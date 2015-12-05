@@ -10,4 +10,8 @@
     However I am unsure how to do either using reflex. I had previously been
     looking into the second option so I will look into the first.
     
+    Here is the Reflex.Dom quick reference:
     
+    https://github.com/ryantrinkle/reflex-dom/blob/develop/Quickref.md
+    
+    Is there anything here that might help?
