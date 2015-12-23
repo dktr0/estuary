@@ -6,7 +6,6 @@ import Sound.Tidal.Context
 setupTidalStream :: IO (OscPattern -> IO ())
 setupTidalStream = do
   putStrLn "setting up Tidal"
-  (cps, getNow) <- bpsUtils
   d1 <- dirtStream
   return d1
 
