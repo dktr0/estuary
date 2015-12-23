@@ -9,8 +9,13 @@ We think the steps are like this, but make no guarantees:
 brew install haskell-stack
 ```
 
+2. run stack setup from the top level of the estuary folder to setup an independent ghc installation and ghcjs. This will probably take a very long time:
+```
+cd estuary
+stack setup
+```
 
-You can build ghcjs with the stack.yaml in this folder.
+3. 
 
 To install reflex
 
