@@ -15,13 +15,13 @@ cd estuary
 stack setup
 ```
 
-3. 
+3. run stack build in the top level of the estuary folder to grab project dependencies and compile:
+```
+stack build
+```
 
-To install reflex
-
-cd try-stack-reflex
-./try-stack-reflex
-
-This will run a script and install reflex. If you have any trouble here is the link to the source of the script.
-
-www.github.com/luigy/try-stack-reflex
+4. To open the editor, change to the build directory and open the index.html file. That is more complicated than it seems, here's a suggestion:
+```
+cd $(stack path --local-install-root)/bin/Estuary.jsexe
+open index.html
+```
