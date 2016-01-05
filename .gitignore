@@ -3,3 +3,5 @@
 bin
 .stack-work/*
 static/
+*.DS_Store*
+*~
