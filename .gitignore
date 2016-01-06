@@ -5,3 +5,4 @@ bin
 static/
 *.DS_Store*
 *~
+EstuaryServer

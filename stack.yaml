@@ -30,6 +30,9 @@ setup-info:
 extra-deps:
 - ref-tf-0.4
 - ghcjs-dom-0.2.2.0
+- webkitgtk3-0.14.1.1
+- webkitgtk3-javascriptcore-0.13.1.1
+- cairo-0.13.1.1
 - these-0.6.1.0
 - hmt-0.15
 - hosc-0.15
