@@ -46,6 +46,8 @@ cd ~/Estuary/server
 
 Note: there's currently no way to safely stop the server, and if you do kill it, it probably doesn't unbind from port 9162, meaning you won't be able to relaunch the server without restarting the operating system. This is a problem that will be fixed in the future.
 
+Another note: You can try out the server without the client: just use your web browser to open the file simpleWebSocketClient.html in the Estuary/server folder.
+
 ## Client Instructions
 
 We think the steps are like this, but make no guarantees:
