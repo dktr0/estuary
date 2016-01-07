@@ -1,0 +1,77 @@
+<html>
+<!-- a demonstration of pure HTML5 drag and drop -->
+
+<head>
+<script>
+
+function makeDraggable(id) {
+  var elem = document.getElementById(id);
+  elem.ondragstart = function(e) {
+    e.dataTransfer.setData("Text",e.target.id);
+    console.log("started dragging");
+  };
+  elem.ondrag = function(e) {
+    console.log("dragging");
+  };
+  elem.ondragend = function(e) {
+    console.log("finished dragging");
+  };
+}
+
+function makeDroppable(id) {
+  var elem = document.getElementById(id);
+  elem.ondragenter = function(e) {
+    console.log("dragenter");
+    if(e.target.className=="container") {
+      e.target.style.border = "3px dotted white";
+    }
+  };
+  elem.ondragover = function(e) {
+    if(e.target.className=="container") {
+      console.log("dragover");
+      e.preventDefault();
+    }
+  };
+  elem.ondragleave = function(e) {
+    if(e.target.className=="container") {
+      console.log("dragleave");
+      e.target.style.border="1px solid purple";
+    }
+  };
+  elem.ondrop = function(e) {
+    e.preventDefault(); // to stop dropped object being a link that is followed!
+    if(e.target.className=="container") {
+      e.target.style.border="1px solid purple";
+      console.log(e.dataTransfer.getData("Text") + " was dropped on " + e.target.className + " " + e.target.id);
+    }
+  };
+}
+
+function setup() {
+  makeDraggable("block");
+  makeDroppable("one");
+  makeDroppable("two");
+  makeDroppable("three");
+}
+
+</script>
+</head>
+<body onload="setup()">
+
+<div>drag the block into the purple border container - watch the web console to see what happens when in terms of events</div>
+
+<div id="container" style="padding: 20px; position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; background: black">
+
+<div draggable="true" id="block" style="background: green; position: absolute; left: 100px; top: 100px;">BLOCK</div>
+
+<div class="container" id="one" style="background: black; border: 1px solid purple; position: absolute; left: 100px; top: 300px; width:200px; height:200px;"></div>
+
+<div class="container" id="two" style="background: black; border: 1px solid purple; position: absolute; left: 350px; top: 300px; width:200px; height:200px;"></div>
+
+<div class="container" id="three" style="background: black; border: 1px solid purple; position: absolute; left: 600px; top: 300px; width:200px; height:200px;"></div>
+
+</div>
+
+</div>
+</body>
+</html>
