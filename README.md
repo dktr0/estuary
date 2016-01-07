@@ -23,7 +23,7 @@ cd Dirt
 make
 ```
 
-4. Install the hint and tidal cabal (Haskell) packages:
+4. Install the hint and tidal packages for Haskell (using cabal):
 ```
 cabal install hint
 cabal install tidal
