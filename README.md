@@ -43,10 +43,22 @@ cd ~/Dirt
 cd ~/Estuary/server
 ./EstuaryServer &
 ```
+Note: You can try out the server without the client: just use your web browser to open the file simpleWebSocketClient.html in the Estuary/server folder.
 
-Note: there's currently no way to safely stop the server, and if you do kill it, it probably doesn't unbind from port 9162, meaning you won't be able to relaunch the server without restarting the operating system. This is a problem that will be fixed in the future.
-
-Another note: You can try out the server without the client: just use your web browser to open the file simpleWebSocketClient.html in the Estuary/server folder.
+Another Note: to stop the server press Ctrl-Z, then kill the process by number. Ctrl-C won't work and if you kill the parent terminal without stopping the server and killing the process by number it seems the websocket port stays locked until you restart the machine. Here's an example:
+```
+pc-ogborn-d:server ogbornd$ ./EstuaryServer
+Tidal websocket server for Estuary
+^Z
+[1]+  Stopped                 ./EstuaryServer
+pc-ogborn-d:server ogbornd$ ps
+  PID TTY           TIME CMD
+  668 ttys000    0:00.08 -bash
+  807 ttys000    0:00.02 ./EstuaryServer
+pc-ogborn-d:server ogbornd$ kill 807
+[1]+  Terminated: 15          ./EstuaryServer
+pc-ogborn-d:server ogbornd$ 
+```
 
 ## Client Instructions
 
