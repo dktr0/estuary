@@ -1,0 +1,37 @@
+<html>
+
+<head>
+
+<script>
+
+var socket;
+
+function setup() {
+  socket = new WebSocket("ws://127.0.0.1:9162");
+  socket.onopen = function () {
+    console.log("socket opened!");
+  };
+  socket.onerror = function () {
+    console.log("socket error");
+  }
+}
+
+function sendData() {
+  var elem = document.getElementById('input');
+  var input = elem.value;
+  console.log(input);
+  socket.send(input);
+}
+
+</script>
+
+
+</head>
+
+<body onload="setup()">
+simpleWebSocketClient<br/>
+<textarea id="input"></textarea>
+<button onclick="sendData()">eval</button><br/>
+</body>
+
+</html>

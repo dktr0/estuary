@@ -19,6 +19,7 @@ data Sample = Bd | Bp | Cp
 main :: IO ()
 main = mainWidget $ do
   elAttr "div" ("style" =: s) $ text "Estuary"
+  d <- dropdown "" (constDyn samples) def
   setup
   countClicks
   where
@@ -34,6 +35,8 @@ buttonDynAttr :: MonadWidget t m => Dynamic t (Map String String) -> m (Event t 
 buttonDynAttr attrs = do
   (e, _) <- elDynAttr' "button" attrs (text "")
   return $ domEvent Click e
+
+
 
 countClicks :: MonadWidget t m => m ()
 countClicks = mdo
@@ -82,23 +85,4 @@ countClicks = mdo
                  linkClass "Add Bin" "reflexLink noselect"
   return ()
 
--- A button widget representing a sound sample
--- sampleWidget :: (MonadWidget t m) => Dynamic t Block -> String -> m (Event t ())
-{- each sample widget stores its pattern name -}
-{- report this data when the sample widget is clicked -}
-
-{- Create drop down menu where each option is a sampleWidget -}
-{- print sample name when option is clicked -}
-
-{- figure out dragging -}
-{- figure out dropping -}
-
-{- create styled button -}
-{- load button into variable -}
-{- pass variable to domEvent click -}
-{- do something with the fired event -}
-
-{- Do something when a div is clicked -}
-{- Allow divs to be dragged around the screen -}
-{- Allow divs to be placed -}
-{- Create constraints for div placement -}
+samples = Data.Map.fromList [("bd","bd"), ("sn","sn"), ("cp","cp")]
