@@ -32,11 +32,18 @@ onMessage = Just (f . getData)
        f (BlobData js) = putStrLn "a blob"
        f (ArrayBufferData js) = putStrLn "an array buffer"
 
--- request = WebSocketRequest { url=JSS.pack "ws:://127.0.0.1:8005",protocols=[],onClose=onClose,onMessage=onMessage}
+openSocket = do
+  let request = WebSocketRequest {
+    url=JSS.pack "ws:://127.0.0.1:8005",
+    protocols=[],
+    onClose=onClose,
+    onMessage=onMessage
+  }
+  socket <- WS.connect request
 
 main = do
   putStrLn "making main widget..."
   mainWidget $ el "div" $ text (intercalate "," test)
-
---  putStrLn "connecting to WebSocket..."
---  socket <- WS.connect request
+  putStrLn "opening socket..."
+  openSocket
+  
