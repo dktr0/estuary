@@ -12,7 +12,8 @@ import Safe (readMay)
 import Data.JSString (JSString)
 import qualified Data.JSString as JSS
 import JavaScript.Web.CloseEvent
-import JavaScript.Web.MessageEvent
+import JavaScript.Web.MessageEvent (getData)
+import JavaScript.Web.WebSocket (url,protocols,onClose,onMessage)
 import qualified JavaScript.Web.WebSocket as WS
 
 showEventArc :: Parseable a => Tidal.Event a -> String
@@ -29,34 +30,29 @@ takeArc x = arc (sound (p x)) (0, 1)
 showSoundPattern :: String -> String
 showSoundPattern x = (intercalate "," (Prelude.map extractSample $ takeArc x) )
 
-onClose :: Maybe (CloseEvent -> IO ())
-onClose = Just (\_ -> putStrLn "connection closed")
-
-onMessage :: Maybe (MessageEvent -> IO ())
-onMessage = Just (f . getData)
- where f (StringData js) = putStrLn "a string"
-       f (BlobData js) = putStrLn "a blob"
-       f (ArrayBufferData js) = putStrLn "an array buffer"
-
-openSocket = do
-  let request = WebSocketRequest {
-    url=JSS.pack "ws:://127.0.0.1:8005",
-    protocols=[],
-    onClose=onClose,
-    onMessage=onMessage
-  }
-  socket <- WS.connect request
-
 makeMainWidget = mainWidget $ el "div" $ do
   input <- textInput def
   result <- forDyn (_textInput_value input) showSoundPattern
   dynText result
 
+onMessageHandler :: Maybe (MessageEvent -> IO ())
+onMessageHandler = Just (f . WS.getData)
+  where f (StringData js) = putStrLn "a string"
+        f (BlobData js) = putStrLn "a blob"
+        f (ArrayBufferData js) = putStrLn "an array buffer"
+
+openSocket = WS.connect WS.WebSocketRequest {
+  url = JSS.pack "ws:://127.0.0.1:8005",
+  protocols = [],
+  onClose = Just (\_ -> putStrLn "connection closed"),
+  onMessage = onMessageHandler
+  }
+
 main = do
   putStrLn "making main widget..."
   makeMainWidget
   putStrLn "opening socket..."
-  openSocket
+  socket <- openSocket
   putStrLn "finished!"
 
 patternInput :: MonadWidget t m => m (Dynamic t (Maybe String))
