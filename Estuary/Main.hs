@@ -12,7 +12,7 @@ import Safe (readMay)
 import Data.JSString (JSString)
 import qualified Data.JSString as JSS
 import JavaScript.Web.CloseEvent
-import JavaScript.Web.MessageEvent (getData)
+import JavaScript.Web.MessageEvent
 import JavaScript.Web.WebSocket (url,protocols,onClose,onMessage)
 import qualified JavaScript.Web.WebSocket as WS
 
@@ -34,6 +34,13 @@ makeMainWidget = mainWidget $ el "div" $ do
   input <- textInput def
   result <- forDyn (_textInput_value input) showSoundPattern
   dynText result
+
+getData :: MessageEvent -> MessageEventData
+getData me = case js_getData me of
+               (# 1#, r #) -> StringData      (JSString r)
+               (# 2#, r #) -> BlobData        (SomeBlob r)
+               (# 3#, r #) -> ArrayBufferData (SomeArrayBuffer r)
+{-# INLINE getData #-}
 
 onMessageHandler :: Maybe (MessageEvent -> IO ())
 onMessageHandler = Just (f . WS.getData)

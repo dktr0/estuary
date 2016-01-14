@@ -18,13 +18,7 @@ packages:
     commit: b3e44108a6986be63475e9128993dac4f9c5fdd0
   extra-dep: true
 
-compiler: ghcjs-0.2.0.20151001_ghc-7.10.2
-compiler-check: match-exact
-setup-info:
-  ghcjs:
-    source:
-      ghcjs-0.2.0.20151001_ghc-7.10.2:
-        url: "https://github.com/fizruk/ghcjs/releases/download/v0.2.0.20151001/ghcjs-0.2.0.20151001.tar.gz"
+compiler: ghcjs-0.2.0_ghc-7.10.3
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:

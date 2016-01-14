@@ -17,3 +17,4 @@ executable Estuary
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base
+  
