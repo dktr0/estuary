@@ -19,8 +19,8 @@ type Position = (Int, Int)
 data Sample = Bd | Bp | Cp
   deriving (Show, Eq)
 
-data Blocks = Empty | Full
-  deriving (Show, Eq, Generic, NFData)
+data Blocks = Enter | Default
+  deriving (Show, Eq)
 
 squares :: [Position]
 squares = [(x, y) | y <- [1..8], x <- [1..8]]
@@ -31,7 +31,7 @@ main = mainWidget $ do
   -- d <- dropdown "" (constDyn samples) def
   setup
   sampleWidget
-  blockDiagram
+  sampleWidgetContainer
   where
     s = "font-size: 50px; margin-left: 155px; font-family: Helvetica; color: steelblue"
 
@@ -46,10 +46,10 @@ buttonAttr attrs name = do
   (e, _) <- elAttr' "button" attrs (text name)
   (return())
 
-buttonDynAttr :: MonadWidget => Dynamic t (Map String String) -> m (Event t ())
+buttonDynAttr :: MonadWidget t m => Dynamic t (Map String String) -> m (Event t ())
 buttonDynAttr dynAttrs = do
   (e, _) <- elDynAttr' "button" dynAttrs (text "")
-  return $ (domEvent DragEnter e | domEvent Dragleave e)
+  return $ (domEvent Dragover e || domEvent Dragleave e)
 
 -- Report back name when dropped
 -- Only drop when over emptySpace
@@ -76,26 +76,35 @@ sampleWidget = elClass "div" "sampleWidget" $ do
 
 -- Highlight when dragged over
 -- Report back coordinates
-emptySpace :: MonadWidget t m => Position -> m (Event t Position)
-emptySpace coors = do
-  rec b <- buttonDynAttr dynAttrs
-  dynAttrs <- mapDyn (case {-dragEnter dragLeave -})
-    Enter -> mkStyle "purple"
-    Leave -> mkStyle "green"
-  return $ fmap (const (coors)) b
-  where
-    mkStyle c = Data.Map.fromList
-    [ ("style", "border: 1px solid " ++ c ++ ";")]
+sampleWidgetContainer :: MonadWidget t m => m ()
+sampleWidgetContainer = do
+  rec b     <- buttonDynAttr attrs
+      dynBool <- toggle False b
+      attrs <- forDyn (dynBool) whichAttr
+  (return ())
 
+whichAttr :: Bool -> (Map String String)
+whichAttr conState
+         | conState == True  = Data.Map.fromList
+                               [("style", "border: 3px dotted white; " ++
+                                 "width: 200px; height: 200px;")]
+         | conState == False = Data.Map.fromList
+                               [("style", "border: 1px solid purple; " ++
+                                 "width: 200px; height: 200px;")]
+
+{-
 -- Make grid of empty spaces (Othello)
 blockDiagram :: MonadWidget t m => m ()
 blockDiagram = elClass "div" "blockDiagram" $ do
   rec rows <- mapM row [1..8]
   (return())
+-}
 
+{-
 row :: MonadWidget t m => Int -> m [()]
 row n = el "div" $
   mapM (emptySpace) (take 8 . drop 8 (8 * (n-1)) $ squares)
+-}
 
 -- Thoughts:
 -- block diagram returns list of event t Strings
