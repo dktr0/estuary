@@ -1,18 +1,18 @@
 code size summary per package:
 
-base:                    276697
+base:                    276879
 conta_5w3UY4chXx62LVUOUrXeRm:117358
 depen_3ZazWrAF611CC0pGA27xUj:2873
 depen_GZFfxs8A7WS3jvJthZg6p3:47741
 excep_Dt64kPlbg5dLPF70RHEAAf:4620
-ghc-prim:                26498
+ghc-prim:                26220
 ghcjs_6fO2sBDbxgl1lxlAeHzYMO:1846
-ghcjs_HXVFfu8XQIWJ1W77s2SHGo:123033
+ghcjs_HXVFfu8XQIWJ1W77s2SHGo:123232
 ghcjs_HwzX8eXAwveCUOoAWSdVDg:9294
 integer-gmp:             5734
-main:                    37788
-refle_7iwpocFgnHQGhHLu6WiQzl:351111
-refle_BmKSHcKzE5FDdieyLaYalI:413030
+main:                    39529
+refle_7iwpocFgnHQGhHLu6WiQzl:350680
+refle_BmKSHcKzE5FDdieyLaYalI:413046
 reftf_JOU40Nd0lxyACBtr3v80Qj:1202
 text_EUgTRFf4B9F3jYYcZNn3Au:3785
 these_HAPc5SObEh8LTs7RCXecPo:816
@@ -61,7 +61,7 @@ base
     GHC.Ptr:                            188
     GHC.ST:                             186
     GHC.STRef:                          648
-    GHC.Show:                           11680
+    GHC.Show:                           11862
     GHC.Storable:                       1084
     GHC.TopHandler:                     10506
     GHC.Weak:                           188
@@ -88,7 +88,7 @@ ghc-prim
     GHC.CString:                        1888
     GHC.Classes:                        21599
     GHC.IntWord64:                      146
-    GHC.Tuple:                          1376
+    GHC.Tuple:                          1098
     GHC.Types:                          1489
 
 ghcjs_6fO2sBDbxgl1lxlAeHzYMO
@@ -99,7 +99,7 @@ ghcjs_HXVFfu8XQIWJ1W77s2SHGo
     GHCJS.DOM:                          9224
     GHCJS.DOM.DOMWindow:                1236
     GHCJS.DOM.Document:                 4190
-    GHCJS.DOM.Element:                  36242
+    GHCJS.DOM.Element:                  36441
     GHCJS.DOM.EventM:                   1658
     GHCJS.DOM.EventTargetClosures:      2034
     GHCJS.DOM.NamedNodeMap:             659
@@ -115,19 +115,19 @@ integer-gmp
     GHC.Integer.Type:                   5401
 
 main
-    Main:                               37788
+    Main:                               39529
 
 refle_7iwpocFgnHQGhHLu6WiQzl
     Reflex.Dom.Class:                   6442
     Reflex.Dom.Internal:                115124
-    Reflex.Dom.Widget.Basic:            229545
+    Reflex.Dom.Widget.Basic:            229114
 
 refle_BmKSHcKzE5FDdieyLaYalI
     Data.Functor.Misc:                  4733
     Reflex.Class:                       20730
     Reflex.Dynamic:                     16374
     Reflex.Host.Class:                  2209
-    Reflex.Spider.Internal:             368984
+    Reflex.Spider.Internal:             369000
 
 reftf_JOU40Nd0lxyACBtr3v80Qj
     Control.Monad.Ref:                  1202
@@ -147,5 +147,5 @@ trans_KzbnBSIEqPI2eU1Inn4mzm
 
 
 
-packed metadata: 283787
+packed metadata: 283660
 

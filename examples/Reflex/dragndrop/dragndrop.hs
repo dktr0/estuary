@@ -61,8 +61,11 @@ setup = el "div" $ do
 -- Name wrapped in an Event when the element is dragged.
 divAttr :: MonadWidget t m => (Map String String) -> String -> m (R.Event t String)
 divAttr attrs name = do
-  (e, _) <- elAttr' "div" attrs (text name)
+  (e, _) <- elAttr' "button" attrs (text name)
+  --x <- R.wrapDomEvent(R._el_element e) GHCJS.elementOndrop stopAll
+  --x <- R.wrapDomEvent(R._el_element e) GHCJS.elementOndragend stopAll
   return $ fmap (const (name)) (domEvent Drag e)
+  --return $ name <$ x
 
 -- Div template for a container which reacts to various events and returns the
 -- EventID wrapped in an event.
@@ -70,17 +73,18 @@ divAttr attrs name = do
        But it won't compile with them uncommented, getting it to compile may be the answer  *** -}
 divDynAttr :: forall t m. R.MonadWidget t m => R.Dynamic t (Map String String) -> R.Dynamic t String -> m (R.Event t DragEvent)
 divDynAttr dynAttrs name = do
-  (e, child) <- elDynAttr' "container" dynAttrs $ dynText name
-  x <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndrop stopAll
-  y <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndragend stopAll
+  (e, _) <- elDynAttr' "div" dynAttrs $ dynText name
+  x <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndragover stopAll
+  y <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndrop stopAll
+  z <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndragend stopAll
   --_ <- R.performEvent_ x
   --_ <- R.performEvent_ y
   return $ R.leftmost [
-    DragEnter <$ R.domEvent R.Dragover e,
+    DragEnter <$ x,
     DragExit <$ R.domEvent R.Dragend e,
     DragExit <$ R.domEvent R.Dragleave e,
-    DragDrop <$ x,
-    DragDrop <$ y
+    DragDrop <$ y,
+    DragDrop <$ z
     ]
 
 -- Builds a block which corresponds to a Tidal Sample (i.e sn bd bp...)
@@ -113,7 +117,12 @@ sampleWidget :: MonadWidget t m => m (Dynamic t String)
 sampleWidget = elClass "div" "sampleWidget" $ do
 
   -- Find out which element is currently being dragged and return its name
-  blockName <- (sampleBlock "bd")
+  --b <- sampleBlock "bd"
+  --s <- sampleBlock "sn"
+  blockName <- sampleBlock "arpy"
+  --n <- [b,s]
+  --dynText n
+  --blockName <- mconcatDyn n
   return $ blockName
 
 -- Tuple template
@@ -128,6 +137,8 @@ sampleWidgetContainer blockName = do
       -- Get the eventID i.e which event fired
       dragEvent <- holdDyn Empty b
 
+      eventname <- forDyn dragEvent show
+      dynText eventname
       -- Pass eventID to the whichAttr pure function in order to determine
       -- which attributes to display
       attrs <- forDyn (dragEvent) whichAttr
@@ -141,23 +152,21 @@ sampleWidgetContainer blockName = do
         (if i == DragDrop
           then s
           else ""))
-
-      -- Testing
-      dynText $ name
+          
   (return ())
 
 -- Set a dynamic div's attributes based on the type of event that fired
 whichAttr :: DragEvent -> (Map String String)
 whichAttr conState
          | conState == DragEnter = Data.Map.fromList
-                               [("style", "border: 3px dotted white; " ++
+                               [("style", "border: 3px dotted white;" ++
                                  "position: absolute; left: 100px; top: 300px; width: 200px; height: 200px;")]
          | conState == DragExit = Data.Map.fromList
-                               [("style", "border: 1px solid purple; " ++
+                               [("style", "border: 1px solid purple;" ++
                                  "position: absolute; left: 100px; top: 300px; width: 200px; height: 200px;")]
          | conState == DragDrop = Data.Map.fromList
-                               [("style", "border: 2px solid purple; " ++
+                               [("style", "border: 2px solid purple;" ++
                                  "position: absolute; left: 100px; top: 300px; width: 200px; height: 200px;")]
          | otherwise     = Data.Map.fromList
-                               [("style", "border: 1px solid purple; " ++
+                               [("style", "border: 1px solid purple;" ++
                                  "position: absolute; left: 100px; top: 300px; width: 200px; height: 200px;")]
