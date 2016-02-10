@@ -9,6 +9,7 @@
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Tuple (fst, snd)
+import           Data.String
 import           Data.Default
 import           Data.Text (Text, intercalate)
 import           Data.Array
@@ -31,8 +32,25 @@ import           GHCJS.DOM.Event  as GHCJS
 import qualified GHCJS.DOM.Element as GHCJS
 import qualified GHCJS.DOM.EventM as GHCJS
 
-data DragEvent = DragEnter | DragExit | DragDrop | DragDrag | DragEnd | Empty
+data DragEvent = DragEnter | DragExit | DragDrop | DragDrag | DragEnd | DragClick | Empty
   deriving (Eq, Show)
+
+-- Tuple template
+tuple :: a -> b -> (a,b)
+tuple x y = (x,y)
+
+-- Triple template
+triple :: (a,b) -> c -> (a,b,c)
+triple (x,y) z = (x,y,z)
+
+fst' :: (a,b,c) -> a
+fst' (x,_,_) = x
+
+snd' :: (a,b,c) -> b
+snd' (_,y,_) = y
+
+thd' :: (a,b,c) -> c
+thd' (_,_,z) = z
 
 stopAll :: GHCJS.IsEvent event => GHCJS.EventM event e ()
 stopAll = do
@@ -67,9 +85,7 @@ divAttr attrs name = do
   return $ R.leftmost [ (DragDrag,name) <$ domEvent Drag e , (DragEnd,name) <$ x ]
 
 -- Div template for a container which reacts to various events and returns the
--- EventID wrapped in an event.
-{- *** Still doesn't work, not sure if the commented out lines have something to do with it
-       But it won't compile with them uncommented, getting it to compile may be the answer  *** -}
+-- EventID wrapped in an event
 divDynAttr :: forall t m. R.MonadWidget t m => R.Dynamic t (Map String String) -> R.Dynamic t String -> m (R.Event t DragEvent)
 divDynAttr dynAttrs name = do
   (e, _) <- elDynAttr' "div" dynAttrs $ dynText name
@@ -83,6 +99,7 @@ divDynAttr dynAttrs name = do
     DragExit <$ R.domEvent R.Dragend e,
     DragExit <$ R.domEvent R.Dragleave e,
     DragDrag <$ R.domEvent R.Drag e,
+    DragClick <$ R.domEvent R.Click e,
     DragDrop <$ y,
     DragEnd <$ z
     ]
@@ -97,18 +114,14 @@ sampleBlock name = do
   -- Store the blocks name when the element is dragged, else store ""
   dynTuple <- holdDyn (Empty,"") b
 
-  --tupleDyn <- splitDyn dynTuple
-
   -- Extract the elements out of the tuple
-  -- blockname <- forDyn dynTuple snd
+  --blockname <- forDyn dynTuple snd
   -- event <- forDyn dynTuple fst
 
-  --dynTriple <- combineDyn (triple) dynTuple blockname
-
-  blockname <- forDyn dynTuple (\(e,n) ->
-    (if e == DragDrag
-      then n
-     else ""))
+  blockname <- forDyn dynTuple (\(i,s) ->
+    (if i == DragDrag
+      then s
+      else ""))
 
   -- Return the resulting block name
   return $ blockname
@@ -135,46 +148,61 @@ sampleWidget = elClass "div" "sampleWidget" $ do
   --blockName <- sampleBlock "bp"
   let n = [bd,sn,bp,arpy]
 
-  --dynText b
   blockName <- mconcatDyn n
 
-  dynText blockName
+  --dynText blockName
   return $ blockName
 
--- Tuple template
-tuple :: a -> b -> (a,b)
-tuple x y = (x,y)
+createSampleBlock :: MonadWidget t m => Dynamic t String -> Dynamic t Int -> m (Dynamic t String)
+createSampleBlock blockname num = do
+  rec b     <- divDynAttr attrs name
+      let name = blockname
+      let s = constDyn ("Drop Here!"::String)
+      attrs <- forDyn num sampleBlockAttrs
+      return $ s
+      -- onclick behaviour
+      -- ondrop behaviour
 
--- Triple template
-triple :: (a,b) -> c -> (a,b,c)
-triple (x,y) z = (x,y,z)
+sampleBlockAttrs :: Int -> (Map String String)
+sampleBlockAttrs num = Data.Map.fromList [("style","position: absolute; left" ++ show (20*(num-1)) ++ "px;" ++
+                                      "width: 20px; height: 20px;")]
 
 -- Create a widget container that will react to dragOver, dragLeave, and Drop events.
-sampleWidgetContainer :: (MonadWidget t m) => Dynamic t String -> m ()
+sampleWidgetContainer :: (MonadWidget t m) => Dynamic t String -> m (Dynamic t Int)
 sampleWidgetContainer blockName = do
   -- Recursively build the dynamic div
   rec b     <- divDynAttr attrs name
 
-      -- Get the eventID i.e which event fired
-      dragEvent <- holdDyn Empty b
+      let oldname = name
 
-      --eventname <- forDyn dragEvent show
-      --dynText eventname
-      -- Pass eventID to the whichAttr pure function in order to determine
-      -- which attributes to display
+      dragEvent <- holdDyn Empty b
+      incrementer <- count b
+
       attrs <- forDyn (dragEvent) whichAttr
 
-      -- Create a tuple containing the eventID and block name
-      dis <- combineDyn (tuple) dragEvent blockName
+      dis <- combineDyn (tuple) dragEvent incrementer
+      tis <- combineDyn (triple) dis blockName
 
-      -- If there is a drop event, change the containers name to that of the
-      -- dropped element.
-      name <- forDyn dis (\(i,s) -> (if i == DragDrop then s else ""))
+      -- Set container name idea
+      --dis <- combineDyn (tuple) dragEvent blockName
+      --tis <- combineDyn (triple) dis oldname
+      --thing <- forDyn tis setContainerName
+      --let name = thing
 
-  (return ())
+      name <- forDyn dis ((i,s,p) ->
+        (if i == DragDrop
+          then createSampleBlock s p
+          else ""))
 
---blockDiagramWidget :: MonadWidget t m => Dynamic t String m ()
---blockDiagramWidget = do
+  (return incrementer)
+
+
+{-
+setContainerName :: (DragEvent,String,String) -> String
+setContainerName triple
+         | (( (fst' triple) == DragDrop) && ((snd' triple) > "") ) = snd' triple
+         | otherwise = thd' triple
+-}
 
 -- Set a dynamic div's attributes based on the type of event that fired
 whichAttr :: DragEvent -> (Map String String)
