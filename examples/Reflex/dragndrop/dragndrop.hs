@@ -139,62 +139,69 @@ sampleBlock name = do
               "font-family: Helvetica;" ++
               "background-color: steelblue")]
 
+sampleProjection :: MonadWidget t m => Dynamic t (String,Int) -> m ()
+sampleProjection sampleTuple = do
+  rec b <- divDynAttr attrs name
+      name <- forDyn sampleTuple fst
+      time <- forDyn sampleTuple snd
+      attrs <- forDyn time setAttrs
+  (return())
+
+--projectionWidget :: MonadWidget t m => [Dynamic t (String,Int)] -> [m ()]
+--projectionWidget sampleTuples = map (sampleProjection) sampleTuples
+  --(return())
+
+setAttrs :: Int -> (Map String String)
+setAttrs time = Data.Map.fromList [("draggable", "true"),("class", "sampleBlock"),
+                                   ("style", "fontsize: 10px;" ++ "font-family:" ++
+                                   "Helvetica;" ++ "background-color: steelblue")]
+
 -- Create a section listing all the available samples
 sampleWidget :: MonadWidget t m => m (Dynamic t String)
 sampleWidget = elClass "div" "sampleWidget" $ do
 
   -- Find out which element is currently being dragged and return its name
-  bd <- sampleBlock "bd "
-  sn <- sampleBlock "sn "
-  bp <- sampleBlock "bp "
-  arpy <- sampleBlock "arpy "
+  bd <- sampleBlock " bd"
+  sn <- sampleBlock " sn"
+  bp <- sampleBlock " bp"
+  arpy <- sampleBlock " arpy"
+  arp <- sampleBlock " arp"
+  pause <- sampleBlock " ~"
+  rand <- sampleBlock "?"
+  mult <- sampleBlock "*"
+  text "Number : "
+  t <- textInput def
+  --num <- _textInput_value t
 
-  --blockName <- sampleBlock "bp"
-  let n = [bd,sn,bp,arpy]
+  let num = constDyn (1::Int)
+  block <- combineDyn (tuple) bd num
+
+  elAttr "div" ("style" =: s) $ do
+    sampleProjection block
+
+  let n = [bd,sn,bp,arpy,arp,pause,rand,mult,(_textInput_value t)]
 
   blockName <- mconcatDyn n
 
   --dynText blockName
   return $ blockName
 
-{-
-createSampleBlock :: MonadWidget t m => Dynamic t String -> Dynamic t Int -> m (Dynamic t String)
-createSampleBlock blockname num = do
-  rec b     <- divDynAttr attrs name
-      let name = blockname
-      let s = constDyn ("Drop Here!"::String)
-      attrs <- forDyn num sampleBlockAttrs
-      return $ s
-      -- onclick behaviour
-      -- ondrop behaviour
-
-sampleBlockAttrs :: Int -> (Map String String)
-sampleBlockAttrs num = Data.Map.fromList [("style","position: absolute; left" ++ show (20*(num-1)) ++ "px;" ++
-                                      "width: 20px; height: 20px;")]
--}
+  where
+    s = "border: 3px dotted black;" ++
+        "position: absolute; left: 20px; top: 250px; width: 500px; height: 120px;"
 
 -- Create a widget container that will react to dragOver, dragLeave, and Drop events.
 sampleWidgetContainer :: (MonadWidget t m) => Dynamic t String -> m ()
 sampleWidgetContainer blockName = do
+
   -- Recursively build the dynamic div
   rec b     <- divDynAttr attrs name
 
-      --let oldname = name
-
       dragEvent <- holdDyn Empty b
-      --first <- holdDyn Empty (headE b)
-      --incrementer <- R.count b
 
       attrs <- forDyn (dragEvent) whichAttr
 
       dis <- combineDyn (tuple) dragEvent blockName
-      --tis <- combineDyn (triple) dis blockName
-
-      -- Set container name idea
-      --dis <- combineDyn (tuple) dragEvent blockName
-      --tis <- combineDyn (triple) dis oldname
-      --thing <- forDyn tis setContainerName
-      --let name = thing
 
       name <- forDyn dis (\(i,s) ->
         (if i == DragDrop
@@ -202,13 +209,6 @@ sampleWidgetContainer blockName = do
           else ""))
 
   (return ())
-
-{-
-setContainerName :: (DragEvent,String,String) -> String
-setContainerName triple
-         | (( (fst' triple) == DragDrop) && ((snd' triple) > "") ) = snd' triple
-         | otherwise = thd' triple
--}
 
 -- Set a dynamic div's attributes based on the type of event that fired
 whichAttr :: DragEvent -> (Map String String)
@@ -225,3 +225,27 @@ whichAttr conState
          | otherwise     = Data.Map.fromList
                                [("style", "border: 1px solid purple;" ++
                                  "position: absolute; left: 20px; top: 120px; width: 500px; height: 120px;")]
+
+-- Old Code
+{-
+setContainerName :: (DragEvent,String,String) -> String
+setContainerName triple
+      | (( (fst' triple) == DragDrop) && ((snd' triple) > "") ) = snd' triple
+      | otherwise = thd' triple
+-}
+
+{-
+createSampleBlock :: MonadWidget t m => Dynamic t String -> Dynamic t Int -> m (Dynamic t String)
+createSampleBlock blockname num = do
+  rec b     <- divDynAttr attrs name
+      let name = blockname
+      let s = constDyn ("Drop Here!"::String)
+      attrs <- forDyn num sampleBlockAttrs
+      return $ s
+      -- onclick behaviour
+      -- ondrop behaviour
+
+sampleBlockAttrs :: Int -> (Map String String)
+sampleBlockAttrs num = Data.Map.fromList [("style","position: absolute; left" ++ show (20*(num-1)) ++ "px;" ++
+                                      "width: 20px; height: 20px;")]
+-}

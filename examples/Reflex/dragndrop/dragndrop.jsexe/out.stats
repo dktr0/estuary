@@ -1,18 +1,18 @@
 code size summary per package:
 
-base:                    277759
+base:                    277926
 conta_5w3UY4chXx62LVUOUrXeRm:117358
 depen_3ZazWrAF611CC0pGA27xUj:2873
 depen_GZFfxs8A7WS3jvJthZg6p3:47741
 excep_Dt64kPlbg5dLPF70RHEAAf:4620
 ghc-prim:                26498
 ghcjs_6fO2sBDbxgl1lxlAeHzYMO:1846
-ghcjs_HXVFfu8XQIWJ1W77s2SHGo:123232
+ghcjs_HXVFfu8XQIWJ1W77s2SHGo:129784
 ghcjs_HwzX8eXAwveCUOoAWSdVDg:9294
 integer-gmp:             5734
-main:                    45408
-refle_7iwpocFgnHQGhHLu6WiQzl:351099
-refle_BmKSHcKzE5FDdieyLaYalI:462422
+main:                    55950
+refle_7iwpocFgnHQGhHLu6WiQzl:374456
+refle_BmKSHcKzE5FDdieyLaYalI:463248
 reftf_JOU40Nd0lxyACBtr3v80Qj:1202
 text_EUgTRFf4B9F3jYYcZNn3Au:3785
 these_HAPc5SObEh8LTs7RCXecPo:816
@@ -26,7 +26,7 @@ base
     Control.Exception.Base:             4053
     Control.Monad.Fix:                  584
     Data.Maybe:                         1186
-    Data.Tuple:                         167
+    Data.Tuple:                         334
     Data.Type.Equality:                 287
     Data.Typeable:                      885
     Data.Typeable.Internal:             1418
@@ -105,7 +105,7 @@ ghcjs_HXVFfu8XQIWJ1W77s2SHGo
     GHCJS.DOM.EventTargetClosures:      2034
     GHCJS.DOM.NamedNodeMap:             659
     GHCJS.DOM.Node:                     2181
-    GHCJS.DOM.Types:                    65609
+    GHCJS.DOM.Types:                    72161
 
 ghcjs_HwzX8eXAwveCUOoAWSdVDg
     GHCJS.Prim:                         8518
@@ -116,19 +116,20 @@ integer-gmp
     GHC.Integer.Type:                   5401
 
 main
-    Main:                               45408
+    Main:                               55950
 
 refle_7iwpocFgnHQGhHLu6WiQzl
-    Reflex.Dom.Class:                   6442
-    Reflex.Dom.Internal:                115124
+    Reflex.Dom.Class:                   6484
+    Reflex.Dom.Internal:                115138
     Reflex.Dom.Widget.Basic:            229533
+    Reflex.Dom.Widget.Input:            23301
 
 refle_BmKSHcKzE5FDdieyLaYalI
     Data.Functor.Misc:                  7380
     Reflex.Class:                       20945
-    Reflex.Dynamic:                     62830
+    Reflex.Dynamic:                     63376
     Reflex.Host.Class:                  2209
-    Reflex.Spider.Internal:             369058
+    Reflex.Spider.Internal:             369338
 
 reftf_JOU40Nd0lxyACBtr3v80Qj
     Control.Monad.Ref:                  1202
@@ -148,5 +149,5 @@ trans_KzbnBSIEqPI2eU1Inn4mzm
 
 
 
-packed metadata: 289583
+packed metadata: 296836
 
