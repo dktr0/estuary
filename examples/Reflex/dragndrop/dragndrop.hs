@@ -5,6 +5,8 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
+--import           Sound.Tidal.Context as Tidal
+
 -- Haskell Imports
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -142,10 +144,10 @@ sampleWidget :: MonadWidget t m => m (Dynamic t String)
 sampleWidget = elClass "div" "sampleWidget" $ do
 
   -- Find out which element is currently being dragged and return its name
-  bd <- sampleBlock "bd"
-  sn <- sampleBlock "sn"
-  bp <- sampleBlock "bp"
-  arpy <- sampleBlock "arpy"
+  bd <- sampleBlock "bd "
+  sn <- sampleBlock "sn "
+  bp <- sampleBlock "bp "
+  arpy <- sampleBlock "arpy "
 
   --blockName <- sampleBlock "bp"
   let n = [bd,sn,bp,arpy]
@@ -172,15 +174,16 @@ sampleBlockAttrs num = Data.Map.fromList [("style","position: absolute; left" ++
 -}
 
 -- Create a widget container that will react to dragOver, dragLeave, and Drop events.
-sampleWidgetContainer :: (MonadWidget t m) => Dynamic t String -> m (Dynamic t Int)
+sampleWidgetContainer :: (MonadWidget t m) => Dynamic t String -> m ()
 sampleWidgetContainer blockName = do
   -- Recursively build the dynamic div
   rec b     <- divDynAttr attrs name
 
-      let oldname = name
+      --let oldname = name
 
       dragEvent <- holdDyn Empty b
-      incrementer <- count b
+      --first <- holdDyn Empty (headE b)
+      --incrementer <- R.count b
 
       attrs <- forDyn (dragEvent) whichAttr
 
@@ -198,7 +201,7 @@ sampleWidgetContainer blockName = do
           then s
           else ""))
 
-  (return incrementer)
+  (return ())
 
 {-
 setContainerName :: (DragEvent,String,String) -> String
@@ -211,14 +214,14 @@ setContainerName triple
 whichAttr :: DragEvent -> (Map String String)
 whichAttr conState
          | conState == DragEnter = Data.Map.fromList
-                               [("style", "border: 3px dotted white;" ++
-                                 "position: absolute; left: 100px; top: 300px; width: 200px; height: 200px;")]
+                               [("style", "border: 3px dotted black;" ++
+                                 "position: absolute; left: 20px; top: 120px; width: 500px; height: 120px;")]
          | conState == DragExit = Data.Map.fromList
                                [("style", "border: 1px solid purple;" ++
-                                 "position: absolute; left: 100px; top: 300px; width: 200px; height: 200px;")]
+                                 "position: absolute; left: 20px; top: 120px; width: 500px; height: 120px;")]
          | conState == DragDrop = Data.Map.fromList
                                [("style", "border: 2px solid purple;" ++
-                                 "position: absolute; left: 100px; top: 300px; width: 200px; height: 200px;")]
+                                 "position: absolute; left: 20px; top: 120px; width: 500px; height: 120px;")]
          | otherwise     = Data.Map.fromList
                                [("style", "border: 1px solid purple;" ++
-                                 "position: absolute; left: 100px; top: 300px; width: 200px; height: 200px;")]
+                                 "position: absolute; left: 20px; top: 120px; width: 500px; height: 120px;")]

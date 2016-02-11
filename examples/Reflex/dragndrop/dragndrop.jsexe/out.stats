@@ -1,18 +1,18 @@
 code size summary per package:
 
-base:                    281203
+base:                    277759
 conta_5w3UY4chXx62LVUOUrXeRm:117358
 depen_3ZazWrAF611CC0pGA27xUj:2873
 depen_GZFfxs8A7WS3jvJthZg6p3:47741
 excep_Dt64kPlbg5dLPF70RHEAAf:4620
-ghc-prim:                26220
+ghc-prim:                26498
 ghcjs_6fO2sBDbxgl1lxlAeHzYMO:1846
 ghcjs_HXVFfu8XQIWJ1W77s2SHGo:123232
 ghcjs_HwzX8eXAwveCUOoAWSdVDg:9294
-integer-gmp:             6036
-main:                    46040
+integer-gmp:             5734
+main:                    45408
 refle_7iwpocFgnHQGhHLu6WiQzl:351099
-refle_BmKSHcKzE5FDdieyLaYalI:470327
+refle_BmKSHcKzE5FDdieyLaYalI:462422
 reftf_JOU40Nd0lxyACBtr3v80Qj:1202
 text_EUgTRFf4B9F3jYYcZNn3Au:3785
 these_HAPc5SObEh8LTs7RCXecPo:816
@@ -26,7 +26,7 @@ base
     Control.Exception.Base:             4053
     Control.Monad.Fix:                  584
     Data.Maybe:                         1186
-    Data.Tuple:                         334
+    Data.Tuple:                         167
     Data.Type.Equality:                 287
     Data.Typeable:                      885
     Data.Typeable.Internal:             1418
@@ -57,9 +57,8 @@ base
     GHC.IO.Handle.Types:                3571
     GHC.IORef:                          166
     GHC.Int:                            802
-    GHC.List:                           4803
+    GHC.List:                           4246
     GHC.MVar:                           188
-    GHC.Num:                            2720
     GHC.Ptr:                            188
     GHC.ST:                             186
     GHC.STRef:                          648
@@ -90,7 +89,7 @@ ghc-prim
     GHC.CString:                        1888
     GHC.Classes:                        21599
     GHC.IntWord64:                      146
-    GHC.Tuple:                          1098
+    GHC.Tuple:                          1376
     GHC.Types:                          1489
 
 ghcjs_6fO2sBDbxgl1lxlAeHzYMO
@@ -114,10 +113,10 @@ ghcjs_HwzX8eXAwveCUOoAWSdVDg
 
 integer-gmp
     GHC.Integer.GMP.Prim:               333
-    GHC.Integer.Type:                   5703
+    GHC.Integer.Type:                   5401
 
 main
-    Main:                               46040
+    Main:                               45408
 
 refle_7iwpocFgnHQGhHLu6WiQzl
     Reflex.Dom.Class:                   6442
@@ -126,10 +125,10 @@ refle_7iwpocFgnHQGhHLu6WiQzl
 
 refle_BmKSHcKzE5FDdieyLaYalI
     Data.Functor.Misc:                  7380
-    Reflex.Class:                       26944
-    Reflex.Dynamic:                     64703
+    Reflex.Class:                       20945
+    Reflex.Dynamic:                     62830
     Reflex.Host.Class:                  2209
-    Reflex.Spider.Internal:             369091
+    Reflex.Spider.Internal:             369058
 
 reftf_JOU40Nd0lxyACBtr3v80Qj
     Control.Monad.Ref:                  1202
@@ -149,5 +148,5 @@ trans_KzbnBSIEqPI2eU1Inn4mzm
 
 
 
-packed metadata: 291988
+packed metadata: 289583
 
