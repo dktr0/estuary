@@ -115,13 +115,15 @@ sampleBlock name = do
   dynTuple <- holdDyn (Empty,"") b
 
   -- Extract the elements out of the tuple
-  --blockname <- forDyn dynTuple snd
+  blockname <- forDyn dynTuple snd
   -- event <- forDyn dynTuple fst
 
+  {-
   blockname <- forDyn dynTuple (\(i,s) ->
     (if i == DragDrag
       then s
       else ""))
+  -}
 
   -- Return the resulting block name
   return $ blockname
@@ -153,6 +155,7 @@ sampleWidget = elClass "div" "sampleWidget" $ do
   --dynText blockName
   return $ blockName
 
+{-
 createSampleBlock :: MonadWidget t m => Dynamic t String -> Dynamic t Int -> m (Dynamic t String)
 createSampleBlock blockname num = do
   rec b     <- divDynAttr attrs name
@@ -166,6 +169,7 @@ createSampleBlock blockname num = do
 sampleBlockAttrs :: Int -> (Map String String)
 sampleBlockAttrs num = Data.Map.fromList [("style","position: absolute; left" ++ show (20*(num-1)) ++ "px;" ++
                                       "width: 20px; height: 20px;")]
+-}
 
 -- Create a widget container that will react to dragOver, dragLeave, and Drop events.
 sampleWidgetContainer :: (MonadWidget t m) => Dynamic t String -> m (Dynamic t Int)
@@ -180,8 +184,8 @@ sampleWidgetContainer blockName = do
 
       attrs <- forDyn (dragEvent) whichAttr
 
-      dis <- combineDyn (tuple) dragEvent incrementer
-      tis <- combineDyn (triple) dis blockName
+      dis <- combineDyn (tuple) dragEvent blockName
+      --tis <- combineDyn (triple) dis blockName
 
       -- Set container name idea
       --dis <- combineDyn (tuple) dragEvent blockName
@@ -189,13 +193,12 @@ sampleWidgetContainer blockName = do
       --thing <- forDyn tis setContainerName
       --let name = thing
 
-      name <- forDyn dis ((i,s,p) ->
+      name <- forDyn dis (\(i,s) ->
         (if i == DragDrop
-          then createSampleBlock s p
+          then s
           else ""))
 
   (return incrementer)
-
 
 {-
 setContainerName :: (DragEvent,String,String) -> String
