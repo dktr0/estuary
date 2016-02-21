@@ -54,6 +54,7 @@ snd' (_,y,_) = y
 thd' :: (a,b,c) -> c
 thd' (_,_,z) = z
 
+-- Function that implements the prevent default java action so that drop events can be detected.
 stopAll :: GHCJS.IsEvent event => GHCJS.EventM event e ()
 stopAll = do
   GHCJS.preventDefault
@@ -76,6 +77,7 @@ setup = el "div" $ do
   text "hello"
   el "br" (return ())
 
+-- Implements the drag and drop functionality for the sample blocks.
 dragAndDrop :: MonadWidget t m => m ()
 countClicks = mdo
 
@@ -143,16 +145,24 @@ countClicks = mdo
 
   return ()
 
--- Div template for a container which reacts to various events and returns the
--- EventID wrapped in an event
+-- Div template for a container which reacts to various events and returns the EventID wrapped in an event
+-- R.Dynamic t (Map String String) : A map of dynamic attributes
+-- R.Dynamic t String : The name to be assigned to the div template
 divDynAttr :: forall t m. R.MonadWidget t m => R.Dynamic t (Map String String) -> R.Dynamic t String -> m (R.Event t DragEvent)
 divDynAttr dynAttrs name = do
+
+  -- Create an element with dynamic attributes, store the element in e and its children in _
   (e, _) <- elDynAttr' "div" dynAttrs $ dynText name
+
+  -- Listen for the dragover, drop, and drag end events that happen to element e
   x <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndragover stopAll
   y <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndrop stopAll
   z <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndragend stopAll
+
   --_ <- R.performEvent_ x
   --_ <- R.performEvent_ y
+
+  -- Bind the data names to the events that fire in order to ID them
   return $ R.leftmost [
     DragEnter <$ x,
     DragExit <$ R.domEvent R.Dragend e,

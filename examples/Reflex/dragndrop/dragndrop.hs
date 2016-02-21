@@ -54,6 +54,7 @@ snd' (_,y,_) = y
 thd' :: (a,b,c) -> c
 thd' (_,_,z) = z
 
+-- Function that implements the prevent default java action so that drop events can be detected.
 stopAll :: GHCJS.IsEvent event => GHCJS.EventM event e ()
 stopAll = do
   GHCJS.preventDefault
@@ -86,16 +87,24 @@ divAttr attrs name = do
   x <- R.wrapDomEvent(R._el_element e) GHCJS.elementOndragend stopAll
   return $ R.leftmost [ (DragDrag,name) <$ domEvent Drag e , (DragEnd,name) <$ x ]
 
--- Div template for a container which reacts to various events and returns the
--- EventID wrapped in an event
+-- Div template for a container which reacts to various events and returns the EventID wrapped in an event
+-- R.Dynamic t (Map String String) : A map of dynamic attributes
+-- R.Dynamic t String : The name to be assigned to the div template
 divDynAttr :: forall t m. R.MonadWidget t m => R.Dynamic t (Map String String) -> R.Dynamic t String -> m (R.Event t DragEvent)
 divDynAttr dynAttrs name = do
+
+  -- Create an element with dynamic attributes, store the element in e and its children in _
   (e, _) <- elDynAttr' "div" dynAttrs $ dynText name
+
+  -- Listen for the dragover, drop, and drag end events that happen to element e
   x <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndragover stopAll
   y <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndrop stopAll
   z <- R.wrapDomEvent (R._el_element e) GHCJS.elementOndragend stopAll
+
   --_ <- R.performEvent_ x
   --_ <- R.performEvent_ y
+
+  -- Bind the data names to the events that fire in order to ID them
   return $ R.leftmost [
     DragEnter <$ x,
     DragExit <$ R.domEvent R.Dragend e,
@@ -107,7 +116,9 @@ divDynAttr dynAttrs name = do
     ]
 
 -- Builds a block which corresponds to a Tidal Sample (i.e sn bd bp...)
-sampleBlock :: MonadWidget t m => String -> m (Dynamic t String)
+-- String : take the name of the sampleBlock
+-- Dynamic t (String,Int) : return the dynamic tuple of the blocks name and whether it is active
+sampleBlock :: MonadWidget t m => String -> m (Dynamic t (String,Int))
 sampleBlock name = do
 
   -- Create a divAttr template and pass the event
@@ -118,17 +129,16 @@ sampleBlock name = do
 
   -- Extract the elements out of the tuple
   blockname <- forDyn dynTuple snd
-  -- event <- forDyn dynTuple fst
+  event <- forDyn dynTuple fst
 
-  {-
-  blockname <- forDyn dynTuple (\(i,s) ->
+  blocknum <- forDyn event (\(i) ->
     (if i == DragDrag
-      then s
-      else ""))
-  -}
+      then 1
+      else 0))
 
+  blockTuple <- combineDyn (tuple) blockname blocknum
   -- Return the resulting block name
-  return $ blockname
+  return $ blockTuple
 
   -- Set the elements attributes
   where
@@ -139,6 +149,8 @@ sampleBlock name = do
               "font-family: Helvetica;" ++
               "background-color: steelblue")]
 
+-- Create a sample projection that changes the sampleBlocks width and colour
+-- based on its timing information (yet to be implemented)
 sampleProjection :: MonadWidget t m => Dynamic t (String,Int) -> m ()
 sampleProjection sampleTuple = do
   rec b <- divDynAttr attrs name
@@ -147,10 +159,7 @@ sampleProjection sampleTuple = do
       attrs <- forDyn time setAttrs
   (return())
 
---projectionWidget :: MonadWidget t m => [Dynamic t (String,Int)] -> [m ()]
---projectionWidget sampleTuples = map (sampleProjection) sampleTuples
-  --(return())
-
+-- return a map of attributes based on the timing information passed in
 setAttrs :: Int -> (Map String String)
 setAttrs time = Data.Map.fromList [("draggable", "true"),("class", "sampleBlock"),
                                    ("style", "fontsize: 10px;" ++ "font-family:" ++
@@ -173,36 +182,48 @@ sampleWidget = elClass "div" "sampleWidget" $ do
   t <- textInput def
   --num <- _textInput_value t
 
-  let num = constDyn (1::Int)
-  block <- combineDyn (tuple) bd num
-
+  -- create a div to put the sample projections in
   elAttr "div" ("style" =: s) $ do
-    sampleProjection block
+    sampleProjection bd
+    sampleProjection sn
+    sampleProjection bp
+    sampleProjection arpy
+    sampleProjection arp
 
+  -- Create a list of returned sampleBlock names to be concatonated
   let n = [bd,sn,bp,arpy,arp,pause,rand,mult,(_textInput_value t)]
 
+  -- Concatonate the dynamic sampleBlock names
   blockName <- mconcatDyn n
 
-  --dynText blockName
+  -- dynText blockName
   return $ blockName
 
+  -- Set the attributes of the div which holds the projections
   where
     s = "border: 3px dotted black;" ++
         "position: absolute; left: 20px; top: 250px; width: 500px; height: 120px;"
 
 -- Create a widget container that will react to dragOver, dragLeave, and Drop events.
-sampleWidgetContainer :: (MonadWidget t m) => Dynamic t String -> m ()
-sampleWidgetContainer blockName = do
+sampleWidgetContainer :: (MonadWidget t m) => Dynamic t (String,Int) -> m ()
+sampleWidgetContainer blockTuple = do
 
   -- Recursively build the dynamic div
   rec b     <- divDynAttr attrs name
 
+      -- pass in the type of event fired (Data) when an event fires
       dragEvent <- holdDyn Empty b
 
+      -- Set the containers attributes based on the event that fired
       attrs <- forDyn (dragEvent) whichAttr
 
+      -- Set the name of the container to that of the block being dragged
+      blockName <- forDyn blockTuple fst
+
+      -- Create a tuple of the event that fired and the name of the block being dragged
       dis <- combineDyn (tuple) dragEvent blockName
 
+      -- set the name of the container based on the fired event and the current blockName
       name <- forDyn dis (\(i,s) ->
         (if i == DragDrop
           then s
