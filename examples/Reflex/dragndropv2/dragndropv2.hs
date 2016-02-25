@@ -101,6 +101,10 @@ dragAndDrop = mdo
     listWithKey allBlocks $ \k oneBlock -> mdo
 
       -- Track mouse position on drag event
+      posE <- wrapDomEvent (R._el_element boxEl) (GHCJS.elementOndrag) getMouseEventCoords
+      pos <- holdDyn (0,0) posE
+      display pos
+
       nClicks <- foldDyn (\() -> succ) (0 :: Int) (R.domEvent Click boxEl)
 
       --name <- (_dropdown_value d)
@@ -144,11 +148,12 @@ dragAndDrop = mdo
                                    "border: 1px solid black; background-color: light-blue" ++
                                    "display: block;")]
 
-
+{-
 mousePosition :: (IsMouseEvent e, GHCJS.IsElement t) => GHCJS.EventM e t (Int, Int)
 mousePosition = do
   (x, y) <- mouseClientXY
   return (x, y)
+-}
 
 --test = fst mousePosition
 
