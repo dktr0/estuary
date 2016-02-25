@@ -1,22 +1,22 @@
 code size summary per package:
 
-base:                    277926
-conta_5w3UY4chXx62LVUOUrXeRm:117358
+base:                    296345
+conta_5w3UY4chXx62LVUOUrXeRm:193104
 depen_3ZazWrAF611CC0pGA27xUj:2873
 depen_GZFfxs8A7WS3jvJthZg6p3:47741
 excep_Dt64kPlbg5dLPF70RHEAAf:4620
-ghc-prim:                26498
+ghc-prim:                26753
 ghcjs_6fO2sBDbxgl1lxlAeHzYMO:1846
-ghcjs_HXVFfu8XQIWJ1W77s2SHGo:129784
+ghcjs_HXVFfu8XQIWJ1W77s2SHGo:126319
 ghcjs_HwzX8eXAwveCUOoAWSdVDg:9294
-integer-gmp:             5734
-main:                    55950
-refle_7iwpocFgnHQGhHLu6WiQzl:374456
-refle_BmKSHcKzE5FDdieyLaYalI:463248
+integer-gmp:             6036
+main:                    42299
+refle_7iwpocFgnHQGhHLu6WiQzl:456745
+refle_BmKSHcKzE5FDdieyLaYalI:408275
 reftf_JOU40Nd0lxyACBtr3v80Qj:1202
 text_EUgTRFf4B9F3jYYcZNn3Au:3785
-these_HAPc5SObEh8LTs7RCXecPo:816
-trans_KzbnBSIEqPI2eU1Inn4mzm:18111
+these_HAPc5SObEh8LTs7RCXecPo:2756
+trans_KzbnBSIEqPI2eU1Inn4mzm:18958
 
 
 code size per module:
@@ -25,8 +25,10 @@ base
     Control.Concurrent.Chan:            3533
     Control.Exception.Base:             4053
     Control.Monad.Fix:                  584
+    Data.Foldable:                      515
+    Data.Functor:                       108
     Data.Maybe:                         1186
-    Data.Tuple:                         334
+    Data.Tuple:                         167
     Data.Type.Equality:                 287
     Data.Typeable:                      885
     Data.Typeable.Internal:             1418
@@ -34,9 +36,9 @@ base
     Foreign.Marshal.Alloc:              375
     Foreign.Marshal.Array:              2038
     Foreign.Storable:                   2680
-    GHC.Base:                           8495
+    GHC.Base:                           8163
     GHC.Conc.Sync:                      8026
-    GHC.Enum:                           3490
+    GHC.Enum:                           11733
     GHC.Err:                            218
     GHC.Exception:                      5626
     GHC.Foreign:                        12264
@@ -57,12 +59,13 @@ base
     GHC.IO.Handle.Types:                3571
     GHC.IORef:                          166
     GHC.Int:                            802
-    GHC.List:                           4246
+    GHC.List:                           5056
     GHC.MVar:                           188
+    GHC.Num:                            2899
     GHC.Ptr:                            188
     GHC.ST:                             186
     GHC.STRef:                          648
-    GHC.Show:                           11680
+    GHC.Show:                           18023
     GHC.Storable:                       1084
     GHC.TopHandler:                     10506
     GHC.Weak:                           188
@@ -71,7 +74,8 @@ base
 
 conta_5w3UY4chXx62LVUOUrXeRm
     Data.IntMap.Base:                   11330
-    Data.Map.Base:                      53092
+    Data.Map.Base:                      116442
+    Data.Map.Strict:                    12396
     Data.Set.Base:                      52936
 
 depen_3ZazWrAF611CC0pGA27xUj
@@ -87,9 +91,9 @@ excep_Dt64kPlbg5dLPF70RHEAAf
 
 ghc-prim
     GHC.CString:                        1888
-    GHC.Classes:                        21599
+    GHC.Classes:                        22132
     GHC.IntWord64:                      146
-    GHC.Tuple:                          1376
+    GHC.Tuple:                          1098
     GHC.Types:                          1489
 
 ghcjs_6fO2sBDbxgl1lxlAeHzYMO
@@ -100,12 +104,11 @@ ghcjs_HXVFfu8XQIWJ1W77s2SHGo
     GHCJS.DOM:                          9224
     GHCJS.DOM.DOMWindow:                1236
     GHCJS.DOM.Document:                 4190
-    GHCJS.DOM.Element:                  36441
-    GHCJS.DOM.EventM:                   1658
+    GHCJS.DOM.Element:                  36045
     GHCJS.DOM.EventTargetClosures:      2034
     GHCJS.DOM.NamedNodeMap:             659
-    GHCJS.DOM.Node:                     2181
-    GHCJS.DOM.Types:                    72161
+    GHCJS.DOM.Node:                     7516
+    GHCJS.DOM.Types:                    65415
 
 ghcjs_HwzX8eXAwveCUOoAWSdVDg
     GHCJS.Prim:                         8518
@@ -113,21 +116,20 @@ ghcjs_HwzX8eXAwveCUOoAWSdVDg
 
 integer-gmp
     GHC.Integer.GMP.Prim:               333
-    GHC.Integer.Type:                   5401
+    GHC.Integer.Type:                   5703
 
 main
-    Main:                               55950
+    Main:                               42299
 
 refle_7iwpocFgnHQGhHLu6WiQzl
-    Reflex.Dom.Class:                   6484
-    Reflex.Dom.Internal:                115138
-    Reflex.Dom.Widget.Basic:            229533
-    Reflex.Dom.Widget.Input:            23301
+    Reflex.Dom.Class:                   17499
+    Reflex.Dom.Internal:                116202
+    Reflex.Dom.Widget.Basic:            323044
 
 refle_BmKSHcKzE5FDdieyLaYalI
-    Data.Functor.Misc:                  7380
-    Reflex.Class:                       20945
-    Reflex.Dynamic:                     63376
+    Data.Functor.Misc:                  6173
+    Reflex.Class:                       17821
+    Reflex.Dynamic:                     12734
     Reflex.Host.Class:                  2209
     Reflex.Spider.Internal:             369338
 
@@ -140,14 +142,16 @@ text_EUgTRFf4B9F3jYYcZNn3Au
     Data.Text.Internal.Fusion.Common:   1314
 
 these_HAPc5SObEh8LTs7RCXecPo
+    Data.Align:                         1940
     Data.These:                         816
 
 trans_KzbnBSIEqPI2eU1Inn4mzm
     Control.Monad.IO.Class:             751
     Control.Monad.Trans.Reader:         8013
+    Control.Monad.Trans.State.Lazy:     847
     Control.Monad.Trans.State.Strict:   9347
 
 
 
-packed metadata: 296836
+packed metadata: 312991
 

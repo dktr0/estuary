@@ -19,7 +19,6 @@ main = mainWidget $ do
   composing
   visualization
   footer
-  countClicks
 
 header :: MonadWidget t m => m ()
 header = do
@@ -75,43 +74,3 @@ footer = do
 linkNewTab :: MonadWidget t m => String -> String -> m ()
 linkNewTab href s =
   elAttr "a" ("href" =: href <> "target" =: "_blank") $ text s
-
-countClicks :: MonadWidget t m => m ()
-countClicks = do
-
-  let initialCounters = Map.fromList [(i,()) | i <- [0..2 :: Int]]
-      addCounter  cs  = Map.insert (length cs) () cs
-      dropCounter cs  = case Map.maxView cs of
-        Nothing      -> cs
-        Just (_,cs') -> cs'
-
-  allBins <- foldDyn ($)
-             initialCounters
-             (leftmost $ [dropBinButton, addBinButton])
-
-  elClass "div" "allCounts" $ do
-
-    listWithKey allBins $ \k oneBin -> do
-
-      nClicks <- foldDyn (\() -> succ) (0 :: Int) (_el_clicked boxEl)
-
-      attrsDyn <- forDyn nClicks $ \b ->
-        Map.fromList
-        [("class","countBin noselect")
-        ,("style","height:" ++ show (30+b*3) ++ "px;" ++
-                  "background-color: hsl("++
-                  show (b*5) ++ ",50%,50%);")]
-
-      (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
-        display nClicks
-
-      return ()
-
-  el "br" (return ())
-
-  -- Turn links' () click events into functions to apply to the bin map
-  dropBinButton <- (fmap (\() -> dropCounter) . _link_clicked) <$>
-                   linkClass "Remove Bin" "reflexLink noselect"
-  addBinButton  <- (fmap (\() -> addCounter)  . _link_clicked) <$>
-                   linkClass "Add Bin" "reflexLink noselect"
-  return ()
