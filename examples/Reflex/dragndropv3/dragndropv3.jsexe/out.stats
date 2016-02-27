@@ -1,6 +1,6 @@
 code size summary per package:
 
-base:                    296345
+base:                    299082
 conta_5w3UY4chXx62LVUOUrXeRm:193104
 depen_3ZazWrAF611CC0pGA27xUj:2873
 depen_GZFfxs8A7WS3jvJthZg6p3:47741
@@ -10,8 +10,8 @@ ghcjs_6fO2sBDbxgl1lxlAeHzYMO:1846
 ghcjs_HXVFfu8XQIWJ1W77s2SHGo:126319
 ghcjs_HwzX8eXAwveCUOoAWSdVDg:9294
 integer-gmp:             6036
-main:                    43787
-refle_7iwpocFgnHQGhHLu6WiQzl:456761
+main:                    43390
+refle_7iwpocFgnHQGhHLu6WiQzl:456783
 refle_BmKSHcKzE5FDdieyLaYalI:408275
 reftf_JOU40Nd0lxyACBtr3v80Qj:1202
 text_EUgTRFf4B9F3jYYcZNn3Au:3785
@@ -65,7 +65,7 @@ base
     GHC.Ptr:                            188
     GHC.ST:                             186
     GHC.STRef:                          648
-    GHC.Show:                           18023
+    GHC.Show:                           20760
     GHC.Storable:                       1084
     GHC.TopHandler:                     10506
     GHC.Weak:                           188
@@ -119,12 +119,12 @@ integer-gmp
     GHC.Integer.Type:                   5703
 
 main
-    Main:                               43787
+    Main:                               43390
 
 refle_7iwpocFgnHQGhHLu6WiQzl
     Reflex.Dom.Class:                   17499
     Reflex.Dom.Internal:                116202
-    Reflex.Dom.Widget.Basic:            323060
+    Reflex.Dom.Widget.Basic:            323082
 
 refle_BmKSHcKzE5FDdieyLaYalI
     Data.Functor.Misc:                  6173
@@ -153,5 +153,5 @@ trans_KzbnBSIEqPI2eU1Inn4mzm
 
 
 
-packed metadata: 313138
+packed metadata: 314401
 
