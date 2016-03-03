@@ -1,3 +1,102 @@
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 // translated from bytestring cbits/fpstring.c
 
 function h$fps_reverse(a_v, a_o, b_v, b_o, n) {
@@ -79,8 +178,7 @@ function h$_hs_bytestring_int_dec(x, buf_d, buf_o) {
         x = (x / 10) | 0;
         bu8[ptr++] = h$_hs_bytestring_digits[x * 10 - x_tmp];
         if(x === 0) {
-            h$ret1 = ptr;
-            return buf_d;
+            { h$ret1 = (ptr); return (buf_d); };
         } else {
             x = -x;
         }
@@ -99,8 +197,7 @@ function h$_hs_bytestring_int_dec(x, buf_d, buf_o) {
         bu8[ptr--] = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    { h$ret1 = (next_free); return (buf_d); };
 }
 
 // signed long long ints (64 bit integers)
@@ -118,8 +215,7 @@ function h$_hs_bytestring_long_long_int_dec(x_a, x_b, buf_d, buf_o) {
         x = x.div(l10);
         bu8[ptr++] = h$_hs_bytestring_digits[x.multiply(l10).subtract(x_tmp).getLowBits()];
         if(x.isZero()) {
-            h$ret1 = ptr;
-            return buf_d;
+            { h$ret1 = (ptr); return (buf_d); };
         } else {
             x = x.negate();
         }
@@ -139,8 +235,7 @@ function h$_hs_bytestring_long_long_int_dec(x_a, x_b, buf_d, buf_o) {
         bu8[ptr--] = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    { h$ret1 = (next_free); return (buf_d); };
 }
 
 // unsigned integers
@@ -162,8 +257,7 @@ function h$_hs_bytestring_uint_dec(x, buf_d, buf_o) {
         bu8[ptr--] = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    { h$ret1 = (next_free); return (buf_d); };
 }
 
 function h$_hs_bytestring_long_long_uint_dec(x_a, x_b, buf_d, buf_o) {
@@ -186,8 +280,7 @@ function h$_hs_bytestring_long_long_uint_dec(x_a, x_b, buf_d, buf_o) {
         bu8[ptr--] = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    { h$ret1 = (next_free); return (buf_d); };
 }
 
 // Padded, decimal, positive integers for the decimal output of bignums
@@ -256,8 +349,7 @@ function h$_hs_bytestring_uint_hex(x, buf_d, buf_o) {
         bu8[ptr--] = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    { h$ret1 = (next_free); return (buf_d); };
 }
 
 // unsigned long ints (64 bit words)
@@ -285,8 +377,59 @@ function h$_hs_bytestring_long_long_uint_hex(x_a, x_b, buf_d, buf_o) {
         bu8[ptr--] = bu8[buf_o];
         bu8[buf_o++] = c;
     }
-    h$ret1 = next_free;
-    return buf_d;
+    { h$ret1 = (next_free); return (buf_d); };
+}
+function h$hsprimitive_memcpy(dst_d, dst_o, doff, src_d, src_o, soff, len) {
+  return h$primitive_memmove(dst_d, dst_o, doff, src_d, src_o, len);
+}
+
+function h$hsprimitive_memmove(dst_d, dst_o, doff, src_d, src_o, soff, len) {
+  if(len === 0) return;
+  var du8 = dst_d.u8, su8 = src_d.u8;
+  for(var i=len-1;i>=0;i--) {
+    du8[dst_o+i] = su8[src_o+i];
+  }
+}
+function h$hsprimitive_memsetba_Word8 (p_d, off, n, x) { if(n > 0) { if(p_d.u8.fill) p_d.u8.fill(x, off, off + n); else for(var i=off; i<off+n; i++) p_d.u8[i] = x; } }
+function h$hsprimitive_memsetba_Word16 (p_d, off, n, x) { if(n > 0) { if(p_d.u1.fill) p_d.u1.fill(x, off, off + n); else for(var i=off; i<off+n; i++) p_d.u1[i] = x; } }
+function h$hsprimitive_memsetba_Word32 (p_d, off, n, x) { if(n > 0) { if(p_d.i3.fill) p_d.i3.fill(x, off, off + n); else for(var i=off; i<off+n; i++) p_d.i3[i] = x; } }
+function h$hsprimitive_memsetba_Word (p_d, off, n, x) { if(n > 0) { if(p_d.i3.fill) p_d.i3.fill(x, off, off + n); else for(var i=off; i<off+n; i++) p_d.i3[i] = x; } }
+function h$hsprimitive_memsetba_Float (p_d, off, n, x) { if(n > 0) { if(p_d.f3.fill) p_d.f3.fill(x, off, off + n); else for(var i=off; i<off+n; i++) p_d.f3[i] = x; } }
+function h$hsprimitive_memsetba_Double (p_d, off, n, x) { if(n > 0) { if(p_d.f6.fill) p_d.f6.fill(x, off, off + n); else for(var i=off; i<off+n; i++) p_d.f6[i] = x; } }
+function h$hsprimitive_memsetba_Char (p_d, off, n, x) { if(n > 0) { if(p_d.i3.fill) p_d.i3.fill(x, off, off + n); else for(var i=off; i<off+n; i++) p_d.i3[i] = x; } }
+
+function h$hsprimitive_memset_Word8 (p_d, p_o, off, n, x) { var start = (p_o >> 0) + off; if(n > 0) { if(p_d.u8.fill) p_d.u8.fill(x, start, start + n); else for(var i=start; i<start+n; i++) p_d.u8[i] = x; } }
+function h$hsprimitive_memset_Word16 (p_d, p_o, off, n, x) { var start = (p_o >> 1) + off; if(n > 0) { if(p_d.u1.fill) p_d.u1.fill(x, start, start + n); else for(var i=start; i<start+n; i++) p_d.u1[i] = x; } }
+function h$hsprimitive_memset_Word32 (p_d, p_o, off, n, x) { var start = (p_o >> 2) + off; if(n > 0) { if(p_d.i3.fill) p_d.i3.fill(x, start, start + n); else for(var i=start; i<start+n; i++) p_d.i3[i] = x; } }
+function h$hsprimitive_memset_Word (p_d, p_o, off, n, x) { var start = (p_o >> 2) + off; if(n > 0) { if(p_d.i3.fill) p_d.i3.fill(x, start, start + n); else for(var i=start; i<start+n; i++) p_d.i3[i] = x; } }
+function h$hsprimitive_memset_Float (p_d, p_o, off, n, x) { var start = (p_o >> 2) + off; if(n > 0) { if(p_d.f3.fill) p_d.f3.fill(x, start, start + n); else for(var i=start; i<start+n; i++) p_d.f3[i] = x; } }
+function h$hsprimitive_memset_Double (p_d, p_o, off, n, x) { var start = (p_o >> 3) + off; if(n > 0) { if(p_d.f6.fill) p_d.f6.fill(x, start, start + n); else for(var i=start; i<start+n; i++) p_d.f6[i] = x; } }
+function h$hsprimitive_memset_Char (p_d, p_o, off, n, x) { var start = (p_o >> 2) + off; if(n > 0) { if(p_d.i3.fill) p_d.i3.fill(x, start, start + n); else for(var i=start; i<start+n; i++) p_d.i3[i] = x; } }
+
+function h$hsprimitive_memsetba_Word64(p_d, off, n, x_1, x_2) {
+  h$hsprimitive_memset_Word64(p_d, 0, off, n, x_1, x_2);
+}
+
+function h$hsprimitive_memset_Word64(p_d, p_o, off, n, x_1, x_2) {
+  var start = (p_o >> 3) + off;
+  if(n > 0) {
+    var pi3 = p_d.i3;
+    for(var i = 0; i < n; i++) {
+      var o = (start + i) << 1;
+      pi3[o] = x_1;
+      pi3[o+1] = x_2;
+    }
+  }
+}
+
+function h$hsprimitive_memset_Ptr(p_d, p_o, off, n, x_1, x_2) {
+  if(n > 0) {
+    if(!p_d.arr) p_d.arr = [];
+    var a = p_d.arr;
+    for(var i = 0; i < n; i++) {
+      a[p_o + ((off + i) << 2)] = [x_1, x_2];
+    }
+  }
 }
 // Copyright 2011 The Closure Library Authors. All Rights Reserved.
 //
@@ -1411,6 +1554,104 @@ goog.crypt.Md5.prototype.digest = function() {
 /* Define for large files, on AIX-style hosts. */
 /* #undef _LARGE_FILES */
 
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 // #define GHCJS_TRACE_IO 1
 function h$base_access(file, file_off, mode, c) {
                            ;
@@ -1779,13 +2020,11 @@ function h$base_fillStat(fs, b, off) {
 /** @const */ var h$base_sizeof_stat = 40;
 
 function h$base_st_mtime(stat, stat_off) {
-    h$ret1 = stat.i3[(stat_off>>2)+4];
-    return stat.i3[(stat_off>>2)+3];
+    { h$ret1 = (stat.i3[(stat_off>>2)+4]); return (stat.i3[(stat_off>>2)+3]); };
 }
 
 function h$base_st_size(stat, stat_off) {
-    h$ret1 = stat.i3[(stat_off>>2)+2];
-    return stat.i3[(stat_off>>2)+1];
+    { h$ret1 = (stat.i3[(stat_off>>2)+2]); return (stat.i3[(stat_off>>2)+1]); };
 }
 
 function h$base_st_mode(stat, stat_off) {
@@ -1797,8 +2036,7 @@ function h$base_st_dev(stat, stat_off) {
 }
 
 function h$base_st_ino(stat, stat_off) {
-    h$ret1 = stat.i3[(stat_off>>2)+7];
-    return stat.i3[(stat_off>>2)+6];
+    { h$ret1 = (stat.i3[(stat_off>>2)+7]); return (stat.i3[(stat_off>>2)+6]); };
 }
 
 /** @const */ var h$base_echo = 1;
@@ -1815,15 +2053,17 @@ function h$base_st_ino(stat, stat_off) {
 /** @const */ var h$base_fd_cloexec = 0;
 /** @const */ var h$base_sizeof_termios = 4;
 /** @const */ var h$base_sizeof_sigset_t = 4;
-/** @const */ var h$base_lflag = 0;
+
+function h$base_lflag(termios, termios_off) {
+    return 0;
+}
 
 function h$base_poke_lflag(termios, termios_off, flag) {
     return 0;
 }
 
 function h$base_ptr_c_cc(termios, termios_off) {
-    h$ret1 = 0;
-    return h$newByteArray(8);
+    { h$ret1 = (0); return (h$newByteArray(8)); };
 }
 
 /** @const */ var h$base_default_buffer_size = 32768;
@@ -1837,13 +2077,11 @@ function h$base_c_s_issock(mode) {
 /** @const */ var h$base_SEEK_END = 2;
 
 function h$base_set_saved_termios(a, b, c) {
-    h$ret1 = 0
-    return null;
+    { h$ret1 = (0); return (null); };
 }
 
 function h$base_get_saved_termios(r) {
-    h$ret1 = 0;
-    return null;
+    { h$ret1 = (0); return (null); };
 }
 
 // fixme
@@ -2041,24 +2279,119 @@ function h$shutdownHaskellAndExit(code, fast) {
 
 
 
-    if(h$isNode) {
-        process.exit(code);
-    } else if(h$isJsShell) {
-        quit(code);
-    } else if(h$isJsCore) {
- if(h$base_stdoutLeftover.val !== null) print(h$base_stdoutLeftover.val);
- if(h$base_stderrLeftover.val !== null) debug(h$base_stderrLeftover.val);
- // jsc does not support returning a nonzero value, print it instead
- if(code !== 0) debug("GHCJS JSC exit status: " + code);
- quit();
-    }
 
+    h$exitProcess(code);
 }
 
 // RAND_MAX = 32767
 function h$rand() {
   return (32768 * Math.random()) & 32767;
 }
+function h$ghcjs_currentWindow() {
+  return window;
+};
+function h$ghcjs_currentDocument() {
+  return document;
+};
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 // JS Objects stuff
 
 function h$isFloat (n) {
@@ -2104,30 +2437,72 @@ function h$typeOf(o) {
     }
 }
 
-function h$listprops(o) {
+function h$listProps(o) {
     if (!(o instanceof Object)) {
         return [];
     }
-    var l = [];
+    var l = [], i = 0;
     for (var prop in o) {
-        l.push(prop);
+        l[i++] = prop;
     }
     return l;
 }
 
 function h$flattenObj(o) {
-    var l = [];
+    var l = [], i = 0;
     for (var prop in o) {
-        l.push([prop, o[prop]]);
+        l[i++] = [prop, o[prop]];
     }
     return l;
 }
-function h$ghcjs_currentWindow() {
-  return window;
-};
-function h$ghcjs_currentDocument() {
-  return document;
-};
+
+/*
+
+  build an object from key/value pairs:
+    var obj = h$buildObject(key1, val1, key2, val2, ...);
+
+  note: magic name:
+    invocations of this function are replaced by object literals wherever
+    possible
+
+ */
+function h$buildObject() {
+    var r = {}, l = arguments.length;
+    for(var i = 0; i < l; i += 2) {
+        var k = arguments[i], v = arguments[i+1];
+        r[k] = v;
+    }
+    return r;
+}
+
+// same as above, but from a list: [k1,v1,k2,v2,...]
+function h$buildObjectFromList(xs) {
+    var r = {}, k, v, t;
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+        xs = ((xs).d2);
+        t = ((xs).d2);
+        if(((t).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+            k = ((xs).d1);
+            v = ((t).d1);
+            xs = ((t).d2);
+            r[k] = v;
+        } else {
+            return r;
+        }
+    }
+    return r;
+}
+
+// same as above, but from a list of tuples [(k1,v1),(k2,v2),...]
+function h$buildObjectFromTupList(xs) {
+    var r = {};
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ var h = ((xs).d1);
+ xs = ((xs).d2);
+ r[((((h).d1)).d1)] = ((((h).d2)).d1);
+    }
+    return r;
+}
 /* FNV-1 hash
  *
  * The FNV-1 hash description: http://isthe.com/chongo/tech/comp/fnv/
@@ -2158,6 +2533,105 @@ function h$hashable_getRandomBytes(dest_d, dest_o, len) {
   }
   return len;
 }
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 function h$_hs_text_memcpy(dst_v,dst_o2,src_v,src_o2,n) {
   return h$memcpy(dst_v,2*dst_o2,src_v,2*src_o2,2*n);
 }
@@ -2168,8 +2642,8 @@ function h$_hs_text_memcmp(a_v,a_o2,b_v,b_o2,n) {
 
 // decoder below adapted from cbits/cbits.c in the text package
 
-var h$_text_UTF8_ACCEPT = 0;
-var h$_text_UTF8_REJECT = 12
+
+
 
 var h$_text_utf8d =
    [
@@ -2211,8 +2685,7 @@ function h$_hs_text_decode_utf8_internal ( dest_v
                                          , s
                                          ) {
   if(src_v === null || src_end_v === null) {
-    h$ret1 = src_end_o;
-    return null;
+    { h$ret1 = (src_end_o); return (null); };
   }
   var dsto = destoff_v.dv.getUint32(destoff_o,true) << 1;
   var srco = src_o;
@@ -2223,7 +2696,7 @@ function h$_hs_text_decode_utf8_internal ( dest_v
 
   function decode(b) {
     var type = h$_text_utf8d[b];
-    codepoint = (state !== h$_text_UTF8_ACCEPT) ?
+    codepoint = (state !== 0) ?
       (b & 0x3f) | (codepoint << 6) :
       (0xff >>> type) & b;
     state = h$_text_utf8d[256 + state + type];
@@ -2231,8 +2704,8 @@ function h$_hs_text_decode_utf8_internal ( dest_v
   }
 
   while (srco < src_end_o) {
-    if(decode(sdv.getUint8(srco++)) !== h$_text_UTF8_ACCEPT) {
-      if(state !== h$_text_UTF8_REJECT) {
+    if(decode(sdv.getUint8(srco++)) !== 0) {
+      if(state !== 12) {
         continue;
       } else {
         break;
@@ -2252,8 +2725,7 @@ function h$_hs_text_decode_utf8_internal ( dest_v
   s.state = state;
   s.codepoint = codepoint;
   destoff_v.dv.setUint32(destoff_o,dsto>>1,true);
-  h$ret1 = srco;
-  return src_v;
+  { h$ret1 = (srco); return (src_v); };
 }
 
 function h$_hs_text_decode_utf8_state( dest_v
@@ -2267,18 +2739,20 @@ function h$_hs_text_decode_utf8_state( dest_v
           , codepoint: codepoint0_v.dv.getUint32(codepoint0_o, true)
           , last: src_o
           };
-  var ret = h$_hs_text_decode_utf8_internal ( dest_v
-                                            , destoff_v, destoff_o
-                                            , src_v.arr[src_o][0], src_v.arr[src_o][1]
-                                            , srcend_v, srcend_o
-                                            , s
-                                            );
+  var ret, ret1;
+  { (ret) = (h$_hs_text_decode_utf8_internal ( dest_v , destoff_v, destoff_o , src_v.arr[src_o][0], src_v.arr[src_o][1] , srcend_v, srcend_o , s )); (ret1) = h$ret1; };
+
+
+
+
+
+
+
   src_v.arr[src_o][1] = s.last;
   state0_v.dv.setUint32(state0_o, s.state, true);
   codepoint0_v.dv.setUint32(codepoint0_o, s.codepoint, true);
-  if(s.state === h$_text_UTF8_REJECT)
-    h$ret1--;
-  return ret;
+  if(s.state === 12) ret1--;
+  { h$ret1 = (ret1); return (ret); };
 }
 
 function h$_hs_text_decode_utf8( dest_v
@@ -2287,19 +2761,21 @@ function h$_hs_text_decode_utf8( dest_v
                                , srcend_v, srcend_o
                                ) {
   /* Back up if we have an incomplete or invalid encoding */
-  var s = { state: h$_text_UTF8_ACCEPT
+  var s = { state: 0
           , codepoint: 0
           , last: src_o
           };
-  var ret = h$_hs_text_decode_utf8_internal ( dest_v
-                                            , destoff_v, destoff_o
-                                            , src_v, src_o
-                                            , srcend_v, srcend_o
-                                            , s
-                                            );
-  if (s.state !== h$_text_UTF8_ACCEPT)
-    h$ret1--;
-  return ret;
+  var ret, ret1;
+  { (ret) = (h$_hs_text_decode_utf8_internal ( dest_v , destoff_v, destoff_o , src_v, src_o , srcend_v, srcend_o , s )); (ret1) = h$ret1; };
+
+
+
+
+
+
+
+  if (s.state !== 0) ret1--;
+  { h$ret1 = (ret1); return (ret); };
 }
 
 
@@ -2378,4 +2854,2007 @@ function h$_hs_text_encode_utf8(destp_v, destp_o, src_v, srcoff, srclen) {
     }
   }
   destp_v.arr[destp_o][1] = dest;
+}
+function h$get_current_timezone_seconds(t, pdst_v, pdst_o, pname_v, pname_o) {
+    var d = new Date(t);
+    var now = new Date();
+    var jan = new Date(now.getFullYear(),0,1);
+    var jul = new Date(now.getFullYear(),0,1);
+    var stdOff = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+    var isDst = d.getTimezoneOffset() < stdOff;
+    var tzo = d.getTimezoneOffset();
+    pdst_v.dv.setInt32(pdst_o, isDst ? 1 : 0, true);
+    if(!pname_v.arr) pname_v.arr = [];
+    var offstr = tzo < 0 ? ('+' + (tzo/-60)) : ('' + (tzo/-60));
+    pname_v.arr[pname_o] = [h$encodeUtf8("UTC" + offstr), 0];
+    return (3600-60*tzo)|0;
+}
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+function h$createWebSocket(url, protocols) {
+  return new WebSocket(url, protocols);
+}
+
+/*
+   this must be called before the websocket has connected,
+   typically synchronously after creating the socket
+ */
+function h$openWebSocket(ws, mcb, ccb, c) {
+  if(ws.readyState !== 0) {
+    throw new Error("h$openWebSocket: unexpected readyState, socket must be CONNECTING");
+  }
+  ws.lastError = null;
+  ws.onopen = function() {
+    if(mcb) {
+      ws.onmessage = mcb;
+    }
+    if(ccb || mcb) {
+      ws.onclose = function(ce) {
+        if(ws.onmessage) {
+          h$release(ws.onmessage);
+          ws.onmessage = null;
+        }
+        if(ccb) {
+          h$release(ccb);
+          ccb(ce);
+        }
+      };
+    };
+    ws.onerror = function(err) {
+      ws.lastError = err;
+      if(ws.onmessage) {
+        h$release(ws.onmessage);
+        ws.onmessage = null;
+      }
+      ws.close();
+    };
+    c(null);
+  };
+  ws.onerror = function(err) {
+    if(ccb) h$release(ccb);
+    if(mcb) h$release(mcb);
+    ws.onmessage = null;
+    ws.close();
+    c(err);
+  };
+}
+
+function h$closeWebSocket(status, reason, ws) {
+  ws.onerror = null;
+  if(ws.onmessage) {
+    h$release(ws.onmessage);
+    ws.onmessage = null;
+  }
+  ws.close(status, reason);
+}
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+/*
+   convert an array to a Haskell list, wrapping each element in a
+   JSVal constructor
+ */
+function h$fromArray(a) {
+    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    for(var i=a.length-1;i>=0;i--) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (a[i])))), (r)));
+    return a;
+}
+
+/*
+   convert an array to a Haskell list. No additional wrapping of the
+   elements is performed. Only use this when the elements are directly
+   usable as Haskell heap objects (numbers, boolean) or when the
+   array elements have already been appropriately wrapped
+ */
+function h$fromArrayNoWrap(a) {
+    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    for(var i=a.length-1;i>=0;i--) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (a[i]), (r)));
+    return a;
+}
+
+/*
+   convert a list of JSVal to an array. the list must have been fully forced,
+   not just the spine.
+ */
+function h$listToArray(xs) {
+    var a = [], i = 0;
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ a[i++] = ((((xs).d1)).d1);
+ xs = ((xs).d2);
+    }
+    return a;
+}
+
+function h$listToArrayWrap(xs) {
+    return (h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (h$listToArray(xs))));
+}
+function h$animationFrameCancel(h) {
+    if(h.handle) window.cancelAnimationFrame(h.handle);
+    if(h.callback) {
+        h$release(h.callback)
+        h.callback = null;
+    }
+}
+
+function h$animationFrameRequest(h) {
+    h.handle = window.requestAnimationFrame(function(ts) {
+        var cb = h.callback;
+        if(cb) {
+         h$release(cb);
+         h.callback = null;
+         cb(ts);
+        }
+    });
+}
+function h$exportValue(fp1a,fp1b,fp2a,fp2b,o) {
+  var e = { fp1a: fp1a
+          , fp1b: fp1b
+          , fp2a: fp2a
+          , fp2b: fp2b
+          , released: false
+          , root: o
+          , _key: -1
+          };
+  h$retain(e);
+  return e;
+}
+
+function h$derefExport(fp1a,fp1b,fp2a,fp2b,e) {
+  if(!e || typeof e !== 'object') return null;
+  if(e.released) return null;
+  if(fp1a !== e.fp1a || fp1b !== e.fp1b ||
+     fp2a !== e.fp2a || fp2b !== e.fp2b) return null;
+  return e.root;
+}
+
+function h$releaseExport(e) {
+  h$release(e);
+  e.released = true;
+  e.root = null;
+}
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+/*
+ * Support code for the Data.JSString module. This code presents a JSString
+ * as a sequence of code points and hides the underlying encoding ugliness of
+ * the JavaScript strings.
+ *
+ * Use Data.JSString.Raw for direct access to the JSThis makes the operations more expen
+ */
+
+/*
+ * Some workarounds here for JS engines that do not support proper
+ * code point access
+ */
+var h$jsstringEmpty = (h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, ('')));
+
+var h$jsstringHead, h$jsstringTail, h$jsstringCons,
+    h$jsstringSingleton, h$jsstringSnoc, h$jsstringUncons,
+    h$jsstringIndex, h$jsstringUncheckedIndex,
+    h$jsstringTake, h$jsstringDrop, h$jsstringTakeEnd, h$jsstringDropEnd;
+
+if(String.prototype.codePointAt) {
+    h$jsstringSingleton = function(ch) {
+                                                        ;
+ return String.fromCodePoint(ch);
+    }
+    h$jsstringHead = function(str) {
+                                                    ;
+ var cp = ch.codePointAt(0);
+ return (cp === undefined) ? -1 : (cp|0);
+    }
+    h$jsstringTail = function(str) {
+                                                    ;
+ var l = str.length;
+ if(l===0) return null;
+ var ch = str.codePointAt(0);
+ if(ch === undefined) return null;
+ // string length is at least two if ch comes from a surrogate pair
+ return str.substr(((ch)>=0x10000)?2:1);
+    }
+    h$jsstringCons = function(ch, str) {
+                                                                      ;
+ return String.fromCodePoint(ch)+str;
+    }
+    h$jsstringSnoc = function(str, ch) {
+                                                                 ;
+ return str+String.fromCodePoint(ch);
+    }
+    h$jsstringUncons = function(str) {
+                                                             ;
+ var l = str.length;
+ if(l===0) return null;
+ var ch = str.codePointAt(0);
+        if(ch === undefined) {
+     { h$ret1 = (null); return (null); };
+        }
+        { h$ret1 = (str.substr(((ch)>=0x10000)?2:1)); return (ch); };
+    }
+    // index is the first part of the character
+    h$jsstringIndex = function(i, str) {
+                                                                      ;
+ var ch = str.codePointAt(i);
+ if(ch === undefined) return -1;
+ return ch;
+    }
+    h$jsstringUncheckedIndex = function(i, str) {
+                                                                                      ;
+ return str.codePointAt(i);
+    }
+} else {
+    h$jsstringSingleton = function(ch) {
+                                                           ;
+ return (((ch)>=0x10000)) ? String.fromCharCode(((((ch)-0x10000)>>>10)+0xDC00), (((ch)&0x3FF)+0xD800))
+                               : String.fromCharCode(ch);
+    }
+    h$jsstringHead = function(str) {
+                                                       ;
+ var l = str.length;
+ if(l===0) return -1;
+ var ch = str.charCodeAt(0);
+ if(((ch|1023)===0xDBFF)) {
+     return (l>1) ? ((((ch)-0xD800)<<10)+(str.charCodeAt(1))-9216) : -1;
+ } else {
+     return ch;
+ }
+    }
+    h$jsstringTail = function(str) {
+                                                       ;
+ var l = str.length;
+ if(l===0) return null;
+ var ch = str.charCodeAt(0);
+ if(((ch|1023)===0xDBFF)) {
+     return (l>1)?str.substr(2):null;
+ } else return str.substr(1);
+    }
+    h$jsstringCons = function(ch, str) {
+                                                                         ;
+ return ((((ch)>=0x10000)) ? String.fromCharCode(((((ch)-0x10000)>>>10)+0xDC00), (((ch)&0x3FF)+0xD800))
+                                : String.fromCharCode(ch))
+                                + str;
+    }
+    h$jsstringSnoc = function(str, ch) {
+                                                                    ;
+ return str + ((((ch)>=0x10000)) ? String.fromCharCode(((((ch)-0x10000)>>>10)+0xDC00), (((ch)&0x3FF)+0xD800))
+                                      : String.fromCharCode(ch));
+    }
+    h$jsstringUncons = function(str) {
+                                                                ;
+ var l = str.length;
+ if(l===0) return -1;
+ var ch = str.charCodeAt(0);
+ if(((ch|1023)===0xDBFF)) {
+   if(l > 1) {
+        { h$ret1 = (str.substr(2)); return (((((ch)-0xD800)<<10)+(str.charCodeAt(1))-9216)); };
+   } else {
+       { h$ret1 = (null); return (-1); };
+   }
+ } else {
+      { h$ret1 = (str.substr(1)); return (ch); };
+ }
+    }
+    // index is the first part of the character
+    h$jsstringIndex = function(i, str) {
+        // TRACE_JSSTRING("(no codePointAt) index: " + i + " '" + str + "'");
+ var ch = str.charCodeAt(i);
+ if(ch != ch) return -1; // NaN test
+ return (((ch|1023)===0xDBFF)) ? ((((ch)-0xD800)<<10)+(str.charCodeAt(i+1))-9216) : ch;
+    }
+    h$jsstringUncheckedIndex = function(i, str) {
+                                                                                         ;
+ var ch = str.charCodeAt(i);
+ return (((ch|1023)===0xDBFF)) ? ((((ch)-0xD800)<<10)+(str.charCodeAt(i+1))-9216) : ch;
+    }
+}
+
+function h$jsstringPack(xs) {
+    var r = '', i = 0, a = [], c;
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ c = ((xs).d1);
+ a[i++] = ((typeof(c) === 'number')?(c):(c).d1);
+ if(i >= 60000) {
+     r += String.fromCharCode.apply(null, a);
+     a = [];
+     i = 0;
+ }
+ xs = ((xs).d2);
+    }
+    if(i > 0) r += String.fromCharCode.apply(null, a);
+                                       ;
+    return r;
+}
+
+function h$jsstringPackReverse(xs) {
+    var a = [], i = 0, c;
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ c = ((xs).d1);
+ a[i++] = ((typeof(c) === 'number')?(c):(c).d1);
+ xs = ((xs).d2);
+    }
+    if(i===0) return '';
+    var r = h$jsstringConvertArray(a.reverse());
+                                              ;
+    return r;
+}
+
+function h$jsstringPackArray(arr) {
+                                        ;
+    return h$jsstringConvertArray(arr);
+}
+
+function h$jsstringPackArrayReverse(arr) {
+                                                ;
+    return h$jsstringConvertArray(arr.reverse());
+}
+
+function h$jsstringConvertArray(arr) {
+    if(arr.length < 60000) {
+ return String.fromCharCode.apply(null, arr);
+    } else {
+ var r = '';
+ for(var i=0; i<arr.length; i+=60000) {
+     r += String.fromCharCode.apply(null, arr.slice(i, i+60000));
+ }
+ return r;
+    }
+}
+
+function h$jsstringInit(str) {
+                                         ;
+    var l = str.length;
+    if(l===0) return null;
+    var ch = str.charCodeAt(l-1);
+    var o = ((ch|1023)===0xDFFF)?2:1;
+    var r = str.substr(0, l-o);
+    return r;
+}
+
+function h$jsstringLast(str) {
+                                         ;
+    var l = str.length;
+    if(l===0) return -1;
+    var ch = str.charCodeAt(l-1);
+    if(((ch|1023)===0xDFFF)) {
+ return (l>1) ? ((((str.charCodeAt(l-2))-0xD800)<<10)+(ch)-9216) : -1;
+
+    } else return ch;
+}
+
+// index is the last part of the character
+function h$jsstringIndexR(i, str) {
+                                                     ;
+    if(i < 0 || i > str.length) return -1;
+    var ch = str.charCodeAt(i);
+    return (((ch|1023)===0xDFFF)) ? ((((str.charCodeAt(i-1))-0xD800)<<10)+(ch)-9216) : ch;
+}
+
+function h$jsstringNextIndex(i, str) {
+                                                        ;
+    return i + (((str.charCodeAt(i)|1023)===0xDBFF)?2:1);
+}
+
+function h$jsstringTake(n, str) {
+                                                   ;
+    if(n <= 0) return '';
+    var i = 0, l = str.length, ch;
+    if(n >= l) return str;
+    while(n--) {
+ ch = str.charCodeAt(i++);
+ if(((ch|1023)===0xDBFF)) i++;
+ if(i >= l) return str;
+    }
+    return str.substr(0,i);
+}
+
+function h$jsstringDrop(n, str) {
+                                                   ;
+    if(n <= 0) return str;
+    var i = 0, l = str.length, ch;
+    if(n >= l) return '';
+    while(n--) {
+ ch = str.charCodeAt(i++);
+ if(((ch|1023)===0xDBFF)) i++;
+ if(i >= l) return str;
+    }
+    return str.substr(i);
+}
+
+function h$jsstringSplitAt(n, str) {
+                                                    ;
+  if(n <= 0) {
+    { h$ret1 = (str); return (""); };
+  } else if(n >= str.length) {
+    { h$ret1 = (""); return (str); };
+  }
+  var i = 0, l = str.length, ch;
+  while(n--) {
+    ch = str.charCodeAt(i++);
+    if(((ch|1023)===0xDBFF)) i++;
+    if(i >= l) {
+      { h$ret1 = (""); return (str); };
+    }
+  }
+  { h$ret1 = (str.substr(i)); return (str.substr(0,i)); };
+}
+
+function h$jsstringTakeEnd(n, str) {
+                                                      ;
+    if(n <= 0) return '';
+    var l = str.length, i = l-1, ch;
+    if(n >= l) return str;
+    while(n-- && i > 0) {
+ ch = str.charCodeAt(i--);
+ if(((ch|1023)===0xDFFF)) i--;
+    }
+    return (i<0) ? str : str.substr(i+1);
+}
+
+function h$jsstringDropEnd(n, str) {
+                                                      ;
+    if(n <= 0) return str;
+    var l = str.length, i = l-1, ch;
+    if(n >= l) return '';
+    while(n-- && i > 0) {
+ ch = str.charCodeAt(i--);
+ if(((ch|1023)===0xDFFF)) i--;
+    }
+    return (i<0) ? '' : str.substr(0,i+1);
+}
+
+function h$jsstringIntercalate(x, ys) {
+                                              ;
+    var a = [], i = 0;
+    while(((ys).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ if(i) a[i++] = x;
+ a[i++] = ((((ys).d1)).d1);
+ ys = ((ys).d2);
+    }
+    return a.join('');
+}
+
+function h$jsstringIntersperse(ch, ys) {
+                                                          ;
+    var i = 0, l = ys.length, j = 0, a = [], ych;
+    if(((ch)>=0x10000)) {
+ var ch1 = ((((ch)-0x10000)>>>10)+0xDC00), ch2 = (((ch)&0x3FF)+0xD800);
+ while(j < l) {
+     if(i) {
+  a[i++] = ch1;
+  a[i++] = ch2;
+     }
+     ych = ys.charCodeAt(j++);
+     a[i++] = ych;
+     if(((ych|1023)===0xDBFF)) a[i++] = ys.charCodeAt(j++);
+ }
+    } else {
+ while(j < l) {
+     if(i) a[i++] = ch;
+     ych = ys.charCodeAt(j++);
+     a[i++] = ych;
+     if(((ych|1023)===0xDBFF)) a[i++] = ys.charCodeAt(j++);
+ }
+    }
+    return h$jsstringConvertArray(a);
+}
+
+function h$jsstringConcat(xs) {
+                            ;
+    var a = [], i = 0;
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ a[i++] = ((((xs).d1)).d1);
+ xs = ((xs).d2);
+    }
+    return a.join('');
+}
+
+var h$jsstringStripPrefix, h$jsstringStripSuffix,
+    h$jsstringIsPrefixOf, h$jsstringIsSuffixOf,
+    h$jsstringIsInfixOf;
+if(String.prototype.startsWith) {
+    h$jsstringStripPrefix = function(p, x) {
+                                                                    ;
+ if(x.startsWith(p)) {
+     return (h$c1(h$baseZCGHCziBaseziJust_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(p.length)))))));
+ } else {
+     return h$baseZCGHCziBaseziNothing;
+ }
+    }
+
+    h$jsstringIsPrefixOf = function(p, x) {
+                                                                   ;
+ return x.startsWith(p);
+    }
+
+} else {
+    h$jsstringStripPrefix = function(p, x) {
+                                                                       ;
+ if(x.indexOf(p) === 0) { // this has worse complexity than it should
+     return (h$c1(h$baseZCGHCziBaseziJust_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(p.length)))))));
+ } else {
+   return h$baseZCGHCziBaseziNothing;
+ }
+    }
+
+    h$jsstringIsPrefixOf = function(p, x) {
+                                                                      ;
+ return x.indexOf(p) === 0; // this has worse complexity than it should
+    }
+}
+
+if(String.prototype.endsWith) {
+    h$jsstringStripSuffix = function(s, x) {
+                                                                  ;
+ if(x.endsWith(s)) {
+     return (h$c1(h$baseZCGHCziBaseziJust_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(0,x.length-s.length)))))));
+ } else {
+   return h$baseZCGHCziBaseziNothing;
+ }
+    }
+
+    h$jsstringIsSuffixOf = function(s, x) {
+                                                                 ;
+ return x.endsWith(s);
+    }
+} else {
+    h$jsstringStripSuffix = function(s, x) {
+                                                                     ;
+ var i = x.lastIndexOf(s); // this has worse complexity than it should
+ var l = x.length - s.length;
+ if(i !== -1 && i === l) {
+     return (h$c1(h$baseZCGHCziBaseziJust_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(0,l)))))));
+ } else {
+   return h$baseZCGHCziBaseziNothing;
+ }
+    }
+
+      h$jsstringIsSuffixOf = function(s, x) {
+                                                                    ;
+        var i = x.lastIndexOf(s); // this has worse complexity than it should
+ return i !== -1 && i === x.length - s.length;
+    }
+}
+
+if(String.prototype.includes) {
+    h$jsstringIsInfixOf = function(i, x) {
+                                                                       ;
+ return x.includes(i);
+    }
+} else {
+    h$jsstringIsInfixOf = function(i, x) {
+                                                                          ;
+ return x.indexOf(i) !== -1; // this has worse complexity than it should
+    }
+}
+
+function h$jsstringCommonPrefixes(x, y) {
+                                                             ;
+    var lx = x.length, ly = y.length, i = 0, cx;
+    var l = lx <= ly ? lx : ly;
+    if(lx === 0 || ly === 0 || x.charCodeAt(0) !== y.charCodeAt(0)) {
+      return h$baseZCGHCziBaseziNothing;
+    }
+    while(++i<l) {
+ cx = x.charCodeAt(i);
+ if(cx !== y.charCodeAt(i)) {
+     if(((cx|1023)===0xDFFF)) i--;
+     break;
+ }
+    }
+  if(i===0) return h$baseZCGHCziBaseziNothing;
+    return (h$c1(h$baseZCGHCziBaseziJust_con_e, ((h$c3(h$ghczmprimZCGHCziTupleziZLz2cUz2cUZR_con_e,((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, ((i===lx)?x:((i===ly)?y:x.substr(0,i)))))),((i===lx) ? h$jsstringEmpty : (h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(i))))),((i===ly) ? h$jsstringEmpty : (h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (y.substr(i))))))))));
+
+
+
+}
+
+function h$jsstringBreakOn(b, x) {
+                                                      ;
+    var i = x.indexOf(b);
+    if(i===-1) {
+        { h$ret1 = (""); return (x); };
+    }
+    if(i===0) {
+        { h$ret1 = (x); return (""); };
+    }
+    { h$ret1 = (x.substr(i)); return (x.substr(0,i)); };
+}
+
+function h$jsstringBreakOnEnd(b, x) {
+                                                         ;
+    var i = x.lastIndexOf(b);
+  if(i===-1) {
+    { h$ret1 = (x); return (""); };
+
+    }
+  i += b.length;
+    { h$ret1 = (x.substr(i)); return (x.substr(0,i)); };
+}
+
+function h$jsstringBreakOnAll1(n, b, x) {
+                                                                    ;
+    var i = x.indexOf(b, n);
+    if(i===0) {
+       { h$ret1 = (""); h$ret2 = (x); return (b.length); };
+    }
+    if(i===-1) {
+       { h$ret1 = (null); h$ret2 = (null); return (-1); };
+    }
+    { h$ret1 = (x.substr(0,i)); h$ret2 = (x.substr(i)); return (i+b.length); };
+}
+
+function h$jsstringBreakOnAll(pat, src) {
+                                ;
+    var a = [], i = 0, n = 0, r = h$ghczmprimZCGHCziTypesziZMZN, pl = pat.length;
+    while(true) {
+ var x = src.indexOf(pat, n);
+ if(x === -1) break;
+ a[i++] = (h$c2(h$ghczmprimZCGHCziTupleziZLz2cUZR_con_e,((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (src.substr(0,x))))),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (src.substr(x)))))));
+ n = x + pl;
+    }
+    while(--i >= 0) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (a[i]), (r)));
+    return r;
+}
+
+function h$jsstringSplitOn1(n, p, x) {
+                                                                 ;
+    var i = x.indexOf(p, n);
+    if(i === -1) {
+        { h$ret1 = (null); return (-1); };
+    }
+    var r1 = (i==n) ? "" : x.substr(n, i-n);
+    { h$ret1 = (r1); return (i + p.length); };
+}
+
+function h$jsstringSplitOn(p, x) {
+                                                      ;
+    var a = x.split(p);
+    var r = h$ghczmprimZCGHCziTypesziZMZN, i = a.length;
+    while(--i>=0) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (a[i])))), (r)));
+    return r;
+}
+
+// returns -1 for end of input, start of next token otherwise
+// word in h$ret1
+// this function assumes that there are no whitespace characters >= 0x10000
+function h$jsstringWords1(n, x) {
+                                                   ;
+    var m = n, s = n, l = x.length;
+    if(m >= l) return -1;
+    // skip leading spaces
+    do {
+ if(m >= l) return -1;
+    } while(h$isSpace(x.charCodeAt(m++)));
+    // found start of word
+    s = m - 1;
+    while(m < l) {
+ if(h$isSpace(x.charCodeAt(m++))) {
+     // found end of word
+            var r1 = (m-s<=1) ? "" : x.substr(s,m-s-1);
+            { h$ret1 = (r1); return (m); };
+ }
+    }
+    // end of string
+    if(s < l) {
+        var r1 = s === 0 ? x : x.substr(s);
+        { h$ret1 = (r1); return (m); };
+    }
+    { h$ret1 = (null); return (-1); };
+}
+
+function h$jsstringWords(x) {
+                                        ;
+    var a = null, i = 0, n, s = -1, m = 0, w, l = x.length, r = h$ghczmprimZCGHCziTypesziZMZN;
+    outer:
+    while(m < l) {
+ // skip leading spaces
+ do {
+     if(m >= l) { s = m; break outer; }
+ } while(h$isSpace(x.charCodeAt(m++)));
+ // found start of word
+ s = m - 1;
+ while(m < l) {
+     if(h$isSpace(x.charCodeAt(m++))) {
+  // found end of word
+  w = (m-s<=1) ? h$jsstringEmpty
+                             : (h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(s,m-s-1))));
+  if(i) a[i++] = w; else { a = [w]; i = 1; }
+  s = m;
+  break;
+     }
+ }
+    }
+    // end of string
+    if(s !== -1 && s < l) {
+ w = (h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (s === 0 ? x : x.substr(s))));
+ if(i) a[i++] = w; else { a = [w]; i = 1; }
+    }
+    // build resulting list
+    while(--i>=0) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (a[i]), (r)));
+    return r;
+}
+
+// returns -1 for end of input, start of next token otherwise
+// line in h$ret1
+function h$jsstringLines1(n, x) {
+                                                   ;
+    var m = n, l = x.length;
+    if(n >= l) return -1;
+    while(m < l) {
+ if(x.charCodeAt(m++) === 10) {
+     // found newline
+     if(n > 0 && n === l-1) return -1; // it was the last character
+            var r1 = (m-n<=1) ? "" : x.substr(n,m-n-1);
+            { h$ret1 = (r1); return (m); };
+ }
+    }
+    // end of string
+    { h$ret1 = (x.substr(n)); return (m); };
+}
+
+function h$jsstringLines(x) {
+                                        ;
+    var a = null, m = 0, i = 0, l = x.length, s = 0, r = h$ghczmprimZCGHCziTypesziZMZN, w;
+    if(l === 0) return h$ghczmprimZCGHCziTypesziZMZN;
+    outer:
+    while(true) {
+ s = m;
+ do {
+     if(m >= l) break outer;
+ } while(x.charCodeAt(m++) !== 10);
+ w = (m-s<=1) ? h$jsstringEmpty : (h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(s,m-s-1))));
+ if(i) a[i++] = w; else { a = [w]; i = 1; }
+    }
+    if(s < l) {
+ w = (h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(s))));
+ if(i) a[i++] = w; else { a = [w]; i = 1; }
+    }
+    while(--i>=0) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (a[i]), (r)));
+    return r;
+}
+
+function h$jsstringGroup(x) {
+                                        ;
+    var xl = x.length;
+    if(xl === 0) return h$ghczmprimZCGHCziTypesziZMZN;
+    var i = xl-1, si, ch, s=xl, r=h$ghczmprimZCGHCziTypesziZMZN;
+    var tch = x.charCodeAt(i--);
+    if(((tch|1023)===0xDFFF)) tch = ((((x.charCodeAt(i--))-0xD800)<<10)+(tch)-9216);
+    while(i >= 0) {
+ si = i;
+ ch = x.charCodeAt(i--);
+ if(((ch|1023)===0xDFFF)) {
+     ch = ((((x.charCodeAt(i--))-0xD800)<<10)+(ch)-9216);
+ }
+ if(ch != tch) {
+     tch = ch;
+     r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(si+1,s-si))))), (r)));
+     s = si;
+ }
+    }
+    return (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(0,s+1))))), (r)));
+}
+
+function h$jsstringChunksOf1(n, s, x) {
+                                                                ;
+    var m = s, c = 0, l = x.length, ch;
+    if(n <= 0 || l === 0 || s >= l) return -1
+    while(++m < l && ++c < n) {
+ ch = x.charCodeAt(m);
+ if(((ch|1023)===0xDBFF)) ++m;
+    }
+    var r1 = (m >= l && s === c) ? x : x.substr(s,m-s);
+    { h$ret1 = (r1); return (m); };
+}
+
+function h$jsstringChunksOf(n, x) {
+                                                     ;
+    var l = x.length;
+    if(l===0 || n <= 0) return h$ghczmprimZCGHCziTypesziZMZN;
+    if(l <= n) return (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x)))), (h$ghczmprimZCGHCziTypesziZMZN)));
+    var a = [], i = 0, s = 0, ch, m = 0, c, r = h$ghczmprimZCGHCziTypesziZMZN;
+    while(m < l) {
+ s = m;
+ c = 0;
+ while(m < l && ++c <= n) {
+     ch = x.charCodeAt(m++);
+     if(((ch|1023)===0xDBFF)) ++m;
+ }
+ if(c) a[i++] = x.substr(s, m-s);
+    }
+    while(--i>=0) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (a[i])))), (r)));
+    return r;
+}
+
+function h$jsstringCount(pat, src) {
+                                                        ;
+    var i = 0, n = 0, pl = pat.length, sl = src.length;
+    while(i<sl) {
+ i = src.indexOf(pat, i);
+ if(i===-1) break;
+ n++;
+ i += pl;
+    }
+    return n;
+}
+
+function h$jsstringReplicate(n, str) {
+                                                        ;
+    if(n === 0 || str == '') return '';
+    if(n === 1) return str;
+    var r = '';
+    do {
+ if(n&1) r+=str;
+        str+=str;
+        n >>= 1;
+    } while(n > 1);
+    return r+str;
+}
+
+// this does not deal with combining diacritics, Data.Text does not either
+var h$jsstringReverse;
+if(Array.from) {
+    h$jsstringReverse = function(str) {
+                                                      ;
+ return Array.from(str).reverse().join('');
+    }
+} else {
+    h$jsstringReverse = function(str) {
+                                                         ;
+ var l = str.length, a = [], o = 0, i = 0, c, c1, s = '';
+ while(i < l) {
+     c = str.charCodeAt(i);
+     if(((c|1023)===0xDBFF)) {
+  a[i] = str.charCodeAt(i+1);
+  a[i+1] = c;
+  i += 2;
+     } else a[i++] = c;
+     if(i-o > 60000) {
+  s = String.fromCharCode.apply(null, a.reverse()) + s;
+  o = -i;
+  a = [];
+     }
+ }
+ return (i===0) ? s : String.fromCharCode.apply(null,a.reverse()) + s;
+    }
+}
+
+function h$jsstringUnpack(str) {
+                                           ;
+    var r = h$ghczmprimZCGHCziTypesziZMZN, i = str.length-1, c;
+    while(i >= 0) {
+ c = str.charCodeAt(i--);
+ if(((c|1023)===0xDFFF)) c = ((((str.charCodeAt(i--))-0xD800)<<10)+(c)-9216)
+ r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (c), (r)));
+    }
+    return r;
+}
+
+function h$jsstringDecI64(hi,lo) {
+                                              ;
+    var lo0 = (lo < 0) ? lo+4294967296:lo;
+    if(hi < 0) {
+ if(hi === -1) return ''+(lo0-4294967296);
+ lo0 = 4294967296 - lo0;
+ var hi0 = -1 - hi;
+ var x0 = hi0 * 967296;
+ var x1 = (lo0 + x0) % 1000000;
+ var x2 = hi0*4294+Math.floor((x0+lo0-x1)/1000000);
+ return '-' + x2 + h$jsstringDecIPadded6(x1);
+    } else {
+ if(hi === 0) return ''+lo0;
+ var x0 = hi * 967296;
+ var x1 = (lo0 + x0) % 1000000;
+ var x2 = hi*4294+Math.floor((x0+lo0-x1)/1000000);
+ return '' + x2 + h$jsstringDecIPadded6(x1);
+    }
+}
+
+function h$jsstringDecW64(hi,lo) {
+                                              ;
+    var lo0 = (lo < 0) ? lo+4294967296 : lo;
+    if(hi === 0) return ''+lo0;
+    var hi0 = (hi < 0) ? hi+4294967296 : hi;
+    var x0 = hi0 * 967296;
+    var x1 = (lo0 + x0) % 1000000;
+    var x2 = hi0*4294+Math.floor((x0+lo0-x1)/1000000);
+    return '' + x2 + h$jsstringDecIPadded6(x1);
+}
+
+function h$jsstringHexI64(hi,lo) {
+    var lo0 = lo<0 ? lo+4294967296 : lo;
+    if(hi === 0) return lo0.toString(16);
+    return ((hi<0)?hi+4294967296:hi).toString(16) + h$jsstringHexIPadded8(lo0);
+}
+
+function h$jsstringHexW64(hi,lo) {
+    var lo0 = lo<0 ? lo+4294967296 : lo;
+    if(hi === 0) return lo0.toString(16);
+    return ((hi<0)?hi+4294967296:hi).toString(16) + h$jsstringHexIPadded8(lo0);
+}
+
+// n in [0, 1000000000)
+function h$jsstringDecIPadded9(n) {
+                                       ;
+    if(n === 0) return '000000000';
+    var pad = (n>=100000000)?'':
+              (n>=10000000)?'0':
+              (n>=1000000)?'00':
+              (n>=100000)?'000':
+              (n>=10000)?'0000':
+              (n>=1000)?'00000':
+              (n>=100)?'000000':
+              (n>=10)?'0000000':
+                     '00000000';
+    return pad+n;
+}
+
+// n in [0, 1000000)
+function h$jsstringDecIPadded6(n) {
+                                       ;
+    if(n === 0) return '000000';
+    var pad = (n>=100000)?'':
+              (n>=10000)?'0':
+              (n>=1000)?'00':
+              (n>=100)?'000':
+              (n>=10)?'0000':
+                     '00000';
+    return pad+n;
+}
+
+// n in [0, 2147483648)
+function h$jsstringHexIPadded8(n) {
+                                       ;
+   if(n === 0) return '00000000';
+   var pad = (n>=0x10000000)?'':
+             (n>=0x1000000)?'0':
+             (n>=0x100000)?'00':
+             (n>=0x10000)?'000':
+             (n>=0x1000)?'0000':
+             (n>=0x100)?'00000':
+             (n>=0x10)?'000000':
+                      '0000000';
+    return pad+n.toString(16);
+}
+
+function h$jsstringZeroes(n) {
+    var r;
+    switch(n&7) {
+ case 0: r = ''; break;
+ case 1: r = '0'; break;
+ case 2: r = '00'; break;
+ case 3: r = '000'; break;
+ case 4: r = '0000'; break;
+ case 5: r = '00000'; break;
+ case 6: r = '000000'; break;
+ case 7: r = '0000000';
+    }
+    for(var i=n>>3;i>0;i--) r = r + '00000000';
+    return r;
+}
+
+function h$jsstringDoubleToFixed(decs, d) {
+    if(decs >= 0) {
+ if(Math.abs(d) < 1e21) {
+     var r = d.toFixed(Math.min(20,decs));
+     if(decs > 20) r = r + h$jsstringZeroes(decs-20);
+     return r;
+ } else {
+     var r = d.toExponential();
+     var ei = r.indexOf('e');
+     var di = r.indexOf('.');
+     var e = parseInt(r.substr(ei+1));
+     return r.substring(0,di) + r.substring(di,ei) + h$jsstringZeroes(di-ei+e) +
+                   ((decs > 0) ? ('.' + h$jsstringZeroes(decs)) : '');
+ }
+    }
+    var r = Math.abs(d).toExponential();
+    var ei = r.indexOf('e');
+    var e = parseInt(r.substr(ei+1));
+    var m = d < 0 ? '-' : '';
+    r = r.substr(0,1) + r.substring(2,ei);
+    if(e >= 0) {
+ return (e > r.length) ? m + r + h$jsstringZeroes(r.length-e-1) + '.0'
+                       : m + r.substr(0,e+1) + '.' + r.substr(e+1);
+    } else {
+ return m + '0.' + h$jsstringZeroes(-e-1) + r;
+    }
+}
+
+function h$jsstringDoubleToExponent(decs, d) {
+    var r;
+    if(decs ===-1) {
+ r = d.toExponential().replace('+','');
+    } else {
+ r = d.toExponential(Math.max(1, Math.min(20,decs))).replace('+','');
+    }
+    if(r.indexOf('.') === -1) {
+ r = r.replace('e', '.0e');
+    }
+    if(decs > 20) r = r.replace('e', h$jsstringZeroes(decs-20)+'e');
+    return r;
+}
+
+function h$jsstringDoubleGeneric(decs, d) {
+    var r;
+    if(decs === -1) {
+ r = d.toString(10).replace('+','');
+    } else {
+ r = d.toPrecision(Math.max(decs+1,1)).replace('+','');
+    }
+    if(decs !== 0 && r.indexOf('.') === -1) {
+ if(r.indexOf('e') !== -1) {
+     r = r.replace('e', '.0e');
+ } else {
+     r = r + '.0';
+ }
+    }
+    return r;
+}
+
+function h$jsstringAppend(x, y) {
+                                                     ;
+    return x+y;
+}
+
+function h$jsstringCompare(x, y) {
+                                                      ;
+    return (x<y)?-1:((x>y)?1:0);
+}
+
+function h$jsstringUnlines(xs) {
+    var r = '';
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ r = r + ((((xs).d1)).d1) + '\n';
+ xs = ((xs).d2);
+    }
+    return r;
+}
+
+function h$jsstringUnwords(xs) {
+    if(((xs).f === h$ghczmprimZCGHCziTypesziZMZN_con_e)) return '';
+    var r = ((((xs).d1)).d1);
+    xs = ((xs).d2);
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ r = r + ' ' + ((((xs).d1)).d1);
+ xs = ((xs).d2);
+    }
+    return r;
+}
+
+function h$jsstringReplace(pat, rep, src) {
+                                                                        ;
+    var r = src.replace(pat, rep, 'g');
+    // the 'g' flag is not supported everywhere, check and fall back if necessary
+    if(r.indexOf(pat) !== -1) {
+ r = src.split(pat).join(rep);
+    }
+    return r;
+}
+
+function h$jsstringReplicateChar(n, ch) {
+                                                    ;
+    return h$jsstringReplicate(n, h$jsstringSingleton(ch));
+}
+
+function h$jsstringIsInteger(str) {
+    return /^-?\d+$/.test(str);
+}
+
+function h$jsstringIsNatural(str) {
+    return /^\d+$/.test(str);
+}
+
+function h$jsstringReadInt(str) {
+    if(!/^-?\d+/.test(str)) return null;
+    var x = parseInt(str, 10);
+    var x0 = x|0;
+    return (x===x0) ? x0 : null;
+}
+
+function h$jsstringLenientReadInt(str) {
+    var x = parseInt(str, 10);
+    var x0 = x|0;
+    return (x===x0) ? x0 : null;
+}
+
+function h$jsstringReadWord(str) {
+  if(!/^\d+/.test(str)) return null;
+  var x = parseInt(str, 10);
+  var x0 = x|0;
+  if(x0<0) return (x===x0+2147483648) ? x0 : null;
+  else return (x===x0) ? x0 : null;
+}
+
+function h$jsstringReadDouble(str) {
+    return parseFloat(str, 10);
+}
+
+function h$jsstringLenientReadDouble(str) {
+    return parseFloat(str, 10);
+}
+
+function h$jsstringReadInteger(str) {
+                                       ;
+  if(!/^(-)?\d+$/.test(str)) {
+    return null;
+  } else if(str.length <= 9) {
+    return (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, (parseInt(str, 10))));;
+  } else {
+    return (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, (new BigInteger(str, 10))));;
+  }
+}
+
+function h$jsstringReadInt64(str) {
+  if(!/^(-)?\d+$/.test(str)) {
+      { h$ret1 = (0); h$ret2 = (0); return (0); };
+  }
+  if(str.charCodeAt(0) === 45) { // '-'
+    return h$jsstringReadValue64(str, 1, true);
+  } else {
+    return h$jsstringReadValue64(str, 0, false);
+  }
+}
+
+function h$jsstringReadWord64(str) {
+  if(!/^\d+$/.test(str)) {
+    { h$ret1 = (0); h$ret2 = (0); return (0); };
+  }
+  return h$jsstringReadValue64(str, 0, false);
+}
+
+var h$jsstringLongs = null;
+
+function h$jsstringReadValue64(str, start, negate) {
+  var l = str.length, i = start;
+  while(i < l) {
+    if(str.charCodeAt(i) !== 48) break;
+    i++;
+  }
+  if(i >= l) { h$ret1 = (0); h$ret2 = (0); return (1); }; // only zeroes
+  if(h$jsstringLongs === null) {
+    h$jsstringLongs = [];
+    for(var t=10; t<=1000000000; t*=10) {
+      h$jsstringLongs.push(goog.math.Long.fromInt(t));
+    }
+  }
+  var li = l-i;
+  if(li < 10 && !negate) {
+    { h$ret1 = (0); h$ret2 = (parseInt(str.substr(i), 10)); return (1); };
+  }
+  var r = goog.math.Long.fromInt(parseInt(str.substr(li,9),10));
+  li += 9;
+  while(li < l) {
+    r = r.multiply(h$jsstringLongs[Math.min(l-li-1,8)])
+         .add(goog.math.Long.fromInt(parseInt(str.substr(li,9), 10)));
+    li += 9;
+  }
+  if(negate) {
+    r = r.negate();
+  }
+  { h$ret1 = (r.getHighBits()); h$ret2 = (r.getLowBits()); return (1); };
+}
+
+function h$jsstringExecRE(i, str, re) {
+    re.lastIndex = i;
+    var m = re.exec(str);
+    if(m === null) return -1;
+    var a = [], x, j = 1, r = h$ghczmprimZCGHCziTypesziZMZN;
+    while(true) {
+ x = m[j];
+ if(typeof x === 'undefined') break;
+ a[j-1] = x;
+ j++;
+    }
+    j-=1;
+    while(--j>=0) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (a[j])))), (r)));
+    { h$ret1 = (m[0]); h$ret2 = (r); return (m.index); };
+}
+
+function h$jsstringReplaceRE(pat, replacement, str) {
+    return str.replace(pat, replacement);
+}
+
+function h$jsstringSplitRE(limit, re, str) {
+    re.lastIndex = i;
+    var s = (limit < 0) ? str.split(re) : str.split(re, limit);
+    var i = s.length, r = h$ghczmprimZCGHCziTypesziZMZN;
+    while(--i>=0) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (a[i])))), (r)));
+    return r;
+}
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+/*
+ * Functions that directly access JavaScript strings, ignoring character
+ * widths and surrogate pairs.
+ */
+
+function h$jsstringRawChunksOf(k, x) {
+    var l = x.length;
+    if(l === 0) return h$ghczmprimZCGHCziTypesziZMZN;
+    if(l <= k) return (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x)))), (h$ghczmprimZCGHCziTypesziZMZN)));
+    var r=h$ghczmprimZCGHCziTypesziZMZN;
+    for(var i=ls-k;i>=0;i-=k) r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(i,i+k))))), (r)));
+    return r;
+}
+
+function h$jsstringRawSplitAt(k, x) {
+    if(k === 0) return (h$c2(h$ghczmprimZCGHCziTupleziZLz2cUZR_con_e,(h$jsstringEmpty),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x))))));
+    if(k >= x.length) return (h$c2(h$ghczmprimZCGHCziTupleziZLz2cUZR_con_e,((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x)))),(h$jsstringEmpty)));
+    return (h$c2(h$ghczmprimZCGHCziTupleziZLz2cUZR_con_e,((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(0,k))))),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x.substr(k)))))));
+}
+function h$foreignListProps(o) {
+    var r = HS_NIL;
+    if(typeof o === 'undefined' || o === null) return null;
+    throw "h$foreignListProps";
+/*    for(var p in o) {
+
+    } */
+}
+// conversion between JavaScript string and Data.Text
+
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+
+/*
+  convert a Data.Text buffer with offset/length to a JavaScript string
+ */
+function h$textToString(arr, off, len) {
+    var a = [];
+    var end = off+len;
+    var k = 0;
+    var u1 = arr.u1;
+    var s = '';
+    for(var i=off;i<end;i++) {
+ var cc = u1[i];
+ a[k++] = cc;
+ if(k === 60000) {
+     s += String.fromCharCode.apply(this, a);
+     k = 0;
+     a = [];
+ }
+    }
+    return s + String.fromCharCode.apply(this, a);
+}
+
+/*
+   convert a JavaScript string to a Data.Text buffer, second return
+   value is length
+ */
+function h$textFromString(s) {
+    var l = s.length;
+    var b = h$newByteArray(l * 2);
+    var u1 = b.u1;
+    for(var i=l-1;i>=0;i--) u1[i] = s.charCodeAt(i);
+    { h$ret1 = (l); return (b); };
+}
+
+function h$lazyTextToString(txt) {
+    var s = '';
+    while(((txt).f.a === 2)) {
+        var head = ((txt));
+        s += h$textToString(((head).d1), ((head).d2.d1), ((head).d2.d2));
+        txt = ((txt).d2.d3);
+    }
+    return s;
+}
+
+function h$safeTextFromString(x) {
+    if(typeof x !== 'string') {
+ { h$ret1 = (0); return (null); };
+    }
+    return h$textFromString(x);
+}
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+function h$allProps(o) {
+    var a = [], i = 0;
+    for(var p in o) a[i++] = p;
+    return a;
+}
+
+function h$listProps(o) {
+    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    for(var p in o) { r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (p)))), (r))); }
+    return r;
+}
+
+function h$listAssocs(o) {
+    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    for(var p in o) { r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c2(h$ghczmprimZCGHCziTupleziZLz2cUZR_con_e,((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (p)))),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (o[p]))))))), (r))); }
+    return r;
+}
+
+function h$isNumber(o) {
+    return typeof(o) === 'number';
+}
+
+// returns true for null, but not for functions and host objects
+function h$isObject(o) {
+    return typeof(o) === 'object';
+}
+
+function h$isString(o) {
+    return typeof(o) === 'string';
+}
+
+function h$isSymbol(o) {
+    return typeof(o) === 'symbol';
+}
+
+function h$isBoolean(o) {
+    return typeof(o) === 'boolean';
+}
+
+function h$isFunction(o) {
+    return typeof(o) === 'function';
+}
+
+function h$jsTypeOf(o) {
+    var t = typeof(o);
+    if(t === 'undefined') return 0;
+    if(t === 'object') return 1;
+    if(t === 'boolean') return 2;
+    if(t === 'number') return 3;
+    if(t === 'string') return 4;
+    if(t === 'symbol') return 5;
+    if(t === 'function') return 6;
+    return 7; // other, host object etc
+}
+
+/*
+        -- 0 - null, 1 - integer,
+        -- 2 - float, 3 - bool,
+        -- 4 - string, 5 - array
+        -- 6 - object
+*/
+function h$jsonTypeOf(o) {
+    if (!(o instanceof Object)) {
+        if (o == null) {
+            return 0;
+        } else if (typeof o == 'number') {
+            if (h$isInteger(o)) {
+                return 1;
+            } else {
+                return 2;
+            }
+        } else if (typeof o == 'boolean') {
+            return 3;
+        } else {
+            return 4;
+        }
+    } else {
+        if (Object.prototype.toString.call(o) == '[object Array]') {
+            // it's an array
+            return 5;
+        } else if (!o) {
+            // null 
+            return 0;
+        } else {
+            // it's an object
+            return 6;
+        }
+    }
+
+}
+function h$sendXHR(xhr, d, cont) {
+    xhr.addEventListener('error', function () {
+ cont(2);
+    });
+    xhr.addEventListener('abort', function() {
+ cont(1);
+    });
+    xhr.addEventListener('load', function() {
+ cont(0);
+    });
+    if(d) {
+ xhr.send(d);
+    } else {
+ xhr.send();
+    }
+}
+function h$dom$sendXHR(xhr, d, cont) {
+    var clear;
+    var error = function () {
+        clear(); cont(2);
+    };
+    var abort = function () {
+        clear(); cont(1);
+    };
+    var load = function () {
+        clear(); cont(0);
+    };
+    clear = function () {
+        xhr.removeEventListener('error', error);
+        xhr.removeEventListener('abort', abort);
+        xhr.removeEventListener('load', load);
+    }
+    xhr.addEventListener('error', error);
+    xhr.addEventListener('abort', abort);
+    xhr.addEventListener('load', load);
+    if(d) {
+ xhr.send(d);
+    } else {
+ xhr.send();
+    }
 }

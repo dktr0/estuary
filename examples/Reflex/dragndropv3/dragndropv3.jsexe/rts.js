@@ -1338,7 +1338,7 @@ var h$ret10;
 /* platform-specific setup */
 
 // top-level debug initialization needs this. declare it in case we aren't in the same file as out.js
-function h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e() { return h$stack[h$sp]; };
+function h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e() { return h$stack[h$sp]; };
 
 /*
    if browser mode is active (GHCJS_BROWSER is defined), all the runtime platform
@@ -1355,6 +1355,9 @@ var h$isNode = false; // runtime is node.js
 var h$isJsShell = false; // runtime is SpiderMonkey jsshell
 var h$isJsCore = false; // runtime is JavaScriptCore jsc
 var h$isBrowser = false; // running in browser or everything else
+
+var h$isGHCJSi = false; // Code is GHCJSi (browser or node)
+
 // load all required node.js modules
 if(typeof process !== 'undefined' && (typeof h$TH !== 'undefined' || (typeof require !== 'undefined' && typeof module !== 'undefined' && module.exports))) {
     h$isNode = true;
@@ -1376,6 +1379,9 @@ if(typeof process !== 'undefined' && (typeof h$TH !== 'undefined' || (typeof req
     h$isJsCore = true;
 } else {
     h$isBrowser = true;
+}
+if(typeof global !== 'undefined' && global.h$GHCJSi) {
+  h$isGHCJSi = true;
 }
 
 
@@ -1573,17 +1579,17 @@ goog.crypt = {};
 
   function packU8Clamped(n) { n = round(Number(n)); return [n < 0 ? 0 : n > 0xff ? 0xff : n & 0xff]; }
 
-  function packI16(n) { return [(n >> 8) & 0xff, n & 0xff]; }
-  function unpackI16(bytes) { return as_signed(bytes[0] << 8 | bytes[1], 16); }
+  function packI16(n) { return [n & 0xff, (n >> 8) & 0xff]; }
+  function unpackI16(bytes) { return as_signed(bytes[1] << 8 | bytes[0], 16); }
 
-  function packU16(n) { return [(n >> 8) & 0xff, n & 0xff]; }
-  function unpackU16(bytes) { return as_unsigned(bytes[0] << 8 | bytes[1], 16); }
+  function packU16(n) { return [n & 0xff, (n >> 8) & 0xff]; }
+  function unpackU16(bytes) { return as_unsigned(bytes[1] << 8 | bytes[0], 16); }
 
-  function packI32(n) { return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff]; }
-  function unpackI32(bytes) { return as_signed(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3], 32); }
+  function packI32(n) { return [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff]; }
+  function unpackI32(bytes) { return as_signed(bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0], 32); }
 
-  function packU32(n) { return [(n >> 24) & 0xff, (n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff]; }
-  function unpackU32(bytes) { return as_unsigned(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3], 32); }
+  function packU32(n) { return [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff]; }
+  function unpackU32(bytes) { return as_unsigned(bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0], 32); }
 
   function packIEEE754(v, ebits, fbits) {
 
@@ -1615,7 +1621,16 @@ goog.crypt = {};
 
       if (v >= pow(2, 1 - bias)) {
         e = min(floor(log(v) / LN2), 1023);
-        f = roundToEven(v / pow(2, e) * pow(2, fbits));
+        var significand = v / pow(2, e);
+        if (significand < 1) {
+          e -= 1;
+          significand *= 2;
+        }
+        if (significand >= 2) {
+          e += 1;
+          significand /= 2;
+        }
+        f = roundToEven(significand * pow(2, fbits));
         if (f / pow(2, fbits) >= 2) {
           e = e + 1;
           f = 1;
@@ -1647,7 +1662,7 @@ goog.crypt = {};
     // Bits to bytes
     bytes = [];
     while (str.length) {
-      bytes.push(parseInt(str.substring(0, 8), 2));
+      bytes.unshift(parseInt(str.substring(0, 8), 2));
       str = str.substring(8);
     }
     return bytes;
@@ -1658,8 +1673,8 @@ goog.crypt = {};
     var bits = [], i, j, b, str,
         bias, s, e, f;
 
-    for (i = bytes.length; i; i -= 1) {
-      b = bytes[i - 1];
+    for (i = 0; i < bytes.length; ++i) {
+      b = bytes[i];
       for (j = 8; j; j -= 1) {
         bits.push(b % 2 ? 1 : 0); b = b >> 1;
       }
@@ -5175,6 +5190,105 @@ h$HeapSet.prototype._upHeap = function(i) {
         }
     }
 }
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 // #define GHCJS_TRACE_META 1
 
 
@@ -5224,13 +5338,10 @@ function h$stl(o, xs, t) {
         for(var i=xs.length-1;i>=0;i--) {
             x = xs[i];
             if(!x && x !== false && x !== 0) throw "h$toHsList: invalid element";
-
-
-
-            r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, x, r);
-
+            r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (x), (r)));
         }
     }
+    // fixme direct object manip
     o.f = r.f;
     o.d1 = r.d1;
     o.d2 = r.d2;
@@ -5239,6 +5350,21 @@ function h$stl(o, xs, t) {
 
 
 }
+
+// some utilities for constructing common objects from JS in the RTS or foreign code.
+// when profiling, the current ccs is assigned
+
+// #ifdef GHCJS_PROF
+// var h$nil = h$c(h$ghczmprimZCGHCziTypesziZMZN_con_e, h$CCS_SYSTEM);
+// #else
+// var h$nil = h$c(h$ghczmprimZCGHCziTypesziZMZN_con_e);
+// #endif
+
+// #ifdef GHCJS_PROF
+// var h$nothing = h$c(h$baseZCGHCziBaseziNothing_con_e, h$CCS_SYSTEM);
+// #else
+//var h$nothing = h$c(h$baseZCGHCziBaseziNothing_con_e);
+// #endif
 
 // delayed init for top-level closures
 var h$staticDelayed = [];
@@ -5427,9 +5553,8 @@ function h$initInfoTables ( depth // depth in the base chain
                 return nextSignificand() * Math.pow(2, n1);
             }
         case 7:
-                                                     ;
-            throw "string arg";
-            return ""; // fixme haskell string
+                             ;
+     // no break, strings are UTF8 encoded binary
         case 8:
                                     ;
             n = next();
@@ -5579,7 +5704,7 @@ function h$initInfoTables ( depth // depth in the base chain
           break;
       case 8: // staticEmptyList
                                        ;
-          o.f = h$ghczmprimZCGHCziTypesziZMZN.f;
+          o.f = h$ghczmprimZCGHCziTypesziZMZN_con_e;
           break;
       case 9: // staticList
                                   ;
@@ -5588,7 +5713,7 @@ function h$initInfoTables ( depth // depth in the base chain
           var c = (hasTail === 1) ? nextObj() : h$ghczmprimZCGHCziTypesziZMZN;
                                          ;
           while(n--) {
-              c = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, nextArg(), c);
+              c = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (nextArg()), (c)));
           }
           o.f = c.f;
           o.d1 = c.d1;
@@ -5672,8 +5797,7 @@ function h$memcpy() {
     for(var i=n-1;i>=0;i--) {
       dst.u8[i] = src.u8[i];
     }
-    h$ret1 = 0;
-    return dst;
+    { h$ret1 = (0); return (dst); };
   } else if(arguments.length === 5) { // Addr# -> Addr# copy
     var dst = arguments[0];
     var dst_off = arguments[1]
@@ -5683,8 +5807,7 @@ function h$memcpy() {
     for(var i=n-1;i>=0;i--) {
       dst.u8[i+dst_off] = src.u8[i+src_off];
     }
-    h$ret1 = dst_off;
-    return dst;
+    { h$ret1 = (dst_off); return (dst); };
   } else {
     throw "h$memcpy: unexpected argument";
   }
@@ -6021,12 +6144,10 @@ function h$mkExportDyn(t, f) {
 function h$memchr(a_v, a_o, c, n) {
   for(var i=0;i<n;i++) {
     if(a_v.u8[a_o+i] === c) {
-      h$ret1 = a_o+i;
-      return a_v;
+      { h$ret1 = (a_o+i); return (a_v); };
     }
   }
-  h$ret1 = 0;
-  return null;
+  { h$ret1 = (0); return (null); };
 }
 
 function h$strlen(a_v, a_o) {
@@ -6082,7 +6203,7 @@ function h$newByteArray(len) {
 
   Since IO has kind * -> *, you cannot return IO ByteArray#
   from a foreign import, even with the UnliftedFFITypes
-  extension. Return a JSRef instead and use unsafeCoerce
+  extension. Return a JSVal instead and use unsafeCoerce
   to convert it to a Data.Primitive.ByteArray.ByteArray or
   Data.Primitive.ByteArray.MutableByteArray (primitive package)
   and pattern match on the constructor to get the
@@ -6090,7 +6211,7 @@ function h$newByteArray(len) {
 
   These types have the same runtime representation (a data
   constructor with one regular (one JavaScript variable)
-  field) as a JSRef, so the conversion is safe, as long
+  field) as a JSVal, so the conversion is safe, as long
   as everything is fully evaluated.
 */
 function h$wrapBuffer(buf, unalignedOk, offset, length) {
@@ -6112,41 +6233,59 @@ function h$wrapBuffer(buf, unalignedOk, offset, length) {
          };
 }
 
+/* 
+   A StableName is represented as either a h$StableName object (for most heap objects)
+   or a number (for heap objects with unboxed representation)
+
+   Holding on to a StableName does not keep the original object alive.
+ */
 var h$stableNameN = 1;
 /** @constructor */
 function h$StableName(m) {
-    this.m = m;
-    this.s = null;
+  this.m = m;
+  this.s = null;
 }
 
 function h$makeStableName(x) {
-    if(typeof x === 'object') {
-        if(typeof x.m !== 'object') {
-            x.m = new h$StableName(x.m);
-        }
-        return x.m;
-    } else {
-        return new h$StableName(0);
+  if(typeof x === 'number') {
+    return x;
+  } else if(((typeof(x)==='object')&&(x).f === h$unbox_e)) {
+    return ((typeof(x) === 'number')?(x):(x).d1);
+  } else if(typeof x === 'object') {
+    if(typeof x.m !== 'object') {
+      x.m = new h$StableName(x.m);
     }
+    return x.m;
+  } else {
+    throw new Error("h$makeStableName: invalid argument");
+  }
 }
 
 function h$stableNameInt(s) {
+  if(typeof s === 'number') {
+    if(s!=s) return 999999; // NaN
+    var s0 = s|0;
+    if(s0 === s) return s0;
+    h$convertDouble[0] = s;
+    return h$convertInt[0] ^ h$convertInt[1];
+  } else {
     var x = s.s;
     if(x === null) {
-        x = s.s = h$stableNameN = (h$stableNameN+1)|0;
+      x = s.s = h$stableNameN = (h$stableNameN+1)|0;
     }
     return x;
+  }
 }
 
 function h$eqStableName(s1o,s2o) {
-    return s1o === s2o ? 1 : 0;
+  if(s1o!=s1o && s2o!=s2o) return 1; // NaN
+  return s1o === s2o ? 1 : 0;
 }
 
 function h$makeStablePtr(v) {
   var buf = h$newByteArray(4);
   buf.arr = [v];
-  h$ret1 = 0;
-  return buf;
+  { h$ret1 = (0); return (buf); };
 }
 
 function h$hs_free_stable_ptr(stable) {
@@ -6154,8 +6293,7 @@ function h$hs_free_stable_ptr(stable) {
 }
 
 function h$malloc(n) {
-  h$ret1 = 0;
-  return h$newByteArray(n);
+  { h$ret1 = (0); return (h$newByteArray(n)); };
 }
 
 function h$free() {
@@ -6180,8 +6318,7 @@ function h$memset() {
   for(var i=buf_off;i<end;i++) {
     buf_v.u8[i] = chr;
   }
-  h$ret1 = buf_off;
-  return buf_v;
+  { h$ret1 = (buf_off); return (buf_v); };
 }
 
 function h$memcmp(a_v, a_o, b_v, b_o, n) {
@@ -6201,11 +6338,10 @@ function h$memmove(a_v, a_o, b_v, b_o, n) {
       a_v.u8[a_o+i] = tmp[i];
     }
   }
-  h$ret1 = a_o;
-  return a_v;
+  { h$ret1 = (a_o); return (a_v); };
 }
 function h$mkPtr(v, o) {
-  return h$c2(h$baseZCGHCziPtrziPtr_con_e, v, o);
+  return (h$c2(baseZCGHCziPtrziPtr_con_e, (v), (o)));
 };
 function h$mkFunctionPtr(f) {
   var d = h$newByteArray(4);
@@ -6214,93 +6350,64 @@ function h$mkFunctionPtr(f) {
 }
 var h$freeHaskellFunctionPtr = function () {
 }
-/*
-function h$createAdjustor(cconv, hptr, hptr_2, wptr, wptr_2, type) {
-    h$ret1 = hptr_2;
-    return hptr;
-};
-*/
 
 // extra roots for the heap scanner: objects with root property
 var h$extraRootsN = 0;
 var h$extraRoots = new h$Set();
 
-// 
-var h$domRoots = new h$Set();
-
-function h$makeCallback(retain, f, extraArgs, action) {
+function h$makeCallback(f, extraArgs, action) {
     var args = extraArgs.slice(0);
     args.unshift(action);
     var c = function() {
         return f.apply(this, args);
     }
-    if(retain === true) {
-        c._key = ++h$extraRootsN;
-        c.root = action;
-        h$extraRoots.add(c);
-    } else if(retain) { // DOM retain
-
-    }
+    c._key = ++h$extraRootsN;
+    c.root = action;
+    h$extraRoots.add(c);
     return c;
 }
 
-function h$makeCallbackApply(retain, n, f, extraArgs, fun) {
+function h$makeCallbackApply(n, f, extraArgs, fun) {
   var c;
   if(n === 1) {
     c = function(x) {
       var args = extraArgs.slice(0);
-      var action = h$c2(h$ap1_e, fun, h$mkJSRef(x));
+      var action = (h$c2(h$ap1_e,(fun),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x))))));
       args.unshift(action);
       return f.apply(this, args);
     }
   } else if (n === 2) {
     c = function(x,y) {
       var args = extraArgs.slice(0);
-      var action = h$c3(h$ap2_e, fun, h$mkJSRef(x), h$mkJSRef(y));
+      var action = (h$c3(h$ap2_e,(fun),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x)))),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (y))))));
+      args.unshift(action);
+      return f.apply(this, args);
+    }
+  } else if (n === 3) {
+    c = function(x,y,z) {
+      var args = extraArgs.slice(0);
+      var action = (h$c2(h$ap1_e,((h$c3(h$ap2_e,(fun),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (x)))),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (y))))))),((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (z))))));
       args.unshift(action);
       return f.apply(this, args);
     }
   } else {
-    throw "h$makeCallbackApply: unsupported arity";
+    throw new Error("h$makeCallbackApply: unsupported arity");
   }
-  if(retain === true) {
-      c.root = fun;
-      c._key = ++h$extraRootsN;
-      h$extraRoots.add(c);
-  } else if(retain) {
-    // fixme: retain this while `retain' is in some DOM
-  } else {
-    // no retainer
-  }
+  c.root = fun;
+  c._key = ++h$extraRootsN;
+  h$extraRoots.add(c);
   return c;
 }
 
-function h$mkJSRef(x) {
-  return h$c1(h$ghcjszmprimZCGHCJSziPrimziJSRef_con_e, x);
-}
-
-// fixme these don't guarantee that the object has a key!
 function h$retain(c) {
+  var k = c._key;
+  if(typeof k !== 'number') throw new Error("retained object does not have a key");
+  if(k === -1) c._key = ++h$extraRootsN;
   h$extraRoots.add(c);
-}
-
-function h$retainDom(d, c) {
-  h$domRoots.add(c);
-  c.domRoots = new h$Set();
-}
-
-function h$releasePermanent(c) {
-  h$extraRoots.remove(c);
 }
 
 function h$release(c) {
   h$extraRoots.remove(c);
-  h$domRoots.remove(c);
-}
-
-function h$releaseDom(c,d) {
-  if(c.domRoots) c.domRoots.remove(d);
-  if(!c.domRoots || c.domRoots.size() == 0) h$domRoots.remove(c);
 }
 
 function h$isInstanceOf(o,c) {
@@ -6314,8 +6421,7 @@ function h$getpagesize() {
 var h$MAP_ANONYMOUS = 0x20;
 function h$mmap(addr_d, addr_o, len, prot, flags, fd, offset1, offset2) {
   if(flags & h$MAP_ANONYMOUS || fd === -1) {
-    h$ret1 = 0;
-    return h$newByteArray(len);
+    { h$ret1 = (0); return (h$newByteArray(len)); };
   } else {
     throw "h$mmap: mapping a file is not yet supported";
   }
@@ -6384,7 +6490,116 @@ function h$munmap(addr_d, addr_o, size) {
   fixme, todo:
   - mark posted exceptions to thread
 */
+
+
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+
+
+
+
+
+
+
 // these macros use a local mark variable
+
 
 
 
@@ -6401,7 +6616,7 @@ var h$extensibleRetentionCallbacks = [];
 
 /*
    after registering an extensible extension root f,
-   f() is called at the start of each gc invocation and is
+   f(currentMark) is called at the start of each gc invocation and is
    expected to return an array with Haskell heap objects
    to be treated as extra roots.
  */
@@ -6430,7 +6645,7 @@ function h$unregisterExtensibleRetentionRoot(f) {
      - false          call other extension callbacks with this object
 
   Use -DGHCJS_TRACE_GC_UNKNOWN to find the JavaScript objects reachable
-  (through JSRef) on the Haskell heap for which none of the registered
+  (through JSVal) on the Haskell heap for which none of the registered
   extensible retention callbacks has returned true or an array.
  */
 function h$registerExtensibleRetention(f) {
@@ -6490,65 +6705,63 @@ function h$gc(t) {
 
 
 
+
+    // fixme, should enable again later when proper CAF management
+    // and retention of the standard handles in GHCJSi work
+    if(h$isGHCJSi) return;
+
+
     if(h$currentThread !== null) throw "h$gc: GC can only be run when no thread is running";
 
 
 
 
-                       ;
-    var start = Date.now();
+
+                                                      ;
     h$resetRegisters();
     h$resetResultVars();
     h$gcMark = 5-h$gcMark;
     var i;
 
     for(i=h$extensibleRetentionRoots.length-1;i>=0;i--) {
-        var a = h$extensibleRetentionRoots[i]();
-        h$follow(a, a.length-1);
+      var a = h$extensibleRetentionRoots[i](h$gcMark);
+      if(a) h$follow(a, a.length-1);
     }
                                                                                                                 ;
-    if(t !== null) h$markThread(t);
+
+    // mark al runnable threads and the running thread
+    if(t !== null) {
+ h$markThread(t);
+ h$resetThread(t);
+    }
     var nt, runnable = h$threads.iter();
-    while((nt = runnable()) !== null) h$markThread(nt);
+    while((nt = runnable()) !== null) {
+ h$markThread(nt);
+ h$resetThread(nt);
+    }
+
+    // some blocked threads are always considered reachable, mark them
+    //   - delayed threads
+    //   - threads blocked on async FFI
     var iter = h$blocked.iter();
     while((nt = iter.next()) !== null) {
-        if(!(nt.blockedOn instanceof h$MVar) || (nt.stack && nt.stack[nt.sp] === h$unboxFFIResult)) {
+        if(nt.delayed ||
+    (nt.blockedOn instanceof h$MVar && nt.stack && nt.stack[nt.sp] === h$unboxFFIResult)) {
             h$markThread(nt);
         }
+ h$resetThread(nt);
     }
                                                   ;
     iter = h$extraRoots.iter();
     while((nt = iter.next()) !== null) h$follow(nt.root);
 
-    // now we've marked all the regular Haskell data, continue marking
-    // weak references and everything retained by DOM retainers
-    h$markRetained();
+    // clean up threads waiting on unreachable synchronization primitives
+    h$resolveDeadlocks();
 
-    // now all running threads and threads blocked on something that's
-    // not an MVar operation have been marked, including other threads
-    // they reference through their ThreadId
+    // clean up unreachable weak refs
+    var toFinalize = h$markRetained();
+    h$finalizeWeaks(toFinalize);
 
-    // clean up threads waiting on unreachable MVars:
-    // throw an exception to a thread (which brings it back
-    // to life), then scan it. Killing one thread might be enough
-    // since the killed thread could make other threads reachable again.
-    h$finalizeMVars();
-    h$markRetained();
-
-    // now everything has been marked, bring out your dead references
-
-    // run finalizers for all weak references with unreachable keys
-    var finalizers = h$finalizeWeaks();
-    h$clearWeaks();
-    for(i=0;i<finalizers.length;i++) {
-        var fin = finalizers[i].finalizer;
-        if(fin !== null && !((typeof fin.m === 'number' && (fin.m & 3) === mark) || (typeof fin.m === 'object' && ((fin.m.m & 3) === mark)))) h$follow(fin);
-    }
-    h$markRetained();
-    h$clearWeaks();
-    h$scannedWeaks = [];
-
-    h$finalizeDom(); // remove all unreachable DOM retainers
     h$finalizeCAFs(); // restore all unreachable CAFs to unevaluated state
 
     var now = Date.now();
@@ -6562,59 +6775,117 @@ function h$gc(t) {
 
 }
 
+function h$markWeaks() {
+  var i, w, marked, mark = h$gcMark;
+  do {
+    marked = false;
+    for (i = 0; i < h$weakPointerList.length; ++i) {
+      w = h$weakPointerList[i];
+      if (((w.keym.m & 3) === mark)) {
+ if (w.val !== null && !((typeof w.val.m === 'number' && (w.val.m & 3) === mark) || (typeof w.val.m === 'object' && ((w.val.m.m & 3) === mark)))) {
+          h$follow(w.val);
+   marked = true;
+ }
+ if (w.finalizer !== null && !((typeof w.finalizer.m === 'number' && (w.finalizer.m & 3) === mark) || (typeof w.finalizer.m === 'object' && ((w.finalizer.m.m & 3) === mark)))) {
+          h$follow(w.finalizer);
+   marked = true;
+ }
+      }
+    }
+  } while(marked);
+}
+
+
 function h$markRetained() {
-    var iter, marked, c, mark = h$gcMark;
+    var iter, marked, w, i, mark = h$gcMark;
+    var newList = [];
+    var toFinalize = [];
+
+    /*
+      2. Scan the Weak Pointer List. If a weak pointer object has a key that is
+      marked (i.e. reachable), then mark all heap reachable from its value
+      or its finalizer, and move the weak pointer object to a new list
+    */
     do {
-                                           ;
+                                               ;
         marked = false;
-        // mark all finalizers of weak references where the key is reachable
-        iter = h$finalizers.iter();
-        while((c = iter.next()) !== null) {
-            if(!((typeof c.finalizer.m === 'number' && (c.finalizer.m & 3) === mark) || (typeof c.finalizer.m === 'object' && ((c.finalizer.m.m & 3) === mark))) && c.m.m === mark) {
-                                                                                              ;
-                h$follow(c.finalizer);
-                marked = true;
-            }
-        }
 
-        // mark all callbacks where at least one of the DOM retainers is reachable
-        iter = h$domRoots.iter();
-        while((c = iter.next()) !== null) {
-            if(!h$isMarked(c.root) && c.domRoots && c.domRoots.size() > 0) {
-                var dr, domRetainers = c.domRoots.iter();
-                while((dr = domRetainers.next()) !== null) {
-                    if(h$isReachableDom(dr)) {
-                                                                              ;
-                        h$follow(c.root);
-                        marked = true;
-                    }
+        for (i = 0; i < h$weakPointerList.length; ++i) {
+            w = h$weakPointerList[i];
+            if (w === null) {
+                // don't handle items deleted in earlier iteration
+                continue;
+            }
+            if (((w.keym.m & 3) === mark)) {
+                if (w.val !== null && !((typeof w.val.m === 'number' && (w.val.m & 3) === mark) || (typeof w.val.m === 'object' && ((w.val.m.m & 3) === mark)))) {
+                    h$follow(w.val);
                 }
-            }
-        }
 
-        // mark weak values for reachable keys
-        for(var i=h$scannedWeaks.length-1;i>=0;i--) {
-            var w = h$scannedWeaks[i];
-            if(w.keym.m === mark && w.val !== null && !((typeof w.val.m === 'number' && (w.val.m & 3) === mark) || (typeof w.val.m === 'object' && ((w.val.m.m & 3) === mark)))) {
-                                              ;
-                h$follow(w.val);
+                if (w.finalizer !== null && !((typeof w.finalizer.m === 'number' && (w.finalizer.m & 3) === mark) || (typeof w.finalizer.m === 'object' && ((w.finalizer.m.m & 3) === mark)))) {
+                    h$follow(w.finalizer);
+                }
+
+                newList.push(w);
+                // instead of removing the item from the h$weakpointerList
+                // we set it to null if we push it to newList.
+                h$weakPointerList[i] = null;
+
                 marked = true;
             }
         }
-        // continue for a next round if we have marked something more
-        // note: this will be slow for very deep chains of weak refs,
-        // change this if that becomes a problem.
+
+        /*
+           3. Repeat from step (2), until a complete scan of Weak Pointer List finds
+              no weak pointer object with a marked keym.
+        */
     } while(marked);
+
+
+    /*
+      4. Scan the Weak Pointer List again. If the weak pointer object is reachable
+         then tombstone it. If the weak pointer object has a finalizer then move
+         it to the Finalization Pending List, and mark all the heap reachable
+         from the finalizer. If the finalizer refers to the key (and/or value),
+         this step will "resurrect" it.
+    */
+
+    for (i = 0; i < h$weakPointerList.length; ++i) {
+        w = h$weakPointerList[i];
+        if (w === null) {
+            // don't handle items deleted in step 2
+            continue;
+        }
+
+                                               ;
+        if(w.val !== null) {
+            w.val = null;
+        }
+
+        if(w.finalizer !== null) {
+            if(!((typeof w.finalizer.m === 'number' && (w.finalizer.m & 3) === mark) || (typeof w.finalizer.m === 'object' && ((w.finalizer.m.m & 3) === mark)))) {
+                                               ;
+                h$follow(w.finalizer);
+            }
+            toFinalize.push(w);
+        }
+    }
+
+    /*
+       5. The list accumulated in step (3) becomes the new Weak Pointer List.
+          Mark any unreachable weak pointer objects on this list as reachable.
+    */
+    h$weakPointerList = newList;
+
+    // marking the weak pointer objects as reachable is not necessary
+
+    return toFinalize;
 }
 
 function h$markThread(t) {
     var mark = h$gcMark;
                                                     ;
     if(((typeof t.m === 'number' && (t.m & 3) === mark) || (typeof t.m === 'object' && ((t.m.m & 3) === mark)))) return;
-    if(typeof t.m === 'number') t.m = (t.m&-4)|mark; else t.m.m = (t.m.m & -4)|mark;;
-    if(t.stack === null) return; // thread finished
-    h$follow(t.stack, t.sp);
-    h$resetThread(t);
+    h$follow(t);
 }
 
 
@@ -6625,7 +6896,7 @@ function h$markThread(t) {
 // big object, not handled by 0..7 cases
 // keep out of h$follow to prevent deopt
 function h$followObjGen(c, work, w) {
-   work.push(c.d1);
+   work[w++] = c.d1;;
    var d = c.d2;
    for(var x in d) {
 //              if(d.hasOwnProperty(x)) {
@@ -6689,26 +6960,24 @@ function h$follow(obj, sp) {
                     for(var i=0;i<s.length;i++) work[w++] = s[i];;
                 }
             } else if(c instanceof h$Weak) {
-                                                  ;
-                if(c.keym.m === mark) {
-                    if(c.val !== null && !((typeof c.val.m === 'number' && (c.val.m & 3) === mark) || (typeof c.val.m === 'object' && ((c.val.m.m & 3) === mark)))) work[w++] = c.val;;
-                } else {
-                    // fixme we should keep separate arrays for
-                    // value mark pending / cleanup pending?
-                    if(c.val !== null) h$scannedWeaks.push(c);
-                }
                 if(typeof c.m === 'number') c.m = (c.m&-4)|mark; else c.m.m = (c.m.m & -4)|mark;;
             } else if(c instanceof h$MVar) {
                                         ;
                 if(typeof c.m === 'number') c.m = (c.m&-4)|mark; else c.m.m = (c.m.m & -4)|mark;;
-                /*
-                   only push the values in the queues, not the waiting threads
-
-                   the threads will be scanned after threads waiting on unreachable
-                   MVars have been cleaned up
-                 */
                 iter = c.writers.iter();
-                while((ii = iter()) !== null) work[w++] = ii[1];;
+                while((ii = iter()) !== null) {
+      work[w++] = ii[1];; // value
+      work[w++] = ii[0];; // thread
+  }
+  iter = c.readers.iter();
+  while((ii = iter()) !== null) {
+      work[w++] = ii;;
+  }
+         if(c.waiters) {
+    for(i=c.waiters.length-1;i>=0;i--) {
+      work[w++] = c.waiters[i];;
+    }
+  }
                 if(c.val !== null && !((typeof c.val.m === 'number' && (c.val.m & 3) === mark) || (typeof c.val.m === 'object' && ((c.val.m.m & 3) === mark)))) work[w++] = c.val;;
             } else if(c instanceof h$MutVar) {
                                           ;
@@ -6718,28 +6987,49 @@ function h$follow(obj, sp) {
                                         ;
                 if(typeof c.m === 'number') c.m = (c.m&-4)|mark; else c.m.m = (c.m.m & -4)|mark;;
                 work[w++] = c.val;;
+  iter = c.blocked.iter();
+  while((ii = iter.next()) !== null) {
+      work[w++] = ii;;
+  }
+  if(c.invariants) {
+      iter = c.invariants.iter();
+      while((ii = iter.next()) !== null) {
+   work[w++] = ii;;
+      }
+  }
             } else if(c instanceof h$Thread) {
                                           ;
                 if(typeof c.m === 'number') c.m = (c.m&-4)|mark; else c.m.m = (c.m.m & -4)|mark;;
                 if(c.stack) {
-                    for(i=c.sp;i>=0;i--) work[w++] = c.stack[i];;
+                    for(i=c.sp;i>=0;i--) {
+   work[w++] = c.stack[i];;
+      }
                 }
+  for(i=0;i<c.excep.length;i++) {
+      work[w++] = c.excep[i];;
+  }
             } else if(c instanceof h$Transaction) {
-                /* - the accessed TVar values don't need to be marked
-                   - parents are also on the stack, so they should've been marked already
-                */
+                // - the accessed TVar values don't need to be marked
+                // - parents are also on the stack, so they should've been marked already
                                                    ;
                 if(typeof c.m === 'number') c.m = (c.m&-4)|mark; else c.m.m = (c.m.m & -4)|mark;;
-                for(i=c.invariants.length-1;i>=0;i--) work[w++] = c.invariants[i];;
+                for(i=c.invariants.length-1;i>=0;i--) {
+      work[w++] = c.invariants[i].action;;
+  }
                 work[w++] = c.action;;
                 iter = c.tvars.iter();
-                while((ii = iter.next()) !== null) work[w++] = ii;;
-            } else if(c instanceof Array && c.__ghcjsArray) { // only for Haskell arrays with lifted values
+                while((ii = iter.nextVal()) !== null) {
+      work[w++] = ii.val;;
+  }
+            } else if(c instanceof Array && c.__ghcjsArray) {
+  // only for Haskell arrays with lifted values
                 if(typeof c.m === 'number') c.m = (c.m&-4)|mark; else c.m.m = (c.m.m & -4)|mark;;
                                          ;
                 for(i=0;i<c.length;i++) {
                     var x = c[i];
-                    if(typeof x === 'object' && x !== null && !((typeof x.m === 'number' && (x.m & 3) === mark) || (typeof x.m === 'object' && ((x.m.m & 3) === mark)))) work[w++] = x;;
+                    if(typeof x === 'object' && x !== null && !((typeof x.m === 'number' && (x.m & 3) === mark) || (typeof x.m === 'object' && ((x.m.m & 3) === mark)))) {
+          work[w++] = x;;
+      }
                 }
             } else if(typeof c === 'object') {
                                                         ;
@@ -6753,7 +7043,9 @@ function h$follow(obj, sp) {
 
 
                     if(x !== true) {
-                        for(j=x.length-1;j>=0;j--) work[w++] = x[j];;
+                      for(j=x.length-1;j>=0;j--) {
+            work[w++] = x[j];;
+        }
                     }
                     break;
                 }
@@ -6776,6 +7068,7 @@ function h$resetThread(t) {
 
 
     var stack = t.stack;
+    if(!stack) return;
     var sp = t.sp;
     if(stack.length - sp > sp && stack.length > 100) {
         t.stack = t.stack.slice(0,sp+1);
@@ -6787,34 +7080,45 @@ function h$resetThread(t) {
                                                            ;
 }
 
+/*
+   Post exceptions to all threads that are waiting on an unreachable synchronization
+   object and haven't been marked reachable themselves.
 
-function h$finalizeMVars() {
-                                ;
-    var kill, i, t, iter;
+   All woken up threads are marked.
+ */
+function h$resolveDeadlocks() {
+                                   ;
+    var kill, t, iter, bo, mark = h$gcMark;
     do {
- kill = null;
- iter = h$blocked.iter();
- while((t = iter.next()) !== null) {
-            if(t.status === h$threadBlocked && t.blockedOn instanceof h$MVar) {
-  // if h$unboxFFIResult is the top of the stack, then we cannot kill
-  // the thread since it's waiting for async FFI
-  if(t.blockedOn.m !== h$gcMark && t.stack[t.sp] !== h$unboxFFIResult) {
-      kill = t;
-  } else {
-      h$markThread(t);
-  }
-     }
-        }
- if(kill && kill.blockedOn.m !== h$gcMark) {
-     h$killThread(kill, h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar);
-     h$markThread(kill);
- }
-    } while(kill);
-}
+        h$markWeaks();
+        // deal with unreachable blocked threads: kill an unreachable thread and restart the process
+        kill = null;
+        iter = h$blocked.iter();
+        while((t = iter.next()) !== null) {
+            // we're done if the thread is already reachable
+            if(((typeof t.m === 'number' && (t.m & 3) === mark) || (typeof t.m === 'object' && ((t.m.m & 3) === mark)))) continue;
 
-// clear DOM retainers
-function h$finalizeDom() {
-  // fixme
+            // check what we're blocked on
+            bo = t.blockedOn;
+            if(bo instanceof h$MVar) {
+                // blocked on MVar
+                if(bo.m === mark) throw "assertion failed: thread should have been marked";
+                // MVar unreachable
+                kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnMVar;
+                break;
+            } else if(t.blockedOn instanceof h$TVarsWaiting) {
+                // blocked in STM transaction
+                kill = h$ghcjszmprimZCGHCJSziPrimziInternalziblockedIndefinitelyOnSTM;
+                break;
+            } else {
+                // blocked on something else, we can't do anything
+            }
+        }
+        if(kill) {
+            h$killThread(t, kill);
+            h$markThread(t);
+        }
+    } while(kill);
 }
 
 // reset unreferenced CAFs to their initial value
@@ -6838,6 +7142,105 @@ function h$finalizeCAFs() {
     }
                                                             ;
 }
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 
 
 
@@ -7478,12 +7881,13 @@ function h$unsupported(status, c) {
 }
 
 function h$strerror(err) {
-    h$ret1 = 0;
-    if(err === 12456) return h$encodeUtf8("operation unsupported on this platform");
+    if(err === 12456) {
+ { h$ret1 = (0); return (h$encodeUtf8("operation unsupported on this platform")); };
+    }
 
 
 
-    return h$encodeUtf8(h$errorStrs[err] || "unknown error");
+    { h$ret1 = (0); return (h$encodeUtf8(h$errorStrs[err] || "unknown error")); };
 
 }
 
@@ -7573,6 +7977,105 @@ var h$__hsbase_MD5Final = h$MD5Final;
 
 
 
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+
+
+
+
+
+
 
 function h$hs_eqWord64(a1,a2,b1,b2) {
   return (a1===b1 && a2===b2) ? 1 : 0;
@@ -7587,23 +8090,19 @@ function h$hs_word64ToWord(a1,a2) {
 }
 
 function h$hs_wordToWord64(w) {
-  h$ret1 = w;
-  return 0;
+  { h$ret1 = (w); return (0); };
 }
 
 function h$hs_intToInt64(a) {
-  h$ret1 = a;
-  return (a < 0) ? -1 : 0;
+  { h$ret1 = (a); return ((a < 0) ? -1 : 0); };
 }
 
 function h$hs_int64ToWord64(a1,a2) {
-  h$ret1 = a2;
-  return a1;
+  { h$ret1 = (a2); return (a1); };
 }
 
 function h$hs_word64ToInt64(a1,a2) {
-  h$ret1 = a2;
-  return a1;
+  { h$ret1 = (a2); return (a1); };
 }
 
 function h$hs_int64ToInt(a1,a2) {
@@ -7612,28 +8111,23 @@ function h$hs_int64ToInt(a1,a2) {
 
 function h$hs_negateInt64(a1,a2) {
   var c = goog.math.Long.fromBits(a2,a1).negate();
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  { h$ret1 = (c.getLowBits()); return (c.getHighBits()); };
 }
 
 function h$hs_not64(a1,a2) {
-  h$ret1 = ~a2;
-  return ~a1;
+  { h$ret1 = (~a2); return (~a1); };
 }
 
 function h$hs_xor64(a1,a2,b1,b2) {
-  h$ret1 = a2 ^ b2;
-  return a1 ^ b1;
+  { h$ret1 = (a2 ^ b2); return (a1 ^ b1); };
 }
 
 function h$hs_and64(a1,a2,b1,b2) {
-  h$ret1 = a2 & b2;
-  return a1 & b1;
+  { h$ret1 = (a2 & b2); return (a1 & b1); };
 }
 
 function h$hs_or64(a1,a2,b1,b2) {
-  h$ret1 = a2 | b2;
-  return a1 | b1;
+  { h$ret1 = (a2 | b2); return (a1 | b1); };
 }
 
 function h$hs_eqInt64(a1,a2,b1,b2) {
@@ -7688,38 +8182,32 @@ function h$hs_quotWord64(a1,a2,b1,b2) {
   var a = h$bigFromWord64(a1,a2);
   var b = h$bigFromWord64(b1,b2);
   var c = a.divide(b);
-  h$ret1 = c.intValue();
-  return c.shiftRight(32).intValue();
+  { h$ret1 = (c.intValue()); return (c.shiftRight(32).intValue()); };
 }
 
 function h$hs_timesInt64(a1,a2,b1,b2) {
   var c = goog.math.Long.fromBits(a2,a1).multiply(goog.math.Long.fromBits(b2,b1));
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  { h$ret1 = (c.getLowBits()); return (c.getHighBits()); };
 }
 
 function h$hs_quotInt64(a1,a2,b1,b2) {
   var c = goog.math.Long.fromBits(a2,a1).div(goog.math.Long.fromBits(b2,b1));
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  { h$ret1 = (c.getLowBits()); return (c.getHighBits()); };
 }
 
 function h$hs_remInt64(a1,a2,b1,b2) {
   var c = goog.math.Long.fromBits(a2,a1).modulo(goog.math.Long.fromBits(b2,b1));
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  { h$ret1 = (c.getLowBits()); return (c.getHighBits()); };
 }
 
 function h$hs_plusInt64(a1,a2,b1,b2) {
   var c = goog.math.Long.fromBits(a2,a1).add(goog.math.Long.fromBits(b2,b1));
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  { h$ret1 = (c.getLowBits()); return (c.getHighBits()); };
 }
 
 function h$hs_minusInt64(a1,a2,b1,b2) {
   var c = goog.math.Long.fromBits(a2,a1).subtract(goog.math.Long.fromBits(b2,b1));
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  { h$ret1 = (c.getLowBits()); return (c.getHighBits()); };
 }
 
 function h$hs_leWord64(a1,a2,b1,b2) {
@@ -7774,48 +8262,39 @@ function h$hs_remWord64(a1,a2,b1,b2) {
   var a = h$bigFromWord64(a1,a2);
   var b = h$bigFromWord64(b1,b2);
   var c = a.mod(b);
-  h$ret1 = c.intValue();
-  return c.shiftRight(32).intValue();
+  { h$ret1 = (c.intValue()); return (c.shiftRight(32).intValue()); };
 }
 
 function h$hs_uncheckedIShiftL64(a1,a2,n) {
   var num = new goog.math.Long(a2,a1).shiftLeft(n);
-  h$ret1 = num.getLowBits();
-  return num.getHighBits();
+  { h$ret1 = (num.getLowBits()); return (num.getHighBits()); };
 }
 
 function h$hs_uncheckedIShiftRA64(a1,a2,n) {
   var num = new goog.math.Long(a2,a1).shiftRight(n);
-  h$ret1 = num.getLowBits();
-  return num.getHighBits();
+  { h$ret1 = (num.getLowBits()); return (num.getHighBits()); };
 }
 
 // always nonnegative n?
 function h$hs_uncheckedShiftL64(a1,a2,n) {
   n &= 63;
   if(n == 0) {
-    h$ret1 = a2;
-    return a1;
+    { h$ret1 = (a2); return (a1); };
   } else if(n < 32) {
-    h$ret1 = a2 << n;
-    return (a1 << n) | (a2 >>> (32-n));
+    { h$ret1 = (a2 << n); return ((a1 << n) | (a2 >>> (32-n))); };
   } else {
-    h$ret1 = 0;
-    return ((a2 << (n-32))|0);
+    { h$ret1 = (0); return (((a2 << (n-32))|0)); };
   }
 }
 
 function h$hs_uncheckedShiftRL64(a1,a2,n) {
   n &= 63;
   if(n == 0) {
-    h$ret1 = a2;
-    return a1;
+    { h$ret1 = (a2); return (a1); };
   } else if(n < 32) {
-    h$ret1 = (a2 >>> n ) | (a1 << (32-n));
-    return a1 >>> n;
+    { h$ret1 = ((a2 >>> n ) | (a1 << (32-n))); return (a1 >>> n); };
   } else {
-    h$ret1 = a1 >>> (n-32);
-    return 0;
+    { h$ret1 = (a1 >>> (n-32)); return (0); };
   }
 }
 
@@ -7842,9 +8321,8 @@ function h$mulWord32(a,b) {
 }
 
 function h$mul2Word32(a,b) {
-  var c = goog.math.Long.fromBits(a,0).multiply(goog.math.Long.fromBits(b,0))
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  var c = goog.math.Long.fromBits(a,0).multiply(goog.math.Long.fromBits(b,0));
+  { h$ret1 = (c.getLowBits()); return (c.getHighBits()); };
 }
 
 function h$quotWord32(a,b) {
@@ -7859,14 +8337,12 @@ function h$quotRem2Word32(a1,a2,b) {
   var a = h$bigFromWord64(a1,a2);
   var b = h$bigFromWord(b);
   var d = a.divide(b);
-  h$ret1 = a.subtract(b.multiply(d)).intValue();
-  return d.intValue();
+  { h$ret1 = (a.subtract(b.multiply(d)).intValue()); return (d.intValue()); };
 }
 
 function h$wordAdd2(a,b) {
   var c = goog.math.Long.fromBits(a,0).add(goog.math.Long.fromBits(b,0));
-  h$ret1 = c.getLowBits();
-  return c.getHighBits();
+  { h$ret1 = (c.getLowBits()); return (c.getHighBits()); };
 }
 
 // this does an unsigned shift, is that ok?
@@ -7874,14 +8350,11 @@ function h$uncheckedShiftRL64(a1,a2,n) {
   if(n < 0) throw "unexpected right shift";
   n &= 63;
   if(n == 0) {
-    h$ret1 = a2;
-    return a1;
+    { h$ret1 = (a2); return (a1); };
   } else if(n < 32) {
-    h$ret1 = (a2 >>> n) | (a1 << (32 - n));
-    return (a1 >>> n);
+    { h$ret1 = ((a2 >>> n) | (a1 << (32 - n))); return ((a1 >>> n)); };
   } else {
-    h$ret1 = a2 >>> (n - 32);
-    return 0;
+    { h$ret1 = (a2 >>> (n - 32)); return (0); };
   }
 }
 
@@ -7942,8 +8415,7 @@ var h$decodeDouble2Int = h$convertInt[0] === 1061158912 ? h$decodeDouble2IntArra
 function h$decodeFloatIntArray(d) {
                                             ;
     if(isNaN(d)) {
-        h$ret1 = 105;
-        return -12582912;
+        { h$ret1 = (105); return (-12582912); };
     }
     h$convertFloat[0] = d;
     var i = h$convertInt[0];
@@ -7952,30 +8424,29 @@ function h$decodeFloatIntArray(d) {
     if(exp === 0) { // zero or denormal
         if(s === 0) {
                                                         ;
-            h$ret1 = 0;
-            return 0;
+     { h$ret1 = (0); return (0); };
         } else {
             h$convertFloat[0] = d*8388608;
             i = h$convertInt[0];
                                                                                                                                     ;
-            h$ret1 = ((i&2139095040) >> 23) - 173;
-            return (((i&8388607)<<7)|(i&2147483648))>>7;
+     { h$ret1 = (((i&2139095040) >> 23) - 173); return ((((i&8388607)<<7)|(i&2147483648))>>7); }
+
         }
     } else {
                                                                                                              ;
-        h$ret1 = exp - 150;
-        return (((s|8388608)<<7)|(i&2147483648))>>7;
+        { h$ret1 = (exp - 150); return ((((s|8388608)<<7)|(i&2147483648))>>7); };
     }
 }
 
 function h$decodeFloatIntFallback(d) {
                                                ;
     if(isNaN(d)) {
-      h$ret1 = 105;
-      return -12582912;
+      { h$ret1 = (105); return (-12582912); };
     }
-    var exponent = h$integer_cmm_decodeDoublezhFallback(d)+29;
-    var significand = h$ret1.shiftRight(28).add(h$bigOne).shiftRight(1).intValue();
+    var ret0, ret1;
+    { (ret0) = (h$integer_cmm_decodeDoublezhFallback(d)); (ret1) = h$ret1; };
+    var exponent = ret0 + 29;
+    var significand = ret1.shiftRight(28).add(h$bigOne).shiftRight(1).intValue();
     if(exponent > 105) {
       exponent = 105;
       significand = d > 0 ? 8388608 : -8388608;
@@ -7984,61 +8455,52 @@ function h$decodeFloatIntFallback(d) {
       exponent = 0;
     }
                                                                                ;
-    h$ret1 = exponent;
-    return significand;
+    { h$ret1 = (exponent); return (significand); };
 }
 
 function h$decodeDouble2IntArray(d) {
                                               ;
     if(isNaN(d)) {
-        h$ret3 = 972;
-        h$ret2 = 0;
-        h$ret1 = -1572864;
-        return 1;
+ { h$ret1 = (-1572864); h$ret2 = (0); h$ret3 = (972); return (1); };
     }
     h$convertDouble[0] = d;
                                                                                                                    ;
     var i1 = h$convertInt[1];
-    h$ret2 = h$convertInt[0];
+    var ret1, ret2 = h$convertInt[0], ret3;
     var exp = (i1&2146435072)>>>20;
     if(exp === 0) { // denormal or zero
-        if((i1&2147483647) === 0 && h$ret2 === 0) {
-            h$ret1 = 0;
-            h$ret3 = 0;
+        if((i1&2147483647) === 0 && ret2 === 0) {
+            ret1 = 0;
+            ret3 = 0;
         } else {
             h$convertDouble[0] = d*9007199254740992;
             i1 = h$convertInt[1];
-            h$ret1 = (i1&1048575)|1048576;
-            h$ret2 = h$convertInt[0];
-            h$ret3 = ((i1&2146435072)>>>20)-1128;
+            ret1 = (i1&1048575)|1048576;
+            ret2 = h$convertInt[0];
+            ret3 = ((i1&2146435072)>>>20)-1128;
         }
     } else {
-        h$ret3 = exp-1075;
-        h$ret1 = (i1&1048575)|1048576;
+        ret3 = exp-1075;
+        ret1 = (i1&1048575)|1048576;
     }
-                                                                                                   ;
-    return i1<0?-1:1;
+                                                                                             ;
+    { h$ret1 = (ret1); h$ret2 = (ret2); h$ret3 = (ret3); return (i1<0?-1:1); };
 }
 
 function h$decodeDouble2IntFallback(d) {
                                                  ;
     if(isNaN(d)) {
-        h$ret3 = 972;
-        h$ret2 = 0;
-        h$ret1 = -1572864;
-        return 1;
+ { h$ret1 = (-1572864); h$ret2 = (0); h$ret3 = (972); return (1); };
     }
-    var exponent = h$integer_cmm_decodeDoublezhFallback(d);
-    var significand = h$ret1;
+    var exponent, significand;
+    { (exponent) = (h$integer_cmm_decodeDoublezhFallback(d)); (significand) = h$ret1; };
     var sign = d<0?-1:1;
     var s = significand.abs();
-    h$decodeDouble2IntArray(d);
-                                                                                                   ;
-    h$ret1 = s.shiftRight(32).intValue();
-    h$ret2 = s.intValue();
-    h$ret3 = exponent;
-                                                                                                      ;
-    return sign;
+    var ret1 = s.shiftRight(32).intValue();
+    var ret2 = s.intValue();
+    var ret3 = exponent;
+                                                                                                ;
+    { h$ret1 = (ret1); h$ret2 = (ret2); h$ret3 = (ret3); return (sign); };
 }
 
 // round .5 to nearest even number
@@ -8119,8 +8581,38 @@ function h$popCnt64(x1,x2) {
 }
 
 function h$bswap64(x1,x2) {
-  h$ret1 = (x1 >>> 24) | (x1 << 24) | ((x1 & 0xFF00) << 8) | ((x1 & 0xFF0000) >> 8);
-  return (x2 >>> 24) | (x2 << 24) | ((x2 & 0xFF00) << 8) | ((x2 & 0xFF0000) >> 8);
+  { h$ret1 = ((x1 >>> 24) | (x1 << 24) | ((x1 & 0xFF00) << 8) | ((x1 & 0xFF0000) >> 8)); return ((x2 >>> 24) | (x2 << 24) | ((x2 & 0xFF00) << 8) | ((x2 & 0xFF0000) >> 8)); };
+
+}
+
+var h$clz32 = Math.clz32 || function(x) {
+    if (x < 0) return 0;
+    if (x === 0) return 32;
+    return 31 - ((Math.log(x) / Math.LN2) | 0);
+}
+function h$clz8(x) {
+    return h$clz32(x&255)-24;
+}
+function h$clz16(x) {
+    return h$clz32(x&65535)-16;
+}
+
+function h$clz64(x1,x2) {
+    return (x1 === 0) ? 32 + h$clz32(x2) : h$clz32(x1);
+}
+
+var h$ctz32tbl = [32,0,1,26,2,23,27,0,3,16,24,30,28,11,0,13,4,7,17,0,25,22,31,15,29,10,12,6,0,21,14,9,5,20,8,19,18,0,0,0,0,0,31];
+function h$ctz32(x) {
+    return h$ctz32tbl[((x&-x)%37)&63];
+}
+function h$ctz16(x) {
+    return h$ctz32(x|65536);
+}
+function h$ctz8(x) {
+    return h$ctz32(x|256);
+}
+function h$ctz64(x1,x2) {
+    return (x2 === 0) ? 32 + h$ctz32(x1) : h$ctz32(x2);
 }
 // Unicode tables generated by ghcjs/utils/genUnicode.hs
 var h$printRanges = "f|!-f=|/q'/+1$J|(mo'1q&')| 63Y--EO'|$9| ('| ?'|!9?| ?-| %'AZ'| JI| +|#U2'''O0$)+'5'''+3*','O-).+''O0&&&'$-+''))0+$1C9)4(N0&,'7(('@+';A)2'''O0&,'5''')3'+','G7'.))*)'$&)')));+-))*'.>M-+2(PB)3(*1'&/+'733(2(P6,'5(*1'1$+'7&?)2(u'3(,32+'C)1''F)S4$'1)*/$2/7');| =+^n'$''$'.+0( #''<('-$.'7'+d| Yk+rk@<n|$G$-&|(E*'1$*'v*'f*'1$*'A| :*'| O'd)W/| t9|.r)|! 1=09Q5K;=(&;|!+'7/7/?'7/| z3z-| U7b:+;+(x'-9|  +W/9)| E'| K]'9/7/?'A| K| b+| #)|!W3| A)A)| /| I33r&/|%M/|&;'/'p'/'3 $a'| 3@>'/H')48-S1| +C''Y<)`GfA|#)/|-h-rU9M|H;'d'h);2| %| '| &|#<-| #$-&| 91'?S510000000|!4| CW| {;|$hW;+| I| u'|!=-v)|!+y-l;| '|$y} ^y7}%0j| /|9t)| 75|'fK|!+| {3|#3_''| S| 3+7/| 93| S5;/[+| r9`)| f8+f| 65?'7'|!=S[7/'/'/510| (+'|!#| %'7/}!e;;Q+| +}!'n|(/'|!Cp1;--W,$&&|!gE|(-C| I'| 5t?'W/?'jH*+-|#!+|$7)/'/'/'))10='';VH&@'?h|!f-)+| #)| v);+| &| %|!t^)| +A[+l;Y-z-`m+?x|#Q'7| vt3| 19|#4|&v5O73|#E/'$|  &)&Q| X35| j[)Y-| H| 9/'| I+&-3(X+)+5351| Idr+;5| 5)^'Y-W1+;1| j| [|+tb|(U| f+`A| E*?U17/| 3>;r5| [+&9/K9Gy|!S| ?-71)2'''O0&,'5''')5,1'1)-|%x| Y37|#b| 5'G| 5| S97p| 937|*K| p;|)y| ;|<Y|4M|!=|!M,|b`|7l}#8j|,^1b6+'|!/`'/7| U770L-I|3U| S9| 'CE}$&7'|e7|!E-=)517'+} 47|%M7r'| ^3|!5h| U|$/| x5G|#1| t| V&'&''+:$0| J*'30Z*,$)1|'T'|&O'| -}  %|$E'C|=C+X&$'$7* #/* $)&$' &'$'+0**$6D-),D| 1'|&#|  +|!7;A'A@m7=)b| @+z| `^=z-51'|#r| #)| f'| h-l3|%`| _-xu|#P'|#+C=)+;|!W;| tz;+| 937/t3`|I^}*Q/v} !59|$x}$#I|,'|G1|%A";
@@ -8131,6 +8623,105 @@ var h$alphaRanges = "| MW/W| '6*,Qa|*2+;?-1$|!q-&'+$/$)$J| o|#*3|#bo'0r| YY-)| #
 var h$toLowerMapping = "| K Wb|!9 Qb!1bf  9#  !|$F  ## &'  (# &'  8#  !|!_# # #)  !|$^# ! # ! |$U !# '|$S&'  !| f|$M !|$O# ! |$S !|$W  !|$`|$[&)  !|$`|$d ! |$f $#  !|$n# ! |$n'  !#  !|$n#!'|$l ##  !|$p#) &1  !%# ! % !#  !%# ) #'  )# &'  !%# ! # ! |!. !| 6# 4 # ! |!q * #1  !}![r# ! |#X}%=]'  !#  !|$>| Q !| U# % #|&I  !# &) &3 |%0/  !n )l ! | G!'| E!Eb!5bj B3  ,# &- |!]'  !#  !.#' )|!qC| hdb| )  1# &5  <#  !?# ' #'  P# &' p| '|a5 p} hG ! } hG- }#To|l)  l# &5  !} p4  P# &5 303 /07 303 303 /09  $0 @3 30S 303 303 303 '0'| ZD9 +| sD9 '0'|!4; '0'|!L<9 '|!m'|!iD|&Y }#a()  !}!&:}!#V/ | 8| # CAI &|23 WU|Ht | '| '| +  !#  !}!Zc|ue}%:e'  $#  !}![R}!Zo !}![X}![V ! #' &3 '}!]> R# &3  !# &+ &}'])  7# &I  .# &|##  '# &)  ?# &7  ##  !}(b.# % #+  !# }4p*'  !# &)  +#  !}*H0}*HF !}*H>}*H*'  !}*G&}*GV}%OG Wb|;/ tr} :K db}p?  ";
 var h$toUpperMapping = "|!1 Wa| = |A$x Qa!1a !|!`  9!  !|%.  #! $'  (! $'  7! $'  #!  !!|&]|(_'  !! $' $) $- $' |$>)  !!|#Y) |%i'  #! $' $+ $' $)  !! $' $)  !! |!N-  !!$ ! ! !$  !!$ ) ! !| e  )! $'  !!$ ! !)  4! $)  )! $3 $' '}!]? ! !+  %!  !!}![Y !}![S}![W !|$]|$T!'|$R ! |$L ! |$N}4qo)  !|$R}*H? ! |$V ! }*GS !}*H1  !|$Z|$_ ! }!Zd}4q6'  !|$_  !}!Zp|$c' |)N1 }%:g' |)_' |)_)  !}*GW|$m|#&'|$k|#.- |)c9 }4o.|#b |#ez  !! $) $) )|!r| % | _)k!Ea| B5a|!m'| D ! | B|!P)  !| $| 2 !0  ,!  !!| s !| g/ !|!T |$8' $' $| 1 daC| g 2 !5  ;! $'  '!  !!> Q !| + p| &} N7 }1H>) } pP|!v  l! $- |!X-  P! $313 /17 313 313 /19  $1 B3 313 '| [+| t'|!5'|!n'|!M'|!j' 313 313 313 '1 ! 37 }#R4+ F; '1? '1) >= F|'b | 6f C@+ $|2f WT|IE | '| &' $)  !}![q}![k $ !/ $' $7  R! $3  !! $+ $; p} hF ! } hF- }#Tm}'Zj  7! $I  .! $|##  '! $)  ?! $7  !! $'  %! $+ $+  !! $)  *! $}%P= Wa|;? tq} :; da}p>; ";
 var h$catMapping = "d;P)3J)3 !/0 !34 !3.'37*'3)4'3W! !/3 !06 !-6W# !/4 !04f; !83+5 !73 !67 !&1 !4< !76 !74', !6#'3 !6, !&2),FQ!H1!S#H3# <!#$'# (!#$'# 8!#'! ##!)#'! !#!&'!&)!'#+!&'!&)!)#'!&'! ##!&'! !#!'# !!#'!&)! !#!&'!'# !&!)#+& !!$ !#! !$# !!$ )#!'# )!#$'# !!$ !#!&)! >#!1#'!&'!'# !!#+! %#!| S#,Y#G%+6;%?6-%16 !%6*E6|!O' #!# !%6 !!#' *)# !3!+ '6 !!3)! ! !!'!&E!!5!j#$'#)!)# ,!#$-# !!# !4!&'!'#| /!| )# 2!#N-'') <!#'! '#!'# Q!#!p!' */3!r# ! 3<' '7 !5 | #' !.'F''F'' !3'3 Y&- )&'39 /<)4'3J'3'79' !3<!'3d&*7&M'7*+3'&.|!5& !3&1' !<7/''%''N+''&7*)&'7,?3 ! < !&'`&Y'' |! &9',? 7*f&5''%N)3*- O&+'*5'*)'*-'' A3!U&)'' F| K I&| + b'0| 5& !'( !'&)(3'+(.'(,1'7&'''37* !3%A&.'(!3&' '&' O&!1& ! &) +&'  !'&)(+'' '(' '( !'&3 0+ '&!)&''' 7*'&'5/, !75- '' !( /&+ '&' O&!1&!'&!'&!'&'  !' )(''+ ''' )') .1 +& ! &1 7*'')&.9 '' !( 5&!)&!O&!1&!'&!-&'  !'&)(-'!'' !( '(.' ,A '&''' 7* !35A .'(!3&' '&' O&!1&!'&!-&'  !'& !('0+'' '(' '(.3  !'(+ '&!)&''' 7* !7&/,7  !'&!/&) )&!+&) '& ! &!'&) '&) )&) ;&+ '(.'() )(!)(.' ,/ 0? 7*),/7 !57- .)(!3&!)&!Q&!C&) ,)'+(!)'!+'1 ''!'&/ '&''' 7*3 1, !7 .'(!3&!)&!Q&!7&!-&'  !'& !('-( ! ''(!'(''1 '(1  !& '&''' 7*!'&? .'(!3&!)&!v&' ,)(+'!)(!)( !'&3 03 '&''' 7*/,) N/&' '(!G&) S&!5& ! &' 1&) .+ )()' ! '!3(/ 7*' '(F; | )&.'&1'+ J/&*3'F7*'3n '& ! &' '& ! &' ,/ +&!1&!)& # &' '&!+&.'&/'!'',' -& ! %!/'' 7*' +&d ,)7A3 !73)7''/77*7, $7' #/0'(3&!l&+ ?'0-'F''-&9'!l'!37./7!'7-3+7'3n z&'(+'0/'0'''('',7*/3/&'(''+&)',)('&1()&+'=&.'(''/( !'&07*)(.'7p! ! !- $' z& !3%|'E&!+&' 1& ! &!+&' v&!+&' f&!+&' 1& ! &!+&' A&!| ;&!+&' | O&' )'53K,) C&77/ | t&9 <|-j&'3E&PW& !/0) | `&)3)+3&1 =&!+&)'9 G&)''35 G&''; =&!)&!''; | 1&''01'3(.'(9')3*)3 !5&.' 7*/ 7,/ /3<+3)' !< 7*/ j&*| 1&3 v& !'&- | U&7 b&!)'+('')(+ '(./()'+ N) '37*`&' -&9 |  &+ E(1&'(/ 7*8) h7Q&'''(.' '3| 3& !('01' ! ' !(''(3'/(7'' .7*/ 7*/ 13*/3' ?'2| K +'0| '& !'(-' !('-(.'(1&+ 7*13775'57) ''0`&0+''(''0)''&7*|  & !'('')( !'()''(3 +3l&3(3''('') -37*) )&7*`&/%'3| I 333 )'F='01'+&.+&'(.'&!''/ |  #| G%=#*h#n%| 5'/ +' l!#$5# Q!#$5#3!/#' /!' 3#3!3#3!/#' /!' 3# % !3#3!?#' 3#3$3#3$3#3$-#!'#+! !$6&)6)#!'#+!()6+#' '#+!!)63#-!)6' )#!'#+!('6!98-</.'3 !12>'1 !2/B33 !9:-<P53 !12+3'-)3 !4/@93 !43:73P-<!7< !,%' /,)4 !/0*7,)4 !/0!=%) `5G ='+).));'A '7$+7$'7&)!'#)! !#7$'7H-!/7 $!7+! !7#+!&+&&'7'#'!-4$+# !74'7 !#7C,j+ !!#++8/ -4-7'4+7H'7H'7H17Hb7'4'7 !47Hb7|%z437 #/0K7'417 !/0| l7H`7U4t7/4U7- r7U 97M | A,| f7O,|$)7H57H| 5734|!M7H|%Q7 (/0`,|  7-4 !/0b4 &/0C4|%b7|!v4 ,/0| G4 #/0d4 !/0|%f4| )7M4'7/4r7' d7' h7) ;7!37| % | '!!| '# ! !&)!'# $!#+! !#!'#$/#'%)! R#!'#/7 #!#)' !!#- +38'3p# ! #- &' | 9&1  !%3? .Q&5 1&!1&!1&!1&!1&!1&!1&!1&!d''3 #12)3 !12 !31D53<'3 !.3 !12'3 !12 %/0-3*73'.+3 !.3>| C W7!|! 7; |$h7W ;7+ P)3 !7% !&+ &/0'7 %/0 !./'0N5++''(<-%'7)+ !%&F'7!| v&' '''6'% !&.|!#&F)%,- v&) |!+&!'7+,77Y&- l7; C&b7!7,`73,NA,d77,r7A,| G7!|%b7} X;&7 | I7}%/C&| / M&*|9G&) | 775 t&/%'3|%z&*)3C&7*'&K  8!# !&'))F7' !3% /!#'% ! '| U&7+''/33 Q65%'6 '!#$)# @!#*3# #!#'! %#! !#%'6 #!# ! ! !#!)# +!#+!' '!| S ,'%&1&.)&.+&.Q&'(''0+7+ /,'7 !57/ | 1&+33 '(| -&C(.5 '37*/ G'/&)3,+ 7*[&3''3Q&9''(9 F^&) )'0| '&.'(+''(.+(=3 ! %7*+ '3-& !'%5&7*-&!v&/''('''(''5 )&.3& !'(' 7*' +3C&*/&)7 !&( !'(| -& !'&)''&''-&'' !&',S '&*'39&0'''('3,'% !('7 /&' /&' /&5 1&!1&!z#L+%+ '#|!# j&'(.'(.'( !3(.' 7*/ }!e;&; Q&+ | +&+ |MQ=} T7 |(/&' |!C&p 1#; -#-  !&'7&H=&!-& ! &!'&!'&!|!G&C6E |()& !0/C | I&' | 5&t ;& !57' C'13 !/0F/ ?'' F'.'- )/0'3 !/0+3)-)3!+3 !./ #0/@)3 !4.)4 ! 3J'3+ -&!|##&'  !< )3J)3 !/0 !34 !3.'37*'3)4'3W! !/3 !06 !-6W# !/4 !04 !/0 !3/@'37&*| #&'%b&) /&' /&' /&' )&) '5 !46N'5 ! 7+4'77 )<'7' ;&!W&!I&!'&!A&' ?&h |!f&- )3+ | #,) 57| 3++,E7',N) ;7+ N| ' | #7.|!t ^&) | +&A .Y,+ d&+,; E&63&6- p&-'- `& ! 3l&+ 3&F-+x t!t#| f&' 7*| v t&3 | 1&9 F|#5 |&v&5 O&7 3&|#E /&'  !& |  &!'&) ,' Q& ! 33,Q&'71,b&3 5,| j O&/,) FW&- F| I | 9&/ '&| I ,)'!''- +'+&!)&!Y&+ )'+ .3,3 531 ^&',F^&),d 3&N[&''+ -,135 | 5&) 13O&' 3,I&- 3,G&1 +3; 1,| j | [&|+t b,|(U  !('0| 3&A'13+ K,7*A )'0| #&)(+''('''3X+3? U&1 7*/ )'l&-'03'!7*+3; j&.'3,5 ''0| )&)(5''(+&+3+ F' 7*,/ K,9 G&!U&)()''( !'(''/3|!S | '&.)(3'- 7*1 .'(!3&' '&' O&!1&!'&!-&'  !'&'(.+(' '(' )(5 0- -&'(' 1') -'|%x | )&)(/' !('+(''0'''& !3&3 7*|#b | '&)(+'' +(''0''53| 5 | )&)(3''( !'('')3,9 7*p z& !'(.'(/' !('3 7*|*K d!d#7*5,; ,|)z | ;&|<Y |4M&|!= |!M+!-3|b` |7l&}#8j |,^&1 b&!7*+ '3|!/ `&' -'F7 | )&1'-3+7+% !377 7*!1,!M&- I&|3U | S&9 ,| %(C +'=%}$&7 '&|e7 |!E&- =&) 5&1 7&' N''F+<} 4/ |%M77 r7' | A7'()')7/(3<3''71'`7+'| )7h | M7)'N|$/ | x75 G,|#1 W!W#W!1#!G#W!W# !! '!' $' '!' +!!3!+# ! #!1#!9#W!W#'!!+!' 3!!1!!W#'!!+!!-! ! !) 1!!W#W!W#W!W#W!W#W!W#W!W#W![#' U!HU#H/#U!HU#H/#U!HU#H/#U!HU#H/#U!HU#H/# !!#' | -*}  % |$E&' 5,1'|=C +&!Y&!'& ! &'  !& 7&!+& # &/ ,+  $& )&!'& ! &'  && '& ! &' +&!1&!+&!+& ! &!7&!E&- )&!-&!E&| 1 '4|&# |  7+ |!77; A7' A7!A7!n77 =,) b7!| A7+ z7| ` ^7= z7- 571 '7|#r | #7) | f7' | h7- l73 |%`7!| `7- x7!v7!|#Q7' |#+7C =7) +7; |!W7; | t7z ;7+ | 973 77/ t73 `7|I^ }*Q/&v } !5&9 |$x&}$#I |,'&|AO X` |!/<|!p |%A'}PF' ";
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 // encode a string constant
 function h$str(s) {
   var enc = null;
@@ -8159,9 +8750,9 @@ function h$rstr(d) {
 
 
 
-function h$strt(str) { return h$c1(h$lazy_e, function() { return h$toHsString(str); }); }
-function h$strta(str) { return h$c1(h$lazy_e, function() { return h$toHsStringA(str); }); }
-function h$strtb(arr) { return h$c1(h$lazy_e, function() { return h$toHsStringMU8(arr); }); }
+function h$strt(str) { return (h$c1(h$lazy_e, (function() { return h$toHsString(str); }))); }
+function h$strta(str) { return (h$c1(h$lazy_e, (function() { return h$toHsStringA(str); }))); }
+function h$strtb(arr) { return (h$c1(h$lazy_e, (function() { return h$toHsStringMU8(arr); }))); }
 
 
 // unpack strings without thunks
@@ -8205,9 +8796,14 @@ function h$u_iswalnum(a) {
   return h$alnum[a] == 1 ? 1 : 0;
 }
 
+// var h$spaceChars = [9,10,11,12,13,32,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8239,8287,12288];
+function h$isSpace(a) {
+    if(a<5760) return a===32||(a>=9&&a<=13)||a===160;
+    return (a>=8192&&a<=8202)||a===5760||a===8239||a===8287||a===12288;
+}
+
 function h$u_iswspace(a) {
-    return '\t\n\v\f\r \u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000'
-        .indexOf(String.fromCharCode(a)) !== -1 ? 1 : 0;
+    return h$isSpace(a)?1:0;
 }
 
 var h$lower = null;
@@ -8336,9 +8932,8 @@ function h$u_gencat(a) {
 }
 
 function h$localeEncoding() {
-    //   h$log("### localeEncoding");
-   h$ret1 = 0; // offset 0
-   return h$encodeUtf8("UTF-8");
+   // h$log("### localeEncoding");
+   { h$ret1 = (0); return (h$encodeUtf8("UTF-8")); }; // offset 0
 }
 
 function h$rawStringData(str) {
@@ -8461,38 +9056,6 @@ function h$encodeUtf16(str) {
   return v;
 }
 
-// convert a string to a buffer, set second field in
-// Addr# to length
-function h$fromStr(s) {
-  var l = s.length;
-  var b = h$newByteArray(l * 2);
-  var dv = b.dv;
-  for(var i=l-1;i>=0;i--) {
-    dv.setUint16(i<<1, s.charCodeAt(i), true);
-  }
-  h$ret1 = l;
-  return b;
-}
-
-// convert a Data.Text buffer with offset/length to a
-// JS string
-function h$toStr(b,o,l) {
-  var a = [];
-  var end = 2*(o+l);
-  var k = 0;
-  var dv = b.dv;
-  var s = '';
-  for(var i=2*o;i<end;i+=2) {
-    var cc = dv.getUint16(i,true);
-    a[k++] = cc;
-    if(k === 60000) {
-      s += String.fromCharCode.apply(this, a);
-      k = 0;
-      a = [];
-    }
-  }
-  return s + String.fromCharCode.apply(this, a);
-}
 
 /*
 function h$encodeUtf16(str) {
@@ -8527,7 +9090,7 @@ function h$decodeUtf16l(v, byteLen, start) {
   for(var i=0;i<byteLen;i+=2) {
     a[i>>1] = v.dv.getUint16(i+start,true);
   }
-  return String.fromCharCode.apply(this, a);
+  return h$charCodeArrayToString(arr);
 }
 var h$dU16 = h$decodeUtf16;
 
@@ -8610,7 +9173,7 @@ function h$decodeUtf8(v,n0,start) {
       arr.push(code);
     }
   }
-  return String.fromCharCode.apply(this, arr);
+  return h$charCodeArrayToString(arr);
 }
 
 // fixme what if terminator, then we read past end
@@ -8621,7 +9184,18 @@ function h$decodeUtf16(v) {
   for(var i=0;i<n;i+=2) {
     arr.push(dv.getUint16(i,true));
   }
-  return String.fromCharCode.apply(this, arr);
+  return h$charCodeArrayToString(arr);
+}
+
+function h$charCodeArrayToString(arr) {
+    if(arr.length <= 60000) {
+ return String.fromCharCode.apply(this, arr);
+    }
+    var r = '';
+    for(var i=0;i<arr.length;i+=60000) {
+ r += String.fromCharCode.apply(this, arr.slice(i, i+60000));
+    }
+    return r;
 }
 
 function h$hs_iconv_open(to,to_off,from,from_off) {
@@ -8693,11 +9267,7 @@ function h$toHsString(str) {
       --i;
       cp = (cp - 0xDC00) + (str.charCodeAt(i) - 0xD800) * 1024 + 0x10000;
     }
-
-
-
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
-
+    r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (cp), (r)));
     --i;
   }
   return r;
@@ -8706,23 +9276,20 @@ function h$toHsString(str) {
 // string must have been completely forced first
 function h$fromHsString(str) {
     var xs = '';
-    while(str.f.a === 2) {
-        if(typeof str.d1 === 'number') {
-            xs += String.fromCharCode(str.d1);
-        } else {
-            xs += String.fromCharCode(str.d1.d1); // unbox_e
-        }
-        str = str.d2;
+    while(((str).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+ var h = ((str).d1);
+ xs += String.fromCharCode(((typeof(h) === 'number')?(h):(h).d1));
+        str = ((str).d2);
     }
     return xs;
 }
 
-// list of JSRef to array, list must have been completely forced first
-function h$fromHsListJSRef(xs) {
+// list of JSVal to array, list must have been completely forced first
+function h$fromHsListJSVal(xs) {
     var arr = [];
-    while(xs.f.a === 2) {
-        arr.push(xs.d1.d1);
-        xs = xs.d2;
+    while(((xs).f === h$ghczmprimZCGHCziTypesziZC_con_e)) {
+        arr.push(((((xs).d1)).d1));
+        xs = ((xs).d2);
     }
     return arr;
 }
@@ -8733,18 +9300,14 @@ function h$fromHsListJSRef(xs) {
 
 function h$toHsStringA(str) {
 
-  if(typeof str !== 'string') return h$ghczmprimZCGHCziTypesziZMZN;
-  var i = str.length - 1;
-  var r = h$ghczmprimZCGHCziTypesziZMZN;
-  while(i>=0) {
-
-
-
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r);
-
-    --i;
-  }
-  return r;
+    if(typeof str !== 'string') return h$ghczmprimZCGHCziTypesziZMZN;
+    var i = str.length - 1;
+    var r = h$ghczmprimZCGHCziTypesziZMZN;
+    while(i>=0) {
+ r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (str.charCodeAt(i)), (r)));
+ --i;
+    }
+    return r;
 }
 
 // convert array with modified UTF-8 encoded text
@@ -8753,7 +9316,7 @@ function h$toHsStringA(str) {
 
 function h$toHsStringMU8(arr) {
 
-    var accept = false, b, n = 0, cp = 0, r = h$ghczmprimZCGHCziTypesziZMZN, i = arr.length - 1;
+    var accept = false, b, n = 0, cp = 0, r = h$ghczmprimZCGHCziTypesziZMZN;
     while(i >= 0) {
         b = arr[i];
         if(!(b & 128)) {
@@ -8766,11 +9329,7 @@ function h$toHsStringMU8(arr) {
             accept = true;
         }
         if(accept) {
-
-
-
-            r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, cp, r);
-
+            r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (cp), (r)));
             cp = 0
             n = 0;
         } else {
@@ -8789,32 +9348,23 @@ function h$toHsList(arr) {
 
   var r = h$ghczmprimZCGHCziTypesziZMZN;
   for(var i=arr.length-1;i>=0;i--) {
-
-
-
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, arr[i], r);
-
+    r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (arr[i]), (r)));
   }
   return r;
 }
 
-// array of JS values to Haskell list of JSRef
+// array of JS values to Haskell list of JSVal
 
 
 
-function h$toHsListJSRef(arr) {
+function h$toHsListJSVal(arr) {
 
     var r = h$ghczmprimZCGHCziTypesziZMZN;
     for(var i=arr.length-1;i>=0;i--) {
-
-
-
-        r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, h$mkJSRef(arr[i]), r);
-
+ r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, ((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (arr[i])))), (r)));
     }
     return r;
 }
-
 
 // unpack ascii string, append to existing Haskell string
 
@@ -8825,11 +9375,7 @@ function h$appendToHsStringA(str, appendTo) {
   var i = str.length - 1;
   var r = appendTo;
   while(i>=0) {
-
-
-
-    r = h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, str.charCodeAt(i), r);
-
+    r = (h$c2(h$ghczmprimZCGHCziTypesziZC_con_e, (str.charCodeAt(i)), (r)));
     --i;
   }
   return r;
@@ -8837,13 +9383,116 @@ function h$appendToHsStringA(str, appendTo) {
 
 // throw e wrapped in a GHCJS.Prim.JSException  in the current thread
 function h$throwJSException(e) {
-  // a GHCJS.Prim.JSException
-  var jsE = h$c2(h$ghcjszmprimZCGHCJSziPrimziJSException_con_e,e,h$toHsString(e.toString()));
-  // wrap it in a SomeException, adding the Exception dictionary
-  var someE = h$c2(h$baseZCGHCziExceptionziSomeException_con_e,
-     h$ghcjszmprimZCGHCJSziPrimzizdfExceptionJSException, jsE);
+  // create a JSException object and  wrap it in a SomeException
+  // adding the Exception dictionary
+  var someE = (h$c2(h$baseZCGHCziExceptionziSomeException_con_e,(h$ghcjszmprimZCGHCJSziPrimzizdfExceptionJSException),((h$c2(h$ghcjszmprimZCGHCJSziPrimziJSException_con_e,((h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, (e)))),(h$toHsString(e.toString())))))));
+
+
+
+
+
+
   return h$throw(someE, true);
 }
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 /* 
    Integer and integer-gmp support
    partial GMP emulation
@@ -9026,16 +9675,14 @@ function h$integer_cmm_quotRemIntegerzh(sa, abits, sb, bbits) {
                                                       ;
     var r = abits.subtract(q.multiply(bbits));
                                                       ;
-    h$ret1 = r;
-    return q;
+    { h$ret1 = (r); return (q); };
 }
 
 function h$integer_cmm_quotRemIntegerWordzh(sa, abits, b) {
     var bbits = h$bigFromWord(b);
                                                            ;
     var q = abits.divide(bbits);
-    h$ret1 = abits.subtract(q.multiply(bbits));
-    return q;
+    { h$ret1 = (abits.subtract(q.multiply(bbits))); return (q); };
 }
 
 function h$integer_cmm_quotIntegerzh(sa, abits, sb, bbits) {
@@ -9063,12 +9710,12 @@ function h$integer_cmm_divModIntegerzh(sa, abits, sb, bbits) {
                                                           ;
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
+                                                                                         ;
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
         d = d.subtract(h$bigOne);
         m.addTo(bbits, m);
     }
-    h$ret1 = m;
-    return d;
+    { h$ret1 = (m); return (d); };
 }
 
 function h$integer_cmm_divModIntegerWordzh(sa, abits, b) {
@@ -9080,9 +9727,12 @@ function h$integer_cmm_divIntegerzh(sa, abits, sb, bbits) {
                                                        ;
     var d = abits.divide(bbits);
     var m = abits.subtract(d.multiply(bbits));
+                                                                                         ;
     if(abits.signum()!==bbits.signum() && m.signum() !== 0) {
+                                    ;
         d = d.subtract(h$bigOne);
     }
+                                            ;
     return d;
 }
 
@@ -9215,27 +9865,27 @@ var h$oneOverLog2 = 1 / Math.log(2);
 
 function h$integer_cmm_decodeDoublezh(x) {
                                                   ;
-    var sgn = h$decodeDouble2Int(x);
-    var b = h$bigFromInt(h$ret1).shiftLeft(32).add(h$bigFromWord(h$ret2));
-    h$ret1 = (!isNaN(x) && sgn < 0) ? b.negate() : b;
-                                                                            ;
-    return h$ret3; // exponent
+    var sgn, ret1, ret2, ret3;
+    { (sgn) = (h$decodeDouble2Int(x)); (ret1) = h$ret1; (ret2) = h$ret2; (ret3) = h$ret3; };
+    var b = h$bigFromInt(ret1).shiftLeft(32).add(h$bigFromWord(ret2));
+    ret1 = (!isNaN(x) && sgn < 0) ? b.negate() : b;
+    // var ret3 = h$ret3;
+                                                                        ;
+    { h$ret1 = (ret1); return (ret3); };
 }
 
 function h$integer_cmm_decodeDoublezhFallback(x) {
                                                            ;
     if(isNaN(x)) {
-      h$ret1 = h$bigFromInt(3).shiftLeft(51).negate();
-      return 972;
+      { h$ret1 = (h$bigFromInt(3).shiftLeft(51).negate()); return (972); };
     }
     if( x < 0 ) {
-        var result = h$integer_cmm_decodeDoublezh(-x);
-        h$ret1 = h$ret1.negate();
-        return result;
+        var result, ret1;
+        { (result) = (h$integer_cmm_decodeDoublezh(-x)); (ret1) = h$ret1; };
+        { h$ret1 = (ret1.negate()); return (result); };
     }
     if(x === Number.POSITIVE_INFINITY) {
-        h$ret1 = h$bigOne.shiftLeft(52);
-        return 972;
+        { h$ret1 = (h$bigOne.shiftLeft(52)); return (972); };
     }
     var exponent = (Math.floor(Math.log(x) * h$oneOverLog2)-52)|0;
     var n;
@@ -9252,21 +9902,19 @@ function h$integer_cmm_decodeDoublezhFallback(x) {
       exponent--;
       n *= 2;
     }
-    h$ret1 = h$bigFromNumber(n);
+    var ret1 = h$bigFromNumber(n);
                                                                                       ;
-    return exponent;
+    { h$ret1 = (ret1); return (exponent); };
 }
 
 function h$integer_cmm_int2Integerzh(i) {
                                       ;
-    h$ret1 = h$bigFromInt(i);
-    return 0;
+    { h$ret1 = (h$bigFromInt(i)); return (0); };
 }
 
 function h$integer_cmm_word2Integerzh(i) {
                                        ;
-    h$ret1 = h$bigFromWord(i);
-    return 0;
+    { h$ret1 = (h$bigFromWord(i)); return (0); };
 }
 
 function h$integer_cmm_andIntegerzh(sa, abits, sb, bbits) {
@@ -9305,26 +9953,22 @@ function h$integer_cmm_complementIntegerzh(sa, abits) {
 
 function h$integer_cmm_int64ToIntegerzh(a0, a1) {
                                                      ;
-    h$ret1 = h$bigFromInt64(a0,a1);
-    return 0;
+    { h$ret1 = (h$bigFromInt64(a0,a1)); return (0); };
 }
 
 function h$integer_cmm_word64ToIntegerzh(a0, a1) {
                                                       ;
-    h$ret1 = h$bigFromWord64(a0,a1);
-    return 0;
+    { h$ret1 = (h$bigFromWord64(a0,a1)); return (0); }
 }
 
 function h$hs_integerToInt64(as, abits) {
                                              ;
-    h$ret1 = abits.intValue();
-    return abits.shiftRight(32).intValue();
+    { h$ret1 = (abits.intValue()); return (abits.shiftRight(32).intValue()); };
 }
 
 function h$hs_integerToWord64(as, abits) {
                                               ;
-    h$ret1 = abits.intValue();
-    return abits.shiftRight(32).intValue();
+    { h$ret1 = (abits.intValue()); return (abits.shiftRight(32).intValue()); };
 }
 
 function h$integer_cmm_integer2Intzh(as, abits) {
@@ -9350,15 +9994,9 @@ function h$__int_encodeFloat(i,e) {
    return i * Math.pow(2,e);
 }
 
-var h$integer_clz32 = Math.clz32 || function(x) {
-    if (x < 0) return 0;
-    if (x === 0) return 32;
-    return 31 - ((Math.log(x) / Math.LN2) | 0);
-}
-
 function h$integer_wordLog2(w) {
                                           ;
-    return 31 - h$integer_clz32(w);
+    return 31 - h$clz32(w);
 }
 
 function h$integer_integerLog2(i) {
@@ -9369,17 +10007,17 @@ function h$integer_integerLog2(i) {
 function h$integer_integerLog2IsPowerOf2(i) {
                                                        ;
     var b = i.bitLength();
-    h$ret1 = (b === 0 || i.getLowestSetBit() !== b) ? 1 : 0;
-                                                                                ;
-    return b-1;
+    var ret1 = (b === 0 || i.getLowestSetBit() !== b) ? 1 : 0;
+                                                                              ;
+    { h$ret1 = (ret1); return (b-1); };
 }
 
 function h$integer_intLog2IsPowerOf2(i) {
                                                    ;
-    var l = 31 - h$integer_clz32(i);
-    h$ret1 = (i !== (1 << l)) ? 1 : 0;
-                                                                         ;
-    return l;
+    var l = 31 - h$clz32(i);
+    var ret1 = (i !== (1 << l)) ? 1 : 0;
+                                                                       ;
+    { h$ret1 = (ret1); return (l); };
 }
 
 function h$integer_roundingMode(i,j) {
@@ -9387,37 +10025,21 @@ function h$integer_roundingMode(i,j) {
     return 1; // round to even, is that correct?
 }
 
-function h$integer_mkBigInt(i) {
-
-
-
-    return h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, i);
-
-}
-
-function h$integer_mkSmallInt(i) {
-
-
-
-    return h$c1(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, i);
-
-}
-
 function h$integer_smartJ(i) {
                                    ;
-    if(i.bitLength() >= 32) return h$integer_mkBigInt(i);
-    return h$integer_mkSmallInt(i.intValue()|0)
+    if(i.bitLength() >= 32) return (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, (i)));;
+    return (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, (i.intValue()|0)));;
 }
 
 function h$integer_mpzToInteger(i) {
                                          ;
-    if(typeof i === 'number') return h$integer_mkSmallInt(i);
+    if(typeof i === 'number') return (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziSzh_con_e, (i)));;
     return h$integer_smartJ(i);
 }
 
-var h$integer_negTwoThirtyOne = h$integer_mkBigInt(h$bigFromInt(-2147483648).negate());
+var h$integer_negTwoThirtyOne = (h$c2(h$integerzmgmpZCGHCziIntegerziTypeziJzh_con_e, 0, (h$bigFromInt(-2147483648).negate())));;
 function h$integer_mpzNeg(i) {
-                                   ;
+                                                          ;
     if(typeof i === 'number') {
  return (i === -2147483648) ? h$integer_negTwoThirtyOne : -i;
     }
@@ -9430,9 +10052,108 @@ function h$integer_absInteger(i) {
 }
 
 function h$integer_negateInteger(i) {
-                                          ;
+                                                                      ;
     return i.negate();
 }
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 
 
 
@@ -9534,7 +10255,6 @@ function h$getpid() {
 
 function h$__hscore_environ() {
                                ;
-    h$ret1 = 0;
 
     if(h$isNode) {
         var env = [], i;
@@ -9544,23 +10264,22 @@ function h$__hscore_environ() {
         p.arr = [];
         for(i=0;i<env.length;i++) p.arr[4*i] = [h$encodeUtf8(env[i]), 0];
         p.arr[4*env.length] = [null, 0];
-        return p;
+        { h$ret1 = (0); return (p); };
     }
 
-    return null;
+    { h$ret1 = (0); return (null); };
 }
 
 function h$getenv(name, name_off) {
                        ;
-    h$ret1 = 0;
 
     if(h$isNode) {
         var n = h$decodeUtf8z(name, name_off);
         if(typeof process.env[n] !== 'undefined')
-            return h$encodeUtf8(process.env[n]);
+            { h$ret1 = (0); return (h$encodeUtf8(process.env[n])); };
     }
 
-    return null;
+    { h$ret1 = (0); return (null); };
 }
 
 function h$errorBelch() {
@@ -9588,7 +10307,9 @@ function h$errorMsg(pat) {
     str = str.replace(/%s/, arguments[i]);
   }
 
-  if(h$isNode) {
+  if(h$isGHCJSi) {
+    // ignore message
+  } else if(h$isNode) {
     process.stderr.write(str);
   } else if (h$isJsShell && typeof printErr !== 'undefined') {
     if(str.length) printErr(stripTrailingNewline(str));
@@ -9683,8 +10404,7 @@ function h$localtime_r(timep_v, timep_o, result_v, result_o) {
   if(!result_v.arr) result_v.arr = [];
   result_v.arr[result_o + 40] = [h$myTimeZone, 0];
   result_v.arr[result_o + 48] = [h$myTimeZone, 0];
-  h$ret1 = result_o;
-  return result_v;
+  { h$ret1 = (result_o); return (result_v); };
 }
 var h$__hscore_localtime_r = h$localtime_r;
 // some Enum conversion things
@@ -9724,26 +10444,111 @@ function h$dataTag(e) {
 }
 // weak reference support
 
-// contains all pending finalizers
-var h$finalizers = new h$Set();
 
-// filled at scan time, weak refs with possible work to do
-var h$scannedWeaks = [];
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+var h$weakPointerList = [];
 // called by the GC after marking the heap
-function h$finalizeWeaks() {
+function h$finalizeWeaks(toFinalize) {
     var mark = h$gcMark;
-                                                                    ;
-    var i, w, toFinalize = [];
-    var iter = h$finalizers.iter();
-    while((w = iter.next()) !== null) {
-                                                                           ;
-                                                             ;
-        if((w.m.m&3) !== mark) {
-            iter.remove();
-            toFinalize.push(w);
-                                             ;
-        }
-    }
+    var i, w;
+
                                                    ;
     // start a finalizer thread if any finalizers need to be run
     if(toFinalize.length > 0) {
@@ -9761,24 +10566,9 @@ function h$finalizeWeaks() {
         }
         h$wakeupThread(t);
     }
-    return toFinalize;
-
 }
 
-// clear references for reachable weak refs with unreachable keys
-function h$clearWeaks() {
-    var mark = h$gcMark;
-                                                                        ;
-    for(var i=h$scannedWeaks.length-1;i>=0;i--) {
-        var w = h$scannedWeaks[i];
-        if(w.keym.m !== mark && w.val !== null) {
-                                                                          ;
-            w.val = null;
-        }
-    }
-}
-
-var h$weakFinalizerN = 0;
+var h$weakN = 0;
 /** @constructor */
 function h$Weak(key, val, finalizer) {
     if(typeof key !== 'object') {
@@ -9795,12 +10585,11 @@ function h$Weak(key, val, finalizer) {
     this.val = val;
     this.finalizer = null;
     if(finalizer !== null) {
-        var fin = { m: this.keym, finalizer: finalizer, _key: ++h$weakFinalizerN };
-        h$finalizers.add(fin);
-        this.finalizer = fin;
+        this.finalizer = finalizer;
     }
     this.m = 0;
-//    h$scannedWeaks.push(this); // fixme debug
+    this._key = ++h$weakN;
+    h$weakPointerList.push(this);
 }
 
 function h$makeWeak(key, val, fin) {
@@ -9817,16 +10606,111 @@ function h$finalizeWeak(w) {
                                                                ;
     w.val = null;
     if(w.finalizer === null || w.finalizer.finalizer === null) {
-        h$ret1 = 0;
-        return null;
+        { h$ret1 = (0); return (null); };
     } else {
-        var r = w.finalizer.finalizer;
-        h$finalizers.remove(w.finalizer);
+        var r = w.finalizer;
         w.finalizer = null;
-        h$ret1 = 1;
-        return r;
+        { h$ret1 = (1); return (r); };
     }
 }
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
 // preemptive threading support
 
 // run gc when this much time has passed (ms)
@@ -9845,12 +10729,6 @@ function h$finalizeWeak(w) {
 
 
 // yield to js after running haskell for GHCJS_BUSY_YIELD ms
-// thread status
-var h$threadRunning = 0;
-var h$threadBlocked = 1;
-var h$threadFinished = 16;
-var h$threadDied = 17;
-
 var h$threadIdN = 0;
 
 // all threads except h$currentThread
@@ -9861,7 +10739,7 @@ var h$blocked = new h$Set();
 /** @constructor */
 function h$Thread() {
     this.tid = ++h$threadIdN;
-    this.status = h$threadRunning;
+    this.status = (0);
     this.stack = [h$done, 0, h$baseZCGHCziConcziSynczireportError, h$catch_e];
     this.sp = 3;
     this.mask = 0; // async exceptions masked (0 unmasked, 1: uninterruptible, 2: interruptible)
@@ -9871,9 +10749,12 @@ function h$Thread() {
     this.blockedOn = null; // object on which thread is blocked
     this.retryInterrupted = null; // how to retry blocking operation when interrupted
     this.transaction = null; // for STM
+    this.noPreemption = false;
     this.isSynchronous = false;
     this.continueAsync = false;
     this.m = 0; // gc mark
+    this.result = null; // result value (used for GHCJS.Foreign.Callback)
+    this.resultIsException = false;
 
 
 
@@ -9921,23 +10802,20 @@ function h$fork(a, inherit) {
 }
 
 function h$threadStatus(t) {
-  h$ret1 = 1; // capability
-  h$ret2 = 0; // locked
-  return t.status;
+  // status, capability, locked
+  { h$ret1 = (1); h$ret2 = (0); return (t.status); };
 }
 
 function h$waitRead(fd) {
   h$fds[fd].waitRead.push(h$currentThread);
   h$currentThread.interruptible = true;
-  h$blockThread(h$currentThread,fd,[h$waitRead,fd]);
-  return h$reschedule;
+  return h$blockThread(h$currentThread,fd,[h$waitRead,fd]);
 }
 
 function h$waitWrite(fd) {
   h$fds[fd].waitWrite.push(h$currentThread);
   h$currentThread.interruptible = true;
-  h$blockThread(h$currentThread,fd,[h$waitWrite,fd]);
-  return h$reschedule;
+  return h$blockThread(h$currentThread,fd,[h$waitWrite,fd]);
 }
 
 // threadDelay support:
@@ -9960,8 +10838,7 @@ function h$delayThread(time) {
                                                                                                      ;
   h$delayed.add(now+ms, h$currentThread);
   h$currentThread.delayed = true;
-  h$blockThread(h$currentThread, h$delayed,[h$resumeDelayThread]);
-  return h$reschedule;
+  return h$blockThread(h$currentThread, h$delayed,[h$resumeDelayThread]);
 }
 
 function h$resumeDelayThread() {
@@ -9998,12 +10875,11 @@ function h$killThread(t, ex) {
       return h$stack ? h$stack[h$sp] : null;
     } else {
       t.excep.push([h$currentThread,ex]);
-      h$blockThread(h$currentThread,t,null);
       h$currentThread.interruptible = true;
       h$sp += 2;
       h$stack[h$sp-1] = h$r1;
       h$stack[h$sp] = h$return;
-      return h$reschedule;
+      return h$blockThread(h$currentThread,t,null);
     }
   }
 }
@@ -10096,9 +10972,9 @@ function h$postAsync(alreadySuspended,next) {
 // from any queues it was blocked on
 function h$wakeupThread(t) {
                                                              ;
-    if(t.status === h$threadBlocked) {
+    if(t.status === (1)) {
         t.blockedOn = null;
-        t.status = h$threadRunning;
+        t.status = (0);
         h$blocked.remove(t);
     }
     t.interruptible = false;
@@ -10111,14 +10987,14 @@ function h$wakeupThread(t) {
 // queue it's blocked on
 function h$forceWakeupThread(t) {
                                                             ;
-  if(t.status === h$threadBlocked) {
+  if(t.status === (1)) {
     h$removeThreadBlock(t);
     h$wakeupThread(t);
   }
 }
 
 function h$removeThreadBlock(t) {
-  if(t.status === h$threadBlocked) {
+  if(t.status === (1)) {
     var o = t.blockedOn;
     if(o === null || o === undefined) {
       throw ("h$removeThreadBlock: blocked on null or undefined: " + h$threadString(t));
@@ -10158,9 +11034,9 @@ function h$removeThreadBlock(t) {
       }
     } else if (o instanceof h$TVarsWaiting) {
       h$stmRemoveBlockedThread(o, t)
-    } else if(o.f && o.f.t === h$BLACKHOLE_CLOSURE) {
+    } else if((typeof (o) === 'object' && (o) && (o).f && (o).f.t === (5))) {
                                              ;
-      h$removeFromArray(o.d2,t);
+      h$removeFromArray(((o).d2),t);
     } else {
       throw ("h$removeThreadBlock: blocked on unknown object: " + h$collectProps(o));
     }
@@ -10181,7 +11057,7 @@ function h$removeFromArray(a,o) {
 
 function h$finishThread(t) {
                                                              ;
-    t.status = h$threadFinished;
+    t.status = (16);
     h$blocked.remove(t);
     t.stack = null;
     t.mask = 0;
@@ -10197,14 +11073,18 @@ function h$finishThread(t) {
 
 function h$blockThread(t,o,resume) {
                                                             ;
+    if(t !== h$currentThread) {
+        throw "h$blockThread: blocked thread is not the current thread";
+    }
     if(o === undefined || o === null) {
         throw ("h$blockThread, no block object: " + h$threadString(t));
     }
-    t.status = h$threadBlocked;
+    t.status = (1);
     t.blockedOn = o;
     t.retryInterrupted = resume;
     t.sp = h$sp;
     h$blocked.add(t);
+    return h$reschedule;
 }
 
 // the main scheduler, called from h$mainLoop
@@ -10214,27 +11094,33 @@ var h$lastGc = Date.now();
 var h$gcInterval = 1000; // ms
 function h$scheduler(next) {
                                                 ;
+    // if we have a running synchronous thread, the only thing we can do is continue
+    if(h$currentThread &&
+       h$currentThread.isSynchronous &&
+       h$currentThread.status === (0)) {
+        return next;
+    }
     var now = Date.now();
     h$wakeupDelayed(now);
     // find the next runnable thread in the run queue
     // remove non-runnable threads
     if(h$currentThread && h$pendingAsync()) {
                                                                              ;
-        if(h$currentThread.status !== h$threadRunning) {
+        if(h$currentThread.status !== (0)) {
             h$forceWakeupThread(h$currentThread);
-            h$currentThread.status = h$threadRunning;
+            h$currentThread.status = (0);
         }
         h$postAsync(next === h$reschedule, next);
         return h$stack[h$sp];
     }
     var t;
     while(t = h$threads.dequeue()) {
-        if(t.status === h$threadRunning) { break; }
+        if(t.status === (0)) { break; }
     }
     // if no other runnable threads, just continue current (if runnable)
     if(t === null) {
                                                            ;
-        if(h$currentThread && h$currentThread.status === h$threadRunning) {
+        if(h$currentThread && h$currentThread.status === (0)) {
             // do gc after a while
             if(now - h$lastGc > h$gcInterval) {
                 // save active data for the thread on its stack
@@ -10274,7 +11160,7 @@ function h$scheduler(next) {
     } else { // runnable thread in t, switch to it
                                                                     ;
         if(h$currentThread !== null) {
-            if(h$currentThread.status === h$threadRunning) {
+            if(h$currentThread.status === (0)) {
                 h$threads.enqueue(h$currentThread);
             }
             // if h$reschedule called, thread takes care of suspend
@@ -10387,113 +11273,179 @@ var h$mainLoopImmediate = null; // immediate id if main loop has been scheduled 
 var h$mainLoopTimeout = null; // timeout id if main loop has been scheduled with a timeout
 var h$mainLoopFrame = null; // timeout id if main loop has been scheduled with an animation frame
 var h$running = false;
-var h$next = null;
+var h$nextThread = null;
 function h$mainLoop() {
 
 
 
 
 
-    if(h$running) return;
-    h$clearScheduleMainLoop();
-    if(h$currentThread) {
- h$scheduleMainLoop();
- return;
+  if(h$running) return;
+  h$clearScheduleMainLoop();
+  if(h$currentThread) {
+    h$scheduleMainLoop();
+    return;
+  }
+  h$running = true;
+  h$runInitStatic();
+  h$currentThread = h$nextThread;
+
+
+
+  if(h$nextThread !== null) {
+    h$stack = h$currentThread.stack;
+    h$sp = h$currentThread.sp;
+  }
+  var c = null;
+  var start = Date.now();
+  do {
+    c = h$scheduler(c);
+    if(c === null) { // no running threads
+      h$nextThread = null;
+      h$running = false;
+      h$currentThread = null;
+
+
+
+      h$scheduleMainLoop();
+      return;
     }
-    h$running = true;
-    h$runInitStatic();
-    h$currentThread = h$next;
+    // yield to js after h$busyYield (default value GHCJS_BUSY_YIELD)
+    if(!h$currentThread.isSynchronous && Date.now() - start > h$busyYield) {
+                                       ;
+      if(c !== h$reschedule) h$suspendCurrentThread(c);
+      h$nextThread = h$currentThread;
+      h$currentThread = null;
 
 
 
-    if(h$next !== null) {
-        h$stack = h$currentThread.stack;
-        h$sp = h$currentThread.sp;
+      h$running = false;
+      if(h$animationFrameMainLoop) {
+        h$mainLoopFrame = requestAnimationFrame(h$mainLoop);
+      } else {
+        h$mainLoopImmediate = setImmediate(h$mainLoop);
+      }
+      return;
     }
-    var c = null;
-    var count;
-    var start = Date.now();
-    do {
-        c = h$scheduler(c);
-        var scheduled = Date.now();
-        if(c === null) { // no running threads
-            h$next = null;
-            h$running = false;
-     h$currentThread = null;
 
 
 
-            h$scheduleMainLoop();
-            return;
-        }
-        // yield to js after h$busyYield (default value GHCJS_BUSY_YIELD)
-        if(Date.now() - start > h$busyYield) {
-                                             ;
-            if(c !== h$reschedule) h$suspendCurrentThread(c);
-            h$next = h$currentThread;
-            h$currentThread = null;
+
+    c = h$runThreadSliceCatch(c);
+
+  } while(true);
+}
+
+function h$runThreadSliceCatch(c) {
+  try {
+    return h$runThreadSlice(c);
+  } catch(e) {
+    // uncaught exception in haskell code, kill thread
 
 
 
-            h$running = false;
-            if(h$animationFrameMainLoop) {
-                h$mainLoopFrame = requestAnimationFrame(h$mainLoop);
-            } else {
-                h$mainLoopImmediate = setImmediate(h$mainLoop);
-            }
-            return;
-        }
-        // preemptively schedule threads after 10*GHCJS_SCHED_CHECK calls
-        // but not before the end of the scheduling quantum
+    c = null;
+    if(h$stack && h$stack[0] === h$doneMain_e) {
+      h$stack = null;
+      h$reportMainLoopException(e, true);
+      h$doneMain_e();
+    } else {
+      h$stack = null;
+      h$reportMainLoopException(e, false);
+    }
+    h$finishThread(h$currentThread);
+    h$currentThread.status = (17);
+    h$currentThread = null;
+  }
+  return h$reschedule;
+}
 
-        try {
+/*
+  run thread h$currentThread for a single time slice
 
-            while(c !== h$reschedule && Date.now() - scheduled < h$schedQuantum) {
-                count = 0;
-                while(c !== h$reschedule && ++count < 1000) {
-                    c = c();
+     - c: the next function to call from the trampoline
 
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
-                    c = c();
+  returns:
+    the next function to call in this thread
 
-                }
-            }
+  preconditions:
+    h$currentThread is the thread to run
+    h$stack         is the stack of this thread
+    h$sp            is the stack pointer
+  
+    any global variables needed to pass arguments have been set
+    the caller has to update the thread state object
+ */
+function h$runThreadSlice(c) {
+  var count, scheduled = Date.now();
+  while(c !== h$reschedule &&
+        (h$currentThread.noPreemption || h$currentThread.isSynchronous ||
+         (Date.now() - scheduled < h$schedQuantum))) {
+    count = 0;
+    while(c !== h$reschedule && ++count < 1000) {
+      c = c();
 
-        } catch(e) {
-            // uncaught exception in haskell code, kill thread
-            // fixme: would we ever need to remove the thread from queues?
-            h$currentThread.status = h$threadDied;
-            h$currentThread.stack = null;
-            h$currentThread = null;
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
+      c = c();
 
-
-
-            c = null;
-            if(h$stack && h$stack[0] === h$doneMain) {
-                h$stack = null;
-                h$reportMainLoopException(e, true);
-                h$doneMain();
-                return;
-            } else {
-                h$stack = null;
-                h$reportMainLoopException(e, false);
-            }
-        }
-
-    } while(true);
+    }
+    if(c === h$reschedule &&
+       (h$currentThread.noPreemption || h$currentThread.isSynchronous) &&
+       h$currentThread.status === (1)) {
+      c = h$handleBlockedSyncThread(c);
+    }
+  }
+  return c;
 }
 
 function h$reportMainLoopException(e, isMainThread) {
-    var main = isMainThread ? " main" : "";
-    h$log("uncaught exception in Haskell" + main + " thread: " + e.toString());
-    if(e.stack) h$log(e.stack)
+  if(e instanceof h$ThreadAbortedError) return;
+  var main = isMainThread ? " main" : "";
+  h$log("uncaught exception in Haskell" + main + " thread: " + e.toString());
+  if(e.stack) h$log(e.stack);
+}
+
+
+function h$handleBlockedSyncThread(c) {
+                                                 ;
+  /*
+    if we have a blocked synchronous/non-preemptible thread,
+    and it's blocked on a black hole, first try to clear
+    it.
+   */
+  var bo = h$currentThread.blockedOn;
+  if(h$currentThread.status === (1) &&
+     (typeof (bo) === 'object' && (bo) && (bo).f && (bo).f.t === (5)) &&
+     h$runBlackholeThreadSync(bo)) {
+                                                    ;
+    c = h$stack[h$sp];
+  }
+  /*
+    if still blocked, then either fall back to async,
+    or throw a WouldBlock exception
+   */
+  if(h$currentThread.isSynchronous && h$currentThread.status === (1)) {
+    if(h$currentThread.continueAsync) {
+      h$currentThread.isSynchronous = false;
+      h$currentThread.continueAsync = false;
+    } else if(h$currentThread.isSynchronous) {
+                                                               ;
+      h$sp += 2;
+      h$currentThread.sp = h$sp;
+      h$stack[h$sp-1] = h$ghcjszmprimZCGHCJSziPrimziInternalziwouldBlock;
+      h$stack[h$sp] = h$raiseAsync_frame;
+      h$forceWakeupThread(h$currentThread);
+      c = h$raiseAsync_frame;
+    } // otherwise a non-preemptible thread, keep it in the same state
+  }
+  return c;
 }
 
 // run the supplied IO action in a new thread
@@ -10505,17 +11457,110 @@ function h$run(a) {
   return t;
 }
 
-// try to run the supplied IO action synchronously, running the
-// thread to completion, unless it blocks,
-// for example by taking an MVar or threadDelay
+/** @constructor */
+function h$WouldBlock() {
 
-// returns the thing the thread blocked on, null if the thread ran to completion
+}
 
-// cont :: bool, continue thread asynchronously after h$runSync returns
+h$WouldBlock.prototype.toString = function() {
+  return "Haskell Operation would block";
+}
+
+/** @constructor */
+function h$HaskellException(msg) {
+  this._msg = msg;
+}
+
+h$HaskellException.prototype.toString = function() {
+  return this._msg;
+}
+
+function h$setCurrentThreadResultWouldBlock() {
+  h$currentThread.result = new h$WouldBlock();
+  h$currentThread.resultIsException = true;
+}
+
+function h$setCurrentThreadResultJSException(e) {
+  h$currentThread.result = e;
+  h$currentThread.resultIsException = true;
+}
+
+function h$setCurrentThreadResultHaskellException(msg) {
+  h$currentThread.result = new h$HaskellException(msg);
+  h$currentThread.resultIsException = true;
+}
+
+function h$setCurrentThreadResultValue(v) {
+  h$currentThread.result = v;
+  h$currentThread.resultIsException = false;
+}
+
+/*
+   run a Haskell (IO JSVal) action synchronously, returning
+   the result. Uncaught Haskell exceptions are thrown as a
+   h$HaskellException. If the action could not finish due to
+   blocking, a h$WouldBlock exception is thrown instead.
+
+     - a:    the (IO JSVal) action
+     - cont: continue async if blocked
+         (the call to h$runSyncReturn would still throw h$WouldBlock,
+          since there would be no return value)
+
+   returns: the result of the IO action
+ */
+function h$runSyncReturn(a, cont) {
+  var t = new h$Thread();
+                                                                         ;
+  var aa = (h$c2(h$ap1_e,(h$ghcjszmprimZCGHCJSziPrimziInternalzisetCurrentThreadResultValue),(a)));
+  h$runSyncAction(t, aa, cont);
+  if(t.status === (16)) {
+    if(t.resultIsException) {
+      throw t.result;
+    } else {
+      return t.result;
+    }
+  } else if(t.status === (1)) {
+    throw new h$WouldBlock();
+  } else {
+    throw new Error("h$runSyncReturn: Unexpected thread status: " + t.status);
+  }
+}
+
+/*
+   run a Haskell IO action synchronously, ignoring the result
+   or any exception in the Haskell code
+     
+     - a:    the IO action
+     - cont: continue async if blocked
+
+   returns: true if the action ran to completion, false otherwise
+
+   throws: any uncaught Haskell or JS exception except WouldBlock
+ */
 function h$runSync(a, cont) {
+  var t = new h$Thread();
+                                                                   ;
+  h$runSyncAction(t, a, cont);
+  if(t.resultIsException) {
+    if(t.result instanceof h$WouldBlock) {
+      return false;
+    } else {
+      throw t.result;
+    }
+  }
+  return t.status === (16);
+}
+
+function h$runSyncAction(t, a, cont) {
   h$runInitStatic();
   var c = h$return;
-  var t = new h$Thread();
+  t.stack[2] = h$ghcjszmprimZCGHCJSziPrimziInternalzisetCurrentThreadResultException;
+  t.stack[4] = h$ap_1_0;
+  t.stack[5] = a;
+  t.stack[6] = h$return;
+  t.sp = 6;
+  t.status = (0);
+
 
 
 
@@ -10524,13 +11569,7 @@ function h$runSync(a, cont) {
   var ct = h$currentThread;
   var csp = h$sp;
   var cr1 = h$r1; // do we need to save more than this?
-  t.stack[4] = h$ap_1_0;
-  t.stack[5] = a;
-  t.stack[6] = h$return;
-  t.sp = 6;
-  t.status = h$threadRunning;
-  var excep = null;
-  var blockedOn = null;
+  var caught = false, excep = null;
   h$currentThread = t;
   h$stack = t.stack;
   h$sp = t.sp;
@@ -10538,59 +11577,16 @@ function h$runSync(a, cont) {
 
 
   try {
-    while(true) {
-                                                      ;
-      while(c !== h$reschedule) {
-
-
-
-
-
-
-        c = c();
-
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-        c = c();
-
-      }
-                                                    ;
-      if(t.status === h$threadFinished) {
-                                                     ;
-        break;
-      } else {
-                                                         ;
-      }
-      var b = t.blockedOn;
-      if(typeof b === 'object' && b && b.f && b.f.t === h$BLACKHOLE_CLOSURE) {
-        var bhThread = b.d1;
-        if(bhThread === ct || bhThread === t) { // hit a blackhole from running thread or ourselves
-                                                      ;
-          c = h$throw(h$baseZCControlziExceptionziBasezinonTermination, false);
-        } else { // blackhole from other thread, steal it if thread is running
-          // switch to that thread
-          if(h$runBlackholeThreadSync(b)) {
-                                                                       ;
-            c = h$stack[h$sp];
-          } else {
-                                                                        ;
-            blockedOn = b;
-            throw false;
-          }
-        }
-      } else {
-                                                                                 ;
-        blockedOn = b;
-        throw false;
-      }
+    c = h$runThreadSlice(c);
+    if(c !== h$reschedule) {
+      throw new Error("h$runSyncAction: h$reschedule expected");
     }
-  } catch(e) { excep = e; }
+  } catch(e) {
+    h$finishThread(h$currentThread);
+    h$currentThread.status = (17);
+    caught = true;
+    excep = e;
+  }
   if(ct !== null) {
     h$currentThread = ct;
     h$stack = ct.stack;
@@ -10603,15 +11599,12 @@ function h$runSync(a, cont) {
 
 
 
-  if(t.status !== h$threadFinished && !cont) {
+
+  if(t.status !== (16) && !cont) {
     h$removeThreadBlock(t);
     h$finishThread(t);
   }
-  if(excep) {
-    throw excep;
-  }
-  return blockedOn;
-                                         ;
+  if(caught) throw excep;
 }
 
 // run other threads synchronously until the blackhole is 'freed'
@@ -10623,35 +11616,37 @@ function h$runBlackholeThreadSync(bh) {
   var success = false;
   var bhs = [];
   var currentBh = bh;
-  // we don't handle async exceptions here, don't run threads with pending exceptions
-  if(bh.d1.excep.length > 0) {
+  // we don't handle async exceptions here,
+  // don't run threads with pending exceptions
+  if(((bh).d1).excep.length > 0) {
+                                                              ;
     return false;
   }
-  h$currentThread = bh.d1;
+  h$currentThread = ((bh).d1);
   h$stack = h$currentThread.stack;
   h$sp = h$currentThread.sp;
 
 
 
-  var c = (h$currentThread.status === h$threadRunning)?h$stack[h$sp]:h$reschedule;
-                                                                                                    ;
+  var c = (h$currentThread.status === (0))?h$stack[h$sp]:h$reschedule;
+                                                                                                   ;
   try {
     while(true) {
-      while(c !== h$reschedule && currentBh.f.t === h$BLACKHOLE_CLOSURE) {
+      while(c !== h$reschedule && (typeof (currentBh) === 'object' && (currentBh) && (currentBh).f && (currentBh).f.t === (5))) {
         c = c();
         c = c();
         c = c();
         c = c();
         c = c();
       }
-      if(c === h$reschedule) { // perhaps new blackhole, then continue with that thread, otherwise fail
-        if(typeof h$currentThread.blockedOn === 'object' &&
-           h$currentThread.blockedOn.f &&
-           h$currentThread.blockedOn.f.t === h$BLACKHOLE_CLOSURE) {
+      if(c === h$reschedule) {
+ // perhaps new blackhole, then continue with that thread,
+ // otherwise fail
+        if((typeof (h$currentThread.blockedOn) === 'object' && (h$currentThread.blockedOn) && (h$currentThread.blockedOn).f && (h$currentThread.blockedOn).f.t === (5))) {
                                                          ;
           bhs.push(currentBh);
           currentBh = h$currentThread.blockedOn;
-          h$currentThread = h$currentThread.blockedOn.d1;
+          h$currentThread = ((h$currentThread.blockedOn).d1);
           if(h$currentThread.excep.length > 0) {
             break;
           }
@@ -10660,7 +11655,7 @@ function h$runBlackholeThreadSync(bh) {
 
 
 
-          c = (h$currentThread.status === h$threadRunning)?h$stack[h$sp]:h$reschedule;
+          c = (h$currentThread.status === (0))?h$stack[h$sp]:h$reschedule;
         } else {
                                                                                          ;
           break;
@@ -10672,7 +11667,7 @@ function h$runBlackholeThreadSync(bh) {
         if(bhs.length > 0) {
                                                ;
           currentBh = bhs.pop();
-          h$currentThread = currentBh.d1;
+          h$currentThread = ((currentBh).d1);
           h$stack = h$currentThread.stack;
           h$sp = h$currentThread.sp;
 
@@ -10698,7 +11693,8 @@ function h$runBlackholeThreadSync(bh) {
 
 function h$syncThreadState(tid) {
   return (tid.isSynchronous ? 1 : 0) |
-         (tid.continueAsync ? 2 : 0);
+    ((tid.continueAsync || !tid.isSynchronous) ? 2 : 0) |
+    ((tid.noPreemption || tid.isSynchronous) ? 4 : 0);
 }
 
 // run the supplied IO action in a main thread
@@ -10709,9 +11705,9 @@ function h$main(a) {
 
 
   //TRACE_SCHEDULER("sched: starting main thread");
-    t.stack[0] = h$doneMain;
+    t.stack[0] = h$doneMain_e;
 
-  if(!h$isBrowser) {
+  if(!h$isBrowser && !h$isGHCJSi) {
     t.stack[2] = h$baseZCGHCziTopHandlerzitopHandler;
   }
 
@@ -10726,6 +11722,55 @@ function h$main(a) {
   h$wakeupThread(t);
   h$startMainLoop();
   return t;
+}
+
+function h$doneMain() {
+
+  if(h$isGHCJSi) {
+    if(h$currentThread.stack) {
+      global.h$GHCJSi.done(h$currentThread);
+    }
+  } else {
+
+    h$exitProcess(0);
+
+  }
+
+  h$finishThread(h$currentThread);
+  return h$reschedule;
+}
+
+/** @constructor */
+function h$ThreadAbortedError(code) {
+  this.code = code;
+}
+
+h$ThreadAbortedError.prototype.toString = function() {
+  return "Thread aborted, exit code: " + this.code;
+}
+
+function h$exitProcess(code) {
+
+    if(h$isNode) {
+ process.exit(code);
+    } else if(h$isJsShell) {
+        quit(code);
+    } else if(h$isJsCore) {
+        if(h$base_stdoutLeftover.val !== null) print(h$base_stdoutLeftover.val);
+        if(h$base_stderrLeftover.val !== null) debug(h$base_stderrLeftover.val);
+        // jsc does not support returning a nonzero value, print it instead
+        if(code !== 0) debug("GHCJS JSC exit status: " + code);
+        quit();
+    } else {
+
+        if(h$currentThread) {
+            h$finishThread(h$currentThread);
+            h$stack = null;
+            throw new h$ThreadAbortedError(code);
+        }
+
+    }
+
 }
 
 // MVar support
@@ -10796,20 +11841,18 @@ function h$takeMVar(mv) {
   } else {
     mv.readers.enqueue(h$currentThread);
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread,mv,[h$takeMVar,mv]);
-    return h$reschedule;
+    return h$blockThread(h$currentThread,mv,[h$takeMVar,mv]);
   }
 }
 
 function h$tryTakeMVar(mv) {
                                                             ;
   if(mv.val === null) {
-    h$ret1 = null;
-    return 0;
+    { h$ret1 = (null); return (0); };
   } else {
-    h$ret1 = mv.val;
+    var v = mv.val;
     h$notifyMVarEmpty(mv);
-    return 1;
+    { h$ret1 = (v); return (1); };
   }
 }
 
@@ -10822,8 +11865,7 @@ function h$readMVar(mv) {
       mv.waiters = [h$currentThread];
     }
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread,mv,[h$readMVar,mv]);
-    return h$reschedule;
+    return h$blockThread(h$currentThread,mv,[h$readMVar,mv]);
   } else {
     h$r1 = mv.val;
     return h$stack[h$sp];
@@ -10835,8 +11877,7 @@ function h$putMVar(mv,val) {
   if(mv.val !== null) {
     mv.writers.enqueue([h$currentThread,val]);
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread,mv,[h$putMVar,mv,val]);
-    return h$reschedule;
+    return h$blockThread(h$currentThread,mv,[h$putMVar,mv,val]);
   } else {
     h$notifyMVarFull(mv,val);
     return h$stack[h$sp];
@@ -10855,7 +11896,7 @@ function h$tryPutMVar(mv,val) {
 
 // box up a JavaScript value and write it to the MVar synchronously
 function h$writeMVarJs1(mv,val) {
-  var v = h$c1(h$data1_e, val);
+  var v = (h$c1(h$data1_e, (val)));
   if(mv.val !== null) {
                                                ;
     mv.writers.enqueue([null,v]);
@@ -10866,7 +11907,7 @@ function h$writeMVarJs1(mv,val) {
 }
 
 function h$writeMVarJs2(mv,val1,val2) {
-  var v = h$c2(h$data1_e, val1, val2);
+  var v = (h$c2(h$data1_e, (val1), (val2)));
   if(mv.val !== null) {
                                                ;
     mv.writers.enqueue([null,v]);
@@ -10884,27 +11925,26 @@ function h$MutVar(v) {
 }
 
 function h$atomicModifyMutVar(mv, fun) {
-  var thunk = h$c2(h$ap1_e, fun, mv.val);
-  mv.val = h$c1(h$select1_e, thunk);
-  return h$c1(h$select2_e, thunk);
+  var thunk = (h$c2(h$ap1_e,(fun),(mv.val)));
+  mv.val = (h$c1(h$select1_e, (thunk)));
+  return (h$c1(h$select2_e, (thunk)));
 }
 
 // Black holes and updates
 // caller must save registers on stack
 function h$blockOnBlackhole(c) {
                                                               ;
-  if(c.d1 === h$currentThread) {
+  if(((c).d1) === h$currentThread) {
                                      ;
     return h$throw(h$baseZCControlziExceptionziBasezinonTermination, false); // is this an async exception?
   }
                                                                                    ;
-  if(c.d2 === null) {
-    c.d2 = [h$currentThread];
+  if(((c).d2) === null) {
+    ((c).d2 = ([h$currentThread]));
   } else {
-    c.d2.push(h$currentThread);
+    ((c).d2).push(h$currentThread);
   }
-  h$blockThread(h$currentThread,c,[h$resumeBlockOnBlackhole,c]);
-  return h$reschedule;
+  return h$blockThread(h$currentThread,c,[h$resumeBlockOnBlackhole,c]);
 }
 
 function h$resumeBlockOnBlackhole(c) {
@@ -10922,10 +11962,7 @@ function h$makeResumable(bh,start,end,extra) {
   }
 //  TRACE_SCHEDULER("making resumable " + (h$debugResumableId+1) + ", stack: ");
 //  h$dumpStackTop(s,0,s.length-1);
-  bh.f = h$resume_e;
-  bh.d1 = s;
-  bh.d2 = null;
-  //  bh.d2 = ++h$debugResumableId;
+  { (bh).f = h$resume_e; (bh).d1 = (s), (bh).d2 = null; };
 }
 
 var h$enabled_capabilities = h$newByteArray(4);
@@ -10941,7 +11978,7 @@ function h$mkForeignCallback(x) {
         if(x.mv === null) { // callback called synchronously
             x.mv = arguments;
         } else {
-            h$notifyMVarFull(x.mv, h$c1(h$data1_e, arguments));
+            h$notifyMVarFull(x.mv, (h$c1(h$data1_e, (arguments))));
             h$mainLoop();
         }
     }
@@ -11145,9 +12182,8 @@ function h$stmSuspendRetry() {
     }
     var waiting = new h$TVarsWaiting(tvs);
     h$currentThread.interruptible = true;
-    h$blockThread(h$currentThread, waiting);
     h$p2(waiting, h$stmResumeRetry_e);
-    return h$reschedule;
+    return h$blockThread(h$currentThread, waiting);
 }
 
 function h$stmCatchRetry(a,b) {
@@ -11264,11 +12300,111 @@ function h$stmCommitInvariant(localInv) {
         h$stmAddTVarInvariant(dep, inv);
     }
 }
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
 // static pointers
 var h$static_pointer_table = null;
 var h$static_pointer_table_keys = null;
 
 function h$hs_spt_insert(key1,key2,key3,key4,ref) {
+    // h$log("hs_spt_insert: " + key1 + " " + key2 + " " + key3 + " " + key4 + " -> " + h$collectProps(ref));
     if(!h$static_pointer_table) {
  h$static_pointer_table = [];
  h$static_pointer_table_keys = [];
@@ -11280,6 +12416,7 @@ function h$hs_spt_insert(key1,key2,key3,key4,ref) {
         ba.i3[2] = key3;
         ba.i3[3] = key4;
  h$static_pointer_table_keys.push([ba,0]);
+        h$retain({ root: ref, _key: -1 });
     }
     var s = h$static_pointer_table;
     if(!s[key1]) s[key1] = [];
@@ -11302,8 +12439,7 @@ function h$hs_spt_keys(tgt_d, tgt_o, n) {
 
 function h$hs_spt_lookup(key_d, key_o) {
     var i3 = key_d.i3, o = key_o >> 2;
-    h$ret1 = 0;
-    return h$hs_spt_lookup_key(i3[o],i3[o+1],i3[o+2],i3[o+3]);
+    { h$ret1 = (0); return (h$hs_spt_lookup_key(i3[o],i3[o+1],i3[o+2],i3[o+3])); };
 }
 
 function h$hs_spt_lookup_key(key1,key2,key3,key4) {
@@ -11311,6 +12447,206 @@ function h$hs_spt_lookup_key(key1,key2,key3,key4) {
     if(s && s[key1] && s[key1][key2] && s[key1][key2][key3] &&
        s[key1][key2][key3][key4]) return s[key1][key2][key3][key4];
     return null;
+}
+
+
+
+
+
+
+// values defined in Gen2.ClosureInfo
+
+
+
+
+
+
+
+// thread status
+
+/*
+ * low-level heap object manipulation macros
+ */
+// GHCJS.Prim.JSVal
+
+
+
+
+
+
+
+// GHCJS.Prim.JSException
+
+
+
+
+
+// Exception dictionary for JSException
+
+
+// SomeException
+
+
+
+
+
+
+// GHC.Ptr.Ptr
+
+
+
+
+
+
+// GHC.Integer.GMP.Internals
+// Data.Maybe.Maybe
+
+
+
+
+// #define HS_NOTHING h$nothing
+
+
+
+
+
+
+// Data.List
+// Data.Text
+
+
+
+
+// Data.Text.Lazy
+
+
+
+
+
+// black holes
+// can we skip the indirection for black holes?
+
+
+
+
+
+
+// resumable thunks
+
+
+// general deconstruction
+
+
+
+// retrieve  a numeric value that's possibly stored as an indirection
+
+
+
+// generic lazy values
+// generic data constructors and selectors
+// unboxed tuple returns
+// #define RETURN_UBX_TUP1(x) return x;
+
+
+
+
+
+
+
+
+function h$__hscore_sizeof_termios() {
+                                         ;
+    return 4;
+}
+
+function h$tcgetattr(x, y, z) {
+                                                       ;
+    return 0;
+}
+
+function h$__hscore_get_saved_termios(r) {
+                                                  ;
+    { h$ret1 = (0); return (null); };
+}
+
+function h$__hscore_set_saved_termios(a, b, c) {
+                                                                      ;
+    { h$ret1 = (0); return (null); };
+}
+
+function h$__hscore_sizeof_sigset_t() {
+                                          ;
+    return 4;
+}
+
+function h$sigemptyset(a, b) {
+                                               ;
+    { h$ret1 = (0); return (null); };
+}
+
+function h$__hscore_sigttou() {
+                                  ;
+    return 0;
+}
+
+function h$sigaddset(a, b, c) {
+                                                       ;
+    return 0;
+}
+
+function h$__hscore_sig_block() {
+                                    ;
+    return 0;
+}
+
+function h$sigprocmask(a,b,c,d,e) {
+                                                                             ;
+    { h$ret1 = (0); return (0); };
+}
+
+function h$__hscore_lflag(a,b) {
+                                                ;
+    return 0;
+}
+
+function h$__hscore_icanon() {
+                                 ;
+    return 0;
+}
+
+function h$__hscore_poke_lflag(a, b, c) {
+                                                               ;
+    return 0;
+}
+
+function h$__hscore_ptr_c_cc(a, b) {
+                                                   ;
+    { h$ret1 = (0); return (h$newByteArray(8)); }; // null;
+}
+
+function h$__hscore_vmin() {
+                               ;
+    { h$ret1 = (0); return (h$newByteArray(8)); }; // null;
+}
+
+function h$__hscore_vtime() {
+                                ;
+    return 0;
+}
+
+function h$__hscore_tcsanow() {
+                                  ;
+    return 0;
+}
+
+function h$tcsetattr(a,b,c,d) {
+                                                                 ;
+    return 0;
+}
+
+function h$__hscore_sig_setmask() {
+                                      ;
+    return 0;
 }
 function h$c(f)
 {
@@ -14471,29 +15807,9 @@ function h$done(h$RTS_29)
   return h$reschedule;
 };
 h$o(h$done, (-1), 0, 0, 256, null);
-function h$doneMain()
+function h$doneMain_e()
 {
-  if(((typeof process !== "undefined") && process.exit))
-  {
-    process.exit(0);
-  }
-  else
-  {
-    if((typeof quit !== "undefined"))
-    {
-      if((((typeof h$base_stdoutLeftover !== "undefined") && h$base_stdoutLeftover) && h$base_stdoutLeftover.val))
-      {
-        print(h$base_stdoutLeftover.val);
-      };
-      if((((typeof h$base_stderrLeftover !== "undefined") && h$base_stderrLeftover) && h$base_stderrLeftover.val))
-      {
-        debug(h$base_stderrLeftover.val);
-      };
-      quit();
-    };
-  };
-  h$finishThread(h$currentThread);
-  return h$reschedule;
+  return h$doneMain();
 };
 h$o(h$doneMain, (-1), 0, 0, 256, null);
 function h$false_e()
