@@ -3,8 +3,8 @@
 -- Estuary UI : Reflex/GHCJS front end for Tidal
 -- My attempt at creating a drag and drop interface with Reflex and GHCJS
 {-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+--{-# LANGUAGE ExistentialQuantification #-}
+--{-# LANGUAGE ScopedTypeVariables #-}
 
 --import           Sound.Tidal.Context as Tidal
 
@@ -46,6 +46,18 @@ data DragEvent = DragEnter | DragExit | DragDrop | DragDrag | DragEnd | DragClic
 tuple :: a -> b -> (a,b)
 tuple x y = (x,y)
 
+triple :: c -> (a,b) -> (a,b,c)
+triple z (x,y) = (x,y,z)
+
+fst' :: (a,b,c) -> a
+fst' (x,_,_) = x
+
+snd' :: (a,b,c) -> b
+snd' (_,y,_) = y
+
+thd' :: (a,b,c) -> c
+thd' (_,_,z) = z
+
 -- Function that implements the prevent default java action so that drop events can be detected.
 stopAll :: GHCJS.IsEvent event => GHCJS.EventM event e ()
 stopAll = do
@@ -71,7 +83,7 @@ setup = el "div" $ do
   el "br" (return ())
 
 -- Implements the drag and drop functionality for the sample blocks.
-dragAndDrop :: forall t m. R.MonadWidget t m => m ()
+dragAndDrop :: R.MonadWidget t m => m ()
 dragAndDrop = mdo
 
   -- initialize samples as individual objects
@@ -100,6 +112,14 @@ dragAndDrop = mdo
     -- Create new block (do for each)
     listWithKey allBlocks $ \k oneBlock -> mdo
 
+      let ox = GHCJS.elementGetOffsetLeft (R._el_element boxEl)
+      let oy = GHCJS.elementGetOffsetTop (R._el_element boxEl)
+
+      --cx <- liftIO $ ox
+      --cy <- liftIO $ oy
+
+      --text $  "(" ++ show (cx) ++ "," ++ show (cy) ++ ")"
+
       -- Track mouse position on drag event
       posE <- wrapDomEvent (R._el_element boxEl) (GHCJS.elementOndrag) getMouseEventCoords
       pos <- holdDyn (0,0) posE
@@ -110,15 +130,20 @@ dragAndDrop = mdo
       --name <- (_dropdown_value d)
 
       -- Set sample attributes based on Tidal feedback and position based on mouse position.
-      attrsDyn <- forDyn nClicks $ \b ->
+
+
+      attrsDyn <- forDyn pos $ \(b,c) ->
         Data.Map.fromList
         [("draggable", "true"),("class","countBin noselect")
-        ,("style","width:" ++ show (30+b*3) ++ "px;" ++
-          "background-color: hsl("++ show (b*5) ++ ",50%,50%);" ++
-          "height: 30px; float: left; border: 1px solid black;" ++
-          "display:block; padding:.3em 0.5em;")]
+        ,("style","width:" ++ show (b*0 + 30) ++ "px;" ++
+          "background-color: hsl("++ show (b*0 + 5) ++ ",50%,50%);" ++
+          "height: 30px; float: left; border: 1px solid black; position: relative;" ++
+          "display:block; padding:.3em 0.5em; top:" ++ show (c) ++ "px; left:" ++ show(b) ++ "px;")]
 
-      --name <- return $ dropdownMenu
+
+      --dynTriple <- combineDyn (triple) nClicks pos
+
+      --attrsDyn <- forDyn dynTriple setElAttrs
 
       -- Create a sampleBlock element
       (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
@@ -148,14 +173,14 @@ dragAndDrop = mdo
                                    "border: 1px solid black; background-color: light-blue" ++
                                    "display: block;")]
 
-{-
-mousePosition :: (IsMouseEvent e, GHCJS.IsElement t) => GHCJS.EventM e t (Int, Int)
-mousePosition = do
-  (x, y) <- mouseClientXY
-  return (x, y)
--}
+setElAttrs :: (Int,Int,Int)-> (Map String String)
+setElAttrs (x,y,t) = Data.Map.fromList
+  [("draggable", "true"),("class","countBin noselect")
+  ,("style","width:" ++ show (30+t*3) ++ "px;" ++
+    "background-color: hsl("++ show (t*5) ++ ",50%,50%);" ++
+    "height: 30px; float: left; border: 1px solid black; position: relative" ++
+    "display:block; padding:.3em 0.5em; left:" ++ show (0 + x) ++ "px;" ++ "top:" ++ show(0 + y) ++ "px;")]
 
---test = fst mousePosition
 
 dropdownEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t ())
 dropdownEl attrs name = do
