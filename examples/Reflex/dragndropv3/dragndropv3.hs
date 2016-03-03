@@ -102,12 +102,9 @@ removeFromState xs = case Data.Map.maxView xs of
 -- sPatternContainer :: R.MonadWidget t m => m (Dynamic t [Info]) ???
 sPatternContainer :: R.MonadWidget t m => m ()
 sPatternContainer = mdo
-  paletteEvent <- palette
-  sampleName <- holdDyn "" paletteEvent
-
-  -- Need type Event t Map Int Info
 
   addBlock <- (fmap (const appendToState info) <$> palette)
+
   removeBlock <- (fmap (\() -> removeFromState) . _link_clicked) <$>
                      linkClass "Remove Sample" "reflexLink noselect"
 
@@ -133,11 +130,12 @@ createSampleBlock unusedKey dynInfo = mdo
     (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
       display dynInfo
 
+    nClicks <- foldDyn (\() -> succ) (0 :: Int) (R.domEvent Click boxEl)
+
+    ----
     mousePosE <- wrapDomEvent (R._el_element boxEl) (GHCJS.elementOndrag) getMouseEventCoords
     pos <- holdDyn (0,0) mousePosE
     display pos
-
-    nClicks <- foldDyn (\() -> succ) (0 :: Int) (R.domEvent Click boxEl)
 
     attrsDyn <- forDyn pos $ \(b,c) ->
       Data.Map.fromList
@@ -146,8 +144,13 @@ createSampleBlock unusedKey dynInfo = mdo
         "background-color: hsl("++ show (b*0 + 5) ++ ",50%,50%);" ++
         "height: 30px; float: left; border: 1px solid black; position: relative;" ++
         "display:block; padding:.3em 0.5em; top:" ++ show (c) ++ "px; left:" ++ show(b) ++ "px;")]
+    ----
+
+    --(34+index*width,145)
+
     return ()
 
+--getMouseCoords :: MonadWidget t m => Dynamic t (Int,Int) -> Dynamic t (Int,Int)
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
@@ -182,7 +185,7 @@ setElAttrs (x,y,t) = Data.Map.fromList
     "height: 30px; float: left; border: 1px solid black; position: relative" ++
     "display:block; padding:.3em 0.5em; left:" ++ show (0 + x) ++ "px;" ++ "top:" ++ show(0 + y) ++ "px;")]
 
-{-
+{- do this Function
 getMousePositon :: El -> (Int,Int)
 getMousePositon El = do
       let ox = GHCJS.elementGetOffsetLeft (R._el_element boxEl)
