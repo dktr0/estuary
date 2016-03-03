@@ -34,29 +34,7 @@ import           GHCJS.Types as GHCJS
 import           GHCJS.DOM.Event  as GHCJS
 import           GHCJS.DOM.MouseEvent as GHCJS
 import qualified GHCJS.DOM.Element as GHCJS
-import           GHCJS.DOM.EventM (mouseClientXY)
 import qualified GHCJS.DOM.EventM as GHCJS
-
---instance IsMouseEvent MouseEvent
-
-data DragEvent = DragEnter | DragExit | DragDrop | DragDrag | DragEnd | DragClick | Empty
-  deriving (Eq, Show)
-
--- Tuple template
-tuple :: a -> b -> (a,b)
-tuple x y = (x,y)
-
-triple :: c -> (a,b) -> (a,b,c)
-triple z (x,y) = (x,y,z)
-
-fst' :: (a,b,c) -> a
-fst' (x,_,_) = x
-
-snd' :: (a,b,c) -> b
-snd' (_,y,_) = y
-
-thd' :: (a,b,c) -> c
-thd' (_,_,z) = z
 
 -- Function that implements the prevent default java action so that drop events can be detected.
 stopAll :: GHCJS.IsEvent event => GHCJS.EventM event e ()
@@ -68,20 +46,9 @@ stopAll = do
 main :: IO ()
 main = mainWidget $ do
   elAttr "div" ("style" =: s) $ text "Estuary"
-  setup
-  paletteEvent <- palette
   sPatternContainer
-  text ""
   where
     s = "font-size: 50px; margin-left: 155px; font-family: Helvetica; color: steelblue"
-
-{-  Does not provide functionality at the moment,
-    but will be used to set up links and other
-    nonessential UI elements.                      -}
-setup :: MonadWidget t m => m ()
-setup = el "div" $ do
-  text "hello"
-  el "br" (return ())
 
 -- Implements the drag and drop functionality for the sample blocks.
 -- for now Info is just the name of the sample but it will be much more involved later on
@@ -123,7 +90,7 @@ sPatternContainer = mdo
   where conAttrs = Data.Map.fromList [("style", "position: relative; top: 25px; height: 500px;" ++
                                      "border: 1px solid black; background-color: light-blue" ++
                                      "display: block;")]
-        info = "?"
+        info = "default"
 
 createSampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m ()
 createSampleBlock unusedKey dynInfo = mdo
@@ -132,7 +99,6 @@ createSampleBlock unusedKey dynInfo = mdo
 
     nClicks <- foldDyn (\() -> succ) (0 :: Int) (R.domEvent Click boxEl)
 
-    ----
     mousePosE <- wrapDomEvent (R._el_element boxEl) (GHCJS.elementOndrag) getMouseEventCoords
     pos <- holdDyn (0,0) mousePosE
     display pos
@@ -144,13 +110,8 @@ createSampleBlock unusedKey dynInfo = mdo
         "background-color: hsl("++ show (b*0 + 5) ++ ",50%,50%);" ++
         "height: 30px; float: left; border: 1px solid black; position: relative;" ++
         "display:block; padding:.3em 0.5em; top:" ++ show (c) ++ "px; left:" ++ show(b) ++ "px;")]
-    ----
-
-    --(34+index*width,145)
 
     return ()
-
---getMouseCoords :: MonadWidget t m => Dynamic t (Int,Int) -> Dynamic t (Int,Int)
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
@@ -173,23 +134,6 @@ palette = do
               [ ("style", "fontsize: 10px;" ++
                 "position: relative; float: left; text-decoration:none;" ++
                 "display:block; padding:.5em 2em; background:#cde;" ++
-                "border:1px solid #ccc; ")] --bottom: 535px;")]
+                "border:1px solid #ccc; ")]
       ulAttrs = Data.Map.fromList
               [("style", "list-style: none; margin:0; padding:0; position: absolute")]
-
-setElAttrs :: (Int,Int,Int)-> (Map String String)
-setElAttrs (x,y,t) = Data.Map.fromList
-  [("draggable", "true"),("class","countBin noselect")
-  ,("style","width:" ++ show (30+t*3) ++ "px;" ++
-    "background-color: hsl("++ show (t*5) ++ ",50%,50%);" ++
-    "height: 30px; float: left; border: 1px solid black; position: relative" ++
-    "display:block; padding:.3em 0.5em; left:" ++ show (0 + x) ++ "px;" ++ "top:" ++ show(0 + y) ++ "px;")]
-
-{- do this Function
-getMousePositon :: El -> (Int,Int)
-getMousePositon El = do
-      let ox = GHCJS.elementGetOffsetLeft (R._el_element boxEl)
-      let oy = GHCJS.elementGetOffsetTop (R._el_element boxEl)
-      --cx <- liftIO $ ox
-      --cy <- liftIO $ oy
--}
