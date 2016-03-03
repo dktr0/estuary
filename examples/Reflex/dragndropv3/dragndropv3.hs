@@ -28,18 +28,18 @@ import           Reflex.Dom.Widget.Basic as R
 import           Reflex.Dom.Class as R
 
 -- GHCJS Imports
-import           GHCJS.Types as GHCJS
-import           GHCJS.DOM.Event  as GHCJS
-import           GHCJS.DOM.MouseEvent as GHCJS
-import qualified GHCJS.DOM.Element as GHCJS
-import qualified GHCJS.DOM.EventM as GHCJS
+import           GHCJS.Types ()
+import qualified GHCJS.DOM.Event
+import qualified GHCJS.DOM.EventM
+import qualified GHCJS.DOM.MouseEvent
+import qualified GHCJS.DOM.Element
 
 -- Function that implements the prevent default java action so that drop events can be detected.
-stopAll :: GHCJS.IsEvent event => GHCJS.EventM event e ()
-stopAll = do
-  GHCJS.preventDefault
-  GHCJS.stopPropagation
-  return()
+-- stopAll :: GHCJS.DOM.Event.IsEvent event => GHCJS.DOM.EventM.EventM event e ()
+-- stopAll = do
+--  GHCJS.DOM.EventM.preventDefault
+--  GHCJS.DOM.EventM.stopPropagation
+--  return()
 
 main :: IO ()
 main = mainWidget $ do
@@ -86,11 +86,14 @@ sPatternContainer = do
                                      "border: 1px solid black; background-color: light-blue" ++
                                      "display: block;")]
 
+-- onEventName :: IsElement e => EventName en -> e -> EventM e (EventType en) () -> IO (IO ())
+--                                            (e -> EventM e event () -> IO (IO ()))
+
 displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m ()
 displaySampleBlock unusedKey dynInfo = mdo
     (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
       display dynInfo
-    mousePosE <- wrapDomEvent (R._el_element boxEl) (GHCJS.elementOndrag) getMouseEventCoords
+    mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
     pos <- holdDyn (0,0) mousePosE
     display pos
     attrsDyn <- forDyn pos $ \(b,c) ->

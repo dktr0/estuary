@@ -1,29 +1,29 @@
 code size summary per package:
 
-base:                    303810
-conta_5w3UY4chXx62LVUOUrXeRm:193104
-depen_3ZazWrAF611CC0pGA27xUj:2873
-depen_GZFfxs8A7WS3jvJthZg6p3:47741
+base:                    302570
+conta_5w3UY4chXx62LVUOUrXeRm:192612
+depen_5vw10fkSDDD0LdF4Qk8khv:2833
+depen_HCFzp6ZGqMz1lvJkHhl9BD:46586
 excep_Dt64kPlbg5dLPF70RHEAAf:4620
-ghc-prim:                26530
-ghcjs_6fO2sBDbxgl1lxlAeHzYMO:1846
-ghcjs_HXVFfu8XQIWJ1W77s2SHGo:126319
-ghcjs_HwzX8eXAwveCUOoAWSdVDg:9294
-integer-gmp:             6036
-main:                    37805
-refle_7iwpocFgnHQGhHLu6WiQzl:456456
-refle_BmKSHcKzE5FDdieyLaYalI:408275
+ghc-prim:                26369
+ghcjs_3QplLXy2vWKBYj9CBnT3bO:151092
+ghcjs_B7KLFJ07Vte3zPHAgRIBTb:10933
+ghcjs_Kc7TQ2cEDg1F5e5cgY2Vuk:9584
+integer-gmp:             5745
+main:                    37807
+refle_073cAmHqiGsDmkEUNXBHGr:488373
+refle_Hx2pd8sFQ344UykccphgzK:398156
 reftf_JOU40Nd0lxyACBtr3v80Qj:1202
-text_EUgTRFf4B9F3jYYcZNn3Au:3785
-these_HAPc5SObEh8LTs7RCXecPo:2756
-trans_KzbnBSIEqPI2eU1Inn4mzm:18958
+text_1ffW5NTi2SPHBcBuYSkgjk:3756
+these_5b569FzUapsEfp1egL7UWo:2725
+trans_KzbnBSIEqPI2eU1Inn4mzm:27894
 
 
 code size per module:
 
 base
     Control.Concurrent.Chan:            3533
-    Control.Exception.Base:             4053
+    Control.Exception.Base:             4020
     Control.Monad.Fix:                  584
     Data.Foldable:                      3580
     Data.Maybe:                         1186
@@ -37,11 +37,11 @@ base
     Foreign.Marshal.Array:              2038
     Foreign.Storable:                   2680
     GHC.Base:                           9552
-    GHC.Conc.Sync:                      8026
+    GHC.Conc.Sync:                      7822
     GHC.Enum:                           3490
     GHC.Err:                            218
-    GHC.Exception:                      5626
-    GHC.Foreign:                        12264
+    GHC.Exception:                      5575
+    GHC.Foreign:                        12136
     GHC.ForeignPtr:                     1265
     GHC.IO:                             4536
     GHC.IO.Buffer:                      1276
@@ -51,9 +51,9 @@ base
     GHC.IO.Encoding.Failure:            724
     GHC.IO.Encoding.Types:              1032
     GHC.IO.Encoding.UTF8:               61149
-    GHC.IO.Exception:                   17239
-    GHC.IO.FD:                          37613
-    GHC.IO.Handle:                      458
+    GHC.IO.Exception:                   17125
+    GHC.IO.FD:                          37215
+    GHC.IO.Handle:                      416
     GHC.IO.Handle.FD:                   6981
     GHC.IO.Handle.Internals:            27136
     GHC.IO.Handle.Types:                3571
@@ -65,26 +65,26 @@ base
     GHC.Ptr:                            188
     GHC.ST:                             186
     GHC.STRef:                          648
-    GHC.Show:                           20449
+    GHC.Show:                           20436
     GHC.Storable:                       1084
-    GHC.TopHandler:                     10506
+    GHC.TopHandler:                     10349
     GHC.Weak:                           188
     GHC.Word:                           350
-    System.Posix.Internals:             16219
+    System.Posix.Internals:             16119
 
 conta_5w3UY4chXx62LVUOUrXeRm
     Data.IntMap.Base:                   11330
-    Data.Map.Base:                      116442
-    Data.Map.Strict:                    12396
+    Data.Map.Base:                      116431
+    Data.Map.Strict:                    11915
     Data.Set.Base:                      52936
 
-depen_3ZazWrAF611CC0pGA27xUj
-    Data.Dependent.Sum:                 659
-    Data.GADT.Compare:                  2214
+depen_5vw10fkSDDD0LdF4Qk8khv
+    Data.Dependent.Sum:                 649
+    Data.GADT.Compare:                  2184
 
-depen_GZFfxs8A7WS3jvJthZg6p3
-    Data.Dependent.Map:                 14401
-    Data.Dependent.Map.Internal:        33340
+depen_HCFzp6ZGqMz1lvJkHhl9BD
+    Data.Dependent.Map:                 13130
+    Data.Dependent.Map.Internal:        33456
 
 excep_Dt64kPlbg5dLPF70RHEAAf
     Control.Monad.Exception:            4620
@@ -94,64 +94,65 @@ ghc-prim
     GHC.Classes:                        21909
     GHC.IntWord64:                      146
     GHC.Tuple:                          1098
-    GHC.Types:                          1489
+    GHC.Types:                          1328
 
-ghcjs_6fO2sBDbxgl1lxlAeHzYMO
-    GHCJS.Foreign:                      1230
-    GHCJS.Marshal:                      616
+ghcjs_3QplLXy2vWKBYj9CBnT3bO
+    GHCJS.DOM:                          10521
+    GHCJS.DOM.EventM:                   1344
+    GHCJS.DOM.JSFFI.Generated.Document: 3553
+    GHCJS.DOM.JSFFI.Generated.Element:  29418
+    GHCJS.DOM.JSFFI.Generated.NamedNodeMap:928
+    GHCJS.DOM.JSFFI.Generated.Node:     6649
+    GHCJS.DOM.JSFFI.Generated.Window:   1478
+    GHCJS.DOM.Types:                    97201
 
-ghcjs_HXVFfu8XQIWJ1W77s2SHGo
-    GHCJS.DOM:                          9224
-    GHCJS.DOM.DOMWindow:                1236
-    GHCJS.DOM.Document:                 4190
-    GHCJS.DOM.Element:                  36045
-    GHCJS.DOM.EventTargetClosures:      2034
-    GHCJS.DOM.NamedNodeMap:             659
-    GHCJS.DOM.Node:                     7516
-    GHCJS.DOM.Types:                    65415
+ghcjs_B7KLFJ07Vte3zPHAgRIBTb
+    GHCJS.Prim:                         6501
+    GHCJS.Prim.Internal:                4432
 
-ghcjs_HwzX8eXAwveCUOoAWSdVDg
-    GHCJS.Prim:                         8518
-    GHCJS.Prim.Internal:                776
+ghcjs_Kc7TQ2cEDg1F5e5cgY2Vuk
+    GHCJS.Marshal:                      7041
+    GHCJS.Marshal.Internal:             1826
+    GHCJS.Marshal.Pure:                 717
 
 integer-gmp
     GHC.Integer.GMP.Prim:               333
-    GHC.Integer.Type:                   5703
+    GHC.Integer.Type:                   5412
 
 main
-    Main:                               37805
+    Main:                               37807
 
-refle_7iwpocFgnHQGhHLu6WiQzl
-    Reflex.Dom.Class:                   17499
-    Reflex.Dom.Internal:                116202
-    Reflex.Dom.Widget.Basic:            322755
+refle_073cAmHqiGsDmkEUNXBHGr
+    Reflex.Dom.Class:                   17341
+    Reflex.Dom.Internal:                114784
+    Reflex.Dom.Widget.Basic:            356248
 
-refle_BmKSHcKzE5FDdieyLaYalI
-    Data.Functor.Misc:                  6173
-    Reflex.Class:                       17821
+refle_Hx2pd8sFQ344UykccphgzK
+    Data.Functor.Misc:                  5280
+    Reflex.Class:                       16321
     Reflex.Dynamic:                     12734
     Reflex.Host.Class:                  2209
-    Reflex.Spider.Internal:             369338
+    Reflex.Spider.Internal:             361612
 
 reftf_JOU40Nd0lxyACBtr3v80Qj
     Control.Monad.Ref:                  1202
 
-text_EUgTRFf4B9F3jYYcZNn3Au
-    Data.Text.Array:                    1217
-    Data.Text.Internal:                 1254
-    Data.Text.Internal.Fusion.Common:   1314
+text_1ffW5NTi2SPHBcBuYSkgjk
+    Data.Text.Array:                    1206
+    Data.Text.Internal:                 1246
+    Data.Text.Internal.Fusion.Common:   1304
 
-these_HAPc5SObEh8LTs7RCXecPo
-    Data.Align:                         1940
-    Data.These:                         816
+these_5b569FzUapsEfp1egL7UWo
+    Data.Align:                         1900
+    Data.These:                         825
 
 trans_KzbnBSIEqPI2eU1Inn4mzm
-    Control.Monad.IO.Class:             751
-    Control.Monad.Trans.Reader:         8013
-    Control.Monad.Trans.State.Lazy:     847
-    Control.Monad.Trans.State.Strict:   9347
+    Control.Monad.IO.Class:             747
+    Control.Monad.Trans.Reader:         7860
+    Control.Monad.Trans.State.Lazy:     10107
+    Control.Monad.Trans.State.Strict:   9180
 
 
 
-packed metadata: 312718
+packed metadata: 341470
 
