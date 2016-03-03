@@ -3,8 +3,6 @@
 -- Estuary UI : Reflex/GHCJS front end for Tidal
 -- My attempt at creating a drag and drop interface with Reflex and GHCJS
 {-# LANGUAGE RecursiveDo #-}
---{-# LANGUAGE ExistentialQuantification #-}
---{-# LANGUAGE ScopedTypeVariables #-}
 
 --import           Sound.Tidal.Context as Tidal
 
