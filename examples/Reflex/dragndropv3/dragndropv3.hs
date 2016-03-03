@@ -64,43 +64,35 @@ removeFromState xs = case Data.Map.maxView xs of
   Nothing -> xs
   Just (_,xs') -> xs'
 
--- sPatternContainer :: R.MonadWidget t m => m (Dynamic t [Info]) ???
+blockAppender :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
+blockAppender = do
+  paletteE <- palette
+  return $ fmap (appendToState) paletteE
+
+blockRemover :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
+blockRemover = do
+  removeE <- button "Remove Sample"
+  return $ fmap (\() -> removeFromState) removeE
+
 sPatternContainer :: R.MonadWidget t m => m ()
-sPatternContainer = mdo
-
-  addBlock <- (fmap (const appendToState info) <$> palette)
-
-  removeBlock <- (fmap (\() -> removeFromState) . _link_clicked) <$>
-                     linkClass "Remove Sample" "reflexLink noselect"
-
-  dynamicMap <- foldDyn ($)
-               initialState
-               (leftmost $ [addBlock, removeBlock])
-
+sPatternContainer = do
+  events <- sequence [blockRemover,blockAppender]
+  dynamicMap <- foldDyn ($) initialState (leftmost events)
   (container, _) <- elAttr' "div" conAttrs $ do
-
-    listWithKey dynamicMap createSampleBlock
-
+    listWithKey dynamicMap displaySampleBlock
     el "br" (return ())
-
   return (())
-
   where conAttrs = Data.Map.fromList [("style", "position: relative; top: 25px; height: 500px;" ++
                                      "border: 1px solid black; background-color: light-blue" ++
                                      "display: block;")]
-        info = "default"
 
-createSampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m ()
-createSampleBlock unusedKey dynInfo = mdo
+displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m ()
+displaySampleBlock unusedKey dynInfo = mdo
     (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
       display dynInfo
-
-    nClicks <- foldDyn (\() -> succ) (0 :: Int) (R.domEvent Click boxEl)
-
     mousePosE <- wrapDomEvent (R._el_element boxEl) (GHCJS.elementOndrag) getMouseEventCoords
     pos <- holdDyn (0,0) mousePosE
     display pos
-
     attrsDyn <- forDyn pos $ \(b,c) ->
       Data.Map.fromList
       [("draggable", "true"),("class","countBin noselect")
@@ -108,7 +100,6 @@ createSampleBlock unusedKey dynInfo = mdo
         "background-color: hsl("++ show (b*0 + 5) ++ ",50%,50%);" ++
         "height: 30px; float: left; border: 1px solid black; position: relative;" ++
         "display:block; padding:.3em 0.5em; top:" ++ show (c) ++ "px; left:" ++ show(b) ++ "px;")]
-
     return ()
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
