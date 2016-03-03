@@ -69,6 +69,7 @@ main :: IO ()
 main = mainWidget $ do
   elAttr "div" ("style" =: s) $ text "Estuary"
   setup
+  paletteEvent <- palette
   sPatternContainer
   text ""
   where
@@ -90,9 +91,8 @@ initialState :: Map Int Info
 initialState = fromList [(0,info)]
  where info = "bd"
 
-appendToState :: Map Int Info -> Map Int Info
-appendToState xs = Data.Map.insert (length xs) info xs
- where info = "bd"
+appendToState :: Info -> Map Int Info -> Map Int Info
+appendToState info xs = Data.Map.insert (length xs) info xs
 
 removeFromState :: Map Int Info -> Map Int Info
 removeFromState xs = case Data.Map.maxView xs of
@@ -103,7 +103,11 @@ removeFromState xs = case Data.Map.maxView xs of
 sPatternContainer :: R.MonadWidget t m => m ()
 sPatternContainer = mdo
   paletteEvent <- palette
-  addBlock <- (fmap (\() -> appendToState) <$> palette)
+  sampleName <- holdDyn "" paletteEvent
+
+  -- Need type Event t Map Int Info
+
+  addBlock <- (fmap (const appendToState info) <$> palette)
   removeBlock <- (fmap (\() -> removeFromState) . _link_clicked) <$>
                      linkClass "Remove Sample" "reflexLink noselect"
 
@@ -122,11 +126,12 @@ sPatternContainer = mdo
   where conAttrs = Data.Map.fromList [("style", "position: relative; top: 25px; height: 500px;" ++
                                      "border: 1px solid black; background-color: light-blue" ++
                                      "display: block;")]
+        info = "?"
 
 createSampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m ()
-createSampleBlock unusedKey unusedDynamicThing = mdo
+createSampleBlock unusedKey dynInfo = mdo
     (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
-      display unusedDynamicThing
+      display dynInfo
 
     mousePosE <- wrapDomEvent (R._el_element boxEl) (GHCJS.elementOndrag) getMouseEventCoords
     pos <- holdDyn (0,0) mousePosE
@@ -144,12 +149,12 @@ createSampleBlock unusedKey unusedDynamicThing = mdo
     return ()
 
 
-paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t ())
+paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
   (e,_) <- elAttr' "li" attrs $ text name
-  return $ (R.domEvent R.Click e)
+  return $ ( name <$ R.domEvent R.Click e)
 
-palette :: MonadWidget t m => m (R.Event t ())
+palette :: MonadWidget t m => m (R.Event t Info)
 palette = do
     elAttr "ul" ulAttrs $ do
       bd <- paletteEl liAttrs "bd"
@@ -165,9 +170,9 @@ palette = do
               [ ("style", "fontsize: 10px;" ++
                 "position: relative; float: left; text-decoration:none;" ++
                 "display:block; padding:.5em 2em; background:#cde;" ++
-                "border:1px solid #ccc; bottom: 535px;")]
+                "border:1px solid #ccc; ")] --bottom: 535px;")]
       ulAttrs = Data.Map.fromList
-              [("style", "list-style: none; margin:0; padding:0; position: relative;")]
+              [("style", "list-style: none; margin:0; padding:0; position: absolute")]
 
 setElAttrs :: (Int,Int,Int)-> (Map String String)
 setElAttrs (x,y,t) = Data.Map.fromList
