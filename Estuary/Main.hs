@@ -4,7 +4,9 @@
 -- My attempt at creating a drag and drop interface with Reflex and GHCJS
 {-# LANGUAGE RecursiveDo #-}
 
---import           Sound.Tidal.Context as Tidal
+import           Sound.Tidal.Context as Tidal
+
+import           Tidal.Utils
 
 -- Haskell Imports
 import           Control.Monad
@@ -33,15 +35,6 @@ import           GHCJS.DOM.Event  as GHCJS
 import           GHCJS.DOM.MouseEvent as GHCJS
 import qualified GHCJS.DOM.Element as GHCJS
 import qualified GHCJS.DOM.EventM as GHCJS
-
--- Function that implements the prevent default java action so that drop events can be detected.
-{-
-stopAll :: GHCJS.IsEvent event => GHCJS.EventM event e ()
-stopAll = do
-  GHCJS.preventDefault
-  GHCJS.stopPropagation
-  return()
--}
 
 main :: IO ()
 main = mainWidget $ do
@@ -84,7 +77,7 @@ sPatternContainer = do
     listWithKey dynamicMap displaySampleBlock
     el "br" (return ())
   return (())
-  where conAttrs = Data.Map.fromList [("style", "position: relative; top: 25px; height: 500px;" ++
+  where conAttrs = Data.Map.fromList [("style", "position: relative; top: 50px; height: 500px;" ++
                                      "border: 1px solid black; background-color: light-blue" ++
                                      "display: block;")]
 
@@ -92,6 +85,10 @@ displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m ()
 displaySampleBlock unusedKey dynInfo = mdo
     (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
       display dynInfo
+
+    arc <- forDyn dynInfo extractArcs
+    display arc
+
     mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
     pos <- holdDyn (0,0) mousePosE
     display pos
@@ -128,4 +125,3 @@ palette = do
                 "border:1px solid #ccc; ")]
       ulAttrs = Data.Map.fromList
               [("style", "list-style: none; margin:0; padding:0; position: absolute")]
-              
