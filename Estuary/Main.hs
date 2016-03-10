@@ -16,7 +16,7 @@ import           Data.String
 import           Data.Default
 import           Data.Text (Text, intercalate)
 import           Data.Array
-import           Data.Map (Map, fromList, maxView, insert)
+import           Data.Map (Map, fromList, maxView, insert, fold)
 import qualified Data.Text as T
 
 -- Reflex Imports
@@ -59,6 +59,9 @@ removeFromState xs = case Data.Map.maxView xs of
   Nothing -> xs
   Just (_,xs') -> xs'
 
+getPattFromState :: Map Int Info -> String
+getPattFromState xs = Data.Map.fold (++) "" xs
+
 blockAppender :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
 blockAppender = do
   paletteE <- palette
@@ -73,6 +76,10 @@ sPatternContainer :: R.MonadWidget t m => m ()
 sPatternContainer = do
   events <- sequence [blockRemover,blockAppender]
   dynamicMap <- foldDyn ($) initialState (leftmost events)
+  patt <- forDyn dynamicMap getPattFromState
+  display patt
+  arc <- forDyn patt extractArcs
+  display arc
   (container, _) <- elAttr' "div" conAttrs $ do
     listWithKey dynamicMap displaySampleBlock
     el "br" (return ())
@@ -85,9 +92,6 @@ displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m ()
 displaySampleBlock unusedKey dynInfo = mdo
     (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
       display dynInfo
-
-    arc <- forDyn dynInfo extractArcs
-    display arc
 
     mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
     pos <- holdDyn (0,0) mousePosE
@@ -109,13 +113,13 @@ paletteEl attrs name = do
 palette :: MonadWidget t m => m (R.Event t Info)
 palette = do
     elAttr "ul" ulAttrs $ do
-      bd <- paletteEl liAttrs "bd"
-      sn <- paletteEl liAttrs "sn"
-      arpy <- paletteEl liAttrs "arpy"
-      arp <- paletteEl liAttrs "arp"
-      hh <- paletteEl liAttrs "hh"
-      ht <- paletteEl liAttrs "ht"
-      cp <- paletteEl liAttrs "cp"
+      bd <- paletteEl liAttrs " bd"
+      sn <- paletteEl liAttrs " sn"
+      arpy <- paletteEl liAttrs " arpy"
+      arp <- paletteEl liAttrs " arp"
+      hh <- paletteEl liAttrs " hh"
+      ht <- paletteEl liAttrs " ht"
+      cp <- paletteEl liAttrs " cp"
       (return $ R.leftmost [bd,sn,arpy,arp,hh,ht,cp])
     where
       liAttrs = Data.Map.fromList
