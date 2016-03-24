@@ -39,7 +39,7 @@ import qualified GHCJS.DOM.EventM as GHCJS
 main :: IO ()
 main = mainWidget $ do
   elAttr "div" ("style" =: s) $ text "Estuary"
-  sPatternContainer
+  blockWidget
   where
     s = "font-size: 50px; margin-left: 155px; font-family: Helvetica; color: steelblue"
 
@@ -54,56 +54,110 @@ initialState = fromList [(0,info)]
 appendToState :: Info -> Map Int Info -> Map Int Info
 appendToState info xs = Data.Map.insert (length xs) info xs
 
-removeFromState :: Map Int Info -> Map Int Info
-removeFromState xs = case Data.Map.maxView xs of
+removeFromState :: Int -> Map Int Info -> Map Int Info
+removeFromState key xs = case Data.Map.maxView xs of
   Nothing -> xs
   Just (_,xs') -> xs'
 
 getPattFromState :: Map Int Info -> String
 getPattFromState xs = Data.Map.fold (++) "" xs
 
+updateState :: (Int,Info) -> Map Int Info -> Map Int Info
+updateState tuple xs = update thingy
+
+
 blockAppender :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
-blockAppender = do
+blockAppender paletteE = do
   paletteE <- palette
   return $ fmap (appendToState) paletteE
 
-blockRemover :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
-blockRemover = do
-  removeE <- button "Remove Sample"
+blockRemover :: R.MonadWidget t m => Dynamic t Int -> m (R.Event t (Map Int Info -> Map Int Info))
+blockRemover keyE = do
+  removerE <- removerWidget
+  let removeE = fmap (\() -> removerE) keyE
+  -- tagDyn
+  -- bind remove event with key of selected block
   return $ fmap (\() -> removeFromState) removeE
 
-sPatternContainer :: R.MonadWidget t m => m ()
-sPatternContainer = do
-  events <- sequence [blockRemover,blockAppender]
+blockUpdater :: R.MonadWidget t m => R.Event t (Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
+blockUpdater dynMap = do
+  return $ fmap (updateState) dynMap
+
+-------------------------Need to add blockUpdater event--------------------------
+blockWidget :: R.MonadWidget t m => m ()
+blockWidget = mdo
+
+  blockTupleE <- createContainerEl dynamicMap
+  blockDTuple <- holdDyn (0,"") blockTupleE
+
+  blockTupleD <- splitDyn blockDTuple
+
+  keyD <- fst blockTupleD
+  infoD <- snd blockTupleD
+
+  events <- sequence [blockRemover ,blockAppender,blockUpdater blockUpdater]
   dynamicMap <- foldDyn ($) initialState (leftmost events)
+
+  -----------------Testing------------------
   patt <- forDyn dynamicMap getPattFromState
   display patt
-  arc <- forDyn patt extractArcs
-  display arc
-  (container, _) <- elAttr' "div" conAttrs $ do
-    listWithKey dynamicMap displaySampleBlock
-    el "br" (return ())
+  showarc <- forDyn patt showAllArcs
+  display showarc
+  arcs <- forDyn patt extractArcs
+  display arcs
+  ------------------------------------------
   return (())
+
+removerWidget :: MonadWidget t m => m (R.Event t ())
+removerWidget = do
+  removeE <- button "Remove Block"
+  return $ removeE
+
+createContainerEl :: MonadWidget t m => m (Dynamic t (Map Int Info)) -> m (R.Event t (Map Int Info))
+createContainerEl dynamicMap = mdo
+  (container, keyE) <- elAttr' "div" conAttrs $ do
+    key <- listViewWithKey dynamicMap displaySampleBlock
+    return $ key
+  return $ keyE
   where conAttrs = Data.Map.fromList [("style", "position: relative; top: 50px; height: 500px;" ++
-                                     "border: 1px solid black; background-color: light-blue" ++
-                                     "display: block;")]
+                                       "border: 1px solid black; background-color: light-blue" ++
+                                       "display: block;")]
 
-displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m ()
-displaySampleBlock unusedKey dynInfo = mdo
-    (boxEl,_) <- elDynAttr' "div" attrsDyn $ do
-      display dynInfo
+createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El)
+createBoxEl dynInfo attrsDyn = do
+  (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
+    display dynInfo
+  return $ boxEl
 
-    mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
-    pos <- holdDyn (0,0) mousePosE
-    display pos
-    attrsDyn <- forDyn pos $ \(b,c) ->
-      Data.Map.fromList
-      [("draggable", "true"),("class","countBin noselect")
-      ,("style","width:" ++ show (b*0 + 30) ++ "px;" ++
-        "background-color: hsl("++ show (b*0 + 5) ++ ",50%,50%);" ++
-        "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-        "display:block; padding:.3em 0.5em; top:" ++ show (c) ++ "px; left:" ++ show(b) ++ "px;")]
-    return ()
+displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> Dynamic t Bool -> m (R.Event t (Int, Info))
+displaySampleBlock key dynInfo isSelected = do
+  boxEl <- createBoxEl dynInfo
+
+  -- If the block is currently selected (isSelected = true)
+  -- some behaviour
+
+  mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
+  pos <- holdDyn (0,0) mousePosE
+  display pos
+
+  -- If block gets clicked
+  -- increment counter change name (return in info)
+  -- requires an update
+
+  -- create (Int,Info) tuple
+
+  attrsDyn <- forDyn pos $ \(a,b) ->
+    Data.Map.fromList
+    [("draggable", "true"),("class","countBin noselect")
+    ,("style","width:" ++ show (b*0 + 30) ++ "px;" ++
+      "background-color: hsl("++ show (b* 0 + 10) ++ ",50%,50%);" ++
+      "height: 30px; float: left; border: 1px solid black; position: relative;" ++
+      "display:block; padding:.3em 0.5em; left:" ++ show (a) ++ "px; top:" ++ show(b) ++ "px;")]
+
+  -- return key of block if selected along with its info
+  return $ leftmost [
+          (tuple <$ R.domEvent R.Click boxEl
+          ]
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
@@ -123,9 +177,9 @@ palette = do
       (return $ R.leftmost [bd,sn,arpy,arp,hh,ht,cp])
     where
       liAttrs = Data.Map.fromList
-              [ ("style", "fontsize: 10px;" ++
+              [ ("style", "fontsize: 6px;" ++
                 "position: relative; float: left; text-decoration:none;" ++
-                "display:block; padding:.5em 2em; background:#cde;" ++
+                "display:block; padding:.8em 2.2em; background:#cde;" ++
                 "border:1px solid #ccc; ")]
       ulAttrs = Data.Map.fromList
               [("style", "list-style: none; margin:0; padding:0; position: absolute")]
