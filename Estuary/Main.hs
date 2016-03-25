@@ -16,7 +16,7 @@ import           Data.String
 import           Data.Default
 import           Data.Text (Text, intercalate)
 import           Data.Array
-import           Data.Map (Map, fromList, maxView, insert, fold)
+import           Data.Map (Map, fromList, maxView, insert, fold, adjust)
 import qualified Data.Text as T
 
 -- Reflex Imports
@@ -63,39 +63,37 @@ getPattFromState :: Map Int Info -> String
 getPattFromState xs = Data.Map.fold (++) "" xs
 
 updateState :: (Int,Info) -> Map Int Info -> Map Int Info
-updateState tuple xs = update thingy
-
+updateState tuple xs = Data.Map.adjust ( (snd tuple) ++) (fst tuple) xs
 
 blockAppender :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
-blockAppender paletteE = do
+blockAppender = do
   paletteE <- palette
   return $ fmap (appendToState) paletteE
 
 blockRemover :: R.MonadWidget t m => Dynamic t Int -> m (R.Event t (Map Int Info -> Map Int Info))
-blockRemover keyE = do
+blockRemover keyD = do
   removerE <- removerWidget
-  let removeE = fmap (\() -> removerE) keyE
-  -- tagDyn
-  -- bind remove event with key of selected block
-  return $ fmap (\() -> removeFromState) removeE
+  removeE <- return $ tagDyn keyD removerE
+  return $ fmap (removeFromState) removeE
 
-blockUpdater :: R.MonadWidget t m => R.Event t (Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
-blockUpdater dynMap = do
-  return $ fmap (updateState) dynMap
+blockUpdater :: R.MonadWidget t m => R.Event t (Int,Info) -> m (R.Event t (Map Int Info -> Map Int Info))
+blockUpdater updateE = do
+  return $ fmap (updateState) updateE
 
 -------------------------Need to add blockUpdater event--------------------------
 blockWidget :: R.MonadWidget t m => m ()
 blockWidget = mdo
 
-  blockTupleE <- createContainerEl dynamicMap
+  blockTupleE <- createContainerEl dynamicMap keyD
   blockDTuple <- holdDyn (0,"") blockTupleE
+  --updateE <- update dynamicMap
 
   blockTupleD <- splitDyn blockDTuple
 
-  keyD <- fst blockTupleD
+  keyD <- return $ fst blockTupleD
   infoD <- snd blockTupleD
 
-  events <- sequence [blockRemover ,blockAppender,blockUpdater blockUpdater]
+  events <- sequence [blockRemover keyD,blockAppender,blockUpdater blockTupleE]
   dynamicMap <- foldDyn ($) initialState (leftmost events)
 
   -----------------Testing------------------
@@ -113,17 +111,17 @@ removerWidget = do
   removeE <- button "Remove Block"
   return $ removeE
 
-createContainerEl :: MonadWidget t m => m (Dynamic t (Map Int Info)) -> m (R.Event t (Map Int Info))
-createContainerEl dynamicMap = mdo
-  (container, keyE) <- elAttr' "div" conAttrs $ do
-    key <- listViewWithKey dynamicMap displaySampleBlock
-    return $ key
-  return $ keyE
+createContainerEl :: MonadWidget t m => Dynamic t Int -> Dynamic t (Map Int Info) -> m (R.Event t (Int, Info))
+createContainerEl dynKey dynamicMap = mdo
+  (container, tupleE) <- elAttr' "div" conAttrs $ do
+    tuple <- R.selectViewListWithKey dynKey dynamicMap displaySampleBlock
+    return $ tuple
+  return $ tupleE
   where conAttrs = Data.Map.fromList [("style", "position: relative; top: 50px; height: 500px;" ++
                                        "border: 1px solid black; background-color: light-blue" ++
                                        "display: block;")]
 
-createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El)
+createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El t)
 createBoxEl dynInfo attrsDyn = do
   (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
     display dynInfo
@@ -144,8 +142,6 @@ displaySampleBlock key dynInfo isSelected = do
   -- increment counter change name (return in info)
   -- requires an update
 
-  -- create (Int,Info) tuple
-
   attrsDyn <- forDyn pos $ \(a,b) ->
     Data.Map.fromList
     [("draggable", "true"),("class","countBin noselect")
@@ -154,10 +150,12 @@ displaySampleBlock key dynInfo isSelected = do
       "height: 30px; float: left; border: 1px solid black; position: relative;" ++
       "display:block; padding:.3em 0.5em; left:" ++ show (a) ++ "px; top:" ++ show(b) ++ "px;")]
 
+  boxDomE <- leftmost [(key, dynInfo) <$ R.domEvent R.Click boxEl]
+
+  boxE <- attachDyn dynInfo boxDomE
+
   -- return key of block if selected along with its info
-  return $ leftmost [
-          (tuple <$ R.domEvent R.Click boxEl
-          ]
+  return $ boxE
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
