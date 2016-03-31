@@ -21,7 +21,7 @@ import qualified Data.Text as T
 
 -- Reflex Imports
 -- Reflex Quick Reference                : https://github.com/ryantrinkle/reflex/blob/develop/Quickref.md
-import           Reflex as R
+--import           Reflex as R
 -- Reflex.Dom Quick Reference            : https://github.com/ryantrinkle/reflex-dom/blob/develop/Quickref.md
 import           Reflex.Dom as R
 -- Reflex.Dom.Widget.Basic Documentation : https://hackage.haskell.org/package/reflex-dom-0.2/docs/Reflex-Dom-Widget-Basic.html#v:DropTag
@@ -54,8 +54,8 @@ initialState = fromList [(0,info)]
 appendToState :: Info -> Map Int Info -> Map Int Info
 appendToState info xs = Data.Map.insert (length xs) info xs
 
-removeFromState :: Int -> Map Int Info -> Map Int Info
-removeFromState key xs = case Data.Map.maxView xs of
+removeFromState :: Map Int Info -> Map Int Info
+removeFromState xs = case Data.Map.maxView xs of
   Nothing -> xs
   Just (_,xs') -> xs'
 
@@ -72,9 +72,9 @@ blockAppender = do
 
 blockRemover :: R.MonadWidget t m => Dynamic t Int -> m (R.Event t (Map Int Info -> Map Int Info))
 blockRemover keyD = do
-  removerE <- removerWidget
-  removeE <- return $ tagDyn keyD removerE
-  return $ fmap (removeFromState) removeE
+  removeE <- removerWidget
+  display keyD
+  return $ fmap (\() -> removeFromState) removeE
 
 blockUpdater :: R.MonadWidget t m => R.Event t (Int,Info) -> m (R.Event t (Map Int Info -> Map Int Info))
 blockUpdater updateE = do
@@ -84,16 +84,13 @@ blockUpdater updateE = do
 blockWidget :: R.MonadWidget t m => m ()
 blockWidget = mdo
 
-  blockTupleE <- createContainerEl dynamicMap keyD
+  blockTupleE <- createContainerEl keyD dynamicMap
   blockDTuple <- holdDyn (0,"") blockTupleE
-  --updateE <- update dynamicMap
-
   blockTupleD <- splitDyn blockDTuple
 
   keyD <- return $ fst blockTupleD
-  infoD <- snd blockTupleD
 
-  events <- sequence [blockRemover keyD,blockAppender,blockUpdater blockTupleE]
+  events <- sequence [blockRemover keyD, blockAppender]--, blockUpdater blockTupleE]
   dynamicMap <- foldDyn ($) initialState (leftmost events)
 
   -----------------Testing------------------
@@ -104,7 +101,7 @@ blockWidget = mdo
   arcs <- forDyn patt extractArcs
   display arcs
   ------------------------------------------
-  return (())
+  return ()
 
 removerWidget :: MonadWidget t m => m (R.Event t ())
 removerWidget = do
@@ -114,22 +111,23 @@ removerWidget = do
 createContainerEl :: MonadWidget t m => Dynamic t Int -> Dynamic t (Map Int Info) -> m (R.Event t (Int, Info))
 createContainerEl dynKey dynamicMap = mdo
   (container, tupleE) <- elAttr' "div" conAttrs $ do
-    tuple <- R.selectViewListWithKey dynKey dynamicMap displaySampleBlock
+    tuple <- selectViewListWithKey dynKey dynamicMap displaySampleBlock
     return $ tuple
   return $ tupleE
-  where conAttrs = Data.Map.fromList [("style", "position: relative; top: 50px; height: 500px;" ++
+  where conAttrs = Data.Map.fromList [("style", "position: relative; height: 500px;" ++
                                        "border: 1px solid black; background-color: light-blue" ++
                                        "display: block;")]
 
+{-
 createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El t)
 createBoxEl dynInfo attrsDyn = do
+  return $ boxEl
+-}
+
+displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> Dynamic t Bool -> m (R.Event t Info)
+displaySampleBlock key dynInfo isSelected = mdo
   (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
     display dynInfo
-  return $ boxEl
-
-displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> Dynamic t Bool -> m (R.Event t (Int, Info))
-displaySampleBlock key dynInfo isSelected = do
-  boxEl <- createBoxEl dynInfo
 
   -- If the block is currently selected (isSelected = true)
   -- some behaviour
@@ -150,9 +148,9 @@ displaySampleBlock key dynInfo isSelected = do
       "height: 30px; float: left; border: 1px solid black; position: relative;" ++
       "display:block; padding:.3em 0.5em; left:" ++ show (a) ++ "px; top:" ++ show(b) ++ "px;")]
 
-  boxDomE <- leftmost [(key, dynInfo) <$ R.domEvent R.Click boxEl]
+  boxDomE <- return $ leftmost [R.domEvent R.Click boxEl]
 
-  boxE <- attachDyn dynInfo boxDomE
+  boxE <- return $ tagDyn dynInfo boxDomE
 
   -- return key of block if selected along with its info
   return $ boxE
