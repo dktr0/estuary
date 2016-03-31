@@ -54,16 +54,17 @@ initialState = fromList [(0,info)]
 appendToState :: Info -> Map Int Info -> Map Int Info
 appendToState info xs = Data.Map.insert (length xs) info xs
 
-removeFromState :: Map Int Info -> Map Int Info
-removeFromState xs = case Data.Map.maxView xs of
+removeFromState :: Int -> Map Int Info -> Map Int Info
+removeFromState key xs = case Data.Map.maxView xs of
   Nothing -> xs
   Just (_,xs') -> xs'
 
 getPattFromState :: Map Int Info -> String
 getPattFromState xs = Data.Map.fold (++) "" xs
 
-updateState :: (Int,Info) -> Map Int Info -> Map Int Info
-updateState tuple xs = Data.Map.adjust ( (snd tuple) ++) (fst tuple) xs
+updateState :: Map Int Info -> Map Int Info
+updateState xs = xs
+--updateState tuple xs = Data.Map.adjust ( (snd tuple) ++) (fst tuple) xs
 
 blockAppender :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
 blockAppender = do
@@ -72,13 +73,27 @@ blockAppender = do
 
 blockRemover :: R.MonadWidget t m => Dynamic t Int -> m (R.Event t (Map Int Info -> Map Int Info))
 blockRemover keyD = do
-  removeE <- removerWidget
+  removerE <- removerWidget
+  removeE <- return $ tagDyn keyD removerE
+  test <- holdDyn 20 removeE
+  display test
   display keyD
-  return $ fmap (\() -> removeFromState) removeE
+  --let dynTest = constDyn 1
+  --removeTestE <- return $ tagDyn dynTest removerE
+  return $ fmap (removeFromState) removeE
 
-blockUpdater :: R.MonadWidget t m => R.Event t (Int,Info) -> m (R.Event t (Map Int Info -> Map Int Info))
-blockUpdater updateE = do
-  return $ fmap (updateState) updateE
+blockUpdater :: R.MonadWidget t m => Dynamic t (Int,Info) -> m (R.Event t (Map Int Info -> Map Int Info))
+blockUpdater blockDTuple = do
+  updaterE <- updaterWidget
+  blockTupleD <- splitDyn blockDTuple
+  display $ fst blockTupleD
+  display $ snd blockTupleD
+  updateE <- return $ tagDyn blockDTuple updaterE
+  test <- holdDyn (0,"") updateE
+  test2 <- splitDyn test
+  display $ fst test2
+  display $ snd test2
+  return $ fmap (\() -> updateState) updaterE
 
 -------------------------Need to add blockUpdater event--------------------------
 blockWidget :: R.MonadWidget t m => m ()
@@ -88,9 +103,15 @@ blockWidget = mdo
   blockDTuple <- holdDyn (0,"") blockTupleE
   blockTupleD <- splitDyn blockDTuple
 
-  keyD <- return $ fst blockTupleD
+  display $ fst blockTupleD
+  display $ snd blockTupleD
 
-  events <- sequence [blockRemover keyD, blockAppender]--, blockUpdater blockTupleE]
+  keyD <- return $ fst blockTupleD
+  test <- blockRemover keyD
+
+  events <- sequence [blockAppender, blockUpdater blockDTuple]
+
+  -- Fix this line so you can have circular dependencies with the map
   dynamicMap <- foldDyn ($) initialState (leftmost events)
 
   -----------------Testing------------------
@@ -108,6 +129,11 @@ removerWidget = do
   removeE <- button "Remove Block"
   return $ removeE
 
+updaterWidget :: MonadWidget t m => m (R.Event t ())
+updaterWidget = do
+  updateE <- button "Update Pattern"
+  return $ updateE
+
 createContainerEl :: MonadWidget t m => Dynamic t Int -> Dynamic t (Map Int Info) -> m (R.Event t (Int, Info))
 createContainerEl dynKey dynamicMap = mdo
   (container, tupleE) <- elAttr' "div" conAttrs $ do
@@ -118,16 +144,15 @@ createContainerEl dynKey dynamicMap = mdo
                                        "border: 1px solid black; background-color: light-blue" ++
                                        "display: block;")]
 
-{-
 createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El t)
 createBoxEl dynInfo attrsDyn = do
+  (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
+    display dynInfo
   return $ boxEl
--}
 
 displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> Dynamic t Bool -> m (R.Event t Info)
 displaySampleBlock key dynInfo isSelected = mdo
-  (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
-    display dynInfo
+  boxEl <- createBoxEl dynInfo attrsDyn
 
   -- If the block is currently selected (isSelected = true)
   -- some behaviour
