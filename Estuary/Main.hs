@@ -16,7 +16,8 @@ import           Data.String
 import           Data.Default
 import           Data.Text (Text, intercalate)
 import           Data.Array
-import           Data.Map (Map, fromList, maxView, insert, fold, adjust)
+import           Data.Maybe
+import           Data.Map (Map, fromList, maxView, insert, fold, adjust, delete, findMax)
 import qualified Data.Text as T
 
 -- Reflex Imports
@@ -43,59 +44,47 @@ main = mainWidget $ do
   where
     s = "font-size: 50px; margin-left: 155px; font-family: Helvetica; color: steelblue"
 
+data BoxEvent = Click | Drag | Drop | Dragover
+  deriving (Eq, Show)
+
 -- Implements the drag and drop functionality for the sample blocks.
 -- for now Info is just the name of the sample but it will be much more involved later on
 type Info = String
 
 initialState :: Map Int Info
-initialState = fromList [(0,info)]
+initialState = Data.Map.fromList [(0,info)]
  where info = "bd"
 
 appendToState :: Info -> Map Int Info -> Map Int Info
-appendToState info xs = Data.Map.insert (length xs) info xs
+appendToState info xs = Data.Map.insert ((+1) $ fst $ Data.Map.findMax xs) info xs
 
 removeFromState :: Int -> Map Int Info -> Map Int Info
-removeFromState key xs = case Data.Map.maxView xs of
-  Nothing -> xs
-  Just (_,xs') -> xs'
+removeFromState key xs = Data.Map.delete key xs
 
 getPattFromState :: Map Int Info -> String
 getPattFromState xs = Data.Map.fold (++) "" xs
 
-updateState :: Map Int Info -> Map Int Info
-updateState xs = xs
---updateState tuple xs = Data.Map.adjust ( (snd tuple) ++) (fst tuple) xs
+updateState :: (Int,Info) -> Map Int Info -> Map Int Info
+updateState tuple xs = Data.Map.adjust ( (snd tuple) ++) (fst tuple) xs
 
 blockAppender :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
 blockAppender = do
   paletteE <- palette
   return $ fmap (appendToState) paletteE
 
-blockRemover :: R.MonadWidget t m => Dynamic t Int -> m (R.Event t (Map Int Info -> Map Int Info))
+blockRemover :: R.MonadWidget t m => Dynamic t Int -> m (R.Event t ( Map Int Info -> Map Int Info))
 blockRemover keyD = do
   removerE <- removerWidget
-  removeE <- return $ tagDyn keyD removerE
-  test <- holdDyn 20 removeE
-  display test
+  let removeE = tag (current keyD) removerE
   display keyD
-  --let dynTest = constDyn 1
-  --removeTestE <- return $ tagDyn dynTest removerE
   return $ fmap (removeFromState) removeE
 
 blockUpdater :: R.MonadWidget t m => Dynamic t (Int,Info) -> m (R.Event t (Map Int Info -> Map Int Info))
 blockUpdater blockDTuple = do
   updaterE <- updaterWidget
-  blockTupleD <- splitDyn blockDTuple
-  display $ fst blockTupleD
-  display $ snd blockTupleD
-  updateE <- return $ tagDyn blockDTuple updaterE
-  test <- holdDyn (0,"") updateE
-  test2 <- splitDyn test
-  display $ fst test2
-  display $ snd test2
-  return $ fmap (\() -> updateState) updaterE
+  let updateE = tag (current blockDTuple) updaterE
+  return $ fmap (updateState) updateE
 
--------------------------Need to add blockUpdater event--------------------------
 blockWidget :: R.MonadWidget t m => m ()
 blockWidget = mdo
 
@@ -103,16 +92,12 @@ blockWidget = mdo
   blockDTuple <- holdDyn (0,"") blockTupleE
   blockTupleD <- splitDyn blockDTuple
 
-  display $ fst blockTupleD
-  display $ snd blockTupleD
+  let keyD = fst blockTupleD
 
-  keyD <- return $ fst blockTupleD
-  test <- blockRemover keyD
+  events <- sequence [blockRemover keyD, blockAppender, blockUpdater blockDTuple]
 
-  events <- sequence [blockAppender, blockUpdater blockDTuple]
-
-  -- Fix this line so you can have circular dependencies with the map
   dynamicMap <- foldDyn ($) initialState (leftmost events)
+  display dynamicMap
 
   -----------------Testing------------------
   patt <- forDyn dynamicMap getPattFromState
@@ -136,7 +121,7 @@ updaterWidget = do
 
 createContainerEl :: MonadWidget t m => Dynamic t Int -> Dynamic t (Map Int Info) -> m (R.Event t (Int, Info))
 createContainerEl dynKey dynamicMap = mdo
-  (container, tupleE) <- elAttr' "div" conAttrs $ do
+  tupleE <- elAttr "div" conAttrs $ do
     tuple <- selectViewListWithKey dynKey dynamicMap displaySampleBlock
     return $ tuple
   return $ tupleE
@@ -177,8 +162,15 @@ displaySampleBlock key dynInfo isSelected = mdo
 
   boxE <- return $ tagDyn dynInfo boxDomE
 
-  -- return key of block if selected along with its info
   return $ boxE
+
+
+determineBoxAttributes :: (Int,Int) -> BoxEvent -> Map String String
+determineBoxAttributes (x,y) boxEvent
+        | boxEvent == Click =
+        | boxEvent == Drag =
+        | boxEvent == Drop =
+        | boxEvent == Dragover =
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
