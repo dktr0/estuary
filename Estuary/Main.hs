@@ -44,7 +44,7 @@ main = mainWidget $ do
   where
     s = "font-size: 50px; margin-left: 155px; font-family: Helvetica; color: steelblue"
 
-data BoxEvent = Click | Drag | Drop | Dragover
+data BoxEvent = ClickE | DragE | DropE | DragoverE | HoveroverE | Empty
   deriving (Eq, Show)
 
 -- Implements the drag and drop functionality for the sample blocks.
@@ -141,6 +141,8 @@ displaySampleBlock key dynInfo isSelected = mdo
 
   -- If the block is currently selected (isSelected = true)
   -- some behaviour
+  test <- forDyn isSelected (\x -> if x == True then "true" else "false")
+  display test
 
   mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
   pos <- holdDyn (0,0) mousePosE
@@ -150,27 +152,54 @@ displaySampleBlock key dynInfo isSelected = mdo
   -- increment counter change name (return in info)
   -- requires an update
 
-  attrsDyn <- forDyn pos $ \(a,b) ->
-    Data.Map.fromList
-    [("draggable", "true"),("class","countBin noselect")
-    ,("style","width:" ++ show (b*0 + 30) ++ "px;" ++
-      "background-color: hsl("++ show (b* 0 + 10) ++ ",50%,50%);" ++
-      "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-      "display:block; padding:.3em 0.5em; left:" ++ show (a) ++ "px; top:" ++ show(b) ++ "px;")]
+  boxDomE <- return $ leftmost [ClickE <$ R.domEvent R.Click boxEl,
+                                DragE  <$ R.domEvent R.Drag boxEl]
+  boxDyn <- holdDyn Empty boxDomE
 
-  boxDomE <- return $ leftmost [R.domEvent R.Click boxEl]
+  selectEvent <- return $ updated isSelected
+  selectE <- return $ attachDyn boxDyn selectEvent
+  boxEvent <- return $ attachDyn pos selectE
+  boxD <- holdDyn ((0,0),(Empty,False)) boxEvent
+
+  attrsDyn <- forDyn boxD determineBoxAttributes
 
   boxE <- return $ tagDyn dynInfo boxDomE
 
   return $ boxE
 
 
-determineBoxAttributes :: (Int,Int) -> BoxEvent -> Map String String
-determineBoxAttributes (x,y) boxEvent
-        | boxEvent == Click =
-        | boxEvent == Drag =
-        | boxEvent == Drop =
-        | boxEvent == Dragover =
+determineBoxAttributes :: ((Int,Int),(BoxEvent,Bool)) -> Map String String
+determineBoxAttributes ((x,y),(boxEvent,selected))
+        | boxEvent == ClickE && selected = Data.Map.fromList
+            [("draggable", "true"),("class","countBin noselect")
+            ,("style","width:30px; background-color: hsl(30%,40%,30%);" ++
+              "height: 30px; float: left; border: 3px solid black; position: relative;" ++
+              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+        | boxEvent == DragE && selected  = Data.Map.fromList
+            [("draggable", "true"),("class","countBin noselect")
+            ,("style","width:30px; background-color: hsl(30%,40%,50%);" ++
+              "height: 30px; float: left; border: 1px solid black; position: relative;" ++
+              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+        | boxEvent == DropE && selected  = Data.Map.fromList
+            [("draggable", "true"),("class","countBin noselect")
+            ,("style","width: 30px; background-color: hsl(50%,50%,50%);" ++
+              "height: 30px; float: left; border: 1px solid black; position: relative;" ++
+              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+        | boxEvent == DragoverE && selected  = Data.Map.fromList
+            [("draggable", "true"),("class","countBin noselect")
+            ,("style","width:30px; background-color: hsl(30%,40%,30%);" ++
+              "height: 30px; float: left; border: 1px solid black; position: relative;" ++
+              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+        | boxEvent == HoveroverE && selected  = Data.Map.fromList
+            [("draggable", "true"),("class","countBin noselect")
+            ,("style","width:30px; background-color: hsl(30%,40%,30%);" ++
+              "height: 30px; float: left; border: 1px solid black; position: relative;" ++
+              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+        | otherwise            = Data.Map.fromList
+            [("draggable", "true"),("class","countBin noselect")
+            ,("style","width: 30px; background-color: hsl(30%,40%,50%);" ++
+              "height: 30px; float: left; border: 1px solid black; position: relative;" ++
+              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
