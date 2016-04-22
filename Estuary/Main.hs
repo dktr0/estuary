@@ -3,6 +3,7 @@
 -- Estuary UI : Reflex/GHCJS front end for Tidal
 -- My attempt at creating a drag and drop interface with Reflex and GHCJS
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 import           Sound.Tidal.Context as Tidal
 
@@ -31,11 +32,11 @@ import           Reflex.Dom.Widget.Basic as R
 import           Reflex.Dom.Class as R
 
 -- GHCJS Imports
-import           GHCJS.Types as GTYPES
-import qualified GHCJS.DOM.Event as GEVENT
-import           GHCJS.DOM.MouseEvent as GMOUSE
-import           GHCJS.DOM.Element as GEL
-import           GHCJS.DOM.EventM as GEVENTM (preventDefault)
+-- GHCJS Imports
+import           GHCJS.Types as GHCJS
+import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
+import qualified GHCJS.DOM.Element as GHCJS
+import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
 main :: IO ()
 main = mainWidget $ do
@@ -44,16 +45,15 @@ main = mainWidget $ do
   where
     s = "font-size: 50px; margin-left: 155px; font-family: Helvetica; color: steelblue"
 
-data BoxEvent = ClickE | DragE | DropE | DragoverE | HoveroverE | Empty
+data BoxEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Empty
   deriving (Eq, Show)
 
--- Implements the drag and drop functionality for the sample blocks.
--- for now Info is just the name of the sample but it will be much more involved later on
-type Info = (String,(Int,Int),Int)
+-- Info :: (Sample, (Sample Number, Multiplier), Key, BoxEvent)
+type Info = (String,(Int,Int),Int,BoxEvent)
 
 initialState :: Map Int Info
 initialState = Data.Map.fromList [(0,info)]
- where info = ("bd",(1,1),0)
+ where info = ("bd",(1,1),0,Empty)
 
 appendToState :: Info -> Map Int Info -> Map Int Info
 appendToState info xs = Data.Map.insert ((+1) $ fst $ Data.Map.findMax xs) info xs
@@ -62,7 +62,7 @@ removeFromState :: Int -> Map Int Info -> Map Int Info
 removeFromState key xs = Data.Map.delete key xs
 
 getPattFromState :: Map Int Info -> String
-getPattFromState xs = Data.Map.fold (\(p,(s,n),k) e ->
+getPattFromState xs = Data.Map.fold (\(p,(s,n),k,b) e ->
   (if      n>1 && s>1  then (p ++ ":" ++ show(s) ++ "*" ++ show(n) ++ " " ++ e)
    else if n>1 && s==1 then (p ++ "*" ++ show(n) ++ " " ++ e)
    else if n==1 && s>1 then (p ++ ":" ++ show(s) ++ " " ++ e)
@@ -92,25 +92,27 @@ blockUpdater blockDTuple = do
 
 blockWidget :: R.MonadWidget t m => m ()
 blockWidget = mdo
-
-  display keyD
+  -- Event t (Key :: Int, Info :: Info (Sample :: String, (Sample Number :: Int, Multiplier :: Int), Key :: Int, Box Event :: BoxEvent)))
   blockTupleE <- createContainerEl keyD dynamicMap
-  blockDTuple <- holdDyn (0,("",(1,1),0)) blockTupleE
+  -- Dynamic t (Key :: Int, Info :: Info (Sample :: String, (Sample Number :: Int, Multiplier :: Int), Key :: Int, Box Event :: BoxEvent)))
+  blockDTuple <- holdDyn (0,("",(1,1),0,Empty)) blockTupleE
+  -- (Key :: Dynamic t Int, Info :: Dynamic t (Sample :: String, (Sample Number :: Int, Multiplier :: Int), Key :: Int, Box Event :: BoxEvent))
   blockTupleD <- splitDyn blockDTuple
-
+  let dynInfo = snd blockTupleD
+  let oldKey = keyD
+  display oldKey
   let keyD = fst blockTupleD
-
-  events <- sequence [blockRemover keyD, blockAppender, blockUpdater blockDTuple]
-
+  display keyD
+  events <- sequence [blockRemover keyD, blockAppender, blockUpdater blockDTuple]--, blockInserter keyTupleD]
   dynamicMap <- foldDyn ($) initialState (leftmost events)
-  --display dynamicMap
-
+  -- Save value on drag events
+  -- Use push to create event when Event == DropE
   -----------------Testing------------------
-  patt <- forDyn dynamicMap getPattFromState
+  --patt <- forDyn dynamicMap getPattFromState
   --display patt
-  showarc <- forDyn patt showAllArcs
+  --showarc <- forDyn patt showAllArcs
   --display showarc
-  arcs <- forDyn patt extractArcs
+  --arcs <- forDyn patt extractArcs
   --display arcs
   ------------------------------------------
   return ()
@@ -129,19 +131,18 @@ updaterWidget = do
 
 createContainerEl :: MonadWidget t m => Dynamic t Int -> Dynamic t (Map Int Info) -> m (R.Event t (Int, Info))
 createContainerEl dynKey dynamicMap = mdo
-  display dynKey
-  tupleE <- elAttr "div" conAttrs $ do
-    tuple <- selectViewListWithKey dynKey dynamicMap displaySampleBlock
-    return $ tuple
-  return $ tupleE
-  where conAttrs = Data.Map.fromList [("style", "position: relative; height: 500px;" ++
+  infoE <- elAttr "div" conAttrs $ do
+    info <- selectViewListWithKey dynKey dynamicMap displaySampleBlock
+    return $ info
+  return $ infoE
+  where conAttrs = Data.Map.fromList [("draggable", "true"),("style", "position: relative; height: 500px;" ++
                                        "border: 1px solid black; background-color: light-blue" ++
                                        "display: block;")]
 
 createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El t)
 createBoxEl dynInfo attrsDyn = do
   (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
-    name <- forDyn dynInfo (\(a,b,c) -> a)
+    name <- forDyn dynInfo (\(a,b,c,d) -> a)
     display $ name
   return $ boxEl
 
@@ -149,13 +150,19 @@ displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> Dynamic t Bool
 displaySampleBlock key dynInfo isSelected = mdo
   boxEl <- createBoxEl dynInfo attrsDyn
 
-  let test = constDyn key
-  display test
+  --let test = constDyn key
+  --display test
   --test <- forDyn isSelected (\x -> if x == True then "true" else "false")
   --display test
 
   mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
+  --test <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drop) (void $ GHCJS.preventDefault)
+  x <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drop) (void $ GHCJS.preventDefault)
+  y <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
+  z <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragend) (void $ GHCJS.preventDefault)
   pos <- holdDyn (0,0) mousePosE
+  --_ <- R.performEvent_ $ return () <$ x
+  --_ <- R.performEvent_ $ return () <$ z
   --display pos
 
   -----------------------------------------------------------------
@@ -169,8 +176,12 @@ displaySampleBlock key dynInfo isSelected = mdo
   -----------------------------------------------------------------
 
   boxDomE <- return $ leftmost [ClickE <$ R.domEvent R.Click boxEl,
-                                DragE  <$ R.domEvent R.Drag boxEl]
+                                DragE  <$ R.domEvent R.Drag boxEl,
+                                --DragoverE <$ R.domEvent R.Dragover boxEl,
+                                DragendE <$ z, DragoverE <$ y, DropE <$ x]
+
   boxDyn <- holdDyn Empty boxDomE
+  display boxDyn
   selectEvent <- return $ updated isSelected
   selectE <- return $ attachDyn boxDyn selectEvent
   boxEvent <- return $ attachDyn pos selectE
@@ -178,7 +189,12 @@ displaySampleBlock key dynInfo isSelected = mdo
 
   attrsDyn <- forDyn boxD determineBoxAttributes
 
-  boxE <- return $ tagDyn dynInfo boxDomE
+  -- Switch BoxEvent in dynInfo
+  tuple <- combineDyn (\a b -> (a,b)) dynInfo boxDyn
+  ndynInfo <- forDyn tuple (\((p,(s,n),k,b),be) -> (p,(s,n),k,be))
+  -- return new boxEvent
+
+  boxE <- return $ tagDyn ndynInfo boxDomE
 
   return $ boxE
 
@@ -188,37 +204,37 @@ determineBoxAttributes ((x,y),(boxEvent,selected))
             [("draggable", "true"),("class","countBin noselect")
             ,("style","width:30px; background-color: hsl(80,80%,30%);" ++
               "height: 30px; float: left; border: 3px solid black; position: relative;" ++
-              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+              "display:block; padding:.3em 0.5em;")] --left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
         | boxEvent == DragE && selected  = Data.Map.fromList
             [("draggable", "true"),("class","countBin noselect")
             ,("style","width:30px; background-color: hsl(80,80%,50%);" ++
               "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+              "display:block; padding:.3em 0.5em; left:")]-- ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
         | boxEvent == DropE && selected  = Data.Map.fromList
             [("draggable", "true"),("class","countBin noselect")
             ,("style","width: 30px; background-color: hsl(80,80%,50%);" ++
               "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+              "display:block; padding:.3em 0.5em; left:")]-- ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
         | boxEvent == DragoverE && selected  = Data.Map.fromList
             [("draggable", "true"),("class","countBin noselect")
             ,("style","width:30px; background-color: hsl(80,80%,30%);" ++
               "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+              "display:block; padding:.3em 0.5em; left:")]-- ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
         | boxEvent == HoveroverE && selected  = Data.Map.fromList
             [("draggable", "true"),("class","countBin noselect")
             ,("style","width:30px; background-color: hsl(80,80%,30%);" ++
               "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+              "display:block; padding:.3em 0.5em; left:")]-- ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
         | otherwise            = Data.Map.fromList
             [("draggable", "true"),("class","countBin noselect")
             ,("style","width: 30px; background-color: hsl(80,80%,50%);" ++
               "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-              "display:block; padding:.3em 0.5em; left:" ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+              "display:block; padding:.3em 0.5em; left:")]-- ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
   (e,_) <- elAttr' "li" attrs $ text name
-  return $ ((name,(1,1),0) <$ R.domEvent R.Click e)
+  return $ ((name,(1,1),0,Empty) <$ R.domEvent R.Click e)
 
 palette :: MonadWidget t m => m (R.Event t Info)
 palette = do
