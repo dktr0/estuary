@@ -3,7 +3,6 @@
 -- Estuary UI : Reflex/GHCJS front end for Tidal
 -- My attempt at creating a drag and drop interface with Reflex and GHCJS
 {-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 
 import           Sound.Tidal.Context as Tidal
 
@@ -143,17 +142,18 @@ blockWidget = mdo
   ------------------------------------------
   return ()
 
-removerWidget :: MonadWidget t m => m (R.Event t ())
-removerWidget = do
-  -- switch to delete key
-  removeE <- button "Remove Block"
-  return $ removeE
-
-updaterWidget :: MonadWidget t m => m (R.Event t ())
-updaterWidget = do
-  -- switch to command enter
-  updateE <- button "Update Pattern"
-  return $ updateE
+{-
+  listViewWithKey :: (Ord k, MonadWidget t m) => Dynamic t (Map k v) -> (k -> Dynamic t v -> m (Event t Info)) -> m (Event t (Map k Info))
+  [17:22] <ryantrinkle> you could have each one return an Event t ()
+  [17:22] <ryantrinkle> then, your list widget would collect those into Event t (Map k (Event t Info))
+  [17:22] <ryantrinkle> you can hold that (using Map.empty as the initial value)
+  [17:23] <ryantrinkle> which will give you Behavior t (Map k (Event t Info))
+  [17:23] <ryantrinkle> then, you can fmap mergeMap over that
+  [17:23] <ryantrinkle> giving you: Behavior t (Event t (Map k Info))
+  [17:23] <ryantrinkle> then switch
+  [17:23] <ryantrinkle> giving: Event t (Map k Info)
+  [17:24] <ryantrinkle> the keys of that map will be the items that want to be deleted :)
+-}
 
 createContainerEl :: MonadWidget t m => Dynamic t Int -> Dynamic t (Map Int Info) -> m (R.Event t (Int, Info))
 createContainerEl dynKey dynamicMap = mdo
@@ -165,13 +165,6 @@ createContainerEl dynKey dynamicMap = mdo
                                        "border: 1px solid black; background-color: light-blue" ++
                                        "display: block;")]
 
-createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El t)
-createBoxEl dynInfo attrsDyn = do
-  (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
-    name <- forDyn dynInfo (\(a,b,c) -> a)
-    display $ name
-  return $ boxEl
-
 displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> Dynamic t Bool -> m (R.Event t Info)
 displaySampleBlock key dynInfo isSelected = mdo
   boxEl <- createBoxEl dynInfo attrsDyn
@@ -181,12 +174,12 @@ displaySampleBlock key dynInfo isSelected = mdo
   --test <- forDyn isSelected (\x -> if x == True then "true" else "false")
   --display test
 
-  mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
+  --mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
   --test <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drop) (void $ GHCJS.preventDefault)
   x <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drop) (void $ GHCJS.preventDefault)
   y <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
   z <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragend) (void $ GHCJS.preventDefault)
-  pos <- holdDyn (0,0) mousePosE
+  --pos <- holdDyn (0,0) mousePosE
   --_ <- R.performEvent_ $ return () <$ x
   _ <- R.performEvent_ $ return () <$ y
   --_ <- R.performEvent_ $ return () <$ z
@@ -225,6 +218,13 @@ displaySampleBlock key dynInfo isSelected = mdo
 
   return $ boxE
 
+createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El t)
+createBoxEl dynInfo attrsDyn = do
+  (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
+    name <- forDyn dynInfo (\(a,b,c) -> a)
+    display $ name
+  return $ boxEl
+
 determineBoxAttributes :: ((Int,Int),(BoxEvent,Bool)) -> Map String String
 determineBoxAttributes ((x,y),(boxEvent,selected))
         | boxEvent == ClickE && selected = Data.Map.fromList
@@ -257,6 +257,24 @@ determineBoxAttributes ((x,y),(boxEvent,selected))
             ,("style","width: 30px; background-color: hsl(80,80%,50%);" ++
               "height: 30px; float: left; border: 1px solid black; position: relative;" ++
               "display:block; padding:.3em 0.5em; left:")]-- ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
+
+updaterWidget :: MonadWidget t m => m (R.Event t ())
+updaterWidget = do
+  -- switch to command enter
+  updateE <- button "Update Pattern"
+  return $ updateE
+
+removerWidget :: MonadWidget t m => m (R.Event t ())
+removerWidget = do
+  -- switch to delete key
+  removeE <- button "Remove Block"
+  return $ removeE
+
+updaterWidget :: MonadWidget t m => m (R.Event t ())
+updaterWidget = do
+  -- switch to command enter
+  updateE <- button "Update Pattern"
+    return $ updateE
 
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
