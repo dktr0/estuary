@@ -18,7 +18,7 @@ import           Data.Default
 import           Data.Text (Text, intercalate)
 import           Data.Array
 import           Data.Maybe
-import           Data.Map (Map, fromList, maxView, insert, fold, adjust, delete, findMax)
+import           Data.Map (Map, fromList, maxView, insert, fold, adjust, delete, findMax, elemAt, partitionWithKey, mapKeys, union)
 import qualified Data.Text as T
 
 -- Reflex Imports
@@ -48,12 +48,12 @@ main = mainWidget $ do
 data BoxEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Empty
   deriving (Eq, Show)
 
--- Info :: (Sample, (Sample Number, Multiplier), Key, BoxEvent)
-type Info = (String,(Int,Int),Int,BoxEvent)
+-- Info :: (Sample, (Sample Number, Multiplier),BoxEvent)
+type Info = (String,(Int,Int),BoxEvent)
 
 initialState :: Map Int Info
 initialState = Data.Map.fromList [(0,info)]
- where info = ("bd",(1,1),0,Empty)
+ where info = ("bd",(1,1),Empty)
 
 appendToState :: Info -> Map Int Info -> Map Int Info
 appendToState info xs = Data.Map.insert ((+1) $ fst $ Data.Map.findMax xs) info xs
@@ -62,7 +62,7 @@ removeFromState :: Int -> Map Int Info -> Map Int Info
 removeFromState key xs = Data.Map.delete key xs
 
 getPattFromState :: Map Int Info -> String
-getPattFromState xs = Data.Map.fold (\(p,(s,n),k,b) e ->
+getPattFromState xs = Data.Map.fold (\(p,(s,n),b) e ->
   (if      n>1 && s>1  then (p ++ ":" ++ show(s) ++ "*" ++ show(n) ++ " " ++ e)
    else if n>1 && s==1 then (p ++ "*" ++ show(n) ++ " " ++ e)
    else if n==1 && s>1 then (p ++ ":" ++ show(s) ++ " " ++ e)
@@ -72,16 +72,33 @@ getPattFromState xs = Data.Map.fold (\(p,(s,n),k,b) e ->
 updateState :: (Int,Info) -> Map Int Info -> Map Int Info
 updateState tuple xs = Data.Map.adjust (\_ -> snd tuple) (fst tuple) xs
 
+-- Insert the element before/after the dropped element.
+insertInState :: ((Int,Info),(Int, Info)) -> Map Int Info -> Map Int Info
+insertInState ((pk,pinfo),(ck,cinfo)) xs
+  | (((\(a,b,c) -> c) pinfo) == DragE) && ( ((\(a,b,c) -> c) cinfo) == DragendE) = do
+          let nxs = Data.Map.delete pk xs
+          let tupleMap = Data.Map.partitionWithKey (\ k _ -> k > ck) nxs
+          let hMap = Data.Map.mapKeys (+1) (fst tupleMap)
+          let lMap = Data.Map.insert ((+1) $ fst $ Data.Map.findMax $ snd tupleMap) (pinfo) (snd tupleMap)
+          Data.Map.union lMap hMap
+  | otherwise = do
+          xs
+
+    -- Need to assign an appropriate key. blockfk > insert > blocklk
+    -- Partition map at blockfk                                       : partitionWithKey (\ k _ -> k > blockfk)
+    -- Increase key values of partition by 1                          : mapKeys (+1)
+    -- Insert new element at end of map                               : insert
+    -- Append the partition                                           : union
+
 blockAppender :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
 blockAppender = do
   paletteE <- palette
   return $ fmap (appendToState) paletteE
 
-blockRemover :: R.MonadWidget t m => Dynamic t Int -> m (R.Event t ( Map Int Info -> Map Int Info))
+blockRemover :: R.MonadWidget t m => Dynamic t Int -> m (R.Event t (Map Int Info -> Map Int Info))
 blockRemover keyD = do
   removerE <- removerWidget
   let removeE = tag (current keyD) removerE
-  --display keyD
   return $ fmap (removeFromState) removeE
 
 blockUpdater :: R.MonadWidget t m => Dynamic t (Int,Info) -> m (R.Event t (Map Int Info -> Map Int Info))
@@ -90,23 +107,32 @@ blockUpdater blockDTuple = do
   let updateE = tag (current blockDTuple) updaterE
   return $ fmap (updateState) updateE
 
+-- TO DO (Event t (Int,Int) :: (Drop Event (key of block dropped on, key of block dropped)))
+blockInserter :: R.MonadWidget t m => Dynamic t ((Int,Info),(Int,Info)) -> m (R.Event t (Map Int Info -> Map Int Info))
+blockInserter blocksDyn = do
+  inserterE <- updaterWidget
+  --let inserterE = (updated blocksDyn)
+  let insertE = tag (current blocksDyn) inserterE
+  return $ fmap (insertInState) insertE
+
 blockWidget :: R.MonadWidget t m => m ()
 blockWidget = mdo
   -- Event t (Key :: Int, Info :: Info (Sample :: String, (Sample Number :: Int, Multiplier :: Int), Key :: Int, Box Event :: BoxEvent)))
   blockTupleE <- createContainerEl keyD dynamicMap
   -- Dynamic t (Key :: Int, Info :: Info (Sample :: String, (Sample Number :: Int, Multiplier :: Int), Key :: Int, Box Event :: BoxEvent)))
-  blockDTuple <- holdDyn (0,("",(1,1),0,Empty)) blockTupleE
+  blockDTuple <- holdDyn (0,("",(1,1),Empty)) blockTupleE
+  -- Event t (Old Value, New Value)
+  let blockEvents = attach (current blockDTuple) (updated blockDTuple)
+  blocksDyn <- holdDyn ((0,("",(1,1),Empty)),(0,("",(1,1),Empty))) blockEvents
   -- (Key :: Dynamic t Int, Info :: Dynamic t (Sample :: String, (Sample Number :: Int, Multiplier :: Int), Key :: Int, Box Event :: BoxEvent))
   blockTupleD <- splitDyn blockDTuple
-  let dynInfo = snd blockTupleD
-  let oldKey = keyD
-  display oldKey
+  -- Dynamic t Int
   let keyD = fst blockTupleD
-  display keyD
-  events <- sequence [blockRemover keyD, blockAppender, blockUpdater blockDTuple]--, blockInserter keyTupleD]
+  -- Dynamic t (Sample :: String, (Sample Number :: Int, Multiplier :: Int), Key :: Int, Box Event :: BoxEvent)
+  let dynInfo = snd blockTupleD
+
+  events <- sequence [blockRemover keyD, blockAppender, blockUpdater blockDTuple, blockInserter blocksDyn]
   dynamicMap <- foldDyn ($) initialState (leftmost events)
-  -- Save value on drag events
-  -- Use push to create event when Event == DropE
   -----------------Testing------------------
   --patt <- forDyn dynamicMap getPattFromState
   --display patt
@@ -142,7 +168,7 @@ createContainerEl dynKey dynamicMap = mdo
 createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El t)
 createBoxEl dynInfo attrsDyn = do
   (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
-    name <- forDyn dynInfo (\(a,b,c,d) -> a)
+    name <- forDyn dynInfo (\(a,b,c) -> a)
     display $ name
   return $ boxEl
 
@@ -158,10 +184,11 @@ displaySampleBlock key dynInfo isSelected = mdo
   mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
   --test <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drop) (void $ GHCJS.preventDefault)
   x <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drop) (void $ GHCJS.preventDefault)
-  y <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
+  y <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
   z <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragend) (void $ GHCJS.preventDefault)
   pos <- holdDyn (0,0) mousePosE
   --_ <- R.performEvent_ $ return () <$ x
+  _ <- R.performEvent_ $ return () <$ y
   --_ <- R.performEvent_ $ return () <$ z
   --display pos
 
@@ -178,10 +205,9 @@ displaySampleBlock key dynInfo isSelected = mdo
   boxDomE <- return $ leftmost [ClickE <$ R.domEvent R.Click boxEl,
                                 DragE  <$ R.domEvent R.Drag boxEl,
                                 --DragoverE <$ R.domEvent R.Dragover boxEl,
-                                DragendE <$ z, DragoverE <$ y, DropE <$ x]
+                                DragendE <$ x, DropE <$ x]
 
   boxDyn <- holdDyn Empty boxDomE
-  display boxDyn
   selectEvent <- return $ updated isSelected
   selectE <- return $ attachDyn boxDyn selectEvent
   boxEvent <- return $ attachDyn pos selectE
@@ -191,7 +217,8 @@ displaySampleBlock key dynInfo isSelected = mdo
 
   -- Switch BoxEvent in dynInfo
   tuple <- combineDyn (\a b -> (a,b)) dynInfo boxDyn
-  ndynInfo <- forDyn tuple (\((p,(s,n),k,b),be) -> (p,(s,n),k,be))
+  ndynInfo <- forDyn tuple (\((p,(s,n),b),be) -> (p,(s,n),be))
+  --display ndynInfo
   -- return new boxEvent
 
   boxE <- return $ tagDyn ndynInfo boxDomE
@@ -234,7 +261,7 @@ determineBoxAttributes ((x,y),(boxEvent,selected))
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
   (e,_) <- elAttr' "li" attrs $ text name
-  return $ ((name,(1,1),0,Empty) <$ R.domEvent R.Click e)
+  return $ ((name,(1,1),Empty) <$ R.domEvent R.Click e)
 
 palette :: MonadWidget t m => m (R.Event t Info)
 palette = do
@@ -255,7 +282,6 @@ palette = do
                 "border:1px solid #ccc; ")]
       ulAttrs = Data.Map.fromList
               [("style", "list-style: none; margin:0; padding:0; position: absolute")]
-
 
 -- Drag and drop
 -- Need the dynInfo of the dropped element.
