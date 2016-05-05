@@ -50,66 +50,80 @@ data BoxEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Emp
 -- Info :: (Sample, (Sample Number, Multiplier),BoxEvent)
 type Info = (String,(Int,Int),BoxEvent)
 
+-- The initial state of the map of block widgets
 initialState :: Map Int Info
 initialState = Data.Map.fromList [(0,info)]
  where info = ("bd",(1,1),Empty)
 
+-- Append a new block to the map of blocks
+-- Takes the info of the new block to be added along with the current map.
 appendToState :: Info -> Map Int Info -> Map Int Info
-appendToState info xs = Data.Map.insert ((+1) $ fst $ Data.Map.findMax xs) info xs
+appendToState info currentMap = Data.Map.insert ((+1) $ fst $ Data.Map.findMax currentMap) info currentMap
 
--- double check
+-- Remove a block from the map of blocks
+-- Takes a map of the blocks to be removed (at this point 1) and the current map
 removeFromState :: Map Int Info -> Map Int Info -> Map Int Info
-removeFromState newMap xs = Data.Map.difference xs newMap
---removeFromState xs = Data.Map.delete key xs
+removeFromState elementMap currentMap = Data.Map.difference currentMap elementMap
 
+-- Concatonates the current tidal pattern out of the name info of each individual block
 getPattFromState :: Map Int Info -> String
-getPattFromState xs = Data.Map.fold (\(p,(s,n),b) e ->
+getPattFromState currentMap = Data.Map.fold (\(p,(s,n),b) e ->
   (if      n>1 && s>1  then (p ++ ":" ++ show(s) ++ "*" ++ show(n) ++ " " ++ e)
    else if n>1 && s==1 then (p ++ "*" ++ show(n) ++ " " ++ e)
    else if n==1 && s>1 then (p ++ ":" ++ show(s) ++ " " ++ e)
    else (p ++ " " ++ e)
-  )) "" xs
+  )) "" currentMap
 
--- double check
+-- Updates the block map based on any changes or additions to the newMap
+-- Takes in the newly changes version of the dyamic block map and the current map
 updateState :: Map Int Info -> Map Int Info -> Map Int Info
-updateState newMap xs = Data.Map.union xs newMap
---updateState newMap xs = Data.Map.adjust (\_ -> snd tuple) (fst tuple) xs
+updateState newMap currentMap = Data.Map.union currentMap newMap
 
+-- Insert the currently dragged block element into a position in the map.
+-- Takes the old map of elements, the map of the element to be inserted, and the current map
 insertInState :: ((Map Int Info),(Map Int Info)) -> Map Int Info -> Map Int Info
-insertInState (oldMap,newMap) xs
+insertInState (oldMap,elementMap) currentMap
   |( ( ( (\(a,b,c) -> c) (snd $ head $ Data.Map.assocs oldMap) ) == DragE ) && ( ((\(a,b,c) -> c) (snd $ head $ Data.Map.assocs newMap)) == DragendE) ) = do
-          let pList = Data.Map.assocs oldMap
-          let cList = Data.Map.assocs newMap
-          let nxs = Data.Map.delete (fst $ head $ pList) xs
-          let tupleMap = Data.Map.partitionWithKey (\ k _ -> k > (fst $ head $ cList)) nxs
-          let hMap = Data.Map.mapKeys (+1) (fst tupleMap)
-          let lMap = Data.Map.insert ((+1) $ fst $ Data.Map.findMax $ snd tupleMap) (snd $ head $ pList) (snd tupleMap)
-          Data.Map.union lMap hMap
+          let oldList = Data.Map.assocs oldMap
+          let currentList = Data.Map.assocs elementMap
+          let newMap = Data.Map.delete (fst $ head $ pList) currentMap
+          let tupleMap = Data.Map.partitionWithKey (\ k _ -> k > (fst $ head $ cList)) newMap
+          let highMap = Data.Map.mapKeys (+1) (fst tupleMap)
+          let lowMap = Data.Map.insert ((+1) $ fst $ Data.Map.findMax $ snd tupleMap) (snd $ head $ oldList) (snd tupleMap)
+          Data.Map.union lowMap highMap
   | otherwise = do
-          xs
+          currentMap
 
+-- Calls the appendToState function on a palette click event returns the function call wrapped in the event
 blockAppender :: R.MonadWidget t m => m (R.Event t (Map Int Info -> Map Int Info))
 blockAppender = do
   paletteE <- palette
   return $ fmap (appendToState) paletteE
 
---ReWrite
+-- Removes the selected block on click of the remover Widget
+-- Takes a the dynamic map of block elements and returns the removeFromState function call wrapped in the removerWidget click event
 blockRemover :: R.MonadWidget t m => Dynamic t (Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
 blockRemover dynamicBlockMap = do
   removerE <- removerWidget
   let removeE = tag (current dynamicBlockMap) removerE
   return $ fmap (removeFromState) removeE
 
---ReWrite
+-- Calls the updateState function on any fired block event
+-- Needs to be fixed do to recursive issues
 blockUpdater :: R.MonadWidget t m => R.Event t (Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
 blockUpdater eventBlockMap = do
+  behavior <- hold eventBlockMap
   return $ fmap (updateState) eventBlockMap
 
--- TO DO (Event t (Int,Int) :: (Drop Event (key of block dropped on, key of block dropped)))
+-- Calls insertInState function on any fired block event
+-- Needs to be fixed do to recursive issues
 blockInserter :: R.MonadWidget t m => R.Event t (Map Int Info,Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
 blockInserter eventBlockMaps = do
+  behavior <- hold eventBlockMaps
   return $ fmap (insertInState) eventBlockMaps
 
+-- Main function which creates the container and block elements
+-- Keeps track of the dynamic Map of blocks as it is mutated by events
 blockWidget :: R.MonadWidget t m => m ()
 blockWidget = mdo
   -- Behavior t (Map k (Event t Info))
@@ -124,37 +138,38 @@ blockWidget = mdo
   let eventBlockMaps = attach (current dynamicBlockMap) (updated dynamicBlockMap)
   -- Dynamic t (Map k Info, Map k Info)
   dynamicBlockMaps <- holdDyn (Data.Map.empty,Data.Map.empty) eventBlockMaps
-  --
-  blockEvents <- sequence [blockRemover dynamicBlockMap, blockAppender, blockUpdater eventBlockMap, blockInserter eventBlockMaps]
+  -- Commented out do to error which needs to be fixed
+  blockEvents <- sequence [blockRemover dynamicBlockMap, blockAppender]--, blockUpdater eventBlockMap, blockInserter eventBlockMaps]
   --
   dynamicMap <- foldDyn ($) initialState (leftmost blockEvents)
   return ()
 
+-- Create the container element and the block widgets which are to be placed inside of it
+-- returns the current value of the dynamicMap along with whatever displaySampleBlock returns
 createContainerEl :: MonadWidget t m => Dynamic t (Map Int Info) -> m (R.Behavior t (Map Int (R.Event t Info)))
 createContainerEl dynamicMap = mdo
   infoE <- elAttr "div" conAttrs $ do
-    --listViewWithKey :: (Ord k, MonadWidget t m) => Dynamic t (Map k v) -> (k -> Dynamic t v -> m (Event t Info) -> m (Event t (Map k Info))
     info <- listViewWithKey' dynamicMap displaySampleBlock
-    --info <- selectViewListWithKey dynKey dynamicMap displaySampleBlock
     return $ info
   return $ infoE
   where conAttrs = Data.Map.fromList [("draggable", "true"),("style", "position: relative; height: 500px;" ++
                                        "border: 1px solid black; background-color: light-blue" ++
                                        "display: block;")]
 
+-- Implements all functionality of an individual sample block
+-- Returns its information wrapped in an event (Click, Drag, Drop)
 displaySampleBlock :: MonadWidget t m => Int -> Dynamic t Info -> m (R.Event t Info)
 displaySampleBlock key dynInfo = mdo
   boxEl <- createBoxEl dynInfo attrsDyn
 
-  -- Event Listeners
+  -- Event Listeners for drag and drop
   mousePosE <- wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drag) getMouseEventCoords
   x <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Drop) (void $ GHCJS.preventDefault)
   y <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
   z <- R.wrapDomEvent (R._el_element boxEl) (R.onEventName R.Dragend) (void $ GHCJS.preventDefault)
   pos <- holdDyn (0,0) mousePosE
-  --_ <- R.performEvent_ $ return () <$ x
+  -- Performs event as necessary to implement dropping
   _ <- R.performEvent_ $ return () <$ y
-  --_ <- R.performEvent_ $ return () <$ z
 
   -- Event Feedback
   boxDomE <- return $ leftmost [ClickE <$ R.domEvent R.Click boxEl,
@@ -179,6 +194,8 @@ displaySampleBlock key dynInfo = mdo
   -----------------------------------------------------------------
   return $ boxE
 
+-- Creates an individual block element
+-- Takes the block info and a map of dynamic attributes, returns the element
 createBoxEl :: MonadWidget t m => Dynamic t Info -> Dynamic t (Map String String) -> m (El t)
 createBoxEl dynInfo attrsDyn = do
   (boxEl, _) <- elDynAttr' "div" attrsDyn $ do
@@ -186,6 +203,9 @@ createBoxEl dynInfo attrsDyn = do
     display $ name
   return $ boxEl
 
+-- Determines a blocks attribute based on which event has fired
+-- Need to fix this as attributes will stay the same until a different event has fired on the blocks
+-- Need to listen for an event to revert all block's boxEvent's to empty
 determineBoxAttributes :: BoxEvent -> Map String String
 determineBoxAttributes boxEvent
         | boxEvent == ClickE = Data.Map.fromList
@@ -219,23 +239,27 @@ determineBoxAttributes boxEvent
               "height: 30px; float: left; border: 1px solid black; position: relative;" ++
               "display:block; padding:.3em 0.5em; left:")]-- ++ show (x) ++ "px; top:" ++ show(y) ++ "px;")]
 
+-- Implements the remove button and returns its event
 removerWidget :: MonadWidget t m => m (R.Event t ())
 removerWidget = do
-  -- switch to delete key
   removeE <- button "Remove Block"
   return $ removeE
 
+-- Implements the update button and returns its event
 updaterWidget :: MonadWidget t m => m (R.Event t ())
 updaterWidget = do
-  -- switch to command enter
   updateE <- button "Update Pattern"
   return $ updateE
 
+-- Creates an individual palette alement and listens for a click event
+-- If the element is clicked it returns default block info with the corresponding sample name to be assigned to a newly created block
 paletteEl :: MonadWidget t m => (Map String String) -> String -> m (R.Event t Info)
 paletteEl attrs name = do
   (e,_) <- elAttr' "li" attrs $ text name
   return $ ((name,(1,1),Empty) <$ R.domEvent R.Click e)
 
+-- Creates the palette of different samples to be clicked
+-- Returns the info of the element to be added to the map on the event returns from paletteEl
 palette :: MonadWidget t m => m (R.Event t Info)
 palette = do
     elAttr "ul" ulAttrs $ do
