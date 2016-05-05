@@ -75,19 +75,19 @@ getPattFromState currentMap = Data.Map.fold (\(p,(s,n),b) e ->
   )) "" currentMap
 
 -- Updates the block map based on any changes or additions to the newMap
--- Takes in the newly changes version of the dyamic block map and the current map
+-- Takes in channges to a block element and updates them in the current map
 updateState :: Map Int Info -> Map Int Info -> Map Int Info
-updateState newMap currentMap = Data.Map.union currentMap newMap
+updateState elementMap currentMap = Data.Map.union currentMap elementMap
 
 -- Insert the currently dragged block element into a position in the map.
 -- Takes the old map of elements, the map of the element to be inserted, and the current map
 insertInState :: ((Map Int Info),(Map Int Info)) -> Map Int Info -> Map Int Info
 insertInState (oldMap,elementMap) currentMap
-  |( ( ( (\(a,b,c) -> c) (snd $ head $ Data.Map.assocs oldMap) ) == DragE ) && ( ((\(a,b,c) -> c) (snd $ head $ Data.Map.assocs newMap)) == DragendE) ) = do
+  |( ( ( (\(a,b,c) -> c) (snd $ head $ Data.Map.assocs oldMap) ) == DragE ) && ( ((\(a,b,c) -> c) (snd $ head $ Data.Map.assocs elementMap)) == DragendE) ) = do
           let oldList = Data.Map.assocs oldMap
           let currentList = Data.Map.assocs elementMap
-          let newMap = Data.Map.delete (fst $ head $ pList) currentMap
-          let tupleMap = Data.Map.partitionWithKey (\ k _ -> k > (fst $ head $ cList)) newMap
+          let newMap = Data.Map.delete (fst $ head $ oldList) currentMap
+          let tupleMap = Data.Map.partitionWithKey (\ k _ -> k > (fst $ head $ currentList)) elementMap
           let highMap = Data.Map.mapKeys (+1) (fst tupleMap)
           let lowMap = Data.Map.insert ((+1) $ fst $ Data.Map.findMax $ snd tupleMap) (snd $ head $ oldList) (snd tupleMap)
           Data.Map.union lowMap highMap
@@ -110,17 +110,17 @@ blockRemover dynamicBlockMap = do
 
 -- Calls the updateState function on any fired block event
 -- Needs to be fixed do to recursive issues
-blockUpdater :: R.MonadWidget t m => R.Event t (Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
-blockUpdater eventBlockMap = do
-  behavior <- hold eventBlockMap
-  return $ fmap (updateState) eventBlockMap
+blockUpdater :: R.MonadWidget t m => R.Dynamic t (Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
+blockUpdater dynamicBlockMap = do
+  let event = tag (current dynamicBlockMap) (updated dynamicBlockMap)
+  return $ fmap (updateState) event
 
 -- Calls insertInState function on any fired block event
 -- Needs to be fixed do to recursive issues
-blockInserter :: R.MonadWidget t m => R.Event t (Map Int Info,Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
-blockInserter eventBlockMaps = do
-  behavior <- hold eventBlockMaps
-  return $ fmap (insertInState) eventBlockMaps
+blockInserter :: R.MonadWidget t m => R.Dynamic t (Map Int Info,Map Int Info) -> m (R.Event t (Map Int Info -> Map Int Info))
+blockInserter dynamicBlockMaps = do
+  let event = tag (current dynamicBlockMaps) (updated dynamicBlockMaps)
+  return $ fmap (insertInState) event
 
 -- Main function which creates the container and block elements
 -- Keeps track of the dynamic Map of blocks as it is mutated by events
@@ -139,7 +139,7 @@ blockWidget = mdo
   -- Dynamic t (Map k Info, Map k Info)
   dynamicBlockMaps <- holdDyn (Data.Map.empty,Data.Map.empty) eventBlockMaps
   -- Commented out do to error which needs to be fixed
-  blockEvents <- sequence [blockRemover dynamicBlockMap, blockAppender]--, blockUpdater eventBlockMap, blockInserter eventBlockMaps]
+  blockEvents <- sequence [blockRemover dynamicBlockMap, blockAppender, blockUpdater dynamicBlockMap, blockInserter dynamicBlockMaps]
   --
   dynamicMap <- foldDyn ($) initialState (leftmost blockEvents)
   return ()
