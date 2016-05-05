@@ -4,8 +4,12 @@
 -- My attempt at creating a drag and drop interface with Reflex and GHCJS
 {-# LANGUAGE RecursiveDo #-}
 
+module           Estuary.Widgets.SoundWidget where
+
 import           Sound.Tidal.Context as Tidal
 import           Tidal.Utils
+import           Widgets.HelperWidgets
+import           Types.Sound
 
 -- Haskell Imports
 import           Control.Monad
@@ -86,56 +90,3 @@ soundWidget = mdo
     boxDomE <- return $ leftmost [ClickE   <$ R.domEvent R.Click cont,
                                   DragE    <$ R.domEvent R.Drag cont,
                                   DragendE <$ x, DropE <$ x]
-
-  --------------------------------------- Widget Tools -------------------------------------------
-  -- Input positional information relative to container
-  buttonWidget :: R.MonadWidget t m => String -> Map String String -> m (Event t ())
-  buttonWidget iconType attrs = do
-    (button, _) <- elAttr' "div" attrs $ icon iconType
-    return $ R.domEvent R.Click button
-
-  -- Input positional information relative to container
-  dropDownWidget :: R.MonadWidget t m => m (Dynamic t String)
-  dropDownWidget = do
-    let samples = [("bd","bd"),("sn","sn"),("arpy","arpy"),("arp","arp"),("hh","hh"),("ht","ht")]
-    d <- dropdown "bd" (constDyn samples) def $ --DropDownConfig
-    return $ _dropdown_value d
-
-  -- Input positional information relative to container
-  checkboxWidget :: R.MonadWidget t m => m (Dynamic t Bool)
-  checkboxWidget = do
-    return (constDyn False)
-
-  determineBoxAttributes :: BoxEvent -> Map String String
-  determineBoxAttributes boxEvent
-          | boxEvent == ClickE = Data.Map.fromList
-              [("draggable", "true"),("class","countBin noselect")
-              ,("style","width:30px; background-color: hsl(80,80%,30%);" ++
-                "height: 30px; float: left; border: 3px solid black; position: relative;" ++
-                "display:block; padding:.3em 0.5em;")]
-          | boxEvent == DragE = Data.Map.fromList
-              [("draggable", "true"),("class","countBin noselect")
-              ,("style","width:30px; background-color: hsl(80,80%,50%);" ++
-                "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-                "display:block; padding:.3em 0.5em; left:")]
-          | boxEvent == DropE = Data.Map.fromList
-              [("draggable", "true"),("class","countBin noselect")
-              ,("style","width: 30px; background-color: hsl(80,80%,50%);" ++
-                "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-                "display:block; padding:.3em 0.5em; left:")]
-          | boxEvent == DragoverE = Data.Map.fromList
-              [("draggable", "true"),("class","countBin noselect")
-              ,("style","width:30px; background-color: hsl(80,80%,30%);" ++
-                "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-                "display:block; padding:.3em 0.5em; left:")]
-          | boxEvent == HoveroverE = Data.Map.fromList
-              [("draggable", "true"),("class","countBin noselect")
-              ,("style","width:30px; background-color: hsl(80,80%,30%);" ++
-                "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-                "display:block; padding:.3em 0.5em; left:")]
-          | otherwise            = Data.Map.fromList
-              [("draggable", "true"),("class","countBin noselect")
-              ,("style","width: 30px; background-color: hsl(80,80%,50%);" ++
-                "height: 30px; float: left; border: 1px solid black; position: relative;" ++
-                "display:block; padding:.3em 0.5em; left:")]
--------------------------------------------------------------------------------------------------
