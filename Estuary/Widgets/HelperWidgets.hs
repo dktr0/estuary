@@ -4,7 +4,6 @@
 -- My attempt at creating a drag and drop interface with Reflex and GHCJS
 {-# LANGUAGE RecursiveDo #-}
 
-
 module Estuary.Widgets.HelperWidgets where
 -- Reflex.Dom Quick Reference            : https://github.com/ryantrinkle/reflex-dom/blob/develop/Quickref.md
 import           Reflex.Dom as R
