@@ -38,10 +38,35 @@ import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
+
+data Sound = (Maybe (String, Int, Int, Bool))
+  deriving (Eq,Show)
+
+initialSound :: Sound
+initialSound = ("sn", 1, 1, False)
+
+incrementM :: Sound -> Sound
+incrementM (a, b, c, d) = (a, b, c + 1, d)
+
+decrementM :: Sound -> Sound
+incrementM (a, b, c, d) = (a, b, c - 1, d)
+
+incrementS :: Sound -> Sound
+incrementM (a, b, c, d) = (a, b + 1, c, d)
+
+decrementS :: Sound -> Sound
+incrementM (a, b, c, d) = (a, b - 1, c, d)
+
+tDegrade :: Sound -> Sound
+tDegrade (a, b, c , d) = (a, b, c, !d)
+
+rename :: String -> Sound -> Sound
+rename newName (a, b, c, d) = (newName, b, c, d)
+
 main :: IO ()
 main = mainWidget $ do
-  elAttr "div" ("style" =: s) $ text "Estuary"
-  blockWidget
+  elAttr "div" ("style" =: s) $ text "SoundWidget Test"
+  soundWidget
   where
     s = "font-size: 50px; margin-left: 155px; font-family: Helvetica; color: steelblue"
 
@@ -50,43 +75,54 @@ soundWidget :: R.MonadWidget t m => m ()
 soundWidget = mdo
   (cont, _) <- elDynAttr' "div" dynAttrs $ do
 
-    -- UpSample
-    upSample <- buttonWidget "up"
-      -- Increment sample counter on click
-      -- update Sound
+    -- Event t (Sound -> Sound)
+    upSampleE <- buttonWidget "up" upSAttrs
+    let incrementSample = (fmap incrementS) upSampleE
 
-    -- DownSample
-    downSample <- buttonWidget "down"
-      -- Decrement sample counter on click
-      -- update Sound
+    -- Event t (Sound -> Sound)
+    downSampleE <- buttonWidget "down" downSAttrs
+    let decrementSample = (fmap decrementS) downSampleE
 
-    -- UpMult
-    upMult <- buttonWidget "up"
-      -- increment mult counter on click
-      -- update Sound
+    -- Event t (Sound -> Sound)
+    upMultE <- buttonWidget "up" upMAttrs
+    let incrementMult = (fmap incrementM) upMultE
 
-    -- DownMult
-    downMult <- buttonWidget "down"
-      -- decrement mult counter on click
-      -- update Sound
+    -- Event t (Sound -> Sound)
+    downMultE <- buttonWidget "down" downMAttrs
+    let decrementMult = (fmap decrementM) downMultE
 
-    -- Degrade?
-    check <- checkboxWidget
-      -- toggle bool
-      -- update Sound
+    -- Event t (Sound -> Sound)
+    checkE <- checkboxWidget checkAttrs
+    let toggleDegrade = (fmap tDegrade) checkE
 
-    -- Name
-    name <- dropDownWidget
-      -- update Sound
+    -- Event t (Sound -> Sound)
+    nameE <- dropDownWidget dropAttrs
+    let updateName = (fmap rename) nameE
 
-    -- Set Attributes
-    attrsDyn <- determineBoxAttributes Empty
+    soundEvents <- sequence [incrementSample, decrementSample, incrementMult, decrementMult, toggleDegrade, updateName]
+
+    -- Dynamic t Sound
+    dynamicSound <- foldDyn ($) initialState (leftmost soundEvents)
+
+    display $ forDyn dynamicSound (\(a,b,c,d) -> a)
 
     -- Event Listeners
     x <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Drop)     (void $ GHCJS.preventDefault)
     y <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
     z <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
     _ <- R.performEvent_ $ return () <$ y
-    boxDomE <- return $ leftmost [ClickE   <$ R.domEvent R.Click cont,
+    soundE <- return $ leftmost [ClickE    <$ R.domEvent R.Click cont,
                                   DragE    <$ R.domEvent R.Drag cont,
                                   DragendE <$ x, DropE <$ x]
+
+    -- Set Attributes for container
+    contAttrsDyn <- forDyn (holdDyn Empty soundE) determineSoundAttributes
+
+    -- Set attributes for container elements
+    where
+      upSAttrs =   Data.Map.fromList [("")]
+      downSAttrs = Data.Map.fromList [("")]
+      upMAttrs =   Data.Map.fromList [("")]
+      downMAttrs = Data.Map.fromList [("")]
+      checkAttrs = Data.Map.fromList [("")]
+      dropAttrs =  Data.Map.fromList [("")]

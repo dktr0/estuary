@@ -20,19 +20,20 @@ buttonWidget iconType attrs = do
   return $ R.domEvent R.Click button
 
 -- Input positional information relative to container
-dropDownWidget :: R.MonadWidget t m => Dynamic t (Map String String) -> m (Dynamic t String)
+dropDownWidget :: R.MonadWidget t m => Dynamic t (Map String String) -> m (Event t String)
 dropDownWidget dynAttrs = do
   let samples = [("bd","bd"),("sn","sn"),("arpy","arpy"),("arp","arp"),("hh","hh"),("ht","ht")]
   d <- dropdown "bd" (constDyn samples) def & _dropdownConfig_attributes .~ dynAttrs
-  return $ _dropdown_value d
+  return $ tagDyn (_dropdown_value d) (_dropdown_change d)
 
 -- Input positional information relative to container
-checkboxWidget :: R.MonadWidget t m => m (Dynamic t Bool)
-checkboxWidget = do
-  return (constDyn False)
+checkboxWidget :: R.MonadWidget t m => Dynamic t (Map String String) -> m (Event t Bool)
+checkboxWidget dynAttrs = do
+  c <- checkbox False def & _checkboxConfig_attributes .~ dynAttrs
+  return $ (_checkbox_change c)
 
-determineBoxAttributes :: BoxEvent -> Map String String
-determineBoxAttributes boxEvent
+determineSoundAttributes :: BoxEvent -> Map String String
+determineSoundAttributes boxEvent
         | boxEvent == ClickE = Data.Map.fromList
             [("draggable", "true"),("class","countBin noselect")
             ,("style","width:30px; background-color: hsl(80,80%,30%);" ++
