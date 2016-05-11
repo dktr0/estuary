@@ -4,12 +4,11 @@
 -- My attempt at creating a drag and drop interface with Reflex and GHCJS
 {-# LANGUAGE RecursiveDo #-}
 
-module           Estuary.Widgets.SoundWidget where
+module           Widgets.SoundWidget where
 
 import           Sound.Tidal.Context as Tidal
 import           Tidal.Utils
 import           Widgets.HelperWidgets
-import           Types.Sound
 
 -- Haskell Imports
 import           Control.Monad
@@ -39,26 +38,26 @@ import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
 
-data Sound = (Maybe (String, Int, Int, Bool))
+data Sound = Sound (Maybe(String, Int, Int, Bool))
   deriving (Eq,Show)
 
 initialSound :: Sound
-initialSound = ("sn", 1, 1, False)
+initialSound = new Sound
 
 incrementM :: Sound -> Sound
 incrementM (a, b, c, d) = (a, b, c + 1, d)
 
 decrementM :: Sound -> Sound
-incrementM (a, b, c, d) = (a, b, c - 1, d)
+decrementM (a, b, c, d) = (a, b, c - 1, d)
 
 incrementS :: Sound -> Sound
-incrementM (a, b, c, d) = (a, b + 1, c, d)
+incrementS (a, b, c, d) = (a, b + 1, c, d)
 
 decrementS :: Sound -> Sound
-incrementM (a, b, c, d) = (a, b - 1, c, d)
+decrementS (a, b, c, d) = (a, b - 1, c, d)
 
-tDegrade :: Sound -> Sound
-tDegrade (a, b, c , d) = (a, b, c, !d)
+tDegrade :: Bool -> Sound -> Sound
+tDegrade bool (a, b, c , d) = (a, b, c, bool)
 
 rename :: String -> Sound -> Sound
 rename newName (a, b, c, d) = (newName, b, c, d)
@@ -73,7 +72,7 @@ main = mainWidget $ do
 -- Create the sound widget
 soundWidget :: R.MonadWidget t m => m ()
 soundWidget = mdo
-  (cont, _) <- elDynAttr' "div" dynAttrs $ do
+  (cont, _) <- elDynAttr' "div" contAttrsDyn $ do
 
     -- Event t (Sound -> Sound)
     upSampleE <- buttonWidget "up" upSAttrs
@@ -92,37 +91,57 @@ soundWidget = mdo
     let decrementMult = (fmap decrementM) downMultE
 
     -- Event t (Sound -> Sound)
-    checkE <- checkboxWidget checkAttrs
+    let checkAttrsDyn = (constDyn) checkAttrs
+    checkE <- checkboxWidget checkAttrsDyn
     let toggleDegrade = (fmap tDegrade) checkE
 
     -- Event t (Sound -> Sound)
-    nameE <- dropDownWidget dropAttrs
+    let dropAttrsDyn = (constDyn) dropAttrs
+    nameE <- dropDownWidget dropAttrsDyn
     let updateName = (fmap rename) nameE
 
     soundEvents <- sequence [incrementSample, decrementSample, incrementMult, decrementMult, toggleDegrade, updateName]
 
     -- Dynamic t Sound
-    dynamicSound <- foldDyn ($) initialState (leftmost soundEvents)
+    dynamicSound <- foldDyn ($) initialSound (leftmost soundEvents)
 
     display $ forDyn dynamicSound (\(a,b,c,d) -> a)
+    return ()
 
-    -- Event Listeners
-    x <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Drop)     (void $ GHCJS.preventDefault)
-    y <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
-    z <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
-    _ <- R.performEvent_ $ return () <$ y
-    soundE <- return $ leftmost [ClickE    <$ R.domEvent R.Click cont,
-                                  DragE    <$ R.domEvent R.Drag cont,
-                                  DragendE <$ x, DropE <$ x]
+  -- Event Listeners
+  x <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Drop)     (void $ GHCJS.preventDefault)
+  y <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
+  z <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
+  _ <- R.performEvent_ $ return () <$ y
 
-    -- Set Attributes for container
-    contAttrsDyn <- forDyn (holdDyn Empty soundE) determineSoundAttributes
+  let soundE = leftmost [ClickE    <$ R.domEvent R.Click cont,
+                          DragE    <$ R.domEvent R.Drag cont,
+                          DragendE <$ x, DropE <$ x]
 
-    -- Set attributes for container elements
-    where
-      upSAttrs =   Data.Map.fromList [("")]
-      downSAttrs = Data.Map.fromList [("")]
-      upMAttrs =   Data.Map.fromList [("")]
-      downMAttrs = Data.Map.fromList [("")]
-      checkAttrs = Data.Map.fromList [("")]
-      dropAttrs =  Data.Map.fromList [("")]
+  -- Set Attributes for container
+  contAttrsDyn <- forDyn (holdDyn Empty soundE) determineSoundAttributes
+
+  return ()
+  -- Set attributes for container elements
+  where
+    upSAttrs =   Data.Map.fromList [("class","dirbutton"),("style", "left: 30px; bottom: 80px;")]
+    downSAttrs = Data.Map.fromList [("class","dirbutton"),("style", "left: 30px; bottom: 20px;")]
+    upMAttrs =   Data.Map.fromList [("class","dirbutton"),("style", "left: 50px; bottom: 80px;")]
+    downMAttrs = Data.Map.fromList [("class","dirbutton"),("style", "left: 50px; bottom: 20px;")]
+    checkAttrs = Data.Map.fromList [("class","checkbox"), ("style", "left: 80px; bottom: 50px;")]
+    dropAttrs =  Data.Map.fromList [("class","dropdown"), ("style", "left: 10px; bottom: 20px;")]
+
+determineSoundAttributes :: SoundEvent -> Map String String
+determineSoundAttributes soundEvent
+        | soundEvent == ClickE     = Data.Map.fromList
+            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,30%); border: 3px solid black;")]
+        | soundEvent == DragE      = Data.Map.fromList
+            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
+        | soundEvent == DropE      = Data.Map.fromList
+            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
+        | soundEvent == DragoverE  = Data.Map.fromList
+            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,30%); border: 1px solid black;")]
+        | soundEvent == HoveroverE = Data.Map.fromList
+            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,30%); border: 1px solid black;")]
+        | otherwise                = Data.Map.fromList
+            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
