@@ -14,12 +14,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:     Estuary/
-  exposed-modules:    Tidal.Utils
+  exposed-modules:    Tidal.Utils, Widgets.HelperWidgets
   build-depends:      base, data-default, tidal, hosc, containers
 
 executable Estuary
-  hs-source-dirs:      Estuary/
-  main-is:             Main.hs
+  hs-source-dirs:      Estuary/Widgets
+  main-is:             SoundWidget.hs
   build-depends:       base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base, ghcjs-dom, text, array,
                        data-default, transformers
   default-language:    Haskell2010
