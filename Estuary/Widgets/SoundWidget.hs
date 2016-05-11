@@ -9,6 +9,7 @@ module           Widgets.SoundWidget where
 import           Sound.Tidal.Context as Tidal
 import           Tidal.Utils
 import           Widgets.HelperWidgets
+import           Types.Sound
 
 -- Haskell Imports
 import           Control.Monad
@@ -37,75 +38,50 @@ import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
-
-data Sound = Sound (Maybe(String, Int, Int, Bool))
-  deriving (Eq,Show)
-
 initialSound :: Sound
-initialSound = new Sound
-
-incrementM :: Sound -> Sound
-incrementM (a, b, c, d) = (a, b, c + 1, d)
-
-decrementM :: Sound -> Sound
-decrementM (a, b, c, d) = (a, b, c - 1, d)
-
-incrementS :: Sound -> Sound
-incrementS (a, b, c, d) = (a, b + 1, c, d)
-
-decrementS :: Sound -> Sound
-decrementS (a, b, c, d) = (a, b - 1, c, d)
-
-tDegrade :: Bool -> Sound -> Sound
-tDegrade bool (a, b, c , d) = (a, b, c, bool)
-
-rename :: String -> Sound -> Sound
-rename newName (a, b, c, d) = (newName, b, c, d)
-
-main :: IO ()
-main = mainWidget $ do
-  elAttr "div" ("style" =: s) $ text "SoundWidget Test"
-  soundWidget
-  where
-    s = "font-size: 50px; margin-left: 155px; font-family: Helvetica; color: steelblue"
+initialSound = simpleSound "sn"
 
 -- Create the sound widget
 soundWidget :: R.MonadWidget t m => m ()
 soundWidget = mdo
-  (cont, _) <- elDynAttr' "div" contAttrsDyn $ do
+  (cont, _) <- elDynAttr' "div" contAttrsDyn $ mdo
 
     -- Event t (Sound -> Sound)
     upSampleE <- buttonWidget "up" upSAttrs
-    let incrementSample = (fmap incrementS) upSampleE
+    incrementSample <- return $ (fmap (\() -> incrementN)) upSampleE
 
     -- Event t (Sound -> Sound)
     downSampleE <- buttonWidget "down" downSAttrs
-    let decrementSample = (fmap decrementS) downSampleE
+    decrementSample <- return $ (fmap (\() -> decrementN)) downSampleE
 
     -- Event t (Sound -> Sound)
-    upMultE <- buttonWidget "up" upMAttrs
-    let incrementMult = (fmap incrementM) upMultE
+    upRepE <- buttonWidget "up" upRAttrs
+    incrementReps <- return $ (fmap (\() -> incrementRepeats)) upRepE
 
     -- Event t (Sound -> Sound)
-    downMultE <- buttonWidget "down" downMAttrs
-    let decrementMult = (fmap decrementM) downMultE
+    downRepsE <- buttonWidget "down" downRAttrs
+    decrementReps <- return $ (fmap (\() -> decrementRepeats)) downRepsE
 
     -- Event t (Sound -> Sound)
-    let checkAttrsDyn = (constDyn) checkAttrs
+    checkAttrsDyn <- return $ constDyn checkAttrs
     checkE <- checkboxWidget checkAttrsDyn
-    let toggleDegrade = (fmap tDegrade) checkE
+    setDegradeVal <- return $ (fmap setDegrade) checkE
 
     -- Event t (Sound -> Sound)
-    let dropAttrsDyn = (constDyn) dropAttrs
+    dropAttrsDyn <- return $ constDyn dropAttrs
     nameE <- dropDownWidget dropAttrsDyn
-    let updateName = (fmap rename) nameE
+    updateName <- return $ (fmap rename) nameE
 
-    soundEvents <- sequence [incrementSample, decrementSample, incrementMult, decrementMult, toggleDegrade, updateName]
+    let soundEvents = [incrementSample, decrementSample, incrementReps, decrementReps, setDegradeVal, updateName]
 
     -- Dynamic t Sound
     dynamicSound <- foldDyn ($) initialSound (leftmost soundEvents)
 
-    display $ forDyn dynamicSound (\(a,b,c,d) -> a)
+    dynamicSoundName <- forDyn dynamicSound show
+
+    -- Display Sound
+    display $ dynamicSoundName
+
     return ()
 
   -- Event Listeners
@@ -118,16 +94,18 @@ soundWidget = mdo
                           DragE    <$ R.domEvent R.Drag cont,
                           DragendE <$ x, DropE <$ x]
 
+  soundDyn <- holdDyn Empty soundE
+
   -- Set Attributes for container
-  contAttrsDyn <- forDyn (holdDyn Empty soundE) determineSoundAttributes
+  contAttrsDyn <- forDyn soundDyn determineSoundAttributes
 
   return ()
   -- Set attributes for container elements
   where
     upSAttrs =   Data.Map.fromList [("class","dirbutton"),("style", "left: 30px; bottom: 80px;")]
     downSAttrs = Data.Map.fromList [("class","dirbutton"),("style", "left: 30px; bottom: 20px;")]
-    upMAttrs =   Data.Map.fromList [("class","dirbutton"),("style", "left: 50px; bottom: 80px;")]
-    downMAttrs = Data.Map.fromList [("class","dirbutton"),("style", "left: 50px; bottom: 20px;")]
+    upRAttrs =   Data.Map.fromList [("class","dirbutton"),("style", "left: 50px; bottom: 80px;")]
+    downRAttrs = Data.Map.fromList [("class","dirbutton"),("style", "left: 50px; bottom: 20px;")]
     checkAttrs = Data.Map.fromList [("class","checkbox"), ("style", "left: 80px; bottom: 50px;")]
     dropAttrs =  Data.Map.fromList [("class","dropdown"), ("style", "left: 10px; bottom: 20px;")]
 

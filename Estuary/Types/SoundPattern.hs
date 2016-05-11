@@ -1,6 +1,6 @@
-module SoundPattern where
+module Types.SoundPattern where
 
-import Sound
+import Types.Sound
 import Data.List (intercalate)
 
 data SoundPattern = SoundPattern [Sound] deriving (Eq)

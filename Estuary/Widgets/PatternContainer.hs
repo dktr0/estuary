@@ -9,6 +9,8 @@ module           Estuary.Widgets.SoundWidget where
 import           Sound.Tidal.Context as Tidal
 import           Tidal.Utils
 import           Widgets.HelperWidgets
+import           Types.Sound
+import           Types.SoundPattern
 
 -- Haskell Imports
 import           Control.Monad

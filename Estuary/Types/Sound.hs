@@ -1,4 +1,4 @@
-module Sound where
+module Types.Sound where
 
 data Sound = Sound (Maybe (String,Int,Int,Bool)) deriving (Eq)
 
@@ -23,11 +23,9 @@ degraded :: Sound -> Bool
 degraded (Sound (Just (_,_,_,x))) = x
 -- deliberately not implementing Nothing to throw exception
 
-degrade :: Sound -> Sound
-degrade (Sound (Just (a,b,c,_))) = Sound (Just (a,b,c,True))
-
-unDegrade :: Sound -> Sound
-unDegrade (Sound (Just (a,b,c,_))) = Sound (Just (a,b,c,False))
+isSilent :: Sound -> Bool
+isSilent (Sound Nothing) = True
+isSilent _ = False
 
 instance Show Sound where
   show (Sound (Just (x,y,1,False))) = x++":"++(show y)
@@ -43,13 +41,21 @@ incrementN (Sound (Just (a,b,c,d))) = Sound (Just (a,b+1,c,d))
 decrementN :: Sound -> Sound
 decrementN (Sound (Just (a,b,c,d))) = Sound (Just (a,b-1,c,d))
 
-incrementRepeats :: Sound -> Sound 
+incrementRepeats :: Sound -> Sound
 incrementRepeats (Sound (Just (a,b,c,d))) = Sound (Just (a,b,c+1,d))
 
 decrementRepeats :: Sound -> Sound
 decrementRepeats (Sound (Just (a,b,1,d))) = Sound (Just (a,b,1,d))
 decrementRepeats (Sound (Just (a,b,c,d))) = Sound (Just (a,b,c-1,d))
 
-isSilent :: Sound -> Bool
-isSilent (Sound Nothing) = True
-isSilent _ = False
+degrade :: Sound -> Sound
+degrade (Sound (Just (a,b,c,_))) = Sound (Just (a,b,c,True))
+
+unDegrade :: Sound -> Sound
+unDegrade (Sound (Just (a,b,c,_))) = Sound (Just (a,b,c,False))
+
+setDegrade :: Bool -> Sound -> Sound
+setDegrade bool (Sound (Just (a,b,c,d))) = Sound (Just (a,b,c,bool))
+
+rename :: String -> Sound -> Sound
+rename newName (Sound (Just (a,b,c,d))) = Sound (Just (newName,b,c,d))
