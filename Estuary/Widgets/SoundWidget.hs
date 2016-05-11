@@ -102,17 +102,17 @@ soundWidget = mdo
   return ()
   -- Set attributes for container elements
   where
-    upSAttrs =   Data.Map.fromList [("class","dirbutton"),("style", "left: 30px; bottom: 80px;")]
-    downSAttrs = Data.Map.fromList [("class","dirbutton"),("style", "left: 30px; bottom: 20px;")]
-    upRAttrs =   Data.Map.fromList [("class","dirbutton"),("style", "left: 50px; bottom: 80px;")]
-    downRAttrs = Data.Map.fromList [("class","dirbutton"),("style", "left: 50px; bottom: 20px;")]
+    upSAttrs =   Data.Map.fromList [("class","sample"),("style", "left: 30px; bottom: 80px;")]
+    downSAttrs = Data.Map.fromList [("class","sample"),("style", "left: 30px; bottom: 20px;")]
+    upRAttrs =   Data.Map.fromList [("class","repeats"),("style", "left: 50px; bottom: 80px;")]
+    downRAttrs = Data.Map.fromList [("class","repeats"),("style", "left: 50px; bottom: 20px;")]
     checkAttrs = Data.Map.fromList [("class","checkbox"), ("style", "left: 80px; bottom: 50px;")]
-    dropAttrs =  Data.Map.fromList [("class","dropdown"), ("style", "left: 10px; bottom: 20px;")]
+    dropAttrs =  Data.Map.fromList [("class","dropdown"), ("style", "left: 10px; bottom: 21px;")]
 
 determineSoundAttributes :: SoundEvent -> Map String String
 determineSoundAttributes soundEvent
         | soundEvent == ClickE     = Data.Map.fromList
-            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,30%); border: 3px solid black;")]
+            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
         | soundEvent == DragE      = Data.Map.fromList
             [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
         | soundEvent == DropE      = Data.Map.fromList

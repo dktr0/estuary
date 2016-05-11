@@ -24,7 +24,7 @@ data SoundEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | E
 -- Input positional information relative to container
 buttonWidget :: R.MonadWidget t m => String -> Map String String -> m (Event t ())
 buttonWidget iconType attrs = do
-  (button, _) <- elAttr' "div" attrs $ text iconType
+  (button, _) <- elAttr' "button" attrs $ text iconType
   return $ R.domEvent R.Click button
 
 -- Input positional information relative to container
