@@ -47,7 +47,6 @@ estuaryApp :: MonadWidget t m => m ()
 estuaryApp = do
   el "div" $ do
     elAttr "section" ("class" =: "soundcontainer") $ do
-      text $ "why"
       mainHeader
       soundWidget
       return ()

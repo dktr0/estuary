@@ -53,23 +53,19 @@ main = mainWidget $ do
 patternContainerWidget :: R.MonadWidget t m => m ()
 patternContainerWidget = mdo
   (cont, _) <- elDynAttr' "div" contAttrsDyn $ do
-    -- Create new block (do for each)
-    feedback <- listWithKey allSounds $ \k oneSound -> mdo
 
-      -- Create a sampleBlock element
-      (a,b) <- soundWidget
-
-      -- concatonate block names
-      return (a,b)
+    keySoundE <- selectViewListWithKey allSounds $ \k oneSound bool -> mdo
+      sound <- soundWidget
+      return sound
 
     addSoundE <- buttonWidget "add" appendAttrs
     let addSound = (fmap appendSound) addSoundE
 
-    remSoundE <- -- Some soundWidget event
-    let remSound = (fmap removeSound) remSoundE
+    remSoundE <- -- Some soundWidget event Event t Int
+    let remSound = (fmap delete) remSoundE
 
-    insSoundE <- -- Some soundWidget event
-    let insSound = (fmap insertSound) insSoundE
+    insSoundE <- -- Some soundWidget event Event t (Sound,Int)
+    let insSound = (fmap insert) insSoundE
 
     allSounds <- foldDyn ($) initial (leftmost $ [addSound, remSound, insSound])
 

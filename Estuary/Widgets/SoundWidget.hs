@@ -42,9 +42,9 @@ initialSound :: Sound
 initialSound = simpleSound "sn"
 
 -- Create the sound widget
-soundWidget :: R.MonadWidget t m => m ()
+soundWidget :: R.MonadWidget t m => m (R.Event t Sound)
 soundWidget = mdo
-  (cont, _) <- elDynAttr' "div" contAttrsDyn $ mdo
+  (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
 
     -- Event t (Sound -> Sound)
     upSampleE <- buttonWidget "up" upSAttrs
@@ -82,7 +82,7 @@ soundWidget = mdo
     -- Display Sound
     display $ dynamicSoundName
 
-    return ()
+    return $ dynamicSound
 
   -- Event Listeners
   x <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Drop)     (void $ GHCJS.preventDefault)
@@ -90,16 +90,18 @@ soundWidget = mdo
   z <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
   _ <- R.performEvent_ $ return () <$ y
 
-  let soundE = leftmost [ClickE    <$ R.domEvent R.Click cont,
-                          DragE    <$ R.domEvent R.Drag cont,
-                          DragendE <$ x, DropE <$ x]
+  let event = leftmost [ClickE    <$ R.domEvent R.Click cont,
+                         DragE    <$ R.domEvent R.Drag cont,
+                         DragendE <$ x, DropE <$ x]
 
-  soundDyn <- holdDyn Empty soundE
+  soundDyn <- holdDyn Empty event
 
   -- Set Attributes for container
   contAttrsDyn <- forDyn soundDyn determineSoundAttributes
 
-  return ()
+  let soundE = tag (current dynSound) event
+
+  return $ soundE
   -- Set attributes for container elements
   where
     upSAttrs =   Data.Map.fromList [("class","sample"),("style", "left: 30px; bottom: 80px;")]
