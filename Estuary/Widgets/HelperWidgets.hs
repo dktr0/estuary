@@ -20,6 +20,9 @@ import           Reflex.Dom.Class as R
 data SoundEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Empty
   deriving (Eq, Show)
 
+initialSound :: Sound
+initialCounter = simpleSound "sn"
+
 --------------------------------------- Widget Tools -------------------------------------------
 -- Input positional information relative to container
 buttonWidget :: R.MonadWidget t m => String -> Map String String -> m (Event t ())
@@ -39,4 +42,83 @@ checkboxWidget :: R.MonadWidget t m => Dynamic t (Map String String) -> m (Event
 checkboxWidget dynAttrs = do
   c <- checkbox False (def & attributes .~ dynAttrs)
   return $ (_checkbox_change c)
+
+nPicker :: MonadWidget t m => m (Event t (Sound -> Sound))
+numberPicker = do
+  (cont,sampsE) <- elDynAttr' "div" contAttrsDyn $ do
+
+    upSampE <- buttonWidget "up" upRAttrs
+    incrementSample <- return $ (fmap (\() -> incrementN)) upSampE
+
+    downSampE <- buttonWidget "down" downRAttrs
+    decrementSample <- return $ (fmap (\() -> decrementN)) downSampE
+
+    sampsE <- <> incrementSample decrementSample
+
+    let samplePickerEvents = [incrementSample, decrementSample]
+
+    dynamicSound <- foldDyn ($) initialCounter (nPickerEvents)
+
+    -- Display text (attrs)
+
+    return $ samps
+
+  return $ sampsE
+  where
+    upAttrs = Data.Map.fromList [("")]
+    downAttrs = Data.Map.fromList [("")]
+    contAttrs = Data.Map.fromList [("")]
+
+repeatsPicker :: MonadWidget t m => m (Event t (Sound -> Sound))
+repeatsPicker = do
+  (cont, repsE) <- elDynAttr' "div" contAttrsDyn $ do
+
+    upRepsE <- buttonWidget "up" upRAttrs
+    incrementReps <- return $ (fmap (\() -> incrementRepeats)) upRepE
+
+    downRepsE <- buttonWidget "down" downRAttrs
+    decrementReps <- return $ (fmap (\() -> decrementRepeats)) downRepsE
+
+    repsE <- <> $ incrementReps decrementReps
+
+    let repeatsPickerEvents = [incrementReps, decrementReps]
+
+    dynamicSound <- foldDyn ($) initialSound (repeatsPickerEvents)
+
+    -- Display text (attrs)
+
+    return $ reps
+
+  return $ repsE
+  where
+    upAttrs = Data.Map.fromList [("")]
+    downAttrs = Data.Map.fromList [("")]
+    contAttrs = Data.Map.fromList [("")]
+
+degradePicker :: MonadWidget t m => m (Event t (Sound -> Sound))
+degradePicker = do
+  (cont, degE) <- elDynAttr' "div" contAttrsDyn $ do
+    checkAttrsDyn <- return $ constDyn checkAttrs
+    checkE <- checkboxWidget checkAttrsDyn
+    deg <- return $ (fmap setDegrade) checkE
+    return $ deg
+
+    -- display degrade (attrs)
+
+  return $ degE
+  where
+    contAttrs = Data.Map.fromList [("")]
+    checkAttrs = Data.Map.fromList [("")]
+
+samplePicker :: MonadWidget t m => m (Event t (Sound -> Sound))
+samplePicker = do
+  (cont, nameE) <- elDynAttr' "div" contAttrsDyn $ do
+    dropAttrsDyn <- return $ constDyn dropAttrs
+    nameE <- dropDownWidget dropAttrsDyn
+    updateName <- return $ (fmap rename) nameE
+
+    -- Display name (attrs)
+
+    return $ updateName
+  return $ nameE
 -------------------------------------------------------------------------------------------------
