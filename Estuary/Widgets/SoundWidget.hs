@@ -38,35 +38,30 @@ import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
-initialSound :: Sound
-initialSound = simpleSound "sn"
-
 -- Create the sound widget
 soundWidget :: R.MonadWidget t m => m (R.Event t Sound)
 soundWidget = mdo
   (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
 
-    changeSamples <- nPicker
+    -- Create n picker widget
+    changeN <- nPicker
+    -- Create repeats changer widget
     changeReps <- repeatsPicker
+    -- Create degrade changer widget
+    changeDegrade <- degradePicker
+    -- Crate sample changer widget
+    changeSamples <- samplePicker
 
-    -- Event t (Sound -> Sound)
-    checkAttrsDyn <- return $ constDyn checkAttrs
-    checkE <- checkboxWidget checkAttrsDyn
-    setDegradeVal <- return $ (fmap setDegrade) checkE
+    -- Create list of events
+    let soundEvents = [changeN, changeReps, changeDegrade, changeSamples]
 
-    -- Event t (Sound -> Sound)
-    dropAttrsDyn <- return $ constDyn dropAttrs
-    nameE <- dropDownWidget dropAttrsDyn
-    updateName <- return $ (fmap rename) nameE
-
-    let soundEvents = [changeSamples, changeReps, setDegradeVal, updateName]
-
-    -- Dynamic t Sound
+    -- Fold events into dynamic sound
     dynamicSound <- foldDyn ($) initialSound (leftmost soundEvents)
 
+    -- Get dynamic sound name string
     dynamicSoundName <- forDyn dynamicSound show
 
-    -- Display Sound
+    -- Display dynamic sound name
     display $ dynamicSoundName
 
     return $ dynamicSound
@@ -91,10 +86,6 @@ soundWidget = mdo
   return $ soundE
   -- Set attributes for container elements
   where
-    upSAttrs =   Data.Map.fromList [("class","sample"),("style", "left: 30px; bottom: 80px;")]
-    downSAttrs = Data.Map.fromList [("class","sample"),("style", "left: 30px; bottom: 20px;")]
-    upRAttrs =   Data.Map.fromList [("class","repeats"),("style", "left: 50px; bottom: 80px;")]
-    downRAttrs = Data.Map.fromList [("class","repeats"),("style", "left: 50px; bottom: 20px;")]
     checkAttrs = Data.Map.fromList [("class","checkbox"), ("style", "left: 80px; bottom: 50px;")]
     dropAttrs =  Data.Map.fromList [("class","dropdown"), ("style", "left: 10px; bottom: 21px;")]
 

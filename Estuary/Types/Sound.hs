@@ -1,8 +1,13 @@
 module Types.Sound where
 
+data SoundEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Empty deriving (Eq, Show)
+
 data Sound = Sound (Maybe (String,Int,Int,Bool)) deriving (Eq)
 
 silentSound = Sound (Nothing)
+
+initialSound :: Sound
+initialSound = simpleSound "sn"
 
 simpleSound :: String -> Sound
 simpleSound x = Sound (Just (x,0,1,False))
