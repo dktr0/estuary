@@ -61,7 +61,7 @@ patternContainerWidget = mdo
     addSoundE <- buttonWidget "add" appendAttrs
     let addSound = (fmap appendSound) addSoundE
 
-    remSoundE <- -- Some soundWidget event Event t Int
+    remSoundE <-
     let remSound = (fmap delete) remSoundE
 
     insSoundE <- -- Some soundWidget event Event t (Sound,Int)

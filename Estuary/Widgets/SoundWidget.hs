@@ -46,21 +46,8 @@ soundWidget :: R.MonadWidget t m => m (R.Event t Sound)
 soundWidget = mdo
   (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
 
-    -- Event t (Sound -> Sound)
-    upSampleE <- buttonWidget "up" upSAttrs
-    incrementSample <- return $ (fmap (\() -> incrementN)) upSampleE
-
-    -- Event t (Sound -> Sound)
-    downSampleE <- buttonWidget "down" downSAttrs
-    decrementSample <- return $ (fmap (\() -> decrementN)) downSampleE
-
-    -- Event t (Sound -> Sound)
-    upRepE <- buttonWidget "up" upRAttrs
-    incrementReps <- return $ (fmap (\() -> incrementRepeats)) upRepE
-
-    -- Event t (Sound -> Sound)
-    downRepsE <- buttonWidget "down" downRAttrs
-    decrementReps <- return $ (fmap (\() -> decrementRepeats)) downRepsE
+    changeSamples <- nPicker
+    changeReps <- repeatsPicker
 
     -- Event t (Sound -> Sound)
     checkAttrsDyn <- return $ constDyn checkAttrs
@@ -72,7 +59,7 @@ soundWidget = mdo
     nameE <- dropDownWidget dropAttrsDyn
     updateName <- return $ (fmap rename) nameE
 
-    let soundEvents = [incrementSample, decrementSample, incrementReps, decrementReps, setDegradeVal, updateName]
+    let soundEvents = [changeSamples, changeReps, setDegradeVal, updateName]
 
     -- Dynamic t Sound
     dynamicSound <- foldDyn ($) initialSound (leftmost soundEvents)
