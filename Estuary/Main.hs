@@ -8,6 +8,7 @@ import           Sound.Tidal.Context as Tidal
 
 import           Tidal.Utils
 import           Widgets.SoundWidget
+import           Widgets.PatternContainer
 
 -- Haskell Imports
 import           Control.Monad
@@ -48,12 +49,12 @@ estuaryApp = do
   el "div" $ do
     elAttr "section" ("class" =: "soundcontainer") $ do
       mainHeader
-      soundWidget
+      patternContainerWidget
       return ()
     infoFooter
 
 mainHeader :: MonadWidget t m => m ()
-mainHeader = el "h1" $ text "Estuary"
+mainHeader = el "h1" $ text "Estuary Test"
 
 -- | Display static information about the application
 infoFooter :: MonadWidget t m => m ()

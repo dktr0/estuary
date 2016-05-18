@@ -17,10 +17,8 @@ import           Control.Monad.IO.Class
 import           Data.Tuple (fst, snd)
 import           Data.String
 import           Data.Default
-import           Data.Array
 import           Data.Maybe
 import           Data.Map
-import qualified Data.Text as T
 
 -- Reflex Imports
 -- Reflex Quick Reference                : https://github.com/ryantrinkle/reflex/blob/develop/Quickref.md
@@ -39,7 +37,7 @@ import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
 -- Create the sound widget
-soundWidget :: R.MonadWidget t m => m (R.Event t Sound)
+soundWidget :: R.MonadWidget t m => m (R.Event t (SoundEvent, Sound))
 soundWidget = mdo
   (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
 
@@ -83,23 +81,21 @@ soundWidget = mdo
 
   let soundE = tag (current dynSound) event
 
-  return $ soundE
-  -- Set attributes for container elements
-  where
-    checkAttrs = Data.Map.fromList [("class","checkbox"), ("style", "left: 80px; bottom: 50px;")]
-    dropAttrs =  Data.Map.fromList [("class","dropdown"), ("style", "left: 10px; bottom: 21px;")]
+  let soundTupleE = attachDyn soundDyn soundE
+
+  return $ soundTupleE
 
 determineSoundAttributes :: SoundEvent -> Map String String
 determineSoundAttributes soundEvent
         | soundEvent == ClickE     = Data.Map.fromList
-            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
+            [("draggable", "true"),("class","w3-container w3-light-grey w3-border-dark-grey")]
         | soundEvent == DragE      = Data.Map.fromList
-            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
+            [("draggable", "true"),("class","w3-container w3-light-grey w3-border-dark-grey")]
         | soundEvent == DropE      = Data.Map.fromList
-            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
+            [("draggable", "true"),("class","w3-container w3-light-grey w3-border-dark-grey")]
         | soundEvent == DragoverE  = Data.Map.fromList
-            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,30%); border: 1px solid black;")]
+            [("draggable", "true"),("class","w3-container w3-light-grey w3-border-dark-grey")]
         | soundEvent == HoveroverE = Data.Map.fromList
-            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,30%); border: 1px solid black;")]
+            [("draggable", "true"),("class","w3-container w3-light-grey w3-border-dark-grey")]
         | otherwise                = Data.Map.fromList
-            [("draggable", "true"),("class","sound"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
+            [("draggable", "true"),("class","w3-container w3-light-grey w3-border-dark-grey")]

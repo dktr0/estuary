@@ -8,8 +8,11 @@ data SoundPattern = SoundPattern [Sound] deriving (Eq)
 instance Show SoundPattern where
   show (SoundPattern xs) = intercalate " " (map show xs)
 
-insert :: Sound -> Int -> SoundPattern -> SoundPattern
-insert sound position (SoundPattern pattern) =  SoundPattern ((take position pattern) ++ [sound] ++ (drop position pattern))
+initialContainer :: SoundPattern
+initialContainer = simple "sn"
+
+insert :: (Sound,Int) -> SoundPattern -> SoundPattern
+insert (sound,position) (SoundPattern pattern) =  SoundPattern ((take position pattern) ++ [sound] ++ (drop position pattern))
 
 delete :: Int -> SoundPattern -> SoundPattern
 delete position (SoundPattern pattern) = SoundPattern ((take position pattern) ++ (drop (position+1) pattern))

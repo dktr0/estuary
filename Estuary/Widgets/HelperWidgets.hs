@@ -9,7 +9,11 @@ module Widgets.HelperWidgets where
 import           Types.Sound
 
 -- Haskell Imports
+import           Control.Monad
+import           Data.Tuple (fst, snd)
+import           Data.String
 import           Data.Default
+import           Data.Maybe
 import           Data.Map
 
 -- Reflex.Dom Quick Reference            : https://github.com/ryantrinkle/reflex-dom/blob/develop/Quickref.md
@@ -19,6 +23,12 @@ import           Reflex.Dom.Widget.Basic as R
 
 import           Reflex.Dom.Class as R
 
+-- GHCJS Imports
+import           GHCJS.Types as GHCJS
+import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
+import qualified GHCJS.DOM.Element as GHCJS
+import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
+
 -------------------------------------------------------------------------------------------------
 --                                     Widget Tools                                            --
 -------------------------------------------------------------------------------------------------
@@ -26,7 +36,7 @@ import           Reflex.Dom.Class as R
 -- Creates a formattable button
 buttonWidget :: R.MonadWidget t m => String -> Map String String -> m (Event t ())
 buttonWidget iconType attrs = do
-  (button, _) <- elAttr' "button" attrs $ text iconType
+  (button, _) <- elAttr' "a" attrs $ text iconType
   return $ R.domEvent R.Click button
 
 -- Creates a formattable dropdown menu
@@ -48,6 +58,16 @@ textWidget dynName attrs = do
   (el, _) <- elAttr' "p" attrs $ display dynName
   return ()
 
+garbageWidget :: R.MonadWidget t m => m (Event t ())
+garbageWidget = do
+  (el, _) <- elAttr' "div" attrs $ text "garbage"
+  x <- R.wrapDomEvent (R._el_element el) (R.onEventName R.Drop)     (void $ GHCJS.preventDefault)
+  y <- R.wrapDomEvent (R._el_element el) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
+  z <- R.wrapDomEvent (R._el_element el) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
+  _ <- R.performEvent_ $ return () <$ y
+  return x
+  where
+    attrs = Data.Map.fromList [("class", "garbage")]
 -------------------------------------------------------------------------------------------------
 --                                        Widgets                                              --
 -------------------------------------------------------------------------------------------------
@@ -55,10 +75,10 @@ textWidget dynName attrs = do
 -- Creates a number picker widget for sample iteration
 nPicker :: MonadWidget t m => m (Event t (Sound -> Sound))
 nPicker = do
-  upSampE <- buttonWidget "up" upAttrs
+  upSampE <- buttonWidget "+" upAttrs
   incrementSample <- return $ (fmap (\() -> incrementN)) upSampE
 
-  downSampE <- buttonWidget "down" downAttrs
+  downSampE <- buttonWidget "-" downAttrs
   decrementSample <- return $ (fmap (\() -> decrementN)) downSampE
 
   let nPickerEvents = [incrementSample, decrementSample]
@@ -71,17 +91,17 @@ nPicker = do
   textWidget dynNString textAttrs
   return $ sampsE
   where
-    upAttrs   = Data.Map.fromList [("class","sampleBtn"),("style", "left: 30px; bottom: 80px;")]
-    downAttrs = Data.Map.fromList [("class","sampleBtn"),("style", "left: 30px; bottom: 20px;")]
-    textAttrs = Data.Map.fromList [("class","sampleTxt"),("style","left: 30px; bottom: 50px;")]
+    upAttrs   = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
+    downAttrs = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
+    textAttrs = Data.Map.fromList [("class","sampleTxt")]
 
 -- Creates a number picker widget for pattern repeats
 repeatsPicker :: MonadWidget t m => m (Event t (Sound -> Sound))
 repeatsPicker = do
-  upRepsE <- buttonWidget "up" upAttrs
+  upRepsE <- buttonWidget "+" upAttrs
   incrementReps <- return $ (fmap (\() -> incrementRepeats)) upRepsE
 
-  downRepsE <- buttonWidget "down" downAttrs
+  downRepsE <- buttonWidget "-" downAttrs
   decrementReps <- return $ (fmap (\() -> decrementRepeats)) downRepsE
 
   let repeatsPickerEvents = [incrementReps, decrementReps]
@@ -95,9 +115,9 @@ repeatsPicker = do
 
   return $ repsE
   where
-    upAttrs   = Data.Map.fromList [("class","repeatsBtn"),("style", "left: 50px; bottom: 80px;")]
-    downAttrs = Data.Map.fromList [("class","repeatsBtn"),("style", "left: 50px; bottom: 20px;")]
-    textAttrs = Data.Map.fromList [("class","sampleTxt"),("style", "left: 50px; bottom: 50px;")]
+    upAttrs   = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
+    downAttrs = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
+    textAttrs = Data.Map.fromList [("class","sampleTxt")]
 
 -- Creates a checkbox widget for degrade value
 degradePicker :: MonadWidget t m => m (Event t (Sound -> Sound))
@@ -112,8 +132,8 @@ degradePicker = do
 
   return $ degE
   where
-    checkAttrs = Data.Map.fromList [("class","checkbox"), ("style", "left: 80px; bottom: 50px;")]
-    textAttrs = Data.Map.fromList [("class","sampleTxt"), ("style", "left: 80px; bottom: 60px;")]
+    checkAttrs = Data.Map.fromList [("class","checkbox")]
+    textAttrs = Data.Map.fromList [("class","sampleTxt")]
 
 -- Creates a dropdown menu for choosing samples
 samplePicker :: MonadWidget t m => m (Event t (Sound -> Sound))
@@ -127,8 +147,8 @@ samplePicker = do
 
   return $ nameE
   where
-    dropdownAttrs = Data.Map.fromList [("class","dropdown"), ("style", "left: 10px; bottom: 20px;")]
-    textAttrs = Data.Map.fromList [("class","sampleTxt"), ("style", "left 10px; bottom: 10px;")]
+    dropdownAttrs = Data.Map.fromList [("class","w3-dropnav")]
+    textAttrs = Data.Map.fromList [("class","sampleTxt")]
 -------------------------------------------------------------------------------------------------
 
 
