@@ -30,13 +30,13 @@ app state pending = do
   WS.forkPingThread conn 30
   Main.interact conn state
 
--- hintOscPattern  :: (MonadIO m, Control.Monad.Catch.MonadMask m) => String -> m (Either InterpreterError Tidal.OscPattern)
-hintOscPattern x = Hint.runInterpreter $ do
+-- hintParamPattern  :: (MonadIO m, Control.Monad.Catch.MonadMask m) => String -> m (Either InterpreterError Tidal.ParamPattern)
+hintParamPattern x = Hint.runInterpreter $ do
   Hint.set [languageExtensions := [OverloadedStrings]]
   Hint.setImports ["Prelude","Sound.Tidal.Context","Sound.OSC.Type","Sound.OSC.Datum","Data.Map"]
-  Hint.interpret x (Hint.as::Tidal.OscPattern)
+  Hint.interpret x (Hint.as::Tidal.ParamPattern)
 
-patternOrSilence :: Either Hint.InterpreterError Tidal.OscPattern -> IO Tidal.OscPattern
+patternOrSilence :: Either Hint.InterpreterError Tidal.ParamPattern -> IO Tidal.ParamPattern
 patternOrSilence (Left err) = do
   putStrLn (show err)
   return $ Tidal.sound (Tidal.p "")
@@ -51,6 +51,6 @@ interact conn state = do
     msg <- WS.receiveData conn
     let s = T.unpack msg
     putStrLn s
-    x <- hintOscPattern s
+    x <- hintParamPattern s
     y <- patternOrSilence x
     ds $ y
