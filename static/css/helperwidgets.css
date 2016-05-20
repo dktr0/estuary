@@ -1,0 +1,38 @@
+.sample {
+  padding: 2px;
+  background-color: grey;
+  border-width: medium;
+  border-style: ridge;
+  display: table-column;
+}
+
+.repeats {
+
+
+}
+
+.dropdown {
+
+
+}
+
+.checkbox {
+
+
+}
+
+.sound {
+  width: 200px;
+  height: 150px;
+
+}
+
+.soundcontainer {
+
+
+}
+
+.squarebutton {
+
+
+}

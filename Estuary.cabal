@@ -11,15 +11,17 @@ copyright:           2015 Matt Paine, Jacques Carette, David Ogborn
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
+extra-source-files:  static/css/helperwidgets.css
 
 library
-  hs-source-dirs:     Estuary/
-  exposed-modules:    Tidal.Utils, Sound, SoundPattern
-  build-depends:      base, data-default, tidal, hosc, containers
+  hs-source-dirs:    Estuary/
+  exposed-modules:   Tidal.Utils, Types.Sound, Widgets.HelperWidgets, Widgets.PatternContainer, Widgets.SoundWidget
+  build-depends:     base, data-default, tidal, hosc, containers, reflex, reflex-dom, ghcjs-base, ghcjs-dom, transformers
+
 
 executable Estuary
-  hs-source-dirs:      Estuary/
-  main-is:             Main.hs
-  build-depends:       base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base, ghcjs-dom, text, array,
-                       data-default, transformers
-  default-language:    Haskell2010
+  hs-source-dirs:    Estuary/
+  main-is:           Main.hs
+  build-depends:     base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base, ghcjs-dom, text, array,
+                     data-default, transformers, file-embed
+  default-language:  Haskell2010
