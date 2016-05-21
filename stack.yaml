@@ -7,11 +7,11 @@ packages:
 - '.'
 - location:
     git: https://github.com/ryantrinkle/reflex.git
-    commit: 784f9f79396ae713a03fc4d81f8a67b75d6ade1c
+    commit: d5e5518d228ae895f6a83b17dc0ae794d4b9eec5
   extra-dep: true
 - location:
     git: https://github.com/ryantrinkle/reflex-dom.git
-    commit: a60ae687cdc284a8eb3776fc95aa2adefc51e7ec
+    commit: c17d6c3cd30707d14d700c8874bdd825be6f65c6
   extra-dep: true
 - location:
     git: https://github.com/tidalcycles/Tidal.git
@@ -35,6 +35,10 @@ extra-deps:
 - hosc-0.15
 - multiset-comb-0.2.4
 - permutation-0.5.0.5
+- reflex-0.4.0
+- reflex-dom-0.3.2
+- dependent-map-0.2.1.0
+- dependent-sum-0.3.2.1
 
 # Override default flag values for local packages and extra-deps
 flags: {}

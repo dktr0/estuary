@@ -1,0 +1,24 @@
+To do: Extraction
+
+1. extract modifiers
+2. extract arc data
+
+To do: Visualization
+
+1. get list of valid sounds (done)
+2. Make a box for each unique sound
+3. Update box numbers based on how many sounds of that type.
+
+To do: Modifiers
+
+1. Make a list of modifiers.
+2. Allow them to be added to composing on click.
+
+To do: Samples
+
+1. Make a list of samples.
+2. Allow them to be added to composing on click.
+
+To do: css
+
+1. style the divs with a css file.
