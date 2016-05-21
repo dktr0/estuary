@@ -1,37 +1,47 @@
 <html>
-
 <head>
-
 <script>
-
-var socket;
 
 function setup() {
   socket = new WebSocket("ws://127.0.0.1:9162");
-  socket.onopen = function () {
-    console.log("socket opened!");
-  };
-  socket.onerror = function () {
-    console.log("socket error");
+  socket.onopen = function () { console.log("socket opened!"); };
+  socket.onerror = function () { console.log("socket error"); };
+}
+
+function hush() {
+  socket.send(JSON.stringify({ "hush": "hush" }));
+}
+
+function cps() {
+  var value = document.getElementById('cps').value;
+  if(value != null && value != "") socket.send("{\"cps\":" + value + "}");
+}
+
+function send(id) {
+  var value = document.getElementById(id).value;
+  if(value != null && value != "") {
+    var msg = "{\"" + id + "\":" + JSON.stringify(value) + "}";
+    socket.send(msg);
   }
 }
 
-function sendData() {
-  var elem = document.getElementById('input');
-  var input = elem.value;
-  console.log(input);
-  socket.send(input);
-}
-
 </script>
-
-
 </head>
 
 <body onload="setup()">
-simpleWebSocketClient<br/>
-<textarea id="input"></textarea>
-<button onclick="sendData()">eval</button><br/>
+simple client for EstuaryServer.hs<br/>
+<div><button onclick="hush()">hush</button></div>
+<div><button onclick="cps()">cps</button><textarea id="cps" rows="1"></textarea></div>
+<div><button onclick="send('d1')">d1</button><textarea id="d1" rows="3"></textarea></div>
+<div><button onclick="send('d2')">d2</button><textarea id="d2" rows="3"></textarea></div>
+<div><button onclick="send('d3')">d3</button><textarea id="d3" rows="3"></textarea></div>
+<div><button onclick="send('d4')">d4</button><textarea id="d4" rows="3"></textarea></div>
+<div><button onclick="send('d5')">d5</button><textarea id="d5" rows="3"></textarea></div>
+<div><button onclick="send('d6')">d6</button><textarea id="d6" rows="3"></textarea></div>
+<div><button onclick="send('d7')">d7</button><textarea id="d7" rows="3"></textarea></div>
+<div><button onclick="send('d8')">d8</button><textarea id="d8" rows="3"></textarea></div>
+<div><button onclick="send('d9')">d9</button><textarea id="d9" rows="3"></textarea></div>
+<div><button onclick="send('info')">info</button><textarea id="info" rows="5"></textarea></div>
 </body>
 
 </html>
