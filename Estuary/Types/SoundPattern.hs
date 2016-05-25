@@ -3,11 +3,12 @@ module Types.SoundPattern where
 import Types.Sound
 import Data.Map as Map
 
+
 data SoundPattern = SoundPattern (Map Int Sound) deriving (Eq)
 
--- Rewrite
---instance Show SoundPattern where
-  --show (SoundPattern xs) = intercalate " " (map show xs)
+-- have to use fold
+instance Show SoundPattern where
+  show (SoundPattern mp) = Map.fold (\x e -> show(x) ++ " " ++ e) "" mp
 
 initialContainer :: SoundPattern
 initialContainer = simple "sn"
