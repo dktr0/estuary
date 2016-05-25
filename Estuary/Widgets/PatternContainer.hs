@@ -19,6 +19,7 @@ import           Data.String
 import           Data.Default
 import           Data.Maybe
 import           Data.Map
+import           Data.List
 
 -- Reflex Imports
 -- Reflex Quick Reference                : https://github.com/ryantrinkle/reflex/blob/develop/Quickref.md
@@ -39,61 +40,78 @@ import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, Eve
 -- Create the sound widget
 patternContainerWidget :: R.MonadWidget t m => m ()
 patternContainerWidget = mdo
-  (cont, keySoundE) <- elDynAttr' "div" contAttrsDyn $ mdo
-    -- Event t (k,a) :: Event t (k, Event t (SoundEvent, Sound))
-    keySoundE <- selectViewListWithKey allSounds $ \k oneSound bool -> mdo
+  (cont, keySoundBE) <- elDynAttr' "div" contAttrsDyn $ mdo
+
+    -- Dynamic t (Map k v) -> (k -> Dynamic t v -> m (Event t (SoundEvent, Sound)) -> m (Behavior t (Map k Event t (SoundEvent, Sound)))
+    keySoundBE <- listViewWithKey' allSoundsMap (\k oneSound -> mdo
       soundE <- soundWidget
 
       -- listen for add event
       addSound <- buttonWidget "add" appendAttrs
-      addSoundE <- attachDyn (constDyn Empty) addSound
+      addSoundE <- return $ tagDyn (constDyn (Empty,simpleSound "sn")) addSound
 
       let events = [soundE, addSoundE]
 
       -- leftmost (return whichever event fired) wrap sound in event
-      soundTupleE <- leftmost (events)
+      soundTupleE <- return $ leftmost (events)
 
-      return $ soundTupleE
-    return $ keySoundE
-  -- Dynamic t (k, Event t (SoundEvent,Sound))
-  keySoundDyn <- holdDyn (Empty,never) keySoundE
-  -- (Dynamic t k, Dynamic (Event t (SoundEvent,Sound))
-  keySoundTuple <- splitDyn keySoundDyn
-  -- Dynamic t k
-  dynKey <- fst keySoundTuple
-  -- Dynamic (Event t (SoundEvent,Sound))
-  dynEvent <- snd keySoundTuple
-  -- Event t (SoundEvent, Sound)
-  soundTupE <- switchPromptlyDyn dynEvent
-  -- Event t (k,(SoundEvent, Sound))
-  soundTripE <- attachDyn dynKey soundTupE
-  -- Dynamic t (k,(SoundEvent, Sound))
-  soundTripDyn <- holdDyn (0,(Empty,silentSound)) soundTripE
-  -- Event t ( (k,(SoundEvent, Sound)) , (k,(SoundEvent,Sound)) )
-  oldNewTupE <- attach (current soundTripDyn) (updated soundTripDyn)
-  -- Dynamic t ( (k,(SoundEvent,Sound)) , (k,(SoundEvent,Sound)) )
-  oldNewTupDyn <- holdDyn ((0,(Empty,silentSound)),(0,(Empty,silentSound))) oldNewTupE
-  -- Was it a drop event? If so use previous key for insert
-      -- else use current key for insert
+      return $ soundTupleE)
+    return $ keySoundBE
+
+  -- Behavior t (Event t Map k (SoundEvent, Sound))
+  keySoundBEM <- return $ (fmap R.mergeMap) keySoundBE
+  -- Event t (Map k (SoundEvent,Sound))
+  keySoundEM <- return $ switch keySoundBEM
+  -- Event t [(k, (SoundEvent,Sound))]
+  keySoundEL <- return $ (fmap Data.Map.toList) keySoundEM
+  -- Dynamic t [(k,(SoundEvent,Sound))]
+  keySoundDL <- holdDyn [] keySoundEL
+  -- Event t ([old],[new])
+  keySoundETL <- return $ attach (current keySoundDL) (updated keySoundDL)
+  keySoundDTL <- holdDyn ([],[]) keySoundETL
+  display keySoundDTL
 
   -- Need type Dynamic t ((oldKey :: Int ,oldSoundEvent :: SoundEvent ,oldSound :: Sound),(newKey :: Int ,newSoundEvent :: SoundEvent ,newSound :: Sound))
-  insSoundDyn <- forDyn oldNewTupDyn (\((ok,oe,os),(nk,ne,ns)) -> if (ne == DropE && oe == DragendE) then (nk,ok,os)
-                                                                  else if (ne == Empty) then (nk,nk,ns)
-                                                                  else (nk,nk,ns))
-  insSoundE <- updated insSoundDyn
-  let insSound = (fmap Types.SoundPattern.insert) insSoundE
+  insSoundE <- return $ fmap (determineInsert) keySoundETL
+  insSound <- return $ (fmap Types.SoundPattern.insert) insSoundE
 
+  keyE <- return $ fmap (\[(k,(se,s))] -> k) keySoundEL
+  keyD <- holdDyn 0 keyE
   garbageE <- garbageWidget
-  let remSoundE = tagDyn dynKey garbageE
-  let remSound = (fmap Types.SoundPattern.delete) remSoundE
+  remSoundE <- return $ tagDyn keyD garbageE
+  remSound <- return $ (fmap Types.SoundPattern.delete) remSoundE
 
-  allSounds <- foldDyn ($) initialContainer (leftmost $ [remSound, insSound])
-  return ()
+  allSoundsList <- foldDyn ($) initialPattern (leftmost $ [remSound, insSound])
+  allSoundsMap <- forDyn allSoundsList convertToMap
 
-  contAttrsDyn <- determineContAttributes Empty
+  display allSoundsList
+  display allSoundsMap
+
+  let contAttrsDyn = (constDyn $ determineContAttributes Empty)
+
   return ()
   where
     appendAttrs = Data.Map.fromList [("class","squarebutton"),("style","left: 20px; bottom: 20px;")]
+
+--  listViewWithKey :: (Ord k, MonadWidget t m) => Dynamic t (Map k v) -> (k -> Dynamic t v -> m (Event t Info)) -> m (Event t (Map k Info))
+--  [17:22] <ryantrinkle> you could have each one return an Event t ()
+--  [17:22] <ryantrinkle> then, your list widget would collect those into Event t (Map k (Event t Info))
+--  [17:22] <ryantrinkle> you can hold that (using Map.empty as the initial value)
+--  [17:23] <ryantrinkle> which will give you Behavior t (Map k (Event t Info))
+--  [17:23] <ryantrinkle> then, you can fmap mergeMap over that
+--  [17:23] <ryantrinkle> giving you: Behavior t (Event t (Map k Info))
+--  [17:23] <ryantrinkle> then switch
+--  [17:23] <ryantrinkle> giving: Event t (Map k Info)
+--  [17:24] <ryantrinkle> the keys of that map will be the items that want to be deleted :)
+
+determineInsert :: ([(Int,(SoundEvent,Sound))],[(Int,(SoundEvent,Sound))]) -> Maybe (Sound,Int)
+determineInsert ([],[]) = Nothing
+determineInsert (x,[]) = Nothing
+determineInsert ([],y) = Nothing
+determineInsert ([(ok,(oe,os))],[(nk,(ne,ns))]) = if (oe == DropE && ne == DragendE) then Just(ns,nk)
+                                                  else if (ne == Empty) then Just(ns,nk)
+                                                  else (Nothing)
+
 
 determineContAttributes :: SoundEvent -> Map String String
 determineContAttributes soundEvent

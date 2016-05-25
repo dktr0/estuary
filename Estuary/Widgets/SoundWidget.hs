@@ -72,7 +72,7 @@ soundWidget = mdo
 
   let event = leftmost [ClickE    <$ R.domEvent R.Click cont,
                          DragE    <$ R.domEvent R.Drag cont,
-                         DragendE <$ x, DropE <$ x]
+                         DragendE <$ z, DropE <$ x]
 
   soundDyn <- holdDyn Empty event
 
