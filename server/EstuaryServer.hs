@@ -43,19 +43,20 @@ interact conn state = do
   --  (d1, _) <- Tidal.superDirtSetters getNow
   forever $ do
     msg <- WS.receiveData conn
-    respond (cps,dss) (decode (T.unpack msg))
+    case decode (T.unpack msg) of (Error e) -> putStrLn ("Error: " ++ e)
+                                  (Ok request) -> do
+                                    putStrLn (show request)
+                                    respond (cps,dss) request
 
-respond :: (Double -> IO (),[Tidal.ParamPattern -> IO()]) -> Result Request -> IO ()
-respond _ (Error e) = putStrLn ("Error: " ++ e)
-respond _ (Ok (Info i)) = putStrLn ("Info: " ++ i)
-respond (_,dss) (Ok Hush) = do
-  putStrLn "hush"
-  mapM_ ($ Tidal.silence) dss
-respond (cps,_) (Ok (Cps x)) = do
-  putStrLn ("cps " ++ (show x))
-  cps x
-respond (_,dss) (Ok (Pattern n p)) = do
-  putStrLn ("d" ++ (show n) ++ " $ " ++ p)
+respond :: (Double -> IO (),[Tidal.ParamPattern -> IO()]) -> Request -> IO ()
+respond _ (Info i) = return ()
+respond (_,dss) Hush = mapM_ ($ Tidal.silence) dss
+respond (cps,_) (Cps x) = cps x
+respond (_,dss) (Pattern n p) = do
   x <- hintParamPattern p
   case x of (Left error) -> putStrLn "Error interpreting pattern"
             (Right paramPattern) -> dss!!(n-1) $ paramPattern
+respond _ (Render patt cps cycles) = do
+  x <- hintParamPattern patt
+  case x of (Left error) -> putStrLn "Error interpreting pattern"
+            (Right paramPattern) -> putStrLn (show paramPattern)

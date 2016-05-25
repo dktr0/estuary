@@ -15,7 +15,7 @@ instance Show Request where
   show (Hush) = "hush"
   show (Pattern n p) = "d" ++ (show n) ++ " $ " ++ p
   show (Info x) = "info: " ++ x
-  show (Render patt cps cycles) = "render (cps=" ++ (show cps) ++ "; cycles=" ++ (show cycles) ++ "): " ++ (show patt)
+  show (Render patt cps cycles) = "render (cps=" ++ (show cps) ++ "; cycles=" ++ (show cycles) ++ "): " ++ patt
 
 instance JSON Request where
   showJSON (Cps x) = encJSDict [("cps",x)]

@@ -21,8 +21,24 @@ function send(id) {
   var value = document.getElementById(id).value;
   if(value != null && value != "") {
     var msg = "{\"" + id + "\":" + JSON.stringify(value) + "}";
+    console.log(msg);
     socket.send(msg);
   }
+}
+
+function render() {
+  var pattern = document.getElementById('renderPattern').value;
+  if(pattern == null || pattern == "") return;
+  var cps = document.getElementById('renderCps').value;
+  if(cps == null || cps == "") cps = "1.0";
+  var cycles = document.getElementById('renderCycles').value;
+  if(cycles == null || cycles == "") cycles = "1";
+  cps = Number(cps);
+  cycles = Number(cycles);
+  var msg;
+  msg = '{"render":' + JSON.stringify(pattern) + ',"cps":' + cps + ',"cycles":' + cycles + '}';
+  console.log(msg);
+  socket.send(msg);
 }
 
 </script>
@@ -42,6 +58,12 @@ simple client for EstuaryServer.hs<br/>
 <div><button onclick="send('d8')">d8</button><textarea id="d8" rows="3"></textarea></div>
 <div><button onclick="send('d9')">d9</button><textarea id="d9" rows="3"></textarea></div>
 <div><button onclick="send('info')">info</button><textarea id="info" rows="5"></textarea></div>
+<div>
+  <button onclick="render()">render</button>
+  <textarea id="renderPattern" rows="5"></textarea>
+  <textarea id="renderCps" rows="1"></textarea>
+  <textarea id="renderCycles" rows="1"></textarea>
+</div>
 </body>
 
 </html>
