@@ -8,6 +8,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Network.WebSockets as WS
 import Language.Haskell.Interpreter as Hint
+import Data.List
+import Text.JSON
+import Request
 
 type Client = WS.Connection
 
@@ -16,13 +19,10 @@ type ServerState = [Client]
 newServerState :: ServerState
 newServerState = []
 
-main = estuaryServer 9162
-
-estuaryServer port = do
+main = do
   putStrLn "Tidal websocket server for Estuary"
-  (cps,getNow) <- Tidal.bpsUtils
   state <- newMVar newServerState
-  WS.runServer "0.0.0.0" port $ app state
+  WS.runServer "0.0.0.0" 9162 $ app state
 
 app :: MVar ServerState -> WS.ServerApp
 app state pending = do
@@ -30,27 +30,32 @@ app state pending = do
   WS.forkPingThread conn 30
   Main.interact conn state
 
--- hintOscPattern  :: (MonadIO m, Control.Monad.Catch.MonadMask m) => String -> m (Either InterpreterError Tidal.OscPattern)
-hintOscPattern x = Hint.runInterpreter $ do
+hintParamPattern  :: String -> IO (Either InterpreterError Tidal.ParamPattern)
+hintParamPattern x = Hint.runInterpreter $ do
   Hint.set [languageExtensions := [OverloadedStrings]]
   Hint.setImports ["Prelude","Sound.Tidal.Context","Sound.OSC.Type","Sound.OSC.Datum","Data.Map"]
-  Hint.interpret x (Hint.as::Tidal.OscPattern)
-
-patternOrSilence :: Either Hint.InterpreterError Tidal.OscPattern -> IO Tidal.OscPattern
-patternOrSilence (Left err) = do
-  putStrLn (show err)
-  return $ Tidal.sound (Tidal.p "")
-patternOrSilence (Right patt) = do
-  putStrLn (show patt)
-  return patt
+  Hint.interpret x (Hint.as::Tidal.ParamPattern)
 
 interact :: WS.Connection -> MVar ServerState -> IO ()
 interact conn state = do
-  ds <- Tidal.dirtStream
+  (cps,getNow) <- Tidal.bpsUtils
+  dss <- mapM (\_ -> Tidal.dirtStream) [0..8]
+  --  (d1, _) <- Tidal.superDirtSetters getNow
   forever $ do
     msg <- WS.receiveData conn
-    let s = T.unpack msg
-    putStrLn s
-    x <- hintOscPattern s
-    y <- patternOrSilence x
-    ds $ y
+    respond (cps,dss) (decode (T.unpack msg))
+
+respond :: (Double -> IO (),[Tidal.ParamPattern -> IO()]) -> Result Request -> IO ()
+respond _ (Error e) = putStrLn ("Error: " ++ e)
+respond _ (Ok (Info i)) = putStrLn ("Info: " ++ i)
+respond (_,dss) (Ok Hush) = do
+  putStrLn "hush"
+  mapM_ ($ Tidal.silence) dss
+respond (cps,_) (Ok (Cps x)) = do
+  putStrLn ("cps " ++ (show x))
+  cps x
+respond (_,dss) (Ok (Pattern n p)) = do
+  putStrLn ("d" ++ (show n) ++ " $ " ++ p)
+  x <- hintParamPattern p
+  case x of (Left error) -> putStrLn "Error interpreting pattern"
+            (Right paramPattern) -> dss!!(n-1) $ paramPattern
