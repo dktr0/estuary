@@ -9,8 +9,11 @@ import qualified Data.Text.IO as T
 import qualified Network.WebSockets as WS
 import Language.Haskell.Interpreter as Hint
 import Data.List
+import Data.Ratio
 import Text.JSON
+
 import Request
+import WebDirt
 
 type Client = WS.Connection
 
@@ -48,6 +51,7 @@ interact conn state = do
                                     putStrLn (show request)
                                     respond (cps,dss) request
 
+
 respond :: (Double -> IO (),[Tidal.ParamPattern -> IO()]) -> Request -> IO ()
 respond _ (Info i) = return ()
 respond (_,dss) Hush = mapM_ ($ Tidal.silence) dss
@@ -59,4 +63,4 @@ respond (_,dss) (Pattern n p) = do
 respond _ (Render patt cps cycles) = do
   x <- hintParamPattern patt
   case x of (Left error) -> putStrLn "Error interpreting pattern"
-            (Right paramPattern) -> putStrLn (show paramPattern)
+            (Right paramPattern) -> putStrLn (encode (render paramPattern cps cycles))
