@@ -5,6 +5,7 @@ bin
 static/
 .DS_Store
 *~
-EstuaryServer
-EstuaryServer.exe
+server/staticWebContent/Dirt
+estuaryWebSocket
+estuaryWebSocket.exe
 *node_modules*
