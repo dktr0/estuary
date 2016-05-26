@@ -12,7 +12,7 @@ function setup() {
   estuaryWebSocket = new WebSocket("ws://" + host + ":9162");
   estuaryWebSocket.onopen = function () { console.log("estuaryWebSocket opened!"); };
   estuaryWebSocket.onerror = function () { console.log("estuaryWebSocket error"); };
-  webDirt = new WebDirt("WebDirt/sampleMap.json","Dirt/samples");
+  webDirt = new WebDirt("WebDirt/sampleMap.json","Dirt/samples",0.5);
   webDirt.subscribeToTidalSocket("ws://" + host + ":9163",true);
 }
 
