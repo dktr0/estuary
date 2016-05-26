@@ -3,7 +3,8 @@
 bin
 .stack-work/*
 static/
-*.DS_Store*
+.DS_Store
 *~
 EstuaryServer
 EstuaryServer.exe
+*node_modules*

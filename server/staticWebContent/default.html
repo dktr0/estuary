@@ -1,20 +1,28 @@
+<!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8"/>
+<script src="WebDirt/SampleBank.js"></script>
+<script src="WebDirt/WebDirt.js"></script>
+<script src="WebDirt/Graph.js"></script>
 <script>
 
 function setup() {
-  socket = new WebSocket("ws://127.0.0.1:9162");
-  socket.onopen = function () { console.log("socket opened!"); };
-  socket.onerror = function () { console.log("socket error"); };
+  var host = "127.0.0.1";
+  estuaryWebSocket = new WebSocket("ws://" + host + ":9162");
+  estuaryWebSocket.onopen = function () { console.log("estuaryWebSocket opened!"); };
+  estuaryWebSocket.onerror = function () { console.log("estuaryWebSocket error"); };
+  webDirt = new WebDirt("WebDirt/sampleMap.json","Dirt/samples");
+  webDirt.subscribeToTidalSocket("ws://" + host + ":9163",true);
 }
 
 function hush() {
-  socket.send(JSON.stringify({ "hush": "hush" }));
+  estuaryWebSocket.send(JSON.stringify({ "hush": "hush" }));
 }
 
 function cps() {
   var value = document.getElementById('cps').value;
-  if(value != null && value != "") socket.send("{\"cps\":" + value + "}");
+  if(value != null && value != "") estuaryWebSocket.send("{\"cps\":" + value + "}");
 }
 
 function send(id) {
@@ -22,7 +30,7 @@ function send(id) {
   if(value != null && value != "") {
     var msg = "{\"" + id + "\":" + JSON.stringify(value) + "}";
     console.log(msg);
-    socket.send(msg);
+    estuaryWebSocket.send(msg);
   }
 }
 
@@ -38,7 +46,7 @@ function render() {
   var msg;
   msg = '{"render":' + JSON.stringify(pattern) + ',"cps":' + cps + ',"cycles":' + cycles + '}';
   console.log(msg);
-  socket.send(msg);
+  estuaryWebSocket.send(msg);
 }
 
 </script>
