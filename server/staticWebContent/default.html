@@ -8,7 +8,7 @@
 <script>
 
 function setup() {
-  var host = "127.0.0.1";
+  var host = location.hostname;
   estuaryWebSocket = new WebSocket("ws://" + host + ":9162");
   estuaryWebSocket.onopen = function () { console.log("estuaryWebSocket opened!"); };
   estuaryWebSocket.onerror = function () { console.log("estuaryWebSocket error"); };

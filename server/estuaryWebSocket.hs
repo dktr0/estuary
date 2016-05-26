@@ -3,6 +3,7 @@ module Main where
 import Control.Concurrent (MVar, newMVar)
 import Control.Monad (forever)
 import qualified Sound.Tidal.Context as Tidal
+import qualified Sound.Tidal.Stream as Tidal
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
