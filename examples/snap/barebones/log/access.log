@@ -1,2 +1,0 @@
-127.0.0.1 - - [09/Dec/2015:14:47:00 -0500] "GET / HTTP/1.1" 200 - "http://snapframework.com/docs/quickstart" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.7 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.7"
-127.0.0.1 - - [09/Dec/2015:14:47:00 -0500] "GET /favicon.ico HTTP/1.1" 404 - "http://localhost:8000/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.7 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.7"
