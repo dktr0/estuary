@@ -54,7 +54,7 @@ processResult state (Ok request) = do
 
 respond :: TidalState -> Request -> IO ()
 respond _ (Info i) = return ()
-respond (_,dss) Hush = mapM_ ($ Tidal.silence) dss
+respond (_,dss) Hush = hush dss
 respond (cps,_) (Cps x) = cps x
 respond (_,dss) (Pattern n p) = do
   x <- hintParamPattern p
