@@ -21,6 +21,9 @@ instance JSON WebDirtEvent where
             f (F name _) (Just (VF x)) = (name,showJSON x)
             f (I name _) (Just (VI x)) = (name,showJSON x)
 
+instance Show WebDirtEvent where
+  show x = encodeStrict x
+
 render :: ParamPattern -> Double -> Double -> [WebDirtEvent]
 render patt cps cycles = map f (arc patt (0,(approxRational cycles 0.001)))
   where f ((a,b),(c,d),params) = WebDirtEvent ((fromRational a)/cps) params
