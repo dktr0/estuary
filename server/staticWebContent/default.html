@@ -12,6 +12,14 @@ function setup() {
   estuaryWebSocket = new WebSocket("ws://" + host + ":9162");
   estuaryWebSocket.onopen = function () { console.log("estuaryWebSocket opened!"); };
   estuaryWebSocket.onerror = function () { console.log("estuaryWebSocket error"); };
+  estuaryWebSocket.onmessage = function (m) {
+    var score = JSON.parse(m.data);
+    webDirt.playScore(score);
+    var div = document.getElementById('renderResults');
+    if(div.firstChild)div.removeChild(div.firstChild);
+    var text = document.createTextNode(JSON.stringify(score));
+    div.appendChild(text);
+  }
   webDirt = new WebDirt("WebDirt/sampleMap.json","Dirt/samples",0.5);
   webDirt.subscribeToTidalSocket("ws://" + host + ":9163",true);
 }
@@ -53,7 +61,7 @@ function render() {
 </head>
 
 <body onload="setup()">
-simple client for EstuaryServer.hs<br/>
+<h2>simple client for estuaryWebSocket</hr><br/>
 <div><button onclick="hush()">hush</button></div>
 <div><button onclick="cps()">cps</button><textarea id="cps" rows="1"></textarea></div>
 <div><button onclick="send('d1')">d1</button><textarea id="d1" rows="3"></textarea></div>
@@ -71,6 +79,9 @@ simple client for EstuaryServer.hs<br/>
   <textarea id="renderPattern" rows="5"></textarea>
   <textarea id="renderCps" rows="1"></textarea>
   <textarea id="renderCycles" rows="1"></textarea>
+</div>
+<div><h4>Render Results:</h4>
+  <div id="renderResults"></div>
 </div>
 </body>
 
