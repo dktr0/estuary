@@ -1,7 +1,5 @@
 module Main where
 
-import Control.Concurrent (MVar, newMVar)
-import Control.Monad (forever)
 import Control.Exception (try)
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Tidal.Stream as Tidal
@@ -9,13 +7,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Network.WebSockets as WS
-import Language.Haskell.Interpreter as Hint
 import Data.List
 import Data.Ratio
 import Text.JSON
 
 import Request
 import WebDirt
+import TidalHint
 
 type TidalState = (Double -> IO (),[Tidal.ParamPattern -> IO()])
 
@@ -47,6 +45,8 @@ close :: TidalState -> String -> IO ()
 close (cps,dss) msg = do
   putStrLn ("connection closed: " ++ msg)
   hush dss
+
+hush = mapM_ ($ Tidal.silence)
 
 processResult :: TidalState -> Result Request -> IO (Maybe JSValue)
 processResult _ (Error e) = do
@@ -86,11 +86,3 @@ processRequest _ (Render patt cps cycles) = do
               let r = render paramPattern cps cycles
               putStrLn (encodeStrict r)
               return (Just (showJSON r))
-
-hintParamPattern  :: String -> IO (Either InterpreterError Tidal.ParamPattern)
-hintParamPattern x = Hint.runInterpreter $ do
-  Hint.set [languageExtensions := [OverloadedStrings]]
-  Hint.setImports ["Prelude","Sound.Tidal.Context","Sound.OSC.Type","Sound.OSC.Datum","Data.Map"]
-  Hint.interpret x (Hint.as::Tidal.ParamPattern)
-
-hush = mapM_ ($ Tidal.silence)
