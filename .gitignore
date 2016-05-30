@@ -9,3 +9,6 @@ server/staticWebContent/Dirt
 estuaryWebSocket
 estuaryWebSocket.exe
 *node_modules*
+renderTidal
+renderTidal.exe
+
