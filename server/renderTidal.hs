@@ -12,7 +12,7 @@ import WebDirt
 
 main = do
   [c,n] <- getArgs
-  p <- getLine
+  p <- getContents
   p' <- hintParamPattern p
   case p' of Left _ -> putStrLn "error"
              Right p'' -> putStrLn (show (render p'' (read c) (read n)))
