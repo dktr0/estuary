@@ -27,5 +27,9 @@ empty = SoundPattern []
 simple :: String -> SoundPattern
 simple x = SoundPattern [simpleSound x]
 
+-- Write update function
+--updatePattern :: (Sound,Int) -> SoundPattern -> SoundPattern
+--updatePattern sound (SoundPattern pattern) = SoundPattern ()
+
 convertToMap :: SoundPattern -> Map Int Sound
 convertToMap (SoundPattern pattern) = Map.fromList (List.zip [0..] pattern)

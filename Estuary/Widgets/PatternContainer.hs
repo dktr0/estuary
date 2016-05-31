@@ -44,13 +44,16 @@ patternContainerWidget = mdo
 
     -- Dynamic t (Map k v) -> (k -> Dynamic t v -> m (Event t (SoundEvent, Sound)) -> m (Behavior t (Map k Event t (SoundEvent, Sound)))
     keySoundBE <- listViewWithKey' allSoundsMap (\k oneSound -> mdo
-      soundE <- soundWidget
+      soundE <- soundWidget oneSound
 
       -- listen for add event
       addSound <- buttonWidget "add" appendAttrs
-      addSoundE <- return $ tagDyn (constDyn (Empty,simpleSound "sn")) addSound
+      -- tag sound that was clicked
+      soundDyn <- holdDyn (Empty,silentSound) soundE
+      addSoundE <- return $ tagDyn soundDyn addSound
+      addSoundEE <- return $ (fmap (\(x,y) -> (Empty,y))) addSoundE
 
-      let events = [soundE, addSoundE]
+      let events = [soundE, addSoundEE]
 
       -- leftmost (return whichever event fired) wrap sound in event
       soundTupleE <- return $ leftmost (events)
@@ -93,25 +96,13 @@ patternContainerWidget = mdo
   where
     appendAttrs = Data.Map.fromList [("class","squarebutton"),("style","left: 20px; bottom: 20px;")]
 
---  listViewWithKey :: (Ord k, MonadWidget t m) => Dynamic t (Map k v) -> (k -> Dynamic t v -> m (Event t Info)) -> m (Event t (Map k Info))
---  [17:22] <ryantrinkle> you could have each one return an Event t ()
---  [17:22] <ryantrinkle> then, your list widget would collect those into Event t (Map k (Event t Info))
---  [17:22] <ryantrinkle> you can hold that (using Map.empty as the initial value)
---  [17:23] <ryantrinkle> which will give you Behavior t (Map k (Event t Info))
---  [17:23] <ryantrinkle> then, you can fmap mergeMap over that
---  [17:23] <ryantrinkle> giving you: Behavior t (Event t (Map k Info))
---  [17:23] <ryantrinkle> then switch
---  [17:23] <ryantrinkle> giving: Event t (Map k Info)
---  [17:24] <ryantrinkle> the keys of that map will be the items that want to be deleted :)
-
 determineInsert :: ([(Int,(SoundEvent,Sound))],[(Int,(SoundEvent,Sound))]) -> Maybe (Sound,Int)
 determineInsert ([],[]) = Nothing
 determineInsert (x,[]) = Nothing
 determineInsert ([],y) = Nothing
-determineInsert ([(ok,(oe,os))],[(nk,(ne,ns))]) = if (oe == DropE && ne == DragendE) then Just(ns,nk)
+determineInsert ([(ok,(oe,os))],[(nk,(ne,ns))]) = if (oe == DropE && ne == DragendE) then Just(ns,ok)
                                                   else if (ne == Empty) then Just(ns,nk)
                                                   else (Nothing)
-
 
 determineContAttributes :: SoundEvent -> Map String String
 determineContAttributes soundEvent

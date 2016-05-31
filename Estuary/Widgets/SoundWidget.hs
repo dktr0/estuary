@@ -37,8 +37,8 @@ import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
 -- Create the sound widget
-soundWidget :: R.MonadWidget t m => m (R.Event t (SoundEvent, Sound))
-soundWidget = mdo
+soundWidget :: R.MonadWidget t m => Dynamic t Sound -> m (R.Event t (SoundEvent, Sound))
+soundWidget sound = mdo
   (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
 
     -- Create n picker widget
@@ -49,6 +49,11 @@ soundWidget = mdo
     changeDegrade <- degradePicker
     -- Crate sample changer widget
     changeSamples <- samplePicker
+
+    changeSound <- forDyn sound updateSound
+    display sound
+
+    changeSoundE <- return $ tagDyn changeSound event
 
     -- Create list of events
     let soundEvents = [changeN, changeReps, changeDegrade, changeSamples]

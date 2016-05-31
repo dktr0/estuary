@@ -64,3 +64,6 @@ setDegrade bool (Sound (Just (a,b,c,d))) = Sound (Just (a,b,c,bool))
 
 rename :: String -> Sound -> Sound
 rename newName (Sound (Just (a,b,c,d))) = Sound (Just (newName,b,c,d))
+
+updateSound :: Sound -> Sound -> Sound
+updateSound newSound silent = newSound
