@@ -3,6 +3,12 @@
 bin
 .stack-work/*
 static/
-*.DS_Store*
+.DS_Store
 *~
-EstuaryServer
+server/staticWebContent/Dirt
+estuaryWebSocket
+estuaryWebSocket.exe
+*node_modules*
+renderTidal
+renderTidal.exe
+

@@ -4,19 +4,25 @@ import Text.JSON
 import Control.Applicative
 import Control.Monad
 
-data Request = Cps Double | Hush | Pattern Int String | Info String
+data Request = Cps Double |
+               Hush |
+               Pattern Int String |
+               Info String |
+               Render String Double Double
 
 instance Show Request where
   show (Cps x) = "cps " ++ (show x)
   show (Hush) = "hush"
   show (Pattern n p) = "d" ++ (show n) ++ " $ " ++ p
   show (Info x) = "info: " ++ x
+  show (Render patt cps cycles) = "render (cps=" ++ (show cps) ++ "; cycles=" ++ (show cycles) ++ "): " ++ patt
 
 instance JSON Request where
   showJSON (Cps x) = encJSDict [("cps",x)]
   showJSON (Hush) = encJSDict [("hush","hush")]
   showJSON (Pattern n p) = encJSDict [("d"++(show n),p)]
   showJSON (Info x) = encJSDict [("info",x)]
+  showJSON (Render patt cps cycles) = encJSDict [("render",patt),("cps",show cps),("cycles",show cycles)]
 
   readJSON (JSObject x) | (firstKeyIs "cps" x) = Cps <$> (valFromObj "cps" x)
   readJSON (JSObject x) | (firstKeyIs "hush" x) = Ok Hush
@@ -30,6 +36,7 @@ instance JSON Request where
   readJSON (JSObject x) | (firstKeyIs "d8" x) = Pattern 8 <$> (valFromObj "d8" x)
   readJSON (JSObject x) | (firstKeyIs "d9" x) = Pattern 9 <$> (valFromObj "d9" x)
   readJSON (JSObject x) | (firstKeyIs "info" x) = Info <$> (valFromObj "info" x)
+  readJSON (JSObject x) | (firstKeyIs "render" x) = Render <$> (valFromObj "render" x) <*> (valFromObj "cps" x) <*> (valFromObj "cycles" x)
   readJSON _ = Error "First key must be cps, hush, info or d1-9"
 
 firstKeyIs :: String -> JSObject JSValue -> Bool
