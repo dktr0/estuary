@@ -12,6 +12,9 @@ initialSound = simpleSound "sn"
 simpleSound :: String -> Sound
 simpleSound x = Sound (Just (x,0,1,False))
 
+setSound :: Sound -> Sound
+setSound (Sound(sound)) = Sound(sound)
+
 name :: Sound -> String
 name (Sound (Just (n,_,_,_))) = n
 -- deliberately not implementing Nothing to throw exception
@@ -65,5 +68,5 @@ setDegrade bool (Sound (Just (a,b,c,d))) = Sound (Just (a,b,c,bool))
 rename :: String -> Sound -> Sound
 rename newName (Sound (Just (a,b,c,d))) = Sound (Just (newName,b,c,d))
 
-updateSound :: Sound -> Sound -> Sound
-updateSound newSound silent = newSound
+refresh :: Sound -> Sound -> Sound
+refresh (Sound(sound)) silentSound = Sound(sound)

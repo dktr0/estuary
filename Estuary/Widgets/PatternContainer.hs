@@ -14,6 +14,8 @@ import           Types.Sound
 import           Types.SoundPattern
 
 -- Haskell Imports
+import           Control.Monad
+import           Control.Monad.IO.Class
 import           Data.Tuple (fst, snd)
 import           Data.String
 import           Data.Default
@@ -48,16 +50,21 @@ patternContainerWidget = mdo
 
       -- listen for add event
       addSound <- buttonWidget "add" appendAttrs
-      -- tag sound that was clicked
-      soundDyn <- holdDyn (Empty,silentSound) soundE
-      addSoundE <- return $ tagDyn soundDyn addSound
+      -- tag sound that was
+      soundDyn <- holdDyn (Empty,simpleSound "sn") soundE
+
+      soundBeh <- return (current soundDyn)
+
+      addSoundE <- return $ tag soundBeh addSound
       addSoundEE <- return $ (fmap (\(x,y) -> (Empty,y))) addSoundE
 
-      display soundDyn
-      let events = [soundE, addSoundEE]
+      --display soundDyn
+      let events = [addSoundEE,soundE]
 
       -- leftmost (return whichever event fired) wrap sound in event
       soundTupleE <- return $ leftmost (events)
+
+      display oneSound
 
       return $ soundTupleE)
     return $ keySoundBE
@@ -70,6 +77,8 @@ patternContainerWidget = mdo
   keySoundEL <- return $ (fmap Data.Map.toList) keySoundEM
   -- Dynamic t [(k,(SoundEvent,Sound))]
   keySoundDL <- holdDyn [] keySoundEL
+  -- Behavior t [(k,(SoundEvent,Sound))]
+  keySoundBL <- hold [] keySoundEL
   -- Event t ([old],[new])
   keySoundETL <- return $ attach (current keySoundDL) (updated keySoundDL)
   keySoundDTL <- holdDyn ([],[]) keySoundETL
@@ -85,19 +94,26 @@ patternContainerWidget = mdo
   remSoundE <- return $ tagDyn keyD garbageE
   remSound <- return $ (fmap Types.SoundPattern.delete) remSoundE
 
-  updSoundE <- return $ fmap (\[(k,(se,s))] -> (s,k)) keySoundEL
-  updSound <- return $ (fmap Types.SoundPattern.update) updSoundE
-
-  --oneSoundE <- return $ fmap (\[(k,(se,s))] -> s) keySoundEL
-  --oneSound <- holdDyn silentSound oneSoundE
+  updSoundE <- return $ tagDyn keySoundDTL event
+  updSoundEE <- return $ fmap (determineUpdate) updSoundE
+  updSound <- return $ (fmap Types.SoundPattern.update) updSoundEE
 
   allSoundsList <- foldDyn ($) initialPattern (leftmost $ [remSound, updSound, insSound])
   allSoundsMap <- forDyn allSoundsList convertToMap
 
-  display allSoundsList
   display allSoundsMap
 
   let contAttrsDyn = (constDyn $ determineContAttributes Empty)
+
+  -- Event Listeners
+  x <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Drop)     (void $ GHCJS.preventDefault)
+  y <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
+  z <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
+  _ <- R.performEvent_ $ return () <$ y
+
+  let event = leftmost [ ClickE      <$ R.domEvent R.Click cont,
+                         HoveroverE  <$ R.domEvent R.Mouseover cont,
+                         DropE       <$ x]
 
   return ()
   where
@@ -110,6 +126,13 @@ determineInsert ([],y) = Nothing
 determineInsert ([(ok,(oe,os))],[(nk,(ne,ns))]) = if (oe == DropE && ne == DragendE) then Just(ns,ok)
                                                   else if (ne == Empty) then Just(ns,nk)
                                                   else (Nothing)
+
+determineUpdate :: ([(Int,(SoundEvent,Sound))],[(Int,(SoundEvent,Sound))]) -> Maybe (Sound,Int)
+determineUpdate ([],[]) = Nothing
+determineUpdate (x,[]) = Nothing
+determineUpdate ([],y) = Nothing
+determineUpdate ([(ok,(oe,os))],[(nk,(ne,ns))]) = if (oe == DragendE) then Just(os,nk)
+                                                  else Just(ns,nk)
 
 determineContAttributes :: SoundEvent -> Map String String
 determineContAttributes soundEvent

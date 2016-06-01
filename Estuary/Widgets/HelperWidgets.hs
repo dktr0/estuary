@@ -36,7 +36,7 @@ import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, Eve
 -- Creates a formattable button
 buttonWidget :: R.MonadWidget t m => String -> Map String String -> m (Event t ())
 buttonWidget iconType attrs = do
-  (button, _) <- elAttr' "div" attrs $ text iconType
+  (button, _) <- elAttr' "a" attrs $ text iconType
   return $ R.domEvent R.Click button
 
 -- Creates a formattable dropdown menu
