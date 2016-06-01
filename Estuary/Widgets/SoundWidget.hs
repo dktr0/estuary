@@ -77,6 +77,7 @@ soundWidget sound = mdo
 
   let event = leftmost [ClickE    <$ R.domEvent R.Click cont,
                          DragE    <$ R.domEvent R.Drag cont,
+                         HoveroverE <$ R.domEvent R.Mouseover cont,
                          DragendE <$ z, DropE <$ x]
 
   soundDyn <- holdDyn Empty event

@@ -53,6 +53,7 @@ patternContainerWidget = mdo
       addSoundE <- return $ tagDyn soundDyn addSound
       addSoundEE <- return $ (fmap (\(x,y) -> (Empty,y))) addSoundE
 
+      display soundDyn
       let events = [soundE, addSoundEE]
 
       -- leftmost (return whichever event fired) wrap sound in event
@@ -84,7 +85,13 @@ patternContainerWidget = mdo
   remSoundE <- return $ tagDyn keyD garbageE
   remSound <- return $ (fmap Types.SoundPattern.delete) remSoundE
 
-  allSoundsList <- foldDyn ($) initialPattern (leftmost $ [remSound, insSound])
+  updSoundE <- return $ fmap (\[(k,(se,s))] -> (s,k)) keySoundEL
+  updSound <- return $ (fmap Types.SoundPattern.update) updSoundE
+
+  --oneSoundE <- return $ fmap (\[(k,(se,s))] -> s) keySoundEL
+  --oneSound <- holdDyn silentSound oneSoundE
+
+  allSoundsList <- foldDyn ($) initialPattern (leftmost $ [remSound, updSound, insSound])
   allSoundsMap <- forDyn allSoundsList convertToMap
 
   display allSoundsList
