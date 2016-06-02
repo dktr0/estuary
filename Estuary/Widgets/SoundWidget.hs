@@ -37,9 +37,14 @@ import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
 -- Create the sound widget
-soundWidget :: R.MonadWidget t m => m (R.Event t (SoundEvent, Sound))
-soundWidget = mdo
+soundWidget :: R.MonadWidget t m => Dynamic t Sound -> m (R.Event t (SoundEvent, Sound))
+soundWidget sound = mdo
   (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
+
+    soundBeh <- return $ current sound
+    soundConst <- sample soundBeh
+    let test = constDyn soundConst
+    display test
 
     -- Create n picker widget
     changeN <- nPicker
@@ -54,13 +59,13 @@ soundWidget = mdo
     let soundEvents = [changeN, changeReps, changeDegrade, changeSamples]
 
     -- Fold events into dynamic sound
-    dynamicSound <- foldDyn ($) initialSound (leftmost soundEvents)
+    dynamicSound <- foldDyn ($) soundConst (leftmost soundEvents)
 
     -- Get dynamic sound name string
     dynamicSoundName <- forDyn dynamicSound show
 
     -- Display dynamic sound name
-    display $ dynamicSoundName
+    display $ sound
 
     return $ dynamicSound
 
@@ -70,9 +75,9 @@ soundWidget = mdo
   z <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
   _ <- R.performEvent_ $ return () <$ y
 
-  let event = leftmost [ClickE    <$ R.domEvent R.Click cont,
-                         DragE    <$ R.domEvent R.Drag cont,
-                         DragendE <$ x, DropE <$ x]
+  let event = leftmost [ DragE      <$ R.domEvent R.Drag cont,
+                         ClickE     <$ R.domEvent R.Click cont,
+                         DragendE   <$ z, DropE <$ x]
 
   soundDyn <- holdDyn Empty event
 

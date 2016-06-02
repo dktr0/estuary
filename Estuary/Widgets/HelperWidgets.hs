@@ -42,8 +42,8 @@ buttonWidget iconType attrs = do
 -- Creates a formattable dropdown menu
 dropDownWidget :: R.MonadWidget t m => Dynamic t (Map String String) -> m (Event t String)
 dropDownWidget dynAttrs = do
-  let samples = Data.Map.fromList [("bd","bd"),("sn","sn"),("arpy","arpy"),("arp","arp"),("hh","hh"),("ht","ht")]
-  d <- dropdown "bd" (constDyn samples) (def & attributes .~ dynAttrs)
+  let samples = Data.Map.fromList [("sn","sn"),("bd","bd"),("arpy","arpy"),("arp","arp"),("hh","hh"),("ht","ht")]
+  d <- dropdown "sn" (constDyn samples) (def & attributes .~ dynAttrs)
   return $ tagDyn (_dropdown_value d) (_dropdown_change d)
 
 -- Creates a formattable checkbox
