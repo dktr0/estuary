@@ -1,5 +1,7 @@
 *.hi
 *.o
+*_hi
+*_o
 bin
 .stack-work/*
 static/
