@@ -79,14 +79,14 @@ soundWidget sound = mdo
                          ClickE     <$ R.domEvent R.Click cont,
                          DragendE   <$ z, DropE <$ x]
 
-  soundDyn <- holdDyn Empty event
+  soundEventDyn <- holdDyn Empty event
 
   -- Set Attributes for container
-  contAttrsDyn <- forDyn soundDyn determineSoundAttributes
+  contAttrsDyn <- forDyn soundEventDyn determineSoundAttributes
 
   let soundE = tag (current dynSound) event
 
-  let soundTupleE = attachDyn soundDyn soundE
+  let soundTupleE = attachDyn soundEventDyn soundE
 
   return $ soundTupleE
 

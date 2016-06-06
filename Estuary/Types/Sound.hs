@@ -42,19 +42,15 @@ instance Show Sound where
   show (Sound (Just (x,y,r,True)))  = x++":"++(show y)++"*"++(show r)++"?"
   show (Sound Nothing) = "~"
 
-incrementN :: Sound -> Sound
-incrementN (Sound (Just (a,b,c,d))) = Sound (Just (a,b+1,c,d))
+incrementNum :: Int -> Int
+incrementNum n = n+1
 -- deliberately not implementing Nothing to throw exception
 
-decrementN :: Sound -> Sound
-decrementN (Sound (Just (a,b,c,d))) = Sound (Just (a,b-1,c,d))
+decrementNum :: Int -> Int
+decrementNum n = n-1
 
-incrementRepeats :: Sound -> Sound
-incrementRepeats (Sound (Just (a,b,c,d))) = Sound (Just (a,b,c+1,d))
-
-decrementRepeats :: Sound -> Sound
-decrementRepeats (Sound (Just (a,b,1,d))) = Sound (Just (a,b,1,d))
-decrementRepeats (Sound (Just (a,b,c,d))) = Sound (Just (a,b,c-1,d))
+changeNum :: Int -> Sound -> Sound
+changeNum n (Sound (Just (a,b,c,d))) = Sound (Just (a,n,c,d))
 
 degrade :: Sound -> Sound
 degrade (Sound (Just (a,b,c,_))) = Sound (Just (a,b,c,True))
