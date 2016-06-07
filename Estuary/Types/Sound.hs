@@ -49,9 +49,6 @@ incrementNum n = n+1
 decrementNum :: Int -> Int
 decrementNum n = n-1
 
-changeNum :: Int -> Sound -> Sound
-changeNum n (Sound (Just (a,b,c,d))) = Sound (Just (a,n,c,d))
-
 degrade :: Sound -> Sound
 degrade (Sound (Just (a,b,c,_))) = Sound (Just (a,b,c,True))
 
@@ -61,8 +58,14 @@ unDegrade (Sound (Just (a,b,c,_))) = Sound (Just (a,b,c,False))
 setDegrade :: Bool -> Sound -> Sound
 setDegrade bool (Sound (Just (a,b,c,d))) = Sound (Just (a,b,c,bool))
 
-rename :: String -> Sound -> Sound
-rename newName (Sound (Just (a,b,c,d))) = Sound (Just (newName,b,c,d))
+setSamp :: String -> Sound -> Sound
+setSamp newName (Sound (Just (a,b,c,d))) = Sound (Just (newName,b,c,d))
+
+setN :: Int -> Sound -> Sound
+setN n (Sound (Just (a,b,c,d))) = Sound (Just (a,n,c,d))
+
+setReps :: Int -> Sound -> Sound
+setReps n (Sound (Just (a,b,c,d))) = Sound (Just (a,b,n,d))
 
 refresh :: Sound -> Sound -> Sound
 refresh (Sound(sound)) silentSound = Sound(sound)

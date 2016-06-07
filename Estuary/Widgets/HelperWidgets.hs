@@ -7,7 +7,6 @@
 module Widgets.HelperWidgets where
 
 import           Types.Sound
-import           Types.SoundWidgetRequest
 
 -- Haskell Imports
 import           Control.Monad
@@ -29,6 +28,11 @@ import           GHCJS.Types as GHCJS
 import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
+
+data HelperWidgetRequest = HelperRequest (Map String String)
+
+instance Show HelperWidgetRequest where
+  show (HelperRequest x) = "helperRequest" ++ (show x)
 
 -------------------------------------------------------------------------------------------------
 --                                     Widget Tools                                            --
@@ -74,7 +78,7 @@ garbageWidget = do
 -------------------------------------------------------------------------------------------------
 
 -- Creates a number picker widget for sample iteration
-numberPicker :: MonadWidget t m => Int -> Event t SoundWidgetRequest -> m (Event t Int)
+numberPicker :: MonadWidget t m => Int -> Event t HelperWidgetRequest -> m (Event t Int)
 numberPicker initialValue request = do
 
   upSampE <- buttonWidget "+" upAttrs
@@ -98,7 +102,7 @@ numberPicker initialValue request = do
     textAttrs = Data.Map.fromList [("class","sampleTxt")]
 
 -- Creates a checkbox widget for degrade value
-degradePicker :: MonadWidget t m => Bool -> Event t SoundWidgetRequest -> m (Event t Bool)
+degradePicker :: MonadWidget t m => Bool -> Event t HelperWidgetRequest -> m (Event t Bool)
 degradePicker initialBool request = do
 
   checkAttrsDyn <- return $ constDyn checkAttrs
@@ -114,7 +118,7 @@ degradePicker initialBool request = do
     checkAttrs = Data.Map.fromList [("class","checkbox")]
 
 -- Creates a dropdown menu for choosing samples
-samplePicker :: MonadWidget t m => String -> Event t SoundWidgetRequest -> m (Event t String)
+samplePicker :: MonadWidget t m => String -> Event t HelperWidgetRequest -> m (Event t String)
 samplePicker initialSample request = do
   let sampleList = [("sn","sn"),("bd","bd"),("arpy","arpy"),("arp","arp"),("hh","hh"),("ht","ht")]
   dropAttrsDyn <- return $ constDyn dropdownAttrs
