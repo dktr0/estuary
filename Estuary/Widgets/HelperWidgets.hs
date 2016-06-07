@@ -29,6 +29,11 @@ import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
+data HelperWidgetRequest = HelperRequest (Map String String)
+
+instance Show HelperWidgetRequest where
+  show (HelperRequest x) = "helperRequest" ++ (show x)
+
 -------------------------------------------------------------------------------------------------
 --                                     Widget Tools                                            --
 -------------------------------------------------------------------------------------------------
@@ -40,15 +45,15 @@ buttonWidget iconType attrs = do
   return $ R.domEvent R.Click button
 
 -- Creates a formattable dropdown menu
-dropDownWidget :: R.MonadWidget t m => Dynamic t (Map String String) -> m (Event t String)
-dropDownWidget dynAttrs = do
-  let samples = Data.Map.fromList [("sn","sn"),("bd","bd"),("arpy","arpy"),("arp","arp"),("hh","hh"),("ht","ht")]
-  d <- dropdown "sn" (constDyn samples) (def & attributes .~ dynAttrs)
+dropDownWidget :: R.MonadWidget t m => String -> [(String,String)]-> Dynamic t (Map String String) -> m (Event t String)
+dropDownWidget initialSample sampleList dynAttrs = do
+  let samples = Data.Map.fromList sampleList
+  d <- dropdown initialSample (constDyn samples) (def & attributes .~ dynAttrs)
   return $ tagDyn (_dropdown_value d) (_dropdown_change d)
 
 -- Creates a formattable checkbox
-checkboxWidget :: R.MonadWidget t m => Dynamic t (Map String String) -> m (Event t Bool)
-checkboxWidget dynAttrs = do
+checkboxWidget :: R.MonadWidget t m => Bool -> Dynamic t (Map String String) -> m (Event t Bool)
+checkboxWidget initialBool dynAttrs = do
   c <- checkbox False (def & attributes .~ dynAttrs)
   return $ (_checkbox_change c)
 
@@ -73,86 +78,53 @@ garbageWidget = do
 -------------------------------------------------------------------------------------------------
 
 -- Creates a number picker widget for sample iteration
-nPicker :: MonadWidget t m => m (Event t (Sound -> Sound))
-nPicker = do
+numberPicker :: MonadWidget t m => Int -> Event t HelperWidgetRequest -> m (Event t Int)
+numberPicker initialValue request = do
+
   upSampE <- buttonWidget "+" upAttrs
-  incrementSample <- return $ (fmap (\() -> incrementN)) upSampE
+  incrementSample <- return $ (fmap (\() -> incrementNum)) upSampE
 
   downSampE <- buttonWidget "-" downAttrs
-  decrementSample <- return $ (fmap (\() -> decrementN)) downSampE
+  decrementSample <- return $ (fmap (\() -> decrementNum)) downSampE
 
   let nPickerEvents = [incrementSample, decrementSample]
-  let sampsE = leftmost nPickerEvents
 
-  dynamicSound <- foldDyn ($) initialSound (leftmost nPickerEvents)
+  dynamicNum <- foldDyn ($) initialValue (leftmost nPickerEvents)
 
-  dynN <- forDyn dynamicSound n
-  dynNString <- forDyn dynN show
-  textWidget dynNString textAttrs
-  return $ sampsE
-  where
-    upAttrs   = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
-    downAttrs = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
-    textAttrs = Data.Map.fromList [("class","sampleTxt")]
+  dynamicString <- forDyn dynamicNum show
+  textWidget dynamicString textAttrs
+  numEvent <- return $ updated dynamicNum
 
--- Creates a number picker widget for pattern repeats
-repeatsPicker :: MonadWidget t m => m (Event t (Sound -> Sound))
-repeatsPicker = do
-  upRepsE <- buttonWidget "+" upAttrs
-  incrementReps <- return $ (fmap (\() -> incrementRepeats)) upRepsE
-
-  downRepsE <- buttonWidget "-" downAttrs
-  decrementReps <- return $ (fmap (\() -> decrementRepeats)) downRepsE
-
-  let repeatsPickerEvents = [incrementReps, decrementReps]
-  let repsE = leftmost repeatsPickerEvents
-
-  dynamicSound <- foldDyn ($) initialSound (leftmost repeatsPickerEvents)
-
-  dynRepeats <- forDyn dynamicSound repeats
-  dynRepeatsString <- forDyn dynRepeats show
-  textWidget dynRepeatsString textAttrs
-
-  return $ repsE
+  return $ numEvent
   where
     upAttrs   = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
     downAttrs = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
     textAttrs = Data.Map.fromList [("class","sampleTxt")]
 
 -- Creates a checkbox widget for degrade value
-degradePicker :: MonadWidget t m => m (Event t (Sound -> Sound))
-degradePicker = do
+degradePicker :: MonadWidget t m => Bool -> Event t HelperWidgetRequest -> m (Event t Bool)
+degradePicker initialBool request = do
+
   checkAttrsDyn <- return $ constDyn checkAttrs
-  checkE <- checkboxWidget checkAttrsDyn
-  degE <- return $ (fmap setDegrade) checkE
+  eventBool <- checkboxWidget initialBool checkAttrsDyn
+  dynamicBool <- holdDyn False eventBool
 
-  dynCheck <- holdDyn False checkE
-  dynDegString <- forDyn dynCheck (\b -> (if b then "?" else ""))
-  textWidget dynDegString textAttrs
 
-  return $ degE
+  -- switch checkAttrs icon depending on bool value
+  dynDegString <- forDyn dynamicBool (\b -> (if b then "?" else ""))
+
+  return $ eventBool
   where
     checkAttrs = Data.Map.fromList [("class","checkbox")]
-    textAttrs = Data.Map.fromList [("class","sampleTxt")]
 
 -- Creates a dropdown menu for choosing samples
-samplePicker :: MonadWidget t m => m (Event t (Sound -> Sound))
-samplePicker = do
+samplePicker :: MonadWidget t m => String -> Event t HelperWidgetRequest -> m (Event t String)
+samplePicker initialSample request = do
+  let sampleList = [("sn","sn"),("bd","bd"),("arpy","arpy"),("arp","arp"),("hh","hh"),("ht","ht")]
   dropAttrsDyn <- return $ constDyn dropdownAttrs
-  dropdownE <- dropDownWidget dropAttrsDyn
-  nameE <- return $ (fmap rename) dropdownE
+  sampleE <- dropDownWidget initialSample sampleList dropAttrsDyn
 
-  dynName <- holdDyn "sn" dropdownE
-  textWidget dynName textAttrs
-
-  return $ nameE
+  return $ sampleE
   where
     dropdownAttrs = Data.Map.fromList [("class","w3-dropnav")]
-    textAttrs = Data.Map.fromList [("class","sampleTxt")]
 -------------------------------------------------------------------------------------------------
-
-
--- To do
--- Use text widget
--- Format widgets using css file
--- Work on pattern container

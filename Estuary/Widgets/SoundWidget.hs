@@ -9,7 +9,7 @@ module           Widgets.SoundWidget where
 import           Sound.Tidal.Context as Tidal
 import           Tidal.Utils
 import           Widgets.HelperWidgets
-import           Types.Sound
+import           Types.Sound as S
 
 -- Haskell Imports
 import           Control.Monad
@@ -36,36 +36,45 @@ import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
+data SoundWidgetRequest = CommonRequest (Map String String) |
+                          ScrambleYourself |
+                          Pulse (Map String String) |
+                          BecomeSound Sound
+
+instance Show SoundWidgetRequest where
+  show (CommonRequest x) = "commonRequest" ++ (show x)
+  show (ScrambleYourself) = "scramble"
+  show (Pulse x) = "pulse" ++ (show x)
+  show (BecomeSound x) = "become" ++ (show x)
+
 -- Create the sound widget
-soundWidget :: R.MonadWidget t m => Dynamic t Sound -> m (R.Event t (SoundEvent, Sound))
-soundWidget sound = mdo
+soundWidget :: R.MonadWidget t m => Sound -> R.Event t SoundWidgetRequest -> m (R.Event t (SoundEvent, Sound))
+soundWidget initSound widgetRequest = mdo
   (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
 
-    soundBeh <- return $ current sound
-    soundConst <- sample soundBeh
-    let test = constDyn soundConst
-    display test
-
     -- Create n picker widget
-    changeN <- nPicker
+    numEvent <- numberPicker (S.n initSound) never
+    changeN <- return $ fmap setN numEvent
     -- Create repeats changer widget
-    changeReps <- repeatsPicker
+    repEvent <- numberPicker (S.repeats initSound) never
+    changeReps <- return $ fmap setReps repEvent
     -- Create degrade changer widget
-    changeDegrade <- degradePicker
+    degEvent <- degradePicker (S.degraded initSound) never
+    changeDeg <- return $ fmap setDegrade degEvent
     -- Crate sample changer widget
-    changeSamples <- samplePicker
+    sampEvent <- samplePicker (S.name initSound) never
+    changeSamp <- return $ fmap setSamp sampEvent
 
     -- Create list of events
-    let soundEvents = [changeN, changeReps, changeDegrade, changeSamples]
+    let soundEvents = [changeN, changeReps, changeDeg, changeSamp]
 
     -- Fold events into dynamic sound
-    dynamicSound <- foldDyn ($) soundConst (leftmost soundEvents)
+    dynamicSound <- foldDyn ($) initSound (leftmost soundEvents)
 
     -- Get dynamic sound name string
     dynamicSoundName <- forDyn dynamicSound show
 
-    -- Display dynamic sound name
-    display $ sound
+    display dynamicSoundName
 
     return $ dynamicSound
 
@@ -79,14 +88,14 @@ soundWidget sound = mdo
                          ClickE     <$ R.domEvent R.Click cont,
                          DragendE   <$ z, DropE <$ x]
 
-  soundDyn <- holdDyn Empty event
+  soundEventDyn <- holdDyn Empty event
 
   -- Set Attributes for container
-  contAttrsDyn <- forDyn soundDyn determineSoundAttributes
+  contAttrsDyn <- forDyn soundEventDyn determineSoundAttributes
 
   let soundE = tag (current dynSound) event
 
-  let soundTupleE = attachDyn soundDyn soundE
+  let soundTupleE = attachDyn soundEventDyn soundE
 
   return $ soundTupleE
 
