@@ -29,6 +29,8 @@ import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
+
+-- Requests should be specific to widgets
 data HelperWidgetRequest = HelperRequest (Map String String)
 
 instance Show HelperWidgetRequest where
@@ -70,7 +72,7 @@ garbageWidget = do
   y <- R.wrapDomEvent (R._el_element el) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
   z <- R.wrapDomEvent (R._el_element el) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
   _ <- R.performEvent_ $ return () <$ y
-  return x
+  return z
   where
     attrs = Data.Map.fromList [("class", "garbage")]
 -------------------------------------------------------------------------------------------------
@@ -78,18 +80,18 @@ garbageWidget = do
 -------------------------------------------------------------------------------------------------
 
 -- Creates a number picker widget for sample iteration
-numberPicker :: MonadWidget t m => Int -> Event t HelperWidgetRequest -> m (Event t Int)
-numberPicker initialValue request = do
+numberPicker :: MonadWidget t m => Int -> m (Event t Int)
+numberPicker initialValue = do
 
   upSampE <- buttonWidget "+" upAttrs
-  incrementSample <- return $ (fmap (\() -> incrementNum)) upSampE
+  incrementNumber <- return $ (fmap (\() -> incrementNum)) upSampE
 
   downSampE <- buttonWidget "-" downAttrs
-  decrementSample <- return $ (fmap (\() -> decrementNum)) downSampE
+  decrementNumber <- return $ (fmap (\() -> decrementNum)) downSampE
 
-  let nPickerEvents = [incrementSample, decrementSample]
+  dynamicNum <- foldDyn ($) initialValue $ R.mergeWith (.) [incrementNumber, decrementNumber]
 
-  dynamicNum <- foldDyn ($) initialValue (leftmost nPickerEvents)
+  --dynamicNum <- foldDyn ($) initialValue (leftmost nPickerEvents)
 
   dynamicString <- forDyn dynamicNum show
   textWidget dynamicString textAttrs
@@ -102,8 +104,8 @@ numberPicker initialValue request = do
     textAttrs = Data.Map.fromList [("class","sampleTxt")]
 
 -- Creates a checkbox widget for degrade value
-degradePicker :: MonadWidget t m => Bool -> Event t HelperWidgetRequest -> m (Event t Bool)
-degradePicker initialBool request = do
+degradePicker :: MonadWidget t m => Bool -> m (Event t Bool)
+degradePicker initialBool = do
 
   checkAttrsDyn <- return $ constDyn checkAttrs
   eventBool <- checkboxWidget initialBool checkAttrsDyn
@@ -118,8 +120,8 @@ degradePicker initialBool request = do
     checkAttrs = Data.Map.fromList [("class","checkbox")]
 
 -- Creates a dropdown menu for choosing samples
-samplePicker :: MonadWidget t m => String -> Event t HelperWidgetRequest -> m (Event t String)
-samplePicker initialSample request = do
+samplePicker :: MonadWidget t m => String -> m (Event t String)
+samplePicker initialSample = do
   let sampleList = [("sn","sn"),("bd","bd"),("arpy","arpy"),("arp","arp"),("hh","hh"),("ht","ht")]
   dropAttrsDyn <- return $ constDyn dropdownAttrs
   sampleE <- dropDownWidget initialSample sampleList dropAttrsDyn

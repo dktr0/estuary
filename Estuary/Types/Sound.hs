@@ -1,6 +1,6 @@
 module Types.Sound where
 
-data SoundEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Empty deriving (Eq, Show)
+data SoundEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Empty | Update deriving (Eq, Show)
 
 data Sound = Sound (Maybe (String,Int,Int,Bool)) deriving (Eq)
 
@@ -11,9 +11,6 @@ initialSound = simpleSound "sn"
 
 simpleSound :: String -> Sound
 simpleSound x = Sound (Just (x,0,1,False))
-
-setSound :: Sound -> Sound
-setSound (Sound(sound)) = Sound(sound)
 
 name :: Sound -> String
 name (Sound (Just (n,_,_,_))) = n
@@ -67,5 +64,5 @@ setN n (Sound (Just (a,b,c,d))) = Sound (Just (a,n,c,d))
 setReps :: Int -> Sound -> Sound
 setReps n (Sound (Just (a,b,c,d))) = Sound (Just (a,b,n,d))
 
-refresh :: Sound -> Sound -> Sound
-refresh (Sound(sound)) silentSound = Sound(sound)
+setSound :: Sound -> Sound -> Sound
+setSound newSound currentSound = newSound
