@@ -36,19 +36,24 @@ import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
-data SoundWidgetRequest = CommonRequest (Map String String) |
-                          ScrambleYourself |
-                          Pulse |
-                          BecomeSound Sound
+data SoundWidgetRequest a = CommonRequest a |
+                            ScrambleYourself |
+                            Pulse |
+                            BecomeSound a |
+                            Default a |
+                            Add |
+                            Nothing
 
 instance Show SoundWidgetRequest where
   show (CommonRequest x) = "commonRequest" ++ (show x)
   show (ScrambleYourself) = "scramble"
   show (Pulse) = "pulse"
   show (BecomeSound x) = "become" ++ (show x)
+  show (Default x) = "default" ++ (show x)
+  show (Add) = "add"
 
 -- Create the sound widget
-soundWidget :: R.MonadWidget t m => Sound -> R.Event t Sound -> m (R.Event t (SoundEvent, Sound))
+soundWidget :: R.MonadWidget t m => Sound -> R.Event t SoundWidgetRequest -> m (R.Event t (SoundEvent, Sound))
 soundWidget initSound request = mdo
   (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
 
