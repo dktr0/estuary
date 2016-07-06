@@ -259,14 +259,13 @@ Next steps:
 >   display hack
 >   display values
 >   return values
->
-> main = mainWidget $ growAndShrinkWidget >>= display
+
 
 oinDynThroughMap :: Ord k => Dynamic (Map k (Dynamic a)) ->  Dynamic (Map k a)
 
 2. then, widgets that can receive signals from their parents (i.e. "flash")
 
-data SimpleWidgetRequest = Set Simple | Flash
+> data SimpleWidgetRequest = Set Simple | Flash
 
 widget :: (Ord k, MonadWidget t m) =>
   k -> SimpleWidgetRequest -> Event t SimpleWidgetRequest
@@ -281,7 +280,33 @@ k -> v -> Event u -> m a
 
 k -> Either Simple SimpleWidgetRequest -> Event (Either Simple SimpleWidgetRequest) -> m Dynamic Simple
 
+elDynAttr  :: String -> Dynamic (Map String String) -> m a -> m a
 
+> requestableSimpleWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t Simple)
+> requestableSimpleWidget key initialValue signal = do
+>   let flashEvent = fforMaybe signal g
+>   flashToggle <- toggle True flashEvent
+>   attr <- forDyn flashToggle h
+>   let buttons = forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
+>   buttons' <- elDynAttr "div" attr buttons
+>   let setEvent = fforMaybe signal f
+>   value <- holdDyn initialValue (leftmost (buttons'++[setEvent]))
+>   display value
+>   return value
+>   where f (Set x) = Just x
+>         f _ = Nothing
+>         g (Flash) = Just ()
+>         g _ = Nothing
+>         h True = singleton "style" "background-color: red; border: 3px solid black"
+>         h False = singleton "style" "background-color: green; border: 3px solid black"
+>
+> main = mainWidget $ do
+>  flash <- liftM (Flash <$) $ button "flash"
+>  makeThree <- liftM (Set Three <$) $ button "makeThree"
+>  let requests = leftmost [flash,makeThree]
+>  widget1 <- requestableSimpleWidget 1 One requests
+>  widget2 <- requestableSimpleWidget 2 Two requests
+>  return ()
 
 
 listWithKeyShallowDiff :: (Ord k, MonadWidget t m) =>
