@@ -42,7 +42,7 @@ import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
 main :: IO ()
-main = mainWidgetWithCss $(Data.FileEmbed.embedFile "static/css/helperwidgets.css") estuaryApp
+main = mainWidgetWithCss $(Data.FileEmbed.embedFile "../static/css/helperwidgets.css") estuaryApp
 
 estuaryApp :: MonadWidget t m => m ()
 estuaryApp = do

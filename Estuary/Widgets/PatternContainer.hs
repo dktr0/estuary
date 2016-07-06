@@ -46,8 +46,8 @@ patternContainerWidget = mdo
 
     -- Dynamic t (Map k v) -> (k -> Dynamic t v -> m (Event t (SoundEvent, Sound)) -> m (Behavior t (Map k Event t (SoundEvent, Sound)))
     keySoundBE <- listViewWithKey' allSoundsMap (\k oneSound -> mdo
-      soundE <- soundWidget oneSound
-
+      soundE <- soundWidget initialSound R.never
+--      soundWidget :: R.MonadWidget t m => Sound -> R.Event t SoundWidgetRequest -> m (R.Event t (SoundEvent, Sound))
       -- listen for add event
       addSound <- buttonWidget "add" appendAttrs
       -- tag sound that was
@@ -86,7 +86,7 @@ patternContainerWidget = mdo
 
   -- Need type Dynamic t ((oldKey :: Int ,oldSoundEvent :: SoundEvent ,oldSound :: Sound),(newKey :: Int ,newSoundEvent :: SoundEvent ,newSound :: Sound))
   insSoundE <- return $ fmap (determineInsert) keySoundETL
-  insSound <- return $ (fmap Types.SoundPattern.insert) insSoundE
+  insSound <- return $ fmap (Types.SoundPattern.insert) insSoundE
 
   keyE <- return $ fmap (\[(k,(se,s))] -> k) keySoundEL
   keyD <- holdDyn 0 keyE

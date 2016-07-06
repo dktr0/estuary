@@ -77,8 +77,9 @@ garbageWidget = do
 --                                        Widgets                                              --
 -------------------------------------------------------------------------------------------------
 
--- Creates a number picker widget for sample iteration
-numberPicker :: MonadWidget t m => Int -> Event t HelperWidgetRequest -> m (Event t Int)
+data NumberPickerRequest = SetNumber Int
+
+numberPicker :: MonadWidget t m => Int -> Event t NumberPickerRequest -> m (Event t Int)
 numberPicker initialValue request = do
 
   upSampE <- buttonWidget "+" upAttrs
@@ -87,7 +88,9 @@ numberPicker initialValue request = do
   downSampE <- buttonWidget "-" downAttrs
   decrementSample <- return $ (fmap (\() -> decrementNum)) downSampE
 
-  let nPickerEvents = [incrementSample, decrementSample]
+  setNumberE <- return $ fmap (\(SetNumber i) -> (\_ -> i)) request
+
+  let nPickerEvents = [incrementSample, decrementSample, setNumberE]
 
   dynamicNum <- foldDyn ($) initialValue (leftmost nPickerEvents)
 
@@ -100,6 +103,7 @@ numberPicker initialValue request = do
     upAttrs   = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
     downAttrs = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
     textAttrs = Data.Map.fromList [("class","sampleTxt")]
+
 
 -- Creates a checkbox widget for degrade value
 degradePicker :: MonadWidget t m => Bool -> Event t HelperWidgetRequest -> m (Event t Bool)
