@@ -11,14 +11,6 @@
 
 > data SimpleWidgetRequest = Set Simple | Flash
 
-widget :: (Ord k, MonadWidget t m) =>
-  k -> SimpleWidgetRequest -> Event t SimpleWidgetRequest
-    -> m (Dynamic t Simple, Event t SimpleWidgetEvent)
-widget k (Set i) e = el "div" $ do ...
-k -> v -> Event v -> m a
-k -> Simple -> Event Simple -> m Dynamic Simple
-k -> v -> Event u -> m a
-k -> Either Simple SimpleWidgetRequest -> Event (Either Simple SimpleWidgetRequest) -> m Dynamic Simple
 > requestableSimpleWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t Simple)
 > requestableSimpleWidget key initialValue signal = do
 >   let flashEvent = fforMaybe signal g
