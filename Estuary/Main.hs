@@ -7,7 +7,7 @@
 import           Sound.Tidal.Context as Tidal
 
 import           Tidal.Utils
-import           Widgets.SoundWidget
+import           Types.SoundPattern
 import           Widgets.PatternContainer
 
 -- Haskell Imports
@@ -49,7 +49,7 @@ estuaryApp = do
   el "div" $ do
     elAttr "section" ("class" =: "soundcontainer") $ do
       mainHeader
-      patternContainerWidget
+      patternContainerWidget initialPattern
       return ()
     infoFooter
 

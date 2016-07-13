@@ -12,6 +12,9 @@ instance Show SoundPattern where
 initialPattern :: SoundPattern
 initialPattern = simple "sn"
 
+-- Get SoundEvent as well as new position
+-- When it is an insert event, insert the element, and change the sound at the
+-- Current position to Nothing/silentSound
 insert :: Maybe (Sound,Int) -> SoundPattern -> SoundPattern
 insert (Just(sound,position)) (SoundPattern pattern) =  SoundPattern ((take position pattern) ++ [sound] ++ (drop position pattern))
 insert (Nothing) (SoundPattern pattern) = (SoundPattern pattern)
@@ -30,6 +33,9 @@ simple x = SoundPattern [simpleSound x]
 update :: Maybe (Sound,Int) -> SoundPattern -> SoundPattern
 update (Just(sound,position)) (SoundPattern pattern) = SoundPattern ((take position pattern) ++ [sound] ++ (drop (position+1) pattern))
 update (Nothing) (SoundPattern pattern) = SoundPattern (pattern)
+
+convertToMapMaybe :: SoundPattern -> Map Int (Maybe Sound)
+convertToMapMaybe (SoundPattern pattern) = Map.fromList (List.zip [0..] $ (Prelude.map Just) pattern)
 
 convertToMap :: SoundPattern -> Map Int Sound
 convertToMap (SoundPattern pattern) = Map.fromList (List.zip [0..] pattern)

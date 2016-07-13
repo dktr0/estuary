@@ -12,6 +12,7 @@ import           Widgets.HelperWidgets
 import           Widgets.SoundWidget
 import           Types.Sound
 import           Types.SoundPattern
+import           Types.RequestMap
 
 -- Haskell Imports
 import           Control.Monad
@@ -127,12 +128,18 @@ determineInsert ([(ok,(oe,os))],[(nk,(ne,ns))]) = if (oe == DropE && ne == Drage
                                                   else if (ne == Empty) then Just(ns,nk)
                                                   else (Nothing)
 
-determineUpdate :: ([(Int,(SoundEvent,Sound))],[(Int,(SoundEvent,Sound))]) -> Maybe (Sound,Int)
-determineUpdate ([],[]) = Nothing
-determineUpdate (x,[]) = Nothing
-determineUpdate ([],y) = Nothing
-determineUpdate ([(ok,(oe,os))],[(nk,(ne,ns))]) = if (oe == DragendE) then Just(os,nk)
-                                                  else Just(ns,nk)
+determineUpdate :: [(Int,(SoundEvent,Sound))] -> Maybe (Sound,Int)
+determineUpdate [] = Nothing
+determineUpdate [(nk,(ne,ns))] = if (ne == ClickE) then Just(ns,nk)
+                                                   else Nothing
+
+determineInsertReq :: ([(Int,(SoundEvent,Sound))],[(Int,(SoundEvent,Sound))]) -> Maybe (Int.Int,SoundWidgetRequest)
+determineInsertReq ([],[]) = Nothing
+determineInsertReq (x,[]) = Nothing
+determineInsertReq ([],y) = Nothing
+determineInsertReq ([(ok,(oe,os))],[(nk,(ne,ns))]) = if (oe == DropE && ne == DragendE) then Just(nk,ok,BecomeSound ns)
+                                                     else if (ne == Empty) then Just(nk,ok,Add)
+                                                     else (Nothing)
 
 determineContAttributes :: SoundEvent -> Map String String
 determineContAttributes soundEvent
@@ -148,3 +155,5 @@ determineContAttributes soundEvent
             [("class","soundcontainer"),("style","background-color: hsl(80,80%,30%); border: 1px solid black;")]
         | otherwise                = Data.Map.fromList
             [("class","soundcontainer"),("style","background-color: hsl(80,80%,50%); border: 1px solid black;")]
+
+-- When there is an insert the current soundwidget has to be tagged for deletion

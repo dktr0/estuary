@@ -15,7 +15,7 @@ extra-source-files:  static/css/helperwidgets.css
 
 library
   hs-source-dirs:    Estuary/
-  exposed-modules:   Tidal.Utils, Types.Sound, Widgets.HelperWidgets, Widgets.PatternContainer, Widgets.SoundWidget
+  exposed-modules:   Tidal.Utils, Types.Sound, Widgets.HelperWidgets, Widgets.SoundWidget, Widgets.PatternContainer
   build-depends:     base, data-default, tidal, hosc, containers, reflex, reflex-dom, ghcjs-base, ghcjs-dom, transformers
 
 

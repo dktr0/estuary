@@ -36,40 +36,44 @@ import qualified GHCJS.DOM.Event  as GHCJS (IsEvent)
 import qualified GHCJS.DOM.Element as GHCJS
 import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
-data SoundWidgetRequest = CommonRequest (Map String String) |
-                          ScrambleYourself |
-                          Pulse (Map String String) |
-                          BecomeSound Sound
+data SoundWidgetRequest a = CommonRequest a |
+                            ScrambleYourself |
+                            Pulse |
+                            BecomeSound a |
+                            Default a |
+                            Add |
+                            Nothing
 
 instance Show SoundWidgetRequest where
   show (CommonRequest x) = "commonRequest" ++ (show x)
   show (ScrambleYourself) = "scramble"
-  show (Pulse x) = "pulse" ++ (show x)
+  show (Pulse) = "pulse"
   show (BecomeSound x) = "become" ++ (show x)
+  show (Default x) = "default" ++ (show x)
+  show (Add) = "add"
 
 -- Create the sound widget
 soundWidget :: R.MonadWidget t m => Sound -> R.Event t SoundWidgetRequest -> m (R.Event t (SoundEvent, Sound))
-soundWidget initSound widgetRequest = mdo
+soundWidget initSound request = mdo
   (cont, dynSound) <- elDynAttr' "div" contAttrsDyn $ mdo
 
     -- Create n picker widget
-    numEvent <- numberPicker (S.n initSound) never
+    numEvent <- numberPicker (S.n initSound)
     changeN <- return $ fmap setN numEvent
     -- Create repeats changer widget
-    repEvent <- numberPicker (S.repeats initSound) never
+    repEvent <- numberPicker (S.repeats initSound)
     changeReps <- return $ fmap setReps repEvent
     -- Create degrade changer widget
-    degEvent <- degradePicker (S.degraded initSound) never
+    degEvent <- degradePicker (S.degraded initSound)
     changeDeg <- return $ fmap setDegrade degEvent
     -- Crate sample changer widget
-    sampEvent <- samplePicker (S.name initSound) never
+    sampEvent <- samplePicker (S.name initSound)
     changeSamp <- return $ fmap setSamp sampEvent
 
-    -- Create list of events
-    let soundEvents = [changeN, changeReps, changeDeg, changeSamp]
+    changeSound <- return $ fmap setSound request
 
     -- Fold events into dynamic sound
-    dynamicSound <- foldDyn ($) initSound (leftmost soundEvents)
+    dynamicSound <- foldDyn ($) initSound $ R.mergeWith (.) [changeN, changeReps, changeDeg, changeSamp, changeSound]
 
     -- Get dynamic sound name string
     dynamicSoundName <- forDyn dynamicSound show
@@ -83,7 +87,9 @@ soundWidget initSound widgetRequest = mdo
   y <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
   z <- R.wrapDomEvent (R._el_element cont) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
   _ <- R.performEvent_ $ return () <$ y
+  --_ <- R.performEvent_ $ return () <$ x
 
+  -- Convert to nothing on dragend event, just value on drop event to initiate update
   let event = leftmost [ DragE      <$ R.domEvent R.Drag cont,
                          ClickE     <$ R.domEvent R.Click cont,
                          DragendE   <$ z, DropE <$ x]
