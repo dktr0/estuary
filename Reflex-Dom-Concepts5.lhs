@@ -5,7 +5,6 @@
 > import Control.Monad
 > import Data.Map
 > import Data.Functor.Misc -- For Const2
-> import Multiple
 
 Next Steps:
 
