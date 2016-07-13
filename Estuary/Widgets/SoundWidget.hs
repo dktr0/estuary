@@ -52,6 +52,8 @@ instance Show SoundWidgetRequest where
   show (Default x) = "default" ++ (show x)
   show (Add) = "add"
 
+data SoundEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Empty | Update deriving (Eq, Show)
+
 -- Create the sound widget
 soundWidget :: R.MonadWidget t m => Sound -> R.Event t SoundWidgetRequest -> m (R.Event t (SoundEvent, Sound))
 soundWidget initSound request = mdo

@@ -1,7 +1,5 @@
 module Types.Sound where
 
-data SoundEvent = ClickE | DragE | DropE | DragoverE | DragendE | HoveroverE | Empty | Update deriving (Eq, Show)
-
 data Sound = Sound (Maybe (String,Int,Int,Bool)) deriving (Eq)
 
 silentSound = Sound (Nothing)
