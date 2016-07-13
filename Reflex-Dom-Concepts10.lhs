@@ -12,11 +12,7 @@
 > import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
 > data Simple = One | Two | Three deriving (Show)
-> data Misc = Add | Drop | Empty deriving (Show)
 > type Multiple = [Simple]
-> type Hetero = [Either Simple Misc]
-
-> data MiscRequest = Resize | Flash
 
 > listWithChildEvents' :: (Ord k, MonadWidget t m)
 >    => Map k v                        -- an ordered map of initial values
@@ -51,16 +47,29 @@
 >   a <- liftM (fmap (\_ -> Drop)) $ x
 >   holdDyn Empty a
 
+> simpleWidget :: MonadWidget t m => Simple -> m (Dynamic t Simple)
+> simpleWidget i = el "div" $ do
+>   buttons <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
+>   value <- holdDyn i (leftmost buttons)
+>   display value
+>   return value
+
 > addWidget :: MonadWidget t m => k -> Misc -> Event t MiscRequest -> (Dynamic t Misc)
 > addWidget = do
 >   a <- liftM (fmap (\_ -> Add)) $ button "Add"
 >   holdDyn Empty a
 
-> heterogeneousWidget :: MonadWidget t m => (Dynamic t Hetero)
+> data Misc = Add deriving (Show)
+> type Hetero = Either Simple Misc
+> data MiscRequest = Resize | Flash
+> data MiscEvent = IGotClicked
+
+> builder :: (Ord k) => k -> Hetero -> Event t r -> m (Dynamic t (Maybe Simple))
+> builder k (Left s) e = simpleWidget s >>= mapDyn (Just)
+> builder k (Right m) e = liftM (Nothing <$) $ button "+" >>= holdDyn Nothing
+
+> heterogeneousWidget :: MonadWidget t m => m ()
 > heterogeneousWidget = do
->   widgetList = [requestableSimpleWidget, addWidget, requestableSimpleWidget, addWidget, requestableSimpleWidget]
->   partial <- listWithChildEvents initialMap never never
->   listMap <- liftM (joinDynThroughMap) $ map partial widgetList
->   widgets <- liftM (joinDynThroughMap) $ listWithChildEvents initialMap never never widgetList
->   values <- forDyn widgets (elems)
->   display values
+>   let initialMap = [Right Add,Left One,Right Add,Left Two,Right Add,Left Three,Right Add]
+>   listWithChildEvents initialMap never never builder
+>   return ()
