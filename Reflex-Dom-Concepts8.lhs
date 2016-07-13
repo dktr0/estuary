@@ -101,14 +101,11 @@ listHoldWithKey :: Map k v -> Event t (Map k (Maybe v)) -> (k -
 > growAndShrinkWidget' = el "div" $ mdo
 >   growEvent <- (return . (fmap (\k -> singleton k (Just One)))) =<< countEvent =<< button "Grow"
 >   flashButton <- liftM (Flash <$) $ button "Flash"
->   activeKeys <- forDyn widgets (keys)
->   let activeKeys' = current activeKeys
->   let flashEvent = attachWith (\a b -> fromList (zip a (repeat b))) activeKeys' flashButton
+>   let flashEvent = attachWith (\a b -> fromList (zip a (repeat b))) (current activeKeys) flashButton
 >   let initialMap = empty :: Map Int Simple
->   lwce <- listWithChildEvents initialMap growEvent flashEvent requestableSimpleWidget
->   let widgets = joinDynThroughMap lwce
->   -- m (Dynamic (Map k Simple))
+>   widgets <- liftM (joinDynThroughMap) $ listWithChildEvents initialMap growEvent flashEvent requestableSimpleWidget
 >   values <- forDyn widgets (elems)
+>   activeKeys <- forDyn widgets (keys)
 >   display values
 >   return values
 
