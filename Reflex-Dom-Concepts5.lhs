@@ -1,10 +1,13 @@
 > {-# LANGUAGE RecursiveDo #-}
-> module Growing where
+> module Main where
 > import Reflex
 > import Reflex.Dom
 > import Control.Monad
 > import Data.Map
 > import Data.Functor.Misc -- For Const2
+
+> data Simple = One | Two | Three deriving (Show)
+> type Multiple = [Simple]
 
 Next Steps:
 
@@ -16,35 +19,35 @@ Next Steps:
 >   k -> Simple -> Event t Simple -> m (Dynamic t Simple, Event t (SimpleWidgetEvent k))
 > deletableWidget k i _ = el "div" $ do
 >   deleteEvent <- liftM (DeleteMe k <$) $ button "-"
->   buttons <- forM [One,Two,Three] (\x -> liftM (x <$)) (button (show x))
+>   buttons <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
 >   value <- holdDyn i (leftmost buttons)
 >   return (value,deleteEvent)
 
 This (above) would probably work but the return type doesn't match what we need for listWithKeyShallowDiff... so
 let's make a return type that is a tuple inside a Dynamic instead:
 
-> deletableWidget' :: MonadWidget t m =>
->   k => Simple -> Event t Simple -> m (Dynamic t (Simple, Event t (SimpleWidgetEvent Int)))
+> deletableWidget' :: (Ord k, MonadWidget t m) =>
+>   k -> Simple -> Event t Simple -> m (Dynamic t (Simple, Event t (SimpleWidgetEvent k)))
 > deletableWidget' k i _ = el "div" $ do
->   deleteEvent0 <- liftM (DeleteMe k <$) $ button "-"
->   let deleteEvent = traceEvent "deleteInternal" deleteEvent0
+>   deleteEvent <- liftM (DeleteMe k <$) $ button "-"
 >   buttons <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
 >   value <- holdDyn i (leftmost buttons)
 >   display value
 >   forDyn value (\a -> (a,deleteEvent))
 >
-> countEvent :: (MonadWidget t m, Num k) => Event a -> m (Event t k)
-> countEvent = zipListWithEvent (\a _ -> a) (0..)
+> countEvent :: (MonadWidget t m, Num k, Enum k) => Event t a -> m (Event t k)
+> countEvent = zipListWithEvent (\a _ -> a) [0..]
 >
 > growAndShrinkWidget :: MonadWidget t m => m (Dynamic t Multiple)
 > growAndShrinkWidget = el "div" $ mdo
 >   let initialMap = empty :: Map Int Simple
->   growEvent <- liftM (fmap (\k -> singleton k (Just One))) =<< countEvent =<< button "-"
->   let updateEvents = mergeWith (union) ([growEvent]++deleteEvents)
+>   growEvent <- (return . (fmap (\k -> singleton k (Just One)))) =<< countEvent =<< button "-"
+>   let updateEvents = mergeWith (union) ([growEvent]++[deleteEvents'''])
 >   widgets <- liftM (joinDynThroughMap) $ listWithKeyShallowDiff initialMap updateEvents deletableWidget'
 >   values <- forDyn widgets (Prelude.map (fst) . elems)
 >   events <- forDyn widgets (Prelude.map (snd) . elems) -- Dynamic [Event (SimpleWidgetEvent)]
->   deleteEvents <- forDyn events (fmap (fmap (\(DeleteMe k)-> singleton k Nothing))
+>   deleteEvents <- forDyn events (fmap (fmap (\(DeleteMe k)-> singleton k Nothing)))
+>   let deleteEvents' = switch $ fmap (mergeWith (union)) $ current deleteEvents -- Behaviour [Event Map ...]
 >   display values
 >   return values
 >
