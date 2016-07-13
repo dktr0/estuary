@@ -102,7 +102,8 @@ listHoldWithKey :: Map k v -> Event t (Map k (Maybe v)) -> (k -
 >   growEvent <- (return . (fmap (\k -> singleton k (Just One)))) =<< countEvent =<< button "Grow"
 >   flashButton <- liftM (Flash <$) $ button "Flash"
 >   activeKeys <- forDyn widgets (keys)
->   let flashEvent = attachDynWith (\a b -> fromList (zip a (repeat b))) activeKeys flashButton
+>   let activeKeys' = current activeKeys
+>   let flashEvent = attachWith (\a b -> fromList (zip a (repeat b))) activeKeys' flashButton
 >   let initialMap = empty :: Map Int Simple
 >   lwce <- listWithChildEvents initialMap growEvent flashEvent requestableSimpleWidget
 >   let widgets = joinDynThroughMap lwce
