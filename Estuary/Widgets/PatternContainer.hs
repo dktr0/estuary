@@ -43,63 +43,66 @@ import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, Eve
 -- Create the sound widget
 patternContainerWidget :: R.MonadWidget t m => m ()
 patternContainerWidget = mdo
-  (cont, soundDynMap) <- elDynAttr' "div" contAttrsDyn $ mdo
-    -- listWithKeyShallowDiff :: (Ord k, MonadWidget t m) => Map k v -> Event t (Map k (Maybe v)) -> (k -> v -> Event t v -> m a) -> m (Dynamic t (Map k a))
-    -- Display the given map of items (in key order) using the builder function provided, and update it with the given event.
-    -- Nothing update entries will delete the corresponding children, and Just entries will create them if they do not exist or send an update event to them if they do.
-    soundDynMap <- listWithKeyShallowDiff initRequestMap allSoundEventRequests buildSoundWidget
-    return $ soundDynMap
+  (cont, keySoundBE) <- elDynAttr' "div" contAttrsDyn $ mdo
 
-  -- Convert Dynamic Map into behaviour to take snapshot Behaviour t (Map k Event t (SoundEvent,Sound))
-  soundBehMapEvent <- return $ current soundDynMap
-  -- Convert Behaviour Map of Events into type Behavior t (Event (Map k (SoundEvent,Sound)))
-  soundBehEventMap <- return $ fmap R.mergeMap soundBehMapEvent
-  -- Convert Behavior Event Map into Event Map
-  soundEventMap <- return $ switch soundBehEventMap
-  -- Convert Event Map into Event List Event t [k,(SoundEvent,Sound)]
-  soundEventList <- return $ fmap Data.Map.toList soundEventMap
-  -- Convert Event Map into Dynamic Map Dynamic t [k,(SoundEvent,Sound)]
-  soundDynList <- holdDyn [] soundEventList
-  -- Keep track of current and previous Events (Event t [Int,(SoundEvent,Sound)],Event t [Int,(SoundEvent,Sound)])
-  oldNewSoundEventLists <- return $ attach (current soundDynList) (updated soundDynList)
+    -- Dynamic t (Map k v) -> (k -> Dynamic t v -> m (Event t (SoundEvent, Sound)) -> m (Behavior t (Map k Event t (SoundEvent, Sound)))
+    keySoundBE <- listViewWithKey' allSoundsMap (\k oneSound -> mdo
+      soundE <- soundWidget initialSound R.never
+--      soundWidget :: R.MonadWidget t m => Sound -> R.Event t SoundWidgetRequest -> m (R.Event t (SoundEvent, Sound))
+      -- listen for add event
+      addSound <- buttonWidget "add" appendAttrs
+      -- tag sound that was
+      soundDyn <- holdDyn (Empty,simpleSound "sn") soundE
 
-  garbageE <- buttonWidget "delete" deleteAttrs
+      soundBeh <- return (current soundDyn)
 
-  keyE <- return $ fmap (\[(k,(se,s))] -> k) soundEventList
+      addSoundE <- return $ tag soundBeh addSound
+      addSoundEE <- return $ (fmap (\(x,y) -> (Empty,y))) addSoundE
+
+      --display soundDyn
+      let events = [addSoundEE,soundE]
+
+      -- leftmost (return whichever event fired) wrap sound in event
+      soundTupleE <- return $ leftmost (events)
+
+      display oneSound
+
+      return $ soundTupleE)
+    return $ keySoundBE
+
+  -- Behavior t (Event t Map k (SoundEvent, Sound))
+  keySoundBEM <- return $ (fmap R.mergeMap) keySoundBE
+  -- Event t (Map k (SoundEvent,Sound))
+  keySoundEM <- return $ switch keySoundBEM
+  -- Event t [(k, (SoundEvent,Sound))]
+  keySoundEL <- return $ (fmap Data.Map.toList) keySoundEM
+  -- Dynamic t [(k,(SoundEvent,Sound))]
+  keySoundDL <- holdDyn [] keySoundEL
+  -- Behavior t [(k,(SoundEvent,Sound))]
+  keySoundBL <- hold [] keySoundEL
+  -- Event t ([old],[new])
+  keySoundETL <- return $ attach (current keySoundDL) (updated keySoundDL)
+  keySoundDTL <- holdDyn ([],[]) keySoundETL
+  display keySoundDTL
+
+  -- Need type Dynamic t ((oldKey :: Int ,oldSoundEvent :: SoundEvent ,oldSound :: Sound),(newKey :: Int ,newSoundEvent :: SoundEvent ,newSound :: Sound))
+  insSoundE <- return $ fmap (determineInsert) keySoundETL
+  insSound <- return $ fmap (Types.SoundPattern.insert) insSoundE
+
+  keyE <- return $ fmap (\[(k,(se,s))] -> k) keySoundEL
   keyD <- holdDyn 0 keyE
-
-  -- Remove sound from list when drop event fires on garbage widget
+  garbageE <- garbageWidget
   remSoundE <- return $ tagDyn keyD garbageE
   remSound <- return $ (fmap Types.SoundPattern.delete) remSoundE
 
-  -- Need type Dynamic t ((oldKey :: Int,oldSoundEvent :: SoundEvent,oldSound :: Sound),(newKey :: Int,newSoundEvent :: SoundEvent,newSound :: Sound))
-  insSoundE <- return $ fmap (determineInsert) oldNewSoundEventLists
-  insSound <- return $ (fmap Types.SoundPattern.insert) insSoundE
+  updSoundE <- return $ tagDyn keySoundDTL event
+  updSoundEE <- return $ fmap (determineUpdate) updSoundE
+  updSound <- return $ (fmap Types.SoundPattern.update) updSoundEE
 
-  -- Run update on every click event
-  updSoundE <- return $ fmap (determineUpdate) soundEventList
-  updSound <- return $ (fmap Types.SoundPattern.update) updSoundE
+  allSoundsList <- foldDyn ($) initialPattern (leftmost $ [remSound, updSound, insSound])
+  allSoundsMap <- forDyn allSoundsList convertToMap
 
-  -- Maintain pattern
-  allSoundsDynList <- foldDyn ($) initialPattern $ R.mergeWith (.) [remSound, insSound, updSound]
-  --allSoundsEventList <- return $ updated allSoundsDynList
-  --allSoundsEventMap <- return $ (fmap convertToMapMaybe) allSoundsEventList
-
-  -- remReq
-  remReq <- return $ (fmap Types.RequestMap.delete) remSoundE
-
-  -- insReq
-  insReqE <- return $ fmap (determineInsertReq) oldNewSoundEventLists
-  insReq <- return $ (fmap Types.RequestMap.insert) insReqE
-
-  -- adjReq
-  adjReqE <- return $
-
-  -- Maintain Requests
-  allSoundsDynRequestsMap <- foldDyn ($) initialReqMap $ R.mergeWith (.) [remReq, insReq, adjReq]
-  allSoundEventRequestsMap <- return $ updated allSoundsDynRequestsMap
-
-  display allSoundsDynList
+  display allSoundsMap
 
   let contAttrsDyn = (constDyn $ determineContAttributes Empty)
 
@@ -114,23 +117,6 @@ patternContainerWidget = mdo
                          DropE       <$ x]
 
   return ()
-  where
-    deleteAttrs = Data.Map.fromList [("class","squarebutton"),("style","left: 20px; bottom: 20px;")]
-
-buildSoundWidget :: MonadWidget t m => Int -> SoundWidgetRequest -> R.Event t SoundWidgetRequest -> m (R.Event t (SoundEvent,Sound))
-buildSoundWidget key initSound request = mdo
-
-  -- MakeUI elements and get their events
-  soundWidgetEvent <- soundWidget initSound request
-  addSoundButtonEvent <- buttonWidget "add" appendAttrs
-
-  soundDyn <- holdDyn (Empty,simpleSound "bd") soundWidgetEvent
-  addSound <- return $ tagDyn soundDyn addSoundButtonEvent
-  addSoundE <- return $ (fmap (\(x,y) -> (Empty,y))) addSound
-
-  -- leftmost (return whichever event fired) wrap sound in event
-  soundTupleE <- return $ leftmost [addSoundE,soundWidgetEvent]
-  return $ soundTupleE
   where
     appendAttrs = Data.Map.fromList [("class","squarebutton"),("style","left: 20px; bottom: 20px;")]
 

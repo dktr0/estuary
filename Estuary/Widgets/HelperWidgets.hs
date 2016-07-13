@@ -79,19 +79,22 @@ garbageWidget = do
 --                                        Widgets                                              --
 -------------------------------------------------------------------------------------------------
 
--- Creates a number picker widget for sample iteration
-numberPicker :: MonadWidget t m => Int -> m (Event t Int)
-numberPicker initialValue = do
+data NumberPickerRequest = SetNumber Int
+
+numberPicker :: MonadWidget t m => Int -> Event t NumberPickerRequest -> m (Event t Int)
+numberPicker initialValue request = do
 
   upSampE <- buttonWidget "+" upAttrs
-  incrementNumber <- return $ (fmap (\() -> incrementNum)) upSampE
+  incrementSample <- return $ (fmap (\() -> incrementNum)) upSampE
 
   downSampE <- buttonWidget "-" downAttrs
-  decrementNumber <- return $ (fmap (\() -> decrementNum)) downSampE
+  decrementSample <- return $ (fmap (\() -> decrementNum)) downSampE
 
-  dynamicNum <- foldDyn ($) initialValue $ R.mergeWith (.) [incrementNumber, decrementNumber]
+  setNumberE <- return $ fmap (\(SetNumber i) -> (\_ -> i)) request
 
-  --dynamicNum <- foldDyn ($) initialValue (leftmost nPickerEvents)
+  let nPickerEvents = [incrementSample, decrementSample, setNumberE]
+
+  dynamicNum <- foldDyn ($) initialValue (leftmost nPickerEvents)
 
   dynamicString <- forDyn dynamicNum show
   textWidget dynamicString textAttrs
@@ -102,6 +105,7 @@ numberPicker initialValue = do
     upAttrs   = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
     downAttrs = Data.Map.fromList [("class","w3-btn-floating w3-ripple w3-teal")]
     textAttrs = Data.Map.fromList [("class","sampleTxt")]
+
 
 -- Creates a checkbox widget for degrade value
 degradePicker :: MonadWidget t m => Bool -> m (Event t Bool)

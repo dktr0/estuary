@@ -4,6 +4,14 @@ projectional editing platform for Tidal
 
 There are two parts to this, a server and a client. The server listens on a WebSocket for messages, and interprets the messages as Tidal patterns (which then normally results in sound coming from Dirt). The client presents a projectional editing interface for Tidal/Haskell expressions, sending these expressions to the server via a WebSocket. The server and client can be used separately if that is helpful.
 
+## Building with cabal and ghcjs
+
+```
+cabal install --ghcjs tidal
+cabal install --ghcjs reflex-dom
+cabal install --ghcjs file-embed
+```
+
 ## Server Instructions
 
 1. Install GHC and cabal, if you don't already have it/them. There are several ways to do this.
@@ -57,7 +65,7 @@ pc-ogborn-d:server ogbornd$ ps
   807 ttys000    0:00.02 ./EstuaryServer
 pc-ogborn-d:server ogbornd$ kill 807
 [1]+  Terminated: 15          ./EstuaryServer
-pc-ogborn-d:server ogbornd$ 
+pc-ogborn-d:server ogbornd$
 ```
 
 ## Client Instructions
