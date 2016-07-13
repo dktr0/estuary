@@ -1,10 +1,13 @@
 > {-# LANGUAGE RecursiveDo #-}
-> module Growing where
+> module Main where
 > import Reflex
 > import Reflex.Dom
 > import Control.Monad
 > import Data.Map
 > import Data.Functor.Misc -- For Const2
+
+> data Simple = One | Two | Three deriving (Show)
+> type Multiple = [Simple]
 
 Below we are refactoring listWithKeyShallowDiff from Reflex.Dom for the sake
 of understanding. In a subsequent step we will make a variation on this definition
@@ -73,3 +76,42 @@ listHoldWithKey :: Map k v -> Event t (Map k (Maybe v)) -> (k -> v -> m a) -> m 
 
 attachWith :: Reflex t => (a -> b -> c) -> Behavior t a -> Event t b -> Event t c
 listHoldWithKey :: Map k v -> Event t (Map k (Maybe v)) -> (k -
+
+> data SimpleWidgetRequest = Set Simple | Flash
+
+> requestableSimpleWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t Simple)
+> requestableSimpleWidget key initialValue signal = do
+>   let flashEvent = fforMaybe signal g
+>   flashToggle <- toggle True flashEvent
+>   attr <- forDyn flashToggle h
+>   let buttons = forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
+>   buttons' <- elDynAttr "div" attr buttons
+>   let setEvent = fforMaybe signal f
+>   value <- holdDyn initialValue (leftmost (buttons'++[setEvent]))
+>   display value
+>   return value
+>   where f (Set x) = Just x
+>         f _ = Nothing
+>         g (Flash) = Just ()
+>         g _ = Nothing
+>         h True = singleton "style" "background-color: red; border: 3px solid black"
+>         h False = singleton "style" "background-color: green; border: 3px solid black"
+>
+> growAndShrinkWidget' :: MonadWidget t m => m (Dynamic t Multiple)
+> growAndShrinkWidget' = el "div" $ mdo
+>   growEvent <- (return . (fmap (\k -> singleton k (Just One)))) =<< countEvent =<< button "Grow"
+>   flashButton <- liftM (Flash <$) $ button "Flash"
+>   activeKeys <- forDyn widgets (keys)
+>   let flashEvent = attachDynWith (\a b -> fromList (zip a (repeat b))) activeKeys flashButton
+>   let initialMap = empty :: Map Int Simple
+>   lwce <- listWithChildEvents initialMap growEvent flashEvent requestableSimpleWidget
+>   let widgets = joinDynThroughMap lwce
+>   -- m (Dynamic (Map k Simple))
+>   values <- forDyn widgets (elems)
+>   display values
+>   return values
+
+> main = mainWidget $ growAndShrinkWidget' >>= display
+
+> countEvent :: (MonadWidget t m, Num k, Enum k) => Event t a -> m (Event t k)
+> countEvent = zipListWithEvent (\a _ -> a) [0..]

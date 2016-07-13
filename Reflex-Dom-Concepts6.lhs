@@ -1,11 +1,13 @@
 > {-# LANGUAGE RecursiveDo #-}
-> module Growing where
+> module Main where
 > import Reflex
 > import Reflex.Dom
 > import Control.Monad
 > import Data.Map
 > import Data.Functor.Misc -- For Const2
-> import Multiple
+
+> data Simple = One | Two | Three deriving (Show)
+> type Multiple = [Simple]
 
 2. then, widgets that can receive signals from their parents (i.e. "flash")
 
