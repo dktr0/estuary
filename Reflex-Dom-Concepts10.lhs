@@ -49,6 +49,11 @@
 > data MiscRequest = Resize | Flash
 > data MiscEvent = IGotClicked
 
+? builder' :: (MonadWidget t m, Ord k) -> k -> Either a b -> Event t (Either c d) -> m (Dynamic t (Maybe e))
+
+metabuilder :: (k -> v -> Event t r -> m v) -> (k -> w -> Event t s -> m b) -> (k -> Either v w -> Event t (Either r s))
+  -> m (Dynamic t (Maybe v))
+
 > builder :: MonadWidget t m => Int -> Hetero -> Event t r -> m (Dynamic t (Maybe Simple))
 > builder k (Left s) e = simpleWidget s >>= mapDyn (Just)
 > builder k (Right m) e = do

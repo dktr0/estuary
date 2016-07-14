@@ -65,6 +65,14 @@ instance Show PatternTransformer where
   show Degrade = "degrade"
   show (Slow f) = "slow " ++ (show f)
 
-applyPatternTransform :: PatternTransformer
+applyPatternTransform :: PatternTransformer -> (ParamPattern -> ParamPattern)
+applyPatternTransform Degrade = Tidal.degrade
+applyPatternTransform (Slow f) = Tidal.slow f
+
 
 data TransformedPattern = TransformedPattern [PatternTransformer] SoundPattern
+
+foldr :: (a -> b -> b) -> b -> [a] -> b
+
+instance Show TransformedPattern where
+  show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
