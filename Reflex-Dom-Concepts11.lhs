@@ -63,10 +63,10 @@
 
 > builder :: MonadWidget t m => Int -> Hetero -> Event t (Either SimpleWidgetRequest MiscRequest) -> m (Dynamic t (Maybe Simple))
 > builder k (Left s) e = do
->   let event = coincidence $ fmap (either (<$ e) (return $ (Set Three) <$ never)) e
+>   let event = coincidence $ fmap (either (<$ e) (return $ (Set Three) <$ never)) e -- if e=Event Left, double wraps in same event and calls coincidence, otherwise  gets: coincidence Event (Never ...)
 >   requestableSimpleWidget k s event >>= mapDyn Just
 > builder k (Right m) e = do
->   let event = coincidence $ fmap (either (return $ Disable <$ never) (<$ e)) e
+>   let event = coincidence $ fmap (either (return $ Disable <$ never) (<$ e)) e -- if e=Event Right, double wraps in same event and calls coincidence, otherwise  gets: coincidence Event (Never ...)
 >   miscWidget k event
 
 > miscWidget:: MonadWidget t m => k -> Event t MiscRequest -> m (Dynamic t (Maybe Simple))
