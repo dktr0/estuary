@@ -82,50 +82,30 @@
 >     deleteButton <- liftM (DeleteMe key <$) $ button "-"
 >     return $ constDyn (One,deleteButton)
 
-
-
 > growAndShrinkWidget' :: MonadWidget t m => m (Dynamic t [Maybe Simple])
 > growAndShrinkWidget' = el "div" $ mdo
->   simpleWidgetButton <- button "Add SimpleWidget"
->   miscWidgetButton <- button "Add miscButton"
-
->   let simpleWidgetButton' = tagDyn maxKey simpleWidgetButton
->   let simpleWidgetButton'' = fmap (\k-> singleton k (Just (Left One))) simpleWidgetButton' -- ::MonadWidget t m => m (Event t (Map Int (Maybe Hetero)))
-
->   let miscWidgetButton' = tagDyn maxKey miscWidgetButton
->   let miscWidgetButton'' = fmap (\k-> singleton k (Just (Right Add))) miscWidgetButton' -- ::MonadWidget t m => m (Event t (Map Int (Maybe Hetero)))
-
->   let growEvents = mergeWith makeMap [miscWidgetButton'', simpleWidgetButton'']
 >   let initialMap = empty :: Map Int Hetero
+>   makeSimpleWidget <- liftM (fmap (=:(Just(Left One))) . (tagDyn maxKey)) $ button "Add SimpleWidget"
+>   makeMiscWidget <- liftM (fmap (=:(Just(Right Add))) . (tagDyn maxKey)) $ button "Add MiscWidget"
+>   let growEvents = mergeWith makeMap [makeMiscWidget, makeSimpleWidget]
 >   let updateEvent = mergeWith union [growEvents, deleteEvents']
-
->   setButton <- liftM (Left (Set Two) <$) $ button "Set two"
->   let setTwoEvent = attachWith (\a b -> fromList (zip a (repeat b))) (current activeKeys) setButton -- Event t (Map (activeKeys) (Maybe (Either Simp/MiscReq)))
->   disableButton <- liftM (Right Disable <$) $ button "Disable '+' buttons"
->   let disableEvent = attachWith (\a b -> fromList (zip a (repeat b))) (current activeKeys) disableButton
-
-> -- @use something more meaningful than 'leftmost'
->   let parentEvents = leftmost [disableEvent,setTwoEvent]
-
+>   setTwoEvent <- liftM (attachWith (\a _-> fromList (zip a (repeat $ Left (Set Two)))) (current activeKeys) ) $ button "Set Two"
+>   disableEvent <- liftM (attachWith (\a _-> fromList (zip a (repeat $ Right Disable))) (current activeKeys) ) $ button "Disable '+' "
+>   let parentEvents = leftmost [setTwoEvent,disableEvent]
 >   widgets <- liftM (joinDynThroughMap) $ listWithChildEvents initialMap updateEvent parentEvents builder --MonadWidget t m => m (Dynamic t( Map k (Maybe Simple,Event t(SimpleWidgetEvent k))))
->   values <- forDyn widgets (Prelude.map fst . elems)
->   events <- forDyn widgets (Prelude.map snd . elems) -- Dynamic t [Event ..]
-
+>   (values,events) <- forDyn widgets (unzip . elems) >>=splitDyn
 >   deleteEvents <- forDyn events (fmap (fmap (\(DeleteMe k)-> singleton k Nothing))) -- m (Dynamic t [Event t (Map k Nothing...)])
 >   let deleteEvents' = switch $ fmap (mergeWith (union)) $ current deleteEvents -- Behaviour [Event Map ...]
-
->   activeKeys <- forDyn widgets (keys)
->   maxKey <- forDyn activeKeys (\k-> if k==[] then 0 else (maximum k)+1)
+>   activeKeys <- forDyn widgets keys
+>   maxKey <-  forDyn activeKeys (\k-> if k==[] then 0 else (maximum k)+1)
 >   el "div" $ do
 >     text "keys "
->     display activeKeys
 >     el "div" $ return values
 
+makeMap should assign unique keys to two widgets when they're made at the same time, giving parameter 'a' the lower key
 
 > makeMap::Map Int (Maybe Hetero) -> Map Int (Maybe Hetero) -> Map Int (Maybe Hetero)
 > makeMap a b = union a $ fromList [(bKey+1,bVal)]
 >   where (bKey,bVal) = elemAt 0 b
-
-
 
 > main = mainWidget $ growAndShrinkWidget'>>=display
