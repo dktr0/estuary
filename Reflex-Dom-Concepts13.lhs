@@ -14,8 +14,8 @@
 
 > data Simple = One | Two | Three deriving (Show,Eq)
 > type Multiple = [Simple]
-> data SimpleWidgetRequest = Set Simple | Flash deriving(Eq)
-> data WidgetEvent k = DeleteMe k | MakeSimple k deriving (Show,Eq)
+> data SimpleWidgetRequest = Set Simple | Flash
+> data WidgetEvent k = DeleteMe k | MakeSimple k deriving (Show)
 
 > data Misc = Add deriving (Show,Eq)
 > type Hetero = Either Simple Misc
