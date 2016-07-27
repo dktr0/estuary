@@ -1,4 +1,4 @@
-module Types.Tidal where
+module Tidal.Types where
 
 import Data.List as List (intercalate, zip)
 import Data.Map as Map
