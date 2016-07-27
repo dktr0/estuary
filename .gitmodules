@@ -1,3 +1,3 @@
 [submodule "server/staticWebContent/WebDirt"]
-	path = server/staticWebContent/WebDirt
+	path = static/WebDirt
 	url = https://github.com/d0kt0r0/WebDirt.git
