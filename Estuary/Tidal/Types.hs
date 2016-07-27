@@ -64,7 +64,7 @@ instance ParamPatternable SoundPattern where
 
 
 
-data PatternTransformer = Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer
+data PatternTransformer = Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak
 
 instance Show PatternTransformer where
   show Rev = "rev"
@@ -73,6 +73,7 @@ instance Show PatternTransformer where
   show Degrade = "degrade"
   show (DegradeBy f) = "degradeBy " ++ (show f)
   show (Every n t) = "every " ++ (show n) ++ "(" ++ show t ++ ")"
+  show (Brak) = "brak"
 
 applyPatternTransform :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
 applyPatternTransform Rev = Tidal.rev
@@ -81,6 +82,7 @@ applyPatternTransform (Density f) = Tidal.density f
 applyPatternTransform Degrade = Tidal.degrade
 applyPatternTransform (DegradeBy d) = Tidal.degradeBy d
 applyPatternTransform (Every n t) = Tidal.every n (applyPatternTransform t)
+applyPatternTransform (Brak) = Tidal.brak
 
 -- PatternTransformer is not an instance of ParamPatternable because a pattern transformer is not sufficient to make a ParamPattern
 
