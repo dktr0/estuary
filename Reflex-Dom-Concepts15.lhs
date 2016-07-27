@@ -1,9 +1,10 @@
-s> {-# LANGUAGE RecursiveDo #-}
+> {-# LANGUAGE RecursiveDo #-}
 > module Main where
 > import Reflex
 > import Reflex.Dom
 > import Control.Monad
 > import Data.Map
+> import qualified Data.List as List
 > import Data.Functor.Misc -- For Const2
 > import qualified Data.Maybe
 
@@ -13,10 +14,9 @@ s> {-# LANGUAGE RecursiveDo #-}
 > import           GHCJS.DOM.EventM as GHCJS (preventDefault, stopPropagation, EventM)
 
 > data Simple = One | Two | Three deriving (Show)
-> data Block = One | Two | Three deriving (Show)
 > type Multiple = [Simple]
-> data SimpleBlockRequest = Set Block | Flash
-> data SimpleBlockEvent k = Drop k | DragEnd k | DeleteMe k deriving (Show)
+> data SimpleWidgetRequest = Set Simple | Flash
+> data SimpleWidgetEvent k = Drop k | DragEnd k | DeleteMe k deriving (Show)
 
 > data Misc = Add deriving (Show)
 > type Hetero = Either Simple Misc
@@ -45,44 +45,40 @@ s> {-# LANGUAGE RecursiveDo #-}
 >   let c = attachWith f beh evt                              -- Event
 >   listHoldWithKey initial c mkChild'
 
-Builds the list of simpleWidgets
+> builder :: (MonadWidget t m, Ord k)=> k -> Hetero -> Event t (Either SimpleWidgetRequest MiscRequest) -> m (Dynamic t (Maybe Simple,Event t (SimpleWidgetEvent k)))
+> builder k (Left simp) e = do
+>   let event = coincidence $ fmap (either (<$ e) (return $ (Set Three) <$ never)) e -- if e=Event Left, double wraps in same event and calls coincidence, otherwise  gets: coincidence Event (Never ...)
+>   requestableSimpleWidget k simp event >>= mapDyn (\(a,b)-> (Just a, b))
+> builder k (Right misc) e = do
+>   let event = coincidence $ fmap (either (return $ Disable <$ never) (<$ e)) e -- if e=Event Right, double wraps in same event and calls coincidence, otherwise  gets: coincidence Event (Never ...)
+>   miscWidget k event >>= mapDyn (\(a,b)-> (Nothing, b))
 
-> builder :: (MonadWidget t m, Ord k) => k -> Hetero -> Event t (These SimpleWidgetRequest MiscRequest) -> m (Dynamic t (Maybe Simple,Event t (SimpleWidgetEvent k)))
-> builder key (Left s) signal = do
->   let event = coincidence $ fmap (either (<$ signal) (return Set Sample) <$ never)) signal
->   simpleBlock key s event >>= mapDyn (\(a,b) -> (Just a, b))
-> builder key (Right m) signal = do
->   let event = coincidence $ fmap (either (<$ signal) (return $ Disable <$ never)) signal
->   miscWidget key event >>= mapDyn (\(a,b) -> (Nothing, b))
-
-
-Pass in disable Event
 > miscWidget :: MonadWidget t m => k -> Event t MiscRequest -> m (Dynamic t (Simple, Event t(SimpleWidgetEvent k)))
 > miscWidget key signal = do
->   el "div" $ do
->     let event = fmap (\a->if a==Disable then "disabled"=:"" else empty) signal
->     attrs <- holdDyn empty event
->     buttonWithAttrs <- elDynAttr "button" attrs $ text "    +    "
->     deleteButton <- liftM (DeleteMe key <$) $ button "-"
->     miscEvents <- leftmost [addButton, deleteButton]
->     return $ constDyn (Modifier,miscEvents)
+>   (wid,deleteButton) <- elAttr' "div" attr $ do
+>     liftM (DeleteMe key <$) $ button "-"
+>   x <- Reflex.Dom.wrapDomEvent (Reflex.Dom._el_element wid) (Reflex.Dom.onEventName Reflex.Dom.Drop)     (void $ GHCJS.preventDefault)
+>   y <- Reflex.Dom.wrapDomEvent (Reflex.Dom._el_element wid) (Reflex.Dom.onEventName Reflex.Dom.Dragover) (void $ GHCJS.preventDefault)
+>   _ <- performEvent_ $ return () <$ y
+>   let miscEvents = leftmost [(Main.Drop key <$) $ x, deleteButton]
+>   return $ constDyn (One,miscEvents)
+>   where
+>         attr = singleton "style" "background-color: red; border: 3px solid black"
 
 > requestableSimpleWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t (Simple, Event t (SimpleWidgetEvent k)))
-> requestableSimpleWidget key initialValue signal = do
->   let buttons = forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
->   buttons' <- elDynAttr "div" attr buttons
->   deleteButton <- liftM (DeleteMe key <$) $ button "-"
-
-Mouse event listeners
->     x <- R.wrapDomEvent (R._el_element el) (R.onEventName R.Drop)     (void $ GHCJS.preventDefault)
->     y <- R.wrapDomEvent (R._el_element el) (R.onEventName R.Dragover) (void $ GHCJS.preventDefault)
->     z <- R.wrapDomEvent (R._el_element el) (R.onEventName R.Dragend)  (void $ GHCJS.preventDefault)
->     _ <- R.performEvent_ $ return () <$ y
->     widgetEvent <- leftmost [ x <$ Drop key , z <$ DragEnd key, deleteButton]
-
->   value <- holdDyn initialValue widgetEvent
+> requestableSimpleWidget key initialValue signal = mdo
+>   (wid,value) <- elAttr' "div" attr $ do
+>     buttons <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
+>     value <-  holdDyn initialValue (leftmost buttons)
+>     return value
+>   x <- Reflex.Dom.wrapDomEvent (Reflex.Dom._el_element wid) (Reflex.Dom.onEventName Reflex.Dom.Dragend)  (void $ GHCJS.preventDefault)
+>   y <- Reflex.Dom.wrapDomEvent (Reflex.Dom._el_element wid) (Reflex.Dom.onEventName Reflex.Dom.Dragover) (void $ GHCJS.preventDefault)
+>   _ <- performEvent_ $ return () <$ y
+>   let widgetEvent = (Main.DragEnd key <$) $ x
 >   display value
 >   forDyn value (\a -> (a,widgetEvent))
+>   where
+>         attr = singleton "draggable" "true"
 
 > dragAndDropWidget :: MonadWidget t m => m (Dynamic t [Maybe Simple])
 > dragAndDropWidget = el "div" $ mdo
@@ -94,26 +90,55 @@ Mouse event listeners
 >   makeSimpleWidget <- liftM (fmap (=:(Just(Left One))) . (tagDyn maxKey)) $ button "Add SimpleWidget"
 >   makeMiscWidget <- liftM (fmap (=:(Just(Right Add))) . (tagDyn maxKey)) $ button "Add MiscWidget"
 >   let growEvents = mergeWith makeMap [makeMiscWidget, makeSimpleWidget]
->   let updateEvent = mergeWith union [growEvents, widgetEvents']
+>   let updateEvents = mergeWith union [growEvents, widgetEvents', dropEvents']
 
->   widgets <- liftM (joinDynThroughMap) $ listWithChildEvents initialMap updateEvents' parentEvent builder --MonadWidget t m => m (Dynamic t( Map k (Maybe Simple,Event t(SimpleWidgetEvent k))))
+>   widgets <- liftM (joinDynThroughMap) $ listWithChildEvents initialMap updateEvents parentEvent builder --MonadWidget t m => m (Dynamic t( Map k (Maybe Simple,Event t(SimpleWidgetEvent k))))
 >   let widgets' = attach (current widgets) (updated widgets)
->   (values, events) <- forDyn widgets' (fst (unzip . elems)) >>= splitDyn
->   (values', events') <- forDyn widgets' (snd (unzip . elems)) >>= splitDyn
->   newValue <- combineDyn (\a b -> (a,b)) events' values  --(newEvent, oldValue)
+>   widgets'' <- holdDyn (Data.Map.empty,Data.Map.empty) widgets'
+>   (old, new) <- splitDyn widgets''
+>   (values, events) <- forDyn old (unzip . elems) >>= splitDyn
+>   (values', events') <- forDyn new (unzip . elems) >>= splitDyn
+>   newValues <- combineDyn zip events' values  -- Dynamic t [(Event t (SimpleWidgetEvent k), Maybe Simple)]
+>   bothEvents <- combineDyn zip events events' -- Dynamic t [(Event t (SimpleWidgetEvent k), (Event t (SimpleWidgetEvent k))]
 
->   widgetEvents <- forDyn newValue (fmap (fmap eventBuff))
->   let updateEvents' = switch $ fmap (mergeWith (union)) $ current widgetEvents
+>   widgetEvents <- forDyn newValues (fmap eventBuff)
+>   dropEvents <- forDyn bothEvents (fmap(fmap dropCheck))
+>   let widgetEvents' = switch $ fmap (mergeWith (union)) $ current widgetEvents
+>   let dropEvents' = switch $ fmap (mergeWith (union)) $ current dropEvents
 
-have dropEvent trigger delete event on old key value than merge these events and pass as updateEvents'
+newValues - forDyn into dynamic -> [(Event t (SimpleWidgetEvent k), Maybe Simple)]
+          - fmap over list      -> (Event t (SimpleWidgetEvent k), Maybe Simple)
+          Have to get to type (SimpleWidgetEvent k, Maybe Simple)
+          - ???
+
+Solution: zipListWithEvent
+
+bothEvents - forDyn into Dynamic -> [(Event t (SimpleWidgetEvent k), Event t (SimpleWidgetEvent k))]
+           - fmap over list      -> (Event t (SimpleWidgetEvent k), Event t (SimpleWidgetEvent k))
+           - mapTuple fmap
+
+Solution: appendEvents
+
+(Event t (SimpleWidgetEvent Int), Event t (SimpleWidgetEvent Int)) -> Event t (Map Int (Maybe Hetero))
+(Event t (SimpleWidgetEvent Int), Maybe Simple) -> Event t (Map Int (Maybe Hetero))
+
+combineEvents :: (a -> b -> c) -> (Event a, Event b) -> Event c
 
 >   activeKeys <- forDyn widgets keys
->   activeKeys <- forDyn widgets (keys)
 >   maxKey <- forDyn activeKeys (\k-> if k==[] then 0 else (maximum k)+1)
 >   el "div" $ do
 >     text "keys "
 >     display activeKeys
->     el "div" $ return values
+>     el "div" $ return values'
 >   where
->     eventBuff (DeleteMe k', v) = k':= Nothing
->     eventBuff (Drop k', v) = k':= Just (v)
+>     eventBuff DeleteMe k' = k'=: Nothing
+>     eventBuff Main.Drop k' =
+>     dropCheck (DragEnd k, Main.Drop k') = k=: Nothing
+
+makeMap should assign unique keys to two widgets when they're made at the same time, giving parameter 'a' the lower key
+
+> makeMap::Map Int (Maybe Hetero) -> Map Int (Maybe Hetero) -> Map Int (Maybe Hetero)
+> makeMap a b = union a $ fromList [(bKey+1,bVal)]
+>   where (bKey,bVal) = elemAt 0 b
+
+> main = mainWidget $ dragAndDropWidget>>=display
