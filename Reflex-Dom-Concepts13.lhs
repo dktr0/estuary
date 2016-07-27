@@ -82,15 +82,15 @@
 >   makeSimpleWidget <- liftM (fmap (=:(Just(Left One))) . (tagDyn maxKey)) $ button "Add SimpleWidget"
 >   makeMiscWidget <- liftM (fmap (=:(Just(Right Add))) . (tagDyn maxKey)) $ button "Add MiscWidget"
 >   let growEvents = mergeWith makeMap [makeMiscWidget, makeSimpleWidget]
->   let updateEvent = mergeWith union [growEvents, deleteEvents']
+>   let updateEvent = mergeWith union [growEvents, childEvents']
 >   setTwoEvent <- liftM (attachWith (\a _-> fromList (zip a (repeat $ Left (Set Two)))) (current activeKeys) ) $ button "Set Two"
->   disableEvent <- liftM (attachWith (\a _-> fromList (zip a (repeat $ Right MakeAllSimple))) (current activeKeys) ) $ button "Make All SimpleWidgets"
->   let parentEvents = leftmost [setTwoEvent,disableEvent]
+>   makeAllSimpleEvent <- liftM (attachWith (\a _-> fromList (zip a (repeat $ Right MakeAllSimple))) (current activeKeys) ) $ button "Make All SimpleWidgets"
+>   let parentEvents = leftmost [setTwoEvent,makeAllSimpleEvent]
 >   widgets <- liftM (joinDynThroughMap) $ listWithChildEvents initialMap updateEvent parentEvents builder --MonadWidget t m => m (Dynamic t( Map k (Maybe Simple,Event t(SimpleWidgetEvent k))))
 >   (values,events) <- forDyn widgets (unzip . elems) >>=splitDyn
 >   -- events::Dynamic t [Event t (SimpleWidgetEvent k)]
->   deleteEvents <- forDyn events (fmap (fmap filterEvents)) -- m (Dynamic t [Event t (Map k Nothing...)])
->   let deleteEvents' = switch $ fmap (mergeWith (union)) $ current deleteEvents -- Behaviour [Event Map ...]
+>   childEvents <- forDyn events (fmap (fmap applyEvents)) -- m (Dynamic t [Event t (Map k Nothing...)])
+>   let childEvents' = switch $ fmap (mergeWith (union)) $ current deleteEvents -- Behaviour [Event Map ...]
 >   activeKeys <- forDyn widgets keys
 >   maxKey <-  forDyn activeKeys (\k-> if k==[] then 0 else (maximum k)+1)
 >   el "div" $ do
@@ -98,8 +98,8 @@
 >     display activeKeys
 >     el "div" $ return values
 >   where
->     filterEvents (DeleteMe k) = k=:Nothing
->     filterEvents (MakeSimple k) =  k=:Just (Left One)
+>     applyEvents (DeleteMe k) = k=:Nothing
+>     applyEvents (MakeSimple k) =  k=:Just (Left One)
 
 
 makeMap should assign unique keys to two widgets when they're made at the same time, giving parameter 'a' the lower key
