@@ -82,6 +82,8 @@ applyPatternTransform Degrade = Tidal.degrade
 applyPatternTransform (DegradeBy d) = Tidal.degradeBy d
 applyPatternTransform (Every n t) = Tidal.every n (applyPatternTransform t)
 
+-- PatternTransformer is not an instance of ParamPatternable because a pattern transformer is not sufficient to make a ParamPattern
+
 
 
 data TransformedPattern = TransformedPattern [PatternTransformer] SoundPattern
