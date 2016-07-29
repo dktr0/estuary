@@ -52,7 +52,9 @@ webDirtTick webDirt patternM tempo ticks = do
       a = ticks' % webDirtTicksPerCycle
       b = (ticks' + 1) % webDirtTicksPerCycle
       events = seqToRelOnsets (a,b) p -- :: [(Double,Map Param (Maybe Value))]
-  E.catch (mapM_ (tidalEventToWebDirt webDirt) events) (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
+      events' = Prelude.map (\(o,m) -> (f o,m)) events
+  E.catch (mapM_ (tidalEventToWebDirt webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
+  where f x = logicalOnset' tempo ticks x 0
 
 valueToJSVal :: Value -> T.JSVal
 valueToJSVal (VI x) = P.pToJSVal x
@@ -63,9 +65,64 @@ valueToJSVal (VS x) = P.pToJSVal x
 
 tidalEventToWebDirt :: T.JSVal -> (Double,ParamMap) -> IO ()
 tidalEventToWebDirt webDirt (t,e) = do
-  putStrLn $ show t ++ show (keys e)
   let e' = mapMaybe (id) e :: Map Param Value
-      s = maybe (P.pToJSVal "bd") (P.pToJSVal) (Data.Map.lookup s_p e')
-      n = maybe (P.pToJSVal 0) (P.pToJSVal) (Data.Map.lookup n_p e')
-  playSample' webDirt t s n
+      t' = P.pToJSVal t
+      s = maybe (P.pToJSVal "bd") (valueToJSVal) (Data.Map.lookup s_p e')
+      n = maybe (P.pToJSVal (0::Int)) (valueToJSVal) (Data.Map.lookup n_p e')
+  putStrLn $ show t ++ " " ++ show e'
+  playSample' webDirt t' s n
   return ()
+
+{-
+
+in Stream.hs:
+type ToMessageFunc = Shape -> Tempo -> Int -> (Double, ParamMap) -> Maybe (IO ())
+
+in OscStream.hs:
+makeConnection :: String -> Int -> OscSlang -> IO (ToMessageFunc)
+makeConnection returns a curried version of 'send' which uses logicalOnset
+
+in Dirt.hs:
+makeConnection is used in definition of dirtBackend :: IO Backend
+the curried version of send is what is stored in the ToMessageFunc field of the Backend
+in dirtStream, the backend is the first argument to stream
+
+in Stream.hs:
+stream :: Backend a -> Shape -> IO (ParamPattern -> IO ())
+calls start (same args) which returns IO (MVar (ParamPattern)) (new mvar for pattern)
+which forks clockedTick ticksPerCycle (onTick backend shape patternM)
+
+in Tempo.hs:
+clockedTick :: Int -> (Tempo -> Int -> IO()) -> IO ()
+clockedTick basically just repeatedly calls the provided function with the
+current tempo and tick
+
+onTick :: Backend a -> Shape -> MVar ParamPattern -> Tempo -> Int -> IO ()
+onTick    backend      shape    patternM             change   ticks
+calls seqToRelOnsets (ticks%8,nextTick%8) thePattern
+then mapMaybe (toMessage backend shape change ticks) on that...
+in other words, it calls send :: Shape (shape) -> Tempo (change) -> Int (ticks)
+ -> (Double,ParamMap) -> Maybe (IO ())
+
+in OscStream.hs:
+in the definition of send, logicalOnset is formed by calling
+logicalOnset' change tick o ((latency shape) + nudge)
+
+in Stream.hs:
+logicalOnset' change tick o offset = logicalNow + (logicalPeriod * o) + offset
+    where
+      tpc = fromIntegral ticksPerCycle
+      cycleD = ((fromIntegral tick) / tpc) :: Double
+      -- i.e. current tick expressed in cycles
+      logicalNow = logicalTime change cycleD
+      -- i.e. POSIX time of current tick
+      logicalPeriod = (logicalTime change (cycleD + (1/tpc))) - logicalNow
+      -- POSIX time increment to next tick
+      -- so overall return value is:
+      -- POSIX time of current tick + o * duration of tick + an offset
+
+in Tempo.hs:
+logicalTime :: Tempo -> Double -> Double
+given a tempo and a beat, returns the POSIX time of that beat
+
+-}

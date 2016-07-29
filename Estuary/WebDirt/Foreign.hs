@@ -12,11 +12,11 @@ foreign import javascript unsafe
   "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null, function() {console.log('callback from WebDirt constructor completed');});"
   newWebDirt :: IO (T.JSVal)
 
-foreign import javascript unsafe "$1.queue({sample_name: 'cp', sample_n:0});" webDirtTestMessage ::T.JSVal->IO (T.JSVal)
+foreign import javascript unsafe "try { $1.queue({sample_name: 'cp', sample_n:0}) } catch(e) {console.log(e)} " webDirtTestMessage ::T.JSVal->IO (T.JSVal)
 
 foreign import javascript unsafe
-  "$1.queue({when: $2, sample_name: $3, sample_n: $4});"
-  playSample':: T.JSVal -> Double -> T.JSVal -> T.JSVal -> IO()
+  "try { $1.queue({whenPosix: $2, sample_name: $3, sample_n: $4})} catch(e) { console.log(e)} "
+  playSample':: T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> IO()
 
 playSample :: T.JSVal -> Double -> String -> Int -> IO ()
-playSample webDirt when sampleName sampleN = playSample' webDirt when (Prim.toJSString sampleName) (pToJSVal sampleN)
+playSample webDirt when sampleName sampleN = playSample' webDirt (pToJSVal when) (Prim.toJSString sampleName) (pToJSVal sampleN)
