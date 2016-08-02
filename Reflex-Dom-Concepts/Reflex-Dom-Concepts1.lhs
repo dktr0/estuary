@@ -34,8 +34,8 @@ whole.
 
 > main0 = mainWidget $ simpleWidget' >>= display
 
-In the code aove, we have buttons that produce Events containing an empty (),
-signalling that something has happened but nothing beyond that. We map those
+In the code above, we have buttons that produce Events containing an empty (),
+signaling that something has happened but nothing beyond that. We map those
 into Events that contain values corresponding to the meaning of which button
 was pressed. We use leftmost to turn those three streams of Events into a
 single Event stream. Finally holdDyn lets us turn this into a Dynamic value,
@@ -57,7 +57,7 @@ buttons:
 > simpleWidget'' = do
 >   a <- liftM (fmap (\_ -> One)) $ button "One" -- :: m (Event t Simple)
 >   b <- liftM (fmap (const Two)) $ button "Two"
->   c <- liftM (fmap <$) $ button "Three"
+>   c <- liftM (Three <$) $ button "Three"
 >   holdDyn One $ leftmost [a,b,c] -- m (Dynamic t Simple)
 
 Now, for an exercise, let's eliminate the rundandancy of three lines for three
