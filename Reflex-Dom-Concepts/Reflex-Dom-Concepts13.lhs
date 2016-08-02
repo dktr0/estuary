@@ -90,7 +90,7 @@
 >   (values,events) <- forDyn widgets (unzip . elems) >>=splitDyn
 >   -- events::Dynamic t [Event t (SimpleWidgetEvent k)]
 >   childEvents <- forDyn events (fmap (fmap applyEvents)) -- m (Dynamic t [Event t (Map k Nothing...)])
->   let childEvents' = switch $ fmap (mergeWith (union)) $ current deleteEvents -- Behaviour [Event Map ...]
+>   let childEvents' = switch $ fmap (mergeWith (union)) $ current childEvents -- Behaviour [Event Map ...]
 >   activeKeys <- forDyn widgets keys
 >   maxKey <-  forDyn activeKeys (\k-> if k==[] then 0 else (maximum k)+1)
 >   el "div" $ do

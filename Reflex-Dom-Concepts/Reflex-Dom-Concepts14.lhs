@@ -1,3 +1,6 @@
+***This can probably be removed, didn't end up continuing with this direction***
+
+
 > {-# LANGUAGE RecursiveDo #-}
 > module Main where
 > import Reflex
