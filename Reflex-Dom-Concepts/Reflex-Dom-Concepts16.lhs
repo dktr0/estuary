@@ -8,7 +8,7 @@ the nature of the GUI is changed
 > import Data.Map
 > import Data.Functor.Misc -- For Const2
 
-> data Simple = One | Two | Three deriving (Show,Eq)
+> data Simple = One | Two | Three deriving (Show,Eq,Ord,Read)
 > data SimpleWidgetRequest = Set Simple | Flash
 > data WidgetEvent k = DeleteMe k | MakeSimple k deriving (Show)
 
@@ -20,7 +20,7 @@ the nature of the GUI is changed
 >     mode <- holdDyn 1 $ leftmost modeEvents
 >     display mode
 >     return mode
->   x <- modeTwoWidget initialValue
+>   x <- modeOneWidget initialValue
 >   return x
 >
 > modeOneWidget :: (MonadWidget t m) => Simple -> m (Dynamic t Simple)
