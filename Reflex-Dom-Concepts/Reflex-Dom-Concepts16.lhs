@@ -12,20 +12,35 @@ the nature of the GUI is changed
 > data SimpleWidgetRequest = Set Simple | Flash
 > data WidgetEvent k = DeleteMe k | MakeSimple k deriving (Show)
 
-multiModeWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t (Simple, Event t (WidgetEvent k)))
-
-> multiModeWidget :: (MonadWidget t m) => Int -> Simple -> Event t (SimpleWidgetRequest) -> m ()
-> multiModeWidget key initialValue signal = do
+> multiModeWidget :: (MonadWidget t m) => Simple -> m (Dynamic t Simple)
+> multiModeWidget initialValue = do
 >   mode <- el "div" $ do
 >     text "Mode: "
 >     modeEvents <- forM ([1,2]::[Int]) (\x -> liftM (x <$) (button (show x)))
 >     mode <- holdDyn 1 $ leftmost modeEvents
 >     display mode
 >     return mode
->   return ()
+>   x <- modeTwoWidget initialValue
+>   return x
 >
-> main = mainWidget $ multiModeWidget 0 One never
+> modeOneWidget :: (MonadWidget t m) => Simple -> m (Dynamic t Simple)
+> modeOneWidget initialValue = do
+>   a <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
+>   value <- holdDyn initialValue $ leftmost a
+>   display value
+>   return value
+>
+> modeTwoWidget :: (MonadWidget t m) => Simple -> m (Dynamic t Simple)
+> modeTwoWidget initialValue = do
+>   let ddMap = constDyn $ fromList [(One,"One"),(Two,"Two"),(Three,"Three")]
+>   dd <- dropdown initialValue ddMap def -- m (Dropdown k)
+>   return $ _dropdown_value dd
+>
+> main = mainWidget $ multiModeWidget One >>= display
 
+
+
+multiModeWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t (Simple, Event t (WidgetEvent k)))
 
 requestableSimpleWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t (Simple, Event t (WidgetEvent k)))
 requestableSimpleWidget key initialValue signal = do
