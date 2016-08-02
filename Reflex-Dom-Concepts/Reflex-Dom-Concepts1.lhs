@@ -57,7 +57,7 @@ buttons:
 > simpleWidget'' = do
 >   a <- liftM (fmap (\_ -> One)) $ button "One" -- :: m (Event t Simple)
 >   b <- liftM (fmap (const Two)) $ button "Two"
->   c <- liftM (fmap <$) $ button "Three"
+>   c <- liftM (Three <$) $ button "Three"
 >   holdDyn One $ leftmost [a,b,c] -- m (Dynamic t Simple)
 
 Now, for an exercise, let's eliminate the rundandancy of three lines for three
