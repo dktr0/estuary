@@ -14,14 +14,17 @@ the nature of the GUI is changed
 
 multiModeWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t (Simple, Event t (WidgetEvent k)))
 
-> multiModeWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m ()
+> multiModeWidget :: (MonadWidget t m) => Int -> Simple -> Event t (SimpleWidgetRequest) -> m ()
 > multiModeWidget key initialValue signal = do
->   modeEvents <- forM [1,2] (\x -> liftM (x <$) (button (show x)))
->   mode <- holdDyn 1 modeEvents
->   display mode
+>   mode <- el "div" $ do
+>     text "Mode: "
+>     modeEvents <- forM ([1,2]::[Int]) (\x -> liftM (x <$) (button (show x)))
+>     mode <- holdDyn 1 $ leftmost modeEvents
+>     display mode
+>     return mode
 >   return ()
 >
-> main = mainWidget $ multiModeWidget
+> main = mainWidget $ multiModeWidget 0 One never
 
 
 requestableSimpleWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t (Simple, Event t (WidgetEvent k)))
