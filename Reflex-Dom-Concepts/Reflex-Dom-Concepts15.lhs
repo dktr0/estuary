@@ -15,31 +15,54 @@
 > data Simple = One | Two | Three deriving (Show,Eq)
 > type Multiple = [Simple]
 > data SimpleWidgetRequest = Set Simple | Flash
-> data WidgetEvent k = DeleteMe k | MakeSimple k deriving (Show)
+> data WidgetEvent = DeleteMe | MakeSimple deriving (Show,Eq)
 
 > data Misc = Add deriving (Show,Eq)
 > type Hetero = Either Simple Misc
 > data MiscRequest = Resize | Disable | MakeAllSimple deriving (Eq)
 
+> data Construction a = Insert a | Replace a | Delete
+
+Given a Construction operation, a position, and a Map, return the changes
+necessary to update the map in accordance with operation.
+
+> constructionDiff :: (Num k, Ord k) => k -> Construction a -> Map k a -> Map k (Maybe a)
+> constructionDiff k (Replace x) m = singleton (k,Just x)
+> constructionDiff k (Delete) m = singleton (k,Nothing)
+> constructionDiff k (Insert x) m = union (singleton (k,Just x)) remainder
+>   where remainder | not (member k m) = empty
+>                   | otherwise = map (Just) . mapKeys (+ 1)  . partitionWithKey (\n _ -> n >= k) $ m
+>   -- when Insert-ing, all keys greater than or equal to insert position go up by one
+>   -- and are applied to Just constructor
+
 > listWithChildEvents :: (Ord k, MonadWidget t m,Show k, Show v, Eq v)
 >    => Map k v                        -- an ordered map of initial values
->    -> Event t (Map k (Maybe v))      -- construction events (add/replace/delete)
->    -> Event t (Map k (Either SimpleWidgetRequest MiscRequest ))              -- events delivered to child widgets
->    -> (k -> v -> Event t (Either SimpleWidgetRequest MiscRequest) -> m a)   -- function to make a widget given key, value and request event
+>    -> Event t (Map k (Construction v))
+>    -> Event t (Map k w)              -- events delivered to child widgets
+>    -> (k -> v -> Event t (Map k w) -> m a)   -- function to make a widget given key, value and request event
 >    -> m (Dynamic t (Map k a))
+>
 > listWithChildEvents initial cEvents rEvents mkChild = do
 >   let selector = fanMap $ rEvents               -- EventSelector (Const2 k r)
 >   let mkChild' k v = mkChild k v $ select selector $ Const2 k
+>   existing <- foldDyn constructionF initial cEvents
+>   -- if Replace, make a straightforward add event
+>   -- if Delete, make a straightforward delete event
+>   -- if Insert and keys are not in use, make a straightforward add event
+>   -- if Insert and keys are in use, shift elements with keys >= AND make straightforward add eventss
+>   -- what if construction contains multiple  
 >   listHoldWithKey initial cEvents mkChild'
 
-> requestableSimpleWidget :: (Ord k, MonadWidget t m) => k -> Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t (Simple, Event t (WidgetEvent k)))
-> requestableSimpleWidget key initialValue signal = do
+
+
+> requestableSimpleWidget :: MonadWidget t m => Simple -> Event t (SimpleWidgetRequest) -> m (Dynamic t (Simple, Event t WidgetEvent))
+> requestableSimpleWidget initialValue signal = do
 >   let flashEvent = fforMaybe signal g
 >   flashToggle <- toggle True flashEvent
 >   attr <- forDyn flashToggle h
 >   let buttons = forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
 >   buttons' <- elDynAttr "div" attr buttons
->   deleteButton <- liftM (DeleteMe key <$) $ button "-"
+>   deleteButton <- liftM (DeleteMe <$) $ button "-"
 >   let setEvent = fforMaybe signal f
 >   value <- holdDyn initialValue (leftmost (buttons'++[setEvent]))
 >   display value
@@ -52,45 +75,47 @@
 >         h False = singleton "style" "background-color: green; border: 3px solid black"
 
 
-> builder :: (MonadWidget t m, Ord k)=> k -> Hetero -> Event t (Either SimpleWidgetRequest MiscRequest) -> m (Dynamic t (Maybe Simple,Event t (WidgetEvent k)))
-> builder k (Left simp) e = do
->   let event = coincidence $ fmap (either (<$ e) (return $ (Set Three) <$ never)) e -- if e=Event Left, double wraps in same event and calls coincidence, otherwise  gets: coincidence Event (Never ...)
->   requestableSimpleWidget k simp event >>= mapDyn (\(a,b)-> (Just a, b))
-> builder k (Right misc) e = do
->   let event = coincidence $ fmap (either (return $ Disable <$ never) (<$ e)) e -- if e=Event Right, double wraps in same event and calls coincidence, otherwise  gets: coincidence Event (Never ...)
->   miscWidget k event >>= mapDyn (\(a,b)-> (Nothing, b))
+> builder :: MonadWidget t m => Hetero  -> Event t SimpleWidgetRequest
+>   -> m (Either (Dynamic t (Simple,Event t WidgetEvent)) (Event t WidgetEvent))
+> builder (Left simp) e = do
+>   x <- requestableSimpleWidget k simp e
+>   return $ Left x
+> builder k (Right misc) _ = do
+>   x <- miscWidget
+>   return $ Right x
 
-> miscWidget:: (Ord k, MonadWidget t m )=> k -> Event t MiscRequest -> m (Dynamic t (Simple, Event t(WidgetEvent k)))
-> miscWidget key e = el "div" $ do
->   let request = fmap f e
->   plusButton <- liftM (MakeSimple key <$) $ button "  +  "
->   deleteButton <- liftM (DeleteMe key <$) $ button "-"
->   let events = leftmost [deleteButton, plusButton, request]
->   return $ constDyn (One,events)
->   where
->     f (MakeAllSimple) = MakeSimple key
+> miscWidget:: MonadWidget t m => m (Event t WidgetEvent)
+> miscWidget = el "div" $ do
+>   plusButton <- liftM (MakeSimple <$) $ button "  +  "
+>   deleteButton <- liftM (DeleteMe <$) $ button "-"
+>   return $ leftmost [deleteButton, plusButton]
 
-> growAndShrinkWidget' :: MonadWidget t m => m (Dynamic t [Maybe Simple])
+> growAndShrinkWidget' :: MonadWidget t m => m (Dynamic t [Simple])
 > growAndShrinkWidget' = el "div" $ mdo
->   let initialMap = empty :: Map Int Hetero
->   makeSimpleWidget <- liftM (fmap (=:(Just(Left One))) . (tagDyn maxKey)) $ button "Add SimpleWidget"
->   makeMiscWidget <- liftM (fmap (=:(Just(Right Add))) . (tagDyn maxKey)) $ button "Add MiscWidget"
->   insertEvent <- liftM ((fromList $ zip [3] $ repeat (Just (Left Three)) )<$) $ button "insert Three at 3"
+>   let initialMap = fromList [(0,Add)]
 
->   let growEvents = mergeWith makeMap [makeMiscWidget, makeSimpleWidget]
->   let updateEvent = mergeWith union [growEvents, childEvents', inserts]
->   setTwoEvent <- liftM (attachWith (\a _-> fromList (zip a (repeat $ Left (Set Two)))) (current activeKeys) ) $ button "Set Two"
->   makeAllSimpleEvent <- liftM (attachWith (\a _-> fromList (zip a (repeat $ Right MakeAllSimple))) (current activeKeys) ) $ button "Make All SimpleWidgets"
->   let parentEvents = leftmost [setTwoEvent,makeAllSimpleEvent]
->   widgets <- liftM (joinDynThroughMap) $ listWithChildEvents initialMap updateEvent parentEvents builder --MonadWidget t m => m (Dynamic t( Map k (Maybe Simple,Event t(SimpleWidgetEvent k))))
->   (values,events) <- forDyn widgets (unzip . elems) >>=splitDyn
->   -- events::Dynamic t [Event t (SimpleWidgetEvent k)]
+>   let blah = foldl (   ) -- Map k (Either Simple Misc)
+>   widgets <- liftM (joinDynThroughMap) $ listWithChildEvents initialMap updateEvents never builder
+>   -- MonadWidget t m => m (Dynamic t ( Map k ( (Either (Dynamic t (Simple,Event t WidgetEvent)) (Event t WidgetEvent))))
+>   existing <- mapDyn (     )
+>   valueMap <- joinDyn $ mapDyn (mapDyn (fst)  .  filter (isLeft)) widgets -- Dynamic (Map k Simple)
+>   let f x = switchPromptlyDyn $ mapDyn (snd) x
+>   eventMap <- switchPromptlyDyn $ mapDyn (map (either (f) (id))) widgets -- Event t (Map k WidgetEvent)
 
->   childEvents <- forDyn events (fmap (fmap applyEvents)) -- m (Dynamic t [Event t (Map k Nothing...)])
->   let childEvents' = switch $ fmap (mergeWith (union)) $ current childEvents -- Behaviour [Event Map ...]
+>   let deleteEvent = fmap ((Nothing <$) . filter (==DeleteMe)) eventMap
 
->   widgets' <- forDyn widgets (Data.Map.map fst) -- dyn Map k (Maybe Simple)
->   widgets'' <- forDyn widgets' (Data.Map.map (\x->case x of (Just val)-> Just (Left val); otherwise->Just (Right Add)))
+>   let makeSimple = fmap ( (() <$) . filter (==MakeSimple)) eventMap -- Event t (Map k ())
+>   let makeSimpleF = fromList . concat . map (\k -> [(k,Just (Right Add)),(k+1),Just (Left One)]) . keys -- Map k () -> Map k (Either Simple Misc)
+>   let makeSimple' = fmap (makeSimpleF) makeSimple -- Event t (Map k (Either Simple Misc))
+>
+
+>   let updateEvents = mergeWith union [deleteEvent,makeSimpleEvents]
+
+widgets' <- forDyn widgets (Data.Map.map fst) -- dyn Map k (Maybe Simple)
+widgets'' <- forDyn widgets' (Data.Map.map (\x->case x of (Just val)-> Just (Left val); otherwise->Just (Right Add)))
+
+>   existing <-
+
 >   let inserts = attachDynWith updateMap widgets'' insertEvent
 >   activeKeys <- forDyn widgets keys
 >   maxKey <-  forDyn activeKeys (\k-> if k==[] then 0 else (maximum k)+1)
@@ -101,6 +126,25 @@
 >   where
 >     applyEvents (DeleteMe k) = k=:Nothing
 >     applyEvents (MakeSimple k) =  k=:Just (Left One)
+
+This next function (g) takes a map that might contain a MakeSimple request
+and translates it to a map maybe containing two construction events.
+
+> insert' :: (Num k,Ord k) => Map k a -> k -> a -> Map k a
+> insert' m pos a = insert pos a (union x y')
+>   where (x,y) = partitionWithKey (\k a -> k < pos) m
+>         y' = mapKeys f y
+>         f | (member pos m) = (+ 1)
+>           | otherwise = id
+
+
+> g :: Ord k => Map k WidgetEvent -> Map k (Either Simple Misc)
+> g x = union h i
+>   where h = fmap ((Just (Left One) <$) . filter (==MakeSimple)) x
+>         i = fromList (map (\a -> (a,Right Misc)) (keys h))
+
+> j :: Ord k => Map k a -> Map k (Either Simple Misc) -> Map k (Maybe (Either Simple Misc))
+> j statusQuo intentions =
 
 > updateMap:: Map Int (Maybe Hetero) -> Map Int (Maybe Hetero) -> Map Int (Maybe Hetero)
 > updateMap oldMap mapChanges = if Data.Map.null mapChanges then oldMap else updateMap (Data.Map.insert firstKey firstElem oldMap') (deleteMin mapChanges)
