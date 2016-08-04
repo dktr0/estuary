@@ -1,4 +1,4 @@
-module Tidal.Types where
+module Estuary.Tidal.Types where
 
 import Data.List as List (intercalate, zip)
 import Data.Map as Map
