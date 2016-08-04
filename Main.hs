@@ -9,6 +9,8 @@ import Estuary.Reflex.Utility
 import Estuary.Widgets.Sound
 import Control.Monad (liftM)
 
+import Estuary.Widgets.TransformedPattern
+
 main :: IO ()
 main = do
   stream <- webDirtStream
@@ -26,3 +28,4 @@ trivialEditor' :: MonadWidget t m => m (Dynamic t (SoundPattern,Event t ChildSig
 trivialEditor' = do
   a <- textWidget (Sound Nothing) never-- Dynamic t (sound, Event childsig)
   forDyn a (\(sound,event)->(SoundPattern [sound],event))
+  mainWidget $ frame stream trivialTransformedPattern

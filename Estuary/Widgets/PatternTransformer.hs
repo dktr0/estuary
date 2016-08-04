@@ -4,24 +4,15 @@ import Reflex
 import Reflex.Dom
 import Estuary.Tidal.Types
 import Estuary.Reflex.Utility
+import Data.Map
 
 trivialPatternTransformer :: MonadWidget t m => m (Dynamic t (PatternTransformer,()))
-trivialPatternTransformer = el "div $ do
-  let ddMap = constDyn $ fromList [
-    (NoTransformer," "),
-    (Rev,"rev"),
-    (Slow 2,"slow 2"),
-    (Density 2,"density 2"),
-    (Degrade,"degrade"),
-    (DegradeBy 0.9,"degradeBy 0.9"),
-    (Brak,"brak")]
-  dd <- dropdown NoTransformer ddMap def
-  mapDyn (\a -> (a,())) $ _dropdown_value dd
- >
-
-  x <- button' "bd cp" $ SoundPattern (map simpleSound ["bd","cp"])
-  y <- button' "arpy*4" $ SoundPattern (map simpleSound ["arpy","arpy","arpy","arpy"])
-  z <- button' "~ arp" $ SoundPattern [silentSound,simpleSound "arp"]
-  pattern <- holdDyn (SoundPattern []) $ leftmost [x,y,z]
-  display pattern
-  mapDyn (\a -> (a,())) pattern
+trivialPatternTransformer = el "div" $ do
+  let ddItems = [NoTransformer,Rev,Slow 2,Density 2,Degrade,DegradeBy 0.9,Brak]
+  let ddShow = Prelude.map (show) ddItems
+  let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6] ddShow
+  dd <- dropdown 0 ddMap def
+  dd' <- mapDyn (ddItems!!) $ _dropdown_value dd
+  dd'' <- mapDyn (ddShow!!) $ _dropdown_value dd
+  display dd''
+  mapDyn (\a -> (a,())) $ dd'
