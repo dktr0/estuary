@@ -14,7 +14,9 @@ import qualified GHCJS.Marshal.Pure as P
 webDirtTicksPerCycle :: Integer
 webDirtTicksPerCycle = 8
 
-webDirtStream :: IO (ParamPattern -> IO ())
+type WebDirtStream = ParamPattern -> IO ()
+
+webDirtStream :: IO WebDirtStream
 webDirtStream = do
   webDirt <- newWebDirt
   now <- getCurrentTime
