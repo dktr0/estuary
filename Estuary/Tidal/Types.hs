@@ -64,9 +64,10 @@ instance ParamPatternable SoundPattern where
 
 
 
-data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak
+data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak deriving (Ord,Eq)
 
 instance Show PatternTransformer where
+  show NoTransformer = ""
   show Rev = "rev"
   show (Slow f) = "slow " ++ (show f)
   show (Density f) = "density " ++ (show f)
@@ -75,14 +76,15 @@ instance Show PatternTransformer where
   show (Every n t) = "every " ++ (show n) ++ "(" ++ show t ++ ")"
   show (Brak) = "brak"
 
-applyPatternTransform :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
-applyPatternTransform Rev = Tidal.rev
-applyPatternTransform (Slow f) = Tidal.slow f
-applyPatternTransform (Density f) = Tidal.density f
-applyPatternTransform Degrade = Tidal.degrade
-applyPatternTransform (DegradeBy d) = Tidal.degradeBy d
-applyPatternTransform (Every n t) = Tidal.every n (applyPatternTransform t)
-applyPatternTransform (Brak) = Tidal.brak
+applyPatternTransformer :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
+applyPatternTransformer NoTransformer = id
+applyPatternTransformer Rev = Tidal.rev
+applyPatternTransformer (Slow f) = Tidal.slow f
+applyPatternTransformer (Density f) = Tidal.density f
+applyPatternTransformer Degrade = Tidal.degrade
+applyPatternTransformer (DegradeBy d) = Tidal.degradeBy d
+applyPatternTransformer (Every n t) = Tidal.every n (applyPatternTransformer t)
+applyPatternTransformer (Brak) = Tidal.brak
 
 -- PatternTransformer is not an instance of ParamPatternable because a pattern transformer is not sufficient to make a ParamPattern
 
@@ -94,4 +96,4 @@ instance Show TransformedPattern where
   show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
 
 instance ParamPatternable TransformedPattern where
-  toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransform a) b) (toParamPattern x) ts
+  toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransformer a) b) (toParamPattern x) ts
