@@ -7,6 +7,7 @@ import Estuary.Frame
 import Estuary.Tidal.Types
 import Estuary.Reflex.Utility
 import Estuary.Widgets.Sound
+import Estuary.Widgets.SoundPattern
 import Control.Monad (liftM)
 
 import Estuary.Widgets.TransformedPattern
@@ -14,7 +15,7 @@ import Estuary.Widgets.TransformedPattern
 main :: IO ()
 main = do
   stream <- webDirtStream
-  mainWidget $ frame stream trivialEditor'
+  mainWidget $ frame stream multiTextWidget'
 
 trivialEditor :: MonadWidget t m => m (Dynamic t (SoundPattern,()))
 trivialEditor = do
@@ -28,4 +29,3 @@ trivialEditor' :: MonadWidget t m => m (Dynamic t (SoundPattern,Event t ChildSig
 trivialEditor' = do
   a <- textWidget (Sound Nothing) never-- Dynamic t (sound, Event childsig)
   forDyn a (\(sound,event)->(SoundPattern [sound],event))
-  mainWidget $ frame stream trivialTransformedPattern

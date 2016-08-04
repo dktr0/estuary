@@ -14,19 +14,6 @@ data ContainerSignal = Flash deriving(Eq, Show)
 data ChildSignal = DeleteMe deriving (Eq, Show)
 
 
-container :: (Ord k, Num k, Show k, Eq v, Show v, MonadWidget t m)
-   => Map k v                                -- a map of initial values
-   -> Event t (Map k (Construction v))       -- construction events (replace/insert/delete)
-   -> Event t (Map k w)                      -- signaling events to be delivered to child widgets
-   -> (v -> Event t w -> m (Dynamic t (v,Event t x)))                -- function to make a widget given initial value and signaling event
-   -> m ( (Dynamic t (Map k v)) , Event t (Map k x) )
-
-
-multiTextWidget::MonadWidget t m => m (Dynamic t (SoundPattern, Event t a))
-multiTextWidget = el "div" $ do
-  addButton<- button' "Add" (1=:Insert ()
-
-
 
 textWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t ChildSignal))
 textWidget _ _= el "div" $ mdo
@@ -41,6 +28,7 @@ textWidget _ _= el "div" $ mdo
   sampleInfo'' <- combineDyn (\name num-> (name,num)) sampleName sampleN --Dyn (string,string..)
   sampleInfo' <- combineDyn (\reps degs ->(reps,degs)) repeats degradeByNum
   sampleInfo <- combineDyn (\(a,b) (c,d)->(a,b,c,d)) sampleInfo'' sampleInfo'
+
   sampleNAttrs <- forDyn sampleN (\k->if k=="" || isJust (readMaybe k::Maybe Int) then valid else invalid)
   repeatsAttrs <- forDyn repeats (\k->if k=="" || isJust (readMaybe k::Maybe Int) then valid else invalid)
   degradeByAttrs <- forDyn degradeByNum (\k->if k=="" || isJust (readMaybe k::Maybe Bool) then valid else invalid)
@@ -60,11 +48,11 @@ textWidget _ _= el "div" $ mdo
 
 validateSample::(String,String,String,String) -> Maybe Sample
 validateSample (name,num,repeats,deg) = if allCheck then
-   Just $ Sample name (if num=="" then 0 else read num::Int) (if repeats =="" then 1 else read repeats::Int) (read deg::Bool)
+   Just $ Sample name (if num=="" then 0 else read num::Int) (if repeats =="" then 1 else read repeats::Int) (if deg=="" then False else read deg::Bool)
    else Nothing
  where
    nameCheck = Just name
    numCheck = if num=="" then Just 0 else readMaybe num::Maybe Int
    repeatCheck = if repeats =="" then Just 1 else readMaybe repeats::Maybe Int
-   degradeCheck = readMaybe deg::Maybe Bool
+   degradeCheck = if deg =="" then Just False else readMaybe deg::Maybe Bool
    allCheck = isJust nameCheck && isJust numCheck && isJust repeatCheck && isJust degradeCheck
