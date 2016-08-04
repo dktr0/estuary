@@ -64,7 +64,7 @@ instance ParamPatternable SoundPattern where
 
 
 
-data PatternTransformer = Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak
+data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak
 
 instance Show PatternTransformer where
   show Rev = "rev"
