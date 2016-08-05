@@ -45,34 +45,39 @@ trivialPatternTransformer = el "div" $ do
 
 
 paramWidget::MonadWidget t m=>PatternTransformer -> m (Dynamic t PatternTransformer)
-paramWidget NoTransformer = return $ constDyn NoTransformer
-paramWidget Rev = return $ constDyn Rev
-paramWidget Degrade = return $ constDyn Degrade
-paramWidget Brak = return $ constDyn Brak
-paramWidget (Slow _) = el "div" $ do
+paramWidget (Every num trans) = do
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
+  let input' = _textInput_value input -- Dyn string
+  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
+  nextTrans <- paramWidget trans
+  val'<-combineDyn (\k next-> Every k next) val nextTrans
+  display val
+  return val'
+paramWidget (Slow _) = do
   input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
   let input' = _textInput_value input -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Rational))
   val'<-forDyn val (\k-> Slow (k))
   display val
   return val'
-paramWidget (Density _)= el "div" $ do
+paramWidget (Density _)= do
   input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
   let input' = _textInput_value input -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Rational))
   val'<-forDyn val (\k-> Density k)
   return val'
-paramWidget (DegradeBy _) = el "div" $ do
+paramWidget (DegradeBy _) = do
   input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
   let input' = _textInput_value input -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Double))
   val'<-forDyn val (\k-> DegradeBy k)
   return val'
+paramWidget transformer = return $ constDyn transformer
 
 parameteredPatternTransformer::MonadWidget t m => m(Dynamic t (PatternTransformer, ()))
 parameteredPatternTransformer = el "div" $ do
-  let transMap = fromList $ zip [0::Int,1,2,3,4,5,6] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak]
-  let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak"]
+  let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak]
+  let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak"]
   dd <- dropdown 0 ddMap def
   let ddVal = _dropdown_value dd -- Dynamic int
   ddWidget <- mapDyn (\k ->case Data.Map.lookup k transMap of Just a->paramWidget a; otherwise -> paramWidget NoTransformer) ddVal  --Dynamic (m(dynamic transformer))
