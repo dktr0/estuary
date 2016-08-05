@@ -12,37 +12,34 @@ import Estuary.Tidal.Types
 import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
 
-data ContainerSignal = Flash deriving(Eq, Show)
 
-textWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t GenericSignal))
-textWidget _ _= el "div" $ mdo
-  sampleTextField <- textInput $ def & textInputConfig_attributes .~ constDyn ("style"=:"border-color:green")
-  let sampleName = _textInput_value sampleTextField
-  sampleNumberField <- textInput $ def & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ sampleNAttrs
-  let sampleN = _textInput_value sampleNumberField
-  repeatNumberField <- textInput $ def & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ repeatsAttrs
+textWidget::MonadWidget t m => Sound -> Event t () ->  m (Dynamic t (Sound, Event t GenericSignal))
+textWidget (Sound i) _ = el "div" $ mdo
+  let iName = maybe "" (sampleName) i
+  let iN = maybe "" (show . sampleN) i
+  let iRepeats = maybe "" (show . sampleRepeats) i
+  let iDegrade = maybe "" (show . sampleDegrade) i
+  sampleTextField <- textInput $ def & textInputConfig_initialValue .~ iName & textInputConfig_attributes .~ constDyn ("style"=:"border-color:green")
+  let sampleName' = _textInput_value sampleTextField
+  sampleNumberField <- textInput $ def & textInputConfig_initialValue .~ iN & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ sampleNAttrs
+  let sampleN' = _textInput_value sampleNumberField
+  repeatNumberField <- textInput $ def & textInputConfig_initialValue .~ iRepeats & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ repeatsAttrs
   let repeats = _textInput_value repeatNumberField
-  degradeByField <-textInput $ def & textInputConfig_attributes .~ degradeByAttrs
+  degradeByField <-textInput $ def & textInputConfig_initialValue .~ iDegrade & textInputConfig_attributes .~ degradeByAttrs
   let degradeByNum = _textInput_value degradeByField
-  sampleInfo'' <- combineDyn (\name num-> (name,num)) sampleName sampleN --Dyn (string,string..)
+  sampleInfo'' <- combineDyn (\name num-> (name,num)) sampleName' sampleN' --Dyn (string,string..)
   sampleInfo' <- combineDyn (\reps degs ->(reps,degs)) repeats degradeByNum
   sampleInfo <- combineDyn (\(a,b) (c,d)->(a,b,c,d)) sampleInfo'' sampleInfo'
-
-  sampleNAttrs <- forDyn sampleN (\k->if k=="" || isJust (readMaybe k::Maybe Int) then valid else invalid)
+  sampleNAttrs <- forDyn sampleN' (\k->if k=="" || isJust (readMaybe k::Maybe Int) then valid else invalid)
   repeatsAttrs <- forDyn repeats (\k->if k=="" || isJust (readMaybe k::Maybe Int) then valid else invalid)
   degradeByAttrs <- forDyn degradeByNum (\k->if k=="" || isJust (readMaybe k::Maybe Bool) then valid else invalid)
   validSample <- forDyn sampleInfo (validateSample) --Dynamic Maybe Sample
-  changeSoundButton <- button "Change Sound"
   sound <- forDyn validSample Sound--Dynamic Sound
   deleteButton <- liftM (DeleteMe <$) $ button "-"
-  let changeSound = tagDyn sound changeSoundButton -- ::MonadWidget t m=> m(Event t Sound) --Event Sound
-  sound' <- holdDyn (Sound Nothing) changeSound
-  display sound'
-  forDyn sound' (\k->(k,deleteButton))
+  display sound
+  forDyn sound (\k->(k,deleteButton))
   where valid = "style"=:"border-color:green"
         invalid = "style"=:"border-color:red"
-
-
 
 
 validateSample::(String,String,String,String) -> Maybe Sample

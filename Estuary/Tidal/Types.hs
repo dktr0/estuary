@@ -62,7 +62,8 @@ instance Show SoundPattern where
 instance ParamPatternable SoundPattern where
   toParamPattern = Tidal.sound . Tidal.p . showSoundPattern
 
-
+emptySoundPattern :: SoundPattern
+emptySoundPattern = SoundPattern []
 
 data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak deriving (Ord,Eq)
 
@@ -97,3 +98,6 @@ instance Show TransformedPattern where
 
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransformer a) b) (toParamPattern x) ts
+
+emptyTransformedPattern :: TransformedPattern
+emptyTransformedPattern = TransformedPattern [] emptySoundPattern

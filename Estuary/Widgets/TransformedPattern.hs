@@ -15,3 +15,16 @@ trivialTransformedPattern = el "div" $ do
   z <- combineDyn (\(a,_) (b,_) -> TransformedPattern [a] b) x y
   display z
   mapDyn (\a -> (a,())) z
+
+
+-- TransformedPattern [PatternTransformer] SoundPattern
+transformedTextWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,()))
+transformedTextWidget (TransformedPattern ts p) _ = el "div" $ do
+  transformer <- parameteredPatternTransformer (f ts) never
+  soundPat <- soundPatternContainer p never
+  transformedPat <- combineDyn(\(a,_) (b,_)-> TransformedPattern [a] b) transformer soundPat -- Dyn transformedPat
+  display transformedPat
+  mapDyn (\a-> (a,()) ) transformedPat
+  where
+    f [] = NoTransformer -- sorry again...
+    f (x:_) = x

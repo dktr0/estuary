@@ -25,6 +25,7 @@ main = do
 pages = [
   ("trivialSoundPattern",widgetToPage trivialSoundPattern),
   ("trivialTransformedPattern",widgetToPage trivialTransformedPattern),
-  ("Simple Container",widgetToPage multiTextWidget'),
-  ("soundPatternContainer",widgetToPage $ soundPatternContainer (SoundPattern []) never)
+  ("Simple Container",widgetToPage multiTextWidget),
+  ("soundPatternContainer",widgetToPage $ soundPatternContainer emptySoundPattern never),
+  ("Transformed Text Widget",widgetToPage $ transformedTextWidget emptyTransformedPattern never)
   ]
