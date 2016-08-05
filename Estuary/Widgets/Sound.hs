@@ -9,13 +9,12 @@ import Data.Maybe
 import Control.Monad
 
 import Estuary.Tidal.Types
+import Estuary.Reflex.Utility
+import Estuary.Widgets.Generic
 
 data ContainerSignal = Flash deriving(Eq, Show)
-data ChildSignal = DeleteMe deriving (Eq, Show)
 
-
-
-textWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t ChildSignal))
+textWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t GenericSignal))
 textWidget _ _= el "div" $ mdo
   sampleTextField <- textInput $ def & textInputConfig_attributes .~ constDyn ("style"=:"border-color:green")
   let sampleName = _textInput_value sampleTextField
@@ -56,3 +55,14 @@ validateSample (name,num,repeats,deg) = if allCheck then
    repeatCheck = if repeats =="" then Just 1 else readMaybe repeats::Maybe Int
    degradeCheck = if deg =="" then Just False else readMaybe deg::Maybe Bool
    allCheck = isJust nameCheck && isJust numCheck && isJust repeatCheck && isJust degradeCheck
+
+
+trivialSound :: MonadWidget t m => Sound -> Event t () -> m (Dynamic t (Sound,Event t GenericSignal))
+trivialSound i _ = el "div" $ do
+  x <- button' "bd" $ simpleSound "bd"
+  y <- button' "arpy" $ simpleSound "arpy"
+  z <- button' "arp" $ simpleSound "arp"
+  deleteMe <- button' "-" DeleteMe
+  pattern <- holdDyn i $ leftmost [x,y,z]
+  display pattern
+  mapDyn (\a -> (a,deleteMe)) pattern

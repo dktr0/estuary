@@ -58,7 +58,7 @@ container initialValue cEvents rEvents mkChild = mdo
 
 eitherContainer :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    => Map k (Either v a)                               -- a map of initial values
-   -> Event t (Map k (Construction (Either v a))       -- construction events (replace/insert/delete)
+   -> Event t (Map k (Construction (Either v a)))       -- construction events (replace/insert/delete)
    -> Event t (Map k w)                                -- signaling events to be delivered to child widgets of type v
    -> Event t (Map k b)                                -- signaling events to be delivered to child widgets of type a
    -> (v -> Event t w -> m (Dynamic t (v,Event t e)))  -- function to build widgets for type v (returning events of type e)
@@ -81,12 +81,12 @@ eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft build
 
 eitherContainer' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    => Map k (Either v a)                               -- a map of initial values
-   -> Event t (Map k (Construction (Either v a))       -- construction events (replace/insert/delete)
+   -> Event t (Map k (Construction (Either v a)))       -- construction events (replace/insert/delete)
    -> Event t (Map k w)                                -- signaling events to be delivered to child widgets of type v
    -> Event t (Map k b)                                -- signaling events to be delivered to child widgets of type a
    -> (v -> Event t w -> m (Dynamic t (v,Event t e)))  -- function to build widgets for type v (returning events of type x)
    -> (a -> Event t b -> m (Dynamic t (a,Event t e)))  -- function to build widgets for type a (returning events of type c)
-   -> m ( (Dynamic t (Map k v) , Event t (Map k e) )
+   -> m ( (Dynamic t (Map k v)) , Event t (Map k e) )
 
 eitherContainer' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = do
   (d,e) <- eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight

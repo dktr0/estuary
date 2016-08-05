@@ -6,7 +6,7 @@ import Control.Monad
 
 data GenericSignal = Ping | DeleteMe deriving (Eq, Show)
 
-plusButton:: MonadWidget t m => m (Dynamic t ((),Event t GenericSignal))
-plusButton = do
-  x <- liftM (Ping <$) $ button "+"
+pingButton :: MonadWidget t m => String -> m (Dynamic t ((),Event t GenericSignal))
+pingButton label = do
+  x <- liftM (Ping <$) $ button label
   return $ constDyn ((),x)
