@@ -25,5 +25,6 @@ main = do
 pages = [
   ("trivialSoundPattern",widgetToPage trivialSoundPattern),
   ("trivialTransformedPattern",widgetToPage trivialTransformedPattern),
-  ("Simple Container",widgetToPage multiTextWidget')
+  ("Simple Container",widgetToPage multiTextWidget),
+  ("Transformed Text Widget",widgetToPage transformedTextWidget)
   ]

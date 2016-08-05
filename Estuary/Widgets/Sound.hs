@@ -13,6 +13,11 @@ import Estuary.Tidal.Types
 data ContainerSignal = Flash deriving(Eq, Show)
 data ChildSignal = DeleteMe deriving (Eq, Show)
 
+--
+-- widget::MonadWidget t m => Sound -> Event t ContainerSignal -> m (Dynamic t (Sound,Event t ChildSignal))
+-- widget = el "div" $ mdo
+
+
 
 
 textWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t ChildSignal))
@@ -28,18 +33,14 @@ textWidget _ _= el "div" $ mdo
   sampleInfo'' <- combineDyn (\name num-> (name,num)) sampleName sampleN --Dyn (string,string..)
   sampleInfo' <- combineDyn (\reps degs ->(reps,degs)) repeats degradeByNum
   sampleInfo <- combineDyn (\(a,b) (c,d)->(a,b,c,d)) sampleInfo'' sampleInfo'
-
   sampleNAttrs <- forDyn sampleN (\k->if k=="" || isJust (readMaybe k::Maybe Int) then valid else invalid)
   repeatsAttrs <- forDyn repeats (\k->if k=="" || isJust (readMaybe k::Maybe Int) then valid else invalid)
   degradeByAttrs <- forDyn degradeByNum (\k->if k=="" || isJust (readMaybe k::Maybe Bool) then valid else invalid)
   validSample <- forDyn sampleInfo (validateSample) --Dynamic Maybe Sample
-  changeSoundButton <- button "Change Sound"
   sound <- forDyn validSample Sound--Dynamic Sound
   deleteButton <- liftM (DeleteMe <$) $ button "-"
-  let changeSound = tagDyn sound changeSoundButton -- ::MonadWidget t m=> m(Event t Sound) --Event Sound
-  sound' <- holdDyn (Sound Nothing) changeSound
-  display sound'
-  forDyn sound' (\k->(k,deleteButton))
+  display sound
+  forDyn sound (\k->(k,deleteButton))
   where valid = "style"=:"border-color:green"
         invalid = "style"=:"border-color:red"
 

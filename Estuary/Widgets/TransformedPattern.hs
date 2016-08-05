@@ -15,3 +15,13 @@ trivialTransformedPattern = el "div" $ do
   z <- combineDyn (\(a,_) (b,_) -> TransformedPattern [a] b) x y
   display z
   mapDyn (\a -> (a,())) z
+
+
+
+transformedTextWidget :: MonadWidget t m => m (Dynamic t (TransformedPattern,()))
+transformedTextWidget = el "div" $ do
+  transformer <- parameteredPatternTransformer
+  soundPat <- multiTextWidget
+  transformedPat <- combineDyn(\(a,_) (b,_)-> TransformedPattern [a] b) transformer soundPat -- Dyn transformedPat
+  display transformedPat
+  mapDyn (\a-> (a,()) ) transformedPat

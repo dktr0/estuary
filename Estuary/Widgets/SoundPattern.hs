@@ -12,29 +12,24 @@ import Estuary.Tidal.Types
 import Estuary.Widgets.Sound
 
 
-
-
-multiTextWidget'::MonadWidget t m => m (Dynamic t (SoundPattern, Event t ChildSignal))
-multiTextWidget' = el "div" $ mdo
-  let initialMap = empty::Map Int Sound
-  addButton <- button' "Add" (1=:Insert (Sound Nothing))
-  (values,events) <- container initialMap addButton (0=:Flash<$ never) textWidget
-  values'<- forDyn values (SoundPattern . elems) -- Dyn SoundPattern
-  forDyn values' (\k-> (k,(DeleteMe<$never)))
-
+-- container :: (Ord k, Num k, Show k, Eq v, Show v, MonadWidget t m)
+--    => Map k v                                -- a map of initial values
+--    -> Event t (Map k (Construction v))       -- construction events (replace/insert/delete)
+--    -> Event t (Map k w)                      -- signaling events to be delivered to child widgets
+--    -> (v -> Event t w -> m (Dynamic t (v,Event t x)))                -- function to make a widget given initial value and signaling event
+--    -> m ( (Dynamic t (Map k v)) , Event t (Map k x) )
 
 multiTextWidget::MonadWidget t m => m (Dynamic t (SoundPattern, Event t ChildSignal))
-multiTextWidget = el "div" $ do
-  (a,b)<-textWidget (Sound Nothing) never >>=splitDyn
-  (c,d)<-textWidget (Sound Nothing) never >>=splitDyn
-  (e,f)<-textWidget (Sound Nothing) never >>=splitDyn
-  values <- combineDyn (\s1 s2 ->[s1,s2]) a c
-  values'<- combineDyn (\pat s3-> SoundPattern $ pat++[s3]) values e
-  let eve = DeleteMe <$ never
-  forDyn values' (\k -> (k,eve))
-
-
-
+multiTextWidget = el "div" $ mdo
+  let initialMap = empty::Map Int Sound
+  addButton <- button' "Add" (1=:Insert (Sound Nothing))
+  let constructionEvents = mergeWith union [addButton, deleteEvents]
+  (values,events) <- container initialMap constructionEvents (0=:Flash<$ never) textWidget
+  values'<- forDyn values (SoundPattern . elems) -- Dyn SoundPattern
+  let deleteEvents = fmap (Data.Map.map (\val->Delete)) events
+  returnVal <- forDyn values' (\k-> (k,(DeleteMe<$never)))
+  display values'
+  return returnVal
 
 
 trivialSoundPattern :: MonadWidget t m => m (Dynamic t (SoundPattern,()))
