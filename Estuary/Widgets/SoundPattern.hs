@@ -51,7 +51,7 @@ soundPatternContainer (SoundPattern initialValues) _ = el "div" $ mdo -- not res
   let initialMap = fromList initialList'
   let defNew = simpleSound "cp"
   let cEvents = mergeWith union [deleteMap,makeSimpleMap]
-  (values,events) <- eitherContainer' initialMap cEvents never never textWidget plusButton
+  (values,events) <- eitherContainer' initialMap cEvents never never errorMessageWidget plusButton
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys
   let deleteMap = fmap (fromList) deleteList

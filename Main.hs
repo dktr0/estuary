@@ -21,6 +21,7 @@ main = do
   webDirt <- webDirtStream
   mainWidget $ multipage webDirt pages
 
+
 -- pages :: MonadWidget t m => [m (Dynamic t ParamPattern)]
 pages = [
   ("trivialSoundPattern",widgetToPage trivialSoundPattern),
