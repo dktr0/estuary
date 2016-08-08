@@ -15,55 +15,43 @@ import qualified Sound.Tidal.Context as Tidal
 class ParamPatternable a where
   toParamPattern :: a -> Tidal.ParamPattern
 
-data Sample = Sample {
-  sampleName::String,
-  sampleN::Int,
-  sampleRepeats::Int,
-  sampleDegrade::Bool
-  } deriving (Eq)
+data RepOrDiv = Once | Rep Int | Div Int
+
+instance Show RepOrDiv where
+  show Once = ""
+  show (Rep n) = "*" ++ (show n)
+  show (Div n) = "/" ++ (show n)
+
+data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
+
+instance Show a => Show (GeneralPattern a) where
+  show (Atom x r) = (show x) ++ (show r)
+  show (Blank) = "~"
+  show (Group xs r) = "[" ++ (intercalate " " . map (show) xs)  ++ "]" ++ (show r)
+  show (Layers xs r) = "[" ++ (intercalate "," . map (show) xs)  ++ "]" ++ (show r)
+
+type SampleName = String
+
+newtype Sample = Sample (SampleName,Int)
 
 instance Show Sample where
-  show (Sample x 0 1 False) = x
-  show (Sample x y 1 False) = x++":"++(show y)
-  show (Sample x y r False) = x++":"++(show y)++"*"++(show r)
-  show (Sample x y 1 True)  = x++":"++(show y)++"?"
-  show (Sample x y r True)  = x++":"++(show y)++"*"++(show r)++"?"
+  show (Sample (x,0)) = show x
+  show (Sample (x,y)) = (show x) ++ ":" (show y)
 
-instance ParamPatternable Sample where
-  toParamPattern = Tidal.sound . Tidal.p . show
+data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double)
 
+instance Show SpecificPattern where
+  show (S x) = "s \"" ++ (show x) ++ "\""
+  show (N x) = "n \"" ++ (show x) ++ "\""
+  show (Sound x) = "sound \"" ++ (show x) ++ "\""
+  show (Pan x) = "pan \"" ++ (show x) ++ "\""
 
+instance ParamPatternable SpecificPattern where
+  toParamPattern (S x) = Tidal.s $ Tidal.p $ show x
+  toParamPattern (N x) = Tidal.n $ Tidal.p $ show x
+  toParamPattern (Sound x) = Tidal.sound $ Tidal.p $ show x
+  toParamPattern (Pan x) = Tidal.pan $ Tidal.p $ show x
 
-newtype Sound = Sound (Maybe Sample) deriving (Eq)
-
-instance Show Sound where
-  show (Sound (Just s)) = show s
-  show (Sound (Nothing)) = "~"
-
-instance ParamPatternable Sound where
-  toParamPattern (Sound (Just s)) = Tidal.sound (Tidal.p (show s))
-  toParamPattern (Sound Nothing) = Tidal.sound (Tidal.p "")
-
-silentSound = Sound (Nothing)
-
-simpleSound :: String -> Sound
-simpleSound x = Sound (Just (Sample x 0 1 False))
-
-
-
-newtype SoundPattern = SoundPattern [Sound] deriving (Eq)
-
-showSoundPattern :: SoundPattern -> String
-showSoundPattern (SoundPattern xs) = intercalate " " (Prelude.map show xs)
-
-instance Show SoundPattern where
-  show x = "sound \"" ++ (showSoundPattern x) ++ "\""
-
-instance ParamPatternable SoundPattern where
-  toParamPattern = Tidal.sound . Tidal.p . showSoundPattern
-
-emptySoundPattern :: SoundPattern
-emptySoundPattern = SoundPattern []
 
 data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer deriving (Ord,Eq)
 
@@ -90,11 +78,7 @@ applyPatternTransformer (Brak) = Tidal.brak
 applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
 
 
--- PatternTransformer is not an instance of ParamPatternable because a pattern transformer is not sufficient to make a ParamPattern
-
-
-
-data TransformedPattern = TransformedPattern [PatternTransformer] SoundPattern
+data TransformedPattern = TransformedPattern [PatternTransformer] SpecificPattern deriving (Eq)
 
 instance Show TransformedPattern where
   show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
@@ -102,5 +86,34 @@ instance Show TransformedPattern where
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransformer a) b) (toParamPattern x) ts
 
-emptyTransformedPattern :: TransformedPattern
-emptyTransformedPattern = TransformedPattern [] emptySoundPattern
+
+
+data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show)
+
+data PatternChain = PatternChain TransformedPattern | PatternChain' TransformedPattern PatternCombinator PatternChain deriving (Eq)
+
+instance Show PatternChain where
+  show (PatternChain x) = show x
+  show (PatternChain' x Merge y) = (show x) ++ " |=| " ++ (show y)
+  show (PatternChain' x Add y) = (show x) ++ " |=| " ++ (show y)
+  show (PatternChain' x Subtract y) = (show x) ++ " |=| " ++ (show y)
+  show (PatternChain' x Multiply y) = (show x) ++ " |=| " ++ (show y)
+  show (PatternChain' x Divide y) = (show x) ++ " |=| " ++ (show y)
+
+instance ParamPatternable PatternChain where
+  toParamPattern (PatternChain x) = toParamPattern x
+  toParamPattern (PatternChain' x Merge y) = (toParamPattern x) `Tidal.|=|` (toParamPattern y)
+  toParamPattern (PatternChain' x Add y) = (toParamPattern x) `Tidal.|+|` (toParamPattern y)
+  toParamPattern (PatternChain' x Subtract y) = (toParamPattern x) `Tidal.|-|` (toParamPattern y)
+  toParamPattern (PatternChain' x Multiply y) = (toParamPattern x) `Tidal.|*|` (toParamPattern y)
+  toParamPattern (PatternChain' x Divide y) = (toParamPattern x) `Tidal.|/|` (toParamPattern y)
+
+
+
+data StackedPatterns = StackedPatterns [PatternChain]
+
+instance Show StackedPatterns where
+  show (StackedPatterns xs) = "stack [" ++ (intercalate "," (map show xs)) ++ "]"
+
+instance ParamPatternable StackedPatterns where
+  toParamPattern (StackedPatterns xs) = Tidal.stack (map toParamPattern xs)
