@@ -15,7 +15,7 @@ import qualified Sound.Tidal.Context as Tidal
 class ParamPatternable a where
   toParamPattern :: a -> Tidal.ParamPattern
 
-data RepOrDiv = Once | Rep Int | Div Int
+data RepOrDiv = Once | Rep Int | Div Int deriving (Eq)
 
 instance Show RepOrDiv where
   show Once = ""
@@ -27,18 +27,18 @@ data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOr
 instance Show a => Show (GeneralPattern a) where
   show (Atom x r) = (show x) ++ (show r)
   show (Blank) = "~"
-  show (Group xs r) = "[" ++ (intercalate " " . map (show) xs)  ++ "]" ++ (show r)
-  show (Layers xs r) = "[" ++ (intercalate "," . map (show) xs)  ++ "]" ++ (show r)
+  show (Group xs r) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
+  show (Layers xs r) = "[" ++ (intercalate "," $ Prelude.map (show) xs)  ++ "]" ++ (show r)
 
 type SampleName = String
 
-newtype Sample = Sample (SampleName,Int)
+newtype Sample = Sample (SampleName,Int) deriving (Eq)
 
 instance Show Sample where
   show (Sample (x,0)) = show x
-  show (Sample (x,y)) = (show x) ++ ":" (show y)
+  show (Sample (x,y)) = (show x) ++ ":" ++ (show y)
 
-data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double)
+data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double) deriving (Eq)
 
 instance Show SpecificPattern where
   show (S x) = "s \"" ++ (show x) ++ "\""
@@ -102,18 +102,18 @@ instance Show PatternChain where
 
 instance ParamPatternable PatternChain where
   toParamPattern (PatternChain x) = toParamPattern x
-  toParamPattern (PatternChain' x Merge y) = (toParamPattern x) `Tidal.|=|` (toParamPattern y)
-  toParamPattern (PatternChain' x Add y) = (toParamPattern x) `Tidal.|+|` (toParamPattern y)
-  toParamPattern (PatternChain' x Subtract y) = (toParamPattern x) `Tidal.|-|` (toParamPattern y)
-  toParamPattern (PatternChain' x Multiply y) = (toParamPattern x) `Tidal.|*|` (toParamPattern y)
-  toParamPattern (PatternChain' x Divide y) = (toParamPattern x) `Tidal.|/|` (toParamPattern y)
+  toParamPattern (PatternChain' x Merge y) = (Tidal.|=|) (toParamPattern x) (toParamPattern y)
+  toParamPattern (PatternChain' x Add y) =  (Tidal.|+|) (toParamPattern x) (toParamPattern y)
+  toParamPattern (PatternChain' x Subtract y) =  (Tidal.|-|) (toParamPattern x) (toParamPattern y)
+  toParamPattern (PatternChain' x Multiply y) =  (Tidal.|*|) (toParamPattern x) (toParamPattern y)
+  toParamPattern (PatternChain' x Divide y) =  (Tidal.|/|) (toParamPattern x) (toParamPattern y)
 
 
 
 data StackedPatterns = StackedPatterns [PatternChain]
 
 instance Show StackedPatterns where
-  show (StackedPatterns xs) = "stack [" ++ (intercalate "," (map show xs)) ++ "]"
+  show (StackedPatterns xs) = "stack [" ++ (intercalate "," (Prelude.map show xs)) ++ "]"
 
 instance ParamPatternable StackedPatterns where
-  toParamPattern (StackedPatterns xs) = Tidal.stack (map toParamPattern xs)
+  toParamPattern (StackedPatterns xs) = Tidal.stack (Prelude.map toParamPattern xs)
