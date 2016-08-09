@@ -12,18 +12,21 @@ import Data.Map
 widgetToPage :: (MonadWidget t m, ParamPatternable p) => m (Dynamic t (p,a)) -> m (Dynamic t ParamPattern)
 widgetToPage x = x >>= mapDyn (toParamPattern . fst)
 
-
 page :: (MonadWidget t m) => WebDirtStream -> m (Dynamic t ParamPattern) -> m ()
 page webDirt x = do
-  pattern <- x
+  pattern <- el "div" x
   evalButton <- button "eval"
   let evalEvent = tagDyn pattern evalButton
   performEvent_ $ fmap (liftIO . webDirt) evalEvent
 
-
-page' :: (MonadWidget t m,ParamPatternable p) => WebDirtStream -> m (Dynamic t (p,a)) -> m ()
-page' webDirt x = page webDirt (widgetToPage x)
-
+page' :: (MonadWidget t m,Show p, ParamPatternable p) => WebDirtStream -> m (Dynamic t (p,a)) -> m ()
+page' webDirt x = do
+  pattern <- el "div" x
+  mapDyn (fst) pattern >>= display
+  -- evalButton <- button "eval"
+  let evalButton = updated pattern
+  let evalEvent = tagDyn pattern evalButton
+  performEvent_ $ fmap (liftIO . webDirt . toParamPattern . fst) evalEvent
 
 multipage :: (MonadWidget t m) => WebDirtStream -> [(String,m (Dynamic t ParamPattern))] -> m ()
 multipage webDirt pages = do

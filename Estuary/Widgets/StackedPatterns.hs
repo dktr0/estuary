@@ -6,20 +6,21 @@ import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
 import Estuary.Reflex.Container
 import Estuary.Widgets.Generic
+import Estuary.Widgets.PatternChain
 import Control.Monad
+import Data.Map
 
--- wfor :: (MonadWidget t m) => [a] -> (a -> m (Dynamic t b)) -> m (Dynamic t [b])
+-- from Estuary.Tidal.Types:
+-- data StackedPatterns = StackedPatterns [PatternChain]
 
-stackedPatternsWidget :: MonadWidget t m => Int -> StackedPatterns -> Event t () -> m (Dynamic t (StackedPatterns,Event t GenericSignal))
-stackedPatternsWidget columns (StackedPatterns iValue) _ = el "table" $ el "tr" $ do
-  c <- wfor [1..columns] $ \_ -> el "td" $ do
-    x <- trivialPatternChain placeHolder never
-    mapDyn fst x
+stackedPatternsWidget :: MonadWidget t m => StackedPatterns -> Event t () -> m (Dynamic t (StackedPatterns,Event t GenericSignal))
+stackedPatternsWidget (StackedPatterns xs) _ = elAttr "table" tableAttrs $ elAttr "tr" trAttrs $ do
+  c <- wfor xs $ \x -> elAttr "td" tdAttrs $ do
+    y <- trivialPatternChain x never
+    mapDyn fst y
   mapDyn (\x -> (StackedPatterns x,never)) c
-  where placeHolder = PatternChain (TransformedPattern [] (S (Atom "bd" Once)))
-
-
-trivialPatternChain :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
-trivialPatternChain iValue _ = do
-  text "trivialPatternChain"
-  return $ constDyn (iValue,never)
+  where
+    placeHolder = PatternChain (TransformedPattern [] (S (Atom "bd" Once)))
+    tableAttrs = singleton "style" "position: absolute; height: 90%; width:90%; border: 1px solid black;"
+    trAttrs = singleton "style" "border: 1px solid grey;"
+    tdAttrs = singleton "style" "border: 1px solid grey;"

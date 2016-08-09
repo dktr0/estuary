@@ -52,6 +52,21 @@ instance ParamPatternable SpecificPattern where
   toParamPattern (Sound x) = Tidal.sound $ Tidal.p $ show x
   toParamPattern (Pan x) = Tidal.pan $ Tidal.p $ show x
 
+emptySPattern :: SpecificPattern
+emptySPattern = S Blank
+
+sPatternFromList :: [String] -> SpecificPattern
+sPatternFromList xs = S (Group (Prelude.map (\x -> Atom x Once) xs) Once)
+
+emptyNPattern :: SpecificPattern
+emptyNPattern = N Blank
+
+nPatternFromList :: [Int] -> SpecificPattern
+nPatternFromList xs = N (Group (Prelude.map (\x -> Atom x Once) xs) Once)
+
+emptySoundPattern :: SpecificPattern
+emptySoundPattern = Sound Blank
+
 
 data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer deriving (Ord,Eq)
 
@@ -81,11 +96,11 @@ applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
 data TransformedPattern = TransformedPattern [PatternTransformer] SpecificPattern deriving (Eq)
 
 instance Show TransformedPattern where
+  show (TransformedPattern [] x) = show x
   show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
 
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransformer a) b) (toParamPattern x) ts
-
 
 
 data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show)
@@ -95,10 +110,10 @@ data PatternChain = PatternChain TransformedPattern | PatternChain' TransformedP
 instance Show PatternChain where
   show (PatternChain x) = show x
   show (PatternChain' x Merge y) = (show x) ++ " |=| " ++ (show y)
-  show (PatternChain' x Add y) = (show x) ++ " |=| " ++ (show y)
-  show (PatternChain' x Subtract y) = (show x) ++ " |=| " ++ (show y)
-  show (PatternChain' x Multiply y) = (show x) ++ " |=| " ++ (show y)
-  show (PatternChain' x Divide y) = (show x) ++ " |=| " ++ (show y)
+  show (PatternChain' x Add y) = (show x) ++ " |+| " ++ (show y)
+  show (PatternChain' x Subtract y) = (show x) ++ " |-| " ++ (show y)
+  show (PatternChain' x Multiply y) = (show x) ++ " |*| " ++ (show y)
+  show (PatternChain' x Divide y) = (show x) ++ " |/| " ++ (show y)
 
 instance ParamPatternable PatternChain where
   toParamPattern (PatternChain x) = toParamPattern x
@@ -108,12 +123,13 @@ instance ParamPatternable PatternChain where
   toParamPattern (PatternChain' x Multiply y) =  (Tidal.|*|) (toParamPattern x) (toParamPattern y)
   toParamPattern (PatternChain' x Divide y) =  (Tidal.|/|) (toParamPattern x) (toParamPattern y)
 
-
+emptyPatternChain :: PatternChain
+emptyPatternChain = PatternChain (TransformedPattern [] emptySPattern)
 
 data StackedPatterns = StackedPatterns [PatternChain]
 
 instance Show StackedPatterns where
-  show (StackedPatterns xs) = "stack [" ++ (intercalate "," (Prelude.map show xs)) ++ "]"
+  show (StackedPatterns xs) = "stack [" ++ (intercalate ", " (Prelude.map show xs)) ++ "]"
 
 instance ParamPatternable StackedPatterns where
   toParamPattern (StackedPatterns xs) = Tidal.stack (Prelude.map toParamPattern xs)
