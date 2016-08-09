@@ -24,7 +24,10 @@ main = do
   webDirt <- webDirtStream
   mainWidget $ multipage webDirt pages
 
-pages = [("S-Specific Pattern",widgetToPage $ simpleSWidget (Estuary.Tidal.Types.S Blank) never)]
+pages = [("S-Specific Pattern",widgetToPage $ sContainerWidget (Estuary.Tidal.Types.S Blank) never),
+  ("Pan-Specific Pattern", widgetToPage $ panContainerWidget (Pan $ Atom 0.5 Once) never),
+  ("Sample and Pan Pattern", widgetToPage $ panSampleWidget (Estuary.Tidal.Types.S Blank) never)
+  ]
 
 -- pages :: MonadWidget t m => [m (Dynamic t ParamPattern)]
 -- pages = [
