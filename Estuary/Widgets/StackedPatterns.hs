@@ -4,19 +4,18 @@ import Reflex
 import Reflex.Dom
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
+import Estuary.Reflex.Container
 import Estuary.Widgets.Generic
 import Control.Monad
 
+-- wfor :: (MonadWidget t m) => [a] -> (a -> m (Dynamic t b)) -> m (Dynamic t [b])
 
-stackedPatternsWidget :: MonadWidget t m => Int -> Int -> StackedPatterns -> Event t () -> m (Dynamic t (StackedPatterns,Event t GenericSignal))
-stackedPatternsWidget rows columns (StackedPatterns iValue) _ = el "table"  $ do
-  r <- forM [1..rows] $ \r -> el "tr" $ do
-    c <- forM [1..columns] $ \c -> el "td" $ trivialPatternChain placeHolder never
-    holdDyn 
-  let flat = concat rows -- m [Dynamic t (PatternChain,Event)]
-  firsts <- mapM (mapDyn (fst)) flat -- m [Dynamic t PatternChain]
-  dynList <- collectDyn firsts
-  mapDyn (\x -> (StackedPatterns x,never)) dynList
+stackedPatternsWidget :: MonadWidget t m => Int -> StackedPatterns -> Event t () -> m (Dynamic t (StackedPatterns,Event t GenericSignal))
+stackedPatternsWidget columns (StackedPatterns iValue) _ = el "table" $ el "tr" $ do
+  c <- wfor [1..columns] $ \_ -> el "td" $ do
+    x <- trivialPatternChain placeHolder never
+    mapDyn fst x
+  mapDyn (\x -> (StackedPatterns x,never)) c
   where placeHolder = PatternChain (TransformedPattern [] (S (Atom "bd" Once)))
 
 

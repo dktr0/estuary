@@ -92,3 +92,15 @@ eitherContainer' initialValues cEvents eventsToLeft eventsToRight buildLeft buil
   (d,e) <- eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight
   d' <- mapDyn (mapMaybe (either (Just) (const Nothing))) d
   return (d',e)
+
+
+wfor :: (MonadWidget t m) => [a] -> (a -> m (Dynamic t b)) -> m (Dynamic t [b])
+wfor iVals mkChild = do
+  widgets <- liftM (joinDynThroughMap) $ listHoldWithKey iMap never mkChild' -- m (Dynamic t [b]))
+  mapDyn elems widgets
+  where
+    iMap = fromList $ zip [(0::Int)..] iVals
+    mkChild' _ a = mkChild a
+
+wmap :: (MonadWidget t m) => (a -> m (Dynamic t b)) -> [a] -> m (Dynamic t [b])
+wmap = flip wfor
