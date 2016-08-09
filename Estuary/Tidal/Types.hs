@@ -25,8 +25,7 @@ instance Show RepOrDiv where
   show (Div 1) = ""
   show (Div n) = "/" ++ (show n)
 
---                       1 2 bd*4 bd bd/2     ~         [bd sn bd]*2                        [bd,bd cp]*3
-data GeneralPattern a = Atom String RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
+data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
 
 showNoQuotes::(Show a)=> a->String
 showNoQuotes x= if head x'=='"' && (last x')=='"' then if x''=="" then "~" else x'' else show x
