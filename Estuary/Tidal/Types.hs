@@ -17,15 +17,24 @@ class ParamPatternable a where
 
 data RepOrDiv = Once | Rep Int | Div Int deriving (Eq)
 
+
 instance Show RepOrDiv where
   show Once = ""
+  show (Rep 1) = ""
   show (Rep n) = "*" ++ (show n)
+  show (Div 1) = ""
   show (Div n) = "/" ++ (show n)
 
-data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
+--                       1 2 bd*4 bd bd/2     ~         [bd sn bd]*2                        [bd,bd cp]*3
+data GeneralPattern a = Atom String RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
+
+showNoQuotes::(Show a)=> a->String
+showNoQuotes x= if head x'=='"' && (last x')=='"' then if x''=="" then "~" else x'' else show x
+  where x' = show x
+        x''=(tail (init x'))
 
 instance Show a => Show (GeneralPattern a) where
-  show (Atom x r) = (show x) ++ (show r)
+  show (Atom x r) = (showNoQuotes x) ++ (show r)
   show (Blank) = "~"
   show (Group xs r) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (Layers xs r) = "[" ++ (intercalate "," $ Prelude.map (show) xs)  ++ "]" ++ (show r)
