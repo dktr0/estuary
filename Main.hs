@@ -6,11 +6,11 @@ import Reflex.Dom
 
 import Estuary.Tidal.Types
 import Estuary.Reflex.Utility
-import Estuary.Widgets.Sound
-import Estuary.Widgets.SoundPattern
+import Estuary.Widgets.Generic
+import Estuary.Widgets.StackedPatterns
 
 import Control.Monad (liftM)
-import Sound.Tidal.Context
+import qualified Sound.Tidal.Context as Tidal
 import Estuary.WebDirt.Stream
 import Estuary.Page
 
@@ -22,12 +22,11 @@ main = do
   webDirt <- webDirtStream
   mainWidget $ multipage webDirt pages
 
+twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
+twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
 
--- pages :: MonadWidget t m => [m (Dynamic t ParamPattern)]
+--pages :: MonadWidget t m => [m (Dynamic t Tidal.ParamPattern)]
+
 pages = [
-  ("trivialSoundPattern",widgetToPage trivialSoundPattern),
-  ("trivialTransformedPattern",widgetToPage trivialTransformedPattern),
-  ("Simple Container",widgetToPage multiTextWidget),
-  ("soundPatternContainer",widgetToPage $ soundPatternContainer emptySoundPattern never),
-  ("Transformed Text Widget",widgetToPage $ transformedTextWidget emptyTransformedPattern never)
+  ("Two stacked patterns",widgetToPage twoStackedPatterns)
   ]

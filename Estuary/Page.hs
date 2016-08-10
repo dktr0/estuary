@@ -23,8 +23,7 @@ page' :: (MonadWidget t m,Show p, ParamPatternable p) => WebDirtStream -> m (Dyn
 page' webDirt x = do
   pattern <- el "div" x
   mapDyn (fst) pattern >>= display
-  -- evalButton <- button "eval"
-  let evalButton = updated pattern
+  evalButton <- button "eval"
   let evalEvent = tagDyn pattern evalButton
   performEvent_ $ fmap (liftIO . webDirt . toParamPattern . fst) evalEvent
 
