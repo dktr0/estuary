@@ -117,7 +117,7 @@ data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq
 data PatternChain = EmptyPatternChain | PatternChain TransformedPattern | PatternChain' TransformedPattern PatternCombinator PatternChain deriving (Eq)
 
 instance Show PatternChain where
-  show (EmptyPatternChain) = ""
+  show (EmptyPatternChain) = "silence"
   show (PatternChain x) = show x
   show (PatternChain' x Merge y) = (show x) ++ " |=| " ++ (show y)
   show (PatternChain' x Add y) = (show x) ++ " |+| " ++ (show y)

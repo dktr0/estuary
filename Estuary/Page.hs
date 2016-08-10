@@ -9,14 +9,20 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Map
 
 
-widgetToPage :: (MonadWidget t m, ParamPatternable p) => m (Dynamic t (p,a)) -> m (Dynamic t ParamPattern)
-widgetToPage x = x >>= mapDyn (toParamPattern . fst)
+widgetToPage :: (MonadWidget t m, Show p, ParamPatternable p) => m (Dynamic t (p,a)) -> m (Dynamic t ParamPattern)
+widgetToPage x = do
+  y <- el "div" x
+  code <- mapDyn fst y
+  evalButton <- button "eval"
+  display code
+  let evalEvent = tagDyn code evalButton
+  let paramPattern = fmap toParamPattern evalEvent
+  holdDyn (toParamPattern emptySPattern) paramPattern
 
 page :: (MonadWidget t m) => WebDirtStream -> m (Dynamic t ParamPattern) -> m ()
 page webDirt x = do
-  pattern <- el "div" x
-  evalButton <- button "eval"
-  let evalEvent = tagDyn pattern evalButton
+  pattern <- x
+  let evalEvent = updated pattern
   performEvent_ $ fmap (liftIO . webDirt) evalEvent
 
 page' :: (MonadWidget t m,Show p, ParamPatternable p) => WebDirtStream -> m (Dynamic t (p,a)) -> m ()
