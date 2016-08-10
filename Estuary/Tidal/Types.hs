@@ -25,6 +25,7 @@ instance Show RepOrDiv where
   show (Div 1) = ""
   show (Div n) = "/" ++ (show n)
 
+
 data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
 
 showNoQuotes::(Show a)=> a->String
@@ -43,22 +44,24 @@ type SampleName = String
 newtype Sample = Sample (SampleName,Int) deriving (Eq)
 
 instance Show Sample where
-  show (Sample (x,0)) = show x
-  show (Sample (x,y)) = (show x) ++ ":" ++ (show y)
+  show (Sample (x,0)) = showNoQuotes x
+  show (Sample (x,y)) = (showNoQuotes x) ++ ":" ++ (show y)
 
-data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double) deriving (Eq)
+data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double) | Crush (GeneralPattern Int) deriving (Eq)
 
 instance Show SpecificPattern where
   show (S x) = "s \"" ++ (show x) ++ "\""
   show (N x) = "n \"" ++ (show x) ++ "\""
   show (Sound x) = "sound \"" ++ (show x) ++ "\""
   show (Pan x) = "pan \"" ++ (show x) ++ "\""
+  show (Crush x) = "crush \"" ++ (show x) ++ "\""
 
 instance ParamPatternable SpecificPattern where
   toParamPattern (S x) = Tidal.s $ Tidal.p $ show x
   toParamPattern (N x) = Tidal.n $ Tidal.p $ show x
   toParamPattern (Sound x) = Tidal.sound $ Tidal.p $ show x
   toParamPattern (Pan x) = Tidal.pan $ Tidal.p $ show x
+  toParamPattern (Crush x) = Tidal.crush $ Tidal.p $ show x
 
 emptySPattern :: SpecificPattern
 emptySPattern = S Blank
@@ -104,6 +107,9 @@ applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
 data TransformedPattern = TransformedPattern [PatternTransformer] SpecificPattern deriving (Eq)
 
 instance Show TransformedPattern where
+  -- @
+  show (TransformedPattern [NoTransformer] (Sound x)) = " $ " ++show (Sound x)
+  show (TransformedPattern [NoTransformer] x) = show x
   show (TransformedPattern [] x) = show x
   show (TransformedPattern (NoTransformer:[]) x) = show x
   show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
