@@ -1,3 +1,5 @@
+{-# LANGUAGE RecursiveDo #-}
+
 module Estuary.Widgets.PatternChain where
 
 import Reflex
@@ -7,12 +9,10 @@ import Estuary.Tidal.Types
 import Estuary.Reflex.Container
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility
+import Estuary.Widgets.TransformedPattern
 import Control.Monad
 import Data.Map
-
--- from Estuary.Tidal.Types:
--- data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show)
--- data PatternChain = PatternChain TransformedPattern | PatternChain' TransformedPattern PatternCombinator PatternChain deriving (Eq)
+import qualified Data.List
 
 
 trivialPatternChain :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
@@ -27,10 +27,58 @@ trivialPatternChain iValue _ = do
   mapDyn (\a -> (a,never)) xyz
 
 
-{-
-patternChainWidget :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
-patternChainWidget (PatternChain tp) _ = do
-  tpWidget <- trivialTransformedPattern
 
-patternChainWidget (PatternChain' tp combinator next) _ = do
--}
+patternCombinatorDropDown :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t GenericSignal))
+patternCombinatorDropDown iValue _ = do
+  let ddMap = constDyn $ fromList $ [ (x,show x) | x <- [Merge,Add,Subtract,Multiply,Divide] ]
+  dd <- dropdown iValue ddMap def
+  mapDyn (\x -> (x,never)) $ _dropdown_value dd
+
+
+
+patternChainToList :: PatternChain -> [Either TransformedPattern PatternCombinator]
+patternChainToList (EmptyPatternChain) = []
+patternChainToList (PatternChain x) = [Left x]
+patternChainToList (PatternChain' x y z) = [Left x,Right y] ++ (patternChainToList z)
+
+patternChainToList' :: PatternChain -> [Either (Either TransformedPattern PatternCombinator) ()]
+patternChainToList' p = (Right ()):(f p)
+  where
+    f (EmptyPatternChain) = []
+    f (PatternChain x) = [Left (Left x),Right ()]
+    f (PatternChain' x y z) = [Left (Left x),Right (),Left (Right y)] ++ (f z)
+
+listToPatternChain :: [Either TransformedPattern PatternCombinator] -> PatternChain
+listToPatternChain [] = EmptyPatternChain
+listToPatternChain ((Left x):[]) = PatternChain x
+listToPatternChain ((Left x):(Right y):z) = PatternChain' x y (listToPatternChain z)
+
+patternChainAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
+  -> [(k,Construction (Either (Either TransformedPattern PatternCombinator) () ))]
+patternChainAdd m k | Data.Map.null m = [(k+1,Insert (Left (Left def))),(k+2,Insert (Right ()))]
+                    | k<(fst (findMin m)) = [(k+1,Insert (Left (Left def))),(k+2,Insert (Right ())),(k+3,Insert (Left (Right Merge)))]
+                    | otherwise = [(k,Insert (Right ())),(k+1,Insert (Left (Right Merge))),(k+2,Insert (Left (Left def)))]
+  where def = TransformedPattern [] emptySPattern
+
+patternChainDel:: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
+  -> [(k,Construction (Either (Either TransformedPattern PatternCombinator) () ))]
+patternChainDel m k | Data.Map.null m = []
+                    | Data.Map.size m == 1 = [(k,Delete),(k+1,Delete)]
+                    | k==(fst (findMax m)) = [(k-1,Delete),(k,Delete),(k+1,Delete)]
+                    | otherwise = [(k,Delete),(k+1,Delete),(k+2,Delete)]
+
+patternChainWidget :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
+patternChainWidget iValue _ = mdo
+  let iMap = fromList $ zip ([0..]::[Int]) $ patternChainToList' iValue
+  let cEvents = mergeWith union [addMap,deleteMap]
+  let patternOrCombinatorWidget = eitherWidget transformedPatternWidget patternCombinatorDropDown
+  (values,events) <- eitherContainer' iMap cEvents never never patternOrCombinatorWidget (pingButton'' "+")
+  let addKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let addList = attachDynWith (\a b -> concat (Prelude.map (patternChainAdd a) b)) values addKeys
+  let addList' = traceEvent "addList" addList
+  let addMap = fmap (fromList) addList'
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events
+  let deleteList = attachDynWith (\a b -> concat (Prelude.map (patternChainDel a) b)) values deleteKeys
+  let deleteList' = traceEvent "deleteList" deleteList
+  let deleteMap = fmap (fromList) deleteList'
+  mapDyn ((\x -> (x,never)) . listToPatternChain . elems) values

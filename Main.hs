@@ -16,6 +16,7 @@ import Estuary.Page
 
 import Estuary.Widgets.TransformedPattern
 
+
 main :: IO ()
 main = do
   webDirt <- webDirtStream

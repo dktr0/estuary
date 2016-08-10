@@ -7,8 +7,8 @@ import Estuary.Reflex.Utility
 import Data.Map
 import Text.Read
 
-trivialPatternTransformer :: MonadWidget t m => m (Dynamic t (PatternTransformer,()))
-trivialPatternTransformer = el "div" $ do
+trivialPatternTransformer :: MonadWidget t m => PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer,()))
+trivialPatternTransformer iValue _ = el "div" $ do
   let ddItems = [NoTransformer,Rev,Slow 2,Density 2,Degrade,DegradeBy 0.9,Brak]
   let ddShow = Prelude.map (show) ddItems
   let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6] ddShow
@@ -76,7 +76,7 @@ paramWidget (DegradeBy _) = do
   return val'
 paramWidget transformer = return $ constDyn transformer
 
-parameteredPatternTransformer::MonadWidget t m => PatternTransformer -> Event t () -> m(Dynamic t (PatternTransformer, ()))
+parameteredPatternTransformer::MonadWidget t m => PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer, ()))
 parameteredPatternTransformer i _ = el "div" $ do
   let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7,8] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak,Every 1 NoTransformer, Jux NoTransformer]
   let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7,8] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak","Every","Jux"]

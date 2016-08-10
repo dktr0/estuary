@@ -13,12 +13,6 @@ import Estuary.Tidal.Types
 import Estuary.Widgets.Generic
 import Estuary.Widgets.Sound
 
--- container :: (Ord k, Num k, Show k, Eq v, Show v, MonadWidget t m)
---    => Map k v                                -- a map of initial values
---    -> Event t (Map k (Construction v))       -- construction events (replace/insert/delete)
---    -> Event t (Map k w)                      -- signaling events to be delivered to child widgets
---    -> (v -> Event t w -> m (Dynamic t (v,Event t x)))                -- function to make a widget given initial value and signaling event
---    -> m ( (Dynamic t (Map k v)) , Event t (Map k x) )
 
 multiTextWidget::MonadWidget t m => m (Dynamic t (SoundPattern, Event t GenericSignal))
 multiTextWidget = el "div" $ mdo
@@ -31,17 +25,6 @@ multiTextWidget = el "div" $ mdo
   returnVal <- forDyn values' (\k-> (k,(DeleteMe<$never)))
   display values'
   return returnVal
-
-
-trivialSoundPattern :: MonadWidget t m => m (Dynamic t (SoundPattern, Event t GenericSignal))
-trivialSoundPattern = el "div" $ do
-  x <- button' "bd cp" $ SoundPattern (Prelude.map simpleSound ["bd","cp"])
-  y <- button' "arpy*4" $ SoundPattern (Prelude.map simpleSound ["arpy","arpy","arpy","arpy"])
-  z <- button' "~ arp" $ SoundPattern [silentSound,simpleSound "arp"]
-  pattern <- holdDyn (SoundPattern []) $ leftmost [x,y,z]
-  deleteMe <- button' "-" DeleteMe
-  display pattern
-  mapDyn (\a -> (a,deleteMe)) pattern
 
 
 soundPatternContainer :: MonadWidget t m => SoundPattern -> Event t () -> m (Dynamic t (SoundPattern,Event t GenericSignal))

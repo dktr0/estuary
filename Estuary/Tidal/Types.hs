@@ -105,17 +105,19 @@ data TransformedPattern = TransformedPattern [PatternTransformer] SpecificPatter
 
 instance Show TransformedPattern where
   show (TransformedPattern [] x) = show x
+  show (TransformedPattern (NoTransformer:[]) x) = show x
   show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
 
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransformer a) b) (toParamPattern x) ts
 
 
-data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show)
+data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show,Read,Ord)
 
-data PatternChain = PatternChain TransformedPattern | PatternChain' TransformedPattern PatternCombinator PatternChain deriving (Eq)
+data PatternChain = EmptyPatternChain | PatternChain TransformedPattern | PatternChain' TransformedPattern PatternCombinator PatternChain deriving (Eq)
 
 instance Show PatternChain where
+  show (EmptyPatternChain) = ""
   show (PatternChain x) = show x
   show (PatternChain' x Merge y) = (show x) ++ " |=| " ++ (show y)
   show (PatternChain' x Add y) = (show x) ++ " |+| " ++ (show y)
@@ -124,6 +126,7 @@ instance Show PatternChain where
   show (PatternChain' x Divide y) = (show x) ++ " |/| " ++ (show y)
 
 instance ParamPatternable PatternChain where
+  toParamPattern (EmptyPatternChain) = Tidal.silence
   toParamPattern (PatternChain x) = toParamPattern x
   toParamPattern (PatternChain' x Merge y) = (Tidal.|=|) (toParamPattern x) (toParamPattern y)
   toParamPattern (PatternChain' x Add y) =  (Tidal.|+|) (toParamPattern x) (toParamPattern y)
@@ -131,8 +134,6 @@ instance ParamPatternable PatternChain where
   toParamPattern (PatternChain' x Multiply y) =  (Tidal.|*|) (toParamPattern x) (toParamPattern y)
   toParamPattern (PatternChain' x Divide y) =  (Tidal.|/|) (toParamPattern x) (toParamPattern y)
 
-emptyPatternChain :: PatternChain
-emptyPatternChain = PatternChain (TransformedPattern [] emptySPattern)
 
 data StackedPatterns = StackedPatterns [PatternChain]
 

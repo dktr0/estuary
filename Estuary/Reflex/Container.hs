@@ -1,6 +1,9 @@
 {-# LANGUAGE RecursiveDo #-}
-
 module Estuary.Reflex.Container where
+
+-- The Estuary.Reflex namespace is for definitions that extend Reflex or
+-- Reflex.Dom in ways that do not involve types specific to Estuary (or Tidal).
+-- For example, as in this module, new container widgets for arbitrary widgets.
 
 import Data.Map
 import Reflex
@@ -92,6 +95,18 @@ eitherContainer' initialValues cEvents eventsToLeft eventsToRight buildLeft buil
   (d,e) <- eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight
   d' <- mapDyn (mapMaybe (either (Just) (const Nothing))) d
   return (d',e)
+
+
+eitherWidget :: (MonadWidget t m)
+  => (a -> Event t c -> m (Dynamic t (a,Event t d)))
+  -> (b -> Event t c -> m (Dynamic t (b,Event t d)))
+  -> Either a b -> Event t c -> m (Dynamic t ((Either a b),Event t d))
+
+eitherWidget buildA buildB iValue c = either buildA' buildB' iValue
+  where
+    buildA' a = buildA a c >>= mapDyn (\(x,d) -> (Left x,d))
+    buildB' b = buildB b c >>= mapDyn (\(x,d) -> (Right x,d))
+
 
 
 wfor :: (MonadWidget t m) => [a] -> (a -> m (Dynamic t b)) -> m (Dynamic t [b])
