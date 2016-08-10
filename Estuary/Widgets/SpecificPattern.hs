@@ -17,22 +17,44 @@ import Text.Read(readMaybe)
 
 panSampleWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (PatternChain,()))
 panSampleWidget i e = do
-  sPattern <- sContainerWidget i e >>= mapDyn (\(a,b)->a)-- S (GeneralPattern String)
-  nPattern <- nContainerWidget i e >>= mapDyn (\(a,b)->a)
+  --sPattern <- sContainerWidget i e >>= mapDyn (\(a,b)->a)-- S (GeneralPattern String)
+  --nPattern <- nContainerWidget i e >>= mapDyn (\(a,b)->a)
+  samplePattern <- sampleContainerWidget i e >>= mapDyn (\(a,b)->a)
   panPattern <- panContainerWidget i e >>= mapDyn (\(a,b)->a)-- Pan (GeneralPattern Double)
   crushPattern <- crushContainerWidget i e >>= mapDyn (\(a,b)->a)
 
-  transS <- forDyn sPattern (TransformedPattern [NoTransformer])
-  transN <- forDyn nPattern (TransformedPattern [NoTransformer])
+  --transS <- forDyn sPattern (TransformedPattern [NoTransformer])
+  --transN <- forDyn nPattern (TransformedPattern [NoTransformer])
+  transSample<- forDyn samplePattern (TransformedPattern [NoTransformer])
   transPan <- forDyn panPattern (TransformedPattern [NoTransformer])
   transCrush <- forDyn crushPattern (TransformedPattern [NoTransformer])
 
-
   patternChain <-combineDyn (\pan crush-> (PatternChain' pan Add (PatternChain crush))) transPan transCrush -- Dynamic t PatternChain
-  patternChain' <- combineDyn (\chain tN -> PatternChain' tN Add chain) patternChain transN
-  patternChain'' <- combineDyn (\chain tS-> PatternChain' tS Add chain) patternChain' transS
-  forDyn patternChain'' (show) >>=display
-  forDyn patternChain'' (\k -> (k,()))
+  patternChain' <- combineDyn (\sample chain-> PatternChain' sample Add chain) transSample patternChain
+  --patternChain' <- combineDyn (\chain tN -> PatternChain' tN Add chain) patternChain transN
+  --patternChain'' <- combineDyn (\chain tS-> PatternChain' tS Add chain) patternChain' transS
+  forDyn patternChain' (show) >>=display
+  forDyn patternChain' (\k -> (k,()))
+
+  -- panSampleWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (PatternChain,()))
+  -- panSampleWidget i e = do
+  --   sPattern <- sContainerWidget i e >>= mapDyn (\(a,b)->a)-- S (GeneralPattern String)
+  --   nPattern <- nContainerWidget i e >>= mapDyn (\(a,b)->a)
+  --   panPattern <- panContainerWidget i e >>= mapDyn (\(a,b)->a)-- Pan (GeneralPattern Double)
+  --   crushPattern <- crushContainerWidget i e >>= mapDyn (\(a,b)->a)
+  --
+  --   transS <- forDyn sPattern (TransformedPattern [NoTransformer])
+  --   transN <- forDyn nPattern (TransformedPattern [NoTransformer])
+  --   transPan <- forDyn panPattern (TransformedPattern [NoTransformer])
+  --   transCrush <- forDyn crushPattern (TransformedPattern [NoTransformer])
+  --
+  --
+  --   patternChain <-combineDyn (\pan crush-> (PatternChain' pan Add (PatternChain crush))) transPan transCrush -- Dynamic t PatternChain
+  --   patternChain' <- combineDyn (\chain tN -> PatternChain' tN Add chain) patternChain transN
+  --   patternChain'' <- combineDyn (\chain tS-> PatternChain' tS Add chain) patternChain' transS
+  --   forDyn patternChain'' (show) >>=display
+  --   forDyn patternChain'' (\k -> (k,()))
+
   --combineDyn (\a b-> (show $ Prelude.fst a)++" |+| " ++ (show $ Prelude.fst b) ) samplePattern panPattern -- Dyn (sPat,panPat)
 
 
@@ -92,6 +114,27 @@ crushContainerWidget iVal _ = el "div" $ mdo
     intersperse' x [] = [x]
     intersperse' x xs = [x] ++ (intersperse x xs) ++ [x]
 
+
+sampleContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
+sampleContainerWidget (S genPat) _ = el "div" $ mdo
+  let initialMap = (0::Int)=:(Right ())
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never sampleWidget miscButton -- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert $ Left $ Atom (Sample ("a",0)) Once)])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> (Sound $ Group x Once))
+  display returnVal
+  returnVal'<-forDyn returnVal (\x->(x,never))
+  return returnVal'
+  where
+    miscButton _ _ = pingButton "+"
+    intersperse' x [] = [x]
+    intersperse' x xs = [x] ++ (intersperse x xs) ++ [x]
 
 panContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
 panContainerWidget iVal _ = el "div" $ mdo
@@ -257,6 +300,24 @@ groupWidget' iVal _ = mdo
     intersperse' x [] = [x]
     intersperse' x xs = [x] ++ (intersperse x xs) ++ [x]
 
+sampleWidget::MonadWidget t m => GeneralPattern Sample-> Event t () -> m (Dynamic t (GeneralPattern Sample,Event t GenericSignal))
+sampleWidget (Atom (Sample s) r) _ = do
+  let (iName,iN) = s
+  text "  Sample:"
+  sampleField <-textInput $ def & textInputConfig_attributes .~ constDyn ("style"=:"width:50px;") & textInputConfig_initialValue .~ (show iName)
+  let sampleName = _textInput_value sampleField
+  nField <-textInput $ def & textInputConfig_attributes .~ constDyn ("style"=:"width:20px;") & textInputConfig_initialValue .~ (show iN) & textInputConfig_inputType .~"number"
+  let nVal' = _textInput_value nField
+  nVal <- forDyn nVal' (\x-> if isJust (readMaybe x::Maybe Int) then read x::Int else 0)
+  sample <- combineDyn (\a b -> Sample (a,b)) sampleName nVal
+  plusButton <- button "^" >>=count
+  minusButton <- button "v">>=count
+  deleteButton <- button' "-" (DeleteMe)
+  repeats <- combineDyn (\a b ->(a+1-b)) plusButton minusButton
+  repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div (abs (k-2)))
+  genPat <- combineDyn (\samp rep-> Atom samp rep) sample repeats'
+  forDyn genPat (\k-> (k,deleteButton))
+--sampleWidget (Atom (Blank) r) _ =
 
 
 textWidget'::(MonadWidget t m)=> GeneralPattern SampleName-> Event t () -> m (Dynamic t (GeneralPattern SampleName,Event t GenericSignal))

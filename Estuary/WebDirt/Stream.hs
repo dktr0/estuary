@@ -58,22 +58,36 @@ webDirtTick webDirt patternM tempo ticks = do
   E.catch (mapM_ (tidalEventToWebDirt webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
   where f x = logicalOnset' tempo ticks x 0
 
-valueToJSVal :: Value -> T.JSVal
-valueToJSVal (VI x) = P.pToJSVal x
-valueToJSVal (VF x) = P.pToJSVal x
-valueToJSVal (VS x) = P.pToJSVal x
 
+
+
+-- data Param = S {name :: String, sDefault :: Maybe String} | F {name :: String, fDefault :: Maybe Double}
+--            | I {name :: String, iDefault :: Maybe Int}
+-- data Value = VS { svalue :: String } | VF { fvalue :: Double } | VI { ivalue :: Int }
 -- ParamMap = Map Param (Maybe Value)
-
+-- t == tidal time value, paramMap =list of any/all parameters
 tidalEventToWebDirt :: T.JSVal -> (Double,ParamMap) -> IO ()
 tidalEventToWebDirt webDirt (t,e) = do
-  let e' = mapMaybe (id) e :: Map Param Value
+  let e' = mapMaybe (id) e :: Map Param Value -- Map Param Value where Value !=Nothing
       t' = P.pToJSVal t
-      s = maybe (P.pToJSVal "bd") (valueToJSVal) (Data.Map.lookup s_p e')
+      s = maybe (P.pToJSVal "trump") (valueToJSVal) (Data.Map.lookup s_p e')
       n = maybe (P.pToJSVal (0::Int)) (valueToJSVal) (Data.Map.lookup n_p e')
-  putStrLn $ show t ++ " " ++ show e'
-  playSample' webDirt t' s n
+  -- putStrLn $ show t ++ " " ++ show e'
+  playSample webDirt t' e
+  --playSample webDirt t' s n
   return ()
+--
+-- tidalEventToWebDirt :: T.JSVal -> (Double,ParamMap) -> IO ()
+-- tidalEventToWebDirt webDirt (t,e) = do
+--   let e' = mapMaybe (id) e :: Map Param Value -- Map Param Value where Value !=Nothing
+--       t' = P.pToJSVal t
+--   putStrLn $ show t ++ " " ++ show e'
+--   playSample webDirt t' e
+--   playSample' webDirt t' e'
+--   return ()
+
+
+
 
 {-
 

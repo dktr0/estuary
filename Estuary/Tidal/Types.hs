@@ -44,8 +44,8 @@ type SampleName = String
 newtype Sample = Sample (SampleName,Int) deriving (Eq)
 
 instance Show Sample where
-  show (Sample (x,0)) = show x
-  show (Sample (x,y)) = (show x) ++ ":" ++ (show y)
+  show (Sample (x,0)) = showNoQuotes x
+  show (Sample (x,y)) = (showNoQuotes x) ++ ":" ++ (show y)
 
 data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double) | Crush (GeneralPattern Int) deriving (Eq)
 
@@ -107,6 +107,9 @@ applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
 data TransformedPattern = TransformedPattern [PatternTransformer] SpecificPattern deriving (Eq)
 
 instance Show TransformedPattern where
+  -- @
+  show (TransformedPattern [NoTransformer] (Sound x)) = " $ " ++show (Sound x)
+  show (TransformedPattern [NoTransformer] x) = show x
   show (TransformedPattern [] x) = show x
   show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
 
