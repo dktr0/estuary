@@ -4,7 +4,8 @@ import Reflex
 import Reflex.Dom
 import GHCJS.DOM.EventM
 import Control.Monad
-import Data.Map (singleton)
+import Estuary.Reflex.Utility
+import Data.Map
 
 data GenericSignal = Ping | DeleteMe deriving (Eq, Show)
 
@@ -18,6 +19,11 @@ pingButton' label = do
 
 pingButton'' :: MonadWidget t m => String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
 pingButton'' label _ _ = pingButton' label
+
+pingButton''':: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
+pingButton''' label attrs _ _ = do
+  b <- buttonDynAttrs label (Ping) $ constDyn attrs
+  return $ constDyn ((), b)
 
 clickableDiv :: MonadWidget t m => String -> m (Event t ())
 clickableDiv label = do

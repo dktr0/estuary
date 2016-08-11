@@ -10,6 +10,7 @@ import Estuary.Reflex.Container
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility
 import Estuary.Widgets.TransformedPattern
+import Estuary.Widgets.SpecificPattern
 import Control.Monad
 import Data.Map
 import qualified Data.List
