@@ -59,25 +59,76 @@ transformedPatternWidget' (TransformedPattern ts p) _ = el "div" $ do
 --   patternDropDown <- dropdown 0 dropDownMap def
 --   let widgetSelector = _dropdown_value patternDropDown -- Dynamic map k (Dyn (specific, ev))
 --   pattern <- forDyn widgetSelector (lookupBuilder)
+
 --
+
+dropdownPatternWidget'::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+dropdownPatternWidget' _ _ = do
+  let patMap = fromList $ zip [0..] [sContainerWidget (S Blank) never, nContainerWidget (N Blank) never, panContainerWidget (S Blank) never,crushContainerWidget (S Blank) never]
+  let dropDownMap = constDyn $ fromList $ zip [0::Int,1..] ["s","n","pan","crush"]
+  patternDropDown <- dropdown 0 dropDownMap def
+  let ddVal = _dropdown_value patternDropDown
+  soundPat <- mapDyn (\k ->case Data.Map.lookup k patMap of Just a-> a; otherwise -> sContainerWidget (S Blank) never) ddVal  --Dynamic (m(dynamic spec,event t))
+  let soundPatEv = updated soundPat -- Event(Dyn )
+  soundPatEv' <- widgetHold (sContainerWidget (S Blank) never) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
+  let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
+  return $ soundPattern
+
+dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+dropdownPatternWidget _ _ = do
+  let paramShowList = ["Accelerate", "Bandf", "Bandq", "Begin", "Coarse", "Crush", "Cut", "Cutoff", "Delay","Delayfeedback","Delaytime", "End", "Gain", "Hcutoff", "Hresonance", "Loop", "N", "Pan", "Resonance", "S", "Shape", "Speed", "Unit", "Vowel"] -- Map (Map k func) String
+  let patMap = fromList $ zip [0..] builderList
+  let dropDownMap = constDyn $ fromList $ zip [0::Int,1..] paramShowList
+  patternDropDown <- dropdown 0 dropDownMap def
+  let ddVal = _dropdown_value patternDropDown
+  soundPat <- mapDyn (\k ->case Data.Map.lookup k patMap of Just a-> a; otherwise -> sContainerWidget (S Blank) never) ddVal  --Dynamic (m(dynamic spec,event t))
+  let soundPatEv = updated soundPat -- Event(Dyn )
+  soundPatEv' <- widgetHold (sContainerWidget (S Blank) never) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
+  let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
+  return $ soundPattern
+  where
+    builderList = Prelude.map (\x-> x never) [doubleContainerWidget (Accelerate $ Atom 0 Once), intContainerWidget (Bandf $ Atom 440 Once),
+      doubleContainerWidget (Bandq $ Atom 100 Once),doubleContainerWidget (Begin $ Atom 0 Once),
+      intContainerWidget (Coarse $ Atom 0 Once), intContainerWidget (Crush $ Atom 16 Once),
+      intContainerWidget (Estuary.Tidal.Types.Cut $ Atom 1 Once), intContainerWidget (Cutoff $ Atom 440 Once),
+      doubleContainerWidget (Delay $ Atom 0 Once),doubleContainerWidget (Delayfeedback $ Atom 0 Once),
+      doubleContainerWidget (Delaytime $ Atom 0.5 Once), doubleContainerWidget (End $ Atom 1 Once),
+      doubleContainerWidget (Gain $ Atom 1 Once), intContainerWidget (Hcutoff $ Atom 440 Once),
+      doubleContainerWidget (Hresonance $ Atom 20 Once),
+      intContainerWidget (Loop $ Atom 0 Once), intContainerWidget (N $ Atom 0 Once),
+      doubleContainerWidget (Pan $ Atom 0.5 Once), doubleContainerWidget (Resonance $ Atom 0.5 Once),
+      stringContainerWidget (S Blank), doubleContainerWidget (Shape $ Atom 0.5 Once),
+      doubleContainerWidget (Speed $ Atom 1 Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+
 
 transformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
 transformedPatternWidget (TransformedPattern ts p) _ = el "div" $ do
+  deleteEvents <- buttonDynAttrs "-" (DeleteMe) (constDyn $ "style"=:"background-color:salmon")
+  (soundPattern,events) <- dropdownPatternWidget (S Blank) never >>= splitDyn
+  --deleteEvents <- mapDyn (ffilter (==DeleteMe)) events --Dyn Event DeleteMe
+  transformer <- parameteredPatternTransformer (f ts) never
+  transformedPat <- combineDyn(\(a,_) b-> TransformedPattern [a] b) transformer soundPattern -- Dyn transformedPat
+  mapDyn (\a-> (a,deleteEvents)) transformedPat
+  where
+    f [] = NoTransformer -- sorry again...
+    f (x:_) = x
+    lookupBuilder x = sContainerWidget
+
+
+transformedPatternWidget'' :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
+transformedPatternWidget'' (TransformedPattern ts p) _ = el "div" $ do
   let patMap = fromList $ zip [0..] [sContainerWidget (S Blank) never, nContainerWidget (S Blank) never, panContainerWidget (S Blank) never,crushContainerWidget (S Blank) never]
 
   let dropDownMap = constDyn $ fromList $ zip [0::Int,1..] ["s","n","pan","crush"] -- Map (Map k func) String
   patternDropDown <- dropdown 0 dropDownMap def
-  let ddVal = _dropdown_value patternDropDown -- Dynamic map k (Dyn (specific, ev))
+  let ddVal = _dropdown_value patternDropDown
 
   soundPat <- mapDyn (\k ->case Data.Map.lookup k patMap of Just a-> a; otherwise -> sContainerWidget (S Blank) never) ddVal  --Dynamic (m(dynamic spec,event t))
   let soundPatEv = updated soundPat -- Event(Dyn )
 
---[W]   widgetHold :: m a ->   Event (m a) -> m (Dynamic a)
---[W]   widgetHold :: m (Dynamic(spec, Event Gen)) ->   Event (m (Dynamic(spec, Event Gen))) -> m (Dynamic (Dynamic(spec, Event Gen)))
   soundPatEv' <- widgetHold (sContainerWidget (S Blank) never) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
   let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
 
-  --let soundPat''' = joinDyn soundPat''
 
   eventsFromPattern <- liftM (switchPromptlyDyn) $ mapDyn (snd) soundPattern
   let deleteEvents = ffilter (==DeleteMe) eventsFromPattern
@@ -87,6 +138,3 @@ transformedPatternWidget (TransformedPattern ts p) _ = el "div" $ do
   where
     f [] = NoTransformer -- sorry again...
     f (x:_) = x
-    lookupBuilder x = sContainerWidget
-    --lookupBuilder _ = nContainerWidget (S Blank) never
-    --builders = [sContainerWidget (S Blank) never, nContainerWidget (S Blank) never, panContainerWidget (S Blank) never,crushContainerWidget (S Blank) never]!!i
