@@ -29,10 +29,11 @@ instance Show RepOrDiv where
 data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
 
 showNoQuotes::(Show a)=> a->String
-showNoQuotes x= if head x'=='"' && (last x')=='"' then if x''=="" then "~" else x'' else show x
+showNoQuotes x= if (head x'=='"' && (last x')=='"') then if x''=="" then "~" else x'' else show x
   where x' = show x
         x''=(tail (init x'))
 
+-- || (head x' =='\'' && last x'=='\'')
 instance Show a => Show (GeneralPattern a) where
   show (Atom x r) = (showNoQuotes x) ++ (show r)
   show (Blank) = "~"
@@ -56,7 +57,7 @@ data SpecificPattern =  Accelerate (GeneralPattern Double) | Bandf (GeneralPatte
   | Pan (GeneralPattern Double)
   | Resonance (GeneralPattern Double) |S (GeneralPattern SampleName) | Shape (GeneralPattern Double)
   | Sound (GeneralPattern Sample) | Speed (GeneralPattern Double) | Unit (GeneralPattern Char)
-  | Vowel (GeneralPattern Char) deriving (Eq)
+  | Vowel (GeneralPattern Char) | NoPattern (GeneralPattern String) deriving (Eq)
 
 
 
@@ -86,6 +87,7 @@ instance Show SpecificPattern where
   show (Speed x) = "speed \"" ++ (show x) ++ "\""
   show (Unit x) = "unit \"" ++ (show x) ++ "\""
   show (Vowel x) = "vowel \"" ++ (show x) ++ "\""
+  show (NoPattern x) = ""
 
 
 instance ParamPatternable SpecificPattern where

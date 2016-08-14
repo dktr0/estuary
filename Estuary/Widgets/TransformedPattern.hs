@@ -10,6 +10,7 @@ import Estuary.Widgets.Generic
 import Control.Monad
 import Estuary.Widgets.SpecificPattern
 import Data.Map
+import Data.List
 
 -- data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double) deriving (Eq)
 
@@ -50,18 +51,6 @@ transformedPatternWidget' (TransformedPattern ts p) _ = el "div" $ do
     f [] = NoTransformer -- sorry again...
     f (x:_) = x
 
-
--- -- soundPat:: (Dynamic t (SpecificPattern, Event t GenericSignal))
---
--- transformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
--- transformedPatternWidget (TransformedPattern ts p) _ = el "div" $ do
---   let dropDownMap = constDyn $ fromList $ zip [0::Int,1..] ["s","n","pan","crush"] -- Map (Map k func) String
---   patternDropDown <- dropdown 0 dropDownMap def
---   let widgetSelector = _dropdown_value patternDropDown -- Dynamic map k (Dyn (specific, ev))
---   pattern <- forDyn widgetSelector (lookupBuilder)
-
---
-
 dropdownPatternWidget'::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 dropdownPatternWidget' _ _ = do
   let patMap = fromList $ zip [0..] [sContainerWidget (S Blank) never, nContainerWidget (N Blank) never, panContainerWidget (S Blank) never,crushContainerWidget (S Blank) never]
@@ -75,15 +64,20 @@ dropdownPatternWidget' _ _ = do
   return $ soundPattern
 
 dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
-dropdownPatternWidget _ _ = do
-  let paramShowList = ["Accelerate", "Bandf", "Bandq", "Begin", "Coarse", "Crush", "Cut", "Cutoff", "Delay","Delayfeedback","Delaytime", "End", "Gain", "Hcutoff", "Hresonance", "Loop", "N", "Pan", "Resonance", "S", "Shape", "Speed", "Unit", "Vowel"] -- Map (Map k func) String
+dropdownPatternWidget iPattern _ = do
+  let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit", "vowel"] -- Map (Map k func) String
+  let patternType = head $ words $ show iPattern
+  let initialIndex = maybe (0) id $ Data.List.findIndex (==patternType) paramShowList -- Int of initalFunc
   let patMap = fromList $ zip [0..] builderList
+  text $ show patternType
+  let initialFunc = maybe (builderList!!0) (id) $ Data.Map.lookup initialIndex patMap
   let dropDownMap = constDyn $ fromList $ zip [0::Int,1..] paramShowList
-  patternDropDown <- dropdown 0 dropDownMap def
+  patternDropDown <- dropdown initialIndex dropDownMap def
   let ddVal = _dropdown_value patternDropDown
   soundPat <- mapDyn (\k ->case Data.Map.lookup k patMap of Just a-> a; otherwise -> sContainerWidget (S Blank) never) ddVal  --Dynamic (m(dynamic spec,event t))
   let soundPatEv = updated soundPat -- Event(Dyn )
-  soundPatEv' <- widgetHold (sContainerWidget (S Blank) never) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
+
+  soundPatEv' <- widgetHold (initialFunc) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
   let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
   return $ soundPattern
   where
@@ -98,13 +92,13 @@ dropdownPatternWidget _ _ = do
       intContainerWidget (Loop $ Atom 0 Once), intContainerWidget (N $ Atom 0 Once),
       doubleContainerWidget (Pan $ Atom 0.5 Once), doubleContainerWidget (Resonance $ Atom 0.5 Once),
       stringContainerWidget (S Blank), doubleContainerWidget (Shape $ Atom 0.5 Once),
-      doubleContainerWidget (Speed $ Atom 1 Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+      doubleContainerWidget (Speed $ Atom 1 Once), charContainerWidget (Unit $ Atom 'c' Once), charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
 
 
 transformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
 transformedPatternWidget (TransformedPattern ts p) _ = el "div" $ do
   deleteEvents <- buttonDynAttrs "-" (DeleteMe) (constDyn $ "style"=:"background-color:salmon")
-  (soundPattern,events) <- dropdownPatternWidget (S Blank) never >>= splitDyn
+  (soundPattern,events) <- dropdownPatternWidget (p) never >>= splitDyn
   --deleteEvents <- mapDyn (ffilter (==DeleteMe)) events --Dyn Event DeleteMe
   transformer <- parameteredPatternTransformer (f ts) never
   transformedPat <- combineDyn(\(a,_) b-> TransformedPattern [a] b) transformer soundPattern -- Dyn transformedPat

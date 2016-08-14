@@ -55,8 +55,29 @@ stringContainerWidget a _ = mdo
     intersperse' x xs = [x] ++ (intersperse x xs) ++ [x]
     (widgetBuilder,defaultGeneralPat, patType) = case a of
       S _ -> (textWidget, Blank, S)
-      --Unit _ -> (charWidget, Atom 'c' Once, Unit)
-      --Vowel _ -> (charWidget, Atom 'o' Once, Vowel)
+
+charContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+charContainerWidget a _ = mdo
+  let initialMap = (0::Int)=:(Right ())
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (pingButton''' "+" ("style"=:"background-color:lightblue"))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
+  display returnVal
+  returnVal'<-forDyn returnVal (\x->(x,never))
+  return returnVal'
+  where
+    intersperse' x [] = [x]
+    intersperse' x xs = [x] ++ (intersperse x xs) ++ [x]
+    (widgetBuilder,defaultGeneralPat, patType) = case a of
+      Unit _ -> (charWidget, Atom 'c' Once, Unit)
+      Vowel _ -> (charWidget, Atom 'o' Once, Vowel)
 
 doubleContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 doubleContainerWidget a _ = mdo
@@ -360,6 +381,21 @@ sampleWidget (Atom (Sample s) r) _ = do
   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div (abs (k-2)))
   genPat <- combineDyn (\samp rep-> Atom samp rep) sample repeats'
   forDyn genPat (\k-> (k,deleteButton))
+
+charWidget::MonadWidget t m => GeneralPattern Char-> Event t () -> m (Dynamic t (GeneralPattern Char,Event t GenericSignal))
+charWidget (Atom iVal reps) _ = do
+  textField <-textInput $ def & textInputConfig_attributes .~ (constDyn $ fromList $ zip ["style", " maxlength"] ["width:40px", "1"]) & textInputConfig_initialValue .~ [iVal]
+  let inputVal = _textInput_value textField
+  inputChar <- mapDyn (\c-> if length c ==1 then c!!0 else  '~') inputVal
+  plusButton <- buttonDynAttrs "▲" () (constDyn ("style"=:"width:20px;text-align:center")) >>= count
+  minusButton <- buttonDynAttrs "▼" () (constDyn ("style"=:"width:20px;text-align:center")) >>= count
+  deleteButton <- buttonDynAttrs "-" (DeleteMe) $ constDyn ("style"=:"width:20px")
+  repeats <- combineDyn (\a b ->(a+1-b)) plusButton minusButton
+  repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div (abs (k-2)))
+  genPat <- combineDyn (\char rep-> if char=='~' then Blank else Atom char rep) inputChar repeats'
+  forDyn genPat (\k-> (k,deleteButton))
+
+
 
 -- genericDoubleWidget::MonadWidget t m => GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
 -- genericDoubleWidget (Atom val rep) _ = do

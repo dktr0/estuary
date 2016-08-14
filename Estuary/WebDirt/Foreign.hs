@@ -10,7 +10,6 @@ import qualified GHCJS.Types as T
 import qualified GHCJS.Foreign as F
 import qualified GHCJS.Marshal.Pure as P
 import JavaScript.Object.Internal as O
---import Data.JSString.Internal.Type
 import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
 
@@ -34,24 +33,10 @@ foreign import javascript unsafe
   "try { $1.queue($2)} catch(e) { console.log(e)} "
   queue:: T.JSVal -> T.JSVal -> IO()
 
-
-
--- foreign import javascript unsafe
---   "try { $1.queue({whenPosix: $2, accelerate: $3, bandf:$4, bandq: $5, begin:$6, coarse:$7, crush:$8, cutoff:$9, delay:$10, delayfeedback:$11, delaytime:$12, end:$12, gain:$13, hcutoff:$14, hresonance:$15, loop:$16, sample_n:$17, pan:$18, resonance:$19, shape:$20, speed: $21, sample_name:$22, unit:$23, vowel:$24]})} catch(e) { console.log(e)} "
---   queue:: T.JSVal -> T.JSVal -> [T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal -> T.JSVal ->T.JSVal->T.JSVal]-> IO()
-
---playSample'' :: T.JSVal -> Double -> String -> Int -> IO ()
--- playSample'' webDirt when sampleName sampleN = playSample' webDirt (pToJSVal when) (Prim.toJSString sampleName) (pToJSVal sampleN)
-
-
--- data Param = S {name :: String, sDefault :: Maybe String} | F {name :: String, fDefault :: Maybe Double}
---            | I {name :: String, iDefault :: Maybe Int}
--- data Value = VS { svalue :: String } | VF { fvalue :: Double } | VI { ivalue :: Int }
--- ParamMap = Map Param (Maybe Value)
-
 playSample::T.JSVal -> T.JSVal -> ParamMap -> IO()
 playSample webDirt time paramMap= do
   object <- createObjFromMap paramMap--[elems] params
+  consoleLog object
   queue webDirt object
   return ()
 
@@ -69,22 +54,7 @@ addProps obj [] = return obj
 addProps obj paramList = do
   obj' <- addProp obj (P.pToJSVal $ fst (paramList!!0)) (snd $ paramList!!0)
   addProps obj' (tail paramList)
---  snd . last $ toList x
 
--- createObjFromList:: [T.JSVal] -> IO T.JSVal
--- createObjFromList vals = do
---   let props = Prelude.map (P.pToJSVal) ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cutoff", "delay", "delayfeedback", "delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "sample_n", "pan", "resonance", "shape", "speed", "sample_name", "unit", "vowel"]
---   obj <- createEmpty
---   return $ zipWith (\a b -> addProp obj a b) props vals
---   return obj
-
-test = do
-  putStrLn "Test:"
-  a <- createEmpty
-  putStrLn "hmmmmm"
-  b <- addProp (P.pToJSVal "sample_name") (P.pToJSVal "bd") a
-  consoleLog a
-  return ()
 
 valueToJSVal :: Value -> T.JSVal
 valueToJSVal (VI x) = P.pToJSVal x
