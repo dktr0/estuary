@@ -1,3 +1,4 @@
+
 module Main where
 
 import Reflex
@@ -20,8 +21,11 @@ main = do
 twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
 twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
 
+-- stackedPats: m (Dynamic t (StackedPatterns,Event t GenericSignal))
+--              m (Dynamic t (StackedPatterns,Event t GenericSignal))
+
 pages = [
-  ("Two stacked patterns",widgetToPage twoStackedPatterns)
+  ("Two stacked patterns",widgetToPage twoStackedPatterns),
   ("S-Specific Pattern",widgetToPage $ sContainerWidget (Estuary.Tidal.Types.S Blank) never),
   ("Sample and Pan Pattern", widgetToPage $ panSampleWidget (Estuary.Tidal.Types.S Blank) never)
   ]

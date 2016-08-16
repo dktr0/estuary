@@ -10,7 +10,6 @@ import qualified GHCJS.Types as T
 import qualified GHCJS.Foreign as F
 import qualified GHCJS.Marshal.Pure as P
 import JavaScript.Object.Internal as O
---import Data.JSString.Internal.Type
 import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
 
@@ -59,6 +58,7 @@ addProps obj [] = return obj
 addProps obj paramList = do
   obj' <- addProp obj (P.pToJSVal $ fst (paramList!!0)) (snd $ paramList!!0)
   addProps obj' (tail paramList)
+
 
 valueToJSVal :: Value -> T.JSVal
 valueToJSVal (VI x) = P.pToJSVal x
