@@ -75,12 +75,6 @@ webDirtTick webDirt patternM tempo ticks = do
   E.catch (mapM_ (WebDirt.playSample webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
   where f x = logicalOnset' tempo ticks x 0
 
-{-
-tidalEventToWebDirt :: T.JSVal -> (Double,ParamMap) -> IO ()
-tidalEventToWebDirt webDirt (t,e) = do
-  let t' = P.pToJSVal t
-  WebDirt.playSample webDirt t' e
--}
 
 {-
 
