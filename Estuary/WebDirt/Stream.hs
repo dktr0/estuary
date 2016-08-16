@@ -3,7 +3,9 @@ module Estuary.WebDirt.Stream where
 import Sound.Tidal.Context
 import Control.Concurrent.MVar
 import Control.Monad.Loops (iterateM_)
--- import Data.Time (getCurrentTime)
+import Control.Monad (liftM)
+import Data.Time (getCurrentTime)
+import Data.Time.Clock.POSIX
 import Data.Map
 import qualified Control.Exception as E
 import Data.Time
@@ -19,18 +21,24 @@ type WebDirtStream = ParamPattern -> IO ()
 webDirtStream :: IO WebDirtStream
 webDirtStream = do
   webDirt <- WebDirt.webDirt
-  now <- WebDirt.getCurrentTime
+  WebDirt.initializeWebAudio webDirt
+  x <- WebDirt.getCurrentTime webDirt
+  putStrLn (show x)
+  let now = posixSecondsToUTCTime $ realToFrac x
   mTempo <- newMVar (Tempo {at=now,beat=0.0,cps=1.0,paused=False,clockLatency=0.2})
   mPattern <- newMVar silence
-  forkIO $ clockedTickWebDirt mTempo (webDirtTick webDirt mPattern)
+  forkIO $ clockedTickWebDirt webDirt mTempo (webDirtTick webDirt mPattern)
   return $ \p -> do swapMVar mPattern p
                     return ()
 
-beatNowWebDirt :: T.JSVal -> Tempo -> IO (Double)
-beatNowWebDirt webDirt t = do now <- WebDirt.getCurrentTime webDirt
-               let delta = realToFrac $ diffUTCTime now (at t)
-               let beatDelta = cps t * delta
-               return $ beat t + beatDelta
+beatNowWebDirt :: T.JSVal -> Tempo -> IO Double
+beatNowWebDirt webDirt t = do
+  x <- WebDirt.getCurrentTime webDirt
+  putStrLn (show x)
+  let now = posixSecondsToUTCTime $ realToFrac x
+  let delta = realToFrac $ diffUTCTime now (at t)
+  let beatDelta = cps t * delta
+  return $ beat t + beatDelta
 
 getCurrentWebDirtBeat :: T.JSVal -> MVar Tempo -> IO Rational
 getCurrentWebDirtBeat webDirt t = (readMVar t) >>= (beatNowWebDirt webDirt) >>= (return . toRational)
@@ -39,9 +47,9 @@ clockedTickWebDirt :: T.JSVal -> MVar Tempo -> (Tempo -> Int -> IO()) -> IO ()
 clockedTickWebDirt webDirt mTempo callback = do
   nowBeat <- getCurrentWebDirtBeat webDirt mTempo
   let nextTick = ceiling (nowBeat * (fromIntegral webDirtTicksPerCycle))
-  iterateM_ (clockedTickWebDirtLoop callback mTempo) nextTick
+  iterateM_ (clockedTickWebDirtLoop webDirt callback mTempo) nextTick
 
-clockedTickWebDirtLoop callback mTempo tick = do
+clockedTickWebDirtLoop webDirt callback mTempo tick = do
   tempo <- readMVar mTempo
   if (paused tempo)
     then do
@@ -49,7 +57,7 @@ clockedTickWebDirtLoop callback mTempo tick = do
       threadDelay $ floor (pause * 1000000)
       return $ if cps tempo < 0 then 0 else tick -- reset tick to 0 if cps is negative
     else do
-      now <- getCurrentTime
+      now <- liftM (posixSecondsToUTCTime . realToFrac) $ WebDirt.getCurrentTime webDirt
       let beatsFromAtToTick = fromIntegral tick / fromIntegral webDirtTicksPerCycle - beat tempo
           delayUntilTick = beatsFromAtToTick / cps tempo - realToFrac (diffUTCTime now (at tempo))
       threadDelay $ floor (delayUntilTick * 1000000)
@@ -64,14 +72,15 @@ webDirtTick webDirt patternM tempo ticks = do
       b = (ticks' + 1) % webDirtTicksPerCycle
       events = seqToRelOnsets (a,b) p -- :: [(Double,Map Param (Maybe Value))]
       events' = Prelude.map (\(o,m) -> (f o,m)) events
-  E.catch (mapM_ (tidalEventToWebDirt webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
+  E.catch (mapM_ (WebDirt.playSample webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
   where f x = logicalOnset' tempo ticks x 0
 
+{-
 tidalEventToWebDirt :: T.JSVal -> (Double,ParamMap) -> IO ()
 tidalEventToWebDirt webDirt (t,e) = do
   let t' = P.pToJSVal t
-  playSample webDirt t' e
-
+  WebDirt.playSample webDirt t' e
+-}
 
 {-
 

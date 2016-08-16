@@ -13,7 +13,6 @@ import JavaScript.Object.Internal as O
 import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
 
-
 foreign import javascript unsafe
   "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null, function() {console.log('callback from WebDirt constructor completed');});"
   webDirt :: IO (T.JSVal)
@@ -31,22 +30,24 @@ foreign import javascript unsafe
   playSample':: T.JSVal -> T.JSVal -> IO ()
 
 foreign import javascript unsafe
-  "try { $r = $1.getCurrentTime } catch(e) { console.log(e)} "
+  "try { $r = $1.getCurrentTime() } catch(e) { console.log(e)} "
   getCurrentTime :: T.JSVal -> IO Double
 
-playSample::T.JSVal -> T.JSVal -> ParamMap -> IO()
-playSample webDirt time paramMap= do
-  object <- createObjFromMap paramMap
+playSample::T.JSVal -> (Double,ParamMap) -> IO()
+playSample webDirt (t,e) = do
+  object <- createObjFromMap t e
   playSample' webDirt object
   return ()
 
-createObjFromMap:: ParamMap -> IO T.JSVal
-createObjFromMap paramMap = do
+foreign import javascript unsafe "$r = {};" createEmpty:: IO T.JSVal
+
+createObjFromMap:: Double -> ParamMap -> IO T.JSVal
+createObjFromMap when paramMap = do
   let paramMap' = mapKeys (\x-> case name x of "n"->"sample_n"; "s"->"sample_name";otherwise->name x) paramMap -- Map String (Value)
   let paramMap'' = Data.Map.map (maybe (T.nullRef) (valueToJSVal)) paramMap':: Map String T.JSVal -- Map String JSVal
   obj <- createEmpty
   --x <- return $ mapWithKey (\k v -> addProp obj (P.pToJSVal k) v) paramMap''
-  a<-addProps obj (toList paramMap'')
+  a<-addProps obj (("when",P.pToJSVal when):(toList paramMap''))
   return a
 
 foreign import javascript safe
@@ -58,7 +59,6 @@ addProps obj [] = return obj
 addProps obj paramList = do
   obj' <- addProp obj (P.pToJSVal $ fst (paramList!!0)) (snd $ paramList!!0)
   addProps obj' (tail paramList)
-
 
 valueToJSVal :: Value -> T.JSVal
 valueToJSVal (VI x) = P.pToJSVal x
