@@ -63,7 +63,10 @@ valueToJSVal (VS x) = P.pToJSVal x
 
 foreign import javascript unsafe
   "$1.syncWithEsp($2)"
-  syncWithEsp :: T.JSVal -> T.JSVal -> IO ()
+  syncWithEsp' :: T.JSVal -> T.JSVal -> IO ()
+
+syncWithEsp :: T.JSVal -> String -> IO ()
+syncWithEsp webDirt url = syncWithEsp' webDirt (pToJSVal url)
 
 foreign import javascript unsafe
   "$1.setTempo({time:$2,beats:$3,bpm:$4})"

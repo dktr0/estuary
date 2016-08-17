@@ -12,17 +12,18 @@ import qualified Sound.Tidal.Context as Tidal
 import Estuary.WebDirt.Stream
 import Estuary.Page
 import Estuary.Widgets.SpecificPattern
+import Estuary.Widgets.WebDirt
 
 main :: IO ()
 main = do
-  webDirt <- webDirtStream
-  mainWidget $ multipage webDirt pages
+  wd <- webDirt
+  stream <- webDirtStream webDirt
+    webDirtWidget webDirt
+    mainWidget $ do
+    multipage stream pages
 
 twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
 twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
-
--- stackedPats: m (Dynamic t (StackedPatterns,Event t GenericSignal))
---              m (Dynamic t (StackedPatterns,Event t GenericSignal))
 
 pages = [
   ("Two stacked patterns",widgetToPage twoStackedPatterns),
