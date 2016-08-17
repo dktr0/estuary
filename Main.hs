@@ -18,6 +18,7 @@ import Estuary.Widgets.WebDirt
 main :: IO ()
 main = do
   wd <- webDirt
+  initializeWebAudio wd
   stream <- webDirtStream wd
   mainWidget $ do
     webDirtWidget wd
