@@ -18,16 +18,16 @@ webDirtTicksPerCycle = 8
 
 type WebDirtStream = ParamPattern -> IO ()
 
-webDirtStream :: IO WebDirtStream
-webDirtStream = do
-  webDirt <- WebDirt.webDirt
-  WebDirt.initializeWebAudio webDirt
+webDirtStream :: T.JSVal -> IO WebDirtStream
+webDirtStream webDirt = do
+  -- webDirt <- WebDirt.webDirt
+  -- WebDirt.initializeWebAudio webDirt
   x <- WebDirt.getCurrentTime webDirt
   putStrLn (show x)
   let now = posixSecondsToUTCTime $ realToFrac x
-  mTempo <- newMVar (Tempo {at=now,beat=0.0,cps=1.0,paused=False,clockLatency=0.2})
+  -- mTempo <- newMVar (Tempo {at=now,beat=0.0,cps=1.0,paused=False,clockLatency=0.2})
   mPattern <- newMVar silence
-  forkIO $ clockedTickWebDirt webDirt mTempo (webDirtTick webDirt mPattern)
+  forkIO $ clockedTickWebDirt webDirt (webDirtTick webDirt mPattern)
   return $ \p -> do swapMVar mPattern p
                     return ()
 
@@ -40,17 +40,22 @@ beatNowWebDirt webDirt t = do
   let beatDelta = cps t * delta
   return $ beat t + beatDelta
 
-getCurrentWebDirtBeat :: T.JSVal -> MVar Tempo -> IO Rational
-getCurrentWebDirtBeat webDirt t = (readMVar t) >>= (beatNowWebDirt webDirt) >>= (return . toRational)
+readTempo webDirt = do
+readTempo :: T.JSVal -> IO Tempo
+  (time,beats,bpm) <- WebDirt.tempo webDirt
+  return $ Tempo {at=time,beat=beats,cps=bpm/60.0,paused=False,clockLatency=0.2}
 
-clockedTickWebDirt :: T.JSVal -> MVar Tempo -> (Tempo -> Int -> IO()) -> IO ()
-clockedTickWebDirt webDirt mTempo callback = do
-  nowBeat <- getCurrentWebDirtBeat webDirt mTempo
+getCurrentWebDirtBeat :: T.JSVal -> IO Rational
+getCurrentWebDirtBeat webDirt = readTempo webDirt >>= beatNowWebDirt >>= return . toRational
+
+clockedTickWebDirt :: T.JSVal -> (Tempo -> Int -> IO()) -> IO ()
+clockedTickWebDirt webDirt callback = do
+  nowBeat <- getCurrentWebDirtBeat webDirt
   let nextTick = ceiling (nowBeat * (fromIntegral webDirtTicksPerCycle))
   iterateM_ (clockedTickWebDirtLoop webDirt callback mTempo) nextTick
 
-clockedTickWebDirtLoop webDirt callback mTempo tick = do
-  tempo <- readMVar mTempo
+clockedTickWebDirtLoop webDirt callback tick = do
+  tempo <- readTempo webDirt
   if (paused tempo)
     then do
       let pause = 0.01
