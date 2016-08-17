@@ -40,22 +40,23 @@ beatNowWebDirt webDirt t = do
   let beatDelta = cps t * delta
   return $ beat t + beatDelta
 
-readTempo webDirt = do
-readTempo :: T.JSVal -> IO Tempo
+readWebDirtTempo :: T.JSVal -> IO Tempo
+readWebDirtTempo webDirt = do
   (time,beats,bpm) <- WebDirt.tempo webDirt
-  return $ Tempo {at=time,beat=beats,cps=bpm/60.0,paused=False,clockLatency=0.2}
+  let time' = posixSecondsToUTCTime $ realToFrac time
+  return $ Tempo {at=time',beat=beats,cps=bpm/60.0,paused=False,clockLatency=0.2}
 
 getCurrentWebDirtBeat :: T.JSVal -> IO Rational
-getCurrentWebDirtBeat webDirt = readTempo webDirt >>= beatNowWebDirt >>= return . toRational
+getCurrentWebDirtBeat webDirt = readWebDirtTempo webDirt >>= beatNowWebDirt webDirt >>= return . toRational
 
 clockedTickWebDirt :: T.JSVal -> (Tempo -> Int -> IO()) -> IO ()
 clockedTickWebDirt webDirt callback = do
   nowBeat <- getCurrentWebDirtBeat webDirt
   let nextTick = ceiling (nowBeat * (fromIntegral webDirtTicksPerCycle))
-  iterateM_ (clockedTickWebDirtLoop webDirt callback mTempo) nextTick
+  iterateM_ (clockedTickWebDirtLoop webDirt callback) nextTick
 
 clockedTickWebDirtLoop webDirt callback tick = do
-  tempo <- readTempo webDirt
+  tempo <- readWebDirtTempo webDirt
   if (paused tempo)
     then do
       let pause = 0.01

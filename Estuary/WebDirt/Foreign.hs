@@ -85,5 +85,5 @@ tempo w = do
   x <- tempo' w
   time <- deindexJSObject x (pToJSVal "time")
   beats <- deindexJSObject x (pToJSVal "beats")
-  bpm <- deindexJSObjecct x (pToJSVal "bpm")
+  bpm <- deindexJSObject x (pToJSVal "bpm")
   return (pFromJSVal time,pFromJSVal beats,pFromJSVal bpm)

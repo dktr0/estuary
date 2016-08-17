@@ -9,6 +9,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.StackedPatterns
 import Control.Monad (liftM)
 import qualified Sound.Tidal.Context as Tidal
+import Estuary.WebDirt.Foreign
 import Estuary.WebDirt.Stream
 import Estuary.Page
 import Estuary.Widgets.SpecificPattern
@@ -17,9 +18,9 @@ import Estuary.Widgets.WebDirt
 main :: IO ()
 main = do
   wd <- webDirt
-  stream <- webDirtStream webDirt
-    webDirtWidget webDirt
-    mainWidget $ do
+  stream <- webDirtStream wd
+  mainWidget $ do
+    webDirtWidget wd
     multipage stream pages
 
 twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
