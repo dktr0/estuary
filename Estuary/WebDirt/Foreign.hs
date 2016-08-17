@@ -15,15 +15,11 @@ import GHCJS.Marshal.Pure
 
 foreign import javascript unsafe
   "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null, function() {console.log('callback from WebDirt constructor completed');});"
-  webDirt :: IO (T.JSVal)
+  webDirt :: IO T.JSVal
 
 foreign import javascript unsafe
   "try { $1.initializeWebAudio() } catch(e) { console.log(e) }"
   initializeWebAudio :: T.JSVal -> IO ()
-
-foreign import javascript unsafe
-  "try { $1.playSample({sample_name: 'cp', sample_n:0}) } catch(e) {console.log(e)} "
-  webDirtTestMessage :: T.JSVal -> IO T.JSVal
 
 foreign import javascript unsafe
   "try { $1.playSample($2)} catch(e) { console.log(e)} "
@@ -64,3 +60,27 @@ valueToJSVal :: Value -> T.JSVal
 valueToJSVal (VI x) = P.pToJSVal x
 valueToJSVal (VF x) = P.pToJSVal x
 valueToJSVal (VS x) = P.pToJSVal x
+
+foreign import javascript unsafe
+  "$1.syncWithEsp($2)"
+  syncWithEsp :: T.JSVal -> T.JSVal -> IO ()
+
+foreign import javascript unsafe
+  "$1.setTempo({time:$2,beats:$3,bpm:$4})"
+  setTempo :: T.JSVal -> Double -> Double -> Double -> IO ()
+
+foreign import javascript unsafe
+  "$r = $1.tempo"
+  tempo' :: T.JSVal -> IO T.JSVal
+
+foreign import javascript safe
+  "$r = $1[$2]"
+  deindexJSObject :: T.JSVal -> T.JSVal -> IO T.JSVal
+
+tempo :: T.JSVal -> IO (Double,Double,Double)
+tempo w = do
+  x <- tempo' w
+  time <- deindexJSObject x (pToJSVal "time")
+  beats <- deindexJSObject x (pToJSVal "beats")
+  bpm <- deindexJSObjecct x (pToJSVal "bpm")
+  return (pFromJSVal time,pFromJSVal beats,pFromJSVal bpm)
