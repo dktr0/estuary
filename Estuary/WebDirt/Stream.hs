@@ -3,11 +3,13 @@ module Estuary.WebDirt.Stream where
 import Sound.Tidal.Context
 import Control.Concurrent.MVar
 import Control.Monad.Loops (iterateM_)
+import Control.Monad (liftM)
 import Data.Time (getCurrentTime)
+import Data.Time.Clock.POSIX
 import Data.Map
 import qualified Control.Exception as E
 import Data.Time
-import Estuary.WebDirt.Foreign
+import qualified Estuary.WebDirt.Foreign as WebDirt
 import qualified GHCJS.Types as T
 import qualified GHCJS.Marshal.Pure as P
 
@@ -16,31 +18,52 @@ webDirtTicksPerCycle = 8
 
 type WebDirtStream = ParamPattern -> IO ()
 
-webDirtStream :: IO WebDirtStream
-webDirtStream = do
-  webDirt <- newWebDirt
-  now <- getCurrentTime
-  mTempo <- newMVar (Tempo {at=now,beat=0.0,cps=1.0,paused=False,clockLatency=0.2})
+webDirtStream :: T.JSVal -> IO WebDirtStream
+webDirtStream webDirt = do
+  -- webDirt <- WebDirt.webDirt
+  -- WebDirt.initializeWebAudio webDirt
+  x <- WebDirt.getCurrentTime webDirt
+  putStrLn (show x)
+  let now = posixSecondsToUTCTime $ realToFrac x
+  -- mTempo <- newMVar (Tempo {at=now,beat=0.0,cps=1.0,paused=False,clockLatency=0.2})
   mPattern <- newMVar silence
-  forkIO $ clockedTickWebDirt mTempo (webDirtTick webDirt mPattern)
+  forkIO $ clockedTickWebDirt webDirt (webDirtTick webDirt mPattern)
   return $ \p -> do swapMVar mPattern p
                     return ()
 
-clockedTickWebDirt :: MVar Tempo -> (Tempo -> Int -> IO()) -> IO ()
-clockedTickWebDirt mTempo callback = do
-  nowBeat <- getCurrentBeat mTempo
-  let nextTick = ceiling (nowBeat * (fromIntegral webDirtTicksPerCycle))
-  iterateM_ (clockedTickWebDirtLoop callback mTempo) nextTick
+beatNowWebDirt :: T.JSVal -> Tempo -> IO Double
+beatNowWebDirt webDirt t = do
+  x <- WebDirt.getCurrentTime webDirt
+  putStrLn (show x)
+  let now = posixSecondsToUTCTime $ realToFrac x
+  let delta = realToFrac $ diffUTCTime now (at t)
+  let beatDelta = cps t * delta
+  return $ beat t + beatDelta
 
-clockedTickWebDirtLoop callback mTempo tick = do
-  tempo <- readMVar mTempo
+readWebDirtTempo :: T.JSVal -> IO Tempo
+readWebDirtTempo webDirt = do
+  (time,beats,bpm) <- WebDirt.tempo webDirt
+  let time' = posixSecondsToUTCTime $ realToFrac time
+  return $ Tempo {at=time',beat=beats,cps=bpm/60.0,paused=False,clockLatency=0.2}
+
+getCurrentWebDirtBeat :: T.JSVal -> IO Rational
+getCurrentWebDirtBeat webDirt = readWebDirtTempo webDirt >>= beatNowWebDirt webDirt >>= return . toRational
+
+clockedTickWebDirt :: T.JSVal -> (Tempo -> Int -> IO()) -> IO ()
+clockedTickWebDirt webDirt callback = do
+  nowBeat <- getCurrentWebDirtBeat webDirt
+  let nextTick = ceiling (nowBeat * (fromIntegral webDirtTicksPerCycle))
+  iterateM_ (clockedTickWebDirtLoop webDirt callback) nextTick
+
+clockedTickWebDirtLoop webDirt callback tick = do
+  tempo <- readWebDirtTempo webDirt
   if (paused tempo)
     then do
       let pause = 0.01
       threadDelay $ floor (pause * 1000000)
       return $ if cps tempo < 0 then 0 else tick -- reset tick to 0 if cps is negative
     else do
-      now <- getCurrentTime
+      now <- liftM (posixSecondsToUTCTime . realToFrac) $ WebDirt.getCurrentTime webDirt
       let beatsFromAtToTick = fromIntegral tick / fromIntegral webDirtTicksPerCycle - beat tempo
           delayUntilTick = beatsFromAtToTick / cps tempo - realToFrac (diffUTCTime now (at tempo))
       threadDelay $ floor (delayUntilTick * 1000000)
@@ -55,38 +78,8 @@ webDirtTick webDirt patternM tempo ticks = do
       b = (ticks' + 1) % webDirtTicksPerCycle
       events = seqToRelOnsets (a,b) p -- :: [(Double,Map Param (Maybe Value))]
       events' = Prelude.map (\(o,m) -> (f o,m)) events
-  E.catch (mapM_ (tidalEventToWebDirt webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
+  E.catch (mapM_ (WebDirt.playSample webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
   where f x = logicalOnset' tempo ticks x 0
-
-
-
-
--- data Param = S {name :: String, sDefault :: Maybe String} | F {name :: String, fDefault :: Maybe Double}
---            | I {name :: String, iDefault :: Maybe Int}
--- data Value = VS { svalue :: String } | VF { fvalue :: Double } | VI { ivalue :: Int }
--- ParamMap = Map Param (Maybe Value)
--- t == tidal time value, paramMap =list of any/all parameters
-tidalEventToWebDirt :: T.JSVal -> (Double,ParamMap) -> IO ()
-tidalEventToWebDirt webDirt (t,e) = do
-  let e' = mapMaybe (id) e :: Map Param Value -- Map Param Value where Value !=Nothing
-      t' = P.pToJSVal t
-      s = maybe (P.pToJSVal "trump") (valueToJSVal) (Data.Map.lookup s_p e')
-      n = maybe (P.pToJSVal (0::Int)) (valueToJSVal) (Data.Map.lookup n_p e')
-  -- putStrLn $ show t ++ " " ++ show e'
-  playSample webDirt t' e
-  --playSample webDirt t' s n
-  return ()
---
--- tidalEventToWebDirt :: T.JSVal -> (Double,ParamMap) -> IO ()
--- tidalEventToWebDirt webDirt (t,e) = do
---   let e' = mapMaybe (id) e :: Map Param Value -- Map Param Value where Value !=Nothing
---       t' = P.pToJSVal t
---   putStrLn $ show t ++ " " ++ show e'
---   playSample webDirt t' e
---   playSample' webDirt t' e'
---   return ()
-
-
 
 
 {-
