@@ -76,7 +76,6 @@ dropdownPatternWidget iPattern _ = do
   let ddVal = _dropdown_value patternDropDown
   soundPat <- mapDyn (\k ->case Data.Map.lookup k patMap of Just a-> a; otherwise -> sContainerWidget (S Blank) never) ddVal  --Dynamic (m(dynamic spec,event t))
   let soundPatEv = updated soundPat -- Event(Dyn )
-
   soundPatEv' <- widgetHold (initialFunc) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
   let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
   return $ soundPattern

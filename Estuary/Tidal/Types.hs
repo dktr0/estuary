@@ -29,7 +29,7 @@ instance Show RepOrDiv where
 data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
 
 showNoQuotes::(Show a)=> a->String
-showNoQuotes x= if (head x'=='"' && (last x')=='"') then if x''=="" then "~" else x'' else show x
+showNoQuotes x= if ((head x'=='"' && (last x')=='"') || (head x'== '\'' && last x'=='\'')) then if x''=="" then "~" else x'' else show x
   where x' = show x
         x''=(tail (init x'))
 
@@ -115,8 +115,7 @@ instance ParamPatternable SpecificPattern where
   toParamPattern (Sound x) = Tidal.sound $ Tidal.p $ show x
   toParamPattern (Speed x) = Tidal.speed $ Tidal.p $ show x
   toParamPattern (Unit x) = Tidal.unit $ Tidal.p $ show x
-
-
+  toParamPattern (Vowel x) = Tidal.vowel $ Tidal.p $ show x
 
 
 emptySPattern :: SpecificPattern

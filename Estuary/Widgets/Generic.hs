@@ -33,6 +33,12 @@ clickableDiv label = do
   where
     attr = singleton "style" "background-color: gray; display: inline;"
 
+clickableDivAttrs::MonadWidget t m => String -> a -> Map String String -> m (Event t a)
+clickableDivAttrs label val attrs= do
+  (element,_) <- elAttr' "div" attrs $ text label
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  return $ (val <$) clickEv
+
 clickableDiv' :: MonadWidget t m => String -> a -> m (Event t a)
 clickableDiv' label e = liftM (e <$) $ clickableDiv label
 

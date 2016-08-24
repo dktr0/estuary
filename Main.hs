@@ -25,7 +25,7 @@ twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,E
 --              m (Dynamic t (StackedPatterns,Event t GenericSignal))
 
 pages = [
-  ("Two stacked patterns",widgetToPage twoStackedPatterns),
-  ("S-Specific Pattern",widgetToPage $ sContainerWidget (Estuary.Tidal.Types.S Blank) never),
-  ("Sample and Pan Pattern", widgetToPage $ panSampleWidget (Estuary.Tidal.Types.S Blank) never)
+  ("Eldad Widget",widgetToPage $ eldadWidget EmptyPatternChain never),
+  ("Sample and Pan Pattern", widgetToPage $ panSampleWidget (Estuary.Tidal.Types.S Blank) never),
+  ("Two stacked patterns",widgetToPage twoStackedPatterns)
   ]

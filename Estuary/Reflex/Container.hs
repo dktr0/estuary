@@ -5,9 +5,9 @@ module Estuary.Reflex.Container where
 -- Reflex.Dom in ways that do not involve types specific to Estuary (or Tidal).
 -- For example, as in this module, new container widgets for arbitrary widgets.
 
+import Reflex.Dom
 import Data.Map
 import Reflex
-import Reflex.Dom
 import Data.Functor.Misc -- For Const2
 import Control.Monad
 

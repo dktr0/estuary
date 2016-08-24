@@ -85,6 +85,22 @@ patternChainWidget iValue _ = mdo
   mapDyn ((\x -> (x,never)) . listToPatternChain . elems) values
 
 
+
+eldadWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
+eldadWidget iChain _ = do
+  (sPattern,_) <- sContainerWidget (Estuary.Tidal.Types.S Blank) never >>= splitDyn
+  endPattern <- elAttr "div" ("style"=:"background-color:Lightyellow") $ do
+    elAttr "b" ("style"=:"font-size:200%;margin:5px") $ text "End"
+    (pat,_) <- doubleContainerWidget (End $ Atom 0.5 Once) never >>= splitDyn
+    return pat
+  vowelPattern <- elAttr "div" ("style"=:"background-color:wheat") $ do
+    elAttr "b" ("style"=:"font-size:200%;margin:5px") $ text "Vowel"
+    (pat,_) <- charContainerWidget (Vowel $ Atom '~' Once) never >>= splitDyn
+    return pat
+  patChain' <- combineDyn (\s e-> PatternChain' (TransformedPattern [NoTransformer] s) Merge (PatternChain $ TransformedPattern [NoTransformer] e)) endPattern vowelPattern
+  patChain <- combineDyn (\chain pat-> PatternChain' (TransformedPattern [NoTransformer] pat) Merge chain) patChain' sPattern
+  mapDyn (\x-> (x,never)) patChain
+
   -- patternChainAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
   --   -> [(k,Construction (Either (Either TransformedPattern PatternCombinator) () ))]
 
