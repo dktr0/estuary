@@ -25,6 +25,11 @@ pingButton''' label attrs _ _ = do
   b <- buttonDynAttrs label (Ping) $ constDyn attrs
   return $ constDyn ((), b)
 
+tdPingButton':: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
+tdPingButton' label attrs _ _ = el "td" $ do
+  b <- buttonDynAttrs label (Ping) $ constDyn attrs
+  return $ constDyn ((), b)
+
 clickableDiv :: MonadWidget t m => String -> m (Event t ())
 clickableDiv label = do
   (element,_) <- elAttr' "div" attr $ text label

@@ -91,6 +91,7 @@ eitherContainer' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    -> (a -> Event t b -> m (Dynamic t (a,Event t e)))  -- function to build widgets for type a (returning events of type c)
    -> m ( (Dynamic t (Map k v)) , Event t (Map k e) )
 
+
 eitherContainer' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = do
   (d,e) <- eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight
   d' <- mapDyn (mapMaybe (either (Just) (const Nothing))) d

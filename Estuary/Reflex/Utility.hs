@@ -7,6 +7,7 @@ import Data.Map
 import GHCJS.DOM.EventM
 
 
+
 -- Anytime an event is received issue another event of a given constant value.
 
 constEvent :: Reflex t => a -> Event t b -> Event t a
@@ -55,6 +56,8 @@ tdPingButton s val attrs _ _= do
   (element, _) <- elAttr' "td" attrs $ text s
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   return $ constDyn ((), ((val) <$) clickEv )
+
+
 
 
   --

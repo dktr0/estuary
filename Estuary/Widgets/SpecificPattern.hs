@@ -50,8 +50,8 @@ stringContainerWidget a _ = mdo
     (widgetBuilder,defaultGeneralPat, patType) = case a of
       S _ -> (textWidget, Blank, S)
 
-charContainerWidget':: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
-charContainerWidget' a _ = mdo
+charContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+charContainerWidget a _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
   (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (pingButton''' "+" ("style"=:"background-color:lightblue"))-- values:dyn Map k GeneralPattern,
@@ -70,27 +70,6 @@ charContainerWidget' a _ = mdo
       Unit _ -> (charWidget, Atom 'c' Once, Unit)
       Vowel _ -> (vowelButtonWidget, Atom '~' Once, Vowel)
 
-
-charContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
-charContainerWidget a _ = elAttr "table" tableAttrs $ el "tr" $ mdo
-  let initialMap = (0::Int)=:(Right ())
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (tdPingButton "+" (Ping) ("style"=:"text-align:center;width:60px;background-color:lightblue"))-- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
-  returnVal'<-forDyn returnVal (\x->(x,never))
-  return returnVal'
-  where
-    tableAttrs=("style"=:"display:inline-table;border-spacing:5px;border: 3pt solid black")
-    (widgetBuilder,defaultGeneralPat, patType) = case a of
-      Unit _ -> (charWidget, Atom 'c' Once, Unit)
-      Vowel _ -> (vowelButtonWidget, Atom '~' Once, Vowel)
 
 doubleContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 doubleContainerWidget a _ = mdo
@@ -221,8 +200,7 @@ nContainerWidget iVal _ = mdo
   return returnVal'
 
 sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t GenericSignal))
-sContainerWidget (S genPat) _ = elAttr "div" ("style"=:"vertical-align:center;background-color:lightgrey") $ mdo
-  elAttr "b" ("style"=:"font-size:200%;margin:5px") $ text "S"
+sContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
   (values,events) <- eitherContainer' initialMap cEvents never  never genPatButtonWidget (pingButton''' "+" ("style"=:"background-color:lightblue"))-- values:dyn Map k GeneralPattern,
@@ -370,15 +348,53 @@ charWidget (Atom iVal reps) _ = do
   genPat <- combineDyn (\char rep-> if char=='~' then Blank else Atom char rep) inputChar repeats'
   forDyn genPat (\k-> (k,deleteButton))
 
+charContainerWidget':: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+charContainerWidget' a _ = mdo
+  let initialMap = (0::Int)=:(Right ())
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (pingButton''' "+" ("style"=:"text-align:center;width:20px;background-color:lightblue"))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
+  returnVal'<-forDyn returnVal (\x->(x,never))
+  return returnVal'
+  where
+    tableAttrs=("style"=:"display:inline-table;border-spacing:5px;")
+    (widgetBuilder,defaultGeneralPat, patType) = case a of
+      Unit _ -> (charWidget, Atom 'c' Once, Unit)
+      Vowel _ -> (vowelButtonWidget', Atom '~' Once, Vowel)
 
-
+charContainerWidget'':: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+charContainerWidget'' a _ = mdo
+  let initialMap = (0::Int)=:(Right ())
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (tdPingButton "+" (Ping) ("style"=:"text-align:center;display:inline-table;max-width:20%;background-color:lightblue;height:50%"))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
+  returnVal'<-forDyn returnVal (\x->(x,never))
+  return returnVal'
+  where
+    tableAttrs=("style"=:"text-align:center;width:90%;display:inline-table;border-spacing:5px;")
+    (widgetBuilder,defaultGeneralPat, patType) = case a of
+      Unit _ -> (charWidget, Atom 'c' Once, Unit)
+      Vowel _ -> (vowelButtonWidget, Atom '~' Once, Vowel)
 
 
 -- Eldad's Widgets:
 
 genPatButtonWidget::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
 genPatButtonWidget (Atom iSamp iReps) _ = elAttr "table" tableAttrs $ mdo
-  --(sample,upCount) <- elAttr "tr" ("style"=:"display:table-row")$ do
   (sample,upCount) <- elAttr "tr" (empty)$ do
     (samp,_) <- sButtonWidget (Atom iSamp iReps) repeatsEv >>= splitDyn
     upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue") >>= count
@@ -411,7 +427,21 @@ sButtonWidget (Atom iSamp iReps) updatedReps = mdo
   mapDyn (\x->(x,never)) returnSample
 
 vowelButtonWidget::MonadWidget t m =>  GeneralPattern Char -> Event t () -> m (Dynamic t (GeneralPattern Char, Event t GenericSignal))
-vowelButtonWidget (Atom iVowel _) _ = el "td" $ elAttr "table" ("style"=:"display:inline-table;background-color:lightgreen;border:3pt solid black") $ mdo
+vowelButtonWidget (Atom iVowel _) _ = elAttr "td" ("style"=:"width:10%") $ elAttr "table" ("style"=:"border-spacing:10px;display:inline-table;background-color:lightgreen;border:3pt solid black") $ mdo
+  let sampleMap = fromList $ zip [0::Int,1,2,3,4] ['~','a','e','i','o','u']  -- Map Int (String,String)
+  let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVowel) $ elems sampleMap
+  vowelButton <- tdButtonAttrs' (showVowel) (iVowel) $ "style"=:"width:80px;text-align:center;background-color:lightblue"
+  deleteButton <- tdButtonAttrs (" - ") (DeleteMe) $ "style"=:"width: 80px; text-align:center;background-color:lightblue"
+  num <- count vowelButton >>= mapDyn (\x-> (x+initialNum) `mod` length sampleMap)
+  char'' <- mapDyn (\x-> maybe ('~') id $ Data.Map.lookup x sampleMap) num
+  let char' = updated char''
+  char <- holdDyn (iVowel) char'
+  vowel <- mapDyn (\x -> Atom x Once) char
+  showVowel <- mapDyn show vowel
+  mapDyn (\x->(x,deleteButton)) vowel
+
+vowelButtonWidget'::MonadWidget t m =>  GeneralPattern Char -> Event t () -> m (Dynamic t (GeneralPattern Char, Event t GenericSignal))
+vowelButtonWidget' (Atom iVowel _) _ = elAttr "table" ("style"=:"border-spacing:5px;display:inline-table;background-color:lightgreen;border:3pt solid black") $ mdo
   let sampleMap = fromList $ zip [0::Int,1,2,3,4] ['~','a','e','i','o','u']  -- Map Int (String,String)
   let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVowel) $ elems sampleMap
   vowelButton <- tdButtonAttrs' (showVowel) (iVowel) $ "style"=:"width:80px;text-align:center;background-color:lightblue"
@@ -426,19 +456,19 @@ vowelButtonWidget (Atom iVowel _) _ = el "td" $ elAttr "table" ("style"=:"displa
 
 endWidget::MonadWidget t m => GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
 endWidget (Atom iEnd Once) _ = elAttr "table" tableAttrs $ mdo
-  slider <- el "tr" $ elAttr "td" ("colspan"=:"3") $ do
-      let attrs = constDyn $ fromList $ zip ["min","max","step"] ["0","1","0.05"]
+  slider <- el "tr" $ elAttr "td" (Data.Map.union ("colspan"=:"3") ("style"=:"text-align:left")) $ do
+      let attrs = constDyn $ fromList $ zip ["min","max","step","style"] ["0","1","0.05","width:100px"]
       rangeInput <- textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs & textInputConfig_setValue .~ sliderUpdateVal & textInputConfig_initialValue .~ (show iEnd)
       let rangeVal = _textInput_value rangeInput
       mapDyn (\x-> maybe 0.5 id (readMaybe x::Maybe Double)) rangeVal
   (begEv,endEv,delEv) <- el "tr" $ do
-    begPlus <- tdButtonAttrs "<" (-0.05) ("style"=:"text-align:center;background-color:lightblue;")
-    endPlus <- tdButtonAttrs ">" (0.05) ("style"=:"text-align:center;background-color:lightblue;")
-    deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue"
+    begPlus <- tdButtonAttrs "<" (-0.05) ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black")
+    endPlus <- tdButtonAttrs ">" (0.05) ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black")
+    deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border: 1pt solid black"
     return (begPlus,endPlus,deleteButton)
   let buttons = leftmost [endEv,begEv]
   let sliderValBeh = current slider
   let sliderAndButtonVal = attachWith (\a b -> max 0 $ min 1 $ a+b) sliderValBeh buttons
   let sliderUpdateVal = fmap show sliderAndButtonVal
   mapDyn (\x-> (Atom x Once,delEv)) slider
-  where tableAttrs=("style"=:"margin:5px;display:inline-table;background-color:lightgreen;width:10%;padding:6px;border-spacing:5px;border: 3pt solid black")
+  where tableAttrs=("style"=:"margin:5px;display:inline-table;background-color:lightgreen;width:10%;border-spacing:5px;border: 2pt solid black")
