@@ -33,7 +33,6 @@ pages = [
   ("Conf1",widgetToPage $ C.eldadWidget EmptyPatternChain never),
   ("Conf2",widgetToPage $ C.eldadWidget' EmptyPatternChain never),
   ("Conf3", widgetToPage $ C.eldadWidget'' EmptyPatternChain never),
-  ("m", widgetToPage $ P.eldadWidget EmptyPatternChain never),
   ("Sample and Pan Pattern", widgetToPage $ panSampleWidget (Estuary.Tidal.Types.S Blank) never),
   ("Two stacked patterns",widgetToPage twoStackedPatterns)
   ]

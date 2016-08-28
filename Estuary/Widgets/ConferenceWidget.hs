@@ -358,8 +358,8 @@ doubleContainerWidget'' a _ = mdo
   where
     (widgetBuilder,defaultGeneralPat, patType) = (endWidget'', Atom (1) Once, End)
 
-endWidget''::MonadWidget t m => GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
-endWidget'' (Atom iEnd Once) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "td" tableAttrs $ mdo
+endWidget2''::MonadWidget t m => GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
+endWidget2'' (Atom iEnd Once) _ = elAttr "td" tableAttrs $ mdo
   slider <- el "tr" $ elAttr "td" (Data.Map.union ("colspan"=:"3") ("style"=:"text-align:left")) $ do
       let attrs = constDyn $ fromList $ zip ["min","max","step","style"] ["0","1","0.05","width:100px"]
       rangeInput <- textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs & textInputConfig_setValue .~ sliderUpdateVal & textInputConfig_initialValue .~ (show iEnd)
@@ -375,7 +375,7 @@ endWidget'' (Atom iEnd Once) _ = elAttr "td" ("style"=:"text-align:center") $ el
   let sliderAndButtonVal = attachWith (\a b -> max 0 $ min 1 $ a+b) sliderValBeh buttons
   let sliderUpdateVal = fmap show sliderAndButtonVal
   mapDyn (\x-> (Atom x Once,delEv)) slider
-  where tableAttrs=("style"=:"margin:5px;display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border: 2pt solid black")
+  where tableAttrs=("style"=:"margin:5px;text-align:center;display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border: 2pt solid black")
 
 
 -- Vowel Pattern
@@ -414,6 +414,28 @@ vowelButtonWidget'' (Atom iVowel _) _ = elAttr "td" ("style"=:"text-align:center
   mapDyn (\x->(x,deleteButton)) vowel
 
 
+-- Experimental:
+endWidget''::MonadWidget t m => GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
+endWidget'' (Atom iEnd Once) _ = elAttr "td" ("style"=:"text=align:center;margin:10px") $ mdo
+  (returnVal,attrs) <- elDynAttr "td" attrs $ do
+    (begEv,endEv,delEv) <- el "tr" $ do
+      begPlus <- tdButtonAttrs "<" (-0.05) ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black")
+      endPlus <- tdButtonAttrs ">" (0.05) ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black")
+      deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border: 1pt solid black"
+      return (begPlus,endPlus,deleteButton)
+    let buttons = leftmost [endEv,begEv]
+    endVal <- foldDyn (\a b-> min 1 $ max 0 $ a+b) 1 buttons
+    endGradient <- forDyn endVal makeStyleString
+    tableAttrs <- forDyn endGradient (\x->"style"=:("text-align:center;display:inline-table;width:100pt;border-spacing:5px;border: 2pt solid black;"++x))
+    val <- mapDyn (\x-> (Atom x Once,delEv)) endVal
+    return $ (val, tableAttrs)
+  return returnVal
+makeStyleString gradient =
+  "background: -webkit-linear-gradient(90deg,lightgreen "++ (show $ x+1) ++ "%, white "++(show $ x) ++ "%);"++
+    "background: -o-linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white "++ (show x)++ "%);" ++
+      "background: -moz-linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white "++ (show x) ++ "%);" ++
+        "background: linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white " ++ (show x) ++ "%);"
+  where x = gradient*100
 
 ------------------------
 --     Universal      --
