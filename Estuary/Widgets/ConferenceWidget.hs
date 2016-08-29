@@ -424,7 +424,8 @@ endWidget'' (Atom iEnd Once) _ = elAttr "td" ("style"=:"text=align:center;margin
       deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border: 1pt solid black"
       return (begPlus,endPlus,deleteButton)
     let buttons = leftmost [endEv,begEv]
-    endVal <- foldDyn (\a b-> min 1 $ max 0 $ a+b) 1 buttons
+    endVal' <- foldDyn (\a b-> min 1 $ max 0 $ a+b) iEnd buttons
+    endVal <- mapDyn (\x-> (fromInteger $ round $ x*100)/100) endVal'
     endGradient <- forDyn endVal makeStyleString
     tableAttrs <- forDyn endGradient (\x->"style"=:("text-align:center;display:inline-table;width:100pt;border-spacing:5px;border: 2pt solid black;"++x))
     val <- mapDyn (\x-> (Atom x Once,delEv)) endVal
