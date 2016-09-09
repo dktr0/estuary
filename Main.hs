@@ -30,9 +30,9 @@ twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t G
 twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
 
 pages = [
-  ("Conf1",widgetToPage $ C.eldadWidget EmptyPatternChain never),
-  ("Conf2",widgetToPage $ C.eldadWidget' EmptyPatternChain never),
   ("Conf3", widgetToPage $ C.eldadWidget'' EmptyPatternChain never),
+  ("Conf2",widgetToPage $ C.eldadWidget' EmptyPatternChain never),
+  ("Conf1",widgetToPage $ C.eldadWidget EmptyPatternChain never),
   ("Sample and Pan Pattern", widgetToPage $ panSampleWidget (Estuary.Tidal.Types.S Blank) never),
   ("Two stacked patterns",widgetToPage twoStackedPatterns)
   ]

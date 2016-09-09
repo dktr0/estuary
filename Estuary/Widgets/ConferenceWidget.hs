@@ -283,23 +283,52 @@ vowelButtonWidget' (Atom iVowel _) _ = elAttr "table" ("style"=:"border-spacing:
 --              Config 3              --
 ----------------------------------------
 
+
 eldadWidget'':: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
 eldadWidget'' iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
-  sPattern<- elAttr "tr" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
+  s<- elAttr "tr" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "S"
-    (s,_)<- sContainerWidget'' (Estuary.Tidal.Types.S Blank) never >>= splitDyn
-    return s
-  endPattern <- elAttr "tr" ("style"=:"background-color:Lightyellow") $ do
+    (pat,_)<- sContainerWidget'' (Estuary.Tidal.Types.S Blank) never >>= splitDyn
+    forDyn pat (TransformedPattern [NoTransformer])
+  end <- elAttr "tr" ("style"=:"background-color:Lightyellow") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "End"
     (pat,_) <- doubleContainerWidget'' (End $ Atom 0.5 Once) never >>= splitDyn
-    return pat
-  vowelPattern <- elAttr "tr" ("style"=:"background-color:wheat") $ do
+    forDyn pat (TransformedPattern [NoTransformer])
+  vowel <- elAttr "tr" ("style"=:"background-color:wheat") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px;") $ text "Vowel"
     (pat,_) <- charContainerWidget'' (Vowel $ Atom '~' Once) never >>= splitDyn
-    return pat
-  patChain' <- combineDyn (\s e-> PatternChain' (TransformedPattern [NoTransformer] s) Merge (PatternChain $ TransformedPattern [NoTransformer] e)) endPattern vowelPattern
-  patChain <- combineDyn (\chain pat-> PatternChain' (TransformedPattern [NoTransformer] pat) Merge chain) patChain' sPattern
+    forDyn pat (TransformedPattern [NoTransformer])
+  patChain' <- combineDyn (\e v-> PatternChain' e Merge (PatternChain v)) end vowel
+  patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain' s
+--  patChain' <- combineDyn (\e v->case toPatternChain e of EmptyPatternChain-> toPatternChain v; otherwise->PatternChain' e Merge $ toPatternChain v) end vowel
+  --patChain <- combineDyn (\chain pat-> PatternChain' pat Merge chain ) patChain' s
   mapDyn (\x-> (x,never)) patChain
+  where
+    toPatternChain (TransformedPattern _ (End  (Group [] _))) = EmptyPatternChain
+    toPatternChain (TransformedPattern _ (Vowel (Group [] _))) = EmptyPatternChain
+    toPatternChain x = PatternChain x
+
+--
+-- eldadWidget''':: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
+-- eldadWidget''' iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
+--   sPattern<- elAttr "tr" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
+--     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "S"
+--     (pat,_)<- sContainerWidget'' (Estuary.Tidal.Types.S Blank) never >>= splitDyn
+--     pat' <- forDyn pat (\x-> if x == (Estuary.Tidal.Types.S $ Group [] Once) then EmptyPatternChain else PatternChain $ TransformedPattern [NoTransformer] $ x)
+--     return pat'
+--   endPattern <- elAttr "tr" ("style"=:"background-color:Lightyellow") $ do
+--     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "End"
+--     (pat,_) <- doubleContainerWidget'' (End $ Atom 0.5 Once) never >>= splitDyn
+--     pat' <- forDyn pat (\x-> if x == (End $ Group [] Once) then EmptyPatternChain else PatternChain $ TransformedPattern [NoTransformer] x)
+--     return pat'
+--   vowelPattern <- elAttr "tr" ("style"=:"background-color:wheat") $ do
+--     elAttr "td" ("style"=:"font-size:100%;margin:5px;") $ text "Vowel"
+--     (pat,_) <- charContainerWidget'' (Vowel $ Atom '~' Once) never >>= splitDyn
+--     pat' <- forDyn pat (\x-> if x == (Vowel $ Group [] Once) then EmptyPatternChain else PatternChain $ TransformedPattern [NoTransformer] $ x )
+--     return pat'
+--   patChain' <- combineDyn (\e v-> if v == EmptyPatternChain then e else PatternChain'' e Merge v) endPattern vowelPattern
+--   patChain <- combineDyn (\chain pat-> if chain == EmptyPatternChain then pat else PatternChain'' pat Merge chain) patChain' sPattern
+--   mapDyn (\x-> (x,never)) patChain
 
 
 
@@ -352,7 +381,7 @@ doubleContainerWidget'' a _ = mdo
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
+  returnVal <- forDyn values' (\x-> patType $ Group x Once)
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
   where
