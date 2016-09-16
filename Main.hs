@@ -15,7 +15,10 @@ import Estuary.WebDirt.Stream
 import Estuary.Page
 import Estuary.Widgets.SpecificPattern
 import Estuary.Widgets.WebDirt
+--import Estuary.Widgets.IclcWidgets
+
 import Estuary.Widgets.ConferenceWidget as C
+
 
 main :: IO ()
 main = do
@@ -30,6 +33,7 @@ twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t G
 twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
 
 pages = [
+  ("Conf 4", widgetToPage $ C.eldadWidget''' EmptyPatternChain never),
   ("Conf3", widgetToPage $ C.eldadWidget'' EmptyPatternChain never),
   ("Conf2",widgetToPage $ C.eldadWidget' EmptyPatternChain never),
   ("Conf1",widgetToPage $ C.eldadWidget EmptyPatternChain never),
