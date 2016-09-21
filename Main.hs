@@ -26,6 +26,7 @@ main = do
   initializeWebAudio wd
   stream <- webDirtStream wd
   mainWidget $ do
+    elAttr "img" ("src"=:"logo.jpg") blank
     webDirtWidget wd
     multipage stream pages
 

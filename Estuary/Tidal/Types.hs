@@ -66,7 +66,7 @@ data SpecificPattern =  Accelerate (GeneralPattern Double) | Bandf (GeneralPatte
   | Pan (GeneralPattern Double)
   | Resonance (GeneralPattern Double) |S (GeneralPattern SampleName) | Shape (GeneralPattern Double)
   | Sound (GeneralPattern Sample) | Speed (GeneralPattern Double) | Unit (GeneralPattern Char)
-  | Vowel (GeneralPattern Char) deriving (Eq)
+  | Up (GeneralPattern Double) | Vowel (GeneralPattern Char) deriving (Eq)
 
 
 
@@ -95,6 +95,7 @@ instance Show SpecificPattern where
   show (Sound x) = "sound \"" ++ (show x) ++ "\""
   show (Speed x) = "speed \"" ++ (show x) ++ "\""
   show (Unit x) = "unit \"" ++ (show x) ++ "\""
+  show (Up x) = "up \"" ++ (show x) ++ "\""
   show (Vowel x) = "vowel \"" ++ (show x) ++ "\""
 
 
@@ -122,6 +123,7 @@ instance ParamPatternable SpecificPattern where
   toParamPattern (Shape x) = Tidal.shape $ Tidal.p $ show x
   toParamPattern (Sound x) = Tidal.sound $ Tidal.p $ show x
   toParamPattern (Speed x) = Tidal.speed $ Tidal.p $ show x
+  toParamPattern (Up x) = if isEmpty $ Up x then Tidal.up $ Tidal.p "0" else Tidal.up $ Tidal.p $ show x
   toParamPattern (Unit x) = Tidal.unit $ Tidal.p $ show x
   --toParamPattern (Vowel x) = Tidal.vowel $ Tidal.p $ show x
   toParamPattern (Vowel x) = if isEmpty $ Vowel x then Tidal.vowel $ Tidal.p $ "t" else Tidal.vowel $ Tidal.p $ show x
@@ -129,6 +131,7 @@ instance ParamPatternable SpecificPattern where
   isEmpty (End x) = generalPatternIsEmpty x
   isEmpty (Vowel x) = generalPatternIsEmpty x
   isEmpty (S x) = generalPatternIsEmpty x
+  isEmpty (Up x) = generalPatternIsEmpty x
 
 
 

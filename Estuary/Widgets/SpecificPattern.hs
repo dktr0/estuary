@@ -101,6 +101,7 @@ doubleContainerWidget a _ = mdo
       Resonance _ -> (sliderWidget (0,1) 0.01, Atom (0.5) Once, Resonance) -- @ is 0.5 an appropriate starting value?
       Shape _ -> (sliderWidget (0,1) 0.01, Atom (0.5) Once, Shape)
       Speed _ -> (sliderWidget (-500,500) 0.01, Atom 1 Once, Speed)
+      Up _ -> (sliderWidget (-36,36) 0.5, Atom 0 Once, Up)
 
 intContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 intContainerWidget a _ = mdo
