@@ -485,21 +485,13 @@ eldadWidget''' iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px;") $ text "Vowel"
     (pat,_) <- charContainerWidget''' (Vowel $ Atom '~' Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
-  up <- elAttr "tr" ("style"=:"background-color:lightred") $ do
+  up <- elAttr "tr" ("style"=:"background-color:lightcyan") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px;") $ text "Up"
     (pat,_) <- upContainerWidget''' (Up $ Atom 0 Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
   patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
   patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
   patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain' s
-
-
-  -- patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
-  -- patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
-  -- patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain' s
-
---  patChain' <- combineDyn (\e v->case toPatternChain e of EmptyPatternChain-> toPatternChain v; otherwise->PatternChain' e Merge $ toPatternChain v) end vowel
-  --patChain <- combineDyn (\chain pat-> PatternChain' pat Merge chain ) patChain' s
   mapDyn (\x-> (x,never)) patChain
   where
     toPatternChain (TransformedPattern _ (End  (Group [] _))) = EmptyPatternChain
@@ -526,26 +518,26 @@ sContainerWidget''' (S genPat) _ = mdo
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
 
+
 sButtonWidget'''::MonadWidget t m =>  GeneralPattern SampleName -> Event t RepOrDiv -> m (Dynamic t (SampleName, Event t GenericSignal))
 sButtonWidget''' (Atom iSamp iReps) updatedReps = mdo
   let sampleMap = fromList $ zip [0::Int,1..] $ concat [[("Rest","~")],fmap (\x->("Bass",x)) ["bd", "bassfoo", "less"], fmap (\x->("Glitch",x)) ["glitch", "click", "glitch2", "casio", "hardcore", "house", "cosmic"], fmap (\x->("Crashes",x)) ["cc"], fmap (\x->("Long Sounds",x)) ["sheffield", "ade", "padlong", "tacscan"], fmap (\x->("Humans and Animals",x)) ["h", "baa", "crow", "numbers", "alphabet", "hmm"]]
-  dd <- dropdownOpts 0 sampleMap def
+  let initialIndex = maybe 0 id $ Data.List.findIndex (==iSamp) $ fmap snd $ elems sampleMap
+  dd <- dropdownOpts initialIndex sampleMap def
   let val = _dropdown_value dd
   val' <- forDyn val (\x -> maybe "~" snd $ Data.Map.lookup x sampleMap)
   forDyn val' (\x-> (x,never))
 
 genPatButtonWidget'''::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
 genPatButtonWidget''' (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
-  (sample,upCount) <- elAttr "tr" (empty)$ do
-    sampName <- el "tr" $ do
-      (sampName,_) <- el "td" $ sButtonWidget''' (Atom iSamp iReps) never >>= splitDyn
-      el "td" $ forDyn repsHold show >>= dynText
-      return sampName
-    upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border 1pt solid black") >>= count
+  (sample,upCount) <- elAttr "tr" (empty) $ do
+    (sampName,_) <- el "td" $ sButtonWidget''' (Atom iSamp iReps) never >>= splitDyn
+    elAttr "td" ("style"=:"width:15%") $ forDyn repsHold show >>= dynText
+    upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
     return $ (sampName,upButton)
   (deleteEvent,downCount) <- el "tr" $ do
-    deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border 1pt solidblack"
-    downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;background-color:lightblue") >>= count
+    deleteButton <- tdButtonAttrs "-" (DeleteMe) $ fromList $ zip ["style","colspan"] ["text-align:center; background-color:lightblue;border: 1pt solid black","2"]
+    downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
     return $ (deleteButton, downButton)
   downCount'<-mapDyn (\x-> case iReps of (Div i) -> x+i-1; Rep i->x-i+1; otherwise -> x) downCount
   repeats <- combineDyn (\a b ->a-b+1) upCount downCount'
@@ -553,7 +545,7 @@ genPatButtonWidget''' (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:c
   repsHold <- holdDyn iReps $ updated repeats'
   sample' <- combineDyn Atom sample repsHold
   mapDyn (\x->(x,deleteEvent)) sample'
-  where tableAttrs=("style"=:"display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border: 3pt solid black")
+  where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
 genPatButtonWidget''' _ e = genPatButtonWidget''' (Atom "~" Once) e
 
 -- End Pattern
@@ -624,7 +616,7 @@ upWidget''' (Atom iUpVal _) _ = elAttr "td" ("style"=:"text-align:center") $ elA
   upValShow <- forDyn upVal show
   --repsHold <- holdDyn iUpVal $ updated repeats
   mapDyn (\x->(Atom (fromIntegral x) Once,deleteEvent)) upVal
-  where tableAttrs=("style"=:"display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border: 3pt solid black")
+  where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
 upWidget''' _ e = upWidget''' (Atom 0 Once) e
 
 -- Vowel Pattern
@@ -645,10 +637,10 @@ charContainerWidget''' a _ = mdo
   return returnVal'
   where
     tableAttrs=("style"=:"text-align:center;display:inline-table;border-spacing:5px;")
-    (widgetBuilder,defaultGeneralPat, patType) = (vowelButtonWidget'', Atom '~' Once, Vowel)
+    (widgetBuilder,defaultGeneralPat, patType) = (vowelButtonWidget''', Atom '~' Once, Vowel)
 
 vowelButtonWidget'''::MonadWidget t m =>  GeneralPattern Char -> Event t () -> m (Dynamic t (GeneralPattern Char, Event t GenericSignal))
-vowelButtonWidget''' (Atom iVowel _) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" ("style"=:"width:100px;border-spacing:5px;display:inline-table;background-color:lightgreen;border:3pt solid black") $ mdo
+vowelButtonWidget''' (Atom iVowel _) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" ("style"=:("width:100px;border-spacing:5px;display:inline-table;background-color:lightgreen;border:"++widgetBorder)) $ mdo
   let sampleMap = fromList $ zip [0::Int,1..] ['~','a','e','i','o','u']  -- Map Int (String,String)
   let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVowel) $ elems sampleMap
   vowelButton <- tdButtonAttrs' (showVowel) (iVowel) $ "style"=:"width:50px;text-align:center;background-color:lightblue;border:1pt solid black"
@@ -657,9 +649,10 @@ vowelButtonWidget''' (Atom iVowel _) _ = elAttr "td" ("style"=:"text-align:cente
   char'' <- mapDyn (\x-> maybe ('~') id $ Data.Map.lookup x sampleMap) num
   let char' = updated char''
   char <- holdDyn (iVowel) char'
-  vowel <- mapDyn (\x -> if x =='~' then Atom 't' Once else Atom x Once) char
+  vowel <- mapDyn (\x -> Atom x Once) char
   showVowel <- mapDyn show vowel
-  mapDyn (\x->(x,deleteButton)) vowel
+  vowel' <- mapDyn (\x -> if x =='~' then Atom 't' Once else Atom x Once) char
+  mapDyn (\x->(x,deleteButton)) vowel'
 
 
 
@@ -729,3 +722,26 @@ makeStyleString gradient =
   --   patChain' <- combineDyn (\e v-> if v == EmptyPatternChain then e else PatternChain'' e Merge v) endPattern vowelPattern
   --   patChain <- combineDyn (\chain pat-> if chain == EmptyPatternChain then pat else PatternChain'' pat Merge chain) patChain' sPattern
   --   mapDyn (\x-> (x,never)) patChain
+
+  --
+  -- genPatButtonWidget'''::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
+  -- genPatButtonWidget''' (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
+  --   (sample,upCount) <- elAttr "tr" (empty) $ do
+  --     sampName <- el "tr" $ do
+  --       (sampName,_) <- el "td" $ sButtonWidget''' (Atom iSamp iReps) never >>= splitDyn
+  --       elAttr "td" ("style"=:"width:30px") $ forDyn repsHold show >>= dynText
+  --       return sampName
+  --     upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border 1pt solid black") >>= count
+  --     return $ (sampName,upButton)
+  --   (deleteEvent,downCount) <- el "tr" $ do
+  --     deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border 1pt solidblack"
+  --     downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;background-color:lightblue") >>= count
+  --     return $ (deleteButton, downButton)
+  --   downCount'<-mapDyn (\x-> case iReps of (Div i) -> x+i-1; Rep i->x-i+1; otherwise -> x) downCount
+  --   repeats <- combineDyn (\a b ->a-b+1) upCount downCount'
+  --   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div $ abs (k-2))
+  --   repsHold <- holdDyn iReps $ updated repeats'
+  --   sample' <- combineDyn Atom sample repsHold
+  --   mapDyn (\x->(x,deleteEvent)) sample'
+  --   where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
+  -- genPatButtonWidget''' _ e = genPatButtonWidget''' (Atom "~" Once) e
