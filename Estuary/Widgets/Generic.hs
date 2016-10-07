@@ -7,7 +7,7 @@ import Control.Monad
 import Estuary.Reflex.Utility
 import Data.Map
 
-data GenericSignal = Ping | DeleteMe deriving (Eq, Show)
+data GenericSignal = Ping | DeleteMe | MakeGroup | MakeLayer | RebuildMe deriving (Eq, Show)
 
 pingButton :: MonadWidget t m => String -> m (Event t GenericSignal)
 pingButton label = liftM (Ping <$) $ button label
@@ -28,6 +28,11 @@ pingButton''' label attrs _ _ = do
 tdPingButton':: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
 tdPingButton' label attrs _ _ = el "td" $ do
   b <- buttonDynAttrs label (Ping) $ constDyn attrs
+  return $ constDyn ((), b)
+
+tdPingButton'':: MonadWidget t m => String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
+tdPingButton'' label _ _ = el "td" $ do
+  b <- buttonDynAttrs label (Ping) $ constDyn ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:30px;vertical-align:middle"))
   return $ constDyn ((), b)
 
 clickableDiv :: MonadWidget t m => String -> m (Event t ())

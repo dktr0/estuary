@@ -55,6 +55,11 @@ main = do
 twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
 twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
 
+hack::MonadWidget t m => m (Dynamic t (SpecificPattern, Event t ()))
+hack = do
+  (a,b) <- C.groupWidget Blank never >>= splitDyn
+  forDyn a (\x-> (Estuary.Tidal.Types.S x,never))
+
 pages = [
   ("ICOAH", widgetToPage $ C.eldadWidget''' EmptyPatternChain never),
   ("Conf3", widgetToPage $ C.eldadWidget'' EmptyPatternChain never),

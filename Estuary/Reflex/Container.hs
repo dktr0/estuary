@@ -90,12 +90,12 @@ eitherContainer' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    -> (v -> Event t w -> m (Dynamic t (v,Event t e)))  -- function to build widgets for type v (returning events of type x)
    -> (a -> Event t b -> m (Dynamic t (a,Event t e)))  -- function to build widgets for type a (returning events of type c)
    -> m ( (Dynamic t (Map k v)) , Event t (Map k e) )
-
-
 eitherContainer' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = do
   (d,e) <- eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight
   d' <- mapDyn (mapMaybe (either (Just) (const Nothing))) d
   return (d',e)
+
+
 
 
 eitherWidget :: (MonadWidget t m)
@@ -108,8 +108,6 @@ eitherWidget buildA buildB iValue c = either buildA' buildB' iValue
     buildA' a = buildA a c >>= mapDyn (\(x,d) -> (Left x,d))
     buildB' b = buildB b c >>= mapDyn (\(x,d) -> (Right x,d))
 
-
-
 wfor :: (MonadWidget t m) => [a] -> (a -> m (Dynamic t b)) -> m (Dynamic t [b])
 wfor iVals mkChild = do
   widgets <- liftM (joinDynThroughMap) $ listHoldWithKey iMap never mkChild' -- m (Dynamic t [b]))
@@ -120,3 +118,24 @@ wfor iVals mkChild = do
 
 wmap :: (MonadWidget t m) => (a -> m (Dynamic t b)) -> [a] -> m (Dynamic t [b])
 wmap = flip wfor
+
+
+rebuildableWidget:: MonadWidget t m
+ => (a -> Event t b -> m (Dynamic t (a, Event t GenericSignal))) -- builder function
+ -> a -> Event t b -> m (Dynamic t (a, Event t GenericSignal))
+rebuildableWidget builderFunc iVal updateEvent = do
+
+
+
+
+someBuilderFunc =
+  let iBuilder = iBuilderFunc iValue iEvent
+  widgetHold iBuilder rebuildEvent -- rebuildEvent contains the new builder func. for the Group widget, iBuilder builds an Atom
+
+-- hints up to Webdirt
+-- multiple interface - 3 levels of interface,
+1 super simple (similar to conference one, fixed structure),
+1 somewhat inbetween, -- more like current 2 stacked patterns thing - but update it and add group stuff
+
+1 more text based --
+-- variation of 2 stacked, but basically just textual

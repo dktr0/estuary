@@ -475,8 +475,8 @@ eldadWidget''':: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (
 eldadWidget''' iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
   s<- elAttr "tr" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "S"
-    (pat,_)<- sContainerWidget''' (Estuary.Tidal.Types.S Blank) never >>= splitDyn
-    forDyn pat (TransformedPattern [NoTransformer])
+    (pat,_)<- sContainerWidget''' (Blank) never >>= splitDyn
+    forDyn pat (\x-> TransformedPattern [NoTransformer] $ S x)
   end <- elAttr "tr" ("style"=:"background-color:Lightyellow") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "End"
     (pat,_) <- endContainerWidget''' (End $ Atom 0.5 Once) never >>= splitDyn
@@ -500,13 +500,55 @@ eldadWidget''' iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
 
 
 
+--
+-- widget iBuilder newBuilder iVal iUpdateEvent = mdo
+--   val <- widgetHold (iBuilder iVal iUpdateEvent) (fmap (\x-> if x == MakeGroup then newBuilder iVal iUpdateEvent else iBuilder iVal iUpdateEvent) $ switchPromptlyDyn upEv)
+--   let val' = joinDyn val
+--   upEv <- forDyn val' (\(returnVal, updateEv)->updateEv)
+--   return val'
+--
+
+f ::MonadWidget t m => GeneralPattern SampleName -> Event t GenericSignal -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
+f (Atom x r) e = groupableWidget (Atom x r) e
+f (Blank) e = groupableWidget (Blank) e
+f (Group xs r) e = sContainerWidget''' (Group xs r) e
+f (Layers xs r) e = sContainerWidget''' (Layers xs r) e
+
+
+widget::MonadWidget t m => GeneralPattern SampleName -> Event t GenericSignal -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
+widget iVal updateEvent = mdo
+  --let ev = fmap (\x->if x ==MakeGroup then sContainerWidget''' (S Blank) updateEvent else )
+  val <- widgetHold (f (iVal) never) makeGroupEvent'' -- m dyn dyn
+  let val' = joinDyn val
+  widgetEvents <- forDyn val' (\(x,y)->y) -- Dyn Ev.
+  makeGroupEvent <- forDyn widgetEvents (\x->ffilter (==RebuildMe) x) -- Dyn Event t RebuildMe
+  makeGroupEvent' <- combineDyn (\v e-> fmap (\x-> f (fst v) never) e) val' makeGroupEvent -- dyn Event m(...)
+  let makeGroupEvent'' = switchPromptlyDyn makeGroupEvent' -- Event m(...)
+  return val'
+
+  -- get events (GenericSignal) out of val
+  -- filter for RebuildMe
+  -- when RebuildMe, constructionEvents = an event wrapping f (and the newest value of the child widget)
+
+  -- val <- widgetHold (groupableWidget (Blank) updateEvent) (fmap (\x-> sContainerWidget''' x updateEvent) upEv)
+  -- let val' = joinDyn val
+  -- val <- forDyn val' (\(returnVal, updateEv)->returnVal)
+  -- ev <- forDyn val' (\(returnVal, updateEv)->updateEv)
+  --
+  -- let upEv = tagDyn val updateEvent
+  -- return val'
+
+
 
 -- S Pattern
-sContainerWidget'''::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t GenericSignal))
-sContainerWidget''' (S genPat) _ = mdo
-  let initialMap = (0::Int)=:(Right ())
+sContainerWidget'''::(MonadWidget t m) => GeneralPattern SampleName -> Event t GenericSignal -> m (Dynamic t (GeneralPattern SampleName,Event t GenericSignal))
+sContainerWidget''' (Atom iVal iReps) _ =  elAttr "td" ("style"=:"border: 1pt solid red") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never genPatButtonWidget''' (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  -- (values,events) <- eitherContainer' initialMap cEvents never  never genPatButtonWidget''' (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  --widget:: MonadWidget t m => a -> Event t b -> (a -> Event t b -> m (Dynamic t (a, Event t c))) -> (a -> Event t b -> m (Dynamic t (a, Event t c))) -> Event t b -> m (Dynamic t (a, Event t c))
+  (values,events) <- eitherContainer' initialMap cEvents never never widget (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -514,19 +556,45 @@ sContainerWidget''' (S genPat) _ = mdo
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (Estuary.Tidal.Types.S $ Group x Once))
-  returnVal'<-forDyn returnVal (\x->(x,never))
+  returnVal <- forDyn values' (\x-> (Group x Once))
+  returnVal'<-forDyn returnVal (\x->(x,delButton))
   return returnVal'
+sContainerWidget''' (Group xs iReps) _ =  elAttr "td" ("style"=:"border: 1pt solid red") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  -- (values,events) <- eitherContainer' initialMap cEvents never  never genPatButtonWidget''' (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  --widget:: MonadWidget t m => a -> Event t b -> (a -> Event t b -> m (Dynamic t (a, Event t c))) -> (a -> Event t b -> m (Dynamic t (a, Event t c))) -> Event t b -> m (Dynamic t (a, Event t c))
+  (values,events) <- eitherContainer' initialMap cEvents never never widget (trPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> (Group x Once))
+  returnVal'<-forDyn returnVal (\x->(x,delButton))
+  return returnVal'
+sContainerWidget''' (Layers xs r) e = elAttr "td" ("style"=:"border: 2pt solid blue") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  -- (values,events) <- eitherContainer' initialMap cEvents never  never genPatButtonWidget''' (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  --widget:: MonadWidget t m => a -> Event t b -> (a -> Event t b -> m (Dynamic t (a, Event t c))) -> (a -> Event t b -> m (Dynamic t (a, Event t c))) -> Event t b -> m (Dynamic t (a, Event t c))
+  (values,events) <- eitherContainer' initialMap cEvents never never widget (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> (Layers x Once))
+  returnVal'<-forDyn returnVal (\x->(x,delButton))
+  return returnVal'
+sContainerWidget''' _ e = sContainerWidget''' (Atom "~" Once) e
 
-
-sButtonWidget'''::MonadWidget t m =>  GeneralPattern SampleName -> Event t RepOrDiv -> m (Dynamic t (SampleName, Event t GenericSignal))
-sButtonWidget''' (Atom iSamp iReps) updatedReps = mdo
-  let sampleMap = fromList $ zip [0::Int,1..] $ concat [[("Rest","~")],fmap (\x->("Bass",x)) ["bd", "bassfoo", "less"], fmap (\x->("Glitch",x)) ["glitch", "click", "glitch2", "casio", "hardcore", "house", "cosmic"], fmap (\x->("Crashes",x)) ["cc"], fmap (\x->("Long Sounds",x)) ["sheffield", "ade", "padlong", "tacscan"], fmap (\x->("Humans and Animals",x)) ["h", "baa", "crow", "numbers", "alphabet", "hmm"]]
-  let initialIndex = maybe 0 id $ Data.List.findIndex (==iSamp) $ fmap snd $ elems sampleMap
-  dd <- dropdownOpts initialIndex sampleMap def
-  let val = _dropdown_value dd
-  val' <- forDyn val (\x -> maybe "~" snd $ Data.Map.lookup x sampleMap)
-  forDyn val' (\x-> (x,never))
 
 genPatButtonWidget'''::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
 genPatButtonWidget''' (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
@@ -547,6 +615,16 @@ genPatButtonWidget''' (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:c
   mapDyn (\x->(x,deleteEvent)) sample'
   where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
 genPatButtonWidget''' _ e = genPatButtonWidget''' (Atom "~" Once) e
+
+sButtonWidget'''::MonadWidget t m =>  GeneralPattern SampleName -> Event t RepOrDiv -> m (Dynamic t (SampleName, Event t GenericSignal))
+sButtonWidget''' (Atom iSamp iReps) updatedReps = mdo
+  let sampleMap = fromList $ zip [0::Int,1..] $ concat [[("Rest","~")],fmap (\x->("Bass",x)) ["bd", "bassfoo", "less"], fmap (\x->("Glitch",x)) ["glitch", "click", "glitch2", "casio", "hardcore", "house", "cosmic"], fmap (\x->("Crashes",x)) ["cc"], fmap (\x->("Long Sounds",x)) ["sheffield", "ade", "padlong", "tacscan"], fmap (\x->("Humans and Animals",x)) ["h", "baa", "crow", "numbers", "alphabet", "hmm"]]
+  let initialIndex = maybe 0 id $ Data.List.findIndex (==iSamp) $ fmap snd $ elems sampleMap
+  dd <- dropdownOpts initialIndex sampleMap def
+  let val = _dropdown_value dd
+  val' <- forDyn val (\x -> maybe "~" snd $ Data.Map.lookup x sampleMap)
+  forDyn val' (\x-> (x,never))
+
 
 -- End Pattern
 endContainerWidget''':: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
@@ -745,3 +823,115 @@ makeStyleString gradient =
   --   mapDyn (\x->(x,deleteEvent)) sample'
   --   where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
   -- genPatButtonWidget''' _ e = genPatButtonWidget''' (Atom "~" Once) e
+
+-- turn me into a group, or tear my group apart
+
+groupWidget:: MonadWidget t m => GeneralPattern SampleName -> Event t GenericSignal -> m ( Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
+groupWidget iPat _ = elAttr "td" ("style"=:"border: 1pt solid red") $ mdo
+  let initialMap = fromList $ zip [0::Int,1] [Left Blank,Right ()]
+  deleteEvent <- button' "-" (DeleteMe)
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never groupableWidget (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  forDyn values' (\x-> (Group x Once, deleteEvent))
+
+
+groupableWidget::MonadWidget t m => GeneralPattern SampleName -> Event t GenericSignal -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
+groupableWidget (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
+  (sample,upCount) <- elAttr "tr" (empty) $ do
+    (sampName,_) <- el "td" $ sButtonWidget''' (Atom iSamp iReps) never >>= splitDyn
+    elAttr "td" ("style"=:"width:15%") $ forDyn repsHold show >>= dynText
+    upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
+    return $ (sampName,upButton)
+  (layerEvent, groupEvent,deleteEvent,downCount) <- el "tr" $ do
+    (layerEvent,groupEvent, deleteEvent) <- el "td" $ do
+      groupButton <- tdButtonAttrs "[]" (MakeGroup) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+      layerButton <- tdButtonAttrs "[,,]" (MakeLayer) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+      deleteButton <- tdButtonAttrs "-" (DeleteMe) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+      return $ (layerButton, groupButton, deleteButton)
+    downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
+    return $ (layerEvent,groupEvent,deleteEvent, downButton)
+  downCount'<-mapDyn (\x-> case iReps of (Div i) -> x+i-1; Rep i->x-i+1; otherwise -> x) downCount
+  repeats <- combineDyn (\a b ->a-b+1) upCount downCount'
+  repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div $ abs (k-2))
+  repsHold <- holdDyn iReps $ updated repeats'
+  groupToggle <- toggle False groupEvent
+  layerToggle <- toggle False layerEvent
+  sample' <- combineDyn Atom sample repsHold
+  sample'' <- combineDyn (\s tog-> if tog then Group [s] Once else s) sample' groupToggle
+  sample''' <- combineDyn (\s tog-> case s of (Atom a x) -> if tog then Layers [s] Once else s; otherwise-> s) sample'' layerToggle
+  let rebuildEvent = fmap (const RebuildMe) $ leftmost [layerEvent, groupEvent]
+  let e = leftmost [rebuildEvent, deleteEvent]
+  mapDyn (\x->(x,e)) sample'''
+  where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
+groupableWidget _ e = groupableWidget (Atom "~" Once) e
+
+-- when make group is called - change the value from an atom to a group (or whatever is appropriate) so the pattern matching works in 'f'
+
+-- groupableWidget::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
+-- groupableWidget (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
+--   (sample,upCount) <- elAttr "tr" (empty) $ do
+--     (sampName,_) <- el "td" $ sButtonWidget''' (Atom iSamp iReps) never >>= splitDyn
+--     elAttr "td" ("style"=:"width:15%") $ forDyn repsHold show >>= dynText
+--     upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
+--     return $ (sampName,upButton)
+--   (groupEvent,deleteEvent,downCount) <- el "tr" $ do
+--     (groupEvent, deleteEvent) <- el "td" $ do
+--       groupButton <- tdButtonAttrs "Make Group" (MakeGroup) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+--       deleteButton <- tdButtonAttrs " - " (DeleteMe) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+--       return $ (groupButton,deleteButton)
+--     downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
+--     return $ (groupEvent,deleteEvent, downButton)
+--   isGroup <- toggle False groupEvent
+--   downCount'<-mapDyn (\x-> case iReps of (Div i) -> x+i-1; Rep i->x-i+1; otherwise -> x) downCount
+--   repeats <- combineDyn (\a b ->a-b+1) upCount downCount'
+--   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div $ abs (k-2))
+--   repsHold <- holdDyn iReps $ updated repeats'
+--   sample' <- combineDyn Atom sample repsHold
+--   let e = leftmost [groupEvent, deleteEvent]
+--   mapDyn (\x->(x,e)) sample'
+--   rval <- combineDyn (\isG rVal -> if isG then groupWidget Blank never else constDyn rVal) isGroup returnVal
+--   rval <- forDyn (\x-> fmap (\isG-> if isG then groupWidget Blank never else constDyn x) $ current isGroup) returnVal
+--   join rval
+--   where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
+-- groupableWidget _ e = groupableWidget (Atom "~" Once) e
+
+
+-- groupableWidget'::MonadWidget t m => Event t GenericSignal -> GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t GenericSignal))
+-- groupableWidget' groupEvent (Atom iSamp iReps) event = do
+--   a <- toggle False groupEvent
+--   b <- forDyn a (\x-> if x then groupWidget (Atom iSamp iReps) event else nongroup (Atom iSamp iReps) never) -- Dynamic t (m Dynamic t (genpat,event gen))
+--   return $ joinDyn b
+--   where
+--     nongroup (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
+--       (sample,upCount) <- elAttr "tr" (empty) $ do
+--         (sampName,_) <- el "td" $ sButtonWidget''' (Atom iSamp iReps) never >>= splitDyn
+--         elAttr "td" ("style"=:"width:15%") $ forDyn repsHold show >>= dynText
+--         upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
+--         return $ (sampName,upButton)
+--       (groupEvent,deleteEvent,downCount) <- el "tr" $ do
+--         (groupEvent, deleteEvent) <- el "td" $ do
+--           groupButton <- tdButtonAttrs "Make Group" (MakeGroup) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+--           deleteButton <- tdButtonAttrs " - " (DeleteMe) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+--           return $ (groupButton,deleteButton)
+--         downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
+--         return $ (groupEvent,deleteEvent, downButton)
+--       -- isGroup <- toggle False groupEvent
+--       downCount'<-mapDyn (\x-> case iReps of (Div i) -> x+i-1; Rep i->x-i+1; otherwise -> x) downCount
+--       repeats <- combineDyn (\a b ->a-b+1) upCount downCount'
+--       repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div $ abs (k-2))
+--       repsHold <- holdDyn iReps $ updated repeats'
+--       sample' <- combineDyn Atom sample repsHold
+--       let e = leftmost [groupEvent, deleteEvent]
+--       mapDyn (\x->(x,e)) sample'
+--     --  rval <- combineDyn (\isG rVal -> if isG then groupWidget Blank never else constDyn rVal) isGroup returnVal
+--       -- rval <- forDyn (\x-> fmap (\isG-> if isG then groupWidget Blank never else constDyn x) $ current isGroup) returnVal
+--       --join rval
+--     tableAttrs = ("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
+-- groupableWidget' _ _ e = groupableWidget' never (Atom "~" Once) e
