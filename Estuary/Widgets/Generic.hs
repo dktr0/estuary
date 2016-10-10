@@ -49,6 +49,13 @@ clickableDivAttrs label val attrs= do
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   return $ (val <$) clickEv
 
+clickableDivAttrs'::MonadWidget t m => String -> a -> Map String String -> x -> y -> m (Dynamic t ((),Event t a))
+clickableDivAttrs' label val attrs _ _= do
+  (element,_) <- elAttr' "div" attrs $ text label
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  let event = (val <$) clickEv
+  return $ constDyn ((),event)
+
 clickableDiv' :: MonadWidget t m => String -> a -> m (Event t a)
 clickableDiv' label e = liftM (e <$) $ clickableDiv label
 

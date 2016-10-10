@@ -120,22 +120,20 @@ wmap :: (MonadWidget t m) => (a -> m (Dynamic t b)) -> [a] -> m (Dynamic t [b])
 wmap = flip wfor
 
 
-rebuildableWidget:: MonadWidget t m
- => (a -> Event t b -> m (Dynamic t (a, Event t GenericSignal))) -- builder function
- -> a -> Event t b -> m (Dynamic t (a, Event t GenericSignal))
-rebuildableWidget builderFunc iVal updateEvent = do
+-- rebuildableWidget:: MonadWidget t m
+--  => (a -> Event t b -> m (Dynamic t (a, Event t GenericSignal))) -- builder function
+--  -> a -> Event t b -> m (Dynamic t (a, Event t GenericSignal))
+-- rebuildableWidget builderFunc iVal updateEvent = do
 
 
-
-
-someBuilderFunc =
-  let iBuilder = iBuilderFunc iValue iEvent
-  widgetHold iBuilder rebuildEvent -- rebuildEvent contains the new builder func. for the Group widget, iBuilder builds an Atom
-
--- hints up to Webdirt
--- multiple interface - 3 levels of interface,
-1 super simple (similar to conference one, fixed structure),
-1 somewhat inbetween, -- more like current 2 stacked patterns thing - but update it and add group stuff
-
-1 more text based --
--- variation of 2 stacked, but basically just textual
+-- someBuilderFunc =
+--   let iBuilder = iBuilderFunc iValue iEvent
+--   widgetHold iBuilder rebuildEvent -- rebuildEvent contains the new builder func. for the Group widget, iBuilder builds an Atom
+--
+-- -- hints up to Webdirt
+-- -- multiple interface - 3 levels of interface,
+-- 1 super simple (similar to conference one, fixed structure),
+-- 1 somewhat inbetween, -- more like current 2 stacked patterns thing - but update it and add group stuff
+--
+-- 1 more text based --
+-- -- variation of 2 stacked, but basicallfy just textual

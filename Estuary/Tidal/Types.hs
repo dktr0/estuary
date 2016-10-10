@@ -127,11 +127,33 @@ instance ParamPatternable SpecificPattern where
   toParamPattern (Unit x) = Tidal.unit $ Tidal.p $ show x
   --toParamPattern (Vowel x) = Tidal.vowel $ Tidal.p $ show x
   toParamPattern (Vowel x) = if isEmpty $ Vowel x then Tidal.vowel $ Tidal.p $ "t" else Tidal.vowel $ Tidal.p $ show x
-  -- @ fill out rest.
+  isEmpty (Accelerate x) = generalPatternIsEmpty x
+  isEmpty (Bandf x) = generalPatternIsEmpty x
+  isEmpty (Bandq x) = generalPatternIsEmpty x
+  isEmpty (Begin x) = generalPatternIsEmpty x
+  isEmpty (Coarse x) = generalPatternIsEmpty x
+  isEmpty (Crush x) = generalPatternIsEmpty x
+  isEmpty (Cut x) = generalPatternIsEmpty x
+  isEmpty (Cutoff x) = generalPatternIsEmpty x
+  isEmpty (Delay x) = generalPatternIsEmpty x
+  isEmpty (Delaytime x) = generalPatternIsEmpty x
+  isEmpty (Delayfeedback x) = generalPatternIsEmpty x
+  isEmpty (End x) = generalPatternIsEmpty x
+  isEmpty (Gain x) = generalPatternIsEmpty x
+  isEmpty (Hcutoff x) = generalPatternIsEmpty x
+  isEmpty (Hresonance x) = generalPatternIsEmpty x
+  isEmpty (Loop x) = generalPatternIsEmpty x
+  isEmpty (N x) = generalPatternIsEmpty x
+  isEmpty (Pan x) = generalPatternIsEmpty x
+  isEmpty (Resonance x) = generalPatternIsEmpty x
+  isEmpty (S x) = generalPatternIsEmpty x
+  isEmpty (Shape x) = generalPatternIsEmpty x
+  isEmpty (Sound x) = generalPatternIsEmpty x
+  isEmpty (Speed x) = generalPatternIsEmpty x
+  isEmpty (Up x) = generalPatternIsEmpty x
+  isEmpty (Unit x) = generalPatternIsEmpty x
   isEmpty (End x) = generalPatternIsEmpty x
   isEmpty (Vowel x) = generalPatternIsEmpty x
-  isEmpty (S x) = generalPatternIsEmpty x
-  isEmpty (Up x) = generalPatternIsEmpty x
 
 
 

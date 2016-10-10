@@ -16,7 +16,7 @@ import Estuary.Page
 import Estuary.Widgets.SpecificPattern
 import Estuary.Widgets.WebDirt
 import Data.Map
---import Estuary.Widgets.IclcWidgets
+import Estuary.Widgets.IclcWidgets as I
 import Control.Monad.IO.Class
 import Estuary.Widgets.ConferenceWidget as C
 
@@ -61,6 +61,7 @@ hack = do
   forDyn a (\x-> (Estuary.Tidal.Types.S x,never))
 
 pages = [
+  ("ICLC Fixed", widgetToPage $ I.iclcFixedStruct EmptyPatternChain never),
   ("ICOAH", widgetToPage $ C.eldadWidget''' EmptyPatternChain never),
   ("Conf3", widgetToPage $ C.eldadWidget'' EmptyPatternChain never),
   ("Conf2",widgetToPage $ C.eldadWidget' EmptyPatternChain never),
