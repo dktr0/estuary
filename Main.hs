@@ -20,16 +20,6 @@ import Estuary.Widgets.IclcWidgets as I
 import Control.Monad.IO.Class
 import Estuary.Widgets.ConferenceWidget as C
 
---
--- main :: IO ()
--- main = do
---   wd <- webDirt
---   initializeWebAudio wd
---   stream <- webDirtStream wd
---   mainWidget $ do
---     elAttr "img" (fromList $ zip ["src","width","height"] ["logo.jpg","150","64"]) blank
---     webDirtWidget wd
---     multipage stream pages
 
 main :: IO ()
 main = do
@@ -37,7 +27,7 @@ main = do
   initializeWebAudio wd
   stream <- webDirtStream wd
   mainWidget $ do
-    elAttr "img" (fromList $ zip ["src","width","height"] ["logo.jpg","150","64"]) blank
+    elAttr "img" (fromList $ zip ["src","width","height"] ["logo.png","168","59"]) blank
     startButton <- el "div" $ button "Start"
     --performEvent $ fmap (liftIO . (initializeWebAudio wd)) startButton
     performEvent $ fmap (liftIO . ( const $ initializeWebAudio wd)) startButton
@@ -61,11 +51,12 @@ hack = do
   forDyn a (\x-> (Estuary.Tidal.Types.S x,never))
 
 pages = [
-  ("ICLC Fixed", widgetToPage $ I.iclcFixedStruct EmptyPatternChain never),
+  ("ICLC Text Widget",widgetToPage $ stackedPatternsTextWidget (StackedPatterns [EmptyPatternChain]) never),
+  ("ICLC Stacked Patterns Widget",widgetToPage twoStackedPatterns),
+  ("ICLC Fixed Widget", widgetToPage $ I.iclcFixedStruct EmptyPatternChain never),
   ("ICOAH", widgetToPage $ C.eldadWidget''' EmptyPatternChain never),
   ("Conf3", widgetToPage $ C.eldadWidget'' EmptyPatternChain never),
   ("Conf2",widgetToPage $ C.eldadWidget' EmptyPatternChain never),
   ("Conf1",widgetToPage $ C.eldadWidget EmptyPatternChain never),
-  ("Sample and Pan Pattern", widgetToPage $ panSampleWidget (Estuary.Tidal.Types.S Blank) never),
-  ("Two stacked patterns",widgetToPage twoStackedPatterns)
+  ("Sample and Pan Pattern", widgetToPage $ panSampleWidget (Estuary.Tidal.Types.S Blank) never)
   ]

@@ -69,7 +69,6 @@ data SpecificPattern =  Accelerate (GeneralPattern Double) | Bandf (GeneralPatte
   | Up (GeneralPattern Double) | Vowel (GeneralPattern Char) deriving (Eq)
 
 
-
 instance Show SpecificPattern where
   show (Accelerate x) = "accelerate \"" ++ (show x) ++ "\""
   show (Bandf x) = "bandf \"" ++ (show x) ++ "\""

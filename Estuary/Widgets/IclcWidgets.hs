@@ -347,7 +347,6 @@ endWidget (Atom iEnd Once) _ = elAttr "td" ("style"=:"text-align:center;margin:1
 
 
 
-
 specificDoubleContainer::MonadWidget t m=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 specificDoubleContainer iVal e = do
   genPat <- doubleContainer vMin vMax step iGroup e -- m (dyn gen eve)
@@ -369,6 +368,7 @@ specificDoubleContainer iVal e = do
       Speed x -> (Speed, x, -999, 999, 0.5)
       Up x -> (Up, x, -132,132, 1)
 
+
 doubleContainer::(MonadWidget t m) => Double -> Double -> Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
 doubleContainer vMin vMax step (Layers xs iReps) _ =  elAttr "div" ("style"=:"border: 2pt solid blue;display:inline-block") $ mdo
   delButton <- button' " - " DeleteMe
@@ -379,7 +379,7 @@ doubleContainer vMin vMax step (Layers xs iReps) _ =  elAttr "div" ("style"=:"bo
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (0::Double) Once))])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
   returnVal <- forDyn values' (\x-> Layers x Once)
@@ -394,7 +394,7 @@ doubleContainer vMin vMax step (Group xs iReps) _ = elAttr "div" ("style"=:"bord
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (0::Double) Once))])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
   returnVal <- forDyn values' (\x-> Group x Once)
@@ -408,7 +408,7 @@ doubleContainer vMin vMax step (Atom iVal iReps) _ = elAttr "div" ("style"=:"bor
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (0::Double) Once))])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal::Double) Once))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
   returnVal <- forDyn values' (\x-> Group x Once)
@@ -457,3 +457,267 @@ doubleGroupOrAtom vMin vMax step iVal updateEvent = mdo
     function vMin vMax step (Blank) e = groupableDoubleWidget vMin vMax step (Blank) e
     function vMin vMax step (Group xs r) e = doubleContainer vMin vMax step (Group xs r) e
     function vMin vMax step (Layers xs r) e = doubleContainer vMin vMax step (Layers xs r) e
+
+
+------------------------------------
+--            Strings....         --
+------------------------------------
+
+
+
+specificStringContainer::MonadWidget t m=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+specificStringContainer iVal e = do
+  genPat <- stringContainer iGroup e -- m (dyn gen eve)
+  mapDyn (\(x,ev)->(constructor x, ev)) genPat
+  where
+    (constructor, iGroup) = case iVal of
+      (S _) -> (S , Atom "~" Once)
+
+
+stringContainer::(MonadWidget t m) => GeneralPattern String -> Event t () -> m (Dynamic t (GeneralPattern String, Event t GenericSignal))
+stringContainer (Layers xs iReps) _ =  elAttr "div" ("style"=:"border: 2pt solid blue;display:inline-block") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never (stringGroupOrAtom) (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom ("~"::String) Once))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> Layers x Once)
+  returnVal'<-forDyn returnVal (\x->(x,delButton))
+  return returnVal'
+stringContainer (Group xs iReps) _ = elAttr "div" ("style"=:"border: 1pt solid red;display:inline-block;") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never (stringGroupOrAtom) (pingButton''' "+" ("style"=:"background-color:lightblue;display:inline-block"))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom ("~"::String) Once))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> Group x Once)
+  forDyn returnVal (\x->(x,delButton))
+stringContainer (Atom iVal iReps) _ = elAttr "div" ("style"=:"border: 1pt solid red;display:inline-block;") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never (stringGroupOrAtom) (pingButton''' "+" ("style"=:"background-color:lightblue;display:inline-block"))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom ("~"::String) Once))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> Group x Once)
+  forDyn returnVal (\x->(x,delButton))
+stringContainer _ e = stringContainer (Atom ("~") Once) e
+  where
+    makeIMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+    makeIMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    makeIMap _ = makeIMap (Atom 0 Once)
+
+groupableStringWidget::(MonadWidget t m) => GeneralPattern String -> Event t () -> m (Dynamic t (GeneralPattern String, Event t GenericSignal))
+groupableStringWidget (Atom iVal iReps) _ = elAttr "div" ("style"=:"display:inline-block;") $ elAttr "table" tableAttrs $ mdo
+  genPat <- el "tr" $ do
+    val <- el "td" $ do
+      inputField <- textInput $ def & textInputConfig_attributes .~ constDyn ("style"=:"width:60px") & textInputConfig_initialValue .~ (iVal)
+      let val = _textInput_value inputField
+      return val
+    reps <- repDivWidget iReps
+    combineDyn (\x y -> Atom x y) val reps
+  (layerEvent, groupEvent, deleteEvent) <- el "tr" $ elAttr "td" ("colspan"=:"3") $ el "tr" $ do
+    groupButton <- tdButtonAttrs " [] " (MakeGroup) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+    layerButton <- tdButtonAttrs " [,,] " (MakeLayer) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+    deleteButton <- tdButtonAttrs " - " (DeleteMe) $ "style"=:"width:45px;text-align:center; background-color:lightblue;border: 1pt solid black"
+    return $ (layerButton, groupButton, deleteButton)
+  groupToggle <- toggle False groupEvent
+  layerToggle <- toggle False layerEvent
+  genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
+  genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
+  let rebuildEvent = fmap (const RebuildMe) $ leftmost [layerEvent, groupEvent]
+  mapDyn (\x-> (x,leftmost [rebuildEvent, deleteEvent])) genPat''
+  where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:130pt;border-spacing:5px;border:"++widgetBorder))
+
+groupableStringWidget _ e = groupableStringWidget (Atom "~" Once) e
+
+stringGroupOrAtom::(MonadWidget t m) =>  GeneralPattern String -> Event t () -> m (Dynamic t (GeneralPattern String, Event t GenericSignal))
+stringGroupOrAtom iVal updateEvent = mdo
+  val <- widgetHold (builder (iVal) never) makeGroupEvent'' -- m dyn dyn
+  let val' = joinDyn val
+  widgetEvents <- forDyn val' (\(x,y)->y) -- Dyn Ev.
+  makeGroupEvent <- forDyn widgetEvents (\x->ffilter (==RebuildMe) x) -- Dyn Event t RebuildMe
+  makeGroupEvent' <- combineDyn (\v e-> fmap (\x-> builder (fst v) never) e) val' makeGroupEvent -- dyn Event m(...)
+  let makeGroupEvent'' = switchPromptlyDyn makeGroupEvent' -- Event m(...)
+  return val'
+  where
+    builder (Atom x r) e = groupableStringWidget (Atom x r) e
+    builder (Blank) e = groupableStringWidget (Blank) e
+    builder (Group xs r) e = stringContainer (Group xs r) e
+    builder (Layers xs r) e = stringContainer (Layers xs r) e
+
+
+repDivWidget::MonadWidget t m => RepOrDiv -> m (Dynamic t RepOrDiv)
+repDivWidget (Rep iVal) = elAttr "table" ("style"=:"height:20px")$ mdo
+  val <- el "tr" $ do
+    repOrDiv <- el "td" $ mdo
+      text "*"
+      rep <- checkbox True $ def & checkboxConfig_setValue .~ (fmap not divideEv)
+      let repEv = _checkbox_change rep
+      el "br" blank
+      text "/"
+      divide <- checkbox False $ def & checkboxConfig_setValue .~ (fmap not repEv)
+      let divideEv = _checkbox_change divide
+      let val = _checkbox_value rep
+      return val
+    num <- el "td" $ do
+      let attrs = fromList $ zip ["style","step","min"] ["width:35px;","1", "0"]
+      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+      let inVal = _textInput_value textField
+      forDyn inVal (\x-> maybe 1 id $ ((readMaybe x)::Maybe Int))
+    combineDyn (\rd val -> if rd then Rep val else Div val) repOrDiv num
+  return val
+repDivWidget (Div iVal) = elAttr "table" ("style"=:"height:20px")$ mdo
+  val <- el "tr" $ do
+    repOrDiv <- el "td" $ mdo
+      text "*"
+      rep <- checkbox False $ def & checkboxConfig_setValue .~ (fmap not divideEv)
+      let repEv = _checkbox_change rep
+      el "br" blank
+      text "/"
+      divide <- checkbox True $ def & checkboxConfig_setValue .~ (fmap not repEv)
+      let divideEv = _checkbox_change divide
+      let val = _checkbox_value rep
+      return val
+    num <- el "td" $ do
+      let attrs = fromList $ zip ["style","step","min"] ["width:35px;","1", "0"]
+      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+      let inVal = _textInput_value textField
+      forDyn inVal (\x-> maybe 1 id $ ((readMaybe x)::Maybe Int))
+    combineDyn (\rd val -> if rd then Rep val else Div val) repOrDiv num
+  return val
+repDivWidget _ = repDivWidget (Rep 1)
+
+
+
+
+
+
+
+
+
+
+----------------Ints.....
+
+
+specificIntContainer::MonadWidget t m=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+specificIntContainer iVal e = do
+  genPat <- intContainer vMin vMax step iGroup e -- m (dyn gen eve)
+  mapDyn (\(x,ev)->(constructor x, ev)) genPat
+  where
+    (constructor, iGroup,vMin,vMax,step) = case iVal of
+      Bandf x -> (Bandf, x, 0, 25000, 10)
+      Coarse x -> (Coarse, x, 0, 24, 1)
+      Crush x -> (Crush, x, 0, 16, 1)
+      Estuary.Tidal.Types.Cut x -> (Estuary.Tidal.Types.Cut, x, -50, 50, 1)
+      Cutoff x -> (Cutoff, x, 0, 25000, 10)
+      Hcutoff x -> (Cutoff, x, 0, 25000, 10)
+      Loop x -> (Loop, x, 0, 1024,1)
+      N x -> (N, x, 0, 50, 1)
+
+
+intContainer::(MonadWidget t m) => Int -> Int -> Int -> GeneralPattern Int -> Event t () -> m (Dynamic t (GeneralPattern Int, Event t GenericSignal))
+intContainer vMin vMax step (Layers xs iReps) _ =  elAttr "div" ("style"=:"border: 2pt solid blue;display:inline-block") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never (intGroupOrAtom vMin vMax step) (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (0::Int) Once))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> Layers x Once)
+  returnVal'<-forDyn returnVal (\x->(x,delButton))
+  return returnVal'
+intContainer vMin vMax step (Group xs iReps) _ = elAttr "div" ("style"=:"border: 1pt solid red;display:inline-block;") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never (intGroupOrAtom vMin vMax step) (pingButton''' "+" ("style"=:"background-color:lightblue;display:inline-block"))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (0::Int) Once))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> Group x Once)
+  forDyn returnVal (\x->(x,delButton))
+intContainer vMin vMax step (Atom iVal iReps) _ = elAttr "div" ("style"=:"border: 1pt solid red;display:inline-block;") $ mdo
+  delButton <- button' " - " DeleteMe
+  let initialMap = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+  let cEvents = mergeWith (union) [makeSMap,deleteMap]
+  (values,events) <- eitherContainer' initialMap cEvents never  never (intGroupOrAtom vMin vMax step) (pingButton''' "+" ("style"=:"background-color:lightblue;display:inline-block"))-- values:dyn Map k GeneralPattern,
+  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
+  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
+  let deleteMap = fmap (fromList) deleteList
+  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (0::Int) Once))])) makeSKeys
+  let makeSMap = fmap (fromList) makeSList
+  values' <- forDyn values (elems)
+  returnVal <- forDyn values' (\x-> Group x Once)
+  forDyn returnVal (\x->(x,delButton))
+intContainer vMin vMax step _ e = intContainer vMin vMax step (Atom 0 Once) e
+  where
+    makeIMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+    makeIMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    makeIMap _ = makeIMap (Atom 0 Once)
+
+groupableIntWidget::(MonadWidget t m) => Int -> Int -> Int -> GeneralPattern Int -> Event t () -> m (Dynamic t (GeneralPattern Int, Event t GenericSignal))
+groupableIntWidget vMin vMax step (Atom iVal _) _ = elAttr "div" ("style"=:"text-align:center;display:inline-block") $ elAttr "table" tableAttrs $ mdo
+  (genPat,deleteEvent) <- elAttr "tr" (empty) $ do
+    genPat <- elAttr "td" ("style"=:"width:45px") $ do
+      let attrs = fromList $ zip ["style","step","min","max"] ["width:40px;",show step, show vMin, show vMax]
+      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+      let inVal = _textInput_value textField
+      inVal' <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else 0) inVal
+      mapDyn (\x->Atom (max vMin $ min vMax x) Once) inVal'
+    deleteButton <- tdButtonAttrs " - " (DeleteMe) $ "style"=:"width:45px;text-align:center; background-color:lightblue;border: 1pt solid black"
+    return (genPat, deleteButton)
+  (layerEvent, groupEvent) <- el "tr" $ do
+    groupButton <- tdButtonAttrs " [] " (MakeGroup) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+    layerButton <- tdButtonAttrs " [,,] " (MakeLayer) $ fromList $ zip ["style"] ["text-align:center; background-color:lightblue;border: 1pt solid black"]
+    return $ (layerButton, groupButton)
+  groupToggle <- toggle False groupEvent
+  layerToggle <- toggle False layerEvent
+  genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
+  genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
+  let rebuildEvent = fmap (const RebuildMe) $ leftmost [layerEvent, groupEvent]
+  mapDyn (\x->(x,leftmost [rebuildEvent, deleteEvent])) genPat''
+  where tableAttrs=("style"=:("display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border:"++widgetBorder))
+groupablIntWidget vMin vMax step _ e = groupablIntWidget vMin vMax step (Atom 0 Once) e
+
+intGroupOrAtom::(MonadWidget t m) => Int -> Int -> Int-> GeneralPattern Int -> Event t () -> m (Dynamic t (GeneralPattern Int, Event t GenericSignal))
+intGroupOrAtom vMin vMax step iVal updateEvent = mdo
+  val <- widgetHold (function vMin vMax step (iVal) never) makeGroupEvent'' -- m dyn dyn
+  let val' = joinDyn val
+  widgetEvents <- forDyn val' (\(x,y)->y) -- Dyn Ev.
+  makeGroupEvent <- forDyn widgetEvents (\x->ffilter (==RebuildMe) x) -- Dyn Event t RebuildMe
+  makeGroupEvent' <- combineDyn (\v e-> fmap (\x-> function vMin vMax step (fst v) never) e) val' makeGroupEvent -- dyn Event m(...)
+  let makeGroupEvent'' = switchPromptlyDyn makeGroupEvent' -- Event m(...)
+  return val'
+  where
+    function vMin vMax step (Atom x r) e = groupableIntWidget vMin (vMax) step (Atom x r) e
+    function vMin vMax step (Blank) e = groupableIntWidget vMin vMax step (Blank) e
+    function vMin vMax step (Group xs r) e = intContainer vMin vMax step (Group xs r) e
+    function vMin vMax step (Layers xs r) e = intContainer vMin vMax step (Layers xs r) e
