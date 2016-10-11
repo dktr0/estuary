@@ -172,7 +172,7 @@ emptySoundPattern :: SpecificPattern
 emptySoundPattern = Sound Blank
 
 
-data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer deriving (Ord,Eq)
+data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer | Chop Int  deriving (Ord,Eq)
 
 instance Show PatternTransformer where
   show NoTransformer = ""
@@ -184,6 +184,7 @@ instance Show PatternTransformer where
   show (Every n t) = "every " ++ (show n) ++ "(" ++ show t ++ ")"
   show (Brak) = "brak"
   show (Jux f) = "jux (" ++ (show f) ++ ")"
+  show (Chop i) = "chop (" ++ (show i) ++ ")"
 
 applyPatternTransformer :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
 applyPatternTransformer NoTransformer = id
@@ -195,7 +196,7 @@ applyPatternTransformer (DegradeBy d) = Tidal.degradeBy d
 applyPatternTransformer (Every n t) = Tidal.every n (applyPatternTransformer t)
 applyPatternTransformer (Brak) = Tidal.brak
 applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
-
+applyPatternTransformer (Chop t) = Tidal.chop t
 
 
 data TransformedPattern = TransformedPattern [PatternTransformer] SpecificPattern deriving (Eq)
