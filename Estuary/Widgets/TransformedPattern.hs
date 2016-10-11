@@ -65,7 +65,7 @@ dropdownPatternWidget' _ _ = do
 
 dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 dropdownPatternWidget iPattern _ = do
-  let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit", "vowel"] -- Map (Map k func) String
+  let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
   let patternType = head $ words $ show iPattern
   let initialIndex = maybe (0) id $ Data.List.findIndex (==patternType) paramShowList -- Int of initalFunc
   let patMap = fromList $ zip [0..] builderList
@@ -90,11 +90,11 @@ dropdownPatternWidget iPattern _ = do
       intContainerWidget (Loop $ Atom 0 Once), I.specificIntContainer (N $ Atom 0 Once),
       I.specificDoubleContainer (Pan $ Atom 0.5 Once), I.specificDoubleContainer (Resonance $ Atom 0.5 Once),
       I.sContainer (S Blank), I.specificDoubleContainer (Shape $ Atom 0.5 Once),
-      I.specificDoubleContainer (Speed $ Atom 1 Once), I.charContainerWidget (Unit $ Atom 'c' Once), I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+      I.specificDoubleContainer (Speed $ Atom 1 Once), I.charContainerWidget (Unit $ Atom 'c' Once), I.specificDoubleContainer (Up $ Atom 0 Once),I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
 
 dropdownPatternTextWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 dropdownPatternTextWidget iPattern _ = do
-  let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit", "vowel"] -- Map (Map k func) String
+  let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
   let patternType = head $ words $ show iPattern
   let initialIndex = maybe (0) id $ Data.List.findIndex (==patternType) paramShowList -- Int of initalFunc
   let patMap = fromList $ zip [0..] builderList
@@ -119,7 +119,7 @@ dropdownPatternTextWidget iPattern _ = do
       intContainerWidget (Loop $ Atom 0 Once), intContainerWidget (N $ Atom 0 Once),
       I.specificDoubleContainer (Pan $ Atom 0.5 Once), I.specificDoubleContainer (Resonance $ Atom 0.5 Once),
       I.specificStringContainer (S Blank), I.specificDoubleContainer (Shape $ Atom 0.5 Once),
-      I.specificDoubleContainer (Speed $ Atom 1 Once), I.charContainerWidget (Unit $ Atom 'c' Once), I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+      I.specificDoubleContainer (Speed $ Atom 1 Once), I.charContainerWidget (Unit $ Atom 'c' Once), I.specificDoubleContainer (Up $ Atom 0 Once), I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
 
 
 
