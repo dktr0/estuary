@@ -6,6 +6,7 @@ import Estuary.Tidal.Types
 import Estuary.Reflex.Utility
 import Data.Map
 import Text.Read
+import GHC.Real
 
 trivialPatternTransformer :: MonadWidget t m => PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer,()))
 trivialPatternTransformer iValue _ = el "div" $ do
@@ -57,17 +58,21 @@ paramWidget (Every num trans) = do
   val'<-combineDyn (\k (next,_)-> Every k next) val nextTrans
   return val'
 paramWidget (Slow _) = do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"]))
   let input' = _textInput_value input -- Dyn string
-  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Rational))
-  val'<-forDyn val (\k-> Slow (k))
-  return val'
+  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ ("1")
+  let input2' = _textInput_value input2 -- Dyn string
+  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Integer))
+  val2 <- forDyn input2' (\x-> maybe 1 id (readMaybe x::Maybe Integer))
+  combineDyn (\x y->  Slow ((x%y)::Rational)) val val2
 paramWidget (Density _)= do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"]))
   let input' = _textInput_value input -- Dyn string
-  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Rational))
-  val'<-forDyn val (\k-> Density k)
-  return val'
+  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ ("1")
+  let input2' = _textInput_value input2 -- Dyn string
+  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Integer))
+  val2 <- forDyn input2' (\x-> maybe 1 id (readMaybe x::Maybe Integer))
+  combineDyn (\x y-> Density $ (x%y::Rational) ) val val2
 paramWidget (DegradeBy _) = do
   input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
   let input' = _textInput_value input -- Dyn string

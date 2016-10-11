@@ -11,7 +11,7 @@ import Control.Monad
 import Estuary.Widgets.SpecificPattern
 import Data.Map
 import Data.List
-
+import qualified Estuary.Widgets.IclcWidgets as I
 -- data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double) deriving (Eq)
 
 
@@ -69,7 +69,6 @@ dropdownPatternWidget iPattern _ = do
   let patternType = head $ words $ show iPattern
   let initialIndex = maybe (0) id $ Data.List.findIndex (==patternType) paramShowList -- Int of initalFunc
   let patMap = fromList $ zip [0..] builderList
-  text $ show patternType
   let initialFunc = maybe (builderList!!0) (id) $ Data.Map.lookup initialIndex patMap
   let dropDownMap = constDyn $ fromList $ zip [0::Int,1..] paramShowList
   patternDropDown <- dropdown initialIndex dropDownMap def
@@ -80,18 +79,48 @@ dropdownPatternWidget iPattern _ = do
   let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
   return $ soundPattern
   where
-    builderList = Prelude.map (\x-> x never) [doubleContainerWidget (Accelerate $ Atom 0 Once), intContainerWidget (Bandf $ Atom 440 Once),
-      doubleContainerWidget (Bandq $ Atom 100 Once),doubleContainerWidget (Begin $ Atom 0 Once),
+    builderList = Prelude.map (\x-> x never) [I.specificDoubleContainer (Accelerate $ Atom 0 Once), I.specificIntContainer (Bandf $ Atom 440 Once),
+      I.specificDoubleContainer (Bandq $ Atom 10 Once),I.specificDoubleContainer (Begin $ Atom 0 Once),
+      I.specificIntContainer (Coarse $ Atom 0 Once), intContainerWidget (Crush $ Atom 16 Once),
+      intContainerWidget (Estuary.Tidal.Types.Cut $ Atom 1 Once), intContainerWidget (Cutoff $ Atom 440 Once),
+      I.specificDoubleContainer (Delay $ Atom 0 Once),I.specificDoubleContainer (Delayfeedback $ Atom 0 Once),
+      I.specificDoubleContainer (Delaytime $ Atom 0.5 Once), I.specificDoubleContainer (End $ Atom 1 Once),
+      I.specificDoubleContainer (Gain $ Atom 1 Once), I.specificIntContainer (Hcutoff $ Atom 440 Once),
+      I.specificDoubleContainer (Hresonance $ Atom 20 Once),
+      intContainerWidget (Loop $ Atom 0 Once), I.specificIntContainer (N $ Atom 0 Once),
+      I.specificDoubleContainer (Pan $ Atom 0.5 Once), I.specificDoubleContainer (Resonance $ Atom 0.5 Once),
+      I.sContainer (S Blank), I.specificDoubleContainer (Shape $ Atom 0.5 Once),
+      I.specificDoubleContainer (Speed $ Atom 1 Once), I.charContainerWidget (Unit $ Atom 'c' Once), I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+
+dropdownPatternTextWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+dropdownPatternTextWidget iPattern _ = do
+  let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit", "vowel"] -- Map (Map k func) String
+  let patternType = head $ words $ show iPattern
+  let initialIndex = maybe (0) id $ Data.List.findIndex (==patternType) paramShowList -- Int of initalFunc
+  let patMap = fromList $ zip [0..] builderList
+  let initialFunc = maybe (builderList!!0) (id) $ Data.Map.lookup initialIndex patMap
+  let dropDownMap = constDyn $ fromList $ zip [0::Int,1..] paramShowList
+  patternDropDown <- dropdown initialIndex dropDownMap def
+  let ddVal = _dropdown_value patternDropDown
+  soundPat <- mapDyn (\k ->case Data.Map.lookup k patMap of Just a-> a; otherwise -> sContainerWidget (S Blank) never) ddVal  --Dynamic (m(dynamic spec,event t))
+  let soundPatEv = updated soundPat -- Event(Dyn )
+  soundPatEv' <- widgetHold (initialFunc) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
+  let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
+  return $ soundPattern
+  where
+    builderList = Prelude.map (\x-> x never) [I.specificDoubleContainer (Accelerate $ Atom 0 Once), intContainerWidget (Bandf $ Atom 440 Once),
+      I.specificDoubleContainer (Bandq $ Atom 10 Once),I.specificDoubleContainer (Begin $ Atom 0 Once),
       intContainerWidget (Coarse $ Atom 0 Once), intContainerWidget (Crush $ Atom 16 Once),
       intContainerWidget (Estuary.Tidal.Types.Cut $ Atom 1 Once), intContainerWidget (Cutoff $ Atom 440 Once),
-      doubleContainerWidget (Delay $ Atom 0 Once),doubleContainerWidget (Delayfeedback $ Atom 0 Once),
-      doubleContainerWidget (Delaytime $ Atom 0.5 Once), doubleContainerWidget (End $ Atom 1 Once),
-      doubleContainerWidget (Gain $ Atom 1 Once), intContainerWidget (Hcutoff $ Atom 440 Once),
-      doubleContainerWidget (Hresonance $ Atom 20 Once),
+      I.specificDoubleContainer (Delay $ Atom 0 Once),I.specificDoubleContainer (Delayfeedback $ Atom 0 Once),
+      I.specificDoubleContainer (Delaytime $ Atom 0.5 Once), I.specificDoubleContainer (End $ Atom 1 Once),
+      I.specificDoubleContainer (Gain $ Atom 1 Once), intContainerWidget (Hcutoff $ Atom 440 Once),
+      I.specificDoubleContainer (Hresonance $ Atom 20 Once),
       intContainerWidget (Loop $ Atom 0 Once), intContainerWidget (N $ Atom 0 Once),
-      doubleContainerWidget (Pan $ Atom 0.5 Once), doubleContainerWidget (Resonance $ Atom 0.5 Once),
-      stringContainerWidget (S Blank), doubleContainerWidget (Shape $ Atom 0.5 Once),
-      doubleContainerWidget (Speed $ Atom 1 Once), charContainerWidget (Unit $ Atom 'c' Once), charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+      I.specificDoubleContainer (Pan $ Atom 0.5 Once), I.specificDoubleContainer (Resonance $ Atom 0.5 Once),
+      I.specificStringContainer (S Blank), I.specificDoubleContainer (Shape $ Atom 0.5 Once),
+      I.specificDoubleContainer (Speed $ Atom 1 Once), I.charContainerWidget (Unit $ Atom 'c' Once), I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+
 
 
 transformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
@@ -107,6 +136,20 @@ transformedPatternWidget (TransformedPattern ts p) _ = el "div" $ do
     f (x:_) = x
     lookupBuilder x = sContainerWidget
 
+transformedPatternTextWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
+transformedPatternTextWidget (TransformedPattern ts p) _ = el "div" $ do
+  deleteEvents <- buttonDynAttrs "-" (DeleteMe) (constDyn $ "style"=:"background-color:salmon")
+  (soundPattern,events) <- dropdownPatternTextWidget (p) never >>= splitDyn
+  --deleteEvents <- mapDyn (ffilter (==DeleteMe)) events --Dyn Event DeleteMe
+  transformer <- parameteredPatternTransformer (f ts) never
+  transformedPat <- combineDyn(\(a,_) b-> TransformedPattern [a] b) transformer soundPattern -- Dyn transformedPat
+  mapDyn (\a-> (a,deleteEvents)) transformedPat
+  where
+    f [] = NoTransformer -- sorry again...
+    f (x:_) = x
+    lookupBuilder x = sContainerWidget
+
+
 
 transformedPatternWidget'' :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
 transformedPatternWidget'' (TransformedPattern ts p) _ = el "div" $ do
@@ -121,7 +164,6 @@ transformedPatternWidget'' (TransformedPattern ts p) _ = el "div" $ do
 
   soundPatEv' <- widgetHold (sContainerWidget (S Blank) never) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
   let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
-
 
   eventsFromPattern <- liftM (switchPromptlyDyn) $ mapDyn (snd) soundPattern
   let deleteEvents = ffilter (==DeleteMe) eventsFromPattern
