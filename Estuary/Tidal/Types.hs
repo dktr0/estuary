@@ -211,9 +211,11 @@ instance Show PatternChain where
 
 instance ParamPatternable PatternChain where
   toParamPattern (EmptyPatternChain) = Tidal.silence
-  toParamPattern (PatternChain x) = toParamPattern x
+  toParamPattern (PatternChain' x c (PatternChain y)) | isEmpty x = toParamPattern y
+                                                      | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
   toParamPattern (PatternChain' x c y) | isEmpty x = toParamPattern y
                                        | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
+  toParamPattern (PatternChain x) = toParamPattern x
   isEmpty (EmptyPatternChain) = True
   isEmpty (PatternChain x) = isEmpty x
   isEmpty (PatternChain' x _ y) = (isEmpty x) && (isEmpty y)
