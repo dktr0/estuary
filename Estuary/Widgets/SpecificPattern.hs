@@ -17,38 +17,7 @@ import Text.Read(readMaybe)
 
 
 
-panSampleWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (PatternChain,Event t GenericSignal))
-panSampleWidget i e = do
-  samplePattern <- sampleContainerWidget i e >>= mapDyn (\(a,b)->a)
-  panPattern <- panContainerWidget i e >>= mapDyn (\(a,b)->a)-- Pan (GeneralPattern Double)
-  crushPattern <- crushContainerWidget i e >>= mapDyn (\(a,b)->a)
-  transSample<- forDyn samplePattern (TransformedPattern [NoTransformer])
-  transPan <- forDyn panPattern (TransformedPattern [NoTransformer])
-  transCrush <- forDyn crushPattern (TransformedPattern [NoTransformer])
-  patternChain <-combineDyn (\pan crush-> (PatternChain' pan Add (PatternChain crush))) transPan transCrush -- Dynamic t PatternChain
-  patternChain' <- combineDyn (\sample chain-> PatternChain' sample Add chain) transSample patternChain
-  forDyn patternChain' (show) >>=display
-  forDyn patternChain' (\k -> (k,never))
 
-stringContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
-stringContainerWidget a _ = mdo
-  let initialMap = (0::Int)=:(Right ())
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (pingButton''' "+" ("style"=:"background-color:lightblue"))-- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
-  display returnVal
-  returnVal'<-forDyn returnVal (\x->(x,never))
-  return returnVal'
-  where
-    (widgetBuilder,defaultGeneralPat, patType) = case a of
-      S _ -> (textWidget, Blank, S)
 
 charContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 charContainerWidget a _ = mdo
@@ -374,7 +343,7 @@ charContainerWidget'':: MonadWidget t m => SpecificPattern -> Event t () -> m (D
 charContainerWidget'' a _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (tdPingButton "+" (Ping) ("style"=:"text-align:center;display:inline-table;max-width:20%;background-color:lightblue;height:50%"))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (tdPingButtonAttrs "+" ("style"=:"text-align:center;display:inline-table;max-width:20%;background-color:lightblue;height:50%"))
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList

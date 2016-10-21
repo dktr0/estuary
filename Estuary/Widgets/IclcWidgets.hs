@@ -105,7 +105,7 @@ soundContainer (Layers xs r) e = elAttr "div" ("style"=:"border: 2pt solid blue;
   delButton <- button' " - " DeleteMe
   let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never never sGroupOrAtom (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never never sGroupOrAtom (tdPingButtonAttrs "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -185,7 +185,7 @@ upContainer (Layers xs iReps) _ =  elAttr "div" ("style"=:"border: 2pt solid blu
   delButton <- button' " - " DeleteMe
   let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never upGroupOrAtom (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never upGroupOrAtom (tdPingButtonAttrs "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -246,7 +246,7 @@ charContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dyn
 charContainerWidget a _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (tdPingButton'"+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (tdPingButtonAttrs"+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -282,7 +282,7 @@ endContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dyna
 endContainerWidget a _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (tdPingButton'"+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never widgetBuilder (tdPingButtonAttrs"+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -339,14 +339,6 @@ endWidget (Atom iEnd Once) _ = elAttr "td" ("style"=:"text-align:center;margin:1
 
 
 
-
-
-
-
-
-
-
-
 specificDoubleContainer::MonadWidget t m=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 specificDoubleContainer iVal e = do
   genPat <- doubleContainer vMin vMax step iGroup e -- m (dyn gen eve)
@@ -374,7 +366,7 @@ doubleContainer vMin vMax step (Layers xs iReps) _ =  elAttr "div" ("style"=:"bo
   delButton <- button' " - " DeleteMe
   let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (doubleGroupOrAtom vMin vMax step) (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never (doubleGroupOrAtom vMin vMax step) (tdPingButtonAttrs "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -459,6 +451,23 @@ doubleGroupOrAtom vMin vMax step iVal updateEvent = mdo
     function vMin vMax step (Layers xs r) e = doubleContainer vMin vMax step (Layers xs r) e
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ------------------------------------
 --            Strings....         --
 ------------------------------------
@@ -479,7 +488,7 @@ stringContainer (Layers xs iReps) _ =  elAttr "div" ("style"=:"border: 2pt solid
   delButton <- button' " - " DeleteMe
   let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (stringGroupOrAtom) (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never (stringGroupOrAtom) (tdPingButtonAttrs "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -614,6 +623,20 @@ repDivWidget _ = repDivWidget (Rep 1)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ----------------Ints.....
 
 
@@ -638,7 +661,7 @@ intContainer vMin vMax step (Layers xs iReps) _ =  elAttr "div" ("style"=:"borde
   delButton <- button' " - " DeleteMe
   let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (intGroupOrAtom vMin vMax step) (tdPingButton' "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never (intGroupOrAtom vMin vMax step) (tdPingButtonAttrs "+" ("style"=:("text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:"++plusHeight++";vertical-align:middle")))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList

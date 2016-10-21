@@ -79,18 +79,31 @@ dropdownPatternWidget iPattern _ = do
   let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
   return $ soundPattern
   where
-    builderList = Prelude.map (\x-> x never) [I.specificDoubleContainer (Accelerate $ Atom 0 Once), I.specificIntContainer (Bandf $ Atom 440 Once),
-      I.specificDoubleContainer (Bandq $ Atom 10 Once),I.specificDoubleContainer (Begin $ Atom 0 Once),
-      I.specificIntContainer (Coarse $ Atom 0 Once), intContainerWidget (Crush $ Atom 16 Once),
-      intContainerWidget (Estuary.Tidal.Types.Cut $ Atom 1 Once), intContainerWidget (Cutoff $ Atom 440 Once),
-      I.specificDoubleContainer (Delay $ Atom 0 Once),I.specificDoubleContainer (Delayfeedback $ Atom 0 Once),
-      I.specificDoubleContainer (Delaytime $ Atom 0.5 Once), I.specificDoubleContainer (End $ Atom 1 Once),
-      I.specificDoubleContainer (Gain $ Atom 1 Once), I.specificIntContainer (Hcutoff $ Atom 440 Once),
+    builderList = Prelude.map (\x-> x never) [I.specificDoubleContainer (Accelerate $ Atom 0 Once), 
+      I.specificIntContainer (Bandf $ Atom 440 Once),
+      I.specificDoubleContainer (Bandq $ Atom 10 Once),
+      I.specificDoubleContainer (Begin $ Atom 0 Once),
+      I.specificIntContainer (Coarse $ Atom 0 Once), 
+      intContainerWidget (Crush $ Atom 16 Once),
+      intContainerWidget (Estuary.Tidal.Types.Cut $ Atom 1 Once), 
+      intContainerWidget (Cutoff $ Atom 440 Once),
+      I.specificDoubleContainer (Delay $ Atom 0 Once),
+      I.specificDoubleContainer (Delayfeedback $ Atom 0 Once),
+      I.specificDoubleContainer (Delaytime $ Atom 0.5 Once), 
+      I.specificDoubleContainer (End $ Atom 1 Once),
+      I.specificDoubleContainer (Gain $ Atom 1 Once), 
+      I.specificIntContainer (Hcutoff $ Atom 440 Once),
       I.specificDoubleContainer (Hresonance $ Atom 20 Once),
-      intContainerWidget (Loop $ Atom 0 Once), I.specificIntContainer (N $ Atom 0 Once),
-      I.specificDoubleContainer (Pan $ Atom 0.5 Once), I.specificDoubleContainer (Resonance $ Atom 0.5 Once),
-      I.sContainer (S Blank), I.specificDoubleContainer (Shape $ Atom 0.5 Once),
-      I.specificDoubleContainer (Speed $ Atom 1 Once), I.charContainerWidget (Unit $ Atom 'c' Once), I.specificDoubleContainer (Up $ Atom 0 Once),I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+      intContainerWidget (Loop $ Atom 0 Once), 
+      I.specificIntContainer (N $ Atom 0 Once),
+      I.specificDoubleContainer (Pan $ Atom 0.5 Once), 
+      I.specificDoubleContainer (Resonance $ Atom 0.5 Once),
+      I.sContainer (S Blank), 
+      I.specificDoubleContainer (Shape $ Atom 0.5 Once),
+      I.specificDoubleContainer (Speed $ Atom 1 Once), 
+      I.charContainerWidget (Unit $ Atom 'c' Once), 
+      I.specificDoubleContainer (Up $ Atom 0 Once),
+      I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
 
 dropdownPatternTextWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 dropdownPatternTextWidget iPattern _ = do
@@ -108,18 +121,31 @@ dropdownPatternTextWidget iPattern _ = do
   let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
   return $ soundPattern
   where
-    builderList = Prelude.map (\x-> x never) [I.specificDoubleContainer (Accelerate $ Atom 0 Once), intContainerWidget (Bandf $ Atom 440 Once),
-      I.specificDoubleContainer (Bandq $ Atom 10 Once),I.specificDoubleContainer (Begin $ Atom 0 Once),
-      intContainerWidget (Coarse $ Atom 0 Once), intContainerWidget (Crush $ Atom 16 Once),
-      intContainerWidget (Estuary.Tidal.Types.Cut $ Atom 1 Once), intContainerWidget (Cutoff $ Atom 440 Once),
-      I.specificDoubleContainer (Delay $ Atom 0 Once),I.specificDoubleContainer (Delayfeedback $ Atom 0 Once),
-      I.specificDoubleContainer (Delaytime $ Atom 0.5 Once), I.specificDoubleContainer (End $ Atom 1 Once),
-      I.specificDoubleContainer (Gain $ Atom 1 Once), intContainerWidget (Hcutoff $ Atom 440 Once),
+    builderList = Prelude.map (\x-> x never) [I.specificDoubleContainer (Accelerate $ Atom 0 Once), 
+      intContainerWidget (Bandf $ Atom 440 Once),
+      I.specificDoubleContainer (Bandq $ Atom 10 Once),
+      I.specificDoubleContainer (Begin $ Atom 0 Once),
+      intContainerWidget (Coarse $ Atom 0 Once), 
+      intContainerWidget (Crush $ Atom 16 Once),
+      intContainerWidget (Estuary.Tidal.Types.Cut $ Atom 1 Once), 
+      intContainerWidget (Cutoff $ Atom 440 Once),
+      I.specificDoubleContainer (Delay $ Atom 0 Once),
+      I.specificDoubleContainer (Delayfeedback $ Atom 0 Once),
+      I.specificDoubleContainer (Delaytime $ Atom 0.5 Once), 
+      I.specificDoubleContainer (End $ Atom 1 Once),
+      I.specificDoubleContainer (Gain $ Atom 1 Once), 
+      intContainerWidget (Hcutoff $ Atom 440 Once),
       I.specificDoubleContainer (Hresonance $ Atom 20 Once),
-      intContainerWidget (Loop $ Atom 0 Once), intContainerWidget (N $ Atom 0 Once),
-      I.specificDoubleContainer (Pan $ Atom 0.5 Once), I.specificDoubleContainer (Resonance $ Atom 0.5 Once),
-      I.specificStringContainer (S Blank), I.specificDoubleContainer (Shape $ Atom 0.5 Once),
-      I.specificDoubleContainer (Speed $ Atom 1 Once), I.charContainerWidget (Unit $ Atom 'c' Once), I.specificDoubleContainer (Up $ Atom 0 Once), I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
+      intContainerWidget (Loop $ Atom 0 Once), 
+      intContainerWidget (N $ Atom 0 Once),
+      I.specificDoubleContainer (Pan $ Atom 0.5 Once), 
+      I.specificDoubleContainer (Resonance $ Atom 0.5 Once),
+      I.specificStringContainer (S Blank), 
+      I.specificDoubleContainer (Shape $ Atom 0.5 Once),
+      I.specificDoubleContainer (Speed $ Atom 1 Once), 
+      I.charContainerWidget (Unit $ Atom 'c' Once), 
+      I.specificDoubleContainer (Up $ Atom 0 Once), 
+      I.charContainerWidget (Vowel $ Atom 'o' Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
 
 
 
