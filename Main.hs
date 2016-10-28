@@ -16,9 +16,7 @@ import Estuary.Page
 import Estuary.Widgets.SpecificPattern
 import Estuary.Widgets.WebDirt
 import Data.Map
-import Estuary.Widgets.IclcWidgets as I
 import Control.Monad.IO.Class
-import Estuary.Widgets.ConferenceWidget as C
 
 
 main :: IO ()
@@ -34,20 +32,13 @@ main = do
     --webDirtWidget wd
     el "div" $ multipage stream pages
 
--- main :: IO ()
--- main = mainWidget $ do
---   elAttr "img" (fromList $ zip ["src","width","height"] ["logo.jpg","150","64"]) blank
---   wd <- webDirt
---   stream <- webDirtStream wd
---   webDirtWidget wd
---   multipage stream pages
 
 twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
 twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
 
 pages = [
-  ("ICLC Text Widget",widgetToPage $ stackedPatternsTextWidget (StackedPatterns [EmptyPatternChain]) never),
+  ("ICLC Text Widget",widgetToPage $ iclcTextWidget EmptyPatternChain never),
   ("ICLC Stacked Patterns Widget",widgetToPage twoStackedPatterns),
-  ("ICLC Fixed Widget", widgetToPage $ I.iclcFixedStruct EmptyPatternChain never),
-  ("ICOAH", widgetToPage $ C.icoahWidget EmptyPatternChain never)
+  ("ICLC Fixed Widget", widgetToPage $ P.iclcFixedStruct EmptyPatternChain never),
+  ("ICOAH", widgetToPage $ P.icoahWidget EmptyPatternChain never)
   ]
