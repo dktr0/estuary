@@ -157,24 +157,3 @@ trivialPatternChain iValue _ = do
   xyz <- holdDyn iValue $ leftmost [x,y,z]
   mapDyn (\a -> (a,never)) xyz
 
-  -- patternChainAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
-  --   -> [(k,Construction (Either (Either TransformedPattern PatternCombinator) () ))]
-
--- patternChainWidget' :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
--- patternChainWidget' iValue _ = mdo
---   let iMap = fromList $ zip ([0..]::[Int]) $ patternChainToList' iValue
---   let cEvents = mergeWith union [addMap,deleteMap]
---   let patternOrCombinatorWidget = eitherWidget transformedPatternWidget patternCombinatorDropDown
---
---   addButton <- pingButton'' "+"
---
---   (values,events) <- eitherContainer' iMap cEvents never never patternOrCombinatorWidget addButton
---   let addKeys = fmap (keys . Data.Map.filter (==Ping)) events -- [ping event keys]
---   let addList = attachDynWith (\a b -> concat (Prelude.map (patternChainAdd a) b)) values addKeys
---   let addList' = traceEvent "addList" addList
---   let addMap = fmap (fromList) addList'
---   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events
---   let deleteList = attachDynWith (\a b -> concat (Prelude.map (patternChainDel a) b)) values deleteKeys
---   let deleteList' = traceEvent "deleteList" deleteList
---   let deleteMap = fmap (fromList) deleteList'
---   mapDyn ((\x -> (x,never)) . listToPatternChain . elems) values

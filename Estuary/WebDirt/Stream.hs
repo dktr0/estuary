@@ -23,7 +23,7 @@ webDirtStream webDirt = do
   -- webDirt <- WebDirt.webDirt
   -- WebDirt.initializeWebAudio webDirt
   x <- WebDirt.getCurrentTime webDirt
-  putStrLn (show x)
+  putStrLn ("Current time: "++ show x)
   let now = posixSecondsToUTCTime $ realToFrac x
   -- mTempo <- newMVar (Tempo {at=now,beat=0.0,cps=1.0,paused=False,clockLatency=0.2})
   mPattern <- newMVar silence
