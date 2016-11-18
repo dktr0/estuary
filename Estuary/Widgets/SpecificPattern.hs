@@ -84,25 +84,6 @@ charContainerWidget'' a _ = mdo
       Vowel _ -> (G.vowelButtonWidget, Atom 'X' Once, Vowel)
 
 
-
-crushContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t GenericSignal))
-crushContainerWidget iVal _ = mdo
-  let initialMap = (0::Int)=:(Right ())
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never G.crushWidget (pingButton''' "+" ("style"=:"background-color:lightblue")) -- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left (Atom 16 Once)))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (Crush $ Group x Once))
-  display returnVal
-  returnVal'<-forDyn returnVal (\x->(x,never))
-  return returnVal'
-
-
 doubleContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 doubleContainerWidget a _ = mdo
   let initialMap = (0::Int)=:(Right ())
@@ -323,5 +304,3 @@ upContainerWidget a _ = mdo
   return returnVal'
   where
     (widgetBuilder,defaultGeneralPat, patType) = (G.countStepWidget 1, Atom 0 Once, Up)
-
-
