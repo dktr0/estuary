@@ -22,7 +22,7 @@ iclcFixedStruct:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t 
 iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
   s<- elAttr "div" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
     elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "Sound"
-    (pat,_)<- Sp.specificStringContainer (S Blank) never >>= splitDyn
+    (pat,_)<- Sp.specificContainer (S $ Atom "~" Once) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
   end <- elAttr "div" ("style"=:"background-color:Lightyellow") $ do
     elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "End"
@@ -34,7 +34,7 @@ iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
     forDyn pat (TransformedPattern [NoTransformer])
   up <- elAttr "tr" ("style"=:"background-color:lightcyan;display:inline-block") $ do
     elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "Up"
-    (pat,_) <- Sp.specificDoubleContainer (Up $ Atom 0 Once) never >>= splitDyn
+    (pat,_) <- Sp.specificContainer (Up $ Atom 0 Once) never >>= splitDyn
     forDyn pat (\x -> TransformedPattern [NoTransformer] x)
   patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
   patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
@@ -49,7 +49,7 @@ icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (Pat
 icoahWidget iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
   s<- elAttr "tr" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "S"
-    (pat,_)<- Sp.sampleContainerWidget' (S $ Blank) never >>= splitDyn
+    (pat,_)<- Sp.sampleContainerWidget (Sound Blank) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
   end <- elAttr "tr" ("style"=:"background-color:Lightyellow") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "End"
@@ -143,6 +143,7 @@ iclcTextWidget iValue _ = mdo
   let deleteList' = traceEvent "deleteList" deleteList
   let deleteMap = fmap (fromList) deleteList'
   mapDyn ((\x -> (x,never)) . listToPatternChain . elems) values
+
 
 
 

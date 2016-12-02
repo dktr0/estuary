@@ -8,6 +8,7 @@ import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
 import Estuary.Widgets.StackedPatterns
 import Estuary.Widgets.PatternChain as P
+import Estuary.Widgets.GeneralPattern as G -- for testing the Refactor of general container
 import Control.Monad (liftM)
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.WebDirt.Foreign
@@ -35,6 +36,7 @@ main = do
 
 twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
 twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
+
 
 pages = [
   ("ICLC Text Widget",widgetToPage $ iclcTextWidget EmptyPatternChain never),

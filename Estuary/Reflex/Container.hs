@@ -8,6 +8,7 @@ module Estuary.Reflex.Container where
 import Reflex.Dom
 import Data.Map
 import Reflex
+import Estuary.Widgets.Generic -- for GenericSignal 
 import Data.Functor.Misc -- For Const2
 import Control.Monad
 
@@ -124,4 +125,9 @@ wmap = flip wfor
 -- variant with a reset Event of the same main type
 
 resettableWidget :: MonadWidget t m => (a -> Event t () -> m (Dynamic t (a,Event t GenericSignal))) -> a -> Event t () -> Event t a -> m (Dynamic t (a,Event t GenericSignal))
-resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x ) reset
+resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x e) reset
+
+
+
+
+
