@@ -5,6 +5,70 @@ module Notation where
 
 data Notation a = L4 a | L3 a a
 
+instance Functor Notation where
+  fmap f (L4 x) = L4 (f x)
+  fmap f (L3 x y) = L3 (f x) y -- ? i.e. only apply to past evaluated states ?
+
+instance Applicative Notation where
+  pure x = L4 x
+  f <*> a = (present f) (present a) --? i.e. only apply to past evaluated states?
+  -- <*> :: Notation (a -> b) -> Notation a -> Notation b
+
+instance Monad Notation where
+  return x = L4 x
+  (L4 x) >>= f = L4 (f x)
+  (L3 x y) >>= f = L3 (f x) (f y)
+
+data Three = One | Two | Three
+data Six = Four | Five | Six
+data Combined = Combined Three Six
+
+data Liveness = L4 | L3
+
+class Notation a where
+  liveness :: a -> Liveness
+  l4 :: a -> a
+  l3 :: a -> a
+  actual :: a -> a
+  future :: a -> a
+  eval :: a -> a
+  edit :: a -> a -> a
+
+data Liveness = L3 | L4
+data Notation a = Notation Liveness a a
+data Three = One | Two | Three
+data Six = Four | Five | Six
+data Combined = Combined Three Six
+
+threeWidget :: m (Dynamic t (Notation Three))
+sixWidget :: m (Dynamic t (Notation Six))
+combinedWidget :: m (Dynamic t (Notation Combined))
+combinedWidget = do
+  e <- clickableDiv' "eval" $ eval
+  a <- clickableDiv' "abandon" $ abandon
+  l3 <- clickableDiv' "l3" $ l3
+  l4 <- clickableDiv' "l4" $ l4
+  three <- threeWidget
+  six <- sixWidget
+
+  Notation
+
+  let edit = zipDynWith (\a b -> Combined a b) -- this makes sense
+  let eval = zipDynWith (\a b -> Combined a b) -- ... but this is a puzzle
+  -- it's like we need a binary function that behaves differently at different
+  -- liveness levels
+
+  foldDyn ($) i $ leftMost [e,a,l3,l4]
+
+  x <- clickableDiv' "One" $ edit One
+  y <- clickableDiv' "Two" $ edit Two
+  z <- clickableDiv' "Three" $ edit Three
+  pattern <- foldDyn ($) i $ leftMost [e,a,l3,l4,x,y,z]
+  mapDyn (\a -> (a,never)) pattern
+
+
+
+
 present :: Notation a -> a
 present (L4 x) = x
 present (L3 x _) = x
@@ -60,16 +124,22 @@ trivialNotationWidget i _ = do
 
 -- what happens when a Notation a type includes a child type Notation b?
 
-data Four = Four | Other Three
+data TwoThrees = TwoThrees Three Three
 
-fourNotationWidget :: MonadWidget t m => Notation Four -> Event t () -> m (Dynamic t (Notation Four, Event t GenericSignal))
-fourNotationWidget i _ = do
+-- but each of the child threes needs to have its own L3/L4 status...
+
+-- this is like a kind of context that is preserved, so possibly a monad
+
+data Notation TwoThrees = L4 (Notation Three) (Notation Three)
+
+twoThreesNotationWidget :: MonadWidget t m => Notation TwoThrees -> Event t () -> m (Dynamic t (Notation TwoThrees, Event t GenericSignal))
+twoThreesNotationWidget i _ = do
   e <- clickableDiv' "eval" $ eval
   a <- clickableDiv' "abandon" $ abandon
   l3 <- clickableDiv' "l3" $ l3
   l4 <- clickableDiv' "l4" $ l4
-  x <- clickableDiv' "Four" $ edit Four
-  y <- trivialNotationWidget (L3 One) never
+  x <- trivialNotationWidget (L3 One) never -- m (Dynamic t (Notation Three, Event t GenericSignal))
+  y <- trivialNotationWidget (L3 One) never -- m (Dynamic t (Notation Three, Event t GenericSignal))
   yNotation <- fmap fst y
   ySignal <- fmap snd y
   let l4events = ffilter (isL4) $ updated yNotation
