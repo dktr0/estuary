@@ -1,71 +1,71 @@
 module Notation where
 
--- an L4 notation is one where changes take effect immediately
--- an L3 notation has a current state and a possible future state for evaluation
-
-data Notation a = L4 a | L3 a a
-
-instance Functor Notation where
-  fmap f (L4 x) = L4 (f x)
-  fmap f (L3 x y) = L3 (f x) y -- ? i.e. only apply to past evaluated states ?
-
-instance Applicative Notation where
-  pure x = L4 x
-  f <*> a = (present f) (present a) --? i.e. only apply to past evaluated states?
-  -- <*> :: Notation (a -> b) -> Notation a -> Notation b
-
-instance Monad Notation where
-  return x = L4 x
-  (L4 x) >>= f = L4 (f x)
-  (L3 x y) >>= f = L3 (f x) (f y)
-
-data Three = One | Two | Three
-data Six = Four | Five | Six
-data Combined = Combined Three Six
-
 data Liveness = L4 | L3
 
-class Notation a where
-  liveness :: a -> Liveness
-  l4 :: a -> a
-  l3 :: a -> a
-  actual :: a -> a
-  future :: a -> a
-  eval :: a -> a
-  edit :: a -> a -> a
+data Notation a = Notation a a Liveness
 
-data Liveness = L3 | L4
-data Notation a = Notation Liveness a a
+
 data Three = One | Two | Three
 data Six = Four | Five | Six
 data Combined = Combined Three Six
 
-threeWidget :: m (Dynamic t (Notation Three))
-sixWidget :: m (Dynamic t (Notation Six))
-combinedWidget :: m (Dynamic t (Notation Combined))
-combinedWidget = do
-  e <- clickableDiv' "eval" $ eval
-  a <- clickableDiv' "abandon" $ abandon
-  l3 <- clickableDiv' "l3" $ l3
-  l4 <- clickableDiv' "l4" $ l4
-  three <- threeWidget
-  six <- sixWidget
+thinking :: m (Dynamic t (Notation Combined))
+thinking = do
+  x <- threeWidget -- m (Dynamic t (Notation Three))
+  y <- sixWidget -- m (Dynamic t (Notation Six))
+  return $ liftA2 (Combined) x y -- m (Dynamic t (Notation Combined))
+  -- liftA2 (Combined) :: Notation Three -> Notation Six -> Notation Combined
+  -- liftA2 (Combined) :: Dynamic (Notation Three) -> Dynamic (Notation Six) -> Dynamic (Notation Combined)
+  -- liftA2 (Combined) x y :: Dynamic (Notation Combined)
+  -- then return places this in m
+  -- this is using the implementation of Applicative in Dynamic not in Notation though
+  -- and it is not doing anything to track edit vs eval states, changes of liveness mode etc...
+  -- note: I think liftA2 and zipDynWith are equivalent in this context?
 
-  Notation
+data Combined = Combined (Notation Three) (Notation Six)
 
-  let edit = zipDynWith (\a b -> Combined a b) -- this makes sense
-  let eval = zipDynWith (\a b -> Combined a b) -- ... but this is a puzzle
-  -- it's like we need a binary function that behaves differently at different
-  -- liveness levels
+thinking :: m (Dynamic t Combined)
+thinking = do
+  x <- threeWidget -- m (Dynamic t (Notation Three))
+  y <- sixWidget -- m (Dynamic t (Notation Six))
+  let z = Combined <$> x <*> y
+  -- Combined :: Notation Three -> Notation Six -> Combined
+  -- Combined <$> :: Dynamic (Notation Three) -> Dynamic (Notation Six -> Combined)
+  -- Combined <$> x :: Dynamic (Notation Six -> Combined)
+  -- Combined <$> x <*> :: Dynamic (Notation Six) -> Dynamic Combined
+  -- Combined <$> x <*> y :: Dynamic Combined
+  return $ Combined <$> x <*> y
+  -- now are preserving notation status of children
+  -- but are not yet managing a notation status for the Combined type itself...
 
-  foldDyn ($) i $ leftMost [e,a,l3,l4]
+thinking2 :: m (Dynamic t (Notation Combined))
+  x <- thinking -- m (Dynamic t Combined)
 
-  x <- clickableDiv' "One" $ edit One
-  y <- clickableDiv' "Two" $ edit Two
-  z <- clickableDiv' "Three" $ edit Three
-  pattern <- foldDyn ($) i $ leftMost [e,a,l3,l4,x,y,z]
-  mapDyn (\a -> (a,never)) pattern
+instance Notation' (Notation Combined) where
+  past (Combined x y) =
 
+data Combined = Combined Three Six
+
+  
+
+
+instance Functor Notation where
+  fmap f (Notation x y l) = Notation (f x) (f y) l
+
+instance Applicative Notation where
+  pure x = Notation x x L4
+  (Notation f g L4) <*> (Notation x y L4) =
+  -- but this doesn't make sense we are always having to choose one liveness or another
+  -- when we actually need to preserve liveness
+
+
+
+  (L4 f) <*> (L4 x) = L4 (f x)
+  (L4 f) <*> (L3 x y) =
+  (L3 f g) <*> (L4 x) =
+  (L3 f g) <*> (L3 x y) =
+
+--
 
 
 
