@@ -13,29 +13,39 @@ import JavaScript.Object.Internal as O
 import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
 
-foreign import javascript unsafe
-  "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null, function() {console.log('callback from WebDirt constructor completed');});"
-  webDirt :: IO T.JSVal
+--foreign import javascript unsafe
+--  "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null, function() {console.log('callback from WebDirt constructor completed');});"
+--  webDirt :: IO T.JSVal
 
 foreign import javascript unsafe
-  "try { $1.initializeWebAudio() } catch(e) { console.log(e) }"
-  initializeWebAudio :: T.JSVal -> IO ()
+  "$r = ___globalWebDirt"
+  webDirt:: IO T.JSVal
+
+--foreign import javascript unsafe
+--  "try { $1.initializeWebAudio() } catch(e) { console.log(e) }"
+--  initializeWebAudio :: T.JSVal -> IO ()
 
 foreign import javascript unsafe
-  "try { $1.playSample($2)} catch(e) { console.log(e)} "
+  "try { ___globalWebDirt.playSample($2)} catch(e) { console.log(e)} "
   playSample':: T.JSVal -> T.JSVal -> IO ()
 
 foreign import javascript unsafe
-  "try { $r = $1.getCurrentTime() } catch(e) { console.log(e)} "
+  "console.log($1)"
+  testLog:: T.JSVal -> IO ()
+
+foreign import javascript unsafe
+  "try { $r = ___globalWebDirt.getCurrentTime() } catch(e) { console.log(e)} "
   getCurrentTime :: T.JSVal -> IO Double
 
 playSample::T.JSVal -> (Double,ParamMap) -> IO()
 playSample webDirt (t,e) = do
   object <- createObjFromMap t e
-  playSample' webDirt object
+  playSample' webDirt object 
   return ()
 
-foreign import javascript unsafe "$r = {};" createEmpty:: IO T.JSVal
+foreign import javascript unsafe "$r = {};" createEmpty:: IO T.JSVal    
+-- "
+
 
 createObjFromMap:: Double -> ParamMap -> IO T.JSVal
 createObjFromMap when paramMap = do

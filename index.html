@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+    <script language="javascript" src="rts.js"></script>
+    <script language="javascript" src="lib.js"></script>
+    <script language="javascript" src="out.js"></script>
+    <script language="javascript" src="WebDirt/WebDirt.js"></script>
+    <script language="javascript" src="WebDirt/Graph.js"></script>
+    <script language="javascript" src="WebDirt/SampleBank.js"></script>
+  </head>
+
+  <body>
+          <button onclick="start()">start button</button>
+
+  </body>
+  <script type="text/javascript">
+
+ 
+
+  function downloadJS() {
+    var element4 = document.createElement("script");
+    element4.setAttribute('src', "runmain.js");
+    element4.defer;
+    document.head.appendChild(element4);
+    console.log("elements added")
+  }
+
+  function start(){
+  
+    ___globalWebDirt = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null, function() {console.log('callback from WebDirt constructor completed');})
+
+    ___globalWebDirt.initializeWebAudio();
+
+    
+    downloadJS();
+  }
+  </script>
+
+
+
+</html>
+
+
+
+
+<!-- 
+
+test = function(){
+  webDirt1 = new WebDirt(null,null,null,function() {
+    console.log("callback from WebDirt1 constructor completed");
+  });
+
+  try{
+  webDirt1.initializeWebAudio();
+  webDirt1.sine = webDirt1.ac.createOscillator();
+  webDirt1.sine.type = 'sine';
+  webDirt1.sine.frequency.value = 440;
+  webDirt1.gain = webDirt1.ac.createGain();
+  webDirt1.sine.connect(webDirt1.gain);
+  webDirt1.gain.connect(webDirt1.ac.destination);
+  webDirt1.sine.start();
+  // envelope
+  var now = webDirt1.ac.currentTime;
+  webDirt1.gain.gain.setValueAtTime(0,now);
+  webDirt1.gain.gain.linearRampToValueAtTime(1,now+0.005);
+  webDirt1.gain.gain.linearRampToValueAtTime(0,now+0.405);
+  webDirt1.ac.close();
+  }
+  catch(e){
+    console.log(e)
+  }
+  console.log("test node played")
+
+} -->

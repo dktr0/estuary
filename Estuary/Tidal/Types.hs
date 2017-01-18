@@ -208,6 +208,9 @@ instance Show TransformedPattern where
   show (TransformedPattern (NoTransformer:[]) x) = show x
   show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
 
+
+-- @what if the parameter is an empty pattern? -> do we need to guard for that?
+-- what happens in tidal with s "a b c d" |=| 
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransformer a) b) (toParamPattern x) ts
   isEmpty (TransformedPattern _ x) = isEmpty x
@@ -221,8 +224,8 @@ toTidalCombinator Subtract = (Tidal.|-|)
 toTidalCombinator Multiply = (Tidal.|*|)
 toTidalCombinator Divide = (Tidal.|/|)
 
-
 data PatternChain = EmptyPatternChain | PatternChain TransformedPattern | PatternChain' TransformedPattern PatternCombinator PatternChain deriving (Eq)
+
 
 instance Show PatternChain where
   show (EmptyPatternChain) = "silence"
@@ -236,10 +239,16 @@ instance Show PatternChain where
 
 instance ParamPatternable PatternChain where
   toParamPattern (EmptyPatternChain) = Tidal.silence
-  toParamPattern (PatternChain' x c (PatternChain y)) | isEmpty x = toParamPattern y
-                                                      | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
-  toParamPattern (PatternChain' x c y) | isEmpty x = toParamPattern y
-                                       | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
+  toParamPattern (PatternChain' transPat pCombinator (PatternChain' transPat2 pCombinator2 pChain)) | isEmpty transPat = toParamPattern (PatternChain' transPat2 pCombinator2 pChain)
+                                                                                                    | otherwise = (toTidalCombinator pCombinator2) ((toTidalCombinator pCombinator) (toParamPattern transPat) (toParamPattern transPat2)) (toParamPattern pChain)
+  toParamPattern (PatternChain' transPat pCombinator patChain) | isEmpty transPat = toParamPattern patChain
+                                                               | isEmpty patChain = toParamPattern transPat
+                                                               | otherwise = (toTidalCombinator pCombinator) (toParamPattern transPat) (toParamPattern patChain)
+  
+  --toParamPattern (PatternChain' x c (PatternChain y)) | isEmpty x = toParamPattern y
+  --                                                    | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
+  --toParamPattern (PatternChain' x c y) | isEmpty x = toParamPattern y
+  --                                     | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
   toParamPattern (PatternChain x) = toParamPattern x
   isEmpty (EmptyPatternChain) = True
   isEmpty (PatternChain x) = isEmpty x

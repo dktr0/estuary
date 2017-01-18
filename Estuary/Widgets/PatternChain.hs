@@ -22,7 +22,7 @@ iclcFixedStruct:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t 
 iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
   s<- elAttr "div" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
     elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "Sound"
-    (pat,_)<- Sp.specificStringContainer (S Blank) never >>= splitDyn
+    (pat,_)<- Sp.specificContainer (S $ Atom "~" Once) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
   end <- elAttr "div" ("style"=:"background-color:Lightyellow") $ do
     elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "End"
@@ -34,7 +34,7 @@ iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
     forDyn pat (TransformedPattern [NoTransformer])
   up <- elAttr "tr" ("style"=:"background-color:lightcyan;display:inline-block") $ do
     elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "Up"
-    (pat,_) <- Sp.specificDoubleContainer (Up $ Atom 0 Once) never >>= splitDyn
+    (pat,_) <- Sp.specificContainer (Up $ Atom 0 Once) never >>= splitDyn
     forDyn pat (\x -> TransformedPattern [NoTransformer] x)
   patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
   patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
@@ -49,7 +49,7 @@ icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (Pat
 icoahWidget iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
   s<- elAttr "tr" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "S"
-    (pat,_)<- Sp.sampleContainerWidget' (S $ Blank) never >>= splitDyn
+    (pat,_)<- Sp.sampleContainerWidget (S Blank) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
   end <- elAttr "tr" ("style"=:"background-color:Lightyellow") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "End"
@@ -146,6 +146,7 @@ iclcTextWidget iValue _ = mdo
 
 
 
+
 trivialPatternChain :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
 trivialPatternChain iValue _ = do
   x <- button' "just an S atom" $ PatternChain (TransformedPattern [] (S (Atom "bd" Once)))
@@ -157,24 +158,3 @@ trivialPatternChain iValue _ = do
   xyz <- holdDyn iValue $ leftmost [x,y,z]
   mapDyn (\a -> (a,never)) xyz
 
-  -- patternChainAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
-  --   -> [(k,Construction (Either (Either TransformedPattern PatternCombinator) () ))]
-
--- patternChainWidget' :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
--- patternChainWidget' iValue _ = mdo
---   let iMap = fromList $ zip ([0..]::[Int]) $ patternChainToList' iValue
---   let cEvents = mergeWith union [addMap,deleteMap]
---   let patternOrCombinatorWidget = eitherWidget transformedPatternWidget patternCombinatorDropDown
---
---   addButton <- pingButton'' "+"
---
---   (values,events) <- eitherContainer' iMap cEvents never never patternOrCombinatorWidget addButton
---   let addKeys = fmap (keys . Data.Map.filter (==Ping)) events -- [ping event keys]
---   let addList = attachDynWith (\a b -> concat (Prelude.map (patternChainAdd a) b)) values addKeys
---   let addList' = traceEvent "addList" addList
---   let addMap = fmap (fromList) addList'
---   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events
---   let deleteList = attachDynWith (\a b -> concat (Prelude.map (patternChainDel a) b)) values deleteKeys
---   let deleteList' = traceEvent "deleteList" deleteList
---   let deleteMap = fmap (fromList) deleteList'
---   mapDyn ((\x -> (x,never)) . listToPatternChain . elems) values
