@@ -98,7 +98,7 @@ sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m 
 sampleContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never G.sampleNameWidget (tdPingButtonAttrs  "+" ("style"=:"text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:50%;vertical-align:middle"))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never G.sButtonContainer (tdPingButtonAttrs  "+" ("style"=:"text-align:center;display:inline-table;max-width:30px;background-color:lightblue;height:50%;vertical-align:middle"))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -114,7 +114,7 @@ sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynam
 sContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never G.genPatButtonWidget (pingButton''' "+" ("style"=:"background-color:lightblue"))-- values:dyn Map k GeneralPattern,
+  (values,events) <- eitherContainer' initialMap cEvents never  never G.sButtonContainer (pingButton''' "+" ("style"=:"background-color:lightblue"))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -128,9 +128,9 @@ sContainerWidget (S genPat) _ = mdo
 
 specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
 specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget (-500) 500 1) x e >>= mapDyn (\(x,ev)->(Accelerate x,ev))
-specificContainer (Bandq x) e = G.generalContainer (G.aGLDoubleWidget 0 22000 10) x e >>= mapDyn (\(x,ev)->(Bandq x,ev))
-specificContainer (Begin x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Begin x,ev))
-specificContainer (Delay x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delay x,ev))
+specificContainer (Bandq x) e = G.generalContainer  (G.aGLDoubleWidget 0 22000 10) x e >>= mapDyn (\(x,ev)->(Bandq x,ev))
+specificContainer (Begin x) e = G.generalContainer  (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Begin x,ev))
+specificContainer (Delay x) e = G.generalContainer    (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delay x,ev))
 specificContainer (Delayfeedback x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delayfeedback x,ev))
 specificContainer (Delaytime x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delaytime x,ev))
 specificContainer (End x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(End x,ev))

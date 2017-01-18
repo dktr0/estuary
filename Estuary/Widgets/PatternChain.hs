@@ -49,7 +49,7 @@ icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (Pat
 icoahWidget iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
   s<- elAttr "tr" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "S"
-    (pat,_)<- Sp.sampleContainerWidget (Sound Blank) never >>= splitDyn
+    (pat,_)<- Sp.sampleContainerWidget (S Blank) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
   end <- elAttr "tr" ("style"=:"background-color:Lightyellow") $ do
     elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "End"

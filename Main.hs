@@ -25,12 +25,6 @@ main = do
   wd <- webDirt
   stream <- webDirtStream wd
   mainWidget $ do
-    -- elAttr "img" (fromList $ zip ["src","width","height"] ["logo.png","168","59"]) blank
-    -- elDynHtml' "input" ""
-    -- startButton <- el "div" $ button "Start"
-    --performEvent $ fmap (liftIO . (initializeWebAudio wd)) startButton
-    --performEvent $ fmap (liftIO . ( const $ initializeWebAudio wd)) startButton
-    --webDirtWidget wd
     el "div" $ multipage stream pages
 
 
