@@ -1,5 +1,5 @@
 > {-# LANGUAGE RecursiveDo #-}
-> module Simple where
+> module Main where
 > import Reflex
 > import Reflex.Dom
 > import Control.Monad
@@ -32,7 +32,7 @@ whole.
 >  let f = fmap (\() -> Three) c
 >  holdDyn One $ leftmost [d,e,f]
 
-> main0 = mainWidget $ simpleWidget' >>= display
+> main = mainWidget $ (simpleWidgetA One) >>= display
 
 In the code above, we have buttons that produce Events containing an empty (),
 signaling that something has happened but nothing beyond that. We map those
@@ -68,21 +68,8 @@ generate labels for the buttons.
 > simpleWidget''' :: MonadWidget t m => m (Dynamic t Simple)
 > simpleWidget''' = do
 >   a <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
->   value <- holdDyn One $ leftmost a
->   display value
->   return value
+>   holdDyn One $ leftmost a
 
-It will often be useful during development to include extra visual feedback
-within a widget's definition. In the following example that will produce the
-same text displayed twice, but in the coming examples involving composite
-widgets that will no longer be the case.
-
-> simpleWidget'''' :: MonadWidget t m => m (Dynamic t Simple)
-> simpleWidget'''' = do
->   a <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
->   value <- holdDyn One $ leftmost a
->   display value
->   return value
 
 In a final, definitive variation on our basic widget for our Simple type, we add
 the ability to specify the initial Simple value of the widget, and wrap
@@ -93,6 +80,34 @@ and the containing div).
 > simpleWidget :: MonadWidget t m => Simple -> m (Dynamic t Simple)
 > simpleWidget i = el "div" $ do
 >   buttons <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
->   value <- holdDyn i (leftmost buttons)
->   display value
->   return value
+>   holdDyn i (leftmost buttons)
+
+
+Can we do the above using the applicative style instead?
+
+> simpleWidgetA :: MonadWidget t m => Simple -> m (Dynamic t Simple)
+> simpleWidgetA i = el "div" $ do
+>   a <- button "One"
+>   b <- button "Two"
+>   c <- button "Three"
+>   let d = const One <$> a
+>   let e = const Two <$> b
+>   let f = const Three <$> c
+>   holdDyn i $ leftmost [d,e,f]
+
+That works, and is probably more clear than some of the earlier examples above.
+But it isn't very economical/terse yet...
+
+> simpleWidgetA' :: MonadWidget t m => Simple -> m (Dynamic t Simple)
+> simpleWidgetA' i = el "div" $ do
+>   a <- liftM (const One <$>) $ button "One"
+>   b <- liftM (const Two <$>) $ button "Two"
+>   c <- liftM (const Three <$>) $ button "Three"
+>   holdDyn i $ leftmost [a,b,c]
+
+> simpleWidgetA'' :: MonadWidget t m => Simple -> m (Dynamic t Simple)
+> simpleWidgetA'' i = el "div" $ do
+>   a <- mapM (\x -> liftM (x <$) (button (show x))) [One,Two,Three]
+>   holdDyn i $ leftmost a
+
+Still think there must be a better way to do this...
