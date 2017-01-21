@@ -173,7 +173,7 @@ dropdownPatternTextWidget iPattern _ = do
 
 transformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
 transformedPatternWidget (TransformedPattern ts p) _ = el "div" $ do
-  deleteEvents <- buttonDynAttrs "-" (DeleteMe) (constDyn $ "style"=:"background-color:salmon")
+  deleteEvents <- buttonDynAttrs "-" (DeleteMe) (constDyn $ "class"=:"patternAddButton")
   (soundPattern,events) <- dropdownPatternWidget (p) never >>= splitDyn
   --deleteEvents <- mapDyn (ffilter (==DeleteMe)) events --Dyn Event DeleteMe
   transformer <- parameteredPatternTransformer (f ts) never
@@ -186,7 +186,7 @@ transformedPatternWidget (TransformedPattern ts p) _ = el "div" $ do
 
 transformedPatternTextWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t GenericSignal))
 transformedPatternTextWidget (TransformedPattern ts p) _ = el "div" $ do
-  deleteEvents <- buttonDynAttrs "-" (DeleteMe) (constDyn $ "style"=:"background-color:salmon")
+  deleteEvents <- buttonDynAttrs "-" (DeleteMe) (constDyn $ "class"=:"patternAddButton")
   (soundPattern,events) <- dropdownPatternTextWidget (p) never >>= splitDyn
   --deleteEvents <- mapDyn (ffilter (==DeleteMe)) events --Dyn Event DeleteMe
   transformer <- parameteredPatternTransformer (f ts) never
