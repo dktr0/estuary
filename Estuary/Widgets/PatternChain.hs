@@ -20,20 +20,20 @@ import qualified Data.List
 
 iclcFixedStruct:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
 iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
-  s<- elAttr "div" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
-    elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "Sound"
+  s<- elAttr "div" ("class"=:"singlePatternDiv") $ do
+    elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Sound"
     (pat,_)<- Sp.specificContainer (S $ Atom "~" Once) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
-  end <- elAttr "div" ("style"=:"background-color:Lightyellow") $ do
-    elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "End"
+  end <- elAttr "div" ("class"=:"singlePatternDiv") $ do
+    elAttr "div" ("class"=:"singlePatternDiv-label") $ text "End"
     (pat,_) <- Sp.endContainerWidget (End $ Atom 0.5 Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
-  vowel <- elAttr "div" ("style"=:"background-color:wheat") $ do
-    elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "Vowel"
+  vowel <- elAttr "div" ("class"=:"singlePatternDiv") $ do
+    elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Vowel"
     (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
-  up <- elAttr "tr" ("style"=:"background-color:lightcyan;display:inline-block") $ do
-    elAttr "div" ("style"=:"font-size:100%;margin:5px;display:inline-block") $ text "Up"
+  up <- elAttr "div" ("class"=:"singlePatternDiv") $ do
+    elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Up"
     (pat,_) <- Sp.specificContainer (Up $ Atom 0 Once) never >>= splitDyn
     forDyn pat (\x -> TransformedPattern [NoTransformer] x)
   patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
@@ -46,21 +46,21 @@ iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
     toPatternChain x = PatternChain x
 
 icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
-icoahWidget iChain _ = elAttr "table" ("cellspacing"=:"0") $ do
-  s<- elAttr "tr" ("style"=:"vertical-align:center;background-color:lightgrey") $ do
-    elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "S"
+icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
+  s<- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
+    elAttr "td" ("class"=:"multiPatternTable-td") $ text "S"
     (pat,_)<- Sp.sampleContainerWidget (S Blank) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
-  end <- elAttr "tr" ("style"=:"background-color:Lightyellow") $ do
-    elAttr "td" ("style"=:"font-size:100%;margin:5px") $ text "End"
+  end <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
+    elAttr "td" ("class"=:"multiPatternTable-td") $ text "End"
     (pat,_) <- Sp.endContainerWidget (End $ Atom 0.5 Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
-  vowel <- elAttr "tr" ("style"=:"background-color:wheat") $ do
-    elAttr "td" ("style"=:"font-size:100%;margin:5px;") $ text "Vowel"
+  vowel <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
+    elAttr "td" ("class"=:"multiPatternTable-td") $ text "Vowel"
     (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
-  up <- elAttr "tr" ("style"=:"background-color:lightcyan") $ do
-    elAttr "td" ("style"=:"font-size:100%;margin:5px;") $ text "Up"
+  up <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
+    elAttr "td" ("class"=:"multiPatternTable-td") $ text "Up"
     (pat,_) <- Sp.upContainerWidget (Up $ Atom 0 Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
   patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up

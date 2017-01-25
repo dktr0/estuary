@@ -1,0 +1,270 @@
+/*ex. each 'pattern' in ICLCfixed (Sound,End, Up,Vowel) is enclosed in one of these divs*/
+.singlePatternDiv {
+
+} 
+
+/*ex. the div that 'Sound' is written in, in ICLCFixed)*/
+.singlePatternDiv-label{
+	font-size:100%; 
+	margin:5px; 
+	display:inline-block
+} 
+
+/*ex. the table wrapping all Patterns in ICOAH (each pattern is its own row))*/
+.multiPatternTable{
+	cellspacing:0
+}
+
+/*ex. each row in ICOAH patterns)*/
+.multiPatternTable-tr{ 
+	vertical-align:center
+	;background-color:lightgrey
+}
+
+/*ex. each td in ICOAH patterns)*/
+.multiPatternTable-td{
+ 	font-size:100%;
+ 	margin:5px
+}
+
+
+
+
+/*
+--------------------------------------------------------------------
+							GENERAL PATTERN
+--------------------------------------------------------------------
+*/
+
+/*ex. ICLCFixed, hit [] on any widget - div wrapped in red border*/
+.generalPattern-group{
+	border: 1pt solid red;
+	display:inline-block;
+}
+
+/*ex. hit [,,] on any widget in ICLC Fixed*/
+.generalPattern-layer{
+	border: 2pt solid blue;
+	display:inline-block
+}
+
+ /*(ex. ICLCFixed, the sound widget (everything wrapped in red))*/
+.generalPattern-atom{
+	border: 1pt solid red;
+	display:inline-block;
+}
+
+
+/* 
+***************************************************************************************************
+For aGLNumberWidget_____ see any pattern that takes a list of Numbers as input (for example 'speed' or 'crush') in iclcStackedPattern
+*/
+
+/*Styles the table*/
+.aGLNumberWidgetTable{
+	display:inline-table;
+	background-color:lightgreen;
+	width:100pt;
+	border-spacing:5px;
+	border:2pt solid black
+}
+
+/*Styles the td element that contains the textfield for the value*/
+.aGLNumberWidgetTable-textFieldtd{
+	width:45px;
+}
+
+
+/* Styles the td that contains the '  -  ' (delete) button in widgets that take doubles*/
+.aGLNumberWidgetTable-deletetd{
+	width:45px;
+	text-align:center; 
+	background-color:lightblue;
+	border: 1pt solid black
+}
+
+/*Styles the td that contains the group [] button in double widgets*/
+.aGLNumberWidgetTable-grouptd{
+	text-align:center;
+	background-color:lightblue;
+	border: 1pt solid black
+}
+
+/*Styles the td that contains the layer [,,] button in double widgets*/
+.aGLNumberWidgetTable-layertd{
+	text-align:center;
+	background-color:lightblue;
+	border: 1pt solid black
+}
+
+
+
+
+/* 
+***************************************************************************************************
+For aGLStringWidget_____ see any pattern that takes a list of Strings as input (for example 's') in iclcStackedPattern
+*/
+
+/* styles the 'Table' containing widgets that take strings (ex. ICLCText->s pattern, green widgets. Or ICLC Stacked -> Vowel)*/
+.aGLStringWidgetTable{
+	display:inline-table;
+	background-color:lightgreen;
+	width:130pt;
+	border-spacing:5px;
+	border:2pt solid black
+}
+
+/*Styles the td containing the text box in */
+.aGLStringWidgetTable-textFieldtd{
+}
+
+
+
+/* Styles the td that contains the '  -  ' (delete) button in widgets that take doubles*/
+.aGLStringWidgetTable-deletetd{
+	width:45px;
+	text-align:center; 
+	background-color:lightblue;
+	border: 1pt solid black
+}
+
+/*Styles the td that contains the group [] button in double widgets*/
+.aGLStringWidgetTable-grouptd{
+	text-align:center;
+	background-color:lightblue;
+	border: 1pt solid black
+}
+
+/*Styles the td that contains the layer [,,] button in double widgets*/
+.aGLStringWidgetTable-layertd{
+	text-align:center;
+	background-color:lightblue;
+	border: 1pt solid black
+}
+
+
+/* See ICOAH Vowel pattern. This styles the td containing the Button that can be clicked on to cycle between different vowels */
+.clickListtd{
+	width:60px;
+	text-align:center;
+	background-color:lightblue
+}
+
+
+/* 
+In iclc stacked patterns -> 's' pattern -> see the check box in the green widget...
+the repDivWidget includes: the * and / with the check boxes, and the textfield
+to the right of them
+*/
+.repDivTable{
+	height:20px;
+}
+
+
+.countWidgetTable{
+	display: inline-table;
+	background-color:lightgreen;
+	width:100pt;
+	border-spacing:5px;
+	border:2pt solid black
+}
+
+/* The td where the widgets value is printed/displayed*/
+.countWidgetTable-numbertd{
+	text-align:center
+}
+
+/* The '▲' arrow td */
+.countWidgetTable-upArrowtd{
+	text-align:center;
+	background-color:lightblue;
+	border: 1pt solid black
+}
+
+/* The '▼' arrow td */
+.countWidgetTable-downArrowtd{
+	text-align:center;
+	background-color:lightblue;
+	border: 1pt solid black
+}
+
+/* The '-' (delete) arrow td */
+.countWidgetTable-deletetd{
+	text-align:center; 
+	background-color:lightblue;
+	border: 1pt solid black;
+}
+
+
+.doubleSliderTable{
+	margin:5px;
+	display:inline-table;
+	background-color:lightgreen;
+	width:10%;
+	border-spacing:5px;
+	border: 2pt solid black
+}
+
+
+
+
+/*
+--------------------------------------------------------------------
+							Stacked Patterns
+--------------------------------------------------------------------
+*/
+
+.stackedPatternTable{
+	position: relative; 
+	height: 90%; 
+	width:90%; 
+	border: 1px solid black;
+}
+
+.stackedPatternTable-tr{
+	border: 1px solid grey;
+}
+3
+.stackedPatternTable-td{
+	border: 1px solid grey;
+	vertical-align: top;
+}
+
+
+
+/*
+--------------------------------------------------------------------
+							Miscelaneous
+--------------------------------------------------------------------
+*/
+
+/*ex. hit [] - see '+' buttons between widgets*/
+.addButton{
+	background-color:lightblue;
+	display:inline-block
+} 
+
+
+/*ex. hit [,,] - the vertical buttons*/
+.addButton-vertical{
+	text-align:center;
+	display:inline-table;
+	max-width:30px;
+	background-color:lightblue;
+	height:30px;
+	vertical-align:middle
+}
+
+
+/* Styles the delete buttons of different patterns in ICLC text widget for example */
+/* go to ICLC Text, and make a new widget*/
+.patternDeleteButton{
+	background-color:salmon;
+}
+
+
+
+
+
+
+
