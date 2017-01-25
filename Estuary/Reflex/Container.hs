@@ -145,7 +145,8 @@ genericSignalWidgetMenu = elClass "div" "genericSignal" $ do
   d <- button' "{}" MakeLayer
   return $ leftmost [a,b,c,d,e]
 
-hideableSignalWidget :: MonadWidget t m => Event t GenericSignal
+hideableSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
 hideableSignalWidget = elClass "div" "hideableSignalWidget" $ mdo
   x <- liftM (switchPromptlyDyn) $ flippableWidget False flipEvents clickableWhiteSpace genericSignalWidget
   flipEvents <- liftM (updated) $ toggle False $ ffilter (==Ping) x
+  return $ ffilter (/=Ping)
