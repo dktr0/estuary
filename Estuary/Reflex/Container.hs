@@ -8,7 +8,7 @@ module Estuary.Reflex.Container where
 import Reflex.Dom
 import Data.Map
 import Reflex
-import Estuary.Widgets.Generic -- for GenericSignal 
+import Estuary.Widgets.Generic -- for GenericSignal
 import Data.Functor.Misc -- For Const2
 import Control.Monad
 
@@ -128,6 +128,24 @@ resettableWidget :: MonadWidget t m => (a -> Event t () -> m (Dynamic t (a,Event
 resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x e) reset
 
 
+flippableWidget :: MonadWidget t m => Bool -> Event t Bool -> m a -> m a -> m (Dynamic t a)
+flippableWidget i e build1 build2 = widgetHold (bool build1 build2 i) $ fmap (bool build1 build2) e
 
+clickableWhiteSpace :: MonadWidget t m => m (Event t GenericSignal)
+clickableWhiteSpace = do
+  (element,_) <- elAttr' "div" $ singleton "class" "clickableWhiteSpace" $ text "clickableWhiteSpace"
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  return $ (Ping <$) clickEv
 
+genericSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
+genericSignalWidgetMenu = elClass "div" "genericSignal" $ do
+  a <- button' "Ping" Ping
+  b <- button' "-" DeleteMe
+  c <- button' "[]" MakeGroup
+  d <- button' "{}" MakeLayer
+  return $ leftmost [a,b,c,d,e]
 
+hideableSignalWidget :: MonadWidget t m => Event t GenericSignal
+hideableSignalWidget = elClass "div" "hideableSignalWidget" $ mdo
+  x <- liftM (switchPromptlyDyn) $ flippableWidget False flipEvents clickableWhiteSpace genericSignalWidget
+  flipEvents <- liftM (updated) $ toggle False $ ffilter (==Ping) x
