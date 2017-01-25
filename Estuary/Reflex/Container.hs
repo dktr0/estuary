@@ -6,9 +6,12 @@ module Estuary.Reflex.Container where
 -- For example, as in this module, new container widgets for arbitrary widgets.
 
 import Reflex.Dom
+import GHCJS.DOM.EventM
 import Data.Map
+import Data.Bool
 import Reflex
 import Estuary.Widgets.Generic -- for GenericSignal
+import Estuary.Reflex.Utility
 import Data.Functor.Misc -- For Const2
 import Control.Monad
 
@@ -133,20 +136,20 @@ flippableWidget i e build1 build2 = widgetHold (bool build1 build2 i) $ fmap (bo
 
 clickableWhiteSpace :: MonadWidget t m => m (Event t GenericSignal)
 clickableWhiteSpace = do
-  (element,_) <- elAttr' "div" $ singleton "class" "clickableWhiteSpace" $ text "clickableWhiteSpace"
+  (element,_) <- elAttr' "div" (singleton "class" "clickableWhiteSpace") $ text "clickableWhiteSpace"
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   return $ (Ping <$) clickEv
 
 genericSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
-genericSignalWidgetMenu = elClass "div" "genericSignal" $ do
+genericSignalWidget = elClass "div" "genericSignal" $ do
   a <- button' "Ping" Ping
   b <- button' "-" DeleteMe
   c <- button' "[]" MakeGroup
   d <- button' "{}" MakeLayer
-  return $ leftmost [a,b,c,d,e]
+  return $ leftmost [a,b,c,d]
 
 hideableSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
 hideableSignalWidget = elClass "div" "hideableSignalWidget" $ mdo
   x <- liftM (switchPromptlyDyn) $ flippableWidget False flipEvents clickableWhiteSpace genericSignalWidget
   flipEvents <- liftM (updated) $ toggle False $ ffilter (==Ping) x
-  return $ ffilter (/=Ping)
+  return $ ffilter (/=Ping) x
