@@ -141,15 +141,28 @@ clickableWhiteSpace = do
   return $ (Ping <$) clickEv
 
 genericSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
-genericSignalWidget = elClass "div" "genericSignal" $ do
+genericSignalWidget = elClass "div" "genericSignalWidget" $ do
   a <- button' "Ping" Ping
   b <- button' "-" DeleteMe
   c <- button' "[]" MakeGroup
   d <- button' "{}" MakeLayer
   return $ leftmost [a,b,c,d]
 
+genericSignalMenu :: MonadWidget t m => m (Event t GenericSignal)
+genericSignalMenu = elClass "div" "genericSignalMenu" $ do
+  a <- clickableDiv' "Ping" Ping
+  b <- clickableDiv' "-" DeleteMe
+  c <- clickableDiv' "[]" MakeGroup
+  d <- clickableDiv' "{}" MakeLayer
+return $ leftmost [a,b,c,d]
+
 hideableSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
 hideableSignalWidget = elClass "div" "hideableSignalWidget" $ mdo
-  x <- liftM (switchPromptlyDyn) $ flippableWidget False flipEvents clickableWhiteSpace genericSignalWidget
+  x <- liftM (switchPromptlyDyn) $ flippableWidget False flipEvents clickableWhiteSpace genericSignalMenu
   flipEvents <- liftM (updated) $ toggle False $ ffilter (==Ping) x
   return $ ffilter (/=Ping) x
+
+
+
+
+--
