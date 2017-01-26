@@ -17,6 +17,18 @@ clickableDiv label = do
   where
     attr = singleton "style" "background-color: gray; display: inline;"
 
+clickableDiv' :: MonadWidget t m => String -> a -> m (Event t a)
+clickableDiv' label e = liftM (e <$) $ clickableDiv label
+
+clickableDivClass :: MonadWidget t m => String -> String -> m (Event t ())
+clickableDivClass label c = do
+  (element,_) <- elAttr' "div" (singleton "class" c) $ text label
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  return $ (() <$) clickEv
+
+clickableDivClass' :: MonadWidget t m => String -> String -> a -> m (Event t a)
+clickableDivClass' label c e = liftM (e <$) $ clickableDivClass label c
+
 clickableDivAttrs::MonadWidget t m => String -> a -> Map String String -> m (Event t a)
 clickableDivAttrs label val attrs= do
   (element,_) <- elAttr' "div" attrs $ text label
@@ -30,8 +42,6 @@ clickableDivAttrs' label val attrs _ _= do
   let event = (val <$) clickEv
   return $ constDyn ((),event)
 
-clickableDiv' :: MonadWidget t m => String -> a -> m (Event t a)
-clickableDiv' label e = liftM (e <$) $ clickableDiv label
 
 pingButton :: MonadWidget t m => String -> m (Event t GenericSignal)
 pingButton label = liftM (Ping <$) $ button label

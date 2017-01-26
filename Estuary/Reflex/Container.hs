@@ -131,8 +131,8 @@ resettableWidget :: MonadWidget t m => (a -> Event t () -> m (Dynamic t (a,Event
 resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x e) reset
 
 
-flippableWidget :: MonadWidget t m => Bool -> Event t Bool -> m a -> m a -> m (Dynamic t a)
-flippableWidget i e build1 build2 = widgetHold (bool build1 build2 i) $ fmap (bool build1 build2) e
+flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
+flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e
 
 clickableWhiteSpace :: MonadWidget t m => m (Event t GenericSignal)
 clickableWhiteSpace = do
@@ -149,20 +149,24 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
   return $ leftmost [a,b,c,d]
 
 genericSignalMenu :: MonadWidget t m => m (Event t GenericSignal)
-genericSignalMenu = elClass "div" "genericSignalMenu" $ do
-  a <- clickableDiv' "Ping" Ping
-  b <- clickableDiv' "-" DeleteMe
-  c <- clickableDiv' "[]" MakeGroup
-  d <- clickableDiv' "{}" MakeLayer
-return $ leftmost [a,b,c,d]
+genericSignalMenu = elAttr "div" (singleton "style" "top: 0px; left: 0px; position: absolute; z-index: 1;") $ do
+  a <- clickableDivClass' "Ping" "noClass" Ping
+  b <- clickableDivClass' "-" "noClass" DeleteMe
+  c <- clickableDivClass' "[]" "noClass" MakeGroup
+  d <- clickableDivClass' "{}" "noClass" MakeLayer
+  return $ leftmost [a,b,c,d]
 
 hideableSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
 hideableSignalWidget = elClass "div" "hideableSignalWidget" $ mdo
-  x <- liftM (switchPromptlyDyn) $ flippableWidget False flipEvents clickableWhiteSpace genericSignalMenu
+  x <- liftM (switchPromptlyDyn) $ flippableWidget clickableWhiteSpace genericSignalWidget False flipEvents
   flipEvents <- liftM (updated) $ toggle False $ ffilter (==Ping) x
   return $ ffilter (/=Ping) x
 
-
-
-
---
+popupSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
+popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
+  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu) False popupEvents
+  x <- clickableWhiteSpace
+  let x' = (True <$)  $ ffilter (==Ping) x
+  let y' = (False <$)  $ ffilter (==Ping) y
+  let popupEvents = leftmost [x',y']
+  return $ ffilter (/=Ping) x

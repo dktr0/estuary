@@ -23,5 +23,8 @@ import Control.Monad.IO.Class
 
 main :: IO ()
 main = mainWidget $ do
-  hideableSignalWidget
+  clickableDivClass' "bd " "noClass" ()
+  popupSignalWidget
+  popupSignalWidget
+  clickableDivClass' "lkdjlksjdlkfjslkdfjslkdjflksdjflksdjflkdsjflksdjflksdfjlsdkjflsdkfjlsdkjflksdjflksdfjsldkfjsdlkfjslkdfjklsdfjklsdfjlkdsfjsldkjflsdkfjlsdkfjlsdkfjldskjflkdsfjsdslkdjflksdjflksdjflksdfjkdlsjflsdkjflksdjflsdkjfldskfjlsdf" "noClass" ()
   blank
