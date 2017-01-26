@@ -138,6 +138,7 @@ popup buildEvents = do
 
 
 -- the following three definitions are just an example of using 'popup' above to implement a popup menu
+-- they should probably be moved to an examples folder sometime soon...
 
 clickableWhiteSpace :: MonadWidget t m => m (Event t GenericSignal)
 clickableWhiteSpace = do

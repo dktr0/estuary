@@ -16,6 +16,29 @@ import Data.Maybe(isJust,listToMaybe)
 import Text.Read(readMaybe)
 
 
+generalContainer :: (MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
+generalContainer b i _ = elClass "div" "generalPattern" $ mdo
+  let cEvents = mergeWith (union) [insertMap,deleteMap]
+  (values,events) <- eitherContainer' (initialMap i) cEvents never never leftBuilder (rightBuilder i)
+  let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
+  let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (==Ping) )  events
+  mapDyn (returnF i) values
+  where
+    initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+    leftBuilder = aGLWidget b
+    rightBuilder (Layers _ _) = tdPingButtonAttrs "+" ("class"=:"addButton-vertical")
+    rightBuilder (Group _ _) = pingButton''' "+" ("class"=:"addButton")
+    rightBuilder (Atom _ _) = pingButton''' "+" ("class"=:"addButton")
+    insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
+    insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    returnF (Layers _ _) x = (Layers (elems x) Once,never)
+    returnF (Group _ _) x = (Group (elems x) Once,never)
+    returnF (Atom _ _) x = (Group (elems x) Once,never)
+
+{-
 ------------------------------------------------
 --                GENERAL CONTAINER           --
 ------------------------------------------------
@@ -69,7 +92,7 @@ generalContainer builder (Atom iVal iReps) _ = elAttr "div" ("class"=:"generalPa
     makeIMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
     makeIMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     makeIMap _ = makeIMap (Atom 0 Once)
-
+-}
 
 aGLWidget::(MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
 aGLWidget builder iVal _ = mdo
@@ -84,7 +107,7 @@ aGLWidget builder iVal _ = mdo
     function (Group xs r) e = generalContainer builder (Group xs r) e
     function (Layers xs r) e = generalContainer builder (Layers xs r) e
 
-    
+
 ------------------------
 ----  GenPat Double   --
 ------------------------
@@ -149,7 +172,7 @@ aGLIntWidget vMin vMax step _ e = aGLIntWidget vMin vMax step (Atom 0 Once) e
 --  GenPat Strings  --
 ----------------------
 -- The following 3 widget functions compose of a container which interpserses aGLStringWidgets
--- (something that returns an Atom, Group or Layer (aGL)) with + buttons. The widgets can be 
+-- (something that returns an Atom, Group or Layer (aGL)) with + buttons. The widgets can be
 -- recursively constructed: each individual widget can be turned into a container itself (as a group or layer).
 
 -- Individual string widgets (able to turn into a container themselves by signaling their container in the returned event)
@@ -208,7 +231,7 @@ clickListWidget cycleMap (Atom iVal iReps) updatedReps = mdo
   reps <- holdDyn (iReps) updatedReps
   returnSample <- combineDyn (\x r -> Atom x r) str reps
   showVal <- mapDyn show returnSample
-  mapDyn (\x->(x,never)) returnSample 
+  mapDyn (\x->(x,never)) returnSample
 
 repDivWidget::MonadWidget t m => RepOrDiv -> m (Dynamic t RepOrDiv)
 repDivWidget (Rep iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
@@ -460,12 +483,10 @@ vowelButtonWidget (Atom iVowel _) _ = elAttr "td" ("style"=:"text-align:center")
 
 
 
--- For faderButtonWidget - gradient string used to show the 
+-- For faderButtonWidget - gradient string used to show the
 makeStyleString gradient =
   "background: -webkit-linear-gradient(90deg,lightgreen "++ (show $ x+1) ++ "%, white "++(show $ x) ++ "%);"++
     "background: -o-linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white "++ (show x)++ "%);" ++
       "background: -moz-linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white "++ (show x) ++ "%);" ++
         "background: linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white " ++ (show x) ++ "%);"
   where x = gradient*100
-
-
