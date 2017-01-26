@@ -17,13 +17,16 @@ import Text.Read(readMaybe)
 
 
 generalContainer :: (MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
-generalContainer b i _ = elClass "div" "generalPattern" $ mdo
+generalContainer b i _ = elClass "div" (getClass i) $ mdo
   let cEvents = mergeWith (union) [insertMap,deleteMap]
   (values,events) <- eitherContainer' (initialMap i) cEvents never never leftBuilder (rightBuilder i)
   let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
   let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (==Ping) )  events
   mapDyn (returnF i) values
   where
+    getClass (Layers _ _) = "generalPattern-layer"
+    getClass (Group _ _) = "generalPattern-group"
+    getClass (Atom _ _) = "generalPattern-atom"
     initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
@@ -38,61 +41,6 @@ generalContainer b i _ = elClass "div" "generalPattern" $ mdo
     returnF (Group _ _) x = (Group (elems x) Once,never)
     returnF (Atom _ _) x = (Group (elems x) Once,never)
 
-{-
-------------------------------------------------
---                GENERAL CONTAINER           --
-------------------------------------------------
-
--- NOTE: generalContainer should not be created with 'Blank' as an initial value - Exception will occur
-generalContainer :: (MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
-generalContainer builder (Layers xs iReps) _ = elAttr "div" ("class"=:"generalPattern-layer") $ mdo
-  delButton <- button' " - " DeleteMe
-  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (aGLWidget builder) (tdPingButtonAttrs "+" ("class"=:"addButton-vertical"))-- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> Layers x Once)
-  returnVal'<-forDyn returnVal (\x->(x,delButton))
-  return returnVal'
-generalContainer builder (Group xs iReps) _ = elAttr "div" ("class"=:"generalPattern-group") $ mdo
-  delButton <- button' " - " DeleteMe
-  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (aGLWidget builder) (pingButton''' "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> Group x Once)
-  forDyn returnVal (\x->(x,delButton))
-generalContainer builder (Atom iVal iReps) _ = elAttr "div" ("class"=:"generalPattern-atom") $ mdo
-  delButton <- button' " - " DeleteMe
-  let initialMap = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (aGLWidget builder) (pingButton''' "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> Group x Once)
-  forDyn returnVal (\x->(x,delButton))
-  where
-    makeIMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
-    makeIMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-    makeIMap _ = makeIMap (Atom 0 Once)
--}
 
 aGLWidget::(MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
 aGLWidget builder iVal _ = mdo
