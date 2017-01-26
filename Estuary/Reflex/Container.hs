@@ -130,37 +130,20 @@ wmap = flip wfor
 resettableWidget :: MonadWidget t m => (a -> Event t () -> m (Dynamic t (a,Event t GenericSignal))) -> a -> Event t () -> Event t a -> m (Dynamic t (a,Event t GenericSignal))
 resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x e) reset
 
-flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
-flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e
 
 popup :: MonadWidget t m => Event t (Maybe (m (Event t a))) -> m (Event t a)
 popup buildEvents = do
   let buildEvents' = fmap (maybe (return never) id) buildEvents
   liftM (switchPromptlyDyn) $ widgetHold (return never) buildEvents'
-  
-popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
-  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu) False popupEvents
-  x <- clickableWhiteSpace
-  let x' = (True <$)  $ ffilter (==Ping) x
-  let y' = (False <$)  $ ffilter (==Ping) y
-  let popupEvents = leftmost [x',y']
-  return $ ffilter (/=Ping) x
 
 
+-- the following three definitions are just an example of using 'popup' above to implement a popup menu
 
 clickableWhiteSpace :: MonadWidget t m => m (Event t GenericSignal)
 clickableWhiteSpace = do
   (element,_) <- elAttr' "div" (singleton "class" "clickableWhiteSpace") $ text "clickableWhiteSpace"
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   return $ (Ping <$) clickEv
-
-genericSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
-genericSignalWidget = elClass "div" "genericSignalWidget" $ do
-  a <- button' "Ping" Ping
-  b <- button' "-" DeleteMe
-  c <- button' "[]" MakeGroup
-  d <- button' "{}" MakeLayer
-  return $ leftmost [a,b,c,d]
 
 genericSignalMenu :: MonadWidget t m => m (Event t GenericSignal)
 genericSignalMenu = elAttr "div" (singleton "style" "top: 0px; left: 0px; position: absolute; z-index: 1;") $ do
@@ -170,17 +153,11 @@ genericSignalMenu = elAttr "div" (singleton "style" "top: 0px; left: 0px; positi
   d <- clickableDivClass' "{}" "noClass" MakeLayer
   return $ leftmost [a,b,c,d]
 
-hideableSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
-hideableSignalWidget = elClass "div" "hideableSignalWidget" $ mdo
-  x <- liftM (switchPromptlyDyn) $ flippableWidget clickableWhiteSpace genericSignalWidget False flipEvents
-  flipEvents <- liftM (updated) $ toggle False $ ffilter (==Ping) x
-  return $ ffilter (/=Ping) x
-
 popupSignalWidget :: MonadWidget t m => m (Event t GenericSignal)
 popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
-  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu) False popupEvents
+  y <- popup popupEvents
   x <- clickableWhiteSpace
-  let x' = (True <$)  $ ffilter (==Ping) x
-  let y' = (False <$)  $ ffilter (==Ping) y
+  let x' = (Just genericSignalMenu <$) $ ffilter (==Ping) x
+  let y' = Nothing <$ y
   let popupEvents = leftmost [x',y']
   return $ ffilter (/=Ping) x
