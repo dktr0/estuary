@@ -126,7 +126,7 @@ sContainerWidget (S genPat) _ = mdo
   return returnVal'
 
 specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
-specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget (-500) 500 1) x e >>= mapDyn (\(x,ev)->(Accelerate x,ev))
+specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget' (-500) 500 1) x e >>= mapDyn (\(x,ev)->(Accelerate x,ev))
 specificContainer (Bandq x) e = G.generalContainer  (G.aGLDoubleWidget 0 22000 10) x e >>= mapDyn (\(x,ev)->(Bandq x,ev))
 specificContainer (Begin x) e = G.generalContainer  (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Begin x,ev))
 specificContainer (Delay x) e = G.generalContainer    (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delay x,ev))

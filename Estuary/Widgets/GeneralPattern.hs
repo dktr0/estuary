@@ -71,6 +71,8 @@ generalContainer builder (Atom iVal iReps) _ = elAttr "div" ("class"=:"generalPa
     makeIMap _ = makeIMap (Atom 0 Once)
 
 
+
+
 aGLWidget::(MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
 aGLWidget builder iVal _ = mdo
   val <- resettableWidget (function) iVal never rebuildEvent'
@@ -90,6 +92,19 @@ aGLWidget builder iVal _ = mdo
 ------------------------
 -- A groupable/layerable/atomizable widget for General Pattern Doubles
 -- vMin and vMax denote the rane of possible values, step = the stepsize of each increment
+
+
+aGLDoubleWidget'::(MonadWidget t m) => Double -> Double -> Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
+aGLDoubleWidget' vMin vMax step (Atom iVal _) _ = do
+  (element,value) <- elAttr' "div" (empty) $ do
+    let attrs = fromList $ zip ["style","step","min","max"] ["width=40px",show step, show vMin, show vMax]
+    textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+    let val = _textInput_value textField
+    mapDyn (\str-> if isJust (readMaybe str::Maybe Double) then (read str::Double) else (vMax-vMin)/2+vMin) val
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Mouseover) (mouseXY)
+  let popUpEv = fmap (\_ -> text "this is popup") clickEv
+  widgetHold (blank) popUpEv
+  mapDyn (\x-> (Atom (max vMin $ min vMax x) Once, never)) value
 
 aGLDoubleWidget::(MonadWidget t m) => Double -> Double -> Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
 aGLDoubleWidget vMin vMax step (Atom iVal _) _ = elAttr "table" ("class"=:"aGLNumberWidgetTable") $ mdo

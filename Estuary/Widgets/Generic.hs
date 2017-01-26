@@ -1,3 +1,6 @@
+{-# LANGUAGE RecursiveDo #-}
+
+
 module Estuary.Widgets.Generic where
 
 import Reflex
@@ -6,6 +9,8 @@ import GHCJS.DOM.EventM
 import Control.Monad
 import Estuary.Reflex.Utility
 import Data.Map
+import Data.List
+import Estuary.Tidal.Types
 
 data GenericSignal = Ping | DeleteMe | MakeGroup | MakeLayer | RebuildMe deriving (Eq, Show)
 
@@ -74,3 +79,31 @@ tdPingButtonAttrs:: MonadWidget t m => String -> Map String String -> a -> b -> 
 tdPingButtonAttrs label attrs _ _ = el "td" $ do
   b <- buttonDynAttrs label (Ping) $ constDyn attrs
   return $ constDyn ((), b)
+
+
+
+
+-- validator.w3.org
+
+-- A clickable td element. Each click cycles to the next element in the map. Updated with a RepOrDiv event.
+-- rep/div values get shown on the button too.
+--clickListWidget::(MonadWidget t m, Show a, Eq a) => Map Int a ->  GeneralPattern a -> Event t RepOrDiv -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
+--clickListWidget cycleMap (Atom iVal iReps) updatedReps = mdo
+--  let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVal) $ elems cycleMap
+--  sampleButton <- tdButtonAttrs' showVal (iVal) $ "class"=:"clickListtd"
+--  num <- count sampleButton >>= mapDyn (\x-> (x+initialNum) `mod` length cycleMap)
+--  str'' <- mapDyn (\x-> maybe iVal id $ Data.Map.lookup x cycleMap) num
+--  let str' = updated str''
+--  str <- holdDyn (iVal) str'
+--  reps <- holdDyn (iReps) updatedReps
+--  returnSample <- combineDyn (\x r -> Atom x r) str reps
+--  showVal <- mapDyn show returnSample
+--  mapDyn (\x->(x,never)) returnSample 
+
+
+
+
+
+
+
+
