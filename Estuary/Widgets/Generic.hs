@@ -34,6 +34,13 @@ clickableDivClass label c = do
 clickableDivClass' :: MonadWidget t m => String -> String -> a -> m (Event t a)
 clickableDivClass' label c e = liftM (e <$) $ clickableDivClass label c
 
+-- with displayed text that can change
+clickableDivClass'':: MonadWidget t m => Dynamic t String -> String -> a -> m (Event t a)
+clickableDivClass'' label c e = do
+  (element, _) <- elAttr' "div" ("class"=:c) $ dynText label
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  return $ (e <$) clickEv
+
 clickableDivAttrs::MonadWidget t m => String -> a -> Map String String -> m (Event t a)
 clickableDivAttrs label val attrs= do
   (element,_) <- elAttr' "div" attrs $ text label

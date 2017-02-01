@@ -12,9 +12,22 @@ import Estuary.Widgets.Generic
 import Control.Monad
 import Data.List(intersperse, findIndex)
 import GHCJS.DOM.EventM
-import Data.Maybe(isJust,listToMaybe)
+import Data.Maybe(isJust,listToMaybe,fromMaybe)
 import Text.Read(readMaybe)
 
+
+popupSampleWidget :: MonadWidget t m => GeneralPattern Sample -> Event t () -> m (Dynamic t (GeneralPattern Sample, Event t GenericSignal))
+popupSampleWidget iVal e = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
+  let popupMap = fromList $ zip [1::Int,2,3,4,5] ["bd","sn", "cp","[]", "[,,]"] 
+  x <- clickableDivClass'' sampText "noClass" Ping
+  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False popupEvents
+  let x' = (True <$)  $ ffilter (==Ping)  x
+  let y' = (False <$)  $ ffilter (==Nothing)  y
+  let sampleChanges = fmap (fromMaybe 0) $ ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False)  y
+  let sampleChanges' = fmap (\k-> maybe iVal (\x-> Atom (Sample (x,0)) Once) $ Data.Map.lookup k popupMap ) sampleChanges
+  sampText <- holdDyn (show iVal) $ fmap show sampleChanges'
+  let popupEvents = leftmost [x',y']
+  mapDyn (\x-> (Atom (Sample (x,0)) Once, never) ) sampText
 
 ------------------------------------------------
 --                GENERAL CONTAINER           --
@@ -23,7 +36,7 @@ import Text.Read(readMaybe)
 -- NOTE: generalContainer should not be created with 'Blank' as an initial value - Exception will occur
 generalContainer :: (MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
 generalContainer builder (Layers xs iReps) _ = elAttr "div" ("class"=:"generalPattern-layer") $ mdo
-  delButton <- button' " - " DeleteMe
+  delButton <-  button' " - " DeleteMe
   let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
   (values,events) <- eitherContainer' initialMap cEvents never  never (aGLWidget builder) (tdPingButtonAttrs "+" ("class"=:"addButton-vertical"))-- values:dyn Map k GeneralPattern,
@@ -93,18 +106,6 @@ aGLWidget builder iVal _ = mdo
 -- A groupable/layerable/atomizable widget for General Pattern Doubles
 -- vMin and vMax denote the rane of possible values, step = the stepsize of each increment
 
-
-aGLDoubleWidget'::(MonadWidget t m) => Double -> Double -> Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
-aGLDoubleWidget' vMin vMax step (Atom iVal _) _ = do
-  (element,value) <- elAttr' "div" (empty) $ do
-    let attrs = fromList $ zip ["style","step","min","max"] ["width=40px",show step, show vMin, show vMax]
-    textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
-    let val = _textInput_value textField
-    mapDyn (\str-> if isJust (readMaybe str::Maybe Double) then (read str::Double) else (vMax-vMin)/2+vMin) val
-  clickEv <- wrapDomEvent (_el_element element) (onEventName Mouseover) (mouseXY)
-  let popUpEv = fmap (\_ -> text "this is popup") clickEv
-  widgetHold (blank) popUpEv
-  mapDyn (\x-> (Atom (max vMin $ min vMax x) Once, never)) value
 
 aGLDoubleWidget::(MonadWidget t m) => Double -> Double -> Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t GenericSignal))
 aGLDoubleWidget vMin vMax step (Atom iVal _) _ = elAttr "table" ("class"=:"aGLNumberWidgetTable") $ mdo
