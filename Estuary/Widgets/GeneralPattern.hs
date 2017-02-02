@@ -14,76 +14,36 @@ import Data.List(intersperse, findIndex)
 import GHCJS.DOM.EventM
 import Data.Maybe(isJust,listToMaybe,fromMaybe)
 import Text.Read(readMaybe)
+import Control.Applicative (liftA2)
 
-
-popupSampleWidget :: MonadWidget t m => GeneralPattern Sample -> Event t () -> m (Dynamic t (GeneralPattern Sample, Event t GenericSignal))
-popupSampleWidget iVal e = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
-  let popupMap = fromList $ zip [1::Int,2,3,4,5] ["bd","sn", "cp","[]", "[,,]"] 
-  x <- clickableDivClass'' sampText "noClass" Ping
-  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False popupEvents
-  let x' = (True <$)  $ ffilter (==Ping)  x
-  let y' = (False <$)  $ ffilter (==Nothing)  y
-  let sampleChanges = fmap (fromMaybe 0) $ ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False)  y
-  let sampleChanges' = fmap (\k-> maybe iVal (\x-> Atom (Sample (x,0)) Once) $ Data.Map.lookup k popupMap ) sampleChanges
-  sampText <- holdDyn (show iVal) $ fmap show sampleChanges'
-  let popupEvents = leftmost [x',y']
-  mapDyn (\x-> (Atom (Sample (x,0)) Once, never) ) sampText
 
 ------------------------------------------------
 --                GENERAL CONTAINER           --
 ------------------------------------------------
-
--- NOTE: generalContainer should not be created with 'Blank' as an initial value - Exception will occur
 generalContainer :: (MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
-generalContainer builder (Layers xs iReps) _ = elAttr "div" ("class"=:"generalPattern-layer") $ mdo
-  delButton <-  button' " - " DeleteMe
-  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (aGLWidget builder) (tdPingButtonAttrs "+" ("class"=:"addButton-vertical"))-- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> Layers x Once)
-  returnVal'<-forDyn returnVal (\x->(x,delButton))
-  return returnVal'
-generalContainer builder (Group xs iReps) _ = elAttr "div" ("class"=:"generalPattern-group") $ mdo
-  delButton <- button' " - " DeleteMe
-  let initialMap = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (aGLWidget builder) (pingButton''' "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> Group x Once)
-  forDyn returnVal (\x->(x,delButton))
-generalContainer builder (Atom iVal iReps) _ = elAttr "div" ("class"=:"generalPattern-atom") $ mdo
-  delButton <- button' " - " DeleteMe
-  let initialMap = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
-  let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never (aGLWidget builder) (pingButton''' "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
-  let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
-  let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])) makeSKeys
-  let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> Group x Once)
-  forDyn returnVal (\x->(x,delButton))
+generalContainer b i _ = elClass "div" (getClass i) $ mdo
+  let cEvents = mergeWith (union) [insertMap,deleteMap]
+  (values,events) <- eitherContainer' (initialMap i) cEvents never never leftBuilder (rightBuilder i)
+  let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
+  let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (==Ping) )  events
+  mapDyn (returnF i) values
   where
-    makeIMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
-    makeIMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-    makeIMap _ = makeIMap (Atom 0 Once)
-
-
+    getClass (Layers _ _) = "generalPattern-layer"
+    getClass (Group _ _) = "generalPattern-group"
+    getClass (Atom _ _) = "generalPattern-atom"
+    initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+    leftBuilder = aGLWidget b
+    rightBuilder (Layers _ _) = tdPingButtonAttrs "+" ("class"=:"addButton-vertical")
+    rightBuilder (Group _ _) = pingButton''' "+" ("class"=:"addButton")
+    rightBuilder (Atom _ _) = pingButton''' "+" ("class"=:"addButton")
+    insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
+    insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    returnF (Layers _ _) x = (Layers (elems x) Once,never)
+    returnF (Group _ _) x = (Group (elems x) Once,never)
+    returnF (Atom _ _) x = (Group (elems x) Once,never)
 
 
 aGLWidget::(MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
@@ -99,7 +59,58 @@ aGLWidget builder iVal _ = mdo
     function (Group xs r) e = generalContainer builder (Group xs r) e
     function (Layers xs r) e = generalContainer builder (Layers xs r) e
 
-    
+
+popupSampleWidget :: MonadWidget t m => GeneralPattern String -> Event t () -> m (Dynamic t (GeneralPattern String, Event t GenericSignal))
+popupSampleWidget iVal e = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
+  let popupMap = fromList $ zip [1::Int,2..] ["bd","sn", "cp","[]", "[,,]","* Or /","Delete"] 
+  x <- clickableDivClass'' sampText "noClass" Ping
+
+  repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' (Rep 1) never) False $ updated repDivToggle
+
+  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False popupEvents
+  x' <- toggle False x 
+  let y' = (False <$)  $ ffilter (==Nothing)  y
+  repDivToggle <- toggle False $ ffilter (== Just 6) y
+
+  let groupEv = (MakeGroup <$) $ ffilter (==Just 4) y
+  let layerEv = (MakeLayer <$) $ ffilter (==Just 5) y
+  let deleteEv = (DeleteMe <$) $ ffilter (==Just 6) y
+  groupToggle <- toggle False groupEv
+  layerToggle <- toggle False layerEv
+  
+  let sampleChanges = fmap (fromMaybe 0) $ ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False)  y
+  let sampleChanges' = fmap (\k-> maybe iVal (\x-> Atom x Once) $ Data.Map.lookup k popupMap ) sampleChanges
+  sampText <- holdDyn (show iVal) $ fmap show sampleChanges'
+  
+  -- TODO - fix double click thing for opening popup menu when it's been closed by the menu option
+  let popupEvents = leftmost [updated x',y']
+  repDivVal <- holdDyn Once repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
+  genPat <- combineDyn (\x y -> Atom x y) sampText repDivVal
+
+  genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
+  genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
+
+  let signalEvents = leftmost $ [deleteEv] ++ [leftmost $ fmap (RebuildMe <$)[groupEv, layerEv]]
+  mapDyn (\val-> (val, signalEvents)) genPat''
+
+repDivWidget'::MonadWidget t m => RepOrDiv -> Event t () -> m (Event t RepOrDiv)
+repDivWidget' iVal _ = elAttr "div" ("class"=:"repOrDiv") $ mdo
+  repDivButton <- clickableDivClass'' showRep "noClass" Ping
+  repTog <- toggle iToggle repDivButton
+  showRep <- mapDyn (\x-> if x then "*" else "/") repTog
+  let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
+  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number"
+  let numTextField = _textInput_value textField
+  num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
+  dynVal <- combineDyn (\tog val -> if tog then Rep val else Div val) repTog num
+  return $ updated dynVal
+  where
+    (iToggle, iNum) = case iVal of
+      (Rep x) -> (True,x)
+      (Div x) -> (False,x)
+      otherwise -> (True, 1)
+
+
 ------------------------
 ----  GenPat Double   --
 ------------------------
@@ -165,7 +176,7 @@ aGLIntWidget vMin vMax step _ e = aGLIntWidget vMin vMax step (Atom 0 Once) e
 --  GenPat Strings  --
 ----------------------
 -- The following 3 widget functions compose of a container which interpserses aGLStringWidgets
--- (something that returns an Atom, Group or Layer (aGL)) with + buttons. The widgets can be 
+-- (something that returns an Atom, Group or Layer (aGL)) with + buttons. The widgets can be
 -- recursively constructed: each individual widget can be turned into a container itself (as a group or layer).
 
 -- Individual string widgets (able to turn into a container themselves by signaling their container in the returned event)
@@ -188,7 +199,7 @@ aGLStringWidget (Atom iVal iReps) _ = elAttr "table" ("class"=:"aGLStringWidgetT
   layerToggle <- toggle False layerEvent
   genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
   genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
-  let rebuildEvent = fmap (const RebuildMe) $ leftmost [layerEvent, groupEvent]
+  let rebuildEvent = (RebuildMe <$) $ leftmost [layerEvent, groupEvent]
   mapDyn (\x-> (x,leftmost [rebuildEvent, deleteEvent])) genPat''
 aGLStringWidget _ e = aGLStringWidget (Atom "~" Once) e
 
@@ -224,7 +235,7 @@ clickListWidget cycleMap (Atom iVal iReps) updatedReps = mdo
   reps <- holdDyn (iReps) updatedReps
   returnSample <- combineDyn (\x r -> Atom x r) str reps
   showVal <- mapDyn show returnSample
-  mapDyn (\x->(x,never)) returnSample 
+  mapDyn (\x->(x,never)) returnSample
 
 repDivWidget::MonadWidget t m => RepOrDiv -> m (Dynamic t RepOrDiv)
 repDivWidget (Rep iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
@@ -476,12 +487,10 @@ vowelButtonWidget (Atom iVowel _) _ = elAttr "td" ("style"=:"text-align:center")
 
 
 
--- For faderButtonWidget - gradient string used to show the 
+-- For faderButtonWidget - gradient string used to show the
 makeStyleString gradient =
   "background: -webkit-linear-gradient(90deg,lightgreen "++ (show $ x+1) ++ "%, white "++(show $ x) ++ "%);"++
     "background: -o-linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white "++ (show x)++ "%);" ++
       "background: -moz-linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white "++ (show x) ++ "%);" ++
         "background: linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white " ++ (show x) ++ "%);"
   where x = gradient*100
-
-
