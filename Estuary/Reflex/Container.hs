@@ -177,13 +177,50 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
 
 
 
+--genericSignalMenu'::(MonadWidget t m, Eq a )=> Map a String -> m (Event t (Maybe a))
+--genericSignalMenu' actionMap = elClass "div" "popupMenu" $ do
+--  let popUpMap = mapWithKey (\k v-> clickableDivClass' v "noClass" (Just k)) actionMap-- Map k (m Event t (Maybe k))
+--  let widgets = Control.Monad.sequence popUpMap  -- m (t a)
+--  events<- liftM (Data.Map.elems) widgets
+--  a <- clickableDivClass' "close" "noClass" (Nothing)
+--  return $ leftmost $ events ++[a]
+
 genericSignalMenu'::(MonadWidget t m, Eq a )=> Map a String -> m (Event t (Maybe a))
 genericSignalMenu' actionMap = elClass "div" "popupMenu" $ do
   let popUpMap = mapWithKey (\k v-> clickableDivClass' v "noClass" (Just k)) actionMap-- Map k (m Event t (Maybe k))
   let widgets = Control.Monad.sequence popUpMap  -- m (t a)
   events<- liftM (Data.Map.elems) widgets
+  liveness <- livenessWidget MakeL4 never
   a <- clickableDivClass' "close" "noClass" (Nothing)
   return $ leftmost $ events ++[a]
+
+
+livenessWidget::MonadWidget t m => GenericSignal -> Event t GenericSignal -> m (Event t GenericSignal)
+livenessWidget iLiveness updateEv = elAttr "div" ("class"=:"livenessWidget") $ mdo
+  let iIsL3 = iLiveness==MakeL3
+  livenessButton <- clickableDivClass'' (livenessText) "livenessText" Ping
+  let livenessTextEv = fmap (\x-> if x == MakeL4 then "L4" else "L3") updateEv
+  livenessText <- holdDyn (if iIsL3 then "L3" else "L4") livenessTextEv
+  evalButton <- liftM switchPromptlyDyn $ flippableWidget (return never) (clickableDivClass' "Eval" "L3Eval" Eval) iIsL3 (fmap (==MakeL4) updateEv)
+  return $ leftmost $ [evalButton]++[livenessButton]
+
+--flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
+
+
+
+  --repTog <- toggle iToggle repDivButton
+  --showRep <- mapDyn (\x-> if x then "*" else "/") repTog
+  --let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
+  --textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number"
+  --let numTextField = _textInput_value textField
+  --num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
+  --dynVal <- combineDyn (\tog val -> if tog then Rep val else Div val) repTog num
+  --return $ updated dynVal
+  --where
+  --  (iToggle, iNum) = case iVal of
+  --    (Rep x) -> (True,x)
+  --    (Div x) -> (False,x)
+  --    otherwise -> (True, 1)
 
   --let popUpBuilders = Data.Map.elems popUpMap  -- [m Evet t (maybe k)]
   --a <-Control.Monad.sequence popUpBuilders -- m [Event t Maybe]

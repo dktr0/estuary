@@ -12,7 +12,7 @@ import Data.Map
 import Data.List
 import Estuary.Tidal.Types
 
-data GenericSignal = Ping | DeleteMe | MakeGroup | MakeLayer | RebuildMe deriving (Eq, Show)
+data GenericSignal = Ping | DeleteMe | MakeGroup | MakeLayer | RebuildMe | MakeL3 | MakeL4 | Eval deriving (Eq, Show)
 
 clickableDiv :: MonadWidget t m => String -> m (Event t ())
 clickableDiv label = do
