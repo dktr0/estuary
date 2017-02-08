@@ -25,6 +25,17 @@ widgetMap iMap rebuild = do
   keys <- holdDyn (keys iMap) (fmap keys rebuild) -- :: m (Dynamic t [k])
   combineDyn (\a b -> fromList $ zip a b) keys widgets
 
+container' :: (Ord k, Num k, MonadWidget t m)
+  => (v -> m a) -- a builder function from
+  -> Map k v -- an initial map of values
+  -> Event t (Map k (Construction v)) -- construction events
+  -> m (Dynamic t (Map k a))
+
+container' build iMap cEvents = do
+  let iMap' = fmap build iMap
+  newMap <- foldDyn (\a b -> applyConstructionMap b a) iMap cEvents
+  let newMap' = fmap (fmap build) (updated newMap)
+  widgetMap iMap' newMap'
 
 
 data Construction a = Insert a | Replace a | Delete deriving (Show)
@@ -72,21 +83,6 @@ container initialValue cEvents rEvents mkChild = mdo
   values <- mapDyn (fmap (fst)) widgets
   events <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap (snd)) widgets
   return (values,events)
-
-{-
-work in progress...
-container' :: (Ord k, Num k, Show k, Eq v, Show v, MonadWidget t m)
-   => Map k v                                -- a map of initial values
-   -> Event t (Map k (Construction v))       -- construction events (replace/insert/delete)
-   -> Event t (Map k w)                      -- signaling events to be delivered to child widgets
-   -> (v -> Event t w -> m a)                -- function to make a widget given initial value and signaling event
-   -> m (Dynamic t (Map k a))
-
-container' initial construction signals build = mdo
-  let construction' = attachDynWith constructionDiff values construction
-  let build' k v = build v $ select (fanMap signals) $ Const2 k
-  x <- listHoldWithKey initial construction' build' -- m (Dynamic t (Map k a))
--}
 
 
 eitherContainer :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
