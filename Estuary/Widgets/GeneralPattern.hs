@@ -60,31 +60,37 @@ aGLWidget builder iVal _ = mdo
     function (Layers xs r) e = generalContainer builder (Layers xs r) e
 
 
+-- @ clean up redundant/ugly code...
 popupSampleWidget :: MonadWidget t m => GeneralPattern String -> Event t () -> m (Dynamic t (GeneralPattern String, Event t GenericSignal))
 popupSampleWidget iVal e = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
+  let (iSamp,iRepDiv) = case iVal of 
+                    (Group xs r) -> (show $ xs!!0,r) 
+                    (Layers xs r) -> (show $ xs!!0,r) 
+                    (Atom v r) -> (v,r)
+                    otherwise -> ("~",Once)
+  let divPopupIsViewable = and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once]  -- Only show the div popup if initial rep Div is not one of these
   let popupMap = fromList $ zip [1::Int,2..] ["bd","sn", "cp","[]", "[,,]","* Or /","Delete"] 
   x <- clickableDivClass'' sampText "noClass" Ping
 
-  repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' (Rep 1) never) False $ updated repDivToggle
+  repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) divPopupIsViewable $ updated repDivToggle
 
-  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False popupEvents
-  x' <- toggle False x 
-  let y' = (False <$)  $ ffilter (==Nothing)  y
-  repDivToggle <- toggle False $ ffilter (== Just 6) y
+  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False (updated popupEvents')
 
+  let closeEvents = (Ping <$)  $ ffilter (==Nothing)  y
+  repDivToggle <- toggle divPopupIsViewable $ ffilter (== Just 6) y
   let groupEv = (MakeGroup <$) $ ffilter (==Just 4) y
   let layerEv = (MakeLayer <$) $ ffilter (==Just 5) y
-  let deleteEv = (DeleteMe <$) $ ffilter (==Just 6) y
+  let deleteEv = (DeleteMe <$) $ ffilter (==Just 7) y
   groupToggle <- toggle False groupEv
   layerToggle <- toggle False layerEv
   
   let sampleChanges = fmap (fromMaybe 0) $ ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False)  y
   let sampleChanges' = fmap (\k-> maybe iVal (\x-> Atom x Once) $ Data.Map.lookup k popupMap ) sampleChanges
-  sampText <- holdDyn (show iVal) $ fmap show sampleChanges'
-  
-  -- TODO - fix double click thing for opening popup menu when it's been closed by the menu option
-  let popupEvents = leftmost [updated x',y']
-  repDivVal <- holdDyn Once repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
+  sampText <- holdDyn iSamp $ fmap show sampleChanges'
+  let popupEvents = leftmost [x,closeEvents]
+  popupEvents' <- toggle False popupEvents
+
+  repDivVal <- holdDyn iRepDiv repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
   genPat <- combineDyn (\x y -> Atom x y) sampText repDivVal
 
   genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
