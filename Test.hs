@@ -22,9 +22,10 @@ import Control.Monad.IO.Class
 
 
 main :: IO ()
-main = mainWidget $ do
-  clickableDivClass' "bd " "noClass" ()
-  popupSignalWidget
-  popupSignalWidget
-  clickableDivClass' "lkdjlksjdlkfjslkdfjslkdjflksdjflksdjflkdsjflksdjflksdfjlsdkjflsdkfjlsdkjflksdjflksdfjsldkfjsdlkfjslkdfjklsdfjklsdfjlkdsfjsldkjflsdkfjlsdkfjlsdkfjldskjflkdsfjsdslkdjflksdjflksdjflksdfjkdlsjflsdkjflksdjflsdkjfldskfjlsdf" "noClass" ()
-  blank
+main = mainWidget $ do 
+	popupSampleWidget (Atom (Sample ("bd",0)) Once) never
+	clickableDivClass' "bd " "noClass" ()
+	popupSignalWidget
+	popupSignalWidget
+	clickableDivClass' "lkdjlksjdlkfjslkdfjslkdjflksdjflksdjflkdsjflksdjflksdfjlsdkjflsdkfjlsdkjflksdjflksdfjsldkfjsdlkfjslkdfjklsdfjklsdfjlkdsfjsldkjflsdkfjlsdkfjlsdkfjldskjflkdsfjsdslkdjflksdjflksdjflksdfjkdlsjflsdkjflksdjflsdkjfldskfjlsdf" "noClass" ()
+	blank

@@ -148,7 +148,10 @@ specificContainer (Cutoff x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) 
 specificContainer (Hcutoff x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Hcutoff x,ev))
 specificContainer (Loop x) e = G.generalContainer (G.aGLIntWidget 0 1024 1) x e >>= mapDyn (\(x,ev)->(Loop x,ev))
 specificContainer (N x) e = G.generalContainer (G.aGLIntWidget 0 50 1) x e >>= mapDyn (\(x,ev)->(N x,ev))
-specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
+--specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
+specificContainer (S x) e = G.generalContainer' (G.aGLWidget G.popupSampleWidget) x e >>= mapDyn (\(x,ev)->(S x,ev))
+
+--specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
 specificContainer (Vowel x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Vowel x,ev))
 specificContainer (Unit x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Unit x,ev))
 
