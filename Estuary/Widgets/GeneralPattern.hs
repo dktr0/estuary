@@ -8,6 +8,7 @@ import Estuary.Reflex.Container
 import Estuary.Tidal.Types
 import Estuary.Reflex.Utility
 import Data.Map
+import Data.Maybe
 import Estuary.Widgets.Generic
 import Control.Monad
 import Data.List(intersperse, findIndex)
@@ -30,7 +31,11 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
     initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
-    leftBuilder = aGLWidget b
+    leftBuilder = makeResettableWidget b'
+    b' (Atom x r) e = b (Atom x r) e
+    b' (Blank) e = b (Blank) e
+    b' (Group xs r) e = generalContainer b (Group xs r) e
+    b' (Layers xs r) e = generalContainer b (Layers xs r) e
     rightBuilder (Layers _ _) = tdPingButtonAttrs "+" ("class"=:"addButton-vertical")
     rightBuilder (Group _ _) = pingButton''' "+" ("class"=:"addButton")
     rightBuilder (Atom _ _) = pingButton''' "+" ("class"=:"addButton")
@@ -42,19 +47,26 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
     returnF (Atom _ _) x = (Group (elems x) Once,never)
 
 
-aGLWidget::(MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
-aGLWidget builder iVal _ = mdo
-  val <- resettableWidget (function) iVal never rebuildEvent'
-  widgetEvents <- forDyn val (\(x,y)->y)
-  rebuildEvent <- forDyn widgetEvents (\x-> ffilter (==RebuildMe) x)
-  let rebuildEvent' = attachDynWith (\(value,_) _ ->value) val $ switchPromptlyDyn rebuildEvent
-  return val
-  where
-    function (Atom x r) e = builder (Atom x r) e
-    function (Blank) e = builder (Blank) e
-    function (Group xs r) e = generalContainer builder (Group xs r) e
-    function (Layers xs r) e = generalContainer builder (Layers xs r) e
+data ContainerOps a = AddElement a
 
+myPopupMenu :: MonadWidget t m => m (Event t (Maybe (ContainerOps String)))
+myPopupMenu = elClass "div" "popupMenu" $ do
+  noop <- clickableDivClass' "close" "popupMenuItem" (Nothing)
+  bd <- clickableDivClass' "+bd" "popupMenuItem" (Just (AddElement "bd"))
+  cp <- clickableDivClass' "+cp" "popupMenuItem" (Just (AddElement "cp"))
+  arpy <- clickableDivClass' "+arpy" "popupMenuItem" (Just (AddElement "arpy"))
+  return $ leftmost [bd,cp,arpy]
+
+popupExperiment :: MonadWidget t m => a -> Event t b -> m (Dynamic t (a, Event t (ContainerOps String)))
+popupExperiment i _ = mdo
+  a <- clickableWhiteSpace
+  b <- popup popupEvents
+  let openPopup = (Just myPopupMenu <$) $ ffilter (==Ping) a
+  let closePopup = Nothing <$ b
+  let popupEvents = leftmost [openPopup,closePopup]
+  let eventsUp = fmap fromJust $ ffilter (isJust) b
+  let rValue = constDyn i
+  forDyn rValue (\a -> (a,eventsUp))
 
 ------------------------
 ----  GenPat Double   --
