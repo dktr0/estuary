@@ -46,6 +46,44 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
     returnF (Atom _ _) x = (Group (elems x) Once,never)
 
 
+-- Using clickable whitespace instead of plus buttons
+generalContainer' :: (MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
+generalContainer' b i _ = elClass "div" (getClass i) $ mdo
+  let cEvents = mergeWith (union) [insertMap,deleteMap]
+  (values,events) <- eitherContainer' (initialMap i) cEvents never never leftBuilder (rightBuilder)
+  let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
+  let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (==Ping) )  events
+  mapDyn (returnF i) values
+  where
+    getClass (Layers _ _) = "generalPattern-layer"
+    getClass (Group _ _) = "generalPattern-group"
+    getClass (Atom _ _) = "generalPattern-atom"
+    initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+    leftBuilder = aGLWidget b
+    rightBuilder = whitespacePopup "whiteSpaceAdd" (1=:"Add")
+    insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
+    insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    returnF (Layers _ _) x = (Layers (elems x) Once,never)
+    returnF (Group _ _) x = (Group (elems x) Once,never)
+    returnF (Atom _ _) x = (Group (elems x) Once,never)
+
+--tdPingButtonAttrs:: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
+
+--genericSignalMenu' :: (MonadWidget t m, Eq a )=> Map a String -> m (Event t (Maybe a))
+
+
+whitespacePopup:: MonadWidget t m => String -> Map Int String -> a -> b -> m (Dynamic t ((), Event t GenericSignal))
+whitespacePopup cssClass popupMap _ _ = elClass "div" cssClass $ mdo 
+  whitespace <- clickableDivClass'' (constDyn "       ") "whiteSpaceAdd" Ping
+  openCloseEvents <- toggle False $ leftmost [whitespace, closeEvents]
+  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False (updated openCloseEvents)
+  let addEvent = (Ping <$) $ ffilter (==Just 1) popupMenu
+  let closeEvents = (Ping <$) $ ffilter (==Nothing) popupMenu
+  return $ constDyn ((),addEvent)
+
 aGLWidget::(MonadWidget t m, Eq a) => (GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))) -> GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
 aGLWidget builder iVal _ = mdo
   val <- resettableWidget (function) iVal never rebuildEvent'
@@ -76,8 +114,9 @@ popupSampleWidget iVal e = elAttr "div" (singleton "style" "border: 1px solid bl
 
   y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False (updated popupEvents')
 
-  let closeEvents = (Ping <$)  $ ffilter (==Nothing)  y
   repDivToggle <- toggle divPopupIsViewable $ ffilter (== Just 6) y
+
+  let closeEvents = (Ping <$)  $ ffilter (==Nothing)  y
   let groupEv = (MakeGroup <$) $ ffilter (==Just 4) y
   let layerEv = (MakeLayer <$) $ ffilter (==Just 5) y
   let deleteEv = (DeleteMe <$) $ ffilter (==Just 7) y
@@ -87,8 +126,7 @@ popupSampleWidget iVal e = elAttr "div" (singleton "style" "border: 1px solid bl
   let sampleChanges = fmap (fromMaybe 0) $ ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False)  y
   let sampleChanges' = fmap (\k-> maybe iVal (\x-> Atom x Once) $ Data.Map.lookup k popupMap ) sampleChanges
   sampText <- holdDyn iSamp $ fmap show sampleChanges'
-  let popupEvents = leftmost [x,closeEvents]
-  popupEvents' <- toggle False popupEvents
+  popupEvents' <- toggle False $ leftmost [x, closeEvents]
 
   repDivVal <- holdDyn iRepDiv repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
   genPat <- combineDyn (\x y -> Atom x y) sampText repDivVal

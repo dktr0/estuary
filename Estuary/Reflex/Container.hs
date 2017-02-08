@@ -175,8 +175,10 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
 --  events <- mapDyn (\x-> liftM (Data.Map.elems) x) widgets -- Dynamic (m ([Event t Maybe]))
 --  mapDyn (\ev-> leftmost $ ev ++[a]) events
 
-genericSignalMenu' :: (MonadWidget t m, Eq a )=> Map a String -> m (Event t (Maybe a))
-genericSignalMenu' actionMap = elClass "div" "genericSignalWidget" $ do
+
+
+genericSignalMenu'::(MonadWidget t m, Eq a )=> Map a String -> m (Event t (Maybe a))
+genericSignalMenu' actionMap = elClass "div" "popupMenu" $ do
   let popUpMap = mapWithKey (\k v-> clickableDivClass' v "noClass" (Just k)) actionMap-- Map k (m Event t (Maybe k))
   let widgets = Control.Monad.sequence popUpMap  -- m (t a)
   events<- liftM (Data.Map.elems) widgets
