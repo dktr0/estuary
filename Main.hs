@@ -55,6 +55,3 @@ pages = [
   ("ICLC Fixed Widget",widgetToPage $ P.iclcFixedStruct EmptyPatternChain never),
   ("ICOAH",widgetToPage $ P.icoahWidget EmptyPatternChain never)
   ]
-
-twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
-twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never

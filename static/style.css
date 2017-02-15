@@ -62,6 +62,17 @@ body {
 	display: inline-block;
 }
 
+.twoStackedPatternsLeft { /* for one of the two divs in the two stacked patterns page */
+	display: inline-block;
+	border-right: 1px solid black;
+	width: 50%;
+}
+
+.twoStackedPatternsRight { /* for one of the two divs in the two stacked patterns page */
+	display: inline-block;
+	width: 49%;
+}
+
 
 /*ex. each 'pattern' in ICLCfixed (Sound,End, Up,Vowel) is enclosed in one of these divs*/
 .singlePatternDiv {
