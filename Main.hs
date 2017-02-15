@@ -34,7 +34,7 @@ main = do
 
 header :: (MonadWidget t m) => m (Event t Int)
 header = divClass "header" $ do
-  divClass "logo" $ text "logo"
+  divClass "logo" $ text "estuary"
   divClass "webDirt" $ text "webDirt"
   newPageIndex <- divClass "pageMenu" $ do
     let pageNames = Prelude.map (fst) pages

@@ -1,14 +1,79 @@
+body {
+	background-color: black;
+	height: 100%;
+	margin: 0;
+}
+
+.estuary { /* the entire interface, contains .header and .page */
+
+}
+
+.header { /* the header area containing logo, webDirt, pageMenu and hintArea */
+	border: 1px solid;
+	border-radius: 10px;
+	background-color: lightgrey;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
+}
+
+.logo { /* logo in top left of header area */
+	display: inline-block;
+	width: 50%;
+	border: 1px solid white;
+}
+
+.webDirt { /* webDirt status area in top right of header */
+	display: inline-block;
+	width: 49%;
+	border: 1px solid white;
+}
+
+.pageMenu { /* contains page menu in bottom left of header */
+	display: inline-block;
+	width: 50%;
+	border: 1px solid white;
+}
+
+.hintArea { /* hint area in bottom right of header */
+	display: inline-block;
+	width: 49%;
+	border: 1px solid white;
+}
+
+.page { /* contains the interface for programming on menu selected in pageMenu */
+	border: 1px solid;
+	border-radius: 10px;
+	background-color: lightgrey;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
+}
+
+.whiteSpaceAdd { /* possibly a temporary class... */
+	white-space: pre-wrap;
+	display: inline-block;
+}
+
+.whiteSpaceClickable { /* possibly a temporary class... */
+	white-space: pre-wrap;
+	display: inline-block;
+}
+
+
 /*ex. each 'pattern' in ICLCfixed (Sound,End, Up,Vowel) is enclosed in one of these divs*/
 .singlePatternDiv {
 
-} 
+}
 
 /*ex. the div that 'Sound' is written in, in ICLCFixed)*/
 .singlePatternDiv-label{
-	font-size:100%; 
-	margin:5px; 
+	font-size:100%;
+	margin:5px;
 	display:inline-block
-} 
+}
 
 /*ex. the table wrapping all Patterns in ICOAH (each pattern is its own row))*/
 .multiPatternTable{
@@ -16,7 +81,7 @@
 }
 
 /*ex. each row in ICOAH patterns)*/
-.multiPatternTable-tr{ 
+.multiPatternTable-tr{
 	vertical-align:center
 	;background-color:lightgrey
 }
@@ -55,7 +120,7 @@
 }
 
 
-/* 
+/*
 ***************************************************************************************************
 For aGLNumberWidget_____ see any pattern that takes a list of Numbers as input (for example 'speed' or 'crush') in iclcStackedPattern
 */
@@ -78,7 +143,7 @@ For aGLNumberWidget_____ see any pattern that takes a list of Numbers as input (
 /* Styles the td that contains the '  -  ' (delete) button in widgets that take doubles*/
 .aGLNumberWidgetTable-deletetd{
 	width:45px;
-	text-align:center; 
+	text-align:center;
 	background-color:lightblue;
 	border: 1pt solid black
 }
@@ -100,7 +165,7 @@ For aGLNumberWidget_____ see any pattern that takes a list of Numbers as input (
 
 
 
-/* 
+/*
 ***************************************************************************************************
 For aGLStringWidget_____ see any pattern that takes a list of Strings as input (for example 's') in iclcStackedPattern
 */
@@ -123,7 +188,7 @@ For aGLStringWidget_____ see any pattern that takes a list of Strings as input (
 /* Styles the td that contains the '  -  ' (delete) button in widgets that take doubles*/
 .aGLStringWidgetTable-deletetd{
 	width:45px;
-	text-align:center; 
+	text-align:center;
 	background-color:lightblue;
 	border: 1pt solid black
 }
@@ -151,7 +216,7 @@ For aGLStringWidget_____ see any pattern that takes a list of Strings as input (
 }
 
 
-/* 
+/*
 In iclc stacked patterns -> 's' pattern -> see the check box in the green widget...
 the repDivWidget includes: the * and / with the check boxes, and the textfield
 to the right of them
@@ -190,7 +255,7 @@ to the right of them
 
 /* The '-' (delete) arrow td */
 .countWidgetTable-deletetd{
-	text-align:center; 
+	text-align:center;
 	background-color:lightblue;
 	border: 1pt solid black;
 }
@@ -215,9 +280,9 @@ to the right of them
 */
 
 .stackedPatternTable{
-	position: relative; 
-	height: 90%; 
-	width:90%; 
+	position: relative;
+	height: 90%;
+	width:90%;
 	border: 1px solid black;
 }
 
@@ -242,7 +307,7 @@ to the right of them
 .addButton{
 	background-color:lightblue;
 	display:inline-block
-} 
+}
 
 
 /*ex. hit [,,] - the vertical buttons*/
@@ -261,10 +326,3 @@ to the right of them
 .patternDeleteButton{
 	background-color:salmon;
 }
-
-
-
-
-
-
-
