@@ -27,13 +27,27 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
   childKeys <- mapDyn keys allValues
   let events' = fmap (Data.Map.elems) events -- Event [l]
   let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a change
-  let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys $ leftmost [livenessEv,livenessReissue]
+  let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
   liveness <- holdDyn MakeL4 livenessEv
+  let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change
   --dynClass <- holdDyn ("MakeL4") $ fmap (\x-> case x of MakeL3 -> "MakeL3"; otherwise -> "MakeL4") livenessEv
   --dynText dynClass
+
+  -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
+
+  unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
+  mapDyn show unchangedVal >>= dynText
+  let isEdited = attachWithMaybe (\x y-> if x==y then Nothing else Just y) (current unchangedVal) (updated values)
+  --holdDyn False $ fmap (==MakeL3) livenessEv
+  --isEditedDyn <- holdDyn False $ fmap fromJust isEdited
+
+  --let edited = attachDynWith (\d e->) isEditedDyn
+
+  holdDyn ("asdf") (fmap show isEdited) >>= dynText
+
   let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
   let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (isChangeValue) )  events
-  let livenessReissue = attachWith (\d e -> d) (current liveness) $ fmap (Data.Map.filter (isChangeValue)) events
+  --let livenessReissue = attachWith (\d e -> d) (current liveness) $ fmap (Data.Map.filter (isChangeValue)) events
   mapDyn (\x->returnF i x livenessEv) values
   where
     initialVal (Atom iV _) = iV
@@ -90,13 +104,18 @@ livenessWidget liveness = elAttr "div" ("class"=:"livenessWidget") $ mdo
   livenessButton <- clickableDivClass'' (livenessText) "livenessText" ()
   --let livenessTextEv = fmap (\x-> if isMake4 x then "L4" else "L3") updateEv  -- used where binding instead of if to avoid needing Eq
    --dynamic m (event t ...)   dyn of that :  m (Event t (Event t ...))
+  --evalButton <- liftM switchPromptlyDyn $ flippableWidget (return never) (clickableDivClass' "Eval" "L3Eval" Eval) iIsL3 (fmap isMake4 updateEv)
   l <- mapDyn (\x-> if isMake4 x then return never else clickableDivClass' "Eval" "L3Eval" Eval) liveness >>= dyn
-  let l2 = coincidence l
+  let l2 = fmap (const "asdf") l
+  f<-toggle False l2
+  f' <- mapDyn show f
+  dynText f'
+
   --evalButton <- liftM switchPromptlyDyn $ flippableWidget (return never) (clickableDivClass' "Eval" "L3Eval" Eval) iIsL3 (fmap isMake4 updateEv)
   -- @Temp
   --liveness <- toggle (iIsL3) livenessButton -- Dyn bool
   let livenessChange = attachWith (\d e -> if isMake4 d then MakeL3 else MakeL4) (current liveness) livenessButton
-  return $ leftmost [livenessChange,l2]
+  return $ leftmost [livenessChange]
   where
     isMake4 (MakeL4) = True
     isMake4 (MakeL3) = False
@@ -140,6 +159,7 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   let sampleChanges = ffilter (\x-> if isJust x then isChangeValue $ fromJust x else False) y -- Event t (Maybe (EditSignal a))
   let sampleChanges' = fmap (\x-> maybe Blank (\y->case y of (ChangeValue z)-> z; otherwise -> Blank) x) sampleChanges
   let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x==Just MakeL4) y
+  let evalEv = fmap fromJust $ ffilter (==Just Eval) y
   groupToggle <- toggle False groupEv
   layerToggle <- toggle False layerEv
   --let sampleChanges = fmap (fromMaybe 0) $ ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False)  y
@@ -151,7 +171,7 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
   genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
   --mapDyn (\val-> (val, never)) genPat''
-  let signalEvents = leftmost $ [deleteEv,livenessEv] ++ [leftmost $ fmap (RebuildMe <$)[groupEv, layerEv]]
+  let signalEvents = leftmost $ [deleteEv,livenessEv,evalEv] ++ [leftmost $ fmap (RebuildMe <$)[groupEv, layerEv]]
   mapDyn (\val-> (val, signalEvents)) genPat''
 
 
