@@ -19,7 +19,7 @@ import Text.Read(readMaybe)
 
 -- see ICOAH vowel widget for example (using vowelButtonWidget)
 -- Vowel Pattern
-charContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+charContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t ()))
 charContainerWidget a _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -27,7 +27,7 @@ charContainerWidget a _ = mdo
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
@@ -43,7 +43,7 @@ charContainerWidget a _ = mdo
 -- End Pattern container
 -- intersperses G.faderButtonWidget with + buttons
 -- see iclc fixed end widget (used in PatternChain.hs)
-endContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+endContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal a)))
 endContainerWidget a _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -51,7 +51,7 @@ endContainerWidget a _ = mdo
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
@@ -62,7 +62,7 @@ endContainerWidget a _ = mdo
     (widgetBuilder,defaultGeneralPat, patType) = (G.faderButtonWidget, Atom (1) Once, End)
 
 
-intContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+intContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t ()))
 intContainerWidget a _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -70,7 +70,7 @@ intContainerWidget a _ = mdo
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
@@ -93,7 +93,7 @@ intContainerWidget a _ = mdo
 -- Sample container widget using the click-list button
 -- doesn't support groups or lists.
 -- Used in ICOAH widget (in PatternChain.hs)
-sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t GenericSignal))
+sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
 sampleContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -101,7 +101,7 @@ sampleContainerWidget (S genPat) _ = mdo
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
@@ -109,7 +109,7 @@ sampleContainerWidget (S genPat) _ = mdo
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
 
-sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t GenericSignal))
+sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
 sContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -117,7 +117,7 @@ sContainerWidget (S genPat) _ = mdo
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
@@ -125,39 +125,75 @@ sContainerWidget (S genPat) _ = mdo
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
 
-specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
-specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget (-500) 500 1) x e >>= mapDyn (\(x,ev)->(Accelerate x,ev))
-specificContainer (Bandq x) e = G.generalContainer  (G.aGLDoubleWidget 0 22000 10) x e >>= mapDyn (\(x,ev)->(Bandq x,ev))
-specificContainer (Begin x) e = G.generalContainer  (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Begin x,ev))
-specificContainer (Delay x) e = G.generalContainer    (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delay x,ev))
-specificContainer (Delayfeedback x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delayfeedback x,ev))
-specificContainer (Delaytime x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delaytime x,ev))
-specificContainer (End x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(End x,ev))
-specificContainer (Gain x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Gain x,ev))
-specificContainer (Hresonance x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Hresonance x,ev))
-specificContainer (Pan x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Pan x,ev))
-specificContainer (Resonance x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Resonance x,ev))
-specificContainer (Shape x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Shape x,ev))
-specificContainer (Speed x) e = G.generalContainer (G.aGLDoubleWidget (-999) 999 0.5) x e >>= mapDyn (\(x,ev)->(Speed x,ev))
-specificContainer (Up x) e = G.generalContainer (G.aGLDoubleWidget (-132) 132 1) x e >>= mapDyn (\(x,ev)->(Up x,ev))
-specificContainer (Bandf x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Bandf x,ev))
-specificContainer (Coarse x) e = G.generalContainer (G.aGLIntWidget 0 24 1) x e >>= mapDyn (\(x,ev)->(Coarse x,ev))
-specificContainer (Crush x) e = G.generalContainer (G.aGLIntWidget 0 16 1) x e >>= mapDyn (\(x,ev)->(Crush x,ev))
-specificContainer (Estuary.Tidal.Types.Cut x) e = G.generalContainer (G.aGLIntWidget (-50) 50 1) x e >>= mapDyn (\(x,ev)->(Estuary.Tidal.Types.Cut x,ev))
-specificContainer (Cutoff x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Cutoff x,ev))
-specificContainer (Hcutoff x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Hcutoff x,ev))
-specificContainer (Loop x) e = G.generalContainer (G.aGLIntWidget 0 1024 1) x e >>= mapDyn (\(x,ev)->(Loop x,ev))
-specificContainer (N x) e = G.generalContainer (G.aGLIntWidget 0 50 1) x e >>= mapDyn (\(x,ev)->(N x,ev))
---specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
-specificContainer (S x) e = G.generalContainer' (G.aGLWidget G.popupSampleWidget) x e >>= mapDyn (\(x,ev)->(S x,ev))
+--specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal (GeneralPattern a))))
+--specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget (-500) 500 1) x e >>= mapDyn (\(x,ev)->(Accelerate x,ev))
+--specificContainer (Bandq x) e = G.generalContainer  (G.aGLDoubleWidget 0 22000 10) x e >>= mapDyn (\(x,ev)->(Bandq x,ev))
+--specificContainer (Begin x) e = G.generalContainer  (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Begin x,ev))
+--specificContainer (Delay x) e = G.generalContainer    (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delay x,ev))
+--specificContainer (Delayfeedback x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delayfeedback x,ev))
+--specificContainer (Delaytime x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delaytime x,ev))
+--specificContainer (End x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(End x,ev))
+--specificContainer (Gain x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Gain x,ev))
+--specificContainer (Hresonance x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Hresonance x,ev))
+--specificContainer (Pan x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Pan x,ev))
+--specificContainer (Resonance x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Resonance x,ev))
+--specificContainer (Shape x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Shape x,ev))
+--specificContainer (Speed x) e = G.generalContainer (G.aGLDoubleWidget (-999) 999 0.5) x e >>= mapDyn (\(x,ev)->(Speed x,ev))
+--specificContainer (Up x) e = G.generalContainer (G.aGLDoubleWidget (-132) 132 1) x e >>= mapDyn (\(x,ev)->(Up x,ev))
+--specificContainer (Bandf x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Bandf x,ev))
+--specificContainer (Coarse x) e = G.generalContainer (G.aGLIntWidget 0 24 1) x e >>= mapDyn (\(x,ev)->(Coarse x,ev))
+--specificContainer (Crush x) e = G.generalContainer (G.aGLIntWidget 0 16 1) x e >>= mapDyn (\(x,ev)->(Crush x,ev))
+--specificContainer (Estuary.Tidal.Types.Cut x) e = G.generalContainer (G.aGLIntWidget (-50) 50 1) x e >>= mapDyn (\(x,ev)->(Estuary.Tidal.Types.Cut x,ev))
+--specificContainer (Cutoff x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Cutoff x,ev))
+--specificContainer (Hcutoff x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Hcutoff x,ev))
+--specificContainer (Loop x) e = G.generalContainer (G.aGLIntWidget 0 1024 1) x e >>= mapDyn (\(x,ev)->(Loop x,ev))
+--specificContainer (N x) e = G.generalContainer (G.aGLIntWidget 0 50 1) x e >>= mapDyn (\(x,ev)->(N x,ev))
+----specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
 
+----genCont-> dyn (genpat a, EditSignal (Genpat b))
+--specificContainer (S x) e = G.generalContainer (G.aGLWidget G.popupSampleWidget) x e >>= mapDyn (\(x,ev)->(S x,ev))
+----specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
+---- @fix vowels...
+--specificContainer (Vowel x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Vowel x,ev))
+--specificContainer (Unit x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Unit x,ev))
+
+
+specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t ()))
+specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget (-500) 500 1) x e >>= mapDyn (\(x,ev)->(Accelerate x,(() <$) ev))
+specificContainer (Bandq x) e = G.generalContainer  (G.aGLDoubleWidget 0 22000 10) x e >>= mapDyn (\(x,ev)->(Bandq x,(() <$) ev))
+specificContainer (Begin x) e = G.generalContainer  (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Begin x,(() <$) ev))
+specificContainer (Delay x) e = G.generalContainer    (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delay x,(() <$) ev))
+specificContainer (Delayfeedback x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delayfeedback x,(() <$) ev))
+specificContainer (Delaytime x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Delaytime x,(() <$) ev))
+specificContainer (End x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(End x,(() <$) ev))
+specificContainer (Gain x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Gain x,(() <$) ev))
+specificContainer (Hresonance x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Hresonance x,(() <$) ev))
+specificContainer (Pan x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Pan x,(() <$) ev))
+specificContainer (Resonance x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Resonance x,(() <$) ev))
+specificContainer (Shape x) e = G.generalContainer (G.aGLDoubleWidget 0 1 0.05) x e >>= mapDyn (\(x,ev)->(Shape x,(() <$) ev))
+specificContainer (Speed x) e = G.generalContainer (G.aGLDoubleWidget (-999) 999 0.5) x e >>= mapDyn (\(x,ev)->(Speed x,(() <$) ev))
+specificContainer (Up x) e = G.generalContainer (G.aGLDoubleWidget (-132) 132 1) x e >>= mapDyn (\(x,ev)->(Up x,(() <$) ev))
+specificContainer (Bandf x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Bandf x,(() <$) ev))
+specificContainer (Coarse x) e = G.generalContainer (G.aGLIntWidget 0 24 1) x e >>= mapDyn (\(x,ev)->(Coarse x,(() <$) ev))
+specificContainer (Crush x) e = G.generalContainer (G.aGLIntWidget 0 16 1) x e >>= mapDyn (\(x,ev)->(Crush x,(() <$) ev))
+specificContainer (Estuary.Tidal.Types.Cut x) e = G.generalContainer (G.aGLIntWidget (-50) 50 1) x e >>= mapDyn (\(x,ev)->(Estuary.Tidal.Types.Cut x,(() <$) ev))
+specificContainer (Cutoff x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Cutoff x,(() <$) ev))
+specificContainer (Hcutoff x) e = G.generalContainer (G.aGLIntWidget 0 25000 10) x e >>= mapDyn (\(x,ev)->(Hcutoff x,(() <$) ev))
+specificContainer (Loop x) e = G.generalContainer (G.aGLIntWidget 0 1024 1) x e >>= mapDyn (\(x,ev)->(Loop x,(() <$) ev))
+specificContainer (N x) e = G.generalContainer (G.aGLIntWidget 0 50 1) x e >>= mapDyn (\(x,ev)->(N x,(() <$) ev))
+--specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
+
+--genCont-> dyn (genpat a, EditSignal (Genpat b))
+specificContainer (S x) e = G.generalContainer (G.aGLWidget G.popupSampleWidget) x e >>= mapDyn (\(x,ev)->(S x,(() <$) ev))
 --specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
-specificContainer (Vowel x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Vowel x,ev))
-specificContainer (Unit x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Unit x,ev))
+-- @fix vowels...
+specificContainer (Vowel x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Vowel x,(() <$) ev))
+specificContainer (Unit x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Unit x,(() <$) ev))
+
 
 
 -- Intersperses countStepWidgets with + buttons (see ICOAH up widget in PatternChain.hs)
-upContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t GenericSignal))
+upContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal a)))
 upContainerWidget a _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -165,7 +201,7 @@ upContainerWidget a _ = mdo
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
-  let makeSKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)

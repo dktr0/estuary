@@ -14,7 +14,7 @@ import Data.Map
 -- data StackedPatterns = StackedPatterns [PatternChain]
 
 -- Used in ICLC Stacked Patterns Widget
-stackedPatternsWidget :: MonadWidget t m => StackedPatterns -> Event t () -> m (Dynamic t (StackedPatterns,Event t GenericSignal))
+stackedPatternsWidget :: MonadWidget t m => StackedPatterns -> Event t () -> m (Dynamic t (StackedPatterns,Event t ()))
 stackedPatternsWidget (StackedPatterns xs) _ = elAttr "table" ("class"=:"stackedPatternTable") $ elAttr "tr" ("class"=:"stackedPatternTable-tr") $ do
   c <- wfor xs $ \x -> elAttr "td" ("class"=:"stackedPatternTable-td") $ do
     y <- iclcForStacked x never

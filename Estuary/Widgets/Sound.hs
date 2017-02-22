@@ -15,7 +15,7 @@ import Estuary.Widgets.Generic
 data ContainerSignal = Flash deriving(Eq, Show)
 
 
-selectableWidget::MonadWidget t m => Sound -> Event t ContainerSignal -> m (Dynamic t (Sound, Event t GenericSignal))
+selectableWidget::MonadWidget t m => Sound -> Event t ContainerSignal -> m (Dynamic t (Sound, Event t (EditSignal a)))
 selectableWidget iVal ev = mdo
   (element,_) <- elDynAttr' "div" attrs $ text "Click here to delete me"
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
@@ -30,7 +30,7 @@ selectableWidget iVal ev = mdo
   display string
   return $ constDyn (Sound $ Just $ Sample "one" 1 1 False, event')
 
-errorMessageWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t GenericSignal))
+errorMessageWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t (EditSignal a)))
 errorMessageWidget a b = mdo
   (element,result) <- elDynAttr' "div" attrs $ mdo
     sampleTextField <- textInput def
@@ -61,7 +61,7 @@ errorMessageWidget a b = mdo
 
 
 
-textWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t GenericSignal))
+textWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t (EditSignal a)))
 textWidget _ _= el "div" $ mdo
   sampleTextField <- textInput $ def & textInputConfig_attributes .~ constDyn ("style"=:"border-color:green")
   let sampleName = _textInput_value sampleTextField

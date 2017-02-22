@@ -14,7 +14,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.Sound
 
 
-multiTextWidget::MonadWidget t m => m (Dynamic t (SoundPattern, Event t GenericSignal))
+multiTextWidget::MonadWidget t m => m (Dynamic t (SoundPattern, Event t (EditSignal a)))
 multiTextWidget = el "div" $ mdo
   let initialMap = empty::Map Int Sound
   addButton <- button' "Add" (1=:Insert (Sound Nothing))
@@ -27,7 +27,7 @@ multiTextWidget = el "div" $ mdo
   return returnVal
 
 
-soundPatternContainer :: MonadWidget t m => SoundPattern -> Event t () -> m (Dynamic t (SoundPattern,Event t GenericSignal))
+soundPatternContainer :: MonadWidget t m => SoundPattern -> Event t () -> m (Dynamic t (SoundPattern,Event t (EditSignal a)))
 soundPatternContainer (SoundPattern initialValues) _ = el "div" $ mdo -- not responding to input events for now...
   let initialList = intersperse' (Right ()) $ (Prelude.map (Left) initialValues)
   let initialList' = zip ([0..]::[Int]) initialList
@@ -38,7 +38,7 @@ soundPatternContainer (SoundPattern initialValues) _ = el "div" $ mdo -- not res
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys
   let deleteMap = fmap (fromList) deleteList
-  let makeSimpleKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  let makeSimpleKeys = fmap (keys . Data.Map.filter (==())) events
   let makeSimpleList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left defNew))])) makeSimpleKeys
   let makeSimpleMap = fmap (fromList) makeSimpleList
   mapDyn ((\x -> (x,never))  . SoundPattern . elems) values

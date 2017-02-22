@@ -28,7 +28,7 @@ main = do
     el "div" $ multipage stream pages
 
 
-twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t GenericSignal))
+twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t ()))
 twoStackedPatterns = stackedPatternsWidget (StackedPatterns [EmptyPatternChain,EmptyPatternChain]) never
 
 

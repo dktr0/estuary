@@ -12,7 +12,28 @@ import Data.Map
 import Data.List
 import Estuary.Tidal.Types
 
-data GenericSignal = Ping | DeleteMe | MakeGroup | MakeLayer | RebuildMe | MakeL3 | MakeL4 | Eval deriving (Eq, Show)
+data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
+ | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval deriving (Eq)
+
+data UpSignal = L4 | Evaluate | L3 deriving (Eq,Show)
+
+instance Show a => Show (EditSignal a) where
+  show (ChangeValue a) =  show a
+  show MakeRepOrDiv = "* or /"
+  show Close = "close"
+  show DeleteMe = "delete"
+  show MakeGroup = "[  ]"
+  show MakeLayer = "[,,]"
+  show RebuildMe = "RebuildMe"
+  show MakeL3 = "L3"
+  show MakeL4 = "L4"
+  show Eval = "eval"
+
+isChangeValue::EditSignal a -> Bool
+isChangeValue (ChangeValue _) = True
+isChangeValue _ = False
+--data EditSignal = DeleteMe | MakeGroup | 
+
 
 clickableDiv :: MonadWidget t m => String -> m (Event t ())
 clickableDiv label = do
@@ -55,26 +76,31 @@ clickableDivAttrs' label val attrs _ _= do
   return $ constDyn ((),event)
 
 
-pingButton :: MonadWidget t m => String -> m (Event t GenericSignal)
-pingButton label = liftM (Ping <$) $ button label
+pingButton :: MonadWidget t m => String -> m (Event t ())
+pingButton label = liftM (() <$) $ button label
 
-pingButton' :: MonadWidget t m => String -> m (Dynamic t ((),Event t GenericSignal))
+pingButton' :: MonadWidget t m => String -> m (Dynamic t ((),Event t ()))
 pingButton' label = do
   x <- pingButton label
   return $ constDyn ((),x)
 
-pingButton'' :: MonadWidget t m => String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
+pingButton'' :: MonadWidget t m => String -> a -> b -> m (Dynamic t ((),Event t ()))
 pingButton'' label _ _ = pingButton' label
 
-pingButton''':: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
+pingButton''':: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())))
 pingButton''' label attrs _ _ = do
-  b <- buttonDynAttrs label (Ping) $ constDyn attrs
+  b <- buttonDynAttrs label (ChangeValue ()) $ constDyn attrs
   return $ constDyn ((), b)
 
-pingDiv :: MonadWidget t m => String -> m (Event t GenericSignal)
-pingDiv label = clickableDiv' label Ping
+makeNewButton:: (MonadWidget t m)=> String -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())) )
+makeNewButton label _ _ = do
+  a <- button label
+  return $ constDyn ((), ((MakeNew::EditSignal ()) <$) a)
 
-pingDiv' :: MonadWidget t m => String -> m (Dynamic t ((),Event t GenericSignal))
+pingDiv :: MonadWidget t m => String -> m (Event t ())
+pingDiv label = clickableDiv' label ()
+
+pingDiv' :: MonadWidget t m => String -> m (Dynamic t ((),Event t ()))
 pingDiv' label = do
   x <- pingDiv label
   return $ constDyn ((),x)
@@ -92,9 +118,9 @@ tdButtonAttrs' s val attrs = do
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   return $ ((val) <$) clickEv
 
-tdPingButtonAttrs:: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t GenericSignal))
+tdPingButtonAttrs:: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())))
 tdPingButtonAttrs label attrs _ _ = el "td" $ do
-  b <- buttonDynAttrs label (Ping) $ constDyn attrs
+  b <- buttonDynAttrs label (ChangeValue ()) $ constDyn attrs
   return $ constDyn ((), b)
 
 
@@ -104,7 +130,7 @@ tdPingButtonAttrs label attrs _ _ = el "td" $ do
 
 -- A clickable td element. Each click cycles to the next element in the map. Updated with a RepOrDiv event.
 -- rep/div values get shown on the button too.
---clickListWidget::(MonadWidget t m, Show a, Eq a) => Map Int a ->  GeneralPattern a -> Event t RepOrDiv -> m (Dynamic t (GeneralPattern a, Event t GenericSignal))
+--clickListWidget::(MonadWidget t m, Show a, Eq a) => Map Int a ->  GeneralPattern a -> Event t RepOrDiv -> m (Dynamic t (GeneralPattern a, Event t EditSignal))
 --clickListWidget cycleMap (Atom iVal iReps) updatedReps = mdo
 --  let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVal) $ elems cycleMap
 --  sampleButton <- tdButtonAttrs' showVal (iVal) $ "class"=:"clickListtd"
