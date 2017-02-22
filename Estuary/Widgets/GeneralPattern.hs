@@ -11,6 +11,7 @@ import Data.Map
 import Estuary.Widgets.Generic
 import Control.Monad
 import Data.List(intersperse, findIndex, elem)
+import Data.Either(partitionEithers)
 import GHCJS.DOM.EventM
 import Data.Maybe(isJust,listToMaybe,fromMaybe,fromJust)
 import Text.Read(readMaybe)
@@ -52,11 +53,9 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
   let cEvents = mergeWith (union) [insertMap,deleteMap]
   --(values,events) <- eitherContainer' (initialMap i) cEvents never never leftBuilder (rightBuilder)
   --(values,events) <- eitherContainer' (fromList $ zip [0::Int] [Right ()]) cEvents livenessEv never leftBuilder (rightBuilder)
-  (values,events) <- eitherContainer' (fromList $ zip [0::Int] [Right ()]) cEvents livenessEvMap never leftBuilder (rightBuilder)
-  childKeys <- mapDyn keys values
-  mapDyn show childKeys >>= dynText
-  --mapDyn show childKeys >>= dynText
-  --let livenessEv = fmap (   . Data.Map.filter (\x-> case x of MakeL3 -> " L3"; otherwise -> " L4") )
+  (allValues,events) <- eitherContainer (fromList $ zip [0::Int] [Right ()]) cEvents livenessEvMap livenessEvMap leftBuilder (rightBuilder)
+  values <- mapDyn (fst . Data.Either.partitionEithers . elems) allValues
+  childKeys <- mapDyn keys allValues
   let events' = fmap (Data.Map.elems) events -- Event [l]
   let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a change 
   let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
@@ -80,9 +79,9 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
     insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
     insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
     insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
-    returnF (Layers _ _) x = (Layers (elems x) Once,never)
-    returnF (Group _ _) x = (Group (elems x) Once,never)
-    returnF (Atom _ _) x = (Group (elems x) Once,never)
+    returnF (Layers _ _) x = (Layers x Once,never)
+    returnF (Group _ _) x = (Group x Once,never)
+    returnF (Atom _ _) x = (Group x Once,never)
 
 --tdPingButtonAttrs:: MonadWidget t m => String -> Map String String -> a -> b -> m (Dynamic t ((),Event t (EditSignal a)))
 
