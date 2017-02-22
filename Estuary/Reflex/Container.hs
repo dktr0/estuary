@@ -125,7 +125,8 @@ wmap = flip wfor
 -- resettableWidget: given a standard Estuary widget function, produce a
 -- variant with a reset Event of the same main type
 
-resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t () -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t () -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
+--resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t () -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t () -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
+resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t (EditSignal a) -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t (EditSignal a) -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
 resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x e) reset
 
 
