@@ -18,7 +18,7 @@ import qualified Estuary.Widgets.GeneralPattern as G
 import qualified Data.List
 
 
-iclcFixedStruct:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
+iclcFixedStruct:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
 iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
   s<- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Sound"
@@ -45,7 +45,7 @@ iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
     toPatternChain (TransformedPattern _ (Vowel (Group [] _))) = EmptyPatternChain
     toPatternChain x = PatternChain x
 
-icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
+icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
 icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
   s<- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "S"
@@ -73,7 +73,7 @@ icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
     toPatternChain x = PatternChain x
 
 
-patternCombinatorDropDown :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t GenericSignal))
+patternCombinatorDropDown :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
 patternCombinatorDropDown iValue _ = do
   let ddMap = constDyn $ fromList $ [ (x,show x) | x <- [Merge,Add,Subtract,Multiply,Divide] ]
   dd <- dropdown iValue ddMap def
@@ -111,13 +111,13 @@ patternChainDel m k | Data.Map.null m = []
                     | otherwise = [(k,Delete),(k+1,Delete),(k+2,Delete)]
 
 -- Widget used in iclc stacked pattern demo
-iclcForStacked :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
+iclcForStacked :: (MonadWidget t m) => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
 iclcForStacked iValue _ = mdo
   let iMap = fromList $ zip ([0..]::[Int]) $ patternChainToList' iValue
   let cEvents = mergeWith union [addMap,deleteMap]
   let patternOrCombinatorWidget = eitherWidget transformedPatternWidget patternCombinatorDropDown
-  (values,events) <- eitherContainer' iMap cEvents never never patternOrCombinatorWidget (pingButton'' "+")
-  let addKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  (values,events) <- eitherContainer' iMap cEvents never never patternOrCombinatorWidget (makeNewButton "+")
+  let addKeys = fmap (keys . Data.Map.filter (==MakeNew)) events
   let addList = attachDynWith (\a b -> concat (Prelude.map (patternChainAdd a) b)) values addKeys
   let addList' = traceEvent "addList" addList
   let addMap = fmap (fromList) addList'
@@ -128,13 +128,13 @@ iclcForStacked iValue _ = mdo
   mapDyn ((\x -> (x,never)) . listToPatternChain . elems) values
 
 
-iclcTextWidget :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
+iclcTextWidget ::(MonadWidget t m)=> PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
 iclcTextWidget iValue _ = mdo
   let iMap = fromList $ zip ([0..]::[Int]) $ patternChainToList' iValue
   let cEvents = mergeWith union [addMap,deleteMap]
   let patternOrCombinatorWidget = eitherWidget transformedPatternTextWidget patternCombinatorDropDown
-  (values,events) <- eitherContainer' iMap cEvents never never patternOrCombinatorWidget (pingButton'' "+")
-  let addKeys = fmap (keys . Data.Map.filter (==Ping)) events
+  (values,events) <- eitherContainer' iMap cEvents never never patternOrCombinatorWidget (makeNewButton "+")
+  let addKeys = fmap (keys . Data.Map.filter (==MakeNew)) events
   let addList = attachDynWith (\a b -> concat (Prelude.map (patternChainAdd a) b)) values addKeys
   let addList' = traceEvent "addList" addList
   let addMap = fmap (fromList) addList'
@@ -147,7 +147,7 @@ iclcTextWidget iValue _ = mdo
 
 
 
-trivialPatternChain :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t GenericSignal))
+trivialPatternChain :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
 trivialPatternChain iValue _ = do
   x <- button' "just an S atom" $ PatternChain (TransformedPattern [] (S (Atom "bd" Once)))
   el "br" blank
