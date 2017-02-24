@@ -34,10 +34,9 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
   -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
   unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
   let isEdited = attachWithMaybe (\x y-> if x==y then Nothing else Just y) (current unchangedVal) (updated values)
-
   isEdited' <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) isEdited
   isEdited'' <- combineDyn (\liveness updatedVal-> if liveness==MakeL4 then Just updatedVal else Nothing) liveness isEdited'
-  isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal 
+  isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal
 
   -- These lines are helpful for seeing the state of changes compared to the last evaluated change
   --mapDyn show unchangedVal >>= dynText
@@ -155,13 +154,12 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
                     otherwise -> ("~",Once)
   let divPopupIsViewable = and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once]  -- Only show the rep/div popup if initial rep Div is not one of these
   --let popupMap = fromList $ zip [1::Int,2..] ["bd","sn", "cp","[]", "[,,]","* Or /","Delete"]
-  let sampleMap = fromList $ zip [0::Int,1..] $ [("Rest","~"),("Percussion", "bd"),("Percussion", "cp"),("Percussion", "hh"),("Percussion", "sn"),("Bass","jvbass"), ("Bass","Wobble"),("Bass","bass1"),("Pitched","arpy"), ("Pitched", "casio"), ("Pitched","latibro")]
+  let sampleMap = fromList $ zip [0::Int,1..] $ [("Rest","~"),("Percussion", "bd"),("Percussion", "cp"),("Percussion", "hh"),("Percussion", "sn"),("Bass","jvbass"), ("Bass","wobble"),("Bass","bass1"),("Pitched","arpy"), ("Pitched", "casio"), ("Pitched","latibro")]
   let popupMap = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
   x <- clickableDivClass'' sampText "noClass" ()
   repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) divPopupIsViewable $ updated repDivToggle
   --y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap (liveness) ) False (updated popupEvents')
   y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (samplePickerPopup sampleMap popupMap (liveness) ) False (updated popupEvents')
-  
   let closeEvents = (() <$)  $ ffilter (==Nothing)  y
   let groupEv = fmap fromJust $ ffilter (==Just MakeGroup) y
   let layerEv = fmap fromJust  $ ffilter (==Just MakeLayer) y
@@ -550,7 +548,7 @@ sButtonContainer _ e = sButtonContainer (Atom "~" Once) e
 
 sButtonWidget::MonadWidget t m =>  GeneralPattern SampleName -> Event t RepOrDiv -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a)))
 sButtonWidget (Atom iSamp iReps) updatedReps = mdo
-  let sampleMap = fromList $ zip [(0::Int)..] ["~","bd","sn","cp","hh"]  -- Map Int (String,String)
+  let sampleMap = fromList $ zip [(0::Int)..] ["~","bd","sn","cp","hh","arpy","glitch","tabla"]  -- Map Int (String,String)
   let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iSamp) $ elems sampleMap
   sampleButton <- tdButtonAttrs' (showSample) (iSamp) $ "style"=:"width:60%;text-align:center;background-color:lightblue"
   num <- count sampleButton >>= mapDyn (\x-> (x+initialNum) `mod` length sampleMap)

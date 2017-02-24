@@ -9,6 +9,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.StackedPatterns
 import Estuary.Widgets.PatternChain as P
 import Estuary.Widgets.GeneralPattern as G -- for testing the Refactor of general container
+import Estuary.Widgets.Text
 import Control.Monad (liftM)
 import Sound.Tidal.Context (ParamPattern)
 import Estuary.WebDirt.Foreign
@@ -34,15 +35,15 @@ main = do
 
 header :: (MonadWidget t m) => m (Event t Int)
 header = divClass "header" $ do
-  divClass "logo" $ text "estuary"
-  divClass "webDirt" $ text "webDirt"
+  divClass "logo" $ text "estuary (a work in progress)"
+  divClass "webDirt" $ text " "
   newPageIndex <- divClass "pageMenu" $ do
     let pageNames = Prelude.map (fst) pages
     let pageList = zipWith (\x y -> (y,x)) pageNames ([0..]::[Int])
     let pageMap = constDyn $ fromList pageList
     menu <- dropdown 0 pageMap def
     return $ _dropdown_change menu
-  divClass "hintArea" $ text "hintArea"
+  divClass "hintArea" $ text " "
   return newPageIndex
 
 widgetToPage :: (MonadWidget t m,ParamPatternable p) => m (Dynamic t (p,a)) -> m (Dynamic t ParamPattern)
@@ -50,8 +51,7 @@ widgetToPage x = x >>= mapDyn (toParamPattern . fst)
 
 -- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern))]
 pages = [
-  ("ICLC Text Widget",widgetToPage $ iclcTextWidget EmptyPatternChain never),
-  ("ICLC Stacked Patterns Widget",widgetToPage $ twoStackedPatterns),
-  ("ICLC Fixed Widget",widgetToPage $ P.iclcFixedStruct EmptyPatternChain never),
-  ("ICOAH",widgetToPage $ P.icoahWidget EmptyPatternChain never)
+  ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyPatternChain never),
+  ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyPatternChain never),
+  ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns)
   ]

@@ -40,10 +40,7 @@ iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
   patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
   patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain' s
   mapDyn (\x-> (x,never)) patChain
-  where
-    toPatternChain (TransformedPattern _ (End  (Group [] _))) = EmptyPatternChain
-    toPatternChain (TransformedPattern _ (Vowel (Group [] _))) = EmptyPatternChain
-    toPatternChain x = PatternChain x
+
 
 icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
 icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
@@ -51,10 +48,6 @@ icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "S"
     (pat,_)<- Sp.sampleContainerWidget (S Blank) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
-  end <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
-    elAttr "td" ("class"=:"multiPatternTable-td") $ text "End"
-    (pat,_) <- Sp.endContainerWidget (End $ Atom 0.5 Once) never >>= splitDyn
-    forDyn pat (TransformedPattern [NoTransformer])
   vowel <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "Vowel"
     (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Once) never >>= splitDyn
@@ -64,13 +57,15 @@ icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
     (pat,_) <- Sp.upContainerWidget (Up $ Atom 0 Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
   patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
-  patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
-  patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain' s
+  patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain'' s
   mapDyn (\x-> (x,never)) patChain
-  where
-    toPatternChain (TransformedPattern _ (End  (Group [] _))) = EmptyPatternChain
-    toPatternChain (TransformedPattern _ (Vowel (Group [] _))) = EmptyPatternChain
-    toPatternChain x = PatternChain x
+
+simpleFixedInterface :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
+simpleFixedInterface i e = do
+  x <- divClass "twoStackedPatternsLeft" $ icoahWidget i e
+  y <- divClass "twoStackedPatternsRight" $ divClass "paddedText" $ do
+    el "div" $ text "In this interface you can combine simple patterns of samples (s), vowels and pitch changes (up). Click a + button to an add element to one of those three patterns. A ~ in an s pattern represents silence - you can click on the ~ to advance to a named sample/sound, and click again to advance through to further sounds. Clicking the up or down arrows repeats an element within the time allotted to it in the overall pattern."
+  return x
 
 
 patternCombinatorDropDown :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
@@ -143,18 +138,3 @@ iclcTextWidget iValue _ = mdo
   let deleteList' = traceEvent "deleteList" deleteList
   let deleteMap = fmap (fromList) deleteList'
   mapDyn ((\x -> (x,never)) . listToPatternChain . elems) values
-
-
-
-
-trivialPatternChain :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
-trivialPatternChain iValue _ = do
-  x <- button' "just an S atom" $ PatternChain (TransformedPattern [] (S (Atom "bd" Once)))
-  el "br" blank
-  y <- button' "merge S and N" $ PatternChain' (TransformedPattern [] (S (Atom "hh" (Rep 4)))) Merge (PatternChain (TransformedPattern [] (nPatternFromList [0..3])))
-  el "br" blank
-  z <- button' "adding Ns" $ PatternChain' (TransformedPattern [] (N (Atom 60 Once))) Add (PatternChain (TransformedPattern [] (N (Atom 7 Once))))
-  el "br" blank
-  xyz <- holdDyn iValue $ leftmost [x,y,z]
-  mapDyn (\a -> (a,never)) xyz
-

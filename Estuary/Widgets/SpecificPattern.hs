@@ -187,7 +187,7 @@ specificContainer (N x) e = G.generalContainer (G.aGLIntWidget 0 50 1) x never >
 --specificContainer (S x) e = G.generalContainer (G.aGLWidget G.popupSampleWidget) x never >>= mapDyn (\(x,ev)->(S x,(() <$) ev))
 specificContainer (S x) e = mdo
   v <- G.generalContainer (G.popupSampleWidget liveness) x never
-  ev <- mapDyn snd v 
+  ev <- mapDyn snd v
   let livenessEv = ffilter (\x->case x of MakeL4->True; MakeL3 -> True; otherwise -> False) $ switchPromptlyDyn ev
   liveness <- holdDyn MakeL4 livenessEv
   mapDyn (\(x,ev)->(S x,(() <$) ev)) v
