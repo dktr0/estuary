@@ -539,7 +539,7 @@ sButtonContainer _ e = sButtonContainer (Atom "~" Once) e
 
 sButtonWidget::MonadWidget t m =>  GeneralPattern SampleName -> Event t RepOrDiv -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a)))
 sButtonWidget (Atom iSamp iReps) updatedReps = mdo
-  let sampleMap = fromList $ zip [(0::Int)..] ["~","bd","sn","cp","hh"]  -- Map Int (String,String)
+  let sampleMap = fromList $ zip [(0::Int)..] ["~","bd","sn","cp","hh","arpy","glitch","tabla"]  -- Map Int (String,String)
   let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iSamp) $ elems sampleMap
   sampleButton <- tdButtonAttrs' (showSample) (iSamp) $ "style"=:"width:60%;text-align:center;background-color:lightblue"
   num <- count sampleButton >>= mapDyn (\x-> (x+initialNum) `mod` length sampleMap)

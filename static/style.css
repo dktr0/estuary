@@ -60,13 +60,36 @@ body {
 
 .twoStackedPatternsLeft { /* for one of the two divs in the two stacked patterns page */
 	display: inline-block;
+	vertical-align: top;
 	border-right: 1px solid black;
 	width: 50%;
 }
 
 .twoStackedPatternsRight { /* for one of the two divs in the two stacked patterns page */
 	display: inline-block;
+	vertical-align: top;
 	width: 49%;
+}
+
+.paddedText {
+	vertical-align: top;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 5px;
+	padding-right: 5px;
+}
+
+.textPatternChain {
+	width: 100%;
+}
+
+.labelAndTextPattern {
+	width: 100%;
+	display: inline-flex;
+}
+
+.textInputToEndOfLine {
+	flex: 1;
 }
 
 

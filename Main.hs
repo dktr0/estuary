@@ -35,8 +35,8 @@ main = do
 
 header :: (MonadWidget t m) => m (Event t Int)
 header = divClass "header" $ do
-  divClass "logo" $ text "estuary"
-  divClass "webDirt" $ text "(using WebDirt for sample playback)"
+  divClass "logo" $ text "estuary (a work in progress)"
+  divClass "webDirt" $ text " "
   newPageIndex <- divClass "pageMenu" $ do
     let pageNames = Prelude.map (fst) pages
     let pageList = zipWith (\x y -> (y,x)) pageNames ([0..]::[Int])
@@ -51,9 +51,7 @@ widgetToPage x = x >>= mapDyn (toParamPattern . fst)
 
 -- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern))]
 pages = [
-  ("Text Only Widget",widgetToPage $ textPatternChain EmptyPatternChain never),
-  ("ICLC Text Widget",widgetToPage $ iclcTextWidget EmptyPatternChain never),
-  ("ICLC Stacked Patterns Widget",widgetToPage $ twoStackedPatterns),
-  ("ICLC Fixed Widget",widgetToPage $ P.iclcFixedStruct EmptyPatternChain never),
-  ("ICOAH",widgetToPage $ P.icoahWidget EmptyPatternChain never)
+  ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyPatternChain never),
+  ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyPatternChain never),
+  ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns)
   ]

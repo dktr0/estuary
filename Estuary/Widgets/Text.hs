@@ -18,7 +18,8 @@ import Text.Read(readMaybe)
 textGeneralContainer :: (MonadWidget t m, Show a) => GeneralPattern a -> Event t () -> m (Dynamic t (GeneralPattern a, Event t ()))
 textGeneralContainer i e = do
   let i' = show i
-  x <- textInput def
+  let textAttrs = constDyn $ singleton "class" "textInputToEndOfLine"
+  x <- textInput $ def & textInputConfig_attributes .~ textAttrs
   mapDyn (\x -> (TextPattern x, never)) $ _textInput_value x
 
 
@@ -46,19 +47,33 @@ textSpecificContainer (Hcutoff x) e = textGeneralContainer x e >>= mapDyn (\(a,_
 textSpecificContainer (Loop x) e = textGeneralContainer x e >>= mapDyn (\(a,_) -> (Loop a, never))
 textSpecificContainer (N x) e = textGeneralContainer x e >>= mapDyn (\(a,_) -> (N a, never))
 textSpecificContainer (S x) e = textGeneralContainer x e >>= mapDyn (\(a,_) -> (S a, never))
+textSpecificContainer (Vowel x) e = textGeneralContainer x e >>= mapDyn (\(a,_) -> (Vowel a, never))
 
 
 textPatternChain :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t()))
-textPatternChain _ _ = do
-  divClass "noClass" $ text "s"
-  s <- textSpecificContainer (S (TextPattern "")) never >>= toTransformedPattern
-  divClass "noClass" $ text "n"
-  n <- textSpecificContainer (N (TextPattern "")) never >>= toTransformedPattern
-  divClass "noClass" $ text "up"
-  up <- textSpecificContainer (Up (TextPattern "")) never >>= toTransformedPattern
+textPatternChain i e = divClass "textPatternChain" $ do
+  s <- divClass "labelAndTextPattern" $ do
+    text "s "
+    textSpecificContainer (S (TextPattern "")) never >>= toTransformedPattern
+  n <- divClass "labelAndTextPattern" $ do
+    text "n "
+    textSpecificContainer (N (TextPattern "")) never >>= toTransformedPattern
+  up <- divClass "labelAndTextPattern" $ do
+    text "up "
+    textSpecificContainer (Up (TextPattern "")) never >>= toTransformedPattern
+  vowel <- divClass "labelAndTextPattern" $ do
+    text "vowel "
+    textSpecificContainer (Vowel (TextPattern "")) never >>= toTransformedPattern
   sn <- combineDyn (,) s n
-  val <- combineDyn (\(a,b) c -> PatternChain' a Merge $ PatternChain' b Merge $ PatternChain c) sn up
-  display val
+  upvowel <- combineDyn (,) up vowel
+  val <- combineDyn (\(a,b) (c,d) -> PatternChain' a Merge $ PatternChain' b Merge $ PatternChain' c Merge $ PatternChain d) sn upvowel
   mapDyn (\x -> (x,never)) val
   where
     toTransformedPattern = mapDyn (\(x,_) -> TransformedPattern [] x)
+
+textInterface :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t ()))
+textInterface i e = do
+  x <- divClass "twoStackedPatternsLeft" $ textPatternChain i e
+  y <- divClass "twoStackedPatternsRight" $ divClass "paddedText" $ do
+    el "div" $ text "In this interface you can enter patterns directly using the text pattern notation of the TidalCycles language. For example in the space for an 's' pattern you could enter 'bd cp' (without the quotes) to hear a bass drum and a clap. Some other possible sample names to use in 's' patterns include: sid hh arpy sine glitch tabla bass (and many more). In the space for 'n' patterns you should use whole numbers (i.e. 0 1 2 3 etc) to access different samples from the set you indicate with your s patterns. In the space for 'up' patterns you can put numbers that shift the pitch of the samples. Try an s pattern like this 'arpy*4' with an up pattern like this '0 4 7 12', for example. In the space for 'vowel' patterns you can put the vowels: a e i o u. (Note to any TidalCycles experts: the ? operator doesn't work in this context, yet!)"
+  return x
