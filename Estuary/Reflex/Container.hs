@@ -16,6 +16,28 @@ import Data.Functor.Misc -- For Const2
 import Control.Monad
 import Data.Maybe
 
+
+widgetMap :: (MonadWidget t m,Ord k) => Map k (m a) -> Event t (Map k (m a)) -> m (Dynamic t (Map k a))
+widgetMap iMap rebuild = do
+  let iWidget = sequence $ elems iMap -- :: m [a]
+  let rebuild' = fmap (sequence . elems) rebuild -- :: Event t (m [a])
+  widgets <- widgetHold iWidget rebuild' -- :: m (Dynamic t [a])
+  keys <- holdDyn (keys iMap) (fmap keys rebuild) -- :: m (Dynamic t [k])
+  combineDyn (\a b -> fromList $ zip a b) keys widgets
+
+container' :: (Ord k, Num k, MonadWidget t m)
+  => (v -> m a) -- a builder function from
+  -> Map k v -- an initial map of values
+  -> Event t (Map k (Construction v)) -- construction events
+  -> m (Dynamic t (Map k a))
+
+container' build iMap cEvents = do
+  let iMap' = fmap build iMap
+  newMap <- foldDyn (\a b -> applyConstructionMap b a) iMap cEvents
+  let newMap' = fmap (fmap build) (updated newMap)
+  widgetMap iMap' newMap'
+
+
 data Construction a = Insert a | Replace a | Delete deriving (Show)
 
 -- given a Map and a Construction operation at a specifed key, return the new map
@@ -43,7 +65,6 @@ constructionDiff oldMap cMap = unions [deletions,additions,changes]
         deletions = fmap (const Nothing) $ difference oldMap newMap -- keys only in oldMap are deletions
         additions = fmap (Just) $ difference newMap oldMap -- keys only in newMap are additions
         changes = fmap (Just) $ intersection newMap $ Data.Map.filter (id) $ intersectionWith (/=) oldMap newMap
-
 
 container :: (Ord k, Num k, Show k, Eq v, Show v, MonadWidget t m)
    => Map k v                                -- a map of initial values
@@ -89,7 +110,7 @@ eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft build
 
 eitherContainer' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    => Map k (Either v a)                               -- a map of initial values
-   -> Event t (Map k (Construction (Either v a)))       -- construction events (replace/insert/delete)
+   -> Event t (Map k (Construction (Either v a)))      -- construction events (replace/insert/delete)
    -> Event t (Map k w)                                -- signaling events to be delivered to child widgets of type v
    -> Event t (Map k b)                                -- signaling events to be delivered to child widgets of type a
    -> (v -> Event t w -> m (Dynamic t (v,Event t e)))  -- function to build widgets for type v (returning events of type x)
@@ -99,6 +120,29 @@ eitherContainer' initialValues cEvents eventsToLeft eventsToRight buildLeft buil
   (d,e) <- eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight
   d' <- mapDyn (Data.Map.mapMaybe (either (Just) (const Nothing))) d
   return (d',e)
+
+{-
+eitherContainer'' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
+  => Map k (Either v a)
+  -> Event t (Map k (Construction (Either v a)))
+  -> (v -> m (Dynamic t (v,Event t e)))
+  -> (a -> m (Event t c))
+  -> m ( Dynamic t (Map k v), Event t (Map k e), Event t (Map k c) )
+
+eitherContainer'' i cEvents lBuild rBuild = mdo
+  widgets <- listHoldWithKey i cEvents? build -- m (Dynamic t (Map k (Either (Dynamic t (v,Event t e)) (Event t c))))
+  values <- liftM joinDynThroughMap $ forDyn widgets (fmapFstIntoMap  . filterMapForOnlyLeftElements)
+  lEvents <- forDyn widgets (fmapSndIntoMap  .  filterMapForOnlyLeftElements)
+  rEvents <- forDyn widgets
+
+  widgets <- liftM (joinDynThroughMap) $ listHoldWithKey i cEvents' build
+  values <- mapDyn (fmap (fst)) widgets
+  events <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap (snd)) widgets
+  return (values,lEvents,rEvents)
+  where
+    build _ (Left v) = lBuild v >>= mapDyn (\(v,e)-> Left (v,e))
+    build _ (Right a) = rBuild a >>= mapDyn (\c-> Right c)
+-}
 
 eitherWidget :: (MonadWidget t m)
   => (a -> Event t c -> m (Dynamic t (a,Event t d)))
@@ -121,14 +165,25 @@ wfor iVals mkChild = do
 wmap :: (MonadWidget t m) => (a -> m (Dynamic t b)) -> [a] -> m (Dynamic t [b])
 wmap = flip wfor
 
-
 -- resettableWidget: given a standard Estuary widget function, produce a
 -- variant with a reset Event of the same main type
+-- resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t () -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t () -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
+-- resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t (EditSignal a) -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t (EditSignal a) -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
+-- resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x e) reset
+-- after a merge conflict... believe the more general version below holds
 
---resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t () -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t () -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
-resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t (EditSignal a) -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t (EditSignal a) -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
-resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x e) reset
+resettableWidget :: MonadWidget t m => (a -> Event t b -> m (Dynamic t c)) -> a -> Event t b -> Event t a -> m (Dynamic t c)
+resettableWidget f i e reset = liftM (joinDyn) $ widgetHold (f i e) $ fmap (\x -> f x e) reset
 
+{-
+makeResettableWidget ::  MonadWidget t m => (a -> Event t b -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t b -> m (Dynamic t (a,Event t (EditSignal a)))
+makeResettableWidget b i e = mdo
+  val <- resettableWidget b i e rebuildEvents'
+  rebuildEvents <- liftM (tagDyn val) $ liftM (switchPromptlyDyn) $ mapDyn (ffilter (==RebuildMe) . snd) val
+  let rebuildEvents' = attachDynWith (\(a,_) _ -> a) val rebuildEvents
+  otherEvents <- liftM (switchPromptlyDyn) $ mapDyn (ffilter (/=RebuildMe) . snd) val
+  mapDyn (\(x,_) -> (x,otherEvents)) val
+-}
 
 popup :: MonadWidget t m => Event t (Maybe (m (Event t a))) -> m (Event t a)
 popup buildEvents = do
@@ -196,68 +251,25 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
 --  return $ leftmost $ events ++[a]
 
 
-
-
---flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
-
-
-
-  --repTog <- toggle iToggle repDivButton
-  --showRep <- mapDyn (\x-> if x then "*" else "/") repTog
-  --let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
-  --textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number"
-  --let numTextField = _textInput_value textField
-  --num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
-  --dynVal <- combineDyn (\tog val -> if tog then Rep val else Div val) repTog num
-  --return $ updated dynVal
-  --where
-  --  (iToggle, iNum) = case iVal of
-  --    (Rep x) -> (True,x)
-  --    (Div x) -> (False,x)
-  --    otherwise -> (True, 1)
-
-  --let popUpBuilders = Data.Map.elems popUpMap  -- [m Evet t (maybe k)]
-  --a <-Control.Monad.sequence popUpBuilders -- m [Event t Maybe]
-  --return $ leftmost a 
-  --let popUpList = fmap snd $ toList popUpMap -- [m (Event t (Maybe k))]
-  --let pop = leftmost popUpBuilders
-  --return pop
-
-
-
-  --let sampleButtons = fmap (\x-> clickableDivClass' x "noClass" $ RebuildMe' x) $ Prelude.filter (/=sVal) ["cp","bd","sn"]
-  --  fmap (\x-> click)
-
-  --a <- clickableDivClass' "Ping" "noClass" Ping
-  --b <- clickableDivClass' "-" "noClass" DeleteMe
-  --c <- clickableDivClass' "[]" "noClass" MakeGroup
-  --d <- clickableDivClass' "{}" "noClass" MakeLayer
-  ----let list = [a,b,c,d]++sampleButtons
-  --return $ leftmost  [a,b,c,d]
-
-
-genericSignalMenu :: MonadWidget t m => m (Event t (EditSignal a))
+genericSignalMenu :: MonadWidget t m => m (Event t (Maybe (EditSignal a)))
 genericSignalMenu = elAttr "div" (singleton "style" "top: 0px; left: 0px; position: absolute; z-index: 1;") $ do
-  --a <- clickableDivClass' "Ping" "noClass" Ping    -- No longer using 'Ping'
-  b <- clickableDivClass' "-" "noClass" DeleteMe
-  c <- clickableDivClass' "[]" "noClass" MakeGroup
-  d <- clickableDivClass' "{}" "noClass" MakeLayer
-  return $ leftmost [b,c,d]
+  a <- clickableDivClass' "Close" "noClass" Nothing
+  b <- clickableDivClass' "-" "noClass" (Just DeleteMe)
+  c <- clickableDivClass' "[]" "noClass" (Just MakeGroup)
+  d <- clickableDivClass' "{}" "noClass" (Just MakeLayer)
+  return $ leftmost [a,b,c,d]
 
-popupSignalWidget :: MonadWidget t m => m (Event t ())
+popupSignalWidget :: MonadWidget t m => m (Event t (EditSignal a))
 popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
   y <- popup popupEvents
   x <- clickableWhiteSpace
-  let x' = (Just genericSignalMenu <$) $ ffilter (==()) x
-  let y' = Nothing <$ y
-  let popupEvents = leftmost [x',y']
-  return $ ffilter (/= ()) x
-
+  let popupEvents = leftmost [Just genericSignalMenu <$ x,Nothing <$ y]
+  return $ (fmap fromJust . ffilter isJust) y
 
 
 --popupSignalWidget' :: MonadWidget t m => m (Event t ())
 --popupSignalWidget' = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
---  let popupMap = fromList $ zip [ChangeValue "bd", ChangeValue "sn", ChangeValue "cp", MakeGroup, MakeLayer] ["bd","sn", "cp","[]", "[,,]"] 
+--  let popupMap = fromList $ zip [ChangeValue "bd", ChangeValue "sn", ChangeValue "cp", MakeGroup, MakeLayer] ["bd","sn", "cp","[]", "[,,]"]
 --  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False popupEvents
 --  x <- clickableWhiteSpace
 --  let x' = (True <$)  $ ffilter (==()) x
@@ -265,19 +277,3 @@ popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; po
 --  let sampleChanges = ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False) y
 --  let popupEvents = leftmost [x',y']
 --  return $ ffilter (/=()) x
-
---popupSignalWidget' :: MonadWidget t m => m (Event t ())
---popupSignalWidget' = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
---  let popupMap = [ChangeValue "bd", ChangeValue "sn", ChangeValue "cp", MakeGroup, MakeLayer]
---  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False popupEvents
---  x <- clickableWhiteSpace
---  let x' = (True <$)  $ ffilter (==()) x
---  let y' = (False <$)  $ ffilter (==Nothing) y
---  let sampleChanges = ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False) y
---  let popupEvents = leftmost [x',y']
---  return $ ffilter (/=()) x
-
-
-
-
-

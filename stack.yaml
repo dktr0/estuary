@@ -1,7 +1,13 @@
-# For more information, see: https://github.com/commercialhaskell/stack/blob/release/doc/yaml_configuration.md
+resolver: lts-7.19
+compiler: ghcjs-0.2.1.9007019_ghc-8.0.1
+compiler-check: match-exact
 
-# Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
-resolver: lts-3.16
+setup-info:
+  ghcjs:
+    source:
+      ghcjs-0.2.1.9007019_ghc-8.0.1:
+           url: http://ghcjs.tolysz.org/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
+           sha1: d2cfc25f9cda32a25a87d9af68891b2186ee52f9
 
 packages:
 - '.'
@@ -17,14 +23,6 @@ packages:
     git: https://github.com/tidalcycles/Tidal.git
     commit: b3e44108a6986be63475e9128993dac4f9c5fdd0
   extra-dep: true
-
-compiler: ghcjs-0.2.0.9005008_ghc-7.10.3
-compiler-check: match-exact
-setup-info:
-  ghcjs:
-    source:
-      ghcjs-0.2.0.9005008_ghc-7.10.3:
-         url: "https://tolysz.org/ghcjs/lts-5.8-9005008.tar.gz"
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
