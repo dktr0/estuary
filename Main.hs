@@ -50,6 +50,7 @@ widgetToPage x = x >>= mapDyn (toParamPattern . fst)
 
 -- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern))]
 pages = [
+  ("Text Only Widget",widgetToPage $ textPatternChain EmptyPatternChain never),
   ("ICLC Text Widget",widgetToPage $ iclcTextWidget EmptyPatternChain never),
   ("ICLC Stacked Patterns Widget",widgetToPage $ twoStackedPatterns),
   ("ICLC Fixed Widget",widgetToPage $ P.iclcFixedStruct EmptyPatternChain never),

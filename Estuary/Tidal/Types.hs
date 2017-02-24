@@ -27,7 +27,7 @@ instance Show RepOrDiv where
   show (Div n) = "/" ++ (show n)
 
 
-data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv deriving (Eq)
+data GeneralPattern a = Atom a RepOrDiv | Blank | Group [GeneralPattern a] RepOrDiv | Layers [GeneralPattern a] RepOrDiv | TextPattern String deriving (Eq)
 
 generalPatternIsEmpty::GeneralPattern a -> Bool
 generalPatternIsEmpty (Atom _ _) = False
@@ -35,6 +35,7 @@ generalPatternIsEmpty Blank = True
 generalPatternIsEmpty (Group [] _) = True
 generalPatternIsEmpty (Group a _) = and $ fmap generalPatternIsEmpty a
 generalPatternIsEmpty (Layers a _) = and $ fmap generalPatternIsEmpty a
+generalPatternIsEmpty (TextPattern x) = length x == 0
 
 showNoQuotes::(Show a)=> a->String
 showNoQuotes x= if ((head x'=='"' && (last x')=='"') || (head x'== '\'' && last x'=='\'')) then if x''=="" then "~" else x'' else show x
@@ -48,6 +49,7 @@ instance Show a => Show (GeneralPattern a) where
   show (Group [] _) = ""
   show (Group xs r) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (Layers xs r) = "[" ++ (intercalate "," $ Prelude.map (show) xs)  ++ "]" ++ (show r)
+  show (TextPattern x) = x
 
 type SampleName = String
 
@@ -210,7 +212,7 @@ instance Show TransformedPattern where
 
 
 -- @what if the parameter is an empty pattern? -> do we need to guard for that?
--- what happens in tidal with s "a b c d" |=| 
+-- what happens in tidal with s "a b c d" |=|
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransformer a) b) (toParamPattern x) ts
   isEmpty (TransformedPattern _ x) = isEmpty x
@@ -244,7 +246,7 @@ instance ParamPatternable PatternChain where
   toParamPattern (PatternChain' transPat pCombinator patChain) | isEmpty transPat = toParamPattern patChain
                                                                | isEmpty patChain = toParamPattern transPat
                                                                | otherwise = (toTidalCombinator pCombinator) (toParamPattern transPat) (toParamPattern patChain)
-  
+
   --toParamPattern (PatternChain' x c (PatternChain y)) | isEmpty x = toParamPattern y
   --                                                    | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
   --toParamPattern (PatternChain' x c y) | isEmpty x = toParamPattern y
