@@ -9,6 +9,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.StackedPatterns
 import Estuary.Widgets.PatternChain as P
 import Estuary.Widgets.GeneralPattern as G -- for testing the Refactor of general container
+import Estuary.Widgets.Text
 import Control.Monad (liftM)
 import Sound.Tidal.Context (ParamPattern)
 import Estuary.WebDirt.Foreign
@@ -35,14 +36,14 @@ main = do
 header :: (MonadWidget t m) => m (Event t Int)
 header = divClass "header" $ do
   divClass "logo" $ text "estuary"
-  divClass "webDirt" $ text "webDirt"
+  divClass "webDirt" $ text "(using WebDirt for sample playback)"
   newPageIndex <- divClass "pageMenu" $ do
     let pageNames = Prelude.map (fst) pages
     let pageList = zipWith (\x y -> (y,x)) pageNames ([0..]::[Int])
     let pageMap = constDyn $ fromList pageList
     menu <- dropdown 0 pageMap def
     return $ _dropdown_change menu
-  divClass "hintArea" $ text "hintArea"
+  divClass "hintArea" $ text " "
   return newPageIndex
 
 widgetToPage :: (MonadWidget t m,ParamPatternable p) => m (Dynamic t (p,a)) -> m (Dynamic t ParamPattern)

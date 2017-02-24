@@ -21,25 +21,21 @@ body {
 .logo { /* logo in top left of header area */
 	display: inline-block;
 	width: 50%;
-	border: 1px solid white;
 }
 
 .webDirt { /* webDirt status area in top right of header */
 	display: inline-block;
 	width: 49%;
-	border: 1px solid white;
 }
 
 .pageMenu { /* contains page menu in bottom left of header */
 	display: inline-block;
 	width: 50%;
-	border: 1px solid white;
 }
 
 .hintArea { /* hint area in bottom right of header */
 	display: inline-block;
 	width: 49%;
-	border: 1px solid white;
 }
 
 .page { /* contains the interface for programming on menu selected in pageMenu */
