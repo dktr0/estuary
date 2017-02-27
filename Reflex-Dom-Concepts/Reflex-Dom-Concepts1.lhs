@@ -32,7 +32,7 @@ whole.
 >  let f = fmap (\() -> Three) c
 >  holdDyn One $ leftmost [d,e,f]
 
-> main = mainWidget $ (simpleWidgetA One) >>= display
+> main = mainWidget $ simpleWidget' >>= display
 
 In the code above, we have buttons that produce Events containing an empty (),
 signaling that something has happened but nothing beyond that. We map those
@@ -45,7 +45,6 @@ Dynamic.
 In the IO () program defined by main, we bing simpleWidget to 'display', taking
 advantage of the fact that our Simple type is a member of the class Show. (To
 verify that the examples below work you'll need to chanfe the definition of main
-to point to successive variations simpleWidget' simpleWidget'' etc.)
 
 It's a bit tedious the way we have three lines of code to make buttons and then
 another three lines of code just, effectively, to make the buttons trigger a
@@ -59,6 +58,7 @@ buttons:
 >   b <- liftM (fmap (const Two)) $ button "Two"
 >   c <- liftM (Three <$) $ button "Three"
 >   holdDyn One $ leftmost [a,b,c] -- m (Dynamic t Simple)
+> main = mainWidget $ simpleWidget'' >>= display
 
 Now, for an exercise, let's eliminate the rundandancy of three lines for three
 buttons, when we can just make a list of the elements to be "buttonized", taking
@@ -69,7 +69,7 @@ generate labels for the buttons.
 > simpleWidget''' = do
 >   a <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
 >   holdDyn One $ leftmost a
-
+> main =  mainWidget $ simpleWidget''' >>= display
 
 In a final, definitive variation on our basic widget for our Simple type, we add
 the ability to specify the initial Simple value of the widget, and wrap
@@ -81,7 +81,7 @@ and the containing div).
 > simpleWidget i = el "div" $ do
 >   buttons <- forM [One,Two,Three] (\x -> liftM (x <$) (button (show x)))
 >   holdDyn i (leftmost buttons)
-
+> main = mainWidget $ (simpleWidget One)  >>= display
 
 Can we do the above using the applicative style instead?
 
@@ -94,6 +94,7 @@ Can we do the above using the applicative style instead?
 >   let e = const Two <$> b
 >   let f = const Three <$> c
 >   holdDyn i $ leftmost [d,e,f]
+> main = mainWidget $ (simpleWidgetA One) >>= display
 
 That works, and is probably more clear than some of the earlier examples above.
 But it isn't very economical/terse yet...
@@ -104,10 +105,12 @@ But it isn't very economical/terse yet...
 >   b <- liftM (const Two <$>) $ button "Two"
 >   c <- liftM (const Three <$>) $ button "Three"
 >   holdDyn i $ leftmost [a,b,c]
+> main = mainWidget $ (simpleWidgetA' One) >>= display
 
 > simpleWidgetA'' :: MonadWidget t m => Simple -> m (Dynamic t Simple)
 > simpleWidgetA'' i = el "div" $ do
 >   a <- mapM (\x -> liftM (x <$) (button (show x))) [One,Two,Three]
 >   holdDyn i $ leftmost a
+> main = mainWidget $ (simpleWidgetA'' One)  >>= display
 
 Still think there must be a better way to do this...
