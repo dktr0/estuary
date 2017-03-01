@@ -551,8 +551,9 @@ sButtonWidget iSamp reps = mdo
   let iNum = maybe (0::Int) id $ Data.List.findIndex (==iSamp) $ elems sMap
   sampleButton <- tdButtonAttrs' (showSample) (iSamp) $ "style"=:"width:60%;text-align:center;background-color:lightblue"
   num <- count sampleButton >>= mapDyn (\x-> (x+iNum) `mod` length sMap)
-  sName <- mapDyn (\x-> maybe ("~") id $ Data.Map.lookup x sampleMap) num
-  showSample <- combineDyn (show . Atom) sName reps
+  sName <- mapDyn (\x-> maybe ("~") id $ Data.Map.lookup x sMap) num
+  atom <- combineDyn (Atom) sName reps
+  showSample <- mapDyn (show) atom
   return sName
 
 -- returns atom of a character
