@@ -93,7 +93,7 @@ intContainerWidget a _ = mdo
 -- Sample container widget using the click-list button
 -- doesn't support groups or lists.
 -- Used in ICOAH widget (in PatternChain.hs)
-sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
+sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ())
 sampleContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]

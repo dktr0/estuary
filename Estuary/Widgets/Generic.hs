@@ -12,6 +12,8 @@ import Data.Map
 import Data.List
 import Estuary.Tidal.Types
 
+data Hint = SampleHint String
+
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval deriving (Eq)
 
@@ -32,7 +34,7 @@ instance Show a => Show (EditSignal a) where
 isChangeValue::EditSignal a -> Bool
 isChangeValue (ChangeValue _) = True
 isChangeValue _ = False
---data EditSignal = DeleteMe | MakeGroup | 
+--data EditSignal = DeleteMe | MakeGroup |
 
 
 clickableDiv :: MonadWidget t m => String -> m (Event t ())
@@ -141,12 +143,4 @@ tdPingButtonAttrs label attrs _ _ = el "td" $ do
 --  reps <- holdDyn (iReps) updatedReps
 --  returnSample <- combineDyn (\x r -> Atom x r) str reps
 --  showVal <- mapDyn show returnSample
---  mapDyn (\x->(x,never)) returnSample 
-
-
-
-
-
-
-
-
+--  mapDyn (\x->(x,never)) returnSample
