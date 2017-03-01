@@ -26,16 +26,16 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
   values <- mapDyn (fst . Data.Either.partitionEithers . elems) allValues
   childKeys <- mapDyn keys allValues
   let events' = fmap (Data.Map.elems) events -- Event [l]
-  let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a change
+  let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a liveness change
   let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
-  liveness <- holdDyn MakeL4 livenessEv
+  liveness <- holdDyn MakeL4 livenessEv >>= mapDyn (\x-> case x of MakeL4 -> L4; otherwise -> L3)
   let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change
 
   -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
   unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
   let isEdited = attachWithMaybe (\x y-> if x==y then Nothing else Just y) (current unchangedVal) (updated values)
   isEdited' <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) isEdited
-  isEdited'' <- combineDyn (\liveness updatedVal-> if liveness==MakeL4 then Just updatedVal else Nothing) liveness isEdited'
+  isEdited'' <- combineDyn (\live updatedVal-> if live==L4 then Just updatedVal else Nothing) liveness isEdited'
   isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal
 
   -- These lines are helpful for seeing the state of changes compared to the last evaluated change
@@ -69,12 +69,12 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
 
 
 
-whitespacePopup:: (MonadWidget t m, Show a, Eq a)=> Dynamic t (EditSignal (GeneralPattern a)) -> GeneralPattern a -> String -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a) )))
+whitespacePopup:: (MonadWidget t m, Show a, Eq a)=> Dynamic t Context -> GeneralPattern a -> String -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a) )))
 whitespacePopup liveness iVal cssClass popupList _ event = elClass "div" cssClass $ mdo
   whitespace <- clickableDivClass'' (constDyn "     ") "whiteSpaceClickable" ()
   openCloseEvents <- toggle False $ leftmost [whitespace, closeEvents,(() <$) addEvent]
   --liveness <- holdDyn MakeL4 event
-  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupList liveness) False (updated openCloseEvents)
+  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' liveness popupList) False (updated openCloseEvents)
   let addEvent = (ChangeValue (iVal) <$) $ ffilter (\x-> if isJust x then fromJust (fmap (isChangeValue) x) else False) popupMenu
   let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x == Just MakeL4) popupMenu
   let evalEv = fmap fromJust $ ffilter (==Just Eval) popupMenu
@@ -96,11 +96,10 @@ aGLWidget builder iVal ev = mdo
 
 
 
-
-livenessWidget::(MonadWidget t m) =>  Dynamic t (EditSignal a) -> m (Event t (EditSignal a))
+livenessWidget::(MonadWidget t m) =>  Dynamic t Context -> m (Event t (EditSignal a))
 livenessWidget liveness = elAttr "div" ("class"=:"livenessWidget") $ mdo
   --let iIsL3 = case iLiveness of MakeL3 -> True; otherwise ->False
-  livenessText <- mapDyn (\x-> case x of MakeL3-> "L3"; otherwise -> "L4") liveness
+  livenessText <- mapDyn show liveness
   livenessButton <- clickableDivClass'' (livenessText) "livenessText" ()
   --let livenessTextEv = fmap (\x-> if isMake4 x then "L4" else "L3") updateEv  -- used where binding instead of if to avoid needing Eq
    --dynamic m (event t ...)   dyn of that :  m (Event t (Event t ...))
@@ -108,44 +107,43 @@ livenessWidget liveness = elAttr "div" ("class"=:"livenessWidget") $ mdo
   eval <- clickableDivClass' "Eval" "L3Eval" Eval
   --evalButton <- liftM switchPromptlyDyn $ flippableWidget (return never) (clickableDivClass' "Eval" "L3Eval" Eval) iIsL3 (fmap isMake4 updateEv)
   --liveness <- toggle (iIsL3) livenessButton -- Dyn bool
-  let livenessChange = attachWith (\d e -> if isMake4 d then MakeL3 else MakeL4) (current liveness) livenessButton
+  let livenessChange = attachWith (\d e -> if d==L4 then MakeL3 else MakeL4) (current liveness) livenessButton
   return $ leftmost [livenessChange,eval]
-  where
-    isMake4 (MakeL4) = True
-    isMake4 (MakeL3) = False
 
 
-genericSignalMenu'::(MonadWidget t m,Show a, Eq a)=> [EditSignal a] -> Dynamic t (EditSignal a) -> m (Event t (Maybe (EditSignal a)))
-genericSignalMenu' actionList liveness = elClass "div" "popupMenu" $ do
+genericSignalMenu'::(MonadWidget t m,Show a, Eq a)=> Dynamic t Context -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
+genericSignalMenu' liveness actionList = elClass "div" "popupMenu" $ do
   --let popUpMap = mapWithKey (\k v-> clickableDivClass' v "noClass" (Just k)) actionMap-- Map k (m Event t (Maybe k))
   let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
   --events <- liftM (Data.Map.elems) widgets
   events' <- liftM (id) events
-  liveWidget <- livenessWidget liveness
+
+  liveWidget <- livenessWidget (liveness)
 
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget]
 
-samplePickerPopup::(MonadWidget t m)=> Map Int (String,String) -> [EditSignal (GeneralPattern String)] -> Dynamic t (EditSignal (GeneralPattern String)) -> m (Event t (Maybe (EditSignal (GeneralPattern String))))
-samplePickerPopup sampleMap actionList liveness = elClass "div" "popupMenu" $ do
+
+
+
+
+samplePickerPopup::(MonadWidget t m)=>  Dynamic t Context -> Map Int (String,String) -> [EditSignal (GeneralPattern String)] -> m (Event t (Maybe (EditSignal (GeneralPattern String))))
+samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ do
   --let popUpMap = mapWithKey (\k v-> clickableDivClass' v "noClass" (Just k)) actionMap-- Map k (m Event t (Maybe k))
   dd <- dropdownOpts 0 sampleMap def
   let sampleKey = _dropdown_value dd
   sampleChange <- mapDyn (\x-> Just $ ChangeValue $ Atom (maybe ("~") (snd) $ Data.Map.lookup x sampleMap) Once) sampleKey -- Dyn (editsignal String)
-  --let sampleChange = ChangeValue $ maybe 0 id $ Data.Map.lookup (_dropdown_value sampleKey) sampleMap
   let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
-  --events <- liftM (Data.Map.elems) widgets
   events' <- liftM (id) events
   liveWidget <- livenessWidget liveness
-
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget, (updated sampleChange)]
 
 
 -- @ clean up redundant/ugly code...
-popupSampleWidget :: MonadWidget t m => Dynamic t (EditSignal (GeneralPattern String)) -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String))))
+popupSampleWidget :: MonadWidget t m => Dynamic t Context -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String))))
 popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
   let (iSamp,iRepDiv) = case iVal of
                     (Group xs r) -> (show $ xs!!0,r)
@@ -158,8 +156,7 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   let popupMap = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
   x <- clickableDivClass'' sampText "noClass" ()
   repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) divPopupIsViewable $ updated repDivToggle
-  --y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap (liveness) ) False (updated popupEvents')
-  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (samplePickerPopup sampleMap popupMap (liveness) ) False (updated popupEvents')
+  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (samplePickerPopup liveness sampleMap popupMap) False (updated popupEvents')
   let closeEvents = (() <$)  $ ffilter (==Nothing)  y
   let groupEv = fmap fromJust $ ffilter (==Just MakeGroup) y
   let layerEv = fmap fromJust  $ ffilter (==Just MakeLayer) y
