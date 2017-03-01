@@ -15,7 +15,7 @@ import Estuary.Tidal.Types
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval deriving (Eq)
 
-data UpSignal = L4 | Evaluate | L3 deriving (Eq,Show)
+data Context = L4 | L3 deriving (Eq,Show)
 
 instance Show a => Show (EditSignal a) where
   show (ChangeValue a) =  show a

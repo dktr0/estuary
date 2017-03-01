@@ -189,10 +189,9 @@ specificContainer (S x) e = mdo
   v <- G.generalContainer (G.popupSampleWidget liveness) x never
   ev <- mapDyn snd v
   let livenessEv = ffilter (\x->case x of MakeL4->True; MakeL3 -> True; otherwise -> False) $ switchPromptlyDyn ev
-  liveness <- holdDyn MakeL4 livenessEv
+  liveness <- holdDyn L4 $ fmap (\x->case x of MakeL4 -> L4; otherwise->L3) livenessEv
   mapDyn (\(x,ev)->(S x,(() <$) ev)) v
 --specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
--- @fix vowels...
 specificContainer (Vowel x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Vowel x,(() <$) ev))
 specificContainer (Unit x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Unit x,(() <$) ev))
 
