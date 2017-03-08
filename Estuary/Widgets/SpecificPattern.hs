@@ -157,6 +157,10 @@ sContainerWidget (S genPat) _ = mdo
 --specificContainer (Vowel x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Vowel x,ev))
 --specificContainer (Unit x) e = G.generalContainer G.charWidget x e >>= mapDyn (\(x,ev)->(Unit x,ev))
 
+-- To ignore the liveness argument to a widget that doesn't use it
+--rmArg::MonadWidget t m
+  --   => (a -> Event t b -> Dynamic t (a, Event t b) 
+  --   -> (Dynamic Context -> a -> Event t b -> Dynamic t (a,Event t b))
 
 specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t ()))
 specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget (-500) 500 1) x never >>= mapDyn (\(x,ev)->(Accelerate x,(() <$) ev))
@@ -183,16 +187,7 @@ specificContainer (Loop x) e = G.generalContainer (G.aGLIntWidget 0 1024 1) x ne
 specificContainer (N x) e = G.generalContainer (G.aGLIntWidget 0 50 1) x never >>= mapDyn (\(x,ev)->(N x,(() <$) ev))
 --specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
 
---genCont-> dyn (genpat a, EditSignal (Genpat b))
 specificContainer (S x) e = G.generalContainerLive G.popupSampleWidget x never >>= mapDyn (\(x,ev)->(S x,(() <$) ev))
---specificContainer (S x) e = mdo
---  v <- G.generalContainer (G.popupSampleWidget liveness) x never
---  ev <- mapDyn snd v
---  let livenessEv = ffilter (\x->case x of MakeL4->True; MakeL3 -> True; otherwise -> False) $ switchPromptlyDyn ev
---  -- livenessEv
---  liveness <- holdDyn L4 $ fmap (\x->case x of MakeL4 -> L4; otherwise->L3) livenessEv
---  mapDyn (\(x,ev)->(S x,(() <$) ev)) v
-
 --specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
 specificContainer (Vowel x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Vowel x,(() <$) ev))
 specificContainer (Unit x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Unit x,(() <$) ev))
