@@ -1,7 +1,7 @@
 cleanup 
 popupmenus don't always close
 l3/l4 switch what's displayed
-L4 with checkbox
+
 randomness crashing
 groups and layers into new design
 pattern transformer widgets changing
@@ -9,6 +9,7 @@ pattern transformer widgets changing
 	vertical whitespace	that can be turned into transformers
 Extend 
 
+Webdirt glitch with accelerate of '2' - '1'
 
 Problem was: 
 	Initializing new widgets with 'liveness' consistent with what everything else was. 
