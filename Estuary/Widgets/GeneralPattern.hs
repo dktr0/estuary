@@ -240,8 +240,8 @@ popupDoubleWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "at
   let iVal = getIVal iGenPat
   textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
   --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
-  --@ something with this flippable widget is causing it to bugg out when this widget is used....
-  repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
+  -- @ something with this flippable widget is causing it to bugg out when this widget is used....
+  repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' Once never) iRepDivViewable $ updated repDivToggle
   --let repOrDiv = constDyn Once
   --flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
   inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Double)) $ _textInput_value textField
