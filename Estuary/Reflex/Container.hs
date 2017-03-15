@@ -225,8 +225,6 @@ clickableWhiteSpace = do
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
-
-
 flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
 flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e
 
