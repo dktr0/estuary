@@ -71,9 +71,9 @@ textPatternChain i e = divClass "textPatternChain" $ do
   where
     toTransformedPattern = mapDyn (\(x,_) -> TransformedPattern [] x)
 
-textInterface :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t ()))
+textInterface :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (), Event t Hint))
 textInterface i e = do
   x <- divClass "twoStackedPatternsLeft" $ textPatternChain i e
   y <- divClass "twoStackedPatternsRight" $ divClass "paddedText" $ do
     el "div" $ text "In this interface you can enter patterns directly using the text pattern notation of the TidalCycles language. For example in the space for an 's' pattern you could enter 'bd cp' (without the quotes) to hear a bass drum and a clap. Some other possible sample names to use in 's' patterns include: sid hh arpy sine glitch tabla bass (and many more). In the space for 'n' patterns you should use whole numbers (i.e. 0 1 2 3 etc) to access different samples from the set you indicate with your s patterns. In the space for 'up' patterns you can put numbers that shift the pitch of the samples. Try an s pattern like this 'arpy*4' with an up pattern like this '0 4 7 12', for example. In the space for 'vowel' patterns you can put the vowels: a e i o u. (Note to any TidalCycles experts: the ? operator doesn't work in this context, yet!)"
-  return x
+  mapDyn (\(a,b) -> (a,b,never)) x

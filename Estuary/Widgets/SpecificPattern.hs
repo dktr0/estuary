@@ -104,12 +104,12 @@ sampleContainerWidget (S genPat) _ = mdo
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
-  mapDyn ((\x -> (S $ Group x Once,never,hints) . elems) values
+  mapDyn ((\x -> (S $ Group x Once,never,hints)) . elems) values
   where
     tdPingButton' = tdPingButtonAttrs  "+" ("class"=:"addButton")
     tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))
 
-sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ())
+sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
 sContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -120,8 +120,7 @@ sContainerWidget (S genPat) _ = mdo
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
-  mapDyn ((\x -> (S $ Group x Once,never) . elems) values
-  values' <- forDyn values (elems)
+  mapDyn ((\x -> (S $ Group x Once,never)) . elems) values
   where
     tdPingButton' = pingButton''' "+" ("class"=:"addButton")
     tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))

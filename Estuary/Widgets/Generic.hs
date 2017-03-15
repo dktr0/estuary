@@ -11,8 +11,15 @@ import Estuary.Reflex.Utility
 import Data.Map
 import Data.List
 import Estuary.Tidal.Types
+import Estuary.WebDirt.Foreign
+import qualified GHCJS.Types as T
+import qualified GHCJS.Marshal.Pure as P
 
-data Hint = SampleHint String
+
+data Hint = SampleHint String deriving (Eq)
+
+doHint :: T.JSVal -> Hint -> IO ()
+doHint wd (SampleHint x) = sampleHint wd (P.pToJSVal x)
 
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval deriving (Eq)

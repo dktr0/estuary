@@ -40,10 +40,10 @@ foreign import javascript unsafe
 playSample::T.JSVal -> (Double,ParamMap) -> IO()
 playSample webDirt (t,e) = do
   object <- createObjFromMap t e
-  playSample' webDirt object 
+  playSample' webDirt object
   return ()
 
-foreign import javascript unsafe "$r = {};" createEmpty:: IO T.JSVal    
+foreign import javascript unsafe "$r = {};" createEmpty:: IO T.JSVal
 -- "
 
 
@@ -97,3 +97,7 @@ tempo w = do
   beats <- deindexJSObject x (pToJSVal "beats")
   bpm <- deindexJSObject x (pToJSVal "bpm")
   return (pFromJSVal time,pFromJSVal beats,pFromJSVal bpm)
+
+foreign import javascript safe
+  "$1.sampleHint($2)"
+  sampleHint :: T.JSVal -> T.JSVal -> IO ()

@@ -29,8 +29,11 @@ main = do
       divClass "page" $ do
         let firstPage = snd (pages!!0)
         let newPage' = fmap (snd . (pages !!)) newPage
-        pattern <- liftM (joinDyn) $ widgetHold firstPage newPage'
-        let patternEval = updated pattern
+        w <- widgetHold firstPage newPage'
+        p <- liftM (joinDyn) $ mapDyn (fst) w
+        h <- liftM (switchPromptlyDyn) $ mapDyn (snd) w
+        let patternEval = updated p
+        performEvent_ $ fmap (liftIO . (doHint wd)) h
         performEvent_ $ fmap (liftIO . stream) patternEval
 
 header :: (MonadWidget t m) => m (Event t Int)
@@ -46,10 +49,14 @@ header = divClass "header" $ do
   divClass "hintArea" $ text " "
   return newPageIndex
 
-widgetToPage :: (MonadWidget t m,ParamPatternable p) => m (Dynamic t (p,a)) -> m (Dynamic t ParamPattern)
-widgetToPage x = x >>= mapDyn (toParamPattern . fst)
+widgetToPage :: (MonadWidget t m,ParamPatternable p) => m (Dynamic t (p,a,Event t Hint)) -> m (Dynamic t ParamPattern,Event t Hint)
+widgetToPage w = do
+  x <- w
+  p <- mapDyn (\(a,_,_) -> toParamPattern a) x
+  h <- liftM (switchPromptlyDyn) $ mapDyn (\(_,_,a) -> a) x
+  return (p,h)
 
--- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern))]
+-- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern,Event t Hint))]
 pages = [
   ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyPatternChain never),
   ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyPatternChain never),
