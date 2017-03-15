@@ -10,7 +10,7 @@ import GHCJS.DOM.EventM
 import Data.Map
 import Data.Bool
 import Reflex
-import Estuary.Widgets.Generic -- for (EditSignal a)
+--import Estuary.Widgets.Generic -- for (EditSignal a)
 import Estuary.Reflex.Utility
 import Data.Functor.Misc -- For Const2
 import Control.Monad
@@ -227,76 +227,3 @@ clickableWhiteSpace = do
 
 flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
 flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e
-
-
-genericSignalWidget :: MonadWidget t m => m (Event t (EditSignal a))
-genericSignalWidget = elClass "div" "genericSignalWidget" $ do
-  --a <- button' "Ping" Ping
-  b <- button' "-" DeleteMe
-  c <- button' "[]" MakeGroup
-  d <- button' "{}" MakeLayer
-  return $ leftmost [b,c,d]
-
-
----- Take map from a to what is displayed in popup, returns maybe that key in the map or Nothin to signal the popup to close
---genericSignalMenu'' :: (MonadWidget t m, Eq a )=> Dynamic t (Map a String) -> m (Dynamic t (Event t (Maybe a)))
---genericSignalMenu'' actionMap = elClass "div" "genericSignalWidget" $ do
---  a <- clickableDivClass' "delete" "noClass" (Nothing)
-
-
-
---  popUpMap <- mapDyn (\m -> mapWithKey (\k v-> clickableDivClass' v "noClass" (Just k)) m) actionMap-- dynamic (Map k (m Event t (Maybe k)))
---  --popUpMap::dynamic Map (k (mEvent t MAybe k))
---  widgets <- mapDyn Control.Monad.sequence popUpMap-- Dynamic (m (Map k (Event t Maybe)))
---  events <- mapDyn (\x-> liftM (Data.Map.elems) x) widgets -- Dynamic (m ([Event t Maybe]))
---  mapDyn (\ev-> leftmost $ ev ++[a]) events
-
-
-
---genericSignalMenu'::(MonadWidget t m, Eq a )=> Map a String -> m (Event t (Maybe a))
---genericSignalMenu' actionMap = elClass "div" "popupMenu" $ do
---  let popUpMap = mapWithKey (\k v-> clickableDivClass' v "noClass" (Just k)) actionMap-- Map k (m Event t (Maybe k))
---  let widgets = Control.Monad.sequence popUpMap  -- m (t a)
---  events<- liftM (Data.Map.elems) widgets
---  a <- clickableDivClass' "close" "noClass" (Nothing)
---  return $ leftmost $ events ++[a]
-
--- @ would it make more sense as:
----- => Map GenericSignal String -> m (Event t (Maybe GenericSignal))?
---genericSignalMenu'::(MonadWidget t m)=> Map (EditSignal a) String -> m (Event t (Maybe (EditSignal a)))
---genericSignalMenu' actionMap = elClass "div" "popupMenu" $ do
---  let popUpMap = mapWithKey (\k v-> clickableDivClass' v "noClass" (Just k)) actionMap-- Map k (m Event t (Maybe k))
---  let widgets = Control.Monad.sequence popUpMap  -- m (t a)
---  events <- liftM (Data.Map.elems) widgets
---  --liveness <- livenessWidget (MakeL4::EditSignal Int) never
---  --let livenessMaybe = ((Just (MakeL4)) <$) liveness
---  a <- clickableDivClass' "close" "noClass" (Nothing)
---  return $ leftmost $ events ++[a]
-
-
-genericSignalMenu :: MonadWidget t m => m (Event t (Maybe (EditSignal a)))
-genericSignalMenu = elAttr "div" (singleton "style" "top: 0px; left: 0px; position: absolute; z-index: 1;") $ do
-  a <- clickableDivClass' "Close" "noClass" Nothing
-  b <- clickableDivClass' "-" "noClass" (Just DeleteMe)
-  c <- clickableDivClass' "[]" "noClass" (Just MakeGroup)
-  d <- clickableDivClass' "{}" "noClass" (Just MakeLayer)
-  return $ leftmost [a,b,c,d]
-
-popupSignalWidget :: MonadWidget t m => m (Event t (EditSignal a))
-popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
-  y <- popup popupEvents
-  x <- clickableWhiteSpace
-  let popupEvents = leftmost [Just genericSignalMenu <$ x,Nothing <$ y]
-  return $ (fmap fromJust . ffilter isJust) y
-
-
---popupSignalWidget' :: MonadWidget t m => m (Event t ())
---popupSignalWidget' = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
---  let popupMap = fromList $ zip [ChangeValue "bd", ChangeValue "sn", ChangeValue "cp", MakeGroup, MakeLayer] ["bd","sn", "cp","[]", "[,,]"]
---  y <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (genericSignalMenu' popupMap) False popupEvents
---  x <- clickableWhiteSpace
---  let x' = (True <$)  $ ffilter (==()) x
---  let y' = (False <$)  $ ffilter (==Nothing) y
---  let sampleChanges = ffilter (\x-> if Data.Maybe.isJust x then (x>=Just 1 && x<=Just 3) else False) y
---  let popupEvents = leftmost [x',y']
---  return $ ffilter (/=()) x

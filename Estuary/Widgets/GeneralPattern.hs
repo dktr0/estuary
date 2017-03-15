@@ -66,7 +66,6 @@ generalContainerLive :: (MonadWidget t m, Eq a, Show a)
   => (Dynamic t Context -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)))))
   -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) 
   -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
-
 generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   let cEvents = mergeWith (union) [insertMap,deleteMap]
   (allValues,events) <- eitherContainer (fromList $ zip [0::Int] [Right ()]) cEvents livenessEvMap livenessEvMap (leftBuilder liveness) (rightBuilder liveness)
@@ -124,88 +123,25 @@ aGLWidget builder iVal ev = mdo
 
 
 
-whitespacePopup:: (MonadWidget t m, Show a, Eq a)=> Dynamic t Context -> GeneralPattern a -> String -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a) )))
-whitespacePopup liveness iVal cssClass popupList _ event = elClass "div" cssClass $ mdo
-  whitespace <- clickableDivClass'' (constDyn "     ") "whiteSpaceClickable" ()
-  openCloseEvents <- toggle False $ leftmost [whitespace, closeEvents,(() <$) addEvent]
-  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (basicPopup liveness popupList) False (updated openCloseEvents)
-  let addEvent = (ChangeValue (iVal) <$) $ ffilter (\x-> if isJust x then fromJust (fmap (isChangeValue) x) else False) popupMenu
-  let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x == Just MakeL4) popupMenu
-  let evalEv = fmap fromJust $ ffilter (==Just Eval) popupMenu
-  let closeEvents = (() <$) $ ffilter (==Nothing) popupMenu
-  return $ constDyn ((),leftmost [livenessEv, addEvent,evalEv])
-
-
-livenessWidget::(MonadWidget t m) =>  Dynamic t Context -> m (Event t (EditSignal a))
-livenessWidget liveness = elClass "div" "livenessWidget" $ mdo
-  livenessText <- mapDyn show liveness
-  livenessButton <- clickableDivClass'' (livenessText) "livenessText" ()
-  eval <- clickableDivClass' "Eval" "L3Eval" Eval
-  let livenessChange = attachWith (\d e -> if d==L4 then MakeL3 else MakeL4) (current liveness) livenessButton
-  return $ leftmost [livenessChange,eval]
-
-livenessCheckboxWidget::(MonadWidget t m ) => Dynamic t Context -> m (Event t (EditSignal a))
-livenessCheckboxWidget liveness = elClass "div" "livenessWidget" $ do
-  text "Live"
-  isLive <- mapDyn (==L4) liveness
-  cb <- checkboxView (constDyn empty) isLive
-  eval <- clickableDivClass' "Eval" "L3Eval" Eval
-  return $ leftmost [fmap (\x-> if x then MakeL4 else MakeL3) cb,eval]
-
-
-
-basicPopup::(MonadWidget t m,Show a)=> Dynamic t Context -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
-basicPopup liveness actionList = elClass "div" "popupMenu" $ do
-  let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
-  let events = Control.Monad.sequence popupList  -- m (t a)
-  events' <- liftM (id) events
-  liveWidget <- livenessCheckboxWidget (liveness)
-  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
-  return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget]
-
-samplePickerPopup::(MonadWidget t m)=>  Dynamic t Context -> Map Int (String,String) -> [EditSignal (GeneralPattern String)] -> m (Event t (Maybe (EditSignal (GeneralPattern String))))
-samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ do
-  dd <- dropdownOpts 0 sampleMap def 
-  let sampleKey = _dropdown_value dd 
-  sampleChange <- mapDyn (\x-> Just $ ChangeValue $ Atom (maybe ("~") (snd) $ Data.Map.lookup x sampleMap) Once) sampleKey -- Dyn (editsignal String)
-  let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
-  let events = Control.Monad.sequence popupList  -- m (t a)
-  events' <- liftM (id) events
-  liveWidget <- livenessCheckboxWidget liveness
-  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
-  return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget, (updated sampleChange)]
-
-
-
-
-
--- @ clean up redundant/ugly code...
 popupSampleWidget :: MonadWidget t m => Dynamic t Context -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String))))
 popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
-  sample <- clickableDivClass'' sampText "noClass" ()
+  sample <- clickableDivClass'' inVal "noClass" ()
   repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
-
   popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) popup False (updated popupEvents')
   let closeEvents = (() <$)  $ ffilter (==Nothing)  popupMenu
-  let groupEv = fmap fromJust $ ffilter (==Just MakeGroup) popupMenu
-  let layerEv = fmap fromJust  $ ffilter (==Just MakeLayer) popupMenu
   let deleteEv = fmap fromJust  $ ffilter (==Just DeleteMe) popupMenu
   repDivToggle <- toggle iRepDivViewable $ ffilter (== Just MakeRepOrDiv) popupMenu
-  let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x==Just MakeL4) popupMenu
-  let evalEv = fmap fromJust $ ffilter (==Just Eval) popupMenu
-  
-  let sampleChanges = fmap (\x-> maybe Blank (\y-> case y of (ChangeValue z)-> z; otherwise -> Blank) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
-  groupToggle <- toggle False groupEv
-  layerToggle <- toggle False layerEv
-  sampText <- holdDyn iSamp $ fmap show sampleChanges
-  popupEvents' <- toggle False $ leftmost $ [sample, closeEvents] ++ [(() <$) $ ffilter (\x-> and $ fmap (/=x) $ fmap Just [MakeL3, MakeL4, Eval])  popupMenu]
   repDivVal <- holdDyn iRepDiv repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
-
-  genPat <- combineDyn (\x y -> Atom x y) sampText repDivVal
-  genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
-  genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
-  let signalEvents = leftmost $ [deleteEv,livenessEv,evalEv] ++ [leftmost $ fmap (RebuildMe <$)[groupEv, layerEv]]
-  mapDyn (\val-> (val, signalEvents)) genPat''
+  let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x==Just MakeL4|| x==Just Eval) popupMenu
+  let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
+  popupEvents' <- toggle False $ leftmost $ [(() <$) sample,(() <$) groupLayerEv,(() <$) closeEvents,(() <$) livenessEv]
+  let sampleChanges = fmap (\x-> maybe Blank (\y-> case y of (ChangeValue z)-> z; otherwise -> Blank) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
+  inVal <- holdDyn iSamp $ fmap show sampleChanges
+  genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . (flip Atom) Once) )  groupLayerEv -- Dyn ()
+  genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
+  genPat' <- combineDyn (\g r -> g r) genPat $ constDyn Once
+  let upEvent = leftmost [livenessEv, (RebuildMe <$) groupLayerEv]
+  mapDyn (\x-> (x,upEvent)) genPat'
   where
     popupMap = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
     sampleMap = fromList $ zip [0::Int,1..] $ [("Rest","~"),("Percussion", "bd"),("Percussion", "cp"),("Percussion", "hh"),("Percussion", "sn"),("Bass","jvbass"), ("Bass","wobble"),("Bass","bass1"),("Pitched","arpy"), ("Pitched", "casio"), ("Pitched","latibro")]
@@ -217,22 +153,39 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
                     (Atom v r) -> (v,r)
                     otherwise -> ("~",Once)
 
-repDivWidget'::MonadWidget t m => RepOrDiv -> Event t () -> m (Event t RepOrDiv)
-repDivWidget' iVal _ = elAttr "div" ("class"=:"repOrDiv") $ mdo
-  repDivButton <- clickableDivClass'' showRep "noClass" ()
-  repTog <- toggle iToggle repDivButton
-  showRep <- mapDyn (\x-> if x then "*" else "/") repTog
-  let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
-  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number"
-  let numTextField = _textInput_value textField
-  num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
-  dynVal <- combineDyn (\tog val -> if tog then Rep val else Div val) repTog num
-  return $ updated dynVal
-  where
-    (iToggle, iNum) = case iVal of
-      (Rep x) -> (True,x)
-      (Div x) -> (False,x)
-      otherwise -> (True, 1)
+
+popupIntWidget :: MonadWidget t m => Int -> Int -> Int -> Dynamic t Context -> GeneralPattern Int -> Event t (EditSignal (GeneralPattern Int)) -> m (Dynamic t (GeneralPattern Int, Event t (EditSignal (GeneralPattern Int))))
+popupIntWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
+  let iVal = getIVal iGenPat
+  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+  --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
+  let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])
+  repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
+  inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Int)) $ _textInput_value textField
+  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (popup) False popupDisplayEv
+  let popupDisplayEv = leftmost $ [ffilter id $ updated $ _textInput_hasFocus textField, closeEvent]  
+  repDivToggle <- toggle iRepDivViewable $ ffilter (== Just MakeRepOrDiv) popupMenu
+  repOrDiv <- holdDyn iRepDiv repOrDivEv >>= combineDyn (\tog val-> if tog then val else Once) repDivToggle
+  let closeEvent = (False <$)  $ ffilter (isNothing)  popupMenu
+  let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
+  genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . (flip Atom) Once) )  groupLayerEv -- Dyn ()
+  genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
+  genPat' <- combineDyn (\g r -> g r) genPat $ constDyn Once
+  let upEvent = leftmost [fmap fromJust $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
+  mapDyn (\x-> (x,upEvent)) genPat'
+  where 
+    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",show step, show minVal, show maxVal]
+    popup = basicPopup liveness [MakeRepOrDiv::EditSignal (GeneralPattern Int), MakeGroup, MakeLayer, DeleteMe]
+    getIVal gP = case gP of 
+      (Group xs r) -> getIVal (xs!!0)
+      (Layers xs r) -> getIVal (xs!!0)
+      (Atom x r) -> x
+      otherwise -> (minVal)
+    (iRepDiv) = case iGenPat of 
+      (Group _ r) ->  r
+      (Layers _ r) -> r
+      (Atom _ r) ->   r
+      otherwise ->    Once
 
 
 popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Dynamic t Context -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double))))
@@ -268,7 +221,7 @@ popupDoubleWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "at
       (Atom _ r) ->   r
       otherwise ->    Once
 
---basicPopup::(MonadWidget t m,Show a)=> Dynamic t Context -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
+
 
 
 ------------------------
