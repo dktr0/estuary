@@ -129,7 +129,7 @@ sContainerWidget (S genPat) _ = mdo
   return returnVal'
   where
     tdPingButton' = pingButton''' "+" ("class"=:"addButton")
-    tdPingButton'' x e = tdPingButton' x e >>= mapDyn((\a,b) -> (a,b,never))
+    tdPingButton'' x e = tdPingButton' x e >>= mapDyn ((\a,b) -> (a,b,never))
 
 --specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal (GeneralPattern a))))
 --specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget (-500) 500 1) x e >>= mapDyn (\(x,ev)->(Accelerate x,ev))
