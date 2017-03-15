@@ -62,52 +62,6 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
     returnF (Atom _ _) x e = (Group x Once,e)
 
 
-generalContainerLive :: (MonadWidget t m, Eq a, Show a) 
-  => (Dynamic t Context -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)))))
-  -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) 
-  -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
-generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
-  let cEvents = mergeWith (union) [insertMap,deleteMap]
-  (allValues,events) <- eitherContainer (fromList $ zip [0::Int] [Right ()]) cEvents livenessEvMap livenessEvMap (leftBuilder liveness) (rightBuilder liveness)
-  values <- mapDyn (fst . Data.Either.partitionEithers . elems) allValues
-  childKeys <- mapDyn keys allValues
-  let events' = fmap (Data.Map.elems) events -- Event [l]
-  let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a liveness change
-  let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
-  liveness <- holdDyn MakeL4 livenessEv >>= mapDyn (\x-> case x of MakeL4 -> L4; otherwise -> L3)
-  let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change 
-
-  -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
-  unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
-  let isEdited = attachWithMaybe (\x y-> if x==y then Nothing else Just y) (current unchangedVal) (updated values)
-  isEdited' <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) isEdited
-  isEdited'' <- combineDyn (\live updatedVal-> if live==L4 then Just updatedVal else Nothing) liveness isEdited'
-  isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal
-  changes <- holdDyn False $ attachDynWith (==) unchangedVal isEdited
-
-  let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
-  let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (isChangeValue) )  events
-  mapDyn (\x->returnF i x livenessEv) isEdited'''
-  where
-    initialVal (Atom iV _) = iV
-    initialVal (Group iV _) = initialVal $ iV!!0
-    initialVal (Layers iV _) = initialVal $ iV!!0
-    getClass (Layers _ _) = "generalPattern-layer"
-    getClass (Group _ _) = "generalPattern-group"
-    getClass (Atom _ _) = "generalPattern-atom"
-    initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-    initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-    initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
-    leftBuilder live = aGLWidget (b live)
-    rightBuilder live= whitespacePopup live (i) "whiteSpaceAdd" [ChangeValue (i)]
-    insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
-    insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
-    insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
-    returnF (Layers _ _) x e = (Layers x Once,e)
-    returnF (Group _ _) x e = (Group x Once,e)
-    returnF (Atom _ _) x e = (Group x Once,e)
-
-
 aGLWidget::(MonadWidget t m, Eq a, Show a) => (GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))) -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
 aGLWidget builder iVal ev = mdo
   val <- resettableWidget (function) iVal ev rebuildEvent'
@@ -120,6 +74,71 @@ aGLWidget builder iVal ev = mdo
     function (Blank) e = builder (Blank) e
     function (Group xs r) e = generalContainer builder (Group xs r) e
     function (Layers xs r) e = generalContainer builder (Layers xs r) e
+
+
+generalContainerLive :: (MonadWidget t m, Eq a, Show a) 
+  => (Dynamic t Context -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)))))
+  -> GeneralPattern a 
+  -> Event t (EditSignal (GeneralPattern a)) 
+  -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
+generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
+  text (case i of (Group _ _)-> "["; (Layers _ _)-> "["; otherwise -> "")
+  let cEvents = mergeWith (union) [insertMap,deleteMap]
+  (allValues,events) <- eitherContainer (fromList $ zip [0::Int] [Right ()]) cEvents livenessEvMap livenessEvMap (leftBuilder liveness) (rightBuilder liveness)
+  values <- mapDyn (fst . Data.Either.partitionEithers . elems) allValues
+  childKeys <- mapDyn keys allValues
+  let events' = fmap (Data.Map.elems) events -- Event [l]
+  let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a liveness change
+  let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
+  liveness <- holdDyn MakeL4 livenessEv >>= mapDyn (\x-> case x of MakeL4 -> L4; otherwise -> L3)
+  let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change 
+
+  text (case i of (Group _ _)-> "]"; (Layers _ _)-> "]"; otherwise -> "")
+
+  -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
+  unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
+  let isEdited = attachWithMaybe (\x y-> if x==y then Nothing else Just y) (current unchangedVal) (updated values)
+  isEdited' <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) isEdited
+  isEdited'' <- combineDyn (\live updatedVal-> if live==L4 then Just updatedVal else Nothing) liveness isEdited'
+  isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal
+  changes <- holdDyn False $ attachDynWith (==) unchangedVal isEdited
+  delEx <- button "delete Ex"
+  let delEx' = fmap (const DeleteMe) delEx
+  let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
+  let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (isChangeValue) )  events
+  mapDyn (\x->returnF i x (leftmost [livenessEv, (DeleteMe <$) $ ffilter (elem DeleteContainer) events',delEx'])) isEdited'''
+  where
+    initialVal (Atom iV _) = iV
+    initialVal (Group iV _) = initialVal $ iV!!0
+    initialVal (Layers iV _) = initialVal $ iV!!0
+    getClass (Layers _ _) = "generalPattern-layer"
+    getClass (Group _ _) = "generalPattern-group"
+    getClass (Atom _ _) = "generalPattern-atom"
+    initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+    leftBuilder live = aGLWidgetLive live b
+    rightBuilder live= whitespacePopup live (i) "whiteSpaceAdd" [ChangeValue (i),DeleteContainer]
+    insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
+    insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    returnF (Layers _ _) x e = (Layers x Once,e)
+    returnF (Group _ _) x e = (Group x Once,e)
+    returnF (Atom _ _) x e = (Group x Once,e)
+
+
+aGLWidgetLive::(MonadWidget t m, Eq a, Show a) => Dynamic t Context -> (Dynamic t Context -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))) -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
+aGLWidgetLive liveness builder iVal ev = mdo
+  val <- resettableWidget (function) iVal ev rebuildEvent'
+  widgetEvents <- forDyn val (\(x,y)->y)
+  rebuildEvent <- forDyn widgetEvents (\x-> ffilter (==RebuildMe) x)
+  let rebuildEvent' = attachDynWith (\(value,_) _ ->value) val $ switchPromptlyDyn rebuildEvent
+  return val
+  where
+    function (Atom x r) e = builder liveness (Atom x r) e
+    function (Blank) e = builder liveness (Blank) e
+    function (Group xs r) e = generalContainerLive (builder) (Group xs r) e
+    function (Layers xs r) e = generalContainerLive  (builder) (Layers xs r) e
 
 
 
@@ -139,8 +158,8 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   inVal <- holdDyn iSamp $ fmap show sampleChanges
   genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . (flip Atom) Once) )  groupLayerEv -- Dyn ()
   genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
-  genPat' <- combineDyn (\g r -> g r) genPat $ constDyn Once
-  let upEvent = leftmost [livenessEv, (RebuildMe <$) groupLayerEv]
+  genPat' <- combineDyn (\g r -> g r) genPat repDivVal
+  let upEvent = leftmost [fmap fromJust $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
   mapDyn (\x-> (x,upEvent)) genPat'
   where
     popupMap = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]

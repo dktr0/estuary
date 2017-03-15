@@ -17,7 +17,7 @@ import Text.Read (readMaybe)
 
 
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
- | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval deriving (Eq)
+ | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer deriving (Eq)
 
 data Context = L4 | L3 deriving (Eq,Show)
 
@@ -26,6 +26,7 @@ instance Show a => Show (EditSignal a) where
   show MakeRepOrDiv = "* or /"
   show Close = "close"
   show DeleteMe = "delete"
+  show DeleteContainer ="delete container"
   show MakeGroup = "[  ]"
   show MakeLayer = "[,,]"
   show RebuildMe = "RebuildMe"
