@@ -93,7 +93,7 @@ intContainerWidget a _ = mdo
 -- Sample container widget using the click-list button
 -- doesn't support groups or lists.
 -- Used in ICOAH widget (in PatternChain.hs)
-sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
+sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t (),Event t Hint))
 sampleContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -104,15 +104,12 @@ sampleContainerWidget (S genPat) _ = mdo
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (S $ Group x Once))
-  returnVal'<-forDyn returnVal (\x->(x,never))
-  return returnVal'
+  mapDyn ((\x -> (S $ Group x Once,never,hints) . elems) values
   where
     tdPingButton' = tdPingButtonAttrs  "+" ("class"=:"addButton")
     tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))
 
-sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
+sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ())
 sContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
@@ -123,10 +120,8 @@ sContainerWidget (S genPat) _ = mdo
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
+  mapDyn ((\x -> (S $ Group x Once,never) . elems) values
   values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (S $ Group x Once))
-  returnVal'<-forDyn returnVal (\x->(x,never))
-  return returnVal'
   where
     tdPingButton' = pingButton''' "+" ("class"=:"addButton")
     tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))
