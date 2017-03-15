@@ -524,7 +524,7 @@ sampleNameWidget _ e = sampleNameWidget (Atom "~" Once) e
 
 
 ---- Eldad's Widgets:
-sButtonContainer::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a)))
+sButtonContainer::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a), Event t Hint))
 sButtonContainer (Atom iSamp iReps) _ = elAttr "table" tableAttrs $ mdo
   (sample,upCount) <- el "tr" $ do
     samp <- sButtonWidget iSamp repeats''
@@ -538,7 +538,8 @@ sButtonContainer (Atom iSamp iReps) _ = elAttr "table" tableAttrs $ mdo
   repeats <- combineDyn (\a b ->a-b+1) upCount downCount'
   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div $ abs (k-2))
   repeats'' <- holdDyn iReps $ updated repeats'
-  combineDyn (\x y -> (Atom x y,deleteEvent)) sample repeats''
+  let hints = fmap (SampleHint) $ updated sample
+  combineDyn (\x y -> (Atom x y,deleteEvent,hints)) sample repeats''
   where tableAttrs=("style"=:"margin:5px;display:inline-table;background-color:lightgreen;width:10%;padding:6px;border-spacing:5px;border: 3pt solid black")
 sButtonContainer _ e = sButtonContainer (Atom "~" Once) e
 

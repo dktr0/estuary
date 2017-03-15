@@ -97,7 +97,7 @@ sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m 
 sampleContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never G.sButtonContainer (tdPingButtonAttrs  "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
+  (values,events,hints) <- eitherContainer''' initialMap cEvents never never G.sButtonContainer (tdPingButtonAttrs  "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -108,12 +108,14 @@ sampleContainerWidget (S genPat) _ = mdo
   returnVal <- forDyn values' (\x-> (S $ Group x Once))
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
+  where
+    tdPingButton' = tdPingButtonAttrs  "+" ("class"=:"addButton")
 
 sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
 sContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never G.sButtonContainer (pingButton''' "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
+  (values,events,hints) <- eitherContainer''' initialMap cEvents never never G.sButtonContainer (pingButton''' "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
