@@ -116,8 +116,7 @@ sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynam
 sContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events,hints) <- eitherContainer''' initialMap cEvents never never
-   (pingButton''' "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
+  (values,events,hints) <- eitherContainer''' initialMap cEvents never never G.sButtonContainer tdPingButton''
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
@@ -128,6 +127,9 @@ sContainerWidget (S genPat) _ = mdo
   returnVal <- forDyn values' (\x-> (S $ Group x Once))
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
+  where
+    tdPingButton' = pingButton''' "+" ("class"=:"addButton")
+    tdPingButton'' x e = tdPingButton' x e >>= mapDyn((\a,b) -> (a,b,never))
 
 --specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal (GeneralPattern a))))
 --specificContainer (Accelerate x) e = G.generalContainer (G.aGLDoubleWidget (-500) 500 1) x e >>= mapDyn (\(x,ev)->(Accelerate x,ev))
