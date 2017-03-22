@@ -1,6 +1,6 @@
 digraph twoStackedPatterns {
               node [shape=record, labelloc=b];
-              twoStackedPatterns [label=<twoStackedPatterns<BR /> <FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              twoStackedPatterns [label=<twoStackedPatterns<BR /> <FONT POINT-SIZE="10">An event handler that <BR /> returns the two "stacked patterns with liveness control" interface </FONT>>];
               iclcForStacked [label=<iclcForStacked<BR /> <FONT POINT-SIZE="10">placeholder for comments</FONT>> ];
               transformedPatternWidget [label=<transformedPatternWidget<BR /> <FONT POINT-SIZE="10">placeholder for comments</FONT>> ];
               patternCombinatorDropDown [label=<patternCombinatorDropDown<BR /> <FONT POINT-SIZE="10">placeholder for comments</FONT>>, xlabel=<eitherWidget>];
@@ -8,12 +8,12 @@ digraph twoStackedPatterns {
               parameteredPatternTransformer [label=<parameteredPatternTransformer<BR /> <FONT POINT-SIZE="10">placeholder for comments</FONT>>];
               whitespacePopup [xlabel=<<FONT POINT-SIZE="7"> eitherContainer</FONT>>];
               generalContainer [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              specificContainer [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              aGLWidget [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              aGLDoubleWidget [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              aGLIntWidget [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              popupSampleWidget [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              whitespacePopup [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              specificContainer [label=<specificContainer <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              aGLWidget [label=<aGLIntWidget <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              aGLDoubleWidget [label=<aGLDoubleWidget <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              aGLIntWidget [label=<aGLIntWidget <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              popupSampleWidget [label=<popupSampleWidget <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              whitespacePopup [label=<whitespacePopup <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
 
               twoStackedPatterns -> iclcForStacked
               iclcForStacked -> transformedPatternWidget
