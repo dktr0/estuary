@@ -93,37 +93,37 @@ intContainerWidget a _ = mdo
 -- Sample container widget using the click-list button
 -- doesn't support groups or lists.
 -- Used in ICOAH widget (in PatternChain.hs)
-sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
+sampleContainerWidget ::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t (),Event t Hint))
 sampleContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never G.sButtonContainer (tdPingButtonAttrs  "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
+  (values,events,hints) <- eitherContainer''' initialMap cEvents never never G.sButtonContainer tdPingButton'' -- values:dyn Map k GeneralPattern,
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (S $ Group x Once))
-  returnVal'<-forDyn returnVal (\x->(x,never))
-  return returnVal'
+  mapDyn ((\x -> (S $ Group x Once,never,hints)) . elems) values
+  where
+    tdPingButton' = tdPingButtonAttrs  "+" ("class"=:"addButton")
+    tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))
 
 sContainerWidget::(MonadWidget t m) => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern,Event t ()))
 sContainerWidget (S genPat) _ = mdo
   let initialMap = (0::Int)=:(Right ())
   let cEvents = mergeWith (union) [makeSMap,deleteMap]
-  (values,events) <- eitherContainer' initialMap cEvents never  never G.sButtonContainer (pingButton''' "+" ("class"=:"addButton"))-- values:dyn Map k GeneralPattern,
+  (values,events,hints) <- eitherContainer''' initialMap cEvents never never G.sButtonContainer tdPingButton''
   let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events --Event [keys]
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
-  values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (S $ Group x Once))
-  returnVal'<-forDyn returnVal (\x->(x,never))
-  return returnVal'
+  mapDyn ((\x -> (S $ Group x Once,never)) . elems) values
+  where
+    tdPingButton' = pingButton''' "+" ("class"=:"addButton")
+    tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))
 
 specificContainer::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t ()))
 specificContainer (Accelerate x) e = G.generalContainerLive (G.popupDoubleWidget (-500) 500 1) x never >>= mapDyn (\(x,ev)->(Accelerate x,(() <$) ev))

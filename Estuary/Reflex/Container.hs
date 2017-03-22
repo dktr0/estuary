@@ -105,27 +105,43 @@ eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft build
     mkChild k (Right x) = buildRight x (select (fanMap eventsToRight) (Const2 k)) >>= mapDyn (\(a,e)->(Right a,e))
 
 
+
 -- Same as eitherContainer' but children take Dynamic value too
 -- primarily (/for now) used for updating children with liveness values
-eitherContainerLive :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
-   => Map k (Either v a)                               -- a map of initial values
-   -> Event t (Map k (Construction (Either v a)))       -- construction events (replace/insert/delete)
-   -> Dynamic t c
-   -> Event t (Map k w)                                -- signaling events to be delivered to child widgets of type v
-   -> Event t (Map k b)                                -- signaling events to be delivered to child widgets of type a
-   -> (Dynamic t c -> v -> Event t w -> m (Dynamic t (v,Event t e)))  -- function to build widgets for type v (returning events of type e)
-   -> (Dynamic t c -> a -> Event t b -> m (Dynamic t (a,Event t e)))  -- function to build widgets for type a (also returning events of type e)
-   -> m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e) )
+--eitherContainerLive :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
+--   => Map k (Either v a)                               -- a map of initial values
+--   -> Event t (Map k (Construction (Either v a)))       -- construction events (replace/insert/delete)
+--   -> Dynamic t c
+--   -> Event t (Map k w)                                -- signaling events to be delivered to child widgets of type v
+--   -> Event t (Map k b)                                -- signaling events to be delivered to child widgets of type a
+--   -> (Dynamic t c -> v -> Event t w -> m (Dynamic t (v,Event t e)))  -- function to build widgets for type v (returning events of type e)
+--   -> (Dynamic t c -> a -> Event t b -> m (Dynamic t (a,Event t e)))  -- function to build widgets for type a (also returning events of type e)
+--   -> m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e) )
 
-eitherContainerLive initialValues cEvents liveness eventsToLeft eventsToRight buildLeft buildRight = mdo
-  let cEvents' = attachDynWith (constructionDiff) values cEvents
-  widgets <- liftM (joinDynThroughMap) $ listHoldWithKey initialValues cEvents' mkChild
-  values <- mapDyn (fmap (fst)) widgets
-  events <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap (snd)) widgets
-  return (values,events)
-  where
-    mkChild k (Left x) = buildLeft liveness x (select (fanMap eventsToLeft) (Const2 k)) >>= mapDyn (\(v,e)->(Left v,e))
-    mkChild k (Right x) = buildRight liveness x (select (fanMap eventsToRight) (Const2 k)) >>= mapDyn (\(a,e)->(Right a,e))
+--eitherContainerLive initialValues cEvents liveness eventsToLeft eventsToRight buildLeft buildRight = mdo
+--  let cEvents' = attachDynWith (constructionDiff) values cEvents
+--  widgets <- liftM (joinDynThroughMap) $ listHoldWithKey initialValues cEvents' mkChild
+--  values <- mapDyn (fmap (fst)) widgets
+--  events <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap (snd)) widgets
+--  return (values,events)
+--  where
+--    mkChild k (Left x) = buildLeft liveness x (select (fanMap eventsToLeft) (Const2 k)) >>= mapDyn (\(v,e)->(Left v,e))
+--    mkChild k (Right x) = buildRight liveness x (select (fanMap eventsToRight) (Const2 k)) >>= mapDyn (\(a,e)->(Right a,e))
+
+{- ???
+maybeContainer :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
+   => Map k (Maybe v)                               -- a map of initial values
+   -> Event t (Map k (Construction (Maybe v))       -- construction events (replace/insert/delete)
+   -> Event t (Map k w)                             -- signaling events to be delivered to child widgets of type v
+   -> (v -> Event t w -> m a)                       -- function to build widgets for Just values
+   -> (Event t w -> m b)                            -- function to build widgets for Nothing values
+   -> m (Dynamic t (Map k a))
+
+widgetAndSpace ::
+  => (v -> Event t w -> m a)
+  -> m (Dynamic t a,)
+
+-}
 
 
 -- eitherContainer' is a variant of eitherContainer where the difference is that
@@ -144,6 +160,39 @@ eitherContainer' initialValues cEvents eventsToLeft eventsToRight buildLeft buil
   d' <- mapDyn (Data.Map.mapMaybe (either (Just) (const Nothing))) d
   return (d',e)
 
+
+eitherContainer'' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
+   => Map k (Either v a)                               -- a map of initial values
+   -> Event t (Map k (Construction (Either v a)))       -- construction events (replace/insert/delete)
+   -> Event t (Map k w)                                -- signaling events to be delivered to child widgets of type v
+   -> Event t (Map k b)                                -- signaling events to be delivered to child widgets of type a
+   -> (v -> Event t w -> m (Dynamic t (v,Event t e,Event t h)))  -- function to build widgets for type v (returning events of type e and f)
+   -> (a -> Event t b -> m (Dynamic t (a,Event t e,Event t h)))  -- function to build widgets for type a (also returning events of type e and f)
+   -> m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e), Event t h)
+
+eitherContainer'' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = mdo
+  let cEvents' = attachDynWith (constructionDiff) values cEvents
+  widgets <- liftM (joinDynThroughMap) $ listHoldWithKey initialValues cEvents' mkChild
+  values <- mapDyn (fmap (\(x,_,_) -> x)) widgets
+  eEvents <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap (\(_,x,_) -> x)) widgets
+  hEvents <- liftM (switchPromptlyDyn) $ mapDyn (leftmost . elems . fmap (\(_,_,x) -> x)) widgets
+  return (values,eEvents,hEvents)
+  where
+    mkChild k (Left x) = buildLeft x (select (fanMap eventsToLeft) (Const2 k)) >>= mapDyn (\(v,e,f)->(Left v,e,f))
+    mkChild k (Right x) = buildRight x (select (fanMap eventsToRight) (Const2 k)) >>= mapDyn (\(a,e,f)->(Right a,e,f))
+
+eitherContainer''' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
+   => Map k (Either v a)                               -- a map of initial values
+   -> Event t (Map k (Construction (Either v a)))      -- construction events (replace/insert/delete)
+   -> Event t (Map k w)                                -- signaling events to be delivered to child widgets of type v
+   -> Event t (Map k b)                                -- signaling events to be delivered to child widgets of type a
+   -> (v -> Event t w -> m (Dynamic t (v,Event t e,Event t h)))  -- function to build widgets for type v (returning events of type e and f)
+   -> (a -> Event t b -> m (Dynamic t (a,Event t e,Event t h)))  -- function to build widgets for type a (returning events of type e and f)
+   -> m ( Dynamic t (Map k v) , Event t (Map k e), Event t h)
+eitherContainer''' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = do
+  (d,e,h) <- eitherContainer'' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight
+  d' <- mapDyn (Data.Map.mapMaybe (either (Just) (const Nothing))) d
+  return (d',e,h)
 
 
 {-

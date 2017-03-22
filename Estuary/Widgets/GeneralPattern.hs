@@ -29,7 +29,7 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
   let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a liveness change
   let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
   liveness <- holdDyn MakeL4 livenessEv >>= mapDyn (\x-> case x of MakeL4 -> L4; otherwise -> L3)
-  let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change 
+  let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change
 
   -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
   unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
@@ -137,7 +137,6 @@ aGLWidgetLive liveness builder iVal ev = mdo
     function (Blank) e = builder liveness (Blank) e
     function (Group xs r) e = generalContainerLive (builder) (Group xs r) e
     function (Layers xs r) e = generalContainerLive  (builder) (Layers xs r) e
-
 
 
 popupSampleWidget :: MonadWidget t m => Dynamic t Context -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String))))
@@ -568,38 +567,35 @@ sampleNameWidget _ e = sampleNameWidget (Atom "~" Once) e
 
 
 ---- Eldad's Widgets:
-sButtonContainer::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a)))
+sButtonContainer::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a), Event t Hint))
 sButtonContainer (Atom iSamp iReps) _ = elAttr "table" tableAttrs $ mdo
-  (sample,upCount) <- elAttr "tr" (empty)$ do
-    (samp,_) <- sButtonWidget (Atom iSamp iReps) repeatsEv >>= splitDyn
+  (sample,upCount) <- el "tr" $ do
+    samp <- sButtonWidget iSamp repeats''
     upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue") >>= count
     return $ (samp,upButton)
   (deleteEvent,downCount) <- el "tr" $ do
     deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue"
     downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;background-color:lightblue") >>= count
     return $ (deleteButton, downButton)
-  downCount'<-mapDyn (\x-> case iReps of (Div i) -> x+i-1; Rep i->x-i+1; otherwise -> x) downCount
+  downCount' <- mapDyn (\x-> case iReps of (Div i) -> x+i-1; Rep i->x-i+1; otherwise -> x) downCount
   repeats <- combineDyn (\a b ->a-b+1) upCount downCount'
   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div $ abs (k-2))
-  repInitial <- holdDyn iReps $ updated repeats'
-  let repeatsEv = updated repInitial
-  mapDyn (\x->(x,deleteEvent)) sample
+  repeats'' <- holdDyn iReps $ updated repeats'
+  let hints = fmap (SampleHint) $ updated sample
+  combineDyn (\x y -> (Atom x y,deleteEvent,hints)) sample repeats''
   where tableAttrs=("style"=:"margin:5px;display:inline-table;background-color:lightgreen;width:10%;padding:6px;border-spacing:5px;border: 3pt solid black")
 sButtonContainer _ e = sButtonContainer (Atom "~" Once) e
 
-sButtonWidget::MonadWidget t m =>  GeneralPattern SampleName -> Event t RepOrDiv -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a)))
-sButtonWidget (Atom iSamp iReps) updatedReps = mdo
-  let sampleMap = fromList $ zip [(0::Int)..] ["~","bd","sn","cp","hh","arpy","glitch","tabla"]  -- Map Int (String,String)
-  let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iSamp) $ elems sampleMap
+sButtonWidget::MonadWidget t m => SampleName -> Dynamic t RepOrDiv -> m (Dynamic t SampleName)
+sButtonWidget iSamp reps = mdo
+  let sMap = fromList $ zip [(0::Int)..] ["~","bd","sn","cp","hh","arpy","glitch","tabla"]
+  let iNum = maybe (0::Int) id $ Data.List.findIndex (==iSamp) $ elems sMap
   sampleButton <- tdButtonAttrs' (showSample) (iSamp) $ "style"=:"width:60%;text-align:center;background-color:lightblue"
-  num <- count sampleButton >>= mapDyn (\x-> (x+initialNum) `mod` length sampleMap)
-  str'' <- mapDyn (\x-> maybe ("~") id $ Data.Map.lookup x sampleMap) num
-  let str' = updated str''
-  str <- holdDyn (iSamp) str'
-  reps <- holdDyn (iReps) updatedReps
-  returnSample <- combineDyn (\x r -> Atom x r) str reps
-  showSample <- mapDyn show returnSample
-  mapDyn (\x->(x,never)) returnSample
+  num <- count sampleButton >>= mapDyn (\x-> (x+iNum) `mod` length sMap)
+  sName <- mapDyn (\x-> maybe ("~") id $ Data.Map.lookup x sMap) num
+  atom <- combineDyn (Atom) sName reps
+  showSample <- mapDyn (show) atom
+  return sName
 
 -- returns atom of a character
 vowelButtonWidget::MonadWidget t m =>  GeneralPattern Char -> Event t () -> m (Dynamic t (GeneralPattern Char, Event t (EditSignal a)))

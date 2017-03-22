@@ -11,10 +11,16 @@ import Estuary.Reflex.Utility
 import Data.Map
 import Data.List
 import Estuary.Tidal.Types
+
 import Estuary.Reflex.Container 
 import Data.Maybe
 import Text.Read (readMaybe)
+import Estuary.WebDirt.Foreign
+import qualified GHCJS.Types as T
+import qualified GHCJS.Marshal.Pure as P
 
+
+data Hint = SampleHint String deriving (Eq)
 
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer deriving (Eq)
@@ -34,10 +40,13 @@ instance Show a => Show (EditSignal a) where
   show MakeL4 = "L4"
   show Eval = "eval"
 
+doHint :: T.JSVal -> Hint -> IO ()
+doHint wd (SampleHint x) = sampleHint wd (P.pToJSVal x)
+
 isChangeValue::EditSignal a -> Bool
 isChangeValue (ChangeValue _) = True
 isChangeValue _ = False
---data EditSignal = DeleteMe | MakeGroup | 
+--data EditSignal = DeleteMe | MakeGroup |
 
 
 clickableDiv :: MonadWidget t m => String -> m (Event t ())
@@ -165,7 +174,6 @@ basicPopup liveness actionList = elClass "div" "popupMenu" $ do
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget]
 
-
 samplePickerPopup::(MonadWidget t m)=>  Dynamic t Context -> Map Int (String,String) -> [EditSignal (GeneralPattern String)] -> m (Event t (Maybe (EditSignal (GeneralPattern String))))
 samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ do
   dd <- dropdownOpts 0 sampleMap def 
@@ -237,12 +245,4 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
 --  reps <- holdDyn (iReps) updatedReps
 --  returnSample <- combineDyn (\x r -> Atom x r) str reps
 --  showVal <- mapDyn show returnSample
---  mapDyn (\x->(x,never)) returnSample 
-
-
-
-
-
-
-
-
+--  mapDyn (\x->(x,never)) returnSample
