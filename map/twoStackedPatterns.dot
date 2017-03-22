@@ -7,6 +7,13 @@ digraph twoStackedPatterns {
               dropdownPatternWidget [label=<dropdownPatternWidget<BR /> <FONT POINT-SIZE="10">placeholder for comments</FONT>>];
               parameteredPatternTransformer [label=<parameteredPatternTransformer<BR /> <FONT POINT-SIZE="10">placeholder for comments</FONT>>];
               whitespacePopup [xlabel=<<FONT POINT-SIZE="7"> eitherContainer</FONT>>];
+              generalContainer [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              specificContainer [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              aGLWidget [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              aGLDoubleWidget [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              aGLIntWidget [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              popupSampleWidget [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              whitespacePopup [label=<generalContainers <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
 
               twoStackedPatterns -> iclcForStacked
               iclcForStacked -> transformedPatternWidget
