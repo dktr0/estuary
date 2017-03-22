@@ -135,10 +135,10 @@ whitespacePopup liveness iVal cssClass popupList _ event = elClass "div" cssClas
   openCloseEvents <- toggle False $ leftmost [whitespace, closeEvents,(() <$) addEvent]
   popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (basicPopup liveness popupList) False (updated openCloseEvents)
   let addEvent = (ChangeValue (iVal) <$) $ ffilter (\x-> if isJust x then fromJust (fmap (isChangeValue) x) else False) popupMenu
-  let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x == Just MakeL4) popupMenu
-  let evalEv = fmap fromJust $ ffilter (==Just Eval) popupMenu
+  let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x == Just MakeL4 || x == Just Eval) popupMenu
+  let delContEv = fmap fromJust $ ffilter (\x-> x==Just DeleteContainer) popupMenu
   let closeEvents = (() <$) $ ffilter (==Nothing) popupMenu
-  return $ constDyn ((),leftmost [livenessEv, addEvent,evalEv])
+  return $ constDyn ((),leftmost [livenessEv, addEvent,delContEv])
 
 livenessWidget::(MonadWidget t m) =>  Dynamic t Context -> m (Event t (EditSignal a))
 livenessWidget liveness = elClass "div" "livenessWidget" $ mdo

@@ -92,7 +92,7 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
   liveness <- holdDyn MakeL4 livenessEv >>= mapDyn (\x-> case x of MakeL4 -> L4; otherwise -> L3)
   let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change 
-
+  let deleteContainerEv = (DeleteMe <$) $ ffilter (\x -> Data.List.elem DeleteContainer x) events'
   text (case i of (Group _ _)-> "]"; (Layers _ _)-> "]"; otherwise -> "")
 
   -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
@@ -102,11 +102,9 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   isEdited'' <- combineDyn (\live updatedVal-> if live==L4 then Just updatedVal else Nothing) liveness isEdited'
   isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal
   changes <- holdDyn False $ attachDynWith (==) unchangedVal isEdited
-  delEx <- button "delete Ex"
-  let delEx' = fmap (const DeleteMe) delEx
   let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
   let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (isChangeValue) )  events
-  mapDyn (\x->returnF i x (leftmost [livenessEv, (DeleteMe <$) $ ffilter (elem DeleteContainer) events',delEx'])) isEdited'''
+  mapDyn (\x->returnF i x (leftmost [livenessEv, deleteContainerEv])) isEdited'''
   where
     initialVal (Atom iV _) = iV
     initialVal (Group iV _) = initialVal $ iV!!0
@@ -153,8 +151,8 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   repDivVal <- holdDyn iRepDiv repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
   let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x==Just MakeL4|| x==Just Eval) popupMenu
   let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
-  popupEvents' <- toggle False $ leftmost $ [(() <$) sample,(() <$) groupLayerEv,(() <$) closeEvents,(() <$) livenessEv]
   let sampleChanges = fmap (\x-> maybe Blank (\y-> case y of (ChangeValue z)-> z; otherwise -> Blank) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
+  popupEvents' <- toggle False $ leftmost $ [(() <$) sample,(() <$) groupLayerEv,(() <$) closeEvents,(() <$) livenessEv, (() <$) sampleChanges]
   inVal <- holdDyn iSamp $ fmap show sampleChanges
   genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . (flip Atom) Once) )  groupLayerEv -- Dyn ()
   genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
