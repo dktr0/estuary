@@ -223,7 +223,7 @@ instance ParamPatternable TransformedPattern where
   toParamPattern (UntransformedPattern u) = toParamPattern u
 
 
-data StackedPatterns = StackedPatterns [git TransformedPattern]
+data StackedPatterns = StackedPatterns [TransformedPattern]
 
 instance Show StackedPatterns where
   show (StackedPatterns xs) = "stack [" ++ (intercalate ", " (Prelude.map show xs)) ++ "]"
