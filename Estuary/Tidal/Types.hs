@@ -173,7 +173,17 @@ emptySoundPattern :: SpecificPattern
 emptySoundPattern = Sound Blank
 
 
-data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer | Chop Int  deriving (Ord,Eq)
+data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show,Read,Ord)
+
+toTidalCombinator :: PatternCombinator -> (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
+toTidalCombinator Merge = (Tidal.|=|)
+toTidalCombinator Add = (Tidal.|+|)
+toTidalCombinator Subtract = (Tidal.|-|)
+toTidalCombinator Multiply = (Tidal.|*|)
+toTidalCombinator Divide = (Tidal.|/|)
+
+
+data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer | Chop Int | Combine SpecificPattern PatternCombinator deriving (Ord,Eq)
 
 instance Show PatternTransformer where
   show NoTransformer = ""
@@ -186,6 +196,7 @@ instance Show PatternTransformer where
   show (Brak) = "brak"
   show (Jux f) = "jux (" ++ (show f) ++ ")"
   show (Chop i) = "chop (" ++ (show i) ++ ")"
+  show (Combine p c) = (show p) ++ " " ++ (show c) ++ " "
 
 applyPatternTransformer :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
 applyPatternTransformer NoTransformer = id
@@ -198,65 +209,21 @@ applyPatternTransformer (Every n t) = Tidal.every n (applyPatternTransformer t)
 applyPatternTransformer (Brak) = Tidal.brak
 applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
 applyPatternTransformer (Chop t) = Tidal.chop t
+applyPatternTransformer (Combine p c) = (toParamPattern p) (toTidalCombinator c)
 
 
-data TransformedPattern = TransformedPattern [PatternTransformer] SpecificPattern deriving (Eq)
+data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern deriving (Eq)
 
 instance Show TransformedPattern where
-  show (TransformedPattern [NoTransformer] (Sound x)) = " $ " ++show (Sound x)
-  show (TransformedPattern [NoTransformer] x) = show x
-  show (TransformedPattern [] x) = show x
-  show (TransformedPattern (NoTransformer:[]) x) = show x
-  show (TransformedPattern ts x) = (intercalate " $ " (Prelude.map show ts))  ++ " $ " ++ (show x)
+ show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
+ show (UntransformedPattern u) = (show u)
 
-
--- @what if the parameter is an empty pattern? -> do we need to guard for that?
--- what happens in tidal with s "a b c d" |=|
 instance ParamPatternable TransformedPattern where
-  toParamPattern (TransformedPattern ts x) = Prelude.foldr (\a b -> (applyPatternTransformer a) b) (toParamPattern x) ts
-  isEmpty (TransformedPattern _ x) = isEmpty x
-
-data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show,Read,Ord)
-
-toTidalCombinator :: PatternCombinator -> (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
-toTidalCombinator Merge = (Tidal.|=|)
-toTidalCombinator Add = (Tidal.|+|)
-toTidalCombinator Subtract = (Tidal.|-|)
-toTidalCombinator Multiply = (Tidal.|*|)
-toTidalCombinator Divide = (Tidal.|/|)
-
-data PatternChain = EmptyPatternChain | PatternChain TransformedPattern | PatternChain' TransformedPattern PatternCombinator PatternChain deriving (Eq)
+  toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
+  toParamPattern (UntransformedPattern u) = toParamPattern u
 
 
-instance Show PatternChain where
-  show (EmptyPatternChain) = "silence"
-  show (PatternChain x) = show x
-  -- show (PatternChain' x _ EmptyPatternChain) = show x
-  show (PatternChain' x Merge y) = if isEmpty x then if isEmpty y then "" else show y else if isEmpty y then show x else (show x) ++ " |=| " ++ (show y)
-  show (PatternChain' x Add y) = (show x) ++ " |+| " ++ (show y)
-  show (PatternChain' x Subtract y) = (show x) ++ " |-| " ++ (show y)
-  show (PatternChain' x Multiply y) = (show x) ++ " |*| " ++ (show y)
-  show (PatternChain' x Divide y) = (show x) ++ " |/| " ++ (show y)
-
-instance ParamPatternable PatternChain where
-  toParamPattern (EmptyPatternChain) = Tidal.silence
-  toParamPattern (PatternChain' transPat pCombinator (PatternChain' transPat2 pCombinator2 pChain)) | isEmpty transPat = toParamPattern (PatternChain' transPat2 pCombinator2 pChain)
-                                                                                                    | otherwise = (toTidalCombinator pCombinator2) ((toTidalCombinator pCombinator) (toParamPattern transPat) (toParamPattern transPat2)) (toParamPattern pChain)
-  toParamPattern (PatternChain' transPat pCombinator patChain) | isEmpty transPat = toParamPattern patChain
-                                                               | isEmpty patChain = toParamPattern transPat
-                                                               | otherwise = (toTidalCombinator pCombinator) (toParamPattern transPat) (toParamPattern patChain)
-
-  --toParamPattern (PatternChain' x c (PatternChain y)) | isEmpty x = toParamPattern y
-  --                                                    | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
-  --toParamPattern (PatternChain' x c y) | isEmpty x = toParamPattern y
-  --                                     | otherwise = (toTidalCombinator c) (toParamPattern x) (toParamPattern y)
-  toParamPattern (PatternChain x) = toParamPattern x
-  isEmpty (EmptyPatternChain) = True
-  isEmpty (PatternChain x) = isEmpty x
-  isEmpty (PatternChain' x _ y) = (isEmpty x) && (isEmpty y)
-
-
-data StackedPatterns = StackedPatterns [PatternChain]
+data StackedPatterns = StackedPatterns [git TransformedPattern]
 
 instance Show StackedPatterns where
   show (StackedPatterns xs) = "stack [" ++ (intercalate ", " (Prelude.map show xs)) ++ "]"
