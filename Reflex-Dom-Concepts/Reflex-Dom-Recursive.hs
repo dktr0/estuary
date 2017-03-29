@@ -1,4 +1,6 @@
-module Recursive where
+{-# LANGUAGE RecursiveDo #-}
+
+module Main where
 
 import Reflex
 import Reflex.Dom
@@ -21,10 +23,10 @@ twoWidget Two = do
 
 twoWidget' :: MonadWidget t m => Two -> m (Dynamic t (Two,Event t Two))
 twoWidget' One = do
-  b <- button "One" >>= (Two <$)
+  b <- liftM (Two <$) $ button "One"
   return $ constDyn (One,b)
-twoWidget Two = do
-  b <- button "Two" >>= (One <$)
+twoWidget' Two = do
+  b <- liftM (One <$) $ button "Two"
   return $ constDyn (Two,b)
 
 -- The widget above can signal that it wants to be something else but it can't
@@ -33,9 +35,9 @@ twoWidget Two = do
 
 twoWidget'' :: MonadWidget t m => Two -> m (Dynamic t Two)
 twoWidget'' i = mdo
-  w <- liftM (joinDyn) $ widgetHold (twoWidget' i) events
-  values <- mapDyn fst
+  w <- liftM (joinDyn) $ widgetHold (twoWidget' i) events'
   events <- liftM (switchPromptlyDyn) $ mapDyn snd w
-  return values
+  let events' = fmap twoWidget' events
+  mapDyn fst w
 
 main = mainWidget $ (twoWidget'' One) >>= display
