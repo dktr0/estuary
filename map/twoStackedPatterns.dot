@@ -1,18 +1,18 @@
 digraph twoStackedPatterns {
               node [shape=record, labelloc=b];
-              twoStackedPatterns [label=<twoStackedPatterns<BR /> <FONT POINT-SIZE="10">An event handler that <BR /> returns the two "stacked patterns with liveness control" interface </FONT>>];
-              iclcForStacked [label=<iclcForStacked<BR /> <FONT POINT-SIZE="10"> A function that takes a pattern chain and an event and binds them in the context of a monad. </FONT>> ];
-              transformedPatternWidget [label=<transformedPatternWidget<BR /> <FONT POINT-SIZE="10">A function that takes a TransformedṔattern and an event and  <BR /> binds them in a dynamic container in the context of a monad <BR /> Returns an interface where parameters and transformations can be selected</FONT>> ];
-              patternCombinatorDropDown [label=<patternCombinatorDropDown<BR /> <FONT POINT-SIZE="10">A function that takes a PatternCombinator and an event and <BR /> binds them in a dynamic container in the context of a monad <BR /> Returns the options of merging, adding, subtracting, multiplying and dividing patterns</FONT>>, xlabel=<eitherWidget>];
-              dropdownPatternWidget [label=<dropdownPatternWidget<BR /> <FONT POINT-SIZE="10"> A function that takes a SpecificPattern and an event and <BR /> binds them in a dynamic container in the context of a monad <BR /> Returns a dropdown menu where parameters can be selected </FONT>>];
-              parameteredPatternTransformer [label=<parameteredPatternTransformer<BR /> <FONT POINT-SIZE="10">A function that takes a PatternTransformer <BR /> and an event and binds them in a dynamic container in the context of a monad <BR /> Return a dropdown menu with transformations</FONT>>];
-              whitespacePopup [xlabel=<<FONT POINT-SIZE="7"> eitherContainer</FONT>>];
-              specificContainer [label=<specificContainer <BR/><FONT POINT-SIZE="10">A function that takes a SpecificPattern and an event and <BR /> binds it to a dynamic container in the context of a monad <BR /> Returns a parameter </FONT>>];
-              generalContainerLive [label=<generalContainerLive <BR/><FONT POINT-SIZE="10">A function that takes a function that takes a function <BR /> that takes a dynamic container  a GeneralPattern and <BR /> an event and bind them in a dynamic container in the context of a monad</FONT>>];
-              popupIntWidget [label=<popupIntWidget <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              popupSampleWidget [label=<popupSampleWidget <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              whitespacePopup [label=<whitespacePopup <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
-              aGLWidget [label=<aGLIntWidget <BR/><FONT POINT-SIZE="10">placeholder for comments</FONT>>];
+              twoStackedPatterns [label=<twoStackedPatterns<BR /> <FONT POINT-SIZE="10">Located in Estuary/Widgets/StackedPatterns.hs . <BR />An event handler that returns the two <BR /> "stacked patterns with liveness control" interface </FONT>>];
+              iclcForStacked [label=<iclcForStacked<BR /> <FONT POINT-SIZE="10"> Located in Estuary/Widgets/PatternChain.hs <BR /> Enables to editing PatternChain to building editors. </FONT>> ];
+              transformedPatternWidget [label=<transformedPatternWidget<BR /> <FONT POINT-SIZE="10"> Located in Estuary/Widgets/TransformedPattern.hs <BR /> Enables to editing TransformedṔattern </FONT>> ];
+              patternCombinatorDropDown [label=<patternCombinatorDropDown<BR /> <FONT POINT-SIZE="10">Located in Estuary/Widgets/PatternChain.hs <BR /> Enables to editing PatternCombinator </FONT>>, xlabel=<eitherWidget>];
+              dropdownPatternWidget [label=<dropdownPatternWidget<BR /> <FONT POINT-SIZE="10"> Located in Estuary/Widgets/TransformedPattern.hs <BR /> Enables to editing SpecificPattern </FONT>>];
+              parameteredPatternTransformer [label=<parameteredPatternTransformer<BR /> <FONT POINT-SIZE="10"> Located in Estuary/Widgets/PatternTransformer.hs <BR /> Enables to editing of PatternTransformer </FONT>>];
+              specificContainer [label=<specificContainer <BR/><FONT POINT-SIZE="10">Located Estuary/Widgets/SpecificPattern.hs <BR /> Enabled to editing SpecificPattern</FONT>>];
+              generalContainerLive [label=<generalContainerLive <BR/><FONT POINT-SIZE="10"> Located in Estuary/Widgets/GeneralPattern.hs <BR /> Enable to editing GeneralPattern </FONT>>];
+              popupIntWidget [label=<popupIntWidget <BR/><FONT POINT-SIZE="10">located in Estuary/Widgets/GeneralPattern.hs</FONT>>];
+              popupSampleWidget [label=<popupSampleWidget <BR/><FONT POINT-SIZE="10">located in Estuary/Widgets/GeneralPattern.hs</FONT>>];
+              popupDoubleWidget [label = <popupDoubleWidget <BR/><FONT POINT-SIZE="10">located in Estuary/Widgets/GeneralPattern.hs</FONT>>];
+              whitespacePopup [label=<whitespacePopup <BR/><FONT POINT-SIZE="10">located Estuary/Widgets/Generic.hs</FONT>>];
+              aGLWidget [label=<aGLIntWidget <BR/><FONT POINT-SIZE="10">located in Estuary/Widgets/GeneralPattern.hs </FONT>>, xlabel= eitherContainer];
 
               twoStackedPatterns -> iclcForStacked
               iclcForStacked -> transformedPatternWidget
