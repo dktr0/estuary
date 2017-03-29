@@ -11,10 +11,6 @@ import Data.Map
 import Data.List
 import qualified Estuary.Widgets.SpecificPattern as Sp
 
--- data SpecificPattern = S (GeneralPattern SampleName) | N (GeneralPattern Int) | Sound (GeneralPattern Sample) | Pan (GeneralPattern Double) deriving (Eq)
-
------  data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer deriving (Ord,Eq)
-
 
 dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t ()))
 dropdownPatternWidget iPattern _ = do
@@ -71,3 +67,23 @@ transformedPatternWidget (TransformedPattern ts p) _ = el "div" $ do
     f [] = NoTransformer -- sorry again...
     f (x:_) = x
     lookupBuilder x = Sp.sContainerWidget
+
+
+transformedPatternWidget' :: MonadWidget t m => TransformedPattern -> m (Dynamic t TransformedPattern)
+
+transformedPatternWidget' (UntransformedPattern u) = do
+  b <- button "transformMe"
+  transformedPatternWidget'' (UntransformedPattern u)
+
+transformedPatternWidget'' (UntransformedPattern u) = do
+  u' <- specificPatternWidget u
+  mapDyn UntransformedPattern u'
+
+transformedPatternWidget' (TransformedPattern t x) = do
+  b <- button "transformMe" >>= (   <$)
+  transformedPatternWidget'' (TransformedPattern t x)
+
+transformedPatternWidget'' (TransformedPattern t x) = do
+  t' <- patternTransformedWidget t
+  x' <- transformedPatternWidget' x
+  combineDyn TransformedPattern t' x'
