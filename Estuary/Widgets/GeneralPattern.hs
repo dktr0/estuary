@@ -11,7 +11,7 @@ import Data.Map
 import Data.Maybe
 import Estuary.Widgets.Generic
 import Control.Monad
-import Data.List(intersperse, findIndex, elem)
+import Data.List(intersperse, findIndex, elem, elemIndex)
 import Data.Either(partitionEithers)
 import GHCJS.DOM.EventM
 import Data.Maybe(isJust,listToMaybe,fromMaybe,fromJust)
@@ -53,7 +53,7 @@ generalContainer b i _ = elClass "div" (getClass i) $ mdo
     initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
     leftBuilder = aGLWidget b
-    rightBuilder live= whitespacePopup live (i) "whiteSpaceAdd" [ChangeValue (i)]
+    rightBuilder live= whitespace live (i) "whiteSpaceAdd" [ChangeValue (i)]
     insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
     insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
     insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
@@ -76,6 +76,9 @@ aGLWidget builder iVal ev = mdo
     function (Layers xs r) e = generalContainer builder (Layers xs r) e
 
 
+-- When ',' happens, need to clobber the existing eithercontainer  and replace it with two
+-- generalContainerLive widgets - one for the left side, one for the right side.
+
 generalContainerLive :: (MonadWidget t m, Eq a, Show a) 
   => (Dynamic t Context -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)))))
   -> GeneralPattern a 
@@ -84,29 +87,107 @@ generalContainerLive :: (MonadWidget t m, Eq a, Show a)
 generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   text (case i of (Group _ _)-> "["; (Layers _ _)-> "["; otherwise -> "")
   let cEvents = mergeWith (union) [insertMap,deleteMap]
-  (allValues,events) <- eitherContainer (initialMap i) cEvents livenessEvMap livenessEvMap (leftBuilder liveness) (rightBuilder liveness)
+
+  -- trying to have eithercontainer to be a widgethold,
+  --let splitBuilder = attachDynWith (\vals split-> maybe (return $ constDyn (Blank,never)) (\int-> do 
+  --                                                                                                  left <- generalContainerLive b (Group (take int vals) Once) never 
+  --                                                                                                  right <- generalContainerLive b (Group (reverse $ take ((length vals) - int) (reverse vals)) Once) never
+  --                                                                                                  combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightV] Once,leftmost [leftEv,rightEv])) left right
+  --                                                                                                ) split ) values splitEv
+
+
+--Dynamic t (Dynamic t (Map Int (Either (GeneralPattern a) ())), Event t (Map Int (EditSignal (GeneralPattern a))))
+
+--flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
+  --eithercontainer:: m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e) )
+--a = ( dynamic (map k (either v a), event t map)
+  --m dynamic (dynamic map, event map)
+--m dynamic (
+
+--inter:: m (dynamic t (  dynamic (map k (either v a))  ,  event t map ))
+
+  inter <- flippableWidget (eitherContainer (initialMap i) cEvents livenessEvMap livenessEvMap (leftBuilder liveness) (rightBuilder liveness)) (return $ (constDyn empty,never)) False $ updated splitTog
+  allValues <- liftM joinDyn $ mapDyn fst inter 
+  events <- liftM switchPromptlyDyn $ mapDyn snd inter 
+  --let eventKey = fmap keys events
+
+  
+
+  let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
+  let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (isChangeValue) )  events
+
   values <- mapDyn (fst . Data.Either.partitionEithers . elems) allValues
   childKeys <- mapDyn keys allValues
   let events' = fmap (Data.Map.elems) events -- Event [l]
+
+
   let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a liveness change
   let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
   liveness <- holdDyn MakeL4 livenessEv >>= mapDyn (\x-> case x of MakeL4 -> L4; otherwise -> L3)
   let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change 
   let deleteContainerEv = (DeleteMe <$) $ ffilter (\x -> Data.List.elem DeleteContainer x) events'
-  text (case i of (Group _ _)-> "]"; (Layers _ _)-> "]"; otherwise -> "")
 
   -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
   unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
   let isEdited = attachWithMaybe (\x y-> if x==y then Nothing else Just y) (current unchangedVal) (updated values)
   isEdited' <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) isEdited
   isEdited'' <- combineDyn (\live updatedVal-> if live==L4 then Just updatedVal else Nothing) liveness isEdited'
-  isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal
+  isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal -- Dyn [GenPat]
+  
+  --let splitEv = fmap (maybe 0 id . elemIndex LayerSplit) $ ffilter (Data.List.elem LayerSplit) events'
+  --let splitEv = coincidence $ fmap (const $ fmap (fromJust . elemIndex LayerSplit) events') $ ffilter (Data.List.elem LayerSplit) events'
+  
+  let splitEv = coincidence $ fmap (const $ fmap (head . keys . Data.Map.filter (==LayerSplit)) events) $ ffilter (Data.List.elem LayerSplit) events'
+
+  -- Event [EditSignal]
+
+  --holdDyn "not yet" (fmap (\x->"split thingy : "++ (show x)) (ffilter (Data.List.elem LayerSplit) events') ) >>= dynText
+
+  --[ ]   attachPromptlyDynWith      :: (a -> b ->       c) ->  Dynamic a -> Event b -> Event c
+  let splitVal = attachDynWith (\vals index-> Layers [Group (take (index+1) vals) Once, Group (reverse $ take ((length vals) - (index+1)) (reverse vals)) Once] Once) isEdited''' splitEv
+  v <- holdDyn Blank splitVal >>= combineDyn (\i e-> case e of Blank -> i; otherwise -> [e]) isEdited'''
+  
+  --splitVal <- holdDyn Nothing $ fmap (elemIndex LayerSplit) splitEv
+  --widgetHold :: m a ->   Event (m a) -> m (Dynamic a)
+  --attachDynWith (\vals split-> maybe (return $ constDyn (Blank,never)) (\int-> do 
+  --  (leftV,leftEv) <- generalContainerLive b (take split vals) never 
+  --  (rightV, rightEv) <- generalContainerLive b (reverse $ take ((length vals) - split) (reverse vals)) never
+  --  combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightv] Once,leftmost [leftEv,rightEv]))
+  --    ) split 
+  --    ) values splitEv
+  --left <- widgetHold (return $ constDyn (Blank,never)) $ 
+  --right <- widgetHold (return $ constDyn (Blank,never)) $ 
+  --genPat <- combineDyn (\val split-> if isJust split then Layers (maybe val (splitFunc val) split) Once else Group (maybe val (splitFunc val) split) Once) isEdited''' splitVal
+  --genPat <- combineDyn (\val split-> maybe (Group val Once) (splitFunc val) split) isEdited''' splitVal
+
+  --trying to have eithercontainer to be a widgethold,
+  --let splitBuilder = attachDynWith (\vals split-> maybe (return $ constDyn (Blank,never)) (\int-> do 
+  --                                                                                                  left <- generalContainerLive b (Group (take int vals) Once) never 
+  --                                                                                                  right <- generalContainerLive b (Group (reverse $ take ((length vals) - int) (reverse vals)) Once) never
+  --                                                                                                  combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightV] Once,leftmost [leftEv,rightEv])) left right
+  --                                                                                                ) split ) values splitEv
+  -- Problem now is: vals becomes just [] when 
+
+  --text ("split list:  " ++ (show $ take (div split 2) vals))
+  --                                                  text ("split list or:  " ++ (show $ take (split-1) vals))
+  let splitBuilder = attachDynWith (\vals split-> do 
+                                                    left <- generalContainerLive b (Group (take (div split 2) vals) Once) never 
+                                                    right <- generalContainerLive b (Group (reverse $ take ((length vals) - (div split 2)) (reverse vals)) Once) never                                                    
+                                                    combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightV] Once,leftmost [leftEv,rightEv])) left right
+                                                    ) values splitEv
+
+  splitTog <- toggle False splitBuilder
   changes <- holdDyn False $ attachDynWith (==) unchangedVal isEdited
-  let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
-  let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (isChangeValue) )  events
-  mapDyn (\x->returnF i x (leftmost [livenessEv, deleteContainerEv])) isEdited'''
+  --mapDyn (\x->returnF i x (leftmost [livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])) isEdited'''
+  
+
+  regVal <-  mapDyn (\x->returnF i x (leftmost [livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])) v
+  returnVal <-liftM joinDyn $ widgetHold (return regVal) splitBuilder
+  text (case i of (Group _ _)-> "]"; (Layers _ _)-> "]"; otherwise -> "")
+  return returnVal
+  --mapDyn (\x-> (x,(leftmost [livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events']))) genPat
   where
-    initialVal (Atom iV _) = iV
+    initialVal (Atom iV r) = Atom iV r
     initialVal (Group iV _) = initialVal $ iV!!0
     initialVal (Layers iV _) = initialVal $ iV!!0
     getClass (Layers _ _) = "generalPattern-layer"
@@ -116,13 +197,20 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
     initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
     leftBuilder live = aGLWidgetLive live b
-    rightBuilder live= whitespacePopup live (i) "whiteSpaceAdd" [ChangeValue (i),DeleteContainer]
+    rightBuilder live= whitespace live (initialVal i) "whiteSpaceAdd" [ChangeValue (initialVal i),DeleteContainer]
     insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
     insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
     insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
     returnF (Layers _ _) x e = (Layers x Once,e)
     returnF (Group _ _) x e = (Group x Once,e)
     returnF (Atom _ _) x e = (Group x Once,e)
+    splitFunc xs index = Layers [Group (take index xs) Once, Group (reverse $ take ((length xs)-index) (reverse xs)) Once] Once
+
+
+    --splitFunc (Atom x r) index = Group [Layers [x] Once] Once
+    --splitFunc (Group xs r) index = Group [Layers (take index xs) Once, Layers (reverse . take ((length index)-index) (reverse xs))] Once
+    --splitFunc (Layers xs r) index = Layers xs r
+
 
 
 aGLWidgetLive::(MonadWidget t m, Eq a, Show a) => Dynamic t Context -> (Dynamic t Context -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))) -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))

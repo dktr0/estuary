@@ -150,7 +150,10 @@ specificContainer (Loop x) e = G.generalContainerLive (G.popupIntWidget 0 1024 1
 specificContainer (N x) e = G.generalContainerLive (G.popupIntWidget 0 50 1) x never >>= mapDyn (\(x,ev)->(N x,(() <$) ev))
 --specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
 
-specificContainer (S x) e = G.generalContainerLive G.popupSampleWidget x never >>= mapDyn (\(x,ev)->(S x,(() <$) ev))
+specificContainer (S x) e = do
+  a <- G.generalContainerLive G.popupSampleWidget x never >>= mapDyn (\(x,ev)->(S x,(() <$) ev))
+  mapDyn (show . fst) a >>= dynText
+  return a
 --specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
 specificContainer (Vowel x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Vowel x,(() <$) ev))
 specificContainer (Unit x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Unit x,(() <$) ev))

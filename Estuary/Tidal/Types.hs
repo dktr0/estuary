@@ -26,11 +26,11 @@ instance Show RepOrDiv where
   show (Div 1) = ""
   show (Div n) = "/" ++ (show n)
 
-data Liveness = L3 | L4
+data Liveness = L3 | L4 deriving (Eq)
 
-data Potential a = Potential a | PotentialLiveness Liveness | Inert | Potentials [Potential a]
+data Potential a = Potential a | PotentialLiveness Liveness | Inert | Potentials [Potential a] deriving (Eq)
 
-data Live a = Live a Liveness | Edited a a
+data Live a = Live a Liveness | Edited a a deriving(Eq)
 
 data GeneralPattern a =
   Atom a (Potential a) RepOrDiv |
@@ -56,18 +56,18 @@ data GeneralPattern a =
 generalPatternIsEmptyFuture::GeneralPattern a -> Bool
 generalPatternIsEmptyFuture (Atom _ _ _) = False
 generalPatternIsEmptyFuture (Blank _ _) = True
-generalPatternIsEmptyFuture (Group (Live (xs,_)) _) = and $ fmap generalPatternIsEmptyFuture xs
+generalPatternIsEmptyFuture (Group (Live (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyFuture (Group (Edited _ (xs,_)) _) = and $ fmap generalPatternIsEmptyFuture xs
-generalPatternIsEmptyFuture (Layers (Live (xs,_)) _) = and $ fmap generalPatternIsEmptyFuture xs
+generalPatternIsEmptyFuture (Layers (Live (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyFuture (Layers (Edited _ (xs,_)) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyFuture (TextPattern x) = length x == 0
 
 generalPatternIsEmptyPast::GeneralPattern a -> Bool
 generalPatternIsEmptyPast (Atom _ _ _) = False
 generalPatternIsEmptyPast (Blank _ _) = True
-generalPatternIsEmptyPast (Group (Live (xs,_)) _) = and $ fmap generalPatternIsEmptyFuture xs
+generalPatternIsEmptyPast (Group (Live (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyPast (Group (Edited (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
-generalPatternIsEmptyPast (Layers (Live (xs,_)) _) = and $ fmap generalPatternIsEmptyFuture xs
+generalPatternIsEmptyPast (Layers (Live (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyPast (Layers (Edited (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
 
 showNoQuotes::(Show a)=> a->String
@@ -186,7 +186,6 @@ instance ParamPatternable SpecificPattern where
   isEmptyPast (Speed x) = generalPatternIsEmptyPast x
   isEmptyPast (Up x) = generalPatternIsEmptyPast x
   isEmptyPast (Unit x) = generalPatternIsEmptyPast x
-  isEmptyPast (End x) = generalPatternIsEmptyPast x
   isEmptyPast (Vowel x) = generalPatternIsEmptyPast x
   isEmptyFuture (Accelerate x) = generalPatternIsEmptyFuture x
   isEmptyFuture (Bandf x) = generalPatternIsEmptyFuture x
@@ -213,20 +212,11 @@ instance ParamPatternable SpecificPattern where
   isEmptyFuture (Speed x) = generalPatternIsEmptyFuture x
   isEmptyFuture (Up x) = generalPatternIsEmptyFuture x
   isEmptyFuture (Unit x) = generalPatternIsEmptyFuture x
-  isEmptyFuture (End x) = generalPatternIsEmptyFuture x
   isEmptyFuture (Vowel x) = generalPatternIsEmptyFuture x
 
 
 
-  data GeneralPattern a =
-    Atom a (Potential a) RepOrDiv |
-    Blank (Potential a) RepOrDiv |
-    Group (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
-    Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
-    TextPattern String
-    deriving (Eq)
 
-data Live a = Live a Liveness | Edited a a
 
 
 emptySPattern :: SpecificPattern
@@ -243,7 +233,9 @@ toTidalCombinator Multiply = (Tidal.|*|)
 toTidalCombinator Divide = (Tidal.|/|)
 
 
-data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer | Chop Int | Combine SpecificPattern PatternCombinator deriving (Ord,Eq)
+-- pattern transformer
+
+data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer | Chop Int | Combine SpecificPattern PatternCombinator deriving (Eq)
 
 instance Show PatternTransformer where
   show NoTransformer = ""
@@ -269,7 +261,7 @@ applyPatternTransformer (Every n t) = Tidal.every n (applyPatternTransformer t)
 applyPatternTransformer (Brak) = Tidal.brak
 applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
 applyPatternTransformer (Chop t) = Tidal.chop t
-applyPatternTransformer (Combine p c) = (toParamPattern p) (toTidalCombinator c)
+applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern p
 
 
 data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern deriving (Eq)
@@ -281,10 +273,11 @@ instance Show TransformedPattern where
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
-  isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
-  isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
+  isEmptyPast (TransformedPattern t p) = isEmptyPast p
+  isEmptyPast (UntransformedPattern u) = isEmptyPast u
+
 
 
 data StackedPatterns = StackedPatterns [TransformedPattern]
