@@ -26,15 +26,29 @@ instance Show RepOrDiv where
   show (Div 1) = ""
   show (Div n) = "/" ++ (show n)
 
-data Liveness = L3 | L4 deriving (Eq)
+
+data Liveness = L3 | L4 deriving (Eq,Show)
+
 
 data Potential a = Potential a | PotentialLiveness Liveness | Inert | Potentials [Potential a] deriving (Eq)
 
+instance JSON a => JSON (Potential a) where
+  showJSON (Potential a) = encJSDict [("Potential",a)]
+  showJSON (PotentialLiveness x) = encJSDict [("PotentialLiveness",show x)]
+  showJSON Inert = encJSDict [("Inert","Inert")]
+  showJSON (Potentials xs) = encJSDict [("Potentials",xs)]
+
+
 data Live a = Live a Liveness | Edited a a deriving(Eq)
+
+instance JSON a => JSON (Live a) where
+  showJSON (Live a liveness) = encJSDict [("live",a),("liveness",show liveness)]
+  showJSON (Edited past future) = encJSDict [("edited",future),("past",past)]
+
 
 data GeneralPattern a =
   Atom a (Potential a) RepOrDiv |
-  Blank (Potential a) RepOrDiv |
+  Blank (Potential a) |
   Group (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
   Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
   TextPattern String
@@ -83,6 +97,13 @@ instance Show a => Show (GeneralPattern a) where
   show (Group (Edited ([],r) _) _) = ""
   show (Group (Edited (xs,r) _) _) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (TextPattern x) = x
+
+instance JSON a => JSON (GeneralPattern a) where
+  showJSON (Atom a p r) = encJSDict [("Atom",a),("p",p),("r",r)]
+  showJSON (Blank p) = encJSDict [("Blank",show p)]
+  showJSON (Group x p) = encJSDict [("Group",x),("p",p)]
+  showJSON (Layers x p) = encJSDict [("Layers",x),("p",p)]
+  showJSON (TextPattern t) = encJSDict [("TextPattern",t)]
 
 type SampleName = String
 
@@ -232,8 +253,13 @@ toTidalCombinator Subtract = (Tidal.|-|)
 toTidalCombinator Multiply = (Tidal.|*|)
 toTidalCombinator Divide = (Tidal.|/|)
 
+instance JSON PatternCombinator where
+  showJSON Merge = encJSDict [("PatternCombinator","Merge")]
+  showJSON Add = encJSDict [("PatternCombinator","Add")]
+  showJSON Subtract = encJSDict [("PatternCombinator","Subtract")]
+  showJSON Multiply = encJSDict [("PatternCombinator","Multiply")]
+  showJSON Divide = encJSDict [("PatternCombinator","Divide")]
 
--- pattern transformer
 
 data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer | Chop Int | Combine SpecificPattern PatternCombinator deriving (Eq)
 
@@ -249,6 +275,19 @@ instance Show PatternTransformer where
   show (Jux f) = "jux (" ++ (show f) ++ ")"
   show (Chop i) = "chop (" ++ (show i) ++ ")"
   show (Combine p c) = (show p) ++ " " ++ (show c) ++ " "
+
+instance JSON PatternTransformer where
+  showJSON NoTransformer = encJSDict [("NoTransformer",0)]
+  showJSON Rev = encJSDict [("Rev",0)]
+  showJSON (Slow f) = encJSDict [("Slow",show f)]
+  showJSON (Density f) = encJSDict [("Density",show f)]
+  showJSON Degrade = encJSDict [("Degrade",0)]
+  showJSON (DegradeBy f) = encJSDict [("DegradeBy",show f)]
+  showJSON (Every n t) = encJSDict [("Every",n),("t",t)]
+  showJSON (Brak) = encJSDict [("Brak",0)]
+  showJSON (Jux f) = encJSDict [("Jux",f)]
+  showJSON (Chop i) = encJSDict [("Chop",i)]
+  showJSON (Combine p c) = encJSDict [("Combine",p),("c",c)]
 
 applyPatternTransformer :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
 applyPatternTransformer NoTransformer = id
@@ -270,6 +309,10 @@ instance Show TransformedPattern where
  show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
  show (UntransformedPattern u) = (show u)
 
+instance JSON TransformedPattern where
+  showJSON (TransformedPattern t p) = encJSDict [("PatternTransformer",p),("TransformedPattern",t)]
+  showJSON (UntransformedPattern s) = encJSDict [("UntransformedPattern",s)]
+
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
@@ -279,11 +322,13 @@ instance ParamPatternable TransformedPattern where
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
 
 
-
 data StackedPatterns = StackedPatterns [TransformedPattern]
 
 instance Show StackedPatterns where
   show (StackedPatterns xs) = "stack [" ++ (intercalate ", " (Prelude.map show xs)) ++ "]"
+
+instance JSON StackedPatterns where
+  showJSON (StackedPatterns xs) = encJSDict [("StackedPatterns",xs)]
 
 instance ParamPatternable StackedPatterns where
   toParamPattern (StackedPatterns xs) = Tidal.stack $ Prelude.map toParamPattern $ Prelude.filter (not . isEmptyPast) xs
