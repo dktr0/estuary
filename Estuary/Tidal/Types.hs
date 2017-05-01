@@ -32,11 +32,16 @@ data Potential a = Potential a | PotentialLiveness Liveness | Inert | Potentials
 
 data Live a = Live a Liveness | Edited a a deriving(Eq)
 
+isEdited::Live a->Bool
+isEdited (Edited _ _) = True
+isEdited _ = False
+
+--
 data GeneralPattern a =
-  Atom a (Potential a) RepOrDiv |
-  Blank (Potential a) RepOrDiv |
-  Group (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
-  Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
+  Atom a (Potential (GeneralPattern a)) RepOrDiv |
+  Blank (Potential (GeneralPattern a)) RepOrDiv |
+  Group (Live  ([GeneralPattern a],RepOrDiv)) (Potential (GeneralPattern a)) |
+  Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential (GeneralPattern a)) |
   TextPattern String
   deriving (Eq)
 
