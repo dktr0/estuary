@@ -28,7 +28,9 @@ instance Show RepOrDiv where
 
 data Liveness = L3 | L4 deriving (Eq)
 
-data Potential a = Potential a | PotentialLiveness Liveness | Inert | Potentials [Potential a] deriving (Eq)
+data Potential a = Potential a | PotentialDelete | PotentialValue (GeneralPattern a) 
+    | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness 
+    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq)
 
 data Live a = Live a Liveness | Edited a a deriving(Eq)
 
@@ -38,12 +40,21 @@ isEdited _ = False
 
 --
 data GeneralPattern a =
-  Atom a (Potential (GeneralPattern a)) RepOrDiv |
-  Blank (Potential (GeneralPattern a)) RepOrDiv |
-  Group (Live  ([GeneralPattern a],RepOrDiv)) (Potential (GeneralPattern a)) |
-  Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential (GeneralPattern a)) |
+  Atom a (Potential a) RepOrDiv |
+  Blank (Potential a) RepOrDiv |
+  Group (Live  ([GeneralPattern a],RepOrDiv)) (Potential a) |
+  Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
   TextPattern String
   deriving (Eq)
+
+isGroup (Group _ _)= True
+isGroup _ = False
+isLayers (Layers _ _) = True
+isLayers _ = False
+isAtom (Atom _ _ _) = True
+isAtom _ = False
+isBlank (Blank _ _) = True
+isBlank _ = False
 
 -- example: an initial pattern...
 -- Group (Live ([Atom "bd" Inert,Atom "sn" Inert,Atom "bd" Inert],Once) L4)

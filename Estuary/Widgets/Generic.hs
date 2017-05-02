@@ -25,11 +25,19 @@ data Hint = SampleHint String deriving (Eq)
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer | LayerSplit  deriving (Eq)
 
-toPotential::EditSignal a -> Potential a
-toPotential (ChangeValue a) = Potential a
+toPotential::EditSignal (GeneralPattern a) -> Potential a
+--toPotential (ChangeValue (Atom val pot rep)) = PotentialValue (Atom val pot rep)
+--toPotential (ChangeValue (Group a b)) = PotentialValue (Group a b)
+--toPotential (ChangeValue (Layers a b)) = PotentialValue (Layers a b)
+--toPotential (ChangeValue (Blank a b)) = PotentialValue (Blank a b)
+toPotential (ChangeValue a) = PotentialValue a
 toPotential (MakeL3) = PotentialLiveness L3
 toPotential (MakeL4) = PotentialLiveness L4
 toPotential (Close) = Inert
+toPotential (MakeRepOrDiv) = PotentialRepOrDiv
+toPotential (MakeGroup) = PotentialMakeGroup
+toPotential (MakeLayer) = PotentialMakeLayer
+toPotential (DeleteMe) = PotentialDelete
 
 
 
