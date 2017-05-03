@@ -239,7 +239,14 @@ emptySPattern :: SpecificPattern
 emptySPattern = S (Blank Inert Once)
 
 
-data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show,Read,Ord)
+data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read,Ord)
+
+instance Show PatternCombinator where
+  show (Merge) = "|=|"
+  show (Add) = "|+|"
+  show (Subtract) = "|-|"
+  show (Multiply) = "|*|"
+  show (Divide) = "|/|"
 
 toTidalCombinator :: PatternCombinator -> (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
 toTidalCombinator Merge = (Tidal.|=|)
@@ -251,7 +258,8 @@ toTidalCombinator Divide = (Tidal.|/|)
 
 -- pattern transformer
 
-data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer | Brak | Jux PatternTransformer | Chop Int | Combine SpecificPattern PatternCombinator deriving (Eq)
+data PatternTransformer = NoTransformer | Rev | Slow Rational | Density Rational | Degrade | DegradeBy Double | Every Int PatternTransformer 
+  | Brak | Jux PatternTransformer | Chop Int | Combine SpecificPattern PatternCombinator deriving (Eq)
 
 instance Show PatternTransformer where
   show NoTransformer = ""
@@ -283,8 +291,8 @@ applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern 
 data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern deriving (Eq)
 
 instance Show TransformedPattern where
- show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
- show (UntransformedPattern u) = (show u)
+  show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
+  show (UntransformedPattern u) = (show u)
 
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)

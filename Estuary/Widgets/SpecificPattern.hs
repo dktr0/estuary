@@ -31,7 +31,7 @@ charContainerWidget a _ = mdo
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
+  returnVal <- forDyn values' (\x-> (patType $ Group (Live (x,Once) L4) Inert))
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
   where
@@ -102,9 +102,9 @@ sampleContainerWidget (S genPat) _ = mdo
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert $ Left $ Blank Inert Once)])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
-  mapDyn ((\x -> (S $ Group (Live (x,Once) L4) Inert),never,hints)) . elems) values
+  mapDyn ((\x -> ((S $ Group (Live (x,Once) L4) Inert),never,hints)) .  elems) values
   where
     tdPingButton' = tdPingButtonAttrs  "+" ("class"=:"addButton")
     tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))
@@ -118,7 +118,7 @@ sContainerWidget (S genPat) _ = mdo
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Blank Inert Once))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   mapDyn ((\x -> ( S $ Group (Live (x,Once) L4) Inert,never)) . elems) values
   where
@@ -155,8 +155,8 @@ specificContainer (S x) e = do
   mapDyn (show . fst) a >>= dynText
   return a
 --specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
-specificContainer (Vowel x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Vowel x,(() <$) ev))
-specificContainer (Unit x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Unit x,(() <$) ev))
+specificContainer (Vowel x) e = G.generalContainerLive G.charWidget x never >>= mapDyn (\(x,ev)->(Vowel x,(() <$) ev))
+specificContainer (Unit x) e = G.generalContainerLive G.charWidget x never >>= mapDyn (\(x,ev)->(Unit x,(() <$) ev))
 
 
 

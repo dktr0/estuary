@@ -50,28 +50,30 @@ textSpecificContainer (S x) e = textGeneralContainer x e >>= mapDyn (\(a,_) -> (
 textSpecificContainer (Vowel x) e = textGeneralContainer x e >>= mapDyn (\(a,_) -> (Vowel a, never))
 
 
-textPatternChain :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t()))
+textPatternChain :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t()))
 textPatternChain i e = divClass "textPatternChain" $ do
   s <- divClass "labelAndTextPattern" $ do
     text "s "
-    textSpecificContainer (S (TextPattern "")) never >>= toTransformedPattern
+    textSpecificContainer (S (TextPattern "")) never >>= mapDyn fst
   n <- divClass "labelAndTextPattern" $ do
     text "n "
-    textSpecificContainer (N (TextPattern "")) never >>= toTransformedPattern
+    textSpecificContainer (N (TextPattern "")) never >>= mapDyn fst
   up <- divClass "labelAndTextPattern" $ do
     text "up "
-    textSpecificContainer (Up (TextPattern "")) never >>= toTransformedPattern
+    textSpecificContainer (Up (TextPattern "")) never >>= mapDyn fst
   vowel <- divClass "labelAndTextPattern" $ do
     text "vowel "
-    textSpecificContainer (Vowel (TextPattern "")) never >>= toTransformedPattern
+    textSpecificContainer (Vowel (TextPattern "")) never >>= mapDyn fst
   sn <- combineDyn (,) s n
   upvowel <- combineDyn (,) up vowel
-  val <- combineDyn (\(a,b) (c,d) -> PatternChain' a Merge $ PatternChain' b Merge $ PatternChain' c Merge $ PatternChain d) sn upvowel
-  mapDyn (\x -> (x,never)) val
-  where
-    toTransformedPattern = mapDyn (\(x,_) -> TransformedPattern [] x)
+  --val <- combineDyn (\(a,b) (c,d) -> PatternChain' a Merge $ PatternChain' b Merge $ PatternChain' c Merge $ PatternChain d) sn upvowel
+  val <- combineDyn (\(a,b) (c,d) -> TransformedPattern (Combine a Merge) $ TransformedPattern (Combine b Merge) $ TransformedPattern (Combine c Merge) $ UntransformedPattern d) sn upvowel
 
-textInterface :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (), Event t Hint))
+  mapDyn (\x -> (x,never)) val
+  --where
+  --  toTransformedPattern = mapDyn (\(x,_) -> TransformedPattern [] x)
+
+textInterface :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (), Event t Hint))
 textInterface i e = do
   x <- divClass "twoStackedPatternsLeft" $ textPatternChain i e
   y <- divClass "twoStackedPatternsRight" $ divClass "paddedText" $ do

@@ -458,8 +458,8 @@ charWidget' iGenPat _ = do
 
 
 -- used in charContainer, example in Vowel in ICLCStacked widget
-charWidget::(MonadWidget t m) => GeneralPattern Char -> Event t (EditSignal (GeneralPattern Char)) -> m (Dynamic t (GeneralPattern Char, Event t (EditSignal (GeneralPattern Char))))
-charWidget iGenPat _ = elAttr "table" ("class"=:"aGLStringWidgetTable") $ mdo
+charWidget::(MonadWidget t m) => Dynamic t Liveness -> GeneralPattern Char -> Event t (EditSignal (GeneralPattern Char)) -> m (Dynamic t (GeneralPattern Char, Event t (EditSignal (GeneralPattern Char))))
+charWidget _ iGenPat _ = elAttr "table" ("class"=:"aGLStringWidgetTable") $ mdo
   let (iVal,iReps) = getIVal iGenPat
   genPat <- el "tr" $ do
     val <- el "td" $ do
