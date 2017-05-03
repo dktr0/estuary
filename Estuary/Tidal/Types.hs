@@ -167,7 +167,7 @@ instance ParamPatternable SpecificPattern where
   toParamPattern (Hcutoff x) = Tidal.hcutoff $ Tidal.p $ show x
   toParamPattern (Hresonance x) = Tidal.hresonance $ Tidal.p $ show x
   toParamPattern (Loop x) = Tidal.loop $ Tidal.p $ show x
-  toParamPattern y@(N x) = if isEmptyPast y then Tidal.n $ Tidal.p "0" else Tidal.n $ Tidal.p $ show x
+  toParamPattern (N x) = if isEmptyPast $ N x then Tidal.n $ Tidal.p "0" else Tidal.n $ Tidal.p $ show x
   toParamPattern (Pan x) = Tidal.pan $ Tidal.p $ show x
   toParamPattern (Resonance x) = Tidal.resonance $ Tidal.p $ show x
   toParamPattern (S x) = Tidal.s $ Tidal.p $ show x

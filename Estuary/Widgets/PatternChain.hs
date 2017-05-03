@@ -22,19 +22,19 @@ iclcFixedStruct:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t 
 iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
   s<- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Sound"
-    (pat,_)<- Sp.specificContainer (S $ Atom "~" Once) never >>= splitDyn
+    (pat,_)<- Sp.specificContainer (S $ Atom "~" Inert Once) never >>= splitDyn
     forDyn pat (\x-> TransformedPattern [NoTransformer] x)
   end <- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "End"
-    (pat,_) <- Sp.endContainerWidget (End $ Atom 0.5 Once) never >>= splitDyn
+    (pat,_) <- Sp.endContainerWidget (End $ Atom 0.5 Inert Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
   vowel <- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Vowel"
-    (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Once) never >>= splitDyn
+    (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Inert Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
   up <- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Up"
-    (pat,_) <- Sp.specificContainer (Up $ Atom 0 Once) never >>= splitDyn
+    (pat,_) <- Sp.specificContainer (Up $ Atom 0 Inert Once) never >>= splitDyn
     forDyn pat (\x -> TransformedPattern [NoTransformer] x)
   patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
   patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
@@ -46,18 +46,18 @@ icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (Pat
 icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
   (s,hints) <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "S"
-    swidget <- Sp.sampleContainerWidget (S Blank) never
+    swidget <- Sp.sampleContainerWidget (S $ Blank Inert Once) never
     pat <- mapDyn (\(x,_,_) -> x) swidget
     pat' <- mapDyn (TransformedPattern [NoTransformer]) pat
     hints' <- liftM (switchPromptlyDyn) $ mapDyn (\(_,_,x) -> x) swidget
     return (pat',hints')
   vowel <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "Vowel"
-    (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Once) never >>= splitDyn
+    (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Inert Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
   up <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "Up"
-    (pat,_) <- Sp.upContainerWidget (Up $ Atom 0 Once) never >>= splitDyn
+    (pat,_) <- Sp.upContainerWidget (Up $ Atom 0 Inert Once) never >>= splitDyn
     forDyn pat (TransformedPattern [NoTransformer])
   patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
   patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain'' s

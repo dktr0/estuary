@@ -26,10 +26,6 @@ data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGr
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer | LayerSplit  deriving (Eq)
 
 toPotential::EditSignal (GeneralPattern a) -> Potential a
---toPotential (ChangeValue (Atom val pot rep)) = PotentialValue (Atom val pot rep)
---toPotential (ChangeValue (Group a b)) = PotentialValue (Group a b)
---toPotential (ChangeValue (Layers a b)) = PotentialValue (Layers a b)
---toPotential (ChangeValue (Blank a b)) = PotentialValue (Blank a b)
 toPotential (ChangeValue a) = PotentialValue a
 toPotential (MakeL3) = PotentialLiveness L3
 toPotential (MakeL4) = PotentialLiveness L4
@@ -38,13 +34,6 @@ toPotential (MakeRepOrDiv) = PotentialRepOrDiv
 toPotential (MakeGroup) = PotentialMakeGroup
 toPotential (MakeLayer) = PotentialMakeLayer
 toPotential (DeleteMe) = PotentialDelete
-
-
-
--- Edit signal used right now to signal certain events up... are those events always potentials?.... no...
--- but the Potentials [] should be derrived somehow from the possible editsignals that the popup menu will be able to 
--- send up.
-
 
 instance Show a => Show (EditSignal a) where
   show (ChangeValue a) =  show a
@@ -158,17 +147,6 @@ tdPingButtonAttrs label attrs _ _ = el "td" $ do
   return $ constDyn ((), b)
 
 
---whitespacePopup:: (MonadWidget t m, Show a, Eq a)=> Dynamic t Context -> GeneralPattern a -> String -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a) )))
---whitespacePopup liveness iVal cssClass popupList _ event = elClass "div" cssClass $ mdo
---  whitespace <- clickableDivClass'' (constDyn "     ") "whiteSpaceClickable" ()
---  openCloseEvents <- toggle False $ leftmost [whitespace, closeEvents,(() <$) addEvent]
---  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (basicPopup liveness popupList) False (updated openCloseEvents)
---  let addEvent = (ChangeValue (iVal) <$) $ ffilter (\x-> if isJust x then fromJust (fmap (isChangeValue) x) else False) popupMenu
---  let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x == Just MakeL4 || x == Just Eval) popupMenu
---  let delContEv = fmap fromJust $ ffilter (\x-> x==Just DeleteContainer) popupMenu
---  let closeEvents = (() <$) $ ffilter (==Nothing) popupMenu
---  return $ constDyn ((),leftmost [livenessEv, addEvent,delContEv])
-
 whitespace:: (MonadWidget t m, Show a, Eq a)=> Dynamic t Liveness -> GeneralPattern a -> String -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a) )))
 whitespace liveness iVal cssClass popupList _ event = elClass "div" cssClass $ mdo
   whitespace <- clickableDivClass'' (constDyn "     ") "whiteSpaceClickable" ()
@@ -229,9 +207,7 @@ samplePickerPopup::(MonadWidget t m)=>  Dynamic t Liveness -> Map Int (String,St
 samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ do
   dd <- dropdownOpts 0 sampleMap def 
   let sampleKey = _dropdown_value dd 
-  -- @ toPotential is undefined for some values of 'editsignal' - this may break depending on how we're using this widget
-  let potential = Potentials $ fmap toPotential actionList
-  sampleChange <- mapDyn (\x-> Just $ ChangeValue $ Atom (maybe ("~") (snd) $ Data.Map.lookup x sampleMap) (potential) Once) sampleKey -- Dyn (editsignal String)
+  sampleChange <- mapDyn (\x-> Just $ ChangeValue $ Atom (maybe ("~") (snd) $ Data.Map.lookup x sampleMap) Inert Once) sampleKey -- Dyn (editsignal String)
   let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
   events' <- liftM (id) events
@@ -276,26 +252,8 @@ popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; po
 
 genericSignalWidget :: MonadWidget t m => m (Event t (EditSignal a))
 genericSignalWidget = elClass "div" "genericSignalWidget" $ do
-  --a <- button' "Ping" Ping
   b <- button' "-" DeleteMe
   c <- button' "[]" MakeGroup
   d <- button' "{}" MakeLayer
   return $ leftmost [b,c,d]
 
-
--- validator.w3.org
-
--- A clickable td element. Each click cycles to the next element in the map. Updated with a RepOrDiv event.
--- rep/div values get shown on the button too.
---clickListWidget::(MonadWidget t m, Show a, Eq a) => Map Int a ->  GeneralPattern a -> Event t RepOrDiv -> m (Dynamic t (GeneralPattern a, Event t EditSignal))
---clickListWidget cycleMap (Atom iVal iReps) updatedReps = mdo
---  let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVal) $ elems cycleMap
---  sampleButton <- tdButtonAttrs' showVal (iVal) $ "class"=:"clickListtd"
---  num <- count sampleButton >>= mapDyn (\x-> (x+initialNum) `mod` length cycleMap)
---  str'' <- mapDyn (\x-> maybe iVal id $ Data.Map.lookup x cycleMap) num
---  let str' = updated str''
---  str <- holdDyn (iVal) str'
---  reps <- holdDyn (iReps) updatedReps
---  returnSample <- combineDyn (\x r -> Atom x r) str reps
---  showVal <- mapDyn show returnSample
---  mapDyn (\x->(x,never)) returnSample
