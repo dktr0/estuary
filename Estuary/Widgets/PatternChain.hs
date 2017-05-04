@@ -17,53 +17,62 @@ import qualified Estuary.Widgets.SpecificPattern as Sp
 import qualified Estuary.Widgets.GeneralPattern as G
 import qualified Data.List
 
+toCombinedTransPat::[TransformedPattern] -> TransformedPattern
+toCombinedTransPat (x:xs) = TransformedPattern (Combine x Merge) $ toCombinedTransPat xs
+toCombinedTransPat x = UntransformedPattern x
 
-iclcFixedStruct:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))
+iclcFixedStruct:: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
 iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
   s<- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Sound"
     (pat,_)<- Sp.specificContainer (S $ Atom "~" Inert Once) never >>= splitDyn
-    forDyn pat (\x-> TransformedPattern [NoTransformer] x)
+    forDyn pat UntransformedPattern
   end <- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "End"
     (pat,_) <- Sp.endContainerWidget (End $ Atom 0.5 Inert Once) never >>= splitDyn
-    forDyn pat (TransformedPattern [NoTransformer])
+    forDyn pat UntransformedPattern
   vowel <- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Vowel"
     (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Inert Once) never >>= splitDyn
-    forDyn pat (TransformedPattern [NoTransformer])
+    forDyn pat UntransformedPattern
   up <- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Up"
     (pat,_) <- Sp.specificContainer (Up $ Atom 0 Inert Once) never >>= splitDyn
-    forDyn pat (\x -> TransformedPattern [NoTransformer] x)
-  patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
-  patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
-  patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain' s
-  mapDyn (\x-> (x,never)) patChain
+    forDyn pat UntransformedPattern
+
+  combineDyn (\a b ->[a,b]) s end >>= combineDyn (:) up >>= combineDyn (:) vowel >>= mapDyn (\x -> (toCombinedTransPat x,never))
+  --upVowel <- combineDyn (,) up vowel
+  --transPat <- combineDyn (\(sPat,e) (u,v) -> TransformedPattern (Combine sPat Merge) $ TransformedPattern (Combine))
+
+  --patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
+  --patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
+  --patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain' s
+  --mapDyn (\x-> (x,never)) patChain
 
 
-icoahWidget:: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a), Event t Hint))
+icoahWidget:: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a), Event t Hint))
 icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
   (s,hints) <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "S"
     swidget <- Sp.sampleContainerWidget (S $ Blank Inert Once) never
     pat <- mapDyn (\(x,_,_) -> x) swidget
-    pat' <- mapDyn (TransformedPattern [NoTransformer]) pat
+    pat' <- mapDyn UntransformedPattern pat
     hints' <- liftM (switchPromptlyDyn) $ mapDyn (\(_,_,x) -> x) swidget
     return (pat',hints')
   vowel <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "Vowel"
     (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Inert Once) never >>= splitDyn
-    forDyn pat (TransformedPattern [NoTransformer])
+    forDyn pat UntransformedPattern
   up <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "Up"
     (pat,_) <- Sp.upContainerWidget (Up $ Atom 0 Inert Once) never >>= splitDyn
-    forDyn pat (TransformedPattern [NoTransformer])
-  patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
-  patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain'' s
-  mapDyn (\x-> (x,never,hints)) patChain
+    forDyn pat UntransformedPattern
+  combineDyn (\a b ->[a,b]) s vowel >>= combineDyn (:) up >>= mapDyn (\x -> (toCombinedTransPat x,never,hints))
+  --patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
+  --patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain'' s
+  --mapDyn (\x-> (x,never,hints)) patChain
 
-simpleFixedInterface :: MonadWidget t m => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a),Event t Hint))
+simpleFixedInterface :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a),Event t Hint))
 simpleFixedInterface i e = do
   x <- divClass "twoStackedPatternsLeft" $ icoahWidget i e
   y <- divClass "twoStackedPatternsRight" $ divClass "paddedText" $ do
@@ -77,10 +86,10 @@ patternCombinatorDropDown iValue _ = do
   dd <- dropdown iValue ddMap def
   mapDyn (\x -> (x,never)) $ _dropdown_value dd
 
-patternChainToList :: PatternChain -> [Either TransformedPattern PatternCombinator]
-patternChainToList (EmptyPatternChain) = []
-patternChainToList (PatternChain x) = [Left x]
-patternChainToList (PatternChain' x y z) = [Left x,Right y] ++ (patternChainToList z)
+--patternChainToList :: PatternChain -> [Either TransformedPattern PatternCombinator]
+--patternChainToList (EmptyPatternChain) = []
+--patternChainToList (PatternChain x) = [Left x]
+--patternChainToList (PatternChain' x y z) = [Left x,Right y] ++ (patternChainToList z)
 
 patternChainToList' :: PatternChain -> [Either (Either TransformedPattern PatternCombinator) ()]
 patternChainToList' p = (Right ()):(f p)
@@ -113,7 +122,8 @@ iclcForStacked :: (MonadWidget t m) => PatternChain -> Event t () -> m (Dynamic 
 iclcForStacked iValue _ = mdo
   let iMap = fromList $ zip ([0..]::[Int]) $ patternChainToList' iValue
   let cEvents = mergeWith union [addMap,deleteMap]
-  let patternOrCombinatorWidget = eitherWidget transformedPatternWidget patternCombinatorDropDown
+  let patternOrCombinatorWidget = eitherWidget transformedPatternWidget patternCombinatorDropDown --m (Dynamic t ((Either a b),Event t d))
+
   (values,events) <- eitherContainer' iMap cEvents never never patternOrCombinatorWidget (makeNewButton "+")
   let addKeys = fmap (keys . Data.Map.filter (==MakeNew)) events
   let addList = attachDynWith (\a b -> concat (Prelude.map (patternChainAdd a) b)) values addKeys
