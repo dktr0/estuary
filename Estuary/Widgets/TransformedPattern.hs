@@ -88,11 +88,17 @@ transformedPatternWidget (TransformedPattern transformer (UntransformedPattern i
   --val <- combineDyn(\(a,_) b-> TransformedPattern a $ UntransformedPattern b) patTrans specPat -- Dyn transformedPat
   val' <- combineDyn (\(a,_) b->(a,b)) patTrans specPat
   combineDyn (\(tog,cVal,ev) (pT,spV) -> if tog then (TransformedPattern (Combine spV Merge) cVal,ev) else (TransformedPattern pT $ UntransformedPattern spV,never)) combineVal' val'
-   where
-    getSpecPat (TransformedPattern _ t) = getSpecPat t
 
+transformedPatternWidget' transformedPat ev = el "div" $ do
+  (specPat, events) <- dropdownPatternWidget iSpecPat never >>= splitDyn
+  patTrans <- parameteredPatternTransformer' transformer never
 
+  where
+    transformer = case transformedPat of
+      (TransformedPattern t _) -> t  -- @ should really return a list of all the transformations applied to the pattern
+      (UntransformedPattern _) -> NoTransformer
 
+ 
 --transformedPatternWidget' :: MonadWidget t m => TransformedPattern -> m (Dynamic t TransformedPattern)
 
 --transformedPatternWidget' (UntransformedPattern u) = do
