@@ -333,6 +333,19 @@ to the right of them
 --------------------------------------------------------------------
 */
 
+
+/* The div wrapping popupMenus */
+/* The div wrapping popupMenus */
+.popupMenu{
+	top: 105%; 
+	left: 0px; 
+	background-color:rgba(100, 255, 246, 1);
+	border: 2pt solid grey;
+	position: absolute; 
+	z-index: 1;
+}
+
+
 /*ex. hit [] - see '+' buttons between widgets*/
 .addButton{
 	background-color:lightblue;

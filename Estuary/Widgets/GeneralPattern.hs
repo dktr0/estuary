@@ -137,8 +137,11 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   --let splitEv = fmap (maybe 0 id . elemIndex LayerSplit) $ ffilter (Data.List.elem LayerSplit) events'
   --let splitEv = coincidence $ fmap (const $ fmap (fromJust . elemIndex LayerSplit) events') $ ffilter (Data.List.elem LayerSplit) events'
   
-  let splitEv = coincidence $ fmap (const $ fmap (head . keys . Data.Map.filter (==LayerSplit)) events) $ ffilter (Data.List.elem LayerSplit) events'
+  --let splitEv = coincidence $ fmap (head . keys) $ ffilter (Data.List.elem LayerSplit) $ fmap Data.Map.elems events
 
+  let splitEv = coincidence $ fmap (const $ fmap (head . keys . Data.Map.filter (==LayerSplit)) events) $ ffilter (Data.List.elem LayerSplit) events'
+  holdDyn 0 splitEv >>= mapDyn show >>= dynText
+  --let splitEv = fmap (head . keys . Data.Map.filter (==LayerSplit)) events
   -- Event [EditSignal]
 
   --holdDyn "not yet" (fmap (\x->"split thingy : "++ (show x)) (ffilter (Data.List.elem LayerSplit) events') ) >>= dynText
@@ -170,16 +173,24 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
 
   --text ("split list:  " ++ (show $ take (div split 2) vals))
   --                                                  text ("split list or:  " ++ (show $ take (split-1) vals))
+
+-- Split is caluclating exacly where in the list of + and other widgets to inser the comma, but the 'vals' thing is just concerning the Left widgets
+
   let splitBuilder = attachDynWith (\vals split-> do 
-                                                    left <- generalContainerLive b (Group (take (div split 2) vals) Once) never 
-                                                    right <- generalContainerLive b (Group (reverse $ take ((length vals) - (div split 2)) (reverse vals)) Once) never                                                    
+                                                    let vals' = elems vals
+                                                    let leftList = (\x-> if x==[] then [Blank] else x) $ fst . partitionEithers $ take split vals'
+                                                    let rightList = (\x-> if x==[] then [Blank] else x) $ fst . partitionEithers . reverse $ take ((length vals') - split) $ reverse vals'
+                                                    left <- generalContainerLive b (Group leftList Once) never 
+                                                    text ", "
+                                                    right <- generalContainerLive b (Group rightList Once) never
                                                     combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightV] Once,leftmost [leftEv,rightEv])) left right
-                                                    ) values splitEv
+                                                    ) allValues splitEv
 
   splitTog <- toggle False splitBuilder
   changes <- holdDyn False $ attachDynWith (==) unchangedVal isEdited
   --mapDyn (\x->returnF i x (leftmost [livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])) isEdited'''
-  
+
+    
 
   regVal <-  mapDyn (\x->returnF i x (leftmost [livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])) v
   returnVal <-liftM joinDyn $ widgetHold (return regVal) splitBuilder
@@ -190,12 +201,15 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
     initialVal (Atom iV r) = Atom iV r
     initialVal (Group iV _) = initialVal $ iV!!0
     initialVal (Layers iV _) = initialVal $ iV!!0
+    initialVal (Blank) = Blank
     getClass (Layers _ _) = "generalPattern-layer"
     getClass (Group _ _) = "generalPattern-group"
     getClass (Atom _ _) = "generalPattern-atom"
+    getClass Blank = "generalPattern-blank"
     initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+    --initialMap (Blank) = 
     leftBuilder live = aGLWidgetLive live b
     rightBuilder live= whitespace live (initialVal i) "whiteSpaceAdd" [ChangeValue (initialVal i),DeleteContainer]
     insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
