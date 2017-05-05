@@ -3,6 +3,7 @@
 import Text.JSON
 import Data.List as List (intercalate, zip)
 import Data.Map as Map
+import Data.Ratio
 import qualified Sound.Tidal.Context as Tidal
 
 -- This module defines types that model elements of the notation employed in the Tidal language
@@ -143,8 +144,10 @@ type SampleName = String
 newtype Sample = Sample (SampleName,Int) deriving (Eq)
 
 instance JSON Sample where
-  showJSON (Sample (x,y)) = encJSDict [(x,y)]
-  readJSON (JSObject x) = Sample (,) <$> fmap fst (decJSDict "unused?" x) <$> fmap snd (decJSDict "unused?" x)
+  showJSON (Sample (x,y)) = encJSDict [("Sample",showJSON x),("n",showJSON y)]
+  readJSON (JSObject x) | firstKey x == "Sample" = (\a b -> Sample (a,b)) <$> c <*> d
+    where c = valFromObj "Sample" x
+          d = valFromObj "n" x
   readJSON _ = Error "can't parse as Sample"
 
 instance Show Sample where
@@ -305,7 +308,7 @@ instance JSON SpecificPattern where
   readJSON (JSObject x) | firstKey x == "Bandq" = Bandq <$> valFromObj "Bandq" x
   readJSON (JSObject x) | firstKey x == "Begin" = Begin <$> valFromObj "Begin" x
   readJSON (JSObject x) | firstKey x == "Coarse" = Coarse <$> valFromObj "Coarse" x
-  readJSON (JSObject x) | firstKey x == "Crush"" = Crush <$> valFromObj "Crush" x
+  readJSON (JSObject x) | firstKey x == "Crush" = Crush <$> valFromObj "Crush" x
   readJSON (JSObject x) | firstKey x == "Cut" = Cut <$> valFromObj "Cut" x
   readJSON (JSObject x) | firstKey x == "Cutoff" = Cutoff <$> valFromObj "Cutoff" x
   readJSON (JSObject x) | firstKey x == "Delay" = Delay <$> valFromObj "Delay" x
@@ -386,8 +389,8 @@ instance Show PatternTransformer where
 instance JSON PatternTransformer where
   showJSON NoTransformer = showJSON "NoTransformer"
   showJSON Rev = showJSON "Rev"
-  showJSON (Slow f) = encJSDict [("Slow",f)]
-  showJSON (Density f) = encJSDict [("Density",f)]
+  showJSON (Slow f) = encJSDict [("Slow",numerator f),("d",denominator f)]
+  showJSON (Density f) = encJSDict [("Density",numerator f),("d",denominator f)]
   showJSON Degrade = showJSON "Degrade"
   showJSON (DegradeBy f) = encJSDict [("DegradeBy",f)]
   showJSON (Every n t) = encJSDict [("Every",showJSON n),("t",showJSON t)]
@@ -397,14 +400,14 @@ instance JSON PatternTransformer where
   showJSON (Combine p c) = encJSDict [("Combine",showJSON p),("c",showJSON c)]
   readJSON (JSString x) | fromJSString x == "NoTransformer" = Ok NoTransformer
   readJSON (JSString x) | fromJSString x == "Rev" = Ok Rev
-  readJSON (JSObject x) | firstKey x == "Slow" = Slow <$> valFromObj "Slow" x
-  readJSON (JSObject x) | firstKey x == "Density" = Density <$> valFromObj "Density" x
+  readJSON (JSObject x) | firstKey x == "Slow" = (\a b -> Slow (a%b)) <$> valFromObj "Slow" x <*> valFromObj "d" x
+  readJSON (JSObject x) | firstKey x == "Density" = (\a b -> Density (a%b)) <$> valFromObj "Density" x <*> valFromObj "d" x
   readJSON (JSString x) | fromJSString x == "Degrade" = Ok Degrade
   readJSON (JSObject x) | firstKey x == "DegradeBy" = DegradeBy <$> valFromObj "DegradeBy" x
   readJSON (JSObject x) | firstKey x == "Every" = Every <$> valFromObj "Every" x <*> valFromObj "t" x
   readJSON (JSString x) | fromJSString x == "Brak" = Ok Brak
-  readJSON (JSObject x) | firstKey x == "Jux" = Every <$> valFromObj "Jux" x
-  readJSON (JSObject x) | firstKey x == "Chop" = Every <$> valFromObj "Chop" x
+  readJSON (JSObject x) | firstKey x == "Jux" = Jux <$> valFromObj "Jux" x
+  readJSON (JSObject x) | firstKey x == "Chop" = Chop <$> valFromObj "Chop" x
   readJSON (JSObject x) | firstKey x == "Combine" = Combine <$> valFromObj "Combine" x <*> valFromObj "c" x
   readJSON _ = Error "can't parse as PatternTransformer"
 
@@ -438,8 +441,8 @@ instance Show TransformedPattern where
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TransformedPattern",showJSON t),("p",showJSON p)]
   showJSON (UntransformedPattern s) = encJSDict [("UntransformedPattern",showJSON s)]
-  readJSON (JSObject x) | firstKey x == "TransformedPattern" = TransformedPattern <$> valFromObj "TransformedPattern" x <$>  valFromObj "p" x
-  readJSON (JSObject x) | firstKey x = "UntransformedPattern" = UntransformedPattern <$> valFromObj "UntransformedPattern"
+  readJSON (JSObject x) | firstKey x == "TransformedPattern" = TransformedPattern <$> valFromObj "TransformedPattern" x <*>  valFromObj "p" x
+  readJSON (JSObject x) | firstKey x == "UntransformedPattern" = UntransformedPattern <$> valFromObj "UntransformedPattern" x
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
