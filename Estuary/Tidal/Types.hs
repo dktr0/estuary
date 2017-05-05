@@ -239,7 +239,7 @@ emptySPattern :: SpecificPattern
 emptySPattern = S (Blank Inert Once)
 
 
-data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read,Ord)
+data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read)
 
 instance Show PatternCombinator where
   show (Merge) = "|=|"
@@ -288,19 +288,23 @@ applyPatternTransformer (Chop t) = Tidal.chop t
 applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern p
 
 
-data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern deriving (Eq)
+data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern | EmptyTransformedPattern deriving (Eq)
 
 instance Show TransformedPattern where
   show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
   show (UntransformedPattern u) = (show u)
+  show (EmptyTransformedPattern) = ""
 
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
+  toParamPattern (EmptyTransformedPattern) = Tidal.silence -- @ is this correct?
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
+  isEmptyFuture (EmptyTransformedPattern) = True
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
+  isEmptyPast (EmptyTransformedPattern) = True
 
 
 

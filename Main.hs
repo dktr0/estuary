@@ -58,7 +58,7 @@ widgetToPage w = do
 
 -- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern,Event t Hint))]
 pages = [
-  ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyPatternChain never),
-  ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyPatternChain never),
+  ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyTransformedPattern never),
+  ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
   ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns)
   ]

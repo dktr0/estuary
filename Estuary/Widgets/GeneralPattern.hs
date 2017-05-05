@@ -219,7 +219,6 @@ popupIntWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomP
 
 popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Dynamic t Liveness -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double))))
 popupDoubleWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
-
   let (iVal,iRepDiv) = getIVal iGenPat
   textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"  --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
   let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])

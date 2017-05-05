@@ -68,35 +68,130 @@ dropdownPatternWidget iPattern _ = do
 --    f [] = NoTransformer -- sorry again...
 --    f (x:_) = x
 
+
 -- @parameteredPatternTransformer only takes 1 pattern transformer rn, should probably take a potentially infinite number of them
 -- (so we can have more than one pattern transformation per pattern)
 -- how to handle deletion though? - TransformedPattern Chain hsa to be reconfigured
 transformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t (EditSignal a)))
-transformedPatternWidget (TransformedPattern transformer (UntransformedPattern iSpecPat)) _ = el "div" $ do
+transformedPatternWidget iTransPat _ = el "div" $ do
   deleteButton <- button "-"
+  deleted <- toggle False deleteButton
+  
   patTrans <- parameteredPatternTransformer transformer never
+
+  --let regWidget = do
+  --    tPat <- dropdownPatternWidget iSpecPat never
+  --    mapDyn (\(x,y)->(x,y,Merge)) tPat
+
   (specPat, events) <- dropdownPatternWidget iSpecPat never >>= splitDyn
+
   --combine <- button "+" >>= (transformedPatternWidget (UntransformedPattern specPat) never <$) 
   combine <- button "+" 
-  --combine' <- (\x-> if x then transformedPatternWidget specPat never else return ((UntransformedPattern specPat),never)) combine >>= dyn
-  --combineVal <- widgetHold (return (UntransformedPattern $ S $ Blank Inert Once,never)) $ combine
-  isCombined <- toggle False combine
+  isCombined <- toggle False combine --  >>= combineDyn (\del com -> if del then False else com)
+
   --flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
-  combineVal <- liftM joinDyn $ flippableWidget (return $ constDyn (UntransformedPattern iSpecPat,never)) (transformedPatternWidget (UntransformedPattern iSpecPat) never) False (updated isCombined)
-  --combineVal <- mapDyn joinDyn combineVal''
-  combineVal' <- combineDyn (\a (b,c)->(a,b,c)) isCombined combineVal
-  --val <- combineDyn(\(a,_) b-> TransformedPattern a $ UntransformedPattern b) patTrans specPat -- Dyn transformedPat
+  let nextBuilder = do
+      c <- patternCombinatorDropDown Merge never >>= mapDyn fst 
+      --mapDyn show c >>= dynText
+      (v,e) <- transformedPatternWidget (UntransformedPattern iSpecPat) never >>= splitDyn
+      combineDyn (,) v e >>= combineDyn (\comb (x,y)-> (x,y,comb)) c
+
+  nextWidget <- liftM joinDyn $ flippableWidget (return $ constDyn (EmptyTransformedPattern,never,Merge)) nextBuilder False (updated isCombined)
+  
+  --val <- flippableWidget nextWidget regWidget False (updated deleted))
+  
+
+
+  combineVal <- combineDyn (\a (b,c,d)->(a,b,c,d)) isCombined nextWidget
+
   val' <- combineDyn (\(a,_) b->(a,b)) patTrans specPat
-  combineDyn (\(tog,cVal,ev) (pT,spV) -> if tog then (TransformedPattern (Combine spV Merge) cVal,ev) else (TransformedPattern pT $ UntransformedPattern spV,never)) combineVal' val'
-
-transformedPatternWidget' transformedPat ev = el "div" $ do
-  (specPat, events) <- dropdownPatternWidget iSpecPat never >>= splitDyn
-  patTrans <- parameteredPatternTransformer' transformer never
-
+  pat <- combineDyn (\(tog,cVal,ev,comb) (pT,spV) -> if tog then (TransformedPattern pT (TransformedPattern (Combine spV comb) cVal),ev) else (TransformedPattern pT $ UntransformedPattern spV,never)) combineVal val'
+  mapDyn (show . fst) pat >>= dynText
+  return pat
   where
-    transformer = case transformedPat of
-      (TransformedPattern t _) -> t  -- @ should really return a list of all the transformations applied to the pattern
-      (UntransformedPattern _) -> NoTransformer
+    (transformer,iSpecPat) = case iTransPat of
+      (TransformedPattern t (UntransformedPattern s)) -> (t,s)
+      (UntransformedPattern s) -> (NoTransformer,s)
+      (EmptyTransformedPattern) -> (NoTransformer,S $ Blank Inert Once)
+
+
+
+
+
+
+---- @parameteredPatternTransformer only takes 1 pattern transformer rn, should probably take a potentially infinite number of them
+---- (so we can have more than one pattern transformation per pattern)
+---- how to handle deletion though? - TransformedPattern Chain hsa to be reconfigured
+--transformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t (EditSignal a)))
+--transformedPatternWidget iTransPat _ = el "div" $ do
+--  deleteButton <- button "-"
+
+--  deleted <- toggle False deleteButton
+--  patTrans <- parameteredPatternTransformer transformer never
+
+--  let regWidget = do
+--      tPat <- dropdownPatternWidget iSpecPat never
+--      mapDyn (\(x,y)->(x,y,Merge)) tPat
+
+--  --(specPat, events) <- dropdownPatternWidget iSpecPat never >>= splitDyn
+
+--  --combine <- button "+" >>= (transformedPatternWidget (UntransformedPattern specPat) never <$) 
+--  combine <- button "+" 
+--  isCombined <- toggle False combine --  >>= combineDyn (\del com -> if del then False else com)
+
+--  --flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
+--  let nextBuilder = do
+--      c <- patternCombinatorDropDown Merge never >>= mapDyn fst 
+--      --mapDyn show c >>= dynText
+--      (v,e) <- transformedPatternWidget (UntransformedPattern iSpecPat) never >>= splitDyn
+--      combineDyn (,) v e >>= combineDyn (\comb (x,y)-> (x,y,comb)) c
+
+--  nextWidget <- liftM joinDyn $ flippableWidget (return $ constDyn (EmptyTransformedPattern,never,Merge)) nextBuilder False (updated isCombined)
+  
+--  (specPat,_) <- liftM joinDyn (flippableWidget nextWidget regWidget False (updated deleted)) >>=splitDyn
+
+
+--  combineVal <- combineDyn (\a (b,c,d)->(a,b,c,d)) isCombined nextWidget
+
+--  val' <- combineDyn (\(a,_) b->(a,b)) patTrans specPat
+--  pat <- combineDyn (\(tog,cVal,ev,comb) (pT,spV) -> if tog then (TransformedPattern (Combine spV comb) cVal,ev) else (TransformedPattern pT $ UntransformedPattern spV,never)) combineVal val'
+--  mapDyn (show . fst) pat >>= dynText
+--  return pat
+--  where
+--    (transformer,iSpecPat) = case iTransPat of
+--      (TransformedPattern t (UntransformedPattern s)) -> (t,s)
+--      (UntransformedPattern s) -> (NoTransformer,s)
+--      (EmptyTransformedPattern) -> (NoTransformer,S $ Blank Inert Once)
+
+
+
+patternCombinatorDropDown :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
+patternCombinatorDropDown iValue _ = do
+  let ddMapVals = fromList $ zip [(1::Int)..] [Merge,Add,Subtract,Multiply,Divide]
+  let ddMap = constDyn $ fromList $ zip [(1::Int)..] $ fmap show [Merge,Add,Subtract,Multiply,Divide]
+  dd <- dropdown iIndex ddMap def
+  --mapDyn show (_dropdown_value dd) >>= dynText
+  let choice = _dropdown_value dd
+  val <- mapDyn (maybe Merge id . (flip Data.Map.lookup) ddMapVals) choice 
+  mapDyn (\x->(x,never)) val
+  --mapDyn ((flip Data.Map.lookup) ddMapVals) choice >>= mapDyn (\x -> (x,never))
+  where 
+    iIndex = case iValue of
+      (Merge) -> 1
+      (Add) -> 2
+      (Subtract) -> 3
+      (Multiply) -> 4
+      (Divide) -> 5
+      -- sorry....
+
+--transformedPatternWidget' transformedPat ev = el "div" $ do
+--  (specPat, events) <- dropdownPatternWidget iSpecPat never >>= splitDyn
+--  patTrans <- parameteredPatternTransformer' transformer never
+
+--  where
+--    transformer = case transformedPat of
+--      (TransformedPattern t _) -> t  -- @ should really return a list of all the transformations applied to the pattern
+--      (UntransformedPattern _) -> NoTransformer
 
  
 --transformedPatternWidget' :: MonadWidget t m => TransformedPattern -> m (Dynamic t TransformedPattern)
