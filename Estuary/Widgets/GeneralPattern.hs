@@ -127,7 +127,7 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   repDivVal <- holdDyn iRepDiv repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
   let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x==Just MakeL4|| x==Just Eval) popupMenu
   let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
-  let sampleChanges = fmap (\x-> maybe (Blank Inert Once) (\y-> case y of (ChangeValue z)-> z; otherwise -> Blank Inert Once) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
+  let sampleChanges = fmap (\x-> maybe (Blank Inert Once) (\y-> case y of (ChangeValue z)-> Atom z Inert Once; otherwise -> Blank Inert Once) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
   popupToggle <- toggle False $ leftmost $ [(() <$) sample,(() <$) groupLayerEv,(() <$) closeEvents,(() <$) livenessEv, (() <$) sampleChanges]
 
   inVal <- holdDyn iSamp $ fmap show sampleChanges
@@ -151,7 +151,10 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   --genPat <- combineDyn (\c v-> case c of Group -> )
   --genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
   --genPat' <- combineDyn (\g r -> g r) genPat repDivVal
-  let upEvent = leftmost [fmap fromJust $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
+  --let upEvent' = fmap (\x-> case x of (Just (ChangeValue a)) -> Atom a Inert Once; otherwise -> x::Edited (GeneralPattern String))
+  let upSig = fmap (toEditSigGenPat . fromJust)  $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu
+
+  let upEvent = leftmost [ ((RebuildMe::EditSignal (GeneralPattern String)) <$) groupLayerEv, upSig]
   mapDyn (\x-> (x,upEvent)) genPat
   where
     popupActions = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
@@ -165,6 +168,7 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
                     (Layers (Live (newV,newR) lness) p) -> (show $ newV!!0,newR)
                     (Atom v p r) -> (v,r)
                     otherwise -> ("~",Once)
+
 
 
 popupIntWidget :: MonadWidget t m => Int -> Int -> Int -> Dynamic t Liveness -> GeneralPattern Int -> Event t (EditSignal (GeneralPattern Int)) -> m (Dynamic t (GeneralPattern Int, Event t (EditSignal (GeneralPattern Int))))
@@ -198,11 +202,11 @@ popupIntWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomP
 
   genPat <- liftM joinDyn $ combineDyn (\gr lay-> if gr then groupVal else if lay then layerVal else atomVal) groupToggle layerToggle
 
-  let upEvent = leftmost [fmap fromJust $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
+  let upEvent = leftmost [fmap (toEditSigGenPat .fromJust) $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
   mapDyn (\x-> (x,upEvent)) genPat
   where 
     attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",show step, show minVal, show maxVal]
-    popupActions = [MakeRepOrDiv::EditSignal (GeneralPattern Int), MakeGroup, MakeLayer, DeleteMe]
+    popupActions = [MakeRepOrDiv::EditSignal Int, MakeGroup, MakeLayer, DeleteMe]
     popup = basicPopup liveness popupActions
     getIVal gP = case gP of 
       (Group (Live (xs,r) _) p) -> (fst $ getIVal (xs!!0),r)
@@ -228,22 +232,17 @@ popupDoubleWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "at
   let closeEvent = (False <$)  $ ffilter (isNothing)  popupMenu
   let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
   potential <- toggle False popupDisplayEv >>= mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert)
-
-
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
-
   groupToggle <- toggle (isGroup iGenPat) $ ffilter (==MakeGroup) groupLayerEv
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
   layerToggle <- toggle (isLayers iGenPat) $ ffilter (==MakeLayer) groupLayerEv
   layerVal <- combineDyn (\v l -> if l==L4 then Layers (Live ([v],Once) L4) Inert  else Layers (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
-
   genPat <- liftM joinDyn $ combineDyn (\gr lay-> if gr then groupVal else if lay then layerVal else atomVal) groupToggle layerToggle
-
-  let upEvent = leftmost [fmap fromJust $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
+  let upEvent = leftmost [fmap (toEditSigGenPat . fromJust) $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
   mapDyn (\x-> (x,upEvent)) genPat
   where 
     attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",show step, show minVal, show maxVal]
-    popupActions = [MakeRepOrDiv::EditSignal (GeneralPattern Double), MakeGroup, MakeLayer, DeleteMe]
+    popupActions = [MakeRepOrDiv::EditSignal Double, MakeGroup, MakeLayer, DeleteMe]
     popup = basicPopup liveness popupActions
     getIVal gP = case gP of 
       (Group (Live (xs,r) _) p) -> (fst $ getIVal (xs!!0),r)

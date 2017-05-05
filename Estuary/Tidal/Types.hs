@@ -28,7 +28,7 @@ instance Show RepOrDiv where
 
 data Liveness = L3 | L4 deriving (Eq)
 
-data Potential a = Potential a | PotentialDelete | PotentialValue (GeneralPattern a) 
+data Potential a = Potential a | PotentialDelete 
     | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness 
     | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq)
 

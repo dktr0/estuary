@@ -25,8 +25,11 @@ data Hint = SampleHint String deriving (Eq)
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer | LayerSplit  deriving (Eq)
 
-toPotential::EditSignal (GeneralPattern a) -> Potential a
-toPotential (ChangeValue a) = PotentialValue a
+--data EditSignal a = RebuildMe | PotentialSignal (Potential a)
+
+
+toPotential::EditSignal a -> Potential a
+toPotential (ChangeValue a) = Potential a
 toPotential (MakeL3) = PotentialLiveness L3
 toPotential (MakeL4) = PotentialLiveness L4
 toPotential (Close) = Inert
@@ -34,6 +37,22 @@ toPotential (MakeRepOrDiv) = PotentialRepOrDiv
 toPotential (MakeGroup) = PotentialMakeGroup
 toPotential (MakeLayer) = PotentialMakeLayer
 toPotential (DeleteMe) = PotentialDelete
+
+toEditSigGenPat::EditSignal a -> EditSignal (GeneralPattern a)
+toEditSigGenPat (ChangeValue a) = ChangeValue (Atom a Inert Once)
+toEditSigGenPat (MakeL4) = MakeL4
+toEditSigGenPat (MakeL3) = MakeL3
+toEditSigGenPat (MakeNew) =MakeNew
+toEditSigGenPat (Close) = Close
+toEditSigGenPat (DeleteMe) = DeleteMe
+toEditSigGenPat (RepDiv) = RepDiv
+toEditSigGenPat (MakeGroup) = MakeGroup
+toEditSigGenPat (MakeLayer) = MakeLayer
+toEditSigGenPat (RebuildMe) = RebuildMe
+toEditSigGenPat (MakeRepOrDiv) = MakeRepOrDiv
+toEditSigGenPat (Eval) = Eval
+toEditSigGenPat (DeleteContainer) = DeleteContainer
+toEditSigGenPat (LayerSplit) = LayerSplit
 
 instance Show a => Show (EditSignal a) where
   show (ChangeValue a) =  show a
@@ -203,11 +222,11 @@ basicPopup liveness actionList = elClass "div" "popupMenu" $ do
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget]
 
-samplePickerPopup::(MonadWidget t m)=>  Dynamic t Liveness -> Map Int (String,String) -> [EditSignal (GeneralPattern String)] -> m (Event t (Maybe (EditSignal (GeneralPattern String))))
+samplePickerPopup::(MonadWidget t m)=>  Dynamic t Liveness -> Map Int (String,String) -> [EditSignal  String] -> m (Event t (Maybe (EditSignal String)))
 samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ do
   dd <- dropdownOpts 0 sampleMap def 
   let sampleKey = _dropdown_value dd 
-  sampleChange <- mapDyn (\x-> Just $ ChangeValue $ Atom (maybe ("~") (snd) $ Data.Map.lookup x sampleMap) Inert Once) sampleKey -- Dyn (editsignal String)
+  sampleChange <- mapDyn (\x-> Just $ ChangeValue $ maybe ("~") (snd) $ Data.Map.lookup x sampleMap) sampleKey -- Dyn (editsignal String)
   let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
   events' <- liftM (id) events
