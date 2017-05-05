@@ -96,19 +96,19 @@ wss.on('connection',function(ws) {
       }
       else if(n.TextEdit != null) {
         console.log("TextEdit");
-        var o = { 'TextEdit':n.TextEdit, 'code':n.code };
+        var o = { 'TextEdit':n.TextEdit, 'code':n.code, password: '' };
         try { wss.broadcast(JSON.stringify(o)); }
         catch(e) { console.log("warning: exception in WebSocket send\n"); }
       }
       else if(n.TextEval != null) {
         console.log("TextEval");
-        var o = { 'TextEval':n.TextEval, 'code':n.code };
+        var o = { 'TextEval':n.TextEval, 'code':n.code, password: '' };
         try { wss.broadcast(JSON.stringify(o)); }
         catch(e) { console.log("warning: exception in WebSocket send\n"); }
       }
       else if(n.request == "EstuaryEdit") {
         console.log("EstuaryEdit");
-        var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code };
+        var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code, password: '' };
         try { wss.broadcast(JSON.stringify(o)); }
         catch(e) { console.log("warning: exception in WebSocket send\n"); }
       }
