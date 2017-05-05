@@ -51,7 +51,9 @@ instance JSON Liveness where
   readJSON _ = Error "can't parse as Liveness"
 
 
-data Potential a = Potential a | PotentialLiveness Liveness | Inert | Potentials [Potential a] deriving (Eq)
+data Potential a = Potential a | PotentialDelete
+    | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness
+    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq)
 
 instance JSON a => JSON (Potential a) where
   showJSON (Potential a) = encJSDict [("Potential",a)]
@@ -74,13 +76,26 @@ instance JSON a => JSON (Live a) where
   readJSON (JSObject x) | firstKey x == "Edited" = Edited <$> valFromObj "Edited" x <*> valFromObj "future" x
   readJSON _ = Error "can't parse as Live"
 
+isEdited :: Live a -> Bool
+isEdited (Edited _ _) = True
+isEdited _ = False
+
 data GeneralPattern a =
   Atom a (Potential a) RepOrDiv |
   Blank (Potential a) |
-  Group (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
+  Group (Live  ([GeneralPattern a],RepOrDiv)) (Potential a) |
   Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
   TextPattern String
   deriving (Eq)
+
+isGroup (Group _ _)= True
+isGroup _ = False
+isLayers (Layers _ _) = True
+isLayers _ = False
+isAtom (Atom _ _ _) = True
+isAtom _ = False
+isBlank (Blank _ _) = True
+isBlank _ = False
 
 -- example: an initial pattern...
 -- Group (Live ([Atom "bd" Inert,Atom "sn" Inert,Atom "bd" Inert],Once) L4)
@@ -213,7 +228,7 @@ instance ParamPatternable SpecificPattern where
   toParamPattern (Hcutoff x) = Tidal.hcutoff $ Tidal.p $ show x
   toParamPattern (Hresonance x) = Tidal.hresonance $ Tidal.p $ show x
   toParamPattern (Loop x) = Tidal.loop $ Tidal.p $ show x
-  toParamPattern y@(N x) = if isEmptyPast y then Tidal.n $ Tidal.p "0" else Tidal.n $ Tidal.p $ show x
+  toParamPattern (N x) = if isEmptyPast $ N x then Tidal.n $ Tidal.p "0" else Tidal.n $ Tidal.p $ show x
   toParamPattern (Pan x) = Tidal.pan $ Tidal.p $ show x
   toParamPattern (Resonance x) = Tidal.resonance $ Tidal.p $ show x
   toParamPattern (S x) = Tidal.s $ Tidal.p $ show x
@@ -336,7 +351,14 @@ emptySPattern :: SpecificPattern
 emptySPattern = S (Blank Inert)
 
 
-data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Show,Read,Ord)
+data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read,Ord)
+
+instance Show PatternCombinator where
+  show (Merge) = "|=|"
+  show (Add) = "|+|"
+  show (Subtract) = "|-|"
+  show (Multiply) = "|*|"
+  show (Divide) = "|/|"
 
 toTidalCombinator :: PatternCombinator -> (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
 toTidalCombinator Merge = (Tidal.|=|)
@@ -435,8 +457,8 @@ deleteHeadByReplacingWithChildren (UntransformedPattern s) = EmptyTransformedPat
 
 
 instance Show TransformedPattern where
- show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
- show (UntransformedPattern u) = (show u)
+  show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
+  show (UntransformedPattern u) = (show u)
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TransformedPattern",showJSON t),("p",showJSON p)]

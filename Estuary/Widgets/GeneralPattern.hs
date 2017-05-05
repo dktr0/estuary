@@ -19,68 +19,12 @@ import Text.Read(readMaybe)
 import Control.Applicative (liftA2)
 
 
-generalContainer :: (MonadWidget t m, Eq a, Show a) => (GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)))))-> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
-generalContainer b i _ = elClass "div" (getClass i) $ mdo
-  let cEvents = mergeWith (union) [insertMap,deleteMap]
-  (allValues,events) <- eitherContainer (initialMap i) cEvents livenessEvMap livenessEvMap (leftBuilder) (rightBuilder liveness)
-  values <- mapDyn (fst . Data.Either.partitionEithers . elems) allValues
-  childKeys <- mapDyn keys allValues
-  let events' = fmap (Data.Map.elems) events -- Event [l]
-  let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a liveness change
-  let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
-  liveness <- holdDyn MakeL4 livenessEv >>= mapDyn (\x-> case x of MakeL4 -> L4; otherwise -> L3)
-  let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change
-
-  -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
-  unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
-  let isEdited = attachWithMaybe (\x y-> if x==y then Nothing else Just y) (current unchangedVal) (updated values)
-  isEdited' <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) isEdited
-  isEdited'' <- combineDyn (\live updatedVal-> if live==L4 then Just updatedVal else Nothing) liveness isEdited'
-  isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal
-  changes <- holdDyn False $ attachDynWith (==) unchangedVal isEdited
-
-  let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
-  let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (isChangeValue) )  events
-  mapDyn (\x->returnF i x livenessEv) isEdited'''
-  where
-    initialVal (Atom iV _) = iV
-    initialVal (Group iV _) = initialVal $ iV!!0
-    initialVal (Layers iV _) = initialVal $ iV!!0
-    getClass (Layers _ _) = "generalPattern-layer"
-    getClass (Group _ _) = "generalPattern-group"
-    getClass (Atom _ _) = "generalPattern-atom"
-    initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-    initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-    initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
-    leftBuilder = aGLWidget b
-    rightBuilder live= whitespace live (i) "whiteSpaceAdd" [ChangeValue (i)]
-    insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
-    insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
-    insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
-    returnF (Layers _ _) x e = (Layers x Once,e)
-    returnF (Group _ _) x e = (Group x Once,e)
-    returnF (Atom _ _) x e = (Group x Once,e)
 
 
-aGLWidget::(MonadWidget t m, Eq a, Show a) => (GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))) -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
-aGLWidget builder iVal ev = mdo
-  val <- resettableWidget (function) iVal ev rebuildEvent'
-  widgetEvents <- forDyn val (\(x,y)->y)
-  rebuildEvent <- forDyn widgetEvents (\x-> ffilter (==RebuildMe) x)
-  let rebuildEvent' = attachDynWith (\(value,_) _ ->value) val $ switchPromptlyDyn rebuildEvent
-  return val
-  where
-    function (Atom x r) e = builder (Atom x r) e
-    function (Blank) e = builder (Blank) e
-    function (Group xs r) e = generalContainer builder (Group xs r) e
-    function (Layers xs r) e = generalContainer builder (Layers xs r) e
 
-
--- When ',' happens, need to clobber the existing eithercontainer  and replace it with two
--- generalContainerLive widgets - one for the left side, one for the right side.
 
 generalContainerLive :: (MonadWidget t m, Eq a, Show a) 
-  => (Dynamic t Context -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)))))
+  => (Dynamic t Liveness -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)))))
   -> GeneralPattern a 
   -> Event t (EditSignal (GeneralPattern a)) 
   -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
@@ -88,30 +32,12 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   text (case i of (Group _ _)-> "["; (Layers _ _)-> "["; otherwise -> "")
   let cEvents = mergeWith (union) [insertMap,deleteMap]
 
-  -- trying to have eithercontainer to be a widgethold,
-  --let splitBuilder = attachDynWith (\vals split-> maybe (return $ constDyn (Blank,never)) (\int-> do 
-  --                                                                                                  left <- generalContainerLive b (Group (take int vals) Once) never 
-  --                                                                                                  right <- generalContainerLive b (Group (reverse $ take ((length vals) - int) (reverse vals)) Once) never
-  --                                                                                                  combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightV] Once,leftmost [leftEv,rightEv])) left right
-  --                                                                                                ) split ) values splitEv
 
-
---Dynamic t (Dynamic t (Map Int (Either (GeneralPattern a) ())), Event t (Map Int (EditSignal (GeneralPattern a))))
-
---flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
-  --eithercontainer:: m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e) )
---a = ( dynamic (map k (either v a), event t map)
-  --m dynamic (dynamic map, event map)
---m dynamic (
-
---inter:: m (dynamic t (  dynamic (map k (either v a))  ,  event t map ))
-
+  -- m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e) )
   inter <- flippableWidget (eitherContainer (initialMap i) cEvents livenessEvMap livenessEvMap (leftBuilder liveness) (rightBuilder liveness)) (return $ (constDyn empty,never)) False $ updated splitTog
-  allValues <- liftM joinDyn $ mapDyn fst inter 
-  events <- liftM switchPromptlyDyn $ mapDyn snd inter 
-  --let eventKey = fmap keys events
+  allValues <- liftM joinDyn $ mapDyn fst inter  -- Dynamic Map (k,Either (GeneralPattern a,() ))
+  events <- liftM switchPromptlyDyn $ mapDyn snd inter  -- Event (Map k e)
 
-  
 
   let deleteMap = fmap (fromList . concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)]) . keys . Data.Map.filter (==DeleteMe)) events
   let insertMap = fmap (fromList . concat . (insertList i) . keys . Data.Map.filter (isChangeValue) )  events
@@ -120,100 +46,62 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   childKeys <- mapDyn keys allValues
   let events' = fmap (Data.Map.elems) events -- Event [l]
 
+  let potential = constDyn Inert
 
-  let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then MakeL3 else MakeL4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a liveness change
-  let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat v) childKeys livenessEv
-  liveness <- holdDyn MakeL4 livenessEv >>= mapDyn (\x-> case x of MakeL4 -> L4; otherwise -> L3)
+  let livenessEv = fmap (\x-> if Data.List.elem MakeL3 x then L3 else L4) $ ffilter (\x-> Data.List.elem MakeL3 x || Data.List.elem MakeL4 x) events' -- If any child reports a liveness change
+  let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat (case v of L3 -> MakeL3; otherwise -> MakeL4)) childKeys livenessEv -- Ev (Map Int MakeL3) -- cycled back to the container to change all children to appropriate liveness
+  liveness <- holdDyn L4 livenessEv
   let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change 
   let deleteContainerEv = (DeleteMe <$) $ ffilter (\x -> Data.List.elem DeleteContainer x) events'
 
-  -- When made to L3 or L4, or when Eval is pressed, reset the 'unchanged' value
-  unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, livenessEv]
-  let isEdited = attachWithMaybe (\x y-> if x==y then Nothing else Just y) (current unchangedVal) (updated values)
-  isEdited' <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) isEdited
-  isEdited'' <- combineDyn (\live updatedVal-> if live==L4 then Just updatedVal else Nothing) liveness isEdited'
-  isEdited''' <- combineDyn (\maybeUpdated oldVal-> maybe oldVal id maybeUpdated) isEdited'' unchangedVal -- Dyn [GenPat]
-  
-  --let splitEv = fmap (maybe 0 id . elemIndex LayerSplit) $ ffilter (Data.List.elem LayerSplit) events'
-  --let splitEv = coincidence $ fmap (const $ fmap (fromJust . elemIndex LayerSplit) events') $ ffilter (Data.List.elem LayerSplit) events'
-  
+  unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, fmap (\x-> if x==L3 then MakeL3 else MakeL4) livenessEv]
+
+  oldAndNew <- combineDyn (,) unchangedVal values
+  live <- combineDyn (\l (oldVal, newVal) ->if l==L4 then Live (newVal,Once) L4 else Edited (oldVal,Once) (newVal,Once)) liveness oldAndNew
+
   let splitEv = coincidence $ fmap (const $ fmap (head . keys . Data.Map.filter (==LayerSplit)) events) $ ffilter (Data.List.elem LayerSplit) events'
 
-  -- Event [EditSignal]
+  let splitVal = attachDynWith (\l index-> let (vals,rep) = case l of (Edited (old,reps) new) -> (old,reps); (Live (v,reps) _) -> (v,reps); in Layers (Live ([Group (Live (take (index+1) vals,Once) L4) Inert, Group (Live (reverse $ take ((length vals) - (index+1)) (reverse vals), Once) L4) Inert],rep) L4) Inert) live splitEv
+  let returnEvents = (leftmost [fmap (\x-> if x==L3 then MakeL3 else MakeL4) livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])
+  regVal <- combineDyn (\l p-> returnF i l p returnEvents) live potential
+  regVal' <- holdDyn (Blank Inert Once) splitVal >>= combineDyn (\reg spV -> case spV of (Blank _ _) -> reg; otherwise -> (spV,returnEvents)) regVal
 
-  --holdDyn "not yet" (fmap (\x->"split thingy : "++ (show x)) (ffilter (Data.List.elem LayerSplit) events') ) >>= dynText
-
-  --[ ]   attachPromptlyDynWith      :: (a -> b ->       c) ->  Dynamic a -> Event b -> Event c
-  let splitVal = attachDynWith (\vals index-> Layers [Group (take (index+1) vals) Once, Group (reverse $ take ((length vals) - (index+1)) (reverse vals)) Once] Once) isEdited''' splitEv
-  v <- holdDyn Blank splitVal >>= combineDyn (\i e-> case e of Blank -> i; otherwise -> [e]) isEdited'''
-  
-  --splitVal <- holdDyn Nothing $ fmap (elemIndex LayerSplit) splitEv
-  --widgetHold :: m a ->   Event (m a) -> m (Dynamic a)
-  --attachDynWith (\vals split-> maybe (return $ constDyn (Blank,never)) (\int-> do 
-  --  (leftV,leftEv) <- generalContainerLive b (take split vals) never 
-  --  (rightV, rightEv) <- generalContainerLive b (reverse $ take ((length vals) - split) (reverse vals)) never
-  --  combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightv] Once,leftmost [leftEv,rightEv]))
-  --    ) split 
-  --    ) values splitEv
-  --left <- widgetHold (return $ constDyn (Blank,never)) $ 
-  --right <- widgetHold (return $ constDyn (Blank,never)) $ 
-  --genPat <- combineDyn (\val split-> if isJust split then Layers (maybe val (splitFunc val) split) Once else Group (maybe val (splitFunc val) split) Once) isEdited''' splitVal
-  --genPat <- combineDyn (\val split-> maybe (Group val Once) (splitFunc val) split) isEdited''' splitVal
-
-  --trying to have eithercontainer to be a widgethold,
-  --let splitBuilder = attachDynWith (\vals split-> maybe (return $ constDyn (Blank,never)) (\int-> do 
-  --                                                                                                  left <- generalContainerLive b (Group (take int vals) Once) never 
-  --                                                                                                  right <- generalContainerLive b (Group (reverse $ take ((length vals) - int) (reverse vals)) Once) never
-  --                                                                                                  combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightV] Once,leftmost [leftEv,rightEv])) left right
-  --                                                                                                ) split ) values splitEv
-  -- Problem now is: vals becomes just [] when 
-
-  --text ("split list:  " ++ (show $ take (div split 2) vals))
-  --                                                  text ("split list or:  " ++ (show $ take (split-1) vals))
   let splitBuilder = attachDynWith (\vals split-> do 
-                                                    left <- generalContainerLive b (Group (take (div split 2) vals) Once) never 
-                                                    right <- generalContainerLive b (Group (reverse $ take ((length vals) - (div split 2)) (reverse vals)) Once) never                                                    
-                                                    combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers [leftV,rightV] Once,leftmost [leftEv,rightEv])) left right
+                                                    left <- generalContainerLive b (Group (Live ((take (div split 2) vals),Once) L4) Inert) never 
+                                                    right <- generalContainerLive b (Group (Live ((reverse $ take ((length vals) - (div split 2)) (reverse vals)),Once) L4) Inert) never                                                    
+                                                    combineDyn (\(leftV,leftEv) (rightV,rightEv) -> (Layers (Live ([leftV,rightV],Once) L4) Inert,leftmost [leftEv,rightEv])) left right
                                                     ) values splitEv
-
   splitTog <- toggle False splitBuilder
-  changes <- holdDyn False $ attachDynWith (==) unchangedVal isEdited
-  --mapDyn (\x->returnF i x (leftmost [livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])) isEdited'''
-  
 
-  regVal <-  mapDyn (\x->returnF i x (leftmost [livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])) v
-  returnVal <-liftM joinDyn $ widgetHold (return regVal) splitBuilder
+  returnVal <-liftM joinDyn $ widgetHold (return regVal') splitBuilder
   text (case i of (Group _ _)-> "]"; (Layers _ _)-> "]"; otherwise -> "")
   return returnVal
-  --mapDyn (\x-> (x,(leftmost [livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events']))) genPat
   where
-    initialVal (Atom iV r) = Atom iV r
-    initialVal (Group iV _) = initialVal $ iV!!0
-    initialVal (Layers iV _) = initialVal $ iV!!0
+    initialVal (Atom iV _ _) = iV
+    initialVal (Group (Live (iV,_) _) _) = initialVal $ iV!!0
+    initialVal (Group (Edited (iV,_) _) _) = initialVal $ iV!!0
+    initialVal (Layers (Live (iV,_) _) _) = initialVal $ iV!!0
+    initialVal (Layers (Edited (iV,_) _) _) = initialVal $ iV!!0
     getClass (Layers _ _) = "generalPattern-layer"
     getClass (Group _ _) = "generalPattern-group"
-    getClass (Atom _ _) = "generalPattern-atom"
-    initialMap (Layers xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-    initialMap (Group xs iReps) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
-    initialMap (Atom iVal iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal iReps, Right ()]
+    getClass (Atom _ _ _) = "generalPattern-atom"
+    initialMap (Layers (Live (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Layers (Edited (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Group (Live (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Group (Edited (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
+    initialMap (Atom iVal _ iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal Inert iReps, Right ()]
     leftBuilder live = aGLWidgetLive live b
-    rightBuilder live= whitespace live (initialVal i) "whiteSpaceAdd" [ChangeValue (initialVal i),DeleteContainer]
-    insertList (Atom iVal _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Once))])
-    insertList (Layers xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
-    insertList (Group xs iReps) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
-    returnF (Layers _ _) x e = (Layers x Once,e)
-    returnF (Group _ _) x e = (Group x Once,e)
-    returnF (Atom _ _) x e = (Group x Once,e)
-    splitFunc xs index = Layers [Group (take index xs) Once, Group (reverse $ take ((length xs)-index) (reverse xs)) Once] Once
+    rightBuilder live= whitespace live (i) "whiteSpaceAdd" [ChangeValue (i)]
+    insertList (Atom iVal _ _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) Inert Once))])
+    insertList (Layers (Edited (xs,_) _) _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    insertList (Layers (Live (xs,_) _) _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    insertList (Group (Edited (xs,_) _) _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    insertList (Group (Live (xs,_) _) _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
+    returnF (Layers _ _) x p e = (Layers x p, e)
+    returnF (Group _ _) x p e = (Group x p,e)
+    returnF (Atom _ _ _) x p e = (Group x p,e)
 
-
-    --splitFunc (Atom x r) index = Group [Layers [x] Once] Once
-    --splitFunc (Group xs r) index = Group [Layers (take index xs) Once, Layers (reverse . take ((length index)-index) (reverse xs))] Once
-    --splitFunc (Layers xs r) index = Layers xs r
-
-
-
-aGLWidgetLive::(MonadWidget t m, Eq a, Show a) => Dynamic t Context -> (Dynamic t Context -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))) -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
+aGLWidgetLive::(MonadWidget t m, Eq a, Show a) => Dynamic t Liveness -> (Dynamic t Liveness -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))) -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a))))
 aGLWidgetLive liveness builder iVal ev = mdo
   -- resettableWidget :: MonadWidget t m => (a -> Event t b -> m (Dynamic t c)) -> a -> Event t b -> Event t a -> m (Dynamic t c)
   val <- resettableWidget (function) iVal ev rebuildEvent'
@@ -222,82 +110,118 @@ aGLWidgetLive liveness builder iVal ev = mdo
   let rebuildEvent' = attachDynWith (\(value,_) _ ->value) val $ switchPromptlyDyn rebuildEvent
   return val
   where
-    function (Atom x r) e = builder liveness (Atom x r) e
-    function (Blank) e = builder liveness (Blank) e
-    function (Group xs r) e = generalContainerLive (builder) (Group xs r) e
-    function (Layers xs r) e = generalContainerLive  (builder) (Layers xs r) e
+    function (Atom x p r) e = builder liveness (Atom x p r) e
+    function (Blank p r) e = builder liveness (Blank p r) e
+    function (Group l p) e = generalContainerLive (builder) (Group l p) e
+    function (Layers l p) e = generalContainerLive  (builder) (Layers l p) e
 
 
-popupSampleWidget :: MonadWidget t m => Dynamic t Context -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String))))
+popupSampleWidget :: MonadWidget t m => Dynamic t Liveness -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String))))
 popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
   sample <- clickableDivClass'' inVal "noClass" ()
   repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
-  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) popup False (updated popupEvents')
+  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) popup False (updated popupDisplayEv)
   let closeEvents = (() <$)  $ ffilter (==Nothing)  popupMenu
   let deleteEv = fmap fromJust  $ ffilter (==Just DeleteMe) popupMenu
   repDivToggle <- toggle iRepDivViewable $ ffilter (== Just MakeRepOrDiv) popupMenu
   repDivVal <- holdDyn iRepDiv repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
   let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x==Just MakeL4|| x==Just Eval) popupMenu
   let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
-  let sampleChanges = fmap (\x-> maybe Blank (\y-> case y of (ChangeValue z)-> z; otherwise -> Blank) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
-  popupEvents' <- toggle False $ leftmost $ [(() <$) sample,(() <$) groupLayerEv,(() <$) closeEvents,(() <$) livenessEv, (() <$) sampleChanges]
+  let sampleChanges = fmap (\x-> maybe (Blank Inert Once) (\y-> case y of (ChangeValue z)-> Atom z Inert Once; otherwise -> Blank Inert Once) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
+  popupToggle <- toggle False $ leftmost $ [(() <$) sample,(() <$) groupLayerEv,(() <$) closeEvents,(() <$) livenessEv, (() <$) sampleChanges]
+
   inVal <- holdDyn iSamp $ fmap show sampleChanges
-  genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . (flip Atom) Once) )  groupLayerEv -- Dyn ()
-  genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
-  genPat' <- combineDyn (\g r -> g r) genPat repDivVal
-  let upEvent = leftmost [fmap fromJust $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
-  mapDyn (\x-> (x,upEvent)) genPat'
+
+  potential <- mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle
+
+  popupDisplayEv <- toggle False $ updated potential
+
+  atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repDivVal
+
+  groupToggle <- toggle (isGroup iVal) $ ffilter (==MakeGroup) groupLayerEv
+  groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
+  layerToggle <- toggle (isLayers iVal) $ ffilter (==MakeLayer) groupLayerEv
+  layerVal <- combineDyn (\v l -> if l==L4 then Layers (Live ([v],Once) L4) Inert  else Layers (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
+
+
+  genPat <- liftM joinDyn $ combineDyn (\gr lay-> if gr then groupVal else if lay then layerVal else atomVal) groupToggle layerToggle
+
+  --genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . ((flip Live) L4 . flip . flip Atom) Inert Once) ) groupLayerEv -- Dyn ()
+  --genPatType <- holdDyn ((flip . Atom) Inert) $ fmap (\x-> (case x of MakeGroup -> (flip Group) Inert ; otherwise -> (flip Layers) Inert) . (take 1 . repeat . (flip . flip Atom) Inert Once))  groupLayerEv -- Dyn ()
+  --genPat <- combineDyn (\c v-> case c of Group -> )
+  --genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
+  --genPat' <- combineDyn (\g r -> g r) genPat repDivVal
+  --let upEvent' = fmap (\x-> case x of (Just (ChangeValue a)) -> Atom a Inert Once; otherwise -> x::Edited (GeneralPattern String))
+  let upSig = fmap (toEditSigGenPat . fromJust)  $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu
+
+  let upEvent = leftmost [ ((RebuildMe::EditSignal (GeneralPattern String)) <$) groupLayerEv, upSig]
+  mapDyn (\x-> (x,upEvent)) genPat
   where
-    popupMap = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
+    popupActions = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
     sampleMap = fromList $ zip [0::Int,1..] $ [("Rest","~"),("Percussion", "bd"),("Percussion", "cp"),("Percussion", "hh"),("Percussion", "sn"),("Bass","jvbass"), ("Bass","wobble"),("Bass","bass1"),("Pitched","arpy"), ("Pitched", "casio"), ("Pitched","latibro")]
-    popup = samplePickerPopup liveness sampleMap popupMap   
+    popup = samplePickerPopup liveness sampleMap popupActions
     iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once]) 
     (iSamp,iRepDiv) = case iVal of
-                    (Group xs r) -> (show $ xs!!0,r)
-                    (Layers xs r) -> (show $ xs!!0,r)
-                    (Atom v r) -> (v,r)
+                    (Group (Edited (oldV,oldR) (newV,newR)) p) -> (show $ oldV!!0,oldR)
+                    (Group (Live (newV,newR) lness) p) -> (show $ newV!!0,newR)
+                    (Layers (Edited (oldV,oldR) (newV,newR)) p) -> (show $ oldV!!0,oldR)
+                    (Layers (Live (newV,newR) lness) p) -> (show $ newV!!0,newR)
+                    (Atom v p r) -> (v,r)
                     otherwise -> ("~",Once)
 
 
-popupIntWidget :: MonadWidget t m => Int -> Int -> Int -> Dynamic t Context -> GeneralPattern Int -> Event t (EditSignal (GeneralPattern Int)) -> m (Dynamic t (GeneralPattern Int, Event t (EditSignal (GeneralPattern Int))))
+
+popupIntWidget :: MonadWidget t m => Int -> Int -> Int -> Dynamic t Liveness -> GeneralPattern Int -> Event t (EditSignal (GeneralPattern Int)) -> m (Dynamic t (GeneralPattern Int, Event t (EditSignal (GeneralPattern Int))))
 popupIntWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
-  let iVal = getIVal iGenPat
+
+  let (iVal,iRepDiv) = getIVal iGenPat
   textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
   --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
   let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])
   repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
   inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Int)) $ _textInput_value textField
-  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (popup) False popupDisplayEv
-  let popupDisplayEv = leftmost $ [ffilter id $ updated $ _textInput_hasFocus textField, closeEvent]  
+  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (popup) False $ updated popupDisplayEv
+  let popupEv = leftmost $ [ffilter id $ updated $ _textInput_hasFocus textField, closeEvent]  
   repDivToggle <- toggle iRepDivViewable $ ffilter (== Just MakeRepOrDiv) popupMenu
   repOrDiv <- holdDyn iRepDiv repOrDivEv >>= combineDyn (\tog val-> if tog then val else Once) repDivToggle
   let closeEvent = (False <$)  $ ffilter (isNothing)  popupMenu
   let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
-  genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . (flip Atom) Once) )  groupLayerEv -- Dyn ()
-  genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
-  genPat' <- combineDyn (\g r -> g r) genPat $ constDyn Once
-  let upEvent = leftmost [fmap fromJust $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
-  mapDyn (\x-> (x,upEvent)) genPat'
+  --genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . (flip Atom) Once) )  groupLayerEv -- Dyn ()
+  --genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
+  --genPat' <- combineDyn (\g r -> g r) genPat $ constDyn Once
+  potential <- toggle False popupEv >>= mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert)
+
+  popupDisplayEv <- toggle False $ updated potential
+
+  atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
+
+  groupToggle <- toggle (isGroup iGenPat) $ ffilter (==MakeGroup) groupLayerEv
+  groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
+  layerToggle <- toggle (isLayers iGenPat) $ ffilter (==MakeLayer) groupLayerEv
+  layerVal <- combineDyn (\v l -> if l==L4 then Layers (Live ([v],Once) L4) Inert  else Layers (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
+
+  genPat <- liftM joinDyn $ combineDyn (\gr lay-> if gr then groupVal else if lay then layerVal else atomVal) groupToggle layerToggle
+
+  let upEvent = leftmost [fmap (toEditSigGenPat .fromJust) $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
+  mapDyn (\x-> (x,upEvent)) genPat
   where 
     attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",show step, show minVal, show maxVal]
-    popup = basicPopup liveness [MakeRepOrDiv::EditSignal (GeneralPattern Int), MakeGroup, MakeLayer, DeleteMe]
+    popupActions = [MakeRepOrDiv::EditSignal Int, MakeGroup, MakeLayer, DeleteMe]
+    popup = basicPopup liveness popupActions
     getIVal gP = case gP of 
-      (Group xs r) -> getIVal (xs!!0)
-      (Layers xs r) -> getIVal (xs!!0)
-      (Atom x r) -> x
-      otherwise -> (minVal)
-    (iRepDiv) = case iGenPat of 
-      (Group _ r) ->  r
-      (Layers _ r) -> r
-      (Atom _ r) ->   r
-      otherwise ->    Once
+      (Group (Live (xs,r) _) p) -> (fst $ getIVal (xs!!0),r)
+      (Group (Edited (xs,r) _) p) -> (fst $ getIVal (xs!!0),r)
+      (Atom v _ r) -> (v,r)
+      otherwise -> (minVal, Once)
 
 
-popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Dynamic t Context -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double))))
+
+
+popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Dynamic t Liveness -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double))))
 popupDoubleWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
-  let iVal = getIVal iGenPat
-  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
-  --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
+
+  let (iVal,iRepDiv) = getIVal iGenPat
+  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"  --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
   let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])
   repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
   inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Double)) $ _textInput_value textField
@@ -307,122 +231,25 @@ popupDoubleWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "at
   repOrDiv <- holdDyn iRepDiv repOrDivEv >>= combineDyn (\tog val-> if tog then val else Once) repDivToggle
   let closeEvent = (False <$)  $ ffilter (isNothing)  popupMenu
   let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
-  genPatType <- holdDyn (Atom) $ fmap (\x-> (case x of MakeGroup -> Group; otherwise -> Layers) . (take 1 . repeat . (flip Atom) Once) )  groupLayerEv -- Dyn ()
-  genPat <- combineDyn (\constructor v -> constructor v) genPatType inVal 
-  genPat' <- combineDyn (\g r -> g r) genPat $ constDyn Once
-  let upEvent = leftmost [fmap fromJust $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
-  mapDyn (\x-> (x,upEvent)) genPat'
+  potential <- toggle False popupDisplayEv >>= mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert)
+  atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
+  groupToggle <- toggle (isGroup iGenPat) $ ffilter (==MakeGroup) groupLayerEv
+  groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
+  layerToggle <- toggle (isLayers iGenPat) $ ffilter (==MakeLayer) groupLayerEv
+  layerVal <- combineDyn (\v l -> if l==L4 then Layers (Live ([v],Once) L4) Inert  else Layers (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
+  genPat <- liftM joinDyn $ combineDyn (\gr lay-> if gr then groupVal else if lay then layerVal else atomVal) groupToggle layerToggle
+  let upEvent = leftmost [fmap (toEditSigGenPat . fromJust) $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
+  mapDyn (\x-> (x,upEvent)) genPat
   where 
     attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",show step, show minVal, show maxVal]
-    popup = basicPopup liveness [MakeRepOrDiv::EditSignal (GeneralPattern Double), MakeGroup, MakeLayer, DeleteMe]
+    popupActions = [MakeRepOrDiv::EditSignal Double, MakeGroup, MakeLayer, DeleteMe]
+    popup = basicPopup liveness popupActions
     getIVal gP = case gP of 
-      (Group xs r) -> getIVal (xs!!0)
-      (Layers xs r) -> getIVal (xs!!0)
-      (Atom x r) -> x
-      otherwise -> (minVal+maxVal)/2
-    (iRepDiv) = case iGenPat of 
-      (Group _ r) ->  r
-      (Layers _ r) -> r
-      (Atom _ r) ->   r
-      otherwise ->    Once
+      (Group (Live (xs,r) _) p) -> (fst $ getIVal (xs!!0),r)
+      (Group (Edited (xs,r) _) p) -> (fst $ getIVal (xs!!0),r)
+      (Atom v _ r) -> (v,r)
+      otherwise -> (minVal, Once)
 
-
-
-
-------------------------
-----  GenPat Double   --
-------------------------
--- A groupable/layerable/atomizable widget for General Pattern Doubles
--- vMin and vMax denote the rane of possible values, step = the stepsize of each increment
-
-
-aGLDoubleWidget::(MonadWidget t m) => Double -> Double -> Double -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double))))
-aGLDoubleWidget vMin vMax step (Atom iVal _) _ = elAttr "table" ("class"=:"aGLNumberWidgetTable") $ mdo
-  (genPat,deleteEvent) <- el "tr" $ do
-    genPat <- elAttr "td" ("class"=:"aGLNumberWidgetTable-textFieldtd") $ do
-      let attrs = fromList $ zip ["style","step","min","max"] ["width=40px",show step, show vMin, show vMax]
-      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
-      let inVal = _textInput_value textField
-      inVal' <- mapDyn (\str-> if isJust (readMaybe str::Maybe Double) then (read str::Double) else (vMax-vMin)/2+vMin) inVal
-      mapDyn (\x->Atom (max vMin $ min vMax x) Once) inVal'
-    deleteButton <- tdButtonAttrs " - " (DeleteMe) $ ("class"=:"aGLNumberWidgetTable-deletetd")
-    return (genPat, deleteButton)
-  (layerEvent, groupEvent) <- el "tr" $ do
-    groupButton <- tdButtonAttrs " [] " (MakeGroup) $ ("class"=:"aGLNumberWidgetTable-grouptd")
-    layerButton <- tdButtonAttrs " [,,] " (MakeLayer) $ ("class"=:"aGLNumberWidgetTable-layertd")
-    return $ (layerButton, groupButton)
-  groupToggle <- toggle False groupEvent
-  layerToggle <- toggle False layerEvent
-  genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
-  genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
-  let rebuildEvent = fmap (const RebuildMe) $ leftmost [layerEvent, groupEvent]
-  mapDyn (\x->(x,leftmost [rebuildEvent, deleteEvent])) genPat''
-aGLDoubleWidget vMin vMax step _ e = aGLDoubleWidget vMin vMax step (Atom 0 Once) e
-
-----------------------
---  GenPat Ints     --
-----------------------
--- A groupable/layerable/atomizable widget for General Pattern Ints
--- vMin and vMax denote the rane of possible values, step = the stepsize of each increment
-
-aGLIntWidget::(MonadWidget t m) => Int -> Int -> Int -> GeneralPattern Int -> Event t (EditSignal (GeneralPattern Int)) -> m (Dynamic t (GeneralPattern Int, Event t (EditSignal (GeneralPattern Int))))
-aGLIntWidget vMin vMax step (Atom iVal _) _ = elAttr "table" ("class"=:"aGLNumberWidgetTable") $ mdo
-  (genPat,deleteEvent) <- elAttr "tr" (empty) $ do
-    genPat <- elAttr "td" ("class"=:"aGLNumberWidgetTable-textFieldtd") $ do
-      let attrs = fromList $ zip ["style","step","min","max"] ["width:40px",show step, show vMin, show vMax]
-      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
-      let inVal = _textInput_value textField
-      inVal' <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else 0) inVal
-      mapDyn (\x->Atom (max vMin $ min vMax x) Once) inVal'
-    deleteButton <- tdButtonAttrs " - " (DeleteMe) $ "class"=:"aGLNumberWidgetTable-deletetd"
-    return (genPat, deleteButton)
-  (layerEvent, groupEvent) <- el "tr" $ do
-    groupButton <- tdButtonAttrs " [] " (MakeGroup) $ ("class"=:"aGLNumberWidgetTable-grouptd")
-    layerButton <- tdButtonAttrs " [,,] " (MakeLayer) $ ("class"=:"aGLNumberWidgetTable-layertd")
-    return $ (layerButton, groupButton)
-  groupToggle <- toggle False groupEvent
-  layerToggle <- toggle False layerEvent
-  genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
-  genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
-  let rebuildEvent = fmap (const RebuildMe) $ leftmost [layerEvent, groupEvent]
-  mapDyn (\x->(x,leftmost [rebuildEvent, deleteEvent])) genPat''
-aGLIntWidget vMin vMax step _ e = aGLIntWidget vMin vMax step (Atom 0 Once) e
-
-
-
-----------------------
---  GenPat Strings  --
-----------------------
--- The following 3 widget functions compose of a container which interpserses aGLStringWidgets
--- (something that returns an Atom, Group or Layer (aGL)) with + buttons. The widgets can be
--- recursively constructed: each individual widget can be turned into a container itself (as a group or layer).
-
--- Individual string widgets (able to turn into a container themselves by signaling their container in the returned event)
-aGLStringWidget::(MonadWidget t m) => GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String))))
---aGLStringWidget (Atom iVal iReps) _ = elAttr "div" ("style"=:"display:inline-block;") $ elAttr "table" tableAttrs $ mdo
-aGLStringWidget (Atom iVal iReps) _ = elAttr "table" ("class"=:"aGLStringWidgetTable") $ mdo
-  genPat <- el "tr" $ do
-    val <- elAttr "td" ("class"=:"aGLStringWidgetTable-textFieldtd") $ do
-      inputField <- textInput $ def & textInputConfig_attributes .~ constDyn ("style"=:"width:60px") & textInputConfig_initialValue .~ (iVal)
-      let val = _textInput_value inputField
-      return val
-    reps <- repDivWidget iReps
-    combineDyn (\x y -> Atom x y) val reps
-  (layerEvent, groupEvent, deleteEvent) <- el "tr" $ elAttr "td" ("colspan"=:"3") $ el "tr" $ do
-    groupButton <- tdButtonAttrs " [] " (MakeGroup) $ ("class"=:"aGLNumberWidgetTable-grouptd")
-    layerButton <- tdButtonAttrs " [,,] " (MakeLayer) $ ("class"=:"aGLNumberWidgetTable-layertd")
-    deleteButton <- tdButtonAttrs " - " (DeleteMe) $ "class"=:"aGLNumberWidgetTable-deletetd"
-    return $ (layerButton, groupButton, deleteButton)
-  groupToggle <- toggle False groupEvent
-  layerToggle <- toggle False layerEvent
-  genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
-  genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
-  let rebuildEvent = (RebuildMe <$) $ leftmost [layerEvent, groupEvent]
-  mapDyn (\x-> (x,leftmost [rebuildEvent, deleteEvent])) genPat''
-aGLStringWidget _ e = aGLStringWidget (Atom "~" Once) e
-
-
--- atomWidgetInt
 
 
 ------------------------------------------
@@ -431,21 +258,31 @@ aGLStringWidget _ e = aGLStringWidget (Atom "~" Once) e
 
 --Slider w/ a range and stepsize
 sliderWidget::MonadWidget t m => (Double,Double)-> Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal a)))
-sliderWidget (minVal,maxVal) stepsize iVal _ = do
+sliderWidget (minVal,maxVal) stepsize iGenPat _ = do
+  let iVal = getIVal iGenPat
   text $ show minVal
   let attrs = constDyn $ fromList $ zip ["type","min","max","step","style"] ["range",show minVal,show maxVal,show stepsize,"width:75px"]
   slider<-textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs
   text $ show maxVal
   let panVal = _textInput_value slider
-  panVal' <- forDyn panVal (\x-> if isJust (readMaybe x::Maybe Double) then Atom (read x::Double) Once else Atom 0.5 Once)
+  panVal' <- forDyn panVal (\x-> if isJust (readMaybe x::Maybe Double) then Atom (read x::Double) Inert Once else Atom ((minVal+maxVal)/2) Inert Once)
   deleteButton <- button' "-" DeleteMe
   forDyn panVal' (\k -> (k,deleteButton))
+  where
+    getIVal i = case i of
+      (Atom a _ _) -> a
+      (Group (Live (xs,_) _) _) -> getIVal $ head xs
+      (Group (Edited (xs,_) _) _) -> getIVal $  head xs
+      (Layers (Live (xs,_) _) _) -> getIVal $ head xs
+      (Layers (Edited (xs,_) _) _) -> getIVal $ head xs
+      (Blank _ _) -> minVal
 
 
 -- A clickable td element. Each click cycles to the next element in the map. Updated with a RepOrDiv event.
 -- rep/div values get shown on the button too.
 clickListWidget::(MonadWidget t m, Show a, Eq a) => Map Int a ->  GeneralPattern a -> Event t RepOrDiv -> m (Dynamic t (GeneralPattern a, Event t (EditSignal a)))
-clickListWidget cycleMap (Atom iVal iReps) updatedReps = mdo
+clickListWidget cycleMap iGenPat updatedReps = mdo
+  let (iVal,iReps) = getIVal iGenPat
   let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVal) $ elems cycleMap
   sampleButton <- tdButtonAttrs' showVal (iVal) $ "class"=:"clickListtd"
   num <- count sampleButton >>= mapDyn (\x-> (x+initialNum) `mod` length cycleMap)
@@ -453,9 +290,16 @@ clickListWidget cycleMap (Atom iVal iReps) updatedReps = mdo
   let str' = updated str''
   str <- holdDyn (iVal) str'
   reps <- holdDyn (iReps) updatedReps
-  returnSample <- combineDyn (\x r -> Atom x r) str reps
+  returnSample <- combineDyn (\x r -> Atom x Inert r) str reps
   showVal <- mapDyn show returnSample
   mapDyn (\x->(x,never)) returnSample
+  where
+    getIVal i = case i of
+      (Atom a _ r) -> (a,r)
+      (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
 
 repDivWidget::MonadWidget t m => RepOrDiv -> m (Dynamic t RepOrDiv)
 repDivWidget (Rep iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
@@ -507,7 +351,8 @@ repDivWidget _ = repDivWidget (Rep 1)
 --   ---------------
 countStepWidget::MonadWidget t m => Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal a)))
 --countStepWidget step (Atom iUpVal _) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
-countStepWidget step (Atom iUpVal _) _ = elAttr "table" ("class"=:"countWidgetTable") $ mdo
+countStepWidget step iGenPat _ = elAttr "table" ("class"=:"countWidgetTable") $ mdo
+  let iUpVal = fst $ getIVal iGenPat
   upCount <- el "tr" $ do
     elAttr "td" ("class"=:"countWidgetTable") $ dynText upValShow
     upButton <- tdButtonAttrs "▲" () ("class"=:"countWidgetTable-upArrowtd") >>= count
@@ -519,15 +364,22 @@ countStepWidget step (Atom iUpVal _) _ = elAttr "table" ("class"=:"countWidgetTa
   upVal <- combineDyn (\a b ->  (a*step)-(b*step)+(iUpVal)) upCount downCount
   upValShow <- forDyn upVal show
   --repsHold <- holdDyn iUpVal $ updated repeats
-  mapDyn (\x->(Atom x Once,deleteEvent)) upVal
-countStepWidget step _ e = countStepWidget step (Atom 0 Once) e
+  mapDyn (\x->(Atom x Inert Once,deleteEvent)) upVal
+  where
+    getIVal i = case i of
+      (Atom a _ r) -> (a,r)
+      (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
 
 -- widget with a slider returning a single Atom with range [minVal,maxVal] and stepsize specified
 doubleSliderWidget::MonadWidget t m => (Double,Double) -> Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal a)))
-doubleSliderWidget (minVal,maxVal) stepsize (Atom iEnd Once) _ = elAttr "table" ("class"=:"doubleSliderWidget") $ mdo
+doubleSliderWidget (minVal,maxVal) stepsize iGenPat _ = elAttr "table" ("class"=:"doubleSliderWidget") $ mdo
+  let iVal = fst $ getIVal iGenPat
   slider <- el "tr" $ elAttr "td" (Data.Map.union ("colspan"=:"3") ("style"=:"text-align:left")) $ do
       let attrs = constDyn $ fromList $ zip ["min","max","step","style"] [show minVal,show maxVal, show stepsize,"width:100px"]
-      rangeInput <- textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs & textInputConfig_setValue .~ sliderUpdateVal & textInputConfig_initialValue .~ (show iEnd)
+      rangeInput <- textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs & textInputConfig_setValue .~ sliderUpdateVal & textInputConfig_initialValue .~ (show iVal)
       let rangeVal = _textInput_value rangeInput
       mapDyn (\x-> maybe 0.5 id (readMaybe x::Maybe Double)) rangeVal
   (begEv,endEv,delEv) <- el "tr" $ do
@@ -539,7 +391,15 @@ doubleSliderWidget (minVal,maxVal) stepsize (Atom iEnd Once) _ = elAttr "table" 
   let sliderValBeh = current slider
   let sliderAndButtonVal = attachWith (\a b -> max 0 $ min 1 $ a+b) sliderValBeh buttons
   let sliderUpdateVal = fmap show sliderAndButtonVal
-  mapDyn (\x-> (Atom x Once,delEv)) slider
+  mapDyn (\x-> (Atom x Inert Once,delEv)) slider
+  where
+  getIVal i = case i of
+    (Atom a _ r) -> (a,r)
+    (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+
 
 
 -- < and > buttons, background color fill illustrateds value
@@ -548,7 +408,8 @@ doubleSliderWidget (minVal,maxVal) stepsize (Atom iEnd Once) _ = elAttr "table" 
 --  --  <   >   -  --
 --  -----------------
 faderButtonWidget::MonadWidget t m => GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal a)))
-faderButtonWidget (Atom iEnd Once) _ = elAttr "td" ("style"=:"text-align:center;margin:10px") $ mdo
+faderButtonWidget iGenPat _ = elAttr "td" ("style"=:"text-align:center;margin:10px") $ mdo
+  let iEnd = fst $ getIVal iGenPat
   (returnVal,attrs) <- elDynAttr "td" attrs $ do
     (begEv,endEv,delEv) <- el "tr" $ do
       begPlus <- tdButtonAttrs "<" (-0.05) ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black")
@@ -560,14 +421,22 @@ faderButtonWidget (Atom iEnd Once) _ = elAttr "td" ("style"=:"text-align:center;
     endVal <- mapDyn (\x-> (fromInteger $ round $ x*100)/100) endVal'
     endGradient <- forDyn endVal makeStyleString
     tableAttrs <- forDyn endGradient (\x->"style"=:("text-align:center;display:inline-table;width:100pt;border-spacing:5px;border:2pt solid black;"++x))
-    val <- mapDyn (\x-> (Atom x Once,delEv)) endVal
+    val <- mapDyn (\x-> (Atom x Inert Once,delEv)) endVal
     return $ (val, tableAttrs)
   return returnVal
+  where
+  getIVal i = case i of
+    (Atom a _ r) -> (a,r)
+    (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
 
 
 
 charWidget'::MonadWidget t m => GeneralPattern Char-> Event t () -> m (Dynamic t (GeneralPattern Char,Event t (EditSignal a)))
-charWidget' (Atom iVal reps) _ = do
+charWidget' iGenPat _ = do
+  let (iVal,reps) = getIVal iGenPat
   textField <-textInput $ def & textInputConfig_attributes .~ (constDyn $ fromList $ zip ["style", " maxlength"] ["width:40px", "1"]) & textInputConfig_initialValue .~ [iVal]
   let inputVal = _textInput_value textField
   inputChar <- mapDyn (\c-> if length c ==1 then c!!0 else  '~') inputVal
@@ -576,19 +445,28 @@ charWidget' (Atom iVal reps) _ = do
   deleteButton <- buttonDynAttrs "-" (DeleteMe) $ constDyn ("style"=:"width:20px")
   repeats <- combineDyn (\a b ->(a+1-b)) plusButton minusButton
   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div (abs (k-2)))
-  genPat <- combineDyn (\char rep-> if char=='~' then Blank else Atom char rep) inputChar repeats'
+  genPat <- combineDyn (\char rep-> if char=='~' then Blank Inert Once else Atom char Inert rep) inputChar repeats'
   forDyn genPat (\k-> (k,deleteButton))
+  where
+  getIVal i = case i of
+    (Atom a _ r) -> (a,r)
+    (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+
 
 -- used in charContainer, example in Vowel in ICLCStacked widget
-charWidget::(MonadWidget t m) => GeneralPattern Char -> Event t (EditSignal (GeneralPattern Char)) -> m (Dynamic t (GeneralPattern Char, Event t (EditSignal (GeneralPattern Char))))
-charWidget (Atom iVal iReps) _ = elAttr "table" ("class"=:"aGLStringWidgetTable") $ mdo
+charWidget::(MonadWidget t m) => Dynamic t Liveness -> GeneralPattern Char -> Event t (EditSignal (GeneralPattern Char)) -> m (Dynamic t (GeneralPattern Char, Event t (EditSignal (GeneralPattern Char))))
+charWidget _ iGenPat _ = elAttr "table" ("class"=:"aGLStringWidgetTable") $ mdo
+  let (iVal,iReps) = getIVal iGenPat
   genPat <- el "tr" $ do
     val <- el "td" $ do
       inputField <- textInput $ def & textInputConfig_attributes .~ constDyn ("class"=:"aGLNumberWidgetTable-textFieldtd") & textInputConfig_initialValue .~ ([iVal])
       let val = _textInput_value inputField
       forDyn val (\x-> maybe (' ') id $ listToMaybe x)
     reps <- repDivWidget iReps
-    combineDyn (\x y -> Atom x y) val reps
+    combineDyn (\x y -> Atom x Inert y) val reps
   (layerEvent, groupEvent, deleteEvent) <- el "tr" $ elAttr "td" ("colspan"=:"3") $ el "tr" $ do
     groupButton <- tdButtonAttrs " [] " (MakeGroup) $ ("class"=:"aGLStringWidgetTable-grouptd")
     layerButton <- tdButtonAttrs " [,,] " (MakeLayer) $ ("class"=:"aGLStringWidgetTable-layertd")
@@ -596,11 +474,17 @@ charWidget (Atom iVal iReps) _ = elAttr "table" ("class"=:"aGLStringWidgetTable"
     return $ (layerButton, groupButton, deleteButton)
   groupToggle <- toggle False groupEvent
   layerToggle <- toggle False layerEvent
-  genPat' <- combineDyn (\u tog-> if tog then Group [u] Once else u) genPat groupToggle
-  genPat''<- combineDyn (\u tog-> case u of (Atom a x) -> if tog then Layers [u] Once else u; otherwise-> u) genPat' layerToggle
+  genPat' <- combineDyn (\u tog-> if tog then Group (Live ([u],Once) L4) Inert else u) genPat groupToggle
+  genPat''<- combineDyn (\u tog-> case u of (Atom a Inert x) -> if tog then Layers (Live ([u],Once) L4) Inert else u; otherwise-> u) genPat' layerToggle
   let rebuildEvent = fmap (const RebuildMe) $ leftmost [layerEvent, groupEvent]
   mapDyn (\x-> (x,leftmost [rebuildEvent, deleteEvent])) genPat''
-charWidget _ e = charWidget (Atom ' ' Once) e
+  where
+  getIVal i = case i of
+    (Atom a _ r) -> (a,r)
+    (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+    (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
 
 intWidget::MonadWidget t m => GeneralPattern Int-> Event t () -> m (Dynamic t (GeneralPattern Int,Event t (EditSignal a)))
 intWidget iVal _ = do
@@ -612,7 +496,7 @@ intWidget iVal _ = do
   deleteButton <- buttonDynAttrs "-" (DeleteMe) $ constDyn ("style"=:"width:20px")
   repeats <- combineDyn (\a b ->(a+1-b)) plusButton minusButton
   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div (abs (k-2)))
-  genPat <- combineDyn (\str rep-> if isJust (readMaybe str::Maybe Int) then Atom (read str::Int) rep else Atom 0 rep ) inputVal repeats'
+  genPat <- combineDyn (\str rep-> if isJust (readMaybe str::Maybe Int) then Atom (read str::Int) Inert rep else Atom 0 Inert rep ) inputVal repeats'
   forDyn genPat (\k-> (k,deleteButton))
 
 
@@ -627,16 +511,17 @@ crushWidget iVal _ = do
   slider<-textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs
   text "16"
   let panVal = _textInput_value slider
-  panVal' <- forDyn panVal (\x-> if isJust (readMaybe x::Maybe Int) then Atom (read x::Int) Once else Atom 16 Once)
+  panVal' <- forDyn panVal (\x-> if isJust (readMaybe x::Maybe Int) then Atom (read x::Int) Inert Once else Atom 16 Inert Once)
   deleteButton <- button' "-" DeleteMe
   forDyn panVal' (\k -> (k,deleteButton))
 
 
 ---- uses clickListWidget as a base widget, intersperses with + buttons
 sampleNameWidget::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a)))
-sampleNameWidget (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
+sampleNameWidget iGenPat _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
+  let (iSamp,iReps) = getIVal iGenPat
   (sample,upCount) <- elAttr "tr" (empty)$ do
-    (samp,_) <- clickListWidget (fromList $ zip [(1::Int)..] ["~","bd","cp","bassfoo","moog", "arpy"]) (Atom iSamp iReps) repeatsEv >>= splitDyn
+    (samp,_) <- clickListWidget (fromList $ zip [(1::Int)..] ["~","bd","cp","bassfoo","moog", "arpy"]) (Atom iSamp Inert iReps) repeatsEv >>= splitDyn
     upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border 1pt solid black") >>= count
     return $ (samp,upButton)
   (deleteEvent,downCount) <- el "tr" $ do
@@ -649,15 +534,23 @@ sampleNameWidget (Atom iSamp iReps) _ = elAttr "td" ("style"=:"text-align:center
   repInitial <- holdDyn iReps $ updated repeats'
   let repeatsEv = updated repInitial
   mapDyn (\x->(x,deleteEvent)) sample
-  where tableAttrs=("style"=:"display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border: 3pt solid black")
-sampleNameWidget _ e = sampleNameWidget (Atom "~" Once) e
+  where 
+    tableAttrs=("style"=:"display:inline-table;background-color:lightgreen;width:100pt;border-spacing:5px;border: 3pt solid black")
+    getIVal i = case i of
+      (Atom a _ r) -> (a,r)
+      (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+sampleNameWidget _ e = sampleNameWidget (Atom "~" Inert Once) e
 
 
 
 
 ---- Eldad's Widgets:
 sButtonContainer::MonadWidget t m => GeneralPattern SampleName -> Event t () -> m (Dynamic t (GeneralPattern SampleName, Event t (EditSignal a), Event t Hint))
-sButtonContainer (Atom iSamp iReps) _ = elAttr "table" tableAttrs $ mdo
+sButtonContainer iGenPat _ = elAttr "table" tableAttrs $ mdo
+  let (iSamp,iReps) = getIVal iGenPat
   (sample,upCount) <- el "tr" $ do
     samp <- sButtonWidget iSamp repeats''
     upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue") >>= count
@@ -671,9 +564,16 @@ sButtonContainer (Atom iSamp iReps) _ = elAttr "table" tableAttrs $ mdo
   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div $ abs (k-2))
   repeats'' <- holdDyn iReps $ updated repeats'
   let hints = fmap (SampleHint) $ updated sample
-  combineDyn (\x y -> (Atom x y,deleteEvent,hints)) sample repeats''
-  where tableAttrs=("style"=:"margin:5px;display:inline-table;background-color:lightgreen;width:10%;padding:6px;border-spacing:5px;border: 3pt solid black")
-sButtonContainer _ e = sButtonContainer (Atom "~" Once) e
+  combineDyn (\x y -> (Atom x Inert y,deleteEvent,hints)) sample repeats''
+  where 
+    tableAttrs=("style"=:"margin:5px;display:inline-table;background-color:lightgreen;width:10%;padding:6px;border-spacing:5px;border: 3pt solid black")
+    getIVal i = case i of
+      (Atom a _ r) -> (a,r)
+      (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+sButtonContainer _ e = sButtonContainer (Atom "~" Inert Once) e
 
 sButtonWidget::MonadWidget t m => SampleName -> Dynamic t RepOrDiv -> m (Dynamic t SampleName)
 sButtonWidget iSamp reps = mdo
@@ -682,13 +582,14 @@ sButtonWidget iSamp reps = mdo
   sampleButton <- tdButtonAttrs' (showSample) (iSamp) $ "style"=:"width:60%;text-align:center;background-color:lightblue"
   num <- count sampleButton >>= mapDyn (\x-> (x+iNum) `mod` length sMap)
   sName <- mapDyn (\x-> maybe ("~") id $ Data.Map.lookup x sMap) num
-  atom <- combineDyn (Atom) sName reps
+  atom <- combineDyn (\v r ->Atom v Inert r) sName reps
   showSample <- mapDyn (show) atom
   return sName
 
 -- returns atom of a character
 vowelButtonWidget::MonadWidget t m =>  GeneralPattern Char -> Event t () -> m (Dynamic t (GeneralPattern Char, Event t (EditSignal a)))
-vowelButtonWidget (Atom iVowel _) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" ("style"=:("width:100px;border-spacing:5px;display:inline-table;background-color:lightgreen;border:1pt solid black")) $ mdo
+vowelButtonWidget iGenPat _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" ("style"=:("width:100px;border-spacing:5px;display:inline-table;background-color:lightgreen;border:1pt solid black")) $ mdo
+  let (iVowel,_) = getIVal iGenPat
   let vowMap = fromList $ zip [0::Int,1..] ['X','a','e','i','o','u']  -- Map Int (String,String)
   let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVowel) $ elems vowMap
   vowelButton <- tdButtonAttrs' showVowel iVowel $ "style"=:"width:50px;text-align:center;background-color:lightblue;border:1pt solid black"
@@ -697,9 +598,16 @@ vowelButtonWidget (Atom iVowel _) _ = elAttr "td" ("style"=:"text-align:center")
   char'' <- mapDyn (\x-> maybe ('X') id $ Data.Map.lookup x vowMap) num
   let char' = updated char''
   char <- holdDyn (iVowel) char'
-  vowel <- mapDyn (\x -> Atom x Once) char
+  vowel <- mapDyn (\x -> Atom x Inert Once) char
   showVowel <- mapDyn show vowel
   mapDyn (\x->(x,deleteButton)) vowel
+  where
+      getIVal i = case i of
+        (Atom a _ r) -> (a,r)
+        (Group (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+        (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+        (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+        (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
 
 
 

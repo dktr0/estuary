@@ -31,13 +31,13 @@ charContainerWidget a _ = mdo
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
+  returnVal <- forDyn values' (\x-> (patType $ Group (Live (x,Once) L4) Inert))
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
   where
     (widgetBuilder,defaultGeneralPat, patType) = case a of
-      Unit _ -> (G.charWidget', Atom 'c' Once, Unit)
-      Vowel _ -> (G.vowelButtonWidget, Atom 'X' Once, Vowel)
+      Unit _ -> (G.charWidget', Atom 'c' Inert Once, Unit)
+      Vowel _ -> (G.vowelButtonWidget, Atom 'X' Inert Once, Vowel)
 
 
 -- End Pattern container
@@ -55,11 +55,11 @@ endContainerWidget a _ = mdo
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> patType $ Group x Once)
+  returnVal <- forDyn values' (\x-> patType $ Group (Live (x,Once) L4) Inert)
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
   where
-    (widgetBuilder,defaultGeneralPat, patType) = (G.faderButtonWidget, Atom (1) Once, End)
+    (widgetBuilder,defaultGeneralPat, patType) = (G.faderButtonWidget, Atom (1) Inert Once, End)
 
 
 intContainerWidget:: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t ()))
@@ -74,20 +74,20 @@ intContainerWidget a _ = mdo
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> (patType $ Group x Once))
+  returnVal <- forDyn values' (\x-> patType $ Group (Live (x,Once) L4) Inert)
   display returnVal
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
   where
     (widgetBuilder,defaultGeneralPat, patType) = case a of
-      Bandf _ -> (G.intWidget, Atom (440) Once, Bandf)
-      Coarse _ -> (G.intWidget, Atom (0) Once, Coarse)
-      Crush _ -> (G.crushWidget, Atom (16) Once, Crush)
-      Estuary.Tidal.Types.Cut _ -> (G.intWidget, Atom 1 Once, Estuary.Tidal.Types.Cut)
-      Cutoff _ -> (G.intWidget, Atom (440) Once, Cutoff)
-      Hcutoff _ -> (G.intWidget, Atom (440) Once, Hcutoff)
-      Loop _ -> (G.intWidget, Atom 0 Once, Loop)
-      N _ -> (G.intWidget, Atom (0) Once, N)
+      Bandf _ -> (G.intWidget, Atom (440) Inert Once, Bandf)
+      Coarse _ -> (G.intWidget, Atom (0) Inert Once, Coarse)
+      Crush _ -> (G.crushWidget, Atom (16) Inert Once, Crush)
+      Estuary.Tidal.Types.Cut _ -> (G.intWidget, Atom 1 Inert Once, Estuary.Tidal.Types.Cut)
+      Cutoff _ -> (G.intWidget, Atom (440) Inert Once, Cutoff)
+      Hcutoff _ -> (G.intWidget, Atom (440) Inert Once, Hcutoff)
+      Loop _ -> (G.intWidget, Atom 0 Inert Once, Loop)
+      N _ -> (G.intWidget, Atom (0) Inert Once, N)
 
 
 -- Sample container widget using the click-list button
@@ -102,9 +102,9 @@ sampleContainerWidget (S genPat) _ = mdo
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert $ Left $ Blank Inert Once)])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
-  mapDyn ((\x -> (S $ Group x Once,never,hints)) . elems) values
+  mapDyn ((\x -> ((S $ Group (Live (x,Once) L4) Inert),never,hints)) .  elems) values
   where
     tdPingButton' = tdPingButtonAttrs  "+" ("class"=:"addButton")
     tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))
@@ -118,9 +118,9 @@ sContainerWidget (S genPat) _ = mdo
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left Blank))])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Blank Inert Once))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
-  mapDyn ((\x -> (S $ Group x Once,never)) . elems) values
+  mapDyn ((\x -> ( S $ Group (Live (x,Once) L4) Inert,never)) . elems) values
   where
     tdPingButton' = pingButton''' "+" ("class"=:"addButton")
     tdPingButton'' x e = tdPingButton' x e >>= mapDyn (\(a,b) -> (a,b,never))
@@ -155,8 +155,8 @@ specificContainer (S x) e = do
   mapDyn (show . fst) a >>= dynText
   return a
 --specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
-specificContainer (Vowel x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Vowel x,(() <$) ev))
-specificContainer (Unit x) e = G.generalContainer G.charWidget x never >>= mapDyn (\(x,ev)->(Unit x,(() <$) ev))
+specificContainer (Vowel x) e = G.generalContainerLive G.charWidget x never >>= mapDyn (\(x,ev)->(Vowel x,(() <$) ev))
+specificContainer (Unit x) e = G.generalContainerLive G.charWidget x never >>= mapDyn (\(x,ev)->(Unit x,(() <$) ev))
 
 
 
@@ -173,8 +173,8 @@ upContainerWidget a _ = mdo
   let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ defaultGeneralPat))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   values' <- forDyn values (elems)
-  returnVal <- forDyn values' (\x-> patType $ Group x Once)
+  returnVal <- forDyn values' (\x-> patType $ Group (Live (x,Once) L4) Inert)
   returnVal'<-forDyn returnVal (\x->(x,never))
   return returnVal'
   where
-    (widgetBuilder,defaultGeneralPat, patType) = (G.countStepWidget 1, Atom 0 Once, Up)
+    (widgetBuilder,defaultGeneralPat, patType) = (G.countStepWidget 1, Atom 0 Inert Once, Up)
