@@ -19,8 +19,8 @@ import Estuary.Widgets.WebDirt
 import Data.Map
 import Control.Monad.IO.Class (liftIO)
 
-main :: IO ()
-main = do
+main' :: IO ()
+main' = do
   wd <- webDirt
   stream <- webDirtStream wd
   mainWidget $ do
@@ -62,3 +62,52 @@ pages = [
   ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyPatternChain never),
   ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns)
   ]
+
+
+examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
+  -> m
+    (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
+     Event t (Map Int (Either TransformedPattern String)), -- edit events for broadcast
+     Event t Hint) -- hint events for local use
+
+examplePage = do
+  -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
+  -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
+  aValue <- trivialTransformedPatternWidget
+  bValue <- textWidget "(blank text to start)"
+  let aValue' = mapDyn (singleton 1 . Left) aValue
+  let bValue' = mapDyn (singleton 2 . Right) bValue
+  values <- combineDyn (union) aValue' bValue'
+  let aDeltaUp = fmap (singleton 1 . Left) $ updated aValue -- note: this is not a viable long-term solution
+  let bDeltaUp = fmap (singleton 2 . Right) $ updated bValue
+  let deltasUp = mergeWith union [aDeltaUp,bDeltaUp]
+  -- let hintsUp = leftmost [aHints,bHints]
+  let hintsUp = never
+  return (values,deltasUp,hintsUp)
+
+trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))
+
+trivialPatternB = UntransformedPattern (S (Atom "cp" Inert Once))
+
+trivialTransformedPatternWidget :: MonadWidget t m => m (Dynamic t TransformedPattern)
+trivialTransformedPatternWidget = do
+  a <- liftM (trivialPatternA <$) $ button "trivialA"
+  b <- liftM (trivialPatternB <$) $ button "trivialB"
+  holdDyn EmptyTransformedPattern $ leftMost [a,b]
+
+textWidget :: MonadWidget t m => String -> m (Dynamic t String)
+textWidget i = do
+  x <- button "eval"
+  y <- textInput $ def & textInputConfig_initialValue .~ i
+  let y' = updated $ _textInput_value y
+  return y'
+
+main :: IO ()
+main = mainWidget $ do
+  (values,deltasUp,hints) <- examplePage
+  text "Values:"
+  display values
+  text "DeltasUp:"
+  holdDyn "" $ fmap show deltasUp >>= display
+  text "Hints:"
+  holdDyn "" $ fmap show hints >>= display
