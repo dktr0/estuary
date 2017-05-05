@@ -1,0 +1,12 @@
+digraph textInterface {
+              node [shape=record, labelloc=b];
+              textInterface [label=<textInterface<BR /> <FONT POINT-SIZE="10">Located in Estuary/Widgets/Text.hs <BR />Enable to editing PatternChain </FONT>>];
+              textPatternChain [label=<textPatternChain <BR /> <FONT POINT-SIZE="10"> Located in Estuary/Widgets/Text.hs <BR /> Enables to editing PatternChain to building editors. </FONT>>];
+              textSpecificContainer [label=<textSpecificContainer<BR /> <FONT POINT-SIZE="10"> Located in Estuary/Widgets/Text.hs <BR /> <BR /> Enables to editing SpecificPattern </FONT>>];
+              textGeneralContainer [label =<textGeneralContainer <BR /> <FONT POINT-SIZE="10"> Located in Estuary/Widgets/Text.hs <BR /> <BR /> Enables to editing GeneralPattern </FONT>>];
+
+              textInterface -> textPatternChain
+              textPatternChain -> textSpecificContainer
+              textSpecificContainer -> textGeneralContainer
+
+}

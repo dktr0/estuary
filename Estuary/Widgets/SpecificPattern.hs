@@ -102,7 +102,7 @@ sampleContainerWidget (S genPat) _ = mdo
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert $ Left $ Blank Inert Once)])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert $ Left $ Blank Inert )])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   mapDyn ((\x -> ((S $ Group (Live (x,Once) L4) Inert),never,hints)) .  elems) values
   where
@@ -118,7 +118,7 @@ sContainerWidget (S genPat) _ = mdo
   let deleteList = fmap (concat . Prelude.map (\k -> [(k,Delete),(k+1,Delete)])) deleteKeys -- Evnt []
   let deleteMap = fmap (fromList) deleteList
   let makeSKeys = fmap (keys . Data.Map.filter (isChangeValue)) events
-  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Blank Inert Once))])) makeSKeys
+  let makeSList = fmap (concat . Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Blank Inert))])) makeSKeys
   let makeSMap = fmap (fromList) makeSList
   mapDyn ((\x -> ( S $ Group (Live (x,Once) L4) Inert,never)) . elems) values
   where
