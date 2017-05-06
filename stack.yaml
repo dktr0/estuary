@@ -1,13 +1,14 @@
-resolver: lts-7.19
-compiler: ghcjs-0.2.1.9007019_ghc-8.0.1
+resolver: lts-6.30
+compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
 compiler-check: match-exact
+
 
 setup-info:
   ghcjs:
     source:
-      ghcjs-0.2.1.9007019_ghc-8.0.1:
-           url: http://ghcjs.tolysz.org/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
-           sha1: d2cfc25f9cda32a25a87d9af68891b2186ee52f9
+      ghcjs-0.2.0.9006030_ghc-7.10.3:
+         url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
+         sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
 
 packages:
 - '.'
@@ -26,6 +27,7 @@ packages:
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
+- aeson-0.10.0.0
 - ref-tf-0.4
 - ghcjs-dom-0.2.3.1
 - these-0.6.1.0
@@ -37,6 +39,8 @@ extra-deps:
 - reflex-dom-0.3.2
 - dependent-map-0.2.1.0
 - dependent-sum-0.3.2.1
+- bifunctors-5
+- profunctors-5
 
 # Override default flag values for local packages and extra-deps
 flags: {}
