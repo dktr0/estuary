@@ -1,64 +1,26 @@
-resolver: lts-6.30
-compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
+resolver: lts-5.12
+compiler: ghcjs-0.2.0.20160414_ghc-7.10.3
 compiler-check: match-exact
-
-
 setup-info:
   ghcjs:
     source:
-      ghcjs-0.2.0.9006030_ghc-7.10.3:
-         url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
-         sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
+      ghcjs-0.2.0.20160414_ghc-7.10.3:
+        url: https://s3.amazonaws.com/ghcjs/ghcjs-0.2.0.20160414_ghc-7.10.3.tar.gz
+        sha1: 6d6f307503be9e94e0c96ef1308c7cf224d06be3
 
 packages:
 - '.'
-- location:
-    git: https://github.com/ryantrinkle/reflex.git
-    commit: d5e5518d228ae895f6a83b17dc0ae794d4b9eec5
-  extra-dep: true
-- location:
-    git: https://github.com/ryantrinkle/reflex-dom.git
-    commit: c17d6c3cd30707d14d700c8874bdd825be6f65c6
-  extra-dep: true
-- location:
-    git: https://github.com/tidalcycles/Tidal.git
-    commit: b3e44108a6986be63475e9128993dac4f9c5fdd0
-  extra-dep: true
 
-# Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
-- aeson-0.10.0.0
-- ref-tf-0.4
 - ghcjs-dom-0.2.3.1
-- these-0.6.1.0
-- hmt-0.15
-- hosc-0.15
-- multiset-comb-0.2.4
-- permutation-0.5.0.5
+- reflex-dom-0.3
 - reflex-0.4.0
-- reflex-dom-0.3.2
-- dependent-map-0.2.1.0
-- dependent-sum-0.3.2.1
-- bifunctors-5
-- profunctors-5
+- ref-tf-0.4
+- haskell-src-exts-1.16.0.1
+- reflex-dom-contrib-0.4.1
+- tidal-0.8.2
+- hosc-0.15
+- hmt-0.15
+- multiset-comb-0.2.4.1
+- permutation-0.5.0.5
 
-# Override default flag values for local packages and extra-deps
-flags: {}
-
-# Extra package databases containing global packages
-extra-package-dbs: []
-
-# Control whether we use the GHC we find on the path
-# system-ghc: true
-
-# Require a specific version of stack, using version ranges
-# require-stack-version: -any # Default
-# require-stack-version: >= 0.1.4.0
-
-# Override the architecture used by stack, especially useful on Windows
-# arch: i386
-# arch: x86_64
-
-# Extra directories used by stack for building
-# extra-include-dirs: [/path/to/dir]
-# extra-lib-dirs: [/path/to/dir]
