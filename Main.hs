@@ -95,6 +95,30 @@ trivialTransformedPatternWidget = do
   b <- liftM (trivialPatternB <$) $ button "trivialB"
   holdDyn EmptyTransformedPattern $ leftMost [a,b]
 
+{-
+topLevelTransformedPatternWidget :: MonadWidget t m =>
+  Event t TransformedPattern -> -- deltas from network (must not re-propagate as edit events!)
+  m (
+    Dynamic t TransformedPattern, -- value for local WebDirt playback
+    Event t TransformedPattern, -- deltas to network (not based on events received from network!)
+    Event t Hint, -- hints (currently for WebDirt sample loading only)
+  )
+
+topLevelTransformedPatternWidget updateEvent = do
+  w <- widgetHold (midLevelTransformedPatternWidget EmptyTransformedPattern) (fmap midLevelTransformedPatternWidget updateEvent)
+  x <- mapDyn (\(a,_,_) -> a) w
+  y <- mapDyn (\(_,a,_) -> a) w
+  z <- mapDyn (\(_,_,a) -> a) w
+  let x' = joinDyn x
+  let y' = switchPromptlyDyn y
+  let z' = switchPromptlyDyn z
+  return (x',y',z')
+
+midLevelTransformedPatternWidget :: MonadWidget t m =>
+  TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+-- i.e. adapting from what we need at higher level to recursively-structured transformedPatternWidget
+-}
+
 textWidget :: MonadWidget t m => String -> m (Dynamic t String)
 textWidget i = do
   x <- button "eval"
