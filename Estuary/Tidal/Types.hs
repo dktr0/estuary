@@ -94,7 +94,7 @@ isLayers (Layers _ _) = True
 isLayers _ = False
 isAtom (Atom _ _ _) = True
 isAtom _ = False
-isBlank (Blank _ _) = True
+isBlank (Blank _) = True
 isBlank _ = False
 
 -- example: an initial pattern...
