@@ -106,8 +106,8 @@ trivialTransformedPatternWidget _ = el "div" $ do
   return (value,edits,never)
 
 textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t (EditAction String),Event t Hint)
-textWidget _ = el "div" $ do
-  y <- textInput $ def
+textWidget delta = el "div" $ do
+  y <- textInput $ def & textInputConfig_setValue .~ delta
   let edits = fmap EditAction $ updated $ _textInput_value y
   evals <- liftM (EvalAction <$) $ button "eval"
   let editActions = leftmost [edits,evals]
@@ -122,8 +122,9 @@ examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern St
 examplePage _ = do
   -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
   -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
+  test <- liftM ("test"  <$) $ button "edit the text from elsewhere"
   (aValue,aEdits,aHints) <- trivialTransformedPatternWidget never
-  (bValue,bEdits,bHints) <- textWidget never
+  (bValue,bEdits,bHints) <- textWidget test
   aValue' <- mapDyn (singleton 1 . Left) aValue
   bValue' <- mapDyn (singleton 2 . Right) bValue
   values <- combineDyn (union) aValue' bValue'
