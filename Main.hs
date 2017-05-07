@@ -1,3 +1,4 @@
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Main where
 
@@ -17,6 +18,9 @@ import Estuary.WebDirt.Stream
 import Estuary.Widgets.SpecificPattern
 import Estuary.Widgets.WebDirt
 import Data.Map
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.ByteString.Char8 as C
 import Control.Monad.IO.Class (liftIO)
 import Text.JSON
 import Estuary.Types.EditAction
@@ -136,8 +140,12 @@ examplePage _ = do
   return (values,deltasUp,never)
 
 main :: IO ()
-main = mainWidget $ divClass "header" $ do
+main = mainWidget $ divClass "header" $ mdo
+  wsRcvd <- webSocket "ws://127.0.0.1:8002" $ def & webSocketConfig_send .~ wsSend
   (values,deltasUp,hints) <- examplePage never
+  let json = fmap encode deltasUp
+  let bs = fmap C.pack json
+  let wsSend = fmap (:[]) bs
   diagnostics values deltasUp hints
 
 diagnostics :: MonadWidget t m =>

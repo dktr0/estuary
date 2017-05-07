@@ -90,7 +90,15 @@ wss.on('connection',function(ws) {
   console.log("new WebSocket connection: " + ip);
 
   ws.on('message',function(m) {
-      var n = JSON.parse(m);
+      console.log(m);
+      try {
+        var n = JSON.parse(m);
+        console.log(n);
+      }
+      catch(e) {
+        console.log("exception in processing incoming message (possibly incorrectly formatted JSON)");
+        n = {};
+      }
       if(n.password != password) {
         console.log("request with invalid password from " + ip);
       }
@@ -115,8 +123,7 @@ wss.on('connection',function(ws) {
   });
 
   ws.on('close',function() {
-    memoryClose(id);
-    console.log("connection to " + id + " closed");
+    console.log("connection to " + ip + " closed");
   });
 });
 

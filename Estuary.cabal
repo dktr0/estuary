@@ -16,5 +16,5 @@ extra-source-files:  static/css/helperwidgets.css
 executable Estuary
   hs-source-dirs:    .
   main-is:           Main.hs
-  build-depends:     base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base, ghcjs-dom, text, array, ghcjs-prim, data-default, transformers, file-embed, time, monad-loops, json
+  build-depends:     base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base, ghcjs-dom, text, array, ghcjs-prim, data-default, transformers, file-embed, time, monad-loops, json, bytestring
   default-language:  Haskell2010
