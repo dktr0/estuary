@@ -64,7 +64,7 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   let splitVal = attachDynWith (\l index-> let (vals,rep) = case l of (Edited (old,reps) new) -> (old,reps); (Live (v,reps) _) -> (v,reps); in Layers (Live ([Group (Live (take (index+1) vals,Once) L4) Inert, Group (Live (reverse $ take ((length vals) - (index+1)) (reverse vals), Once) L4) Inert],rep) L4) Inert) live splitEv
   let returnEvents = (leftmost [fmap (\x-> if x==L3 then MakeL3 else MakeL4) livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])
   regVal <- combineDyn (\l p-> returnF i l p returnEvents) live potential
-  regVal' <- holdDyn (Blank Inert Once) splitVal >>= combineDyn (\reg spV -> case spV of (Blank _ _) -> reg; otherwise -> (spV,returnEvents)) regVal
+  regVal' <- holdDyn (Blank Inert ) splitVal >>= combineDyn (\reg spV -> case spV of (Blank _ ) -> reg; otherwise -> (spV,returnEvents)) regVal
 
   let splitBuilder = attachDynWith (\vals split-> do 
                                                     left <- generalContainerLive b (Group (Live ((take (div split 2) vals),Once) L4) Inert) never 
@@ -111,7 +111,7 @@ aGLWidgetLive liveness builder iVal ev = mdo
   return val
   where
     function (Atom x p r) e = builder liveness (Atom x p r) e
-    function (Blank p r) e = builder liveness (Blank p r) e
+    function (Blank p) e = builder liveness (Blank p) e
     function (Group l p) e = generalContainerLive (builder) (Group l p) e
     function (Layers l p) e = generalContainerLive  (builder) (Layers l p) e
 
@@ -127,7 +127,7 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   repDivVal <- holdDyn iRepDiv repDivEv >>= combineDyn (\tog val -> if tog then val else Once) repDivToggle
   let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x==Just MakeL4|| x==Just Eval) popupMenu
   let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
-  let sampleChanges = fmap (\x-> maybe (Blank Inert Once) (\y-> case y of (ChangeValue z)-> Atom z Inert Once; otherwise -> Blank Inert Once) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
+  let sampleChanges = fmap (\x-> maybe (Blank Inert ) (\y-> case y of (ChangeValue z)-> Atom z Inert Once; otherwise -> Blank Inert) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
   popupToggle <- toggle False $ leftmost $ [(() <$) sample,(() <$) groupLayerEv,(() <$) closeEvents,(() <$) livenessEv, (() <$) sampleChanges]
 
   inVal <- holdDyn iSamp $ fmap show sampleChanges
@@ -219,7 +219,6 @@ popupIntWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomP
 
 popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Dynamic t Liveness -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double))))
 popupDoubleWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
-
   let (iVal,iRepDiv) = getIVal iGenPat
   textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"  --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
   let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])
@@ -275,7 +274,7 @@ sliderWidget (minVal,maxVal) stepsize iGenPat _ = do
       (Group (Edited (xs,_) _) _) -> getIVal $  head xs
       (Layers (Live (xs,_) _) _) -> getIVal $ head xs
       (Layers (Edited (xs,_) _) _) -> getIVal $ head xs
-      (Blank _ _) -> minVal
+      (Blank _) -> minVal
 
 
 -- A clickable td element. Each click cycles to the next element in the map. Updated with a RepOrDiv event.
@@ -445,7 +444,7 @@ charWidget' iGenPat _ = do
   deleteButton <- buttonDynAttrs "-" (DeleteMe) $ constDyn ("style"=:"width:20px")
   repeats <- combineDyn (\a b ->(a+1-b)) plusButton minusButton
   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div (abs (k-2)))
-  genPat <- combineDyn (\char rep-> if char=='~' then Blank Inert Once else Atom char Inert rep) inputChar repeats'
+  genPat <- combineDyn (\char rep-> if char=='~' then Blank Inert  else Atom char Inert rep) inputChar repeats'
   forDyn genPat (\k-> (k,deleteButton))
   where
   getIVal i = case i of

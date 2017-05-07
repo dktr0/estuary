@@ -108,11 +108,7 @@ simpleFixedInterface i e = do
   return x
 
 
-patternCombinatorDropDown :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
-patternCombinatorDropDown iValue _ = do
-  let ddMap = constDyn $ fromList $ [ (x,show x) | x <- [Merge,Add,Subtract,Multiply,Divide] ]
-  dd <- dropdown iValue ddMap def
-  mapDyn (\x -> (x,never)) $ _dropdown_value dd
+
 
 --patternChainToList :: PatternChain -> [Either TransformedPattern PatternCombinator]
 --patternChainToList (EmptyPatternChain) = []
@@ -136,15 +132,15 @@ patternCombinatorDropDown iValue _ = do
 --listToPatternChain ((Left x):[]) = PatternChain x
 --listToPatternChain ((Left x):(Right y):z) = PatternChain' x y (listToPatternChain z)
 
-toCombinedTransPat'::[Either TransformedPattern PatternCombinator] -> TransformedPattern
-toCombinedTransPat' ((Left tPat):(Right patComb):xs) = TransformedPattern (Combine tPat patComb) $ toCombinedTransPat' xs
-toCombinedTransPat' ((Left x):[]) = UntransformedPattern x
+--toCombinedTransPat'::[Either TransformedPattern PatternCombinator] -> TransformedPattern
+--toCombinedTransPat' ((Left tPat):(Right patComb):xs) = TransformedPattern (Combine tPat patComb) $ toCombinedTransPat' xs
+--toCombinedTransPat' ((Left x):[]) = UntransformedPattern x
 
-toCombinedTransPat::[TransformedPattern] -> TransformedPattern
-toCombinedTransPat (UntransformedPattern x:[]) = UntransformedPattern x
-toCombinedTransPat (TransformedPattern trans x:[]) = TransformedPattern trans x
-toCombinedTransPat ((UntransformedPattern x):xs) = TransformedPattern (Combine x Merge) $ toCombinedTransPat xs
-toCombinedTransPat ((TransformedPattern trans tpat):xs) = TransformedPattern trans $ toCombinedTransPat $ tpat:xs
+--toCombinedTransPat::[TransformedPattern] -> TransformedPattern
+--toCombinedTransPat (UntransformedPattern x:[]) = UntransformedPattern x
+--toCombinedTransPat (TransformedPattern trans x:[]) = TransformedPattern trans x
+--toCombinedTransPat ((UntransformedPattern x):xs) = TransformedPattern (Combine x Merge) $ toCombinedTransPat xs
+--toCombinedTransPat ((TransformedPattern trans tpat):xs) = TransformedPattern trans $ toCombinedTransPat $ tpat:xs
 
 -- @
 --patternChainAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
@@ -154,11 +150,11 @@ toCombinedTransPat ((TransformedPattern trans tpat):xs) = TransformedPattern tra
 --                    | otherwise = [(k,Insert (Right ())),(k+1,Insert (Left (Right Merge))),(k+2,Insert (Left (Left def)))]
 --  where def = TransformedPattern [] emptySPattern
 
-transformedPatAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
-transformedPatAdd m k | Data.Map.null m = [(k+1,Insert (Left (Left def))),(k+2,Insert (Right ()))]
-                      | k<(fst (findMin m)) = [(k+1,Insert (Left (Left def))),(k+2,Insert (Right ())),(k+3,Insert (Left (Right Merge)))]
-                      | otherwise = [(k,Insert (Right ())),(k+1,Insert (Left (Right Merge))),(k+2,Insert (Left (Left def)))]
-  where def = UntransformedPattern $ S $ Blank Inert Once
+--transformedPatAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
+--transformedPatAdd m k | Data.Map.null m = [(k+1,Insert (Left (Left def))),(k+2,Insert (Right ()))]
+--                      | k<(fst (findMin m)) = [(k+1,Insert (Left (Left def))),(k+2,Insert (Right ())),(k+3,Insert (Left (Right Merge)))]
+--                      | otherwise = [(k,Insert (Right ())),(k+1,Insert (Left (Right Merge))),(k+2,Insert (Left (Left def)))]
+--  where def = UntransformedPattern $ S $ Blank Inert Once
 
 patternChainDel:: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k
   -> [(k,Construction (Either (Either TransformedPattern PatternCombinator) () ))]
@@ -183,36 +179,36 @@ transformedPatternToList x = (Right ()):(f x)
 
 
 iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
-iclcForStacked (TransformedPattern (Combine spPat comb) iTransPat) _ = do
+iclcForStacked = transformedPatternWidget
+--iclcForStacked (TransformedPattern (Combine spPat comb) iTransPat) _ = do
+
+  
+--  transPat <- transformedPatternWidget (UntransformedPattern spPat) never
+--  <- fmap () $ button "+"
 
 
+--transPat
 
-  transPat <- transformedPatternWidget (UntransformedPattern spPat) never
-  <- fmap () $ button "+"
+---- Widget used in iclc stacked pattern demo
+--iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
+--iclcForStacked iValue _ = mdo
+--  let iMap = fromList $ zip ([0..]::[Int]) $ transformedPatternToList iValue
+--  let cEvents = mergeWith union [addMap,deleteMap]
+--  let trasnformedCombinatorWidget = eitherWidget transformedPatternWidget patternCombinatorDropDown --m (Dynamic t ((Either a b),Event t d))
 
+--  (values,events) <- eitherContainer' iMap cEvents never never trasnformedCombinatorWidget (makeNewButton "+")
+--  let addKeys = fmap (keys . Data.Map.filter (==MakeNew)) events
 
-transPat
+----patternChainAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k  -> [(k,Construction (Either (Either TransformedPattern PatternCombinator) () ))]
 
--- Widget used in iclc stacked pattern demo
-iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
-iclcForStacked iValue _ = mdo
-  let iMap = fromList $ zip ([0..]::[Int]) $ transformedPatternToList iValue
-  let cEvents = mergeWith union [addMap,deleteMap]
-  let trasnformedCombinatorWidget = eitherWidget transformedPatternWidget patternCombinatorDropDown --m (Dynamic t ((Either a b),Event t d))
-
-  (values,events) <- eitherContainer' iMap cEvents never never trasnformedCombinatorWidget (makeNewButton "+")
-  let addKeys = fmap (keys . Data.Map.filter (==MakeNew)) events
-
---patternChainAdd :: (Ord k,Num k) => Map k (Either TransformedPattern PatternCombinator) -> k  -> [(k,Construction (Either (Either TransformedPattern PatternCombinator) () ))]
-
-  let addList = attachDynWith (\a b -> concat (Prelude.map (transformedPatAdd a) b)) values addKeys
-  let addList' = traceEvent "addList" addList
-  let addMap = fmap (fromList) addList'
-  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events
-  let deleteList = attachDynWith (\a b -> concat (Prelude.map (patternChainDel a) b)) values deleteKeys
-  let deleteList' = traceEvent "deleteList" deleteList
-  let deleteMap = fmap (fromList) deleteList'
-  mapDyn ((\x -> (x,never)) . toCombinedTransPat' . elems) values
+--  let addList = attachDynWith (\a b -> concat (Prelude.map (transformedPatAdd a) b)) values addKeys
+--  let addList' = traceEvent "addList" addList
+--  let addMap = fmap (fromList) addList'
+--  let deleteKeys = fmap (keys . Data.Map.filter (==DeleteMe)) events
+--  let deleteList = attachDynWith (\a b -> concat (Prelude.map (patternChainDel a) b)) values deleteKeys
+--  let deleteList' = traceEvent "deleteList" deleteList
+--  let deleteMap = fmap (fromList) deleteList'
+--  mapDyn ((\x -> (x,never)) . toCombinedTransPat' . elems) values
 
 ---- Widget used in iclc stacked pattern demo
 --iclcForStacked :: (MonadWidget t m) => PatternChain -> Event t () -> m (Dynamic t (PatternChain, Event t (EditSignal a)))

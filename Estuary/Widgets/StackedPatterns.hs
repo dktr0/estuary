@@ -22,8 +22,8 @@ stackedPatternsWidget (StackedPatterns xs) _ = elAttr "table" ("class"=:"stacked
 
 twoStackedPatterns :: MonadWidget t m => m (Dynamic t (StackedPatterns,Event t (), Event t Hint))
 twoStackedPatterns = do
-  x <- divClass "twoStackedPatternsLeft" $ iclcForStacked EmptyPatternChain never
-  y <- divClass "twoStackedPatternsRight" $ iclcForStacked EmptyPatternChain never
+  x <- divClass "twoStackedPatternsLeft" $ iclcForStacked EmptyTransformedPattern never
+  y <- divClass "twoStackedPatternsRight" $ iclcForStacked EmptyTransformedPattern never
   x' <- mapDyn fst x
   y' <- mapDyn fst y
   combineDyn (\a b -> (StackedPatterns [a,b],never,never)) x' y'

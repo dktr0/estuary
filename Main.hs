@@ -19,8 +19,8 @@ import Estuary.Widgets.WebDirt
 import Data.Map
 import Control.Monad.IO.Class (liftIO)
 
-main' :: IO ()
-main' = do
+main :: IO ()
+main = do
   wd <- webDirt
   stream <- webDirtStream wd
   mainWidget $ do
@@ -58,8 +58,8 @@ widgetToPage w = do
 
 -- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern,Event t Hint))]
 pages = [
-  ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyPatternChain never),
-  ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyPatternChain never),
+  ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyTransformedPattern never),
+  ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
   ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns)
   ]
 
@@ -126,12 +126,12 @@ textWidget i = do
   let y' = updated $ _textInput_value y
   return y'
 
-main :: IO ()
-main = mainWidget $ do
-  (values,deltasUp,hints) <- examplePage
-  text "Values:"
-  display values
-  text "DeltasUp:"
-  holdDyn "" $ fmap show deltasUp >>= display
-  text "Hints:"
-  holdDyn "" $ fmap show hints >>= display
+--main :: IO ()
+--main = mainWidget $ do
+--  (values,deltasUp,hints) <- examplePage
+--  text "Values:"
+--  display values
+--  text "DeltasUp:"
+--  holdDyn "" $ fmap show deltasUp >>= display
+--  text "Hints:"
+--  holdDyn "" $ fmap show hints >>= display
