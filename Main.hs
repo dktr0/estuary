@@ -19,6 +19,7 @@ import Estuary.Widgets.WebDirt
 import Data.Map
 import Control.Monad.IO.Class (liftIO)
 import Text.JSON
+import Estuary.Types.EditAction
 
 {-
 main :: IO ()
@@ -66,37 +67,6 @@ pages = [
   ]
 -}
 
-examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
-  -> m
-    (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
-     Event t (Map Int (Either TransformedPattern String)), -- edit events for broadcast
-     Event t Hint) -- hint events for local use
-
-examplePage _ = do
-  -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
-  -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
-  aValue <- trivialTransformedPatternWidget
-  bValue <- textWidget "(blank text to start)"
-  aValue' <- mapDyn (singleton 1 . Left) aValue
-  bValue' <- mapDyn (singleton 2 . Right) bValue
-  values <- combineDyn (union) aValue' bValue'
-  let aDeltaUp = fmap (singleton 1 . Left) $ updated aValue -- note: this is not a viable long-term solution
-  let bDeltaUp = fmap (singleton 2 . Right) $ updated bValue
-  let deltasUp = mergeWith union [aDeltaUp,bDeltaUp]
-  -- let hintsUp = leftmost [aHints,bHints]
-  let hintsUp = never
-  return (values,deltasUp,hintsUp)
-
-trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))
-
-trivialPatternB = UntransformedPattern (S (Atom "cp" Inert Once))
-
-trivialTransformedPatternWidget :: MonadWidget t m => m (Dynamic t TransformedPattern)
-trivialTransformedPatternWidget = do
-  a <- liftM (trivialPatternA <$) $ button "trivialA"
-  b <- liftM (trivialPatternB <$) $ button "trivialB"
-  holdDyn EmptyTransformedPattern $ leftmost [a,b]
-
 {-
 topLevelTransformedPatternWidget :: MonadWidget t m =>
   Event t TransformedPattern -> -- deltas from network (must not re-propagate as edit events!)
@@ -121,21 +91,65 @@ midLevelTransformedPatternWidget :: MonadWidget t m =>
 -- i.e. adapting from what we need at higher level to recursively-structured transformedPatternWidget
 -}
 
-textWidget :: MonadWidget t m => String -> m (Dynamic t String)
-textWidget i = do
-  x <- button "eval"
-  y <- textInput $ def & textInputConfig_initialValue .~ i
-  holdDyn i $ updated $ _textInput_value y
+
+
+trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))
+
+trivialPatternB = UntransformedPattern (S (Atom "cp" Inert Once))
+
+trivialTransformedPatternWidget :: MonadWidget t m => Event t TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+trivialTransformedPatternWidget _ = el "div" $ do
+  a <- liftM (trivialPatternA <$) $ button "trivialA"
+  b <- liftM (trivialPatternB <$) $ button "trivialB"
+  value <- holdDyn EmptyTransformedPattern $ leftmost [a,b]
+  let edits = leftmost [a,b]
+  return (value,edits,never)
+
+textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t (EditAction String),Event t Hint)
+textWidget _ = el "div" $ do
+  y <- textInput $ def
+  let edits = fmap EditAction $ updated $ _textInput_value y
+  evals <- liftM (EvalAction <$) $ button "eval"
+  let editActions = leftmost [edits,evals]
+  value <- holdDyn "" $ updated $ _textInput_value y
+  return (value,editActions,never)
+
+examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
+  -> m
+    (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
+     Event t (Map Int (Either (EditAction TransformedPattern) (EditAction String))), -- edit events for broadcast
+     Event t Hint) -- hint events for local use
+examplePage _ = do
+  -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
+  -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
+  (aValue,aEdits,aHints) <- trivialTransformedPatternWidget never
+  (bValue,bEdits,bHints) <- textWidget never
+  aValue' <- mapDyn (singleton 1 . Left) aValue
+  bValue' <- mapDyn (singleton 2 . Right) bValue
+  values <- combineDyn (union) aValue' bValue'
+  let aDeltaUp = fmap (singleton 1 . Left . EditAction) $ aEdits
+  let bDeltaUp = fmap (singleton 2 . Right) $ bEdits
+  let deltasUp = mergeWith union [aDeltaUp,bDeltaUp]
+  -- let hintsUp = leftmost [aHints,bHints]
+  return (values,deltasUp,never)
 
 main :: IO ()
 main = mainWidget $ divClass "header" $ do
   (values,deltasUp,hints) <- examplePage never
+  diagnostics values deltasUp hints
+
+diagnostics :: MonadWidget t m =>
+  Dynamic t (Map Int (Either TransformedPattern String)) ->
+  Event t (Map Int (Either (EditAction TransformedPattern) (EditAction String))) ->
+  Event t Hint ->
+  m ()
+diagnostics values deltas hints = do
   el "div" $ do
     text "Values:"
-    mapDyn (encode) values >>= display
+    mapDyn encode values >>= display
   el "div" $ do
-    text "DeltasUp:"
-    (holdDyn "" $ fmap encode deltasUp) >>= display
+    text "Deltas:"
+    (holdDyn "" $ fmap encode deltas) >>= display
   el "div" $ do
     text "Hints:"
     (holdDyn "" $ fmap show hints) >>= display
