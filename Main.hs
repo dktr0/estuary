@@ -18,7 +18,9 @@ import Estuary.Widgets.SpecificPattern
 import Estuary.Widgets.WebDirt
 import Data.Map
 import Control.Monad.IO.Class (liftIO)
+import Text.JSON
 
+{-
 main :: IO ()
 main = do
   wd <- webDirt
@@ -62,7 +64,7 @@ pages = [
   ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
   ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns)
   ]
-
+-}
 
 examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
   -> m
@@ -70,13 +72,13 @@ examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern St
      Event t (Map Int (Either TransformedPattern String)), -- edit events for broadcast
      Event t Hint) -- hint events for local use
 
-examplePage = do
+examplePage _ = do
   -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
   -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
   aValue <- trivialTransformedPatternWidget
   bValue <- textWidget "(blank text to start)"
-  let aValue' = mapDyn (singleton 1 . Left) aValue
-  let bValue' = mapDyn (singleton 2 . Right) bValue
+  aValue' <- mapDyn (singleton 1 . Left) aValue
+  bValue' <- mapDyn (singleton 2 . Right) bValue
   values <- combineDyn (union) aValue' bValue'
   let aDeltaUp = fmap (singleton 1 . Left) $ updated aValue -- note: this is not a viable long-term solution
   let bDeltaUp = fmap (singleton 2 . Right) $ updated bValue
@@ -93,7 +95,7 @@ trivialTransformedPatternWidget :: MonadWidget t m => m (Dynamic t TransformedPa
 trivialTransformedPatternWidget = do
   a <- liftM (trivialPatternA <$) $ button "trivialA"
   b <- liftM (trivialPatternB <$) $ button "trivialB"
-  holdDyn EmptyTransformedPattern $ leftMost [a,b]
+  holdDyn EmptyTransformedPattern $ leftmost [a,b]
 
 {-
 topLevelTransformedPatternWidget :: MonadWidget t m =>
@@ -123,15 +125,17 @@ textWidget :: MonadWidget t m => String -> m (Dynamic t String)
 textWidget i = do
   x <- button "eval"
   y <- textInput $ def & textInputConfig_initialValue .~ i
-  let y' = updated $ _textInput_value y
-  return y'
+  holdDyn i $ updated $ _textInput_value y
 
---main :: IO ()
---main = mainWidget $ do
---  (values,deltasUp,hints) <- examplePage
---  text "Values:"
---  display values
---  text "DeltasUp:"
---  holdDyn "" $ fmap show deltasUp >>= display
---  text "Hints:"
---  holdDyn "" $ fmap show hints >>= display
+main :: IO ()
+main = mainWidget $ divClass "header" $ do
+  (values,deltasUp,hints) <- examplePage never
+  el "div" $ do
+    text "Values:"
+    mapDyn (encode) values >>= display
+  el "div" $ do
+    text "DeltasUp:"
+    (holdDyn "" $ fmap encode deltasUp) >>= display
+  el "div" $ do
+    text "Hints:"
+    (holdDyn "" $ fmap show hints) >>= display

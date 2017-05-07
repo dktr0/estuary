@@ -24,31 +24,6 @@ toCombinedTransPat ((UntransformedPattern x):xs) = TransformedPattern (Combine x
 toCombinedTransPat ((TransformedPattern trans tpat):xs) = TransformedPattern trans $ toCombinedTransPat $ tpat:xs
 
 
---toCombinedTransPat ((TransformedPattern transf tpat):[]) = TransformedPattern transf tpat 
---toCombinedTransPat (UntransformedPattern s:[]) = UntransformedPattern s
---toCombinedTransPat ((UntransformedPattern x):xs) = TransformedPattern (Combine x Merge) $ toCombinedTransPat xs
---toCombinedTransPat ((TransformedPattern transf transPat):xs) = TransformedPattern transf $ TransformedPattern (Combine x Merge) $ toCombinedTransPat xs
-
-
---toCombinedTransPat (x:xs) = TransformedPattern (Combine x Merge) $ toCombinedTransPat xs
-
---toCombinedTransPat x = UntransformedPattern x
-
---[ TransformedPattern Brak UntransformedPattern x, TransformedPattern Rev $ TransformedPattern (Slow 2) y       ]
-
---(TransformedPattern Brak $ TransformedPattern Rev $ y):xs
-
---toCombinedTransPat ((TransformedPattern x tpat):xs)  = TransformedPattern x $ TransformedPattern (Combine ) toCombinedTransPat [tpat] $ toCombinedTransPat xs
-
-
---every 2 (slow 2) $ s "bd*2" # slow 2 (speed "0.5 1")
-
---TransformedPattern (Every 2 (Slow 2)) $ TransformedPattern (Combine (S $ Atom "bd" Inert (Rep 2)) Merge) $ TransformedPattern (Slow 2) $ UntransformedPattern (Speed $ Atom 0.5 Inert Once)
-
---[TransformedPattern (Every 2 (Slow 2)) $ UntransformedPattern (S $ Atom "bd" Inert (Rep 2)), TransformedPattern (Slow 2) $ UntransformedPattern (Speed $ Atom 0.5 Inert Once)]
-
---[UntransformedPattern (S $ Atom "bd" Inert (Rep 2)), TransformedPattern (Slow 2) $ UntransformedPattern (Speed $ Atom 0.5 Inert Once)]
-
 iclcFixedStruct:: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
 iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
   s<- elAttr "div" ("class"=:"singlePatternDiv") $ do
@@ -67,22 +42,14 @@ iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Up"
     (pat,_) <- Sp.specificContainer (Up $ Atom 0 Inert Once) never >>= splitDyn
     forDyn pat UntransformedPattern
-
   combineDyn (\a b ->[a,b]) s end >>= combineDyn (:) up >>= combineDyn (:) vowel >>= mapDyn (\x -> (toCombinedTransPat x,never))
-  --upVowel <- combineDyn (,) up vowel
-  --transPat <- combineDyn (\(sPat,e) (u,v) -> TransformedPattern (Combine sPat Merge) $ TransformedPattern (Combine))
-
-  --patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
-  --patChain' <- combineDyn (\e p-> PatternChain' e Merge p) end patChain''
-  --patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain' s
-  --mapDyn (\x-> (x,never)) patChain
 
 
 icoahWidget:: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a), Event t Hint))
 icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
   (s,hints) <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "S"
-    swidget <- Sp.sampleContainerWidget (S $ Blank Inert Once) never
+    swidget <- Sp.sampleContainerWidget (S $ Blank Inert) never
     pat <- mapDyn (\(x,_,_) -> x) swidget
     pat' <- mapDyn UntransformedPattern pat
     hints' <- liftM (switchPromptlyDyn) $ mapDyn (\(_,_,x) -> x) swidget
@@ -96,9 +63,7 @@ icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
     (pat,_) <- Sp.upContainerWidget (Up $ Atom 0 Inert Once) never >>= splitDyn
     forDyn pat UntransformedPattern
   combineDyn (\a b ->[a,b]) s vowel >>= combineDyn (:) up >>= mapDyn (\x -> (toCombinedTransPat x,never,hints))
-  --patChain''<- combineDyn (\v u -> PatternChain' v Merge (PatternChain u)) vowel up
-  --patChain <- combineDyn (\chain pat -> PatternChain' pat Merge chain) patChain'' s
-  --mapDyn (\x-> (x,never,hints)) patChain
+
 
 simpleFixedInterface :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a),Event t Hint))
 simpleFixedInterface i e = do
@@ -106,24 +71,6 @@ simpleFixedInterface i e = do
   y <- divClass "twoStackedPatternsRight" $ divClass "paddedText" $ do
     el "div" $ text "In this interface you can combine simple patterns of samples (s), vowels and pitch changes (up). Click a + button to an add element to one of those three patterns. A ~ in an s pattern represents silence - you can click on the ~ to advance to a named sample/sound, and click again to advance through to further sounds. Clicking the up or down arrows repeats an element within the time allotted to it in the overall pattern."
   return x
-
-
-
-
---patternChainToList :: PatternChain -> [Either TransformedPattern PatternCombinator]
---patternChainToList (EmptyPatternChain) = []
---patternChainToList (PatternChain x) = [Left x]
---patternChainToList (PatternChain' x y z) = [Left x,Right y] ++ (patternChainToList z)
-
-
--- @
---patternChainToList' :: PatternChain -> [Either (Either TransformedPattern PatternCombinator) ()]
---patternChainToList' p = (Right ()):(f p)
---  where
---    f (EmptyPatternChain) = []
---    f (PatternChain x) = [Left (Left x),Right ()]
---    f (PatternChain' x y z) = [Left (Left x),Right (),Left (Right y)] ++ (f z)
-
 
 
 -- @
@@ -164,11 +111,6 @@ patternChainDel m k | Data.Map.null m = []
                     | otherwise = [(k,Delete),(k+1,Delete),(k+2,Delete)]
 
 
---Left Left - iVal passed to transformedPatternWidget
---Left Right - iVal passed to patternCombinatorDropDown
---Right()  - plus button
-
---every 2 (slow 2) $ s "bd cp" # speed "0.5"
 
 transformedPatternToList::TransformedPattern -> [Either (Either TransformedPattern PatternCombinator) ()]
 transformedPatternToList x = (Right ()):(f x)
@@ -178,16 +120,12 @@ transformedPatternToList x = (Right ()):(f x)
     f y = [Left $ Left y, Right ()]
 
 
+{-
 iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
 iclcForStacked = transformedPatternWidget
 --iclcForStacked (TransformedPattern (Combine spPat comb) iTransPat) _ = do
+-}
 
-  
---  transPat <- transformedPatternWidget (UntransformedPattern spPat) never
---  <- fmap () $ button "+"
-
-
---transPat
 
 ---- Widget used in iclc stacked pattern demo
 --iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))

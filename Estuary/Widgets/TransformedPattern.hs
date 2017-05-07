@@ -73,7 +73,7 @@ dropdownPatternWidget iPattern _ = do
 
 
 
-
+{-
 -- @parameteredPatternTransformer only takes 1 pattern transformer rn, should probably take a potentially infinite number of them
 -- (so we can have more than one pattern transformation per pattern)
 -- how to handle deletion though? - TransformedPattern Chain hsa to be reconfigured
@@ -92,17 +92,17 @@ transformedPatternWidget iTransPat _ = el "div" $ do
   --resettableWidget :: MonadWidget t m => (a -> Event t b -> m (Dynamic t c)) -> a -> Event t b -> Event t a -> m (Dynamic t c)
 
 
-  --combine <- button "+" >>= (transformedPatternWidget (UntransformedPattern specPat) never <$) 
-  combine <- button "+" 
+  --combine <- button "+" >>= (transformedPatternWidget (UntransformedPattern specPat) never <$)
+  combine <- button "+"
   isCombined <- toggle False combine --  >>= combineDyn (\del com -> if del then False else com)
 
   --flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
 
   let nextBuilder = do
-      c <- patternCombinatorDropDown Merge never >>= mapDyn fst 
-      --mapDyn show c >>= dynText
-      (v,e) <- transformedPatternWidget (UntransformedPattern iSpecPat) never >>= splitDyn
-      combineDyn (,) v e >>= combineDyn (\comb (x,y)-> (x,y,comb)) c
+    c <- patternCombinatorDropDown Merge never >>= mapDyn fst
+    --mapDyn show c >>= dynText
+    (v,e) <- transformedPatternWidget (UntransformedPattern iSpecPat) never >>= splitDyn
+    combineDyn (,) v e >>= combineDyn (\comb (x,y)-> (x,y,comb)) c 
 
   nextWidget <- liftM joinDyn $ flippableWidget (return $ constDyn (EmptyTransformedPattern,never,Merge)) nextBuilder False (updated isCombined)
   --val <- flippableWidget nextWidget regWidget False (updated deleted))
@@ -124,7 +124,7 @@ transformedPatternWidget iTransPat _ = el "div" $ do
       (UntransformedPattern s) -> (NoTransformer,s)
       (EmptyTransformedPattern) -> (NoTransformer,S $ Blank Inert Once)
 
-
+-}
 
 
 
@@ -145,19 +145,19 @@ transformedPatternWidget iTransPat _ = el "div" $ do
 
 --  --(specPat, events) <- dropdownPatternWidget iSpecPat never >>= splitDyn
 
---  --combine <- button "+" >>= (transformedPatternWidget (UntransformedPattern specPat) never <$) 
---  combine <- button "+" 
+--  --combine <- button "+" >>= (transformedPatternWidget (UntransformedPattern specPat) never <$)
+--  combine <- button "+"
 --  isCombined <- toggle False combine --  >>= combineDyn (\del com -> if del then False else com)
 
 --  --flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
 --  let nextBuilder = do
---      c <- patternCombinatorDropDown Merge never >>= mapDyn fst 
+--      c <- patternCombinatorDropDown Merge never >>= mapDyn fst
 --      --mapDyn show c >>= dynText
 --      (v,e) <- transformedPatternWidget (UntransformedPattern iSpecPat) never >>= splitDyn
 --      combineDyn (,) v e >>= combineDyn (\comb (x,y)-> (x,y,comb)) c
 
 --  nextWidget <- liftM joinDyn $ flippableWidget (return $ constDyn (EmptyTransformedPattern,never,Merge)) nextBuilder False (updated isCombined)
-  
+
 --  (specPat,_) <- liftM joinDyn (flippableWidget nextWidget regWidget False (updated deleted)) >>=splitDyn
 
 
@@ -182,10 +182,10 @@ patternCombinatorDropDown iValue _ = do
   dd <- dropdown iIndex ddMap def
   --mapDyn show (_dropdown_value dd) >>= dynText
   let choice = _dropdown_value dd
-  val <- mapDyn (maybe Merge id . (flip Data.Map.lookup) ddMapVals) choice 
+  val <- mapDyn (maybe Merge id . (flip Data.Map.lookup) ddMapVals) choice
   mapDyn (\x->(x,never)) val
   --mapDyn ((flip Data.Map.lookup) ddMapVals) choice >>= mapDyn (\x -> (x,never))
-  where 
+  where
     iIndex = case iValue of
       (Merge) -> 1
       (Add) -> 2
@@ -203,7 +203,7 @@ patternCombinatorDropDown iValue _ = do
 --      (TransformedPattern t _) -> t  -- @ should really return a list of all the transformations applied to the pattern
 --      (UntransformedPattern _) -> NoTransformer
 
- 
+
 --transformedPatternWidget' :: MonadWidget t m => TransformedPattern -> m (Dynamic t TransformedPattern)
 
 --transformedPatternWidget' (UntransformedPattern u) = do

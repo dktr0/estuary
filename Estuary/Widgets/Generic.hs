@@ -12,7 +12,7 @@ import Data.Map
 import Data.List
 import Estuary.Tidal.Types
 
-import Estuary.Reflex.Container 
+import Estuary.Reflex.Container
 import Data.Maybe
 import Text.Read (readMaybe)
 import Estuary.WebDirt.Foreign
@@ -20,7 +20,7 @@ import qualified GHCJS.Types as T
 import qualified GHCJS.Marshal.Pure as P
 
 
-data Hint = SampleHint String deriving (Eq)
+data Hint = SampleHint String deriving (Eq,Show)
 
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer | LayerSplit  deriving (Eq)
@@ -191,7 +191,7 @@ whitespacePopup liveness actionList = elClass "div" "popupMenu" $ do
   let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
   events' <- liftM (id) events
-  layerSplit <- clickableDivClass' "[ , ]" "noClass" (LayerSplit) 
+  layerSplit <- clickableDivClass' "[ , ]" "noClass" (LayerSplit)
   liveWidget <- livenessCheckboxWidget (liveness)
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget, fmap Just layerSplit]
@@ -224,8 +224,8 @@ basicPopup liveness actionList = elClass "div" "popupMenu" $ do
 
 samplePickerPopup::(MonadWidget t m)=>  Dynamic t Liveness -> Map Int (String,String) -> [EditSignal  String] -> m (Event t (Maybe (EditSignal String)))
 samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ do
-  dd <- dropdownOpts 0 sampleMap def 
-  let sampleKey = _dropdown_value dd 
+  dd <- dropdownOpts 0 sampleMap def
+  let sampleKey = _dropdown_value dd
   sampleChange <- mapDyn (\x-> Just $ ChangeValue $ maybe ("~") (snd) $ Data.Map.lookup x sampleMap) sampleKey -- Dyn (editsignal String)
   let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
@@ -275,4 +275,3 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
   c <- button' "[]" MakeGroup
   d <- button' "{}" MakeLayer
   return $ leftmost [b,c,d]
-
