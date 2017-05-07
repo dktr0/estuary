@@ -90,7 +90,6 @@ wss.on('connection',function(ws) {
   console.log("new WebSocket connection: " + ip);
 
   ws.on('message',function(m) {
-      console.log(m);
       try {
         var n = JSON.parse(m);
         console.log(n);

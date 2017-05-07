@@ -5,6 +5,7 @@ module Main where
 import Reflex
 import Reflex.Dom
 import Estuary.Tidal.Types
+import Estuary.Protocol
 import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
 import Estuary.Widgets.StackedPatterns
@@ -101,56 +102,57 @@ trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))
 
 trivialPatternB = UntransformedPattern (S (Atom "cp" Inert Once))
 
-trivialTransformedPatternWidget :: MonadWidget t m => Event t TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+trivialTransformedPatternWidget :: MonadWidget t m => Event t TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern)
 trivialTransformedPatternWidget _ = el "div" $ do
   a <- liftM (trivialPatternA <$) $ button "trivialA"
   b <- liftM (trivialPatternB <$) $ button "trivialB"
   value <- holdDyn EmptyTransformedPattern $ leftmost [a,b]
   let edits = leftmost [a,b]
-  return (value,edits,never)
+  return (value,edits)
 
-
-textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t (EditAction String),Event t Hint)
+textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t String,Event t String)
 textWidget delta = el "div" $ do
   y <- textArea $ def & textAreaConfig_setValue .~ delta
-  let edits = fmap EditAction $ tagDyn (_textArea_value y) (_textArea_keypress y) -- local edit actions are the value after a keypress
-  evals <- liftM (EvalAction <$) $ button "eval"
-  let editActions = leftmost [edits,evals]
+  let edits = tagDyn (_textArea_value y) (_textArea_keypress y) -- local edit actions are the value after a keypress
+  evals <- button "eval"
+  let evals' = tagDyn (_textArea_value y) evals
   value <- holdDyn "" $ updated $ _textArea_value y -- updated values may be from local edit actions or remote assignment
-  return (value,editActions,never)
+  return (value,edits,evals')
 
-examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
+examplePage :: MonadWidget t m => Event t EstuaryProtocol
   -> m
     (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
-     Event t (Map Int (Either (EditAction TransformedPattern) (EditAction String))), -- edit events for broadcast
+     Event t EstuaryProtocol, -- edit events for broadcast
      Event t Hint) -- hint events for local use
 examplePage _ = do
   -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
   -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
   test <- liftM ("test"  <$) $ button "edit the text from elsewhere"
-  (aValue,aEdits,aHints) <- trivialTransformedPatternWidget never
-  (bValue,bEdits,bHints) <- textWidget test
+  (aValue,aEdits) <- trivialTransformedPatternWidget never
+  (bValue,bEdits,bEvals) <- textWidget test
   aValue' <- mapDyn (singleton 1 . Left) aValue
   bValue' <- mapDyn (singleton 2 . Right) bValue
   values <- combineDyn (union) aValue' bValue'
-  let aDeltaUp = fmap (singleton 1 . Left . EditAction) $ aEdits
-  let bDeltaUp = fmap (singleton 2 . Right) $ bEdits
-  let deltasUp = mergeWith union [aDeltaUp,bDeltaUp]
-  -- let hintsUp = leftmost [aHints,bHints]
+  let aDeltaUp = fmap (EstuaryEdit "" 1) aEdits
+  let bDeltaUp = fmap (TextEdit "" 2) bEdits
+  let bDeltaUp' = fmap (TextEval "" 2) bEvals
+  let deltasUp = leftmost [aDeltaUp,bDeltaUp]
   return (values,deltasUp,never)
 
 main :: IO ()
 main = mainWidget $ divClass "header" $ mdo
   wsRcvd <- webSocket "ws://127.0.0.1:8002" $ def & webSocketConfig_send .~ wsSend
   (values,deltasUp,hints) <- examplePage never
-  let json = fmap encode deltasUp
+  let wpwd = fmap (setPassword "blah") deltasUp
+  let json = fmap encode wpwd
   let bs = fmap C.pack json
   let wsSend = fmap (:[]) bs
-  diagnostics values deltasUp hints
+  diagnostics values wpwd hints
+
 
 diagnostics :: MonadWidget t m =>
   Dynamic t (Map Int (Either TransformedPattern String)) ->
-  Event t (Map Int (Either (EditAction TransformedPattern) (EditAction String))) ->
+  Event t EstuaryProtocol ->
   Event t Hint ->
   m ()
 diagnostics values deltas hints = do
