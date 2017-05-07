@@ -105,13 +105,14 @@ trivialTransformedPatternWidget _ = el "div" $ do
   let edits = leftmost [a,b]
   return (value,edits,never)
 
+
 textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t (EditAction String),Event t Hint)
 textWidget delta = el "div" $ do
-  y <- textInput $ def & textInputConfig_setValue .~ delta
-  let edits = fmap EditAction $ updated $ _textInput_value y
+  y <- textArea $ def & textAreaConfig_setValue .~ delta
+  let edits = fmap EditAction $ tagDyn (_textArea_value y) (_textArea_keypress y) -- local edit actions are the value after a keypress
   evals <- liftM (EvalAction <$) $ button "eval"
   let editActions = leftmost [edits,evals]
-  value <- holdDyn "" $ updated $ _textInput_value y
+  value <- holdDyn "" $ updated $ _textArea_value y -- updated values may be from local edit actions or remote assignment
   return (value,editActions,never)
 
 examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
