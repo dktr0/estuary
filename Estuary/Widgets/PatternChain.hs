@@ -82,7 +82,7 @@ icoahWidget:: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic 
 icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
   (s,hints) <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "S"
-    swidget <- Sp.sampleContainerWidget (S $ Blank Inert Once) never
+    swidget <- Sp.sampleContainerWidget (S $ Blank Inert) never
     pat <- mapDyn (\(x,_,_) -> x) swidget
     pat' <- mapDyn UntransformedPattern pat
     hints' <- liftM (switchPromptlyDyn) $ mapDyn (\(_,_,x) -> x) swidget
@@ -179,7 +179,7 @@ transformedPatternToList x = (Right ()):(f x)
 
 
 iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
-iclcForStacked = transformedPatternWidget
+iclcForStacked tPat _= transformedPatternWidget tPat never
 --iclcForStacked (TransformedPattern (Combine spPat comb) iTransPat) _ = do
 
   

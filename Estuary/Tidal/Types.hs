@@ -468,6 +468,7 @@ instance JSON TransformedPattern where
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
+  toParamPattern (TransformedPattern (Combine sPat comb) EmptyTransformedPattern) = toParamPattern sPat
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
   toParamPattern (EmptyTransformedPattern) = Tidal.silence -- @ is this correct?
