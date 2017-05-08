@@ -19,3 +19,12 @@ estuaryWebSocket addr pwd toSend = mdo
   let wsSend = fmap (:[]) bs
   wsRcvd <- webSocket addr' $ def & webSocketConfig_send .~ wsSend
   return never -- **placeholder**
+
+
+resettableWebSocket :: MonadWidget t m => Event t String -> Dynamic t String -> Event t EstuaryProtocol
+  -> m (Event t EstuaryProtocol)
+resettableWebSocket addr pwd toSend = mdo
+  let i = estuaryWebSocket "127.0.0.1:8002" pwd toSend
+  let resets = fmap (\a -> estuaryWebSocket a pwd toSend) addr
+  ws <- widgetHold i resets -- :: m (Dynamic t (Event t EstuaryProtocol))
+  return $ switchPromptlyDyn ws

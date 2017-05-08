@@ -139,7 +139,7 @@ examplePage _ = do
 main :: IO ()
 main = mainWidget $ divClass "header" $ mdo
   (values,deltasUp,hints) <- examplePage never
-  estuaryWebSocket "127.0.0.1:8002" (constDyn "blah") deltasUp
+  resettableWebSocket never (constDyn "blah") deltasUp
   diagnostics values deltasUp hints
 
 diagnostics :: MonadWidget t m =>
