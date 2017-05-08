@@ -19,12 +19,9 @@ import Estuary.WebDirt.Stream
 import Estuary.Widgets.SpecificPattern
 import Estuary.Widgets.WebDirt
 import Data.Map
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Data.ByteString.Char8 as C
 import Control.Monad.IO.Class (liftIO)
+import Estuary.Widgets.WebSocket
 import Text.JSON
-import Estuary.Types.EditAction
 
 {-
 main :: IO ()
@@ -141,14 +138,9 @@ examplePage _ = do
 
 main :: IO ()
 main = mainWidget $ divClass "header" $ mdo
-  wsRcvd <- webSocket "ws://127.0.0.1:8002" $ def & webSocketConfig_send .~ wsSend
   (values,deltasUp,hints) <- examplePage never
-  let wpwd = fmap (setPassword "blah") deltasUp
-  let json = fmap encode wpwd
-  let bs = fmap C.pack json
-  let wsSend = fmap (:[]) bs
-  diagnostics values wpwd hints
-
+  estuaryWebSocket "127.0.0.1:8002" (constDyn "blah") deltasUp
+  diagnostics values deltasUp hints
 
 diagnostics :: MonadWidget t m =>
   Dynamic t (Map Int (Either TransformedPattern String)) ->
