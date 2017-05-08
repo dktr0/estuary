@@ -139,22 +139,25 @@ examplePage _ = do
 main :: IO ()
 main = mainWidget $ divClass "header" $ mdo
   (values,deltasUp,hints) <- examplePage never
-  webSocketWidget deltasUp
-  --
-  diagnostics values deltasUp hints
+  deltasDown <- webSocketWidget deltasUp
+  diagnostics values deltasUp deltasDown hints
 
 diagnostics :: MonadWidget t m =>
   Dynamic t (Map Int (Either TransformedPattern String)) ->
   Event t EstuaryProtocol ->
+  Event t EstuaryProtocol ->
   Event t Hint ->
   m ()
-diagnostics values deltas hints = do
+diagnostics values deltasUp deltasDown hints = do
   el "div" $ do
     text "Values:"
     mapDyn encode values >>= display
   el "div" $ do
-    text "Deltas:"
-    (holdDyn "" $ fmap encode deltas) >>= display
+    text "DeltasUp:"
+    (holdDyn "" $ fmap encode deltasUp) >>= display
+  el "div" $ do
+    text "DeltasDown:"
+    (holdDyn "" $ fmap encode deltasDown) >>= display
   el "div" $ do
     text "Hints:"
     (holdDyn "" $ fmap show hints) >>= display

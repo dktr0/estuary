@@ -18,8 +18,13 @@ estuaryWebSocket :: MonadWidget t m => String -> Dynamic t String -> Event t Est
 estuaryWebSocket addr pwd toSend = mdo
   let addr' = "ws://" ++ addr
   let toSend' = fmap ((:[]) . C.pack . encode) $ attachDynWith setPassword pwd toSend
-  wsRcvd <- webSocket addr' $ def & webSocketConfig_send .~ toSend'
-  return never -- **placeholder**
+  ws <- webSocket addr' $ def & webSocketConfig_send .~ toSend'
+  let ws' = traceEventWith (C.unpack) $ _webSocket_recv ws
+  let wsRcvd = fmap (decode . C.unpack) $ ws'
+  return $ fmapMaybe isOk wsRcvd
+  where
+    isOk (Ok x) = Just x
+    isOk _ = Just (ProtocolError "unknown protocol error")
 
 
 -- a resettingWebSocket is a wrapper of estuaryWebSocket above so that the webSocket address

@@ -74,9 +74,10 @@ server.on('request',app);
 // create WebSocket server
 var wss = new WebSocket.Server({server: server});
 wss.broadcast = function(data) {
-  for (var i in this.clients) {
+  for (let i of wss.clients) {
     try {
-      this.clients[i].send(data);
+      // console.log("send");
+      i.send(data);
     }
     catch(e) {
       console.log("warning: exception in websocket broadcast");
@@ -105,19 +106,19 @@ wss.on('connection',function(ws) {
         console.log("TextEdit");
         var o = { 'TextEdit':n.TextEdit, 'code':n.code, password: '' };
         try { wss.broadcast(JSON.stringify(o)); }
-        catch(e) { console.log("warning: exception in WebSocket send\n"); }
+        catch(e) { console.log("warning: exception in WebSocket send for TextEdit\n"); }
       }
       else if(n.TextEval != null) {
         console.log("TextEval");
         var o = { 'TextEval':n.TextEval, 'code':n.code, password: '' };
         try { wss.broadcast(JSON.stringify(o)); }
-        catch(e) { console.log("warning: exception in WebSocket send\n"); }
+        catch(e) { console.log("warning: exception in WebSocket send for TextEval\n"); }
       }
-      else if(n.request == "EstuaryEdit") {
+      else if(n.EstuaryEdit != null) {
         console.log("EstuaryEdit");
         var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code, password: '' };
         try { wss.broadcast(JSON.stringify(o)); }
-        catch(e) { console.log("warning: exception in WebSocket send\n"); }
+        catch(e) { console.log("warning: exception in WebSocket send for EstuaryEdit\n"); }
       }
   });
 
