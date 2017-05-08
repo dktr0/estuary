@@ -572,6 +572,7 @@ sButtonContainer iGenPat _ = elAttr "table" tableAttrs $ mdo
       (Group (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
       (Layers (Live (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
       (Layers (Edited (xs,r) _) _) -> (fst $ getIVal $ head xs,r)
+      (Blank p) -> ("~",Once)
 sButtonContainer _ e = sButtonContainer (Atom "~" Inert Once) e
 
 sButtonWidget::MonadWidget t m => SampleName -> Dynamic t RepOrDiv -> m (Dynamic t SampleName)

@@ -29,6 +29,8 @@ main = do
       divClass "page" $ do
         let firstPage = snd (pages!!0)
         let newPage' = fmap (snd . (pages !!)) newPage
+        --test <- G.popupSampleWidget (constDyn L4) (Atom "bd" Inert Once) never >>= mapDyn fst
+        --holdDyn (Blank Inert) (updated test) >>= mapDyn show >>= dynText
         w <- widgetHold firstPage newPage'
         p <- liftM (joinDyn) $ mapDyn (fst) w
         h <- liftM (switchPromptlyDyn) $ mapDyn (snd) w
@@ -64,26 +66,26 @@ pages = [
   ]
 
 
-examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
-  -> m
-    (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
-     Event t (Map Int (Either TransformedPattern String)), -- edit events for broadcast
-     Event t Hint) -- hint events for local use
+--examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
+--  -> m
+--    (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
+--     Event t (Map Int (Either TransformedPattern String)), -- edit events for broadcast
+--     Event t Hint) -- hint events for local use
 
-examplePage = do
-  -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
-  -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
-  aValue <- trivialTransformedPatternWidget
-  bValue <- textWidget "(blank text to start)"
-  let aValue' = mapDyn (singleton 1 . Left) aValue
-  let bValue' = mapDyn (singleton 2 . Right) bValue
-  values <- combineDyn (union) aValue' bValue'
-  let aDeltaUp = fmap (singleton 1 . Left) $ updated aValue -- note: this is not a viable long-term solution
-  let bDeltaUp = fmap (singleton 2 . Right) $ updated bValue
-  let deltasUp = mergeWith union [aDeltaUp,bDeltaUp]
-  -- let hintsUp = leftmost [aHints,bHints]
-  let hintsUp = never
-  return (values,deltasUp,hintsUp)
+--examplePage = do
+--  -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
+--  -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
+--  aValue <- trivialTransformedPatternWidget
+--  bValue <- textWidget "(blank text to start)"
+--  let aValue' = mapDyn (singleton 1 . Left) aValue
+--  let bValue' = mapDyn (singleton 2 . Right) bValue
+--  values <- combineDyn (union) aValue' bValue'
+--  let aDeltaUp = fmap (singleton 1 . Left) $ updated aValue -- note: this is not a viable long-term solution
+--  let bDeltaUp = fmap (singleton 2 . Right) $ updated bValue
+--  let deltasUp = mergeWith union [aDeltaUp,bDeltaUp]
+--  -- let hintsUp = leftmost [aHints,bHints]
+--  let hintsUp = never
+--  return (values,deltasUp,hintsUp)
 
 trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))
 
@@ -93,14 +95,14 @@ trivialTransformedPatternWidget :: MonadWidget t m => m (Dynamic t TransformedPa
 trivialTransformedPatternWidget = do
   a <- liftM (trivialPatternA <$) $ button "trivialA"
   b <- liftM (trivialPatternB <$) $ button "trivialB"
-  holdDyn EmptyTransformedPattern $ leftMost [a,b]
+  holdDyn EmptyTransformedPattern $ leftmost [a,b]
 
-textWidget :: MonadWidget t m => String -> m (Dynamic t String)
-textWidget i = do
-  x <- button "eval"
-  y <- textInput $ def & textInputConfig_initialValue .~ i
-  let y' = updated $ _textInput_value y
-  return y'
+--textWidget :: MonadWidget t m => String -> m (Dynamic t String)
+--textWidget i = do
+--  x <- button "eval"
+--  y <- textInput $ def & textInputConfig_initialValue .~ i
+--  let y' = updated $ _textInput_value y
+--  return y'
 
 --main :: IO ()
 --main = mainWidget $ do
