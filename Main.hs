@@ -139,7 +139,8 @@ examplePage _ = do
 main :: IO ()
 main = mainWidget $ divClass "header" $ mdo
   (values,deltasUp,hints) <- examplePage never
-  resettableWebSocket never (constDyn "blah") deltasUp
+  webSocketWidget deltasUp
+  --
   diagnostics values deltasUp hints
 
 diagnostics :: MonadWidget t m =>
