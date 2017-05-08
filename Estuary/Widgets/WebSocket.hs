@@ -13,11 +13,8 @@ estuaryWebSocket :: MonadWidget t m => String -> Dynamic t String -> Event t Est
   -> m (Event t EstuaryProtocol)
 estuaryWebSocket addr pwd toSend = mdo
   let addr' = "ws://" ++ addr
-  let cpwd = attachDynWith setPassword pwd toSend
-  let json = fmap encode cpwd
-  let bs = fmap C.pack json
-  let wsSend = fmap (:[]) bs
-  wsRcvd <- webSocket addr' $ def & webSocketConfig_send .~ wsSend
+  let toSend' = fmap ((:[]) . C.pack . encode) $ attachDynWith setPassword pwd toSend
+  wsRcvd <- webSocket addr' $ def & webSocketConfig_send .~ toSend'
   return never -- **placeholder**
 
 
