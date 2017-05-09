@@ -1,3 +1,4 @@
+"use strict"; 
 process.title = 'estuary';
 var stderr = process.stderr;
 
@@ -76,7 +77,6 @@ var wss = new WebSocket.Server({server: server});
 wss.broadcast = function(data) {
   for (let i of wss.clients) {
     try {
-      // console.log("send");
       i.send(data);
     }
     catch(e) {
@@ -85,14 +85,16 @@ wss.broadcast = function(data) {
   }
 };
 
+
 wss.on('connection',function(ws) {
   // var location = url.parse(ws.upgradeReq.url, true);
   var ip = ws.upgradeReq.connection.remoteAddress;
   console.log("new WebSocket connection: " + ip);
 
   ws.on('message',function(m) {
+      var n;
       try {
-        var n = JSON.parse(m);
+        n = JSON.parse(JSON.parse(m));
         console.log(n);
       }
       catch(e) {
@@ -101,6 +103,11 @@ wss.on('connection',function(ws) {
       }
       if(n.password != password) {
         console.log("request with invalid password from " + ip);
+	console.log("password is: " + password);
+	console.log("received is: " + n.password);
+	console.log("n.TextEdit : " + n.TextEdit);
+	console.log("n.code     : " + n.code);
+	console.log(typeof n);
       }
       else if(n.TextEdit != null) {
         console.log("TextEdit");
