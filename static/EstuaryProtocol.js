@@ -1,5 +1,7 @@
 EstuaryProtocol = function () {
   this.wsReady = false;
+  this.textEdits = new Array;
+  this.estuaryEdits = new Array;
 }
 
 EstuaryProtocol.prototype.setUrl = function(x) {
@@ -46,7 +48,27 @@ EstuaryProtocol.prototype.connect = function() {
 }
 
 EstuaryProtocol.prototype.onMessage = function(m) {
-  console.log("EstuaryProtocol onMessage:" + m);
+  try {
+   var n = JSON.parse(m.data);
+   if(n.TextEdit != null) {
+     console.log("EstuaryProtocol onMessage TextEdit" + parseInt(n.TextEdit));
+     this.textEdits[parseInt(n.TextEdit)] = n.code;
+   }
+   else if(n.TextEval != null) {
+     // console.log("EstuaryProtocol onMessage TextEval" + n.TextEval);
+     // no need to log textevals in the browser for now
+   }
+   else if(n.EstuaryEdit != null) {
+     console.log("EstuaryProtocol onMessage EstuaryEdit" + parseInt(n.EstuaryEdit));
+     this.estuaryEdits[parseInt(n.EstuaryEdit)] = n.code;
+   }
+   else {
+     console.log("warning: unrecognized message in EstuaryProtocol onMessage");
+   }
+  }
+  catch(e) {
+   console.log("exception in EstuaryProtocol onMessage");
+  }
 }
 
 EstuaryProtocol.prototype.send = function(o) {

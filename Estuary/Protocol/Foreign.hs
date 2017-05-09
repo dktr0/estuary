@@ -12,7 +12,7 @@ import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
 
 foreign import javascript unsafe
-  "$r = new EstuaryProtocol()"
+  "__debugEstuaryProtocol = new EstuaryProtocol(); $r = __debugEstuaryProtocol"
   estuaryProtocolFFI :: IO T.JSVal
 
 foreign import javascript unsafe
