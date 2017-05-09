@@ -68,7 +68,13 @@ widgetToPage w = do
 pages = [
   ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyTransformedPattern never),
   ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
-  ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns)
+  ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns),
+  ("Single TransformedPattern", widgetToPage $ do 
+    emptyPat <- liftM (trivialPatternA <$) $ button "Empty Pat"
+    (pat,ev,hint) <- topLevelTransformedPatternWidget emptyPat
+    holdDyn "no changes" (fmap (const "changes")  ev) >>= dynText
+    mapDyn (\x-> (x,ev,hint)) pat
+    )
   ]
 
 

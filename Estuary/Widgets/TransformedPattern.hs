@@ -114,7 +114,6 @@ transformedPat (UntransformedPattern specificPattern) _= do
   let updatedValue' = leftmost [updatedValue, combineValue, fmap constDyn delete']
   value <- liftM joinDyn $ holdDyn tPat updatedValue'
   let rebuildEvents = leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform, (RebuildMe <$) combine]
-  holdDyn "asdfasdf" (("triggered" <$) delete) >>= dynText
   mapDyn (\x->(x,rebuildEvents,hint)) value
 transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do  
   delete <- button "delete"

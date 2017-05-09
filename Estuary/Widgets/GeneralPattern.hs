@@ -126,8 +126,6 @@ popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px
   repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
   
   --samplePickerPopup::(MonadWidget t m)=>  Dynamic t Liveness -> Map Int (String,String) -> [EditSignal  String] -> m (Event t (Maybe (EditSignal String)),Event t Hint)
-
-
   (dynPopup, dynHintEv) <- flippableWidget (return (never,never)) popup False (updated popupDisplayEv) >>= splitDyn 
   let popupMenu =  switchPromptlyDyn dynPopup
   let hintEv =  switchPromptlyDyn dynHintEv
