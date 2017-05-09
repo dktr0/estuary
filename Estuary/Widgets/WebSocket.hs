@@ -8,6 +8,7 @@ import Text.JSON
 import Estuary.Protocol.JSON
 import qualified Data.ByteString.Char8 as C
 import Estuary.Protocol.Foreign
+import Control.Monad.IO.Class (liftIO)
 
 
 -- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
@@ -41,8 +42,7 @@ resettingWebSocket addr pwd toSend = do
   ws <- widgetHold (return never) resets
   return $ switchPromptlyDyn ws
 
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Event t String -> Dynamic t String - > Event t EstuaryProtocol
-  - m (Event t EstuaryProtocol)
+alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Event t String -> Dynamic t String -> Event t EstuaryProtocol -> m (Event t EstuaryProtocol)
 alternateWebSocket obj addr pwd toSend = do
   let addr' = fmap ("ws://" ++) addr
   performEvent_ $ fmap (liftIO . (setUrl obj)) addr'

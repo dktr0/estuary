@@ -31,7 +31,8 @@ estuaryProtocol = do
   return $ EstuaryProtocolObject x
 
 setUrl :: EstuaryProtocolObject -> String -> IO ()
-setUrl (EstuaryProtocolObject x) url = setUrlFFI x url
+setUrl (EstuaryProtocolObject x) url = setUrlFFI x (Prim.toJSString url)
 
 send :: EstuaryProtocolObject -> String -> IO ()
-send (EstuaryProtocolObject x) y = sendFFI x y
+send (EstuaryProtocolObject x) y = sendFFI x (Prim.toJSString y)
+
