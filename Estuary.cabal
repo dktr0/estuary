@@ -1,27 +1,20 @@
 name:                Estuary
 version:             0.0.0.1
-synopsis:            Projectional editor for Tidal
+synopsis:            Projectional editor for TidalCycles
 description:         Please see README.md
 homepage:            http://github.com/d0kt0r0/estuary/blob/master/README.md
 license:             GPL-3
 license-file:        LICENSE
-author:              Matt Paine, Jacques Carette, David Ogborn
-maintainer:          matthewpaine21@gmail.com
-copyright:           2015 Matt Paine, Jacques Carette, David Ogborn
+author:              David Ogborn, Jamie Beverley and others
+maintainer:          ogbornd@mcmaster.ca
+copyright:           2015-17 David Ogborn and others
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  static/css/helperwidgets.css
 
-library
-  hs-source-dirs:    Estuary/
-  exposed-modules:   Tidal.Utils, Types.Sound, Widgets.HelperWidgets, Widgets.SoundWidget, Widgets.PatternContainer
-  build-depends:     base, data-default, tidal, hosc, containers, reflex, reflex-dom, ghcjs-base, ghcjs-dom, transformers
-
-
 executable Estuary
-  hs-source-dirs:    Estuary/
+  hs-source-dirs:    .
   main-is:           Main.hs
-  build-depends:     base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base, ghcjs-dom, text, array,
-                     data-default, transformers, file-embed
+  build-depends:     base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base, ghcjs-dom, text, array, ghcjs-prim, data-default, transformers, file-embed, time, monad-loops, json, bytestring
   default-language:  Haskell2010

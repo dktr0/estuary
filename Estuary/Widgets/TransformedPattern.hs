@@ -19,7 +19,7 @@ import Text.Read
 import Estuary.Reflex.Utility
 
 
-dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t ()))
+dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (),Event t Hint))
 dropdownPatternWidget iPattern _ = do
   let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
   let patternType = head $ words $ show iPattern
@@ -30,7 +30,7 @@ dropdownPatternWidget iPattern _ = do
   patternDropDown <- dropdown initialIndex dropDownMap def
   let ddVal = _dropdown_value patternDropDown
   soundPat <- mapDyn (\k ->case Data.Map.lookup k patMap of Just a-> a; otherwise -> Sp.specificContainer (S $ Blank Inert) never) ddVal  --Dynamic (m(dynamic spec,event t))
-  let soundPatEv = updated soundPat -- Event(Dyn )
+  let soundPatEv = updated soundPat -- Event(Dyn ,ev,ev)
   soundPatEv' <- widgetHold (initialFunc) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
   let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
   return $ soundPattern
@@ -69,10 +69,10 @@ patternCombinatorDropDown iValue _ = do
   dd <- dropdown iIndex ddMap def
   --mapDyn show (_dropdown_value dd) >>= dynText
   let choice = _dropdown_value dd
-  val <- mapDyn (maybe Merge id . (flip Data.Map.lookup) ddMapVals) choice 
+  val <- mapDyn (maybe Merge id . (flip Data.Map.lookup) ddMapVals) choice
   mapDyn (\x->(x,never)) val
   --mapDyn ((flip Data.Map.lookup) ddMapVals) choice >>= mapDyn (\x -> (x,never))
-  where 
+  where
     iIndex = case iValue of
       (Merge) -> 1
       (Add) -> 2
@@ -82,25 +82,30 @@ patternCombinatorDropDown iValue _ = do
       -- sorry....
 
 
-resettableTransformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t (EditSignal a) -> m (Dynamic t(TransformedPattern, Event t (EditSignal a)))
+
+resettableTransformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t (EditSignal a) -> m (Dynamic t(TransformedPattern, Event t (EditSignal a),Event t Hint))
 resettableTransformedPatternWidget iTransPat ev = mdo
   val <- resettableWidget (transformedPat) iTransPat ev resetEvent
-  tPat <- mapDyn fst val
-  e <- liftM switchPromptlyDyn $ mapDyn snd val
+  tPat <- mapDyn (\(x,_,_)->x) val
+  e <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) val
+  h <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) val
   let resetEvent = tagDyn tPat $ ffilter (\x-> case x of RebuildMe->True; DeleteMe -> True; otherwise -> False) e
-  mapDyn (\x->(x,e)) tPat
+  mapDyn (\x->(x,e,h)) tPat
 
 
-transformedPat :: MonadWidget t m => TransformedPattern -> Event t (EditSignal a) -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
+transformedPat :: MonadWidget t m => TransformedPattern -> Event t (EditSignal a) -> m (Dynamic t (TransformedPattern, Event t (EditSignal a), Event t Hint))
 transformedPat (EmptyTransformedPattern) _ = do
   x <- liftM (UntransformedPattern (S (Atom "~" Inert Once))  <$) $ button "make me not empty"
   value <- holdDyn EmptyTransformedPattern x
   let event = (RebuildMe <$) x
-  mapDyn (\y -> (y,event)) value
+  mapDyn (\y -> (y,event,never)) value
 transformedPat (UntransformedPattern specificPattern) _= do
   delete <- button "delete"
   transform <- button "transform" -- >>= toggle False 
-  sPat <- dropdownPatternWidget specificPattern never >>= mapDyn fst
+  sPatTuple <- dropdownPatternWidget specificPattern never
+  sPat <- mapDyn (\(x,_,_)->x) sPatTuple
+  hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
+  ev <- mapDyn (\(_,ev,_)->ev) sPatTuple
   tPat <- mapDyn (UntransformedPattern) sPat
   combine <- button "+"
   let delete' = (EmptyTransformedPattern <$) delete
@@ -109,29 +114,39 @@ transformedPat (UntransformedPattern specificPattern) _= do
   let updatedValue' = leftmost [updatedValue, combineValue, fmap constDyn delete']
   value <- liftM joinDyn $ holdDyn tPat updatedValue'
   let rebuildEvents = leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform, (RebuildMe <$) combine]
-  mapDyn (\x->(x,rebuildEvents)) value
+  holdDyn "asdfasdf" (("triggered" <$) delete) >>= dynText
+  mapDyn (\x->(x,rebuildEvents,hint)) value
 transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do  
   delete <- button "delete"
   transform <- button "transform"
-  (specPat,sEv) <- dropdownPatternWidget iSpecPat never >>= splitDyn
+  sPatTuple <- dropdownPatternWidget iSpecPat never
+  sPat <- mapDyn (\(x,_,_)->x) sPatTuple
+  sHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
   (comb,_) <- patternCombinatorDropDown iPatComb never >>= splitDyn
-  (transPat,transEv) <- resettableTransformedPatternWidget iTransPat never >>= splitDyn  -- this one has to have the 'reset' wrapper around it
-  val <- combineDyn (\x y -> TransformedPattern (Combine x y)) specPat comb >>= combineDyn (\t cons -> cons t) transPat
-  let childDeleteMe = ffilter (\x->case x of DeleteMe ->True; otherwise-> False) $ switchPromptlyDyn transEv
+  tPatTuple <- resettableTransformedPatternWidget iTransPat never  -- this one has to have the 'reset' wrapper around it
+  tPat <- mapDyn (\(x,_,_)->x) tPatTuple
+  tEv <- liftM switchPromptlyDyn $ mapDyn (\(_,ev,_)->ev) tPatTuple
+  tHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) tPatTuple
+
+  val <- combineDyn (\x y -> TransformedPattern (Combine x y)) sPat comb >>= combineDyn (\t cons -> cons t) tPat
+  let childDeleteMe = ffilter (\x->case x of DeleteMe ->True; otherwise-> False)  tEv
   transVal <- mapDyn (TransformedPattern NoTransformer) val
-  untransPat <- mapDyn UntransformedPattern specPat
-  val' <- liftM joinDyn $ holdDyn val $ fmap (const transPat) delete 
+  untransPat <- mapDyn UntransformedPattern sPat
+  val' <- liftM joinDyn $ holdDyn val $ fmap (const tPat) delete 
   val''<- liftM joinDyn $ holdDyn val' $ (untransPat <$) childDeleteMe
   val''' <- liftM joinDyn $ holdDyn val'' $ (transVal <$) transform
-  mapDyn (\x->(x, leftmost [(RebuildMe <$) delete,(RebuildMe <$) childDeleteMe, (RebuildMe <$) transform])) val'''
+  mapDyn (\x->(x, leftmost [(RebuildMe <$) delete,(RebuildMe <$) childDeleteMe, (RebuildMe <$) transform],leftmost [tHint,sHint])) val'''
 transformedPat (TransformedPattern iPatTrans iTransPat) _ = do
   delete <- button "delete transformer"
-  iPatTrans <- parameteredPatternTransformer iPatTrans never >>= mapDyn fst
-  transPat <- resettableTransformedPatternWidget iTransPat never >>= mapDyn fst
-  let rebuildVal = tagDyn transPat delete
-  newTransPat<- combineDyn (\x y-> TransformedPattern x y) iPatTrans transPat
+  patTrans <- parameteredPatternTransformer iPatTrans never >>= mapDyn fst
+  tPatTuple <- resettableTransformedPatternWidget iTransPat never
+  transPat <- mapDyn (\(x,_,_)->x) tPatTuple
+  tEv <- liftM switchPromptlyDyn $ mapDyn (\(_,ev,_)->ev) tPatTuple
+  tHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) tPatTuple
+  let rebuildVal = tagDyn transPat $ leftmost [(DeleteMe <$) delete,ffilter (\x->case x of DeleteMe->True;otherwise->False) tEv]
+  newTransPat<- combineDyn (\x y-> TransformedPattern x y) patTrans transPat
   val <- liftM joinDyn $ holdDyn newTransPat $ fmap constDyn rebuildVal
-  mapDyn (\x-> (x,(RebuildMe <$) delete)) val
+  mapDyn (\x-> (x,leftmost [(RebuildMe <$) delete,(RebuildMe <$) rebuildVal],tHint)) val
 
 
 
@@ -141,42 +156,47 @@ paramWidget (Jux trans) = do
   val'<- mapDyn (\(next,_)-> Jux next) trans'
   return val'
 paramWidget (Every num trans) = do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
+
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (show num)
   let input' = _textInput_value input -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
   nextTrans <- parameteredPatternTransformer trans never
   val'<-combineDyn (\k (next,_)-> Every k next) val nextTrans
   return val'
-paramWidget (Slow _) = do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"]))
+paramWidget (Slow i) = do
+  let numer = numerator i
+  let denom = denominator i
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (show numer)
   let input' = _textInput_value input -- Dyn string
-  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ ("1")
+  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (show denom)
   let input2' = _textInput_value input2 -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Integer))
   val2 <- forDyn input2' (\x-> maybe 1 id (readMaybe x::Maybe Integer))
   combineDyn (\x y->  Slow ((x%y)::Rational)) val val2
-paramWidget (Density _)= do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"]))
+paramWidget (Density i)= do
+  let numer = numerator i
+  let denom = denominator i
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"]))  & textInputConfig_initialValue .~ (show numer)
   let input' = _textInput_value input -- Dyn string
-  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ ("1")
+  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (show denom)
   let input2' = _textInput_value input2 -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Integer))
   val2 <- forDyn input2' (\x-> maybe 1 id (readMaybe x::Maybe Integer))
   combineDyn (\x y-> Density $ (x%y::Rational) ) val val2
-paramWidget (DegradeBy _) = do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
+paramWidget (DegradeBy i) = do
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (show i)
   let input' = _textInput_value input -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Double))
   val'<-forDyn val (\k-> DegradeBy k)
   return val'
-paramWidget (Chop _) = do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number"))
+paramWidget (Chop i) = do
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (show i)
   let input' = _textInput_value input -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
   val'<-forDyn val (\k-> Chop k)
   return val'
 paramWidget (Combine iSPat iPatComb) = do
-  sPat <- dropdownPatternWidget iSPat never >>= mapDyn fst
+  sPat <- dropdownPatternWidget iSPat never >>= mapDyn (\(x,_,_)->x)
   comb <- patternCombinatorDropDown iPatComb never >>= mapDyn fst
   combineDyn Combine sPat comb
 paramWidget transformer = return $ constDyn transformer

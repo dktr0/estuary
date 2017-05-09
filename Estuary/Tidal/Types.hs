@@ -463,8 +463,10 @@ instance Show TransformedPattern where
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TransformedPattern",showJSON t),("p",showJSON p)]
   showJSON (UntransformedPattern s) = encJSDict [("UntransformedPattern",showJSON s)]
+  showJSON (EmptyTransformedPattern) = showJSON "EmptyTransformedPattern"
   readJSON (JSObject x) | firstKey x == "TransformedPattern" = TransformedPattern <$> valFromObj "TransformedPattern" x <*>  valFromObj "p" x
   readJSON (JSObject x) | firstKey x == "UntransformedPattern" = UntransformedPattern <$> valFromObj "UntransformedPattern" x
+  readJSON (JSString x) | fromJSString x == "EmptyTransformedPattern" = Ok EmptyTransformedPattern
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where

@@ -28,7 +28,7 @@ iclcFixedStruct:: MonadWidget t m => TransformedPattern -> Event t () -> m (Dyna
 iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
   s<- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Sound"
-    (pat,_)<- Sp.specificContainer (S $ Atom "~" Inert Once) never >>= splitDyn
+    (pat,_)<- Sp.specificContainer (S $ Atom "~" Inert Once) never >>= mapDyn (\(x,y,_)->(x,y)) >>= splitDyn
     forDyn pat UntransformedPattern
   end <- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "End"
@@ -40,9 +40,8 @@ iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
     forDyn pat UntransformedPattern
   up <- elAttr "div" ("class"=:"singlePatternDiv") $ do
     elAttr "div" ("class"=:"singlePatternDiv-label") $ text "Up"
-    (pat,_) <- Sp.specificContainer (Up $ Atom 0 Inert Once) never >>= splitDyn
+    (pat,_) <- Sp.specificContainer (Up $ Atom 0 Inert Once) never >>= mapDyn (\(x,y,_)->(x,y)) >>= splitDyn
     forDyn pat UntransformedPattern
-
   combineDyn (\a b ->[a,b]) s end >>= combineDyn (:) up >>= combineDyn (:) vowel >>= mapDyn (\x -> (toCombinedTransPat x,never))
 
 
@@ -93,6 +92,8 @@ transformedPatternToList x = (Right ()):(f x)
     f y = [Left $ Left y, Right ()]
 
 
-iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a)))
+
+iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a), Event t Hint))
 iclcForStacked tPat _= resettableTransformedPatternWidget tPat never
+
 
