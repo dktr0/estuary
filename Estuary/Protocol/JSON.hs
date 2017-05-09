@@ -1,4 +1,4 @@
-module Estuary.Protocol where
+module Estuary.Protocol.JSON where
 
 import Text.JSON
 import Estuary.Tidal.Types
