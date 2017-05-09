@@ -5,7 +5,8 @@ module Main where
 import Reflex
 import Reflex.Dom
 import Estuary.Tidal.Types
-import Estuary.Protocol
+import Estuary.Protocol.JSON
+import Estuary.Protocol.Foreign
 import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
 import Estuary.Widgets.StackedPatterns
@@ -137,10 +138,12 @@ examplePage _ = do
   return (values,deltasUp,never)
 
 main :: IO ()
-main = mainWidget $ divClass "header" $ mdo
-  (values,deltasUp,hints) <- examplePage never
-  deltasDown <- webSocketWidget deltasUp
-  diagnostics values deltasUp deltasDown hints
+main = do
+  protocol <- estuaryProtocol
+  mainWidget $ divClass "header" $ mdo
+    (values,deltasUp,hints) <- examplePage never
+    deltasDown <- webSocketWidget protocol deltasUp
+    diagnostics values deltasUp deltasDown hints
 
 diagnostics :: MonadWidget t m =>
   Dynamic t (Map Int (Either TransformedPattern String)) ->
