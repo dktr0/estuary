@@ -23,6 +23,7 @@ import Data.Map
 import Control.Monad.IO.Class (liftIO)
 import Estuary.Widgets.WebSocket
 import Text.JSON
+import Data.Time
 
 {-
 main :: IO ()
@@ -101,10 +102,10 @@ trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))
 trivialPatternB = UntransformedPattern (S (Atom "cp" Inert Once))
 
 trivialTransformedPatternWidget :: MonadWidget t m => Event t TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern)
-trivialTransformedPatternWidget _ = el "div" $ do
+trivialTransformedPatternWidget delta = el "div" $ do
   a <- liftM (trivialPatternA <$) $ button "trivialA"
   b <- liftM (trivialPatternB <$) $ button "trivialB"
-  value <- holdDyn EmptyTransformedPattern $ leftmost [a,b]
+  value <- holdDyn EmptyTransformedPattern $ leftmost [a,b,delta]
   let edits = leftmost [a,b]
   return (value,edits)
 
@@ -117,17 +118,18 @@ textWidget delta = el "div" $ do
   value <- holdDyn "" $ updated $ _textArea_value y -- updated values may be from local edit actions or remote assignment
   return (value,edits,evals')
 
-examplePage :: MonadWidget t m => Event t EstuaryProtocol
+examplePage :: MonadWidget t m => Event t [EstuaryProtocol]
   -> m
     (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
      Event t EstuaryProtocol, -- edit events for broadcast
      Event t Hint) -- hint events for local use
-examplePage _ = do
-  -- let deltaA = fmapMaybe (either Just (const Nothing)) $ fmapMaybe (lookup 1) deltasDown
-  -- let deltaB = fmapMaybe (either (const Nothing) Just) $ fmapMaybe (lookup 2) deltasDown
-  test <- liftM ("test"  <$) $ button "edit the text from elsewhere"
-  (aValue,aEdits) <- trivialTransformedPatternWidget never
-  (bValue,bEdits,bEvals) <- textWidget test
+examplePage deltasDown = do
+  let deltaA = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 1)) ) deltasDown
+  let deltaB = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 2)) ) deltasDown
+  let deltaA' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaA
+  let deltaB' = fmap justTextCode $ fmapMaybe lastOrNothing deltaB
+  (aValue,aEdits) <- trivialTransformedPatternWidget deltaA'
+  (bValue,bEdits,bEvals) <- textWidget deltaB'
   aValue' <- mapDyn (singleton 1 . Left) aValue
   bValue' <- mapDyn (singleton 2 . Right) bValue
   values <- combineDyn (union) aValue' bValue'
@@ -137,18 +139,24 @@ examplePage _ = do
   let deltasUp = leftmost [aDeltaUp,bDeltaUp]
   return (values,deltasUp,never)
 
+lastOrNothing :: [a] -> Maybe a
+lastOrNothing [] = Nothing
+lastOrNothing xs = Just (last xs)
+
 main :: IO ()
 main = do
   protocol <- estuaryProtocol
+  now <- Data.Time.getCurrentTime
   mainWidget $ divClass "header" $ mdo
-    (values,deltasUp,hints) <- examplePage never
-    deltasDown <- webSocketWidget protocol deltasUp
-    diagnostics values deltasUp deltasDown hints
+    (values,deltasUp,hints) <- examplePage deltasDown'
+    deltasDown <- webSocketWidget protocol now deltasUp
+    let deltasDown' = ffilter (not . Prelude.null) deltasDown 
+    diagnostics values deltasUp deltasDown' hints
 
 diagnostics :: MonadWidget t m =>
   Dynamic t (Map Int (Either TransformedPattern String)) ->
   Event t EstuaryProtocol ->
-  Event t EstuaryProtocol ->
+  Event t [EstuaryProtocol] ->
   Event t Hint ->
   m ()
 diagnostics values deltasUp deltasDown hints = do

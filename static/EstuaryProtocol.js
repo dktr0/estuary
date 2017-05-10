@@ -2,6 +2,7 @@ EstuaryProtocol = function () {
   this.wsReady = false;
   this.textEdits = new Array;
   this.estuaryEdits = new Array;
+  this.edits = new Array;
 }
 
 EstuaryProtocol.prototype.setUrl = function(x) {
@@ -53,6 +54,7 @@ EstuaryProtocol.prototype.onMessage = function(m) {
    if(n.TextEdit != null) {
      console.log("EstuaryProtocol onMessage TextEdit" + parseInt(n.TextEdit));
      this.textEdits[parseInt(n.TextEdit)] = n.code;
+     this.edits.push(n);
    }
    else if(n.TextEval != null) {
      // console.log("EstuaryProtocol onMessage TextEval" + n.TextEval);
@@ -61,6 +63,7 @@ EstuaryProtocol.prototype.onMessage = function(m) {
    else if(n.EstuaryEdit != null) {
      console.log("EstuaryProtocol onMessage EstuaryEdit" + parseInt(n.EstuaryEdit));
      this.estuaryEdits[parseInt(n.EstuaryEdit)] = n.code;
+     this.edits.push(n);
    }
    else {
      console.log("warning: unrecognized message in EstuaryProtocol onMessage");
@@ -72,6 +75,12 @@ EstuaryProtocol.prototype.onMessage = function(m) {
 }
 
 EstuaryProtocol.prototype.send = function(o) {
+  if(o.TextEdit != null) {
+    this.textEdits[parseInt(o.TextEdit)] = o.code;
+  }
+  if(o.EstuaryEdit != null) {
+    this.estuaryEdits[parseInt(o.EstuaryEdit)] = o.code;
+  }
   if(!this.wsReady)return;
   try {
     this.ws.send(JSON.stringify(o));
@@ -80,3 +89,25 @@ EstuaryProtocol.prototype.send = function(o) {
     console.log("EstuaryProtocol: warning - exception in websocket send");
   }
 }
+
+EstuaryProtocol.prototype.getTextEdit = function(n) {
+  if(n < this.textEdits.length) {
+    return this.textEdits[n];
+  }
+  else return null;
+}
+
+
+EstuaryProtocol.prototype.getEstuaryEdit = function(n) {
+  if(n < this.estuaryEdits.length) {
+    return this.estuaryEdits[n];
+  }
+  else return null;
+}
+
+EstuaryProtocol.prototype.getEdits = function() {
+  var x = this.edits;
+  this.edits = new Array;
+  return JSON.stringify(x);
+}
+

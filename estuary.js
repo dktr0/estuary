@@ -107,7 +107,7 @@ wss.on('connection',function(ws) {
 	console.log("received is: " + n.password);
 	console.log("n.TextEdit : " + n.TextEdit);
 	console.log("n.code     : " + n.code);
-	console.log(typeof n);
+	console.log(typeof n); 
       }
       else if(n.TextEdit != null) {
         console.log("TextEdit");

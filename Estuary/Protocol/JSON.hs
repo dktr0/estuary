@@ -17,7 +17,7 @@ instance JSON EstuaryProtocol where
   showJSON (TextEval password n code) = encJSDict [("TextEval",showJSON n),("password",showJSON password),("code",showJSON code)]
   showJSON (Chat password name msg) = encJSDict [("Chat",msg),("password",password),("name",name)]
   showJSON (ProtocolError msg) = encJSDict [("ProtocolError",msg)]
-  readJSON (JSObject x) | firstKey x == "TextEdit" = EstuaryEdit <$> valFromObj "password" x <*> valFromObj "EstuaryEdit" x <*> valFromObj "code" x
+  readJSON (JSObject x) | firstKey x == "EstuaryEdit" = EstuaryEdit <$> valFromObj "password" x <*> valFromObj "EstuaryEdit" x <*> valFromObj "code" x
   readJSON (JSObject x) | firstKey x == "TextEdit" = TextEdit <$> valFromObj "password" x <*> valFromObj "TextEdit" x <*> valFromObj "code" x
   readJSON (JSObject x) | firstKey x == "TextEdit" = TextEval <$> valFromObj "password" x <*> valFromObj "TextEval" x <*> valFromObj "code" x
   readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj "password" x <*> valFromObj "name" x <*> valFromObj "Chat" x
@@ -29,3 +29,30 @@ setPassword x (EstuaryEdit _ n c) = EstuaryEdit x n c
 setPassword x (TextEdit _ n c) = TextEdit x n c
 setPassword x (TextEval _ n c) = TextEval x n c
 setPassword x (Chat _ m n) = Chat x m n
+
+matchesNumber :: Int -> EstuaryProtocol -> Bool
+matchesNumber n1 (EstuaryEdit _ n2 _) = n1 == n2
+matchesNumber n1 (TextEdit _ n2 _) = n1 == n2
+matchesNumber n1 (TextEval _ n2 _) = n1 == n2
+matchesNumber _ _ = False
+
+isEstuaryEdit :: EstuaryProtocol -> Bool
+isEstuaryEdit (EstuaryEdit _ _ _) = True
+isEstuaryEdit _ = False
+
+isTextEdit :: EstuaryProtocol -> Bool
+isTextEdit (TextEdit _ _ _) = True
+isTextEdit _ = False
+
+justEstuaryCode :: EstuaryProtocol -> TransformedPattern
+justEstuaryCode (EstuaryEdit _ _ x) = x
+justEstuaryCode _ = error "can't get estuary code from non EstuaryEdit"
+
+justTextCode :: EstuaryProtocol -> String
+justTextCode (TextEdit _ _ x) = x
+justTextCode (TextEval _ _ x) = x
+justTextCode _ = error "can't get text code from non TextEdit or TextEval"
+
+
+
+
