@@ -316,6 +316,15 @@ to the right of them
 	border: 2pt solid black
 }
 
+/*
+--------------------------------------------------------------------
+							Transformed Patterns
+--------------------------------------------------------------------
+*/
+.patternTransformerWidget{
+	position: relative; 
+	display: inline-block;
+}
 
 
 

@@ -14,7 +14,7 @@ import Data.Map
 import Data.List
 import qualified Estuary.Widgets.SpecificPattern as Sp
 import GHC.Real
-
+import Data.Maybe (fromJust)
 import Text.Read
 import Estuary.Reflex.Utility
 
@@ -83,6 +83,10 @@ patternCombinatorDropDown iValue _ = do
 
 
 
+
+
+
+
 resettableTransformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t (EditSignal a) -> m (Dynamic t(TransformedPattern, Event t (EditSignal a),Event t Hint))
 resettableTransformedPatternWidget iTransPat ev = mdo
   val <- resettableWidget (transformedPat) iTransPat ev resetEvent
@@ -143,7 +147,7 @@ transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do
   val' <- liftM joinDyn $ holdDyn val rebuildVal
   mapDyn (\x->(x, leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform,(RebuildMe <$) childDeleteMe, (RebuildMe <$) addAfter],leftmost [tHint,sHint])) val'
 transformedPat (TransformedPattern iPatTrans iTransPat) _ = do
-  (patTrans,deleteTransformer) <- parameteredPatternTransformer iPatTrans never >>= splitDyn
+  (patTrans,deleteTransformer) <- patternTransformerWidget iPatTrans never >>= splitDyn
   tPatTuple <- el "div" $ resettableTransformedPatternWidget iTransPat never
   transPat <- mapDyn (\(x,_,_)->x) tPatTuple
   tEv <- liftM switchPromptlyDyn $ mapDyn (\(_,ev,_)->ev) tPatTuple
@@ -263,4 +267,68 @@ parameteredPatternTransformer i _ = el "div" $ do
     hack (Combine _ _) = 10
     hack _ = 0
 
+
+
+
+
+
+
+
+
+paramWidget'::MonadWidget t m=>PatternTransformer -> m (Dynamic t PatternTransformer)
+paramWidget' (Jux trans) = do
+  trans' <- patternTransformerWidget trans never
+  val'<- mapDyn (\(next,_)-> Jux next) trans'
+  return val'
+paramWidget' (Every num trans) = do
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (show num)
+  let input' = _textInput_value input -- Dyn string
+  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
+  nextTrans <- patternTransformerWidget trans never
+  val'<-combineDyn (\k (next,_)-> Every k next) val nextTrans
+  return val'
+paramWidget' x = paramWidget x
+
+
+
+patternTransformerWidget :: (MonadWidget t m)=> PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer, Event t (EditSignal a)))
+patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget" $ mdo
+  let popup = patternTransformerPopup [DeleteMe]
+  openEv <- clickableDivClass'' showTransformer "noClass" ()
+  dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ leftmost [(False<$) dynPopup,(True <$) openEv]
+  let changeEvents = fmap ((\x->case x of ChangeValue a->a;otherwise->NoTransformer) . fromJust) $ ffilter (\x->case x of Just (ChangeValue a) ->True;otherwise->False) dynPopup
+  let deleteEvent = fmap (\x->case x of Just DeleteMe -> DeleteMe; otherwise->Close) $ ffilter (\x-> case x of Just (DeleteMe)->True;otherwise->False) dynPopup
+  transformer <- holdDyn NoTransformer changeEvents 
+  showTransformer <- mapDyn hack transformer
+  widget <- mapDyn paramWidget' transformer
+  paramValue <- liftM joinDyn $ widgetHold (paramWidget' iValue) $ updated widget
+  mapDyn (\x->(x,deleteEvent)) paramValue
+  where
+    hack NoTransformer = "NoTransformer"
+    hack Rev = "Rev"
+    hack (Slow _) = "Slow" -- sorry...
+    hack (Density _) = "Density"
+    hack Degrade = "Degrade"
+    hack (DegradeBy _) = "DegradeBy"
+    hack Brak = "Brak"
+    hack (Every _ _)= "Every"
+    hack (Jux _) = "Jux"
+    hack (Chop _) = "Chop"
+    hack (Combine _ _) = "Combine"
+
+
+
+
+patternTransformerPopup:: MonadWidget t m => [EditSignal PatternTransformer] -> m (Event t (Maybe (EditSignal PatternTransformer)))
+patternTransformerPopup actionList = elClass "div" "popupMenu" $ do
+  let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
+  let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak","Every","Jux","Chop","Combine"]
+  --let combinatorMap = fromList $ zip [0::Int..] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Every ]
+  dd <- dropdown 11 ddMap def
+  let transformerKey = _dropdown_value dd
+  transformerChange <- mapDyn (Just . ChangeValue . maybe NoTransformer id . (flip Data.Map.lookup) transMap) transformerKey
+  let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  edits <- liftM id $ Control.Monad.sequence popupList
+  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
+  return $ (leftmost $ edits ++[closeMenu,updated transformerChange])
 
