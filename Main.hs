@@ -112,7 +112,8 @@ trivialTransformedPatternWidget delta = el "div" $ do
 textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t String,Event t String)
 textWidget delta = el "div" $ do
   y <- textArea $ def & textAreaConfig_setValue .~ delta
-  let edits = tagDyn (_textArea_value y) (_textArea_keypress y) -- local edit actions are the value after a keypress
+  let edits = _textArea_input y
+  --tagDyn (_textArea_value y) (_textArea_keyup y) -- local edit actions are the value after a keypress
   evals <- button "eval"
   let evals' = tagDyn (_textArea_value y) evals
   value <- holdDyn "" $ updated $ _textArea_value y -- updated values may be from local edit actions or remote assignment
@@ -145,6 +146,8 @@ lastOrNothing xs = Just (last xs)
 
 main :: IO ()
 main = do
+  wd <- webDirt
+  stream <- webDirtStream wd
   protocol <- estuaryProtocol
   now <- Data.Time.getCurrentTime
   mainWidget $ divClass "header" $ mdo
