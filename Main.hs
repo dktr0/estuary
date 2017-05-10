@@ -70,7 +70,10 @@ pages = [
   ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
   ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns),
   ("Single TransformedPattern", widgetToPage $ do 
-    emptyPat <- liftM (trivialPatternA <$) $ button "Empty Pat"
+    let tPat = TransformedPattern (Combine (S $ Group (Live ([Atom "jvbass" (PotentialDelete) (Rep 2)],Once) L4) Inert ) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
+    let tPat2 = TransformedPattern (Combine (S $ Atom "jvbass" (PotentialDelete) (Rep 2)) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
+
+    emptyPat <- liftM (tPat2 <$) $ button "init pat"
     (pat,ev,hint) <- topLevelTransformedPatternWidget emptyPat
     holdDyn "no changes" (fmap (const "changes")  ev) >>= dynText
     mapDyn (\x-> (x,ev,hint)) pat

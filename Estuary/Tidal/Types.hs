@@ -53,7 +53,7 @@ instance JSON Liveness where
 
 data Potential a = Potential a | PotentialDelete
     | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness
-    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq)
+    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq,Show) --show just for testing
 
 instance JSON a => JSON (Potential a) where
   showJSON (Potential a) = encJSDict [("Potential",a)]

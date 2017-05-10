@@ -294,14 +294,16 @@ paramWidget' x = paramWidget x
 patternTransformerWidget :: (MonadWidget t m)=> PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer, Event t (EditSignal a)))
 patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget" $ mdo
   let popup = patternTransformerPopup [DeleteMe]
-  openEv <- clickableDivClass'' showTransformer "noClass" ()
+  openEv <- clickableSpanClass showTransformer' "noClass" ()
   dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ leftmost [(False<$) dynPopup,(True <$) openEv]
   let changeEvents = fmap ((\x->case x of ChangeValue a->a;otherwise->NoTransformer) . fromJust) $ ffilter (\x->case x of Just (ChangeValue a) ->True;otherwise->False) dynPopup
   let deleteEvent = fmap (\x->case x of Just DeleteMe -> DeleteMe; otherwise->Close) $ ffilter (\x-> case x of Just (DeleteMe)->True;otherwise->False) dynPopup
   transformer <- holdDyn NoTransformer changeEvents 
   showTransformer <- mapDyn hack transformer
+  showTransformer' <-holdDyn (hack iValue)  $ updated showTransformer
   widget <- mapDyn paramWidget' transformer
   paramValue <- liftM joinDyn $ widgetHold (paramWidget' iValue) $ updated widget
+
   mapDyn (\x->(x,deleteEvent)) paramValue
   where
     hack NoTransformer = "NoTransformer"
@@ -324,7 +326,7 @@ patternTransformerPopup actionList = elClass "div" "popupMenu" $ do
   let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
   let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak","Every","Jux","Chop","Combine"]
   --let combinatorMap = fromList $ zip [0::Int..] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Every ]
-  dd <- dropdown 11 ddMap def
+  dd <- dropdown (-1) ddMap def
   let transformerKey = _dropdown_value dd
   transformerChange <- mapDyn (Just . ChangeValue . maybe NoTransformer id . (flip Data.Map.lookup) transMap) transformerKey
   let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
