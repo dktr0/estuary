@@ -122,7 +122,7 @@ aGLWidgetLive liveness builder iVal ev = mdo
 
 popupSampleWidget :: MonadWidget t m => Dynamic t Liveness -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String)), Event t Hint))
 popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
-  sample <- clickableDivClass'' inVal "noClass" ()
+  sample <- clickableSpanClass inVal "noClass" ()
   repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
   (dynPopup, dynHintEv) <- flippableWidget (return (never,never)) popup (case iPotential of Inert->False; otherwise->True) (updated popupDisplayEv) >>= splitDyn 
   let popupMenu =  switchPromptlyDyn dynPopup

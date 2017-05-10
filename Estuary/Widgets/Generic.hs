@@ -117,6 +117,12 @@ clickableDivAttrs' label val attrs _ _= do
   let event = (val <$) clickEv
   return $ constDyn ((),event)
 
+-- with displayed text that can change
+clickableSpanClass:: MonadWidget t m => Dynamic t String -> String -> a -> m (Event t a)
+clickableSpanClass label c e = do
+  (element, _) <- elAttr' "span" ("class"=:c) $ dynText label
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  return $ (e <$) clickEv
 
 pingButton :: MonadWidget t m => String -> m (Event t ())
 pingButton label = liftM (() <$) $ button label
@@ -235,12 +241,12 @@ samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ d
   return $ (leftmost $ events' ++[closeMenu, fmap Just liveWidget,fmap (Just . ChangeValue) (updated sampleChange)], fmap SampleHint $ updated sampleChange)
 
 repDivWidget'::MonadWidget t m => RepOrDiv -> Event t () -> m (Event t RepOrDiv)
-repDivWidget' iVal _ = elAttr "div" ("class"=:"repOrDiv") $ mdo
-  repDivButton <- clickableDivClass'' showRep "noClass" ()
+repDivWidget' iVal _ = elClass "span" "repOrDiv" $ mdo
+  repDivButton <- clickableSpanClass showRep "repDivSpan" ()
   repTog <- toggle iToggle repDivButton
-  showRep <- mapDyn (\x-> if x then "*" else "/") repTog
+  showRep <- mapDyn (\x-> if x then " * " else " / ") repTog
   let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
-  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number"
+  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number" 
   let numTextField = _textInput_value textField
   num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
   dynVal <- combineDyn (\tog val -> if tog then Rep val else Div val) repTog num

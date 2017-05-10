@@ -261,7 +261,17 @@ to the right of them
 	height:20px;
 }
 
-
+.repOrDiv{
+	position: relative; 
+	display: inline-block;
+}
+.repDivSpan{
+	white-space: pre
+}
+/* for the text input */
+.repOrDivInput {
+	width:25px;
+}
 .countWidgetTable{
 	display: inline-table;
 	background-color:lightgreen;
