@@ -121,11 +121,9 @@ aGLWidgetLive liveness builder iVal ev = mdo
 
 
 popupSampleWidget :: MonadWidget t m => Dynamic t Liveness -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String)), Event t Hint))
-popupSampleWidget liveness iVal e = elAttr "div" (singleton "style" "border: 1px solid black; position: relative; display: inline-block;") $ mdo
+popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
   sample <- clickableDivClass'' inVal "noClass" ()
   repDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
-  
-  --samplePickerPopup::(MonadWidget t m)=>  Dynamic t Liveness -> Map Int (String,String) -> [EditSignal  String] -> m (Event t (Maybe (EditSignal String)),Event t Hint)
   (dynPopup, dynHintEv) <- flippableWidget (return (never,never)) popup False (updated popupDisplayEv) >>= splitDyn 
   let popupMenu =  switchPromptlyDyn dynPopup
   let hintEv =  switchPromptlyDyn dynHintEv
@@ -168,7 +166,7 @@ popupIntWidget :: MonadWidget t m => Int -> Int -> Int -> Dynamic t Liveness -> 
 popupIntWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
 
   let (iVal,iRepDiv) = getIVal iGenPat
-  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ (constDyn ("style"=:"width:30px"))
   --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
   let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])
   repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
@@ -213,7 +211,7 @@ popupIntWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomP
 popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Dynamic t Liveness -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double)), Event t Hint))
 popupDoubleWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
   let (iVal,iRepDiv) = getIVal iGenPat
-  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"  --repOrDiv <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ never  --@ this would be cleaner, not sure why it doesn't work...
+  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"  & textInputConfig_attributes .~ (constDyn ("style"=:"width:30px"))
   let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])
   repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
   inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Double)) $ _textInput_value textField

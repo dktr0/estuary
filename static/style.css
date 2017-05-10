@@ -131,21 +131,27 @@ body {
 --------------------------------------------------------------------
 */
 
+.atomPopup{
+	/*border: 1px solid black; */
+	position: relative; 
+	display: inline-block;
+}
+
 /*ex. ICLCFixed, hit [] on any widget - div wrapped in red border*/
 .generalPattern-group{
-	border: 1pt solid red;
+	/*border: 1pt solid red;*/
 	display:inline-block;
 }
 
 /*ex. hit [,,] on any widget in ICLC Fixed*/
 .generalPattern-layer{
-	border: 2pt solid blue;
+	/*border: 2pt solid blue;*/
 	display:inline-block
 }
 
  /*(ex. ICLCFixed, the sound widget (everything wrapped in red))*/
 .generalPattern-atom{
-	border: 1pt solid red;
+	/*border: 1pt solid red;*/
 	display:inline-block;
 }
 
