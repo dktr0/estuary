@@ -100,12 +100,11 @@ transformedPat (EmptyTransformedPattern) _ = do
   let event = (RebuildMe <$) x
   mapDyn (\y -> (y,event,never)) value
 transformedPat (UntransformedPattern specificPattern) _= do
-  delete <- button "delete"
-  transform <- button "transform" -- >>= toggle False 
+  delete <- button "-"
+  transform <- button "transform"
   sPatTuple <- dropdownPatternWidget specificPattern never
   sPat <- mapDyn (\(x,_,_)->x) sPatTuple
   hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
-  ev <- mapDyn (\(_,ev,_)->ev) sPatTuple
   tPat <- mapDyn (UntransformedPattern) sPat
   combine <- button "+"
   let delete' = (EmptyTransformedPattern <$) delete
@@ -115,39 +114,40 @@ transformedPat (UntransformedPattern specificPattern) _= do
   value <- liftM joinDyn $ holdDyn tPat updatedValue'
   let rebuildEvents = leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform, (RebuildMe <$) combine]
   mapDyn (\x->(x,rebuildEvents,hint)) value
+transformedPat (TransformedPattern (Combine iSpecPat iPatComb) EmptyTransformedPattern) _ = transformedPat (UntransformedPattern iSpecPat) never
 transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do  
-  delete <- button "delete"
+  delete <- button "-"
   transform <- button "transform"
   sPatTuple <- dropdownPatternWidget iSpecPat never
   sPat <- mapDyn (\(x,_,_)->x) sPatTuple
   sHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
-  (comb,_) <- patternCombinatorDropDown iPatComb never >>= splitDyn
-  tPatTuple <- resettableTransformedPatternWidget iTransPat never  -- this one has to have the 'reset' wrapper around it
+  (comb,tPatTuple) <- el "div" $ do
+      (c,_) <- patternCombinatorDropDown iPatComb never >>= splitDyn
+      t <- resettableTransformedPatternWidget iTransPat never  -- this one has to have the 'reset' wrapper around it
+      return (c,t)
   tPat <- mapDyn (\(x,_,_)->x) tPatTuple
   tEv <- liftM switchPromptlyDyn $ mapDyn (\(_,ev,_)->ev) tPatTuple
   tHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) tPatTuple
-
   val <- combineDyn (\x y -> TransformedPattern (Combine x y)) sPat comb >>= combineDyn (\t cons -> cons t) tPat
-  let childDeleteMe = ffilter (\x->case x of DeleteMe ->True; otherwise-> False)  tEv
+  let childDeleteMe = ffilter (\x ->case x of DeleteMe ->True; otherwise-> False) tEv
+  let childIsEmpty = ffilter id $ attachDynWith (\x->case x of EmptyTransformedPattern->True;otherwise->False) tPat childDeleteMe
   transVal <- mapDyn (TransformedPattern NoTransformer) val
   untransPat <- mapDyn UntransformedPattern sPat
   val' <- liftM joinDyn $ holdDyn val $ fmap (const tPat) delete 
-  val''<- liftM joinDyn $ holdDyn val' $ (untransPat <$) childDeleteMe
-  val''' <- liftM joinDyn $ holdDyn val'' $ (transVal <$) transform
-  mapDyn (\x->(x, leftmost [(RebuildMe <$) delete,(RebuildMe <$) childDeleteMe, (RebuildMe <$) transform],leftmost [tHint,sHint])) val'''
+  val'' <- liftM joinDyn $ holdDyn val' $ (transVal <$) transform
+  val'''<- liftM joinDyn $ holdDyn val'' $ (untransPat <$) childIsEmpty
+  mapDyn (\x->(x, leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform,(RebuildMe <$) childDeleteMe],leftmost [tHint,sHint])) val'''
 transformedPat (TransformedPattern iPatTrans iTransPat) _ = do
-  delete <- button "delete transformer"
-  patTrans <- parameteredPatternTransformer iPatTrans never >>= mapDyn fst
-  tPatTuple <- resettableTransformedPatternWidget iTransPat never
+  (patTrans,deleteTransformer) <- parameteredPatternTransformer iPatTrans never >>= splitDyn
+  tPatTuple <- el "div" $ resettableTransformedPatternWidget iTransPat never
   transPat <- mapDyn (\(x,_,_)->x) tPatTuple
   tEv <- liftM switchPromptlyDyn $ mapDyn (\(_,ev,_)->ev) tPatTuple
+  let deleteEvent = ffilter (\x->case x of DeleteMe->True;otherwise->False) tEv
   tHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) tPatTuple
-  let rebuildVal = tagDyn transPat $ leftmost [(DeleteMe <$) delete,ffilter (\x->case x of DeleteMe->True;otherwise->False) tEv]
-  newTransPat<- combineDyn (\x y-> TransformedPattern x y) patTrans transPat
+  let rebuildVal = tagDyn transPat $ leftmost [switchPromptlyDyn deleteTransformer, deleteEvent]
+  newTransPat <- combineDyn (\x y-> TransformedPattern x y) patTrans transPat
   val <- liftM joinDyn $ holdDyn newTransPat $ fmap constDyn rebuildVal
-  mapDyn (\x-> (x,leftmost [(RebuildMe <$) delete,(RebuildMe <$) rebuildVal],tHint)) val
-
-
+  mapDyn (\x-> (x,leftmost [deleteEvent, (RebuildMe <$) rebuildVal],tHint)) val
 
 paramWidget::MonadWidget t m=>PatternTransformer -> m (Dynamic t PatternTransformer)
 paramWidget (Jux trans) = do
@@ -200,17 +200,18 @@ paramWidget (Combine iSPat iPatComb) = do
   combineDyn Combine sPat comb
 paramWidget transformer = return $ constDyn transformer
 
-parameteredPatternTransformer::MonadWidget t m => PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer, ()))
+parameteredPatternTransformer::MonadWidget t m => PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer, Event t (EditSignal a)))
 parameteredPatternTransformer i _ = el "div" $ do
   let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
   let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak","Every","Jux","Chop","Combine"]
+  delete <- liftM (DeleteMe <$) $ button "-"
   dd <- dropdown (hack i) ddMap def
   let ddVal = _dropdown_value dd -- Dynamic int
   ddWidget <- mapDyn (\k ->case Data.Map.lookup k transMap of Just a->paramWidget a; otherwise -> paramWidget NoTransformer) ddVal  --Dynamic (m(dynamic transformer))
   let ddWidgetValEv =  updated ddWidget -- Event (M (dyn Pattern))
   paramValue <- widgetHold (paramWidget i) ddWidgetValEv  -- m Dynamic t(m (Dynamic PatternTrans...))
   let paramValue' = joinDyn paramValue --Dyn PatternTransformer
-  mapDyn (\k->(k,())) paramValue'
+  mapDyn (\k->(k,delete)) paramValue'
   where
     hack NoTransformer = 0
     hack Rev = 1
@@ -224,6 +225,5 @@ parameteredPatternTransformer i _ = el "div" $ do
     hack (Chop _) = 9
     hack (Combine _ _) = 10
     hack _ = 0
-
 
 
