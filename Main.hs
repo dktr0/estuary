@@ -206,12 +206,16 @@ main = do
   now <- Data.Time.getCurrentTime
   mainWidget $ divClass "header" $ mdo
     (values,deltasUp,hints) <- mainPage deltasDown'
+    values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
+    let values'' = updated values'
     tempoEdits <- tempoWidget deltasDown
     let deltasUp' = leftmost [deltasUp,tempoEdits]
     deltasDown <- webSocketWidget protocol now deltasUp'
     let deltasDown' = ffilter (not . Prelude.null) deltasDown
     diagnostics values deltasUp' deltasDown' hints
-
+    performEvent_ $ fmap (liftIO . (doHint wd)) hints
+    performEvent_ $ fmap (liftIO . stream) values''
+        
 tempoWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
 tempoWidget deltas = do
   text "CPS:"
