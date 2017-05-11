@@ -22,18 +22,18 @@ import Estuary.Reflex.Utility
 
 popupSpecificPatternWidget :: (MonadWidget t m)=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal a),Event t Hint))
 popupSpecificPatternWidget iValue _ = elClass "div" "popupSpecificPatternWidget" $ mdo
-  let popup = specificPatternPopup []
+  let popup = specificPatternPopup [DeleteMe, TransformMe]
   openEv <- clickableSpanClass showSpecPat "noClass" ()
   dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ updated dynOpen
   dynOpen <- toggle False $ leftmost [openEv,(() <$ )dynPopup]
   let changeEvents = fmap ((\x->case x of ChangeValue a->a;otherwise->(S $ Blank Inert)) . fromJust) $ ffilter (\x->case x of Just (ChangeValue a) ->True;otherwise->False) dynPopup
   let deleteEvent = fmap (\x->case x of Just DeleteMe -> DeleteMe; otherwise->Close) $ ffilter (\x-> case x of Just (DeleteMe)->True;otherwise->False) dynPopup
+  let transformEvent = fmap (\x->case x of Just TransformMe -> TransformMe; otherwise->Close) $ ffilter (\x-> case x of Just (TransformMe)->True; otherwise->False) dynPopup
   --specPat <- holdDyn iValue changeEvents >>= liftM joinDyn $ mapDyn (flip  Sp.specificPattern $ never)
   specPatTuple <- liftM joinDyn $ widgetHold (Sp.specificContainer iValue never) $ fmap (flip Sp.specificContainer $ never) changeEvents
   specPat <- mapDyn (\(x,_,_)->x) specPatTuple
   showSpecPat <- mapDyn hack specPat
-
-  mapDyn (\(x,y,z)-> (x,never,z)) specPatTuple
+  mapDyn (\(x,y,z)-> (x,leftmost [transformEvent,deleteEvent],z)) specPatTuple
   where
     hack (Accelerate _) = " accelerate "
     hack (Bandf _) = " bandf "
@@ -182,15 +182,19 @@ resettableTransformedPatternWidget iTransPat ev = mdo
 
 transformedPat :: MonadWidget t m => TransformedPattern -> Event t (EditSignal a) -> m (Dynamic t (TransformedPattern, Event t (EditSignal a), Event t Hint))
 transformedPat (EmptyTransformedPattern) _ = do
-  x <- liftM (UntransformedPattern (S (Atom "~" Inert Once))  <$) $ button "make me not empty"
+  x <- liftM (UntransformedPattern (S (Atom "~" Inert Once))  <$) $ button "+"
   value <- holdDyn EmptyTransformedPattern x
   let event = (RebuildMe <$) x
   mapDyn (\y -> (y,event,never)) value
 transformedPat (UntransformedPattern specificPattern) _= do
-  delete <- button "-"
-  transform <- button "transform"
+  --delete <- button "-"
+  --transform <- button "transform"
   sPatTuple <- popupSpecificPatternWidget specificPattern never
   sPat <- mapDyn (\(x,_,_)->x) sPatTuple
+  sEv <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) sPatTuple
+  let delete = ffilter (\x->case x of DeleteMe->True;otherwise->False) sEv
+  let transform = ffilter (\x->case x of TransformMe->True;otherwise->False) sEv
+
   hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
   tPat <- mapDyn (UntransformedPattern) sPat
   combine <- el "div" $ button "+"
@@ -204,18 +208,19 @@ transformedPat (UntransformedPattern specificPattern) _= do
   mapDyn (\x->(x,rebuildEvents,hint)) value
 transformedPat (TransformedPattern (Combine iSpecPat iPatComb) EmptyTransformedPattern) _ = transformedPat (UntransformedPattern iSpecPat) never
 transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do  
-  delete <- button "-"
-  transform <- button "transform"
+  --delete <- button "-"
+  --transform <- button "transform"
   sPatTuple <- popupSpecificPatternWidget iSpecPat never
   sPat <- mapDyn (\(x,_,_)->x) sPatTuple
   sHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
-  addAfter <- el "div" $ button "add"
+  sEv <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) sPatTuple
+  let delete = ffilter (\x->case x of DeleteMe->True;otherwise->False) sEv
+  let transform = ffilter (\x->case x of TransformMe->True;otherwise->False) sEv
+  addAfter <- el "div" $ button "+"
   (comb,tPatTuple) <- el "div" $ do
       (c,_) <- patternCombinatorDropDown iPatComb never >>= splitDyn
       t <- resettableTransformedPatternWidget iTransPat never  -- this one has to have the 'reset' wrapper around it
       return (c,t)
-
-
 
   tPat <- mapDyn (\(x,_,_)->x) tPatTuple
   addInbetweenVal <- combineDyn (\sp c-> TransformedPattern (Combine sp Merge) . TransformedPattern (Combine sp c)) sPat comb >>= combineDyn (\tp cons->cons tp) tPat
@@ -279,8 +284,8 @@ paramWidget (Jux trans) = do
   val'<- mapDyn (\(next,_)-> Jux next) trans'
   return val'
 paramWidget (Every num trans) = do
-
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (show num)
+  let attrs = fromList $ zip ["type","style"] ["number","width:25px"]
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn attrs) & textInputConfig_initialValue .~ (show num)
   let input' = _textInput_value input -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
   nextTrans <- parameteredPatternTransformer trans never
@@ -289,7 +294,7 @@ paramWidget (Every num trans) = do
 paramWidget (Slow i) = do
   let numer = numerator i
   let denom = denominator i
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (show numer)
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:25px"])) & textInputConfig_initialValue .~ (show numer)
   let input' = _textInput_value input -- Dyn string
   input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (show denom)
   let input2' = _textInput_value input2 -- Dyn string
@@ -364,7 +369,8 @@ paramWidget' (Jux trans) = do
   val'<- mapDyn (\(next,_)-> Jux next) trans'
   return val'
 paramWidget' (Every num trans) = do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (show num)
+  let attrs = fromList $ zip ["type","style"] ["number","width:25px"]
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn attrs) & textInputConfig_initialValue .~ (show num)
   let input' = _textInput_value input -- Dyn string
   val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
   nextTrans <- patternTransformerWidget trans never
@@ -391,7 +397,7 @@ patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget" $ m
   mapDyn (\x->(x,deleteEvent)) paramValue
   where
     hack NoTransformer = " NoTransformer "
-    hack Rev = " Re v"
+    hack Rev = " Rev "
     hack (Slow _) = " Slow " -- sorry...
     hack (Density _) = " Density "
     hack Degrade = " Degrade "

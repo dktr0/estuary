@@ -23,7 +23,7 @@ import qualified GHCJS.Marshal.Pure as P
 data Hint = SampleHint String deriving (Eq,Show)
 
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
- | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer | LayerSplit  deriving (Eq)
+ | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer | LayerSplit | TransformMe deriving (Eq)
 
 --data EditSignal a = RebuildMe | PotentialSignal (Potential a)
 
@@ -37,6 +37,7 @@ toPotential (MakeRepOrDiv) = PotentialRepOrDiv
 toPotential (MakeGroup) = PotentialMakeGroup
 toPotential (MakeLayer) = PotentialMakeLayer
 toPotential (DeleteMe) = PotentialDelete
+
 
 toEditSigGenPat::EditSignal a -> EditSignal (GeneralPattern a)
 toEditSigGenPat (ChangeValue a) = ChangeValue (Atom a Inert Once)
@@ -67,6 +68,7 @@ instance Show a => Show (EditSignal a) where
   show MakeL4 = "L4"
   show Eval = "eval"
   show LayerSplit = "LayerSplit"
+  show TransformMe = "Transform"
 
 doHint :: T.JSVal -> Hint -> IO ()
 doHint wd (SampleHint x) = sampleHint wd (P.pToJSVal x)
