@@ -153,8 +153,20 @@ main = do
   mainWidget $ divClass "header" $ mdo
     (values,deltasUp,hints) <- examplePage deltasDown'
     deltasDown <- webSocketWidget protocol now deltasUp
-    let deltasDown' = ffilter (not . Prelude.null) deltasDown 
+    tempoEdits <- tempoWidget deltasDown
+    let deltasUp' = mergeWith (++) [deltasUp,tempoEdits]
+    let deltasDown' = ffilter (not . Prelude.null) deltasDown
     diagnostics values deltasUp deltasDown' hints
+
+tempoWidget :: MonadWidget t m => Event t EstuaryProtocol -> m (Event t EstuaryProtocol)
+tempoWidget deltas = do
+  text "BPM:"
+  let delta' = fmapMaybe getCps deltas
+  delta'' <- holdDyn "120" delta'
+  t <- textInput $ def & textInputConfig_inputType .~"number" & textInputConfig_setValue .~ delta''
+  let t' = fmapMaybe (readMaybe) $ _textInput_value t
+  let edits = fmap (TempoChange "") t'
+  return edits
 
 diagnostics :: MonadWidget t m =>
   Dynamic t (Map Int (Either TransformedPattern String)) ->

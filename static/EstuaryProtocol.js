@@ -70,6 +70,7 @@ EstuaryProtocol.prototype.onMessage = function(m) {
      this.tempoCps = n.Tempo;
      this.tempoAt = n.at;
      this.tempoBeat = n.beat;
+     this.edits.push(n);
    }
    else if(n.TempoChange != null) {
      console.log("EstuaryProtocol onMessage TempoChange (ignoring)");

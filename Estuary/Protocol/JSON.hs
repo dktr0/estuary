@@ -9,7 +9,7 @@ data EstuaryProtocol =
   TextEdit String Int String |
   TextEval String Int String |
   Chat String String String |
-  Tempo String Double Double Double |
+  Tempo String Double Double Double | -- password at beat cps
   TempoChange String Double |
   ProtocolError String
   deriving (Show)
@@ -59,3 +59,7 @@ justTextCode :: EstuaryProtocol -> String
 justTextCode (TextEdit _ _ x) = x
 justTextCode (TextEval _ _ x) = x
 justTextCode _ = error "can't get text code from non TextEdit or TextEval"
+
+getCps :: EstuaryProtocol -> Maybe Double
+getCps (Tempo _ _ _ x) = Just x
+getCps _ = Nothing
