@@ -179,18 +179,18 @@ whitespace liveness iVal cssClass popupList _ event = elAttr "div" ("style"=:"po
   whitespace <- clickableDivClass'' (constDyn "     ") "whiteSpaceClickable" ()
   openCloseEvents <- toggle False $ leftmost [whitespace, closeEvents,(() <$) addEvent]
   popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (whitespacePopup liveness popupList) False (updated openCloseEvents)
-  let addEvent = (ChangeValue (iValSingle iVal) <$) $ ffilter (\x-> if isJust x then fromJust (fmap (isChangeValue) x) else False) popupMenu
+  let addEvent = (ChangeValue (Blank Inert) <$) $ ffilter (\x-> if isJust x then fromJust (fmap (isChangeValue) x) else False) popupMenu
   let livenessEv = fmap fromJust $ ffilter (\x-> x==Just MakeL3 || x == Just MakeL4 || x == Just Eval) popupMenu
   let delContEv = fmap fromJust $ ffilter (\x-> x==Just DeleteContainer) popupMenu
   let layerSplit = fmap fromJust $ ffilter (\x-> x==Just LayerSplit) popupMenu
   let closeEvents = (() <$) $ ffilter (==Nothing) popupMenu
   return $ constDyn ((),leftmost [livenessEv, addEvent,delContEv,layerSplit],never)
-  where
-    iValSingle (Group (Live (xs,r) _) p) = iValSingle (xs!!0)
-    iValSingle (Group (Edited _ (xs,r)) p) = iValSingle (xs!!0)
-    iValSingle (Layers (Live (xs,r) _) p) = iValSingle (xs!!0)
-    iValSingle (Layers (Edited _ (xs,r)) p) = iValSingle (xs!!0)
-    iValSingle (Atom x p r) = Atom x p r
+  --where
+  --  iValSingle (Group (Live (xs,r) _) p) = iValSingle (xs!!0)
+  --  iValSingle (Group (Edited _ (xs,r)) p) = iValSingle (xs!!0)
+  --  iValSingle (Layers (Live (xs,r) _) p) = iValSingle (xs!!0)
+  --  iValSingle (Layers (Edited _ (xs,r)) p) = iValSingle (xs!!0)
+  --  iValSingle (Atom x p r) = Atom x p r
 
 
 

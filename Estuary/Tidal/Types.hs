@@ -139,6 +139,11 @@ instance Show a => Show (GeneralPattern a) where
   show (Group (Live (xs,r) _) _) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (Group (Edited ([],r) _) _) = ""
   show (Group (Edited (xs,r) _) _) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
+
+  show (Layers (Live ([],r) _) _) = ""
+  show (Layers (Live (xs,r) _) _) = "[" ++ (intercalate ", " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
+  show (Layers (Edited ([],r) _) _) = ""
+  show (Layers (Edited (xs,r) _) _) = "[" ++ (intercalate ", " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (TextPattern x) = x
 
 instance JSON a => JSON (GeneralPattern a) where
