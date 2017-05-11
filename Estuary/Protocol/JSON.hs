@@ -19,14 +19,16 @@ instance JSON EstuaryProtocol where
   showJSON (TextEdit password n code) = encJSDict [("TextEdit",showJSON n),("password",showJSON password),("code",showJSON code)]
   showJSON (TextEval password n code) = encJSDict [("TextEval",showJSON n),("password",showJSON password),("code",showJSON code)]
   showJSON (Chat password name msg) = encJSDict [("Chat",msg),("password",password),("name",name)]
-  showJSON (Tempo password at beat cps) = encJSDict [("Tempo",showJSON cps),("password",showJSON password),("at",showJSON (toRational at)),("beat",showJSON beat)]
+  showJSON (Tempo password at beat cps) = encJSDict [("Tempo",showJSON cps),("password",showJSON password),("at",showJSON at'),("beat",showJSON beat)]
+    where at' = [ (numerator . toRational) at, (denominator . toRational) at ] :: [Integer]
   showJSON (TempoChange password cps) = encJSDict [("TempoChange",showJSON cps),("password",showJSON password)]
   showJSON (ProtocolError msg) = encJSDict [("ProtocolError",msg)]
   readJSON (JSObject x) | firstKey x == "EstuaryEdit" = EstuaryEdit <$> valFromObj "password" x <*> valFromObj "EstuaryEdit" x <*> valFromObj "code" x
   readJSON (JSObject x) | firstKey x == "TextEdit" = TextEdit <$> valFromObj "password" x <*> valFromObj "TextEdit" x <*> valFromObj "code" x
   readJSON (JSObject x) | firstKey x == "TextEdit" = TextEval <$> valFromObj "password" x <*> valFromObj "TextEval" x <*> valFromObj "code" x
   readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj "password" x <*> valFromObj "name" x <*> valFromObj "Chat" x
-  readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "password" x <*> (fromRational <$> valFromObj "at" x)  <*> valFromObj "beat" x <*> valFromObj "Tempo" x
+  readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "password" x <*> at' <*> valFromObj "beat" x <*> valFromObj "Tempo" x
+    where at' = (\[a:b:_] -> fromRational (a % b)) <$> valFromObj "at" x
   readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj "password" x <*> valFromObj "TempoChange" x
   readJSON (JSObject x) | firstKey x == "ProtocolError" = ProtocolError <$> valFromObj "ProtocolError" x
   readJSON _ = Error "Unable to parse as EstuaryProtocol"
