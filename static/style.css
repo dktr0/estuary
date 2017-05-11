@@ -327,6 +327,12 @@ to the right of them
 }
 
 
+.popupSpecificPatternWidget{
+	/*border: 1px solid black; */
+	position: relative; 
+	display: inline-block;
+}
+
 
 /*
 --------------------------------------------------------------------

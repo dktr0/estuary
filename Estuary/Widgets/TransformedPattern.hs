@@ -19,6 +19,89 @@ import Text.Read
 import Estuary.Reflex.Utility
 
 
+
+popupSpecificPatternWidget :: (MonadWidget t m)=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal a),Event t Hint))
+popupSpecificPatternWidget iValue _ = elClass "div" "popupSpecificPatternWidget" $ mdo
+  let popup = specificPatternPopup []
+  openEv <- clickableSpanClass showSpecPat "noClass" ()
+  dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ updated dynOpen
+  dynOpen <- toggle False $ leftmost [openEv,(() <$ )dynPopup]
+  let changeEvents = fmap ((\x->case x of ChangeValue a->a;otherwise->(S $ Blank Inert)) . fromJust) $ ffilter (\x->case x of Just (ChangeValue a) ->True;otherwise->False) dynPopup
+  let deleteEvent = fmap (\x->case x of Just DeleteMe -> DeleteMe; otherwise->Close) $ ffilter (\x-> case x of Just (DeleteMe)->True;otherwise->False) dynPopup
+  --specPat <- holdDyn iValue changeEvents >>= liftM joinDyn $ mapDyn (flip  Sp.specificPattern $ never)
+  specPatTuple <- liftM joinDyn $ widgetHold (Sp.specificContainer iValue never) $ fmap (flip Sp.specificContainer $ never) changeEvents
+  specPat <- mapDyn (\(x,_,_)->x) specPatTuple
+  showSpecPat <- mapDyn hack specPat
+
+  mapDyn (\(x,y,z)-> (x,never,z)) specPatTuple
+  where
+    hack (Accelerate _) = " accelerate "
+    hack (Bandf _) = " bandf "
+    hack (Bandq _) = " bandq " -- sorry...
+    hack (Begin _) = " begin "
+    hack (Coarse _) = " coarse "
+    hack (Crush _) = " crush "
+    hack (Estuary.Tidal.Types.Cut _) = " cut "
+    hack (Cutoff _) = " cutoff "
+    hack (Delay _) = " delay "
+    hack (Delaytime _) = " delaytime "
+    hack (Delayfeedback _) = " delayfeedback "
+    hack (End _) = " end " 
+    hack (Gain _) = " gain"
+    hack (Hcutoff _) = " hcutoff"
+    hack (Hresonance _) = " hresonance"
+    hack (Loop _) = " loop "
+    hack (N _) =  " n "
+    hack (Pan _) = " pan "
+    hack (Resonance _) = " resonance "
+    hack (S _) = " s "
+    hack (Shape _) = " shape "
+    hack (Sound _) = " sound "
+    hack (Speed _) = " speed "
+    hack (Unit _) = " unit "
+    hack (Up _) = " up "
+    hack (Vowel _) = " vowel "
+
+
+specificPatternPopup:: MonadWidget t m => [EditSignal SpecificPattern] -> m (Event t (Maybe (EditSignal SpecificPattern)))
+specificPatternPopup actionList = elClass "div" "popupMenu" $ do
+  let specMap = fromList $ zip [(0::Int)..] iValueList
+  let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
+  dd <- dropdown (-1) ddMap def
+  let specPatKey = _dropdown_value dd
+  specChange <- mapDyn (Just . ChangeValue . maybe (S $ Blank Inert) id . (flip Data.Map.lookup) specMap) specPatKey
+  let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  edits <- liftM id $ Control.Monad.sequence popupList
+  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
+  return $ (leftmost $ edits ++[closeMenu,updated specChange])
+  where
+    iValueList = [(Accelerate $ Atom 0 Inert Once),
+      (Bandf $ Atom 440 Inert Once),
+      (Bandq $ Atom 10 Inert Once),
+      (Begin $ Atom 0 Inert Once),
+      (Coarse $ Atom 0 Inert Once),
+      (Crush $ Atom 16 Inert Once),
+      (Estuary.Tidal.Types.Cut $ Atom 1 Inert Once),
+      (Cutoff $ Atom 440 Inert Once),
+      (Delay $ Atom 0 Inert Once),
+      (Delayfeedback $ Atom 0 Inert Once),
+      (Delaytime $ Atom 0.5 Inert Once),
+      (End $ Atom 1 Inert Once),
+      (Gain $ Atom 1 Inert Once),
+      (Hcutoff $ Atom 440 Inert Once),
+      (Hresonance $ Atom 20 Inert Once),
+      (Loop $ Atom 0 Inert Once),
+      (N $ Atom 0 Inert Once),
+      (Pan $ Atom 0.5 Inert Once),
+      (Resonance $ Atom 0.5 Inert Once),
+      (S $ Atom "~" Inert Once),
+      (Shape $ Atom 0.5 Inert Once),
+      (Speed $ Atom 1 Inert Once),
+      (Unit $ Atom 'c' Inert Once),
+      (Up $ Atom 0 Inert Once),
+      (Vowel $ Atom 'o' Inert Once)]
+
+
 dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (),Event t Hint))
 dropdownPatternWidget iPattern _ = do
   let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
@@ -106,7 +189,7 @@ transformedPat (EmptyTransformedPattern) _ = do
 transformedPat (UntransformedPattern specificPattern) _= do
   delete <- button "-"
   transform <- button "transform"
-  sPatTuple <- dropdownPatternWidget specificPattern never
+  sPatTuple <- popupSpecificPatternWidget specificPattern never
   sPat <- mapDyn (\(x,_,_)->x) sPatTuple
   hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
   tPat <- mapDyn (UntransformedPattern) sPat
@@ -123,7 +206,7 @@ transformedPat (TransformedPattern (Combine iSpecPat iPatComb) EmptyTransformedP
 transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do  
   delete <- button "-"
   transform <- button "transform"
-  sPatTuple <- dropdownPatternWidget iSpecPat never
+  sPatTuple <- popupSpecificPatternWidget iSpecPat never
   sPat <- mapDyn (\(x,_,_)->x) sPatTuple
   sHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
   addAfter <- el "div" $ button "add"
@@ -236,7 +319,7 @@ paramWidget (Chop i) = do
   val'<-forDyn val (\k-> Chop k)
   return val'
 paramWidget (Combine iSPat iPatComb) = do
-  sPat <- dropdownPatternWidget iSPat never >>= mapDyn (\(x,_,_)->x)
+  sPat <- popupSpecificPatternWidget iSPat never >>= mapDyn (\(x,_,_)->x)
   comb <- patternCombinatorDropDown iPatComb never >>= mapDyn fst
   combineDyn Combine sPat comb
 paramWidget transformer = return $ constDyn transformer
@@ -295,7 +378,8 @@ patternTransformerWidget :: (MonadWidget t m)=> PatternTransformer -> Event t ()
 patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget" $ mdo
   let popup = patternTransformerPopup [DeleteMe]
   openEv <- clickableSpanClass showTransformer' "noClass" ()
-  dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ leftmost [(False<$) dynPopup,(True <$) openEv]
+  dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ updated dynOpen
+  dynOpen <- toggle False $ leftmost [openEv,(() <$ )dynPopup]
   let changeEvents = fmap ((\x->case x of ChangeValue a->a;otherwise->NoTransformer) . fromJust) $ ffilter (\x->case x of Just (ChangeValue a) ->True;otherwise->False) dynPopup
   let deleteEvent = fmap (\x->case x of Just DeleteMe -> DeleteMe; otherwise->Close) $ ffilter (\x-> case x of Just (DeleteMe)->True;otherwise->False) dynPopup
   transformer <- holdDyn NoTransformer changeEvents 
@@ -306,17 +390,17 @@ patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget" $ m
 
   mapDyn (\x->(x,deleteEvent)) paramValue
   where
-    hack NoTransformer = "NoTransformer"
-    hack Rev = "Rev"
-    hack (Slow _) = "Slow" -- sorry...
-    hack (Density _) = "Density"
-    hack Degrade = "Degrade"
-    hack (DegradeBy _) = "DegradeBy"
-    hack Brak = "Brak"
-    hack (Every _ _)= "Every"
-    hack (Jux _) = "Jux"
-    hack (Chop _) = "Chop"
-    hack (Combine _ _) = "Combine"
+    hack NoTransformer = " NoTransformer "
+    hack Rev = " Re v"
+    hack (Slow _) = " Slow " -- sorry...
+    hack (Density _) = " Density "
+    hack Degrade = " Degrade "
+    hack (DegradeBy _) = " DegradeBy "
+    hack Brak = " Brak "
+    hack (Every _ _)= " Every "
+    hack (Jux _) = " Jux "
+    hack (Chop _) = " Chop "
+    hack (Combine _ _) = " Combine "
 
 
 
