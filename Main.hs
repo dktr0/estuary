@@ -162,9 +162,9 @@ mainPage deltasDown = do
   (aValue,aEdits,aHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaA'
   (bValue,bEdits,bHints) <- divClass "eightR" $ textPatternChainWidget deltaB'
   (cValue,cEdits,cHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaC'
-  (dValue,dEdits,dHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaD'
+  (dValue,dEdits,dHints) <- divClass "eightR" $ textPatternChainWidget deltaD'
   (eValue,eEdits,eHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaE'
-  (fValue,fEdits,fHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaF'
+  (fValue,fEdits,fHints) <- divClass "eightR" $ textPatternChainWidget deltaF'
   (_,gEdits,gEvals) <- divClass "eightL" $ textWidget deltaG'
   (_,hEdits,hEvals) <- divClass "eightR" $ textWidget deltaH'
   aValue' <- mapDyn (singleton 1) aValue
