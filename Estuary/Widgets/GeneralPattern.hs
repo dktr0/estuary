@@ -271,6 +271,8 @@ popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
   groupToggle <- toggle (isGroup iVal) groupEv
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
   
+  --holdDyn (show iPotential) (fmap show $ updated potential) >>= dynText
+
   let groupEvVal = tagDyn groupVal groupEv
   layerToggle <- toggle (isLayers iVal) layerEv
   layerVal <- combineDyn (\v l -> if l==L4 then Layers (Live ([v],Once) L4) Inert  else Layers (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
@@ -286,7 +288,8 @@ popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
   --let upEvent = leftmost [ groupLayerEv, upSig]
   mapDyn (\x-> (x,leftmost [upSig,groupEv],hintEv)) genPat'
   where
-    popupActions = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
+    --popupActions = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
+    popupActions = [MakeRepOrDiv, DeleteMe]
     sampleMap = fromList $ zip [0::Int,1..] $ [("Rest","~"),("Percussion", "bd"),("Percussion", "cp"),("Percussion", "hh"),("Percussion", "sn"),("Bass","jvbass"), ("Bass","wobble"),("Bass","bass1"),("Pitched","arpy"), ("Pitched", "casio"), ("Pitched","latibro")]
     popup = samplePickerPopup liveness sampleMap popupActions
     iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once]) 
@@ -316,8 +319,11 @@ popupIntWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "
   let closeEvent = (False <$)  $ ffilter (isNothing)  popupMenu
   let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
   popupToggle <- toggle (case iPotential of Inert->False; otherwise->True) $ leftmost [(()<$) popupMenu, (()<$) $ ffilter id $ updated $ _textInput_hasFocus textField,(() <$)closeEvent]
+  
+
   potential <- liftM updated (mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle) >>= holdDyn iPotential
   popupDisplayEv <- toggle (case iPotential of Inert->False; otherwise->True) $ updated potential
+  
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
   groupToggle <- toggle (isGroup iGenPat) $ ffilter (==MakeGroup) groupLayerEv
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
@@ -354,6 +360,7 @@ popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClas
   popupToggle <- toggle (case iPotential of Inert->False; otherwise->True) $ leftmost [(()<$) popupMenu, (()<$) $ ffilter id $ updated $ _textInput_hasFocus textField,(() <$)closeEvent]
   potential <- liftM updated (mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle) >>= holdDyn iPotential
   popupDisplayEv <- toggle (case iPotential of Inert->False; otherwise->True) $ updated potential
+  
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
   groupToggle <- toggle (isGroup iGenPat) $ ffilter (==MakeGroup) groupLayerEv
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
