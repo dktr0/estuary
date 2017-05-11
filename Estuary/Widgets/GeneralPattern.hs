@@ -265,7 +265,7 @@ popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
   inVal <- holdDyn iSamp $ fmap show sampleChanges
   potential <- liftM updated (mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle) >>= holdDyn iPotential
   popupDisplayEv <- toggle (case iPotential of Inert->False; otherwise->True) $ updated potential
-  holdDyn (show iPotential) (fmap show $ updated potential)>>=dynText
+
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repDivVal
   
   groupToggle <- toggle (isGroup iVal) groupEv
