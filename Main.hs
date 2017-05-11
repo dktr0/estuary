@@ -12,6 +12,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.StackedPatterns
 import Estuary.Widgets.PatternChain as P
 import Estuary.Widgets.GeneralPattern as G -- for testing the Refactor of general container
+import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Control.Monad (liftM)
 import Sound.Tidal.Context (ParamPattern)
@@ -37,12 +38,15 @@ main = do
       divClass "page" $ do
         let firstPage = snd (pages!!0)
         let newPage' = fmap (snd . (pages !!)) newPage
+        --test <- G.popupSampleWidget (constDyn L4) (Atom "bd" Inert Once) never >>= mapDyn fst
+        --holdDyn (Blank Inert) (updated test) >>= mapDyn show >>= dynText
         w <- widgetHold firstPage newPage'
         p <- liftM (joinDyn) $ mapDyn (fst) w
         h <- liftM (switchPromptlyDyn) $ mapDyn (snd) w
         let patternEval = updated p
         performEvent_ $ fmap (liftIO . (doHint wd)) h
         performEvent_ $ fmap (liftIO . stream) patternEval
+-}
 
 header :: (MonadWidget t m) => m (Event t Int)
 header = divClass "header" $ do
@@ -68,19 +72,40 @@ widgetToPage w = do
 pages = [
   ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyTransformedPattern never),
   ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
-  ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns)
+  ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns),
+  ("Single TransformedPattern", widgetToPage $ do 
+    let tPat = TransformedPattern (Combine (S $ Group (Live ([Atom "jvbass" (PotentialDelete) (Rep 2)],Once) L4) Inert ) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
+    let tPat2 = TransformedPattern (Combine (S $ Atom "jvbass" (PotentialDelete) (Rep 2)) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
+
+    emptyPat <- liftM (tPat2 <$) $ button "init pat example"
+    (pat,ev,hint) <- el "div" $ topLevelTransformedPatternWidget emptyPat
+    --holdDyn "no changes" (fmap (const "changes")  ev) >>= dynText
+    mapDyn (\x-> (x,ev,hint)) pat
+    )
   ]
--}
+
+
+
+
+
 
 {-
+
+
+
+
+midLevelTransformedPatternWidget :: MonadWidget t m =>
+  TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+-- i.e. adapting from what we need at higher level to recursively-structured transformedPatternWidget
+-}
+
 topLevelTransformedPatternWidget :: MonadWidget t m =>
   Event t TransformedPattern -> -- deltas from network (must not re-propagate as edit events!)
   m (
     Dynamic t TransformedPattern, -- value for local WebDirt playback
     Event t TransformedPattern, -- deltas to network (not based on events received from network!)
-    Event t Hint, -- hints (currently for WebDirt sample loading only)
+    Event t Hint -- hints (currently for WebDirt sample loading only)
   )
-
 topLevelTransformedPatternWidget updateEvent = do
   w <- widgetHold (midLevelTransformedPatternWidget EmptyTransformedPattern) (fmap midLevelTransformedPatternWidget updateEvent)
   x <- mapDyn (\(a,_,_) -> a) w
@@ -91,10 +116,21 @@ topLevelTransformedPatternWidget updateEvent = do
   let z' = switchPromptlyDyn z
   return (x',y',z')
 
-midLevelTransformedPatternWidget :: MonadWidget t m =>
-  TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
--- i.e. adapting from what we need at higher level to recursively-structured transformedPatternWidget
--}
+midLevelTransformedPatternWidget:: MonadWidget t m => TransformedPattern -> m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
+midLevelTransformedPatternWidget iTransPat = do
+  tuple <- resettableTransformedPatternWidget iTransPat never 
+  pat <- mapDyn (\(x,_,_)->x) tuple
+  ev <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) tuple
+  hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) tuple 
+  return (pat,(EmptyTransformedPattern <$) ev,hint)
+
+--examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
+--  -> m
+--    (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
+--     Event t (Map Int (Either TransformedPattern String)), -- edit events for broadcast
+--     Event t Hint) -- hint events for local use
+
+
 
 
 
@@ -114,10 +150,9 @@ textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t S
 textWidget delta = el "div" $ do
   y <- textArea $ def & textAreaConfig_setValue .~ delta
   let edits = _textArea_input y
-  --tagDyn (_textArea_value y) (_textArea_keyup y) -- local edit actions are the value after a keypress
   evals <- button "eval"
   let evals' = tagDyn (_textArea_value y) evals
-  value <- holdDyn "" $ updated $ _textArea_value y -- updated values may be from local edit actions or remote assignment
+  value <- holdDyn "" $ updated $ _textArea_value y
   return (value,edits,evals')
 
 examplePage :: MonadWidget t m => Event t [EstuaryProtocol]
@@ -190,3 +225,4 @@ diagnostics values deltasUp deltasDown hints = do
   el "div" $ do
     text "Hints:"
     (holdDyn "" $ fmap show hints) >>= display
+-}

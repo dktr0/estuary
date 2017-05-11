@@ -53,7 +53,7 @@ instance JSON Liveness where
 
 data Potential a = Potential a | PotentialDelete
     | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness
-    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq)
+    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq,Show) --show just for testing
 
 instance JSON a => JSON (Potential a) where
   showJSON (Potential a) = encJSDict [("Potential",a)]
@@ -139,6 +139,11 @@ instance Show a => Show (GeneralPattern a) where
   show (Group (Live (xs,r) _) _) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (Group (Edited ([],r) _) _) = ""
   show (Group (Edited (xs,r) _) _) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
+
+  show (Layers (Live ([],r) _) _) = ""
+  show (Layers (Live (xs,r) _) _) = "[" ++ (intercalate ", " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
+  show (Layers (Edited ([],r) _) _) = ""
+  show (Layers (Edited (xs,r) _) _) = "[" ++ (intercalate ", " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (TextPattern x) = x
 
 instance JSON a => JSON (GeneralPattern a) where
@@ -470,6 +475,7 @@ instance JSON TransformedPattern where
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
+  toParamPattern (TransformedPattern (Combine sPat comb) EmptyTransformedPattern) = toParamPattern sPat
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
   toParamPattern (EmptyTransformedPattern) = Tidal.silence -- @ is this correct?
