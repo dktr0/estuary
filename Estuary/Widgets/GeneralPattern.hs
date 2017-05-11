@@ -120,6 +120,7 @@ aGLWidgetLive liveness builder iVal ev = mdo
     function (Layers l p) e = generalContainerLive  (builder) (Layers l p) e
 
 
+
 popupSampleWidget :: MonadWidget t m => Dynamic t Liveness -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String)), Event t Hint))
 popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
   sample <- clickableSpanClass inVal "noClass" ()
@@ -187,8 +188,6 @@ popupIntWidget minVal maxVal step liveness iGenPat editEv = elClass "div" "atomP
   popupToggle <- toggle (case iPotential of Inert->False; otherwise->True) $ leftmost [(()<$) popupMenu, (()<$) $ ffilter id $ updated $ _textInput_hasFocus textField,(() <$)closeEvent]
   potential <- liftM updated (mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle) >>= holdDyn iPotential
   popupDisplayEv <- toggle (case iPotential of Inert->False; otherwise->True) $ updated potential
-
-  mapDyn show potential >>=dynText
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
 
   groupToggle <- toggle (isGroup iGenPat) $ ffilter (==MakeGroup) groupLayerEv
