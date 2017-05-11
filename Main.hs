@@ -74,7 +74,7 @@ pages = [
   ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyTransformedPattern never),
   ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
   ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns),
-  ("Single TransformedPattern", widgetToPage $ do 
+  ("Single TransformedPattern", widgetToPage $ do
     let tPat = TransformedPattern (Combine (S $ Group (Live ([Atom "jvbass" (PotentialDelete) (Rep 2)],Once) L4) Inert ) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
     let tPat2 = TransformedPattern (Combine (S $ Atom "jvbass" (PotentialDelete) (Rep 2)) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
 
@@ -88,17 +88,6 @@ pages = [
 
 -}
 
-
-
-{-
-
-
-
-
-midLevelTransformedPatternWidget :: MonadWidget t m =>
-  TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
--- i.e. adapting from what we need at higher level to recursively-structured transformedPatternWidget
--}
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
   Event t TransformedPattern -> -- deltas from network (must not re-propagate as edit events!)
@@ -119,20 +108,11 @@ topLevelTransformedPatternWidget updateEvent = do
 
 midLevelTransformedPatternWidget:: MonadWidget t m => TransformedPattern -> m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
 midLevelTransformedPatternWidget iTransPat = do
-  tuple <- resettableTransformedPatternWidget iTransPat never 
+  tuple <- resettableTransformedPatternWidget iTransPat never
   pat <- mapDyn (\(x,_,_)->x) tuple
   ev <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) tuple
-  hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) tuple 
+  hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) tuple
   return (pat,(EmptyTransformedPattern <$) ev,hint)
-
---examplePage :: MonadWidget t m => Event t (Map Int (Either TransformedPattern String))
---  -> m
---    (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
---     Event t (Map Int (Either TransformedPattern String)), -- edit events for broadcast
---     Event t Hint) -- hint events for local use
-
-
-
 
 
 trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))
@@ -166,7 +146,7 @@ examplePage deltasDown = do
   let deltaB = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 2)) ) deltasDown
   let deltaA' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaA
   let deltaB' = fmap justTextCode $ fmapMaybe lastOrNothing deltaB
-  (aValue,aEdits) <- trivialTransformedPatternWidget deltaA'
+  (aValue,aEdits,aHints) <- topLevelTransformedPatternWidget deltaA'
   (bValue,bEdits,bEvals) <- textWidget deltaB'
   aValue' <- mapDyn (singleton 1 . Left) aValue
   bValue' <- mapDyn (singleton 2 . Right) bValue
@@ -226,4 +206,3 @@ diagnostics values deltasUp deltasDown hints = do
   el "div" $ do
     text "Hints:"
     (holdDyn "" $ fmap show hints) >>= display
-
