@@ -159,14 +159,14 @@ mainPage deltasDown = do
   let deltaF' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaF
   let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
   let deltaH' = fmap justTextCode $ fmapMaybe lastOrNothing deltaH
-  (aValue,aEdits,aHints) <- topLevelTransformedPatternWidget deltaA'
-  (bValue,bEdits,bHints) <- topLevelTransformedPatternWidget deltaB'
-  (cValue,cEdits,cHints) <- topLevelTransformedPatternWidget deltaC'
-  (dValue,dEdits,dHints) <- topLevelTransformedPatternWidget deltaD'
-  (eValue,eEdits,eHints) <- topLevelTransformedPatternWidget deltaE'
-  (fValue,fEdits,fHints) <- topLevelTransformedPatternWidget deltaF'
-  (_,gEdits,gEvals) <- textWidget deltaG'
-  (_,hEdits,hEvals) <- textWidget deltaH'
+  (aValue,aEdits,aHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaA'
+  (bValue,bEdits,bHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaB'
+  (cValue,cEdits,cHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaC'
+  (dValue,dEdits,dHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaD'
+  (eValue,eEdits,eHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaE'
+  (fValue,fEdits,fHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaF'
+  (_,gEdits,gEvals) <- divClass "eightL" $ textWidget deltaG'
+  (_,hEdits,hEvals) <- divClass "eightR" $ textWidget deltaH'
   aValue' <- mapDyn (singleton 1) aValue
   bValue' <- mapDyn (singleton 2) bValue
   cValue' <- mapDyn (singleton 3) cValue
