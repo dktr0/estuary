@@ -160,7 +160,7 @@ mainPage deltasDown = do
   let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
   let deltaH' = fmap justTextCode $ fmapMaybe lastOrNothing deltaH
   (aValue,aEdits,aHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaA'
-  (bValue,bEdits,bHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaB'
+  (bValue,bEdits,bHints) <- divClass "eightR" $ textPatternChainWidget deltaB'
   (cValue,cEdits,cHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaC'
   (dValue,dEdits,dHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaD'
   (eValue,eEdits,eHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaE'
