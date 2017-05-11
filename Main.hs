@@ -48,6 +48,7 @@ main = do
         performEvent_ $ fmap (liftIO . stream) patternEval
 -}
 
+{-
 header :: (MonadWidget t m) => m (Event t Int)
 header = divClass "header" $ do
   divClass "logo" $ text "estuary (a work in progress)"
@@ -85,7 +86,7 @@ pages = [
   ]
 
 
-
+-}
 
 
 
@@ -225,4 +226,4 @@ diagnostics values deltasUp deltasDown hints = do
   el "div" $ do
     text "Hints:"
     (holdDyn "" $ fmap show hints) >>= display
--}
+
