@@ -65,6 +65,15 @@ EstuaryProtocol.prototype.onMessage = function(m) {
      this.estuaryEdits[parseInt(n.EstuaryEdit)] = n.code;
      this.edits.push(n);
    }
+   else if(n.Tempo != null) {
+     console.log("EstuaryProtocol onMessage Tempo: " + n.Tempo + " CPS at " + n.at + " (beat=" + b.beat + ")");
+     this.tempoCps = n.Tempo;
+     this.tempoAt = n.at;
+     this.tempoBeat = n.beat;
+   }
+   else if(n.TempoChange != null) {
+     console.log("EstuaryProtocol onMessage TempoChange (ignoring)");
+   }
    else {
      console.log("warning: unrecognized message in EstuaryProtocol onMessage");
    }
@@ -110,4 +119,3 @@ EstuaryProtocol.prototype.getEdits = function() {
   this.edits = new Array;
   return JSON.stringify(x);
 }
-
