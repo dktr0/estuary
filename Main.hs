@@ -24,6 +24,7 @@ import Control.Monad.IO.Class (liftIO)
 import Estuary.Widgets.WebSocket
 import Text.JSON
 import Data.Time
+import Text.Read
 
 {-
 main :: IO ()
@@ -152,19 +153,21 @@ main = do
   now <- Data.Time.getCurrentTime
   mainWidget $ divClass "header" $ mdo
     (values,deltasUp,hints) <- examplePage deltasDown'
-    deltasDown <- webSocketWidget protocol now deltasUp
     tempoEdits <- tempoWidget deltasDown
-    let deltasUp' = mergeWith (++) [deltasUp,tempoEdits]
+    let deltasUp' = leftmost [deltasUp,tempoEdits]
+    deltasDown <- webSocketWidget protocol now deltasUp'
     let deltasDown' = ffilter (not . Prelude.null) deltasDown
-    diagnostics values deltasUp deltasDown' hints
+    diagnostics values deltasUp' deltasDown' hints
 
-tempoWidget :: MonadWidget t m => Event t EstuaryProtocol -> m (Event t EstuaryProtocol)
+tempoWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
 tempoWidget deltas = do
   text "BPM:"
-  let delta' = fmapMaybe getCps deltas
-  delta'' <- holdDyn "120" delta'
-  t <- textInput $ def & textInputConfig_inputType .~"number" & textInputConfig_setValue .~ delta''
-  let t' = fmapMaybe (readMaybe) $ _textInput_value t
+  let delta' = fmap (Prelude.filter isCps) deltas
+  let delta'' = fmapMaybe lastOrNothing delta'
+  let delta''' = fmapMaybe getCps delta''
+  let delta'''' = fmap show delta'''
+  t <- textInput $ def & textInputConfig_inputType .~"number" & textInputConfig_setValue .~ delta''''
+  let t' = fmapMaybe (readMaybe) $ _textInput_input t
   let edits = fmap (TempoChange "") t'
   return edits
 

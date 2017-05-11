@@ -60,6 +60,10 @@ justTextCode (TextEdit _ _ x) = x
 justTextCode (TextEval _ _ x) = x
 justTextCode _ = error "can't get text code from non TextEdit or TextEval"
 
+isCps :: EstuaryProtocol -> Bool
+isCps (Tempo _ _ _ _) = True
+isCps _ = False
+
 getCps :: EstuaryProtocol -> Maybe Double
 getCps (Tempo _ _ _ x) = Just x
 getCps _ = Nothing
