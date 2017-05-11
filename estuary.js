@@ -102,7 +102,6 @@ wss.broadcast = function(data) {
 };
 
 wss.on('connection',function(ws) {
-  // var location = url.parse(ws.upgradeReq.url, true);
   var ip = ws.upgradeReq.connection.remoteAddress;
   console.log("new WebSocket connection: " + ip);
 
@@ -110,7 +109,6 @@ wss.on('connection',function(ws) {
       var n;
       try {
         n = JSON.parse(JSON.parse(m));
-        console.log(n);
       }
       catch(e) {
         console.log("exception in processing incoming message (possibly incorrectly formatted JSON)");
@@ -120,17 +118,17 @@ wss.on('connection',function(ws) {
         console.log("request with invalid password from " + ip);
       }
       else if(n.TextEdit != null) {
-        console.log("TextEdit");
+        console.log("TextEdit " + n.TextEdit + " " + n.code);
         var o = { 'TextEdit':n.TextEdit, 'code':n.code, password: '' };
         wss.broadcast(o);
       }
       else if(n.TextEval != null) {
-        console.log("TextEval");
+        console.log("TextEval " + n.TextEval + " " + n.code);
         var o = { 'TextEval':n.TextEval, 'code':n.code, password: '' };
         wss.broadcast(o);
       }
       else if(n.EstuaryEdit != null) {
-        console.log("EstuaryEdit");
+        console.log("EstuaryEdit" + m);
         var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code, password: '' };
         wss.broadcast(o);
       }

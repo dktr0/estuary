@@ -137,26 +137,62 @@ textWidget delta = el "div" $ do
   value <- holdDyn "" $ updated $ _textArea_value y
   return (value,edits,evals')
 
-examplePage :: MonadWidget t m => Event t [EstuaryProtocol]
+mainPage :: MonadWidget t m => Event t [EstuaryProtocol]
   -> m
-    (Dynamic t (Map Int (Either TransformedPattern String)), -- values for local use
+    (Dynamic t (Map Int TransformedPattern), -- values for local use
      Event t EstuaryProtocol, -- edit events for broadcast
      Event t Hint) -- hint events for local use
-examplePage deltasDown = do
+mainPage deltasDown = do
   let deltaA = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 1)) ) deltasDown
-  let deltaB = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 2)) ) deltasDown
+  let deltaB = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 2)) ) deltasDown
+  let deltaC = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 3)) ) deltasDown
+  let deltaD = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 4)) ) deltasDown
+  let deltaE = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 5)) ) deltasDown
+  let deltaF = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 6)) ) deltasDown
+  let deltaG = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 7)) ) deltasDown
+  let deltaH = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 8)) ) deltasDown
   let deltaA' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaA
-  let deltaB' = fmap justTextCode $ fmapMaybe lastOrNothing deltaB
+  let deltaB' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaB
+  let deltaC' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaC
+  let deltaD' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaD
+  let deltaE' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaE
+  let deltaF' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaF
+  let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
+  let deltaH' = fmap justTextCode $ fmapMaybe lastOrNothing deltaH
   (aValue,aEdits,aHints) <- topLevelTransformedPatternWidget deltaA'
-  (bValue,bEdits,bEvals) <- textWidget deltaB'
-  aValue' <- mapDyn (singleton 1 . Left) aValue
-  bValue' <- mapDyn (singleton 2 . Right) bValue
-  values <- combineDyn (union) aValue' bValue'
+  (bValue,bEdits,bHints) <- topLevelTransformedPatternWidget deltaB'
+  (cValue,cEdits,cHints) <- topLevelTransformedPatternWidget deltaC'
+  (dValue,dEdits,dHints) <- topLevelTransformedPatternWidget deltaD'
+  (eValue,eEdits,eHints) <- topLevelTransformedPatternWidget deltaE'
+  (fValue,fEdits,fHints) <- topLevelTransformedPatternWidget deltaF'
+  (_,gEdits,gEvals) <- textWidget deltaG'
+  (_,hEdits,hEvals) <- textWidget deltaH'
+  aValue' <- mapDyn (singleton 1) aValue
+  bValue' <- mapDyn (singleton 2) bValue
+  cValue' <- mapDyn (singleton 3) cValue
+  dValue' <- mapDyn (singleton 4) dValue
+  eValue' <- mapDyn (singleton 5) eValue
+  fValue' <- mapDyn (singleton 6) fValue
+  valuesB <- combineDyn (union) aValue' bValue'
+  valuesC <- combineDyn (union) valuesB cValue'
+  valuesD <- combineDyn (union) valuesC dValue'
+  valuesE <- combineDyn (union) valuesD eValue'
+  values <- combineDyn (union) valuesE fValue'
   let aDeltaUp = fmap (EstuaryEdit "" 1) aEdits
-  let bDeltaUp = fmap (TextEdit "" 2) bEdits
-  let bDeltaUp' = fmap (TextEval "" 2) bEvals
-  let deltasUp = leftmost [aDeltaUp,bDeltaUp]
-  return (values,deltasUp,never)
+  let bDeltaUp = fmap (EstuaryEdit "" 2) bEdits
+  let cDeltaUp = fmap (EstuaryEdit "" 3) cEdits
+  let dDeltaUp = fmap (EstuaryEdit "" 4) dEdits
+  let eDeltaUp = fmap (EstuaryEdit "" 5) eEdits
+  let fDeltaUp = fmap (EstuaryEdit "" 6) fEdits
+  let gEditsUp = fmap (TextEdit "" 7) gEdits
+  let hEditsUp = fmap (TextEdit "" 8) hEdits
+  let gEvalsUp = fmap (TextEval "" 7) gEvals
+  let hEvalsUp = fmap (TextEval "" 8) hEvals
+  let gDeltaUp = leftmost [gEditsUp,gEvalsUp]
+  let hDeltaUp = leftmost [hEditsUp,hEvalsUp]
+  let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,gDeltaUp,hDeltaUp]
+  let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints]
+  return (values,deltasUp,hints)
 
 lastOrNothing :: [a] -> Maybe a
 lastOrNothing [] = Nothing
@@ -169,7 +205,7 @@ main = do
   protocol <- estuaryProtocol
   now <- Data.Time.getCurrentTime
   mainWidget $ divClass "header" $ mdo
-    (values,deltasUp,hints) <- examplePage deltasDown'
+    (values,deltasUp,hints) <- mainPage deltasDown'
     tempoEdits <- tempoWidget deltasDown
     let deltasUp' = leftmost [deltasUp,tempoEdits]
     deltasDown <- webSocketWidget protocol now deltasUp'
@@ -189,7 +225,7 @@ tempoWidget deltas = do
   return edits
 
 diagnostics :: MonadWidget t m =>
-  Dynamic t (Map Int (Either TransformedPattern String)) ->
+  Dynamic t (Map Int TransformedPattern) ->
   Event t EstuaryProtocol ->
   Event t [EstuaryProtocol] ->
   Event t Hint ->
