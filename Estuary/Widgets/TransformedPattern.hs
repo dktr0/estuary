@@ -66,7 +66,8 @@ popupSpecificPatternWidget iValue _ = elClass "div" "popupSpecificPatternWidget"
 specificPatternPopup:: MonadWidget t m => [EditSignal SpecificPattern] -> m (Event t (Maybe (EditSignal SpecificPattern)))
 specificPatternPopup actionList = elClass "div" "popupMenu" $ do
   let specMap = fromList $ zip [(0::Int)..] iValueList
-  let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
+  --let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
+  let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
   dd <- dropdown (-1) ddMap def
   let specPatKey = _dropdown_value dd
   specChange <- mapDyn (Just . ChangeValue . maybe (S $ Blank Inert) id . (flip Data.Map.lookup) specMap) specPatKey
@@ -75,7 +76,8 @@ specificPatternPopup actionList = elClass "div" "popupMenu" $ do
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ (leftmost $ edits ++[closeMenu,updated specChange])
   where
-    iValueList = [(Accelerate $ Atom 0 Inert Once),
+    iValueList = [
+      --(Accelerate $ Atom 0 Inert Once),
       (Bandf $ Atom 440 Inert Once),
       (Bandq $ Atom 10 Inert Once),
       (Begin $ Atom 0 Inert Once),
@@ -331,8 +333,10 @@ paramWidget transformer = return $ constDyn transformer
 
 parameteredPatternTransformer::MonadWidget t m => PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer, Event t (EditSignal a)))
 parameteredPatternTransformer i _ = el "div" $ do
-  let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
-  let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak","Every","Jux","Chop","Combine"]
+  --let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
+  --let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak","Every","Jux","Chop","Combine"]
+  let transMap = fromList $ zip [0::Int,1..] [NoTransformer,Rev,Slow 1, Density 1, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
+  let ddMap = constDyn $ fromList $ zip [0::Int,1..] ["NoTransformer","Rev","Slow","Density","Brak","Every","Jux","Chop","Combine"]
   delete <- liftM (DeleteMe <$) $ button "-"
   dd <- dropdown (hack i) ddMap def
   let ddVal = _dropdown_value dd -- Dynamic int
@@ -413,8 +417,11 @@ patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget" $ m
 
 patternTransformerPopup:: MonadWidget t m => [EditSignal PatternTransformer] -> m (Event t (Maybe (EditSignal PatternTransformer)))
 patternTransformerPopup actionList = elClass "div" "popupMenu" $ do
-  let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
-  let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak","Every","Jux","Chop","Combine"]
+  --let transMap = fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
+  --let ddMap = constDyn $ fromList $ zip [0::Int,1,2,3,4,5,6,7,8,9,10] ["NoTransformer","Rev","Slow","Density", "Degrade", "DegradeBy","Brak","Every","Jux","Chop","Combine"]
+  let transMap = fromList $ zip [0::Int,1..] [NoTransformer,Rev,Slow 1, Density 1, Brak,Every 1 NoTransformer, Jux NoTransformer, Chop 1,Combine (Speed $ Atom 1 Inert Once) Multiply]
+  let ddMap = constDyn $ fromList $ zip [0::Int,1..] ["NoTransformer","Rev","Slow","Density","Brak","Every","Jux","Chop","Combine"]
+
   --let combinatorMap = fromList $ zip [0::Int..] [NoTransformer,Rev,Slow 1, Density 1, Degrade, DegradeBy 0.5, Every ]
   dd <- dropdown (-1) ddMap def
   let transformerKey = _dropdown_value dd
