@@ -73,19 +73,21 @@ body {
 
 .eightL { 
 	border: 1px solid black;
+	height: 125px;
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
 	border-right: 1px solid black;
-	width: 50%;
+	width: 48%;
 }
 
 .eightR {
 	border: 1px solid black;
+ 	height: 125px;
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
-	width: 49%;
+	width: 48%;
 }
 
 .paddedText {
