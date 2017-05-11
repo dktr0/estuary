@@ -49,8 +49,14 @@ EstuaryProtocol.prototype.connect = function() {
 }
 
 EstuaryProtocol.prototype.onMessage = function(m) {
-  try {
-   var n = JSON.parse(m.data);
+   try {
+     var n = JSON.parse(m.data);
+   }
+   catch(e) {
+     console.log("parsing exception in EstuaryProtocol.onMessage");
+     return;
+   }
+   try {
    if(n.TextEdit != null) {
      console.log("EstuaryProtocol onMessage TextEdit" + parseInt(n.TextEdit));
      this.textEdits[parseInt(n.TextEdit)] = n.code;
@@ -66,7 +72,7 @@ EstuaryProtocol.prototype.onMessage = function(m) {
      this.edits.push(n);
    }
    else if(n.Tempo != null) {
-     console.log("EstuaryProtocol onMessage Tempo: " + n.Tempo + " CPS at " + n.at + " (beat=" + b.beat + ")");
+     console.log("EstuaryProtocol onMessage Tempo: " + n.Tempo + " CPS at " + n.at + " (beat=" + n.beat + ")");
      this.tempoCps = n.Tempo;
      this.tempoAt = n.at;
      this.tempoBeat = n.beat;

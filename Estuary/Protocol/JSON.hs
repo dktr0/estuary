@@ -36,6 +36,8 @@ setPassword x (EstuaryEdit _ n c) = EstuaryEdit x n c
 setPassword x (TextEdit _ n c) = TextEdit x n c
 setPassword x (TextEval _ n c) = TextEval x n c
 setPassword x (Chat _ m n) = Chat x m n
+setPassword x (Tempo _ a b c) = Tempo x a b c
+setPassword x (TempoChange _ a) = TempoChange x a
 
 matchesNumber :: Int -> EstuaryProtocol -> Bool
 matchesNumber n1 (EstuaryEdit _ n2 _) = n1 == n2

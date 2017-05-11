@@ -161,12 +161,12 @@ main = do
 
 tempoWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
 tempoWidget deltas = do
-  text "BPM:"
+  text "CPS:"
   let delta' = fmap (Prelude.filter isCps) deltas
   let delta'' = fmapMaybe lastOrNothing delta'
   let delta''' = fmapMaybe getCps delta''
   let delta'''' = fmap show delta'''
-  t <- textInput $ def & textInputConfig_inputType .~"number" & textInputConfig_setValue .~ delta''''
+  t <- textInput $ def & textInputConfig_setValue .~ delta''''
   let t' = fmapMaybe (readMaybe) $ _textInput_input t
   let edits = fmap (TempoChange "") t'
   return edits

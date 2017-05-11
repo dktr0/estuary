@@ -64,12 +64,12 @@ if(password[0]=='-') {
 }
 
 
-tempoCps = 2.0; // 120 BPM to start
-tempoAt = (new Date).getTime();
-tempoBeat = 0.0; // beat 0 at server launch
+var tempoCps = 2.0; // 120 BPM to start
+var tempoAt = (new Date).getTime()/1000;
+var tempoBeat = 0.0; // beat 0 at server launch
 
 function logTempo() {
-  console.log("tempo at " + tempoAt + " is " + tempoCps + " CPS (beat=" + tempoBeat + ")";
+  console.log("tempo at " + tempoAt + " is " + tempoCps + " CPS (beat=" + tempoBeat + ")");
 }
 logTempo();
 
@@ -140,16 +140,17 @@ wss.on('connection',function(ws) {
       else if(n.TempoChange != null) {
         console.log("TempoChange " + n.TempoChange);
         // recalculate tempo grid following tempo change
-        var now = (new Date).getTime()*1000; // time in seconds since 1970
-        var elapsedTime = now - tempoAt;
-        var elapsedBeats = elapsedTime * tempoCps;
-        var beatAtNow = tempoBeat + elapsedBeats;
+        var now = (new Date).getTime()/1000; console.log("now = " + now); // time in seconds since 1970
+	console.log("old tempoAt = " + tempoAt);
+        var elapsedTime = now - tempoAt; console.log("elapsedTime = " + elapsedTime);
+        var elapsedBeats = elapsedTime * tempoCps; console.log("elapsedBeats = " + elapsedBeats);
+        var beatAtNow = tempoBeat + elapsedBeats; console.log("beatAtNow = " + beatAtNow);
         tempoAt = now;
         tempoCps = n.TempoChange;
         tempoBeat = beatAtNow;
-        tempoLog();
+        logTempo();
         // broadcast new tempo grid to all clients
-        var o = { 'Tempo': tempoCps, 'at': tempoAt, 'beat': tempoBeat };
+        var o = { 'Tempo': tempoCps, 'at': tempoAt, 'beat': tempoBeat, password: '' };
         wss.broadcast(o);
       }
   });
