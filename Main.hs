@@ -110,9 +110,10 @@ midLevelTransformedPatternWidget:: MonadWidget t m => TransformedPattern -> m (D
 midLevelTransformedPatternWidget iTransPat = do
   tuple <- resettableTransformedPatternWidget iTransPat never
   pat <- mapDyn (\(x,_,_)->x) tuple
-  ev <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) tuple
+  --ev <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) tuple
+  let ev = updated pat
   hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) tuple
-  return (pat,(EmptyTransformedPattern <$) ev,hint)
+  return (pat,ev,hint)
 
 
 trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))

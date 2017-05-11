@@ -57,12 +57,20 @@ data Potential a = Potential a | PotentialDelete
 
 instance JSON a => JSON (Potential a) where
   showJSON (Potential a) = encJSDict [("Potential",a)]
+  showJSON PotentialDelete = showJSON "PotentialDelete"
+  showJSON PotentialMakeGroup = showJSON "PotentialMakeGroup"
+  showJSON PotentialMakeLayer = showJSON "PotentialMakeLayer"
   showJSON (PotentialLiveness x) = encJSDict [("PotentialLiveness",showJSON x)]
-  showJSON Inert = encJSDict [("Inert",JSNull)]
+  showJSON Inert = showJSON "Inert"
+  showJSON PotentialRepOrDiv = showJSON "PotentialRepOrDiv"
   showJSON (Potentials xs) = encJSDict [("Potentials",xs)]
   readJSON (JSObject x) | firstKey x == "Potential" = Potential <$> valFromObj "Potential" x
+  readJSON (JSString x) | fromJSString x == "PotentialDelete" = Ok PotentialDelete
+  readJSON (JSString x) | fromJSString x == "PotentialMakeGroup" = Ok PotentialMakeGroup
+  readJSON (JSString x) | fromJSString x == "PotentialMakeLayer" = Ok PotentialMakeLayer
   readJSON (JSObject x) | firstKey x == "PotentialLiveness" = PotentialLiveness <$> valFromObj "PotentialLiveness" x
-  readJSON (JSObject x) | firstKey x == "Inert" = Ok (Inert)
+  readJSON (JSString x) | fromJSString x == "Inert" = Ok Inert
+  readJSON (JSString x) | fromJSString x == "PotentialRepOrDiv" = Ok PotentialRepOrDiv
   readJSON (JSObject x) | firstKey x == "Potentials" = Potentials <$> valFromObj "Potentials" x
   readJSON _ = Error "can't parse as Potential"
 
