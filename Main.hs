@@ -150,7 +150,7 @@ mainPage deltasDown = do
   let deltaE = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 5)) ) deltasDown
   let deltaF = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 6)) ) deltasDown
   let deltaG = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 7)) ) deltasDown
-  let deltaH = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 8)) ) deltasDown
+  let deltaH = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 8)) ) deltasDown
   let deltaA' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaA
   let deltaB' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaB
   let deltaC' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaC
@@ -158,26 +158,28 @@ mainPage deltasDown = do
   let deltaE' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaE
   let deltaF' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaF
   let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
-  let deltaH' = fmap justTextCode $ fmapMaybe lastOrNothing deltaH
+  let deltaH' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaH
   (aValue,aEdits,aHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaA'
-  (bValue,bEdits,bHints) <- divClass "eightR" $ textPatternChainWidget deltaB'
-  (cValue,cEdits,cHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaC'
+  (bValue,bEdits,bHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaB'
+  (cValue,cEdits,cHints) <- divClass "eightL" $ textPatternChainWidget deltaC'
   (dValue,dEdits,dHints) <- divClass "eightR" $ textPatternChainWidget deltaD'
-  (eValue,eEdits,eHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaE'
+  (eValue,eEdits,eHints) <- divClass "eightL" $ textPatternChainWidget deltaE'
   (fValue,fEdits,fHints) <- divClass "eightR" $ textPatternChainWidget deltaF'
   (_,gEdits,gEvals) <- divClass "eightL" $ textWidget deltaG'
-  (_,hEdits,hEvals) <- divClass "eightR" $ textWidget deltaH'
+  (hValue,hEdits,hHints) <- divClass "eightR" $ textPatternChainWidget deltaH'
   aValue' <- mapDyn (singleton 1) aValue
   bValue' <- mapDyn (singleton 2) bValue
   cValue' <- mapDyn (singleton 3) cValue
   dValue' <- mapDyn (singleton 4) dValue
   eValue' <- mapDyn (singleton 5) eValue
   fValue' <- mapDyn (singleton 6) fValue
+  hValue' <- mapDyn (singleton 6) hValue
   valuesB <- combineDyn (union) aValue' bValue'
   valuesC <- combineDyn (union) valuesB cValue'
   valuesD <- combineDyn (union) valuesC dValue'
   valuesE <- combineDyn (union) valuesD eValue'
-  values <- combineDyn (union) valuesE fValue'
+  valuesF <- combineDyn (union) valuesE fValue'
+  values <- combineDyn (union) valuesF hValue'
   let aDeltaUp = fmap (EstuaryEdit "" 1) aEdits
   let bDeltaUp = fmap (EstuaryEdit "" 2) bEdits
   let cDeltaUp = fmap (EstuaryEdit "" 3) cEdits
@@ -185,13 +187,11 @@ mainPage deltasDown = do
   let eDeltaUp = fmap (EstuaryEdit "" 5) eEdits
   let fDeltaUp = fmap (EstuaryEdit "" 6) fEdits
   let gEditsUp = fmap (TextEdit "" 7) gEdits
-  let hEditsUp = fmap (TextEdit "" 8) hEdits
+  let hDeltaUp = fmap (EstuaryEdit "" 8) hEdits
   let gEvalsUp = fmap (TextEval "" 7) gEvals
-  let hEvalsUp = fmap (TextEval "" 8) hEvals
   let gDeltaUp = leftmost [gEditsUp,gEvalsUp]
-  let hDeltaUp = leftmost [hEditsUp,hEvalsUp]
   let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,gDeltaUp,hDeltaUp]
-  let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints]
+  let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints,hHints]
   return (values,deltasUp,hints)
 
 lastOrNothing :: [a] -> Maybe a
