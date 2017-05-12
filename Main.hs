@@ -27,7 +27,7 @@ import Text.JSON
 import Data.Time
 import Text.Read
 
-{-
+
 main :: IO ()
 main = do
   wd <- webDirt
@@ -46,9 +46,9 @@ main = do
         let patternEval = updated p
         performEvent_ $ fmap (liftIO . (doHint wd)) h
         performEvent_ $ fmap (liftIO . stream) patternEval
--}
 
-{-
+
+
 header :: (MonadWidget t m) => m (Event t Int)
 header = divClass "header" $ do
   divClass "logo" $ text "estuary (a work in progress)"
@@ -72,7 +72,7 @@ widgetToPage w = do
 -- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern,Event t Hint))]
 pages = [
   ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyTransformedPattern never),
-  ("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
+  --("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
   ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns),
   ("Single TransformedPattern", widgetToPage $ do
     let tPat = TransformedPattern (Combine (S $ Group (Live ([Atom "jvbass" (PotentialDelete) (Rep 2)],Once) L4) Inert ) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
@@ -86,7 +86,7 @@ pages = [
   ]
 
 
--}
+
 
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
@@ -218,23 +218,23 @@ lastOrNothing :: [a] -> Maybe a
 lastOrNothing [] = Nothing
 lastOrNothing xs = Just (last xs)
 
-main :: IO ()
-main = do
-  wd <- webDirt
-  stream <- webDirtStream wd
-  protocol <- estuaryProtocol
-  now <- Data.Time.getCurrentTime
-  mainWidget $ divClass "header" $ mdo
-    (values,deltasUp,hints) <- mainPage deltasDown'
-    values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
-    let values'' = updated values'
-    -- tempoEdits <- tempoWidget deltasDown
-    let deltasUp' = leftmost [deltasUp] -- temporarily removed tempo controls
-    deltasDown <- webSocketWidget protocol now deltasUp'
-    let deltasDown' = ffilter (not . Prelude.null) deltasDown
-    diagnostics values deltasUp' deltasDown' hints
-    performEvent_ $ fmap (liftIO . (doHint wd)) hints
-    performEvent_ $ fmap (liftIO . stream) values''
+--main :: IO ()
+--main = do
+--  wd <- webDirt
+--  stream <- webDirtStream wd
+--  protocol <- estuaryProtocol
+--  now <- Data.Time.getCurrentTime
+--  mainWidget $ divClass "header" $ mdo
+--    (values,deltasUp,hints) <- mainPage deltasDown'
+--    values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
+--    let values'' = updated values'
+--    -- tempoEdits <- tempoWidget deltasDown
+--    let deltasUp' = leftmost [deltasUp] -- temporarily removed tempo controls
+--    deltasDown <- webSocketWidget protocol now deltasUp'
+--    let deltasDown' = ffilter (not . Prelude.null) deltasDown
+--    diagnostics values deltasUp' deltasDown' hints
+--    performEvent_ $ fmap (liftIO . (doHint wd)) hints
+--    performEvent_ $ fmap (liftIO . stream) values''
         
 tempoWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
 tempoWidget deltas = do
