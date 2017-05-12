@@ -48,7 +48,7 @@ estuaryWidget wd stream protocol now = divClass "estuary" $ do
     let values''' = updated values''
     deltasDown <- webSocketWidget protocol now deltasUp
     let deltasDown' = ffilter (not . Prelude.null) deltasDown
-    -- diagnostics values deltasUp' deltasDown' hints
+    -- diagnostics values deltasUp deltasDown' hints
     performEvent_ $ fmap (liftIO . (doHint wd)) hints
     performEvent_ $ fmap (liftIO . stream) values'''
     where f x False = x
