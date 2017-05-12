@@ -16,22 +16,22 @@ data EstuaryProtocol =
   deriving (Show)
 
 instance JSON EstuaryProtocol where
-  showJSON (EstuaryEdit password n code) = encJSDict [("EstuaryEdit",showJSON n),("password",showJSON password),("code",showJSON code)]
-  showJSON (TextEdit password n code) = encJSDict [("TextEdit",showJSON n),("password",showJSON password),("code",showJSON code)]
-  showJSON (TextEval password n code) = encJSDict [("TextEval",showJSON n),("password",showJSON password),("code",showJSON code)]
-  showJSON (LabelEdit password n t) = encJSDict [("LabelEdit",showJSON n),("password",showJSON password),("t",showJSON t)]
-  showJSON (Chat password name msg) = encJSDict [("Chat",msg),("password",password),("name",name)]
-  showJSON (Tempo password at beat cps) = encJSDict [("Tempo",showJSON cps),("password",showJSON password),("at",showJSON at),("beat",showJSON beat)]
-  showJSON (TempoChange password cps) = encJSDict [("TempoChange",showJSON cps),("password",showJSON password)]
-  showJSON (ProtocolError msg) = encJSDict [("ProtocolError",msg)]
-  readJSON (JSObject x) | firstKey x == "EstuaryEdit" = EstuaryEdit <$> valFromObj "password" x <*> valFromObj "EstuaryEdit" x <*> valFromObj "code" x
-  readJSON (JSObject x) | firstKey x == "TextEdit" = TextEdit <$> valFromObj "password" x <*> valFromObj "TextEdit" x <*> valFromObj "code" x
-  readJSON (JSObject x) | firstKey x == "TextEval" = TextEval <$> valFromObj "password" x <*> valFromObj "TextEval" x <*> valFromObj "code" x
-  readJSON (JSObject x) | firstKey x == "LabelEdit" = LabelEdit <$> valFromObj "password" x <*> valFromObj "LabelEdit" x <*> valFromObj "t" x
-  readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj "password" x <*> valFromObj "name" x <*> valFromObj "Chat" x
-  readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "password" x <*> valFromObj "at" x <*> valFromObj "beat" x <*> valFromObj "Tempo" x
-  readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj "password" x <*> valFromObj "TempoChange" x
-  readJSON (JSObject x) | firstKey x == "ProtocolError" = ProtocolError <$> valFromObj "ProtocolError" x
+  showJSON (EstuaryEdit password n code) = encJSDict [("EEdit",showJSON n),("p",showJSON password),("c",showJSON code)]
+  showJSON (TextEdit password n code) = encJSDict [("TEdit",showJSON n),("p",showJSON password),("c",showJSON code)]
+  showJSON (TextEval password n code) = encJSDict [("TEval",showJSON n),("p",showJSON password),("c",showJSON code)]
+  showJSON (LabelEdit password n t) = encJSDict [("LEdit",showJSON n),("p",showJSON password),("t",showJSON t)]
+  showJSON (Chat password name msg) = encJSDict [("Chat",msg),("p",password),("n",name)]
+  showJSON (Tempo password at beat cps) = encJSDict [("Tempo",showJSON cps),("p",showJSON password),("at",showJSON at),("beat",showJSON beat)]
+  showJSON (TempoChange password cps) = encJSDict [("Change",showJSON cps),("p",showJSON password)]
+  showJSON (ProtocolError msg) = encJSDict [("Err",msg)]
+  readJSON (JSObject x) | firstKey x == "EEdit" = EstuaryEdit <$> valFromObj "p" x <*> valFromObj "EEdit" x <*> valFromObj "c" x
+  readJSON (JSObject x) | firstKey x == "TEdit" = TextEdit <$> valFromObj "p" x <*> valFromObj "TEdit" x <*> valFromObj "c" x
+  readJSON (JSObject x) | firstKey x == "TEval" = TextEval <$> valFromObj "p" x <*> valFromObj "TEval" x <*> valFromObj "c" x
+  readJSON (JSObject x) | firstKey x == "LEdit" = LabelEdit <$> valFromObj "p" x <*> valFromObj "Edit" x <*> valFromObj "t" x
+  readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj "p" x <*> valFromObj "n" x <*> valFromObj "Chat" x
+  readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "p" x <*> valFromObj "at" x <*> valFromObj "beat" x <*> valFromObj "Tempo" x
+  readJSON (JSObject x) | firstKey x == "Change" = TempoChange <$> valFromObj "p" x <*> valFromObj "Change" x
+  readJSON (JSObject x) | firstKey x == "Err" = ProtocolError <$> valFromObj "Err" x
   readJSON _ = Error "Unable to parse as EstuaryProtocol"
 
 setPassword :: String -> EstuaryProtocol -> EstuaryProtocol
