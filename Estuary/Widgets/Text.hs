@@ -36,6 +36,7 @@ textWidgetForPatternChain delta = do
 textPatternChainWidget :: MonadWidget t m => Event t TransformedPattern -> 
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
 textPatternChainWidget delta = do
+  text "sound"
   let delta' = fmapMaybe f delta
   (v,e) <- textWidgetForPatternChain delta'
   v' <- mapDyn TextPatternChain v
