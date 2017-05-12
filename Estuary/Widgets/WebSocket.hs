@@ -67,7 +67,7 @@ webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
     dynText statusText
     let addr= tagDyn (_textInput_value addrInput) cButton
     text "Password:"
-    pwdInput <- textInput $ def & textInputConfig_initialValue .~ ""
+    pwdInput <- textInput $ def & textInputConfig_initialValue .~ "" & textInputConfig_inputType .~ "password"
     let pwd = _textInput_value pwdInput
     return (addr,pwd)
   chatSend <- chatWidget deltasDown 
