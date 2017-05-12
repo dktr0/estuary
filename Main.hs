@@ -40,22 +40,28 @@ main = do
 
 estuaryWidget :: MonadWidget t m => T.JSVal -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget wd stream protocol now = divClass "estuary" $ do
-  header
+  muted <- header
   divClass "page" $ mdo
     (values,deltasUp,hints) <- mainPage deltasDown'
     values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
-    let values'' = updated values'
+    values'' <- combineDyn f values' muted
+    let values''' = updated values''
     deltasDown <- webSocketWidget protocol now deltasUp
     let deltasDown' = ffilter (not . Prelude.null) deltasDown
     -- diagnostics values deltasUp' deltasDown' hints
     performEvent_ $ fmap (liftIO . (doHint wd)) hints
-    performEvent_ $ fmap (liftIO . stream) values''
+    performEvent_ $ fmap (liftIO . stream) values'''
+    where f x False = x
+          f _ True = toParamPattern EmptyTransformedPattern
 
-
-header :: (MonadWidget t m) => m ()
+header :: (MonadWidget t m) => m (Dynamic t Bool)
 header = divClass "header" $ do
   divClass "logo" $ text "estuary (based on TidalCycles and Reflex)"
-  divClass "webDirt" $ text " "
+  muted' <- divClass "webDirt" $ do
+    muted <- divClass "webDirtMute" $ do
+      text "WebDirt Mute"
+      checkbox False $ def
+    return $ _checkbox_value muted
   -- newPageIndex <- divClass "pageMenu" $ do
   --  let pageNames = Prelude.map (fst) pages
   --  let pageList = zipWith (\x y -> (y,x)) pageNames ([0..]::[Int])
@@ -64,7 +70,7 @@ header = divClass "header" $ do
   --  return $ _dropdown_change menu
   -- divClass "hintArea" $ text " "
   -- return newPageIndex
-  return ()
+  return muted'
 
  
 mainPage :: MonadWidget t m => Event t [EstuaryProtocol]

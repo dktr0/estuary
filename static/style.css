@@ -28,6 +28,10 @@ body {
 	width: 49%;
 }
 
+.webDirtMute {
+	float: right;
+}
+
 .pageMenu { /* contains page menu in bottom left of header */
 	display: inline-block;
 	width: 50%;
