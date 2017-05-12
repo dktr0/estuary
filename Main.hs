@@ -116,18 +116,6 @@ midLevelTransformedPatternWidget iTransPat = do
   return (pat,ev,hint)
 
 
-trivialPatternA = UntransformedPattern (S (Atom "bd" Inert Once))
-
-trivialPatternB = UntransformedPattern (S (Atom "cp" Inert Once))
-
-trivialTransformedPatternWidget :: MonadWidget t m => Event t TransformedPattern -> m (Dynamic t TransformedPattern,Event t TransformedPattern)
-trivialTransformedPatternWidget delta = el "div" $ do
-  a <- liftM (trivialPatternA <$) $ button "trivialA"
-  b <- liftM (trivialPatternB <$) $ button "trivialB"
-  value <- holdDyn EmptyTransformedPattern $ leftmost [a,b,delta]
-  let edits = leftmost [a,b]
-  return (value,edits)
-
 textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t String,Event t String)
 textWidget delta = el "div" $ do
   y <- textArea $ def & textAreaConfig_setValue .~ delta
@@ -136,6 +124,14 @@ textWidget delta = el "div" $ do
   let evals' = tagDyn (_textArea_value y) evals
   value <- holdDyn "" $ updated $ _textArea_value y
   return (value,edits,evals')
+
+labelWidget :: MonadWidget t m => Int -> Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
+labelWidget n delta = el "div" $ do
+  let delta' = fmap ( (Prelude.filter isLabelEdit) . (Prelude.filter (matchesNumber n)) ) delta
+  let delta'' = fmap justText $ fmapMaybe lastOrNothing delta' 
+  y <- textInput $ def & textInputConfig_setValue .~ delta''
+  let z = fmap (LabelEdit "" n) $ _textInput_input y
+  return z
 
 mainPage :: MonadWidget t m => Event t [EstuaryProtocol]
   -> m
