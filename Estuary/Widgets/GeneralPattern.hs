@@ -269,9 +269,9 @@ popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
   mapDyn (\x-> (x,upSig,hintEv)) genPat
   where
     popupActions = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
-    sampleMap = fromList $ zip [0::Int,1..] $ [("Rest","~"),("Percussion", "bd"),("Percussion", "cp"),("Percussion", "hh"),("Percussion", "sn"),("Percussion","dr"),("Bass","jvbass"), ("Bass","wobble"),("Bass","bass1"),("Pitched","arpy"), ("Pitched", "casio"), ("Pitched","latibro")]
+    sampleMap = fromList $ zip [0::Int,1..] $ [("Rest","~"),("Percussion", "bd"),("Percussion", "cp"),("Percussion", "hh"),("Percussion", "sn"),("Percussion","dr"),("Percussion","jazz"),("Bass","jvbass"), ("Bass","wobble"),("Bass","bass1"),("Pitched","arpy"), ("Pitched", "casio"), ("Pitched","latibro")]
     popup = samplePickerPopup liveness sampleMap popupActions
-    iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once]) 
+    iRepDivViewable = (iRepDiv/=Once)
     (iSamp,iRepDiv,iPotential) = case iVal of
                     (Group (Edited (oldV,oldR) (newV,newR)) p) -> (show $ oldV!!0,oldR,p)
                     (Group (Live (newV,newR) lness) p) -> (show $ newV!!0,newR,p)
@@ -323,7 +323,7 @@ popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Double -> 
 popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
   let (iVal,iRepDiv,iPotential) = getIVal iGenPat
   textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ (constDyn ("style"=:"width:30px"))
-  let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])
+  let iRepDivViewable = (iRepDiv/=Once)
   repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
   popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (popup) (case iPotential of Inert->False; otherwise->True) $ updated popupToggle
   let popupEv = leftmost $ [ffilter id $ updated $ _textInput_hasFocus textField, closeEvent]  
