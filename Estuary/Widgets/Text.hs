@@ -10,6 +10,7 @@ import Data.Map
 import Estuary.Widgets.Generic
 import Control.Monad
 import GHCJS.DOM.EventM
+import Estuary.Protocol.JSON
 
 
 {-
@@ -44,6 +45,22 @@ textPatternChainWidget delta = do
   return (v',e',never)
   where f (TextPatternChain x) = Just x
         f _ = Nothing
+
+textWidget :: MonadWidget t m => Event t String -> m (Event t String,Event t String)
+textWidget delta = el "div" $ do
+  y <- textArea $ def & textAreaConfig_setValue .~ delta
+  let edits = _textArea_input y
+  evals <- button "eval"
+  let evals' = tagDyn (_textArea_value y) evals
+  return (edits,evals')
+
+labelWidget :: MonadWidget t m => Int -> Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
+labelWidget n delta = el "div" $ do
+  let delta' = fmap ( (Prelude.filter isLabelEdit) . (Prelude.filter (matchesNumber n)) ) delta
+  let delta'' = fmap justText $ fmapMaybe lastOrNothing delta' 
+  y <- textInput $ def & textInputConfig_setValue .~ delta''
+  let z = fmap (LabelEdit "" n) $ _textInput_input y
+  return z
 
 {-
 
