@@ -1,3 +1,4 @@
+"use strict";
 process.title = 'estuary';
 var stderr = process.stderr;
 
@@ -62,6 +63,16 @@ if(password[0]=='-') {
   process.exit(1);
 }
 
+
+var tempoCps = 2.0; // 120 BPM to start
+var tempoAt = (new Date).getTime()/1000;
+var tempoBeat = 0.0; // beat 0 at server launch
+
+function logTempo() {
+  console.log("tempo at " + tempoAt + " is " + tempoCps + " CPS (beat=" + tempoBeat + ")");
+}
+logTempo();
+
 var tcpPort = parsed['tcp-port'];
 if(tcpPort==null) tcpPort = 8002;
 
@@ -74,26 +85,30 @@ server.on('request',app);
 // create WebSocket server
 var wss = new WebSocket.Server({server: server});
 wss.broadcast = function(data) {
-  for (let i of wss.clients) {
-    try {
-      // console.log("send");
-      i.send(data);
+  try {
+    var s = JSON.stringify(data);
+    for (let i of wss.clients) {
+      try {
+        i.send(s);
+      }
+      catch(e) {
+        console.log("warning: exception in websocket broadcast to specific client");
+      }
     }
-    catch(e) {
-      console.log("warning: exception in websocket broadcast");
-    }
+  }
+  catch(e) {
+    console.log("warning: exception in stringifying JSON data")
   }
 };
 
 wss.on('connection',function(ws) {
-  // var location = url.parse(ws.upgradeReq.url, true);
   var ip = ws.upgradeReq.connection.remoteAddress;
   console.log("new WebSocket connection: " + ip);
 
   ws.on('message',function(m) {
+      var n;
       try {
-        var n = JSON.parse(m);
-        console.log(n);
+        n = JSON.parse(JSON.parse(m));
       }
       catch(e) {
         console.log("exception in processing incoming message (possibly incorrectly formatted JSON)");
@@ -103,22 +118,43 @@ wss.on('connection',function(ws) {
         console.log("request with invalid password from " + ip);
       }
       else if(n.TextEdit != null) {
-        console.log("TextEdit");
+        console.log("TextEdit " + n.TextEdit + " " + n.code);
         var o = { 'TextEdit':n.TextEdit, 'code':n.code, password: '' };
-        try { wss.broadcast(JSON.stringify(o)); }
-        catch(e) { console.log("warning: exception in WebSocket send for TextEdit\n"); }
+        wss.broadcast(o);
       }
       else if(n.TextEval != null) {
-        console.log("TextEval");
+        console.log("TextEval " + n.TextEval + " " + n.code);
         var o = { 'TextEval':n.TextEval, 'code':n.code, password: '' };
-        try { wss.broadcast(JSON.stringify(o)); }
-        catch(e) { console.log("warning: exception in WebSocket send for TextEval\n"); }
+        wss.broadcast(o);
+      }
+      else if(n.LabelEdit != null) {
+        console.log("LabelEdit " + n.LabelEdit + " " + n.t);
+        var o = { 'LabelEdit':n.LabelEdit, 't':n.t, password: '' };
+        wss.broadcast(o);
       }
       else if(n.EstuaryEdit != null) {
-        console.log("EstuaryEdit");
+        console.log("EstuaryEdit" + m);
         var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code, password: '' };
-        try { wss.broadcast(JSON.stringify(o)); }
-        catch(e) { console.log("warning: exception in WebSocket send for EstuaryEdit\n"); }
+        wss.broadcast(o);
+      }
+      else if(n.Tempo != null) {
+        console.log("Error: received Tempo message but tempo can only be changed by TempoChange");
+      }
+      else if(n.TempoChange != null) {
+        console.log("TempoChange " + n.TempoChange);
+        // recalculate tempo grid following tempo change
+        var now = (new Date).getTime()/1000; console.log("now = " + now); // time in seconds since 1970
+	console.log("old tempoAt = " + tempoAt);
+        var elapsedTime = now - tempoAt; console.log("elapsedTime = " + elapsedTime);
+        var elapsedBeats = elapsedTime * tempoCps; console.log("elapsedBeats = " + elapsedBeats);
+        var beatAtNow = tempoBeat + elapsedBeats; console.log("beatAtNow = " + beatAtNow);
+        tempoAt = now;
+        tempoCps = n.TempoChange;
+        tempoBeat = beatAtNow;
+        logTempo();
+        // broadcast new tempo grid to all clients
+        var o = { 'Tempo': tempoCps, 'at': tempoAt, 'beat': tempoBeat, password: '' };
+        wss.broadcast(o);
       }
   });
 

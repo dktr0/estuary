@@ -57,12 +57,20 @@ data Potential a = Potential a | PotentialDelete
 
 instance JSON a => JSON (Potential a) where
   showJSON (Potential a) = encJSDict [("Potential",a)]
+  showJSON PotentialDelete = showJSON "PotentialDelete"
+  showJSON PotentialMakeGroup = showJSON "PotentialMakeGroup"
+  showJSON PotentialMakeLayer = showJSON "PotentialMakeLayer"
   showJSON (PotentialLiveness x) = encJSDict [("PotentialLiveness",showJSON x)]
-  showJSON Inert = encJSDict [("Inert",JSNull)]
+  showJSON Inert = showJSON "Inert"
+  showJSON PotentialRepOrDiv = showJSON "PotentialRepOrDiv"
   showJSON (Potentials xs) = encJSDict [("Potentials",xs)]
   readJSON (JSObject x) | firstKey x == "Potential" = Potential <$> valFromObj "Potential" x
+  readJSON (JSString x) | fromJSString x == "PotentialDelete" = Ok PotentialDelete
+  readJSON (JSString x) | fromJSString x == "PotentialMakeGroup" = Ok PotentialMakeGroup
+  readJSON (JSString x) | fromJSString x == "PotentialMakeLayer" = Ok PotentialMakeLayer
   readJSON (JSObject x) | firstKey x == "PotentialLiveness" = PotentialLiveness <$> valFromObj "PotentialLiveness" x
-  readJSON (JSObject x) | firstKey x == "Inert" = Ok (Inert)
+  readJSON (JSString x) | fromJSString x == "Inert" = Ok Inert
+  readJSON (JSString x) | fromJSString x == "PotentialRepOrDiv" = Ok PotentialRepOrDiv
   readJSON (JSObject x) | firstKey x == "Potentials" = Potentials <$> valFromObj "Potentials" x
   readJSON _ = Error "can't parse as Potential"
 
@@ -168,7 +176,7 @@ instance JSON Sample where
   readJSON (JSObject x) | firstKey x == "Sample" = (\a b -> Sample (a,b)) <$> c <*> d
     where c = valFromObj "Sample" x
           d = valFromObj "n" x
-  readJSON _ = Error "can't parse as Sample"
+  readJSON _ = Error "can't parsed as Sample"
 
 instance Show Sample where
   show (Sample (x,0)) = showNoQuotes x
@@ -453,7 +461,7 @@ applyPatternTransformer (Chop t) = Tidal.chop t
 applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern p
 
 
-data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern | EmptyTransformedPattern deriving (Eq)
+data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern | EmptyTransformedPattern | TextPatternChain String deriving (Eq)
 
 --deleteHeadByReplacingWithChildren :: TransformedPattern -> TransformedPattern
 --deleteHeadByReplacingWithChildren (TransformedPattern p t) = t
@@ -464,14 +472,17 @@ instance Show TransformedPattern where
   show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
+  show (TextPatternChain a) = (show a)
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TransformedPattern",showJSON t),("p",showJSON p)]
   showJSON (UntransformedPattern s) = encJSDict [("UntransformedPattern",showJSON s)]
   showJSON (EmptyTransformedPattern) = showJSON "EmptyTransformedPattern"
+  showJSON (TextPatternChain a) = encJSDict [("TextPatternChain",a)]
   readJSON (JSObject x) | firstKey x == "TransformedPattern" = TransformedPattern <$> valFromObj "TransformedPattern" x <*>  valFromObj "p" x
   readJSON (JSObject x) | firstKey x == "UntransformedPattern" = UntransformedPattern <$> valFromObj "UntransformedPattern" x
   readJSON (JSString x) | fromJSString x == "EmptyTransformedPattern" = Ok EmptyTransformedPattern
+  readJSON (JSObject x) | firstKey x == "TextPatternChain" = TextPatternChain <$> valFromObj "TextPatternChain" x
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
@@ -479,12 +490,15 @@ instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
   toParamPattern (EmptyTransformedPattern) = Tidal.silence -- @ is this correct?
+  toParamPattern (TextPatternChain a) = (Tidal.sound . Tidal.p) a
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
+  isEmptyFuture (TextPatternChain _) = False
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
+  isEmptyPast (TextPatternChain _) = False
 
 
 data StackedPatterns = StackedPatterns [TransformedPattern]

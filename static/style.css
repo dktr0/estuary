@@ -71,6 +71,25 @@ body {
 	width: 49%;
 }
 
+.eightL { 
+	border: 1px solid black;
+	height: 125px;
+	padding: 5px;
+	display: inline-block;
+	vertical-align: top;
+	border-right: 1px solid black;
+	width: 48%;
+}
+
+.eightR {
+	border: 1px solid black;
+ 	height: 125px;
+	padding: 5px;
+	display: inline-block;
+	vertical-align: top;
+	width: 48%;
+}
+
 .paddedText {
 	vertical-align: top;
 	padding-top: 5px;
