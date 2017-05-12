@@ -137,6 +137,11 @@ wss.on('connection',function(ws) {
         var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code, password: '' };
         wss.broadcast(o);
       }
+      else if(n.Chat != null) {
+        console.log("Chat from " + n.name + ": " + n.Chat);
+        var o = { Chat:n.Chat, name:n.name, password: '' };
+        wss.broadcast(o);
+      }
       else if(n.Tempo != null) {
         console.log("Error: received Tempo message but tempo can only be changed by TempoChange");
       }
