@@ -66,6 +66,10 @@ EstuaryProtocol.prototype.onMessage = function(m) {
      // console.log("EstuaryProtocol onMessage TextEval" + n.TextEval);
      // no need to log textevals in the browser for now
    }
+   else if(n.LabelEdit != null) {
+     console.log("EstuaryProtocol onMessage LabelEdit" + parseInt(n.LabelEdit));
+     this.edits.push(n);
+   }
    else if(n.EstuaryEdit != null) {
      console.log("EstuaryProtocol onMessage EstuaryEdit" + parseInt(n.EstuaryEdit));
      this.estuaryEdits[parseInt(n.EstuaryEdit)] = n.code;

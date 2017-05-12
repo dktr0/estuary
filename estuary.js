@@ -127,6 +127,11 @@ wss.on('connection',function(ws) {
         var o = { 'TextEval':n.TextEval, 'code':n.code, password: '' };
         wss.broadcast(o);
       }
+      else if(n.LabelEdit != null) {
+        console.log("LabelEdit " + n.LabelEdit + " " + n.t);
+        var o = { 'LabelEdit':n.LabelEdit, 't':n.t, password: '' };
+        wss.broadcast(o);
+      }
       else if(n.EstuaryEdit != null) {
         console.log("EstuaryEdit" + m);
         var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code, password: '' };

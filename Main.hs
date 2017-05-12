@@ -116,14 +116,13 @@ midLevelTransformedPatternWidget iTransPat = do
   return (pat,ev,hint)
 
 
-textWidget :: MonadWidget t m => Event t String -> m (Dynamic t String,Event t String,Event t String)
+textWidget :: MonadWidget t m => Event t String -> m (Event t String,Event t String)
 textWidget delta = el "div" $ do
   y <- textArea $ def & textAreaConfig_setValue .~ delta
   let edits = _textArea_input y
   evals <- button "eval"
   let evals' = tagDyn (_textArea_value y) evals
-  value <- holdDyn "" $ updated $ _textArea_value y
-  return (value,edits,evals')
+  return (edits,evals')
 
 labelWidget :: MonadWidget t m => Int -> Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
 labelWidget n delta = el "div" $ do
@@ -139,14 +138,14 @@ mainPage :: MonadWidget t m => Event t [EstuaryProtocol]
      Event t EstuaryProtocol, -- edit events for broadcast
      Event t Hint) -- hint events for local use
 mainPage deltasDown = do
-  let deltaA = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 1)) ) deltasDown
-  let deltaB = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 2)) ) deltasDown
-  let deltaC = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 3)) ) deltasDown
-  let deltaD = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 4)) ) deltasDown
-  let deltaE = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 5)) ) deltasDown
-  let deltaF = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 6)) ) deltasDown
-  let deltaG = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 7)) ) deltasDown
-  let deltaH = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 8)) ) deltasDown
+  let deltaA = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 2)) ) deltasDown
+  let deltaB = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 4)) ) deltasDown
+  let deltaC = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 6)) ) deltasDown
+  let deltaD = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 8)) ) deltasDown
+  let deltaE = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 10)) ) deltasDown
+  let deltaF = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 12)) ) deltasDown
+  let deltaG = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 14)) ) deltasDown
+  let deltaH = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 16)) ) deltasDown
   let deltaA' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaA
   let deltaB' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaB
   let deltaC' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaC
@@ -155,38 +154,63 @@ mainPage deltasDown = do
   let deltaF' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaF
   let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
   let deltaH' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaH
-  (aValue,aEdits,aHints) <- divClass "eightL" $ topLevelTransformedPatternWidget deltaA'
-  (bValue,bEdits,bHints) <- divClass "eightR" $ topLevelTransformedPatternWidget deltaB'
-  (cValue,cEdits,cHints) <- divClass "eightL" $ textPatternChainWidget deltaC'
-  (dValue,dEdits,dHints) <- divClass "eightR" $ textPatternChainWidget deltaD'
-  (eValue,eEdits,eHints) <- divClass "eightL" $ textPatternChainWidget deltaE'
-  (fValue,fEdits,fHints) <- divClass "eightR" $ textPatternChainWidget deltaF'
-  (_,gEdits,gEvals) <- divClass "eightL" $ textWidget deltaG'
-  (hValue,hEdits,hHints) <- divClass "eightR" $ textPatternChainWidget deltaH'
-  aValue' <- mapDyn (singleton 1) aValue
-  bValue' <- mapDyn (singleton 2) bValue
-  cValue' <- mapDyn (singleton 3) cValue
-  dValue' <- mapDyn (singleton 4) dValue
-  eValue' <- mapDyn (singleton 5) eValue
-  fValue' <- mapDyn (singleton 6) fValue
-  hValue' <- mapDyn (singleton 6) hValue
+  (aLabel,aValue,aEdits,aHints) <- divClass "eightL" $ do 
+	a <- labelWidget 1 deltasDown
+	(b,c,d) <- topLevelTransformedPatternWidget deltaA'
+	return (a,b,c,d)
+  (bLabel,bValue,bEdits,bHints) <- divClass "eightR" $ do
+	a <- labelWidget 3 deltasDown
+	(b,c,d) <- topLevelTransformedPatternWidget deltaB'
+	return (a,b,c,d)
+  (cLabel,cValue,cEdits,cHints) <- divClass "eightL" $ do
+	a <- labelWidget 5 deltasDown
+	(b,c,d) <- textPatternChainWidget deltaC'
+	return (a,b,c,d)
+  (dLabel,dValue,dEdits,dHints) <- divClass "eightR" $ do
+	a <- labelWidget 7 deltasDown
+	(b,c,d) <- textPatternChainWidget deltaD'
+	return (a,b,c,d)
+  (eLabel,eValue,eEdits,eHints) <- divClass "eightL" $ do
+	a <- labelWidget 9 deltasDown
+	(b,c,d) <- textPatternChainWidget deltaE'
+	return (a,b,c,d)
+  (fLabel,fValue,fEdits,fHints) <- divClass "eightR" $ do
+	a <- labelWidget 11 deltasDown
+	(b,c,d) <- textPatternChainWidget deltaF'
+	return (a,b,c,d)
+  (gLabel,gEdits,gEvals) <- divClass "eightL" $ do
+	a <- labelWidget 13 deltasDown
+	(b,c) <- textWidget deltaG'
+	return (a,b,c)
+  (hLabel,hValue,hEdits,hHints) <- divClass "eightR" $ do 
+	a <- labelWidget 15 deltasDown
+	(b,c,d) <- textPatternChainWidget deltaH'
+	return (a,b,c,d)
+  aValue' <- mapDyn (singleton 2) aValue
+  bValue' <- mapDyn (singleton 4) bValue
+  cValue' <- mapDyn (singleton 6) cValue
+  dValue' <- mapDyn (singleton 8) dValue
+  eValue' <- mapDyn (singleton 10) eValue
+  fValue' <- mapDyn (singleton 12) fValue
+  hValue' <- mapDyn (singleton 16) hValue
   valuesB <- combineDyn (union) aValue' bValue'
   valuesC <- combineDyn (union) valuesB cValue'
   valuesD <- combineDyn (union) valuesC dValue'
   valuesE <- combineDyn (union) valuesD eValue'
   valuesF <- combineDyn (union) valuesE fValue'
   values <- combineDyn (union) valuesF hValue'
-  let aDeltaUp = fmap (EstuaryEdit "" 1) aEdits
-  let bDeltaUp = fmap (EstuaryEdit "" 2) bEdits
-  let cDeltaUp = fmap (EstuaryEdit "" 3) cEdits
-  let dDeltaUp = fmap (EstuaryEdit "" 4) dEdits
-  let eDeltaUp = fmap (EstuaryEdit "" 5) eEdits
-  let fDeltaUp = fmap (EstuaryEdit "" 6) fEdits
-  let gEditsUp = fmap (TextEdit "" 7) gEdits
-  let hDeltaUp = fmap (EstuaryEdit "" 8) hEdits
-  let gEvalsUp = fmap (TextEval "" 7) gEvals
+  let aDeltaUp = fmap (EstuaryEdit "" 2) aEdits
+  let bDeltaUp = fmap (EstuaryEdit "" 4) bEdits
+  let cDeltaUp = fmap (EstuaryEdit "" 6) cEdits
+  let dDeltaUp = fmap (EstuaryEdit "" 8) dEdits
+  let eDeltaUp = fmap (EstuaryEdit "" 10) eEdits
+  let fDeltaUp = fmap (EstuaryEdit "" 12) fEdits
+  let gEditsUp = fmap (TextEdit "" 14) gEdits
+  let gEvalsUp = fmap (TextEval "" 14) gEvals
   let gDeltaUp = leftmost [gEditsUp,gEvalsUp]
-  let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,gDeltaUp,hDeltaUp]
+  let hDeltaUp = fmap (EstuaryEdit "" 16) hEdits
+  let labelsUp = leftmost [aLabel,bLabel,cLabel,dLabel,eLabel,fLabel,gLabel,hLabel]
+  let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,gDeltaUp,hDeltaUp,labelsUp]
   let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints,hHints]
   return (values,deltasUp,hints)
 
