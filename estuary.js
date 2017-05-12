@@ -138,22 +138,22 @@ wss.on('connection',function(ws) {
       else if(n.TextEdit != null) {
         console.log("TextEdit " + n.TextEdit + " " + n.code);
         var o = { 'TextEdit':n.TextEdit, 'code':n.code, password: '' };
-        wss.broadcastNoOrigin(o);
+        wss.broadcastNoOrigin(ws,o);
       }
       else if(n.TextEval != null) {
         console.log("TextEval " + n.TextEval + " " + n.code);
         var o = { 'TextEval':n.TextEval, 'code':n.code, password: '' };
-        wss.broadcastNoOrigin(o);
+        wss.broadcastNoOrigin(ws,o);
       }
       else if(n.LabelEdit != null) {
         console.log("LabelEdit " + n.LabelEdit + " " + n.t);
         var o = { 'LabelEdit':n.LabelEdit, 't':n.t, password: '' };
-        wss.broadcastNoOrigin(o);
+        wss.broadcastNoOrigin(ws,o);
       }
       else if(n.EstuaryEdit != null) {
         console.log("EstuaryEdit" + m);
         var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code, password: '' };
-        wss.broadcastNoOrigin(o);
+        wss.broadcastNoOrigin(ws,o);
       }
       else if(n.Chat != null) {
         console.log("Chat from " + n.name + ": " + n.Chat);

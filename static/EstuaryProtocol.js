@@ -54,6 +54,7 @@ EstuaryProtocol.prototype.onMessage = function(m) {
    }
    catch(e) {
      console.log("parsing exception in EstuaryProtocol.onMessage");
+     console.log("dump: " + JSON.stringify(m.data));
      return;
    }
    try {
