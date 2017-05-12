@@ -228,8 +228,8 @@ main = do
     (values,deltasUp,hints) <- mainPage deltasDown'
     values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
     let values'' = updated values'
-    tempoEdits <- tempoWidget deltasDown
-    let deltasUp' = leftmost [deltasUp,tempoEdits]
+    -- tempoEdits <- tempoWidget deltasDown
+    let deltasUp' = leftmost [deltasUp] -- temporarily removed tempo controls
     deltasDown <- webSocketWidget protocol now deltasUp'
     let deltasDown' = ffilter (not . Prelude.null) deltasDown
     diagnostics values deltasUp' deltasDown' hints

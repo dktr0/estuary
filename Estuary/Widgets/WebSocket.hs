@@ -46,7 +46,7 @@ resettingWebSocket addr pwd toSend = do
 
 alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t String -> Dynamic t String -> Event t EstuaryProtocol -> m (Event t [EstuaryProtocol])
 alternateWebSocket obj now addr pwd toSend = do
-  ticks <- tickLossy (0.25::NominalDiffTime) now
+  ticks <- tickLossy (0.1::NominalDiffTime) now
   let addr' = fmap ("ws://" ++) addr
   performEvent_ $ fmap (liftIO . (setUrl obj)) addr'
   let toSend' = attachDynWith setPassword pwd toSend
@@ -55,13 +55,36 @@ alternateWebSocket obj now addr pwd toSend = do
   performEvent $ fmap (liftIO . (\_ -> getEdits obj)) ticks
   
 -- finally, a webSocketWidget includes GUI elements for setting the webSocket address and
--- password, and connects these GUI elements to a resettingWebSocket (i.e. estuaryWebSocket)
+-- password, and the chat interface, and connects these GUI elements to a resettingWebSocket (i.e. estuaryWebSocket)
 
 webSocketWidget :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t EstuaryProtocol -> m (Event t [EstuaryProtocol])
-webSocketWidget obj now toSend = do
-  addr <- textInput $ def & textInputConfig_initialValue .~ "127.0.0.1:8002"
-  let addr' = tagDyn (_textInput_value addr) (_textInput_keypress addr)
-  pwd <- textInput $ def & textInputConfig_initialValue .~ "blah"
-  let pwd' = _textInput_value pwd
-  alternateWebSocket obj now addr' pwd' toSend
+webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
+  (addr',pwd') <- divClass "webSocketWidgetLine1" $ do
+    text "WebSocket Address:"
+    addrInput <- textInput $ def & textInputConfig_initialValue .~ ""
+    cButton <- button "Connect"
+    statusText <- holdDyn "Status: " never
+    dynText statusText
+    let addr= tagDyn (_textInput_value addrInput) cButton
+    text "Password:"
+    pwdInput <- textInput $ def & textInputConfig_initialValue .~ ""
+    let pwd = _textInput_value pwdInput
+    return (addr,pwd)
+  chatSend <- chatWidget deltasDown 
+  let toSend' = leftmost [toSend,chatSend]
+  deltasDown <- alternateWebSocket obj now addr' pwd' toSend'
+  return $ deltasDown
+
+chatWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
+chatWidget _ = divClass "chatWidget" $ mdo
+  text "Name:"
+  nameInput <- textInput $ def 
+  text "Chat:"
+  chatInput <- textInput $ def & textInputConfig_setValue .~ resetText
+  send <- button "Send"
+  let send' = fmap (const ()) $ ffilter (==13) $ _textInput_keypress chatInput
+  let send'' = leftmost [send,send']
+  let toSend = tag (current $ _textInput_value chatInput) send''
+  let resetText = fmap (const "") send''
+  return $ attachDynWith (Chat "") (_textInput_value nameInput) toSend
 

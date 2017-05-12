@@ -9,7 +9,7 @@ data EstuaryProtocol =
   TextEdit String Int String |
   TextEval String Int String |
   LabelEdit String Int String |
-  Chat String String String |
+  Chat String String String | -- password name msg
   Tempo String Double Double Double | -- password at beat cps
   TempoChange String Double |
   ProtocolError String
@@ -62,6 +62,10 @@ isLabelEdit :: EstuaryProtocol -> Bool
 isLabelEdit (LabelEdit _ _ _) = True
 isLabelEdit _ = False
 
+isChat :: EstuaryProtocol -> Bool
+isChat (Chat _ _ _) = True
+isChat _ = False
+
 justEstuaryCode :: EstuaryProtocol -> TransformedPattern
 justEstuaryCode (EstuaryEdit _ _ x) = x
 justEstuaryCode _ = error "can't get estuary code from non EstuaryEdit"
@@ -75,6 +79,7 @@ justText :: EstuaryProtocol -> String
 justText (TextEdit _ _ x) = x
 justText (TextEval _ _ x) = x
 justText (LabelEdit _ _ x) = x
+justText (Chat _ _ x) = x
 justText _ = error "can't get text from non TextEdit/TextEval/LabelEdit"
 
 isCps :: EstuaryProtocol -> Bool
