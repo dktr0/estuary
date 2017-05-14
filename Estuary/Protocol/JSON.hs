@@ -27,7 +27,7 @@ instance JSON EstuaryProtocol where
   readJSON (JSObject x) | firstKey x == "EEdit" = EstuaryEdit <$> valFromObj "p" x <*> valFromObj "EEdit" x <*> valFromObj "c" x
   readJSON (JSObject x) | firstKey x == "TEdit" = TextEdit <$> valFromObj "p" x <*> valFromObj "TEdit" x <*> valFromObj "c" x
   readJSON (JSObject x) | firstKey x == "TEval" = TextEval <$> valFromObj "p" x <*> valFromObj "TEval" x <*> valFromObj "c" x
-  readJSON (JSObject x) | firstKey x == "LEdit" = LabelEdit <$> valFromObj "p" x <*> valFromObj "Edit" x <*> valFromObj "t" x
+  readJSON (JSObject x) | firstKey x == "LEdit" = LabelEdit <$> valFromObj "p" x <*> valFromObj "LEdit" x <*> valFromObj "t" x
   readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj "p" x <*> valFromObj "n" x <*> valFromObj "Chat" x
   readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "p" x <*> valFromObj "at" x <*> valFromObj "beat" x <*> valFromObj "Tempo" x
   readJSON (JSObject x) | firstKey x == "Change" = TempoChange <$> valFromObj "p" x <*> valFromObj "Change" x

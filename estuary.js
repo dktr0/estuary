@@ -132,39 +132,39 @@ wss.on('connection',function(ws) {
         console.log("exception in processing incoming message (possibly incorrectly formatted JSON)");
         n = {};
       }
-      if(n.password != password) {
-        console.log("request with invalid password from " + ip);
+      if(n.p != password) {
+        console.log("request with invalid password from " + ip + ", invalid password is " + n.p);
       }
-      else if(n.TextEdit != null) {
-        console.log("TextEdit " + n.TextEdit + " " + n.code);
-        var o = { 'TextEdit':n.TextEdit, 'code':n.code, password: '' };
+      else if(n.TEdit != null) {
+        console.log("TEdit " + n.TEdit + " " + n.c);
+        var o = { 'TEdit':n.TEdit, 'c':n.c, p: '' };
         wss.broadcastNoOrigin(ws,o);
       }
-      else if(n.TextEval != null) {
-        console.log("TextEval " + n.TextEval + " " + n.code);
-        var o = { 'TextEval':n.TextEval, 'code':n.code, password: '' };
+      else if(n.TEval != null) {
+        console.log("TEval " + n.TEval + " " + n.c);
+        var o = { 'TEval':n.TEval, 'code':n.c, p: '' };
         wss.broadcastNoOrigin(ws,o);
       }
-      else if(n.LabelEdit != null) {
-        console.log("LabelEdit " + n.LabelEdit + " " + n.t);
-        var o = { 'LabelEdit':n.LabelEdit, 't':n.t, password: '' };
+      else if(n.LEdit != null) {
+        console.log("LEdit " + n.LEdit + " " + n.t);
+        var o = { 'LEdit':n.LEdit, 't':n.t, p: '' };
         wss.broadcastNoOrigin(ws,o);
       }
-      else if(n.EstuaryEdit != null) {
-        console.log("EstuaryEdit" + m);
-        var o = { 'EstuaryEdit':n.EstuaryEdit, 'code':n.code, password: '' };
+      else if(n.EEdit != null) {
+        console.log("EEdit" + m);
+        var o = { 'EEdit':n.EEdit, 'c':n.c, p: '' };
         wss.broadcastNoOrigin(ws,o);
       }
       else if(n.Chat != null) {
-        console.log("Chat from " + n.name + ": " + n.Chat);
-        var o = { Chat:n.Chat, name:n.name, password: '' };
+        console.log("Chat from " + n.n + ": " + n.Chat);
+        var o = { Chat:n.Chat, n:n.n, p: '' };
         wss.broadcast(o);
       }
       else if(n.Tempo != null) {
         console.log("Error: received Tempo message but tempo can only be changed by TempoChange");
       }
-      else if(n.TempoChange != null) {
-        console.log("TempoChange " + n.TempoChange);
+      else if(n.Change != null) {
+        console.log("Change " + n.TempoChange);
         // recalculate tempo grid following tempo change
         var now = (new Date).getTime()/1000; console.log("now = " + now); // time in seconds since 1970
 	console.log("old tempoAt = " + tempoAt);
@@ -172,11 +172,11 @@ wss.on('connection',function(ws) {
         var elapsedBeats = elapsedTime * tempoCps; console.log("elapsedBeats = " + elapsedBeats);
         var beatAtNow = tempoBeat + elapsedBeats; console.log("beatAtNow = " + beatAtNow);
         tempoAt = now;
-        tempoCps = n.TempoChange;
+        tempoCps = n.Change;
         tempoBeat = beatAtNow;
         logTempo();
         // broadcast new tempo grid to all clients
-        var o = { 'Tempo': tempoCps, 'at': tempoAt, 'beat': tempoBeat, password: '' };
+        var o = { 'Tempo': tempoCps, 'at': tempoAt, 'beat': tempoBeat, p: '' };
         wss.broadcast(o);
       }
   });

@@ -58,22 +58,22 @@ EstuaryProtocol.prototype.onMessage = function(m) {
      return;
    }
    try {
-   if(n.TextEdit != null) {
+   if(n.TEdit != null) {
      // console.log("EstuaryProtocol onMessage TextEdit" + parseInt(n.TextEdit));
-     this.textEdits[parseInt(n.TextEdit)] = n.code;
+     this.textEdits[parseInt(n.TEdit)] = n.c;
      this.edits.push(n);
    }
-   else if(n.TextEval != null) {
+   else if(n.TEval != null) {
      // console.log("EstuaryProtocol onMessage TextEval" + n.TextEval);
      // no need to log textevals in the browser for now
    }
-   else if(n.LabelEdit != null) {
+   else if(n.LEdit != null) {
      // console.log("EstuaryProtocol onMessage LabelEdit" + parseInt(n.LabelEdit));
      this.edits.push(n);
    }
-   else if(n.EstuaryEdit != null) {
+   else if(n.EEdit != null) {
      // console.log("EstuaryProtocol onMessage EstuaryEdit" + parseInt(n.EstuaryEdit));
-     this.estuaryEdits[parseInt(n.EstuaryEdit)] = n.code;
+     this.estuaryEdits[parseInt(n.EEdit)] = n.c;
      this.edits.push(n);
    }
    else if(n.Chat != null) {
@@ -87,7 +87,7 @@ EstuaryProtocol.prototype.onMessage = function(m) {
      this.tempoBeat = n.beat;
      this.edits.push(n);
    }
-   else if(n.TempoChange != null) {
+   else if(n.Change != null) {
      // console.log("EstuaryProtocol onMessage TempoChange (ignoring)");
    }
    else {
@@ -100,11 +100,11 @@ EstuaryProtocol.prototype.onMessage = function(m) {
 }
 
 EstuaryProtocol.prototype.send = function(o) {
-  if(o.TextEdit != null) {
-    this.textEdits[parseInt(o.TextEdit)] = o.code;
+  if(o.TEdit != null) {
+    this.textEdits[parseInt(o.TEdit)] = o.c;
   }
-  if(o.EstuaryEdit != null) {
-    this.estuaryEdits[parseInt(o.EstuaryEdit)] = o.code;
+  if(o.EEdit != null) {
+    this.estuaryEdits[parseInt(o.EEdit)] = o.c;
   }
   if(!this.wsReady)return;
   try {
