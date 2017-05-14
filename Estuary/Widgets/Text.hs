@@ -53,7 +53,7 @@ textPatternChainWidget delta = divClass "textPatternChain" $ do
     textWidgetForPatternChain deltaC
   value <- combineDyn TextPatternChain aValue bValue
   value' <- combineDyn ($) value cValue
-  let deltaUp = tag (current value') $ leftmost [aEvent,bEvent,cEvent] 
+  let deltaUp = tagDyn value' $ leftmost [aEvent,bEvent,cEvent] 
   return (value',deltaUp,never)
   where f (TextPatternChain x y z) = Just (x,y,z)
         f _ = Nothing
