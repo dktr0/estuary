@@ -68,10 +68,11 @@ textWidget delta = el "div" $ do
   return (edits,evals')
 
 labelWidget :: MonadWidget t m => Int -> Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
-labelWidget n delta = el "div" $ do
+labelWidget n delta = divClass "textPatternChain" $ divClass "labelAndTextPattern" $ do
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
   let delta' = fmap ( (Prelude.filter isLabelEdit) . (Prelude.filter (matchesNumber n)) ) delta
   let delta'' = fmap justText $ fmapMaybe lastOrNothing delta' 
-  y <- textInput $ def & textInputConfig_setValue .~ delta''
+  y <- textInput $ def & textInputConfig_setValue .~ delta'' & textInputConfig_attributes .~ attrs
   let z = fmap (LabelEdit "" n) $ _textInput_input y
   return z
 
