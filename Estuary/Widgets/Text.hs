@@ -29,22 +29,35 @@ textSpecificContainer f delta = textGeneralContainer delta >>= mapDyn (\(a,b,c) 
 
 textWidgetForPatternChain :: MonadWidget t m => Event t String -> m (Dynamic t String, Event t String)
 textWidgetForPatternChain delta = do
-  x <- textInput $ def & textInputConfig_setValue .~ delta
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
+  x <- textInput $ def & textInputConfig_setValue .~ delta & textInputConfig_attributes .~ attrs
   let edits = _textInput_input x
   let value = _textInput_value x
   return (value,edits)
 
 textPatternChainWidget :: MonadWidget t m => Event t TransformedPattern -> 
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-textPatternChainWidget delta = do
-  text "sound"
+textPatternChainWidget delta = divClass "textPatternChain" $ do
   let delta' = fmapMaybe f delta
-  (v,e) <- textWidgetForPatternChain delta'
-  v' <- mapDyn TextPatternChain v
-  let e' = fmap TextPatternChain e
-  return (v',e',never)
-  where f (TextPatternChain x) = Just x
+  let deltaA = fmap (\(x,_,_)->x) delta'
+  let deltaB = fmap (\(_,x,_)->x) delta'
+  let deltaC = fmap (\(_,_,x)->x) delta'
+  (aValue,aEvent) <- divClass "labelAndTextPattern" $ do
+    text "sound" 
+    textWidgetForPatternChain deltaA
+  (bValue,bEvent) <- divClass "labelAndTextPattern" $ do 
+    text "up"
+    textWidgetForPatternChain deltaB
+  (cValue,cEvent) <- divClass "labelAndTextPattern" $ do
+    text "vowel"
+    textWidgetForPatternChain deltaC
+  value <- combineDyn TextPatternChain aValue bValue
+  value' <- combineDyn ($) value cValue
+  let deltaUp = tag (current value') $ leftmost [aEvent,bEvent,cEvent] 
+  return (value',deltaUp,never)
+  where f (TextPatternChain x y z) = Just (x,y,z)
         f _ = Nothing
+
 
 textWidget :: MonadWidget t m => Event t String -> m (Event t String,Event t String)
 textWidget delta = el "div" $ do

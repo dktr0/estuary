@@ -134,6 +134,7 @@ generalPatternIsEmptyPast (Group (Live (xs,_) _) _) = and $ fmap generalPatternI
 generalPatternIsEmptyPast (Group (Edited (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyPast (Layers (Live (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyPast (Layers (Edited (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
+generalPatternIsEmptyPast (TextPattern x) = length x == 0
 
 showNoQuotes::(Show a)=> a->String
 showNoQuotes x= if ((head x'=='"' && (last x')=='"') || (head x'== '\'' && last x'=='\'')) then if x''=="" then "~" else x'' else show x
@@ -461,7 +462,7 @@ applyPatternTransformer (Chop t) = Tidal.chop t
 applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern p
 
 
-data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern | EmptyTransformedPattern | TextPatternChain String deriving (Eq)
+data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern | EmptyTransformedPattern | TextPatternChain String String String deriving (Eq)
 
 --deleteHeadByReplacingWithChildren :: TransformedPattern -> TransformedPattern
 --deleteHeadByReplacingWithChildren (TransformedPattern p t) = t
@@ -472,17 +473,17 @@ instance Show TransformedPattern where
   show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
-  show (TextPatternChain a) = (show a)
+  show (TextPatternChain a b c) = (show a) ++ " " ++ (show b) ++ " " ++ (show c)
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
   showJSON (UntransformedPattern s) = encJSDict [("UP",showJSON s)]
   showJSON (EmptyTransformedPattern) = showJSON "E"
-  showJSON (TextPatternChain a) = encJSDict [("Text",a)]
+  showJSON (TextPatternChain a b c) = encJSDict [("Text",a),("b",b),("c",c)]
   readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
   readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
   readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
-  readJSON (JSObject x) | firstKey x == "Text" = TextPatternChain <$> valFromObj "Text" x
+  readJSON (JSObject x) | firstKey x == "Text" = TextPatternChain <$> valFromObj "Text" x <*> valFromObj "b" x <*> valFromObj "c" x
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
@@ -490,16 +491,19 @@ instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
   toParamPattern (EmptyTransformedPattern) = Tidal.silence -- @ is this correct?
-  toParamPattern (TextPatternChain a) = (Tidal.sound . Tidal.p) a
+  toParamPattern (TextPatternChain a b c) = toParamPattern $ TransformedPattern (Combine a' Merge) $ TransformedPattern (Combine b' Merge) $ UntransformedPattern c'
+    where a' = Sound (TextPattern a)
+          b' = Up (TextPattern b)
+          c' = Vowel (TextPattern c)
+-- (Tidal.sound . Tidal.p) a Tidal.|=| (Tidal.up . Tidal.p) b
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
-  isEmptyFuture (TextPatternChain _) = False
+  isEmptyFuture (TextPatternChain _ _ _) = False
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
-  isEmptyPast (TextPatternChain _) = False
-
+  isEmptyPast (TextPatternChain _ _ _) = False
 
 data StackedPatterns = StackedPatterns [TransformedPattern]
 
