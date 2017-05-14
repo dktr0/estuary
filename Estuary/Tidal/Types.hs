@@ -24,19 +24,21 @@ data RepOrDiv = Once | Rep Int | Div Int deriving (Eq)
 
 instance Show RepOrDiv where
   show Once = ""
-  show (Rep 1) = ""
+  --show (Rep 1) = ""
   show (Rep n) = "*" ++ (show n)
-  show (Div 1) = ""
+  --show (Div 1) = ""
   show (Div n) = "/" ++ (show n)
 
 instance JSON RepOrDiv where
-  showJSON Once = JSNull
+  showJSON Once = showJSON "o"
   showJSON (Rep n) = encJSDict [("r",n)]
   showJSON (Div n) = encJSDict [("d",n)]
-  readJSON (JSNull) = Ok (Once)
-  readJSON (JSObject x) | firstKey x == "r" = valFromObj "r" x
-  readJSON (JSObject x) | firstKey x == "d" = valFromObj "d" x
-  readJSON _ = Error "can't parse as RepOrDiv"
+  readJSON (JSString x) | fromJSString x == "o" = Ok (Once)
+                        | otherwise = Error $ "can't parse JSString as RepOrDiv: " ++ (show x)
+  readJSON (JSObject x) | firstKey x == "r" = Rep <$> valFromObj "r" x
+                        | firstKey x == "d" = Div <$> valFromObj "d" x
+                        | otherwise = Error $ "can't parse JSObject as RepOrDiv: " ++ (show x)
+  readJSON _ = Error "can't parse as RepOrDiv (not JSString nor JSObject)"
 
 firstKey :: JSObject JSValue -> String
 firstKey = fst . head . fromJSObject
@@ -135,7 +137,6 @@ instance Show a => Show (GeneralPattern a) where
   show (Group (Live (xs,r) _) _) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (Group (Edited ([],r) _) _) = ""
   show (Group (Edited (xs,r) _) _) = "[" ++ (intercalate " " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
-
   show (Layers (Live ([],r) _) _) = ""
   show (Layers (Live (xs,r) _) _) = "[" ++ (intercalate ", " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (Layers (Edited ([],r) _) _) = ""
@@ -449,12 +450,8 @@ applyPatternTransformer (Chop t) = Tidal.chop t
 applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern p
 
 
+
 data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern | EmptyTransformedPattern | TextPatternChain String String String deriving (Eq)
-
---deleteHeadByReplacingWithChildren :: TransformedPattern -> TransformedPattern
---deleteHeadByReplacingWithChildren (TransformedPattern p t) = t
---deleteHeadByReplacingWithChildren (UntransformedPattern s) = EmptyTransformedPattern
-
 
 instance Show TransformedPattern where
   show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
@@ -482,7 +479,6 @@ instance ParamPatternable TransformedPattern where
     where a' = Sound (TextPattern a)
           b' = Up (TextPattern b)
           c' = Vowel (TextPattern c)
--- (Tidal.sound . Tidal.p) a Tidal.|=| (Tidal.up . Tidal.p) b
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True

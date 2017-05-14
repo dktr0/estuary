@@ -48,11 +48,12 @@ estuaryWidget wd stream protocol now = divClass "estuary" $ do
     let values''' = updated values''
     deltasDown <- webSocketWidget protocol now deltasUp
     let deltasDown' = ffilter (not . Prelude.null) deltasDown
-    -- diagnostics values deltasUp deltasDown' hints
+    diagnostics values deltasUp deltasDown' hints
     performEvent_ $ fmap (liftIO . (doHint wd)) hints
     performEvent_ $ fmap (liftIO . stream) values'''
     where f x False = x
           f _ True = toParamPattern EmptyTransformedPattern
+
 
 header :: (MonadWidget t m) => m (Dynamic t Bool)
 header = divClass "header" $ do
@@ -96,13 +97,13 @@ mainPage deltasDown = do
   let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
   let deltaH' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaH
   (aLabel,aValue,aEdits,aHints) <- divClass "eightL" $ do 
-	a <- labelWidget 1 deltasDown
-	(b,c,d) <- topLevelTransformedPatternWidget deltaA'
-	return (a,b,c,d)
+    a <- labelWidget 1 deltasDown
+    (b,c,d) <- topLevelTransformedPatternWidget deltaA'
+    return (a,b,c,d)
   (bLabel,bValue,bEdits,bHints) <- divClass "eightR" $ do
-	a <- labelWidget 3 deltasDown
-	(b,c,d) <- topLevelTransformedPatternWidget deltaB'
-	return (a,b,c,d)
+    a <- labelWidget 3 deltasDown
+    (b,c,d) <- topLevelTransformedPatternWidget deltaB'
+    return (a,b,c,d)
   (cLabel,cValue,cEdits,cHints) <- divClass "eightL" $ do
 	a <- labelWidget 5 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaC'
@@ -188,3 +189,4 @@ diagnostics values deltasUp deltasDown hints = do
   el "div" $ do
     text "Hints:"
     (holdDyn "" $ fmap show hints) >>= display
+

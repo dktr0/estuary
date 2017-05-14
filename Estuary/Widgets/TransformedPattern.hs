@@ -36,15 +36,16 @@ topLevelTransformedPatternWidget updateEvent = do
   let z' = switchPromptlyDyn z
   return (x',y',z')
 
+
 midLevelTransformedPatternWidget:: MonadWidget t m => TransformedPattern -> m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
 midLevelTransformedPatternWidget iTransPat = do
   tuple <- resettableTransformedPatternWidget iTransPat never
   pat <- mapDyn (\(x,_,_)->x) tuple
   --ev <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) tuple
   let ev = updated pat
+  --holdDyn "no update yet" (fmap (const "update received") ev) >>= dynText
   hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) tuple
   return (pat,ev,hint)
-
 
 
 popupSpecificPatternWidget :: (MonadWidget t m)=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal a),Event t Hint))
@@ -93,8 +94,8 @@ popupSpecificPatternWidget iValue _ = elClass "div" "popupSpecificPatternWidget"
 specificPatternPopup:: MonadWidget t m => [EditSignal SpecificPattern] -> m (Event t (Maybe (EditSignal SpecificPattern)))
 specificPatternPopup actionList = elClass "div" "popupMenu" $ do
   let specMap = fromList $ zip [(0::Int)..] iValueList
-  --let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
-  let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
+  let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
+  --let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
   dd <- dropdown (-1) ddMap def
   let specPatKey = _dropdown_value dd
   specChange <- mapDyn (Just . ChangeValue . maybe (S $ Blank Inert) id . (flip Data.Map.lookup) specMap) specPatKey
@@ -104,7 +105,7 @@ specificPatternPopup actionList = elClass "div" "popupMenu" $ do
   return $ (leftmost $ edits ++[closeMenu,updated specChange])
   where
     iValueList = [
-      --(Accelerate $ Atom 0 Inert Once),
+      (Accelerate $ Atom 0 Inert Once),
       (Bandf $ Atom 440 Inert Once),
       (Bandq $ Atom 10 Inert Once),
       (Begin $ Atom 0 Inert Once),

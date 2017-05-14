@@ -50,6 +50,7 @@ setUrl (EstuaryProtocolObject x) url = setUrlFFI x (Prim.toJSString url)
 send :: EstuaryProtocolObject -> String -> IO ()
 send (EstuaryProtocolObject x) y = sendFFI x (Prim.toJSString y)
 
+{-
 getTextEdit :: EstuaryProtocolObject -> Int -> IO EstuaryProtocol
 getTextEdit (EstuaryProtocolObject x) n = do 
   y <- getTextEditFFI x n
@@ -61,11 +62,12 @@ getEstuaryEdit (EstuaryProtocolObject x) n = do
   return $ f (decode (Prim.fromJSString y))
   where f (Ok (EstuaryEdit p n' z)) = EstuaryEdit p n' z
         f _ = ProtocolError "not EstuaryEdit or some other problem?"
+-}
 
 getEdits :: EstuaryProtocolObject -> IO [EstuaryProtocol]
 getEdits (EstuaryProtocolObject x) = do 
   y <- getEditsFFI x
   return $ f (decode (Prim.fromJSString y))
   where f (Ok xs) = xs
-        f _ = [ProtocolError "not [EstuaryProtocol] or some other problem?"]
+        f (Error x) = [ProtocolError ("error trying to parse as [EstuaryProtocol]: " ++ x)]
 

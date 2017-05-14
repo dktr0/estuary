@@ -247,12 +247,28 @@ repDivWidget' iVal _ = elClass "span" "repOrDiv" $ mdo
   repDivButton <- clickableSpanClass showRep "repDivSpan" ()
   repTog <- toggle iToggle repDivButton
   showRep <- mapDyn (\x-> if x then " * " else " / ") repTog
-  let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["2","repOrDivInput"]
+  let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
   textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number" 
   let numTextField = _textInput_value textField
   num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
   dynVal <- combineDyn (\tog val -> if tog then Rep val else Div val) repTog num
   return $ updated dynVal
+  where
+    (iToggle, iNum) = case iVal of
+      (Rep x) -> (True,x)
+      (Div x) -> (False,x)
+      otherwise -> (True, 1)
+
+repDivWidget''::MonadWidget t m => RepOrDiv -> Event t () -> m (Dynamic t RepOrDiv)
+repDivWidget'' iVal _ = elClass "span" "repOrDiv" $ mdo
+  repDivButton <- clickableSpanClass showRep "repDivSpan" ()
+  repTog <- toggle iToggle repDivButton
+  showRep <- mapDyn (\x-> if x then " * " else " / ") repTog
+  let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
+  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number" 
+  let numTextField = _textInput_value textField
+  num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
+  combineDyn (\tog val -> if tog then Rep val else Div val) repTog num
   where
     (iToggle, iNum) = case iVal of
       (Rep x) -> (True,x)
