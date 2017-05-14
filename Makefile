@@ -14,6 +14,19 @@ open:
 	cp static/style.css Estuary.jsexe
 	open Estuary.jsexe/index.html
 
+zip:
+	rm -rf temp
+	mkdir temp
+	cp package.json temp
+	cp estuary.js temp
+	cp evalClient.js temp
+	cp -Rf $$(stack path --local-install-root)/bin/Estuary.jsexe temp
+	cp static/index.html temp/Estuary.jsexe
+	cp static/style.css temp/Estuary.jsexe
+	cp static/EstuaryProtocol.js temp/Estuary.jsexe
+	tar czf estuary-build.tgz -C temp .
+	rm -rf temp
+
 clean:
 	rm -rf Estuary.jsexe
 	rm -rf $$(stack path --local-install-root)/bin/Estuary.jsexe

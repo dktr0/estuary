@@ -28,39 +28,39 @@ import Data.Time
 import Text.Read
 
 
-main :: IO ()
-main = do
-  wd <- webDirt
-  stream <- webDirtStream wd
-  mainWidget $ do
-    divClass "estuary" $ do
-      newPage <- header
-      divClass "page" $ do
-        let firstPage = snd (pages!!0)
-        let newPage' = fmap (snd . (pages !!)) newPage
-        --test <- G.popupSampleWidget (constDyn L4) (Atom "bd" Inert Once) never >>= mapDyn fst
-        --holdDyn (Blank Inert) (updated test) >>= mapDyn show >>= dynText
-        w <- widgetHold firstPage newPage'
-        p <- liftM (joinDyn) $ mapDyn (fst) w
-        h <- liftM (switchPromptlyDyn) $ mapDyn (snd) w
-        let patternEval = updated p
-        performEvent_ $ fmap (liftIO . (doHint wd)) h
-        performEvent_ $ fmap (liftIO . stream) patternEval
+--main :: IO ()
+--main = do
+--  wd <- webDirt
+--  stream <- webDirtStream wd
+--  mainWidget $ do
+--    divClass "estuary" $ do
+--      newPage <- header
+--      divClass "page" $ do
+--        let firstPage = snd (pages!!0)
+--        let newPage' = fmap (snd . (pages !!)) newPage
+--        --test <- G.popupSampleWidget (constDyn L4) (Atom "bd" Inert Once) never >>= mapDyn fst
+--        --holdDyn (Blank Inert) (updated test) >>= mapDyn show >>= dynText
+--        w <- widgetHold firstPage newPage'
+--        p <- liftM (joinDyn) $ mapDyn (fst) w
+--        h <- liftM (switchPromptlyDyn) $ mapDyn (snd) w
+--        let patternEval = updated p
+--        performEvent_ $ fmap (liftIO . (doHint wd)) h
+--        performEvent_ $ fmap (liftIO . stream) patternEval
 
 
 
-header :: (MonadWidget t m) => m (Event t Int)
-header = divClass "header" $ do
-  divClass "logo" $ text "estuary (a work in progress)"
-  divClass "webDirt" $ text " "
-  newPageIndex <- divClass "pageMenu" $ do
-    let pageNames = Prelude.map (fst) pages
-    let pageList = zipWith (\x y -> (y,x)) pageNames ([0..]::[Int])
-    let pageMap = constDyn $ fromList pageList
-    menu <- dropdown 0 pageMap def
-    return $ _dropdown_change menu
-  divClass "hintArea" $ text " "
-  return newPageIndex
+--header :: (MonadWidget t m) => m (Event t Int)
+--header = divClass "header" $ do
+--  divClass "logo" $ text "estuary (a work in progress)"
+--  divClass "webDirt" $ text " "
+--  newPageIndex <- divClass "pageMenu" $ do
+--    let pageNames = Prelude.map (fst) pages
+--    let pageList = zipWith (\x y -> (y,x)) pageNames ([0..]::[Int])
+--    let pageMap = constDyn $ fromList pageList
+--    menu <- dropdown 0 pageMap def
+--    return $ _dropdown_change menu
+--  divClass "hintArea" $ text " "
+--  return newPageIndex
 
 widgetToPage :: (MonadWidget t m,ParamPatternable p) => m (Dynamic t (p,a,Event t Hint)) -> m (Dynamic t ParamPattern,Event t Hint)
 widgetToPage w = do
@@ -69,24 +69,20 @@ widgetToPage w = do
   h <- liftM (switchPromptlyDyn) $ mapDyn (\(_,_,a) -> a) x
   return (p,h)
 
--- pages :: MonadWidget t m => [(String,m (Dynamic t ParamPattern,Event t Hint))]
-pages = [
-  ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyTransformedPattern never),
-  --("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
-  ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns),
-  ("Single TransformedPattern", widgetToPage $ do
-    let tPat = TransformedPattern (Combine (S $ Group (Live ([Atom "jvbass" (PotentialDelete) (Rep 2)],Once) L4) Inert ) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
-    let tPat2 = TransformedPattern (Combine (S $ Atom "jvbass" (PotentialDelete) (Rep 2)) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
+--pages = [
+--  ("Simple Fixed (s,vowel,up)",widgetToPage $ P.simpleFixedInterface EmptyTransformedPattern never),
+--  --("Text-Only Fixed (s,n,up,vowel)",widgetToPage $ textInterface EmptyTransformedPattern never),
+--  ("Two Stacked Patterns with Liveness controls",widgetToPage $ twoStackedPatterns),
+--  ("Single TransformedPattern", widgetToPage $ do 
+--    let tPat = TransformedPattern (Combine (S $ Group (Live ([Atom "jvbass" (PotentialDelete) (Rep 2)],Once) L4) Inert ) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
+--    let tPat2 = TransformedPattern (Combine (S $ Atom "jvbass" (PotentialDelete) (Rep 2)) Merge) $ TransformedPattern Brak $ UntransformedPattern (Up $ Group (Live ([Atom 0 Inert Once, Atom 4 (Potentials [PotentialDelete,PotentialMakeGroup]) Once],Once) L4) Inert)
 
-    emptyPat <- liftM (tPat2 <$) $ button "init pat example"
-    (pat,ev,hint) <- el "div" $ topLevelTransformedPatternWidget emptyPat
-    --holdDyn "no changes" (fmap (const "changes")  ev) >>= dynText
-    mapDyn (\x-> (x,ev,hint)) pat
-    )
-  ]
-
-
-
+--    emptyPat <- liftM (tPat2 <$) $ button "init pat example"
+--    (pat,ev,hint) <- el "div" $ topLevelTransformedPatternWidget emptyPat
+--    --holdDyn "no changes" (fmap (const "changes")  ev) >>= dynText
+--    mapDyn (\x-> (x,ev,hint)) pat
+--    )
+--  ]
 
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
@@ -112,6 +108,7 @@ midLevelTransformedPatternWidget iTransPat = do
   pat <- mapDyn (\(x,_,_)->x) tuple
   --ev <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_)->x) tuple
   let ev = updated pat
+  --holdDyn "no update yet" (fmap (const "update received") ev) >>= dynText
   hint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x)->x) tuple
   return (pat,ev,hint)
 
@@ -155,13 +152,13 @@ mainPage deltasDown = do
   let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
   let deltaH' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaH
   (aLabel,aValue,aEdits,aHints) <- divClass "eightL" $ do 
-	a <- labelWidget 1 deltasDown
-	(b,c,d) <- topLevelTransformedPatternWidget deltaA'
-	return (a,b,c,d)
+    a <- labelWidget 1 deltasDown
+    (b,c,d) <- topLevelTransformedPatternWidget deltaA'
+    return (a,b,c,d)
   (bLabel,bValue,bEdits,bHints) <- divClass "eightR" $ do
-	a <- labelWidget 3 deltasDown
-	(b,c,d) <- topLevelTransformedPatternWidget deltaB'
-	return (a,b,c,d)
+    a <- labelWidget 3 deltasDown
+    (b,c,d) <- topLevelTransformedPatternWidget deltaB'
+    return (a,b,c,d)
   (cLabel,cValue,cEdits,cHints) <- divClass "eightL" $ do
 	a <- labelWidget 5 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaC'
@@ -218,23 +215,25 @@ lastOrNothing :: [a] -> Maybe a
 lastOrNothing [] = Nothing
 lastOrNothing xs = Just (last xs)
 
---main :: IO ()
---main = do
---  wd <- webDirt
---  stream <- webDirtStream wd
---  protocol <- estuaryProtocol
---  now <- Data.Time.getCurrentTime
---  mainWidget $ divClass "header" $ mdo
---    (values,deltasUp,hints) <- mainPage deltasDown'
---    values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
---    let values'' = updated values'
---    -- tempoEdits <- tempoWidget deltasDown
---    let deltasUp' = leftmost [deltasUp] -- temporarily removed tempo controls
---    deltasDown <- webSocketWidget protocol now deltasUp'
---    let deltasDown' = ffilter (not . Prelude.null) deltasDown
---    diagnostics values deltasUp' deltasDown' hints
---    performEvent_ $ fmap (liftIO . (doHint wd)) hints
---    performEvent_ $ fmap (liftIO . stream) values''
+main :: IO ()
+main = do
+  wd <- webDirt
+  stream <- webDirtStream wd
+  protocol <- estuaryProtocol
+  now <- Data.Time.getCurrentTime
+  mainWidget $ divClass "header" $ mdo
+    (values,deltasUp,hints) <- mainPage deltasDown'
+    values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
+    let values'' = updated values'
+    -- tempoEdits <- tempoWidget deltasDown
+    let deltasUp' = leftmost [deltasUp] -- temporarily removed tempo controls
+    deltasDown <- webSocketWidget protocol now deltasUp'
+
+    let deltasDown' = ffilter (not . Prelude.null) deltasDown
+    -- diagnostics values deltasUp' deltasDown' hints
+    performEvent_ $ fmap (liftIO . (doHint wd)) hints
+    performEvent_ $ fmap (liftIO . stream) values''
+
         
 tempoWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
 tempoWidget deltas = do

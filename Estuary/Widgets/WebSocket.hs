@@ -67,7 +67,7 @@ webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
     dynText statusText
     let addr= tagDyn (_textInput_value addrInput) cButton
     text "Password:"
-    pwdInput <- textInput $ def & textInputConfig_initialValue .~ ""
+    pwdInput <- textInput $ def & textInputConfig_initialValue .~ "" & textInputConfig_inputType .~ "password"
     let pwd = _textInput_value pwdInput
     return (addr,pwd)
   chatSend <- chatWidget deltasDown 
@@ -76,7 +76,7 @@ webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
   return $ deltasDown
 
 chatWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
-chatWidget _ = divClass "chatWidget" $ mdo
+chatWidget deltasDown = divClass "chatWidget" $ mdo
   text "Name:"
   nameInput <- textInput $ def 
   text "Chat:"
@@ -86,5 +86,11 @@ chatWidget _ = divClass "chatWidget" $ mdo
   let send'' = leftmost [send,send']
   let toSend = tag (current $ _textInput_value chatInput) send''
   let resetText = fmap (const "") send''
-  return $ attachDynWith (Chat "") (_textInput_value nameInput) toSend
+  let deltasUp = attachDynWith (Chat "") (_textInput_value nameInput) toSend
+  let chatsOnly = fmap (Prelude.filter isChat) deltasDown
+  mostRecent <- foldDyn (\a b -> take 30 $ (reverse a) ++ b) [] chatsOnly
+  formatted <- mapDyn (fmap (\(Chat _ n m) -> n ++ ": " ++ m)) mostRecent 
+  simpleList formatted chatMsg 
+  return deltasUp
+  where chatMsg v = divClass "chatMessage" $ dynText v
 

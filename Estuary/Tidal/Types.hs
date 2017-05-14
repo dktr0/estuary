@@ -24,9 +24,9 @@ data RepOrDiv = Once | Rep Int | Div Int deriving (Eq)
 
 instance Show RepOrDiv where
   show Once = ""
-  show (Rep 1) = ""
+  --show (Rep 1) = ""
   show (Rep n) = "*" ++ (show n)
-  show (Div 1) = ""
+  --show (Div 1) = ""
   show (Div n) = "/" ++ (show n)
 
 instance JSON RepOrDiv where

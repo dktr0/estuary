@@ -1,4 +1,4 @@
-transformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t (EditSignal a)))
+StransformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern,Event t (EditSignal a)))
 transformedPatternWidget iTransPat _ = el "div" $ do
   deleteButton <- button "-"
   deleted <- toggle False deleteButton

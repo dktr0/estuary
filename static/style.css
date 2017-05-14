@@ -48,6 +48,10 @@ body {
 	padding-right: 15px;
 }
 
+.chatMessage {
+        display: block;
+}
+
 .whiteSpaceAdd { /* possibly a temporary class... */
 	white-space: pre-wrap;
 	display: inline-block;
