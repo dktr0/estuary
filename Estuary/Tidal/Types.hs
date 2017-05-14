@@ -105,19 +105,6 @@ isAtom _ = False
 isBlank (Blank _) = True
 isBlank _ = False
 
--- example: an initial pattern...
--- Group (Live ([Atom "bd" Inert,Atom "sn" Inert,Atom "bd" Inert],Once) L4)
--- user clicks in whitespace to bring up a potential change (bring ups pop up menu in whitespace)...
--- Group (Live ([Atom "bd" Inert,Blank (Potentials [Potential "~",PotentialLiveness L3,Inert]), Atom "sn" Inert,Atom "bd" Inert],Once) L4)
--- user selects change to L3...
--- Group (Live ([Atom "bd" Inert,Atom "sn" Inert,Atom "bd" Inert],Once) L3)
--- user clicks on "sn" intending to delete it (brings up pop up menu on sn)...
--- Group (Edited ([Atom "bd" Inert,Atom "sn" Inert,Atom "bd" Inert],Once) ([Atom "bd" Inert,Atom "sn" (Potentials [Potential "arpy",DeleteMe,Inert]), Atom "bd" Inert],Once))
--- after clicking on delete button
--- Group (Edited ([Atom "bd" Inert,Atom "sn" Inert,Atom "bd" Inert],Once) ([Atom "bd" Inert,Atom "bd" Inert],Once))
--- after clicking eval button a moment later...
--- Group (Live [Atom "bd",Atom "bd"] L3)
-
 generalPatternIsEmptyFuture::GeneralPattern a -> Bool
 generalPatternIsEmptyFuture (Atom _ _ _) = False
 generalPatternIsEmptyFuture (Blank _) = True
@@ -153,7 +140,7 @@ instance Show a => Show (GeneralPattern a) where
   show (Layers (Live (xs,r) _) _) = "[" ++ (intercalate ", " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (Layers (Edited ([],r) _) _) = ""
   show (Layers (Edited (xs,r) _) _) = "[" ++ (intercalate ", " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
-  show (TextPattern x) = x
+  show (TextPattern x) = Prelude.filter (not . (`elem` "?")) x
 
 instance JSON a => JSON (GeneralPattern a) where
   showJSON (Atom a p r) = encJSDict [("a",showJSON a),("p",showJSON p),("r",showJSON r)]
