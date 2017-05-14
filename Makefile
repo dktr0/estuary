@@ -27,6 +27,9 @@ zip:
 	tar czf estuary-build.tgz -C temp .
 	rm -rf temp
 
+WebDirt:
+	cp -Rf static/WebDirt Estuary.jsexe
+
 clean:
 	rm -rf Estuary.jsexe
 	rm -rf $$(stack path --local-install-root)/bin/Estuary.jsexe
