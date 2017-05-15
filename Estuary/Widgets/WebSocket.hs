@@ -59,15 +59,16 @@ alternateWebSocket obj now addr pwd toSend = do
  
 webSocketWidget :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t EstuaryProtocol -> m (Event t [EstuaryProtocol])
 webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
+  let attrs = constDyn ("class" =: "webSocketTextInputs")
   (addr,pwd) <- do 
     text "WebSocket:"
-    addrInput <- textInput $ def & textInputConfig_initialValue .~ ""
-    cButton <- button "Connect"
+    addrInput <- textInput $ def & textInputConfig_initialValue .~ "" & textInputConfig_attributes .~ attrs
+    cButton <- divClass "webSocketButtons" $ button "Connect"
     -- statusText <- holdDyn "Status: " never
     -- dynText statusText
     let addr' = tagDyn (_textInput_value addrInput) cButton
     text "Password:"
-    pwdInput <- textInput $ def & textInputConfig_inputType .~ "password"
+    pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
     let pwd' = _textInput_value pwdInput
     return (addr',pwd')
   chatSend <- chatWidget deltasDown 
@@ -77,12 +78,13 @@ webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
 
 chatWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
 chatWidget deltasDown = mdo
+  let attrs = constDyn ("class" =: "webSocketTextInputs")
   text "Name:"
-  nameInput <- textInput $ def 
+  nameInput <- textInput $ def & textInputConfig_attributes .~ attrs
   text "Chat:"
   let resetText = fmap (const "") send''
-  chatInput <- textInput $ def & textInputConfig_setValue .~ resetText
-  send <- button "Send"
+  chatInput <- textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
+  send <- divClass "webSocketButtons" $ button "Send"
   let send' = fmap (const ()) $ ffilter (==13) $ _textInput_keypress chatInput
   let send'' = leftmost [send,send']
   let toSend = tag (current $ _textInput_value chatInput) send''

@@ -1,21 +1,69 @@
 body {
 	background-color: black;
+	color: hsl(120,100%,80%);
 	height: 100%;
 	margin: 0;
+	font-family: sans;
 }
 
-.estuary { /* the entire interface, contains .header and .page */
+input {
+	background-color: black;
+	color: hsl(120,100%,80%);
+	margin: 1px;
+}
+
+textarea {
+	background-color: black;
+	color: hsl(120,100%,80%);
+}
+
+button {
+	background-color: hsl(0,0%,20%);
+	color: hsl(120,100%,70%);
+	border: none;
+	border-radius: 4px;
+}
+
+.estuary { /* the entire interface, contains .header .page and .footer */
 
 }
 
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	border: 1px solid;
-	border-radius: 10px;
-	background-color: lightgrey;
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+}
+
+.page { /* contains the interface for programming on menu selected in pageMenu */
+	border: 1px solid;
+	border-radius: 10px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
+}
+
+.footer { /* the header area containing logo, webDirt, pageMenu and hintArea */
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
+}
+
+.textWidgetTextArea {
+	width: 100%;
+	border: none;
+	font-size: 100%;
+}
+
+.webSocketTextInputs {
+	border: none;
+}
+
+.webSocketButtons {
+	display: inline;
+	margin-right: 5px;
 }
 
 .logo { /* logo in top left of header area */
@@ -30,6 +78,7 @@ body {
 
 .webDirtMute {
 	float: right;
+	font-size: 60%;
 }
 
 .pageMenu { /* contains page menu in bottom left of header */
@@ -42,15 +91,7 @@ body {
 	width: 49%;
 }
 
-.page { /* contains the interface for programming on menu selected in pageMenu */
-	border: 1px solid;
-	border-radius: 10px;
-	background-color: lightgrey;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-}
+
 
 .chatMessage {
         display: block;
@@ -79,19 +120,58 @@ body {
 	width: 49%;
 }
 
-.eightL { 
-	border: 1px solid black;
-	height: 125px;
+.eightTopL { 
+	border-right: 1px solid hsl(0,0%,10%);
+	border-bottom: 1px solid hsl(0,0%,10%);
+	height: 215px;
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
-	border-right: 1px solid black;
 	width: 48%;
 }
 
-.eightR {
-	border: 1px solid black;
- 	height: 125px;
+.eightTopR {
+	border-left: 1px solid hsl(0,0%,10%);
+	border-bottom: 1px solid hsl(0,0%,10%);
+ 	height: 215px;
+	padding: 5px;
+	display: inline-block;
+	vertical-align: top;
+	width: 48%;
+}
+
+.eightMiddleL { 
+	border-bottom: 1px solid hsl(0,0%,10%);
+	border-right: 1px solid hsl(0,0%,10%);
+	/* height: 125px; */
+	padding: 5px;
+	display: inline-block;
+	vertical-align: top;
+	width: 48%;
+}
+
+.eightMiddleR {
+	border-bottom: 1px solid hsl(0,0%,10%);
+	border-left: 1px solid hsl(0,0%,10%);
+ 	/* height: 125px; */
+	padding: 5px;
+	display: inline-block;
+	vertical-align: top;
+	width: 48%;
+}
+
+.eightBottomL { 
+	border-right: 1px solid hsl(0,0%,10%);
+	/* height: 125px; */
+	padding: 5px;
+	display: inline-block;
+	vertical-align: top;
+	width: 48%;
+}
+
+.eightBottomR {
+	border-left: 1px solid hsl(0,0%,10%);
+ 	/* height: 125px; */
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
@@ -103,7 +183,9 @@ body {
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 5px;
-	padding-right: 5px;
+	padding-right: 5px; 
+
+
 }
 
 .textPatternChain {
@@ -113,10 +195,40 @@ body {
 .labelAndTextPattern {
 	width: 100%;
 	display: inline-flex;
+	margin: 0px;
+	padding: 0px;
+}
+
+.labelWidgetDiv {
+	width: 100%;
+	display: inline-flex;
+}
+
+
+.labelWidgetTextInput {
+	flex:1;
+	color: hsl(120,0%,80%);
+	border: none;
+}
+
+.textInputLabel {
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
 }
 
 .textInputToEndOfLine {
 	flex: 1;
+	vertical-align: middle;
+	font-size: 100%;
+	font-weight: normal;
+	color: hsl(120,100%,80%);
+	border: none;
+	padding: 0px;
+	margin: 0px;
 }
 
 
@@ -139,8 +251,7 @@ body {
 
 /*ex. each row in ICOAH patterns)*/
 .multiPatternTable-tr{
-	vertical-align:center
-	;background-color:lightgrey
+	vertical-align:center;
 }
 
 /*ex. each td in ICOAH patterns)*/
@@ -191,7 +302,8 @@ For aGLNumberWidget_____ see any pattern that takes a list of Numbers as input (
 /*Styles the table*/
 .aGLNumberWidgetTable{
 	display:inline-table;
-	background-color:lightgreen;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	width:100pt;
 	border-spacing:5px;
 	border:2pt solid black
@@ -207,21 +319,24 @@ For aGLNumberWidget_____ see any pattern that takes a list of Numbers as input (
 .aGLNumberWidgetTable-deletetd{
 	width:45px;
 	text-align:center;
-	background-color:lightblue;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	border: 1pt solid black
 }
 
 /*Styles the td that contains the group [] button in double widgets*/
 .aGLNumberWidgetTable-grouptd{
 	text-align:center;
-	background-color:lightblue;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	border: 1pt solid black
 }
 
 /*Styles the td that contains the layer [,,] button in double widgets*/
 .aGLNumberWidgetTable-layertd{
 	text-align:center;
-	background-color:lightblue;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	border: 1pt solid black
 }
 
@@ -236,10 +351,10 @@ For aGLStringWidget_____ see any pattern that takes a list of Strings as input (
 /* styles the 'Table' containing widgets that take strings (ex. ICLCText->s pattern, green widgets. Or ICLC Stacked -> Vowel)*/
 .aGLStringWidgetTable{
 	display:inline-table;
-	background-color:lightgreen;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	width:130pt;
 	border-spacing:5px;
-	border:2pt solid black
 }
 
 /*Styles the td containing the text box in */
@@ -252,22 +367,22 @@ For aGLStringWidget_____ see any pattern that takes a list of Strings as input (
 .aGLStringWidgetTable-deletetd{
 	width:45px;
 	text-align:center;
-	background-color:lightblue;
-	border: 1pt solid black
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 }
 
 /*Styles the td that contains the group [] button in double widgets*/
 .aGLStringWidgetTable-grouptd{
 	text-align:center;
-	background-color:lightblue;
-	border: 1pt solid black
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 }
 
 /*Styles the td that contains the layer [,,] button in double widgets*/
 .aGLStringWidgetTable-layertd{
 	text-align:center;
-	background-color:lightblue;
-	border: 1pt solid black
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 }
 
 
@@ -275,7 +390,8 @@ For aGLStringWidget_____ see any pattern that takes a list of Strings as input (
 .clickListtd{
 	width:60px;
 	text-align:center;
-	background-color:lightblue
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 }
 
 
@@ -299,12 +415,25 @@ to the right of them
 .repOrDivInput {
 	width:25px;
 }
+
+table {
+	border: none;
+}
+
+tr {
+	border: none;
+}
+
+td {
+	border: none;
+}
+
 .countWidgetTable{
 	display: inline-table;
-	background-color:lightgreen;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	width:100pt;
 	border-spacing:5px;
-	border:2pt solid black
 }
 
 /* The td where the widgets value is printed/displayed*/
@@ -315,29 +444,30 @@ to the right of them
 /* The '▲' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
-	background-color:lightblue;
-	border: 1pt solid black
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 }
 
 /* The '▼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
-	background-color:lightblue;
-	border: 1pt solid black
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 }
 
 /* The '-' (delete) arrow td */
 .countWidgetTable-deletetd{
 	text-align:center;
-	background-color:lightblue;
-	border: 1pt solid black;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 }
 
 
 .doubleSliderTable{
 	margin:5px;
 	display:inline-table;
-	background-color:lightgreen;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	width:10%;
 	border-spacing:5px;
 	border: 2pt solid black
@@ -375,11 +505,11 @@ to the right of them
 }
 
 .stackedPatternTable-tr{
-	border: 1px solid grey;
+/*	border: 1px solid grey; */
 }
-3
+
 .stackedPatternTable-td{
-	border: 1px solid grey;
+	/* border: 1px solid grey; */
 	vertical-align: top;
 }
 
@@ -395,8 +525,8 @@ to the right of them
 .popupMenu{
 	top: 105%; 
 	left: 0px; 
-	background-color:rgba(100, 255, 246, 1);
-	border: 2pt solid grey;
+	/* background-color:rgba(100, 255, 246, 1); */
+	border: 2pt solid hsl(0,0%,10%);
 	position: absolute; 
 	z-index: 1;
 }
@@ -404,7 +534,8 @@ to the right of them
 
 /*ex. hit [] - see '+' buttons between widgets*/
 .addButton{
-	background-color:lightblue;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	display:inline-block
 }
 
@@ -414,7 +545,8 @@ to the right of them
 	text-align:center;
 	display:inline-table;
 	max-width:30px;
-	background-color:lightblue;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 	height:30px;
 	vertical-align:middle
 }
@@ -423,5 +555,6 @@ to the right of them
 /* Styles the delete buttons of different patterns in ICLC text widget for example */
 /* go to ICLC Text, and make a new widget*/
 .patternDeleteButton{
-	background-color:salmon;
+	background-color: hsl(0,0%,10%);
+	color: lightgreen;
 }

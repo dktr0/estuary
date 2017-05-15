@@ -573,7 +573,7 @@ countStepWidget step iGenPat _ = elAttr "table" ("class"=:"countWidgetTable") $ 
     upButton <- tdButtonAttrs "▲" () ("class"=:"countWidgetTable-upArrowtd") >>= count
     return upButton
   (deleteEvent,downCount) <- el "tr" $ do
-    deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border 1pt solidblack"
+    deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border 1pt solid black"
     downButton <- tdButtonAttrs "▼" () ("class"=:"countWidgetTable-downArrowtd") >>= count
     return $ (deleteButton, downButton)
   upVal <- combineDyn (\a b ->  (a*step)-(b*step)+(iUpVal)) upCount downCount
@@ -759,10 +759,10 @@ sampleNameWidget iGenPat _ = elAttr "td" ("style"=:"text-align:center") $ elAttr
   let (iSamp,iReps) = getIVal iGenPat
   (sample,upCount) <- elAttr "tr" (empty)$ do
     (samp,_) <- clickListWidget (fromList $ zip [(1::Int)..] ["~","bd","cp","bassfoo","moog", "arpy"]) (Atom iSamp Inert iReps) repeatsEv >>= splitDyn
-    upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border 1pt solid black") >>= count
+    upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black") >>= count
     return $ (samp,upButton)
   (deleteEvent,downCount) <- el "tr" $ do
-    deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border 1pt solidblack"
+    deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border 1pt solid black"
     downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;background-color:lightblue") >>= count
     return $ (deleteButton, downButton)
   downCount'<-mapDyn (\x-> case iReps of (Div i) -> x+i-1; Rep i->x-i+1; otherwise -> x) downCount

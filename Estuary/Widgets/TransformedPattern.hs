@@ -194,10 +194,9 @@ patternCombinatorDropDown iValue _ = do
       (Divide) -> 5
       -- sorry....
 
-
-
-
-
+patternCombinatorDropDown' :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
+patternCombinatorDropDown' _ _ = do
+  return $ constDyn (Merge,never)
 
 
 resettableTransformedPatternWidget :: MonadWidget t m => TransformedPattern -> Event t (EditSignal a) -> m (Dynamic t(TransformedPattern, Event t (EditSignal a),Event t Hint))
@@ -248,7 +247,7 @@ transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do
   let transform = ffilter (\x->case x of TransformMe->True;otherwise->False) sEv
   addAfter <- el "div" $ button "+"
   (comb,tPatTuple) <- el "div" $ do
-      (c,_) <- patternCombinatorDropDown iPatComb never >>= splitDyn
+      (c,_) <- patternCombinatorDropDown' iPatComb never >>= splitDyn
       t <- resettableTransformedPatternWidget iTransPat never  -- this one has to have the 'reset' wrapper around it
       return (c,t)
 
@@ -355,7 +354,7 @@ paramWidget (Chop i) = do
   return val'
 paramWidget (Combine iSPat iPatComb) = do
   sPat <- popupSpecificPatternWidget iSPat never >>= mapDyn (\(x,_,_)->x)
-  comb <- patternCombinatorDropDown iPatComb never >>= mapDyn fst
+  comb <- patternCombinatorDropDown' iPatComb never >>= mapDyn fst
   combineDyn Combine sPat comb
 paramWidget transformer = return $ constDyn transformer
 

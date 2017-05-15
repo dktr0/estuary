@@ -43,13 +43,13 @@ textPatternChainWidget delta = divClass "textPatternChain" $ do
   let deltaB = fmap (\(_,x,_)->x) delta'
   let deltaC = fmap (\(_,_,x)->x) delta'
   (aValue,aEvent) <- divClass "labelAndTextPattern" $ do
-    text "sound" 
+    divClass "textInputLabel" $ text "sound" 
     textWidgetForPatternChain deltaA
   (bValue,bEvent) <- divClass "labelAndTextPattern" $ do 
-    text "up"
+    divClass "textInputLabel" $ text "up"
     textWidgetForPatternChain deltaB
   (cValue,cEvent) <- divClass "labelAndTextPattern" $ do
-    text "vowel"
+    divClass "textInputLabel" $ text "vowel"
     textWidgetForPatternChain deltaC
   value <- combineDyn TextPatternChain aValue bValue
   value' <- combineDyn ($) value cValue
@@ -60,16 +60,17 @@ textPatternChainWidget delta = divClass "textPatternChain" $ do
 
 
 textWidget :: MonadWidget t m => Event t String -> m (Event t String,Event t String)
-textWidget delta = el "div" $ do
-  y <- textArea $ def & textAreaConfig_setValue .~ delta
+textWidget delta = divClass "textWidget" $ do
+  let attrs = constDyn $ fromList [  ("class","textWidgetTextArea"), ("rows","5")]
+  y <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs
   let edits = _textArea_input y
   evals <- button "eval"
   let evals' = tagDyn (_textArea_value y) evals
   return (edits,evals')
 
 labelWidget :: MonadWidget t m => Int -> Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
-labelWidget n delta = divClass "textPatternChain" $ divClass "labelAndTextPattern" $ do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
+labelWidget n delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+  let attrs = constDyn $ ("class" =: "labelWidgetTextInput")
   let delta' = fmap ( (Prelude.filter isLabelEdit) . (Prelude.filter (matchesNumber n)) ) delta
   let delta'' = fmap justText $ fmapMaybe lastOrNothing delta' 
   y <- textInput $ def & textInputConfig_setValue .~ delta'' & textInputConfig_attributes .~ attrs

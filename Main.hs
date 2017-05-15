@@ -39,20 +39,19 @@ main = do
 
 
 estuaryWidget :: MonadWidget t m => T.JSVal -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
-estuaryWidget wd stream protocol now = divClass "estuary" $ do
+estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   muted <- header
-  divClass "page" $ mdo
-    (values,deltasUp,hints) <- mainPage deltasDown'
-    values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
-    values'' <- combineDyn f values' muted
-    let values''' = updated values''
-    deltasDown <- webSocketWidget protocol now deltasUp
-    let deltasDown' = ffilter (not . Prelude.null) deltasDown
-    -- diagnostics values deltasUp deltasDown' hints
-    performEvent_ $ fmap (liftIO . (doHint wd)) hints
-    performEvent_ $ fmap (liftIO . stream) values'''
-    where f x False = x
-          f _ True = toParamPattern EmptyTransformedPattern
+  (values,deltasUp,hints) <- divClass "page" $ mainPage deltasDown'
+  values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
+  values'' <- combineDyn f values' muted
+  let values''' = updated values''
+  deltasDown <- divClass "footer" $ webSocketWidget protocol now deltasUp
+  let deltasDown' = ffilter (not . Prelude.null) deltasDown
+  -- diagnostics values deltasUp deltasDown' hints
+  performEvent_ $ fmap (liftIO . (doHint wd)) hints
+  performEvent_ $ fmap (liftIO . stream) values'''
+  where f x False = x
+        f _ True = toParamPattern EmptyTransformedPattern
 
 
 header :: (MonadWidget t m) => m (Dynamic t Bool)
@@ -60,7 +59,7 @@ header = divClass "header" $ do
   divClass "logo" $ text "estuary (based on TidalCycles and Reflex)"
   muted' <- divClass "webDirt" $ do
     muted <- divClass "webDirtMute" $ do
-      text "WebDirt Mute"
+      text "WebDirt Mute "
       checkbox False $ def
     return $ _checkbox_value muted
   -- newPageIndex <- divClass "pageMenu" $ do
@@ -96,35 +95,35 @@ mainPage deltasDown = do
   let deltaF' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaF
   let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
   let deltaH' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaH
-  (aLabel,aValue,aEdits,aHints) <- divClass "eightL" $ do 
+  (aLabel,aValue,aEdits,aHints) <- divClass "eightTopL" $ do 
     a <- labelWidget 1 deltasDown
     (b,c,d) <- topLevelTransformedPatternWidget deltaA'
     return (a,b,c,d)
-  (bLabel,bValue,bEdits,bHints) <- divClass "eightR" $ do
+  (bLabel,bValue,bEdits,bHints) <- divClass "eightTopR" $ do
     a <- labelWidget 3 deltasDown
     (b,c,d) <- topLevelTransformedPatternWidget deltaB'
     return (a,b,c,d)
-  (cLabel,cValue,cEdits,cHints) <- divClass "eightL" $ do
+  (cLabel,cValue,cEdits,cHints) <- divClass "eightMiddleL" $ do
 	a <- labelWidget 5 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaC'
 	return (a,b,c,d)
-  (dLabel,dValue,dEdits,dHints) <- divClass "eightR" $ do
+  (dLabel,dValue,dEdits,dHints) <- divClass "eightMiddleR" $ do
 	a <- labelWidget 7 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaD'
 	return (a,b,c,d)
-  (eLabel,eValue,eEdits,eHints) <- divClass "eightL" $ do
+  (eLabel,eValue,eEdits,eHints) <- divClass "eightMiddleL" $ do
 	a <- labelWidget 9 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaE'
 	return (a,b,c,d)
-  (fLabel,fValue,fEdits,fHints) <- divClass "eightR" $ do
+  (fLabel,fValue,fEdits,fHints) <- divClass "eightMiddleR" $ do
 	a <- labelWidget 11 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaF'
 	return (a,b,c,d)
-  (gLabel,gEdits,gEvals) <- divClass "eightL" $ do
+  (gLabel,gEdits,gEvals) <- divClass "eightBottomL" $ do
 	a <- labelWidget 13 deltasDown
 	(b,c) <- textWidget deltaG'
 	return (a,b,c)
-  (hLabel,hValue,hEdits,hHints) <- divClass "eightR" $ do 
+  (hLabel,hValue,hEdits,hHints) <- divClass "eightBottomR" $ do 
 	a <- labelWidget 15 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaH'
 	return (a,b,c,d)
