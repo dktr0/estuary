@@ -12,6 +12,7 @@ input {
 	margin: 1px;
 }
 
+
 textarea {
 	background-color: black;
 	color: hsl(120,100%,80%);
@@ -275,6 +276,10 @@ button {
 	display: inline-block;
 }
 
+.atomPopupInput {
+	border: none;
+}
+
 /*ex. ICLCFixed, hit [] on any widget - div wrapped in red border*/
 .generalPattern-group{
 	/*border: 1pt solid red;*/
@@ -414,6 +419,7 @@ to the right of them
 /* for the text input */
 .repOrDivInput {
 	width:25px;
+	border:none;
 }
 
 table {
@@ -525,7 +531,7 @@ td {
 .popupMenu{
 	top: 105%; 
 	left: 0px; 
-	/* background-color:rgba(100, 255, 246, 1); */
+	background-color:hsl(0,0%,10%);
 	border: 2pt solid hsl(0,0%,10%);
 	position: absolute; 
 	z-index: 1;
