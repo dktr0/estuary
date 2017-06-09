@@ -70,7 +70,7 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   let livenessEvMap = attachDynWith (\k v -> fromList $ zip k $ repeat (case v of L3 -> MakeL3; otherwise -> MakeL4)) childKeys livenessEv -- Ev (Map Int MakeL3) -- cycled back to the container to change all children to appropriate liveness
   liveness <- holdDyn L4 livenessEv
   let evalEv = (Eval <$) $ ffilter (\x-> Data.List.elem Eval x) events' -- If any child reports a change 
-  --let groupLayerEv = (RebuildMe <$) $ ffilter (\x-> Data.List.elem MakeGroup x || Data.List.elem MakeLayer x) events'
+  let groupLayerEv = (RebuildMe <$) $ ffilter (\x-> Data.List.elem MakeGroup x || Data.List.elem MakeLayer x) events'
   let deleteContainerEv = (DeleteMe <$) $ ffilter (\x -> Data.List.elem DeleteContainer x) events'
 
   unchangedVal <- holdDyn (fst . Data.Either.partitionEithers . elems $ initialMap i) $ tagDyn values $ leftmost [evalEv, fmap (\x-> if x==L3 then MakeL3 else MakeL4) livenessEv]
@@ -81,7 +81,7 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
   let splitIndex = coincidence $ fmap (const $ fmap (head . keys . Data.Map.filter (==LayerSplit)) events) $ ffilter (Data.List.elem LayerSplit) events'
 
   let splitVal = attachDynWith (\l index-> let (vals,rep) = case l of (Edited (old,reps) new) -> (old,reps); (Live (v,reps) _) -> (v,reps); in Layers (Live ([Group (Live (take (div index 2) vals,Once) L4) Inert, Group (Live (reverse $ take ((length vals) - (div index 2)) (reverse vals), Once) L4) Inert],rep) L4) Inert) live splitIndex
-  let returnEvents = (leftmost [fmap (\x-> if x==L3 then MakeL3 else MakeL4) livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events'])
+  let returnEvents = (leftmost [fmap (\x-> if x==L3 then MakeL3 else MakeL4) livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events',groupLayerEv])
   retVal <- combineDyn (\l p-> returnF i l p returnEvents hints) live potential
   regVal <- mapDyn (\(x,_,_)->x) retVal
   --regVal' <- holdDyn (Blank Inert ) splitVal >>= combineDyn (\reg spV -> case spV of (Blank _ ) -> reg; otherwise -> (spV,returnEvents,hints)) regVal
@@ -327,20 +327,14 @@ popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
 
   rdv <- holdDyn iRepDiv $ fmap (\x-> if x then Rep 4 else Once) (updated repDivToggle)  
 
-
-  -- test <- combineDyn (,) potential rdv
-  -- atomVal <- combineDyn (\val (pot,r)-> Atom val pot r) inVal test
-
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repDivVal
-
-  -- holdDyn "nothing..." (fmap show $ updated atomVal) >>= dynText
 
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
   let groupEvVal = tag (current groupVal) groupEv
   layerVal <- combineDyn (\v l -> if l==L4 then Layers (Live ([v],Once) L4) Inert  else Layers (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
   let layerEvVal = tag (current layerVal) layerEv
-  --genPat <- liftM joinDyn $ holdDyn atomVal $ leftmost $ fmap (fmap constDyn) [groupEvVal,layerEvVal]
-  let genPat = atomVal
+  genPat <- liftM joinDyn $ holdDyn atomVal $ leftmost $ fmap (fmap constDyn) [groupEvVal,layerEvVal]
+  --let genPat = atomVal
   let upSig = fmap toEditSigGenPat $ leftmost [deleteEv, livenessEv,(RebuildMe <$) groupEv, (RebuildMe <$) layerEv] --, (RebuildMe <$) $ updated repDivVal]
   mapDyn (\x-> (x,upSig,hintEv)) genPat
   where
