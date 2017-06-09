@@ -85,7 +85,7 @@ mainPage deltasDown = do
   let deltaD = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 8)) ) deltasDown
   let deltaE = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 10)) ) deltasDown
   let deltaF = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 12)) ) deltasDown
-  let deltaG = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 14)) ) deltasDown
+  let deltaG = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 14)) ) deltasDown
   let deltaH = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 16)) ) deltasDown
   let deltaA' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaA
   let deltaB' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaB
@@ -93,7 +93,7 @@ mainPage deltasDown = do
   let deltaD' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaD
   let deltaE' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaE
   let deltaF' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaF
-  let deltaG' = fmap justTextCode $ fmapMaybe lastOrNothing deltaG
+  let deltaG' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaG
   let deltaH' = fmap justTextCode $ fmapMaybe lastOrNothing deltaH
   (aLabel,aValue,aEdits,aHints) <- divClass "eightTopL" $ do 
     a <- labelWidget 1 deltasDown
@@ -119,10 +119,10 @@ mainPage deltasDown = do
 	a <- labelWidget 11 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaF'
 	return (a,b,c,d)
-  (gLabel,gEdits,gEvals) <- divClass "eightBottomL" $ do
+  (gLabel,gValue,gEdits,gHints) <- divClass "eightBottomL" $ do
 	a <- labelWidget 13 deltasDown
-	(b,c) <- textWidget deltaG'
-	return (a,b,c)
+	(b,c,d) <- textPatternChainWidget deltaG'
+	return (a,b,c,d)
   (hLabel,hEdits,hEvals) <- divClass "eightBottomR" $ do 
 	a <- labelWidget 15 deltasDown
 	(b,c) <- textWidget deltaH'
@@ -133,26 +133,26 @@ mainPage deltasDown = do
   dValue' <- mapDyn (singleton 8) dValue
   eValue' <- mapDyn (singleton 10) eValue
   fValue' <- mapDyn (singleton 12) fValue
+  gValue' <- mapDyn (singleton 14) gValue
   valuesB <- combineDyn (union) aValue' bValue'
   valuesC <- combineDyn (union) valuesB cValue'
   valuesD <- combineDyn (union) valuesC dValue'
   valuesE <- combineDyn (union) valuesD eValue'
-  values <- combineDyn (union) valuesE fValue'
+  valuesF <- combineDyn (union) valuesE fValue'
+  values <- combineDyn (union) valuesF gValue'
   let aDeltaUp = fmap (EstuaryEdit "" 2) aEdits
   let bDeltaUp = fmap (EstuaryEdit "" 4) bEdits
   let cDeltaUp = fmap (EstuaryEdit "" 6) cEdits
   let dDeltaUp = fmap (EstuaryEdit "" 8) dEdits
   let eDeltaUp = fmap (EstuaryEdit "" 10) eEdits
   let fDeltaUp = fmap (EstuaryEdit "" 12) fEdits
-  let gEditsUp = fmap (TextEdit "" 14) gEdits
-  let gEvalsUp = fmap (TextEval "" 14) gEvals
-  let gDeltaUp = leftmost [gEditsUp,gEvalsUp]
+  let gDeltaUp = fmap (EstuaryEdit "" 14) gEdits
   let hEditsUp = fmap (TextEdit "" 16) hEdits
   let hEvalsUp = fmap (TextEval "" 16) hEvals
   let hDeltaUp = leftmost [hEditsUp,hEvalsUp]
   let labelsUp = leftmost [aLabel,bLabel,cLabel,dLabel,eLabel,fLabel,gLabel,hLabel]
   let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,gDeltaUp,hDeltaUp,labelsUp]
-  let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints]
+  let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints,gHints]
   return (values,deltasUp,hints)
 
 
