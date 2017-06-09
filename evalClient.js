@@ -46,8 +46,8 @@ var connectWs = function() {
 
     ws.on('message',function(m) {
       var n = JSON.parse(m);
-      if(n.TextEval != null) {
-        var s = n.code;
+      if(n.TEval != null) {
+        var s = n.c;
         if(newlines) { // convert newline sequences to whitespace
             s = s.replace(/\n|\n\r|\r\n|\r/g," ");
         }

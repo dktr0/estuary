@@ -26,14 +26,6 @@ foreign import javascript unsafe
   sendFFI :: T.JSVal -> T.JSVal -> IO ()
 
 foreign import javascript unsafe
-  "$r = $1.getTextEdit($2)"
-  getTextEditFFI :: T.JSVal -> Int -> IO T.JSVal
-
-foreign import javascript unsafe
-  "$r = $1.getEstuaryEdit($2)"
-  getEstuaryEditFFI :: T.JSVal -> Int -> IO T.JSVal
-
-foreign import javascript unsafe
   "$r = $1.getEdits()"
   getEditsFFI :: T.JSVal -> IO T.JSVal
 
@@ -49,20 +41,6 @@ setUrl (EstuaryProtocolObject x) url = setUrlFFI x (Prim.toJSString url)
 
 send :: EstuaryProtocolObject -> String -> IO ()
 send (EstuaryProtocolObject x) y = sendFFI x (Prim.toJSString y)
-
-{-
-getTextEdit :: EstuaryProtocolObject -> Int -> IO EstuaryProtocol
-getTextEdit (EstuaryProtocolObject x) n = do 
-  y <- getTextEditFFI x n
-  return $ TextEdit "" n (Prim.fromJSString y)
-
-getEstuaryEdit :: EstuaryProtocolObject -> Int -> IO EstuaryProtocol
-getEstuaryEdit (EstuaryProtocolObject x) n = do 
-  y <- getEstuaryEditFFI x n
-  return $ f (decode (Prim.fromJSString y))
-  where f (Ok (EstuaryEdit p n' z)) = EstuaryEdit p n' z
-        f _ = ProtocolError "not EstuaryEdit or some other problem?"
--}
 
 getEdits :: EstuaryProtocolObject -> IO [EstuaryProtocol]
 getEdits (EstuaryProtocolObject x) = do 

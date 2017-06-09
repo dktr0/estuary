@@ -76,6 +76,10 @@ logTempo();
 var tcpPort = parsed['tcp-port'];
 if(tcpPort==null) tcpPort = 8002;
 
+var estuaries = new Array;
+var texts = new Array;
+var labels = new Array;
+
 // create HTTP (Express) server
 var server = http.createServer();
 var app = express();
@@ -119,10 +123,32 @@ wss.broadcastNoOrigin = function(originWs,data) {
   }
 };
 
+function sendObject(ws,data) {
+  var s;
+  try {
+    s = JSON.stringify(data);
+  }
+  catch(e) {
+    console.log("warning: exception in sendObject stringifying JSON data");
+    return;
+  }
+  try {
+    ws.send(s);
+  }
+  catch(e) {
+    console.log("warning: exception in sendObject during websocket send");
+  }
+}
+  
 wss.on('connection',function(ws) {
   var ip = ws.upgradeReq.connection.remoteAddress;
   console.log("new WebSocket connection: " + ip);
 
+  // send stored state of estuary edit panels, text edit panels and labels to new client
+  for (var k in estuaries) sendObject(ws,{ 'EEdit':parseInt(k), 'c':estuaries[k], p:'' });
+  for (var k in texts) sendObject(ws,{ 'TEdit':parseInt(k), 'c':texts[k], p:'' });
+  for (var k in labels) sendObject(ws,{ 'LEdit':parseInt(k), 't':labels[k], p:'' });
+  
   ws.on('message',function(m) {
       var n;
       try {
@@ -138,6 +164,7 @@ wss.on('connection',function(ws) {
       else if(n.TEdit != null) {
         console.log("TEdit " + n.TEdit + " " + n.c);
         var o = { 'TEdit':n.TEdit, 'c':n.c, p: '' };
+	texts[n.TEdit] = n.c;
         wss.broadcastNoOrigin(ws,o);
       }
       else if(n.TEval != null) {
@@ -148,11 +175,13 @@ wss.on('connection',function(ws) {
       else if(n.LEdit != null) {
         console.log("LEdit " + n.LEdit + " " + n.t);
         var o = { 'LEdit':n.LEdit, 't':n.t, p: '' };
+	labels[parseInt(n.LEdit)] = n.t;
         wss.broadcastNoOrigin(ws,o);
       }
       else if(n.EEdit != null) {
         console.log("EEdit" + m);
         var o = { 'EEdit':n.EEdit, 'c':n.c, p: '' };
+	estuaries[n.EEdit] = n.c;
         wss.broadcastNoOrigin(ws,o);
       }
       else if(n.Chat != null) {
