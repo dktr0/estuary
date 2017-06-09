@@ -163,7 +163,7 @@ button {
 
 .eightBottomL { 
 	border-right: 1px solid hsl(0,0%,10%);
-	/* height: 125px; */
+	height: 215px; 
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
@@ -172,7 +172,7 @@ button {
 
 .eightBottomR {
 	border-left: 1px solid hsl(0,0%,10%);
- 	/* height: 125px; */
+ 	height: 215px; 
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;

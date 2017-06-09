@@ -111,48 +111,34 @@ mainPage deltasDown = do
 	a <- labelWidget 7 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaD'
 	return (a,b,c,d)
-  (eLabel,eValue,eEdits,eHints) <- divClass "eightMiddleL" $ do
+  (eLabel,eValue,eEdits,eHints) <- divClass "eightBottomL" $ do
 	a <- labelWidget 9 deltasDown
 	(b,c,d) <- textPatternChainWidget deltaE'
 	return (a,b,c,d)
-  (fLabel,fValue,fEdits,fHints) <- divClass "eightMiddleR" $ do
-	a <- labelWidget 11 deltasDown
-	(b,c,d) <- textPatternChainWidget deltaF'
-	return (a,b,c,d)
-  (gLabel,gValue,gEdits,gHints) <- divClass "eightBottomL" $ do
-	a <- labelWidget 13 deltasDown
-	(b,c,d) <- textPatternChainWidget deltaG'
-	return (a,b,c,d)
-  (hLabel,hEdits,hEvals) <- divClass "eightBottomR" $ do 
-	a <- labelWidget 15 deltasDown
-	(b,c) <- textWidget deltaH'
-	return (a,b,c)
+  (fLabel,fValue,fEdits,fHints) <- divClass "eightBottomR" $ do
+    	a <- labelWidget 1 deltasDown
+    	(b,c,d) <- topLevelTransformedPatternWidget deltaA'
+    	return (a,b,c,d)
   aValue' <- mapDyn (singleton 2) aValue
   bValue' <- mapDyn (singleton 4) bValue
   cValue' <- mapDyn (singleton 6) cValue
   dValue' <- mapDyn (singleton 8) dValue
   eValue' <- mapDyn (singleton 10) eValue
   fValue' <- mapDyn (singleton 12) fValue
-  gValue' <- mapDyn (singleton 14) gValue
   valuesB <- combineDyn (union) aValue' bValue'
   valuesC <- combineDyn (union) valuesB cValue'
   valuesD <- combineDyn (union) valuesC dValue'
   valuesE <- combineDyn (union) valuesD eValue'
-  valuesF <- combineDyn (union) valuesE fValue'
-  values <- combineDyn (union) valuesF gValue'
+  values <- combineDyn (union) valuesE fValue'
   let aDeltaUp = fmap (EstuaryEdit "" 2) aEdits
   let bDeltaUp = fmap (EstuaryEdit "" 4) bEdits
   let cDeltaUp = fmap (EstuaryEdit "" 6) cEdits
   let dDeltaUp = fmap (EstuaryEdit "" 8) dEdits
   let eDeltaUp = fmap (EstuaryEdit "" 10) eEdits
   let fDeltaUp = fmap (EstuaryEdit "" 12) fEdits
-  let gDeltaUp = fmap (EstuaryEdit "" 14) gEdits
-  let hEditsUp = fmap (TextEdit "" 16) hEdits
-  let hEvalsUp = fmap (TextEval "" 16) hEvals
-  let hDeltaUp = leftmost [hEditsUp,hEvalsUp]
-  let labelsUp = leftmost [aLabel,bLabel,cLabel,dLabel,eLabel,fLabel,gLabel,hLabel]
-  let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,gDeltaUp,hDeltaUp,labelsUp]
-  let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints,gHints]
+  let labelsUp = leftmost [aLabel,bLabel,cLabel,dLabel,eLabel,fLabel]
+  let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,labelsUp]
+  let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints]
   return (values,deltasUp,hints)
 
 
