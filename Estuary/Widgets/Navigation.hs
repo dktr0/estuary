@@ -6,6 +6,9 @@ import Reflex
 import Reflex.Dom
 import Estuary.Protocol.JSON
 import Estuary.WebDirt.Foreign
+import Estuary.Tidal.Types
+import Control.Monad (liftM)
+
 
 data Navigation =
   Splash |
@@ -15,22 +18,21 @@ data Navigation =
   Lobby |
   Collaborate
 
--- note: temporary [a] in following is meant to become [Part] where a Part is a ParamPatternable notation
 
-navigation :: MonadWidget t m => Event t EstuaryProtocol ->
-  m (Dynamic t [a],Event t EstuaryProtocol,Event t Hint)
+navigation :: MonadWidget t m => Event t [EstuaryProtocol] ->
+  m (Dynamic t [TransformedPattern],Event t EstuaryProtocol,Event t Hint)
 navigation wsDown = mdo
   let initialPage = page wsDown Splash
   let rebuild = fmap (page wsDown) navEvents
   w <- widgetHold initialPage rebuild
-  let values = joinDyn $ mapDyn (\(x,_,_,_)->x) w
-  let wsUp = switchPromptlyDyn $ mapDyn (\(_,x,_,_)->x) w
-  let hints = switchPromptlyDyn $ mapDyn (\(_,_,x,_)->x) w
-  let navEvents = switchPromptlyDyn $ mapDyn (\(_,_,_,x)->x) w
+  values <- liftM joinDyn $ mapDyn (\(x,_,_,_)->x) w
+  wsUp <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_,_)->x) w
+  hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x,_)->x) w
+  navEvents <- liftM switchPromptlyDyn $ mapDyn (\(_,_,_,x)->x) w
   return (values,wsUp,hints)
 
-page :: MonadWidget t m => Event t EstuaryProtocol -> Navigation ->
-  m (Dynamic t [a],Event t EstuaryProtocol,Event t Hint,Event t Navigation)
+page :: MonadWidget t m => Event t [EstuaryProtocol] -> Navigation ->
+  m (Dynamic t [TransformedPattern],Event t EstuaryProtocol,Event t Hint,Event t Navigation)
 
 page wsDown Splash = do
   x <- liftM (TutorialList <$)  $ button "Tutorials"

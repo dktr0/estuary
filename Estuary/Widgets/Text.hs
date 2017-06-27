@@ -3,6 +3,7 @@ module Estuary.Widgets.Text where
 import Reflex
 import Reflex.Dom
 import Estuary.Tidal.Types
+import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Container
 import Estuary.Widgets.GeneralPattern
 import Estuary.Reflex.Utility

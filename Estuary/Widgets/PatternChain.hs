@@ -6,6 +6,7 @@ import Reflex
 import Reflex.Dom
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
+import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Container
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility

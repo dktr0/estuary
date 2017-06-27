@@ -1,7 +1,7 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
 module Estuary.WebDirt.Foreign where
-import Sound.Tidal.Context
+import qualified Sound.Tidal.Context as Tidal
 import Data.Map
 import Data.Maybe
 import GHC.IORef
@@ -12,6 +12,9 @@ import qualified GHCJS.Marshal.Pure as P
 import JavaScript.Object.Internal as O
 import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
+import Control.Monad.IO.Class (liftIO)
+import Reflex
+import Reflex.Dom
 
 data WebDirt = WebDirt T.JSVal
 
@@ -45,16 +48,16 @@ foreign import javascript unsafe
   "try { ___globalWebDirt.playSample($2)} catch(e) { console.log(e)} "
   playSample_ :: T.JSVal -> T.JSVal -> IO ()
 
-playSample :: WebDirt -> (Double,ParamMap) -> IO ()
+playSample :: WebDirt -> (Double,Tidal.ParamMap) -> IO ()
 playSample (WebDirt j) (t,e) = do
   object <- createObjFromMap t e
   playSample_ j object
 
 foreign import javascript unsafe "$r = {};" createEmpty:: IO T.JSVal
 
-createObjFromMap:: Double -> ParamMap -> IO T.JSVal
+createObjFromMap:: Double -> Tidal.ParamMap -> IO T.JSVal
 createObjFromMap when paramMap = do
-  let paramMap' = mapKeys (\x-> case name x of "n"->"sample_n"; "s"->"sample_name";otherwise->name x) paramMap -- Map String (Value)
+  let paramMap' = mapKeys (\x-> case Tidal.name x of "n"->"sample_n"; "s"->"sample_name";otherwise->Tidal.name x) paramMap -- Map String (Value)
   let paramMap'' = Data.Map.map (maybe (T.nullRef) (valueToJSVal)) paramMap':: Map String T.JSVal -- Map String JSVal
   obj <- createEmpty
   --x <- return $ mapWithKey (\k v -> addProp obj (P.pToJSVal k) v) paramMap''
@@ -71,10 +74,10 @@ addProps obj paramList = do
   obj' <- addProp obj (P.pToJSVal $ fst (paramList!!0)) (snd $ paramList!!0)
   addProps obj' (tail paramList)
 
-valueToJSVal :: Value -> T.JSVal
-valueToJSVal (VI x) = P.pToJSVal x
-valueToJSVal (VF x) = P.pToJSVal x
-valueToJSVal (VS x) = P.pToJSVal x
+valueToJSVal :: Tidal.Value -> T.JSVal
+valueToJSVal (Tidal.VI x) = P.pToJSVal x
+valueToJSVal (Tidal.VF x) = P.pToJSVal x
+valueToJSVal (Tidal.VS x) = P.pToJSVal x
 
 foreign import javascript unsafe
   "$1.syncWithEsp($2)"

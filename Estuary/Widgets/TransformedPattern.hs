@@ -5,6 +5,7 @@ module Estuary.Widgets.TransformedPattern where
 import Reflex
 import Reflex.Dom
 import Estuary.Tidal.Types
+import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Utility
 import Estuary.Widgets.PatternTransformer
 import Estuary.Widgets.Generic

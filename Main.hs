@@ -9,7 +9,7 @@ import Estuary.Protocol.JSON
 import Estuary.Protocol.Foreign
 import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
-import Estuary.Widgets.StackedPatterns
+import Estuary.Widgets.Navigation
 import Estuary.Widgets.PatternChain as P
 import Estuary.Widgets.GeneralPattern as G -- for testing the Refactor of general container
 import Estuary.Widgets.TransformedPattern
@@ -19,7 +19,6 @@ import Sound.Tidal.Context (ParamPattern)
 import Estuary.WebDirt.Foreign
 import Estuary.WebDirt.Stream
 import Estuary.Widgets.SpecificPattern
-import Estuary.Widgets.WebDirt
 import Data.Map
 import Control.Monad.IO.Class (liftIO)
 import Estuary.Widgets.WebSocket
@@ -37,12 +36,16 @@ main = do
   now <- Data.Time.getCurrentTime
   mainWidget $ estuaryWidget wd stream protocol now
 
+-- navigation :: MonadWidget t m => Event t [EstuaryProtocol] ->
+--  m (Dynamic t [TransformedPattern],Event t EstuaryProtocol,Event t Hint)
 
-estuaryWidget :: MonadWidget t m => T.JSVal -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
+estuaryWidget :: MonadWidget t m => WebDirt -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   muted <- header
-  (values,deltasUp,hints) <- divClass "page" $ mainPage deltasDown'
-  values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
+  -- (values,deltasUp,hints) <- divClass "page" $ mainPage deltasDown'
+  -- values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
+  (values,deltasUp,hints) <- divClass "page" $ navigation deltasDown'
+  values' <- mapDyn (toParamPattern . StackedPatterns) values
   values'' <- combineDyn f values' muted
   let values''' = updated values''
   deltasDown <- divClass "footer" $ webSocketWidget protocol now deltasUp
@@ -104,21 +107,21 @@ mainPage deltasDown = do
     (b,c,d) <- topLevelTransformedPatternWidget deltaB'
     return (a,b,c,d)
   (cLabel,cValue,cEdits,cHints) <- divClass "eightMiddleL" $ do
-	a <- labelWidget 5 deltasDown
-	(b,c,d) <- textPatternChainWidget deltaC'
-	return (a,b,c,d)
+        a <- labelWidget 5 deltasDown
+        (b,c,d) <- textPatternChainWidget deltaC'
+        return (a,b,c,d)
   (dLabel,dValue,dEdits,dHints) <- divClass "eightMiddleR" $ do
-	a <- labelWidget 7 deltasDown
-	(b,c,d) <- textPatternChainWidget deltaD'
-	return (a,b,c,d)
+        a <- labelWidget 7 deltasDown
+        (b,c,d) <- textPatternChainWidget deltaD'
+        return (a,b,c,d)
   (eLabel,eValue,eEdits,eHints) <- divClass "eightBottomL" $ do
-	a <- labelWidget 9 deltasDown
-	(b,c,d) <- textPatternChainWidget deltaE'
-	return (a,b,c,d)
+        a <- labelWidget 9 deltasDown
+        (b,c,d) <- textPatternChainWidget deltaE'
+        return (a,b,c,d)
   (fLabel,fValue,fEdits,fHints) <- divClass "eightBottomR" $ do
-    	a <- labelWidget 1 deltasDown
-    	(b,c,d) <- topLevelTransformedPatternWidget deltaA'
-    	return (a,b,c,d)
+        a <- labelWidget 1 deltasDown
+        (b,c,d) <- topLevelTransformedPatternWidget deltaA'
+        return (a,b,c,d)
   aValue' <- mapDyn (singleton 2) aValue
   bValue' <- mapDyn (singleton 4) bValue
   cValue' <- mapDyn (singleton 6) cValue

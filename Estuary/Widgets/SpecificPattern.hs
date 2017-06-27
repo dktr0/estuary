@@ -4,6 +4,7 @@ where
 
 import Reflex
 import Reflex.Dom
+import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Container
 import qualified Estuary.Widgets.GeneralPattern as G
 import Estuary.Tidal.Types
