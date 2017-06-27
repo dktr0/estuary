@@ -20,7 +20,6 @@ import qualified GHCJS.Types as T
 import qualified GHCJS.Marshal.Pure as P
 
 
-data Hint = SampleHint String deriving (Eq,Show)
 
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer | LayerSplit | TransformMe deriving (Eq)
@@ -70,8 +69,6 @@ instance Show a => Show (EditSignal a) where
   show LayerSplit = "LayerSplit"
   show TransformMe = "Transform"
 
-doHint :: T.JSVal -> Hint -> IO ()
-doHint wd (SampleHint x) = sampleHint wd (P.pToJSVal x)
 
 isChangeValue::EditSignal a -> Bool
 isChangeValue (ChangeValue _) = True
@@ -248,7 +245,7 @@ repDivWidget' iVal _ = elClass "span" "repOrDiv" $ mdo
   repTog <- toggle iToggle repDivButton
   showRep <- mapDyn (\x-> if x then " * " else " / ") repTog
   let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
-  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number" 
+  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number"
   let numTextField = _textInput_value textField
   num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
   dynVal <- combineDyn (\tog val -> if tog then Rep val else Div val) repTog num
@@ -265,7 +262,7 @@ repDivWidget'' iVal _ = elClass "span" "repOrDiv" $ mdo
   repTog <- toggle iToggle repDivButton
   showRep <- mapDyn (\x-> if x then " * " else " / ") repTog
   let textAttrs = constDyn $ fromList $ zip ["min", "class"] ["1","repOrDivInput"]
-  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number" 
+  textField <- textInput $ def & textInputConfig_attributes .~ textAttrs & textInputConfig_initialValue .~ (show iNum) & textInputConfig_inputType .~"number"
   let numTextField = _textInput_value textField
   num <- mapDyn (\str-> if isJust (readMaybe str::Maybe Int) then (read str::Int) else iNum) numTextField
   combineDyn (\tog val -> if tog then Rep val else Div val) repTog num
