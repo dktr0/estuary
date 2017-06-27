@@ -13,39 +13,44 @@ import JavaScript.Object.Internal as O
 import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
 
+data WebDirt = WebDirt T.JSVal
+
 --foreign import javascript unsafe
 --  "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null, function() {console.log('callback from WebDirt constructor completed');});"
 --  webDirt :: IO T.JSVal
 
 foreign import javascript unsafe
   "$r = ___globalWebDirt"
-  webDirt:: IO T.JSVal
+  webDirt_ :: IO T.JSVal
+
+webDirt :: IO WebDirt
+webDirt = webDirt_ >>= return . WebDirt
 
 --foreign import javascript unsafe
 --  "try { $1.initializeWebAudio() } catch(e) { console.log(e) }"
 --  initializeWebAudio :: T.JSVal -> IO ()
 
+-- foreign import javascript unsafe
+--   "console.log($1)"
+--  testLog:: T.JSVal -> IO ()
+
+foreign import javascript unsafe
+  "try { $r = $1.getCurrentTime() } catch(e) { console.log(e)} "
+  getCurrentTime_ :: T.JSVal -> IO Double
+
+getCurrentTime :: WebDirt -> IO Double
+getCurrentTime (WebDirt j) = getCurrentTime_ j
+
 foreign import javascript unsafe
   "try { ___globalWebDirt.playSample($2)} catch(e) { console.log(e)} "
-  playSample':: T.JSVal -> T.JSVal -> IO ()
+  playSample_ :: T.JSVal -> T.JSVal -> IO ()
 
-foreign import javascript unsafe
-  "console.log($1)"
-  testLog:: T.JSVal -> IO ()
-
-foreign import javascript unsafe
-  "try { $r = ___globalWebDirt.getCurrentTime() } catch(e) { console.log(e)} "
-  getCurrentTime :: T.JSVal -> IO Double
-
-playSample::T.JSVal -> (Double,ParamMap) -> IO()
-playSample webDirt (t,e) = do
+playSample :: WebDirt -> (Double,ParamMap) -> IO ()
+playSample (WebDirt j) (t,e) = do
   object <- createObjFromMap t e
-  playSample' webDirt object
-  return ()
+  playSample_ j object
 
 foreign import javascript unsafe "$r = {};" createEmpty:: IO T.JSVal
--- "
-
 
 createObjFromMap:: Double -> ParamMap -> IO T.JSVal
 createObjFromMap when paramMap = do
@@ -73,31 +78,42 @@ valueToJSVal (VS x) = P.pToJSVal x
 
 foreign import javascript unsafe
   "$1.syncWithEsp($2)"
-  syncWithEsp' :: T.JSVal -> T.JSVal -> IO ()
+  syncWithEsp_ :: T.JSVal -> T.JSVal -> IO ()
 
-syncWithEsp :: T.JSVal -> String -> IO ()
-syncWithEsp webDirt url = syncWithEsp' webDirt (pToJSVal url)
+syncWithEsp :: WebDirt -> String -> IO ()
+syncWithEsp (WebDirt j) url = syncWithEsp_ j (pToJSVal url)
 
 foreign import javascript unsafe
   "$1.setTempo({time:$2,beats:$3,bpm:$4})"
-  setTempo :: T.JSVal -> Double -> Double -> Double -> IO ()
+  setTempo_ :: T.JSVal -> Double -> Double -> Double -> IO ()
+
+setTempo :: WebDirt -> Double -> Double -> Double -> IO ()
+setTempo (WebDirt j) time beats bpm = setTempo_ j time beats bpm
 
 foreign import javascript unsafe
   "$r = $1.tempo"
-  tempo' :: T.JSVal -> IO T.JSVal
+  tempo_ :: T.JSVal -> IO T.JSVal
 
 foreign import javascript safe
   "$r = $1[$2]"
   deindexJSObject :: T.JSVal -> T.JSVal -> IO T.JSVal
 
-tempo :: T.JSVal -> IO (Double,Double,Double)
-tempo w = do
-  x <- tempo' w
+tempo :: WebDirt -> IO (Double,Double,Double)
+tempo (WebDirt j) = do
+  x <- tempo_ j
   time <- deindexJSObject x (pToJSVal "time")
   beats <- deindexJSObject x (pToJSVal "beats")
   bpm <- deindexJSObject x (pToJSVal "bpm")
   return (pFromJSVal time,pFromJSVal beats,pFromJSVal bpm)
 
+data Hint = SampleHint String deriving (Eq,Show)
+
 foreign import javascript safe
   "$1.sampleHint($2)"
-  sampleHint :: T.JSVal -> T.JSVal -> IO ()
+  sampleHint_ :: T.JSVal -> T.JSVal -> IO ()
+
+doHint :: WebDirt -> Hint -> IO ()
+doHint (WebDirt j) (SampleHint x) = sampleHint_ j (P.pToJSVal x)
+
+performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
+performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev

@@ -48,7 +48,7 @@ estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   deltasDown <- divClass "footer" $ webSocketWidget protocol now deltasUp
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   -- diagnostics values deltasUp deltasDown' hints
-  performEvent_ $ fmap (liftIO . (doHint wd)) hints
+  performHint wd hints
   performEvent_ $ fmap (liftIO . stream) values'''
   where f x False = x
         f _ True = toParamPattern EmptyTransformedPattern
@@ -72,7 +72,7 @@ header = divClass "header" $ do
   -- return newPageIndex
   return muted'
 
- 
+
 mainPage :: MonadWidget t m => Event t [EstuaryProtocol]
   -> m
     (Dynamic t (Map Int TransformedPattern), -- values for local use
@@ -95,7 +95,7 @@ mainPage deltasDown = do
   let deltaF' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaF
   let deltaG' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaG
   let deltaH' = fmap justTextCode $ fmapMaybe lastOrNothing deltaH
-  (aLabel,aValue,aEdits,aHints) <- divClass "eightTopL" $ do 
+  (aLabel,aValue,aEdits,aHints) <- divClass "eightTopL" $ do
     a <- labelWidget 1 deltasDown
     (b,c,d) <- topLevelTransformedPatternWidget deltaA'
     return (a,b,c,d)
@@ -174,4 +174,3 @@ diagnostics values deltasUp deltasDown hints = do
   el "div" $ do
     text "Hints:"
     (holdDyn "" $ fmap show hints) >>= display
-
