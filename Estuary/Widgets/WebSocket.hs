@@ -34,7 +34,7 @@ estuaryWebSocket addr pwd toSend = mdo
 
 -- a resettingWebSocket is a wrapper of estuaryWebSocket above so that the webSocket address
 -- is specified by event updates. A new address event causes the previous estuaryWebSocket to
--- be discarded and a new one to be created. But we're not using this - instead we use 
+-- be discarded and a new one to be created. But we're not using this - instead we use
 -- alternateWebSocket below (which works with old reflex via our javascript ffi workaround)
 
 resettingWebSocket :: MonadWidget t m => Event t String -> Dynamic t String -> Event t EstuaryProtocol
@@ -44,36 +44,31 @@ resettingWebSocket addr pwd toSend = do
   ws <- widgetHold (return never) resets
   return $ switchPromptlyDyn ws
 
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t String -> Dynamic t String -> Event t EstuaryProtocol -> m (Event t [EstuaryProtocol])
-alternateWebSocket obj now addr pwd toSend = do
-  ticks <- tickLossy (0.1::NominalDiffTime) now
-  let addr' = fmap ("ws://" ++) addr
-  performEvent_ $ fmap (liftIO . (setUrl obj)) addr'
+alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Dynamic t String -> Event t EstuaryProtocol ->
+  m (Event t [EstuaryProtocol],Dynamic t String)
+alternateWebSocket obj now pwd toSend = do
   let toSend' = attachDynWith setPassword pwd toSend
-  let toSend'' = fmap (encode) toSend'
-  performEvent_ $ fmap (liftIO . (send obj)) toSend''
-  performEvent $ fmap (liftIO . (\_ -> getEdits obj)) ticks
-  
+  performEvent_ $ fmap (liftIO . (send obj) . encode) toSend'
+  ticks <- tickLossy (0.1::NominalDiffTime) now
+  edits <- performEvent $ fmap (liftIO . (\_ -> getEdits obj)) ticks
+  status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
+  status' <- holdDyn "---" status
+  return (edits,status')
+
 -- finally, a webSocketWidget includes GUI elements for setting the webSocket address and
 -- password, and the chat interface, and connects these GUI elements to a resettingWebSocket (i.e. estuaryWebSocket)
- 
+
 webSocketWidget :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t EstuaryProtocol -> m (Event t [EstuaryProtocol])
 webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
+  text "WebSocket status:"
+  display status
+  text "Password:"
   let attrs = constDyn ("class" =: "webSocketTextInputs")
-  (addr,pwd) <- do 
-    text "WebSocket:"
-    addrInput <- textInput $ def & textInputConfig_initialValue .~ "" & textInputConfig_attributes .~ attrs
-    cButton <- divClass "webSocketButtons" $ button "Connect"
-    -- statusText <- holdDyn "Status: " never
-    -- dynText statusText
-    let addr' = tagDyn (_textInput_value addrInput) cButton
-    text "Password:"
-    pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-    let pwd' = _textInput_value pwdInput
-    return (addr',pwd')
-  chatSend <- chatWidget deltasDown 
+  pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
+  let pwd = _textInput_value pwdInput
+  chatSend <- chatWidget deltasDown
   let toSend' = leftmost [toSend,chatSend]
-  deltasDown <- alternateWebSocket obj now addr pwd toSend'
+  (deltasDown,status) <- alternateWebSocket obj now pwd toSend'
   return $ deltasDown
 
 chatWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
@@ -91,8 +86,7 @@ chatWidget deltasDown = mdo
   let deltasUp = attachDynWith (Chat "") (_textInput_value nameInput) toSend
   let chatsOnly = fmap (Prelude.filter isChat) deltasDown
   mostRecent <- foldDyn (\a b -> take 8 $ (reverse a) ++ b) [] chatsOnly
-  formatted <- mapDyn (fmap (\(Chat _ n m) -> n ++ ": " ++ m)) mostRecent 
-  simpleList formatted chatMsg 
+  formatted <- mapDyn (fmap (\(Chat _ n m) -> n ++ ": " ++ m)) mostRecent
+  simpleList formatted chatMsg
   return deltasUp
   where chatMsg v = divClass "chatMessage" $ dynText v
-
