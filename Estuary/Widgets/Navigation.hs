@@ -7,7 +7,12 @@ import Reflex.Dom
 import Estuary.Protocol.JSON
 import Estuary.WebDirt.Foreign
 import Estuary.Tidal.Types
+import Estuary.Widgets.Text
+import Estuary.Widgets.TransformedPattern
 import Control.Monad (liftM)
+import Data.Map
+import Text.Read
+import Text.JSON
 
 
 data Navigation =

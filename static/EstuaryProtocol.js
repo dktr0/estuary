@@ -26,15 +26,15 @@ EstuaryProtocol.prototype.connect = function() {
   try {
     this.ws = new WebSocket(this.url);
     this.ws.onopen = function () {
-      this.log("connection open");
+      closure.log("connection open");
       closure.wsReady = true;
     };
     this.ws.onerror = function () {
-      this.log("error");
+      closure.log("error");
       closure.wsReady = false;
     };
     this.ws.onclose = function () {
-      this.log("closed (retrying in 1 second)");
+      closure.log("closed (retrying in 1 second)");
       closure.wsReady = false;
       closure.ws = null;
       setTimeout(function() {
