@@ -45,7 +45,7 @@ send :: EstuaryProtocolObject -> String -> IO ()
 send (EstuaryProtocolObject x) y = send_ x (Prim.toJSString y)
 
 getEdits :: EstuaryProtocolObject -> IO [EstuaryProtocol]
-getEdits (EstuaryProtocolObject x) = getEdits_ >>= return . f . decode . Prim.fromJSString
+getEdits (EstuaryProtocolObject x) = getEdits_ x >>= return . f . decode . Prim.fromJSString
   where f (Ok xs) = xs
         f (Error x) = [ProtocolError ("error trying to parse as [EstuaryProtocol]: " ++ x)]
 
