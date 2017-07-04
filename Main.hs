@@ -36,14 +36,10 @@ main = do
   now <- Data.Time.getCurrentTime
   mainWidget $ estuaryWidget wd stream protocol now
 
--- navigation :: MonadWidget t m => Event t [EstuaryProtocol] ->
---  m (Dynamic t [TransformedPattern],Event t EstuaryProtocol,Event t Hint)
 
 estuaryWidget :: MonadWidget t m => WebDirt -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   muted <- header
-  -- (values,deltasUp,hints) <- divClass "page" $ mainPage deltasDown'
-  -- values' <- mapDyn (toParamPattern . StackedPatterns . elems) values
   (values,deltasUp,hints) <- divClass "page" $ navigation deltasDown'
   values' <- mapDyn (toParamPattern . StackedPatterns) values
   values'' <- combineDyn f values' muted
@@ -65,12 +61,4 @@ header = divClass "header" $ do
       text "WebDirt Mute "
       checkbox False $ def
     return $ _checkbox_value muted
-  -- newPageIndex <- divClass "pageMenu" $ do
-  --  let pageNames = Prelude.map (fst) pages
-  --  let pageList = zipWith (\x y -> (y,x)) pageNames ([0..]::[Int])
-  --  let pageMap = constDyn $ fromList pageList
-  --  menu <- dropdown 0 pageMap def
-  --  return $ _dropdown_change menu
-  -- divClass "hintArea" $ text " "
-  -- return newPageIndex
   return muted'

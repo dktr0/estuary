@@ -88,6 +88,10 @@ getCps (Tempo _ _ x) = Just x
 getCps _ = Nothing
 
 
+type ServerRequest = Request (Action ZoneValue)
+
+type ServerResponse = Response (Action ZoneValue)
+
 data ZoneValue =
   Structure TransformedPattern |
   EvaluableText String |

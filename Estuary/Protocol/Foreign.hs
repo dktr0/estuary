@@ -26,8 +26,8 @@ foreign import javascript unsafe
   send_ :: T.JSVal -> T.JSVal -> IO ()
 
 foreign import javascript unsafe
-  "$r = $1.getEdits()"
-  getEdits_ :: T.JSVal -> IO T.JSVal
+  "$r = $1.getResponses()"
+  getResponses_ :: T.JSVal -> IO T.JSVal
 
 foreign import javascript unsafe
   "$r = $1.status"
@@ -44,8 +44,8 @@ setUrl (EstuaryProtocolObject x) url = setUrl_ x (Prim.toJSString url)
 send :: EstuaryProtocolObject -> String -> IO ()
 send (EstuaryProtocolObject x) y = send_ x (Prim.toJSString y)
 
-getEdits :: EstuaryProtocolObject -> IO [EstuaryProtocol]
-getEdits (EstuaryProtocolObject x) = getEdits_ x >>= return . f . decode . Prim.fromJSString
+getResponses :: EstuaryProtocolObject -> IO [Response (Action ZoneValue)]
+getResponses (EstuaryProtocolObject x) = getResponses_ x >>= return . f . decode . Prim.fromJSString
   where f (Ok xs) = xs
         f (Error x) = [ProtocolError ("error trying to parse as [EstuaryProtocol]: " ++ x)]
 

@@ -17,8 +17,9 @@ import Data.Time
 -- isn't (so each new address requires a new instance of the widget - see resettingWebSocket below)
 -- currently not working, apparently because of a bug in the old version of reflex-dom we are using
 -- (see alternateWebSocket below)
+-- when we refactor to new reflex we will likely reincorporate this
 
-estuaryWebSocket :: MonadWidget t m => String -> Dynamic t String -> Event t EstuaryProtocol
+{- estuaryWebSocket :: MonadWidget t m => String -> Dynamic t String -> Event t EstuaryProtocol
   -> m (Event t EstuaryProtocol)
 estuaryWebSocket addr pwd toSend = mdo
   let addr' = "ws://" ++ addr
@@ -30,30 +31,32 @@ estuaryWebSocket addr pwd toSend = mdo
   where
     isOk (Ok x) = Just x
     isOk _ = Just (ProtocolError "unknown protocol error")
-
+-}
 
 -- a resettingWebSocket is a wrapper of estuaryWebSocket above so that the webSocket address
 -- is specified by event updates. A new address event causes the previous estuaryWebSocket to
 -- be discarded and a new one to be created. But we're not using this - instead we use
 -- alternateWebSocket below (which works with old reflex via our javascript ffi workaround)
 
-resettingWebSocket :: MonadWidget t m => Event t String -> Dynamic t String -> Event t EstuaryProtocol
+{- resettingWebSocket :: MonadWidget t m => Event t String -> Dynamic t String -> Event t EstuaryProtocol
   -> m (Event t EstuaryProtocol)
 resettingWebSocket addr pwd toSend = do
   let resets = fmap (\a -> estuaryWebSocket a pwd toSend) addr
   ws <- widgetHold (return never) resets
   return $ switchPromptlyDyn ws
+-}
 
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Dynamic t String -> Event t EstuaryProtocol ->
-  m (Event t [EstuaryProtocol],Dynamic t String)
+
+alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Dynamic t String -> Event t ServerRequest ->
+  m (Event t [ServerResponse],Dynamic t String)
 alternateWebSocket obj now pwd toSend = do
   let toSend' = attachDynWith setPassword pwd toSend
   performEvent_ $ fmap (liftIO . (send obj) . encode) toSend'
   ticks <- tickLossy (0.1::NominalDiffTime) now
-  edits <- performEvent $ fmap (liftIO . (\_ -> getEdits obj)) ticks
+  responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status
-  return (edits,status')
+  return (responses,status')
 
 -- finally, a webSocketWidget includes GUI elements for setting the webSocket address and
 -- password, and the chat interface, and connects these GUI elements to a resettingWebSocket (i.e. estuaryWebSocket)

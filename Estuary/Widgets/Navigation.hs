@@ -24,8 +24,8 @@ data Navigation =
   Collaborate
 
 
-navigation :: MonadWidget t m => Event t [EstuaryProtocol] ->
-  m (Dynamic t [TransformedPattern],Event t EstuaryProtocol,Event t Hint)
+navigation :: MonadWidget t m => Event t [ServerResponse] ->
+  m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint)
 navigation wsDown = mdo
   let initialPage = page wsDown Splash
   let rebuild = fmap (page wsDown) navEvents
@@ -36,8 +36,8 @@ navigation wsDown = mdo
   navEvents <- liftM switchPromptlyDyn $ mapDyn (\(_,_,_,x)->x) w
   return (values,wsUp,hints)
 
-page :: MonadWidget t m => Event t [EstuaryProtocol] -> Navigation ->
-  m (Dynamic t [TransformedPattern],Event t EstuaryProtocol,Event t Hint,Event t Navigation)
+page :: MonadWidget t m => Event t [ServerResponse] -> Navigation ->
+  m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
 
 page wsDown Splash = do
   x <- liftM (TutorialList <$)  $ button "Tutorials"
@@ -76,12 +76,13 @@ page wsDown Collaborate = do
 
 -- stuff below this line here temporarily during testing/refactoring
 
-mainPage :: MonadWidget t m => Event t [EstuaryProtocol]
+mainPage :: MonadWidget t m => Event t [ServerResponse]
   -> m
     (Dynamic t (Map Int TransformedPattern), -- values for local use
-     Event t EstuaryProtocol, -- edit events for broadcast
+     Event t ServerRequest, -- edit events for broadcast
      Event t Hint) -- hint events for local use
 mainPage deltasDown = do
+  let deltasDown' = fmapMaybe (justActionsInSpace "placeholder") deltasDown
   let deltaA = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 2)) ) deltasDown
   let deltaB = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 4)) ) deltasDown
   let deltaC = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 6)) ) deltasDown
@@ -133,16 +134,23 @@ mainPage deltasDown = do
   valuesD <- combineDyn (union) valuesC dValue'
   valuesE <- combineDyn (union) valuesD eValue'
   values <- combineDyn (union) valuesE fValue'
-  let aDeltaUp = fmap (EstuaryEdit "" 2) aEdits
-  let bDeltaUp = fmap (EstuaryEdit "" 4) bEdits
-  let cDeltaUp = fmap (EstuaryEdit "" 6) cEdits
-  let dDeltaUp = fmap (EstuaryEdit "" 8) dEdits
-  let eDeltaUp = fmap (EstuaryEdit "" 10) eEdits
-  let fDeltaUp = fmap (EstuaryEdit "" 12) fEdits
+  let aDeltaUp = fmap (Edit 2 . Structure) aEdits
+  let bDeltaUp = fmap (Edit 4 . Structure) bEdits
+  let cDeltaUp = fmap (Edit 6 . Structure) cEdits
+  let dDeltaUp = fmap (Edit 8 . Structure) dEdits
+  let eDeltaUp = fmap (Edit 10 . Structure) eEdits
+  let fDeltaUp = fmap (Edit 12 . Structure) fEdits
+  let aLabel' = fmap (Edit 1 . LabelText) aLabel
+  let bLabel' = fmap (Edit 3 . LabelText) bLabel
+  let cLabel' = fmap (Edit 5 . LabelText) cLabel
+  let dLabel' = fmap (Edit 7 . LabelText) dLabel
+  let eLabel' = fmap (Edit 9 . LabelText) eLabel
+  let fLabel' = fmap (Edit 11 . LabelText) fLabel
   let labelsUp = leftmost [aLabel,bLabel,cLabel,dLabel,eLabel,fLabel]
   let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,labelsUp]
+  let deltasUp' = fmap (SpaceRequest . InSpace "placeholder") deltasUp
   let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints]
-  return (values,deltasUp,hints)
+  return (values,deltasUp',hints)
 
 
 tempoWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)

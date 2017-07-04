@@ -1,7 +1,7 @@
 EstuaryProtocol = function () {
   this.status = "initializing...";
   this.wsReady = false;
-  this.edits = new Array;
+  this.responses = new Array;
   this.setUrl("ws://" + location.hostname + ":" + location.port);
 }
 
@@ -62,27 +62,7 @@ EstuaryProtocol.prototype.onMessage = function(m) {
      console.log("dump: " + JSON.stringify(m.data));
      return;
    }
-   try {
-     if(n.TEdit != null || n.TEval != null || n.LEdit != null | n.EEdit != null | n.Chat != null) {
-       this.edits.push(n);
-     }
-     else if(n.Tempo != null) {
-       // console.log("EstuaryProtocol onMessage Tempo: " + n.Tempo + " CPS at " + n.at + " (beat=" + n.beat + ")");
-       this.tempoCps = n.Tempo;
-       this.tempoAt = n.at;
-       this.tempoBeat = n.beat;
-       this.edits.push(n);
-     }
-     else if(n.Change != null) {
-       // console.log("EstuaryProtocol onMessage TempoChange (ignoring)");
-     }
-     else {
-       this.log("unrecognized message in onMessage");
-     }
-   }
-   catch(e) {
-     this.log("exception in onMessage");
-   }
+   this.responses.push(n);
 }
 
 EstuaryProtocol.prototype.send = function(o) {
@@ -95,8 +75,8 @@ EstuaryProtocol.prototype.send = function(o) {
   }
 }
 
-EstuaryProtocol.prototype.getEdits = function() {
-  var x = this.edits;
-  this.edits = new Array;
+EstuaryProtocol.prototype.getResponses = function() {
+  var x = this.responses;
+  this.responses = new Array;
   return JSON.stringify(x);
 }

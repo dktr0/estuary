@@ -36,7 +36,7 @@ textWidgetForPatternChain delta = do
   let value = _textInput_value x
   return (value,edits)
 
-textPatternChainWidget :: MonadWidget t m => Event t TransformedPattern -> 
+textPatternChainWidget :: MonadWidget t m => Event t TransformedPattern ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
 textPatternChainWidget delta = divClass "textPatternChain" $ do
   let delta' = fmapMaybe f delta
@@ -44,9 +44,9 @@ textPatternChainWidget delta = divClass "textPatternChain" $ do
   let deltaB = fmap (\(_,x,_)->x) delta'
   let deltaC = fmap (\(_,_,x)->x) delta'
   (aValue,aEvent) <- divClass "labelAndTextPattern" $ do
-    divClass "textInputLabel" $ text "sound" 
+    divClass "textInputLabel" $ text "sound"
     textWidgetForPatternChain deltaA
-  (bValue,bEvent) <- divClass "labelAndTextPattern" $ do 
+  (bValue,bEvent) <- divClass "labelAndTextPattern" $ do
     divClass "textInputLabel" $ text "up"
     textWidgetForPatternChain deltaB
   (cValue,cEvent) <- divClass "labelAndTextPattern" $ do
@@ -54,7 +54,7 @@ textPatternChainWidget delta = divClass "textPatternChain" $ do
     textWidgetForPatternChain deltaC
   value <- combineDyn TextPatternChain aValue bValue
   value' <- combineDyn ($) value cValue
-  let deltaUp = tagDyn value' $ leftmost [aEvent,bEvent,cEvent] 
+  let deltaUp = tagDyn value' $ leftmost [aEvent,bEvent,cEvent]
   return (value',deltaUp,never)
   where f (TextPatternChain x y z) = Just (x,y,z)
         f _ = Nothing
@@ -69,17 +69,18 @@ textWidget delta = divClass "textWidget" $ do
   let evals' = tagDyn (_textArea_value y) evals
   return (edits,evals')
 
-labelWidget :: MonadWidget t m => Int -> Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
-labelWidget n delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+
+labelWidget :: MonadWidget t m => Space -> Zone -> Event t [ServerResponse] -> m (Event t ServerRequest)
+labelWidget s z delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let attrs = constDyn $ ("class" =: "labelWidgetTextInput")
-  let delta' = fmap ( (Prelude.filter isLabelEdit) . (Prelude.filter (matchesNumber n)) ) delta
-  let delta'' = fmap justText $ fmapMaybe lastOrNothing delta' 
-  y <- textInput $ def & textInputConfig_setValue .~ delta'' & textInputConfig_attributes .~ attrs
-  let z = fmap (LabelEdit "" n) $ _textInput_input y
-  return z
+  let delta' = fmapMaybe (justActionsInSpace s) delta
+  let delta'' = fmapMaybe (justEditsInZone z) delta'
+  let delta''' = fmapMaybe lastOrNothing delta ''
+  y <- textInput $ def & textInputConfig_setValue .~ delta''' & textInputConfig_attributes .~ attrs
+  return $ fmap (InSpace s . Edit z) $ _textInput_input y
+
 
 {-
-
 textPatternChain :: MonadWidget t m => Event t TransformedPattern -> m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
 textPatternChain delta = do
   let (deltaA,tailA) = fmap g delta
@@ -103,13 +104,7 @@ textPatternChain delta = do
   (cValue,cEdit) <- textSpecificContainer (Up) deltaC
   text "vowel"
   (dValue,dEdit) <- textSpecificContainer (Vowel) deltaD
-  value <- combineDyn 
+  value <- combineDyn
 
   where f (a,b) (c,d) = TextPatternChain a b c d
 -}
-
-
-
-
-
-
