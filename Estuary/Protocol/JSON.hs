@@ -1,5 +1,6 @@
 module Estuary.Protocol.JSON where
 
+import Estuary.Tidal.Types
 import Text.JSON
 
 
