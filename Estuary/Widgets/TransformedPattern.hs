@@ -18,19 +18,20 @@ import GHC.Real
 import Data.Maybe (fromJust)
 import Text.Read
 import Estuary.Reflex.Utility
-
+import Estuary.Protocol.JSON
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
-  Event t TransformedPattern -> -- deltas from network (must not re-propagate as edit events!)
+  Zone -> Event t [Action ZoneValue] -> -- deltas from network (must not re-propagate as edit events!)
   m (
     Dynamic t TransformedPattern, -- value for local WebDirt playback
-    Event t TransformedPattern, -- deltas to network (not based on events received from network!)
+    Event t (Action ZoneValue), -- deltas to network (not based on events received from network!)
     Event t Hint -- hints (currently for WebDirt sample loading only)
   )
-topLevelTransformedPatternWidget updateEvent = do
-  w <- widgetHold (midLevelTransformedPatternWidget EmptyTransformedPattern) (fmap midLevelTransformedPatternWidget updateEvent)
+topLevelTransformedPatternWidget zone updateEvent = do
+  let updates = fmap midLevelTransformedPatternWidget $ fmapMaybe lastOrNothing $ fmapMaybe (justEditsInZone zone) updateEvent
+  w <- widgetHold (midLevelTransformedPatternWidget EmptyTransformedPattern) updates
   x <- mapDyn (\(a,_,_) -> a) w
-  y <- mapDyn (\(_,a,_) -> a) w
+  y <- mapDyn (\(_,a,_) -> Edit zone (Structure a)) w
   z <- mapDyn (\(_,_,a) -> a) w
   let x' = joinDyn x
   let y' = switchPromptlyDyn y
@@ -75,7 +76,7 @@ popupSpecificPatternWidget iValue _ = elClass "div" "popupSpecificPatternWidget"
     hack (Delay _) = " delay "
     hack (Delaytime _) = " delaytime "
     hack (Delayfeedback _) = " delayfeedback "
-    hack (End _) = " end " 
+    hack (End _) = " end "
     hack (Gain _) = " gain"
     hack (Hcutoff _) = " hcutoff"
     hack (Hresonance _) = " hresonance"
@@ -237,7 +238,7 @@ transformedPat (UntransformedPattern specificPattern) _= do
   let rebuildEvents = leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform, (RebuildMe <$) combine]
   mapDyn (\x->(x,rebuildEvents,hint)) value
 transformedPat (TransformedPattern (Combine iSpecPat iPatComb) EmptyTransformedPattern) _ = transformedPat (UntransformedPattern iSpecPat) never
-transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do  
+transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do
   --delete <- button "-"
   --transform <- button "transform"
   sPatTuple <- popupSpecificPatternWidget iSpecPat never
@@ -261,7 +262,7 @@ transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do
   let childIsEmpty = ffilter id $ attachDynWith (\x _->case x of EmptyTransformedPattern->True;otherwise->False) tPat childDeleteMe
   transVal <- mapDyn (TransformedPattern NoTransformer) val
   untransPat <- mapDyn UntransformedPattern sPat
-  let rebuildVal = leftmost [(tPat <$) delete, (untransPat <$) childIsEmpty, (transVal <$) transform, (addInbetweenVal <$) addAfter] 
+  let rebuildVal = leftmost [(tPat <$) delete, (untransPat <$) childIsEmpty, (transVal <$) transform, (addInbetweenVal <$) addAfter]
   val' <- liftM joinDyn $ holdDyn val rebuildVal
   mapDyn (\x->(x, leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform,(RebuildMe <$) childDeleteMe, (RebuildMe <$) addAfter],leftmost [tHint,sHint])) val'
 transformedPat (TransformedPattern iPatTrans iTransPat) _ = do
@@ -280,7 +281,7 @@ transformedPat (TransformedPattern iPatTrans iTransPat) _ = do
 
 
 
---transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do  
+--transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do
 --  delete <- button "-"
 --  transform <- button "transform"
 --  sPatTuple <- dropdownPatternWidget iSpecPat never
@@ -299,7 +300,7 @@ transformedPat (TransformedPattern iPatTrans iTransPat) _ = do
 --  let childIsEmpty = ffilter id $ attachDynWith (\x _->case x of EmptyTransformedPattern->True;otherwise->False) tPat childDeleteMe
 --  transVal <- mapDyn (TransformedPattern NoTransformer) val
 --  untransPat <- mapDyn UntransformedPattern sPat
---  val' <- liftM joinDyn $ holdDyn val $ fmap (const tPat) delete 
+--  val' <- liftM joinDyn $ holdDyn val $ fmap (const tPat) delete
 --  val'' <- liftM joinDyn $ holdDyn val' $ (transVal <$) transform
 --  val'''<- liftM joinDyn $ holdDyn val'' $ (untransPat <$) childIsEmpty
 --  mapDyn (\x->(x, leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform,(RebuildMe <$) childDeleteMe],leftmost [tHint,sHint])) val'''
@@ -420,7 +421,7 @@ patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget" $ m
   dynOpen <- toggle False $ leftmost [openEv,(() <$ )dynPopup]
   let changeEvents = fmap ((\x->case x of ChangeValue a->a;otherwise->NoTransformer) . fromJust) $ ffilter (\x->case x of Just (ChangeValue a) ->True;otherwise->False) dynPopup
   let deleteEvent = fmap (\x->case x of Just DeleteMe -> DeleteMe; otherwise->Close) $ ffilter (\x-> case x of Just (DeleteMe)->True;otherwise->False) dynPopup
-  transformer <- holdDyn NoTransformer changeEvents 
+  transformer <- holdDyn NoTransformer changeEvents
   showTransformer <- mapDyn hack transformer
   showTransformer' <-holdDyn (hack iValue)  $ updated showTransformer
   widget <- mapDyn paramWidget' transformer
@@ -458,4 +459,3 @@ patternTransformerPopup actionList = elClass "div" "popupMenu" $ do
   edits <- liftM id $ Control.Monad.sequence popupList
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ (leftmost $ edits ++[closeMenu,updated transformerChange])
-

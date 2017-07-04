@@ -36,13 +36,14 @@ textWidgetForPatternChain delta = do
   let value = _textInput_value x
   return (value,edits)
 
-textPatternChainWidget :: MonadWidget t m => Event t TransformedPattern ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-textPatternChainWidget delta = divClass "textPatternChain" $ do
-  let delta' = fmapMaybe f delta
-  let deltaA = fmap (\(x,_,_)->x) delta'
-  let deltaB = fmap (\(_,x,_)->x) delta'
-  let deltaC = fmap (\(_,_,x)->x) delta'
+textPatternChainWidget :: MonadWidget t m => Zone -> Event t [Action ZoneValue] ->
+  m (Dynamic t TransformedPattern,Event t (Action ZoneValue),Event t Hint)
+textPatternChainWidget zone delta = divClass "textPatternChain" $ do
+  let delta' = fmapMaybe justStructures $ fmapMaybe (justEditsInZone zone) delta
+  let delta'' = fmapMaybe lastOrNothing $ fmapMaybe f delta'
+  let deltaA = fmap (\(x,_,_)->x) delta''
+  let deltaB = fmap (\(_,x,_)->x) delta''
+  let deltaC = fmap (\(_,_,x)->x) delta''
   (aValue,aEvent) <- divClass "labelAndTextPattern" $ do
     divClass "textInputLabel" $ text "sound"
     textWidgetForPatternChain deltaA
@@ -55,7 +56,8 @@ textPatternChainWidget delta = divClass "textPatternChain" $ do
   value <- combineDyn TextPatternChain aValue bValue
   value' <- combineDyn ($) value cValue
   let deltaUp = tagDyn value' $ leftmost [aEvent,bEvent,cEvent]
-  return (value',deltaUp,never)
+  let deltaUp' = fmap (Edit zone . Structure)
+  return (value',deltaUp',never)
   where f (TextPatternChain x y z) = Just (x,y,z)
         f _ = Nothing
 
@@ -70,14 +72,12 @@ textWidget delta = divClass "textWidget" $ do
   return (edits,evals')
 
 
-labelWidget :: MonadWidget t m => Space -> Zone -> Event t [ServerResponse] -> m (Event t ServerRequest)
-labelWidget s z delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+labelWidget :: MonadWidget t m => Zone -> Event t [Action ZoneValue] -> m (Event t (Action ZoneValue))
+labelWidget z delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let attrs = constDyn $ ("class" =: "labelWidgetTextInput")
-  let delta' = fmapMaybe (justActionsInSpace s) delta
-  let delta'' = fmapMaybe (justEditsInZone z) delta'
-  let delta''' = fmapMaybe lastOrNothing delta ''
+  let delta' = fmapMaybe lastOrNothing $ fmapMaybe justLabelText $ fmapMaybe (justEditsInZone z) delta
   y <- textInput $ def & textInputConfig_setValue .~ delta''' & textInputConfig_attributes .~ attrs
-  return $ fmap (InSpace s . Edit z) $ _textInput_input y
+  return $ fmap (Edit z . LabelText) $ _textInput_input y
 
 
 {-

@@ -36,6 +36,9 @@ instance JSON a => JSON (Response a) where
   showJSON (SpaceResponse r) = encJSDict [("SpaceResponse",showJSON r)]
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Request"
 
+justActionsInSpace :: String -> Response a -> Maybe (Action a)
+justActionsInSpace s1 (SpaceResponse (InSpace s2 a)) | s1 == s2 = Just a
+justActionsInSpace _ _ = Nothing
 
 data InSpace a = InSpace String a
 
@@ -67,6 +70,9 @@ instance JSON v => JSON (Action v) where
   readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj x "TempoChange"
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Action"
 
+justEditsInZone :: Zone -> Action a -> Maybe a
+justEditsInZone z1 (Edit z2 a) = Just a
+justEditsInZone _ _ = Nothing
 
 matchesNumber :: Int -> Action v -> Bool
 matchesNumber z1 (Edit z2 _) = z1 == z2
@@ -88,9 +94,9 @@ getCps (Tempo _ _ x) = Just x
 getCps _ = Nothing
 
 
-type ServerRequest = Request (Action ZoneValue)
+type ServerRequest = Request ZoneValue
 
-type ServerResponse = Response (Action ZoneValue)
+type ServerResponse = Response ZoneValue
 
 data ZoneValue =
   Structure TransformedPattern |
@@ -102,6 +108,18 @@ instance JSON ZoneValue where
   showJSON (EvaluableText x) = encJSDict [("EvaluableText",x)]
   showJSON (LabelText x) = encJSDict [("LabelText",x)]
 
+justStructures :: ZoneValue -> Maybe TransformedPattern
+justStructures (Structure x) = Just x
+justStructures _ = Nothing
+
+justEvaluableText :: ZoneValue -> Maybe String
+justEvaluableText (EvaluableText x) = Just x
+justEvaluableText _ = Nothing
+
+justLabelText :: ZoneValue -> Maybe String
+justLabelText (LabelText x) = Just x
+justLabelText _ = Nothing
+
 isEstuaryEdit :: Action ZoneValue -> Bool
 isEstuaryEdit (Edit _ (Structure _)) = True
 isEstuaryEdit _ = False
@@ -111,7 +129,7 @@ isTextEdit (Edit _ (EvaluableText _)) = True
 isTextEdit _ = False
 
 isLabelEdit :: Action ZoneValue -> Bool
-isLabelEdit (Edit _ (LabelTexxt _)) = True
+isLabelEdit (Edit _ (LabelText _)) = True
 isLabelEdit _ = False
 
 justEstuaryCode :: Action ZoneValue -> TransformedPattern

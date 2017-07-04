@@ -83,45 +83,29 @@ mainPage :: MonadWidget t m => Event t [ServerResponse]
      Event t Hint) -- hint events for local use
 mainPage deltasDown = do
   let deltasDown' = fmapMaybe (justActionsInSpace "placeholder") deltasDown
-  let deltaA = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 2)) ) deltasDown
-  let deltaB = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 4)) ) deltasDown
-  let deltaC = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 6)) ) deltasDown
-  let deltaD = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 8)) ) deltasDown
-  let deltaE = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 10)) ) deltasDown
-  let deltaF = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 12)) ) deltasDown
-  let deltaG = fmap ( (Prelude.filter isEstuaryEdit) . (Prelude.filter (matchesNumber 14)) ) deltasDown
-  let deltaH = fmap ( (Prelude.filter isTextEdit) . (Prelude.filter (matchesNumber 16)) ) deltasDown
-  let deltaA' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaA
-  let deltaB' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaB
-  let deltaC' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaC
-  let deltaD' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaD
-  let deltaE' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaE
-  let deltaF' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaF
-  let deltaG' = fmap justEstuaryCode $ fmapMaybe lastOrNothing deltaG
-  let deltaH' = fmap justTextCode $ fmapMaybe lastOrNothing deltaH
   (aLabel,aValue,aEdits,aHints) <- divClass "eightTopL" $ do
-    a <- labelWidget 1 deltasDown
-    (b,c,d) <- topLevelTransformedPatternWidget deltaA'
+    a <- labelWidget 1 deltasDown'
+    (b,c,d) <- topLevelTransformedPatternWidget 2 deltasDown'
     return (a,b,c,d)
   (bLabel,bValue,bEdits,bHints) <- divClass "eightTopR" $ do
-    a <- labelWidget 3 deltasDown
-    (b,c,d) <- topLevelTransformedPatternWidget deltaB'
+    a <- labelWidget 3 deltasDown'
+    (b,c,d) <- topLevelTransformedPatternWidget 4 deltaB
     return (a,b,c,d)
   (cLabel,cValue,cEdits,cHints) <- divClass "eightMiddleL" $ do
-        a <- labelWidget 5 deltasDown
-        (b,c,d) <- textPatternChainWidget deltaC'
+        a <- labelWidget 5 deltasDown'
+        (b,c,d) <- textPatternChainWidget 6 deltaC
         return (a,b,c,d)
   (dLabel,dValue,dEdits,dHints) <- divClass "eightMiddleR" $ do
-        a <- labelWidget 7 deltasDown
-        (b,c,d) <- textPatternChainWidget deltaD'
+        a <- labelWidget 7 deltasDown'
+        (b,c,d) <- textPatternChainWidget 8 deltaD
         return (a,b,c,d)
   (eLabel,eValue,eEdits,eHints) <- divClass "eightBottomL" $ do
-        a <- labelWidget 9 deltasDown
-        (b,c,d) <- textPatternChainWidget deltaE'
+        a <- labelWidget 9 deltasDown'
+        (b,c,d) <- textPatternChainWidget 10 deltaE
         return (a,b,c,d)
   (fLabel,fValue,fEdits,fHints) <- divClass "eightBottomR" $ do
-        a <- labelWidget 1 deltasDown
-        (b,c,d) <- topLevelTransformedPatternWidget deltaA'
+        a <- labelWidget 11 deltasDown'
+        (b,c,d) <- topLevelTransformedPatternWidget 12 deltaA
         return (a,b,c,d)
   aValue' <- mapDyn (singleton 2) aValue
   bValue' <- mapDyn (singleton 4) bValue
@@ -134,21 +118,9 @@ mainPage deltasDown = do
   valuesD <- combineDyn (union) valuesC dValue'
   valuesE <- combineDyn (union) valuesD eValue'
   values <- combineDyn (union) valuesE fValue'
-  let aDeltaUp = fmap (Edit 2 . Structure) aEdits
-  let bDeltaUp = fmap (Edit 4 . Structure) bEdits
-  let cDeltaUp = fmap (Edit 6 . Structure) cEdits
-  let dDeltaUp = fmap (Edit 8 . Structure) dEdits
-  let eDeltaUp = fmap (Edit 10 . Structure) eEdits
-  let fDeltaUp = fmap (Edit 12 . Structure) fEdits
-  let aLabel' = fmap (Edit 1 . LabelText) aLabel
-  let bLabel' = fmap (Edit 3 . LabelText) bLabel
-  let cLabel' = fmap (Edit 5 . LabelText) cLabel
-  let dLabel' = fmap (Edit 7 . LabelText) dLabel
-  let eLabel' = fmap (Edit 9 . LabelText) eLabel
-  let fLabel' = fmap (Edit 11 . LabelText) fLabel
   let labelsUp = leftmost [aLabel,bLabel,cLabel,dLabel,eLabel,fLabel]
-  let deltasUp = leftmost [aDeltaUp,bDeltaUp,cDeltaUp,dDeltaUp,eDeltaUp,fDeltaUp,labelsUp]
-  let deltasUp' = fmap (SpaceRequest . InSpace "placeholder") deltasUp
+  let deltasUp = leftmost [aEdits,bEdits,cEdits,dEdits,eEdits,fEdits]
+  let deltasUp' = fmap (SpaceRequest  . InSpace "placeholder") deltasUp
   let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints]
   return (values,deltasUp',hints)
 
