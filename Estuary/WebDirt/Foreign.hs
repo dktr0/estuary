@@ -58,7 +58,8 @@ foreign import javascript unsafe "$r = {};" createEmpty:: IO T.JSVal
 createObjFromMap:: Double -> Tidal.ParamMap -> IO T.JSVal
 createObjFromMap when paramMap = do
   let paramMap' = mapKeys (\x-> case Tidal.name x of "n"->"sample_n"; "s"->"sample_name";otherwise->Tidal.name x) paramMap -- Map String (Value)
-  let paramMap'' = Data.Map.map (maybe (T.nullRef) (valueToJSVal)) paramMap':: Map String T.JSVal -- Map String JSVal
+--  let paramMap'' = Data.Map.map (maybe (T.nullRef) (valueToJSVal)) paramMap':: Map String T.JSVal -- Map String JSVal
+  let paramMap'' = Data.Map.map (valueToJSVal) paramMap':: Map String T.JSVal -- Map String JSVal
   obj <- createEmpty
   --x <- return $ mapWithKey (\k v -> addProp obj (P.pToJSVal k) v) paramMap''
   a<-addProps obj (("when",P.pToJSVal when):(toList paramMap''))

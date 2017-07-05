@@ -88,6 +88,10 @@ isChat :: Action v -> Bool
 isChat (Chat _ _) = True
 isChat _ = False
 
+justChats :: Action v -> Maybe (String,String)
+justChats (Chat n m) = Just (n,m)
+justChats _ = Nothing
+
 isCps :: Action v -> Bool
 isCps (Tempo _ _ _) = True
 isCps _ = False

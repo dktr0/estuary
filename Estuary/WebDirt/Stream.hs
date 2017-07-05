@@ -72,8 +72,8 @@ webDirtTick webDirt patternM tempo ticks = do
   let ticks' = (fromIntegral ticks) :: Integer
       a = ticks' % webDirtTicksPerCycle
       b = (ticks' + 1) % webDirtTicksPerCycle
-      events = seqToRelOnsets (a,b) p -- :: [(Double,Map Param (Maybe Value))]
-      events' = Prelude.map (\(o,m) -> (f o,m)) events
+      events = seqToRelOnsetDeltas (a,b) p -- :: [(Double,Map Param (Maybe Value))]
+      events' = Prelude.map (\(o,_,m) -> (f o,m)) events
   E.catch (mapM_ (WebDirt.playSample webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
   where f x = logicalOnset' tempo ticks x 0
 

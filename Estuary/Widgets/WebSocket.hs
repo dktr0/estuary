@@ -10,7 +10,7 @@ import qualified Data.ByteString.Char8 as C
 import Estuary.Protocol.Foreign
 import Control.Monad.IO.Class (liftIO)
 import Data.Time
-
+import Data.Either
 
 -- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
 -- for collaborative editing. While the password is dynamic, like the Reflex WebSocket the socket address
@@ -50,18 +50,19 @@ resettingWebSocket addr pwd toSend = do
 alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Dynamic t String -> Event t ServerRequest ->
   m (Event t [ServerResponse],Dynamic t String)
 alternateWebSocket obj now pwd toSend = do
-  let toSend' = attachDynWith setPassword pwd toSend
+  let toSend' = leftmost [toSend,fmap Authenticate (updated pwd) ]
   performEvent_ $ fmap (liftIO . (send obj) . encode) toSend'
   ticks <- tickLossy (0.1::NominalDiffTime) now
   responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
+  let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status
-  return (responses,status')
+  return (responses',status')
 
 -- finally, a webSocketWidget includes GUI elements for setting the webSocket address and
 -- password, and the chat interface, and connects these GUI elements to a resettingWebSocket (i.e. estuaryWebSocket)
 
-webSocketWidget :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t EstuaryProtocol -> m (Event t [EstuaryProtocol])
+webSocketWidget :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t ServerRequest -> m (Event t [ServerResponse])
 webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
   text "WebSocket status:"
   display status
@@ -69,13 +70,15 @@ webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
   let attrs = constDyn ("class" =: "webSocketTextInputs")
   pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
   let pwd = _textInput_value pwdInput
-  chatSend <- chatWidget deltasDown
+  chatSend <- chatWidget "placeholder" deltasDown
   let toSend' = leftmost [toSend,chatSend]
   (deltasDown,status) <- alternateWebSocket obj now pwd toSend'
   return $ deltasDown
 
-chatWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
-chatWidget deltasDown = mdo
+-- SpaceRequest (InSpace space (Chat name msg))
+
+chatWidget :: MonadWidget t m => String -> Event t [ServerResponse] -> m (Event t ServerRequest)
+chatWidget space deltasDown = mdo
   let attrs = constDyn ("class" =: "webSocketTextInputs")
   text "Name:"
   nameInput <- textInput $ def & textInputConfig_attributes .~ attrs
@@ -86,10 +89,10 @@ chatWidget deltasDown = mdo
   let send' = fmap (const ()) $ ffilter (==13) $ _textInput_keypress chatInput
   let send'' = leftmost [send,send']
   let toSend = tag (current $ _textInput_value chatInput) send''
-  let deltasUp = attachDynWith (Chat "") (_textInput_value nameInput) toSend
-  let chatsOnly = fmap (Prelude.filter isChat) deltasDown
+  let deltasUp = attachDynWith (\name msg -> SpaceRequest (InSpace space (Chat name msg))) (_textInput_value nameInput) toSend
+  let chatsOnly = fmapMaybe justChats $ fmapMaybe (justActionsInSpace space) deltasDown
   mostRecent <- foldDyn (\a b -> take 8 $ (reverse a) ++ b) [] chatsOnly
-  formatted <- mapDyn (fmap (\(Chat _ n m) -> n ++ ": " ++ m)) mostRecent
+  formatted <- mapDyn (fmap (\(n,m) -> n ++ ": " ++ m)) mostRecent
   simpleList formatted chatMsg
   return deltasUp
   where chatMsg v = divClass "chatMessage" $ dynText v
