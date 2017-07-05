@@ -3,34 +3,38 @@ module Main where
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-
+import qualified Data.Map.Strict as Map
 import qualified Network.WebSockets as WS
-import Estuary.Protocol.JSON
 import Control.Concurrent.MVar
 import Control.Exception (try)
+import Text.JSON
 
-data Space = Space (Map Int ZoneValue)
+import Estuary.Protocol.JSON
+
+data Space = Space (Map.Map Int ZoneValue)
 
 data ServerState = ServerState {
-  password :: MVar String
-  spaces :: MVar (Map String Space)
-   }
+  password :: MVar String,
+  spaces :: MVar (Map.Map String Space)
+}
 
 newServerState :: IO ServerState
 newServerState = do
   p <- newMVar "password"
+  s <- newMVar Map.empty
   return $ ServerState {
-    password = p
+    password = p,
+    spaces = s
   }
 
 getPassword :: ServerState -> IO String
 getPassword s = readMVar (password s)
 
-setPassword :: String -> ServerState -> IO ()
+setPassword :: String -> ServerState -> IO String
 setPassword x s = swapMVar (password s) x
 
 data ClientState = ClientState {
-  authenticated :: Bool
+  authenticated :: Bool,
   space :: Maybe String
   }
 
@@ -49,7 +53,7 @@ main = do
 connectionHandler :: ServerState -> WS.PendingConnection -> IO ()
 connectionHandler s ws = do
   putStrLn "received new connection"
-  ws' <- WS.acceptRequest c
+  ws' <- WS.acceptRequest ws
   WS.forkPingThread ws' 30
   processLoop s newClientState ws'
 
@@ -58,15 +62,23 @@ processLoop s c ws = do
   m <- try (WS.receiveData ws)
   case m of
     Right x -> do
-      c' <- processRequest s c (decode (T.unpack x))
-      loop s c' ws
+      c' <- processResult s c (decode (T.unpack x))
+      processLoop s c' ws
     Left WS.ConnectionClosed -> putStrLn "unexpected loss of connection"
     Left (WS.CloseRequest _ _) -> putStrLn "connection closed by request from peer"
     Left (WS.ParseException e) -> putStrLn ("parse exception: " ++ e)
 
 
 onlyIfAuthenticated :: ClientState -> IO ClientState -> IO ClientState
-onlyIfAuthenticated c f = if (authenticated c) then f else $ return c
+onlyIfAuthenticated c f = if (authenticated c) then f else return c
+
+
+processResult :: ServerState -> ClientState -> Result (Request ZoneValue)
+  -> IO ClientState
+processResult _ c (Error x) = do
+  putStrLn ("Error: " ++ x)
+  return c
+processResult s c (Ok x) = processRequest s c x
 
 
 processRequest :: ServerState -> ClientState -> Request ZoneValue -> IO ClientState
@@ -100,7 +112,7 @@ processRequest s c (CreateSpace x) = onlyIfAuthenticated c $ do
 processRequest s c (SpaceRequest x) = onlyIfAuthenticated c $ processInSpace s c x
 
 
-processInSpace :: ServerState -> ClientState -> InSpace ZoneValue -> IO ClientState
+processInSpace :: ServerState -> ClientState -> InSpace (Action ZoneValue) -> IO ClientState
 processInSpace s c (InSpace x y) = do
   putStrLn "warning: processInSpace is disregarding space names as a placeholder"
   processAction s c y

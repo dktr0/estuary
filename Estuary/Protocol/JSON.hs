@@ -14,17 +14,17 @@ data Request a =
 
 instance JSON a => JSON (Request a) where
   showJSON (Authenticate p) = encJSDict [("Authenticate",p)]
-  showJSON (RequestSpaceList) = toJSString "RequestSpaceList"
-  showJSON (JoinSpace s) = encJSDict [("JoinSpace",s]
-  showJSON (LeaveSpace) = toJSString "LeaveSpace"
+  showJSON (RequestSpaceList) = showJSON "RequestSpaceList"
+  showJSON (JoinSpace s) = encJSDict [("JoinSpace",s)]
+  showJSON (LeaveSpace) = showJSON "LeaveSpace"
   showJSON (CreateSpace s) = encJSDict [("CreateSpace",s)]
   showJSON (SpaceRequest s) = encJSDict [("SpaceRequest",showJSON s)]
-  readJSON (JSObject x) | firstKey x == "Authenticate" = Authenticate <$> valFromObj x "Authenticate"
+  readJSON (JSObject x) | firstKey x == "Authenticate" = Authenticate <$> valFromObj "Authenticate" x
   readJSON (JSString x) | fromJSString x == "RequestSpaceList" = Ok RequestSpaceList
-  readJSON (JSObject x) | firstKey x == "JoinSpace" = JoinSpace <$> valFromObj x "JoinSpace"
+  readJSON (JSObject x) | firstKey x == "JoinSpace" = JoinSpace <$> valFromObj "JoinSpace" x
   readJSON (JSString x) | fromJSString x == "LeaveSpace" = Ok LeaveSpace
-  readJSON (JSObject x) | firstKey x == "CreateSpace" = CreateSpace <$> valFromObj x "CreateSpace"
-  readJSON (JSObject x) | firstKey x == "SpaceRequest" = SpaceRequest <$> valFromObj x "SpaceRequest"
+  readJSON (JSObject x) | firstKey x == "CreateSpace" = CreateSpace <$> valFromObj "CreateSpace" x
+  readJSON (JSObject x) | firstKey x == "SpaceRequest" = SpaceRequest <$> valFromObj "SpaceRequest" x
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Request"
 
 
@@ -35,6 +35,8 @@ data Response a =
 instance JSON a => JSON (Response a) where
   showJSON (SpaceList xs) = encJSDict [("SpaceList",showJSON xs)]
   showJSON (SpaceResponse r) = encJSDict [("SpaceResponse",showJSON r)]
+  readJSON (JSObject x) | firstKey x == "SpaceList" = SpaceList <$> valFromObj "SpaceList" x
+  readJSON (JSObject x) | firstKey x == "SpaceResponse" = SpaceResponse <$> valFromObj "SpaceResponse" x
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Request"
 
 justActionsInSpace :: String -> Response a -> Maybe (Action a)
@@ -45,7 +47,7 @@ data InSpace a = InSpace String a
 
 instance JSON a => JSON (InSpace a) where
   showJSON (InSpace s x) = encJSDict [("InSpace",showJSON s),("x",showJSON x)]
-  readJSON (JSObject x) | firstKey x == "InSpace" = InSpace <$> valFromObj x "InSpace" <$> valFromObj x "x"
+  readJSON (JSObject x) | firstKey x == "InSpace" = InSpace <$> valFromObj "InSpace" x <*> valFromObj "x" x
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.InSpace"
 
 
@@ -64,11 +66,11 @@ instance JSON v => JSON (Action v) where
   showJSON (Eval z v) = encJSDict [("Eval",showJSON z),("v",showJSON v)]
   showJSON (Tempo at beat cps) = encJSDict [("Tempo",showJSON cps),("at",showJSON at),("beat",showJSON beat)]
   showJSON (TempoChange cps) = encJSDict [("TempoChange",showJSON cps)]
-  readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj x "Chat" <*> valFromObj x "m"
-  readJSON (JSObject x) | firstKey x == "Edit" = Edit <$> valFromObj x "Edit" <*> valFromObj x "v"
-  readJSON (JSObject x) | firstKey x == "Eval" = Eval <$> valFromObj x "Eval" <*> valFromObj x "v"
-  readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj x "Tempo" <*> valFromObj x "at" <*> valFromObj x "beat"
-  readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj x "TempoChange"
+  readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj "Chat" x <*> valFromObj "m" x
+  readJSON (JSObject x) | firstKey x == "Edit" = Edit <$> valFromObj "Edit" x <*> valFromObj "v" x
+  readJSON (JSObject x) | firstKey x == "Eval" = Eval <$> valFromObj "Eval" x <*> valFromObj "v" x
+  readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "Tempo" x <*> valFromObj "at" x <*> valFromObj "beat" x
+  readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj "TempoChange" x
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Action"
 
 justEditsInZone :: Zone -> Action a -> Maybe a
@@ -102,12 +104,16 @@ type ServerResponse = Response ZoneValue
 data ZoneValue =
   Structure TransformedPattern |
   EvaluableText String |
-  LabelText String |
+  LabelText String
 
 instance JSON ZoneValue where
   showJSON (Structure x) = encJSDict [("Structure",x)]
   showJSON (EvaluableText x) = encJSDict [("EvaluableText",x)]
   showJSON (LabelText x) = encJSDict [("LabelText",x)]
+  readJSON (JSObject x) | firstKey x == "Structure" = Structure <$> valFromObj "Structure" x
+  readJSON (JSObject x) | firstKey x == "EvaluableText" = EvaluableText <$> valFromObj "EvaluableText" x
+  readJSON (JSObject x) | firstKey x == "LabelText" = LabelText <$> valFromObj "LabelText" x
+  readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.ZoneValue"
 
 justStructures :: ZoneValue -> Maybe TransformedPattern
 justStructures (Structure x) = Just x

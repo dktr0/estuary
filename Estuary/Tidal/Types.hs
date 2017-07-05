@@ -439,14 +439,14 @@ instance JSON PatternTransformer where
 applyPatternTransformer :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
 applyPatternTransformer NoTransformer = id
 applyPatternTransformer Rev = Tidal.rev
-applyPatternTransformer (Slow f) = Tidal.slow f
-applyPatternTransformer (Density f) = Tidal.density f
+applyPatternTransformer (Slow f) = Tidal.slow $ pure f
+applyPatternTransformer (Density f) = Tidal.density $ pure f
 applyPatternTransformer Degrade = Tidal.degrade
-applyPatternTransformer (DegradeBy d) = Tidal.degradeBy d
-applyPatternTransformer (Every n t) = Tidal.every n (applyPatternTransformer t)
+applyPatternTransformer (DegradeBy d) = Tidal.degradeBy $ pure d
+applyPatternTransformer (Every n t) = Tidal.every (pure n) (applyPatternTransformer t)
 applyPatternTransformer (Brak) = Tidal.brak
 applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
-applyPatternTransformer (Chop t) = Tidal.chop t
+applyPatternTransformer (Chop t) = Tidal.chop $ pure t
 applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern p
 
 

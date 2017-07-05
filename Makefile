@@ -27,6 +27,9 @@ zip:
 	tar czf estuary-build.tgz -C temp .
 	rm -rf temp
 
+server:
+	ghc -o EstuaryServer EstuaryServer.hs
+
 WebDirt:
 	cp -Rf static/WebDirt Estuary.jsexe
 
