@@ -28,13 +28,13 @@ topLevelTransformedPatternWidget :: MonadWidget t m =>
     Event t Hint -- hints (currently for WebDirt sample loading only)
   )
 topLevelTransformedPatternWidget zone updateEvent = do
-  let updates = fmap midLevelTransformedPatternWidget $ fmapMaybe lastOrNothing $ fmapMaybe (justEditsInZone zone) updateEvent
+  let updates = fmap midLevelTransformedPatternWidget $ fmapMaybe lastOrNothing $ fmap (justStructures . justEditsInZone zone) updateEvent
   w <- widgetHold (midLevelTransformedPatternWidget EmptyTransformedPattern) updates
   x <- mapDyn (\(a,_,_) -> a) w
-  y <- mapDyn (\(_,a,_) -> Edit zone (Structure a)) w
+  y <- mapDyn (\(_,a,_) -> a) w
   z <- mapDyn (\(_,_,a) -> a) w
   let x' = joinDyn x
-  let y' = switchPromptlyDyn y
+  let y' = fmap (\a -> Edit zone (Structure a)) $ switchPromptlyDyn y
   let z' = switchPromptlyDyn z
   return (x',y',z')
 

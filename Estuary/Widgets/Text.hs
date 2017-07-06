@@ -7,17 +7,18 @@ import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Container
 import Estuary.Widgets.GeneralPattern
 import Estuary.Reflex.Utility
-import Data.Map
 import Estuary.Widgets.Generic
 import Control.Monad
 import GHCJS.DOM.EventM
 import Estuary.Protocol.JSON
+import Data.Maybe
+import Data.Map (fromList)
 
 
 {-
 textGeneralContainer :: (MonadWidget t m, Show a) => Event t (GeneralPattern a) -> m (Dynamic t (GeneralPattern a), Event t (GeneralPattern a),Event t Hint)
 textGeneralContainer delta = do
-  let delta' = fmapMaybe getTextPattern delta
+  let delta' = fMaybe getTextPattern delta
   x <- textInput $ def & textInputConfig_setValue .~ delta'
   let edits = fmap TextPattern $ _textInput_input x
   value <- mapDyn TextPattern $ _textInput_value x
@@ -39,8 +40,8 @@ textWidgetForPatternChain delta = do
 textPatternChainWidget :: MonadWidget t m => Zone -> Event t [Action ZoneValue] ->
   m (Dynamic t TransformedPattern,Event t (Action ZoneValue),Event t Hint)
 textPatternChainWidget zone delta = divClass "textPatternChain" $ do
-  let delta' = fmapMaybe justStructures $ fmapMaybe (justEditsInZone zone) delta
-  let delta'' = fmapMaybe lastOrNothing $ fmapMaybe f delta'
+  let delta' = fmap (mapMaybe f . justStructures . justEditsInZone zone) delta
+  let delta'' = fmapMaybe lastOrNothing delta'
   let deltaA = fmap (\(x,_,_)->x) delta''
   let deltaB = fmap (\(_,x,_)->x) delta''
   let deltaC = fmap (\(_,_,x)->x) delta''
@@ -56,7 +57,7 @@ textPatternChainWidget zone delta = divClass "textPatternChain" $ do
   value <- combineDyn TextPatternChain aValue bValue
   value' <- combineDyn ($) value cValue
   let deltaUp = tagDyn value' $ leftmost [aEvent,bEvent,cEvent]
-  let deltaUp' = fmap (Edit zone . Structure)
+  let deltaUp' = fmap (Edit zone . Structure) deltaUp
   return (value',deltaUp',never)
   where f (TextPatternChain x y z) = Just (x,y,z)
         f _ = Nothing
@@ -75,8 +76,8 @@ textWidget delta = divClass "textWidget" $ do
 labelWidget :: MonadWidget t m => Zone -> Event t [Action ZoneValue] -> m (Event t (Action ZoneValue))
 labelWidget z delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let attrs = constDyn $ ("class" =: "labelWidgetTextInput")
-  let delta' = fmapMaybe lastOrNothing $ fmapMaybe justLabelText $ fmapMaybe (justEditsInZone z) delta
-  y <- textInput $ def & textInputConfig_setValue .~ delta''' & textInputConfig_attributes .~ attrs
+  let delta' = fmapMaybe lastOrNothing $ fmap (justLabelTexts . justEditsInZone z) delta
+  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs
   return $ fmap (Edit z . LabelText) $ _textInput_input y
 
 

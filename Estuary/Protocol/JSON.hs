@@ -2,6 +2,7 @@ module Estuary.Protocol.JSON where
 
 import Estuary.Tidal.Types
 import Text.JSON
+import Data.Maybe
 
 
 data Request a =
@@ -39,10 +40,11 @@ instance JSON a => JSON (Response a) where
   readJSON (JSObject x) | firstKey x == "SpaceResponse" = SpaceResponse <$> valFromObj "SpaceResponse" x
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Request"
 
-justActionsInSpace :: String -> Response a -> Maybe (Action a)
-justActionsInSpace s1 (SpaceResponse (InSpace s2 a)) | s1 == s2 = Just a
-justActionsInSpace _ _ = Nothing
-
+justActionsInSpace :: String -> [Response a] -> [Action a]
+justActionsInSpace s1 = mapMaybe f
+  where f (SpaceResponse (InSpace s2 a)) | s1 == s2 = Just a
+        f _ = Nothing
+ 
 data InSpace a = InSpace String a
 
 instance JSON a => JSON (InSpace a) where
@@ -73,9 +75,11 @@ instance JSON v => JSON (Action v) where
   readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj "TempoChange" x
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Action"
 
-justEditsInZone :: Zone -> Action a -> Maybe a
-justEditsInZone z1 (Edit z2 a) = Just a
-justEditsInZone _ _ = Nothing
+justEditsInZone :: Zone -> [Action a] -> [a]
+justEditsInZone z1 = mapMaybe f
+  where
+    f (Edit z2 a) | z1 ==z2 = Just a
+    f _ = Nothing
 
 matchesNumber :: Int -> Action v -> Bool
 matchesNumber z1 (Edit z2 _) = z1 == z2
@@ -88,9 +92,10 @@ isChat :: Action v -> Bool
 isChat (Chat _ _) = True
 isChat _ = False
 
-justChats :: Action v -> Maybe (String,String)
-justChats (Chat n m) = Just (n,m)
-justChats _ = Nothing
+justChats :: [Action v] -> [(String,String)]
+justChats = mapMaybe f
+  where f (Chat x y) = Just (x,y)
+        f _ = Nothing
 
 isCps :: Action v -> Bool
 isCps (Tempo _ _ _) = True
@@ -119,17 +124,20 @@ instance JSON ZoneValue where
   readJSON (JSObject x) | firstKey x == "LabelText" = LabelText <$> valFromObj "LabelText" x
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.ZoneValue"
 
-justStructures :: ZoneValue -> Maybe TransformedPattern
-justStructures (Structure x) = Just x
-justStructures _ = Nothing
+justStructures :: [ZoneValue] -> [TransformedPattern]
+justStructures = mapMaybe f
+  where f (Structure x) = Just x
+        f _ = Nothing
+ 
+justEvaluableTexts :: [ZoneValue] -> [String]
+justEvaluableTexts = mapMaybe f
+  where f (EvaluableText x) = Just x
+        f _ = Nothing
 
-justEvaluableText :: ZoneValue -> Maybe String
-justEvaluableText (EvaluableText x) = Just x
-justEvaluableText _ = Nothing
-
-justLabelText :: ZoneValue -> Maybe String
-justLabelText (LabelText x) = Just x
-justLabelText _ = Nothing
+justLabelTexts :: [ZoneValue] -> [String]
+justLabelTexts = mapMaybe f
+  where f (LabelText x) = Just x
+        f _ = Nothing
 
 isEstuaryEdit :: Action ZoneValue -> Bool
 isEstuaryEdit (Edit _ (Structure _)) = True

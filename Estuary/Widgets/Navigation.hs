@@ -82,30 +82,30 @@ mainPage :: MonadWidget t m => Event t [ServerResponse]
      Event t ServerRequest, -- edit events for broadcast
      Event t Hint) -- hint events for local use
 mainPage deltasDown = do
-  let deltasDown' = fmapMaybe (justActionsInSpace "placeholder") deltasDown
+  let deltasDown' = fmap (justActionsInSpace "placeholder") deltasDown
   (aLabel,aValue,aEdits,aHints) <- divClass "eightTopL" $ do
     a <- labelWidget 1 deltasDown'
     (b,c,d) <- topLevelTransformedPatternWidget 2 deltasDown'
     return (a,b,c,d)
   (bLabel,bValue,bEdits,bHints) <- divClass "eightTopR" $ do
     a <- labelWidget 3 deltasDown'
-    (b,c,d) <- topLevelTransformedPatternWidget 4 deltaB
+    (b,c,d) <- topLevelTransformedPatternWidget 4 deltasDown'
     return (a,b,c,d)
   (cLabel,cValue,cEdits,cHints) <- divClass "eightMiddleL" $ do
         a <- labelWidget 5 deltasDown'
-        (b,c,d) <- textPatternChainWidget 6 deltaC
+        (b,c,d) <- textPatternChainWidget 6 deltasDown'
         return (a,b,c,d)
   (dLabel,dValue,dEdits,dHints) <- divClass "eightMiddleR" $ do
         a <- labelWidget 7 deltasDown'
-        (b,c,d) <- textPatternChainWidget 8 deltaD
+        (b,c,d) <- textPatternChainWidget 8 deltasDown'
         return (a,b,c,d)
   (eLabel,eValue,eEdits,eHints) <- divClass "eightBottomL" $ do
         a <- labelWidget 9 deltasDown'
-        (b,c,d) <- textPatternChainWidget 10 deltaE
+        (b,c,d) <- textPatternChainWidget 10 deltasDown'
         return (a,b,c,d)
   (fLabel,fValue,fEdits,fHints) <- divClass "eightBottomR" $ do
         a <- labelWidget 11 deltasDown'
-        (b,c,d) <- topLevelTransformedPatternWidget 12 deltaA
+        (b,c,d) <- topLevelTransformedPatternWidget 12 deltasDown'
         return (a,b,c,d)
   aValue' <- mapDyn (singleton 2) aValue
   bValue' <- mapDyn (singleton 4) bValue
@@ -125,7 +125,8 @@ mainPage deltasDown = do
   return (values,deltasUp',hints)
 
 
-tempoWidget :: MonadWidget t m => Event t [EstuaryProtocol] -> m (Event t EstuaryProtocol)
+{-
+tempoWidget :: MonadWidget t m => Event t [ServerResponse] -> m (Event t ServerRequest)
 tempoWidget deltas = do
   text "CPS:"
   let delta' = fmap (Prelude.filter isCps) deltas
@@ -136,12 +137,12 @@ tempoWidget deltas = do
   let t' = fmapMaybe (readMaybe) $ _textInput_input t
   let edits = fmap (TempoChange "") t'
   return edits
-
+-}
 
 diagnostics :: MonadWidget t m =>
   Dynamic t (Map Int TransformedPattern) ->
-  Event t EstuaryProtocol ->
-  Event t [EstuaryProtocol] ->
+  Event t ServerRequest ->
+  Event t [ServerResponse] ->
   Event t Hint ->
   m ()
 diagnostics values deltasUp deltasDown hints = do
