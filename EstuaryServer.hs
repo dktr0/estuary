@@ -22,14 +22,14 @@ editZone z v s = s { zones = Map.insert z v (zones s) }
 
 type ClientHandle = Int
 
-data ServerState = ServerState {
+data Server = Server {
   password :: String,
   clients :: Map.Map ClientHandle WS.Connection,
   spaces :: Map.Map String Space
 }
 
-newServerState :: ServerState
-newServerState = ServerState {
+newServer :: Server
+newServer = Server {
     password = "password",
     clients = Map.empty,
     spaces = Map.empty
@@ -37,29 +37,29 @@ newServerState = ServerState {
 
 
 
-addClient :: ServerState -> WS.Connection -> (ClientHandle,ServerState)
+addClient :: Server -> WS.Connection -> (ClientHandle,Server)
 addClient s x = (i,s { clients=newMap})
   where i = head ([0..] \\ Map.keys (clients s))
         newMap = Map.insert i x (clients s)
 
-createSpace :: String -> ServerState -> ServerState
+createSpace :: String -> Server -> Server
 createSpace w s = s { spaces = Map.insertWith (\_ x -> x) w (Space Map.empty) (spaces s) }
 
 -- if space already exists, createSpace does not make any change
 
-edit :: String -> Zone -> ZoneValue -> ServerState -> ServerState
+edit :: String -> Zone -> ZoneValue -> Server -> Server
 edit w z v s = s { spaces = Map.adjust (editZone z v) w (spaces s) }
 
 
-data ClientState = ClientState {
+data Client = Client {
   handle :: ClientHandle,
   connection :: WS.Connection,
   authenticated :: Bool,
   space :: Maybe String
   }
 
-newClientState :: ClientHandle -> WS.Connection -> ClientState
-newClientState h c = ClientState {
+newClient :: ClientHandle -> WS.Connection -> Client
+newClient h c = Client {
   handle = h,
   connection = c,
   authenticated = False,
@@ -68,21 +68,20 @@ newClientState h c = ClientState {
 
 main = do
   putStrLn "Estuary collaborative editing server (listening on port 8001)"
-  server <- newMVar newServerState
+  server <- newMVar newServer
   WS.runServer "0.0.0.0" 8001 $ connectionHandler server
 
-connectionHandler :: MVar ServerState -> WS.PendingConnection -> IO ()
+connectionHandler :: MVar Server -> WS.PendingConnection -> IO ()
 connectionHandler s ws = do
   putStrLn "received new connection"
   ws' <- WS.acceptRequest ws
   ss <- takeMVar s
   let (h,ss') = addClient ss ws'
   putMVar s ss'
-  let c = newClientState h ws'
   WS.forkPingThread ws' 30
-  processLoop s c
+  processLoop s $ newClient h ws'
 
-processLoop :: MVar ServerState -> ClientState -> IO ()
+processLoop :: MVar Server -> Client -> IO ()
 processLoop s c = do
   m <- try (WS.receiveData (connection c))
   case m of
@@ -100,14 +99,14 @@ processLoop s c = do
     Left (WS.ParseException e) -> putStrLn ("parse exception: " ++ e)
 
 
-onlyIfAuthenticated :: ClientState -> IO ClientState -> IO ClientState
+onlyIfAuthenticated :: Client -> IO Client -> IO Client
 onlyIfAuthenticated c f = if (authenticated c) then f else do
   putStrLn "ignoring request from non-authenticated client"
   return c
 
 
-processResult :: MVar ServerState -> ClientState -> Result (Request ZoneValue)
-  -> IO ClientState
+processResult :: MVar Server -> Client -> Result (Request ZoneValue)
+  -> IO Client
 processResult _ c (Error x) = do
   putStrLn ("Error: " ++ x)
   return c
@@ -116,7 +115,7 @@ processResult s c (Ok x) = do
   processRequest s c x
 
 
-processRequest :: MVar ServerState -> ClientState -> Request ZoneValue -> IO ClientState
+processRequest :: MVar Server -> Client -> Request ZoneValue -> IO Client
 
 processRequest s c (Authenticate x) = do
   pwd <- readMVar s >>= return . password
@@ -150,13 +149,11 @@ processRequest s c (CreateSpace x) = onlyIfAuthenticated c $ do
 processRequest s c (SpaceRequest x) = onlyIfAuthenticated c $ processInSpace s c x
 
 
-processInSpace :: MVar ServerState -> ClientState -> InSpace (Action ZoneValue) -> IO ClientState
-processInSpace s c (InSpace x y) = do
-  putStrLn "warning: processInSpace is disregarding space names as a placeholder"
-  processAction s c x y
+processInSpace :: MVar Server -> Client -> InSpace (Action ZoneValue) -> IO Client
+processInSpace s c (InSpace x y) = processAction s c x y
 
 
-processAction :: MVar ServerState -> ClientState -> String -> Action ZoneValue -> IO ClientState
+processAction :: MVar Server -> Client -> String -> Action ZoneValue -> IO Client
 
 processAction s c w x@(Chat name msg) = do
   putStrLn $ "Chat in " ++ w ++ " from " ++ name ++ ": " ++ msg
@@ -188,7 +185,7 @@ respond ws x = do
   let x' = T.pack (encodeStrict x)
   WS.sendTextData ws x'
 
-broadcast :: MVar ServerState -> ServerResponse -> IO ()
+broadcast :: MVar Server -> ServerResponse -> IO ()
 broadcast s x = do
   s' <- takeMVar s
   let x' = T.pack (encodeStrict x)
@@ -196,7 +193,7 @@ broadcast s x = do
   forM_ cs' $ \ws -> WS.sendTextData ws x'
   putMVar s s'
 
-broadcastNoOrigin :: MVar ServerState -> ClientState -> ServerResponse -> IO ()
+broadcastNoOrigin :: MVar Server -> Client -> ServerResponse -> IO ()
 broadcastNoOrigin s c x = do
   s' <- takeMVar s
   let x' = T.pack (encodeStrict x)
@@ -204,7 +201,7 @@ broadcastNoOrigin s c x = do
   forM_ cs' $ \ws -> WS.sendTextData ws x'
   putMVar s s'
 
-updateServer :: MVar ServerState -> (ServerState -> ServerState) -> IO (MVar ServerState)
+updateServer :: MVar Server -> (Server -> Server) -> IO (MVar Server)
 updateServer s f = do
   s' <- takeMVar s
   putMVar s (f s')
