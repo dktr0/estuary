@@ -17,6 +17,11 @@ data Space = Space {
   zones :: Map.Map Int ZoneValue
   }
 
+newSpace :: Space
+newSpace = Space {
+  zones = Map.empty
+  }
+
 editZone :: Int -> ZoneValue -> Space -> Space
 editZone z v s = s { zones = Map.insert z v (zones s) }
 
@@ -32,10 +37,8 @@ newServer :: Server
 newServer = Server {
     password = "password",
     clients = Map.empty,
-    spaces = Map.empty
+    spaces = Map.fromList [("testingA",newSpace),("testingB",newSpace),("testingC",newSpace)]
   }
-
-
 
 addClient :: Server -> WS.Connection -> (ClientHandle,Server)
 addClient s x = (i,s { clients=newMap})
@@ -49,6 +52,9 @@ createSpace w s = s { spaces = Map.insertWith (\_ x -> x) w (Space Map.empty) (s
 
 edit :: String -> Zone -> ZoneValue -> Server -> Server
 edit w z v s = s { spaces = Map.adjust (editZone z v) w (spaces s) }
+
+getSpaceList :: MVar Server -> IO ServerResponse
+getSpaceList s = readMVar s >>= return . SpaceList . Map.keys . spaces
 
 
 data Client = Client {
@@ -129,8 +135,7 @@ processRequest s c (Authenticate x) = do
 
 processRequest s c RequestSpaceList = onlyIfAuthenticated c $ do
   putStrLn "RequestSpaceList"
-  spaceNames <- readMVar s >>= return . Map.keys . spaces
-  respond (connection c) $ SpaceList spaceNames
+  getSpaceList s >>= respond (connection c)
   return c
 
 processRequest s c (JoinSpace x) = onlyIfAuthenticated c $ do
@@ -144,6 +149,7 @@ processRequest s c LeaveSpace = onlyIfAuthenticated c $ do
 processRequest s c (CreateSpace x) = onlyIfAuthenticated c $ do
   putStrLn $ "CreateSpace " ++ x
   updateServer s $ createSpace x
+  getSpaceList s >>= broadcast s
   return c
 
 processRequest s c (SpaceRequest x) = onlyIfAuthenticated c $ processInSpace s c x

@@ -47,6 +47,13 @@ justActionsInSpace s1 = mapMaybe f
   where f (SpaceResponse (InSpace s2 a)) | s1 == s2 = Just a
         f _ = Nothing
 
+justSpaceList :: [Response a] -> [String]
+justSpaceList = g . mapMaybe f
+  where f (SpaceList x) = Just x
+        f _ = Nothing
+        g [] = []
+        g (x:xs) = x
+
 data InSpace a = InSpace String a
 
 instance JSON a => JSON (InSpace a) where

@@ -21,7 +21,7 @@ data Navigation =
   Tutorial |
   Solo |
   Lobby |
-  Collaborate
+  Collaborate String
 
 
 navigation :: MonadWidget t m => Event t [ServerResponse] ->
@@ -62,10 +62,18 @@ page wsDown Solo = do
   return (constDyn [],never,never,x)
 
 page wsDown Lobby = do
-  text "Lobby placeholder"
-  y <- liftM (Collaborate <$) $ button "collaborate"
-  x <- liftM (Splash <$) $ button "back to splash"
-  return (constDyn [],never,never,leftmost [x,y])
+  let now = UTCTime { utctDay = 0, utctDayTime = 0.0 }
+  ticks <- tickLossy (1.0::NominalDiffTime) now
+  let requestSpaceList = RequestSpaceList <$ ticks
+  spaceList <- holdDyn [] $ justSpaceList <$> wsDown
+  join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
+  let join' = mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
+  let join'' = switchPromptlyDyn join -- Event t Navigation
+  back <- liftM (Splash <$) $ button "back to splash"
+  return (constDyn [],requestSpaceList,never,leftmost [back,join''])
+  where joinButton x = do
+    b <- button $ "Join " ++ x
+    return $ Collaborate x <$ b
 
 page wsDown Collaborate = do
   (patternMap,wsUp,hints) <- mainPage wsDown
