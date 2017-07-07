@@ -117,7 +117,6 @@ processResult _ c (Error x) = do
   putStrLn ("Error: " ++ x)
   return c
 processResult s c (Ok x) = do
-  putStrLn "processResult"
   processRequest s c x
 
 

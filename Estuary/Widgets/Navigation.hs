@@ -7,6 +7,7 @@ import Reflex.Dom
 import Estuary.Protocol.JSON
 import Estuary.WebDirt.Foreign
 import Estuary.Tidal.Types
+import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Control.Monad (liftM)
@@ -62,35 +63,36 @@ page wsDown Solo = do
   return (constDyn [],never,never,x)
 
 page wsDown Lobby = do
-  let now = UTCTime { utctDay = 0, utctDayTime = 0.0 }
-  ticks <- tickLossy (1.0::NominalDiffTime) now
-  let requestSpaceList = RequestSpaceList <$ ticks
+  requestSpaceList <- liftM (RequestSpaceList <$) getPostBuild
   spaceList <- holdDyn [] $ justSpaceList <$> wsDown
   join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
-  let join' = mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
-  let join'' = switchPromptlyDyn join -- Event t Navigation
+  join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
+  let join'' = switchPromptlyDyn join' -- Event t Navigation
   back <- liftM (Splash <$) $ button "back to splash"
   return (constDyn [],requestSpaceList,never,leftmost [back,join''])
-  where joinButton x = do
-    b <- button $ "Join " ++ x
-    return $ Collaborate x <$ b
 
-page wsDown Collaborate = do
-  (patternMap,wsUp,hints) <- mainPage wsDown
+page wsDown (Collaborate w) = do
+  (patternMap,wsUp,hints) <- mainPage w wsDown
   patterns <- mapDyn elems patternMap
   x <- liftM (Lobby <$) $ button "back to lobby"
   return (patterns,wsUp,hints,x)
 
+joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation) 
+joinButton x = do
+  b <- clickableDivClass'' x "placeholderClass" ()
+  return $ Collaborate <$> tagDyn x b
+
+
 
 -- stuff below this line here temporarily during testing/refactoring
 
-mainPage :: MonadWidget t m => Event t [ServerResponse]
+mainPage :: MonadWidget t m => String -> Event t [ServerResponse]
   -> m
     (Dynamic t (Map Int TransformedPattern), -- values for local use
      Event t ServerRequest, -- edit events for broadcast
      Event t Hint) -- hint events for local use
-mainPage deltasDown = do
-  let deltasDown' = fmap (justActionsInSpace "placeholder") deltasDown
+mainPage spaceName deltasDown = do
+  let deltasDown' = fmap (justActionsInSpace spaceName) deltasDown
   (aLabel,aValue,aEdits,aHints) <- divClass "eightTopL" $ do
     a <- labelWidget 1 deltasDown'
     (b,c,d) <- topLevelTransformedPatternWidget 2 deltasDown'
@@ -128,7 +130,7 @@ mainPage deltasDown = do
   values <- combineDyn (union) valuesE fValue'
   let labelsUp = leftmost [aLabel,bLabel,cLabel,dLabel,eLabel,fLabel]
   let deltasUp = leftmost [aEdits,bEdits,cEdits,dEdits,eEdits,fEdits]
-  let deltasUp' = fmap (SpaceRequest  . InSpace "placeholder") deltasUp
+  let deltasUp' = fmap (SpaceRequest  . InSpace spaceName) deltasUp
   let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints]
   return (values,deltasUp',hints)
 
