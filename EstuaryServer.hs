@@ -62,15 +62,23 @@ processLoop s c ws = do
   m <- try (WS.receiveData ws)
   case m of
     Right x -> do
-      c' <- processResult s c (decode (T.unpack x))
-      processLoop s c' ws
+      let x' = decode (T.unpack x) :: Result JSString
+      case x' of 
+        Ok x'' -> do
+          c' <- processResult s c $ decode (fromJSString x'')
+          processLoop s c' ws
+        Error x'' -> do
+          putStrLn $ "Error: " ++ x''
+          processLoop s c ws 
     Left WS.ConnectionClosed -> putStrLn "unexpected loss of connection"
     Left (WS.CloseRequest _ _) -> putStrLn "connection closed by request from peer"
     Left (WS.ParseException e) -> putStrLn ("parse exception: " ++ e)
 
 
 onlyIfAuthenticated :: ClientState -> IO ClientState -> IO ClientState
-onlyIfAuthenticated c f = if (authenticated c) then f else return c
+onlyIfAuthenticated c f = if (authenticated c) then f else do 
+  putStrLn "ignoring request from non-authenticated client"
+  return c
 
 
 processResult :: ServerState -> ClientState -> Result (Request ZoneValue)
@@ -78,7 +86,9 @@ processResult :: ServerState -> ClientState -> Result (Request ZoneValue)
 processResult _ c (Error x) = do
   putStrLn ("Error: " ++ x)
   return c
-processResult s c (Ok x) = processRequest s c x
+processResult s c (Ok x) = do
+  putStrLn "processResult"
+  processRequest s c x
 
 
 processRequest :: ServerState -> ClientState -> Request ZoneValue -> IO ClientState

@@ -26,7 +26,9 @@ instance JSON a => JSON (Request a) where
   readJSON (JSString x) | fromJSString x == "LeaveSpace" = Ok LeaveSpace
   readJSON (JSObject x) | firstKey x == "CreateSpace" = CreateSpace <$> valFromObj "CreateSpace" x
   readJSON (JSObject x) | firstKey x == "SpaceRequest" = SpaceRequest <$> valFromObj "SpaceRequest" x
-  readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Request"
+  readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSOBject as Estuary.Protocol.JSON.Request: " ++ (show x)
+  readJSON (JSString x) | otherwise = Error $ "Unable to parse JSString as Estuary.Protocol.JSON.Request: " ++ (show x)
+  readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Request (neither JSOBject nor JSString)"
 
 
 data Response a =
