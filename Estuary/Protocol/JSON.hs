@@ -46,7 +46,7 @@ justActionsInSpace :: String -> [Response a] -> [Action a]
 justActionsInSpace s1 = mapMaybe f
   where f (SpaceResponse (InSpace s2 a)) | s1 == s2 = Just a
         f _ = Nothing
- 
+
 data InSpace a = InSpace String a
 
 instance JSON a => JSON (InSpace a) where
@@ -116,6 +116,7 @@ data ZoneValue =
   Structure TransformedPattern |
   EvaluableText String |
   LabelText String
+  deriving (Eq,Show)
 
 instance JSON ZoneValue where
   showJSON (Structure x) = encJSDict [("Structure",x)]
@@ -130,7 +131,7 @@ justStructures :: [ZoneValue] -> [TransformedPattern]
 justStructures = mapMaybe f
   where f (Structure x) = Just x
         f _ = Nothing
- 
+
 justEvaluableTexts :: [ZoneValue] -> [String]
 justEvaluableTexts = mapMaybe f
   where f (EvaluableText x) = Just x
