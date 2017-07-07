@@ -45,6 +45,9 @@ addClient s x = (i,s { clients=newMap})
   where i = head ([0..] \\ Map.keys (clients s))
         newMap = Map.insert i x (clients s)
 
+deleteClient :: ClientHandle -> Server -> Server
+deleteClient h s = s { clients = Map.delete h (clients s) }
+
 createSpace :: String -> Server -> Server
 createSpace w s = s { spaces = Map.insertWith (\_ x -> x) w (Space Map.empty) (spaces s) }
 
@@ -100,9 +103,17 @@ processLoop s c = do
         Error x'' -> do
           putStrLn $ "Error: " ++ x''
           processLoop s c
-    Left WS.ConnectionClosed -> putStrLn "unexpected loss of connection"
-    Left (WS.CloseRequest _ _) -> putStrLn "connection closed by request from peer"
-    Left (WS.ParseException e) -> putStrLn ("parse exception: " ++ e)
+    Left WS.ConnectionClosed -> close s c "unexpected loss of connection"
+    Left (WS.CloseRequest _ _) -> close s c "connection closed by request from peer"
+    Left (WS.ParseException e) -> do
+      putStrLn ("parse exception: " ++ e)
+      processLoop s c
+
+close :: MVar Server -> Client -> String -> IO ()
+close s c msg = do
+  putStrLn $ "closing connection: " ++ msg
+  updateServer s $ deleteClient (handle c)
+  return ()
 
 
 onlyIfAuthenticated :: Client -> IO Client -> IO Client
