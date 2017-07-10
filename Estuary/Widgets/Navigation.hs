@@ -72,68 +72,15 @@ page wsDown Lobby = do
   return (constDyn [],requestSpaceList,never,leftmost [back,join''])
 
 page wsDown (Collaborate w) = do
-  (patternMap,wsUp,hints) <- mainPage w wsDown
+  (patternMap,wsUp,hints) <- viewInSpaceWidget spaceName defaultView wsDown
   patterns <- mapDyn elems patternMap
   x <- liftM (Lobby <$) $ button "back to lobby"
   return (patterns,wsUp,hints,x)
 
-joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation) 
+joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation)
 joinButton x = do
   b <- clickableDivClass'' x "placeholderClass" ()
   return $ Collaborate <$> tagDyn x b
-
-
-
--- stuff below this line here temporarily during testing/refactoring
-
-mainPage :: MonadWidget t m => String -> Event t [ServerResponse]
-  -> m
-    (Dynamic t (Map Int TransformedPattern), -- values for local use
-     Event t ServerRequest, -- edit events for broadcast
-     Event t Hint) -- hint events for local use
-mainPage spaceName deltasDown = do
-  let deltasDown' = fmap (justActionsInSpace spaceName) deltasDown
-  (aLabel,aValue,aEdits,aHints) <- divClass "eightTopL" $ do
-    a <- labelWidget 1 deltasDown'
-    (b,c,d) <- topLevelTransformedPatternWidget 2 deltasDown'
-    return (a,b,c,d)
-  (bLabel,bValue,bEdits,bHints) <- divClass "eightTopR" $ do
-    a <- labelWidget 3 deltasDown'
-    (b,c,d) <- topLevelTransformedPatternWidget 4 deltasDown'
-    return (a,b,c,d)
-  (cLabel,cValue,cEdits,cHints) <- divClass "eightMiddleL" $ do
-        a <- labelWidget 5 deltasDown'
-        (b,c,d) <- textPatternChainWidget 6 deltasDown'
-        return (a,b,c,d)
-  (dLabel,dValue,dEdits,dHints) <- divClass "eightMiddleR" $ do
-        a <- labelWidget 7 deltasDown'
-        (b,c,d) <- textPatternChainWidget 8 deltasDown'
-        return (a,b,c,d)
-  (eLabel,eValue,eEdits,eHints) <- divClass "eightBottomL" $ do
-        a <- labelWidget 9 deltasDown'
-        (b,c,d) <- textPatternChainWidget 10 deltasDown'
-        return (a,b,c,d)
-  (fLabel,fValue,fEdits,fHints) <- divClass "eightBottomR" $ do
-        a <- labelWidget 11 deltasDown'
-        (b,c,d) <- topLevelTransformedPatternWidget 12 deltasDown'
-        return (a,b,c,d)
-  aValue' <- mapDyn (singleton 2) aValue
-  bValue' <- mapDyn (singleton 4) bValue
-  cValue' <- mapDyn (singleton 6) cValue
-  dValue' <- mapDyn (singleton 8) dValue
-  eValue' <- mapDyn (singleton 10) eValue
-  fValue' <- mapDyn (singleton 12) fValue
-  valuesB <- combineDyn (union) aValue' bValue'
-  valuesC <- combineDyn (union) valuesB cValue'
-  valuesD <- combineDyn (union) valuesC dValue'
-  valuesE <- combineDyn (union) valuesD eValue'
-  values <- combineDyn (union) valuesE fValue'
-  let labelsUp = leftmost [aLabel,bLabel,cLabel,dLabel,eLabel,fLabel]
-  let deltasUp = leftmost [aEdits,bEdits,cEdits,dEdits,eEdits,fEdits]
-  let deltasUp' = fmap (SpaceRequest  . InSpace spaceName) deltasUp
-  let hints = leftmost [aHints,bHints,cHints,dHints,eHints,fHints]
-  return (values,deltasUp',hints)
-
 
 {-
 tempoWidget :: MonadWidget t m => Event t [ServerResponse] -> m (Event t ServerRequest)

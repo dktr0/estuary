@@ -44,7 +44,7 @@ setUrl (EstuaryProtocolObject x) url = setUrl_ x (Prim.toJSString url)
 send :: EstuaryProtocolObject -> String -> IO ()
 send (EstuaryProtocolObject x) y = send_ x (Prim.toJSString y)
 
-getResponses :: EstuaryProtocolObject -> IO (Either String [Response ZoneValue]) -- left=parsing error right=responses
+getResponses :: EstuaryProtocolObject -> IO (Either String [ServerResponse]) -- left=parsing error right=responses
 getResponses (EstuaryProtocolObject x) = getResponses_ x >>= return . f . decode . Prim.fromJSString
   where f (Ok xs) = Right xs
         f (Error x) = Left $ "error trying to parse as [EstuaryProtocol]: " ++ x

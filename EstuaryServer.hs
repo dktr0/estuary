@@ -11,19 +11,8 @@ import Control.Concurrent.MVar
 import Control.Exception (try)
 import Text.JSON
 
-import Estuary.Protocol.JSON
 
-data Space = Space {
-  zones :: Map.Map Int ZoneValue
-  }
-
-newSpace :: Space
-newSpace = Space {
-  zones = Map.empty
-  }
-
-editZone :: Int -> ZoneValue -> Space -> Space
-editZone z v s = s { zones = Map.insert z v (zones s) }
+import Estuary.Types.Space
 
 type ClientHandle = Int
 
@@ -49,12 +38,12 @@ deleteClient :: ClientHandle -> Server -> Server
 deleteClient h s = s { clients = Map.delete h (clients s) }
 
 createSpace :: String -> Server -> Server
-createSpace w s = s { spaces = Map.insertWith (\_ x -> x) w (Space Map.empty) (spaces s) }
+createSpace w s = s { spaces = Map.insertWith (\_ x -> x) w emptySpace (spaces s) }
 
 -- if space already exists, createSpace does not make any change
 
-edit :: String -> Zone -> ZoneValue -> Server -> Server
-edit w z v s = s { spaces = Map.adjust (editZone z v) w (spaces s) }
+edit :: String -> Int -> Definition -> Server -> Server
+edit w z d s = s { spaces = Map.adjust (editDef z d) w (spaces s) }
 
 getSpaceList :: MVar Server -> IO ServerResponse
 getSpaceList s = readMVar s >>= return . SpaceList . Map.keys . spaces
@@ -122,7 +111,7 @@ onlyIfAuthenticated c f = if (authenticated c) then f else do
   return c
 
 
-processResult :: MVar Server -> Client -> Result (Request ZoneValue)
+processResult :: MVar Server -> Client -> Result ServerRequest
   -> IO Client
 processResult _ c (Error x) = do
   putStrLn ("Error: " ++ x)
@@ -131,7 +120,7 @@ processResult s c (Ok x) = do
   processRequest s c x
 
 
-processRequest :: MVar Server -> Client -> Request ZoneValue -> IO Client
+processRequest :: MVar Server -> Client -> ServerRequest -> IO Client
 
 processRequest s c (Authenticate x) = do
   pwd <- readMVar s >>= return . password
@@ -165,26 +154,25 @@ processRequest s c (CreateSpace x) = onlyIfAuthenticated c $ do
 processRequest s c (SpaceRequest x) = onlyIfAuthenticated c $ processInSpace s c x
 
 
-processInSpace :: MVar Server -> Client -> InSpace (Action ZoneValue) -> IO Client
-processInSpace s c (InSpace x y) = processAction s c x y
+processInSpace :: MVar Server -> Client -> Sited (Action Definition) -> IO Client
+processInSpace s c (Sited x y) = processAction s c x y
 
-
-processAction :: MVar Server -> Client -> String -> Action ZoneValue -> IO Client
+processAction :: MVar Server -> Client -> String -> Action Definition -> IO Client
 
 processAction s c w x@(Chat name msg) = do
   putStrLn $ "Chat in " ++ w ++ " from " ++ name ++ ": " ++ msg
-  broadcast s $ SpaceResponse (InSpace w x)
+  broadcast s $ SpaceResponse (Sited w x)
   return c
 
 processAction s c w x@(Edit zone value) = do
   putStrLn $ "Edit in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
   updateServer s $ edit w zone value
-  broadcastNoOrigin s c $ SpaceResponse (InSpace w x)
+  broadcastNoOrigin s c $ SpaceResponse (Sited w x)
   return c
 
 processAction s c w x@(Eval zone value) = do
   putStrLn $ "Eval in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
-  broadcastNoOrigin s c $ SpaceResponse (InSpace w x)
+  broadcastNoOrigin s c $ SpaceResponse (Sited w x)
   return c
 
 processAction s c w x@(Tempo at beat cps) = do

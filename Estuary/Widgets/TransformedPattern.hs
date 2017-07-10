@@ -21,20 +21,20 @@ import Estuary.Reflex.Utility
 import Estuary.Protocol.JSON
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
-  Zone -> Event t [Action ZoneValue] -> -- deltas from network (must not re-propagate as edit events!)
+  Event t [TransformedPattern] -> -- deltas from network (must not re-propagate as edit events!)
   m (
     Dynamic t TransformedPattern, -- value for local WebDirt playback
-    Event t (Action ZoneValue), -- deltas to network (not based on events received from network!)
+    Event t TransformedPattern, -- deltas to network (not based on events received from network!)
     Event t Hint -- hints (currently for WebDirt sample loading only)
   )
-topLevelTransformedPatternWidget zone updateEvent = do
-  let updates = fmap midLevelTransformedPatternWidget $ fmapMaybe lastOrNothing $ fmap (justStructures . justEditsInZone zone) updateEvent
+topLevelTransformedPatternWidget delta = do
+  let updates = fmap midLevelTransformedPatternWidget $ fmapMaybe lastOrNothing delta
   w <- widgetHold (midLevelTransformedPatternWidget EmptyTransformedPattern) updates
   x <- mapDyn (\(a,_,_) -> a) w
   y <- mapDyn (\(_,a,_) -> a) w
   z <- mapDyn (\(_,_,a) -> a) w
   let x' = joinDyn x
-  let y' = fmap (\a -> Edit zone (Structure a)) $ switchPromptlyDyn y
+  let y' = switchPromptlyDyn y
   let z' = switchPromptlyDyn z
   return (x',y',z')
 

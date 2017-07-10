@@ -88,7 +88,7 @@ chatWidget space deltasDown = mdo
   let send' = fmap (const ()) $ ffilter (==13) $ _textInput_keypress chatInput
   let send'' = leftmost [send,send']
   let toSend = tag (current $ _textInput_value chatInput) send''
-  let deltasUp = attachDynWith (\name msg -> SpaceRequest (InSpace space (Chat name msg))) (_textInput_value nameInput) toSend
+  let deltasUp = attachDynWith (\name msg -> SpaceRequest (Sited space (Chat name msg))) (_textInput_value nameInput) toSend
   let chatsOnly = fmap (justChats . justActionsInSpace space) deltasDown
   mostRecent <- foldDyn (\a b -> take 8 $ (reverse a) ++ b) [] chatsOnly
   formatted <- mapDyn (fmap (\(n,m) -> n ++ ": " ++ m)) mostRecent
