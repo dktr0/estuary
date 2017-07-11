@@ -19,6 +19,7 @@ import Estuary.WebDirt.Foreign
 import qualified GHCJS.Types as T
 import qualified GHCJS.Marshal.Pure as P
 
+import Estuary.Types.Hint
 
 
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer

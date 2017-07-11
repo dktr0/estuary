@@ -17,6 +17,7 @@ import GHCJS.DOM.EventM
 import Data.Maybe(isJust)
 import Text.Read(readMaybe)
 
+import Estuary.Types.Hint
 
 -- see ICOAH vowel widget for example (using vowelButtonWidget)
 -- Vowel Pattern

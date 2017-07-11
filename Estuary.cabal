@@ -11,7 +11,7 @@ copyright:           2015-17 David Ogborn and others
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
-extra-source-files:  static/css/helperwidgets.css
+extra-source-files:  
 
 executable Estuary
   hs-source-dirs:    .

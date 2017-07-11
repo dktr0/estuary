@@ -5,7 +5,6 @@ module Main where
 import Reflex
 import Reflex.Dom
 import Estuary.Tidal.Types
-import Estuary.Protocol.JSON
 import Estuary.Protocol.Foreign
 import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic

@@ -1,8 +1,11 @@
 setup:
 	stack setup
 
-build:
+client:
 	stack build
+
+server:
+	ghc -o EstuaryServer EstuaryServer.hs
 
 install:
 	cp -Rf $$(stack path --local-install-root)/bin/Estuary.jsexe .
@@ -27,8 +30,6 @@ zip:
 	tar czf estuary-build.tgz -C temp .
 	rm -rf temp
 
-server:
-	ghc -o EstuaryServer EstuaryServer.hs
 
 WebDirt:
 	cp -Rf static/WebDirt Estuary.jsexe

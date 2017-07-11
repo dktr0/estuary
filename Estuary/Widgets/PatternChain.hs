@@ -18,6 +18,8 @@ import qualified Estuary.Widgets.SpecificPattern as Sp
 import qualified Estuary.Widgets.GeneralPattern as G
 import qualified Data.List
 
+import Estuary.Types.Hint
+
 toCombinedTransPat::[TransformedPattern] -> TransformedPattern
 toCombinedTransPat (UntransformedPattern x:[]) = UntransformedPattern x
 toCombinedTransPat (TransformedPattern trans x:[]) = TransformedPattern trans x

@@ -19,6 +19,7 @@ import Data.Maybe(isJust,listToMaybe,fromMaybe,fromJust)
 import Text.Read(readMaybe)
 import Control.Applicative (liftA2)
 
+import Estuary.Types.Hint
 
 
 generalContainerLive' :: (MonadWidget t m, Eq a, Show a) 

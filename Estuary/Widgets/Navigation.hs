@@ -4,7 +4,6 @@ module Estuary.Widgets.Navigation where
 
 import Reflex
 import Reflex.Dom
-import Estuary.Protocol.JSON
 import Estuary.WebDirt.Foreign
 import Estuary.Tidal.Types
 import Estuary.Widgets.Generic
@@ -14,6 +13,14 @@ import Control.Monad (liftM)
 import Data.Map
 import Text.Read
 import Text.JSON
+
+import Estuary.Types.Request
+import Estuary.Types.Response
+import Estuary.Types.Hint
+import Estuary.Types.View
+import Estuary.Types.Definition
+
+import Estuary.Widgets.View
 
 
 data Navigation =
@@ -72,10 +79,11 @@ page wsDown Lobby = do
   return (constDyn [],requestSpaceList,never,leftmost [back,join''])
 
 page wsDown (Collaborate w) = do
-  (patternMap,wsUp,hints) <- viewInSpaceWidget spaceName defaultView wsDown
-  patterns <- mapDyn elems patternMap
+  (defMap,wsUp,hints) <- viewInSpaceWidget w defaultView wsDown
+  patterns <- mapDyn (justStructures . elems) defMap
   x <- liftM (Lobby <$) $ button "back to lobby"
   return (patterns,wsUp,hints,x)
+
 
 joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation)
 joinButton x = do

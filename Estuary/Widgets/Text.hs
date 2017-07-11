@@ -10,10 +10,13 @@ import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
 import Control.Monad
 import GHCJS.DOM.EventM
-import Estuary.Protocol.JSON
 import Data.Maybe
 import Data.Map (fromList)
 
+import Estuary.Utility (lastOrNothing)
+import Estuary.Types.Definition
+import Estuary.Types.EditOrEval
+import Estuary.Types.Hint
 
 textWidgetForPatternChain :: MonadWidget t m => Event t String -> m (Dynamic t String, Event t String)
 textWidgetForPatternChain delta = do
@@ -24,10 +27,10 @@ textWidgetForPatternChain delta = do
   return (value,edits)
 
 
-textPatternChainWidget :: MonadWidget t m => Event t TransformedPattern ->
+textPatternChainWidget :: MonadWidget t m => Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
 textPatternChainWidget delta = divClass "textPatternChain" $ do
-  let delta' = fmapMaybe lastOrNothing delta
+  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
   let deltaA = fmap (\(x,_,_)->x) delta'
   let deltaB = fmap (\(_,x,_)->x) delta'
   let deltaC = fmap (\(_,_,x)->x) delta'
@@ -55,13 +58,13 @@ evaluableTextWidget delta = divClass "textWidget" $ do
   y <- textArea $ def & textAreaConfig_setValue .~ delta' & textAreaConfig_attributes .~ attrs
   let edits = fmap (Edit . EvaluableText) $ _textArea_input y
   evals <- button "eval"
-  let evals' = fmap (Eval . EvaluableText) $ tagDyn (_textArea_value y) evals
+  let evals' = fmap (Evaluate . EvaluableText) $ tagDyn (_textArea_value y) evals
   return $ leftmost [edits,evals']
 
 
 labelWidget :: MonadWidget t m => Event t [String] -> m (Event t (EditOrEval Definition))
-labelWidget z delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+labelWidget delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let delta' = fmapMaybe lastOrNothing delta
   let attrs = constDyn $ ("class" =: "labelWidgetTextInput")
   y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs
-  return $ fmap (Edit z . LabelText) $ _textInput_input y
+  return $ fmap (Edit . LabelText) $ _textInput_input y

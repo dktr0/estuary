@@ -10,8 +10,10 @@ import qualified GHCJS.Marshal.Pure as P
 import JavaScript.Object.Internal as O
 import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
-import Estuary.Protocol.JSON
 import Text.JSON
+
+import Estuary.Types.Request
+import Estuary.Types.Response
 
 foreign import javascript unsafe
   "__debugEstuaryProtocol = new EstuaryProtocol(); $r = __debugEstuaryProtocol"

@@ -5,13 +5,17 @@ module Estuary.Widgets.WebSocket where
 import Reflex
 import Reflex.Dom
 import Text.JSON
-import Estuary.Protocol.JSON
 import qualified Data.ByteString.Char8 as C
-import Estuary.Protocol.Foreign
 import Control.Monad.IO.Class (liftIO)
 import Data.Time
 import Data.Either
 import Data.Maybe
+
+import Estuary.Protocol.Foreign
+import Estuary.Types.Request
+import Estuary.Types.Response
+import Estuary.Types.Sited
+import Estuary.Types.Action
 
 -- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
 -- for collaborative editing. While the password is dynamic, like the Reflex WebSocket the socket address
@@ -89,7 +93,7 @@ chatWidget space deltasDown = mdo
   let send'' = leftmost [send,send']
   let toSend = tag (current $ _textInput_value chatInput) send''
   let deltasUp = attachDynWith (\name msg -> SpaceRequest (Sited space (Chat name msg))) (_textInput_value nameInput) toSend
-  let chatsOnly = fmap (justChats . justActionsInSpace space) deltasDown
+  let chatsOnly = fmap (justChats . justSited space .  justSpaceResponses) deltasDown
   mostRecent <- foldDyn (\a b -> take 8 $ (reverse a) ++ b) [] chatsOnly
   formatted <- mapDyn (fmap (\(n,m) -> n ++ ": " ++ m)) mostRecent
   simpleList formatted chatMsg

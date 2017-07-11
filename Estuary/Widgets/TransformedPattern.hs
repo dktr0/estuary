@@ -17,8 +17,9 @@ import qualified Estuary.Widgets.SpecificPattern as Sp
 import GHC.Real
 import Data.Maybe (fromJust)
 import Text.Read
-import Estuary.Reflex.Utility
-import Estuary.Protocol.JSON
+
+import Estuary.Utility (lastOrNothing)
+import Estuary.Types.Hint
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
   Event t [TransformedPattern] -> -- deltas from network (must not re-propagate as edit events!)

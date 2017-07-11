@@ -176,7 +176,7 @@ processAction s c w x@(ZoneAction (Sited zone (Edit value))) = do
   broadcastNoOrigin s c $ SpaceResponse (Sited w x)
   return c
 
-processAction s c w x@(ZoneAction (Sited zone (Eval value))) = do
+processAction s c w x@(ZoneAction (Sited zone (Evaluate value))) = do
   putStrLn $ "Eval in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
   broadcastNoOrigin s c $ SpaceResponse (Sited w x)
   return c

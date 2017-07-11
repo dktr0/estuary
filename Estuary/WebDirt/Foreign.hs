@@ -16,6 +16,8 @@ import Control.Monad.IO.Class (liftIO)
 import Reflex
 import Reflex.Dom
 
+import Estuary.Types.Hint
+
 data WebDirt = WebDirt T.JSVal
 
 --foreign import javascript unsafe
@@ -110,7 +112,6 @@ tempo (WebDirt j) = do
   bpm <- deindexJSObject x (pToJSVal "bpm")
   return (pFromJSVal time,pFromJSVal beats,pFromJSVal bpm)
 
-data Hint = SampleHint String deriving (Eq,Show)
 
 foreign import javascript safe
   "$1.sampleHint($2)"
