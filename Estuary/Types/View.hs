@@ -1,6 +1,7 @@
 module Estuary.Types.View where
 
 import Text.JSON
+import Estuary.Utility (firstKey)
 
 data View =
   Views [View] |

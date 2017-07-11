@@ -7,7 +7,7 @@ import Estuary.Types.View
 
 
 data Space = Space {
-  defs :: Map.Map Int Definition
+  defs :: Map.Map Int Definition,
   views :: Map.Map String View
   }
 
@@ -18,4 +18,4 @@ emptySpace = Space {
   }
 
 editDef :: Int -> Definition -> Space -> Space
-editDef z d s = s { zones = Map.insert z d (defs s) }
+editDef z d s = s { defs = Map.insert z d (defs s) }

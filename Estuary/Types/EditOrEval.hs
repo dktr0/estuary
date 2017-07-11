@@ -1,6 +1,7 @@
 module Estuary.Types.EditOrEval where
 
 import Text.JSON
+import Estuary.Utility (firstKey)
 
 data EditOrEval a = Edit a | Eval a deriving (Show,Eq)
 

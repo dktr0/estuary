@@ -2,6 +2,7 @@ module Estuary.Types.Action where
 
 import Data.Maybe (mapMaybe)
 import Text.JSON
+import Estuary.Utility (firstKey)
 import Estuary.Types.Sited
 import Estuary.Types.EditOrEval
 
@@ -17,7 +18,7 @@ instance JSON v => JSON (Action v) where
   showJSON (Tempo at beat cps) = encJSDict [("Tempo",showJSON cps),("at",showJSON at),("beat",showJSON beat)]
   showJSON (TempoChange cps) = encJSDict [("TempoChange",showJSON cps)]
   readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj "Chat" x <*> valFromObj "m" x
-  readJSON (JSObject x) | firstKey x == "ZoneAction" = Edit <$> valFromObj "ZoneAction" x
+  readJSON (JSObject x) | firstKey x == "ZoneAction" = ZoneAction <$> valFromObj "ZoneAction" x
   readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "Tempo" x <*> valFromObj "at" x <*> valFromObj "beat" x
   readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj "TempoChange" x
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Action: " ++ (show x)

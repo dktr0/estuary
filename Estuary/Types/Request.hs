@@ -1,6 +1,7 @@
 module Estuary.Types.Request where
 
 import Text.JSON
+import Estuary.Utility (firstKey)
 import Estuary.Types.Sited
 import Estuary.Types.Action
 import Estuary.Types.Definition

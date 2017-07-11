@@ -1,9 +1,10 @@
 module Estuary.Types.Definition where
 
 import Text.JSON
+import Estuary.Utility (firstKey)
 import Estuary.Tidal.Types
 import Data.Maybe (mapMaybe)
-import Data.Map (Map)
+import qualified Data.Map as Map
 
 data Definition =
   Structure TransformedPattern |

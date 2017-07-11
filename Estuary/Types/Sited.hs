@@ -1,6 +1,7 @@
 module Estuary.Types.Sited where
 
 import Text.JSON
+import Estuary.Utility (firstKey)
 import Data.Maybe
 
 data Sited a b = Sited a b

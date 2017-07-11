@@ -2,6 +2,7 @@ module Estuary.Types.Response where
 
 import Data.Maybe (mapMaybe)
 import Text.JSON
+import Estuary.Utility (firstKey)
 import Estuary.Types.Sited
 import Estuary.Types.Action
 import Estuary.Types.Definition
@@ -19,7 +20,7 @@ instance JSON a => JSON (Response a) where
   readJSON (JSObject x) | firstKey x == "SpaceResponse" = SpaceResponse <$> valFromObj "SpaceResponse" x
   readJSON _ = Error "Unable to parse as Estuary.Protocol.JSON.Request"
 
-justSpaceResponses :: [Response a] -> [Action a]
+justSpaceResponses :: [Response a] -> [Sited String (Action a)]
 justSpaceResponses = mapMaybe f
   where f (SpaceResponse x) = Just x
         f _ = Nothing

@@ -6,6 +6,8 @@ import Data.Map as Map
 import Data.Ratio
 import qualified Sound.Tidal.Context as Tidal
 
+import Estuary.Utility
+
 -- This module defines types that model elements of the notation employed in the Tidal language
 -- including both notations within Tidal's pattern notation (i.e. within "quotation marks") as well
 -- as a range of Haskell notations and definitions provided by the Tidal modules.
@@ -39,9 +41,6 @@ instance JSON RepOrDiv where
                         | firstKey x == "d" = Div <$> valFromObj "d" x
                         | otherwise = Error $ "can't parse JSObject as RepOrDiv: " ++ (show x)
   readJSON _ = Error "can't parse as RepOrDiv (not JSString nor JSObject)"
-
-firstKey :: JSObject JSValue -> String
-firstKey = fst . head . fromJSObject
 
 data Liveness = L3 | L4 deriving (Eq,Show)
 

@@ -11,8 +11,14 @@ import Control.Concurrent.MVar
 import Control.Exception (try)
 import Text.JSON
 
-
+import Estuary.Utility
+import Estuary.Types.Definition
+import Estuary.Types.Sited
+import Estuary.Types.Action
+import Estuary.Types.EditOrEval
 import Estuary.Types.Space
+import Estuary.Types.Request
+import Estuary.Types.Response
 
 type ClientHandle = Int
 
@@ -26,7 +32,7 @@ newServer :: Server
 newServer = Server {
     password = "password",
     clients = Map.empty,
-    spaces = Map.fromList [("testingA",newSpace),("testingB",newSpace),("testingC",newSpace)]
+    spaces = Map.fromList [("testingA",emptySpace),("testingB",emptySpace),("testingC",emptySpace)]
   }
 
 addClient :: Server -> WS.Connection -> (ClientHandle,Server)
@@ -154,7 +160,7 @@ processRequest s c (CreateSpace x) = onlyIfAuthenticated c $ do
 processRequest s c (SpaceRequest x) = onlyIfAuthenticated c $ processInSpace s c x
 
 
-processInSpace :: MVar Server -> Client -> Sited (Action Definition) -> IO Client
+processInSpace :: MVar Server -> Client -> Sited String (Action Definition) -> IO Client
 processInSpace s c (Sited x y) = processAction s c x y
 
 processAction :: MVar Server -> Client -> String -> Action Definition -> IO Client
@@ -164,13 +170,13 @@ processAction s c w x@(Chat name msg) = do
   broadcast s $ SpaceResponse (Sited w x)
   return c
 
-processAction s c w x@(Edit zone value) = do
+processAction s c w x@(ZoneAction (Sited zone (Edit value))) = do
   putStrLn $ "Edit in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
   updateServer s $ edit w zone value
   broadcastNoOrigin s c $ SpaceResponse (Sited w x)
   return c
 
-processAction s c w x@(Eval zone value) = do
+processAction s c w x@(ZoneAction (Sited zone (Eval value))) = do
   putStrLn $ "Eval in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
   broadcastNoOrigin s c $ SpaceResponse (Sited w x)
   return c
