@@ -9,6 +9,7 @@ data View =
   StructureView Int |
   TidalTextView Int |
   EvaluableTextView Int
+  deriving (Show)
 
 instance JSON View where
   showJSON (Views xs) = encJSDict [("Views",xs)]

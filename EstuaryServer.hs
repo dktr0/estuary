@@ -2,6 +2,7 @@ module Main where
 
 import Data.Text (Text)
 import Data.List ((\\))
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Map.Strict as Map
@@ -19,6 +20,7 @@ import Estuary.Types.EditOrEval
 import Estuary.Types.Space
 import Estuary.Types.Request
 import Estuary.Types.Response
+import Estuary.Types.View
 
 type ClientHandle = Int
 
@@ -51,9 +53,15 @@ createSpace w s = s { spaces = Map.insertWith (\_ x -> x) w emptySpace (spaces s
 edit :: String -> Int -> Definition -> Server -> Server
 edit w z d s = s { spaces = Map.adjust (editDef z d) w (spaces s) }
 
+view :: String -> String -> View -> Server -> Server
+view w k v s = s { spaces = Map.adjust (editView k v) w (spaces s) }
+
 getSpaceList :: MVar Server -> IO ServerResponse
 getSpaceList s = readMVar s >>= return . SpaceList . Map.keys . spaces
 
+getAllViews :: MVar Server -> String -> IO [Sited String View]
+getAllViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.elems . Map.mapWithKey Sited . views) . Map.lookup w . spaces
+--- *** WORKING HERE ***
 
 data Client = Client {
   handle :: ClientHandle,
@@ -179,6 +187,17 @@ processAction s c w x@(ZoneAction (Sited zone (Edit value))) = do
 processAction s c w x@(ZoneAction (Sited zone (Evaluate value))) = do
   putStrLn $ "Eval in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
   broadcastNoOrigin s c $ SpaceResponse (Sited w x)
+  return c
+
+processAction s c w GetAllViews = do
+  putStrLn $ "GetAllViews in " ++ w
+  vs <- getAllViews s w -- IO [Sited String View]
+  forM_ vs $ \v -> respond (connection c) (SpaceResponse (Sited w (View v)))
+  return c
+
+processAction s c w x@(View (Sited key value)) = do
+  putStrLn $ "View in (" ++ w ++ "," ++ key ++ "): " ++ (show value)
+  updateServer s $ view w key value
   return c
 
 processAction s c w x@(Tempo at beat cps) = do

@@ -19,3 +19,7 @@ emptySpace = Space {
 
 editDef :: Int -> Definition -> Space -> Space
 editDef z d s = s { defs = Map.insert z d (defs s) }
+
+editView :: String -> View -> Space -> Space 
+editView w v s = s { views = Map.insert w v (views s) }
+
