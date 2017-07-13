@@ -71,7 +71,7 @@ page wsDown Solo = do
 
 page wsDown Lobby = do
   requestSpaceList <- liftM (RequestSpaceList <$) getPostBuild
-  spaceList <- holdDyn [] $ justSpaceList <$> wsDown
+  spaceList <- holdDyn [] $ fmapMaybe justSpaceList wsDown
   join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
   join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation

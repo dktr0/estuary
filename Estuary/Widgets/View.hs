@@ -10,7 +10,8 @@ import Estuary.Types.Definition
 import Estuary.Types.Request
 import Estuary.Types.View
 import Estuary.Types.Sited
-import Estuary.Types.Action
+import Estuary.Types.SpaceRequest
+import Estuary.Types.SpaceResponse
 import Estuary.Types.Hint
 import Estuary.Types.EditOrEval
 
@@ -28,8 +29,8 @@ viewInSpaceWidget spaceName view deltasDown = do
   return (zones,edits',hints)
 
 
-viewWidget :: MonadWidget t m => View -> Event t [Action Definition] ->
-  m (Dynamic t DefinitionMap, Event t (Action Definition), Event t Hint)
+viewWidget :: MonadWidget t m => View -> Event t [SpaceResponse Definition] ->
+  m (Dynamic t DefinitionMap, Event t (SpaceRequest Definition), Event t Hint)
 
 viewWidget (Views xs) deltasDown = foldM f i xs
   where
@@ -46,24 +47,24 @@ viewWidget (StructureView n) deltasDown = do
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown -- Event t TransformedPattern
   (value,edits,hints) <- topLevelTransformedPatternWidget deltasDown'  -- m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
   value' <- mapDyn (Map.singleton n . Structure) value
-  let edits' = fmap (ZoneAction . Sited n . Edit . Structure) edits
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
   return (value',edits',hints)
 
 viewWidget (TidalTextView n) deltasDown = do
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown -- Event t TransformedPattern
   (value,edits,hints) <- textPatternChainWidget deltasDown' -- m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
   value' <- mapDyn (Map.singleton n . Structure) value
-  let edits' = fmap (ZoneAction . Sited n . Edit . Structure) edits
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
   return (value',edits',hints)
 
 viewWidget (LabelView n) deltasDown = do
   let deltasDown' = fmap (justLabelTexts . justEditsInZone n) deltasDown -- Event t [String]
   edits <- labelWidget deltasDown'
-  let edits' = fmap (ZoneAction . Sited n) edits
+  let edits' = fmap (ZoneRequest . Sited n) edits
   return (constDyn Map.empty,edits',never)
 
 viewWidget (EvaluableTextView n) deltasDown = do
   let deltasDown' = fmap (justEvaluableTexts . justEditsInZone n) deltasDown -- Event t [String]
   editsOrEvals <- evaluableTextWidget deltasDown'
-  let editsOrEvals' = fmap (ZoneAction . Sited n) editsOrEvals
+  let editsOrEvals' = fmap (ZoneRequest . Sited n) editsOrEvals
   return (constDyn Map.empty,editsOrEvals',never)
