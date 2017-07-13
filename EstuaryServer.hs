@@ -61,7 +61,9 @@ getSpaceList s = readMVar s >>= return . SpaceList . Map.keys . spaces
 
 getAllViews :: MVar Server -> String -> IO [Sited String View]
 getAllViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.elems . Map.mapWithKey Sited . views) . Map.lookup w . spaces
---- *** WORKING HERE ***
+
+getServerClientCount :: MVar Server -> IO Int
+getServerClientCount s = readMVar s >>= return . Map.size . clients
 
 data Client = Client {
   handle :: ClientHandle,
@@ -166,6 +168,11 @@ processRequest s c (CreateSpace x) = onlyIfAuthenticated c $ do
   return c
 
 processRequest s c (SpaceRequest x) = onlyIfAuthenticated c $ processInSpace s c x
+
+processRequest s c RequestServerClientCount = onlyIfAuthenticated c $ do
+  putStrLn "RequestServerClientCount"
+  getServerClientCount s >>= respond (connection c) . ServerClientCount
+  return c
 
 
 processInSpace :: MVar Server -> Client -> Sited String (Action Definition) -> IO Client
