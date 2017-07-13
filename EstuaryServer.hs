@@ -15,7 +15,8 @@ import Text.JSON
 import Estuary.Utility
 import Estuary.Types.Definition
 import Estuary.Types.Sited
-import Estuary.Types.Action
+import Estuary.Types.SpaceRequest
+import Estuary.Types.SpaceResponse
 import Estuary.Types.EditOrEval
 import Estuary.Types.Space
 import Estuary.Types.Request
@@ -53,14 +54,14 @@ createSpace w s = s { spaces = Map.insertWith (\_ x -> x) w emptySpace (spaces s
 edit :: String -> Int -> Definition -> Server -> Server
 edit w z d s = s { spaces = Map.adjust (editDef z d) w (spaces s) }
 
-view :: String -> String -> View -> Server -> Server
-view w k v s = s { spaces = Map.adjust (editView k v) w (spaces s) }
+setView :: String -> String -> View -> Server -> Server
+setView w k v s = s { spaces = Map.adjust (editView k v) w (spaces s) }
 
 getSpaceList :: MVar Server -> IO ServerResponse
 getSpaceList s = readMVar s >>= return . SpaceList . Map.keys . spaces
 
-getAllViews :: MVar Server -> String -> IO [Sited String View]
-getAllViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.elems . Map.mapWithKey Sited . views) . Map.lookup w . spaces
+getViews :: MVar Server -> String -> IO [Sited String View]
+getViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.elems . Map.mapWithKey Sited . views) . Map.lookup w . spaces
 
 getServerClientCount :: MVar Server -> IO Int
 getServerClientCount s = readMVar s >>= return . Map.size . clients
@@ -169,52 +170,55 @@ processRequest s c (CreateSpace x) = onlyIfAuthenticated c $ do
 
 processRequest s c (SpaceRequest x) = onlyIfAuthenticated c $ processInSpace s c x
 
-processRequest s c RequestServerClientCount = onlyIfAuthenticated c $ do
-  putStrLn "RequestServerClientCount"
+processRequest s c GetServerClientCount = onlyIfAuthenticated c $ do
+  putStrLn "GetServerClientCount"
   getServerClientCount s >>= respond (connection c) . ServerClientCount
   return c
 
-
-processInSpace :: MVar Server -> Client -> Sited String (Action Definition) -> IO Client
-processInSpace s c (Sited x y) = processAction s c x y
-
-processAction :: MVar Server -> Client -> String -> Action Definition -> IO Client
-
-processAction s c w x@(Chat name msg) = do
-  putStrLn $ "Chat in " ++ w ++ " from " ++ name ++ ": " ++ msg
-  broadcast s $ SpaceResponse (Sited w x)
+processRequest s c _ = do
+  putStrLn "warning: request failed pattern matching"
   return c
 
-processAction s c w x@(ZoneAction (Sited zone (Edit value))) = do
+
+processInSpace :: MVar Server -> Client -> Sited String (SpaceRequest Definition) -> IO Client
+processInSpace s c (Sited x y) = processSpaceRequest s c x y
+
+processSpaceRequest :: MVar Server -> Client -> String -> SpaceRequest Definition -> IO Client
+
+processSpaceRequest s c w x@(SendChat name msg) = do
+  putStrLn $ "SendChat in " ++ w ++ " from " ++ name ++ ": " ++ msg
+  broadcast s $ SpaceResponse (Sited w (Chat name msg))
+  return c
+
+processSpaceRequest s c w x@(ZoneRequest (Sited zone (Edit value))) = do
   putStrLn $ "Edit in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
   updateServer s $ edit w zone value
-  broadcastNoOrigin s c $ SpaceResponse (Sited w x)
+  broadcastNoOrigin s c $ SpaceResponse (Sited w (ZoneResponse (Sited zone (Edit value))))
   return c
 
-processAction s c w x@(ZoneAction (Sited zone (Evaluate value))) = do
+processSpaceRequest s c w x@(ZoneRequest (Sited zone (Evaluate value))) = do
   putStrLn $ "Eval in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
-  broadcastNoOrigin s c $ SpaceResponse (Sited w x)
+  broadcastNoOrigin s c $ SpaceResponse (Sited w (ZoneResponse (Sited zone (Evaluate value))))
   return c
 
-processAction s c w GetAllViews = do
-  putStrLn $ "GetAllViews in " ++ w
-  vs <- getAllViews s w -- IO [Sited String View]
+processSpaceRequest s c w GetViews = do
+  putStrLn $ "GetViews in " ++ w
+  vs <- getViews s w -- IO [Sited String View]
   forM_ vs $ \v -> respond (connection c) (SpaceResponse (Sited w (View v)))
   return c
 
-processAction s c w x@(View (Sited key value)) = do
-  putStrLn $ "View in (" ++ w ++ "," ++ key ++ "): " ++ (show value)
-  updateServer s $ view w key value
+processSpaceRequest s c w x@(SetView (Sited key value)) = do
+  putStrLn $ "SetView in (" ++ w ++ "," ++ key ++ "): " ++ (show value)
+  updateServer s $ setView w key value
   return c
 
-processAction s c w x@(Tempo at beat cps) = do
-  putStrLn "placeholder: Tempo"
-  return c
-
-processAction s c w x@(TempoChange cps) = do
+processSpaceRequest s c w x@(TempoChange cps) = do
   putStrLn "placeholder: TempoChange"
   return c
 
+processSpaceRequest s c w _ = do
+  putStrLn "warning: action failed pattern matching"
+  return c
 
 respond :: WS.Connection -> ServerResponse -> IO ()
 respond ws x = do
