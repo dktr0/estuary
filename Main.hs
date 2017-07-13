@@ -26,6 +26,7 @@ import Data.Time
 import Text.Read
 import qualified GHCJS.Types as T
 
+import Estuary.Types.Request
 import Estuary.Types.Response
 
 main :: IO ()

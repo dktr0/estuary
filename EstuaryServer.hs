@@ -94,6 +94,7 @@ connectionHandler s ws = do
   let (h,ss') = addClient ss ws'
   putMVar s ss'
   WS.forkPingThread ws' 30
+  getServerClientCount s >>= broadcast s . ServerClientCount
   processLoop s $ newClient h ws'
 
 processLoop :: MVar Server -> Client -> IO ()
@@ -170,7 +171,7 @@ processRequest s c (CreateEnsemble x) = onlyIfAuthenticated c $ do
 
 processRequest s c (EnsembleRequest x) = onlyIfAuthenticated c $ processInEnsemble s c x
 
-processRequest s c GetServerClientCount = onlyIfAuthenticated c $ do
+processRequest s c GetServerClientCount = do
   putStrLn "GetServerClientCount"
   getServerClientCount s >>= respond (connection c) . ServerClientCount
   return c
