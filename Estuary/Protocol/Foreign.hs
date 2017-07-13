@@ -24,6 +24,14 @@ foreign import javascript unsafe
   setUrl_ :: T.JSVal -> T.JSVal -> IO ()
 
 foreign import javascript unsafe
+  "$r = location.hostname"
+  getHostName_ :: IO T.JSVal
+
+foreign import javascript unsafe
+  "$r = location.port"
+  getPort_ :: IO T.JSVal
+
+foreign import javascript unsafe
   "$1.send($2)"
   send_ :: T.JSVal -> T.JSVal -> IO ()
 
@@ -38,7 +46,7 @@ foreign import javascript unsafe
 data EstuaryProtocolObject = EstuaryProtocolObject T.JSVal
 
 estuaryProtocol :: IO EstuaryProtocolObject
-estuaryProtocol = estuaryProtocol_ >>= return . EstuaryProtocolObject
+estuaryProtocol = EstuaryProtocolObject <$> estuaryProtocol_ 
 
 setUrl :: EstuaryProtocolObject -> String -> IO ()
 setUrl (EstuaryProtocolObject x) url = setUrl_ x (Prim.toJSString url)
@@ -47,9 +55,16 @@ send :: EstuaryProtocolObject -> String -> IO ()
 send (EstuaryProtocolObject x) y = send_ x (Prim.toJSString y)
 
 getResponses :: EstuaryProtocolObject -> IO (Either String [ServerResponse]) -- left=parsing error right=responses
-getResponses (EstuaryProtocolObject x) = getResponses_ x >>= return . f . decode . Prim.fromJSString
+getResponses (EstuaryProtocolObject x) = (f . decode . Prim.fromJSString) <$> getResponses_ x
   where f (Ok xs) = Right xs
         f (Error x) = Left $ "error trying to parse as [EstuaryProtocol]: " ++ x
 
 getStatus :: EstuaryProtocolObject -> IO String
-getStatus (EstuaryProtocolObject j) = getStatus_ j >>= return . Prim.fromJSString
+getStatus (EstuaryProtocolObject j) = Prim.fromJSString <$> getStatus_ j 
+
+getHostName :: IO String
+getHostName = Prim.fromJSString <$> getHostName_ 
+
+getPort :: IO String
+getPort = Prim.fromJSString <$> getPort_
+
