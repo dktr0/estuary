@@ -26,6 +26,7 @@ import Data.Time
 import Text.Read
 import qualified GHCJS.Types as T
 
+import Estuary.Types.Response
 
 main :: IO ()
 main = do
@@ -38,13 +39,14 @@ main = do
 
 estuaryWidget :: MonadWidget t m => WebDirt -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
-  muted <- header
+  muted <- header clientCount
   (values,deltasUp,hints) <- divClass "page" $ navigation deltasDown'
   values' <- mapDyn (toParamPattern . StackedPatterns) values
   values'' <- combineDyn f values' muted
   let values''' = updated values''
   deltasDown <- divClass "footer" $ webSocketWidget protocol now deltasUp
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
+  clientCount <- holdDyn 0 $ fmapMaybe justServerClientCount deltasDown'
   -- diagnostics values deltasUp deltasDown' hints
   performHint wd hints
   performEvent_ $ fmap (liftIO . stream) values'''
@@ -52,9 +54,22 @@ estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
         f _ True = toParamPattern EmptyTransformedPattern
 
 
-header :: (MonadWidget t m) => m (Dynamic t Bool)
-header = divClass "header" $ do
+header :: (MonadWidget t m) => Dynamic t Int -> m (Dynamic t Bool)
+header clientCount = divClass "header" $ do
+  tick <- getPostBuild
+  hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
+  port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
+  hostName' <- holdDyn "" hostName
+  port' <- holdDyn "" port
   divClass "logo" $ text "estuary (based on TidalCycles and Reflex)"
+  divClass "server" $ do
+    text "server: "
+    dynText hostName'
+    text ":"
+    dynText port'
+    text " ("
+    display clientCount
+    text " clients)"  
   muted' <- divClass "webDirt" $ do
     muted <- divClass "webDirtMute" $ do
       text "WebDirt Mute "
