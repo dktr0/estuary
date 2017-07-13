@@ -70,16 +70,16 @@ page wsDown Solo = do
   return (constDyn [],never,never,x)
 
 page wsDown Lobby = do
-  requestSpaceList <- liftM (RequestSpaceList <$) getPostBuild
-  spaceList <- holdDyn [] $ fmapMaybe justSpaceList wsDown
+  requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
+  spaceList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
   join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
   join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation
   back <- liftM (Splash <$) $ button "back to splash"
-  return (constDyn [],requestSpaceList,never,leftmost [back,join''])
+  return (constDyn [],requestEnsembleList,never,leftmost [back,join''])
 
 page wsDown (Collaborate w) = do
-  (defMap,wsUp,hints) <- viewInSpaceWidget w defaultView wsDown
+  (defMap,wsUp,hints) <- viewInEnsembleWidget w defaultView wsDown
   patterns <- mapDyn (justStructures . elems) defMap
   x <- liftM (Lobby <$) $ button "back to lobby"
   return (patterns,wsUp,hints,x)

@@ -10,8 +10,8 @@ import Estuary.Types.Definition
 import Estuary.Types.Request
 import Estuary.Types.View
 import Estuary.Types.Sited
-import Estuary.Types.SpaceRequest
-import Estuary.Types.SpaceResponse
+import Estuary.Types.EnsembleRequest
+import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Types.EditOrEval
 
@@ -19,18 +19,18 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 
 
-viewInSpaceWidget :: MonadWidget t m => String -> View -> Event t [Response Definition] ->
+viewInEnsembleWidget :: MonadWidget t m => String -> View -> Event t [Response Definition] ->
   m (Dynamic t DefinitionMap, Event t (Request Definition), Event t Hint)
 
-viewInSpaceWidget spaceName view deltasDown = do
-  let deltasDown' = fmap (justSited spaceName . justSpaceResponses) deltasDown
+viewInEnsembleWidget spaceName view deltasDown = do
+  let deltasDown' = fmap (justSited spaceName . justEnsembleResponses) deltasDown
   (zones,edits,hints) <- viewWidget view deltasDown'
-  let edits' = fmap (SpaceRequest  . Sited spaceName) edits
+  let edits' = fmap (EnsembleRequest  . Sited spaceName) edits
   return (zones,edits',hints)
 
 
-viewWidget :: MonadWidget t m => View -> Event t [SpaceResponse Definition] ->
-  m (Dynamic t DefinitionMap, Event t (SpaceRequest Definition), Event t Hint)
+viewWidget :: MonadWidget t m => View -> Event t [EnsembleResponse Definition] ->
+  m (Dynamic t DefinitionMap, Event t (EnsembleRequest Definition), Event t Hint)
 
 viewWidget (Views xs) deltasDown = foldM f i xs
   where

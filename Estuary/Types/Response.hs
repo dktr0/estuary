@@ -4,34 +4,34 @@ import Data.Maybe (mapMaybe)
 import Text.JSON
 import Estuary.Utility
 import Estuary.Types.Sited
-import Estuary.Types.SpaceResponse
+import Estuary.Types.EnsembleResponse
 import Estuary.Types.Definition
 
 type ServerResponse = Response Definition
 
 data Response a =
-  SpaceList [String] |
-  SpaceResponse (Sited String (SpaceResponse a)) |
+  EnsembleList [String] |
+  EnsembleResponse (Sited String (EnsembleResponse a)) |
   ServerClientCount Int
 
 instance JSON a => JSON (Response a) where
-  showJSON (SpaceList xs) = encJSDict [("SpaceList",xs)]
-  showJSON (SpaceResponse r) = encJSDict [("SpaceResponse",r)]
+  showJSON (EnsembleList xs) = encJSDict [("EnsembleList",xs)]
+  showJSON (EnsembleResponse r) = encJSDict [("EnsembleResponse",r)]
   showJSON (ServerClientCount r) = encJSDict [("ServerClientCount",r)]
-  readJSON (JSObject x) | firstKey x == "SpaceList" = SpaceList <$> valFromObj "SpaceList" x
-  readJSON (JSObject x) | firstKey x == "SpaceResponse" = SpaceResponse <$> valFromObj "SpaceResponse" x
+  readJSON (JSObject x) | firstKey x == "EnsembleList" = EnsembleList <$> valFromObj "EnsembleList" x
+  readJSON (JSObject x) | firstKey x == "EnsembleResponse" = EnsembleResponse <$> valFromObj "EnsembleResponse" x
   readJSON (JSObject x) | firstKey x == "ServerClientCount" = ServerClientCount <$> valFromObj "ServerClientCount" x
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Request: " ++ (show x)
   readJSON _ = Error "Unable to parse as Request"
 
-justSpaceResponses :: [Response a] -> [Sited String (SpaceResponse a)]
-justSpaceResponses = mapMaybe f
-  where f (SpaceResponse x) = Just x
+justEnsembleResponses :: [Response a] -> [Sited String (EnsembleResponse a)]
+justEnsembleResponses = mapMaybe f
+  where f (EnsembleResponse x) = Just x
         f _ = Nothing
 
-justSpaceList :: [Response a] -> Maybe [String]
-justSpaceList = lastOrNothing . mapMaybe f
-  where f (SpaceList x) = Just x
+justEnsembleList :: [Response a] -> Maybe [String]
+justEnsembleList = lastOrNothing . mapMaybe f
+  where f (EnsembleList x) = Just x
         f _ = Nothing
 
 justServerClientCount :: [Response a] -> Maybe Int

@@ -3,34 +3,34 @@ module Estuary.Types.Request where
 import Text.JSON
 import Estuary.Utility (firstKey)
 import Estuary.Types.Sited
-import Estuary.Types.SpaceRequest
+import Estuary.Types.EnsembleRequest
 import Estuary.Types.Definition
 
 type ServerRequest = Request Definition
 
 data Request a =
   Authenticate String |
-  RequestSpaceList |
-  JoinSpace String |
-  LeaveSpace |
-  CreateSpace String |
-  SpaceRequest (Sited String (SpaceRequest a)) |
+  GetEnsembleList |
+  JoinEnsemble String |
+  LeaveEnsemble |
+  CreateEnsemble String |
+  EnsembleRequest (Sited String (EnsembleRequest a)) |
   GetServerClientCount 
 
 instance JSON a => JSON (Request a) where
   showJSON (Authenticate p) = encJSDict [("Authenticate",p)]
-  showJSON (RequestSpaceList) = showJSON "RequestSpaceList"
-  showJSON (JoinSpace s) = encJSDict [("JoinSpace",s)]
-  showJSON (LeaveSpace) = showJSON "LeaveSpace"
-  showJSON (CreateSpace s) = encJSDict [("CreateSpace",s)]
-  showJSON (SpaceRequest s) = encJSDict [("SpaceRequest",showJSON s)]
+  showJSON (GetEnsembleList) = showJSON "GetEnsembleList"
+  showJSON (JoinEnsemble s) = encJSDict [("JoinEnsemble",s)]
+  showJSON (LeaveEnsemble) = showJSON "LeaveEnsemble"
+  showJSON (CreateEnsemble s) = encJSDict [("CreateEnsemble",s)]
+  showJSON (EnsembleRequest s) = encJSDict [("EnsembleRequest",showJSON s)]
   showJSON (GetServerClientCount) = showJSON "GetServerClientCount"
   readJSON (JSObject x) | firstKey x == "Authenticate" = Authenticate <$> valFromObj "Authenticate" x
-  readJSON (JSString x) | fromJSString x == "RequestSpaceList" = Ok RequestSpaceList
-  readJSON (JSObject x) | firstKey x == "JoinSpace" = JoinSpace <$> valFromObj "JoinSpace" x
-  readJSON (JSString x) | fromJSString x == "LeaveSpace" = Ok LeaveSpace
-  readJSON (JSObject x) | firstKey x == "CreateSpace" = CreateSpace <$> valFromObj "CreateSpace" x
-  readJSON (JSObject x) | firstKey x == "SpaceRequest" = SpaceRequest <$> valFromObj "SpaceRequest" x
+  readJSON (JSString x) | fromJSString x == "GetEnsembleList" = Ok GetEnsembleList
+  readJSON (JSObject x) | firstKey x == "JoinEnsemble" = JoinEnsemble <$> valFromObj "JoinEnsemble" x
+  readJSON (JSString x) | fromJSString x == "LeaveEnsemble" = Ok LeaveEnsemble
+  readJSON (JSObject x) | firstKey x == "CreateEnsemble" = CreateEnsemble <$> valFromObj "CreateEnsemble" x
+  readJSON (JSObject x) | firstKey x == "EnsembleRequest" = EnsembleRequest <$> valFromObj "EnsembleRequest" x
   readJSON (JSString x) | fromJSString x == "GetServerClientCount" = Ok GetServerClientCount
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSOBject as Request: " ++ (show x)
   readJSON (JSString x) | otherwise = Error $ "Unable to parse JSString as Request: " ++ (show x)

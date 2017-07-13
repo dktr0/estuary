@@ -15,10 +15,10 @@ import Text.JSON
 import Estuary.Utility
 import Estuary.Types.Definition
 import Estuary.Types.Sited
-import Estuary.Types.SpaceRequest
-import Estuary.Types.SpaceResponse
+import Estuary.Types.EnsembleRequest
+import Estuary.Types.EnsembleResponse
 import Estuary.Types.EditOrEval
-import Estuary.Types.Space
+import Estuary.Types.Ensemble
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.View
@@ -28,14 +28,14 @@ type ClientHandle = Int
 data Server = Server {
   password :: String,
   clients :: Map.Map ClientHandle WS.Connection,
-  spaces :: Map.Map String Space
+  spaces :: Map.Map String Ensemble
 }
 
 newServer :: Server
 newServer = Server {
     password = "password",
     clients = Map.empty,
-    spaces = Map.fromList [("testingA",emptySpace),("testingB",emptySpace),("testingC",emptySpace)]
+    spaces = Map.fromList [("testingA",emptyEnsemble),("testingB",emptyEnsemble),("testingC",emptyEnsemble)]
   }
 
 addClient :: Server -> WS.Connection -> (ClientHandle,Server)
@@ -46,10 +46,10 @@ addClient s x = (i,s { clients=newMap})
 deleteClient :: ClientHandle -> Server -> Server
 deleteClient h s = s { clients = Map.delete h (clients s) }
 
-createSpace :: String -> Server -> Server
-createSpace w s = s { spaces = Map.insertWith (\_ x -> x) w emptySpace (spaces s) }
+createEnsemble :: String -> Server -> Server
+createEnsemble w s = s { spaces = Map.insertWith (\_ x -> x) w emptyEnsemble (spaces s) }
 
--- if space already exists, createSpace does not make any change
+-- if space already exists, createEnsemble does not make any change
 
 edit :: String -> Int -> Definition -> Server -> Server
 edit w z d s = s { spaces = Map.adjust (editDef z d) w (spaces s) }
@@ -57,8 +57,8 @@ edit w z d s = s { spaces = Map.adjust (editDef z d) w (spaces s) }
 setView :: String -> String -> View -> Server -> Server
 setView w k v s = s { spaces = Map.adjust (editView k v) w (spaces s) }
 
-getSpaceList :: MVar Server -> IO ServerResponse
-getSpaceList s = readMVar s >>= return . SpaceList . Map.keys . spaces
+getEnsembleList :: MVar Server -> IO ServerResponse
+getEnsembleList s = readMVar s >>= return . EnsembleList . Map.keys . spaces
 
 getViews :: MVar Server -> String -> IO [Sited String View]
 getViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.elems . Map.mapWithKey Sited . views) . Map.lookup w . spaces
@@ -149,26 +149,26 @@ processRequest s c (Authenticate x) = do
       putStrLn "received authenticate with wrong password"
       return $ c { authenticated = False }
 
-processRequest s c RequestSpaceList = onlyIfAuthenticated c $ do
-  putStrLn "RequestSpaceList"
-  getSpaceList s >>= respond (connection c)
+processRequest s c GetEnsembleList = onlyIfAuthenticated c $ do
+  putStrLn "GetEnsembleList"
+  getEnsembleList s >>= respond (connection c)
   return c
 
-processRequest s c (JoinSpace x) = onlyIfAuthenticated c $ do
+processRequest s c (JoinEnsemble x) = onlyIfAuthenticated c $ do
   putStrLn $ "joining space " ++ x
   return $ c { space = Just x }
 
-processRequest s c LeaveSpace = onlyIfAuthenticated c $ do
+processRequest s c LeaveEnsemble = onlyIfAuthenticated c $ do
   putStrLn $ maybe "warning: no space to leave" ("leaving space " ++) $ space c
   return $ c { space = Nothing }
 
-processRequest s c (CreateSpace x) = onlyIfAuthenticated c $ do
-  putStrLn $ "CreateSpace " ++ x
-  updateServer s $ createSpace x
-  getSpaceList s >>= broadcast s
+processRequest s c (CreateEnsemble x) = onlyIfAuthenticated c $ do
+  putStrLn $ "CreateEnsemble " ++ x
+  updateServer s $ createEnsemble x
+  getEnsembleList s >>= broadcast s
   return c
 
-processRequest s c (SpaceRequest x) = onlyIfAuthenticated c $ processInSpace s c x
+processRequest s c (EnsembleRequest x) = onlyIfAuthenticated c $ processInEnsemble s c x
 
 processRequest s c GetServerClientCount = onlyIfAuthenticated c $ do
   putStrLn "GetServerClientCount"
@@ -180,43 +180,43 @@ processRequest s c _ = do
   return c
 
 
-processInSpace :: MVar Server -> Client -> Sited String (SpaceRequest Definition) -> IO Client
-processInSpace s c (Sited x y) = processSpaceRequest s c x y
+processInEnsemble :: MVar Server -> Client -> Sited String (EnsembleRequest Definition) -> IO Client
+processInEnsemble s c (Sited x y) = processEnsembleRequest s c x y
 
-processSpaceRequest :: MVar Server -> Client -> String -> SpaceRequest Definition -> IO Client
+processEnsembleRequest :: MVar Server -> Client -> String -> EnsembleRequest Definition -> IO Client
 
-processSpaceRequest s c w x@(SendChat name msg) = do
+processEnsembleRequest s c w x@(SendChat name msg) = do
   putStrLn $ "SendChat in " ++ w ++ " from " ++ name ++ ": " ++ msg
-  broadcast s $ SpaceResponse (Sited w (Chat name msg))
+  broadcast s $ EnsembleResponse (Sited w (Chat name msg))
   return c
 
-processSpaceRequest s c w x@(ZoneRequest (Sited zone (Edit value))) = do
+processEnsembleRequest s c w x@(ZoneRequest (Sited zone (Edit value))) = do
   putStrLn $ "Edit in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
   updateServer s $ edit w zone value
-  broadcastNoOrigin s c $ SpaceResponse (Sited w (ZoneResponse (Sited zone (Edit value))))
+  broadcastNoOrigin s c $ EnsembleResponse (Sited w (ZoneResponse (Sited zone (Edit value))))
   return c
 
-processSpaceRequest s c w x@(ZoneRequest (Sited zone (Evaluate value))) = do
+processEnsembleRequest s c w x@(ZoneRequest (Sited zone (Evaluate value))) = do
   putStrLn $ "Eval in (" ++ w ++ "," ++ (show zone) ++ "): " ++ (show value)
-  broadcastNoOrigin s c $ SpaceResponse (Sited w (ZoneResponse (Sited zone (Evaluate value))))
+  broadcastNoOrigin s c $ EnsembleResponse (Sited w (ZoneResponse (Sited zone (Evaluate value))))
   return c
 
-processSpaceRequest s c w GetViews = do
+processEnsembleRequest s c w GetViews = do
   putStrLn $ "GetViews in " ++ w
   vs <- getViews s w -- IO [Sited String View]
-  forM_ vs $ \v -> respond (connection c) (SpaceResponse (Sited w (View v)))
+  forM_ vs $ \v -> respond (connection c) (EnsembleResponse (Sited w (View v)))
   return c
 
-processSpaceRequest s c w x@(SetView (Sited key value)) = do
+processEnsembleRequest s c w x@(SetView (Sited key value)) = do
   putStrLn $ "SetView in (" ++ w ++ "," ++ key ++ "): " ++ (show value)
   updateServer s $ setView w key value
   return c
 
-processSpaceRequest s c w x@(TempoChange cps) = do
+processEnsembleRequest s c w x@(TempoChange cps) = do
   putStrLn "placeholder: TempoChange"
   return c
 
-processSpaceRequest s c w _ = do
+processEnsembleRequest s c w _ = do
   putStrLn "warning: action failed pattern matching"
   return c
 
