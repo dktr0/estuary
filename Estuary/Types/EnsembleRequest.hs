@@ -7,6 +7,7 @@ import Estuary.Types.EditOrEval
 import Estuary.Types.View
 
 data EnsembleRequest v =
+  AuthenticateInEnsemble String |
   SendChat String String | -- name message
   ZoneRequest (Sited Int (EditOrEval v)) |
   GetViews |
@@ -15,12 +16,14 @@ data EnsembleRequest v =
   GetEnsembleClientCount
   
 instance JSON v => JSON (EnsembleRequest v) where
+  showJSON (AuthenticateInEnsemble s) = encJSDict [("AuthenticateInEnsemble",s)]
   showJSON (SendChat name msg) = encJSDict [("SendChat",name),("m",msg)]
   showJSON (ZoneRequest z) = encJSDict [("ZoneRequest",showJSON z)]
   showJSON GetViews = showJSON "GetViews"
   showJSON (SetView x) = encJSDict [("SetView",x)]
   showJSON (TempoChange cps) = encJSDict [("TempoChange",showJSON cps)]
   showJSON GetEnsembleClientCount = showJSON "GetEnsembleClientCount"
+  readJSON (JSObject x) | firstKey x == "AuthenticateInEnsemble" = AuthenticateInEnsemble <$> valFromObj "AuthenticateInEnsemble" x
   readJSON (JSObject x) | firstKey x == "SendChat" = SendChat <$> valFromObj "SendChat" x <*> valFromObj "m" x
   readJSON (JSObject x) | firstKey x == "ZoneRequest" = ZoneRequest <$> valFromObj "ZoneRequest" x
   readJSON (JSString x) | fromJSString x == "GetViews" = Ok GetViews
