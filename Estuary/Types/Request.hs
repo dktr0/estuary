@@ -13,7 +13,7 @@ data Request a =
   GetEnsembleList |
   JoinEnsemble String |
   LeaveEnsemble |
-  CreateEnsemble String |
+  CreateEnsemble String (Maybe String) |
   EnsembleRequest (Sited String (EnsembleRequest a)) |
   GetServerClientCount 
 
@@ -22,14 +22,14 @@ instance JSON a => JSON (Request a) where
   showJSON (GetEnsembleList) = showJSON "GetEnsembleList"
   showJSON (JoinEnsemble s) = encJSDict [("JoinEnsemble",s)]
   showJSON (LeaveEnsemble) = showJSON "LeaveEnsemble"
-  showJSON (CreateEnsemble s) = encJSDict [("CreateEnsemble",s)]
+  showJSON (CreateEnsemble name pwd) = encJSDict [("CreateEnsemble",showJSON name),("pwd",showJSON pwd)]
   showJSON (EnsembleRequest s) = encJSDict [("EnsembleRequest",showJSON s)]
   showJSON (GetServerClientCount) = showJSON "GetServerClientCount"
   readJSON (JSObject x) | firstKey x == "Authenticate" = Authenticate <$> valFromObj "Authenticate" x
   readJSON (JSString x) | fromJSString x == "GetEnsembleList" = Ok GetEnsembleList
   readJSON (JSObject x) | firstKey x == "JoinEnsemble" = JoinEnsemble <$> valFromObj "JoinEnsemble" x
   readJSON (JSString x) | fromJSString x == "LeaveEnsemble" = Ok LeaveEnsemble
-  readJSON (JSObject x) | firstKey x == "CreateEnsemble" = CreateEnsemble <$> valFromObj "CreateEnsemble" x
+  readJSON (JSObject x) | firstKey x == "CreateEnsemble" = CreateEnsemble <$> valFromObj "CreateEnsemble" x <*> valFromObj "pwd" x
   readJSON (JSObject x) | firstKey x == "EnsembleRequest" = EnsembleRequest <$> valFromObj "EnsembleRequest" x
   readJSON (JSString x) | fromJSString x == "GetServerClientCount" = Ok GetServerClientCount
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSOBject as Request: " ++ (show x)

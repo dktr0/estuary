@@ -110,9 +110,9 @@ processRequest s c LeaveEnsemble = onlyIfAuthenticated s c $ do
   putStrLn $ "leaving ensemble"
   updateClient s c $ \c' -> c' { ensemble = Nothing }
 
-processRequest s c (CreateEnsemble x) = onlyIfAuthenticated s c $ do
-  putStrLn $ "CreateEnsemble " ++ x
-  updateServer s $ createEnsemble x
+processRequest s c (CreateEnsemble name pwd) = onlyIfAuthenticated s c $ do
+  putStrLn $ "CreateEnsemble " ++ name
+  updateServer s $ createEnsemble name pwd
   getEnsembleList s >>= respondAll s
 
 processRequest s c (EnsembleRequest x) = onlyIfAuthenticated s c $ processInEnsemble s c x
