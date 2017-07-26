@@ -74,6 +74,12 @@ onlyIfAuthenticated s h f = do
   let c = clients s' Map.! h
   if (authenticated c) then f else putStrLn "ignoring request from non-authenticated client"
 
+onlyIfAuthenticatedInEnsemble :: MVar Server -> ClientHandle -> IO () -> IO ()
+onlyIfAuthenticatedInEnsemble s h f = do
+  s' <- readMVar s
+  let c = clients s' Map.! h
+  if (authenticatedInEnsemble c) then f else putStrLn "ignoring request from client not authenticated in ensemble"
+
 
 processResult :: MVar Server -> ClientHandle -> Result ServerRequest -> IO ()
 processResult _ c (Error x) = putStrLn ("Error: " ++ x)
