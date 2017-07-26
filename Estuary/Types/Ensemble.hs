@@ -19,6 +19,9 @@ emptyEnsemble = Ensemble {
   views = Map.empty
   }
 
+setPassword :: Maybe String -> Ensemble -> Ensemble
+setPassword s e = e { password = s } 
+
 editDef :: Int -> Definition -> Ensemble -> Ensemble
 editDef z d s = s { defs = Map.insert z d (defs s) }
 
