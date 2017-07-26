@@ -22,79 +22,8 @@ import Estuary.Types.Ensemble
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.View
-
-
-type ClientHandle = Int
-
-data Client = Client {
-  handle :: ClientHandle,
-  connection :: WS.Connection,
-  authenticated :: Bool,
-  ensemble :: Maybe String,
-  authenticatedInEnsemble :: Bool
-}
-
-newClient :: ClientHandle -> WS.Connection -> Client
-newClient h c = Client {
-  handle = h,
-  connection = c,
-  authenticated = False,
-  ensemble = Nothing,
-  authenticatedInEnsemble = False
-}
-
-
-data Server = Server {
-  password :: String,
-  clients :: Map.Map ClientHandle Client,
-  ensembles :: Map.Map String Ensemble
-}
-
-newServer :: Server
-newServer = Server {
-  password = "password",
-  clients = Map.empty,
-  ensembles = Map.fromList [("testingA",emptyEnsemble),("testingB",emptyEnsemble)]
-}
-
-getPassword :: MVar Server -> IO String
-getPassword s = readMVar s >>= return . password
-
-updateClient :: MVar Server -> ClientHandle -> (Client -> Client) -> IO ()
-updateClient s c f = do
-  s' <- takeMVar s
-  let c' = (clients s') Map.! c 
-  let c'' = f c'
-  putMVar s $ s' { clients = Map.adjust (const c'') c (clients s') }
- 
-addClient :: Server -> WS.Connection -> (ClientHandle,Server)
-addClient s x = (i,s { clients=newMap})
-  where i = head ([0..] \\ Map.keys (clients s))
-        newMap = Map.insert i (newClient i x) (clients s)
-
-deleteClient :: ClientHandle -> Server -> Server
-deleteClient h s = s { clients = Map.delete h (clients s) }
-
-createEnsemble :: String -> Server -> Server
-createEnsemble w s = s { ensembles = Map.insertWith (\_ x -> x) w emptyEnsemble (ensembles s) }
-
--- if space already exists, createEnsemble does not make any change
-
-edit :: String -> Int -> Definition -> Server -> Server
-edit w z d s = s { ensembles = Map.adjust (editDef z d) w (ensembles s) }
-
-setView :: String -> String -> View -> Server -> Server
-setView w k v s = s { ensembles = Map.adjust (editView k v) w (ensembles s) }
-
-getEnsembleList :: MVar Server -> IO ServerResponse
-getEnsembleList s = readMVar s >>= return . EnsembleList . Map.keys . ensembles
-
-getViews :: MVar Server -> String -> IO [Sited String View]
-getViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.elems . Map.mapWithKey Sited . views) . Map.lookup w . ensembles
-
-getServerClientCount :: MVar Server -> IO Int
-getServerClientCount s = readMVar s >>= return . Map.size . clients
-
+import Estuary.Types.Client
+import Estuary.Types.Server
 
 
 main = do
