@@ -30,7 +30,8 @@ data Client = Client {
   handle :: ClientHandle,
   connection :: WS.Connection,
   authenticated :: Bool,
-  ensemble :: Maybe String
+  ensemble :: Maybe String,
+  authenticatedInEnsemble :: Bool
 }
 
 newClient :: ClientHandle -> WS.Connection -> Client
@@ -38,7 +39,8 @@ newClient h c = Client {
   handle = h,
   connection = c,
   authenticated = False,
-  ensemble = Nothing
+  ensemble = Nothing,
+  authenticatedInEnsemble = False
 }
 
 
