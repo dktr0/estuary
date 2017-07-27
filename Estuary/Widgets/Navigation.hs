@@ -26,7 +26,7 @@ import Estuary.Widgets.View
 data Navigation =
   Splash |
   TutorialList |
-  Tutorial |
+  Tutorial String |
   Solo |
   Lobby |
   CreateEnsemblePage |
@@ -49,26 +49,42 @@ page :: MonadWidget t m => Event t [ServerResponse] -> Navigation ->
   m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
 
 page wsDown Splash = do
-  x <- liftM (TutorialList <$)  $ button "Tutorials"
-  y <- liftM (Solo <$)  $ button "Solo"
-  z <- liftM (Lobby <$)  $ button "Collaborate"
+  x <- liftM (TutorialList <$) $ el "div" $ button "Tutorials"
+  y <- liftM (Solo <$)  $ el "div" $ button "Solo"
+  z <- liftM (Lobby <$)  $ el "div" $ button "Collaborate"
   let navEvents = leftmost [x,y,z]
   return (constDyn [],never,never,navEvents)
 
 page wsDown TutorialList = do
-  text "TutorialList placeholder"
-  x <- liftM (Splash <$) $ button "back to splash"
-  return (constDyn [],never,never,x)
+  el "div" $ text "Click on a button to select a tutorial interface:"
+  t1 <- liftM (Tutorial "Structure editing" <$) $ el "div" $ button "Structure editing"
+  t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"  
+  back <- liftM (Splash <$) $ button "Return to splashscreen"
+  let navEvents = leftmost [t1,t2,back]
+  return (constDyn [],never,never,navEvents)
 
-page wsDown Tutorial = do
+page wsDown (Tutorial "Structure editing") = do
   text "Tutorial placeholder"
   x <- liftM (Splash <$) $ button "back to splash"
   return (constDyn [],never,never,x)
 
-page wsDown Solo = do
-  text "Solo placeholder"
+page wsDown (Tutorial "TidalCycles text editing") = do
+  text "Tutorial placeholder"
   x <- liftM (Splash <$) $ button "back to splash"
   return (constDyn [],never,never,x)
+
+page wsDown (Tutorial _) = do
+  text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
+  x <- liftM (Splash <$) $ button "back to splash"
+  return (constDyn [],never,never,x)
+
+--viewInSoloWidget :: MonadWidget t m => View -> m (Dynamic t DefinitionMap, Event t Hint)
+
+page wsDown Solo = do
+  (defMap,hints) <- viewInSoloWidget defaultView 
+  patterns <- mapDyn (justStructures . elems) defMap
+  x <- liftM (Splash <$) $ button "Return to splashscreen"
+  return (patterns,never,hints,x)
 
 page wsDown Lobby = do
   requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild

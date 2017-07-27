@@ -36,6 +36,12 @@ viewInEnsembleWidget spaceName view deltasDown = do
   let requests = leftmost [edits',join]
   return (zones,requests,hints)
 
+viewInSoloWidget :: MonadWidget t m => View -> m (Dynamic t DefinitionMap, Event t Hint)
+
+viewInSoloWidget view = do
+  (zones,edits,hints) <- viewWidget view never
+  return (zones,hints)
+
 
 viewWidget :: MonadWidget t m => View -> Event t [EnsembleResponse Definition] ->
   m (Dynamic t DefinitionMap, Event t (EnsembleRequest Definition), Event t Hint)
