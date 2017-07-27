@@ -105,6 +105,17 @@ processRequest s c GetEnsembleList = do
 processRequest s c (JoinEnsemble x) = do
   putStrLn $ "joining ensemble " ++ x
   updateClientWithServer s c f 
+  s' <- takeMVar s
+  let e = ensembles s' Map.! x
+  let defs' = Map.elems $ fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
+  putStrLn $ show (length defs')
+  mapM_ (respond' s' c) $ defs'
+  putStrLn "here"
+  let views' = Map.elems $ fmap (EnsembleResponse . Sited x . View) $ Map.mapWithKey Sited $ E.views e
+  putStrLn $ show (length views')
+  mapM_ (respond' s' c) $ views'
+  putStrLn "and here"
+  putMVar s s'
   where
     f s' c' = c' { ensemble = Just x, authenticatedInEnsemble = E.password ((ensembles s') Map.! x) == "" }
 
@@ -176,6 +187,10 @@ send x cs = do
 
 respond :: MVar Server -> ClientHandle -> ServerResponse -> IO ()
 respond s c x = withMVar s $ (send x) . (:[]) . (Map.! c)  . clients
+
+-- respond' is for use when one already has a lock on the server MVar'
+respond' :: Server -> ClientHandle -> ServerResponse -> IO ()
+respond' s c x = send x $ (:[]) $ (Map.! c) $ clients s
 
 respondAll :: MVar Server -> ServerResponse -> IO ()
 respondAll s x = withMVar s $ (send x) . Map.elems . clients

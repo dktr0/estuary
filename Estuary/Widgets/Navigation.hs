@@ -80,9 +80,6 @@ page wsDown Lobby = do
   back <- liftM (Splash <$) $ el "div" $ button "back to splash"
   return (constDyn [],requestEnsembleList,never,leftmost [back,join'',create])
 
--- page :: MonadWidget t m => Event t [ServerResponse] -> Navigation ->
---  m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
-
 
 page wsDown CreateEnsemblePage = do
   el "div" $ text "Create A New Ensemble"
