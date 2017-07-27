@@ -29,6 +29,7 @@ data Navigation =
   Tutorial |
   Solo |
   Lobby |
+  CreateEnsemblePage |
   Collaborate String
 
 
@@ -77,6 +78,27 @@ page wsDown Lobby = do
   let join'' = switchPromptlyDyn join' -- Event t Navigation
   back <- liftM (Splash <$) $ button "back to splash"
   return (constDyn [],requestEnsembleList,never,leftmost [back,join''])
+
+page wsDown CreateEnsemblePage = do
+  el "div" $ text "Create A New Ensemble"
+  el "div" $ text "Note: To successfully create an ensemble you need to know and enter the correct admin password."
+  name <- el "div" $ do
+    text "Ensemble Name: "
+    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
+  password <- el "div" $ do
+    text "Ensemble Password: "
+    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
+  nameAndPassword <- combineDyn (,) name password
+  confirm <- el "div" $ button "Confirm"
+  let createEnsemble = fmap (\(a,b) -> CreateEnsemble a b) $ tagDyn nameAndPassword confirm
+  cancel <- el "div" $ button "Cancel"
+  let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
+  return (constDyn [], createEnsemble, never, navEvents)
+
+-- page :: MonadWidget t m => Event t [ServerResponse] -> Navigation ->
+--  m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
 
 page wsDown (Collaborate w) = do
   (defMap,wsUp,hints) <- viewInEnsembleWidget w defaultView wsDown
