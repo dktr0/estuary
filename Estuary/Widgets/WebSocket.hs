@@ -72,7 +72,7 @@ webSocketWidget :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event 
 webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
   text "WebSocket status:"
   display status
-  text "Password:"
+  text " Admin Password:"
   let attrs = constDyn ("class" =: "webSocketTextInputs")
   pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
   let pwd = _textInput_value pwdInput

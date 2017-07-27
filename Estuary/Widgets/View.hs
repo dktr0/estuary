@@ -23,9 +23,14 @@ viewInEnsembleWidget :: MonadWidget t m => String -> View -> Event t [Response D
   m (Dynamic t DefinitionMap, Event t (Request Definition), Event t Hint)
 
 viewInEnsembleWidget spaceName view deltasDown = do
+  text $ "Ensemble: " ++ spaceName
+  text " Password:"
+  let attrs = constDyn ("class" =: "webSocketTextInputs")
+  pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
+  let pwd = fmap AuthenticateInEnsemble $ _textInput_input pwdInput
   let deltasDown' = fmap (justSited spaceName . justEnsembleResponses) deltasDown
   (zones,edits,hints) <- viewWidget view deltasDown'
-  let edits' = fmap (EnsembleRequest  . Sited spaceName) edits
+  let edits' = fmap (EnsembleRequest  . Sited spaceName) $ leftmost [edits,pwd]
   return (zones,edits',hints)
 
 
