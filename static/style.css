@@ -52,6 +52,26 @@ button {
 	padding-right: 15px;
 }
 
+.logo {
+	display: inline-block;
+}
+
+.server {
+	display: inline-block;
+}
+
+.webDirt { /* webDirt status area in top right of header */
+	display: inline-block;
+	float: right;
+	/* width: 49%; */
+}
+
+.webDirtMute {
+	float: right;
+	font-size: 60%;
+}
+
+
 .textWidgetTextArea {
 	width: 100%;
 	border: none;
@@ -72,15 +92,7 @@ button {
 	width: 50%;
 }
 
-.webDirt { /* webDirt status area in top right of header */
-	display: inline-block;
-	width: 49%;
-}
 
-.webDirtMute {
-	float: right;
-	font-size: 60%;
-}
 
 .pageMenu { /* contains page menu in bottom left of header */
 	display: inline-block;
