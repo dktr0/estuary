@@ -98,24 +98,24 @@ processRequest s c (Authenticate x) = do
       putStrLn "received authenticate with wrong password"
       updateClient s c $ \x -> x { authenticated = False }
 
-processRequest s c GetEnsembleList = onlyIfAuthenticated s c $ do
+processRequest s c GetEnsembleList = do
   putStrLn "GetEnsembleList"
   getEnsembleList s >>= respond s c
 
-processRequest s c (JoinEnsemble x) = onlyIfAuthenticated s c $ do
+processRequest s c (JoinEnsemble x) = do
   putStrLn $ "joining ensemble " ++ x
-  updateClient s c $ \c' -> c' { ensemble = Just x }
+  updateClient s c $ \c' -> c' { ensemble = Just x, authenticatedInEnsemble = False }
 
-processRequest s c LeaveEnsemble = onlyIfAuthenticated s c $ do
+processRequest s c LeaveEnsemble = do
   putStrLn $ "leaving ensemble"
-  updateClient s c $ \c' -> c' { ensemble = Nothing }
+  updateClient s c $ \c' -> c' { ensemble = Nothing, authenticatedInEnsemble = False }
 
 processRequest s c (CreateEnsemble name pwd) = onlyIfAuthenticated s c $ do
   putStrLn $ "CreateEnsemble " ++ name
   updateServer s $ createEnsemble name pwd
   getEnsembleList s >>= respondAll s
 
-processRequest s c (EnsembleRequest x) = onlyIfAuthenticated s c $ processInEnsemble s c x
+processRequest s c (EnsembleRequest x) = processInEnsemble s c x
 
 processRequest s c GetServerClientCount = do
   putStrLn "GetServerClientCount"
@@ -138,16 +138,16 @@ processEnsembleRequest s c e x@(AuthenticateInEnsemble p2) = do
       putStrLn $ "failed AuthenticateInEnsemble in " ++ e
       updateClient s c $ setAuthenticatedInEnsemble False
 
-processEnsembleRequest s c e x@(SendChat name msg) = do
+processEnsembleRequest s c e x@(SendChat name msg) = onlyIfAuthenticatedInEnsemble s c $ do
   putStrLn $ "SendChat in " ++ e ++ " from " ++ name ++ ": " ++ msg
   respondEnsemble s e $ EnsembleResponse (Sited e (Chat name msg))
 
-processEnsembleRequest s c e x@(ZoneRequest (Sited zone (Edit value))) = do
+processEnsembleRequest s c e x@(ZoneRequest (Sited zone (Edit value))) = onlyIfAuthenticatedInEnsemble s c $ do
   putStrLn $ "Edit in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
   updateServer s $ edit e zone value
   respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone (Edit value))))
 
-processEnsembleRequest s c e x@(ZoneRequest (Sited zone (Evaluate value))) = do
+processEnsembleRequest s c e x@(ZoneRequest (Sited zone (Evaluate value))) = onlyIfAuthenticatedInEnsemble s c $ do
   putStrLn $ "Eval in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
   respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone (Evaluate value))))
 
@@ -156,12 +156,12 @@ processEnsembleRequest s c e GetViews = do
   vs <- getViews s e -- IO [Sited String View]
   forM_ vs $ \v -> respond s c (EnsembleResponse (Sited e (View v)))
 
-processEnsembleRequest s c e x@(SetView (Sited key value)) = do
+processEnsembleRequest s c e x@(SetView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
   putStrLn $ "SetView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
   updateServer s $ setView e key value
   respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (View (Sited key value))) 
 
-processEnsembleRequest s c e x@(TempoChange cps) = putStrLn "placeholder: TempoChange"
+processEnsembleRequest s c e x@(TempoChange cps) = onlyIfAuthenticatedInEnsemble s c $ putStrLn "placeholder: TempoChange"
 
 processEnsembleRequest _ _ _ _ = putStrLn "warning: action failed pattern matching"
 
