@@ -11,6 +11,7 @@ import Control.Monad
 import Control.Concurrent.MVar
 import Control.Exception (try)
 import Text.JSON
+import System.Environment (getArgs)
 
 import Estuary.Utility
 import Estuary.Types.Definition
@@ -27,8 +28,12 @@ import Estuary.Types.Server
 
 
 main = do
+  args <- getArgs
+  let pwd = if (length args >= 1) then args!!0 else ""
   putStrLn "Estuary collaborative editing server (listening on port 8001)"
-  server <- newMVar newServer
+  putStrLn $ "password: " ++ pwd
+  let ourServer = newServer { password = pwd }
+  server <- newMVar ourServer
   WS.runServer "0.0.0.0" 8001 $ connectionHandler server
 
 connectionHandler :: MVar Server -> WS.PendingConnection -> IO ()
