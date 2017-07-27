@@ -167,7 +167,10 @@ processEnsembleRequest _ _ _ _ = putStrLn "warning: action failed pattern matchi
 
 
 send :: ServerResponse -> [Client] -> IO ()
-send x = mapM_ $ \c -> WS.sendTextData (connection c) $ (T.pack . encodeStrict) x
+send x cs = do 
+  putStrLn $ "send to " ++ (show (length cs))
+  mapM_ f cs
+  where f c = WS.sendTextData (connection c) $ (T.pack . encodeStrict) x 
 
 respond :: MVar Server -> ClientHandle -> ServerResponse -> IO ()
 respond s c x = withMVar s $ (send x) . (:[]) . (Map.! c)  . clients
