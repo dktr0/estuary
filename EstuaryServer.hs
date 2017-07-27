@@ -127,6 +127,17 @@ processInEnsemble s c (Sited e x) = processEnsembleRequest s c e x
 
 processEnsembleRequest :: MVar Server -> ClientHandle -> String -> EnsembleRequest Definition -> IO ()
 
+processEnsembleRequest s c e x@(AuthenticateInEnsemble p2) = do
+  p1 <- getEnsemblePassword s e
+  let p2' = if p1 == "" then "" else p2
+  if p1 == p2'
+    then do
+      putStrLn $ "successful AuthenticateInEnsemble in " ++ e
+      updateClient s c $ setAuthenticatedInEnsemble True 
+    else do
+      putStrLn $ "failed AuthenticateInEnsemble in " ++ e
+      updateClient s c $ setAuthenticatedInEnsemble False
+
 processEnsembleRequest s c e x@(SendChat name msg) = do
   putStrLn $ "SendChat in " ++ e ++ " from " ++ name ++ ": " ++ msg
   respondEnsemble s e $ EnsembleResponse (Sited e (Chat name msg))

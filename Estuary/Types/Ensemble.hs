@@ -7,19 +7,19 @@ import Estuary.Types.View
 
 
 data Ensemble = Ensemble {
-  password :: Maybe String,
+  password :: String,
   defs :: Map.Map Int Definition,
   views :: Map.Map String View
   }
 
 emptyEnsemble :: Ensemble
 emptyEnsemble = Ensemble {
-  password = Nothing, 
+  password = "", 
   defs = Map.empty,
   views = Map.empty
   }
 
-setPassword :: Maybe String -> Ensemble -> Ensemble
+setPassword :: String -> Ensemble -> Ensemble
 setPassword s e = e { password = s } 
 
 editDef :: Int -> Definition -> Ensemble -> Ensemble

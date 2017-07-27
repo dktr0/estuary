@@ -21,4 +21,9 @@ newClient h c = Client {
   authenticatedInEnsemble = False
 }
 
+setAuthenticatedInEnsemble :: Bool -> Client -> Client
+setAuthenticatedInEnsemble x c = c { authenticatedInEnsemble = x }
+
+
+
 

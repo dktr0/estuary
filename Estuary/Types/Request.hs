@@ -13,7 +13,7 @@ data Request a =
   GetEnsembleList |
   JoinEnsemble String |
   LeaveEnsemble |
-  CreateEnsemble String (Maybe String) |
+  CreateEnsemble String String | -- ensembleName ensemblePassword (or "" for no password)
   EnsembleRequest (Sited String (EnsembleRequest a)) |
   GetServerClientCount 
 
