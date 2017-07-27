@@ -107,14 +107,10 @@ processRequest s c (JoinEnsemble x) = do
   updateClientWithServer s c f 
   s' <- takeMVar s
   let e = ensembles s' Map.! x
-  let defs' = Map.elems $ fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
-  putStrLn $ show (length defs')
+  let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
   mapM_ (respond' s' c) $ defs'
-  putStrLn "here"
-  let views' = Map.elems $ fmap (EnsembleResponse . Sited x . View) $ Map.mapWithKey Sited $ E.views e
-  putStrLn $ show (length views')
+  let views' = fmap (EnsembleResponse . Sited x . View) $ Map.mapWithKey Sited $ E.views e
   mapM_ (respond' s' c) $ views'
-  putStrLn "and here"
   putMVar s s'
   where
     f s' c' = c' { ensemble = Just x, authenticatedInEnsemble = E.password ((ensembles s') Map.! x) == "" }
@@ -181,7 +177,7 @@ processEnsembleRequest _ _ _ _ = putStrLn "warning: action failed pattern matchi
 
 send :: ServerResponse -> [Client] -> IO ()
 send x cs = do 
-  putStrLn $ "send to " ++ (show (length cs))
+  -- putStrLn $ "send to " ++ (show (length cs))
   mapM_ f cs
   where f c = WS.sendTextData (connection c) $ (T.pack . encodeStrict) x 
 

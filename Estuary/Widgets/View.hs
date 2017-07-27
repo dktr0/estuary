@@ -51,6 +51,8 @@ viewWidget (Views xs) deltasDown = foldM f i xs
       let newHints = leftmost [prevHints,hints]
       return (newZoneMap,newEdits,newHints)
 
+viewWidget (ViewDiv c v) deltasDown = divClass c $ viewWidget v deltasDown
+
 viewWidget (StructureView n) deltasDown = do
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown -- Event t TransformedPattern
   (value,edits,hints) <- topLevelTransformedPatternWidget deltasDown'  -- m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
