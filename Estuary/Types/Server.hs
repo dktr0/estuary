@@ -21,9 +21,9 @@ data Server = Server {
 
 newServer :: Server
 newServer = Server {
-  password = "password",
+  password = "",
   clients = Map.empty,
-  ensembles = Map.fromList [("testingA",E.emptyEnsemble),("testingB",E.emptyEnsemble)]
+  ensembles = Map.empty
 }
 
 
