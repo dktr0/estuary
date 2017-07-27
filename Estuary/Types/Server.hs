@@ -26,8 +26,12 @@ newServer = Server {
   ensembles = Map.fromList [("testingA",E.emptyEnsemble),("testingB",E.emptyEnsemble)]
 }
 
-getPassword :: MVar Server -> IO String
-getPassword s = readMVar s >>= return . password
+
+updateServer :: MVar Server -> (Server -> Server) -> IO (MVar Server)
+updateServer s f = do
+  s' <- takeMVar s
+  putMVar s (f s')
+  return s
 
 updateClient :: MVar Server -> ClientHandle -> (Client -> Client) -> IO ()
 updateClient s c f = do
@@ -35,6 +39,17 @@ updateClient s c f = do
   let c' = (clients s') Map.! c 
   let c'' = f c'
   putMVar s $ s' { clients = Map.adjust (const c'') c (clients s') }
+
+updateClientWithServer :: MVar Server -> ClientHandle -> (Server -> Client -> Client) -> IO ()
+updateClientWithServer s c f = do
+  s' <- takeMVar s
+  let c' = (clients s') Map.! c 
+  let c'' = f s' c'
+  putMVar s $ s' { clients = Map.adjust (const c'') c (clients s') }
+
+
+getPassword :: MVar Server -> IO String
+getPassword s = readMVar s >>= return . password
  
 addClient :: Server -> WS.Connection -> (ClientHandle,Server)
 addClient s x = (i,s { clients=newMap})

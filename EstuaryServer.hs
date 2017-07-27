@@ -18,7 +18,7 @@ import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.EditOrEval
-import Estuary.Types.Ensemble
+import qualified Estuary.Types.Ensemble as E
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.View
@@ -104,7 +104,9 @@ processRequest s c GetEnsembleList = do
 
 processRequest s c (JoinEnsemble x) = do
   putStrLn $ "joining ensemble " ++ x
-  updateClient s c $ \c' -> c' { ensemble = Just x, authenticatedInEnsemble = False }
+  updateClientWithServer s c f 
+  where
+    f s' c' = c' { ensemble = Just x, authenticatedInEnsemble = E.password ((ensembles s') Map.! x) == "" }
 
 processRequest s c LeaveEnsemble = do
   putStrLn $ "leaving ensemble"
@@ -190,10 +192,6 @@ respondEnsembleNoOrigin s c e x = withMVar s $ (send x) . Map.elems . Map.delete
 ensembleFilter :: String -> Map.Map ClientHandle Client -> Map.Map ClientHandle Client
 ensembleFilter e = Map.filter $ (==(Just e)) . ensemble 
 
-updateServer :: MVar Server -> (Server -> Server) -> IO (MVar Server)
-updateServer s f = do
-  s' <- takeMVar s
-  putMVar s (f s')
-  return s
+
 
 
