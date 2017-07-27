@@ -76,8 +76,13 @@ page wsDown Lobby = do
   join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
   join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation
-  back <- liftM (Splash <$) $ button "back to splash"
-  return (constDyn [],requestEnsembleList,never,leftmost [back,join''])
+  create <- liftM (CreateEnsemblePage <$) $ el "div" $ button "Create New Ensemble"
+  back <- liftM (Splash <$) $ el "div" $ button "back to splash"
+  return (constDyn [],requestEnsembleList,never,leftmost [back,join'',create])
+
+-- page :: MonadWidget t m => Event t [ServerResponse] -> Navigation ->
+--  m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
+
 
 page wsDown CreateEnsemblePage = do
   el "div" $ text "Create A New Ensemble"
@@ -96,9 +101,6 @@ page wsDown CreateEnsemblePage = do
   cancel <- el "div" $ button "Cancel"
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
   return (constDyn [], createEnsemble, never, navEvents)
-
--- page :: MonadWidget t m => Event t [ServerResponse] -> Navigation ->
---  m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
 
 page wsDown (Collaborate w) = do
   (defMap,wsUp,hints) <- viewInEnsembleWidget w defaultView wsDown
