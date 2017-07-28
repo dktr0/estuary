@@ -30,6 +30,19 @@ zip:
 	tar czf estuary-build.tgz -C temp .
 	rm -rf temp
 
+zipWithWebDirt:
+	rm -rf temp
+	mkdir temp
+	cp package.json temp
+	cp estuary.js temp
+	cp evalClient.js temp
+	cp -Rf $$(stack path --local-install-root)/bin/Estuary.jsexe temp
+	cp static/index.html temp/Estuary.jsexe
+	cp static/style.css temp/Estuary.jsexe
+	cp static/EstuaryProtocol.js temp/Estuary.jsexe
+	cp -Rf static/WebDirt temp/Estuary.jsexe
+	cd temp; zip -r ../estuary-build.zip ./*
+	rm -rf temp
 
 WebDirt:
 	cp -Rf static/WebDirt Estuary.jsexe
