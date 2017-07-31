@@ -5,6 +5,7 @@
 *_o
 bin
 .stack-work/*
+.stack-work
 static/
 .DS_Store
 *~
@@ -14,6 +15,3 @@ estuaryWebSocket.exe
 *node_modules*
 renderTidal
 renderTidal.exe
-EstuaryServer.exe
-EstuaryServer
-

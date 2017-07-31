@@ -1,10 +1,9 @@
-name:                Estuary
+name:                EstuaryServer
 version:             0.0.0.1
 synopsis:            Projectional editor for TidalCycles
 description:         Please see README.md
 homepage:            http://github.com/d0kt0r0/estuary/blob/master/README.md
 license:             GPL-3
-license-file:        LICENSE
 author:              David Ogborn, Jamie Beverley and others
 maintainer:          ogbornd@mcmaster.ca
 copyright:           2015-17 David Ogborn and others
@@ -13,10 +12,9 @@ build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  
 
-executable Estuary
-  hs-source-dirs:    .
-  main-is:           EstuaryClient.hs
-  build-depends:     base, reflex, reflex-dom, tidal, hosc, containers, safe, ghcjs-base, ghcjs-dom, text, array, ghcjs-prim, data-default, transformers, file-embed, time, monad-loops, json, bytestring
+executable EstuaryServer
+  hs-source-dirs:    .. .
+  main-is:           EstuaryServer.hs
+  build-depends:     base, containers, text, tidal, hosc, json, websockets
   default-language:  Haskell2010
-
 

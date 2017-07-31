@@ -1,0 +1,10 @@
+resolver: lts-7.24
+compiler: ghc-8.0.2
+compiler-check: match-exact
+
+packages:
+- 'EstuaryServer'
+
+extra-deps:
+- tidal-0.9.4
+

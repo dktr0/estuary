@@ -1,11 +1,14 @@
-setup:
-	stack setup
+setupClient:
+	stack setup --stack-yaml=client.yaml
 
-client:
-	stack build
+buildClient:
+	stack build --stack-yaml=client.yaml
 
-server:
-	ghc -o EstuaryServer EstuaryServer.hs
+setupServer:
+	stack setup --stack-yaml=server.yaml
+
+buildServer:
+	stack build --stack-yaml=server.yaml
 
 install:
 	cp -Rf $$(stack path --local-install-root)/bin/Estuary.jsexe .
