@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import Data.Text (Text)
@@ -6,12 +7,17 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Map.Strict as Map
-import qualified Network.WebSockets as WS
 import Control.Monad
 import Control.Concurrent.MVar
 import Control.Exception (try)
 import Text.JSON
 import System.Environment (getArgs)
+import qualified Network.WebSockets as WS
+import qualified Network.Wai as WS
+import qualified Network.Wai.Handler.WebSockets as WS
+import Network.Wai.Application.Static (staticApp, defaultWebAppSettings, ssIndices)
+import Network.Wai.Handler.Warp (run)
+import WaiAppStatic.Types (unsafeToPiece)
 
 import Estuary.Utility
 import Estuary.Types.Definition
@@ -32,12 +38,12 @@ main = do
   let pwd = if (length args >= 1) then args!!0 else ""
   putStrLn "Estuary collaborative editing server (listening on port 8001)"
   putStrLn $ "password: " ++ pwd
-  let ourServer = newServer { password = pwd }
-  server <- newMVar ourServer
-  WS.runServer "0.0.0.0" 8001 $ connectionHandler server
+  s <- newMVar $ newServer { password = pwd }
+  let settings = (defaultWebAppSettings "Estuary.jsexe") { ssIndices = [unsafeToPiece "index.html"] }
+  run 8001 $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp s) (staticApp settings)
 
-connectionHandler :: MVar Server -> WS.PendingConnection -> IO ()
-connectionHandler s ws = do
+webSocketsApp :: MVar Server -> WS.ServerApp -- = PendingConnection -> IO ()
+webSocketsApp s ws = do
   putStrLn "received new connection"
   ws' <- WS.acceptRequest ws
   ss <- takeMVar s
@@ -95,10 +101,10 @@ processRequest :: MVar Server -> ClientHandle -> ServerRequest -> IO ()
 
 processRequest s c (Authenticate x) = do
   pwd <- getPassword s
-  if x == pwd 
-    then do 
+  if x == pwd
+    then do
       putStrLn "received authenticate with correct password"
-      updateClient s c $ \x -> x { authenticated = True } 
+      updateClient s c $ \x -> x { authenticated = True }
     else do
       putStrLn "received authenticate with wrong password"
       updateClient s c $ \x -> x { authenticated = False }
@@ -109,7 +115,7 @@ processRequest s c GetEnsembleList = do
 
 processRequest s c (JoinEnsemble x) = do
   putStrLn $ "joining ensemble " ++ x
-  updateClientWithServer s c f 
+  updateClientWithServer s c f
   s' <- takeMVar s
   let e = ensembles s' Map.! x
   let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
@@ -147,7 +153,7 @@ processEnsembleRequest s c e x@(AuthenticateInEnsemble p2) = do
   if p1 == p2'
     then do
       putStrLn $ "successful AuthenticateInEnsemble in " ++ e
-      updateClient s c $ setAuthenticatedInEnsemble True 
+      updateClient s c $ setAuthenticatedInEnsemble True
     else do
       putStrLn $ "failed AuthenticateInEnsemble in " ++ e
       updateClient s c $ setAuthenticatedInEnsemble False
@@ -173,7 +179,7 @@ processEnsembleRequest s c e GetViews = do
 processEnsembleRequest s c e x@(SetView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
   putStrLn $ "SetView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
   updateServer s $ setView e key value
-  respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (View (Sited key value))) 
+  respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (View (Sited key value)))
 
 processEnsembleRequest s c e x@(TempoChange cps) = onlyIfAuthenticatedInEnsemble s c $ putStrLn "placeholder: TempoChange"
 
@@ -181,10 +187,10 @@ processEnsembleRequest _ _ _ _ = putStrLn "warning: action failed pattern matchi
 
 
 send :: ServerResponse -> [Client] -> IO ()
-send x cs = do 
+send x cs = do
   -- putStrLn $ "send to " ++ (show (length cs))
   mapM_ f cs
-  where f c = WS.sendTextData (connection c) $ (T.pack . encodeStrict) x 
+  where f c = WS.sendTextData (connection c) $ (T.pack . encodeStrict) x
 
 respond :: MVar Server -> ClientHandle -> ServerResponse -> IO ()
 respond s c x = withMVar s $ (send x) . (:[]) . (Map.! c)  . clients
@@ -200,14 +206,10 @@ respondAllNoOrigin :: MVar Server -> ClientHandle -> ServerResponse -> IO ()
 respondAllNoOrigin s c x = withMVar s $ (send x) . Map.elems . Map.delete c . clients
 
 respondEnsemble :: MVar Server -> String -> ServerResponse -> IO ()
-respondEnsemble s e x = withMVar s $ (send x) . Map.elems . ensembleFilter e . clients 
+respondEnsemble s e x = withMVar s $ (send x) . Map.elems . ensembleFilter e . clients
 
 respondEnsembleNoOrigin :: MVar Server -> ClientHandle -> String -> ServerResponse -> IO ()
 respondEnsembleNoOrigin s c e x = withMVar s $ (send x) . Map.elems . Map.delete c . ensembleFilter e . clients
 
 ensembleFilter :: String -> Map.Map ClientHandle Client -> Map.Map ClientHandle Client
-ensembleFilter e = Map.filter $ (==(Just e)) . ensemble 
-
-
-
-
+ensembleFilter e = Map.filter $ (==(Just e)) . ensemble

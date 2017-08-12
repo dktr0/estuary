@@ -15,7 +15,7 @@ installClient:
 	cp -Rf static/* Estuary.jsexe
 
 installServer:
-	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./estuaryServer
+	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
 
 openClient:
 	cp -Rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin/Estuary.jsexe .
