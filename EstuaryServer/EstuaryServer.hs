@@ -34,13 +34,18 @@ import Estuary.Types.Server
 
 
 main = do
-  args <- getArgs
-  let pwd = if (length args >= 1) then args!!0 else ""
-  putStrLn "Estuary collaborative editing server (listening on port 8001)"
+  (pwd,port) <- getArgs >>= return . processArgs
+  putStrLn $ "Estuary collaborative editing server, listening on port " ++ (show port)
   putStrLn $ "password: " ++ pwd
   s <- newMVar $ newServer { password = pwd }
   let settings = (defaultWebAppSettings "Estuary.jsexe") { ssIndices = [unsafeToPiece "index.html"] }
-  run 8001 $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp s) (staticApp settings)
+  run port $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp s) (staticApp settings)
+
+processArgs :: [String] -> (String,Int) -- (password,port)
+processArgs xs = case length xs of
+  0 -> ("",8002)
+  1 -> (xs!!0,8002)
+  _ -> (xs!!0,read (xs!!1))
 
 webSocketsApp :: MVar Server -> WS.ServerApp -- = PendingConnection -> IO ()
 webSocketsApp s ws = do
