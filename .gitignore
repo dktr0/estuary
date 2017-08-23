@@ -9,10 +9,5 @@ bin
 static/
 .DS_Store
 *~
-server/staticWebContent/Dirt
-estuaryWebSocket
-estuaryWebSocket.exe
-*node_modules*
-renderTidal
-renderTidal.exe
-estuaryServer
+EstuaryServer/EstuaryServer
+EstuaryServer/EstuaryServer.exe

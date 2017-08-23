@@ -1,106 +1,76 @@
-# estuary
+# Building Estuary
 
-projectional editing platform for Tidal
+Note that, depending on your purpose, you may not need to
+build Estuary. For stand alone usage, an already built 
+release will suffice (although you may wish to add a sample
+library). The recommended method of building Estuary's components
+(client and server) is via the Haskell stack application, although
+other methods may be possible. 
 
-There are two parts to this, a server and a client. The server listens on a WebSocket for messages, and interprets the messages as Tidal patterns (which then normally results in sound coming from Dirt). The client presents a projectional editing interface for Tidal/Haskell expressions, sending these expressions to the server via a WebSocket. The server and client can be used separately if that is helpful.
+## Building on Debian 9.1 (Stretch)
 
-## Building with cabal and ghcjs
+These instructions have been tested against a fresh
+installation of Debian 9.1. First, install binary 
+dependencies as root:
 
 ```
-cabal install --ghcjs tidal
-cabal install --ghcjs reflex-dom
-cabal install --ghcjs file-embed
-```
-
-## Server Instructions
-
-1. Install GHC and cabal, if you don't already have it/them. There are several ways to do this.
-
-2. Install dependencies for Tidal and dirt:
-```
-brew install liblo
-brew install libsamplerate
-brew install libsndfile
-brew install jack
-```
-
-3. Clone and compile the Dirt sample playback engine (which Tidal uses to make sound):
-```
-git clone https://github.com/tidalcycles/Dirt.git
-cd Dirt
-make
+su
+apt-get install git
+apt-get install nodejs nodejs-legacy
+apt-get install libncurses5-dev
+apt-get install libghc-entropy-dev
+apt-get install happy
+apt-get install haskell-stack
+exit
 ```
 
-4. Install the hint and tidal packages for Haskell (using cabal):
+Now we need to upgrade stack, as the default package installed
+on Debian is somewhat old. As your preferred (not root) user:
+
 ```
-cabal install hint
-cabal install tidal
+stack upgrade
 ```
 
-5. Compile the server using GHC:
+...then add $HOME/.local/bin to your PATH environment variable as
+the warning at the end of the stack upgrade process suggests! You
+may want to confirm you have version 1.5.1 as follows:
+
 ```
-cd Estuary/server
-ghc EstuaryServer.hs
+stack --version
 ```
 
-6. Now you can run the jack audio routing system, Dirt, and the Estuary server.  Assuming Dirt and Estuary's source trees are both under your user directory it would be as follows (note that steps 1-5 above are install steps to be done once only):
-```
-jackd -d coreaudio &
-cd ~/Dirt
-./dirt &
-cd ~/Estuary/server
-./EstuaryServer &
-```
-Note: You can try out the server without the client: just use your web browser to open the file simpleWebSocketClient.html in the Estuary/server folder.
+With those dependencies in place, here is what the rest of the 
+process of building and launching a complete Estuary installation might look like,
+starting from the process of cloning the repository from github, and
+including downloading the Dirt sampling library as one possible sample
+library to be used by WebDirt (Estuary's sampling engine):
 
-Another Note: to stop the server press Ctrl-Z, then kill the process by number. Ctrl-C won't work and if you kill the parent terminal without stopping the server and killing the process by number it seems the websocket port stays locked until you restart the machine. Here's an example:
 ```
-pc-ogborn-d:server ogbornd$ ./EstuaryServer
-Tidal websocket server for Estuary
-^Z
-[1]+  Stopped                 ./EstuaryServer
-pc-ogborn-d:server ogbornd$ ps
-  PID TTY           TIME CMD
-  668 ttys000    0:00.08 -bash
-  807 ttys000    0:00.02 ./EstuaryServer
-pc-ogborn-d:server ogbornd$ kill 807
-[1]+  Terminated: 15          ./EstuaryServer
-pc-ogborn-d:server ogbornd$
-```
-
-## Client Instructions
-
-We think the steps are like this, but make no guarantees:
-
-1. install ghc, if you don't already have it. There are several ways to do this.
-
-2. install stack on your system, and also some other dependencies. If you use homebrew on OS X, then this works:
-```
-brew install haskell-stack
-brew install automake
-brew install glib
-brew install cairo
-brew install pango
-brew install gtk+
-brew install gtk+3
-brew install webkitgtk
-```
-
-3. install ghcjs on your system:
-```
-cabal install ...
-ghcjs-boot --dev
-```
-
-4. run stack setup from the top level of the estuary folder to setup the project for building with ghcjs, then after that works, run stack compile to grab project dependencies (Haskell packages) and compile using ghcjs:
-```
+cd ~
+git clone https://github.com/d0kt0r0/Estuary.git
 cd Estuary
-stack setup
-stack build
+git submodule init
+git submodule update
+cd static
+git clone https://github.com/TidalCycles/Dirt.git
+cd Dirt
+git submodule init
+git submodule update
+cd ../..
+make setupClient
+make buildClient
+make installClient
+make setupServer
+make buildServer
+./EstuaryServer/EstuaryServer somePassword 8002
 ```
 
-5. To open the editor, change to the build directory and open the index.html file. That is more complicated than it seems, here's a suggestion:
-```
-cd $(stack path --local-install-root)/bin/Estuary.jsexe
-open index.html
-```
+The 8002 in the example above is a TCP port number and can be changed to
+another suitable port as necessary. To use this
+newly built Estuary installation you would open your web browser and point 
+it to: 127.0.0.1:8002
+
+The overall process is similar on OS X (we should add more detailed instructions soon...). We have not been able to
+build the client on Windows so far, but the server yes. Windows users can 
+use a release of the client with their own build of the server.
+
