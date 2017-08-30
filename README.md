@@ -20,6 +20,7 @@ apt-get install nodejs nodejs-legacy
 apt-get install libncurses5-dev
 apt-get install libghc-entropy-dev
 apt-get install happy
+apt-get install zlib1g-dev
 apt-get install haskell-stack
 exit
 ```
