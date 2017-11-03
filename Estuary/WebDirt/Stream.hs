@@ -10,6 +10,7 @@ import Data.Map
 import qualified Control.Exception as E
 import Data.Time
 import qualified Estuary.WebDirt.Foreign as WebDirt
+import qualified Estuary.WebDirt.SuperDirt as SuperDirt
 import qualified GHCJS.Types as T
 import qualified GHCJS.Marshal.Pure as P
 
@@ -18,13 +19,13 @@ webDirtTicksPerCycle = 8
 
 type WebDirtStream = ParamPattern -> IO ()
 
-webDirtStream :: WebDirt.WebDirt -> IO WebDirtStream
-webDirtStream webDirt = do
+webDirtStream :: WebDirt.WebDirt -> SuperDirt.SuperDirt -> IO WebDirtStream
+webDirtStream webDirt superDirt = do
   x <- WebDirt.getCurrentTime webDirt
   let now = posixSecondsToUTCTime $ realToFrac x
   -- mTempo <- newMVar (Tempo {at=now,beat=0.0,cps=1.0,paused=False,clockLatency=0.2})
   mPattern <- newMVar silence
-  forkIO $ clockedTickWebDirt webDirt (webDirtTick webDirt mPattern)
+  forkIO $ clockedTickWebDirt webDirt (webDirtTick webDirt superDirt mPattern)
   return $ \p -> do swapMVar mPattern p
                     return ()
 
@@ -66,8 +67,8 @@ clockedTickWebDirtLoop webDirt callback tick = do
       callback tempo tick
       return $ tick + 1
 
-webDirtTick :: WebDirt.WebDirt -> MVar ParamPattern -> Tempo -> Int -> IO ()
-webDirtTick webDirt patternM tempo ticks = do
+webDirtTick :: WebDirt.WebDirt -> SuperDirt.SuperDirt -> MVar ParamPattern -> Tempo -> Int -> IO ()
+webDirtTick webDirt superDirt patternM tempo ticks = do
   p <- readMVar patternM
   let ticks' = (fromIntegral ticks) :: Integer
       a = ticks' % webDirtTicksPerCycle
@@ -75,5 +76,5 @@ webDirtTick webDirt patternM tempo ticks = do
       events = seqToRelOnsetDeltas (a,b) p -- :: [(Double,Map Param (Maybe Value))]
       events' = Prelude.map (\(o,_,m) -> (f o,m)) events
   E.catch (mapM_ (WebDirt.playSample webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
+  E.catch (mapM_ (SuperDirt.playSample superDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
   where f x = logicalOnset' tempo ticks x 0
-

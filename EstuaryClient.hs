@@ -17,6 +17,7 @@ import Control.Monad (liftM)
 import Sound.Tidal.Context (ParamPattern)
 import Estuary.WebDirt.Foreign
 import Estuary.WebDirt.Stream
+import Estuary.WebDirt.SuperDirt
 import Estuary.Widgets.SpecificPattern
 import Data.Map
 import Control.Monad.IO.Class (liftIO)
@@ -32,7 +33,8 @@ import Estuary.Types.Response
 main :: IO ()
 main = do
   wd <- webDirt
-  stream <- webDirtStream wd
+  sd <- superDirt
+  stream <- webDirtStream wd sd
   protocol <- estuaryProtocol
   now <- Data.Time.getCurrentTime
   mainWidget $ estuaryWidget wd stream protocol now
@@ -70,7 +72,7 @@ header clientCount = divClass "header" $ do
     dynText port'
     text " ("
     display clientCount
-    text " clients)"  
+    text " clients)"
   muted' <- divClass "webDirt" $ do
     muted <- divClass "webDirtMute" $ do
       text "WebDirt Mute "
