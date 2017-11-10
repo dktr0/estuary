@@ -57,6 +57,8 @@ clean:
 	rm -rf Estuary.jsexe
 	rm -rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin
 	rm -rf $$(stack path --local-install-root --stack-yaml=server.yaml)/bin
+	stack clean --stack-yaml=client.yaml
+	stack clean --stack-yaml=server.yaml
 
 style:
 	cp static/style.css Estuary.jsexe
