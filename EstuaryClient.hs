@@ -42,12 +42,12 @@ main = do
 
 estuaryWidget :: MonadWidget t m => WebDirt -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
-  muted <- header clientCount
+  muted <- header wsStatus clientCount
   (values,deltasUp,hints) <- divClass "page" $ navigation deltasDown'
+  (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp
   values' <- mapDyn (toParamPattern . StackedPatterns) values
   values'' <- combineDyn f values' muted
   let values''' = updated values''
-  deltasDown <- divClass "footer" $ webSocketWidget protocol now deltasUp
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   clientCount <- holdDyn 0 $ fmapMaybe justServerClientCount deltasDown'
   -- diagnostics values deltasUp deltasDown' hints
@@ -57,25 +57,28 @@ estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
         f _ True = toParamPattern EmptyTransformedPattern
 
 
-header :: (MonadWidget t m) => Dynamic t Int -> m (Dynamic t Bool)
-header clientCount = divClass "header" $ do
+header :: (MonadWidget t m) => Dynamic t String -> Dynamic t Int -> m (Dynamic t Bool)
+header wsStatus clientCount = divClass "header" $ do
   tick <- getPostBuild
   hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
-  divClass "logo" $ text "estuary (based on TidalCycles and Reflex)"
+  divClass "logo" $ text "estuary (a TidalCycles symbiont)"
+  statusMsg <- combineDyn f wsStatus clientCount
   divClass "server" $ do
     text "server: "
     dynText hostName'
     text ":"
     dynText port'
-    text " ("
-    display clientCount
-    text " clients)"
+    text ": "
+    dynText statusMsg
   muted' <- divClass "webDirt" $ do
     muted <- divClass "webDirtMute" $ do
       text "WebDirt Mute "
       checkbox False $ def
     return $ _checkbox_value muted
   return muted'
+  where
+    f "connection open" c = "(" ++ (show c) ++ " clients)"
+    f x _ = x

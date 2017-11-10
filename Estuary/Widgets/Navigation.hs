@@ -58,7 +58,7 @@ page wsDown Splash = do
 page wsDown TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   t1 <- liftM (Tutorial "Structure editing" <$) $ el "div" $ button "Structure editing"
-  t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"  
+  t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"
   back <- liftM (Splash <$) $ button "Return to splashscreen"
   let navEvents = leftmost [t1,t2,back]
   return (constDyn [],never,never,navEvents)
@@ -81,7 +81,7 @@ page wsDown (Tutorial _) = do
 --viewInSoloWidget :: MonadWidget t m => View -> m (Dynamic t DefinitionMap, Event t Hint)
 
 page wsDown Solo = do
-  (defMap,hints) <- viewInSoloWidget defaultView 
+  (defMap,hints) <- viewInSoloWidget defaultView
   patterns <- mapDyn (justStructures . elems) defMap
   x <- liftM (Splash <$) $ button "Return to splashscreen"
   return (patterns,never,hints,x)
@@ -100,6 +100,10 @@ page wsDown Lobby = do
 page wsDown CreateEnsemblePage = do
   el "div" $ text "Create A New Ensemble"
   el "div" $ text "Note: To successfully create an ensemble you need to know and enter the correct admin password."
+  adminPwd <- el "div" $ do
+    text "Admin Password: "
+    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   name <- el "div" $ do
     text "Ensemble Name: "
     let attrs = constDyn ("class" =: "webSocketTextInputs")
@@ -111,9 +115,11 @@ page wsDown CreateEnsemblePage = do
   nameAndPassword <- combineDyn (,) name password
   confirm <- el "div" $ button "Confirm"
   let createEnsemble = fmap (\(a,b) -> CreateEnsemble a b) $ tagDyn nameAndPassword confirm
+  let authenticateAdmin = fmap Authenticate $ updated adminPwd
   cancel <- el "div" $ button "Cancel"
+  let serverRequests = leftmost [createEnsemble,authenticateAdmin]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
-  return (constDyn [], createEnsemble, never, navEvents)
+  return (constDyn [], serverRequests, never, navEvents)
 
 page wsDown (Collaborate w) = do
   (defMap,wsUp,hints) <- viewInEnsembleWidget w defaultView wsDown

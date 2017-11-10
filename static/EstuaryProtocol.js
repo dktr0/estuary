@@ -15,12 +15,12 @@ EstuaryProtocol.prototype.setUrl = function(x) {
 }
 
 EstuaryProtocol.prototype.log = function(x) {
-  console.log("EstuaryProtocol: " + x);
+  console.log("EstuaryProtocol (" + this.url + "): " + x);
   this.status = x;
 }
 
 EstuaryProtocol.prototype.connect = function() {
-  this.log("opening connection to " + this.url + "...");
+  this.log("opening connection");
   window.WebSocket = window.WebSocket || window.MozWebSocket;
   var closure = this;
   try {
@@ -34,7 +34,7 @@ EstuaryProtocol.prototype.connect = function() {
       closure.wsReady = false;
     };
     this.ws.onclose = function () {
-      closure.log("closed (retrying in 1 second)");
+      closure.log("closed (retry in 1s)");
       closure.wsReady = false;
       closure.ws = null;
       setTimeout(function() {
@@ -46,7 +46,7 @@ EstuaryProtocol.prototype.connect = function() {
     }
   }
   catch(e) {
-    this.log("exception in new WebSocket (retry in 1 second)");
+    this.log("exception (retry in 1s)");
     setTimeout(function() {
       closure.connect();
     },1000);
@@ -58,7 +58,7 @@ EstuaryProtocol.prototype.onMessage = function(m) {
      var n = JSON.parse(m.data);
    }
    catch(e) {
-     this.log("parsing exception in onMessage");
+     this.log("parsing exception");
      console.log("dump: " + JSON.stringify(m.data));
      return;
    }
@@ -71,7 +71,7 @@ EstuaryProtocol.prototype.send = function(o) {
     this.ws.send(JSON.stringify(o));
   }
   catch(e) {
-    this.log("warning - exception in websocket send");
+    this.log("send exception");
   }
 }
 

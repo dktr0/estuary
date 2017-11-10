@@ -39,25 +39,11 @@ estuaryWebSocket addr pwd toSend = mdo
     isOk _ = Just (ProtocolError "unknown protocol error")
 -}
 
--- a resettingWebSocket is a wrapper of estuaryWebSocket above so that the webSocket address
--- is specified by event updates. A new address event causes the previous estuaryWebSocket to
--- be discarded and a new one to be created. But we're not using this - instead we use
--- alternateWebSocket below (which works with old reflex via our javascript ffi workaround)
 
-{- resettingWebSocket :: MonadWidget t m => Event t String -> Dynamic t String -> Event t EstuaryProtocol
-  -> m (Event t EstuaryProtocol)
-resettingWebSocket addr pwd toSend = do
-  let resets = fmap (\a -> estuaryWebSocket a pwd toSend) addr
-  ws <- widgetHold (return never) resets
-  return $ switchPromptlyDyn ws
--}
-
-
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Dynamic t String -> Event t ServerRequest ->
+alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t ServerRequest ->
   m (Event t [ServerResponse],Dynamic t String)
-alternateWebSocket obj now pwd toSend = do
-  let toSend' = leftmost [toSend,fmap Authenticate (updated pwd) ]
-  performEvent_ $ fmap (liftIO . (send obj) . encode) toSend'
+alternateWebSocket obj now toSend = do
+  performEvent_ $ fmap (liftIO . (send obj) . encode) toSend
   ticks <- tickLossy (0.1::NominalDiffTime) now
   responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
@@ -65,21 +51,6 @@ alternateWebSocket obj now pwd toSend = do
   status' <- holdDyn "---" status
   return (responses',status')
 
--- finally, a webSocketWidget includes GUI elements for setting the webSocket address and
--- password, and the chat interface, and connects these GUI elements to a resettingWebSocket (i.e. estuaryWebSocket)
-
-webSocketWidget :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t ServerRequest -> m (Event t [ServerResponse])
-webSocketWidget obj now toSend = divClass "webSocketWidget" $ mdo
-  text "WebSocket status:"
-  display status
-  text " Admin Password:"
-  let attrs = constDyn ("class" =: "webSocketTextInputs")
-  pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-  let pwd = _textInput_value pwdInput
-  chatSend <- chatWidget "placeholder" deltasDown
-  let toSend' = leftmost [toSend,chatSend]
-  (deltasDown,status) <- alternateWebSocket obj now pwd toSend'
-  return $ deltasDown
 
 chatWidget :: MonadWidget t m => String -> Event t [ServerResponse] -> m (Event t ServerRequest)
 chatWidget space deltasDown = mdo
