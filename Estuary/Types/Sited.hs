@@ -4,7 +4,7 @@ import Text.JSON
 import Estuary.Utility (firstKey)
 import Data.Maybe
 
-data Sited a b = Sited a b
+data Sited a b = Sited a b deriving (Eq)
 
 instance (JSON a, JSON b) => JSON (Sited a b) where
   showJSON (Sited s x) = encJSDict [("at",showJSON s),("x",showJSON x)]

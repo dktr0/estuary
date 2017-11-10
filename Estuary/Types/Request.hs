@@ -15,7 +15,8 @@ data Request a =
   LeaveEnsemble |
   CreateEnsemble String String | -- ensembleName ensemblePassword (or "" for no password)
   EnsembleRequest (Sited String (EnsembleRequest a)) |
-  GetServerClientCount 
+  GetServerClientCount
+  deriving (Eq)
 
 instance JSON a => JSON (Request a) where
   showJSON (Authenticate p) = encJSDict [("Authenticate",p)]
@@ -35,4 +36,3 @@ instance JSON a => JSON (Request a) where
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSOBject as Request: " ++ (show x)
   readJSON (JSString x) | otherwise = Error $ "Unable to parse JSString as Request: " ++ (show x)
   readJSON _ = Error "Unable to parse as Request (neither JSOBject nor JSString)"
-

@@ -19,6 +19,7 @@ import Estuary.WebDirt.Foreign
 import Estuary.WebDirt.Stream
 import Estuary.WebDirt.SuperDirt
 import Estuary.Widgets.SpecificPattern
+import Estuary.Widgets.Chat
 import Data.Map
 import Control.Monad.IO.Class (liftIO)
 import Estuary.Widgets.WebSocket
@@ -39,12 +40,16 @@ main = do
   now <- Data.Time.getCurrentTime
   mainWidget $ estuaryWidget wd stream protocol now
 
-
 estuaryWidget :: MonadWidget t m => WebDirt -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   muted <- header wsStatus clientCount
   (values,deltasUp,hints) <- divClass "page" $ navigation deltasDown'
-  (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp
+  let ensembleJoins = fmapMaybe g deltasUp
+  let ensembleLeaves = fmap (const "") $ ffilter (==LeaveEnsemble) deltasUp
+  currentSpace <- holdDyn "" $ leftmost [ensembleJoins,ensembleLeaves]
+  chatsUp <- divClass "chat" $ chatWidget currentSpace deltasDown'
+  let deltasUp' = leftmost [deltasUp,chatsUp]
+  (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp'
   values' <- mapDyn (toParamPattern . StackedPatterns) values
   values'' <- combineDyn f values' muted
   let values''' = updated values''
@@ -55,6 +60,8 @@ estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   performEvent_ $ fmap (liftIO . stream) values'''
   where f x False = x
         f _ True = toParamPattern EmptyTransformedPattern
+        g (JoinEnsemble x) = Just x
+        g _ = Nothing
 
 
 header :: (MonadWidget t m) => Dynamic t String -> Dynamic t Int -> m (Dynamic t Bool)

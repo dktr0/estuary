@@ -10,7 +10,7 @@ data View =
   StructureView Int |
   TidalTextView Int |
   EvaluableTextView Int
-  deriving (Show)
+  deriving (Show,Eq)
 
 instance JSON View where
   showJSON (Views xs) = encJSDict [("Views",xs)]
@@ -37,4 +37,3 @@ defaultView = Views [
   ViewDiv "eightBottomL" (Views [LabelView 9, EvaluableTextView 10]),
   ViewDiv "eightBottomR" (Views [LabelView 11, EvaluableTextView 12])
   ]
-

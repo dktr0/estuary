@@ -50,24 +50,3 @@ alternateWebSocket obj now toSend = do
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status
   return (responses',status')
-
-
-chatWidget :: MonadWidget t m => String -> Event t [ServerResponse] -> m (Event t ServerRequest)
-chatWidget space deltasDown = mdo
-  let attrs = constDyn ("class" =: "webSocketTextInputs")
-  text "Name:"
-  nameInput <- textInput $ def & textInputConfig_attributes .~ attrs
-  text "Chat:"
-  let resetText = fmap (const "") send''
-  chatInput <- textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
-  send <- divClass "webSocketButtons" $ button "Send"
-  let send' = fmap (const ()) $ ffilter (==13) $ _textInput_keypress chatInput
-  let send'' = leftmost [send,send']
-  let toSend = tag (current $ _textInput_value chatInput) send''
-  let deltasUp = attachDynWith (\name msg -> EnsembleRequest (Sited space (SendChat name msg))) (_textInput_value nameInput) toSend
-  let chatsOnly = fmap (justChats . justSited space .  justEnsembleResponses) deltasDown
-  mostRecent <- foldDyn (\a b -> take 8 $ (reverse a) ++ b) [] chatsOnly
-  formatted <- mapDyn (fmap (\(n,m) -> n ++ ": " ++ m)) mostRecent
-  simpleList formatted chatMsg
-  return deltasUp
-  where chatMsg v = divClass "chatMessage" $ dynText v

@@ -14,7 +14,8 @@ data EnsembleRequest v =
   SetView (Sited String View) |
   TempoChange Double |
   GetEnsembleClientCount
-  
+  deriving (Eq)
+
 instance JSON v => JSON (EnsembleRequest v) where
   showJSON (AuthenticateInEnsemble s) = encJSDict [("AuthenticateInEnsemble",s)]
   showJSON (SendChat name msg) = encJSDict [("SendChat",name),("m",msg)]
@@ -33,4 +34,3 @@ instance JSON v => JSON (EnsembleRequest v) where
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as EnsembleRequest: " ++ (show x)
   readJSON (JSString x) | otherwise = Error $ "Unable to parse JSString as EnsembleRequest: " ++ (show x)
   readJSON _ = Error "Unable to parse as EnsembleRequest"
-
