@@ -43,8 +43,17 @@ foreign import javascript unsafe
   "try { $r = $1.getCurrentTime() } catch(e) { console.log(e)} "
   getCurrentTime_ :: T.JSVal -> IO Double
 
+-- | get the current audio context time from WebDirt
 getCurrentTime :: WebDirt -> IO Double
 getCurrentTime (WebDirt j) = getCurrentTime_ j
+
+foreign import javascript unsafe
+  "try { $r = $1.clockDiff } catch(e) { console.log(e)}"
+  getClockDiff_ :: T.JSVal -> IO Double
+
+-- | get the current stored value for how far behind POSIX time the audio context time is
+getClockDiff :: WebDirt -> IO Double
+getClockDiff (WebDirt j) = getClockDiff_ j
 
 foreign import javascript unsafe
   "try { ___globalWebDirt.playSample($2)} catch(e) { console.log(e)} "

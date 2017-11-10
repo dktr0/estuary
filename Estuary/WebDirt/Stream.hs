@@ -70,11 +70,14 @@ clockedTickWebDirtLoop webDirt callback tick = do
 webDirtTick :: WebDirt.WebDirt -> SuperDirt.SuperDirt -> MVar ParamPattern -> Tempo -> Int -> IO ()
 webDirtTick webDirt superDirt patternM tempo ticks = do
   p <- readMVar patternM
+  clockDiff <- WebDirt.getClockDiff webDirt
+  let acTimeToPosix x = x + clockDiff
   let ticks' = (fromIntegral ticks) :: Integer
       a = ticks' % webDirtTicksPerCycle
       b = (ticks' + 1) % webDirtTicksPerCycle
       events = seqToRelOnsetDeltas (a,b) p -- :: [(Double,Map Param (Maybe Value))]
       events' = Prelude.map (\(o,_,m) -> (f o,m)) events
+      events'' = Prelude.map (\(x,y) -> (acTimeToPosix x,y)) events'
   E.catch (mapM_ (WebDirt.playSample webDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
-  E.catch (mapM_ (SuperDirt.playSample superDirt) events') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
+  E.catch (mapM_ (SuperDirt.playSample superDirt) events'') (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
   where f x = logicalOnset' tempo ticks x 0
