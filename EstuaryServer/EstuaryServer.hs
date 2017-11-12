@@ -176,13 +176,13 @@ processEnsembleRequest s c e x@(ZoneRequest (Sited zone (Evaluate value))) = onl
   putStrLn $ "Eval in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
   respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone (Evaluate value))))
 
-processEnsembleRequest s c e GetViews = do
-  putStrLn $ "GetViews in " ++ e
+processEnsembleRequest s c e ListViews = do
+  putStrLn $ "ListViews in " ++ e
   vs <- getViews s e -- IO [Sited String View]
   forM_ vs $ \v -> respond s c (EnsembleResponse (Sited e (View v)))
 
-processEnsembleRequest s c e x@(SetView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
-  putStrLn $ "SetView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
+processEnsembleRequest s c e x@(PublishView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
+  putStrLn $ "PublishView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
   updateServer s $ setView e key value
   respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (View (Sited key value)))
 
