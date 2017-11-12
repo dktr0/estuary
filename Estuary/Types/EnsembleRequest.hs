@@ -10,8 +10,10 @@ data EnsembleRequest v =
   AuthenticateInEnsemble String |
   SendChat String String | -- name message
   ZoneRequest (Sited Int (EditOrEval v)) |
-  GetViews |
-  SetView (Sited String View) |
+  ListViews |
+  GetView String |
+  PublishView (Sited String View) |
+  DeleteView String |
   TempoChange Double |
   GetEnsembleClientCount
   deriving (Eq)
@@ -20,15 +22,19 @@ instance JSON v => JSON (EnsembleRequest v) where
   showJSON (AuthenticateInEnsemble s) = encJSDict [("AuthenticateInEnsemble",s)]
   showJSON (SendChat name msg) = encJSDict [("SendChat",name),("m",msg)]
   showJSON (ZoneRequest z) = encJSDict [("ZoneRequest",showJSON z)]
-  showJSON GetViews = showJSON "GetViews"
-  showJSON (SetView x) = encJSDict [("SetView",x)]
+  showJSON ListViews = showJSON "ListViews"
+  showJSON (GetView x) = encJSDict [("GetView",x)]
+  showJSON (PublishView x) = encJSDict [("PublishView",x)]
+  showJSON (DeleteView x) = encJSDict [("DeleteView",x)]
   showJSON (TempoChange cps) = encJSDict [("TempoChange",showJSON cps)]
   showJSON GetEnsembleClientCount = showJSON "GetEnsembleClientCount"
   readJSON (JSObject x) | firstKey x == "AuthenticateInEnsemble" = AuthenticateInEnsemble <$> valFromObj "AuthenticateInEnsemble" x
   readJSON (JSObject x) | firstKey x == "SendChat" = SendChat <$> valFromObj "SendChat" x <*> valFromObj "m" x
   readJSON (JSObject x) | firstKey x == "ZoneRequest" = ZoneRequest <$> valFromObj "ZoneRequest" x
-  readJSON (JSString x) | fromJSString x == "GetViews" = Ok GetViews
-  readJSON (JSObject x) | firstKey x == "SetView" = SetView <$> valFromObj "SetView" x
+  readJSON (JSString x) | fromJSString x == "ListViews" = Ok ListViews
+  readJSON (JSObject x) | firstKey x == "GetView" = GetView <$> valFromObj "GetView" x
+  readJSON (JSObject x) | firstKey x == "PublishView" = PublishView <$> valFromObj "PublishView" x
+  readJSON (JSObject x) | firstKey x == "DeleteView" = DeleteView <$> valFromObj "DeleteView" x
   readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj "TempoChange" x
   readJSON (JSString x) | fromJSString x == "GetEnsembleClientCount" = Ok GetEnsembleClientCount
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as EnsembleRequest: " ++ (show x)
