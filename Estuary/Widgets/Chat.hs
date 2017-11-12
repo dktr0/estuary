@@ -12,6 +12,7 @@ import Data.Either
 import Data.Maybe
 
 import Estuary.Protocol.Foreign
+import Estuary.Types.Definition
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Sited
@@ -32,14 +33,17 @@ chatWidget space deltasDown = mdo
   let toSend = tag (current $ _textInput_value chatInput) send''
   let toSend' = attachDyn space toSend
   let deltasUp = attachDynWith (\name (site,msg) -> EnsembleRequest (Sited site (SendChat name msg))) (_textInput_value nameInput) toSend'
-  -- filter for chat messages in current space only
   let deltasDown' = fmap justEnsembleResponses deltasDown
   let spaceAndDeltasDown = attachDyn space deltasDown'
   let justInSpace = fmap (\(x,y) -> justSited x $ y) spaceAndDeltasDown
-  let chatsOnly = fmap justChats justInSpace
-  -- display
-  mostRecent <- foldDyn (\a b -> take 8 $ (reverse a) ++ b) [] chatsOnly
-  formatted <- mapDyn (fmap (\(n,m) -> n ++ ": " ++ m)) mostRecent
-  simpleList formatted chatMsg
+  let messages = fmap (mapMaybe messageForEnsembleResponse) justInSpace
+  mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
+  simpleList mostRecent chatMsg
   return deltasUp
   where chatMsg v = divClass "chatMessage" $ dynText v
+
+messageForEnsembleResponse :: EnsembleResponse Definition -> Maybe String
+messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
+messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
+messageForEnsembleResponse (View (Sited x _)) = Just $ "received view " ++ x
+messageForEnsembleResponse _ = Nothing
