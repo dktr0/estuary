@@ -50,6 +50,19 @@ textPatternChainWidget delta = divClass "textPatternChain" $ do
   where f (TextPatternChain x y z) = Just (x,y,z)
         f _ = Nothing
 
+cqenzeWidget :: MonadWidget t m => Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+cqenzeWidget delta = divClass "textPatternChain" $ do
+  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
+  (value,event) <- divClass "labelAndTextPattern" $ do
+    divClass "textInputLabel" $ text "CQenze"
+    textWidgetForPatternChain delta'
+  value <- mapDyn CQenzePattern value -- m (Dynamic t TransformedPattern)
+  let deltaUp = tagDyn value $ leftmost event
+  return (value,deltaUp,never)
+  where f (CQenzePattern x) = Just x
+        f _ = Nothing
+
 
 evaluableTextWidget :: MonadWidget t m => Event t [String] -> m (Event t (EditOrEval Definition))
 evaluableTextWidget delta = divClass "textWidget" $ do
