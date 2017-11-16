@@ -30,7 +30,13 @@ viewInEnsembleWidget spaceName view deltasDown = do
     pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
     return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
   let deltasDown' = fmap (justSited spaceName . justEnsembleResponses) deltasDown
-  (zones,edits,hints) <- viewWidget view deltasDown'
+  let initialWidget = viewWidget view deltasDown'
+  let newViews = fmap (lastOrNothing . justViews) deltasDown'
+  let rebuildWidget = fmap (flip viewWidget $ deltasDown') newViews
+  x <- widgetHold initialWidget rebuildWidget
+  zones <- flatten? $ mapDyn (\(y,_,_) -> y) x -- *** working here: fill in flattening functions ***
+  edits <- flatten? $ mapDyn (\(_,y,_) -> y) x
+  hints <- flatten? $ mapDyn (\(_,_,y) -> y) x
   let edits' = fmap (EnsembleRequest  . Sited spaceName) $ leftmost [edits,pwd]
   join <- liftM (JoinEnsemble spaceName <$) $ getPostBuild
   let requests = leftmost [edits',join]
