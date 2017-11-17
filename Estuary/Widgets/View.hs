@@ -73,6 +73,13 @@ viewWidget (TidalTextView n) deltasDown = do
   let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
   return (value',edits',hints)
 
+viewWidget (CQenzeView n) deltasDown = do
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown -- Event t TransformedPattern
+  (value,edits,hints) <- cquenzeWidget deltasDown' -- m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+
 viewWidget (LabelView n) deltasDown = do
   let deltasDown' = fmap (justLabelTexts . justEditsInZone n) deltasDown -- Event t [String]
   edits <- labelWidget deltasDown'
