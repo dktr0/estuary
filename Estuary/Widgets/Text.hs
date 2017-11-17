@@ -26,6 +26,13 @@ textWidgetForPatternChain delta = do
   let value = _textInput_value x
   return (value,edits)
 
+textAreaWidgetForPatternChain :: MonadWidget t m => Event t String -> m (Dynamic t String, Event t String)
+textAreaWidgetForPatternChain delta = do
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
+  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs
+  let edits = _textArea_input x
+  let value = _textArea_value x
+  return (value,edits)
 
 textPatternChainWidget :: MonadWidget t m => Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
@@ -56,7 +63,7 @@ cqenzeWidget delta = divClass "textPatternChain" $ do
   let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
   (value,event) <- divClass "labelAndTextPattern" $ do
     divClass "textInputLabel" $ text "CQenze"
-    textWidgetForPatternChain delta'
+    textAreaWidgetForPatternChain delta'
   value <- mapDyn CQenzePattern value -- m (Dynamic t TransformedPattern)
   let deltaUp = tagDyn value event
   return (value,deltaUp,never)
