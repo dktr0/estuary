@@ -58,7 +58,7 @@ cqenzeWidget delta = divClass "textPatternChain" $ do
     divClass "textInputLabel" $ text "CQenze"
     textWidgetForPatternChain delta'
   value <- mapDyn CQenzePattern value -- m (Dynamic t TransformedPattern)
-  let deltaUp = tagDyn value $ leftmost event
+  let deltaUp = tagDyn value event
   return (value,deltaUp,never)
   where f (CQenzePattern x) = Just x
         f _ = Nothing

@@ -1,10 +1,11 @@
- module Estuary.Tidal.Types where
+module Estuary.Tidal.Types where
 
 import Text.JSON
 import Data.List as List (intercalate, zip)
 import Data.Map as Map
 import Data.Ratio
 import qualified Sound.Tidal.Context as Tidal
+import Estuary.Languages.CQenze
 
 import Estuary.Utility
 
@@ -462,7 +463,7 @@ instance Show TransformedPattern where
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
   show (TextPatternChain a b c) = (show a) ++ " " ++ (show b) ++ " " ++ (show c)
-  show (CQenzePattern x) = cquenzeShow x
+  show (CQenzePattern x) = cqenzeShow x
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
@@ -496,7 +497,7 @@ instance ParamPatternable TransformedPattern where
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
   isEmptyPast (TextPatternChain _ _ _) = False
-  isEmptyFuture (CQenzePattern _) = False
+  isEmptyPast (CQenzePattern _) = False
 
 data StackedPatterns = StackedPatterns [TransformedPattern]
 

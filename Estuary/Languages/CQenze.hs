@@ -1,7 +1,9 @@
 module Estuary.Languages.CQenze where
 
-import Sound.Tidal.Context
+import qualified Sound.Tidal.Context as Tidal
 
-cquenzeShow :: String -> String
+cqenzeShow :: String -> String
+cqenzeShow x = x
 
-cquenzeParamPattern :: String -> ParamPattern
+cqenzeParamPattern :: String -> Tidal.ParamPattern
+cqenzeParamPattern x = Tidal.s $ Tidal.p x
