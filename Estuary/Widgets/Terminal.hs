@@ -18,10 +18,12 @@ import Estuary.Types.Response
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
-import Estuary.Types.Terminal
+import qualified Estuary.Types.Terminal as Terminal
 
-terminalWidget :: MonadWidget t m => Dynamic t String -> Event t [ServerResponse] -> m (Event t Command)
-terminalWidget space deltasDown = mdo
+terminalWidget :: MonadWidget t m =>
+  Event t ServerRequest -> Event t [ServerResponse] -> m (Event t Terminal.Command)
+terminalWidget deltasUp deltasDown = mdo
+  currentSpace <- mostRecentEnsemble deltasUp
   let attrs = constDyn ("class" =: "webSocketTextInputs")
   text "Name:"
   nameInput <- textInput $ def & textInputConfig_attributes .~ attrs
@@ -31,13 +33,13 @@ terminalWidget space deltasDown = mdo
   sendButton <- divClass "webSocketButtons" $ button "Send"
   let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
   let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [sendButton,enterPressed]
-  let parsedInput = fmap parseCommand terminalInput
+  let parsedInput = fmap Terminal.parseCommand terminalInput
   let commands = fmapMaybe (either (const Nothing) Just) parsedInput
   let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " ++) . show) (const Nothing)) parsedInput
 
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
-  let spaceAndDeltasDown = attachDyn space deltasDown'
+  let spaceAndDeltasDown = attachDyn currentSpace deltasDown'
   let justInSpace = fmap (\(x,y) -> justSited x $ y) spaceAndDeltasDown
   let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) justInSpace
   let messages = mergeWith (++) [responseMsgs,errorMsgs]
@@ -46,8 +48,19 @@ terminalWidget space deltasDown = mdo
 
   return commands
 
+
 messageForEnsembleResponse :: EnsembleResponse Definition -> Maybe String
 messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
 messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
 messageForEnsembleResponse (View (Sited x _)) = Just $ "received view " ++ x
 messageForEnsembleResponse _ = Nothing
+
+
+mostRecentEnsemble :: (MonadWidget t m, Eq a) => Event t (Request a) -> m (Dynamic t String)
+mostRecentEnsemble requests = do
+  let ensembleJoins = fmapMaybe f requests
+  let ensembleLeaves = fmap (const "") $ ffilter (==LeaveEnsemble) requests
+  holdDyn "" $ leftmost [ensembleJoins,ensembleLeaves]
+  where
+    f (JoinEnsemble x) = Just x
+    f _ = Nothing

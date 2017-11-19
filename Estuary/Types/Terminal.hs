@@ -1,4 +1,4 @@
-module Estuary.Types.Terminal (Command,parseCommand) where
+module Estuary.Types.Terminal (Command(..),parseCommand) where
 
 import Text.ParserCombinators.Parsec
 

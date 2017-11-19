@@ -32,6 +32,7 @@ instance JSON View where
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Estuary.Protocol.View: " ++ (show x)
   readJSON _ = Error $ "Unable to parse non-JSObject as Estuary.Protocol.View"
 
+
 defaultView :: View
 defaultView = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),

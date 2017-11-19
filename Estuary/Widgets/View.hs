@@ -12,40 +12,62 @@ import Estuary.Types.View
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
+import Estuary.Types.EnsembleState
 import Estuary.Types.Hint
 import Estuary.Types.EditOrEval
+import Estuary.Types.Terminal
 import Estuary.Utility
 
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
+import Estuary.Widgets.Terminal
 
+viewInEnsembleWidget :: MonadWidget t m =>
+  String -> Event t Command -> Event t [ServerResponse] ->
+  m (Dynamic t DefinitionMap, Event t ServerRequest, Event t Hint)
 
-viewInEnsembleWidget :: MonadWidget t m => String -> View -> Event t [Response Definition] ->
-  m (Dynamic t DefinitionMap, Event t (Request Definition), Event t Hint)
+viewInEnsembleWidget ensemble commands deltasDown = do
 
-viewInEnsembleWidget spaceName view deltasDown = do
-  divClass "ensembleName" $ text $ "Ensemble: " ++ spaceName
-  pwd <- divClass "ensemblePassword" $ do
-    text "   Password:"
+  -- UI for global ensemble parameters
+  divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
+  hdl <- divClass "handleInEnsemble" $ do
+    text "   Name/Handle:"
+    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
+    return $ _textInput_input handleInput
+  pwdRequest <- divClass "ensemblePassword" $ do
+    text "   Ensemble Password:"
     let attrs = constDyn ("class" =: "webSocketTextInputs")
     pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
     return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
-  let deltasDown' = fmap (justSited spaceName . justEnsembleResponses) deltasDown
-  let initialWidget = viewWidget view deltasDown'
-  let newViews = fmapMaybe (lastOrNothing . justViews) deltasDown'
+
+  -- management of EnsembleState
+  let initialState = newEnsembleState ensemble
+  let commandChanges = fmap commandsToStateChanges commands
+  let ensembleResponses = fmap (justSited ensemble . justEnsembleResponses) deltasDown
+  let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
+  let handleChanges = fmap (\x es -> es { userHandle = x}) hdl
+  ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges]
+
+  -- dynamic View UI
+  let initialWidget = viewWidget (Views []) ensembleResponses
+  let newViews = fmapMaybe (lastOrNothing . justViews) ensembleResponses
   let anyNewView = fmap thing newViews
-  let rebuildWidget = fmap (flip viewWidget $ deltasDown') anyNewView
+  let rebuildWidget = fmap (flip viewWidget $ ensembleResponses) anyNewView
   x <- widgetHold initialWidget rebuildWidget
   zones <- liftM joinDyn $ mapDyn (\(y,_,_) -> y) x
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,y,_) -> y) x
   hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,y) -> y) x
-  let edits' = fmap (EnsembleRequest  . Sited spaceName) $ leftmost [edits,pwd]
-  join <- liftM (JoinEnsemble spaceName <$) $ getPostBuild
-  let requests = leftmost [edits',join]
+
+  -- form requests to send to server
+  joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
+  let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands
+  let ensembleRequests = fmap (EnsembleRequest . Sited ensemble) $ leftmost [edits,pwdRequest,commandRequests]
+  let requests = leftmost [joinRequest,ensembleRequests]
   return (zones,requests,hints)
 
-viewInSoloWidget :: MonadWidget t m => View -> m (Dynamic t DefinitionMap, Event t Hint)
 
+viewInSoloWidget :: MonadWidget t m => View -> m (Dynamic t DefinitionMap, Event t Hint)
 viewInSoloWidget view = do
   (zones,edits,hints) <- viewWidget view never
   return (zones,hints)

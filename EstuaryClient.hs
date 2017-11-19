@@ -31,6 +31,7 @@ import qualified GHCJS.Types as T
 import Estuary.Types.Request
 import Estuary.Types.Response
 
+
 main :: IO ()
 main = do
   wd <- webDirt
@@ -44,11 +45,9 @@ main = do
 estuaryWidget :: MonadWidget t m => WebDirt -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   muted <- header wsStatus clientCount
-  (values,deltasUp,hints) <- divClass "page" $ navigation deltasDown'
-  currentSpace <- mostRecentEnsemble deltasUp
-  commands <- divClass "chat" $ terminalWidget currentSpace deltasDown'
-  let deltasUp' = leftmost [deltasUp] -- ,chatsUp] *** note: chat commands would be processed in viewWidget etc
-  (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp'
+  (values,deltasUp,hints) <- divClass "page" $ navigation commands deltasDown'
+  commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'
+  (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp
   values' <- mapDyn (toParamPattern . StackedPatterns) values
   values'' <- combineDyn f values' muted
   let values''' = updated values''
@@ -86,13 +85,3 @@ header wsStatus clientCount = divClass "header" $ do
   where
     f "connection open" c = "(" ++ (show c) ++ " clients)"
     f x _ = x
-
-
-mostRecentEnsemble :: (MonadWidget t m, Eq a) => Event t (Request a) -> m (Dynamic t String)
-mostRecentEnsemble requests = do
-  let ensembleJoins = fmapMaybe f requests
-  let ensembleLeaves = fmap (const "") $ ffilter (==LeaveEnsemble) requests
-  holdDyn "" $ leftmost [ensembleJoins,ensembleLeaves]
-  where
-    f (JoinEnsemble x) = Just x
-    f _ = Nothing
