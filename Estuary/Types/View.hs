@@ -44,7 +44,9 @@ defaultView = Views [
   ]
 
 viewsParser :: GenParser Char a View
-viewsParser = many viewParser >>= return . Views
+viewsParser = do
+  spaces
+  many1 viewParser >>= return . Views
 
 viewParser :: GenParser Char a View
 viewParser = do

@@ -16,5 +16,5 @@ executable EstuaryServer
   hs-source-dirs:    .. .
   main-is:           EstuaryServer.hs
   build-depends:     base, containers, text, tidal, hosc, json, websockets,
-                     wai, warp, wai-websockets, wai-app-static
+                     wai, warp, wai-websockets, wai-app-static, parsec
   default-language:  Haskell2010
