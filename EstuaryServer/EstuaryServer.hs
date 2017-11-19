@@ -181,10 +181,19 @@ processEnsembleRequest s c e ListViews = do
   vs <- getViews s e -- IO [Sited String View]
   forM_ vs $ \v -> respond s c (EnsembleResponse (Sited e (View v)))
 
-processEnsembleRequest s c e x@(PublishView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
+processEnsembleRequest s c e (PublishView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
   putStrLn $ "PublishView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
   updateServer s $ setView e key value
   respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (View (Sited key value)))
+
+processEnsembleRequest s c e (GetView v) = do
+  putStrLn $ "GetView " ++ v ++ " in ensemble " ++ e
+  getView s e v >>= maybe (return ()) (\v' -> respond s c (EnsembleResponse (Sited e (View (Sited v v')))))
+
+processEnsembleRequest s c e (DeleteView x) = do
+  putStrLn $ "DeleteView " ++ x ++ " in ensemble " ++ e
+  updateServer s $ deleteView e x
+  return ()
 
 processEnsembleRequest s c e x@(TempoChange cps) = onlyIfAuthenticatedInEnsemble s c $ putStrLn "placeholder: TempoChange"
 

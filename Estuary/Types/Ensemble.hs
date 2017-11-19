@@ -14,17 +14,19 @@ data Ensemble = Ensemble {
 
 emptyEnsemble :: Ensemble
 emptyEnsemble = Ensemble {
-  password = "", 
+  password = "",
   defs = Map.empty,
   views = Map.empty
   }
 
 setPassword :: String -> Ensemble -> Ensemble
-setPassword s e = e { password = s } 
+setPassword s e = e { password = s }
 
 editDef :: Int -> Definition -> Ensemble -> Ensemble
 editDef z d s = s { defs = Map.insert z d (defs s) }
 
-editView :: String -> View -> Ensemble -> Ensemble 
+editView :: String -> View -> Ensemble -> Ensemble
 editView w v s = s { views = Map.insert w v (views s) }
 
+deleteView :: String -> Ensemble -> Ensemble
+deleteView v e = e { views = Map.delete v (views e) }
