@@ -18,6 +18,7 @@ import Estuary.Types.Response
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
+import qualified Estuary.Types.TerminalCommand as Command
 
 chatWidget :: MonadWidget t m => Dynamic t String -> Event t [ServerResponse] -> m (Event t ServerRequest)
 chatWidget space deltasDown = mdo
@@ -30,7 +31,8 @@ chatWidget space deltasDown = mdo
   send <- divClass "webSocketButtons" $ button "Send"
   let send' = fmap (const ()) $ ffilter (==13) $ _textInput_keypress chatInput
   let send'' = leftmost [send,send']
-  let toSend = tag (current $ _textInput_value chatInput) send''
+  let terminalInput = tag (current $ _textInput_value chatInput) send''
+  let ? = fmap Command.parseTerminalCommand terminalInput
 
   -- parse terminal input that does begin with : into other commands to be sent to the server
   let terminalWords = fmap (lowerCaseFirstWord . words) toSend
@@ -55,11 +57,7 @@ chatWidget space deltasDown = mdo
 
 
 
-data ViewState = ViewState {
-  views :: Map String View,
-  currentView :: View,
-  currentViewName :: String
-}
+
 
 parseTerminalToRequests :: ([String],ViewState) -> Maybe (EnsembleRequest Definition)
 parseTerminalToRequests [":publishview":name:_] vs = Just (PublishView (Sited name (currentView vs)))

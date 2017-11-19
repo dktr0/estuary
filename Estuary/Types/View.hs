@@ -1,5 +1,6 @@
 module Estuary.Types.View where
 
+import Text.ParserCombinators.Parsec
 import Text.JSON
 import Estuary.Utility (firstKey)
 
@@ -40,3 +41,26 @@ defaultView = Views [
   ViewDiv "eightBottomL" (Views [LabelView 9, CQenzeView 10]),
   ViewDiv "eightBottomR" (Views [LabelView 11, EvaluableTextView 12])
   ]
+
+viewsParser :: GenParser Char a View
+viewsParser = many viewParser >>= return . Views
+
+viewParser :: GenParser Char a View
+viewParser = do
+  v <- choice [viewDiv,labelView,structureView,tidalTextView,evaluableTextView,cqenzeView]
+  spaces
+  return v
+
+viewDiv = between (char '{') (char '}') $ do
+  spaces
+  cssClass <- many1 alphaNum
+  skipMany1 space
+  vs <- viewsParser
+  spaces
+  return $ ViewDiv cssClass vs
+
+labelView = string "label:" >> (read <$> many1 digit) >>= return . LabelView
+structureView = string "structure:" >> (read <$> many1 digit) >>= return . StructureView
+tidalTextView = string "tidalText:" >> (read <$> many1 digit) >>= return . TidalTextView
+evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
+cqenzeView = string "cqenze:" >> (read <$> many1 digit) >>= return . CQenzeView
