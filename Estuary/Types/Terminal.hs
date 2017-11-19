@@ -1,4 +1,4 @@
-module Estuary.Types.Terminal (Command,parseTerminal) where
+module Estuary.Types.Terminal (Command,parseCommand) where
 
 import Text.ParserCombinators.Parsec
 
@@ -14,8 +14,8 @@ data Command =
   Chat String
   deriving (Show,Eq)
 
-parseTerminal :: String -> Either ParseError Command
-parseTerminal = parse terminal "(unknown)"
+parseCommand :: String -> Either ParseError Command
+parseCommand = parse terminal "(unknown)"
 
 terminal :: GenParser Char a Command
 terminal = spaces >> (terminalCommand <|> chat)

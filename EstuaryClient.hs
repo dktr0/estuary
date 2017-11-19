@@ -19,7 +19,7 @@ import Estuary.WebDirt.Foreign
 import Estuary.WebDirt.Stream
 import Estuary.WebDirt.SuperDirt
 import Estuary.Widgets.SpecificPattern
-import Estuary.Widgets.Chat
+import Estuary.Widgets.Terminal
 import Data.Map
 import Control.Monad.IO.Class (liftIO)
 import Estuary.Widgets.WebSocket
@@ -40,15 +40,14 @@ main = do
   now <- Data.Time.getCurrentTime
   mainWidget $ estuaryWidget wd stream protocol now
 
+
 estuaryWidget :: MonadWidget t m => WebDirt -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   muted <- header wsStatus clientCount
   (values,deltasUp,hints) <- divClass "page" $ navigation deltasDown'
-  let ensembleJoins = fmapMaybe g deltasUp
-  let ensembleLeaves = fmap (const "") $ ffilter (==LeaveEnsemble) deltasUp
-  currentSpace <- holdDyn "" $ leftmost [ensembleJoins,ensembleLeaves]
-  chatsUp <- divClass "chat" $ chatWidget currentSpace deltasDown'
-  let deltasUp' = leftmost [deltasUp,chatsUp]
+  currentSpace <- mostRecentEnsemble deltasUp
+  commands <- divClass "chat" $ terminalWidget currentSpace deltasDown'
+  let deltasUp' = leftmost [deltasUp] -- ,chatsUp] *** note: chat commands would be processed in viewWidget etc
   (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp'
   values' <- mapDyn (toParamPattern . StackedPatterns) values
   values'' <- combineDyn f values' muted
@@ -60,8 +59,6 @@ estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
   performEvent_ $ fmap (liftIO . stream) values'''
   where f x False = x
         f _ True = toParamPattern EmptyTransformedPattern
-        g (JoinEnsemble x) = Just x
-        g _ = Nothing
 
 
 header :: (MonadWidget t m) => Dynamic t String -> Dynamic t Int -> m (Dynamic t Bool)
@@ -89,3 +86,13 @@ header wsStatus clientCount = divClass "header" $ do
   where
     f "connection open" c = "(" ++ (show c) ++ " clients)"
     f x _ = x
+
+
+mostRecentEnsemble :: (MonadWidget t m, Eq a) => Event t (Request a) -> m (Dynamic t String)
+mostRecentEnsemble requests = do
+  let ensembleJoins = fmapMaybe f requests
+  let ensembleLeaves = fmap (const "") $ ffilter (==LeaveEnsemble) requests
+  holdDyn "" $ leftmost [ensembleJoins,ensembleLeaves]
+  where
+    f (JoinEnsemble x) = Just x
+    f _ = Nothing
