@@ -32,6 +32,8 @@ charToTransformation '?' = Tidal.degrade
 charToTransformation 'f' = Tidal.fast 2
 charToTransformation 's' = Tidal.slow 2
 charToTransformation 'r' = Tidal.rev
+charToTransformation 'b' = Tidal.brak
+charToTransformation 'c' = Tidal.chop 2
 charToTransformation _ = id
 
 makeTidalPattern :: String -> [Bool] -> String
