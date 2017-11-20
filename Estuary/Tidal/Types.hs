@@ -463,7 +463,7 @@ instance Show TransformedPattern where
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
   show (TextPatternChain a b c) = (show a) ++ " " ++ (show b) ++ " " ++ (show c)
-  show (CQenzePattern x) = error "oops attempted to show CQenzePattern"
+  show (CQenzePattern x) = "CQenzePattern: " ++ x
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]

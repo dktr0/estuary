@@ -51,9 +51,9 @@ viewInEnsembleWidget ensemble commands deltasDown = do
 
   -- dynamic View UI
   let initialWidget = viewWidget (Views []) ensembleResponses
-  let newViews = fmapMaybe (lastOrNothing . justViews) ensembleResponses
-  let anyNewView = fmap thing newViews
-  let rebuildWidget = fmap (flip viewWidget $ ensembleResponses) anyNewView
+  currentView <- mapDyn activeView ensembleState
+  let newView = updated currentView 
+  let rebuildWidget = fmap (flip viewWidget $ ensembleResponses) newView
   x <- widgetHold initialWidget rebuildWidget
   zones <- liftM joinDyn $ mapDyn (\(y,_,_) -> y) x
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,y,_) -> y) x
