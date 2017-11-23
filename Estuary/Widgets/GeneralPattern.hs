@@ -132,8 +132,6 @@ typedAtomWidget defaultVal  liveness iGenPat editEv = elClass "div" "atomPopup" 
   inputAttrs <- mapDyn (fromList . (\x-> [x]) . ((,) "class") . bool "atomPopupInput" "atomPopupInputMouseOver") isMouseOverInput
   textField <- growingTextInput $ def & textInputConfig_attributes .~  inputAttrs & textInputConfig_initialValue .~ (showNoQuotes iVal)
 
-
-
   let textInputChange = updated $ _textInput_value textField
   onClickEv <- wrapDomEvent (_textInput_element textField) (onEventName Click) (mouseXY)
   let iRepDivViewable = (iRepDiv/=Once)

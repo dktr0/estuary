@@ -10,6 +10,7 @@ import Control.Monad
 import Estuary.Reflex.Utility
 import Data.Map
 import Data.List
+import Data.Bool(bool)
 import Estuary.Tidal.Types
 
 import Estuary.Reflex.Container
@@ -104,6 +105,17 @@ clickableDivClass'' label c e = do
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   return $ (e <$) clickEv
 
+mouseOverClickableDiv::MonadWidget t m => Dynamic t String -> String -> a -> m(Event t a)
+mouseOverClickableDiv label c e = mdo
+  (element, _) <- elDynAttr' "div" attrs $ dynText label
+  mouseOver <- liftM (True <$) $ wrapDomEvent (_el_element element) (onEventName Mouseover) mouseXY
+  mouseOut <- liftM (False <$) $ wrapDomEvent (_el_element element) (onEventName Mouseout) mouseXY
+  isMouseOver <- holdDyn False $ leftmost [mouseOut, mouseOver]
+  attrs  <- mapDyn (fromList . (\x-> [("class",c),x]) . ((,) "style") . bool "" ";background-color:rgba(144,238,144,0.2);") isMouseOver
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  return $ (e <$) clickEv
+
+
 clickableDivAttrs::MonadWidget t m => String -> a -> Map String String -> m (Event t a)
 clickableDivAttrs label val attrs= do
   (element,_) <- elAttr' "div" attrs $ text label
@@ -181,7 +193,8 @@ growingTextInput config = mdo
 
 whitespace:: (MonadWidget t m, Show a, Eq a)=> Dynamic t Liveness -> GeneralPattern a -> String -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a)), Event t Hint))
 whitespace liveness iVal cssClass popupList _ event = elAttr "div" ("style"=:"position:relative;display:inline-block") $ elClass "div" cssClass $ mdo
-  whitespace <- clickableDivClass'' (constDyn (case iVal of (Layers _ _)->",    ";otherwise->"     ")) "whiteSpaceClickable" ()
+  -- whitespace <- clickableDivClass'' (constDyn (case iVal of (Layers _ _)->",    ";otherwise->"     ")) "whiteSpaceClickable" ()
+  whitespace <- mouseOverClickableDiv (constDyn (case iVal of (Layers _ _)->",    ";otherwise->"     ")) "whiteSpaceClickable" ()
   openCloseEvents <- toggle False $ leftmost [whitespace, closeEvents,(() <$) addEvent]
   popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (whitespacePopup liveness popupList) False (updated openCloseEvents)
   let addEvent = (ChangeValue (Blank Inert) <$) $ ffilter (\x-> if isJust x then fromJust (fmap (isChangeValue) x) else False) popupMenu
