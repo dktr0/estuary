@@ -33,8 +33,8 @@ instance JSON View where
   readJSON _ = Error $ "Unable to parse non-JSObject as Estuary.Protocol.View"
 
 
-defaultView :: View
-defaultView = Views [
+standardView :: View
+standardView = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
   ViewDiv "eightTopR" (Views [LabelView 3, StructureView 4]),
   ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6]),
@@ -42,6 +42,9 @@ defaultView = Views [
   ViewDiv "eightBottomL" (Views [LabelView 9, CQenzeView 10]),
   ViewDiv "eightBottomR" (Views [LabelView 11, EvaluableTextView 12])
   ]
+
+emptyView :: View
+emptyView = Views []
 
 viewsParser :: GenParser Char a View
 viewsParser = do

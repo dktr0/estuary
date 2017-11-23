@@ -71,14 +71,17 @@ edit w z d s = s { ensembles = Map.adjust (E.editDef z d) w (ensembles s) }
 setView :: String -> String -> View -> Server -> Server
 setView w k v s = s { ensembles = Map.adjust (E.editView k v) w (ensembles s) }
 
+setDefaultView :: String -> View -> Server -> Server
+setDefaultView w v s = s { ensembles = Map.adjust (E.editDefaultView v) w (ensembles s)}
+
 deleteView :: String -> String -> Server -> Server
 deleteView e v s = s { ensembles = Map.adjust (E.deleteView v) e (ensembles s) }
 
 getEnsembleList :: MVar Server -> IO ServerResponse
 getEnsembleList s = readMVar s >>= return . EnsembleList . Map.keys . ensembles
 
-getViews :: MVar Server -> String -> IO [Sited String View]
-getViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.elems . Map.mapWithKey Sited . E.views) . Map.lookup w . ensembles
+getViews :: MVar Server -> String -> IO [String]
+getViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.keys . E.views) . Map.lookup w . ensembles
 
 getView :: MVar Server -> String -> String -> IO (Maybe View)
 getView s e v = do

@@ -80,7 +80,7 @@ page _ wsDown (Tutorial _) = do
   return (constDyn [],never,never,x)
 
 page _ wsDown Solo = do
-  (defMap,hints) <- viewInSoloWidget defaultView
+  (defMap,hints) <- viewInSoloWidget standardView
   patterns <- mapDyn (justStructures . elems) defMap
   x <- liftM (Splash <$) $ button "Return to splashscreen"
   return (patterns,never,hints,x)

@@ -178,17 +178,22 @@ processEnsembleRequest s c e x@(ZoneRequest (Sited zone (Evaluate value))) = onl
 
 processEnsembleRequest s c e ListViews = do
   putStrLn $ "ListViews in " ++ e
-  vs <- getViews s e -- IO [Sited String View]
-  forM_ vs $ \v -> respond s c (EnsembleResponse (Sited e (View v)))
-
-processEnsembleRequest s c e (PublishView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
-  putStrLn $ "PublishView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
-  updateServer s $ setView e key value
-  respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (View (Sited key value)))
+  vs <- getViews s e -- IO [String]
+  respond s c (EnsembleResponse (Sited e (ViewList vs)))
 
 processEnsembleRequest s c e (GetView v) = do
   putStrLn $ "GetView " ++ v ++ " in ensemble " ++ e
   getView s e v >>= maybe (return ()) (\v' -> respond s c (EnsembleResponse (Sited e (View (Sited v v')))))
+
+processEnsembleRequest s c e (PublishView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
+  putStrLn $ "PublishView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
+  updateServer s $ setView e key value
+  return ()
+
+processEnsembleRequest s c e (PublishDefaultView v) = onlyIfAuthenticatedInEnsemble s c $ do
+  putStrLn $ "PublishDefaultView in " ++ e
+  updateServer s $ setDefaultView e v
+  return ()
 
 processEnsembleRequest s c e (DeleteView x) = do
   putStrLn $ "DeleteView " ++ x ++ " in ensemble " ++ e

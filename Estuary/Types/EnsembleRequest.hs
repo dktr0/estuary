@@ -13,6 +13,7 @@ data EnsembleRequest v =
   ListViews |
   GetView String |
   PublishView (Sited String View) |
+  PublishDefaultView View |
   DeleteView String |
   TempoChange Double |
   GetEnsembleClientCount
@@ -25,6 +26,7 @@ instance JSON v => JSON (EnsembleRequest v) where
   showJSON ListViews = showJSON "ListViews"
   showJSON (GetView x) = encJSDict [("GetView",x)]
   showJSON (PublishView x) = encJSDict [("PublishView",x)]
+  showJSON (PublishDefaultView x) = encJSDict [("PublishDefaultView",x)]
   showJSON (DeleteView x) = encJSDict [("DeleteView",x)]
   showJSON (TempoChange cps) = encJSDict [("TempoChange",showJSON cps)]
   showJSON GetEnsembleClientCount = showJSON "GetEnsembleClientCount"
@@ -34,6 +36,7 @@ instance JSON v => JSON (EnsembleRequest v) where
   readJSON (JSString x) | fromJSString x == "ListViews" = Ok ListViews
   readJSON (JSObject x) | firstKey x == "GetView" = GetView <$> valFromObj "GetView" x
   readJSON (JSObject x) | firstKey x == "PublishView" = PublishView <$> valFromObj "PublishView" x
+  readJSON (JSObject x) | firstKey x == "PublishDefaultView" = PublishDefaultView <$> valFromObj "PublishDefaultView" x
   readJSON (JSObject x) | firstKey x == "DeleteView" = DeleteView <$> valFromObj "DeleteView" x
   readJSON (JSObject x) | firstKey x == "TempoChange" = TempoChange <$> valFromObj "TempoChange" x
   readJSON (JSString x) | fromJSString x == "GetEnsembleClientCount" = Ok GetEnsembleClientCount
