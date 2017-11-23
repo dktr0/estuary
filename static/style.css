@@ -291,6 +291,10 @@ button {
 .atomPopupInput {
 	border: none;
 }
+.atomPopupInputMouseOver{
+	border:none;
+	background-color: rgba(50,50,50,60);
+}
 
 /*ex. ICLCFixed, hit [] on any widget - div wrapped in red border*/
 .generalPattern-group{
@@ -544,7 +548,7 @@ td {
 /* The div wrapping popupMenus */
 .popupMenu{
 	top: 105%;
-	left: 0px; 
+	left: 0px;
 	background-color:hsl(0,0%,10%);
 	border: 2pt solid hsl(0,0%,10%);
 	position: absolute;

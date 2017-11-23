@@ -140,7 +140,9 @@ specificContainer (Hresonance x) e = G.generalContainerLive' (G.popupDoubleWidge
 specificContainer (Pan x) e = G.generalContainerLive' (G.popupDoubleWidget 0.5 0 1 0.05) x never >>= mapDyn (\(x,ev,h)->(Pan x,(() <$) ev,h))
 specificContainer (Resonance x) e = G.generalContainerLive' (G.popupDoubleWidget 0 0 1 0.05) x never >>= mapDyn (\(x,ev,h)->(Resonance x,(() <$) ev,h))
 specificContainer (Shape x) e = G.generalContainerLive' (G.popupDoubleWidget 0 0 1 0.05) x never >>= mapDyn (\(x,ev,h)->(Shape x,(() <$) ev,h))
-specificContainer (Speed x) e = G.generalContainerLive' (G.popupDoubleWidget 1 (-999) 999 0.5) x never >>= mapDyn (\(x,ev,h)->(Speed x,(() <$) ev,h))
+-- specificContainer (Speed x) e = G.generalContainerLive' (G.popupDoubleWidget 1 (-999) 999 0.5) x never >>= mapDyn (\(x,ev,h)->(Speed x,(() <$) ev,h))
+specificContainer (Speed x) e = G.generalContainerLive' (G.typedAtomWidget 1) x never >>= mapDyn (\(x,ev,hint)->(Speed x,(() <$) ev,hint))
+
 specificContainer (Up x) e = G.generalContainerLive' (G.popupDoubleWidget 0 (-132) 132 1) x never >>= mapDyn (\(x,ev,h)->(Up x,(() <$) ev,h))
 specificContainer (Bandf x) e = G.generalContainerLive' (G.popupIntWidget 440 0 25000 10) x never >>= mapDyn (\(x,ev,h)->(Bandf x,(() <$) ev,h))
 specificContainer (Coarse x) e = G.generalContainerLive' (G.popupIntWidget 0 0 24 1) x never >>= mapDyn (\(x,ev,h)->(Coarse x,(() <$) ev,h))

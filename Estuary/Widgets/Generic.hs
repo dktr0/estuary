@@ -171,6 +171,13 @@ tdPingButtonAttrs label attrs _ _ = el "td" $ do
   b <- buttonDynAttrs label (ChangeValue ()) $ constDyn attrs
   return $ constDyn ((), b)
 
+growingTextInput::MonadWidget t m => TextInputConfig t -> m (TextInput t)
+growingTextInput config = mdo
+  let attrs = _textInputConfig_attributes config
+  dynAttrs <- combineDyn (\m w-> insertWith (++) "style" (";width:"++ show (max 20 $ min 100 $ 8*length w) ++ "px" ++";") m) attrs (_textInput_value textField)
+  let newConfig = TextInputConfig (_textInputConfig_inputType config) (_textInputConfig_initialValue config) (_textInputConfig_setValue config) dynAttrs
+  textField <- textInput newConfig
+  return textField
 
 whitespace:: (MonadWidget t m, Show a, Eq a)=> Dynamic t Liveness -> GeneralPattern a -> String -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a)), Event t Hint))
 whitespace liveness iVal cssClass popupList _ event = elAttr "div" ("style"=:"position:relative;display:inline-block") $ elClass "div" cssClass $ mdo
