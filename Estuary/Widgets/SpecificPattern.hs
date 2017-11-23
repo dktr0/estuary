@@ -150,12 +150,15 @@ specificContainer (Cutoff x) e = G.generalContainerLive' (G.popupIntWidget 20000
 specificContainer (Hcutoff x) e = G.generalContainerLive' (G.popupIntWidget 0 0 25000 10) x never >>= mapDyn (\(x,ev,h)->(Hcutoff x,(() <$) ev,h))
 specificContainer (Loop x) e = G.generalContainerLive' (G.popupIntWidget 0 0 1024 1) x never >>= mapDyn (\(x,ev,h)->(Loop x,(() <$) ev,h))
 specificContainer (N x) e = G.generalContainerLive' (G.popupIntWidget 0 0 50 1) x never >>= mapDyn (\(x,ev,h)->(N x,(() <$) ev,h))
---specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
 
 specificContainer (S x) e = do
-  a <- G.generalContainerLive' G.popupSampleWidget x never >>= mapDyn (\(x,ev,hint)->(S x,(() <$) ev,hint))
-  -- mapDyn (\(x,_,_)-> show x) a >>= dynText
-  return a
+  -- a <- G.generalContainerLive' G.popupSampleWidget x never >>= mapDyn (\(x,ev,hint)->(S x,(() <$) ev,hint))
+  G.generalContainerLive' (G.typedAtomWidget "~") x never >>= mapDyn (\(x,ev,hint)->(S x,(() <$) ev,hint))
+  --
+  -- -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)), Event t Hint))
+  --
+  -- -- mapDyn (\(x,_,_)-> show x) a >>= dynText
+  -- return (constDyn $ S Blank,never,never)
 --specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
 specificContainer (Vowel x) e = G.generalContainerLive' G.charWidget x never >>= mapDyn (\(x,ev,h)->(Vowel x,(() <$) ev,h))
 specificContainer (Unit x) e = G.generalContainerLive' G.charWidget x never >>= mapDyn (\(x,ev,h)->(Unit x,(() <$) ev,h))
