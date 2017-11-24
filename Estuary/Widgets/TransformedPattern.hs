@@ -22,15 +22,16 @@ import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Hint
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
+  TransformedPattern -> -- initial value
   Event t [TransformedPattern] -> -- deltas from network (must not re-propagate as edit events!)
   m (
     Dynamic t TransformedPattern, -- value for local WebDirt playback
     Event t TransformedPattern, -- deltas to network (not based on events received from network!)
     Event t Hint -- hints (currently for WebDirt sample loading only)
   )
-topLevelTransformedPatternWidget delta = do
+topLevelTransformedPatternWidget i delta = do
   let updates = fmap midLevelTransformedPatternWidget $ fmapMaybe lastOrNothing delta
-  w <- widgetHold (midLevelTransformedPatternWidget EmptyTransformedPattern) updates
+  w <- widgetHold (midLevelTransformedPatternWidget i) updates
   x <- mapDyn (\(a,_,_) -> a) w
   y <- mapDyn (\(_,a,_) -> a) w
   z <- mapDyn (\(_,_,a) -> a) w

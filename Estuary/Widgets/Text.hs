@@ -18,73 +18,78 @@ import Estuary.Types.Definition
 import Estuary.Types.EditOrEval
 import Estuary.Types.Hint
 
-textWidgetForPatternChain :: MonadWidget t m => Event t String -> m (Dynamic t String, Event t String)
-textWidgetForPatternChain delta = do
+textWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
+textWidgetForPatternChain i delta = do
   let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
-  x <- textInput $ def & textInputConfig_setValue .~ delta & textInputConfig_attributes .~ attrs
+  x <- textInput $ def & textInputConfig_setValue .~ delta & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   let edits = _textInput_input x
   let value = _textInput_value x
   return (value,edits)
 
-textAreaWidgetForPatternChain :: MonadWidget t m => Event t String -> m (Dynamic t String, Event t String)
-textAreaWidgetForPatternChain delta = do
+textAreaWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
+textAreaWidgetForPatternChain i delta = do
   let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
-  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs
+  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let edits = _textArea_input x
   let value = _textArea_value x
   return (value,edits)
 
-textPatternChainWidget :: MonadWidget t m => Event t [TransformedPattern] ->
+textPatternChainWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-textPatternChainWidget delta = divClass "textPatternChain" $ do
+textPatternChainWidget i delta = divClass "textPatternChain" $ do
+  let (iA,iB,iC) = g i
   let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
   let deltaA = fmap (\(x,_,_)->x) delta'
   let deltaB = fmap (\(_,x,_)->x) delta'
   let deltaC = fmap (\(_,_,x)->x) delta'
   (aValue,aEvent) <- divClass "labelAndTextPattern" $ do
     divClass "textInputLabel" $ text "sound"
-    textWidgetForPatternChain deltaA
+    textWidgetForPatternChain iA deltaA
   (bValue,bEvent) <- divClass "labelAndTextPattern" $ do
     divClass "textInputLabel" $ text "up"
-    textWidgetForPatternChain deltaB
+    textWidgetForPatternChain iB deltaB
   (cValue,cEvent) <- divClass "labelAndTextPattern" $ do
     divClass "textInputLabel" $ text "vowel"
-    textWidgetForPatternChain deltaC
+    textWidgetForPatternChain iC deltaC
   value <- combineDyn TextPatternChain aValue bValue
   value' <- combineDyn ($) value cValue
   let deltaUp = tagDyn value' $ leftmost [aEvent,bEvent,cEvent]
   return (value',deltaUp,never)
   where f (TextPatternChain x y z) = Just (x,y,z)
         f _ = Nothing
+        g (TextPatternChain x y z) = (x,y,z)
+        g _ = ("","","")
 
-cqenzeWidget :: MonadWidget t m => Event t [TransformedPattern] ->
+cqenzeWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-cqenzeWidget delta = divClass "textPatternChain" $ do
+cqenzeWidget i delta = divClass "textPatternChain" $ do
   let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
   (value,event) <- divClass "labelAndTextPattern" $ do
     divClass "textInputLabel" $ text "CQenze"
-    textAreaWidgetForPatternChain delta'
+    textAreaWidgetForPatternChain (g i) delta'
   value <- mapDyn CQenzePattern value -- m (Dynamic t TransformedPattern)
   let deltaUp = tagDyn value event
   return (value,deltaUp,never)
   where f (CQenzePattern x) = Just x
         f _ = Nothing
+        g (CQenzePattern x) = x
+        g _ = ""
 
 
-evaluableTextWidget :: MonadWidget t m => Event t [String] -> m (Event t (EditOrEval Definition))
-evaluableTextWidget delta = divClass "textWidget" $ do
+evaluableTextWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
+evaluableTextWidget i delta = divClass "textWidget" $ do
   let delta' = fmapMaybe lastOrNothing delta
   let attrs = constDyn $ fromList [  ("class","textWidgetTextArea"), ("rows","5")]
-  y <- textArea $ def & textAreaConfig_setValue .~ delta' & textAreaConfig_attributes .~ attrs
+  y <- textArea $ def & textAreaConfig_setValue .~ delta' & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let edits = fmap (Edit . EvaluableText) $ _textArea_input y
   evals <- button "eval"
   let evals' = fmap (Evaluate . EvaluableText) $ tagDyn (_textArea_value y) evals
   return $ leftmost [edits,evals']
 
 
-labelWidget :: MonadWidget t m => Event t [String] -> m (Event t (EditOrEval Definition))
-labelWidget delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
+labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let delta' = fmapMaybe lastOrNothing delta
   let attrs = constDyn $ ("class" =: "labelWidgetTextInput")
-  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs
+  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   return $ fmap (Edit . LabelText) $ _textInput_input y

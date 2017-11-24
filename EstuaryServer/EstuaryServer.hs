@@ -123,9 +123,9 @@ processRequest s c (JoinEnsemble x) = do
   updateClientWithServer s c f
   s' <- takeMVar s
   let e = ensembles s' Map.! x
-  respond' s' c $ EnsembleResponse (Sited x (DefaultView (E.defaultView e)))
   let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
   mapM_ (respond' s' c) $ defs'
+  respond' s' c $ EnsembleResponse (Sited x (DefaultView (E.defaultView e)))
   let views' = fmap (EnsembleResponse . Sited x . View) $ Map.mapWithKey Sited $ E.views e
   mapM_ (respond' s' c) $ views'
   putMVar s s'

@@ -18,6 +18,7 @@ import Estuary.Types.Response
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
+import Estuary.Types.EnsembleState
 import qualified Estuary.Types.Terminal as Terminal
 
 terminalWidget :: MonadWidget t m =>
@@ -47,14 +48,6 @@ terminalWidget deltasUp deltasDown = mdo
   simpleList mostRecent $ \v -> divClass "chatMessage" $ dynText v
 
   return commands
-
-
-messageForEnsembleResponse :: EnsembleResponse Definition -> Maybe String
-messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
-messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
-messageForEnsembleResponse (View (Sited x _)) = Just $ "received view " ++ x
-messageForEnsembleResponse _ = Nothing
-
 
 mostRecentEnsemble :: (MonadWidget t m, Eq a) => Event t (Request a) -> m (Dynamic t String)
 mostRecentEnsemble requests = do

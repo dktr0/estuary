@@ -1,21 +1,24 @@
 setupClient:
 	stack setup --stack-yaml=client.yaml
 
-buildClient:
+buildClient: setupClient
 	stack build --stack-yaml=client.yaml
 
 setupServer:
 	stack setup --stack-yaml=server.yaml
 
-buildServer:
+buildServer: setupServer
 	stack build --stack-yaml=server.yaml
 
-installClient:
+installClient: buildClient
 	cp -Rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin/Estuary.jsexe .
 	cp -Rf static/* Estuary.jsexe
 
-installServer:
+installServer: buildServer
 	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
+
+test: installClient installServer
+	EstuaryServer/EstuaryServer test
 
 openClient:
 	cp -Rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin/Estuary.jsexe .

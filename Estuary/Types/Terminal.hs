@@ -24,7 +24,16 @@ terminal :: GenParser Char a Command
 terminal = spaces >> (terminalCommand <|> chatP)
 
 terminalCommand :: GenParser Char a Command
-terminalCommand = char '!' >> choice [setViewP,standardViewP,defaultViewP,activeViewP,publishViewP,publishDefaultViewP,getViewP,listViewsP,deleteViewP]
+terminalCommand = char '!' >> choice [
+  try setViewP,
+  try standardViewP,
+  try defaultViewP,
+  try activeViewP,
+  try publishViewP,
+  try publishDefaultViewP,
+  try getViewP,
+  try listViewsP,
+  try deleteViewP]
 
 setViewP = string "setview" >> spaces >> viewsParser >>= return . SetView
 standardViewP = string "standardview" >> return StandardView
