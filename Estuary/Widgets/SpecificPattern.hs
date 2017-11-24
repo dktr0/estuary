@@ -140,7 +140,9 @@ specificContainer (Hresonance x) e = G.generalContainerLive' (G.popupDoubleWidge
 specificContainer (Pan x) e = G.generalContainerLive' (G.popupDoubleWidget 0.5 0 1 0.05) x never >>= mapDyn (\(x,ev,h)->(Pan x,(() <$) ev,h))
 specificContainer (Resonance x) e = G.generalContainerLive' (G.popupDoubleWidget 0 0 1 0.05) x never >>= mapDyn (\(x,ev,h)->(Resonance x,(() <$) ev,h))
 specificContainer (Shape x) e = G.generalContainerLive' (G.popupDoubleWidget 0 0 1 0.05) x never >>= mapDyn (\(x,ev,h)->(Shape x,(() <$) ev,h))
-specificContainer (Speed x) e = G.generalContainerLive' (G.popupDoubleWidget 1 (-999) 999 0.5) x never >>= mapDyn (\(x,ev,h)->(Speed x,(() <$) ev,h))
+-- specificContainer (Speed x) e = G.generalContainerLive' (G.popupDoubleWidget 1 (-999) 999 0.5) x never >>= mapDyn (\(x,ev,h)->(Speed x,(() <$) ev,h))
+specificContainer (Speed x) e = G.generalContainerLive' (G.typedAtomWidget 1) x never >>= mapDyn (\(x,ev,hint)->(Speed x,(() <$) ev,hint))
+
 specificContainer (Up x) e = G.generalContainerLive' (G.popupDoubleWidget 0 (-132) 132 1) x never >>= mapDyn (\(x,ev,h)->(Up x,(() <$) ev,h))
 specificContainer (Bandf x) e = G.generalContainerLive' (G.popupIntWidget 440 0 25000 10) x never >>= mapDyn (\(x,ev,h)->(Bandf x,(() <$) ev,h))
 specificContainer (Coarse x) e = G.generalContainerLive' (G.popupIntWidget 0 0 24 1) x never >>= mapDyn (\(x,ev,h)->(Coarse x,(() <$) ev,h))
@@ -150,12 +152,15 @@ specificContainer (Cutoff x) e = G.generalContainerLive' (G.popupIntWidget 20000
 specificContainer (Hcutoff x) e = G.generalContainerLive' (G.popupIntWidget 0 0 25000 10) x never >>= mapDyn (\(x,ev,h)->(Hcutoff x,(() <$) ev,h))
 specificContainer (Loop x) e = G.generalContainerLive' (G.popupIntWidget 0 0 1024 1) x never >>= mapDyn (\(x,ev,h)->(Loop x,(() <$) ev,h))
 specificContainer (N x) e = G.generalContainerLive' (G.popupIntWidget 0 0 50 1) x never >>= mapDyn (\(x,ev,h)->(N x,(() <$) ev,h))
---specificContainer (S x) e = G.generalContainer G.aGLStringWidget x e >>= mapDyn (\(x,ev)->(S x,ev))
 
 specificContainer (S x) e = do
-  a <- G.generalContainerLive' G.popupSampleWidget x never >>= mapDyn (\(x,ev,hint)->(S x,(() <$) ev,hint))
-  -- mapDyn (\(x,_,_)-> show x) a >>= dynText
-  return a
+  -- a <- G.generalContainerLive' G.popupSampleWidget x never >>= mapDyn (\(x,ev,hint)->(S x,(() <$) ev,hint))
+  G.generalContainerLive' (G.typedAtomWidget "~") x never >>= mapDyn (\(x,ev,hint)->(S x,(() <$) ev,hint))
+  --
+  -- -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)), Event t Hint))
+  --
+  -- -- mapDyn (\(x,_,_)-> show x) a >>= dynText
+  -- return (constDyn $ S Blank,never,never)
 --specificContainer (Sample x) e = G.generalContainer (G.aGLIntWidget G.popupSampleWidget) (Atom (Sample ("bd",0)) Once) never
 specificContainer (Vowel x) e = G.generalContainerLive' G.charWidget x never >>= mapDyn (\(x,ev,h)->(Vowel x,(() <$) ev,h))
 specificContainer (Unit x) e = G.generalContainerLive' G.charWidget x never >>= mapDyn (\(x,ev,h)->(Unit x,(() <$) ev,h))

@@ -4,6 +4,9 @@ setupClient:
 buildClient: setupClient
 	stack build --stack-yaml=client.yaml
 
+buildClientForceDirty:
+	stack build --stack-yaml=client.yaml --force-dirty
+
 setupServer:
 	stack setup --stack-yaml=server.yaml
 
