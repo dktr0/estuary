@@ -6,6 +6,7 @@ import Data.Map as Map
 import Data.Ratio
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Languages.CQenze
+import Estuary.Languages.MiniTidal
 
 import Estuary.Utility
 
@@ -455,7 +456,8 @@ data TransformedPattern =
   TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern |
   EmptyTransformedPattern |
   TextPatternChain String String String |
-  CQenzePattern String
+  CQenzePattern String |
+  MiniTidalPattern String
   deriving (Eq)
 
 instance Show TransformedPattern where
@@ -464,6 +466,7 @@ instance Show TransformedPattern where
   show (EmptyTransformedPattern) = ""
   show (TextPatternChain a b c) = (show a) ++ " " ++ (show b) ++ " " ++ (show c)
   show (CQenzePattern x) = "CQenzePattern: " ++ x
+  show (MiniTidalPattern x) = "MiniTidalPattern: " ++ x
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
@@ -471,11 +474,13 @@ instance JSON TransformedPattern where
   showJSON (EmptyTransformedPattern) = showJSON "E"
   showJSON (TextPatternChain a b c) = encJSDict [("Text",a),("b",b),("c",c)]
   showJSON (CQenzePattern x) = encJSDict [("CQenzePattern",x)]
+  showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
   readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
   readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
   readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
   readJSON (JSObject x) | firstKey x == "Text" = TextPatternChain <$> valFromObj "Text" x <*> valFromObj "b" x <*> valFromObj "c" x
   readJSON (JSObject x) | firstKey x == "CQenzePattern" = CQenzePattern <$> valFromObj "CQenzePattern" x
+  readJSON (JSObject x) | firstKey x == "MiniTidalPattern" = MiniTidalPattern <$> valFromObj "MiniTidalPattern" x
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
@@ -488,16 +493,19 @@ instance ParamPatternable TransformedPattern where
           b' = Up (TextPattern b)
           c' = Vowel (TextPattern c)
   toParamPattern (CQenzePattern x) = cqenzeParamPattern x
+  toParamPattern (MiniTidalPattern x) = miniTidalPattern x
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
   isEmptyFuture (TextPatternChain _ _ _) = False
   isEmptyFuture (CQenzePattern _) = False
+  isEmptyFuture (MiniTidalPattern _) = False
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
   isEmptyPast (TextPatternChain _ _ _) = False
   isEmptyPast (CQenzePattern _) = False
+  isEmptyPast (MiniTidalPattern _) = False
 
 data StackedPatterns = StackedPatterns [TransformedPattern]
 
