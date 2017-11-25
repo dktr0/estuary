@@ -17,5 +17,5 @@ executable EstuaryServer
   ghc-options:       -threaded
   main-is:           EstuaryServer.hs
   build-depends:     base, containers, text, tidal, hosc, json, websockets,
-                     wai, warp, wai-websockets, wai-app-static, parsec
+                     wai, warp, wai-websockets, wai-app-static, parsec, parsec-numbers
   default-language:  Haskell2010

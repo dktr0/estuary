@@ -1,6 +1,7 @@
 module Estuary.Languages.MiniTidal (miniTidalPattern) where
 
 import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Number
 import Data.List (intercalate)
 import Data.Bool (bool)
 import qualified Sound.Tidal.Context as Tidal
@@ -18,8 +19,6 @@ patternOrTransformedPattern = choice [
   try transformedPattern2,
   specificPattern
   ]
-
--- s "bd cp" # pan "0 0.5"
 
 transformedPattern0 :: GenParser Char a (Tidal.ParamPattern)
 transformedPattern0 = do
@@ -49,10 +48,11 @@ transformedPattern2 = do
   return $ x y
 
 patternTransformation :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-patternTransformation = choice [
-  try patternTransformationInBrackets,
-  patternTransformations
-  ]
+patternTransformation = do
+  spaces
+  x <- choice [ try patternTransformationInBrackets, patternTransformations]
+  spaces
+  return x
 
 patternTransformationInBrackets :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 patternTransformationInBrackets = do
@@ -67,10 +67,20 @@ patternTransformationInBrackets = do
 patternTransformations :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 patternTransformations = choice [
   try mergedPattern,
-  try (string "brak" >> spaces >> return Tidal.brak),
-  try (string "rev" >> spaces >> return Tidal.rev),
-  jux
+  try (string "brak" >> return Tidal.brak),
+  try (string "rev" >> return Tidal.rev),
+  try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
+  try (string "slow" >> spaces >> fractional3 False >>= return . Tidal.slow),
+  try append,
+  string "jux" >> spaces >> patternTransformation >>= return . Tidal.jux
   ]
+
+append :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+append = do
+  string "append" >> spaces
+  x <- patternOrTransformedPattern
+  spaces
+  return $ Tidal.append x
 
 mergedPattern :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 mergedPattern = do
@@ -81,9 +91,6 @@ mergedPattern = do
 
 mergeOperator :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
 mergeOperator = char '#' >> spaces >> return (Tidal.#)
-
-jux :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-jux = string "jux" >> spaces >> patternTransformation >>= return . Tidal.jux
 
 specificPattern :: GenParser Char a (Tidal.ParamPattern)
 specificPattern = choice [

@@ -7,4 +7,4 @@ packages:
 
 extra-deps:
 - tidal-0.9.4
-
+- parsec-numbers-0.1.0
