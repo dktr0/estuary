@@ -70,10 +70,33 @@ patternTransformations = choice [
   try (string "brak" >> return Tidal.brak),
   try (string "rev" >> return Tidal.rev),
   try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
+  try (string "density" >> spaces >> fractional3 False >>= return . Tidal.density),
   try (string "slow" >> spaces >> fractional3 False >>= return . Tidal.slow),
   try append,
+  try every,
+  try whenmod,
   string "jux" >> spaces >> patternTransformation >>= return . Tidal.jux
   ]
+
+every :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+every = do
+  string "every"
+  spaces
+  n <- int
+  spaces
+  t <- patternTransformationInBrackets
+  return $ Tidal.every n t
+
+whenmod :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+whenmod = do
+  string "whenmod"
+  spaces
+  x <- int
+  spaces
+  y <- int
+  spaces
+  t <- patternTransformationInBrackets
+  return $ Tidal.whenmod x y t
 
 append :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 append = do
@@ -96,10 +119,10 @@ specificPattern :: GenParser Char a (Tidal.ParamPattern)
 specificPattern = choice [
   try (string "s" >> spaces >> genericPattern >>= return . Tidal.s),
   try (string "n" >> spaces >> genericPattern >>= return . Tidal.n),
-  try (string "up" >> spaces >> genericPattern >>= return . Tidal.up),
+  try (string "up" >> spaces >> doublePattern >>= return . Tidal.up),
   try (string "vowel" >> spaces >> genericPattern >>= return . Tidal.vowel),
-  try (string "pan" >> spaces >> genericPattern >>= return . Tidal.pan),
-  try (string "shape" >> spaces >> genericPattern >>= return . Tidal.shape)
+  try (string "pan" >> spaces >> doublePattern >>= return . Tidal.pan),
+  try (string "shape" >> spaces >> doublePattern >>= return . Tidal.shape)
   ]
 
 genericPattern :: Tidal.Parseable b => GenParser Char a (Tidal.Pattern b)
@@ -109,3 +132,27 @@ genericPattern = do
   char '"'
   spaces
   return $ Tidal.p x
+
+doublePattern :: GenParser Char a (Tidal.Pattern Double)
+doublePattern = (try genericPattern) <|> oscillators
+
+oscillators :: GenParser Char a (Tidal.Pattern Double)
+oscillators = choice [
+  try (string "sinewave" >> spaces >> return Tidal.sinewave),
+  try (string "sinewave1" >> spaces >> return Tidal.sinewave1),
+  try (string "sine" >> spaces >> return Tidal.sine),
+  try (string "sine1" >> spaces >> return Tidal.sine1),
+--  try (string "cosine" >> spaces >> return Tidal.cosine),
+  try (string "sawwave" >> spaces >> return Tidal.sawwave),
+  try (string "sawwave1" >> spaces >> return Tidal.sawwave1),
+  try (string "saw" >> spaces >> return Tidal.saw),
+  try (string "saw1" >> spaces >> return Tidal.saw1),
+  try (string "tri" >> spaces >> return Tidal.tri),
+  try (string "tri1" >> spaces >> return Tidal.tri1),
+  try (string "triwave" >> spaces >> return Tidal.triwave),
+  try (string "triwave1" >> spaces >> return Tidal.triwave1),
+  try (string "square" >> spaces >> return Tidal.square),
+  try (string "square1" >> spaces >> return Tidal.square1),
+  try (string "squarewave" >> spaces >> return Tidal.squarewave),
+  string "squarewave1" >> spaces >> return Tidal.squarewave1
+  ]

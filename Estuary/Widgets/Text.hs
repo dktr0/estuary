@@ -65,7 +65,7 @@ cqenzeWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPat
 cqenzeWidget i delta = divClass "textPatternChain" $ do
   let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
   (value,event) <- divClass "labelAndTextPattern" $ do
-    divClass "textInputLabel" $ text "CQenze"
+    divClass "textInputLabel" $ text "CQenze "
     textAreaWidgetForPatternChain (g i) delta'
   value <- mapDyn CQenzePattern value
   let deltaUp = tagDyn value event
@@ -80,7 +80,7 @@ miniTidalWidget :: MonadWidget t m => TransformedPattern -> Event t [Transformed
 miniTidalWidget i delta = divClass "textPatternChain" $ do
   let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
   (value,event) <- divClass "labelAndTextPattern" $ do
-    divClass "textInputLabel" $ text "MiniTidal"
+    divClass "textInputLabel" $ text "MiniTidal "
     textAreaWidgetForPatternChain (g i) delta'
   value <- mapDyn MiniTidalPattern value
   let deltaUp = tagDyn value event
