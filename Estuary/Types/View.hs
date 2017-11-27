@@ -70,3 +70,30 @@ structureView = string "structure:" >> (read <$> many1 digit) >>= return . Struc
 tidalTextView = string "tidalText:" >> (read <$> many1 digit) >>= return . TidalTextView
 evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
 cqenzeView = string "cqenze:" >> (read <$> many1 digit) >>= return . CQenzeView
+
+presetView :: String -> View
+
+presetView "iclc2017" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15]),
+  ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17]),
+  ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19]),
+  ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21]),
+  ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23]),
+  ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25]),
+  ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27]),
+  ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29]),
+  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31]),
+  ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35]),
+  ViewDiv "eightMiddleL" (Views [LabelView 36,TidalTextView 37]),
+  ViewDiv "eightMiddleR" (Views [LabelView 38,TidalTextView 39])
+  ]
+
+presetView _ = standardView

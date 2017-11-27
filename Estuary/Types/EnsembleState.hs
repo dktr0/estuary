@@ -39,6 +39,7 @@ getActiveView e = f (activeView e)
 commandsToStateChanges :: Terminal.Command -> EnsembleState -> EnsembleState
 commandsToStateChanges (Terminal.SetView v) es = es { customView = v, activeView = Just "" }
 commandsToStateChanges Terminal.StandardView es = es { customView = standardView, activeView = Just "" }
+commandsToStateChanges (Terminal.PresetView v) es = es { customView = presetView v, activeView = Just ""}
 commandsToStateChanges Terminal.DefaultView es = es { activeView = Nothing }
 commandsToStateChanges (Terminal.ActiveView x) es = es { activeView = Just x }
 commandsToStateChanges (Terminal.PublishView x) es = es { publishedViews = newViews, activeView = Just x }

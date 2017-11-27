@@ -7,6 +7,7 @@ import Estuary.Types.View
 data Command =
   SetView View | -- change the current active view to a specific literal view
   StandardView | -- make the current active view the "standard" view of this Estuary build
+  PresetView String | -- make the current active view a preset of this Estuary build (or Standard if not found)
   DefaultView | -- make the current active view whatever has been stored as the local/ensemble default
   ActiveView String | -- make the current active view be the named, published view
   PublishView String | -- take the current local view and publish it with a specific name
@@ -27,6 +28,7 @@ terminalCommand :: GenParser Char a Command
 terminalCommand = char '!' >> choice [
   try setViewP,
   try standardViewP,
+  try presetViewP,
   try defaultViewP,
   try activeViewP,
   try publishViewP,
@@ -37,6 +39,7 @@ terminalCommand = char '!' >> choice [
 
 setViewP = string "setview" >> spaces >> viewsParser >>= return . SetView
 standardViewP = string "standardview" >> return StandardView
+presetViewP = string "presetview" >> spaces >> many1 alphaNum >>= return . PresetView
 defaultViewP = string "defaultview" >> return DefaultView
 activeViewP = string "activeview" >> spaces >> many1 alphaNum >>= return . ActiveView
 publishViewP = string "publishview" >> spaces >> many1 alphaNum >>= return . PublishView
