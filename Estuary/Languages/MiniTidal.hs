@@ -7,7 +7,7 @@ import Data.Bool (bool)
 import qualified Sound.Tidal.Context as Tidal
 
 miniTidalPattern :: String -> Tidal.ParamPattern
-miniTidalPattern x = either (const Tidal.silence) id $ parse miniTidalParser "(unknown)" x
+miniTidalPattern x = either (const Tidal.silence) id $ parse miniTidalParser "(unknown)" $ filter (/='?') x
 
 miniTidalParser :: GenParser Char a Tidal.ParamPattern
 miniTidalParser = spaces >> patternOrTransformedPattern
