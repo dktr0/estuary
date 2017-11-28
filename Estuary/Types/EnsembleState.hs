@@ -1,6 +1,9 @@
 module Estuary.Types.EnsembleState where
 
 import Data.Map
+import Sound.Tidal.Tempo as Tidal
+import Data.Time
+
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Definition
@@ -16,7 +19,8 @@ data EnsembleState = EnsembleState {
   publishedViews :: Map String View,
   defaultView :: View,
   customView :: View,
-  activeView :: Maybe String -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews
+  activeView :: Maybe String, -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews
+  tempo :: Tidal.Tempo
 }
 
 newEnsembleState :: String -> EnsembleState
@@ -27,7 +31,8 @@ newEnsembleState x = EnsembleState {
   publishedViews = empty,
   defaultView = emptyView,
   customView = emptyView,
-  activeView = Nothing
+  activeView = Nothing,
+  tempo = Tidal.Tempo { at=UTCTime (ModifiedJulianDay 0) (fromInteger 0), beat=0.0, cps=0.5, paused=False, clockLatency=0.0 }
 }
 
 getActiveView :: EnsembleState -> View
