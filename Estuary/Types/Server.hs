@@ -5,6 +5,8 @@ import qualified Data.Map as Map
 import Control.Concurrent.MVar
 import Data.List ((\\))
 import Data.Maybe (fromMaybe)
+import Data.Time.Clock
+import Sound.Tidal.Tempo
 
 import Estuary.Types.Client
 import Estuary.Types.Definition
@@ -95,3 +97,9 @@ getServerClientCount s = readMVar s >>= return . Map.size . clients
 
 getEnsemblePassword :: MVar Server -> String -> IO String
 getEnsemblePassword s e = readMVar s >>= return . fromMaybe [] . fmap (E.password) . Map.lookup e . ensembles
+
+tempoChangeInEnsemble :: String -> UTCTime -> Double -> Server -> Server
+tempoChangeInEnsemble e time newCps s = s { ensembles = Map.adjust (E.tempoChange time newCps) e (ensembles s) }
+
+getTempoInEnsemble :: MVar Server -> String -> IO (Maybe Tempo)
+getTempoInEnsemble s e = readMVar s >>= return . fmap E.tempo . Map.lookup e . ensembles

@@ -1,6 +1,7 @@
 module Estuary.Types.EnsembleResponse where
 
 import Data.Maybe (mapMaybe)
+import Data.Ratio
 import Text.JSON
 import Estuary.Utility (firstKey)
 import Estuary.Types.Sited
@@ -13,7 +14,7 @@ data EnsembleResponse v =
   ViewList [String] |
   View (Sited String View) |
   DefaultView View |
-  Tempo Double Double Double | -- at(timepoint) beat(continuous index) cps
+  Tempo Double Rational Double | --  cps at(timepoint) beat(continuous index)
   EnsembleClientCount Int
 
 instance JSON v => JSON (EnsembleResponse v) where
@@ -22,14 +23,15 @@ instance JSON v => JSON (EnsembleResponse v) where
   showJSON (ViewList x) = encJSDict [("ViewList",x)]
   showJSON (View x) = encJSDict [("View",x)]
   showJSON (DefaultView x) = encJSDict [("DefaultView",x)]
-  showJSON (Tempo at beat cps) = encJSDict [("Tempo",showJSON cps),("at",showJSON at),("beat",showJSON beat)]
+  showJSON (Tempo cps at beat) = encJSDict [("Tempo",showJSON cps),("atN",showJSON $ numerator at),("atD",showJSON $ denominator at),("beat",showJSON beat)]
   showJSON (EnsembleClientCount x) = encJSDict [("EnsembleClientCount",x)]
   readJSON (JSObject x) | firstKey x == "Chat" = Chat <$> valFromObj "Chat" x <*> valFromObj "m" x
   readJSON (JSObject x) | firstKey x == "ZoneResponse" = ZoneResponse <$> valFromObj "ZoneResponse" x
   readJSON (JSObject x) | firstKey x == "ViewList" = ViewList <$> valFromObj "ViewList" x
   readJSON (JSObject x) | firstKey x == "View" = View <$> valFromObj "View" x
   readJSON (JSObject x) | firstKey x == "DefaultView" = DefaultView <$> valFromObj "DefaultView" x
-  readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "Tempo" x <*> valFromObj "at" x <*> valFromObj "beat" x
+  readJSON (JSObject x) | firstKey x == "Tempo" = Tempo <$> valFromObj "Tempo" x <*> at' <*> valFromObj "beat" x
+    where at' = (%) <$> valFromObj "atN" x <*> valFromObj "atD" x
   readJSON (JSObject x) | firstKey x == "EnsembleClientCount" = EnsembleClientCount <$> valFromObj "EnsembleClientCount" x
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as EnsembleResponse: " ++ (show x)
   readJSON _ = Error "Unable to parse non-JSObject as EnsembleResponse"

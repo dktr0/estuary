@@ -3,7 +3,7 @@ module Main where
 
 import Data.Text (Text)
 import Data.List ((\\))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe,isJust,fromJust)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Map.Strict as Map
@@ -18,6 +18,9 @@ import qualified Network.Wai.Handler.WebSockets as WS
 import Network.Wai.Application.Static (staticApp, defaultWebAppSettings, ssIndices)
 import Network.Wai.Handler.Warp (run)
 import WaiAppStatic.Types (unsafeToPiece)
+import Data.Time
+import Data.Time.Clock.POSIX
+import qualified Sound.Tidal.Tempo as Tidal
 
 import Estuary.Utility
 import Estuary.Types.Definition
@@ -201,7 +204,15 @@ processEnsembleRequest s c e (DeleteView x) = do
   updateServer s $ deleteView e x
   return ()
 
-processEnsembleRequest s c e x@(TempoChange cps) = onlyIfAuthenticatedInEnsemble s c $ putStrLn "placeholder: TempoChange"
+processEnsembleRequest s c e x@(TempoChange newCps) = onlyIfAuthenticatedInEnsemble s c $ do
+  timeNow <- Data.Time.getCurrentTime
+  updateServer s $ tempoChangeInEnsemble e timeNow newCps
+  newTempo <- getTempoInEnsemble s e
+  if isJust newTempo then do
+    let newTempo' = fromJust newTempo
+    respondAll s $ EnsembleResponse (Sited e (Tempo (Tidal.cps newTempo') (toRational . utcTimeToPOSIXSeconds $ Tidal.at newTempo') (Tidal.beat newTempo') ))
+    putStrLn $ "TempoChange in " ++ e
+  else return ()
 
 processEnsembleRequest _ _ _ _ = putStrLn "warning: action failed pattern matching"
 
