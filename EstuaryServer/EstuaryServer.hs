@@ -125,7 +125,9 @@ processRequest s c (JoinEnsemble x) = do
   putStrLn $ "joining ensemble " ++ x
   updateClientWithServer s c f
   s' <- takeMVar s
-  let e = ensembles s' Map.! x
+  let e = ensembles s' Map.! x -- *** this is unsafe and should be refactored ***
+  let t = E.tempo e
+  respond' s' c $ EnsembleResponse (Sited x (Tempo (Tidal.cps t) (toRational . utcTimeToPOSIXSeconds $ Tidal.at t) (Tidal.beat t)))
   let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
   mapM_ (respond' s' c) $ defs'
   respond' s' c $ EnsembleResponse (Sited x (DefaultView (E.defaultView e)))
