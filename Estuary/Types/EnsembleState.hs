@@ -81,4 +81,5 @@ messageForEnsembleResponse :: EnsembleResponse Definition -> Maybe String
 messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
 messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
 messageForEnsembleResponse (View (Sited x _)) = Just $ "received view " ++ x
+messageForEnsembleResponse (Tempo c a b) = Just $ "received new tempo " ++ (show c)
 messageForEnsembleResponse _ = Nothing
