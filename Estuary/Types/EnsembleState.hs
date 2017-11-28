@@ -1,8 +1,9 @@
 module Estuary.Types.EnsembleState where
 
 import Data.Map
-import Sound.Tidal.Tempo as Tidal
+import qualified Sound.Tidal.Tempo as Tidal
 import Data.Time
+import Data.Time.Clock.POSIX
 
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
@@ -32,7 +33,7 @@ newEnsembleState x = EnsembleState {
   defaultView = emptyView,
   customView = emptyView,
   activeView = Nothing,
-  tempo = Tidal.Tempo { at=UTCTime (ModifiedJulianDay 0) (fromInteger 0), beat=0.0, cps=0.5, paused=False, clockLatency=0.0 }
+  tempo = Tidal.Tempo { Tidal.at=UTCTime (ModifiedJulianDay 0) (fromInteger 0), Tidal.beat=0.0, Tidal.cps=0.5, Tidal.paused=False, Tidal.clockLatency=0.0 }
 }
 
 getActiveView :: EnsembleState -> View
@@ -63,6 +64,8 @@ responsesToStateChanges (ZoneResponse (Sited n (Edit v))) es = es { zones = newZ
 responsesToStateChanges (View (Sited s v)) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)
 responsesToStateChanges (DefaultView v) es = es { defaultView = v }
+responsesToStateChanges (Tempo c a b) es = es { tempo = (tempo es) { Tidal.cps = c, Tidal.at = a', Tidal.beat = b } }
+  where a' = (posixSecondsToUTCTime . fromRational) a
 responsesToStateChanges _ es = es
 
 commandsToRequests :: EnsembleState -> Terminal.Command -> Maybe (EnsembleRequest Definition)
