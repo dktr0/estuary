@@ -582,3 +582,15 @@ td {
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
+
+.terminal {
+}
+
+.terminalHeader {
+	display: flex;
+	flex-direction: row;
+}
+
+.terminalInput {
+	flex-grow: 1;
+}

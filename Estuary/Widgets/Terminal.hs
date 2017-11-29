@@ -10,6 +10,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Time
 import Data.Either
 import Data.Maybe
+import Data.Map (fromList)
 
 import Estuary.Protocol.Foreign
 import Estuary.Types.Definition
@@ -23,15 +24,15 @@ import qualified Estuary.Types.Terminal as Terminal
 
 terminalWidget :: MonadWidget t m =>
   Event t ServerRequest -> Event t [ServerResponse] -> m (Event t Terminal.Command)
-terminalWidget deltasUp deltasDown = mdo
+terminalWidget deltasUp deltasDown = divClass "terminal" $ mdo
   currentSpace <- mostRecentEnsemble deltasUp
-  let attrs = constDyn ("class" =: "webSocketTextInputs")
-  text "Name:"
-  nameInput <- textInput $ def & textInputConfig_attributes .~ attrs
-  text "Terminal/Chat:"
-  let resetText = fmap (const "") terminalInput
-  inputWidget <- textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
-  sendButton <- divClass "webSocketButtons" $ button "Send"
+  (sendButton,inputWidget) <- divClass "terminalHeader" $ do
+    sendButton' <- divClass "webSocketButtons" $ button "Send"
+    divClass "webSocketButtons" $ text "Terminal/Chat:"
+    let resetText = fmap (const "") terminalInput
+    let attrs = constDyn $ fromList [("class","webSocketTextInputs"),("style","width: 100%")]
+    inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
+    return (sendButton',inputWidget')
   let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
   let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [sendButton,enterPressed]
   let parsedInput = fmap Terminal.parseCommand terminalInput
