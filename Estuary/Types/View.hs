@@ -74,10 +74,10 @@ cqenzeView = string "cqenze:" >> (read <$> many1 digit) >>= return . CQenzeView
 presetView :: String -> View
 
 presetView "iclc2017" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
-  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
-  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 0,StructureView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,StructureView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,CQenzeView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,CQenzeView 7]),
   ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
   ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
   ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
