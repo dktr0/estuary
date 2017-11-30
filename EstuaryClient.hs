@@ -14,13 +14,14 @@ import Estuary.Widgets.GeneralPattern as G -- for testing the Refactor of genera
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Control.Monad (liftM)
-import Sound.Tidal.Context (ParamPattern)
+import Sound.Tidal.Context (ParamPattern,Tempo(..))
 import Estuary.WebDirt.Foreign
-import Estuary.WebDirt.Stream
 import Estuary.WebDirt.SuperDirt
+import Estuary.WebDirt.Stream
 import Estuary.Widgets.SpecificPattern
 import Estuary.Widgets.Terminal
 import Data.Map
+import Control.Concurrent.MVar
 import Control.Monad.IO.Class (liftIO)
 import Estuary.Widgets.WebSocket
 import Text.JSON
@@ -34,33 +35,38 @@ import Estuary.Types.Response
 
 main :: IO ()
 main = do
+  now <- Data.Time.getCurrentTime
+  let defaultTempo = Tempo {at=now,beat=0.0,cps=0.5,paused=False,clockLatency=0.2}
+  tempo <- newMVar defaultTempo
   wd <- webDirt
   sd <- superDirt
-  stream <- webDirtStream wd sd
+  wdStream <- sampleStream wd tempo
+  sdStream <- sampleStream sd tempo
   protocol <- estuaryProtocol
-  now <- Data.Time.getCurrentTime
-  mainWidget $ estuaryWidget wd stream protocol now
+  mainWidget $ estuaryWidget wd wdStream sd sdStream protocol now
 
 
-estuaryWidget :: MonadWidget t m => WebDirt -> WebDirtStream -> EstuaryProtocolObject -> UTCTime -> m ()
-estuaryWidget wd stream protocol now = divClass "estuary" $ mdo
-  muted <- header wsStatus clientCount
+estuaryWidget :: MonadWidget t m =>
+  WebDirt -> SampleStream -> SuperDirt -> SampleStream ->
+  EstuaryProtocolObject -> UTCTime -> m ()
+estuaryWidget wd wdStream sd sdStream protocol now = divClass "estuary" $ mdo
+  (sdOn,wdOn) <- header wsStatus clientCount
   (values,deltasUp,hints) <- divClass "page" $ navigation commands deltasDown'
   commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'
   (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp
   values' <- mapDyn (toParamPattern . StackedPatterns) values
-  values'' <- combineDyn f values' muted
-  let values''' = updated values''
+  valuesSd <- liftM updated $ combineDyn f values' sdOn
+  valuesWd <- liftM updated $ combineDyn f values' wdOn
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   clientCount <- holdDyn 0 $ fmapMaybe justServerClientCount deltasDown'
-  -- diagnostics values deltasUp deltasDown' hints
   performHint wd hints
-  performEvent_ $ fmap (liftIO . stream) values'''
-  where f x False = x
-        f _ True = toParamPattern EmptyTransformedPattern
+  performEvent_ $ fmap (liftIO . wdStream) valuesWd
+  performEvent_ $ fmap (liftIO . sdStream) valuesSd
+  where f x True = x
+        f _ False = toParamPattern EmptyTransformedPattern
 
 
-header :: (MonadWidget t m) => Dynamic t String -> Dynamic t Int -> m (Dynamic t Bool)
+header :: (MonadWidget t m) => Dynamic t String -> Dynamic t Int -> m (Dynamic t Bool, Dynamic t Bool)
 header wsStatus clientCount = divClass "header" $ do
   tick <- getPostBuild
   hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
@@ -76,12 +82,12 @@ header wsStatus clientCount = divClass "header" $ do
     dynText port'
     text ": "
     dynText statusMsg
-  muted' <- divClass "webDirt" $ do
-    muted <- divClass "webDirtMute" $ do
-      text "WebDirt Mute "
-      checkbox False $ def
-    return $ _checkbox_value muted
-  return muted'
+  divClass "webDirt" $ divClass "webDirtMute" $ do
+      text "SuperDirt:"
+      sdInput <- checkbox False $ def
+      text "WebDirt:"
+      wdInput <- checkbox True $ def
+      return (_checkbox_value sdInput,_checkbox_value wdInput)
   where
     f "connection open" c = "(" ++ (show c) ++ " clients)"
     f x _ = x
