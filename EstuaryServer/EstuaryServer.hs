@@ -169,8 +169,7 @@ processRequest db s c (CreateEnsemble name pwd) = onlyIfAuthenticated s c $ do
   postLog db $ "CreateEnsemble " ++ name
   updateServer s $ createEnsemble name pwd
   getEnsembleList s >>= respondAll s
-  saveEnsembleToDatabase s name db
-
+  saveNewEnsembleToDatabase s name db
 
 processRequest db s c (EnsembleRequest x) = processInEnsemble db s c x
 
@@ -271,6 +270,14 @@ respondEnsembleNoOrigin s c e x = withMVar s $ (send x) . Map.elems . Map.delete
 
 ensembleFilter :: String -> Map.Map ClientHandle Client -> Map.Map ClientHandle Client
 ensembleFilter e = Map.filter $ (==(Just e)) . ensemble
+
+saveNewEnsembleToDatabase :: MVar Server -> String -> SQLite.Connection -> IO ()
+saveNewEnsembleToDatabase s name db = do
+  s' <- readMVar s
+  f $ Data.Map.lookup name (ensembles s')
+  where
+    f (Just e) = writeNewEnsemble db name e
+    f Nothing = postLog db $ "saveNewEnsembleToDatabase lookup failure for ensemble " ++ name
 
 saveEnsembleToDatabase :: MVar Server -> String -> SQLite.Connection -> IO ()
 saveEnsembleToDatabase s name db = do

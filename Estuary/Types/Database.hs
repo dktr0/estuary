@@ -36,12 +36,15 @@ postLogToDatabase c l = do
   now <- getCurrentTime
   execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,l)
 
+writeNewEnsemble :: Connection -> String -> Ensemble -> IO ()
+writeNewEnsemble c eName e = do
+  now <- getCurrentTime
+  execute c "INSERT INTO ensembles (name,json,lastUpdate) VALUES (?,?,?)" (eName,e,now)
+  
 writeEnsemble :: Connection -> String -> Ensemble -> IO ()
 writeEnsemble c eName e = do
   now <- getCurrentTime
-  execute c "UPDATE ensembles (json,lastUpdate) VALUES (?,?) WHERE name=?" (e,now,eName)
-
--- *** note: QUERY in above is almost certainly syntactically incorrect... ***
+  execute c "UPDATE ensembles SET json=?, lastUpdate=? WHERE name=?" (e,now,eName)
 
 instance ToField Ensemble where
   toField = SQLText . pack . encode
