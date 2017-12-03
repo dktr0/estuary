@@ -122,7 +122,8 @@ specificPattern = choice [
   try (string "up" >> spaces >> doublePattern >>= return . Tidal.up),
   try (string "vowel" >> spaces >> genericPattern >>= return . Tidal.vowel),
   try (string "pan" >> spaces >> doublePattern >>= return . Tidal.pan),
-  try (string "shape" >> spaces >> doublePattern >>= return . Tidal.shape)
+  try (string "shape" >> spaces >> doublePattern >>= return . Tidal.shape),
+  try (string "gain" >> spaces >> doublePattern >>= return . Tidal.gain)
   ]
 
 genericPattern :: Tidal.Parseable b => GenParser Char a (Tidal.Pattern b)

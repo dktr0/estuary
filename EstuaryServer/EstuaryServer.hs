@@ -22,6 +22,7 @@ import Network.Wai.Handler.Warp (run)
 import WaiAppStatic.Types (unsafeToPiece)
 import Data.Time
 import Data.Time.Clock.POSIX
+import Data.Map
 import qualified Sound.Tidal.Tempo as Tidal
 
 import Estuary.Utility
@@ -85,20 +86,24 @@ processLoop :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle
 processLoop db ws s h = do
   m <- try $ WS.receiveData ws
   case m of
-    Right x -> do
-      let x' = decode (T.unpack x) :: Result JSString
-      case x' of
-        Ok x'' -> do
-          processResult db s h $ decode (fromJSString x'')
-          processLoop db ws s h
-        Error x'' -> do
-          postLog db $ "Error: " ++ x''
-          processLoop db ws s h
+    Right m' -> do
+      processMessage db ws s h m' `catch` processMessageExceptions db
+      processLoop db ws s h
     Left WS.ConnectionClosed -> close db s h "unexpected loss of connection"
     Left (WS.CloseRequest _ _) -> close db s h "connection closed by request from peer"
     Left (WS.ParseException e) -> do
       postLog db $ "parse exception: " ++ e
       processLoop db ws s h
+
+processMessage :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle -> Text -> IO ()
+processMessage db ws s h m = do
+  let m' = decode (T.unpack m) :: Result JSString
+  case m' of
+    Ok m'' -> processResult db s h $ decode (fromJSString m'')
+    Error x'' -> postLog db $ "Error: " ++ x''
+
+processMessageExceptions :: SQLite.Connection -> SomeException -> IO ()
+processMessageExceptions db e = postLog db $ "Exception (processResult): " ++ (show e)
 
 close :: SQLite.Connection -> MVar Server -> ClientHandle -> String -> IO ()
 close db s h msg = do
@@ -124,7 +129,6 @@ processResult :: SQLite.Connection -> MVar Server -> ClientHandle -> Result Serv
 processResult db _ c (Error x) = postLog db $ "Error (processResult): " ++ x
 processResult db s c (Ok x) = processRequest db s c x
 
-
 processRequest :: SQLite.Connection -> MVar Server -> ClientHandle -> ServerRequest -> IO ()
 
 processRequest db s c (Authenticate x) = do
@@ -145,7 +149,7 @@ processRequest db s c (JoinEnsemble x) = do
   postLog db $ "joining ensemble " ++ x
   updateClientWithServer s c f
   s' <- takeMVar s
-  let e = ensembles s' Map.! x -- *** this is unsafe and should be refactored ***
+  let e = ensembles s' Map.! x -- *** this is unsafe and should be refactored, same problem below in f too ***
   let t = E.tempo e
   respond' s' c $ EnsembleResponse (Sited x (Tempo (Tidal.cps t) (toRational . utcTimeToPOSIXSeconds $ Tidal.at t) (Tidal.beat t)))
   let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
@@ -165,6 +169,8 @@ processRequest db s c (CreateEnsemble name pwd) = onlyIfAuthenticated s c $ do
   postLog db $ "CreateEnsemble " ++ name
   updateServer s $ createEnsemble name pwd
   getEnsembleList s >>= respondAll s
+  saveEnsembleToDatabase s name db
+
 
 processRequest db s c (EnsembleRequest x) = processInEnsemble db s c x
 
@@ -265,3 +271,11 @@ respondEnsembleNoOrigin s c e x = withMVar s $ (send x) . Map.elems . Map.delete
 
 ensembleFilter :: String -> Map.Map ClientHandle Client -> Map.Map ClientHandle Client
 ensembleFilter e = Map.filter $ (==(Just e)) . ensemble
+
+saveEnsembleToDatabase :: MVar Server -> String -> SQLite.Connection -> IO ()
+saveEnsembleToDatabase s name db = do
+  s' <- readMVar s
+  f $ Data.Map.lookup name (ensembles s')
+  where
+    f (Just e) = writeEnsemble db name e
+    f Nothing = postLog db $ "saveEnsembleToDatabase lookup failure for ensemble " ++ name
