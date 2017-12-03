@@ -16,8 +16,9 @@ import Estuary.Types.Ensemble
 openDatabase :: IO Connection
 openDatabase = do
   c <- open "Estuary.db"
-  createEnsembleTable c
   createLogTable c
+  createEnsembleTable c
+  postLogToDatabase c "database opened"
   return c
 
 createEnsembleTable :: Connection -> IO ()
@@ -26,16 +27,17 @@ createEnsembleTable c = execute_ c "CREATE TABLE IF NOT EXISTS ensembles (name T
 createLogTable :: Connection -> IO ()
 createLogTable c = execute_ c "CREATE TABLE IF NOT EXISTS log (time TEXT,msg TEXT)"
 
+postLogToDatabase :: Connection -> String -> IO ()
+postLogToDatabase c l = do
+  now <- getCurrentTime
+  execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,l)
+
 {-
 readEnsembles :: Connection -> IO (Map String Ensemble)
 readEnsembles c = do
   r <- query_ c "SELECT name,password,defs,views,defaultView,tempo FROM ensembles" -- [(n,e)]
   fromList r
 
-postLog :: Connection -> String -> IO ()
-postLog c l = do
-  now <- getCurrentTime
-  execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,l) (handle,time,event,exerciseId,config,question,answer,selection,shortTermEval,longTermEval,reflection) VALUES (?,?,?,?,?,?,?,?,?,?,?)" r
 
 writeEnsemble :: Connection -> String -> Ensemble -> IO ()
 writeEnsemble c eName e = do
