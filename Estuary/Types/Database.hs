@@ -40,7 +40,7 @@ writeNewEnsemble :: Connection -> String -> Ensemble -> IO ()
 writeNewEnsemble c eName e = do
   now <- getCurrentTime
   execute c "INSERT INTO ensembles (name,json,lastUpdate) VALUES (?,?,?)" (eName,e,now)
-  
+
 writeEnsemble :: Connection -> String -> Ensemble -> IO ()
 writeEnsemble c eName e = do
   now <- getCurrentTime
@@ -54,7 +54,7 @@ instance FromField Ensemble where
     where g (SQLText t) = unpack t
           g _ = ""
           f (Text.JSON.Ok x) = Database.SQLite.Simple.Ok.Ok x
-          -- *** incomplete pattern matching here is a bad bad bad temporary idea...
+          f (Text.JSON.Error x) = error x
 
 readEnsembles :: Connection -> IO (Map String Ensemble)
 readEnsembles c = do

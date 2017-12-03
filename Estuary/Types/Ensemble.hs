@@ -5,10 +5,13 @@ import qualified Data.Map.Strict as Map
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Data.Time.Clock
+import Data.Time.Clock.POSIX
 import Data.Time.Calendar
 import Sound.Tidal.Tempo (Tempo(..))
 import Text.JSON
 import Text.Read
+
+import Data.Ratio
 
 data Ensemble = Ensemble {
   password :: String,
@@ -30,20 +33,10 @@ instance JSON Tempo where
   readJSON (JSObject x) = Tempo <$> valFromObj "at" x <*> valFromObj "beat" x <*> valFromObj "cps" x <*> valFromObj "paused" x <*> valFromObj "clockLatency" x
 
 instance JSON UTCTime where
-  showJSON (UTCTime x y) = encJSDict [("x",showJSON x),("y",showJSON y)]
-  readJSON (JSObject z) = UTCTime <$> valFromObj "x" z <*> valFromObj "y" z
-
-instance JSON DiffTime where
-  showJSON x = showJSON $ show $ realToFrac x
-  readJSON (JSString x) = (f . readMaybe . fromJSString) x
-    where f (Just y) = Ok $ fromRational y
-          f _ = Error "readMaybe can't parse as Day"
-
-instance JSON Day where
-  showJSON x = showJSON $ show x
-  readJSON (JSString x) = (f . readMaybe . fromJSString) x
-    where f (Just y) = Ok y
-          f _ = Error "readMaybe can't parse as Day"
+  showJSON x = encJSDict [("n",showJSON $ numerator r),("d",showJSON $ denominator r)]
+    where r = (realToFrac (utcTimeToPOSIXSeconds x) :: Rational)
+  readJSON (JSObject x) = f <$> valFromObj "n" x <*> valFromObj "d" x
+    where f n d = posixSecondsToUTCTime $ fromRational $ n % d
 
 instance JSON Ensemble where
   showJSON (Ensemble pwd' defs' views' defaultView' tempo') =

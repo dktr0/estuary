@@ -49,7 +49,9 @@ mainWithDatabase db = do
   (pwd,port) <- getArgs >>= return . processArgs
   putStrLn $ "Estuary collaborative editing server, listening on port " ++ (show port)
   putStrLn $ "password: " ++ pwd
-  s <- newMVar $ newServer { password = pwd }
+  es <- readEnsembles db
+  postLog db $ (show (size es)) ++ " ensembles restored from database"
+  s <- newMVar $ newServer { password = pwd, ensembles = es }
   let settings = (defaultWebAppSettings "Estuary.jsexe") { ssIndices = [unsafeToPiece "index.html"] }
   run port $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
 
