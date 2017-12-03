@@ -202,6 +202,7 @@ processEnsembleRequest db s c e x@(ZoneRequest (Sited zone (Edit value))) = only
   postLog db $ "Edit in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
   updateServer s $ edit e zone value
   respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone (Edit value))))
+  saveEnsembleToDatabase s e db
 
 processEnsembleRequest db s c e x@(ZoneRequest (Sited zone (Evaluate value))) = onlyIfAuthenticatedInEnsemble s c $ do
   postLog db $ "Eval in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
@@ -219,17 +220,17 @@ processEnsembleRequest db s c e (GetView v) = do
 processEnsembleRequest db s c e (PublishView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
   postLog db $ "PublishView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
   updateServer s $ setView e key value
-  return ()
+  saveEnsembleToDatabase s e db
 
 processEnsembleRequest db s c e (PublishDefaultView v) = onlyIfAuthenticatedInEnsemble s c $ do
   postLog db $ "PublishDefaultView in " ++ e
   updateServer s $ setDefaultView e v
-  return ()
+  saveEnsembleToDatabase s e db
 
 processEnsembleRequest db s c e (DeleteView x) = do
   postLog db $ "DeleteView " ++ x ++ " in ensemble " ++ e
   updateServer s $ deleteView e x
-  return ()
+  saveEnsembleToDatabase s e db
 
 processEnsembleRequest db s c e x@(TempoChange newCps) = onlyIfAuthenticatedInEnsemble s c $ do
   timeNow <- Data.Time.getCurrentTime
@@ -239,7 +240,8 @@ processEnsembleRequest db s c e x@(TempoChange newCps) = onlyIfAuthenticatedInEn
     let newTempo' = fromJust newTempo
     respondAll s $ EnsembleResponse (Sited e (Tempo (Tidal.cps newTempo') (toRational . utcTimeToPOSIXSeconds $ Tidal.at newTempo') (Tidal.beat newTempo') ))
     postLog db $ "TempoChange in " ++ e
-  else return ()
+    saveEnsembleToDatabase s e db
+  else postLog db $ "attempt to TempoChange in non-existent ensemble " ++ e
 
 processEnsembleRequest db _ _ _ _ = postLog db $ "warning: action failed pattern matching"
 
