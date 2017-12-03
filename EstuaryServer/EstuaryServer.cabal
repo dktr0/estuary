@@ -18,5 +18,5 @@ executable EstuaryServer
   main-is:           EstuaryServer.hs
   build-depends:     base, containers, text, tidal, hosc, json, websockets,
                      wai, warp, wai-websockets, wai-app-static, parsec, parsec-numbers,
-                     time
+                     time, sqlite-simple
   default-language:  Haskell2010

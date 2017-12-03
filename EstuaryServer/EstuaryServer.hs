@@ -9,7 +9,9 @@ import qualified Data.Text.IO as T
 import qualified Data.Map.Strict as Map
 import Control.Monad
 import Control.Concurrent.MVar
-import Control.Exception (try)
+import Control.Exception (try,catch,SomeException)
+
+import qualified Database.SQLite.Simple as SQLite
 import Text.JSON
 import System.Environment (getArgs)
 import qualified Network.WebSockets as WS
@@ -34,15 +36,27 @@ import Estuary.Types.Response
 import Estuary.Types.View
 import Estuary.Types.Client
 import Estuary.Types.Server
+import Estuary.Types.Database
 
-
+main :: IO ()
 main = do
+  db <- openDatabase
+  mainWithDatabase db `catch` (closeDatabaseOnException db)
+
+mainWithDatabase :: SQLite.Connection -> IO ()
+mainWithDatabase db = do
   (pwd,port) <- getArgs >>= return . processArgs
   putStrLn $ "Estuary collaborative editing server, listening on port " ++ (show port)
   putStrLn $ "password: " ++ pwd
   s <- newMVar $ newServer { password = pwd }
   let settings = (defaultWebAppSettings "Estuary.jsexe") { ssIndices = [unsafeToPiece "index.html"] }
   run port $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp s) (staticApp settings)
+
+closeDatabaseOnException :: SQLite.Connection -> SomeException -> IO ()
+closeDatabaseOnException db e = do
+  putStrLn $ "quitting and closing database due to unhandled exception (" ++ (show e) ++ ")..."
+  closeDatabase db
+  putStrLn "database connection closed."
 
 processArgs :: [String] -> (String,Int) -- (password,port)
 processArgs xs = case length xs of
