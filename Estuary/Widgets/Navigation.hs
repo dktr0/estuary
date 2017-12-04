@@ -101,7 +101,7 @@ page _ _ CreateEnsemblePage = do
   adminPwd <- el "div" $ do
     text "Admin Password: "
     let attrs = constDyn ("class" =: "webSocketTextInputs")
-    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
+    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   name <- el "div" $ do
     text "Ensemble Name: "
     let attrs = constDyn ("class" =: "webSocketTextInputs")

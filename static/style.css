@@ -594,3 +594,23 @@ td {
 .terminalInput {
 	flex-grow: 1;
 }
+
+.ensembleHeader {
+	display: flex;
+	flex-direction: row;
+}
+
+.ensembleName {
+	margin-top: 1px;
+	margin-right: 1em;
+}
+
+.ensembleHandle {
+  margin-right: 1em;
+	border: none;
+}
+
+.ensemblePassword {
+  margin-right: 1em;
+	border: none;
+}

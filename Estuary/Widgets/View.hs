@@ -32,17 +32,19 @@ viewInEnsembleWidget :: MonadWidget t m =>
 viewInEnsembleWidget ensemble commands deltasDown = mdo
 
   -- UI for global ensemble parameters
-  divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
-  hdl <- divClass "handleInEnsemble" $ do
-    text "   Name/Handle:"
-    let attrs = constDyn ("class" =: "webSocketTextInputs")
-    handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
-    return $ _textInput_input handleInput
-  pwdRequest <- divClass "ensemblePassword" $ do
-    text "   Ensemble Password:"
-    let attrs = constDyn ("class" =: "webSocketTextInputs")
-    pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-    return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
+  (hdl,pwdRequest) <- divClass "ensembleHeader" $ do
+    divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
+    hdl' <- divClass "ensembleHandle" $ do
+      text "   Name/Handle:"
+      let attrs = constDyn ("class" =: "ensembleHandle")
+      handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
+      return $ _textInput_input handleInput
+    pwdRequest' <- divClass "ensemblePassword" $ do
+      text "   Ensemble Password:"
+      let attrs = constDyn ("class" =: "ensemblePassword")
+      pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
+      return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
+    return (hdl',pwdRequest')
 
   -- management of EnsembleState
   let initialState = newEnsembleState ensemble
