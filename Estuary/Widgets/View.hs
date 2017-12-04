@@ -6,6 +6,7 @@ import qualified Data.Map as Map
 import Control.Monad
 import Reflex
 import Reflex.Dom
+import Text.Read
 
 import Estuary.Types.Response
 import Estuary.Types.Definition
@@ -32,19 +33,25 @@ viewInEnsembleWidget :: MonadWidget t m =>
 viewInEnsembleWidget ensemble commands deltasDown = mdo
 
   -- UI for global ensemble parameters
-  (hdl,pwdRequest) <- divClass "ensembleHeader" $ do
+  (hdl,pwdRequest,tempoRequest) <- divClass "ensembleHeader" $ do
     divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
     hdl' <- divClass "ensembleHandle" $ do
-      text "   Name/Handle:"
+      text "Name/Handle:"
       let attrs = constDyn ("class" =: "ensembleHandle")
       handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
       return $ _textInput_input handleInput
     pwdRequest' <- divClass "ensemblePassword" $ do
-      text "   Ensemble Password:"
+      text "Ensemble Password:"
       let attrs = constDyn ("class" =: "ensemblePassword")
       pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
       return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
-    return (hdl',pwdRequest')
+    tempoRequest' <- divClass "ensembleTempo" $ do
+      text "Ensemble Tempo:"
+      let attrs = constDyn ("class" =: "ensembleTempo")
+      tempoInput <- textInput $ def & textInputConfig_attributes .~ attrs
+      let newTempo = fmapMaybe (readMaybe :: String -> Maybe Double) $ _textInput_input tempoInput
+      return $ fmap TempoChange newTempo
+    return (hdl',pwdRequest',tempoRequest')
 
   -- management of EnsembleState
   let initialState = newEnsembleState ensemble
@@ -70,7 +77,7 @@ viewInEnsembleWidget ensemble commands deltasDown = mdo
   -- form requests to send to server
   joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
   let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands
-  let ensembleRequests = fmap (EnsembleRequest . Sited ensemble) $ leftmost [edits,pwdRequest,commandRequests]
+  let ensembleRequests = fmap (EnsembleRequest . Sited ensemble) $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
   let requests = leftmost [joinRequest,ensembleRequests]
   return (defMap,requests,hints)
 
