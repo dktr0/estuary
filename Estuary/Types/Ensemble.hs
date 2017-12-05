@@ -49,15 +49,13 @@ instance JSON Ensemble where
       ]
   readJSON (JSObject x) = Ensemble <$> valFromObj "password" x <*> valFromObj "defs" x <*> valFromObj "views" x <*> valFromObj "defaultView" x <*> valFromObj "tempo" x
 
-
-
-emptyEnsemble :: Ensemble
-emptyEnsemble = Ensemble {
+emptyEnsemble :: UTCTime -> Ensemble
+emptyEnsemble t = Ensemble {
   password = "",
   defs = Map.empty,
   views = Map.empty,
   defaultView = standardView,
-  tempo = Tempo { at=UTCTime (ModifiedJulianDay 0) (fromInteger 0), beat=0.0, cps=0.5, paused=False, clockLatency=0.0 }
+  tempo = Tempo { at=t, beat=0.0, cps=0.5, paused=False, clockLatency=0.0 }
   }
 
 setPassword :: String -> Ensemble -> Ensemble

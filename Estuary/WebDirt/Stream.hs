@@ -54,13 +54,15 @@ clockedTickLoop engine tempo callback tick = do
   let delayUntilTick = beatsFromAtToTick / cps tempo' - realToFrac (diffUTCTime nowUtc (at tempo'))
   threadDelay $ floor (delayUntilTick * 1000000)
   callback tempo' tick
-  return $ tick + 1
+  let nowBeat = utcToBeat nowUtc tempo'
+  let nextTick = ceiling (nowBeat * (fromIntegral ticksPerCycle))
+  return nextTick
+  -- return $ tick + 1
 
 tick :: SampleEngine e => e -> MVar ParamPattern -> Tempo -> Int -> IO ()
 tick e patternM tempo ticks = do
   p <- readMVar patternM
   clockDiff <- getClockDiff e
-  putStrLn $ show clockDiff
   let latency = clockLatency tempo
   let ticks' = (fromIntegral ticks) :: Integer
       a = ticks' % ticksPerCycle

@@ -5,6 +5,7 @@ module Main where
 import Reflex
 import Reflex.Dom
 import Estuary.Tidal.Types
+import Estuary.Types.Hint
 import Estuary.Protocol.Foreign
 import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
@@ -43,13 +44,13 @@ main = do
   wdStream <- sampleStream wd tempo
   sdStream <- sampleStream sd tempo
   protocol <- estuaryProtocol
-  mainWidget $ estuaryWidget wd wdStream sd sdStream protocol now
+  mainWidget $ estuaryWidget tempo wd wdStream sd sdStream protocol now
 
 
 estuaryWidget :: MonadWidget t m =>
-  WebDirt -> SampleStream -> SuperDirt -> SampleStream ->
+  MVar Tempo -> WebDirt -> SampleStream -> SuperDirt -> SampleStream ->
   EstuaryProtocolObject -> UTCTime -> m ()
-estuaryWidget wd wdStream sd sdStream protocol now = divClass "estuary" $ mdo
+estuaryWidget tempo wd wdStream sd sdStream protocol now = divClass "estuary" $ mdo
   (sdOn,wdOn) <- header wsStatus clientCount
   (values,deltasUp,hints) <- divClass "page" $ navigation commands deltasDown'
   commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'
@@ -59,12 +60,17 @@ estuaryWidget wd wdStream sd sdStream protocol now = divClass "estuary" $ mdo
   valuesWd <- liftM updated $ combineDyn f values' wdOn
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   clientCount <- holdDyn 0 $ fmapMaybe justServerClientCount deltasDown'
+  performTempoUpdates tempo hints
   performHint wd hints
   performEvent_ $ fmap (liftIO . wdStream) valuesWd
   performEvent_ $ fmap (liftIO . sdStream) valuesSd
   where f x True = x
         f _ False = toParamPattern EmptyTransformedPattern
 
+performTempoUpdates :: MonadWidget t m => MVar Tempo -> Event t Hint -> m ()
+performTempoUpdates t h = do
+  let newTempi = fmapMaybe maybeTempoHint h
+  performEvent_ $ fmap (liftIO . (\x -> swapMVar t x >> return ())) newTempi
 
 header :: (MonadWidget t m) => Dynamic t String -> Dynamic t Int -> m (Dynamic t Bool, Dynamic t Bool)
 header wsStatus clientCount = divClass "header" $ do

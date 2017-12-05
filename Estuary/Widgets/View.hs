@@ -62,6 +62,8 @@ viewInEnsembleWidget ensemble commands deltasDown = mdo
   let requestChanges = fmap requestsToStateChanges edits
   ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
 
+  tempoHints <- liftM (fmap TempoHint . updated . nubDyn) $ mapDyn tempo ensembleState
+
   -- dynamic View UI
   let initialWidget = viewWidget emptyView Map.empty ensembleResponses
   currentView <- liftM nubDyn $ mapDyn getActiveView ensembleState
@@ -72,8 +74,9 @@ viewInEnsembleWidget ensemble commands deltasDown = mdo
   ui <- widgetHold initialWidget rebuildWidget
   defMap <- liftM joinDyn $ mapDyn (\(y,_,_) -> y) ui
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,y,_) -> y) ui
-  hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,y) -> y) ui
-
+  hintsUi <- liftM switchPromptlyDyn $ mapDyn (\(_,_,y) -> y) ui
+  let hints = leftmost [tempoHints,hintsUi] -- *** note: might this occasionally lose a hint?
+  
   -- form requests to send to server
   joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
   let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands

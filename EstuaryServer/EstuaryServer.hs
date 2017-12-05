@@ -169,7 +169,8 @@ processRequest db s c LeaveEnsemble = do
 
 processRequest db s c (CreateEnsemble name pwd) = onlyIfAuthenticated s c $ do
   postLog db $ "CreateEnsemble " ++ name
-  updateServer s $ createEnsemble name pwd
+  t <- getCurrentTime
+  updateServer s $ createEnsemble name pwd t
   getEnsembleList s >>= respondAll s
   saveNewEnsembleToDatabase s name db
 

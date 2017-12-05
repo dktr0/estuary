@@ -128,6 +128,7 @@ foreign import javascript safe
 
 doHint :: WebDirt -> Hint -> IO ()
 doHint (WebDirt j) (SampleHint x) = sampleHint_ j (P.pToJSVal x)
+doHint _ (TempoHint _) = return ()
 
 performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev

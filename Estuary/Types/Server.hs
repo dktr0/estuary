@@ -61,9 +61,9 @@ addClient s x = (i,s { clients=newMap})
 deleteClient :: ClientHandle -> Server -> Server
 deleteClient h s = s { clients = Map.delete h (clients s) }
 
-createEnsemble :: String -> String -> Server -> Server
-createEnsemble name pwd s = s { ensembles = Map.insertWith (\_ x -> x) name e (ensembles s) }
-  where e = E.setPassword pwd E.emptyEnsemble
+createEnsemble :: String -> String -> UTCTime -> Server -> Server
+createEnsemble name pwd t s = s { ensembles = Map.insertWith (\_ x -> x) name e (ensembles s) }
+  where e = E.setPassword pwd (E.emptyEnsemble t)
 
 -- if space already exists, createEnsemble does not make any change
 
