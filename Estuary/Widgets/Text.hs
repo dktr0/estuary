@@ -78,17 +78,27 @@ cqenzeWidget i delta = divClass "textPatternChain" $ do
 miniTidalWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
 miniTidalWidget i delta = divClass "textPatternChain" $ do
-  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
-  (value,event) <- divClass "labelAndTextPattern" $ do
-    divClass "textInputLabel" $ text "MiniTidal "
-    textAreaWidgetForPatternChain (g i) delta'
-  value <- mapDyn MiniTidalPattern value
-  let deltaUp = tagDyn value event
+  let i' = maybe (Live "" L3) (id) $ f i
+  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta -- just MiniTidalPatterns
+  let deltaPast = fmap forRendering delta'
+  let deltaFuture = fmap forEditing delta'
+  (editText,editEvent,evalButton) <- divClass "labelAndTextPattern" $ do
+    b <- divClass "textInputLabel" $ button "MiniTidal "
+    (v,e) <- textAreaWidgetForPatternChain (forEditing i') deltaFuture
+    return (v,e,b)
+  let evalEvent = tagDyn editText evalButton
+  pastValue <- holdDyn (forRendering i') $ leftmost [deltaPast,evalEvent]
+  futureValue <- holdDyn (forEditing i') $ leftmost [deltaFuture,editEvent]
+  value <- combineDyn g pastValue futureValue
+  let deltaUpEdit = tagDyn value editEvent
+  let deltaUpEval = tagDyn value evalEvent
+  let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
   return (value,deltaUp,never)
-  where f (MiniTidalPattern x) = Just x
-        f _ = Nothing
-        g (MiniTidalPattern x) = x
-        g _ = ""
+  where
+    f (MiniTidalPattern x) = Just x -- for filtering out non-MiniTidalPatterns
+    f _ = Nothing
+    g p f | p == f = MiniTidalPattern (Live p L3) -- combine past and future values into a valid TransformedPattern
+          | otherwise = MiniTidalPattern (Edited p f)
 
 evaluableTextWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
 evaluableTextWidget i delta = divClass "textWidget" $ do

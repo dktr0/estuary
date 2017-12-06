@@ -76,7 +76,7 @@ viewInEnsembleWidget ensemble commands deltasDown = mdo
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,y,_) -> y) ui
   hintsUi <- liftM switchPromptlyDyn $ mapDyn (\(_,_,y) -> y) ui
   let hints = leftmost [tempoHints,hintsUi] -- *** note: might this occasionally lose a hint?
-  
+
   -- form requests to send to server
   joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
   let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands
@@ -118,7 +118,7 @@ viewWidget (StructureView n) i deltasDown = do
         f _ = EmptyTransformedPattern
 
 viewWidget (TidalTextView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Structure (MiniTidalPattern "")) n i
+  let i' = f $ Map.findWithDefault (Structure (MiniTidalPattern (Live "" L3))) n i
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
   (value,edits,hints) <- miniTidalWidget i' deltasDown'
   value' <- mapDyn (Map.singleton n . Structure) value

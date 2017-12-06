@@ -74,11 +74,35 @@ patternTransformations = choice [
   try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
   try (string "density" >> spaces >> fractional3 False >>= return . Tidal.density),
   try (string "slow" >> spaces >> fractional3 False >>= return . Tidal.slow),
+  try stut,
+  try swingBy,
   try append,
   try every,
   try whenmod,
   string "jux" >> spaces >> patternTransformation >>= return . Tidal.jux
   ]
+
+stut :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+stut = do
+  string "stut"
+  spaces
+  n <- int
+  spaces
+  x <- fractional3 False
+  spaces
+  y <- fractional3 False
+  spaces
+  return $ Tidal.stut n x y
+
+swingBy :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+swingBy = do
+  string "swingBy"
+  spaces
+  x <- fractional3 False
+  spaces
+  y <- int
+  spaces
+  return $ Tidal.swingBy x (fromIntegral y)
 
 every :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 every = do

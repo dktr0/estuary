@@ -80,6 +80,19 @@ instance JSON a => JSON (Potential a) where
 
 data Live a = Live a Liveness | Edited a a deriving(Eq)
 
+forRendering :: Live a -> a
+forRendering (Live a _) = a
+forRendering (Edited a _) = a
+
+forEditing :: Live a -> a
+forEditing (Live a _) = a
+forEditing (Edited _ a) = a
+
+instance Show a => Show (Live a) where
+  show (Live a L3) = "L3:"++(show a)
+  show (Live a L4) = "L4:"++(show a)
+  show (Edited a b) = "L3e:"++(show a)++":"++(show b)
+
 instance JSON a => JSON (Live a) where
   showJSON (Live a liveness) = encJSDict [("Live",showJSON a),("l",showJSON liveness)]
   showJSON (Edited past future) = encJSDict [("Edited",past),("f",future)]
@@ -457,7 +470,7 @@ data TransformedPattern =
   EmptyTransformedPattern |
   TextPatternChain String String String |
   CQenzePattern String |
-  MiniTidalPattern String
+  MiniTidalPattern (Live String)
   deriving (Eq)
 
 instance Show TransformedPattern where
@@ -466,7 +479,7 @@ instance Show TransformedPattern where
   show (EmptyTransformedPattern) = ""
   show (TextPatternChain a b c) = (show a) ++ " " ++ (show b) ++ " " ++ (show c)
   show (CQenzePattern x) = "CQenzePattern: " ++ x
-  show (MiniTidalPattern x) = "MiniTidalPattern: " ++ x
+  show (MiniTidalPattern x) = "MiniTidalPattern: " ++ (show x)
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
@@ -493,7 +506,7 @@ instance ParamPatternable TransformedPattern where
           b' = Up (TextPattern b)
           c' = Vowel (TextPattern c)
   toParamPattern (CQenzePattern x) = cqenzeParamPattern x
-  toParamPattern (MiniTidalPattern x) = miniTidalPattern x
+  toParamPattern (MiniTidalPattern x) = miniTidalPattern (forRendering x)
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
