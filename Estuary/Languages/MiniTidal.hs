@@ -67,8 +67,10 @@ patternTransformationInBrackets = do
 patternTransformations :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 patternTransformations = choice [
   try mergedPattern,
+  try mergedPattern1,
   try (string "brak" >> return Tidal.brak),
   try (string "rev" >> return Tidal.rev),
+  try (string "palindrome" >> return Tidal.palindrome),
   try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
   try (string "density" >> spaces >> fractional3 False >>= return . Tidal.density),
   try (string "slow" >> spaces >> fractional3 False >>= return . Tidal.slow),
@@ -112,14 +114,24 @@ mergedPattern = do
   m <- mergeOperator
   return $ m x
 
+mergedPattern1 :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+mergedPattern1 = do
+  m <- mergeOperator
+  spaces
+  x <- specificPattern
+  return $ \y -> m y x
+
+
 mergeOperator :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
 mergeOperator = char '#' >> spaces >> return (Tidal.#)
 
 specificPattern :: GenParser Char a (Tidal.ParamPattern)
 specificPattern = choice [
+  try (string "silence" >> spaces >> return Tidal.silence),
   try (string "s" >> spaces >> genericPattern >>= return . Tidal.s),
   try (string "n" >> spaces >> genericPattern >>= return . Tidal.n),
   try (string "up" >> spaces >> doublePattern >>= return . Tidal.up),
+  try (string "speed" >> spaces >> doublePattern >>= return . Tidal.speed),
   try (string "vowel" >> spaces >> genericPattern >>= return . Tidal.vowel),
   try (string "pan" >> spaces >> doublePattern >>= return . Tidal.pan),
   try (string "shape" >> spaces >> doublePattern >>= return . Tidal.shape),
