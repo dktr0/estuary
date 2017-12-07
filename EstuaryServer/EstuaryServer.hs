@@ -9,7 +9,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Map.Strict as Map
 import Control.Monad
 import Control.Concurrent.MVar
-import Control.Exception (try,catch,SomeException)
+import Control.Exception
 
 import qualified Database.SQLite.Simple as SQLite
 import Text.JSON
@@ -74,15 +74,21 @@ postLog db msg = do
 
 webSocketsApp :: SQLite.Connection -> MVar Server -> WS.ServerApp -- = PendingConnection -> IO ()
 webSocketsApp db s ws = do
-  postLog db "received new connection"
-  ws' <- WS.acceptRequest ws
+  -- ws' <- try $ WS.acceptRequest ws
+  ws'' <- WS.acceptRequest ws
+--  case ws' of
+--    Right ws'' -> do
   ss <- takeMVar s
-  let (h,ss') = addClient ss ws'
-  putMVar s ss'
-  WS.forkPingThread ws' 30
+  let (h,ss') = addClient ss ws''
+  let cc = connectionCount ss' + 1
+  let ss'' = ss' { connectionCount=cc }
+  putMVar s ss''
+  postLog db $ "received new connection (" ++ (show cc) ++ " connections since launch)"
+  WS.forkPingThread ws'' 30
   getServerClientCount s >>= respondAll s . ServerClientCount
-  postLog db "starting process loop"
-  processLoop db ws' s h
+  processLoop db ws'' s h
+--    Left e -> do
+  --    postLog db $ "exception during WS.acceptRequest: " ++ (show e)
 
 processLoop :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle -> IO ()
 processLoop db ws s h = do
@@ -96,6 +102,9 @@ processLoop db ws s h = do
     Left (WS.ParseException e) -> do
       postLog db $ "parse exception: " ++ e
       processLoop db ws s h
+    -- Left (WS.UnicodeException e) -> do
+    --  postLog db $ "Unicode exception: " ++ e
+    --  processLoop db ws s h
 
 processMessage :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle -> Text -> IO ()
 processMessage db ws s h m = do

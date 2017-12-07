@@ -7,6 +7,7 @@ import Data.Ratio
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Languages.CQenze
 import Estuary.Languages.MiniTidal
+import Estuary.Languages.Morelia
 
 import Estuary.Utility
 

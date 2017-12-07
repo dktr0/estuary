@@ -149,17 +149,42 @@ mergedPattern1 = do
 mergeOperator :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
 mergeOperator = char '#' >> spaces >> return (Tidal.#)
 
+-- specificPatternDouble :: String -> (Tidal.Pattern Double -> Tidal.ParamPattern) -> GenParser Char a (Tidal.ParamPattern)
+specificPatternDouble s f = string s >> spaces >> doublePattern >>= return . f
+
+-- specificPatternGeneric :: Tidal.Parseable a => String -> (Tidal.Pattern a -> Tidal.ParamPattern) -> GenParser Char a (Tidal.ParamPattern)
+specificPatternGeneric s f = string s >> spaces >> genericPattern >>= return . f
+
 specificPattern :: GenParser Char a (Tidal.ParamPattern)
 specificPattern = choice [
   try (string "silence" >> spaces >> return Tidal.silence),
-  try (string "s" >> spaces >> genericPattern >>= return . Tidal.s),
-  try (string "n" >> spaces >> genericPattern >>= return . Tidal.n),
-  try (string "up" >> spaces >> doublePattern >>= return . Tidal.up),
-  try (string "speed" >> spaces >> doublePattern >>= return . Tidal.speed),
-  try (string "vowel" >> spaces >> genericPattern >>= return . Tidal.vowel),
-  try (string "pan" >> spaces >> doublePattern >>= return . Tidal.pan),
-  try (string "shape" >> spaces >> doublePattern >>= return . Tidal.shape),
-  try (string "gain" >> spaces >> doublePattern >>= return . Tidal.gain)
+  try (specificPatternGeneric "s" Tidal.s),
+  try (specificPatternGeneric "sound" Tidal.sound),
+  try (specificPatternGeneric "n" Tidal.n),
+  try (specificPatternDouble "up" Tidal.up),
+  try (specificPatternDouble "speed" Tidal.speed),
+  try (specificPatternGeneric "vowel" Tidal.vowel),
+  try (specificPatternDouble "pan" Tidal.pan),
+  try (specificPatternDouble "shape" Tidal.shape),
+  try (specificPatternDouble "gain" Tidal.gain),
+  try (specificPatternDouble "accelerate" Tidal.accelerate),
+  try (specificPatternDouble "bandf" Tidal.bandf),
+  try (specificPatternDouble "bandq" Tidal.bandq),
+  try (specificPatternDouble "begin" Tidal.begin),
+  try (specificPatternGeneric "coarse" Tidal.coarse),
+  try (specificPatternDouble "crush" Tidal.crush),
+  try (specificPatternGeneric "cut" Tidal.cut),
+  try (specificPatternDouble "cutoff" Tidal.cutoff),
+  try (specificPatternDouble "delay" Tidal.delay),
+  try (specificPatternDouble "delayfeedback" Tidal.delayfeedback),
+  try (specificPatternDouble "delaytime" Tidal.delaytime),
+  try (specificPatternDouble "end" Tidal.end),
+  try (specificPatternDouble "hcutoff" Tidal.hcutoff),
+  try (specificPatternDouble "hresonance" Tidal.hresonance),
+  try (specificPatternGeneric "loop" Tidal.loop),
+  try (specificPatternDouble "resonance" Tidal.resonance),
+  try (specificPatternDouble "shape" Tidal.shape),
+  specificPatternGeneric "unit" Tidal.unit
   ]
 
 genericPattern :: Tidal.Parseable b => GenParser Char a (Tidal.Pattern b)

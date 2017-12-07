@@ -18,14 +18,16 @@ import qualified Estuary.Types.Ensemble as E
 data Server = Server {
   password :: String,
   clients :: Map.Map ClientHandle Client,
-  ensembles :: Map.Map String E.Ensemble
+  ensembles :: Map.Map String E.Ensemble,
+  connectionCount :: Int
 }
 
 newServer :: Server
 newServer = Server {
   password = "",
   clients = Map.empty,
-  ensembles = Map.empty
+  ensembles = Map.empty,
+  connectionCount = 0
 }
 
 
