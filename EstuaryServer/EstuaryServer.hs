@@ -74,21 +74,22 @@ postLog db msg = do
 
 webSocketsApp :: SQLite.Connection -> MVar Server -> WS.ServerApp -- = PendingConnection -> IO ()
 webSocketsApp db s ws = do
-  -- ws' <- try $ WS.acceptRequest ws
-  ws'' <- WS.acceptRequest ws
---  case ws' of
---    Right ws'' -> do
-  ss <- takeMVar s
-  let (h,ss') = addClient ss ws''
-  let cc = connectionCount ss' + 1
-  let ss'' = ss' { connectionCount=cc }
-  putMVar s ss''
-  postLog db $ "received new connection (" ++ (show cc) ++ " connections since launch)"
-  WS.forkPingThread ws'' 30
-  getServerClientCount s >>= respondAll s . ServerClientCount
-  processLoop db ws'' s h
---    Left e -> do
-  --    postLog db $ "exception during WS.acceptRequest: " ++ (show e)
+  ws' <- try $ WS.acceptRequest ws
+  case ws' of
+    Right ws'' -> do
+      ss <- takeMVar s
+      let (h,ss') = addClient ss ws''
+      let cc = connectionCount ss' + 1
+      let ss'' = ss' { connectionCount=cc }
+      putMVar s ss''
+      postLog db $ "received new connection (" ++ (show cc) ++ " connections since launch)"
+      (WS.forkPingThread ws'' 30) `catch`
+        \(SomeException e) -> postLog db $ "exception in forking ping thread: " ++ (show e)
+      (getServerClientCount s >>= respondAll s . ServerClientCount) `catch`
+        \(SomeException e) -> postLog db $ "exception during transmission of serverClientCount: " ++ (show e)
+      processLoop db ws'' s h
+    Left (SomeException e) -> do
+      postLog db $ "exception during WS.acceptRequest: " ++ (show e)
 
 processLoop :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle -> IO ()
 processLoop db ws s h = do

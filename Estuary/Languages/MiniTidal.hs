@@ -74,6 +74,13 @@ patternTransformations = choice [
   try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
   try (string "density" >> spaces >> fractional3 False >>= return . Tidal.density),
   try (string "slow" >> spaces >> fractional3 False >>= return . Tidal.slow),
+  try (string "chop" >> spaces >> int >>= return . Tidal.chop),
+  try (string "striate" >> spaces >> int >>= return . Tidal.striate),
+  try (string "iter" >> spaces >> int >>= return . Tidal.iter),
+  try (string "trunc" >> spaces >> fractional3 False >>= return . Tidal.trunc),
+  try striate',
+  try shiftLeft,
+  try shiftRight,
   try stut,
   try swingBy,
   try append,
@@ -81,6 +88,32 @@ patternTransformations = choice [
   try whenmod,
   string "jux" >> spaces >> patternTransformation >>= return . Tidal.jux
   ]
+
+shiftLeft :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+shiftLeft = do
+  x <- fractional3 False
+  spaces
+  string "<~"
+  spaces
+  return $ (x Tidal.<~)
+
+shiftRight :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+shiftRight = do
+  x <- fractional3 False
+  spaces
+  string "~>"
+  spaces
+  return $ (x Tidal.~>)
+
+striate' :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+striate' = do
+  string "striate'"
+  spaces
+  i <- int
+  spaces
+  d <- fractional3 False
+  spaces
+  return $ Tidal.striate' i d
 
 stut :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 stut = do
@@ -147,7 +180,14 @@ mergedPattern1 = do
 
 
 mergeOperator :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
-mergeOperator = char '#' >> spaces >> return (Tidal.#)
+mergeOperator = choice [
+  try (char '#' >> spaces >> return (Tidal.#)),
+  try (string "|=|" >> spaces >> return (Tidal.|=|)),
+  try (string "|+|" >> spaces >> return (Tidal.|+|)),
+  try (string "|-|" >> spaces >> return (Tidal.|-|)),
+  try (string "|*|" >> spaces >> return (Tidal.|*|)),
+  (string "|/|" >> spaces >> return (Tidal.|/|))
+  ]
 
 -- specificPatternDouble :: String -> (Tidal.Pattern Double -> Tidal.ParamPattern) -> GenParser Char a (Tidal.ParamPattern)
 specificPatternDouble s f = string s >> spaces >> doublePattern >>= return . f
@@ -175,9 +215,9 @@ specificPattern = choice [
   try (specificPatternDouble "crush" Tidal.crush),
   try (specificPatternGeneric "cut" Tidal.cut),
   try (specificPatternDouble "cutoff" Tidal.cutoff),
-  try (specificPatternDouble "delay" Tidal.delay),
   try (specificPatternDouble "delayfeedback" Tidal.delayfeedback),
   try (specificPatternDouble "delaytime" Tidal.delaytime),
+  try (specificPatternDouble "delay" Tidal.delay),
   try (specificPatternDouble "end" Tidal.end),
   try (specificPatternDouble "hcutoff" Tidal.hcutoff),
   try (specificPatternDouble "hresonance" Tidal.hresonance),
