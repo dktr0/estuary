@@ -128,9 +128,19 @@ viewWidget (TidalTextView n) i deltasDown = do
         f _ = EmptyTransformedPattern
 
 viewWidget (CQenzeView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Structure (CQenzePattern "")) n i
+  let i' = f $ Map.findWithDefault (Structure (CQenzePattern (Live "" L3))) n i
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
   (value,edits,hints) <- cqenzeWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+viewWidget (MoreliaView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (MoreliaPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- moreliaWidget i' deltasDown'
   value' <- mapDyn (Map.singleton n . Structure) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
   return (value',edits',hints)

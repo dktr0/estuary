@@ -62,43 +62,49 @@ textPatternChainWidget i delta = divClass "textPatternChain" $ do
 
 cqenzeWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-cqenzeWidget i delta = divClass "textPatternChain" $ do
-  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
-  (value,event) <- divClass "labelAndTextPattern" $ do
-    divClass "textInputLabel" $ text "CQenze "
-    textAreaWidgetForPatternChain (g i) delta'
-  value <- mapDyn CQenzePattern value
-  let deltaUp = tagDyn value event
-  return (value,deltaUp,never)
-  where f (CQenzePattern x) = Just x
-        f _ = Nothing
-        g (CQenzePattern x) = x
-        g _ = ""
+cqenzeWidget = miniLanguageWidget "CQenze " f CQenzePattern
+  where
+    f (CQenzePattern x) = Just x
+    f _ = Nothing
 
 miniTidalWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-miniTidalWidget i delta = divClass "textPatternChain" $ do
+miniTidalWidget = miniLanguageWidget "MiniTidal " f MiniTidalPattern
+  where
+    f (MiniTidalPattern x) = Just x
+    f _ = Nothing
+
+moreliaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+moreliaWidget = miniLanguageWidget "Morelia " f MoreliaPattern
+  where
+    f (MoreliaPattern x) = Just x
+    f _ = Nothing
+
+miniLanguageWidget :: MonadWidget t m =>
+  String -> (TransformedPattern -> Maybe (Live String)) -> (Live String -> TransformedPattern) ->
+  TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+miniLanguageWidget label f h i delta = divClass "textPatternChain" $ do
   let i' = maybe (Live "" L3) (id) $ f i
-  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta -- just MiniTidalPatterns
+  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
   let deltaPast = fmap forRendering delta'
   let deltaFuture = fmap forEditing delta'
   (editText,editEvent,evalButton) <- divClass "labelAndTextPattern" $ do
-    b <- divClass "textInputLabel" $ button "MiniTidal "
+    b <- divClass "textInputLabel" $ button label
     (v,e) <- textAreaWidgetForPatternChain (forEditing i') deltaFuture
     return (v,e,b)
   let evalEvent = tagDyn editText evalButton
   pastValue <- holdDyn (forRendering i') $ leftmost [deltaPast,evalEvent]
   futureValue <- holdDyn (forEditing i') $ leftmost [deltaFuture,editEvent]
-  value <- combineDyn g pastValue futureValue
+  value <- combineDyn (\p f -> h (g p f)) pastValue futureValue
   let deltaUpEdit = tagDyn value editEvent
   let deltaUpEval = tagDyn value evalEvent
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
   return (value,deltaUp,never)
   where
-    f (MiniTidalPattern x) = Just x -- for filtering out non-MiniTidalPatterns
-    f _ = Nothing
-    g p f | p == f = MiniTidalPattern (Live p L3) -- combine past and future values into a valid TransformedPattern
-          | otherwise = MiniTidalPattern (Edited p f)
+    g p f | p == f = Live p L3
+          | otherwise = Edited p f
 
 evaluableTextWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
 evaluableTextWidget i delta = divClass "textWidget" $ do

@@ -11,7 +11,8 @@ data View =
   StructureView Int |
   TidalTextView Int |
   EvaluableTextView Int |
-  CQenzeView Int
+  CQenzeView Int |
+  MoreliaView Int
   deriving (Show,Eq)
 
 instance JSON View where
@@ -22,6 +23,7 @@ instance JSON View where
   showJSON (TidalTextView n) = encJSDict [("TidalTextView",n)]
   showJSON (EvaluableTextView n) = encJSDict [("EvaluableTextView",n)]
   showJSON (CQenzeView n) = encJSDict [("CQenzeView",n)]
+  showJSON (MoreliaView n) = encJSDict [("MoreliaView",n)]
   readJSON (JSObject x) | firstKey x == "Views" = Views <$> valFromObj "Views" x
   readJSON (JSObject x) | firstKey x == "ViewDiv" = ViewDiv <$> valFromObj "ViewDiv" x <*> valFromObj "v" x
   readJSON (JSObject x) | firstKey x == "LabelView" = LabelView <$> valFromObj "LabelView" x
@@ -29,6 +31,7 @@ instance JSON View where
   readJSON (JSObject x) | firstKey x == "TidalTextView" = TidalTextView <$> valFromObj "TidalTextView" x
   readJSON (JSObject x) | firstKey x == "EvaluableTextView" = EvaluableTextView <$> valFromObj "EvaluableTextView" x
   readJSON (JSObject x) | firstKey x == "CQenzeView" = CQenzeView <$> valFromObj "CQenzeView" x
+  readJSON (JSObject x) | firstKey x == "MoreliaView" = MoreliaView <$> valFromObj "MoreliaView" x
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Estuary.Protocol.View: " ++ (show x)
   readJSON _ = Error $ "Unable to parse non-JSObject as Estuary.Protocol.View"
 
@@ -53,7 +56,7 @@ viewsParser = do
 
 viewParser :: GenParser Char a View
 viewParser = do
-  v <- choice [viewDiv,labelView,structureView,tidalTextView,evaluableTextView,cqenzeView]
+  v <- choice [viewDiv,labelView,structureView,tidalTextView,evaluableTextView,cqenzeView,moreliaView]
   spaces
   return v
 
@@ -70,14 +73,15 @@ structureView = string "structure:" >> (read <$> many1 digit) >>= return . Struc
 tidalTextView = string "tidalText:" >> (read <$> many1 digit) >>= return . TidalTextView
 evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
 cqenzeView = string "cqenze:" >> (read <$> many1 digit) >>= return . CQenzeView
+moreliaView = string "morelia:" >> (read <$> many1 digit) >>= return . MoreliaView
 
 presetView :: String -> View
 
 presetView "iclc2017" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,StructureView 1]),
-  ViewDiv "eightMiddleR" (Views [LabelView 2,StructureView 3]),
-  ViewDiv "eightMiddleL" (Views [LabelView 4,CQenzeView 5]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,CQenzeView 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 0,MoreliaView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,CQenzeView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
   ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
   ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
   ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
@@ -89,11 +93,7 @@ presetView "iclc2017" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25]),
   ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27]),
   ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29]),
-  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31]),
-  ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
-  ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35]),
-  ViewDiv "eightMiddleL" (Views [LabelView 36,TidalTextView 37]),
-  ViewDiv "eightMiddleR" (Views [LabelView 38,TidalTextView 39])
+  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31])
   ]
 
 presetView _ = standardView

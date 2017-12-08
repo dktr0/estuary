@@ -470,8 +470,9 @@ data TransformedPattern =
   TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern |
   EmptyTransformedPattern |
   TextPatternChain String String String |
-  CQenzePattern String |
-  MiniTidalPattern (Live String)
+  CQenzePattern (Live String) |
+  MiniTidalPattern (Live String) |
+  MoreliaPattern (Live String)
   deriving (Eq)
 
 instance Show TransformedPattern where
@@ -479,8 +480,9 @@ instance Show TransformedPattern where
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
   show (TextPatternChain a b c) = (show a) ++ " " ++ (show b) ++ " " ++ (show c)
-  show (CQenzePattern x) = "CQenzePattern: " ++ x
+  show (CQenzePattern x) = "CQenzePattern: " ++ (show x)
   show (MiniTidalPattern x) = "MiniTidalPattern: " ++ (show x)
+  show (MoreliaPattern x) = "MoreliaPattern: " ++ (show x)
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
@@ -489,12 +491,14 @@ instance JSON TransformedPattern where
   showJSON (TextPatternChain a b c) = encJSDict [("Text",a),("b",b),("c",c)]
   showJSON (CQenzePattern x) = encJSDict [("CQenzePattern",x)]
   showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
+  showJSON (MoreliaPattern x) = encJSDict [("MoreliaPattern",x)]
   readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
   readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
   readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
   readJSON (JSObject x) | firstKey x == "Text" = TextPatternChain <$> valFromObj "Text" x <*> valFromObj "b" x <*> valFromObj "c" x
   readJSON (JSObject x) | firstKey x == "CQenzePattern" = CQenzePattern <$> valFromObj "CQenzePattern" x
   readJSON (JSObject x) | firstKey x == "MiniTidalPattern" = MiniTidalPattern <$> valFromObj "MiniTidalPattern" x
+  readJSON (JSObject x) | firstKey x == "MoreliaPattern" = MoreliaPattern <$> valFromObj "MoreliaPattern" x
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
@@ -506,20 +510,23 @@ instance ParamPatternable TransformedPattern where
     where a' = Sound (TextPattern a)
           b' = Up (TextPattern b)
           c' = Vowel (TextPattern c)
-  toParamPattern (CQenzePattern x) = cqenzeParamPattern x
+  toParamPattern (CQenzePattern x) = cqenzeParamPattern (forRendering x)
   toParamPattern (MiniTidalPattern x) = miniTidalPattern (forRendering x)
+  toParamPattern (MoreliaPattern x) = morelia (forRendering x)
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
   isEmptyFuture (TextPatternChain _ _ _) = False
   isEmptyFuture (CQenzePattern _) = False
   isEmptyFuture (MiniTidalPattern _) = False
+  isEmptyFuture (MoreliaPattern _) = False
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
   isEmptyPast (TextPatternChain _ _ _) = False
   isEmptyPast (CQenzePattern _) = False
   isEmptyPast (MiniTidalPattern _) = False
+  isEmptyPast (MoreliaPattern _) = False
 
 data StackedPatterns = StackedPatterns [TransformedPattern]
 
