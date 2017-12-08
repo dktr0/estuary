@@ -64,7 +64,7 @@ responsesToStateChanges (ZoneResponse (Sited n (Edit v))) es = es { zones = newZ
 responsesToStateChanges (View (Sited s v)) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)
 responsesToStateChanges (DefaultView v) es = es { defaultView = v }
-responsesToStateChanges (Tempo c a b) es = es { tempo = (tempo es) { Tidal.cps = c, Tidal.at = a', Tidal.beat = b } }
+responsesToStateChanges (Tempo c a b) es = es { tempo = (tempo es) { Tidal.cps = c } }
   where a' = (posixSecondsToUTCTime . fromRational) a
 responsesToStateChanges _ es = es
 
