@@ -34,10 +34,7 @@ sampleStream engine tempo = do
   forkIO $ do
     nowUtc <- getCurrentTime
     tempo' <- readMVar tempo
-    let nowBeat = utcToBeat nowUtc tempo'
-    let nextTick = ceiling (nowBeat * (fromIntegral ticksPerCycle))
-    putStrLn $ "UTCTime:" ++ show nowUtc ++ "  nowBeat:" ++ show nowBeat ++ "  nextTick:" ++ show nextTick
-    iterateM_ (clockedTickLoop engine tempo (tick engine mPattern)) nextTick
+    iterateM_ (clockedTickLoop engine tempo (tick engine mPattern)) 0
   return $ \p -> do swapMVar mPattern p
                     return ()
 
@@ -47,17 +44,18 @@ utcToBeat now t = beat t + beatDelta
     delta = realToFrac $ diffUTCTime now (at t)
     beatDelta = cps t * delta
 
-clockedTickLoop engine tempo callback tick = do
+clockedTickLoop engine tempo callback _ = do
   nowUtc <- getCurrentTime
   tempo' <- readMVar tempo
-  let beatsFromAtToTick = fromIntegral tick / fromIntegral ticksPerCycle - beat tempo'
-  let delayUntilTick = beatsFromAtToTick / cps tempo' - realToFrac (diffUTCTime nowUtc (at tempo'))
-  threadDelay $ floor (delayUntilTick * 1000000)
-  callback tempo' tick
   let nowBeat = utcToBeat nowUtc tempo'
   let nextTick = ceiling (nowBeat * (fromIntegral ticksPerCycle))
-  return nextTick
-  -- return $ tick + 1
+  let beatsFromAtToTick = fromIntegral nextTick / fromIntegral ticksPerCycle - beat tempo'
+  let delayUntilTick = beatsFromAtToTick / cps tempo' - realToFrac (diffUTCTime nowUtc (at tempo'))
+  putStrLn $ show tempo'
+  putStrLn $ "nowBeat=" ++ (show nowBeat) ++ " nextTick " ++ (show nextTick) ++ " in " ++ (show $ delayUntilTick * 1000000) ++ " microseconds"
+  threadDelay $ floor (delayUntilTick * 1000000)
+  callback tempo' nextTick
+  return 0
 
 tick :: SampleEngine e => e -> MVar ParamPattern -> Tempo -> Int -> IO ()
 tick e patternM tempo ticks = do

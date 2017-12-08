@@ -7,6 +7,7 @@ import Control.Monad
 import Reflex
 import Reflex.Dom
 import Text.Read
+import Data.Time.Clock
 
 import Estuary.Types.Response
 import Estuary.Types.Definition
@@ -27,10 +28,10 @@ import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
 
 viewInEnsembleWidget :: MonadWidget t m =>
-  String -> Event t Command -> Event t [ServerResponse] ->
+  String -> UTCTime -> Event t Command -> Event t [ServerResponse] ->
   m (Dynamic t DefinitionMap, Event t ServerRequest, Event t Hint)
 
-viewInEnsembleWidget ensemble commands deltasDown = mdo
+viewInEnsembleWidget ensemble now commands deltasDown = mdo
 
   -- UI for global ensemble parameters
   (hdl,pwdRequest,tempoRequest) <- divClass "ensembleHeader" $ do
@@ -54,7 +55,7 @@ viewInEnsembleWidget ensemble commands deltasDown = mdo
     return (hdl',pwdRequest',tempoRequest')
 
   -- management of EnsembleState
-  let initialState = newEnsembleState ensemble
+  let initialState = newEnsembleState ensemble now
   let commandChanges = fmap commandsToStateChanges commands
   let ensembleResponses = fmap (justSited ensemble . justEnsembleResponses) deltasDown
   let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses

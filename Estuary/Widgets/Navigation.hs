@@ -13,6 +13,7 @@ import Control.Monad (liftM)
 import Data.Map
 import Text.Read
 import Text.JSON
+import Data.Time.Clock
 
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -34,11 +35,11 @@ data Navigation =
   Collaborate String
 
 
-navigation :: MonadWidget t m => Event t Command -> Event t [ServerResponse] ->
+navigation :: MonadWidget t m => UTCTime -> Event t Command -> Event t [ServerResponse] ->
   m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint)
-navigation commands wsDown = mdo
-  let initialPage = page commands wsDown Splash
-  let rebuild = fmap (page commands wsDown) navEvents
+navigation now commands wsDown = mdo
+  let initialPage = page commands wsDown now Splash
+  let rebuild = fmap (page commands wsDown now) navEvents
   w <- widgetHold initialPage rebuild
   values <- liftM joinDyn $ mapDyn (\(x,_,_,_)->x) w
   wsUp <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_,_)->x) w
@@ -46,17 +47,17 @@ navigation commands wsDown = mdo
   navEvents <- liftM switchPromptlyDyn $ mapDyn (\(_,_,_,x)->x) w
   return (values,wsUp,hints)
 
-page :: MonadWidget t m => Event t Command -> Event t [ServerResponse] -> Navigation ->
+page :: MonadWidget t m => Event t Command -> Event t [ServerResponse] -> UTCTime -> Navigation ->
   m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
 
-page _ wsDown Splash = do
+page _ wsDown _ Splash = do
   x <- liftM (TutorialList <$) $ el "div" $ button "Tutorials"
   y <- liftM (Solo <$)  $ el "div" $ button "Solo"
   z <- liftM (Lobby <$)  $ el "div" $ button "Collaborate"
   let navEvents = leftmost [x,y,z]
   return (constDyn [],never,never,navEvents)
 
-page _ wsDown TutorialList = do
+page _ wsDown _ TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   t1 <- liftM (Tutorial "Structure editing" <$) $ el "div" $ button "Structure editing"
   t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"
@@ -64,28 +65,28 @@ page _ wsDown TutorialList = do
   let navEvents = leftmost [t1,t2,back]
   return (constDyn [],never,never,navEvents)
 
-page _ wsDown (Tutorial "Structure editing") = do
+page _ wsDown _ (Tutorial "Structure editing") = do
   text "Tutorial placeholder"
   x <- liftM (Splash <$) $ button "back to splash"
   return (constDyn [],never,never,x)
 
-page _ wsDown (Tutorial "TidalCycles text editing") = do
+page _ wsDown _ (Tutorial "TidalCycles text editing") = do
   text "Tutorial placeholder"
   x <- liftM (Splash <$) $ button "back to splash"
   return (constDyn [],never,never,x)
 
-page _ wsDown (Tutorial _) = do
+page _ wsDown _ (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
   x <- liftM (Splash <$) $ button "back to splash"
   return (constDyn [],never,never,x)
 
-page _ wsDown Solo = do
+page _ wsDown _ Solo = do
   (defMap,hints) <- viewInSoloWidget standardView
   patterns <- mapDyn (justStructures . elems) defMap
   x <- liftM (Splash <$) $ button "Return to splashscreen"
   return (patterns,never,hints,x)
 
-page _ wsDown Lobby = do
+page _ wsDown _ Lobby = do
   requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
   spaceList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
   join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
@@ -95,7 +96,7 @@ page _ wsDown Lobby = do
   back <- liftM (Splash <$) $ el "div" $ button "back to splash"
   return (constDyn [],requestEnsembleList,never,leftmost [back,join'',create])
 
-page _ _ CreateEnsemblePage = do
+page _ _ _ CreateEnsemblePage = do
   el "div" $ text "Create A New Ensemble"
   el "div" $ text "Note: To successfully create an ensemble you need to know and enter the correct admin password."
   adminPwd <- el "div" $ do
@@ -119,8 +120,8 @@ page _ _ CreateEnsemblePage = do
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
   return (constDyn [], serverRequests, never, navEvents)
 
-page commands wsDown (Collaborate w) = do
-  (defMap,wsUp,hints) <- viewInEnsembleWidget w commands wsDown
+page commands wsDown now (Collaborate w) = do
+  (defMap,wsUp,hints) <- viewInEnsembleWidget w now commands wsDown
   patterns <- mapDyn (justStructures . elems) defMap
   x <- liftM (Lobby <$) $ button "back to lobby"
   return (patterns,wsUp,hints,x)

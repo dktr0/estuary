@@ -24,8 +24,8 @@ data EnsembleState = EnsembleState {
   tempo :: Tidal.Tempo
 }
 
-newEnsembleState :: String -> EnsembleState
-newEnsembleState x = EnsembleState {
+newEnsembleState :: String -> UTCTime -> EnsembleState
+newEnsembleState x now = EnsembleState {
   ensembleName = x,
   userHandle = "",
   zones = empty,
@@ -33,7 +33,7 @@ newEnsembleState x = EnsembleState {
   defaultView = emptyView,
   customView = emptyView,
   activeView = Nothing,
-  tempo = Tidal.Tempo { Tidal.at=UTCTime (ModifiedJulianDay 0) (fromInteger 0), Tidal.beat=0.0, Tidal.cps=0.5, Tidal.paused=False, Tidal.clockLatency=0.0 }
+  tempo = Tidal.Tempo { Tidal.at=now, Tidal.beat=0.0, Tidal.cps=0.5, Tidal.paused=False, Tidal.clockLatency=0.0 }
 }
 
 getActiveView :: EnsembleState -> View

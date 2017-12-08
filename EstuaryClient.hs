@@ -52,7 +52,7 @@ estuaryWidget :: MonadWidget t m =>
   EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget tempo wd wdStream sd sdStream protocol now = divClass "estuary" $ mdo
   (sdOn,wdOn) <- header wsStatus clientCount
-  (values,deltasUp,hints) <- divClass "page" $ navigation commands deltasDown'
+  (values,deltasUp,hints) <- divClass "page" $ navigation now commands deltasDown'
   commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'
   (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp
   values' <- mapDyn (toParamPattern . StackedPatterns) values
