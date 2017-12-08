@@ -51,8 +51,8 @@ clockedTickLoop engine tempo callback _ = do
   let nextTick = ceiling (nowBeat * (fromIntegral ticksPerCycle))
   let beatsFromAtToTick = fromIntegral nextTick / fromIntegral ticksPerCycle - beat tempo'
   let delayUntilTick = beatsFromAtToTick / cps tempo' - realToFrac (diffUTCTime nowUtc (at tempo'))
-  putStrLn $ show tempo'
-  putStrLn $ "nowBeat=" ++ (show nowBeat) ++ " nextTick " ++ (show nextTick) ++ " in " ++ (show $ delayUntilTick * 1000000) ++ " microseconds"
+  -- putStrLn $ show tempo'
+  -- putStrLn $ "nowBeat=" ++ (show nowBeat) ++ " nextTick " ++ (show nextTick) ++ " in " ++ (show $ delayUntilTick * 1000000) ++ " microseconds"
   threadDelay $ floor (delayUntilTick * 1000000)
   callback tempo' nextTick
   return 0
