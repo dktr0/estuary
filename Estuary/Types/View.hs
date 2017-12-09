@@ -93,7 +93,9 @@ presetView "iclc2017" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25]),
   ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27]),
   ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29]),
-  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31])
+  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31]),
+  ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35]),
   ]
 
 presetView _ = standardView
