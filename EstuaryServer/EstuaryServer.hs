@@ -261,7 +261,7 @@ processEnsembleRequest db _ _ _ _ = postLog db $ "warning: action failed pattern
 
 send :: ServerResponse -> [Client] -> IO ()
 send x cs = forM_ cs $ \y -> do
-  (WS.sendTextData (connection y) $ (T.pack . encodeStrict) x)
+  (WS.sendTextData (connection y) $ (T.pack . encodeStrict) x)  
   `catch` \(SomeException e) -> putStrLn $ "send exception: " ++ (show e)
 
 respond :: MVar Server -> ClientHandle -> ServerResponse -> IO ()
