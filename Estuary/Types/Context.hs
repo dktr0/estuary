@@ -1,15 +1,20 @@
 module Estuary.Types.Context where
 
 data Context = Context {
-  levels :: [Double]
+  peakLevels :: [Double],
+  rmsLevels :: [Double]
   }
 
 type ContextChange = Context -> Context
 
 emptyContext :: Context
 emptyContext = Context {
-  levels = []
+  peakLevels = [],
+  rmsLevels = []
 }
 
-setLevels :: [Double] -> ContextChange
-setLevels xs c = c { levels = xs }
+setPeakLevels :: [Double] -> ContextChange
+setPeakLevels xs c = c { peakLevels = xs }
+
+setRmsLevels :: [Double] -> ContextChange
+setRmsLevels xs c = c { rmsLevels = xs }

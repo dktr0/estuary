@@ -21,6 +21,7 @@ import Estuary.WebDirt.SuperDirt
 import Estuary.WebDirt.Stream
 import Estuary.Widgets.SpecificPattern
 import Estuary.Widgets.Terminal
+import Estuary.Widgets.LevelMeters
 import Data.Map
 import Control.Concurrent.MVar
 import Control.Monad.IO.Class (liftIO)
@@ -37,6 +38,7 @@ import Estuary.Types.Context
 
 main :: IO ()
 main = do
+  context <- newMVar emptyContext
   now <- Data.Time.getCurrentTime
   let defaultTempo = Tempo {at=now,beat=0.0,cps=0.5,paused=False,clockLatency=0.2}
   tempo <- newMVar defaultTempo
@@ -52,8 +54,12 @@ estuaryWidget :: MonadWidget t m =>
   MVar Tempo -> WebDirt -> SampleStream -> SuperDirt -> SampleStream ->
   EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget tempo wd wdStream sd sdStream protocol now = divClass "estuary" $ mdo
-  let contextChanges = fmap (const $ setLevels []) never
+
+  -- level meters and shared dynamic context experiment here:
+  contextChanges <- monitorWebDirtLevels now wd
   context <- foldDyn ($) emptyContext contextChanges
+  levelMeterWidget context
+
   (sdOn,wdOn) <- header wsStatus clientCount
   (values,deltasUp,hints) <- divClass "page" $ navigation now commands deltasDown'
   commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'

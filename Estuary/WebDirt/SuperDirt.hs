@@ -13,7 +13,8 @@ data SuperDirt = SuperDirt T.JSVal
 instance S.SampleEngine SuperDirt where
   getClockDiff _ = return 0.0
   playSample sd x = playSample sd x
-  getLevels sd = return [] -- getLevels sd
+  peakLevels sd = return []
+  rmsLevels sd = return []
 
 superDirt :: IO SuperDirt
 superDirt = superDirt_ >>= return . SuperDirt

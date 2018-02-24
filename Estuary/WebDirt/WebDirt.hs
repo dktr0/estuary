@@ -17,7 +17,8 @@ data WebDirt = WebDirt T.JSVal
 instance S.SampleEngine WebDirt where
   getClockDiff wd = getClockDiff wd
   playSample wd x = playSample wd x
-  getLevels wd = return [] -- getLevels wd
+  peakLevels wd = peakLevels wd
+  rmsLevels wd = rmsLevels wd
 
 webDirt :: IO WebDirt
 webDirt = webDirt_ >>= return . WebDirt
@@ -39,6 +40,18 @@ doHint _ (TempoHint _) = return ()
 
 performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
+
+peakLevels :: WebDirt -> IO [Double]
+peakLevels (WebDirt j) = do
+  l <- peakLevelLeft_ j
+  r <- peakLevelRight_ j
+  return [l,r]
+
+rmsLevels :: WebDirt -> IO [Double]
+rmsLevels (WebDirt j) = do
+  l <- rmsLevelLeft_ j
+  r <- rmsLevelRight_ j
+  return [l,r]
 
 
 -- FFI definitions below this line:
@@ -62,3 +75,19 @@ foreign import javascript unsafe
 foreign import javascript safe
   "$1.sampleHint($2)"
   sampleHint_ :: T.JSVal -> T.JSVal -> IO ()
+
+foreign import javascript unsafe
+  "$r = $1.levelMeter.peak[0]"
+  peakLevelLeft_ :: T.JSVal -> IO Double
+
+foreign import javascript unsafe
+  "$r = $1.levelMeter.peak[1]"
+  peakLevelRight_ :: T.JSVal -> IO Double
+
+foreign import javascript unsafe
+  "$r = $1.levelMeter.rms[0]"
+  rmsLevelLeft_ :: T.JSVal -> IO Double
+
+foreign import javascript unsafe
+  "$r = $1.levelMeter.rms[1]"
+  rmsLevelRight_ :: T.JSVal -> IO Double
