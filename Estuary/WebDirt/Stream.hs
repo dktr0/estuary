@@ -3,28 +3,16 @@ module Estuary.WebDirt.Stream where
 import Sound.Tidal.Context
 import Control.Concurrent.MVar
 import Control.Monad.Loops (iterateM_)
-import Control.Monad (liftM)
 import Data.Time (getCurrentTime)
 import Data.Time.Clock.POSIX
 import Data.Map
 import qualified Control.Exception as E
 import Data.Time
-import qualified Estuary.WebDirt.Foreign as WebDirt
+
+import Estuary.WebDirt.SampleEngine
+import qualified Estuary.WebDirt.WebDirt as WebDirt
 import qualified Estuary.WebDirt.SuperDirt as SuperDirt
-import qualified GHCJS.Types as T
-import qualified GHCJS.Marshal.Pure as P
 
-class SampleEngine e where
-  getClockDiff :: e -> IO Double -- difference between clock used to play sample events and POSIX time
-  playSample :: e -> (Double,ParamMap) -> IO ()
-
-instance SampleEngine WebDirt.WebDirt where
-  getClockDiff wd = WebDirt.getClockDiff wd
-  playSample wd x = WebDirt.playSample wd x
-
-instance SampleEngine SuperDirt.SuperDirt where
-  getClockDiff _ = return 0.0
-  playSample sd x = SuperDirt.playSample sd x
 
 type SampleStream = ParamPattern -> IO ()
 

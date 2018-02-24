@@ -16,7 +16,7 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Control.Monad (liftM)
 import Sound.Tidal.Context (ParamPattern,Tempo(..))
-import Estuary.WebDirt.Foreign
+import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.WebDirt.Stream
 import Estuary.Widgets.SpecificPattern
@@ -32,6 +32,7 @@ import qualified GHCJS.Types as T
 
 import Estuary.Types.Request
 import Estuary.Types.Response
+import Estuary.Types.Context
 
 
 main :: IO ()
@@ -51,6 +52,8 @@ estuaryWidget :: MonadWidget t m =>
   MVar Tempo -> WebDirt -> SampleStream -> SuperDirt -> SampleStream ->
   EstuaryProtocolObject -> UTCTime -> m ()
 estuaryWidget tempo wd wdStream sd sdStream protocol now = divClass "estuary" $ mdo
+  let contextChanges = fmap (const $ setLevels []) never
+  context <- foldDyn ($) emptyContext contextChanges
   (sdOn,wdOn) <- header wsStatus clientCount
   (values,deltasUp,hints) <- divClass "page" $ navigation now commands deltasDown'
   commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'

@@ -1,12 +1,14 @@
-resolver: lts-5.12
-compiler: ghcjs-0.2.0.20160414_ghc-7.10.3
+resolver: lts-6.30
+compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
 compiler-check: match-exact
 setup-info:
   ghcjs:
     source:
-      ghcjs-0.2.0.20160414_ghc-7.10.3:
-        url: https://s3.amazonaws.com/ghcjs/ghcjs-0.2.0.20160414_ghc-7.10.3.tar.gz
-        sha1: 6d6f307503be9e94e0c96ef1308c7cf224d06be3
+      ghcjs-0.2.0.9006030_ghc-7.10.3:
+        url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
+        sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
+
+allow-newer: true
 
 packages:
 - '.'
@@ -16,11 +18,5 @@ extra-deps:
 - reflex-dom-0.3
 - reflex-0.4.0
 - ref-tf-0.4
-- haskell-src-exts-1.16.0.1
-- reflex-dom-contrib-0.4.1
 - tidal-0.9.4
-- hosc-0.15
-- hmt-0.15
-- multiset-comb-0.2.4.1
-- permutation-0.5.0.5
 - parsec-numbers-0.1.0
