@@ -64,33 +64,3 @@ dropdownOpts k0 setUpMap (DropdownConfig setK attrs) = do
         return k
   dValue <- mapDyn readKey =<< holdDyn (Just k0) (leftmost [eChange, fmap Just setK])
   return $ Dropdown dValue (fmap readKey eChange) -- @clean this.
-
-  --
-  -- errorMessageWidget::MonadWidget t m => Sound -> Event t ContainerSignal ->  m (Dynamic t (Sound, Event t GenericSignal))
-  -- errorMessageWidget a b = mdo
-  --   (element,result) <- elDynAttr' "div" attrs $ mdo
-  --     sampleTextField <- textInput def
-  --     let sampleName = _textInput_value sampleTextField
-  --     sampleNumberField <- textInput $ def & textInputConfig_inputType .~"number"
-  --     let sampleN = _textInput_value sampleNumberField
-  --     repeatNumberField <- textInput $ def & textInputConfig_inputType .~"number"
-  --     let repeats = _textInput_value repeatNumberField
-  --     degradeBox <- checkbox False def
-  --     let degradeVal = _checkbox_value degradeBox
-  --     sampleInfo'' <- combineDyn (\name num-> (name,num)) sampleName sampleN --Dyn (string,string..)
-  --     sampleInfo' <- combineDyn (\reps degs ->(reps,degs)) repeats degradeVal
-  --     sampleInfo <- combineDyn (\(a,b) (c,d)->(a,b,c,d)) sampleInfo'' sampleInfo'
-  --     validSample <- forDyn sampleInfo validateSample' --Dynamic Either Sample String
-  --     errorMessage <- forDyn validSample (either (\_->"") (id))
-  --     showErrorMessage <- combineDyn (\tog msg-> if tog then msg else "") mouseOverToggle errorMessage --Dynamic String
-  --     sound <- forDyn validSample (either (Sound . Just) (\_->Sound Nothing))--Dynamic Sound
-  --     deleteButton <- liftM (DeleteMe <$) $ button "-"
-  --     display sound
-  --     dynText showErrorMessage
-  --     combineDyn (\s err->(s,deleteButton,err)) sound errorMessage
-  --   mouseOver <- wrapDomEvent (_el_element element) (onEventName Mouseover) (mouseXY)
-  --   mouseOut <- wrapDomEvent (_el_element element) (onEventName Mouseout) (mouseXY)
-  --   let mouse = leftmost [mouseOut,mouseOver]
-  --   mouseOverToggle <- toggle False mouse
-  --   attrs <- forDyn result (\(_,_,validMsg) -> if validMsg=="" then "style"=:"background-color:lightgreen" else "style"=:"background-color:yellow")
-  --   forDyn result (\(a,b,_)->(a,b))
