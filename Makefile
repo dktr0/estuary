@@ -20,8 +20,8 @@ installClient: buildClient
 installServer: buildServer
 	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
 
-test: installClient installServer
-	EstuaryServer/EstuaryServer test
+rggtrn: installClient installServer
+	EstuaryServer/EstuaryServer rggtrn
 
 openClient:
 	cp -Rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin/Estuary.jsexe .
@@ -45,8 +45,7 @@ zipClient:
 zipClientWithWebDirt:
 	rm -rf temp
 	mkdir temp
-	cp package.json temp
-	cp estuary.js temp
+	cp static/WebDirt/sampleMap.json temp
 	cp evalClient.js temp
 	cp -Rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin/Estuary.jsexe temp
 	cp static/index.html temp/Estuary.jsexe

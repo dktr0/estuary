@@ -81,6 +81,42 @@ moreliaWidget = miniLanguageWidget "Morelia " f MoreliaPattern
     f (MoreliaPattern x) = Just x
     f _ = Nothing
 
+test1Widget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+test1Widget = miniLanguageWidget "Test1 " f Test1Pattern
+  where
+    f (Test1Pattern x) = Just x
+    f _ = Nothing
+
+saludosWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+saludosWidget = miniLanguageWidget "Saludos" f SaludosPattern
+  where
+    f (SaludosPattern x) = Just x
+    f _ = Nothing
+
+colombiaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+colombiaWidget = miniLanguageWidget "Colombia" f ColombiaPattern
+  where
+    f (ColombiaPattern x) = Just x
+    f _ = Nothing
+
+siWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+siWidget = miniLanguageWidget "Si" f SiPattern
+  where
+    f (SiPattern x) = Just x
+    f _ = Nothing
+
+
+sentidosWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+sentidosWidget = miniLanguageWidget "Sentidos" f SentidosPattern
+  where
+    f (SentidosPattern x) = Just x
+    f _ = Nothing
+
 miniLanguageWidget :: MonadWidget t m =>
   String -> (TransformedPattern -> Maybe (Live String)) -> (Live String -> TransformedPattern) ->
   TransformedPattern -> Event t [TransformedPattern] ->

@@ -15,7 +15,7 @@ data Command =
   GetView String | -- request a specific named view from the ensemble server
   ListViews | -- request the list of all named views from the ensemble server
   DeleteView String | -- delete a named view from the ensemble server
-  Chat String -- send a chat message
+  Chat String  -- send a chat message
   deriving (Show,Eq)
 
 parseCommand :: String -> Either ParseError Command

@@ -8,6 +8,13 @@ import qualified Sound.Tidal.Context as Tidal
 import Estuary.Languages.CQenze
 import Estuary.Languages.MiniTidal
 import Estuary.Languages.Morelia
+import Estuary.Languages.Test1
+import Estuary.Languages.Test2
+import Estuary.Languages.Saludos
+import Estuary.Languages.Si
+import Estuary.Languages.ColombiaEsPasion
+import Estuary.Languages.Sentidos
+
 
 import Estuary.Utility
 
@@ -472,7 +479,13 @@ data TransformedPattern =
   TextPatternChain String String String |
   CQenzePattern (Live String) |
   MiniTidalPattern (Live String) |
-  MoreliaPattern (Live String)
+  MoreliaPattern (Live String)   |
+  Test1Pattern (Live String)     |
+  Test2Pattern (Live String)     |
+  SiPattern (Live String)     |
+  SentidosPattern (Live String)     |
+  ColombiaPattern (Live String)     |
+  SaludosPattern (Live String)
   deriving (Eq)
 
 instance Show TransformedPattern where
@@ -483,6 +496,13 @@ instance Show TransformedPattern where
   show (CQenzePattern x) = "CQenzePattern: " ++ (show x)
   show (MiniTidalPattern x) = "MiniTidalPattern: " ++ (show x)
   show (MoreliaPattern x) = "MoreliaPattern: " ++ (show x)
+  show (Test1Pattern x) = "Test1Pattern: " ++ (show x)
+  show (Test2Pattern x) = "Test2Pattern: " ++ (show x)
+  show (SiPattern x) = "SiPattern: " ++ (show x)
+  show (SentidosPattern x) = "SentidosPattern: " ++ (show x)
+  show (ColombiaPattern x) = "ColomiaPattern: " ++ (show x)
+  show (SaludosPattern x) = "ColomiaPattern: " ++ (show x)
+
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
@@ -492,6 +512,12 @@ instance JSON TransformedPattern where
   showJSON (CQenzePattern x) = encJSDict [("CQenzePattern",x)]
   showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
   showJSON (MoreliaPattern x) = encJSDict [("MoreliaPattern",x)]
+  showJSON (Test1Pattern x) = encJSDict [("Test1Pattern",x)]
+  showJSON (Test2Pattern x) = encJSDict [("Test2Pattern",x)]
+  showJSON (ColombiaPattern x) = encJSDict [("ColombiaPattern",x)]
+  showJSON (SiPattern x) = encJSDict [("SiPattern",x)]
+  showJSON (SentidosPattern x) = encJSDict [("SentidosPattern",x)]
+  showJSON (SaludosPattern x) = encJSDict [("SaludosPattern",x)]
   readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
   readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
   readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
@@ -499,6 +525,13 @@ instance JSON TransformedPattern where
   readJSON (JSObject x) | firstKey x == "CQenzePattern" = CQenzePattern <$> valFromObj "CQenzePattern" x
   readJSON (JSObject x) | firstKey x == "MiniTidalPattern" = MiniTidalPattern <$> valFromObj "MiniTidalPattern" x
   readJSON (JSObject x) | firstKey x == "MoreliaPattern" = MoreliaPattern <$> valFromObj "MoreliaPattern" x
+  readJSON (JSObject x) | firstKey x == "Test1Pattern" = Test1Pattern <$> valFromObj "Test1Pattern" x
+  readJSON (JSObject x) | firstKey x == "ColombiaPattern" = ColombiaPattern <$> valFromObj "ColombiaPattern" x
+  readJSON (JSObject x) | firstKey x == "SiPattern" = SiPattern <$> valFromObj "SiPattern" x
+  readJSON (JSObject x) | firstKey x == "SentidosPattern" = SentidosPattern <$> valFromObj "SentidosPattern" x
+  readJSON (JSObject x) | firstKey x == "SaludosPattern" = SaludosPattern <$> valFromObj "SaludosPattern" x
+
+
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
@@ -513,6 +546,12 @@ instance ParamPatternable TransformedPattern where
   toParamPattern (CQenzePattern x) = cqenzeParamPattern (forRendering x)
   toParamPattern (MiniTidalPattern x) = miniTidalPattern (forRendering x)
   toParamPattern (MoreliaPattern x) = morelia (forRendering x)
+  toParamPattern (Test1Pattern x) = test1 (forRendering x)
+  toParamPattern (Test2Pattern x) = test2 (forRendering x)
+  toParamPattern (ColombiaPattern x) = colombiaEsPasion (forRendering x)
+  toParamPattern (SaludosPattern x) = saludos (forRendering x)
+  toParamPattern (SiPattern x) = si (forRendering x)
+  toParamPattern (SentidosPattern x) = sentidos (forRendering x)
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
@@ -520,6 +559,12 @@ instance ParamPatternable TransformedPattern where
   isEmptyFuture (CQenzePattern _) = False
   isEmptyFuture (MiniTidalPattern _) = False
   isEmptyFuture (MoreliaPattern _) = False
+  isEmptyFuture (Test1Pattern _) = False
+  isEmptyFuture (Test2Pattern _) = False
+  isEmptyFuture (ColombiaPattern _) = False
+  isEmptyFuture (SiPattern _) = False
+  isEmptyFuture (SentidosPattern _) = False
+  isEmptyFuture (SaludosPattern _) = False
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
@@ -527,6 +572,13 @@ instance ParamPatternable TransformedPattern where
   isEmptyPast (CQenzePattern _) = False
   isEmptyPast (MiniTidalPattern _) = False
   isEmptyPast (MoreliaPattern _) = False
+  isEmptyPast (Test1Pattern _) = False
+  isEmptyPast (Test2Pattern _) = False
+  isEmptyPast (ColombiaPattern _) = False
+  isEmptyPast (SiPattern _) = False
+  isEmptyPast (SaludosPattern _) = False
+  isEmptyPast (SentidosPattern _) = False
+
 
 data StackedPatterns = StackedPatterns [TransformedPattern]
 
