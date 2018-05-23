@@ -9,7 +9,6 @@ import Estuary.Languages.CQenze
 import Estuary.Languages.MiniTidal
 import Estuary.Languages.Morelia
 import Estuary.Languages.Test1
-import Estuary.Languages.Test2
 import Estuary.Languages.Saludos
 import Estuary.Languages.Si
 import Estuary.Languages.ColombiaEsPasion
@@ -481,7 +480,6 @@ data TransformedPattern =
   MiniTidalPattern (Live String) |
   MoreliaPattern (Live String)   |
   Test1Pattern (Live String)     |
-  Test2Pattern (Live String)     |
   SiPattern (Live String)     |
   SentidosPattern (Live String)     |
   ColombiaPattern (Live String)     |
@@ -497,7 +495,6 @@ instance Show TransformedPattern where
   show (MiniTidalPattern x) = "MiniTidalPattern: " ++ (show x)
   show (MoreliaPattern x) = "MoreliaPattern: " ++ (show x)
   show (Test1Pattern x) = "Test1Pattern: " ++ (show x)
-  show (Test2Pattern x) = "Test2Pattern: " ++ (show x)
   show (SiPattern x) = "SiPattern: " ++ (show x)
   show (SentidosPattern x) = "SentidosPattern: " ++ (show x)
   show (ColombiaPattern x) = "ColomiaPattern: " ++ (show x)
@@ -513,7 +510,6 @@ instance JSON TransformedPattern where
   showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
   showJSON (MoreliaPattern x) = encJSDict [("MoreliaPattern",x)]
   showJSON (Test1Pattern x) = encJSDict [("Test1Pattern",x)]
-  showJSON (Test2Pattern x) = encJSDict [("Test2Pattern",x)]
   showJSON (ColombiaPattern x) = encJSDict [("ColombiaPattern",x)]
   showJSON (SiPattern x) = encJSDict [("SiPattern",x)]
   showJSON (SentidosPattern x) = encJSDict [("SentidosPattern",x)]
@@ -547,7 +543,6 @@ instance ParamPatternable TransformedPattern where
   toParamPattern (MiniTidalPattern x) = miniTidalPattern (forRendering x)
   toParamPattern (MoreliaPattern x) = morelia (forRendering x)
   toParamPattern (Test1Pattern x) = test1 (forRendering x)
-  toParamPattern (Test2Pattern x) = test2 (forRendering x)
   toParamPattern (ColombiaPattern x) = colombiaEsPasion (forRendering x)
   toParamPattern (SaludosPattern x) = saludos (forRendering x)
   toParamPattern (SiPattern x) = si (forRendering x)
@@ -560,7 +555,6 @@ instance ParamPatternable TransformedPattern where
   isEmptyFuture (MiniTidalPattern _) = False
   isEmptyFuture (MoreliaPattern _) = False
   isEmptyFuture (Test1Pattern _) = False
-  isEmptyFuture (Test2Pattern _) = False
   isEmptyFuture (ColombiaPattern _) = False
   isEmptyFuture (SiPattern _) = False
   isEmptyFuture (SentidosPattern _) = False
@@ -573,7 +567,6 @@ instance ParamPatternable TransformedPattern where
   isEmptyPast (MiniTidalPattern _) = False
   isEmptyPast (MoreliaPattern _) = False
   isEmptyPast (Test1Pattern _) = False
-  isEmptyPast (Test2Pattern _) = False
   isEmptyPast (ColombiaPattern _) = False
   isEmptyPast (SiPattern _) = False
   isEmptyPast (SaludosPattern _) = False

@@ -1,26 +1,26 @@
 body {
-	background-color: black;
-	color: hsl(120,100%,80%);
+	background-color: lightgray;
+	color: black;
 	height: 100%;
 	margin: 0;
 	font-family: sans;
 }
 
 input {
-	background-color: black;
-	color: hsl(120,100%,80%);
+	background-color: whitesmoke;
+	color: black;
 	margin: 1px;
 }
 
 
 textarea {
-	background-color: black;
-	color: hsl(120,100%,80%);
-}
+	background-color: whitesmoke;
+	color: black;
+	}
 
 button {
 	background-color: hsl(0,0%,20%);
-	color: hsl(120,100%,70%);
+	color: white;
 	border: none;
 	border-radius: 4px;
 }
@@ -220,7 +220,7 @@ button {
 
 .labelWidgetTextInput {
 	flex:1;
-	color: hsl(120,0%,80%);
+	color: black;
 	border: none;
 }
 
@@ -238,7 +238,7 @@ button {
 	vertical-align: middle;
 	font-size: 100%;
 	font-weight: normal;
-	color: hsl(120,100%,80%);
+	color: black;
 	border: none;
 	padding: 0px;
 	margin: 0px;
@@ -463,14 +463,14 @@ td {
 	text-align:center
 }
 
-/* The '▲' arrow td */
+/* The 'â–²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The '▼' arrow td */
+/* The 'â–¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
