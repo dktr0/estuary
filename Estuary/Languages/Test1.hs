@@ -11,10 +11,7 @@ lengExpr = do
 --coloca aquí los parsers
   espacios
   s <- sonidos
-  espacios
-  char "#"
-  t <- transf
-  espacios
+  t <- trans
   return $ t $ nuestroTextoATidal s
 
 nuestroTextoATidal ::  String  -> Tidal.ParamPattern
@@ -24,8 +21,7 @@ sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "~" >> espacios >> "~"),
-        try (string "machete" >> espacios >> "hh")
+        try (string "bombo" >> espacios >> return "sax")
         ]
 
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)

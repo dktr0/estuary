@@ -14,6 +14,7 @@ data View =
   CQenzeView Int |
   MoreliaView Int |
   Test1View Int |
+  MacheteView Int |
   SaludosView Int |
   ColombiaView Int |
   SiView Int |
@@ -31,6 +32,7 @@ instance JSON View where
   showJSON (CQenzeView n) = encJSDict [("CQenzeView",n)]
   showJSON (MoreliaView n) = encJSDict [("MoreliaView",n)]
   showJSON (Test1View n) = encJSDict [("Test1View",n)]
+  showJSON (MacheteView n) = encJSDict [("MacheteView",n)]
   showJSON (SaludosView n) = encJSDict [("SaludosView",n)]
   showJSON (ColombiaView n) = encJSDict [("ColombiaView",n)]
   showJSON (SiView n) = encJSDict [("SiView",n)]
@@ -44,6 +46,7 @@ instance JSON View where
   readJSON (JSObject x) | firstKey x == "CQenzeView" = CQenzeView <$> valFromObj "CQenzeView" x
   readJSON (JSObject x) | firstKey x == "MoreliaView" = MoreliaView <$> valFromObj "MoreliaView" x
   readJSON (JSObject x) | firstKey x == "Test1View" = MoreliaView <$> valFromObj "Test1View" x
+  readJSON (JSObject x) | firstKey x == "MacheteView" = MoreliaView <$> valFromObj "MacheteView" x
   readJSON (JSObject x) | firstKey x == "SaludosView" = SaludosView <$> valFromObj "SaludosView" x
   readJSON (JSObject x) | firstKey x == "ColombiaView" = ColombiaView <$> valFromObj "ColombiaView" x
   readJSON (JSObject x) | firstKey x == "SiView" = SiView <$> valFromObj "SiView" x
@@ -88,6 +91,7 @@ labelView = string "label:" >> (read <$> many1 digit) >>= return . LabelView
 structureView = string "structure:" >> (read <$> many1 digit) >>= return . StructureView
 evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
 testView = string "test:" >> (read <$> many1 digit) >>= return . Test1View
+testView = string "machete:" >> (read <$> many1 digit) >>= return . MacheteView
 tidalTextView = string "tidal:" >> (read <$> many1 digit) >>= return . TidalTextView
 cqenzeView = string "cquenze:" >> (read <$> many1 digit) >>= return . CQenzeView
 moreliaView = string "morelia:" >> (read <$> many1 digit) >>= return . MoreliaView
@@ -160,6 +164,27 @@ presetView "Medellin" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
   ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35])
   ]
+
+  presetView "Lima" = Views [
+    ViewDiv "eightMiddleL" (Views [LabelView 0,Test1View 1]),
+    ViewDiv "eightMiddleR" (Views [LabelView 2,Test1View 3]),
+    ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+    ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+    ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
+    ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
+    ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
+    ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15]),
+    ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17]),
+    ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19]),
+    ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21]),
+    ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23]),
+    ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25]),
+    ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27]),
+    ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29]),
+    ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31]),
+    ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
+    ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35])
+    ]
 
 presetView "RGGTRN" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
