@@ -1,4 +1,4 @@
-module Estuary.Languages.Test1 (test1) where
+module Estuary.Languages.Machete (machete) where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
@@ -25,7 +25,7 @@ sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
         try (string "~" >> espacios >> "~"),
-        try (string "machete" >> espacios >> "hh")
+        try (string "machete" >> espacios >> "bass")
         ]
 
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
@@ -49,5 +49,5 @@ exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-test1 :: String -> Tidal.ParamPattern
-test1 s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s
+machete :: String -> Tidal.ParamPattern
+machete s = either (const Tidal.silence) id $ parse exprStack "machete" s
