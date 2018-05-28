@@ -90,7 +90,7 @@ viewDiv = between (char '{') (char '}') $ do
 labelView = string "label:" >> (read <$> many1 digit) >>= return . LabelView
 structureView = string "structure:" >> (read <$> many1 digit) >>= return . StructureView
 evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
-testView = string "machete:" >> (read <$> many1 digit) >>= return . MacheteView
+testView = string "test1:" >> (read <$> many1 digit) >>= return . Test1View
 --macheteView = string "machete:" >> (read <$> many1 digit) >>= return . MacheteView
 tidalTextView = string "tidal:" >> (read <$> many1 digit) >>= return . TidalTextView
 cqenzeView = string "cquenze:" >> (read <$> many1 digit) >>= return . CQenzeView
@@ -187,7 +187,7 @@ presetView "Lima" = Views [
     ]
 
 presetView "RGGTRN" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,MacheteView 1]),
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
   ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
   ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7])
