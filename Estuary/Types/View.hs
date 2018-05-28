@@ -161,6 +161,29 @@ presetView "Medellin" = Views [
   ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35])
   ]
 
+
+presetView "Lima" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,Test1View 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,Test1View 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15]),
+  ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17]),
+  ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19]),
+  ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21]),
+  ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23]),
+  ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25]),
+  ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27]),
+  ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29]),
+  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31]),
+  ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35])
+  ]
+
+
 presetView "RGGTRN" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
