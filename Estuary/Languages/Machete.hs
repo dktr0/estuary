@@ -12,8 +12,8 @@ lengExpr = do
   espacios
   s <- sonidos
   espacios
-  char "#"
-  t <- transf
+  char '#'
+  t <- trans
   espacios
   return $ t $ nuestroTextoATidal s
 
@@ -24,16 +24,15 @@ sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "~" >> espacios >> "~"),
-        try (string "machete" >> espacios >> "bass")
+        try (string "machete" >> espacios >> return "bd")
         ]
 
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 trans = choice [
                --coloca aqui los nombres de tus transformaciones
               --ej. try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
-                try (descartarTexto >> return id),
-                try (string "rapidin" >> espacios >> fractional3 False >>= return . Tidal.fast  )
+                try (string "rapidin" >> espacios >> fractional3 False >>= return . Tidal.fast  ),
+                try (descartarTexto >> return id)
                 ]
 
 --descartar espacios

@@ -11,7 +11,9 @@ lengExpr = do
 --coloca aquí los parsers
   espacios
   s <- sonidos
+  espacios
   t <- trans
+  espacios
   return $ t $ nuestroTextoATidal s
 
 nuestroTextoATidal ::  String  -> Tidal.ParamPattern
@@ -28,8 +30,8 @@ trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 trans = choice [
                --coloca aqui los nombres de tus transformaciones
               --ej. try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
-                try (descartarTexto >> return id),
-                try (string "rapidin" >> espacios >> fractional3 False >>= return . Tidal.fast  )
+                try (string "rapidin" >> espacios >> fractional3 False >>= return . Tidal.fast  ),
+                try (descartarTexto >> return id)
                 ]
 
 --descartar espacios

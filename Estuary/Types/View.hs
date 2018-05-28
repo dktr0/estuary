@@ -46,7 +46,7 @@ instance JSON View where
   readJSON (JSObject x) | firstKey x == "CQenzeView" = CQenzeView <$> valFromObj "CQenzeView" x
   readJSON (JSObject x) | firstKey x == "MoreliaView" = MoreliaView <$> valFromObj "MoreliaView" x
   readJSON (JSObject x) | firstKey x == "Test1View" = MoreliaView <$> valFromObj "Test1View" x
-  readJSON (JSObject x) | firstKey x == "MacheteView" = MoreliaView <$> valFromObj "MacheteView" x
+  readJSON (JSObject x) | firstKey x == "MacheteView" = MacheteView <$> valFromObj "MacheteView" x
   readJSON (JSObject x) | firstKey x == "SaludosView" = SaludosView <$> valFromObj "SaludosView" x
   readJSON (JSObject x) | firstKey x == "ColombiaView" = ColombiaView <$> valFromObj "ColombiaView" x
   readJSON (JSObject x) | firstKey x == "SiView" = SiView <$> valFromObj "SiView" x
@@ -90,8 +90,8 @@ viewDiv = between (char '{') (char '}') $ do
 labelView = string "label:" >> (read <$> many1 digit) >>= return . LabelView
 structureView = string "structure:" >> (read <$> many1 digit) >>= return . StructureView
 evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
-testView = string "test:" >> (read <$> many1 digit) >>= return . Test1View
 testView = string "machete:" >> (read <$> many1 digit) >>= return . MacheteView
+--macheteView = string "machete:" >> (read <$> many1 digit) >>= return . MacheteView
 tidalTextView = string "tidal:" >> (read <$> many1 digit) >>= return . TidalTextView
 cqenzeView = string "cquenze:" >> (read <$> many1 digit) >>= return . CQenzeView
 moreliaView = string "morelia:" >> (read <$> many1 digit) >>= return . MoreliaView
@@ -165,7 +165,7 @@ presetView "Medellin" = Views [
   ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35])
   ]
 
-  presetView "Lima" = Views [
+presetView "Lima" = Views [
     ViewDiv "eightMiddleL" (Views [LabelView 0,Test1View 1]),
     ViewDiv "eightMiddleR" (Views [LabelView 2,Test1View 3]),
     ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
@@ -187,7 +187,7 @@ presetView "Medellin" = Views [
     ]
 
 presetView "RGGTRN" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+  ViewDiv "eightMiddleL" (Views [LabelView 0,MacheteView 1]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
   ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
   ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7])

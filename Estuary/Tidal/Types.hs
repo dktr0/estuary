@@ -9,6 +9,7 @@ import Estuary.Languages.CQenze
 import Estuary.Languages.MiniTidal
 import Estuary.Languages.Morelia
 import Estuary.Languages.Test1
+import Estuary.Languages.Machete
 import Estuary.Languages.Saludos
 import Estuary.Languages.Si
 import Estuary.Languages.ColombiaEsPasion
@@ -480,6 +481,7 @@ data TransformedPattern =
   MiniTidalPattern (Live String) |
   MoreliaPattern (Live String)   |
   Test1Pattern (Live String)     |
+  MachetePattern (Live String)     |
   SiPattern (Live String)     |
   SentidosPattern (Live String)     |
   ColombiaPattern (Live String)     |
@@ -495,6 +497,7 @@ instance Show TransformedPattern where
   show (MiniTidalPattern x) = "MiniTidalPattern: " ++ (show x)
   show (MoreliaPattern x) = "MoreliaPattern: " ++ (show x)
   show (Test1Pattern x) = "Test1Pattern: " ++ (show x)
+  show (MachetePattern x) = "MachetePattern: " ++ (show x)
   show (SiPattern x) = "SiPattern: " ++ (show x)
   show (SentidosPattern x) = "SentidosPattern: " ++ (show x)
   show (ColombiaPattern x) = "ColomiaPattern: " ++ (show x)
@@ -510,6 +513,7 @@ instance JSON TransformedPattern where
   showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
   showJSON (MoreliaPattern x) = encJSDict [("MoreliaPattern",x)]
   showJSON (Test1Pattern x) = encJSDict [("Test1Pattern",x)]
+  showJSON (MachetePattern x) = encJSDict [("MachetePattern",x)]
   showJSON (ColombiaPattern x) = encJSDict [("ColombiaPattern",x)]
   showJSON (SiPattern x) = encJSDict [("SiPattern",x)]
   showJSON (SentidosPattern x) = encJSDict [("SentidosPattern",x)]
@@ -522,6 +526,7 @@ instance JSON TransformedPattern where
   readJSON (JSObject x) | firstKey x == "MiniTidalPattern" = MiniTidalPattern <$> valFromObj "MiniTidalPattern" x
   readJSON (JSObject x) | firstKey x == "MoreliaPattern" = MoreliaPattern <$> valFromObj "MoreliaPattern" x
   readJSON (JSObject x) | firstKey x == "Test1Pattern" = Test1Pattern <$> valFromObj "Test1Pattern" x
+  readJSON (JSObject x) | firstKey x == "MachetePattern" = MachetePattern <$> valFromObj "MachetePattern" x
   readJSON (JSObject x) | firstKey x == "ColombiaPattern" = ColombiaPattern <$> valFromObj "ColombiaPattern" x
   readJSON (JSObject x) | firstKey x == "SiPattern" = SiPattern <$> valFromObj "SiPattern" x
   readJSON (JSObject x) | firstKey x == "SentidosPattern" = SentidosPattern <$> valFromObj "SentidosPattern" x
@@ -543,6 +548,7 @@ instance ParamPatternable TransformedPattern where
   toParamPattern (MiniTidalPattern x) = miniTidalPattern (forRendering x)
   toParamPattern (MoreliaPattern x) = morelia (forRendering x)
   toParamPattern (Test1Pattern x) = test1 (forRendering x)
+  toParamPattern (MachetePattern x) = machete (forRendering x)
   toParamPattern (ColombiaPattern x) = colombiaEsPasion (forRendering x)
   toParamPattern (SaludosPattern x) = saludos (forRendering x)
   toParamPattern (SiPattern x) = si (forRendering x)
@@ -555,6 +561,7 @@ instance ParamPatternable TransformedPattern where
   isEmptyFuture (MiniTidalPattern _) = False
   isEmptyFuture (MoreliaPattern _) = False
   isEmptyFuture (Test1Pattern _) = False
+  isEmptyFuture (MachetePattern _) = False
   isEmptyFuture (ColombiaPattern _) = False
   isEmptyFuture (SiPattern _) = False
   isEmptyFuture (SentidosPattern _) = False
@@ -567,6 +574,7 @@ instance ParamPatternable TransformedPattern where
   isEmptyPast (MiniTidalPattern _) = False
   isEmptyPast (MoreliaPattern _) = False
   isEmptyPast (Test1Pattern _) = False
+  isEmptyPast (MachetePattern _) = False
   isEmptyPast (ColombiaPattern _) = False
   isEmptyPast (SiPattern _) = False
   isEmptyPast (SaludosPattern _) = False
