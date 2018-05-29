@@ -51,9 +51,9 @@ page :: MonadWidget t m => Event t Command -> Event t [ServerResponse] -> UTCTim
   m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
 
 page _ wsDown _ Splash = do
-  x <- liftM (TutorialList <$) $ el "div" $ button "Tutorials"
+  x <- liftM (TutorialList <$) $ el "div" $ button "Tutoriales"
   y <- liftM (Solo <$)  $ el "div" $ button "Solo"
-  z <- liftM (Lobby <$)  $ el "div" $ button "Collaborate"
+  z <- liftM (Lobby <$)  $ el "div" $ button "Colaborar"
   let navEvents = leftmost [x,y,z]
   return (constDyn [],never,never,navEvents)
 
@@ -61,29 +61,29 @@ page _ wsDown _ TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   t1 <- liftM (Tutorial "Structure editing" <$) $ el "div" $ button "Structure editing"
   t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"
-  back <- liftM (Splash <$) $ button "Return to splashscreen"
+  back <- liftM (Splash <$) $ button  "<----"
   let navEvents = leftmost [t1,t2,back]
   return (constDyn [],never,never,navEvents)
 
 page _ wsDown _ (Tutorial "Structure editing") = do
   text "Tutorial placeholder"
-  x <- liftM (Splash <$) $ button "back to splash"
+  x <- liftM (Splash <$) $ button  "<----"
   return (constDyn [],never,never,x)
 
 page _ wsDown _ (Tutorial "TidalCycles text editing") = do
   text "Tutorial placeholder"
-  x <- liftM (Splash <$) $ button "back to splash"
+  x <- liftM (Splash <$) $ button "<----"
   return (constDyn [],never,never,x)
 
 page _ wsDown _ (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
-  x <- liftM (Splash <$) $ button "back to splash"
+  x <- liftM (Splash <$) $ button "<----"
   return (constDyn [],never,never,x)
 
 page _ wsDown _ Solo = do
   (defMap,hints) <- viewInSoloWidget standardView
   patterns <- mapDyn (justStructures . elems) defMap
-  x <- liftM (Splash <$) $ button "Return to splashscreen"
+  x <- liftM (Splash <$) $ button "<----"
   return (patterns,never,hints,x)
 
 page _ wsDown _ Lobby = do
@@ -92,30 +92,30 @@ page _ wsDown _ Lobby = do
   join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
   join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation
-  create <- liftM (CreateEnsemblePage <$) $ el "div" $ button "Create New Ensemble"
-  back <- liftM (Splash <$) $ el "div" $ button "back to splash"
+  create <- liftM (CreateEnsemblePage <$) $ el "div" $ button "Crear nuevo ensamble"
+  back <- liftM (Splash <$) $ el "div" $ button "<----"
   return (constDyn [],requestEnsembleList,never,leftmost [back,join'',create])
 
 page _ _ _ CreateEnsemblePage = do
-  el "div" $ text "Create A New Ensemble"
-  el "div" $ text "Note: To successfully create an ensemble you need to know and enter the correct admin password."
+  el "div" $ text "Crear un nuevo ensamble"
+  el "div" $ text "Nota: para crear un enamble escribe la contraseña de administrador"
   adminPwd <- el "div" $ do
-    text "Admin Password: "
+    text "Contraseña del admin: "
     let attrs = constDyn ("class" =: "webSocketTextInputs")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   name <- el "div" $ do
-    text "Ensemble Name: "
+    text "Nombre del ensamble: "
     let attrs = constDyn ("class" =: "webSocketTextInputs")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   password <- el "div" $ do
-    text "Ensemble Password: "
+    text "Contraseña del ensamble: "
     let attrs = constDyn ("class" =: "webSocketTextInputs")
     liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
   nameAndPassword <- combineDyn (,) name password
-  confirm <- el "div" $ button "Confirm"
+  confirm <- el "div" $ button "Confirmar"
   let createEnsemble = fmap (\(a,b) -> CreateEnsemble a b) $ tagDyn nameAndPassword confirm
   let authenticateAdmin = fmap Authenticate $ updated adminPwd
-  cancel <- el "div" $ button "Cancel"
+  cancel <- el "div" $ button "Cancelar"
   let serverRequests = leftmost [createEnsemble,authenticateAdmin]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
   return (constDyn [], serverRequests, never, navEvents)
@@ -123,7 +123,7 @@ page _ _ _ CreateEnsemblePage = do
 page commands wsDown now (Collaborate w) = do
   (defMap,wsUp,hints) <- viewInEnsembleWidget w now commands wsDown
   patterns <- mapDyn (justStructures . elems) defMap
-  x <- liftM (Lobby <$) $ button "back to lobby"
+  x <- liftM (Lobby <$) $ button  "<----"
   return (patterns,wsUp,hints,x)
 
 
