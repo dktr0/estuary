@@ -1,4 +1,4 @@
- Bienvenidx al tutorial de Estuary
+# Bienvenidx al tutorial de Estuary
 
 Los siguientes lenguajes fueron creados en los talleres de Parserx que tuvieron lugar en Bogotá, Manizales, Medellín, Lima y 
 Quito durante la gira BellaCode Tour 2018 del colectivo RGGTRN. 
@@ -231,5 +231,160 @@ Transformaciones:
 		q >> fast
 		s >> slow
 		z >> gap
+
+////////////////////////////////////////////////////////
+
+Nombre del lenguaje: suciXXX
+Modelo de entrada: 
+
+	<sujeto><nombre del sample><transformación y parámetro>
+
+Ejemplo de modelo de salida: 
+		
+	putita-dame suave suevecito
+
+Para iniciar:
+
+	putita-
+	perrita-
+	tu sicaria-
+	mala mujer-
+	amorfada-
+	gata fiera-
+	torta golosa-
+	feminasty-
+
+Sonidos:
+	comeme        >> fire
+	dame          >> bass
+	azotame       >> 808
+	rompeme       >> gabba
+	barre el piso >> notes
+	interpelame   >> metal
+	encadename    >> metal
+	aborto        >> arpy
+	
+Transformadores:
+	suave                        >> slow 2
+	suave suevecito              >> slow 4
+	duro                         >> fast 2
+	más más                      >> fast 4
+	con lengua                   >> brak
+	con el pelo                  >> 
+	en la cama                   >>
+	bajo la luz de las estrellas >> 
+	bb                           >> reverb
+	con flow                     >> rev (slow)
+	
+////////////////////////////////////////////////////////
+
+Nombre del lenguaje: Ecu a lo bestia 
+Modelo de entrada: 
+
+	<nombre del sample><transformación><parámetros>
+	
+Ejemplo de modelo de salida: 
+
+	clap rapido 4 
+	
+Sonidos:
+
+	boom
+	clap
+	sap
+	bit
+	byte
+	scratch
+	git
+	click
+	supr
+	esc
+	
+Transformaciones:  
+
+	rapido      >> fast
+	lento       >> slow
+	distorsion  >> gap
+	reverb      >> reverb
+	eco         >> ?
+	pitch       >> up
+	
+////////////////////////////////////////////////////////
+
+Nombre del lenguaje: 
+Modelo de entrada:
+Ejemplo modelo de salida: 
+Sonidos:
+
+	El agua
+	Las hojas
+	El pájaro
+	
+Transformaciones:
+
+	del rio
+	cayendo 
+	del mar
+	del árbol
+	caer
+	crecer
+	cantando
+	volando
+	comiendo
+	
+Parámetros: 
+
+
+////////////////////////////////////////////////////////
+
+Nombre del lenguaje: vocesotrevez
+Modelo de entrada:
+
+	<nombre del sample><transformación><parámetro>
+	
+Ejemplo de modelo de salida:
+
+	otirg mmm 2
+
+Sonidos:
+
+	otirg   >> grito
+	odimeg  >> gemido 
+	odiblis >> silbido
+	
+Transformaciones: 
+
+	mmm >> up
+	uuu >> pan
+	,,, >> fast
+
+
+////////////////////////////////////////////////////////
+
+Nombre del lenguaje: punto y ya
+Modelo de entrada: 
+
+	<nombre del sample><transformaciones><parámetros>
+	
+Ejemplo de modelo de entrada: 
+
+	. _ . o 2
+
+Sonidos: 
+	. _ .  >> up
+	. - .  >> arpy
+	. | .  >> bass
+	. " .  >> hh
+	
+Transformaciones:
+	
+	o     >> fast
+	oo    >> slow
+	ooo   >> iter
+	oooo  >> chop
+	
+
+	
+	
 
  
