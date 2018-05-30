@@ -79,7 +79,7 @@ header wsStatus clientCount = divClass "header" $ do
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
-  divClass "logo" $ text "estuary (a TidalCycles symbiont)"
+  divClass "logo" $ text "estuary"
   statusMsg <- combineDyn f wsStatus clientCount
   divClass "server" $ do
     text "server: "

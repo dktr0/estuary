@@ -37,17 +37,17 @@ viewInEnsembleWidget ensemble now commands deltasDown = mdo
   (hdl,pwdRequest,tempoRequest) <- divClass "ensembleHeader" $ do
     divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
     hdl' <- divClass "ensembleHandle" $ do
-      text "Name/Handle:"
+      text "Nombre:"
       let attrs = constDyn ("class" =: "ensembleHandle")
       handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
       return $ _textInput_input handleInput
     pwdRequest' <- divClass "ensemblePassword" $ do
-      text "Ensemble Password:"
+      text "Contraseña del ensamble:"
       let attrs = constDyn ("class" =: "ensemblePassword")
       pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
       return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
     tempoRequest' <- divClass "ensembleTempo" $ do
-      text "Ensemble Tempo:"
+      text "Tempo del ensamble:"
       let attrs = constDyn ("class" =: "ensembleTempo")
       tempoInput <- textInput $ def & textInputConfig_attributes .~ attrs
       let newTempo = fmapMaybe (readMaybe :: String -> Maybe Double) $ _textInput_input tempoInput
