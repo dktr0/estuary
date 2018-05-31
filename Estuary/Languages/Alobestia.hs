@@ -1,9 +1,10 @@
-module Estuary.Languages.Test1 (test1) where
+module Estuary.Languages.Alobestia (alobestia) where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
--- suci xxx
+-- ?
+--por Gaby Dávila y Lenin Moncayo
 -- <nombre sonido> <transf1> <parametros>
 
 
@@ -11,7 +12,7 @@ lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
 --coloca aquí los parsers
   espacios
-  inicio
+  char '"'
   espacios
   s1 <- sonidos
   espacios
@@ -20,6 +21,8 @@ lengExpr = do
   s3 <- sonidos
   espacios
   s4 <- sonidos
+  espacios
+  char '"'
   espacios
   t1 <- trans
   espacios
@@ -34,20 +37,15 @@ lengExpr = do
 nuestroTextoATidal ::  String  -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s
 
-inicio :: GenParser Char a String
-inicio = choice [
-        try (string "imagina" ),
-        try (string "sueña"),
-        try (string "mechita")
-        ]
+
 
 sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "el agua" >> espacios >> return "pluck" ),
-        try (string "las hojas" >> espacios >> return "wind" ),
-        try (string "el pájaro" >> espacios >> return "birds3" ),
+        try (string "boom" >> espacios >> return "bd" ),
+        try (string "clap" >> espacios >> return "cp" ),
+        try (string "zap" >> espacios >> return "bass" ),
         try (descartarTexto >> return " ")
         ]
 
@@ -55,15 +53,10 @@ sonidos = choice [
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 trans = choice [
               --coloca aqui los nombres de tus transformaciones
-              try (string "del río" >> return Tidal.palindrome),
-              try (string "cayendo" >> spaces >> fractional3 False >>= return . Tidal.slow),
-              try (string "del mar" >> spaces >> fractional3 False >>= return . Tidal.density),
-              try (string "del árbol" >> return Tidal.palindrome),
-              try (string "caer" >> spaces >> fractional3 False >>= return . Tidal.slow),
-              try (string "crecer" >> spaces >> fractional3 False >>= return . Tidal.density),
-              try (string "cantando" >> spaces >> fractional3 False >>= return . Tidal.fast),
-              try (string "volando" >> spaces >> fractional3 False >>= return . Tidal.density),
-              try (string "comiendo" >> spaces >> fractional3 False >>= return . Tidal.trunc),
+              try (string "lento" >> spaces >> fractional3 False >>= return . Tidal.slow),
+              try (string "distorsion" >> spaces >> fractional3 False >>= return . Tidal.trunc),
+              try (string "densidad" >> spaces >> fractional3 False >>= return . Tidal.density),
+              try (string "rapido" >> spaces >> fractional3 False >>= return . Tidal.fast),
               try (descartarTexto >> return id)
                 ]
 
@@ -80,5 +73,5 @@ exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-test1 :: String -> Tidal.ParamPattern
-test1 s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s
+alobestia :: String -> Tidal.ParamPattern
+alobestia s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s

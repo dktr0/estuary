@@ -117,6 +117,49 @@ sentidosWidget = miniLanguageWidget "Sentidos" f SentidosPattern
     f (SentidosPattern x) = Just x
     f _ = Nothing
 
+
+sabortsWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+sabortsWidget = miniLanguageWidget "Saborts" f SabortsPattern
+  where
+    f (SabortsPattern x) = Just x
+    f _ = Nothing
+
+puntoyyaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+puntoyyaWidget = miniLanguageWidget "Puntoyya" f PuntoyyaPattern
+  where
+    f (PuntoyyaPattern x) = Just x
+    f _ = Nothing
+
+sucixxxWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+sucixxxWidget = miniLanguageWidget "Sucixxx" f SucixxxPattern
+  where
+    f (SucixxxPattern x) = Just x
+    f _ = Nothing
+
+vocesotrevezWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+vocesotrevezWidget = miniLanguageWidget "Vocesotrevez" f VocesotrevezPattern
+  where
+    f (VocesotrevezPattern x) = Just x
+    f _ = Nothing
+
+imaginaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+imaginaWidget = miniLanguageWidget "Imagina" f ImaginaPattern
+  where
+    f (ImaginaPattern x) = Just x
+    f _ = Nothing
+
+alobestiaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
+  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
+alobestiaWidget = miniLanguageWidget "Alobestia" f AlobestiaPattern
+  where
+    f (AlobestiaPattern x) = Just x
+    f _ = Nothing
+
 miniLanguageWidget :: MonadWidget t m =>
   String -> (TransformedPattern -> Maybe (Live String)) -> (Live String -> TransformedPattern) ->
   TransformedPattern -> Event t [TransformedPattern] ->

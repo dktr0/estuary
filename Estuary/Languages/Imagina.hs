@@ -1,4 +1,4 @@
-module Estuary.Languages.Test1 (test1) where
+module Estuary.Languages.Imagina (imagina) where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
@@ -45,7 +45,7 @@ sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "el agua" >> espacios >> return "pluck" ),
+        try (string "el agua" >> espacios >> return "pluck:3" ),
         try (string "las hojas" >> espacios >> return "wind" ),
         try (string "el pájaro" >> espacios >> return "birds3" ),
         try (descartarTexto >> return " ")
@@ -80,5 +80,5 @@ exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-test1 :: String -> Tidal.ParamPattern
-test1 s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s
+imagina :: String -> Tidal.ParamPattern
+imagina s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s

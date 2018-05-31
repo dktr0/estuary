@@ -200,6 +200,71 @@ viewWidget (SiView n) i deltasDown = do
   where f (Structure x) = x
         f _ = EmptyTransformedPattern
 
+viewWidget (SabortsView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (SabortsPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- sabortsWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+
+viewWidget (PuntoyyaView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (PuntoyyaPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- puntoyyaWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+
+viewWidget (SucixxxView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (SucixxxPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- sucixxxWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+
+viewWidget (VocesotrevezView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (VocesotrevezPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- vocesotrevezWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+
+viewWidget (ImaginaView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (ImaginaPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- imaginaWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+
+viewWidget (AlobestiaView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (AlobestiaPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- alobestiaWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
 
 viewWidget (LabelView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (LabelText "") n i
