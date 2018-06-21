@@ -1,4 +1,4 @@
-module Estuary.Languages.Lima (lima) where
+module Estuary.Languages.LaCalle (laCalle) where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
@@ -52,5 +52,5 @@ exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-lima :: String -> Tidal.ParamPattern
-lima s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s
+laCalle :: String -> Tidal.ParamPattern
+laCalle s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s

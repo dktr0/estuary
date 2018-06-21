@@ -17,7 +17,7 @@ lengExpr = do
 
 nuestroTextoATidal :: String -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s
-natural
+
 espacios :: GenParser Char a String
 espacios = many (oneOf " ")
 
