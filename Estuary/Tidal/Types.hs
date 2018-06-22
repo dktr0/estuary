@@ -681,6 +681,7 @@ instance JSON StackedPatterns where
   readJSON (JSObject x) | firstKey x == "StackedPatterns" = StackedPatterns <$> valFromObj "StackedPatterns" x
   readJSON _ = Error "can't parse as StackedPatterns"
 
+instance ParamPatternable StackedPatterns where
   toParamPattern (StackedPatterns xs) = Tidal.stack $ Prelude.map toParamPattern $ Prelude.filter (not . isEmptyPast) xs
   isEmptyPast (StackedPatterns xs) = and $ fmap isEmptyPast xs
   isEmptyFuture (StackedPatterns xs) = and $ fmap isEmptyFuture xs

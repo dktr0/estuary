@@ -98,7 +98,7 @@ viewsParser = do
 
 viewParser :: GenParser Char a View
 viewParser = do
-  v <- choice [viewDiv,labelView,structureView,tidalTextView,evaluableTextView,cqenzeView,moreliaView {--, sabortsView, saludosView, sentidosView, siView, colombiaView, naturalView, medellinView, laCalleView, mariaView, crudoView, puntoyyaView, sucixxxView, vocesotrevezView, imaginaView, alobestiaVie--} ]
+  v <- choice [viewDiv,labelView,structureView,tidalTextView,evaluableTextView,cqenzeView,moreliaView, sabortsView, saludosView, sentidosView, siView, colombiaView, naturalView, medellinView, laCalleView, mariaView, crudoView, puntoyyaView, sucixxxView, vocesotrevezView, imaginaView, alobestiaView ]
   spaces
   return v
 
