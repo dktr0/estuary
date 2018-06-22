@@ -62,7 +62,7 @@ instance JSON View where
   readJSON (JSObject x) | firstKey x == "SiView" = SiView <$> valFromObj "SiView" x
   readJSON (JSObject x) | firstKey x == "SentidosView" = SentidosView <$> valFromObj "SentidosView" x
   readJSON (JSObject x) | firstKey x == "PuntoyyaView" = PuntoyyaView <$> valFromObj "PuntoyyaView" x
-  readJSON (JSObject x) | firstKey x == "Sucixxx" = SucixxxView <$> valFromObj "Sucixxx" x
+  readJSON (JSObject x) | firstKey x == "SucixxxView" = SucixxxView <$> valFromObj "SucixxxView" x
   readJSON (JSObject x) | firstKey x == "VocesotrevezView" = VocesotrevezView <$> valFromObj "VocesotrevezView" x
   readJSON (JSObject x) | firstKey x == "ImaginaView" = ImaginaView <$> valFromObj "ImaginaView" x
   readJSON (JSObject x) | firstKey x == "AlobestiaView" = AlobestiaView <$> valFromObj "AlobestiaView" x
