@@ -13,16 +13,16 @@ import Estuary.Languages.Saludos
 import Estuary.Languages.Si
 import Estuary.Languages.ColombiaEsPasion
 import Estuary.Languages.Sentidos
+import Estuary.Languages.Natural
+import Estuary.Languages.Medellin
+import Estuary.Languages.LaCalle
+import Estuary.Languages.Maria
+import Estuary.Languages.Crudo
 import Estuary.Languages.Puntoyya
 import Estuary.Languages.Sucixxx
 import Estuary.Languages.Vocesotrevez
 import Estuary.Languages.Imagina
 import Estuary.Languages.Alobestia
-
-
-
-
-
 
 import Estuary.Utility
 
@@ -493,6 +493,11 @@ data TransformedPattern =
   SentidosPattern (Live String)     |
   ColombiaPattern (Live String)     |
   SaludosPattern (Live String)  |
+  NaturalPattern (Live String) |
+  MedellinPattern (Live String) |
+  LaCallePattern (Live String) |
+  MariaPattern (Live String) |
+  CrudoPattern (Live String) |
   PuntoyyaPattern (Live String) |
   SucixxxPattern (Live String) |
   VocesotrevezPattern (Live String)  |
@@ -513,6 +518,11 @@ instance Show TransformedPattern where
   show (SentidosPattern x) = "SentidosPattern: " ++ (show x)
   show (ColombiaPattern x) = "ColombiaPattern: " ++ (show x)
   show (SaludosPattern x) = "SaludosPattern: " ++ (show x)
+  show (NaturalPattern x) = "NaturalPattern: " ++ (show x)
+  show (MedellinPattern x) = "MedellinPattern: " ++ (show x)
+  show (LaCallePattern x) = "LaCallePattern: " ++ (show x)
+  show (MariaPattern x) = "MariaPattern: " ++ (show x)
+  show (CrudoPattern x) = "CrudoPattern: " ++ (show x)
   show (PuntoyyaPattern x) = "PuntoyyaPattern: " ++ (show x)
   show (SucixxxPattern x) = "SucixxxPattern: " ++ (show x)
   show (VocesotrevezPattern x) = "VocesotrevezPattern: " ++ (show x)
@@ -528,11 +538,33 @@ instance JSON TransformedPattern where
   showJSON (CQenzePattern x) = encJSDict [("CQenzePattern",x)]
   showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
   showJSON (MoreliaPattern x) = encJSDict [("MoreliaPattern",x)]
+  readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
+  readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
+  readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
+  readJSON (JSObject x) | firstKey x == "Text" = TextPatternChain <$> valFromObj "Text" x <*> valFromObj "b" x <*> valFromObj "c" x
+  readJSON (JSObject x) | firstKey x == "CQenzePattern" = CQenzePattern <$> valFromObj "CQenzePattern" x
+  readJSON (JSObject x) | firstKey x == "MiniTidalPattern" = MiniTidalPattern <$> valFromObj "MiniTidalPattern" x
+  readJSON (JSObject x) | firstKey x == "MoreliaPattern" = MoreliaPattern <$> valFromObj "MoreliaPattern" x
+  readJSON _ = Error "can't parse as TransformedPattern"
+
+instance JSON TransformedPattern where
+  showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
+  showJSON (UntransformedPattern s) = encJSDict [("UP",showJSON s)]
+  showJSON (EmptyTransformedPattern) = showJSON "E"
+  showJSON (TextPatternChain a b c) = encJSDict [("Text",a),("b",b),("c",c)]
+  showJSON (CQenzePattern x) = encJSDict [("CQenzePattern",x)]
+  showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
+  showJSON (MoreliaPattern x) = encJSDict [("MoreliaPattern",x)]
   showJSON (SabortsPattern x) = encJSDict [("SabortsPattern",x)]
   showJSON (ColombiaPattern x) = encJSDict [("ColombiaPattern",x)]
   showJSON (SiPattern x) = encJSDict [("SiPattern",x)]
   showJSON (SentidosPattern x) = encJSDict [("SentidosPattern",x)]
   showJSON (SaludosPattern x) = encJSDict [("SaludosPattern",x)]
+  showJSON (NaturalPattern x) = encJSDict [("NaturalPattern",x)]
+  showJSON (MedellinPattern x) = encJSDict [("MedellinPattern",x)]
+  showJSON (LaCallePattern x) = encJSDict [("LaCallePattern",x)]
+  showJSON (MariaPattern x) = encJSDict [("MariaPattern",x)]
+  showJSON (CrudoPattern x) = encJSDict [("CrudoPattern",x)]
   showJSON (PuntoyyaPattern x) = encJSDict [("PuntoyyaPattern",x)]
   showJSON (SucixxxPattern x) = encJSDict [("SucixxxPattern",x)]
   showJSON (VocesotrevezPattern x) = encJSDict [("VocesotrevezPattern",x)]
@@ -551,13 +583,16 @@ instance JSON TransformedPattern where
   readJSON (JSObject x) | firstKey x == "SiPattern" = SiPattern <$> valFromObj "SiPattern" x
   readJSON (JSObject x) | firstKey x == "SentidosPattern" = SentidosPattern <$> valFromObj "SentidosPattern" x
   readJSON (JSObject x) | firstKey x == "SaludosPattern" = SaludosPattern <$> valFromObj "SaludosPattern" x
+  readJSON (JSObject x) | firstKey x == "NaturalPattern" = NaturalPattern <$> valFromObj "NaturalPattern" x
+  readJSON (JSObject x) | firstKey x == "MedellinPattern" = MedellinPattern <$> valFromObj "MedellinPattern" x
+  readJSON (JSObject x) | firstKey x == "LaCallePattern" = LaCallePattern <$> valFromObj "LaCallePattern" x
+  readJSON (JSObject x) | firstKey x == "MariaPattern" = MariaPattern <$> valFromObj "MariaPattern" x
+  readJSON (JSObject x) | firstKey x == "CrudoPattern" = CrudoPattern <$> valFromObj "CrudoPattern" x
   readJSON (JSObject x) | firstKey x == "PuntoyyaPattern" = PuntoyyaPattern <$> valFromObj "PuntoyyaPattern" x
   readJSON (JSObject x) | firstKey x == "SucixxxPattern" = SucixxxPattern <$> valFromObj "SucixxxPattern" x
   readJSON (JSObject x) | firstKey x == "VocesotrevezPattern" = VocesotrevezPattern <$> valFromObj "VocesotrevezPattern" x
   readJSON (JSObject x) | firstKey x == "ImaginaPattern" = ImaginaPattern <$> valFromObj "ImaginaPattern" x
   readJSON (JSObject x) | firstKey x == "AlobestiaPattern" = AlobestiaPattern <$> valFromObj "AlobestiaPattern" x
-
-
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
@@ -577,6 +612,11 @@ instance ParamPatternable TransformedPattern where
   toParamPattern (SaludosPattern x) = saludos (forRendering x)
   toParamPattern (SiPattern x) = si (forRendering x)
   toParamPattern (SentidosPattern x) = sentidos (forRendering x)
+  toParamPattern (NaturalPattern x) = natural (forRendering x)
+  toParamPattern (MedellinPattern x) = medellin (forRendering x)
+  toParamPattern (LaCallePattern x) = laCalle (forRendering x)
+  toParamPattern (MariaPattern x) = maria (forRendering x)
+  toParamPattern (CrudoPattern x) = crudo (forRendering x)
   toParamPattern (PuntoyyaPattern x) = puntoyya (forRendering x)
   toParamPattern (SucixxxPattern x) = sucixxx (forRendering x)
   toParamPattern (VocesotrevezPattern x) = vocesotrevez (forRendering x)
@@ -595,6 +635,11 @@ instance ParamPatternable TransformedPattern where
   isEmptyFuture (SiPattern _) = False
   isEmptyFuture (SentidosPattern _) = False
   isEmptyFuture (SaludosPattern _) = False
+  isEmptyFuture (NaturalPattern _) = False
+  isEmptyFuture (MedellinPattern _) = False
+  isEmptyFuture (LaCallePattern _) = False
+  isEmptyFuture (MariaPattern _) = False
+  isEmptyFuture (CrudoPattern _) = False
   isEmptyFuture (PuntoyyaPattern _) = False
   isEmptyFuture (SucixxxPattern _) = False
   isEmptyFuture (SaludosPattern _) = False
@@ -614,6 +659,11 @@ instance ParamPatternable TransformedPattern where
   isEmptyPast (SiPattern _) = False
   isEmptyPast (SaludosPattern _) = False
   isEmptyPast (SentidosPattern _) = False
+  isEmptyPast (NaturalPattern _) = False
+  isEmptyPast (MedellinPattern _) = False
+  isEmptyPast (LaCallePattern _) = False
+  isEmptyPast (MariaPattern _) = False
+  isEmptyPast (CrudoPattern _) = False
   isEmptyPast (PuntoyyaPattern _) = False
   isEmptyPast (SucixxxPattern _) = False
   isEmptyPast (VocesotrevezPattern _) = False
@@ -631,7 +681,6 @@ instance JSON StackedPatterns where
   readJSON (JSObject x) | firstKey x == "StackedPatterns" = StackedPatterns <$> valFromObj "StackedPatterns" x
   readJSON _ = Error "can't parse as StackedPatterns"
 
-instance ParamPatternable StackedPatterns where
   toParamPattern (StackedPatterns xs) = Tidal.stack $ Prelude.map toParamPattern $ Prelude.filter (not . isEmptyPast) xs
   isEmptyPast (StackedPatterns xs) = and $ fmap isEmptyPast xs
   isEmptyFuture (StackedPatterns xs) = and $ fmap isEmptyFuture xs

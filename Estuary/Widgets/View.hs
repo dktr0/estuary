@@ -35,7 +35,7 @@ viewInEnsembleWidget ensemble now commands deltasDown = mdo
 
   -- UI for global ensemble parameters
   (hdl,pwdRequest,tempoRequest) <- divClass "ensembleHeader" $ do
-    divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
+    divClass "ensembleName" $ text $ "Ensamble: " ++ ensemble
     hdl' <- divClass "ensembleHandle" $ do
       text "Nombre:"
       let attrs = constDyn ("class" =: "ensembleHandle")
@@ -194,6 +194,57 @@ viewWidget (SabortsView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure (SabortsPattern (Live "" L3))) n i
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
   (value,edits,hints) <- sabortsWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+viewWidget (NaturalView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (NaturalPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- naturalWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+
+viewWidget (MedellinView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (MedellinPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- medellinWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+viewWidget (LaCalleView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (LaCallePattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- laCalleWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+viewWidget (MariaView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (MariaPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- mariaWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern
+
+viewWidget (CrudoView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure (CrudoPattern (Live "" L3))) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- crudoWidget i' deltasDown'
   value' <- mapDyn (Map.singleton n . Structure) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
   return (value',edits',hints)
