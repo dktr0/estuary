@@ -44,19 +44,19 @@ sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "g" >> espacios >> return "guiro" ),
-        try (string "b" >> espacios >> return "bombo"),
-        try (string "v" >> espacios >> return "kick_v" ),
-        try (string "d" >> espacios >> return "kick_boom"),
-        try (string "k" >> espacios >> return "kick"),
-        try (string "m" >> espacios >> return "bass_m" ),
-        try (string "h" >> espacios >> return "hi1"),
-        try (string "i" >> espacios >> return "hi2"),
-        try (string "t" >> espacios >> return "snare_1"),
-        try (string "a" >> espacios >> return "timbales"),
-        try (string "c" >> espacios >> return "clap1"),
-        try (string "o" >> espacios >> return "conga"),
-        try (string "e" >> espacios >> return "geom"),
+        try (string "g" >> espacios >> return "drumtraks" ),
+        try (string "b" >> espacios >> return "bd"),
+        try (string "v" >> espacios >> return "bd:1" ),
+        try (string "d" >> espacios >> return "bd:2"),
+        try (string "k" >> espacios >> return "bd:3"),
+        try (string "m" >> espacios >> return "bass:1" ),
+        try (string "h" >> espacios >> return "hh27"),
+        try (string "i" >> espacios >> return "hh:7"),
+        try (string "t" >> espacios >> return "sn:1"),
+        try (string "a" >> espacios >> return "sn:2"),
+        try (string "c" >> espacios >> return "cp:1"),
+        try (string "o" >> espacios >> return "drum"),
+        try (string "e" >> espacios >> return "drum:1"),
         try (descartarTexto >> return " ")
         ]
 
@@ -67,7 +67,7 @@ trans = choice [
          try (string "w" >> spaces >>  return Tidal.brak),
          try (string "q" >> spaces >> fractional3 False  >>= return . Tidal.fast),
          try (string "s">> spaces >> fractional3 False   >>= return . Tidal.slow),
-         try (string "z" >> spaces  >> int >>= return . Tidal.gap ),
+         try (string "z" >> spaces  >> int >>= return . Tidal.gap),
          try (descartarTexto >> return id)
                 ]
 

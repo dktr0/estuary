@@ -11,24 +11,41 @@ import qualified Sound.Tidal.Context as Tidal
 
 lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
-  spaces'
-  s <- pasion
-  spaces'
-  t <- sustantivos
-  spaces'
-  return $ t $ stringToTidalPattern s
+  espacios
+  char '"'
+  espacios
+  s1 <- pasion
+  espacios
+  s2 <- pasion
+  espacios
+  s3 <- pasion
+  espacios
+  s4 <- pasion
+  espacios
+  char '"'
+  espacios
+  t1 <- sustantivos
+  espacios
+  t2 <- sustantivos
+  espacios
+  t3 <- sustantivos
+  espacios
+  t4 <- sustantivos
+  espacios
+  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-stringToTidalPattern :: String -> Tidal.ParamPattern
-stringToTidalPattern s = Tidal.s $ Tidal.p s
+nuestroTextoATidal :: String -> Tidal.ParamPattern
+nuestroTextoATidal s = Tidal.s $ Tidal.p s
 
-spaces' :: GenParser Char a String
-spaces' = many (oneOf " ")
+espacios :: GenParser Char a String
+espacios = many (oneOf " ")
 
 pasion :: GenParser Char a String
 pasion = choice [
-        try (string "voz" >> spaces' >> return "birds3"),
-        try (string "pasion" >> spaces' >> return "blip"),
-        try (string "paz" >> spaces' >> return "sax")
+        try (string "voz" >> espacios >> return "birds3"),
+        try (string "pasion" >> espacios >> return "blip"),
+        try (string "paz" >> espacios >> return "sax"),
+        try (descartarTexto >> return " ")
         ]
 
 descartarTexto :: GenParser Char a String

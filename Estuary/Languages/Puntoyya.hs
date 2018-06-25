@@ -23,8 +23,15 @@ lengExpr = do
   espacios
   char '.'
   espacios
-  t <- trans
-  return $ t $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
+  t1 <- trans
+  espacios
+  t2 <- trans
+  espacios
+  t3 <- trans
+  espacios
+  t4 <- trans
+  espacios
+  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
 nuestroTextoATidal ::  String  -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s

@@ -529,24 +529,6 @@ instance Show TransformedPattern where
   show (ImaginaPattern x) = "ImaginaPattern: " ++ (show x)
   show (AlobestiaPattern x) = "AlobestiaPattern: " ++ (show x)
 
-
-instance JSON TransformedPattern where
-  showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
-  showJSON (UntransformedPattern s) = encJSDict [("UP",showJSON s)]
-  showJSON (EmptyTransformedPattern) = showJSON "E"
-  showJSON (TextPatternChain a b c) = encJSDict [("Text",a),("b",b),("c",c)]
-  showJSON (CQenzePattern x) = encJSDict [("CQenzePattern",x)]
-  showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
-  showJSON (MoreliaPattern x) = encJSDict [("MoreliaPattern",x)]
-  readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
-  readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
-  readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
-  readJSON (JSObject x) | firstKey x == "Text" = TextPatternChain <$> valFromObj "Text" x <*> valFromObj "b" x <*> valFromObj "c" x
-  readJSON (JSObject x) | firstKey x == "CQenzePattern" = CQenzePattern <$> valFromObj "CQenzePattern" x
-  readJSON (JSObject x) | firstKey x == "MiniTidalPattern" = MiniTidalPattern <$> valFromObj "MiniTidalPattern" x
-  readJSON (JSObject x) | firstKey x == "MoreliaPattern" = MoreliaPattern <$> valFromObj "MoreliaPattern" x
-  readJSON _ = Error "can't parse as TransformedPattern"
-
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
   showJSON (UntransformedPattern s) = encJSDict [("UP",showJSON s)]
@@ -681,6 +663,7 @@ instance JSON StackedPatterns where
   readJSON (JSObject x) | firstKey x == "StackedPatterns" = StackedPatterns <$> valFromObj "StackedPatterns" x
   readJSON _ = Error "can't parse as StackedPatterns"
 
+instance ParamPatternable StackedPatterns where
   toParamPattern (StackedPatterns xs) = Tidal.stack $ Prelude.map toParamPattern $ Prelude.filter (not . isEmptyPast) xs
   isEmptyPast (StackedPatterns xs) = and $ fmap isEmptyPast xs
   isEmptyFuture (StackedPatterns xs) = and $ fmap isEmptyFuture xs

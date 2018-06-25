@@ -38,7 +38,7 @@ inicio :: GenParser Char a String
 inicio = choice [
         try (string "imagina" ),
         try (string "sueña"),
-        try (string "mechita")
+        try (string "medita")
         ]
 
 sonidos :: GenParser Char a String

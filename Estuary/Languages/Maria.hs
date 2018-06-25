@@ -12,13 +12,23 @@ lengExpr = do
   espacios
   string "Maria"
   espacios
-  s <- sonidos
+  s1 <- sonidos
+  espacios
+  s2 <- sonidos
+  espacios
+  s3 <- sonidos
+  espacios
+  s4 <- sonidos
   espacios
   t1 <- trans
   espacios
   t2 <- trans
   espacios
-  return $ t1 $ t2 $ nuestroTextoATidal s
+  t3 <- trans
+  espacios
+  t4 <- trans
+  espacios
+  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
 nuestroTextoATidal ::  String  -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s
@@ -30,7 +40,8 @@ sonidos = choice [
         try (string "toca" >> espacios >> return "bd" ),
         try (string "abre" >> espacios >> return "arpy" ),
         try (string "cierra" >> espacios >> return "cp" ),
-        try (string "tapa" >> espacios >> return "bass")
+        try (string "tapa" >> espacios >> return "bass"),
+        try (descartarTexto >> return " ")
         ]
 
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
@@ -38,8 +49,8 @@ trans = choice [
               --coloca aqui los nombres de tus transformaciones
          try (string "rapido" >> spaces >> fractional3 False >>= return . Tidal.fast),
          try (string "lento" >> spaces >> fractional3 False >>= return . Tidal.slow),
-         try (string "suave">> spaces >> fractional3 False >>= return . Tidal.density),
-         try (string "puerta" >> spaces >> int >>= return . Tidal.chop),
+         try (string "puerta">> spaces >> fractional3 False >>= return . Tidal.density),
+         try (string "suave" >> spaces >> int >>= return . Tidal.chop),
          try (string "ventana">> spaces >> int >>= return . Tidal.striate),
          try (string "botella" >> spaces >> int >>= return . Tidal.iter),
          try (descartarTexto >> return id)
