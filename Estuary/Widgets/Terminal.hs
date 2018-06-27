@@ -27,7 +27,7 @@ terminalWidget :: MonadWidget t m =>
 terminalWidget deltasUp deltasDown = divClass "terminal" $ mdo
   currentSpace <- mostRecentEnsemble deltasUp
   (sendButton,inputWidget) <- divClass "terminalHeader" $ do
-    sendButton' <- divClass "webSocketButtons" $ button "Send"
+    sendButton' <- divClass "webSocketButtons" $ button "enviar"
     divClass "webSocketButtons" $ text "Terminal/Chat:"
     let resetText = fmap (const "") terminalInput
     let attrs = constDyn $ fromList [("class","webSocketTextInputs"),("style","width: 100%")]

@@ -33,8 +33,14 @@ apt-get install libghc-entropy-dev
 apt-get install happy
 apt-get install zlib1g-dev
 apt-get install haskell-stack
+apt-get install ghc
+apt-get install cabal-install
 exit
 ```
+
+(Note: some might ask why we need to install ghc and cabal-install when we will be using stack as our build tool.
+The answer is that it seems that the version of ghcjs we are using requires that an older version of cabal-install
+(version 1.24.0.1 is confirmed as working) be available on the path.)
 
 Now we need to upgrade stack, as the default package installed
 on Debian is somewhat old. As your preferred (not root) user:
