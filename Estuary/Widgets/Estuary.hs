@@ -1,3 +1,5 @@
+{-# LANGUAGE RecursiveDo #-}
+
 module Estuary.Widgets.Estuary where
 
 import Reflex
@@ -17,23 +19,24 @@ import Estuary.Widgets.WebSocket
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Context
+import Estuary.Widgets.LevelMeters
+import Estuary.Widgets.Terminal
 
 estuaryWidget :: MonadWidget t m
   => WebDirt -> SuperDirt -> EstuaryProtocolObject -> Context -> m ()
 estuaryWidget wd sd protocol initialContext = divClass "estuary" $ mdo
   levelMeterWidget context
-  headerChanges <- header wsStatus clientCount
+  headerChanges <- header context
   (values,deltasUp,hints) <- divClass "page" $ navigation (startTime initialContext) commands deltasDown'
   -- note: in preceding line (startTime initialContext) should soon become Dynamic passing of current context...
   commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'
-  (deltasDown,wsStatus) <- alternateWebSocket protocol now deltasUp
+  (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime initialContext) deltasUp
   p <- mapDyn (toParamPattern . StackedPatterns) values
-  patternChanges <- fmap setPattern $ updated p
-  renderChanges <- renderSendFlush now wd sd ctx
-  levelChanges <- monitorWebDirtLevels now wd
+  let patternChanges = fmap setPattern $ updated p
+  renderChanges <- renderSendFlush (startTime initialContext) wd sd context
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
-  let contextChanges = mergeWith (.) [renderChanges,patternChanges,headerChanges,levelChanges,ccChange]
+  let contextChanges = mergeWith (.) [renderChanges,patternChanges,headerChanges,ccChange]
   context <- foldDyn ($) initialContext contextChanges
   performHint wd hints
 
@@ -47,7 +50,7 @@ header ctx = divClass "header" $ do
   port' <- holdDyn "" port
   divClass "logo" $ text "estuary (a TidalCycles symbiont)"
   wsStatus' <- mapDyn wsStatus ctx
-  clientCount <- mapDyn clientCount ctx
+  clientCount' <- mapDyn clientCount ctx
   statusMsg <- combineDyn f wsStatus' clientCount'
   divClass "server" $ do
     text "server: "
@@ -56,14 +59,18 @@ header ctx = divClass "header" $ do
     dynText port'
     text ": "
     dynText statusMsg
-    where
-      f "connection open" c = "(" ++ (show c) ++ " clients)"
-      f x _ = x
-  divClass "webDirt" $ divClass "webDirtMute" $ do
-    text "SuperDirt:"
-    sdInput <- checkbox False $ def
-    let sdOn = fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_event sdInput
-    text "WebDirt:"
-    wdInput <- checkbox True $ def
-    let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_event wdInput
-    return $ mergeWith (.) [sdOn,wdOn]
+  webDirtSuperDirtToggles
+  where
+    f "connection open" c = "(" ++ (show c) ++ " clients)"
+    f x _ = x
+
+webDirtSuperDirtToggles :: (MonadWidget t m) => m (Event t ContextChange)
+webDirtSuperDirtToggles = divClass "webDirt" $ divClass "webDirtMute" $ do
+  text "SuperDirt:"
+  sdInput <- checkbox False $ def
+  let sdOn = fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
+  text "WebDirt:"
+  wdInput <- checkbox True $ def
+  let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
+  return $ mergeWith (.) [sdOn,wdOn]
+

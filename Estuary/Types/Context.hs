@@ -8,7 +8,7 @@ data Context = Context {
   startTime :: UTCTime,
   tempo :: Tidal.Tempo,
   pattern :: Tidal.ParamPattern,
-  sounds :: [(Double,Tidal.ParamMap)],
+  sounds :: [(UTCTime,Tidal.ParamMap)],
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   peakLevels :: [Double],
@@ -41,3 +41,6 @@ setRmsLevels xs c = c { rmsLevels = xs }
 
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
+
+setPattern :: Tidal.ParamPattern -> ContextChange
+setPattern x c = c { pattern = x }

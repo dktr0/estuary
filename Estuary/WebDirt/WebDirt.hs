@@ -17,8 +17,8 @@ data WebDirt = WebDirt T.JSVal
 instance S.SampleEngine WebDirt where
   getClockDiff wd = getClockDiff wd
   playSample wd x = playSample wd x
-  peakLevels wd = peakLevels wd
-  rmsLevels wd = rmsLevels wd
+  getPeakLevels wd = peakLevels wd
+  getRmsLevels wd = rmsLevels wd
 
 webDirt :: IO WebDirt
 webDirt = webDirt_ >>= return . WebDirt
@@ -65,7 +65,7 @@ foreign import javascript unsafe
   getCurrentTime_ :: T.JSVal -> IO Double
 
 foreign import javascript unsafe
-  "try { $r = $1.clockDiff } catch(e) { console.log(e)}"
+  "try { $r = $1.clockDiff; } catch(e) { console.log(e)}"
   getClockDiff_ :: T.JSVal -> IO Double
 
 foreign import javascript unsafe

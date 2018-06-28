@@ -6,6 +6,7 @@ import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.Protocol.Foreign
 import Estuary.Types.Context
+import Estuary.Widgets.Estuary
 
 main :: IO ()
 main = do

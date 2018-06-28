@@ -14,10 +14,4 @@ levelMeterWidget ctx = do
   let t' = nubDyn t
   dynText t'
 
-monitorWebDirtLevels :: (MonadWidget t m, SampleEngine.SampleEngine e)
-  => UTCTime -> e -> m (Event t ContextChange)
-monitorWebDirtLevels now e = do
-  tick <- tickLossy (0.020::NominalDiffTime) now
-  peaks <- performEvent $ fmap (liftIO . (\_ -> SampleEngine.peakLevels e)) tick
-  rms <- performEvent $ fmap (liftIO . (\_ -> SampleEngine.rmsLevels e)) tick
-  return $ mergeWith (.) [fmap setPeakLevels peaks,fmap setRmsLevels rms]
+
