@@ -15,7 +15,13 @@ class SampleEngine e where
 
 -- | Given a time range, calculate the events that occur in that time range
 renderPattern :: (UTCTime, NominalDiffTime) -> ContextChange
-renderPattern (t,i) c = **** RESUME WORKING HERE (adapting from soon-to-be-deprecated Stream.hs)
+renderPattern (s,e) c = c { sounds = (sounds c) ++ events' }
+  where
+    t = tempo c
+    s' = diffUTCTime s (at t) / cps t + beat t
+    e' = e / cps t + s'
+    events = seqToRelOnsetDeltas (s',e') (pattern c)
+    events' = Prelude.map (\(o,_,m) -> (o + ?????????,m)) events
 
 -- | IO action to send all events from a given context to a SampleEngine
 -- (will use getClockDiff to adjust the frame of reference as necessary)
@@ -28,7 +34,7 @@ sendSoundsIO e c = do
     (\msg -> putStrLn $ "exception: " ++ show (msg :: E.SomeException))
 
 sendSounds :: (MonadWidget t m, SampleEngine e)
-  => e -> Event t Context -> IO ()
+  => e -> Event t Context -> m ()
 sendSounds e c = performEvent_ $ fmap (liftIO . sendSoundsIO e) c
 
 flushSounds :: (MonadWidget t m, SampleEngine.SampleEngine e)

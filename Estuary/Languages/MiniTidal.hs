@@ -227,7 +227,7 @@ specificPattern = choice [
   specificPatternGeneric "unit" Tidal.unit
   ]
 
-genericPattern :: Tidal.Parseable b => GenParser Char a (Tidal.Pattern b)
+genericPattern :: (Tidal.Parseable b, Tidal.Enumerable b) => GenParser Char a (Tidal.Pattern b)
 genericPattern = do
   char '"'
   x <- many (noneOf "\"")

@@ -20,7 +20,7 @@ data Context = Context {
 emptyContext :: UTCTime -> Context
 emptyContext now = Context {
   startTime = now,
-  tempo = Tidal.Tempo {at=now,beat=0.0,cps=0.5,paused=False,clockLatency=0.2},
+  tempo = Tidal.Tempo now 0.0 0.5 False 0.2,
   pattern = Tidal.silence,
   sounds = [],
   webDirtOn = True,

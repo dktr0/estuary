@@ -18,5 +18,6 @@ extra-deps:
 - reflex-dom-0.3
 - reflex-0.4.0
 - ref-tf-0.4
-- tidal-0.9.4
+- hosc-0.16
+- tidal-0.9.9
 - parsec-numbers-0.1.0
