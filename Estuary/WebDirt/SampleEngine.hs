@@ -16,43 +16,38 @@ class SampleEngine e where
   getPeakLevels :: e -> IO [Double]
   getRmsLevels :: e -> IO [Double]
 
--- | Given a time range, calculate the events that occur in that time range
-renderPattern :: (UTCTime, NominalDiffTime) -> ContextChange
-renderPattern (start,range) c = c { sounds = (sounds c) ++ events' }
+renderTidalPattern :: UTCTime -> NominalDiffTime -> Tidal.Tempo -> Tidal.ParamPattern -> [(UTCTime,Tidal.ParamMap)]
+renderTidalPattern start range t p = Prelude.map (\(o,_,m) -> (addUTCTime (realToFrac o*range) start,m)) events
   where
-    t = tempo c
     start' = (realToFrac $ diffUTCTime start (Tidal.at t)) / Tidal.cps t + Tidal.beat t -- start time in cycles since beginning of tempo
     end = realToFrac range / Tidal.cps t + start' -- end time in cycles since beginning of tempo
-    events = Tidal.seqToRelOnsetDeltas (toRational start',toRational end) (pattern c) -- events, with times expressed as fractions of the range s to e
-    events' = Prelude.map (\(o,_,m) -> (addUTCTime (realToFrac o*range) start,m)) events
+    events = Tidal.seqToRelOnsetDeltas (toRational start',toRational end) (pattern c) -- times expressed as fractions of start->range
 
--- | IO action to send all events from a given context to a SampleEngine
--- (will use getClockDiff to adjust the frame of reference as necessary)
-sendSoundsIO :: SampleEngine e => e -> Context -> IO ()
-sendSoundsIO e c = do
+sendSounds :: SampleEngine e => e -> Tidal.Tempo -> [(UTCTime,Tidal.ParamMap)] -> IO ()
+sendSounds e t sounds = do
   clockDiff <- getClockDiff e
-  let latency = Tidal.clockLatency $ tempo c
-  let sounds' = fmap (\(x,y) -> (realToFrac (utcTimeToPOSIXSeconds x) - clockDiff + latency,y)) $ sounds c
+  let latency = Tidal.clockLatency t
+  let sounds' = fmap (\(x,y) -> (realToFrac (utcTimeToPOSIXSeconds x) - clockDiff + latency,y)) sounds
   catch (mapM_ (playSample e) sounds')
     (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))
 
-sendSounds :: (MonadWidget t m, SampleEngine e)
-  => e -> Event t Context -> m ()
-sendSounds e c = performEvent_ $ fmap (liftIO . sendSoundsIO e) c
+render :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> UTCTime -> IO ()
+render wd sd c logicalTime = do
+  let sounds = renderTidalPattern logicalTime (0.1::NominalDiffTime) (tempo c) (pattern c)
+  if webDirtOn c then sendSounds wd (tempo c) sounds else return ()
+  if superDirtOn c then sendSounds sd (tempo c) sounds else return ()
 
-flushSounds :: (MonadWidget t m)
-  => Event t a -> m (Event t ContextChange)
-flushSounds x = return $ fmap (const $ \y -> y { sounds = [] } ) x
+regenerateRenderer :: (SampleEngine wd, SampleEngine sd) => MVar (UTCTime -> IO ()) -> wd -> sd -> Context -> IO ()
+regenerateRenderer r wd sd c = putMVar r $ render wd sd c  
 
-renderSendFlush :: (MonadWidget t m, SampleEngine e, SampleEngine e2)
-  => UTCTime -> e -> e2 -> Dynamic t Context -> m (Event t ContextChange)
-renderSendFlush now wd sd c = do
-  tick <- tickLossy (0.125::NominalDiffTime) now
-  let r = fmap (renderPattern . (\x -> (x,0.125::NominalDiffTime)) . _tickInfo_lastUTC) tick
-  wdIsOn <- mapDyn webDirtOn c
-  sdIsOn <- mapDyn superDirtOn c
-  sendSounds wd (gate (current wdIsOn) $ tagDyn c tick)
-  sendSounds sd (gate (current sdIsOn) $ tagDyn c tick)
-  f <- flushSounds tick
-  return $ mergeWith (.) [r,f]
+--  performEvent_ $ fmap (liftIO . regenerateRenderer r wd sd) $ updated context
+
+forkRenderThread :: MVar (UTCTime -> IO ()) -> IO ()
+forkRenderThread r = do
+  renderStart <- getUTCTime 
+  forkIO $ flip iterateM_ $ renderStart $ \t ->
+    r' <- readMVar r
+    r' t
+    threadDelay 100000 -- 0.1 seconds in microseconds
+    return $ addUTCTime (0.1::NominalDiffTime) t
 
