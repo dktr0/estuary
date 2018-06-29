@@ -33,7 +33,7 @@ estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
   -- levelMeterWidget context
   headerChanges <- header ctx
   (values,deltasUp,hints) <- divClass "page" $ navigation (startTime initialContext) ctx commands deltasDown'
-  commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'
+  commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
   (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime initialContext) deltasUp
   p <- mapDyn (toParamPattern . StackedPatterns) values
   let patternChanges = fmap setPattern $ updated p

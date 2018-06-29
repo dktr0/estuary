@@ -15,7 +15,8 @@ data Term =
   CreateNewEnsembleNote |
   AdministratorPassword |
   EnsembleName |
-  EnsemblePassword
+  EnsemblePassword |
+  TerminalChat
   deriving (Show,Eq)
   
 translate :: Term -> Language -> String
@@ -58,6 +59,12 @@ translate EnsembleName Español = "Nombre del ensamble:"
 
 translate EnsemblePassword English = "Ensemble password:"
 translate EnsemblePassword Español = "Contraseña del ensamble:"
+
+translate TerminalChat English = "Terminal/Chat:"
+translate TerminalChat Español = "Terminal/Chat:"
+
+translate Send English = "Send"
+translate Send Español = "enviar"
 
 translate x _ = "?" ++ show x
 
