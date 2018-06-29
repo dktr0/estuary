@@ -8,6 +8,7 @@ import Text.JSON
 import Data.Time
 import Text.Read
 import Control.Monad.IO.Class (liftIO)
+import Control.Concurrent.MVar
 
 import Estuary.Tidal.Types
 import Estuary.Protocol.Foreign
@@ -23,22 +24,22 @@ import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 
 estuaryWidget :: MonadWidget t m
-  => WebDirt -> SuperDirt -> EstuaryProtocolObject -> Context -> m ()
-estuaryWidget wd sd protocol initialContext = divClass "estuary" $ mdo
+  => MVar Renderer -> WebDirt -> SuperDirt -> EstuaryProtocolObject -> Context -> m ()
+estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
   levelMeterWidget context
   headerChanges <- header context
   (values,deltasUp,hints) <- divClass "page" $ navigation (startTime initialContext) commands deltasDown'
-  -- note: in preceding line (startTime initialContext) should soon become Dynamic passing of current context...
   commands <- divClass "chat" $ terminalWidget deltasUp deltasDown'
   (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime initialContext) deltasUp
   p <- mapDyn (toParamPattern . StackedPatterns) values
   let patternChanges = fmap setPattern $ updated p
-  renderChanges <- renderSendFlush (startTime initialContext) wd sd context
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
-  let contextChanges = mergeWith (.) [renderChanges,patternChanges,headerChanges,ccChange]
+  let contextChanges = mergeWith (.) [patternChanges,headerChanges,ccChange]
   context <- foldDyn ($) initialContext contextChanges
+  dynamicRender renderM wd sd context
   performHint wd hints
+
 
 
 header :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
