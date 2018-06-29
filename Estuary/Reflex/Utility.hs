@@ -8,11 +8,36 @@ import GHCJS.DOM.EventM
 import Data.Map
 import Data.Maybe
 import Data.Monoid
+import Control.Monad
 import GHCJS.DOM.HTMLSelectElement as Select
 import Control.Monad hiding (forM_) -- for 'guard'
 import Safe -- for readMay
 import GHCJS.DOM.Element hiding (error) --for 'change'
 import Data.List (nub, elemIndex)
+
+import Estuary.Types.Term
+import Estuary.Types.Context
+import Estuary.Types.Language
+
+translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t String)
+translateDyn t = mapDyn (translate t . language)
+
+translationList :: MonadWidget t m => Dynamic t Context -> [(Language,a)] -> m (Dynamic t a)
+translationList c m = do 
+  let m' = fromList m
+  let d = snd (m!!0)
+  l <- mapDyn language c
+  mapDyn (\k -> findWithDefault d k m') l
+
+--Button with dynamic label. A final version that uses >=> from Control.Monad to compose together two a -> m b functions
+dynButton :: MonadWidget t m => Dynamic t String -> m (Event t ())
+dynButton = (mapDyn button) >=> dynE
+
+-- | dynE is like dyn from Reflex, specialized for widgets that return
+-- events. A dynamic argument updates the widget, and the return value is
+-- already flattened to just being the events returned by the child widget.
+dynE :: MonadWidget t m => Dynamic t (m (Event t a)) -> m (Event t a)
+dynE x = dyn x >>= switchPromptly never
 
 -- Anytime an event is received issue another event of a given constant value.
 constEvent :: Reflex t => a -> Event t b -> Event t a

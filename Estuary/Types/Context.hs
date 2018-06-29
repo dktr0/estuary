@@ -3,8 +3,10 @@ module Estuary.Types.Context where
 import Data.Time
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
+import Estuary.Types.Language
 
 data Context = Context {
+  language :: Language,
   startTime :: UTCTime,
   tempo :: Tidal.Tempo,
   pattern :: Tidal.ParamPattern,
@@ -18,6 +20,7 @@ data Context = Context {
 
 emptyContext :: UTCTime -> Context
 emptyContext now = Context {
+  language = English,
   startTime = now,
   tempo = Tidal.Tempo now 0.0 0.5 False 0.2,
   pattern = Tidal.silence,
@@ -30,6 +33,9 @@ emptyContext now = Context {
 }
 
 type ContextChange = Context -> Context
+
+setLanguage :: Language -> ContextChange
+setLanguage x c = c { language = x }
 
 setPeakLevels :: [Double] -> ContextChange
 setPeakLevels xs c = c { peakLevels = xs }
