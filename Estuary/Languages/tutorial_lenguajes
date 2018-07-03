@@ -234,7 +234,7 @@ Transformaciones:
 
 ////////////////////////////////////////////////////////
 
-Nombre del lenguaje: suciXXX
+Nombre del lenguaje: SuciXXX
 Modelo de entrada: 
 
 	<sujeto><nombre del sample><transformación y parámetro>
@@ -256,29 +256,27 @@ Para iniciar:
 
 Sonidos:
 	comeme        >> fire
-	dame          >> bass
-	azotame       >> 808
+	dame          >> bass2
+	azotame       >> 808:2
 	rompeme       >> gabba
 	barre el piso >> notes
-	interpelame   >> metal
+	interpelame   >> casio
 	encadename    >> metal
 	aborto        >> arpy
 	
 Transformadores:
-	suave                        >> slow 2
-	suave suevecito              >> slow 4
-	duro                         >> fast 2
-	más más                      >> fast 4
-	con lengua                   >> brak
-	con el pelo                  >> 
-	en la cama                   >>
-	bajo la luz de las estrellas >> 
+	suave                        >> slow 
+	suave suevecito              >> slow 
+	duro                         >> fast
+	más más                      >> fast 
+	con lengua                   >> striate
+	con el pelo                  >> chop
 	bb                           >> reverb
-	con flow                     >> rev (slow)
+	con flow                     >> rev
 	
 ////////////////////////////////////////////////////////
 
-Nombre del lenguaje: Ecu a lo bestia 
+Nombre del lenguaje: Alobestia
 Modelo de entrada: 
 
 	<nombre del sample><transformación><parámetros>
@@ -289,50 +287,53 @@ Ejemplo de modelo de salida:
 	
 Sonidos:
 
-	boom
-	clap
-	sap
-	bit
-	byte
-	scratch
-	git
-	click
-	supr
-	esc
+	boom        >> bd
+	clap        >> cp
+	zap         >> bass
+	
 	
 Transformaciones:  
 
 	rapido      >> fast
 	lento       >> slow
 	distorsion  >> gap
-	reverb      >> reverb
-	eco         >> ?
-	pitch       >> up
+	densidad    >> density
+
 	
 ////////////////////////////////////////////////////////
 
-Nombre del lenguaje: 
+Nombre del lenguaje: Imagina 
 Modelo de entrada:
-Ejemplo modelo de salida: 
+	
+	<verbo><nombre del sample><transformación><parámetro>
+		
+Ejemplo modelo de salida:
+
+	Imagina  el agua del rio
+	
+Verbos:
+	imagina
+	sueña
+	mechita
+	
 Sonidos:
 
-	El agua
-	Las hojas
-	El pájaro
+	el agua     >> pluck:3
+	las hojas   >> wind
+	el pájaro   >> birds3
 	
 Transformaciones:
 
-	del rio
-	cayendo 
-	del mar
-	del árbol
-	caer
-	crecer
-	cantando
-	volando
-	comiendo
-	
-Parámetros: 
+	del rio     >> palindrome
+	cayendo     >> slow
+	del mar     >> density
+	del árbol   >> palindrome
+	caer        >> slow
+	crecer      >> density
+	cantando    >> fast
+	volando     >> density
+	comiendo    >> trunc
+
 
 
 ////////////////////////////////////////////////////////
@@ -348,20 +349,21 @@ Ejemplo de modelo de salida:
 
 Sonidos:
 
-	otirg   >> grito
-	odimeg  >> gemido 
-	odiblis >> silbido
+	otirg   >> alphabet:2
+	odimeg  >> moan 
+	odiblis >> space:3
 	
 Transformaciones: 
 
-	mmm >> up
-	uuu >> pan
-	,,, >> fast
+	mmm >> iter
+	uuu >> chop
+	,   >> fast
+	;   >> slow
 
 
 ////////////////////////////////////////////////////////
 
-Nombre del lenguaje: punto y ya
+Nombre del lenguaje: Puntoyya
 Modelo de entrada: 
 
 	<nombre del sample><transformaciones><parámetros>
@@ -371,7 +373,7 @@ Ejemplo de modelo de entrada:
 	. _ . o 2
 
 Sonidos: 
-	. _ .  >> up
+	. _ .  >> cp
 	. - .  >> arpy
 	. | .  >> bass
 	. " .  >> hh
