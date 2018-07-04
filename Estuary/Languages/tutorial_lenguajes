@@ -170,7 +170,7 @@ País: Perú
 Cuidad: Lima 
 
 ////////////////////////////////////////////////////////		
-Nombre del lenguaje: Coloquial
+Nombre del lenguaje: La calle
 Modelo de entrada: 
 
 		 <nombre sonido> <transf1> <parametros>
@@ -209,6 +209,11 @@ Modelo de entrada:
 Ejemplo de modelo de salida:
 
 		:) hbkm!q3
+		
+Carácteres para el emoticón:
+
+! @ # $ % ^ / ( ) = + * [ ] { } | ; ~ ? ¿
+
 Sonidos:
 	
 		g >> guiro
@@ -272,7 +277,7 @@ Transformadores:
 	con lengua                   >> striate
 	con el pelo                  >> chop
 	bb                           >> reverb
-	con flow                     >> rev
+	con flow                     >> rev 
 	
 ////////////////////////////////////////////////////////
 
@@ -371,6 +376,7 @@ Modelo de entrada:
 Ejemplo de modelo de entrada: 
 
 	. _ . o 2
+	
 
 Sonidos: 
 	. _ .  >> cp
