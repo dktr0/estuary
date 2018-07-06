@@ -10,14 +10,30 @@ import qualified Sound.Tidal.Context as Tidal
 
 lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
-  sonido <- animal
-  transf <- accion
-  --param <- adjetivos
-  return $ transf $ nuestroTextoATidal sonido
+  espacios
+  char 'a'
+  espacios
+  s1 <- animal
+  espacios
+  s2 <- animal
+  espacios
+  s3 <- animal
+  espacios
+  s4 <- animal
+  espacios
+  t1 <- accion
+  espacios
+  t2 <- accion
+  espacios
+  t3 <- accion
+  espacios
+  t4 <- accion
+  espacios
+  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
 nuestroTextoATidal :: String -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s
-natural
+
 espacios :: GenParser Char a String
 espacios = many (oneOf " ")
 
@@ -25,7 +41,8 @@ animal :: GenParser Char a String
 animal = choice [
         try (string "El Cóndor" >> espacios >> return "sax"),
         try (string "El Hombre" >> espacios >> return "pluck"),
-        try (string "El León" >> espacios >> return "bass")
+        try (string "El León" >> espacios >> return "bass"),
+        try (descartarTexto >> return " ")
         ]
 
 descartarTexto :: GenParser Char a String

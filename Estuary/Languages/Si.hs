@@ -11,46 +11,54 @@ import qualified Sound.Tidal.Context as Tidal
 
 lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
-  spaces'
-  s <- bancoDeSonidos
-  spaces'
-  t1 <- ordenesDentrada1
-  spaces'
-  t2 <- ordenesDentrada2
-  spaces
-  return $ t1 $ t2 $ stringToTidalPattern s
+  --coloca aquí los parsers
+    espacios
+    char '#'
+    espacios
+    s1 <- sonidos
+    espacios
+    s2 <- sonidos
+    espacios
+    s3 <- sonidos
+    espacios
+    s4 <- sonidos
+    espacios
+    t1 <- transformacion
+    espacios
+    t2 <- transformacion
+    espacios
+    t3 <- transformacion
+    espacios
+    t4 <- transformacion
+    espacios
+    return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-stringToTidalPattern :: String -> Tidal.ParamPattern
-stringToTidalPattern s = Tidal.s $ Tidal.p s
+nuestroTextoATidal :: String -> Tidal.ParamPattern
+nuestroTextoATidal s = Tidal.s $ Tidal.p s
 
-spaces' :: GenParser Char a String
-spaces' = many (oneOf " ")
+espacios :: GenParser Char a String
+espacios = many (oneOf " ")
 
-bancoDeSonidos :: GenParser Char a String
-bancoDeSonidos = choice [
-        try (string "Nose" >> spaces' >> return "bd"),
-        try (string "Willy" >> spaces' >> return "hh"),
-        try (string "Gracioso" >> spaces' >> return "sn"),
-        try (string "Elefante" >> spaces' >> return "bass")
-        ]
+sonidos :: GenParser Char a String
+sonidos = choice [
+                try (string "Nose" >> espacios >> return "bd"),
+                try (string "Willy" >> espacios >> return "hh"),
+                try (string "Gracioso" >> espacios >> return "sn"),
+                try (string "Elefante" >> espacios >> return "bass"),
+                try (descartarTexto >> return " ")
+                ]
 
 descartarTexto :: GenParser Char a String
 descartarTexto = many (oneOf "\n")
 
-ordenesDentrada1 :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-ordenesDentrada1 = choice [
-                try (string "Pegado"  >> spaces >> int >>= return . Tidal.iter),
-                try (string "lejos" >> spaces >> fractional3 False >>= return . Tidal.density),
-                try (descartarTexto >> return id)
-                ]
-
-ordenesDentrada2 :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-ordenesDentrada2 = choice [
-                try (string "Tortuga" >> spaces >> fractional3 False >>= return . Tidal.slow),
-                try (string "Comadreja" >> spaces >> fractional3 False >>= return . Tidal.fast),
-                  try (descartarTexto >> return id)
-                ]
-
+transformacion :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+transformacion = choice [
+                      try (string "Pegado"  >> espacios >> int >>= return . Tidal.iter),
+                      try (string "lejos" >> espacios >> fractional3 False >>= return . Tidal.density),
+                      try (string "Tortuga" >> espacios >> fractional3 False >>= return . Tidal.slow),
+                      try (string "Comadreja" >> espacios >> fractional3 False >>= return . Tidal.fast),
+                      try (descartarTexto >> return id)
+                      ]
 
 exprStack :: GenParser Char a Tidal.ParamPattern
 exprStack = do

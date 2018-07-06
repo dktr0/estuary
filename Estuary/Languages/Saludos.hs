@@ -6,31 +6,49 @@ import Data.List (intercalate)
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
 
+--saludos
 -- <nombreDelSample><espacio><transformaciones>
 
 lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
-  spaces'
-  s <- saludos'
-  spaces'
-  t <- transformaciones
-  spaces'
-  return $ t $ stringToTidalPattern s
+  espacios
+  char '¡'
+  espacios
+  s1 <- saludos'
+  espacios
+  s2 <- saludos'
+  espacios
+  s3 <- saludos'
+  espacios
+  s4 <- saludos'
+  espacios
+  char '!'
+  espacios
+  t1 <- transformaciones
+  espacios
+  t2 <- transformaciones
+  espacios
+  t3 <- transformaciones
+  espacios
+  t4 <- transformaciones
+  espacios
+  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-stringToTidalPattern :: String -> Tidal.ParamPattern
-stringToTidalPattern s = Tidal.s $ Tidal.p s
+nuestroTextoATidal :: String -> Tidal.ParamPattern
+nuestroTextoATidal s = Tidal.s $ Tidal.p s
 
 
-spaces' :: GenParser Char a String
-spaces' = many (oneOf " ")
+espacios :: GenParser Char a String
+espacios = many (oneOf " ")
 
 
 
 saludos' :: GenParser Char a String
 saludos' = choice [
-        try (string "hola" >> spaces' >> return "moog"),
-        try (string "como estas" >> spaces' >> return "arpy"),
-        try (string "saludos" >> spaces' >> return "bd")
+        try (string "hola" >> espacios >> return "moog"),
+        try (string "como estas" >> espacios >> return "arpy"),
+        try (string "saludos" >> espacios >> return "bd"),
+        try (descartarTexto >> return " ")
         ]
 
 transformaciones :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)

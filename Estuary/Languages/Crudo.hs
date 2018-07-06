@@ -1,17 +1,18 @@
-module Estuary.Languages.Puntoyya (puntoyya) where
+module Estuary.Languages.Crudo (crudo) where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
---punto y ya
--- <nombre sonido> <transf1> <parametros>
---  .-. o 2
+
+--Crudo
+-- "<samples><samples><samples><samples>" <espacio> <transformación><parametros>
+
 
 lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
 --coloca aquí los parsers
   espacios
-  char '.'
+  char '"'
   espacios
   s1 <- sonidos
   espacios
@@ -21,7 +22,7 @@ lengExpr = do
   espacios
   s4 <- sonidos
   espacios
-  char '.'
+  char '"'
   espacios
   t1 <- trans
   espacios
@@ -36,28 +37,30 @@ lengExpr = do
 nuestroTextoATidal ::  String  -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s
 
-
 sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (char '_' >> espacios >> return "cp" ),
-        try (char '-' >> espacios >> return "arpy" ),
-        try (char '|' >> espacios >> return "bass" ),
-        try (char '"' >> espacios >> return "hh" ),
+        try (string "trueno" >> espacios >> return "bd"),
+        try (string "río" >> espacios >> return "sn"),
+        try (string "cascada" >> espacios >> return "wind"),
+        try (string "volcán" >> espacios >> return "stomp"),
+        try (string "rama" >> espacios >> return "hh"),
+        try (string "viento" >> espacios >> return "wind"),
+        try (string "cueva" >> espacios >> return "short"),
         try (descartarTexto >> return " ")
         ]
 
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 trans = choice [
               --coloca aqui los nombres de tus transformaciones
-         try (string "o" >> spaces >> fractional3 False >>= return . Tidal.fast),
-         try (string "oo" >> spaces >> fractional3 False >>= return . Tidal.slow),
-         try (string "ooo" >> spaces >> int >>= return . Tidal.iter),
-         try (string "oooo" >> spaces >> int >>= return . Tidal.chop),
-         try (descartarTexto >> return id)
-                ]
-
+        try (string "eco" >> return Tidal.palindrome),
+        try (string "oscuridad" >> spaces >> fractional3 False >>= return . Tidal.slow),
+        try (string "salvaje" >> spaces >> fractional3 False >>= return . Tidal.density),
+        try (string "este" >> spaces >> fractional3 False >>= return . Tidal.fast),
+        try (string "oeste" >> spaces >> fractional3 False >>= return . Tidal.trunc),
+        try (descartarTexto >> return id)
+        ]
 
 --descartar espacios
 espacios :: GenParser Char a String
@@ -72,5 +75,5 @@ exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-puntoyya :: String -> Tidal.ParamPattern
-puntoyya s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s
+crudo :: String -> Tidal.ParamPattern
+crudo s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s

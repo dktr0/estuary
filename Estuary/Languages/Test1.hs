@@ -12,24 +12,16 @@ lengExpr = do
 --coloca aquí los parsers
   espacios
   inicio
+  s <- sonidos
+  t1 <- transformaciones
   espacios
-  s1 <- sonidos
+  t2 <- transformaciones
   espacios
-  s2 <- sonidos
+  t3 <- transformaciones
   espacios
-  s3 <- sonidos
+  t4 <- transformaciones
   espacios
-  s4 <- sonidos
-  espacios
-  t1 <- trans
-  espacios
-  t2 <- trans
-  espacios
-  t3 <- trans
-  espacios
-  t4 <- trans
-  espacios
-  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
+  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal s
 
 nuestroTextoATidal ::  String  -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s
@@ -41,8 +33,8 @@ inicio = choice [
         try (string "mechita")
         ]
 
-sonidos :: GenParser Char a String
-sonidos = choice [
+sonidos' :: GenParser Char a String
+sonidos' = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
         try (string "el agua" >> espacios >> return "pluck" ),
@@ -52,8 +44,8 @@ sonidos = choice [
         ]
 
 
-trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-trans = choice [
+transformaciones :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+transformaciones = choice [
               --coloca aqui los nombres de tus transformaciones
               try (string "del río" >> return Tidal.palindrome),
               try (string "cayendo" >> spaces >> fractional3 False >>= return . Tidal.slow),
@@ -66,6 +58,18 @@ trans = choice [
               try (string "comiendo" >> spaces >> fractional3 False >>= return . Tidal.trunc),
               try (descartarTexto >> return id)
                 ]
+sonidos :: GenParser Char a String
+sonidos = do
+      espacios
+      s1 <- sonidos'
+      espacios
+      s2 <- sonidos'
+      espacios
+      s3 <- sonidos'
+      espacios
+      s4 <- sonidos'
+      espacios
+      return $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
 --descartar espacios
 espacios :: GenParser Char a String
