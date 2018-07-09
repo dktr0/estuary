@@ -67,4 +67,3 @@ if(wsAddress != null) connectWs();
 process.on('SIGINT', function() {
   ws.close();
 });
-

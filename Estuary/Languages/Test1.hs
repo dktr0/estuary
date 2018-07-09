@@ -3,77 +3,80 @@ module Estuary.Languages.Test1 (test1) where
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
--- suci xxx
--- <nombre sonido> <transf1> <parametros>
+import Data.List (intercalate)
 
-
+--saborts
+-- <emoticon> <nombre sonido> <transf1> <parametros>
+-- :) q! w10
+-- cyril
 lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
 --coloca aquí los parsers
   espacios
-  inicio
-  s <- sonidos
-  t1 <- transformaciones
+  char ':'
+  many (oneOf "!, @, #, $, %, ^, /, (, ), =, +, *, [,], {, }, |, ;, ~, ?, ¿")
   espacios
-  t2 <- transformaciones
+  s1 <- sonidos
+  s2 <- sonidos
+  s3 <- sonidos
+  s4 <- sonidos
   espacios
-  t3 <- transformaciones
+  char '!'
   espacios
-  t4 <- transformaciones
+  t1 <- trans
   espacios
-  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal s
+  t2 <- trans
+  espacios
+  t3 <- trans
+  espacios
+  t4 <- trans
+  espacios
+  return $ t1 $t2 $t3 $t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-nuestroTextoATidal ::  String  -> Tidal.ParamPattern
+  --zs <- many (oneOf "~")
+  --t1 <- trans
+
+nuestroTextoATidal :: String -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s
 
-inicio :: GenParser Char a String
-inicio = choice [
-        try (string "imagina" ),
-        try (string "sueña"),
-        try (string "mechita")
-        ]
 
-sonidos' :: GenParser Char a String
-sonidos' = choice [
+sonidos :: GenParser Char a String
+sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "el agua" >> espacios >> return "pluck" ),
-        try (string "las hojas" >> espacios >> return "wind" ),
-        try (string "el pájaro" >> espacios >> return "birds3" ),
+        try (string "g" >> espacios >> return "drumtraks" ),
+        try (string "b" >> espacios >> return "bd"),
+        try (string "v" >> espacios >> return "bd:1" ),
+        try (string "d" >> espacios >> return "bd:2"),
+        try (string "k" >> espacios >> return "bd:3"),
+        try (string "m" >> espacios >> return "bass:1" ),
+        try (string "h" >> espacios >> return "hh27"),
+        try (string "i" >> espacios >> return "hh:7"),
+        try (string "t" >> espacios >> return "sn:1"),
+        try (string "a" >> espacios >> return "sn:2"),
+        try (string "c" >> espacios >> return "cp:1"),
+        try (string "o" >> espacios >> return "drum"),
+        try (string "e" >> espacios >> return "drum:1"),
         try (descartarTexto >> return " ")
         ]
 
 
-transformaciones :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-transformaciones = choice [
+trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+trans = choice [
               --coloca aqui los nombres de tus transformaciones
-              try (string "del río" >> return Tidal.palindrome),
-              try (string "cayendo" >> spaces >> fractional3 False >>= return . Tidal.slow),
-              try (string "del mar" >> spaces >> fractional3 False >>= return . Tidal.density),
-              try (string "del árbol" >> return Tidal.palindrome),
-              try (string "caer" >> spaces >> fractional3 False >>= return . Tidal.slow),
-              try (string "crecer" >> spaces >> fractional3 False >>= return . Tidal.density),
-              try (string "cantando" >> spaces >> fractional3 False >>= return . Tidal.fast),
-              try (string "volando" >> spaces >> fractional3 False >>= return . Tidal.density),
-              try (string "comiendo" >> spaces >> fractional3 False >>= return . Tidal.trunc),
-              try (descartarTexto >> return id)
+         try (string "w" >> spaces >>  return Tidal.brak),
+         try (string "q" >> spaces >> fractional3 False  >>= return . Tidal.fast),
+         try (string "s">> spaces >> fractional3 False   >>= return . Tidal.slow),
+         try (string "z" >> spaces  >> int >>= return . Tidal.gap),
+         try (descartarTexto >> return id)
                 ]
-sonidos :: GenParser Char a String
-sonidos = do
-      espacios
-      s1 <- sonidos'
-      espacios
-      s2 <- sonidos'
-      espacios
-      s3 <- sonidos'
-      espacios
-      s4 <- sonidos'
-      espacios
-      return $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
+numeros ::  Char -> Char
+numeros '|' = '1'
 --descartar espacios
 espacios :: GenParser Char a String
 espacios = many (oneOf " ")
+
 
 --descartar texto
 descartarTexto :: GenParser Char a String

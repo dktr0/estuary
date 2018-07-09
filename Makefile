@@ -21,7 +21,7 @@ installServer: buildServer
 	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
 
 rggtrn: installClient installServer
-	EstuaryServer/EstuaryServer rggtrn
+	EstuaryServer/EstuaryServer rggtrn 8002
 
 openClient:
 	cp -Rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin/Estuary.jsexe .
