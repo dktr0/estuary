@@ -32,7 +32,7 @@ var newlines = parsed['newlines-as-spaces'];
 var server = parsed['server'];
 if(server == null) { server = "localhost"; }
 var port = parsed['port'];
-if(port == null) { port = 8002; }
+if(port == null) { port = 80; }
 var wsAddress = "ws://" + server + ":" + (port.toString());
 
 var connectWs = function() {
