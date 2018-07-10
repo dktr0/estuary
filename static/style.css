@@ -4,18 +4,22 @@ body {
 	height: 100%;
 	margin: 0;
 	font-family: sans;
+		
 }
 
 input {
 	background-color: whitesmoke;
 	color: black;
 	margin: 1px;
+
 }
 
 
 textarea {
 	background-color: whitesmoke;
 	color: black;
+	font-size: 200%;
+	
 	}
 
 button {
