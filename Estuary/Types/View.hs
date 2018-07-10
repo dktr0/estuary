@@ -231,7 +231,11 @@ presetView "RGGTRN" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,SabortsView 1]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,SabortsView 3]),
   ViewDiv "eightMiddleL" (Views [LabelView 4,SabortsView 5]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,SabortsView 7])
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15])
   ]
 
 presetView "test" = Views [
