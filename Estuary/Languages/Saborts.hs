@@ -65,6 +65,7 @@ sonidos = choice [
         --ej. try (string "bombo" >> espacios >> "bd")
         try (string "[" >> espacios >> return "[" ),
         try (string "]" >> espacios >> return "]"),
+        try (string "_" >> espacios >> return "~"),
         try (string "g" >> espacios >> return "drumtraks" ),
         try (string "b" >> espacios >> return "bd"),
         try (string "v" >> espacios >> return "bd:1" ),
