@@ -11,15 +11,34 @@ import Data.List (intercalate)
 -- cyril
 lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
---coloca aquí los parsers
   espacios
   char ':'
-  many (oneOf "!, @, #, $, %, ^, /, (, ), =, +, *, [,], {, }, |, ;, ~, ?, ¿")
+  many (oneOf "!, @, #, $, %, ^, /, (, ), =, +, *, {, }, |, ;, ~, ?, ¿")
   espacios
   s1 <- sonidos
   s2 <- sonidos
   s3 <- sonidos
   s4 <- sonidos
+  s5 <- sonidos
+  s6 <- sonidos
+  s7 <- sonidos
+  s8 <- sonidos
+  s9 <- sonidos
+  s10 <- sonidos
+  s11 <- sonidos
+  s12 <- sonidos
+  s13 <- sonidos
+  s14 <- sonidos
+  s15 <- sonidos
+  s16 <- sonidos
+  s17 <- sonidos
+  s18 <- sonidos
+  s19 <- sonidos
+  s20 <- sonidos
+  s21 <- sonidos
+  s22<- sonidos
+  s23 <- sonidos
+  s24 <- sonidos
   espacios
   char '!'
   espacios
@@ -31,7 +50,7 @@ lengExpr = do
   espacios
   t4 <- trans
   espacios
-  return $ t1 $t2 $t3 $t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
+  return $ t1 $t2 $t3 $t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " " ++ s5 ++ " " ++ s6 ++ " " ++ s7 ++ " " ++ s8 ++ " " ++ s9 ++ " " ++ s10 ++ " " ++ s11 ++ " " ++ s12 ++ " " ++ s13 ++ " " ++ s14 ++ " " ++ s15 ++ " " ++ s16 ++ " " ++ s17 ++ " " ++ s18 ++ " " ++ s19 ++ " " ++ s20 ++ " " ++ s21 ++ " " ++ s22 ++ " " ++ s23 ++ " " ++ s24 ++ " "
 
   --zs <- many (oneOf "~")
   --t1 <- trans
@@ -44,6 +63,8 @@ sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
+        try (string "[" >> espacios >> return "[" ),
+        try (string "]" >> espacios >> return "]"),
         try (string "g" >> espacios >> return "drumtraks" ),
         try (string "b" >> espacios >> return "bd"),
         try (string "v" >> espacios >> return "bd:1" ),
@@ -60,6 +81,31 @@ sonidos = choice [
         try (descartarTexto >> return " ")
         ]
 
+-- sonidosConCorchetes :: GenParser Char a String
+-- sonidosConCorchetes = do
+--   espacios
+--   char '['
+--   espacios
+--   s1 <- sonidosSinCorchetes
+--   espacios
+--   s2 <- sonidosSinCorchetes
+--   espacios
+--   s3 <- sonidosSinCorchetes
+--   espacios
+--   s4 <- sonidosSinCorchetes
+--   espacios
+--   char ']'
+--   espacios
+--   return $  "[" ++ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ "]"
+--   -- c1 ++ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ c2
+--
+--
+-- sonidos :: GenParser Char a String
+-- sonidos = choice [
+--            try sonidosSinCorchetes,
+--            try sonidosConCorchetes
+--            -- try (descartarTexto >> return " ")
+--            ]
 
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 trans = choice [
