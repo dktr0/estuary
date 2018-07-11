@@ -1,10 +1,10 @@
 body {
-	background-color: lightgray;
+	background: linear-gradient(white, black, white);;
 	color: black;
 	height: 100%;
 	margin: 0;
 	font-family: sans;
-		
+  font-size: 200%;
 }
 
 input {
@@ -19,7 +19,7 @@ textarea {
 	background-color: whitesmoke;
 	color: black;
 	font-size: 200%;
-	
+
 	}
 
 button {
@@ -467,14 +467,14 @@ td {
 	text-align:center
 }
 
-/* The 'â–²' arrow td */
+/* The 'Ã¢â€“Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The 'â–¼' arrow td */
+/* The 'Ã¢â€“Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);

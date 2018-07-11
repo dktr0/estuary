@@ -36,7 +36,7 @@ lengExpr = do
   s19 <- sonidos
   s20 <- sonidos
   s21 <- sonidos
-  s22<- sonidos
+  s22<-  sonidos
   s23 <- sonidos
   s24 <- sonidos
   espacios
