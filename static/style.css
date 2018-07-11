@@ -1,16 +1,17 @@
 body {
-	background: linear-gradient(white, black, white);;
+	background: linear-gradient(white, gray, white);
 	color: black;
 	height: 100%;
 	margin: 0;
 	font-family: sans;
-  font-size: 200%;
+	font-size: 150%;
 }
 
 input {
 	background-color: whitesmoke;
 	color: black;
 	margin: 1px;
+  border-radius: 15px;
 
 }
 
@@ -18,7 +19,8 @@ input {
 textarea {
 	background-color: whitesmoke;
 	color: black;
-	font-size: 200%;
+
+	border-radius: 15px;
 
 	}
 
@@ -27,6 +29,8 @@ button {
 	color: white;
 	border: none;
 	border-radius: 4px;
+	font-size: 75%;
+
 }
 
 .estuary { /* the entire interface, contains .header .page and .footer */
@@ -38,6 +42,8 @@ button {
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+	font-size: 80%;
+
 }
 
 .page { /* contains the interface for programming on menu selected in pageMenu */
@@ -467,14 +473,14 @@ td {
 	text-align:center
 }
 
-/* The 'Ã¢â€“Â²' arrow td */
+/* The 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The 'Ã¢â€“Â¼' arrow td */
+/* The 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
@@ -602,11 +608,14 @@ td {
 .ensembleHeader {
 	display: flex;
 	flex-direction: row;
+
 }
 
 .ensembleName {
 	margin-top: 1px;
 	margin-right: 1em;
+		font-size: 80%;
+
 }
 
 .ensembleHandle {
@@ -617,9 +626,12 @@ td {
 .ensemblePassword {
   margin-right: 1em;
 	border: none;
+	font-size: 80%;
 }
 
 .ensembleTempo {
   margin-right: 1em;
 	border: none;
+	font-size: 80%;
+
 }
