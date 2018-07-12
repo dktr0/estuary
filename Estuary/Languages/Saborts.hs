@@ -15,6 +15,8 @@ lengExpr = do
   char ':'
   many (oneOf "!, #, $, %, ^, /, (, ), =, +, *, {, }, |, ;, ~, ?, ¿")
   espacios
+  n <- stringAnumeros
+  espacios
   s1 <- sonidos
   s2 <- sonidos
   s3 <- sonidos
@@ -68,16 +70,28 @@ lengExpr = do
   espacios
   t1 <- trans
   espacios
-  t2 <- trans
-  espacios
-  t3 <- trans
-  espacios
-  t4 <- trans
-  espacios
-  return $ t1 $t2 $t3 $t4 $ nuestroTextoATidal $ s1  ++ s2 ++ s3  ++ s4  ++ s5  ++ s6  ++ s7  ++ s8 ++  s9  ++ s10  ++ s11 ++ s12 ++ s13 ++ s14 ++ s15 ++ s16 ++ s17 ++ s18 ++ s19 ++ s20 ++ s21 ++ s22  ++ s23 ++ s24 ++ s25  ++ s26 ++ s27  ++ s28  ++ s29  ++ s30  ++ s31  ++ s32 ++  s33  ++ s34  ++ s35 ++ s36 ++ s37 ++ s38 ++ s39 ++ s40 ++ s42 ++ s42 ++ s43 ++ s44 ++ s45 ++ s46  ++ s47 ++ s48
+  -- t2 <- trans
+  -- espacios
+  -- t3 <- trans
+  -- espacios
+  -- t4 <- trans
+  -- espacios
+  return $ t1 $ nuestroTextoATidal (s1  ++ s2 ++ s3  ++ s4  ++ s5  ++ s6  ++ s7  ++ s8 ++  s9  ++ s10  ++ s11 ++ s12 ++ s13 ++ s14 ++ s15 ++ s16 ++ s17 ++ s18 ++ s19 ++ s20 ++ s21 ++ s22  ++ s23 ++ s24 ++ s25  ++ s26 ++ s27  ++ s28  ++ s29  ++ s30  ++ s31  ++ s32 ++  s33  ++ s34  ++ s35 ++ s36 ++ s37 ++ s38 ++ s39 ++ s40 ++ s42 ++ s42 ++ s43 ++ s44 ++ s45 ++ s46  ++ s47 ++ s48) Tidal.# Tidal.up n
 
-  --zs <- many (oneOf "~")
-  --t1 <- trans
+stringAnumeros :: GenParser Char a (Tidal.Pattern Double)
+stringAnumeros = choice [
+        try parseString,
+        try (descartarTexto >> return 0)
+        ]
+
+
+parseString :: Tidal.Parseable b => GenParser Char a (Tidal.Pattern b)
+parseString = do
+    char '"'
+    x <- many (noneOf "\"")
+    char '"'
+    spaces
+    return $ Tidal.p x
 
 nuestroTextoATidal :: String -> Tidal.ParamPattern
 nuestroTextoATidal s = Tidal.s $ Tidal.p s
@@ -90,6 +104,8 @@ sonidos = choice [
         try (string "[" >> espacios >> return "[" ),
         try (string "]" >> espacios >> return "]"),
         try (string "_" >> espacios >> return "~"),
+        try (string ">>" >> espacios >> return "*"),
+        try (string "<<" >> espacios >> return "/"),
         try (string "@" >> return ":"),
         try (string "0" >> return "0"),
         try (string "1" >> return "1"),
@@ -102,6 +118,7 @@ sonidos = choice [
         try (string "8" >> return "8"),
         try (string "9" >> return "9"),
         try (string " " >> return " "),
+        try (string "ñ" >> return "geom"),
         try (string "a" >> return "arpy"),
         try (string "b" >> return "bombo"),
         try (string "c" >> return "clap"),
@@ -125,32 +142,6 @@ sonidos = choice [
         try (descartarTexto >> return " ")
         ]
 
--- sonidosConCorchetes :: GenParser Char a String
--- sonidosConCorchetes = do
---   espacios
---   char '['
---   espacios
---   s1 <- sonidosSinCorchetes
---   espacios
---   s2 <- sonidosSinCorchetes
---   espacios
---   s3 <- sonidosSinCorchetes
---   espacios
---   s4 <- sonidosSinCorchetes
---   espacios
---   char ']'
---   espacios
---   return $  "[" ++ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ "]"
---   -- c1 ++ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ c2
---
---
--- sonidos :: GenParser Char a String
--- sonidos = choice [
---            try sonidosSinCorchetes,
---            try sonidosConCorchetes
---            -- try (descartarTexto >> return " ")
---            ]
-
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 trans = choice [
               --coloca aqui los nombres de tus transformaciones
@@ -164,8 +155,6 @@ trans = choice [
          try (descartarTexto >> return id)
                 ]
 
-numeros ::  Char -> Char
-numeros '|' = '1'
 --descartar espacios
 espacios :: GenParser Char a String
 espacios = many (oneOf " ")
