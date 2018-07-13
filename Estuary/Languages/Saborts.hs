@@ -13,7 +13,7 @@ lengExpr :: GenParser Char a Tidal.ParamPattern
 lengExpr = do
   espacios
   char ':'
-  many (oneOf "!, #, $, %, ^, /, (, ), =, +, *, {, }, |, ;, ~, ?, ¿")
+  many (oneOf "!, #, $, %, ^, /, (, ), +, *, {, }, |, ;, ~, ?, ¿")
   espacios
   pan <- stringAPan
   espacios
