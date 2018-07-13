@@ -70,13 +70,13 @@ lengExpr = do
   espacios
   t1 <- trans
   espacios
-  -- t2 <- trans
-  -- espacios
-  -- t3 <- trans
-  -- espacios
-  -- t4 <- trans
-  -- espacios
-  return $ t1 $ nuestroTextoATidal (s1  ++ s2 ++ s3  ++ s4  ++ s5  ++ s6  ++ s7  ++ s8 ++  s9  ++ s10  ++ s11 ++ s12 ++ s13 ++ s14 ++ s15 ++ s16 ++ s17 ++ s18 ++ s19 ++ s20 ++ s21 ++ s22  ++ s23 ++ s24 ++ s25  ++ s26 ++ s27  ++ s28  ++ s29  ++ s30  ++ s31  ++ s32 ++  s33  ++ s34  ++ s35 ++ s36 ++ s37 ++ s38 ++ s39 ++ s40 ++ s42 ++ s42 ++ s43 ++ s44 ++ s45 ++ s46  ++ s47 ++ s48) Tidal.# Tidal.up n
+  t2 <- trans
+  espacios
+  t3 <- trans
+  espacios
+  t4 <- trans
+  espacios
+  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal (s1  ++ s2 ++ s3  ++ s4  ++ s5  ++ s6  ++ s7  ++ s8 ++  s9  ++ s10  ++ s11 ++ s12 ++ s13 ++ s14 ++ s15 ++ s16 ++ s17 ++ s18 ++ s19 ++ s20 ++ s21 ++ s22  ++ s23 ++ s24 ++ s25  ++ s26 ++ s27  ++ s28  ++ s29  ++ s30  ++ s31  ++ s32 ++  s33  ++ s34  ++ s35 ++ s36 ++ s37 ++ s38 ++ s39 ++ s40 ++ s42 ++ s42 ++ s43 ++ s44 ++ s45 ++ s46  ++ s47 ++ s48) Tidal.# Tidal.up n
 
 stringAnumeros :: GenParser Char a (Tidal.Pattern Double)
 stringAnumeros = choice [
@@ -142,8 +142,8 @@ sonidos = choice [
         try (descartarTexto >> return " ")
         ]
 
-trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-trans = choice [
+transformaciones :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+transformaciones = choice [
               --coloca aqui los nombres de tus transformaciones
          try (string "q" >> spaces >> fractional3 False  >>= return . Tidal.fast),
          try (string "r" >> return Tidal.rev),
@@ -152,8 +152,35 @@ trans = choice [
          try (string "z" >> spaces  >> int >>= return . Tidal.gap),
          try (string "u" >> return Tidal.palindrome),
          try (string ">" >> spaces >> fractional3 False >>= return . Tidal.density),
+         try every,
          try (descartarTexto >> return id)
                 ]
+
+trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+trans = do
+  spaces
+  x <- choice [ try transformacionesEnLlaves, transformaciones]
+  spaces
+  return x
+
+every :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+every = do
+  string ";"
+  spaces
+  n <- int
+  spaces
+  t <- transformacionesEnLlaves
+  return $ Tidal.every n t
+
+transformacionesEnLlaves :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+transformacionesEnLlaves = do
+  char '{'
+  spaces
+  x <- trans
+  spaces
+  char '}'
+  spaces
+  return x
 
 --descartar espacios
 espacios :: GenParser Char a String
