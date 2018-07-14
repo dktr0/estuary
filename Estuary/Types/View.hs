@@ -236,6 +236,30 @@ presetView "RGGTRN" = Views [
   ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11])
   ]
 
+
+presetView "Transpiksel" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,SabortsView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,SabortsView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,SabortsView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,SabortsView 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,SabortsView 9]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,SabortsView 11]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,SabortsView 13]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,SabortsView 15]),
+  ViewDiv "eightMiddleL" (Views [LabelView 16,SabortsView 17]),
+  ViewDiv "eightMiddleR" (Views [LabelView 18,SabortsView 19]),
+  ViewDiv "eightMiddleL" (Views [LabelView 20,SabortsView 21]),
+  ViewDiv "eightMiddleR" (Views [LabelView 22,SabortsView 23]),
+  ViewDiv "eightMiddleL" (Views [LabelView 24,SabortsView 25]),
+  ViewDiv "eightMiddleR" (Views [LabelView 26,SabortsView 27]),
+  ViewDiv "eightMiddleL" (Views [LabelView 28,SabortsView 29]),
+  ViewDiv "eightMiddleR" (Views [LabelView 30,SabortsView 31]),
+  ViewDiv "eightMiddleL" (Views [LabelView 32,SabortsView 33]),
+  ViewDiv "eightMiddleR" (Views [LabelView 34,SabortsView 35]),
+  ViewDiv "eightMiddleR" (Views [LabelView 36,SabortsView 37]),
+  ViewDiv "eightMiddleR" (Views [LabelView 38,SabortsView 39])
+  ]
+
 presetView "test" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,Test1View 1]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,Test1View 3]),
