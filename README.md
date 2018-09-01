@@ -106,3 +106,45 @@ you would open your web browser and point it to: 127.0.0.1:8002
 The overall process is similar on OS X (we should add more detailed instructions soon...).
 We have not been able to build the client on Windows so far, but the server yes. Windows
 users can use a release of the client with their own build of the server.
+
+
+
+## Building on Windows
+
+To build on Windows you need to enable the Windows Subsystem for Linux. The following instructions pertain to a Debian installation on Windows
+
+Enable Windows Subsystem for Linux  - run power shell as administrator and enter:
+
+```Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux```
+
+Disable legacy mode from command prompt: open a Command Prompt, right click on the header bar and click properties, uncheck legacy mode
+
+Install Debian: You can install it directly from the Microsoft store.
+
+Open Debian - initialize and set up a user (follow prompts)
+
+Get latest apt packages in Debian terminal
+```
+sudo apt-get update
+sudo apt-get upgrade
+```
+
+
+Install haskell platform, haskell stack, git, and curl for Debian
+
+```
+sudo apt-get install haskell-platform haskell-stack curl git
+```
+
+Install nodejs
+
+```
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+```
+git clone https://github.com/d0kt0r0/Estuary.git
+```
+
+(follow the rest of the instructions under Linux detailed above after ```git clone https://gitub.com/d0kt0r0/Estuary.git```)
