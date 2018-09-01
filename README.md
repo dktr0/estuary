@@ -143,8 +143,16 @@ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
+In a regular windows Command prompt (ie. not WSL) clone the Estuary repository:
+
 ```
 git clone https://github.com/d0kt0r0/Estuary.git
 ```
 
-(follow the rest of the instructions under Linux detailed above after ```git clone https://gitub.com/d0kt0r0/Estuary.git```)
+Now back in the Debian terminal you should be able to find the cloned repository in: /mnt/c/<....path to cloned repo on windows...>
+
+```
+cd /mnt/c/ ...<path to cloned repo>
+```
+
+Follow the rest of the instructions under Linux detailed above after ```git clone https://gitub.com/d0kt0r0/Estuary.git``` in the Debian terminal.
