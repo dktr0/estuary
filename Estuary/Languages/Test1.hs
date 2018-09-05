@@ -20,6 +20,10 @@ lengExpr = do
   s2 <- sonidos
   s3 <- sonidos
   s4 <- sonidos
+  s5 <- sonidos
+  s6 <- sonidos
+  s7 <- sonidos
+  s8 <- sonidos
   espacios
   char '!'
   espacios
@@ -33,7 +37,7 @@ lengExpr = do
   espacios
   return $ t1 $t2 $t3 $t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-  --zs <- many (oneOf "~")
+  --zs <- many (oneOf "~")[]
   --t1 <- trans
 
 nuestroTextoATidal :: String -> Tidal.ParamPattern
@@ -44,19 +48,12 @@ sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "g" >> espacios >> return "drumtraks" ),
-        try (string "b" >> espacios >> return "bd"),
-        try (string "v" >> espacios >> return "bd:1" ),
-        try (string "d" >> espacios >> return "bd:2"),
-        try (string "k" >> espacios >> return "bd:3"),
-        try (string "m" >> espacios >> return "bass:1" ),
-        try (string "h" >> espacios >> return "hh27"),
-        try (string "i" >> espacios >> return "hh:7"),
-        try (string "t" >> espacios >> return "sn:1"),
-        try (string "a" >> espacios >> return "sn:2"),
-        try (string "c" >> espacios >> return "cp:1"),
-        try (string "o" >> espacios >> return "drum"),
-        try (string "e" >> espacios >> return "drum:1"),
+        try (string "piña" >> espacios >> return "foo" ),
+        try (string "reñir" >> espacios >> return "feel" ),
+        try (string "hazaña" >> espacios >> return "jazz" ),
+        try (string "montaña" >> espacios >> return "printshot" ),
+        try (string "niño" >> espacios >> return "industrial" ),
+        try (string "piraña" >> espacios >> return "koy" ),
         try (descartarTexto >> return " ")
         ]
 
@@ -64,10 +61,9 @@ sonidos = choice [
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 trans = choice [
               --coloca aqui los nombres de tus transformaciones
-         try (string "w" >> spaces >>  return Tidal.brak),
-         try (string "q" >> spaces >> fractional3 False  >>= return . Tidal.fast),
-         try (string "s">> spaces >> fractional3 False   >>= return . Tidal.slow),
-         try (string "z" >> spaces  >> int >>= return . Tidal.gap),
+         try (string "soñemos" >> spaces >>  return Tidal.brak),
+         try (string "teñiste" >> spaces >> fractional3 False  >>= return . Tidal.fast),
+         try (string "otoño">> spaces >> fractional3 False   >>= return . Tidal.slow),
          try (descartarTexto >> return id)
                 ]
 
