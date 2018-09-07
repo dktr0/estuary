@@ -2,9 +2,11 @@
 <html>
   <head>
     <link href="style.css" rel="stylesheet" type="text/css"/>
+#ifndef PRODUCTION
     <script language="javascript" src="rts.js"></script>
     <script language="javascript" src="lib.js"></script>
     <script language="javascript" src="out.js"></script>
+#endif
     <script language="javascript" src="EstuaryProtocol.js"></script>
     <script language="javascript" src="SuperDirt.js"></script>
     <script language="javascript" src="WebDirt/WebDirt.js"></script>
@@ -14,7 +16,11 @@
 
 function downloadJS() {
   var element4 = document.createElement("script");
+#ifdef PRODUCTION
+  element4.setAttribute('src', "all.min.js");
+#else
   element4.setAttribute('src', "runmain.js");
+#endif
   element4.defer;
   document.head.appendChild(element4);
   console.log("elements added");

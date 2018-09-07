@@ -8,6 +8,7 @@ Estuary.db
 bin
 .stack-work/*
 .stack-work
+.stack-work-production/
 static/
 .DS_Store
 *~
