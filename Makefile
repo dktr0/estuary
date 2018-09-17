@@ -13,6 +13,7 @@ prodBuildClient: setupClient
 	"$(CLOSURE_COMPILER)" "$(PRODUCTION_INSTALL_DIR)/all.js" --compilation_level=ADVANCED_OPTIMIZATIONS --jscomp_off=checkVars --js_output_file="$(PRODUCTION_INSTALL_DIR)/all.min.js" $(EXTERNS)
 	gzip -fk "$(PRODUCTION_INSTALL_DIR)/all.min.js"
 
+
 buildClientForceDirty:
 	stack build --stack-yaml=client.yaml --force-dirty
 
@@ -30,10 +31,18 @@ installClient: buildClient
 	$(GCC_PREPROCESSOR) Estuary.jsexe/index.html.template -o Estuary.jsexe/index.html
 
 prodInstallClient: prodBuildClient
+	rm -rf ./Estuary.jsexe
 	cp -Rf $(PRODUCTION_INSTALL_DIR) .
 	cp -Rf static/* Estuary.jsexe
 	$(GCC_PREPROCESSOR) Estuary.jsexe/index.html.template -DPRODUCTION -o Estuary.jsexe/index.html
-
+	rm -rf Estuary.jsexe/runmain.js
+	rm -rf Estuary.jsexe/rts.js
+	rm -rf Estuary.jsexe/lib.js
+	rm -rf Estuary.jsexe/out.js
+	rm -rf Estuary.jsexe/all.js
+	rm -rf Estuary.jsexe/out.stats
+	rm -rf Estuary.jsexe/all.min.js.gz
+	
 installServer: buildServer
 	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
 
@@ -83,12 +92,4 @@ clean:
 	stack clean --stack-yaml=server.yaml
 
 style:
-	cp static/style.css Estuary.jsexe
-
-static:
-	cp -Rf static/* Estuary.jsexe
-
-Estuary.jsexe:
-	ghcjs -o Estuary Main.hs
-	cp static/index.html Estuary.jsexe
 	cp static/style.css Estuary.jsexe
