@@ -2,7 +2,9 @@ EstuaryProtocol = function () {
   this.status = "initializing...";
   this.wsReady = false;
   this.responses = new Array;
-  this.setUrl("ws://" + location.hostname + ":" + location.port);
+  var port = "";
+  if(location.port != "") port = ":" + location.port;
+  this.setUrl("ws://" + location.hostname + port + location.pathname);
 }
 
 EstuaryProtocol.prototype.setUrl = function(x) {
