@@ -30,7 +30,7 @@ installClient: buildClient
 	cp -Rf static/* Estuary.jsexe
 	$(GCC_PREPROCESSOR) Estuary.jsexe/index.html.template -o Estuary.jsexe/index.html
 
-prodInstallClient: prodBuildClient
+prodInstallClient: # make prodBuildClient first!
 	rm -rf ./Estuary.jsexe
 	cp -Rf $(PRODUCTION_INSTALL_DIR) .
 	cp -Rf static/* Estuary.jsexe
@@ -41,32 +41,25 @@ prodInstallClient: prodBuildClient
 	rm -rf Estuary.jsexe/out.js
 	rm -rf Estuary.jsexe/all.js
 	rm -rf Estuary.jsexe/out.stats
+	rm -rf Estuary.jsexe/index.html.template
 	rm -rf Estuary.jsexe/all.min.js.gz
-	
+
 installServer: buildServer
 	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
 
 rggtrn: installClient installServer
 	EstuaryServer/EstuaryServer rggtrn
 
-openClient:
-	cp -Rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin/Estuary.jsexe .
-	cp static/index.html Estuary.jsexe
-	cp static/style.css Estuary.jsexe
+openClient: installClient
 	open Estuary.jsexe/index.html
 
-zipClient:
+prodReleaseClient: # make prodInstallClient first!
 	rm -rf temp
 	mkdir temp
-	cp package.json temp
-	cp estuary.js temp
-	cp evalClient.js temp
-	cp -Rf $$(stack path --local-install-root --stack-yaml=client.yaml)/bin/Estuary.jsexe temp
-	cp static/index.html temp/Estuary.jsexe
-	cp static/style.css temp/Estuary.jsexe
-	cp static/EstuaryProtocol.js temp/Estuary.jsexe
-	tar czf estuary-build.tgz -C temp .
-	rm -rf temp
+	cp -Rf Estuary.jsexe temp
+	rm -rf temp/Estuary.jsexe/Dirt
+	tar czf estuary-client.tgz -C temp .
+	# rm -rf temp
 
 zipClientWithWebDirt:
 	rm -rf temp
