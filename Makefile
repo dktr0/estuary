@@ -58,8 +58,9 @@ prodReleaseClient: # make prodInstallClient first!
 	mkdir temp
 	cp -Rf Estuary.jsexe temp
 	rm -rf temp/Estuary.jsexe/Dirt
-	tar czf estuary-client.tgz -C temp .
-	# rm -rf temp
+	# tar czf estuary-client.tgz -C temp .
+	cd temp; zip -r ../estuary-client.zip ./*
+	rm -rf temp
 
 zipClientWithWebDirt:
 	rm -rf temp
