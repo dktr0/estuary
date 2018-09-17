@@ -62,6 +62,13 @@ prodReleaseClient: # make prodInstallClient first!
 	cd temp; zip -r ../estuary-client.zip ./*
 	rm -rf temp
 
+curlReleaseClient:
+	rm -rf Estuary.jsexe
+	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20180917/estuary-client-20180917.zip
+	unzip temp.zip
+	rm -rf temp.zip
+	cp -Rf static/Dirt Estuary.jsexe
+
 zipClientWithWebDirt:
 	rm -rf temp
 	mkdir temp
