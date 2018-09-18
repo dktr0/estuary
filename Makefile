@@ -41,7 +41,6 @@ prodInstallClient: # make prodBuildClient first!
 	rm -rf Estuary.jsexe/all.js
 	rm -rf Estuary.jsexe/out.stats
 	rm -rf Estuary.jsexe/index.html.template
-	rm -rf Estuary.jsexe/all.min.js.gz
 
 installServer: buildServer
 	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
