@@ -16,8 +16,8 @@
 
 ```
 make installServer
-cd static; git clone https://github.com/TidalCycles/Dirt.git
-cd static/Dirt; git submodule init; git submodule update
+cd static; git clone https://github.com/TidalCycles/Dirt.git; cd ..
+cd static/Dirt; git submodule init; git submodule update; cd ../..
 make curlReleaseClient
 EstuaryServer/EstuaryServer someSecurePasswordYouPick
 ```
