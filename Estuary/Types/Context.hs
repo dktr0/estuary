@@ -7,6 +7,7 @@ import Estuary.Types.Language
 
 data Context = Context {
   language :: Language,
+  theme :: String,
   startTime :: UTCTime,
   tempo :: Tidal.Tempo,
   pattern :: Tidal.ParamPattern,
@@ -21,6 +22,7 @@ data Context = Context {
 emptyContext :: UTCTime -> Context
 emptyContext now = Context {
   language = English,
+  theme = "Classic",
   startTime = now,
   tempo = Tidal.Tempo now 0.0 0.5 False 0.2,
   pattern = Tidal.silence,

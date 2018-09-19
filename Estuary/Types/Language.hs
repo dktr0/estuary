@@ -1,11 +1,9 @@
 module Estuary.Types.Language where
 
-data Language = 
+data Language =
   English |
-  Español 
+  Español
   deriving (Read,Show,Eq,Ord)
 
 languages :: [Language]
 languages = [English,Español]
-
-

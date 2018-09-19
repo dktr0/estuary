@@ -53,7 +53,7 @@ header ctx = divClass "header" $ do
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
-  divClass "logo" $ dynText =<< translateDyn Term.EstuaryDescription ctx 
+  divClass "logo" $ dynText =<< translateDyn Term.EstuaryDescription ctx
   wsStatus' <- mapDyn wsStatus ctx
   clientCount' <- mapDyn clientCount ctx
   statusMsg <- combineDyn f wsStatus' clientCount'
@@ -71,6 +71,11 @@ header ctx = divClass "header" $ do
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ do
+  let styleMap = fromList [
+       ("classic.css","Classic"),
+       ("inverse.css","Inverse")
+       ]
+  styleEvent <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def
   translateDyn Term.Language ctx >>= dynText
   let langMap = constDyn $ fromList $ zip languages (fmap show languages)
   langChange <- _dropdown_change <$> (dropdown English langMap def)
@@ -82,4 +87,3 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ d
   wdInput <- checkbox True $ def
   let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
   return $ mergeWith (.) [langChange',sdOn,wdOn]
-
