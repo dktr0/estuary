@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Estuary.Widgets.Text where
 
 import Reflex
@@ -17,6 +19,7 @@ import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Definition
 import Estuary.Types.EditOrEval
 import Estuary.Types.Hint
+import Estuary.Languages.TidalParser
 
 textWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
 textWidgetForPatternChain i delta = do
@@ -34,182 +37,43 @@ textAreaWidgetForPatternChain i delta = do
   let value = _textArea_value x
   return (value,edits)
 
-textPatternChainWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-textPatternChainWidget i delta = divClass "textPatternChain" $ do
-  let (iA,iB,iC) = g i
-  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
-  let deltaA = fmap (\(x,_,_)->x) delta'
-  let deltaB = fmap (\(_,x,_)->x) delta'
-  let deltaC = fmap (\(_,_,x)->x) delta'
-  (aValue,aEvent) <- divClass "labelAndTextPattern" $ do
-    divClass "textInputLabel" $ text "sound"
-    textWidgetForPatternChain iA deltaA
-  (bValue,bEvent) <- divClass "labelAndTextPattern" $ do
-    divClass "textInputLabel" $ text "up"
-    textWidgetForPatternChain iB deltaB
-  (cValue,cEvent) <- divClass "labelAndTextPattern" $ do
-    divClass "textInputLabel" $ text "vowel"
-    textWidgetForPatternChain iC deltaC
-  value <- combineDyn TextPatternChain aValue bValue
-  value' <- combineDyn ($) value cValue
-  let deltaUp = tagDyn value' $ leftmost [aEvent,bEvent,cEvent]
-  return (value',deltaUp,never)
-  where f (TextPatternChain x y z) = Just (x,y,z)
-        f _ = Nothing
-        g (TextPatternChain x y z) = (x,y,z)
-        g _ = ("","","")
-
-cqenzeWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-cqenzeWidget = miniLanguageWidget "CQenze " f CQenzePattern
-  where
-    f (CQenzePattern x) = Just x
-    f _ = Nothing
-
-miniTidalWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-miniTidalWidget = miniLanguageWidget "MiniTidal " f MiniTidalPattern
-  where
-    f (MiniTidalPattern x) = Just x
-    f _ = Nothing
-
-moreliaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-moreliaWidget = miniLanguageWidget "Morelia " f MoreliaPattern
-  where
-    f (MoreliaPattern x) = Just x
-    f _ = Nothing
-
-saludosWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-saludosWidget = miniLanguageWidget "Saludos" f SaludosPattern
-  where
-    f (SaludosPattern x) = Just x
-    f _ = Nothing
-
-colombiaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-colombiaWidget = miniLanguageWidget "Colombia" f ColombiaPattern
-  where
-    f (ColombiaPattern x) = Just x
-    f _ = Nothing
-
-siWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-siWidget = miniLanguageWidget "Si" f SiPattern
-  where
-    f (SiPattern x) = Just x
-    f _ = Nothing
-
-sentidosWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-sentidosWidget = miniLanguageWidget "Sentidos" f SentidosPattern
-  where
-    f (SentidosPattern x) = Just x
-    f _ = Nothing
-
-sabortsWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-sabortsWidget = miniLanguageWidget "Saborts" f SabortsPattern
-  where
-    f (SabortsPattern x) = Just x
-    f _ = Nothing
-
-naturalWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-naturalWidget = miniLanguageWidget "Natural" f NaturalPattern
-  where
-    f (NaturalPattern x) = Just x
-    f _ = Nothing
-
-medellinWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-medellinWidget = miniLanguageWidget "medellin" f MedellinPattern
-  where
-    f (MedellinPattern x) = Just x
-    f _ = Nothing
-
-laCalleWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-laCalleWidget = miniLanguageWidget "LaCalle" f LaCallePattern
-  where
-    f (LaCallePattern x) = Just x
-    f _ = Nothing
-
-mariaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-mariaWidget = miniLanguageWidget "Maria" f MariaPattern
-  where
-    f (MariaPattern x) = Just x
-    f _ = Nothing
-
-crudoWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-crudoWidget = miniLanguageWidget "Crudo" f CrudoPattern
-  where
-    f (CrudoPattern x) = Just x
-    f _ = Nothing
-
-puntoyyaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-puntoyyaWidget = miniLanguageWidget "Puntoyya" f PuntoyyaPattern
-  where
-    f (PuntoyyaPattern x) = Just x
-    f _ = Nothing
-
-sucixxxWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-sucixxxWidget = miniLanguageWidget "Sucixxx" f SucixxxPattern
-  where
-    f (SucixxxPattern x) = Just x
-    f _ = Nothing
-
-vocesotrevezWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-vocesotrevezWidget = miniLanguageWidget "Vocesotrevez" f VocesotrevezPattern
-  where
-    f (VocesotrevezPattern x) = Just x
-    f _ = Nothing
-
-imaginaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-imaginaWidget = miniLanguageWidget "Imagina" f ImaginaPattern
-  where
-    f (ImaginaPattern x) = Just x
-    f _ = Nothing
-
-alobestiaWidget :: MonadWidget t m => TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-alobestiaWidget = miniLanguageWidget "Alobestia" f AlobestiaPattern
-  where
-    f (AlobestiaPattern x) = Just x
-    f _ = Nothing
-
-miniLanguageWidget :: MonadWidget t m =>
-  String -> (TransformedPattern -> Maybe (Live String)) -> (Live String -> TransformedPattern) ->
+tidalTextWidget :: forall t m. MonadWidget t m =>
   TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-miniLanguageWidget label f h i delta = divClass "textPatternChain" $ do
-  let i' = maybe (Live "" L3) (id) $ f i
-  let delta' = fmapMaybe f $ fmapMaybe lastOrNothing delta
-  let deltaPast = fmap forRendering delta'
+tidalTextWidget i delta = divClass "textPatternChain" $ do -- *** TODO: css class name should be tidalTextWidget (in CSS also)
+  let i' = transformedPatternToTidalTextPatternContents i
+  let delta' = fmap transformedPatternToTidalTextPatternContents $ fmapMaybe lastOrNothing delta
   let deltaFuture = fmap forEditing delta'
-  (editText,editEvent,evalButton) <- divClass "labelAndTextPattern" $ do
-    b <- divClass "textInputLabel" $ button label
-    (v,e) <- textAreaWidgetForPatternChain (forEditing i') deltaFuture
-    return (v,e,b)
-  let evalEvent = tagDyn editText evalButton
-  pastValue <- holdDyn (forRendering i') $ leftmost [deltaPast,evalEvent]
-  futureValue <- holdDyn (forEditing i') $ leftmost [deltaFuture,editEvent]
-  value <- combineDyn (\p f -> h (g p f)) pastValue futureValue
-  let deltaUpEdit = tagDyn value editEvent
-  let deltaUpEval = tagDyn value evalEvent
+  let parserFuture = fmap fst deltaFuture
+  let textFuture = fmap snd deltaFuture
+  (edit,eval) <- divClass "labelAndTextPattern" $ do
+    let initialParser = fst $ forEditing i'
+    let parserMap = constDyn $ fromList $ fmap (\x -> (x,show x)) tidalParsers
+    d <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
+    let parserValue = _dropdown_value d
+    let parserEvent = _dropdown_change d
+    b <- divClass "textInputLabel" $ button "eval"
+    let initialText = snd $ forEditing i'
+    (textValue,textEvent) <- textAreaWidgetForPatternChain initialText textFuture
+    v' <- combineDyn (,) parserValue textValue
+    let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
+    let evalEvent = tagDyn v' b
+    return (editEvent,evalEvent)
+  let deltaPast = fmap forRendering delta'
+  pastValue <- holdDyn (forRendering i') $ leftmost [deltaPast,eval]
+  futureValue <- holdDyn (forEditing i') $ leftmost [deltaFuture,edit]
+  value <- combineDyn (\p f -> TidalTextPattern (g p f)) pastValue futureValue
+  let deltaUpEdit = tagDyn value edit
+  let deltaUpEval = tagDyn value eval
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
   return (value,deltaUp,never)
   where
-    g p f | p == f = Live p L3
-          | otherwise = Edited p f
+    g p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
+          | otherwise = Edited p x
+
+transformedPatternToTidalTextPatternContents :: TransformedPattern -> Live (TidalParser,String)
+transformedPatternToTidalTextPatternContents (TidalTextPattern x) = x
+transformedPatternToTidalTextPatternContents _ = Live (MiniTidal,"") L3
 
 evaluableTextWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
 evaluableTextWidget i delta = divClass "textWidget" $ do
@@ -220,7 +84,6 @@ evaluableTextWidget i delta = divClass "textWidget" $ do
   evals <- button "eval"
   let evals' = fmap (Evaluate . EvaluableText) $ tagDyn (_textArea_value y) evals
   return $ leftmost [edits,evals']
-
 
 labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
 labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
