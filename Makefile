@@ -72,10 +72,10 @@ clean:
 	stack clean --stack-yaml=server.yaml
 
 style:
-	cp static/style.css Estuary.jsexe
+	cp static/classic.css Estuary.jsexe
 
-rggtrn: installClient installServer
-	EstuaryServer/EstuaryServer rggtrn
+test: installClient installServer
+	EstuaryServer/EstuaryServer test
 
 openClient: installClient
 	open Estuary.jsexe/index.html

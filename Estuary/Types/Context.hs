@@ -36,6 +36,9 @@ emptyContext now = Context {
 
 type ContextChange = Context -> Context
 
+setTheme :: String -> ContextChange
+setTheme x c = c {theme = x}
+
 setLanguage :: Language -> ContextChange
 setLanguage x c = c { language = x }
 

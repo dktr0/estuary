@@ -75,7 +75,9 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ d
        ("classic.css","Classic"),
        ("inverse.css","Inverse")
        ]
-  styleEvent <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def
+  styleChange <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def
+  let styleChange' = fmap (\x c -> c {theme = x}) styleChange
+  -- let styleSheet link = elAttr "link" (fromList [("rel", "stylesheet"), ("type", "text/css"), ("href", link)])
   translateDyn Term.Language ctx >>= dynText
   let langMap = constDyn $ fromList $ zip languages (fmap show languages)
   langChange <- _dropdown_change <$> (dropdown English langMap def)
