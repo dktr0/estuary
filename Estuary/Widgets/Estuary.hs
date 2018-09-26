@@ -78,6 +78,8 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ d
   styleChange <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def
   let styleChange' = fmap (\x c -> c {theme = x}) styleChange
   -- let styleSheet link = elAttr "link" (fromList [("rel", "stylesheet"), ("type", "text/css"), ("href", link)])
+  -- updated in reflex after chaning context, javascript. type should be string -> IO () to change the stylesheet of the page. thing --prevent reloading
+  -- force new versions to load without cacheing
   translateDyn Term.Language ctx >>= dynText
   let langMap = constDyn $ fromList $ zip languages (fmap show languages)
   langChange <- _dropdown_change <$> (dropdown English langMap def)
