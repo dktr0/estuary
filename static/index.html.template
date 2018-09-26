@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link href="classic.css" rel="stylesheet" type="text/css"/>
+    <link href="classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
 #ifndef PRODUCTION
     <script language="javascript" src="rts.js"></script>
     <script language="javascript" src="lib.js"></script>

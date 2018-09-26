@@ -22,7 +22,7 @@ data Context = Context {
 emptyContext :: UTCTime -> Context
 emptyContext now = Context {
   language = English,
-  theme = "Classic",
+  theme = "classic.css",
   startTime = now,
   tempo = Tidal.Tempo now 0.0 0.5 False 0.2,
   pattern = Tidal.silence,

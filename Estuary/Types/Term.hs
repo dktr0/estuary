@@ -16,7 +16,8 @@ data Term =
   AdministratorPassword |
   EnsembleName |
   EnsemblePassword |
-  TerminalChat
+  TerminalChat | 
+  Theme
   deriving (Show,Eq)
   
 translate :: Term -> Language -> String
@@ -65,6 +66,9 @@ translate TerminalChat Español = "Terminal/Chat:"
 
 translate Send English = "Send"
 translate Send Español = "enviar"
+
+translate Theme English = "Theme"
+translate Theme Español = "Tema"
 
 translate x _ = "?" ++ show x
 
