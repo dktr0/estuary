@@ -78,6 +78,41 @@ instance JSON View where
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Estuary.Protocol.View: " ++ (show x)
   readJSON _ = Error $ "Unable to parse non-JSObject as Estuary.Protocol.View"
 
+
+
+getIndex :: View -> Int
+getIndex (Views _) = error "'Views' doesn't have a single index"
+getIndex (ViewDiv _ v) = getIndex v
+getIndex (LabelView i)
+getIndex (StructureView i) = i
+getIndex (TidalTextView i) = i
+getIndex (EvaluableTextView i) = i
+getIndex (CQenzeView i) = i
+getIndex (MoreliaView i) = i
+getIndex (SabortsView i) = i
+getIndex (SaludosView i) = i
+getIndex (ColombiaView i) = i
+getIndex (SiView i) = i
+getIndex (SentidosView i) = i
+getIndex (NaturalView i) = i
+getIndex (MariaView i) = i
+getIndex (MedellinView i) = i
+getIndex LaCalleView i) = i
+getIndex (CrudoView i) = i
+getIndex (PuntoyyaView i) = i
+getIndex (SucixxxView i) = i
+getIndex (VocesotrevezView i) = i
+getIndex (ImaginaView i) = i
+getIndex (AlobestiaView i) = i
+
+
+
+
+
+
+
+
+
 standardView :: View
 standardView = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
