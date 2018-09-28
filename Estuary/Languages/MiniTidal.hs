@@ -4,108 +4,121 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
 import Data.List (intercalate)
 import Data.Bool (bool)
-import qualified Sound.Tidal.Context as Tidal
+import Sound.Tidal.Context as T hiding ((<|>))
 
-miniTidalParser :: String -> Tidal.ParamPattern
-miniTidalParser x = either (const Tidal.silence) id $ parse miniTidal "(unknown)" $ filter (/='?') x
+miniTidalParser :: String -> ParamPattern
+miniTidalParser x = either (const silence) id $ parse miniTidal "(unknown)" $ filter (/='?') x
 
-miniTidal :: GenParser Char a Tidal.ParamPattern
-miniTidal = spaces >> patternOrTransformedPattern
+miniTidal :: Parser ParamPattern
+miniTidal = spaces >> paramPattern
 
-patternOrTransformedPattern :: GenParser Char a (Tidal.ParamPattern)
-patternOrTransformedPattern = choice [
-  try transformedPattern0,
-  try transformedPattern1,
-  try transformedPattern2,
-  specificPattern
+paramPattern :: Parser ParamPattern
+paramPattern = choice [
+  try $ transformedPattern0,
+  try $ transformedPattern1 specificParamPattern,
+  try $ transformedPattern2 specificParamPattern,
+  specificParamPattern
   ]
 
-transformedPattern0 :: GenParser Char a (Tidal.ParamPattern)
+pattern :: Parser (Pattern a) -> Parser (Pattern a)
+pattern p = choice [
+  try $ transformedPattern1 p,
+  try $ transformedPattern2 p,
+  p
+  ]
+
+transformedPattern0 :: Parser ParamPattern -- specialized for ParamPattern because so are the merge operators...
 transformedPattern0 = do
-  x <- specificPattern
+  x <- paramPattern
   m <- mergeOperator
-  y <- patternOrTransformedPattern
+  y <- paramPattern
   spaces
   return $ m x y
 
-transformedPattern1 :: GenParser Char a (Tidal.ParamPattern)
-transformedPattern1 = do
-  x <- patternTransformation
+transformedPattern1 :: Parser (Pattern a) -> Parser (Pattern a)
+transformedPattern1 p = do
+  x <- patternTransformation p
   char '$'
   spaces
-  y <- patternOrTransformedPattern
+  y <- pattern p
   spaces
   return $ x y
 
-transformedPattern2 :: GenParser Char a (Tidal.ParamPattern)
-transformedPattern2 = do
-  x <- patternTransformation
+transformedPattern2 :: Parser (Pattern a) -> Parser (Pattern a)
+transformedPattern2 p = do
+  x <- patternTransformation p
   char '('
   spaces
-  y <- patternOrTransformedPattern
+  y <- pattern p
   spaces
   char ')'
+  spaces
   return $ x y
 
-patternTransformation :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-patternTransformation = do
+patternTransformation :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
+patternTransformation p = do
   spaces
-  x <- choice [ try patternTransformationInBrackets, patternTransformations]
+  x <- choice [ try $ patternTransformationInBrackets p, patternTransformations p]
   spaces
   return x
 
-patternTransformationInBrackets :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-patternTransformationInBrackets = do
+patternTransformationInBrackets :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
+patternTransformationInBrackets p = do
   char '('
   spaces
-  x <- patternTransformations
+  x <- patternTransformations p
   spaces
   char ')'
   spaces
   return x
 
-patternTransformations :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-patternTransformations = choice [
-  try mergedPattern,
-  try mergedPattern1,
-  try (string "brak" >> return Tidal.brak),
-  try (string "rev" >> return Tidal.rev),
-  try (string "palindrome" >> return Tidal.palindrome),
-  try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
-  try (string "density" >> spaces >> fractional3 False >>= return . Tidal.density),
-  try (string "slow" >> spaces >> fractional3 False >>= return . Tidal.slow),
-  try (string "chop" >> spaces >> int >>= return . Tidal.chop),
-  try (string "striate" >> spaces >> int >>= return . Tidal.striate),
-  try (string "iter" >> spaces >> int >>= return . Tidal.iter),
-  try (string "trunc" >> spaces >> fractional3 False >>= return . Tidal.trunc),
-  try striate',
-  try shiftLeft,
-  try shiftRight,
-  try stut,
-  try swingBy,
-  try append,
-  try every,
-  try whenmod,
-  string "jux" >> spaces >> patternTransformation >>= return . Tidal.jux
+paramPatternTransformations :: Parser (ParamPattern -> ParamPattern)
+paramPatternTransformations = choice [
+  try $ mergedPattern p,
+  try $ mergedPattern1 p,
+  try (string "chop" >> spaces >> int >>= return . chop),
+  try (string "striate" >> spaces >> int >>= return . striate),
+  try Estuary.Languages.MiniTidal.striate',
+  try Estuary.Languages.MiniTidal.stut,
+  string "jux" >> spaces >> patternTransformation p >>= return . jux,
+  try $ patternTransformations paramPattern
   ]
 
-shiftLeft :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+patternTransformations :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
+patternTransformations p = choice [
+  try (string "brak" >> return brak),
+  try (string "rev" >> return rev),
+  try (string "palindrome" >> return palindrome),
+  try (string "fast" >> spaces >> fractional3 False >>= return . fast),
+  try (string "density" >> spaces >> fractional3 False >>= return . density),
+  try (string "slow" >> spaces >> fractional3 False >>= return . slow),
+  try (string "iter" >> spaces >> int >>= return . iter),
+  try (string "trunc" >> spaces >> fractional3 False >>= return . trunc),
+  try shiftLeft,
+  try shiftRight,
+  try Estuary.Languages.MiniTidal.swingBy,
+  try $ Estuary.Languages.MiniTidal.append p,
+  try $ Estuary.Languages.MiniTidal.every p,
+  try $ Estuary.Languages.MiniTidal.whenmod p
+  ]
+
+shiftLeft :: Parser (Pattern a -> Pattern a)
 shiftLeft = do
   x <- fractional3 False
   spaces
   string "<~"
   spaces
-  return $ (x Tidal.<~)
+  return $ (x <~)
 
-shiftRight :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+shiftRight :: Parser (Pattern a -> Pattern a)
 shiftRight = do
   x <- fractional3 False
   spaces
   string "~>"
   spaces
-  return $ (x Tidal.~>)
+  return $ (x ~>)
 
-striate' :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+striate' :: Parser (ParamPattern -> ParamPattern)
 striate' = do
   string "striate'"
   spaces
@@ -113,9 +126,9 @@ striate' = do
   spaces
   d <- fractional3 False
   spaces
-  return $ Tidal.striate' i d
+  return $ T.striate' i d
 
-stut :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+stut :: Parser (ParamPattern -> ParamPattern)
 stut = do
   string "stut"
   spaces
@@ -125,9 +138,9 @@ stut = do
   spaces
   y <- fractional3 False
   spaces
-  return $ Tidal.stut n x y
+  return $ T.stut n x y 
 
-swingBy :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+swingBy :: Parser (Pattern a -> Pattern a)
 swingBy = do
   string "swingBy"
   spaces
@@ -135,126 +148,138 @@ swingBy = do
   spaces
   y <- int
   spaces
-  return $ Tidal.swingBy x (fromIntegral y)
+  return $ T.swingBy x (fromIntegral y)
 
-every :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-every = do
+every :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
+every p = do
   string "every"
   spaces
   n <- int
   spaces
-  t <- patternTransformationInBrackets
-  return $ Tidal.every n t
+  t <- patternTransformationInBrackets p
+  return $ T.every n t
 
-whenmod :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-whenmod = do
+whenmod :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
+whenmod p = do
   string "whenmod"
   spaces
   x <- int
   spaces
   y <- int
   spaces
-  t <- patternTransformationInBrackets
-  return $ Tidal.whenmod x y t
+  t <- patternTransformationInBrackets p
+  return $ T.whenmod x y t
 
-append :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-append = do
+append :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
+append p = do
   string "append" >> spaces
-  x <- patternOrTransformedPattern
+  x <- pattern p
   spaces
-  return $ Tidal.append x
+  return $ T.append x
 
-mergedPattern :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
-mergedPattern = do
-  x <- specificPattern
+mergedPattern :: Parser (ParamPattern -> ParamPattern)
+mergedPattern p = do
+  x <- paramPattern
   spaces
   m <- mergeOperator
   return $ m x
 
-mergedPattern1 :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+mergedPattern1 :: Parser (ParamPattern -> ParamPattern)
 mergedPattern1 = do
   m <- mergeOperator
   spaces
-  x <- specificPattern
+  x <- paramPattern
   return $ \y -> m y x
 
 
-mergeOperator :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
+mergeOperator :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
 mergeOperator = choice [
-  try (char '#' >> spaces >> return (Tidal.#)),
-  try (string "|=|" >> spaces >> return (Tidal.|=|)),
-  try (string "|+|" >> spaces >> return (Tidal.|+|)),
-  try (string "|-|" >> spaces >> return (Tidal.|-|)),
-  try (string "|*|" >> spaces >> return (Tidal.|*|)),
-  (string "|/|" >> spaces >> return (Tidal.|/|))
+  try (char '#' >> spaces >> return (#)),
+  try (string "|=|" >> spaces >> return (|=|)),
+  try (string "|+|" >> spaces >> return (|+|)),
+  try (string "|-|" >> spaces >> return (|-|)),
+  try (string "|*|" >> spaces >> return (|*|)),
+  (string "|/|" >> spaces >> return (|/|))
   ]
 
--- specificPatternDouble :: String -> (Tidal.Pattern Double -> Tidal.ParamPattern) -> GenParser Char a (Tidal.ParamPattern)
+-- specificPatternDouble :: String -> (Pattern Double -> ParamPattern) -> GenParser Char a (ParamPattern)
 specificPatternDouble s f = string s >> spaces >> doublePattern >>= return . f
 
--- specificPatternGeneric :: Tidal.Parseable a => String -> (Tidal.Pattern a -> Tidal.ParamPattern) -> GenParser Char a (Tidal.ParamPattern)
+-- specificPatternGeneric :: Parseable a => String -> (Pattern a -> ParamPattern) -> GenParser Char a (ParamPattern)
 specificPatternGeneric s f = string s >> spaces >> genericPattern >>= return . f
 
-specificPattern :: GenParser Char a (Tidal.ParamPattern)
-specificPattern = choice [
-  try (string "silence" >> spaces >> return Tidal.silence),
-  try (specificPatternGeneric "s" Tidal.s),
-  try (specificPatternGeneric "sound" Tidal.sound),
-  try (specificPatternGeneric "n" Tidal.n),
-  try (specificPatternDouble "up" Tidal.up),
-  try (specificPatternDouble "speed" Tidal.speed),
-  try (specificPatternGeneric "vowel" Tidal.vowel),
-  try (specificPatternDouble "pan" Tidal.pan),
-  try (specificPatternDouble "shape" Tidal.shape),
-  try (specificPatternDouble "gain" Tidal.gain),
-  try (specificPatternDouble "accelerate" Tidal.accelerate),
-  try (specificPatternDouble "bandf" Tidal.bandf),
-  try (specificPatternDouble "bandq" Tidal.bandq),
-  try (specificPatternDouble "begin" Tidal.begin),
-  try (specificPatternGeneric "coarse" Tidal.coarse),
-  try (specificPatternDouble "crush" Tidal.crush),
-  try (specificPatternGeneric "cut" Tidal.cut),
-  try (specificPatternDouble "cutoff" Tidal.cutoff),
-  try (specificPatternDouble "delayfeedback" Tidal.delayfeedback),
-  try (specificPatternDouble "delaytime" Tidal.delaytime),
-  try (specificPatternDouble "delay" Tidal.delay),
-  try (specificPatternDouble "end" Tidal.end),
-  try (specificPatternDouble "hcutoff" Tidal.hcutoff),
-  try (specificPatternDouble "hresonance" Tidal.hresonance),
-  try (specificPatternGeneric "loop" Tidal.loop),
-  try (specificPatternDouble "resonance" Tidal.resonance),
-  try (specificPatternDouble "shape" Tidal.shape),
-  specificPatternGeneric "unit" Tidal.unit
+{-
+paramPatternGeneric :: Parseable a => String -> (Pattern a -> ParamPattern) -> Parser ParamPattern
+paramPatternGeneric s f = do
+  string s >> spaces
+  x <- choice [
+    try genericPattern,
+
+
+  ]
+  return $ f x
+-}
+
+specificParamPattern :: GenParser Char a (ParamPattern)
+specificParamPattern = choice [
+  try (string "silence" >> spaces >> return silence),
+  try (specificPatternGeneric "s" s),
+  try (specificPatternGeneric "sound" sound),
+  try (specificPatternGeneric "n" n),
+  try (specificPatternDouble "up" up),
+  try (specificPatternDouble "speed" speed),
+  try (specificPatternGeneric "vowel" vowel),
+  try (specificPatternDouble "pan" pan),
+  try (specificPatternDouble "shape" shape),
+  try (specificPatternDouble "gain" gain),
+  try (specificPatternDouble "accelerate" accelerate),
+  try (specificPatternDouble "bandf" bandf),
+  try (specificPatternDouble "bandq" bandq),
+  try (specificPatternDouble "begin" begin),
+  try (specificPatternGeneric "coarse" coarse),
+  try (specificPatternDouble "crush" crush),
+  try (specificPatternGeneric "cut" cut),
+  try (specificPatternDouble "cutoff" cutoff),
+  try (specificPatternDouble "delayfeedback" delayfeedback),
+  try (specificPatternDouble "delaytime" delaytime),
+  try (specificPatternDouble "delay" delay),
+  try (specificPatternDouble "end" end),
+  try (specificPatternDouble "hcutoff" hcutoff),
+  try (specificPatternDouble "hresonance" hresonance),
+  try (specificPatternGeneric "loop" loop),
+  try (specificPatternDouble "resonance" resonance),
+  try (specificPatternDouble "shape" shape),
+  specificPatternGeneric "unit" unit
   ]
 
-genericPattern :: (Tidal.Parseable b, Tidal.Enumerable b) => GenParser Char a (Tidal.Pattern b)
+genericPattern :: (Parseable b, Enumerable b) => GenParser Char a (Pattern b)
 genericPattern = do
   char '"'
-  x <- many (noneOf "\"")
+  x <- Text.ParserCombinators.Parsec.many (noneOf "\"")
   char '"'
   spaces
-  return $ Tidal.p x
+  return $ p x
 
-doublePattern :: GenParser Char a (Tidal.Pattern Double)
+doublePattern :: GenParser Char a (Pattern Double)
 doublePattern = (try genericPattern) <|> oscillators
 
-oscillators :: GenParser Char a (Tidal.Pattern Double)
+oscillators :: GenParser Char a (Pattern Double)
 oscillators = choice [
-  try (string "sinewave" >> spaces >> return Tidal.sinewave),
-  try (string "sinewave1" >> spaces >> return Tidal.sinewave1),
-  try (string "sine" >> spaces >> return Tidal.sine),
-  try (string "sine1" >> spaces >> return Tidal.sine1),
---  try (string "cosine" >> spaces >> return Tidal.cosine),
-  try (string "sawwave" >> spaces >> return Tidal.sawwave),
-  try (string "sawwave1" >> spaces >> return Tidal.sawwave1),
-  try (string "saw" >> spaces >> return Tidal.saw),
-  try (string "saw1" >> spaces >> return Tidal.saw1),
-  try (string "tri" >> spaces >> return Tidal.tri),
-  try (string "tri1" >> spaces >> return Tidal.tri1),
-  try (string "triwave" >> spaces >> return Tidal.triwave),
-  try (string "triwave1" >> spaces >> return Tidal.triwave1),
-  try (string "square" >> spaces >> return Tidal.square),
-  try (string "square1" >> spaces >> return Tidal.square1),
-  try (string "squarewave" >> spaces >> return Tidal.squarewave),
-  string "squarewave1" >> spaces >> return Tidal.squarewave1
+  try (string "sinewave" >> spaces >> return sinewave),
+  try (string "sinewave1" >> spaces >> return sinewave1),
+  try (string "sine" >> spaces >> return sine),
+  try (string "sine1" >> spaces >> return sine1),
+--  try (string "cosine" >> spaces >> return cosine),
+  try (string "sawwave" >> spaces >> return sawwave),
+  try (string "sawwave1" >> spaces >> return sawwave1),
+  try (string "saw" >> spaces >> return saw),
+  try (string "saw1" >> spaces >> return saw1),
+  try (string "tri" >> spaces >> return tri),
+  try (string "tri1" >> spaces >> return tri1),
+  try (string "triwave" >> spaces >> return triwave),
+  try (string "triwave1" >> spaces >> return triwave1),
+  try (string "square" >> spaces >> return square),
+  try (string "square1" >> spaces >> return square1),
+  try (string "squarewave" >> spaces >> return squarewave),
+  string "squarewave1" >> spaces >> return squarewave1
   ]
