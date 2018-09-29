@@ -10,7 +10,14 @@ miniTidalParser :: String -> ParamPattern
 miniTidalParser x = either (const silence) id $ parse miniTidal "(unknown)" $ filter (/='?') x
 
 miniTidal :: Parser ParamPattern
-miniTidal = spaces >> paramPattern
+miniTidal = choice [
+  try $ spaces >> eof >> return silence,
+  do
+    spaces
+    x <- paramPattern
+    eof
+    return x
+  ]
 
 paramPattern :: Parser ParamPattern
 paramPattern = choice [
@@ -29,7 +36,7 @@ pattern p = choice [
 
 transformedPattern0 :: Parser ParamPattern -- specialized for ParamPattern because so are the merge operators...
 transformedPattern0 = do
-  x <- paramPattern
+  x <- specificParamPattern
   m <- mergeOperator
   y <- paramPattern
   spaces
@@ -55,32 +62,22 @@ transformedPattern2 p = do
   spaces
   return $ x y
 
-patternTransformation :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
-patternTransformation p = do
-  spaces
-  x <- choice [ try $ patternTransformationInBrackets p, patternTransformations p]
-  spaces
-  return x
 
-patternTransformationInBrackets :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
-patternTransformationInBrackets p = do
-  char '('
-  spaces
-  x <- patternTransformations p
-  spaces
-  char ')'
-  spaces
-  return x
+paramPatternTransformation :: Parser (ParamPattern -> ParamPattern)
+paramPatternTransformation = inBracketsOrApplied paramPatternTransformations
+
+patternTransformation :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
+patternTransformation p = inBracketsOrApplied (patternTransformations p)
 
 paramPatternTransformations :: Parser (ParamPattern -> ParamPattern)
 paramPatternTransformations = choice [
-  try $ mergedPattern p,
-  try $ mergedPattern1 p,
+  try $ mergedPattern,
+  try $ mergedPattern1,
   try (string "chop" >> spaces >> int >>= return . chop),
   try (string "striate" >> spaces >> int >>= return . striate),
   try Estuary.Languages.MiniTidal.striate',
   try Estuary.Languages.MiniTidal.stut,
-  string "jux" >> spaces >> patternTransformation p >>= return . jux,
+  string "jux" >> spaces >> paramPatternTransformation >>= return . jux,
   try $ patternTransformations paramPattern
   ]
 
@@ -138,7 +135,7 @@ stut = do
   spaces
   y <- fractional3 False
   spaces
-  return $ T.stut n x y 
+  return $ T.stut n x y
 
 swingBy :: Parser (Pattern a -> Pattern a)
 swingBy = do
@@ -156,7 +153,7 @@ every p = do
   spaces
   n <- int
   spaces
-  t <- patternTransformationInBrackets p
+  t <- patternTransformation p
   return $ T.every n t
 
 whenmod :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
@@ -167,7 +164,7 @@ whenmod p = do
   spaces
   y <- int
   spaces
-  t <- patternTransformationInBrackets p
+  t <- patternTransformation p
   return $ T.whenmod x y t
 
 append :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
@@ -178,7 +175,7 @@ append p = do
   return $ T.append x
 
 mergedPattern :: Parser (ParamPattern -> ParamPattern)
-mergedPattern p = do
+mergedPattern = do
   x <- paramPattern
   spaces
   m <- mergeOperator
@@ -191,6 +188,8 @@ mergedPattern1 = do
   x <- paramPattern
   return $ \y -> m y x
 
+-- *** WORK IN PROGRESS - think this parser is doing something super inefficient
+-- that is hanging even on parsing blank fields for the first time...
 
 mergeOperator :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
 mergeOperator = choice [
@@ -202,10 +201,10 @@ mergeOperator = choice [
   (string "|/|" >> spaces >> return (|/|))
   ]
 
--- specificPatternDouble :: String -> (Pattern Double -> ParamPattern) -> GenParser Char a (ParamPattern)
+-- specificPatternDouble :: String -> (Pattern Double -> ParamPattern) -> Parser (ParamPattern)
 specificPatternDouble s f = string s >> spaces >> doublePattern >>= return . f
 
--- specificPatternGeneric :: Parseable a => String -> (Pattern a -> ParamPattern) -> GenParser Char a (ParamPattern)
+-- specificPatternGeneric :: Parseable a => String -> (Pattern a -> ParamPattern) -> Parser (ParamPattern)
 specificPatternGeneric s f = string s >> spaces >> genericPattern >>= return . f
 
 {-
@@ -220,7 +219,7 @@ paramPatternGeneric s f = do
   return $ f x
 -}
 
-specificParamPattern :: GenParser Char a (ParamPattern)
+specificParamPattern :: Parser (ParamPattern)
 specificParamPattern = choice [
   try (string "silence" >> spaces >> return silence),
   try (specificPatternGeneric "s" s),
@@ -252,7 +251,7 @@ specificParamPattern = choice [
   specificPatternGeneric "unit" unit
   ]
 
-genericPattern :: (Parseable b, Enumerable b) => GenParser Char a (Pattern b)
+genericPattern :: (Parseable b, Enumerable b) => Parser (Pattern b)
 genericPattern = do
   char '"'
   x <- Text.ParserCombinators.Parsec.many (noneOf "\"")
@@ -260,10 +259,10 @@ genericPattern = do
   spaces
   return $ p x
 
-doublePattern :: GenParser Char a (Pattern Double)
+doublePattern :: Parser (Pattern Double)
 doublePattern = (try genericPattern) <|> oscillators
 
-oscillators :: GenParser Char a (Pattern Double)
+oscillators :: Parser (Pattern Double)
 oscillators = choice [
   try (string "sinewave" >> spaces >> return sinewave),
   try (string "sinewave1" >> spaces >> return sinewave1),
@@ -283,3 +282,24 @@ oscillators = choice [
   try (string "squarewave" >> spaces >> return squarewave),
   string "squarewave1" >> spaces >> return squarewave1
   ]
+
+inBrackets :: Parser a -> Parser a
+inBrackets p = do
+  char '('
+  spaces
+  x <- p
+  spaces
+  char ')'
+  spaces
+  return x
+
+applied :: Parser a -> Parser a
+applied p = do
+  char '$'
+  spaces
+  x <- p
+  spaces
+  return x
+
+inBracketsOrApplied :: Parser a -> Parser a
+inBracketsOrApplied p = inBrackets p <|> applied p
