@@ -6,6 +6,7 @@ import Reflex
 import Reflex.Dom
 import Estuary.WebDirt.Foreign
 import Estuary.Tidal.Types
+import Estuary.Tutorials.Tutorial
 import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
@@ -32,7 +33,7 @@ import qualified Estuary.Types.Term as Term
 data Navigation =
   Splash |
   TutorialList |
-  Tutorial String |
+  Tutorial TutorialID |
   Solo |
   Lobby |
   CreateEnsemblePage |
@@ -68,6 +69,13 @@ page ctx _ wsDown _ TutorialList = do
   back <- liftM (Splash <$) $ button  "<----"
   let navEvents = leftmost [t1,t2,back]
   return (constDyn [],never,never,navEvents)
+
+-- page ctx _ wsDown _ (Tutorail tid) =
+--   let tutorial = M.lookup tutorials tid
+--   a <- maybe (\)
+--
+--   tutorialWidget :: MonadWidget t m => Tutorial -> Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
+
 
 page ctx _ wsDown _ (Tutorial "Structure editing") = do
   text "Tutorial placeholder"
@@ -149,4 +157,3 @@ tempoWidget deltas = do
   let edits = fmap (TempoChange "") t'
   return edits
 -}
-

@@ -83,7 +83,7 @@ instance JSON View where
 getIndex :: View -> Int
 getIndex (Views _) = error "'Views' doesn't have a single index"
 getIndex (ViewDiv _ v) = getIndex v
-getIndex (LabelView i)
+getIndex (LabelView i) = i
 getIndex (StructureView i) = i
 getIndex (TidalTextView i) = i
 getIndex (EvaluableTextView i) = i
@@ -97,7 +97,7 @@ getIndex (SentidosView i) = i
 getIndex (NaturalView i) = i
 getIndex (MariaView i) = i
 getIndex (MedellinView i) = i
-getIndex LaCalleView i) = i
+getIndex (LaCalleView i) = i
 getIndex (CrudoView i) = i
 getIndex (PuntoyyaView i) = i
 getIndex (SucixxxView i) = i
