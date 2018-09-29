@@ -23,16 +23,11 @@ paramPattern :: Parser ParamPattern
 paramPattern = choice [
   try $ transformedPattern0,
   try $ transformedPattern1 specificParamPattern,
-  try $ transformedPattern2 specificParamPattern,
   specificParamPattern
   ]
 
 pattern :: Parser (Pattern a) -> Parser (Pattern a)
-pattern p = choice [
-  try $ transformedPattern1 p,
-  try $ transformedPattern2 p,
-  p
-  ]
+pattern p = choice [ try $ transformedPattern1 p, p]
 
 transformedPattern0 :: Parser ParamPattern -- specialized for ParamPattern because so are the merge operators...
 transformedPattern0 = do
@@ -44,24 +39,9 @@ transformedPattern0 = do
 
 transformedPattern1 :: Parser (Pattern a) -> Parser (Pattern a)
 transformedPattern1 p = do
-  x <- patternTransformation p
-  char '$'
-  spaces
-  y <- pattern p
-  spaces
-  return $ x y
-
-transformedPattern2 :: Parser (Pattern a) -> Parser (Pattern a)
-transformedPattern2 p = do
-  x <- patternTransformation p
-  char '('
-  spaces
-  y <- pattern p
-  spaces
-  char ')'
-  spaces
-  return $ x y
-
+  t <- patternTransformation p
+  p <- inBracketsOrApplied (pattern p)
+  return $ t p
 
 paramPatternTransformation :: Parser (ParamPattern -> ParamPattern)
 paramPatternTransformation = inBracketsOrApplied paramPatternTransformations
@@ -188,9 +168,6 @@ mergedPattern1 = do
   x <- paramPattern
   return $ \y -> m y x
 
--- *** WORK IN PROGRESS - think this parser is doing something super inefficient
--- that is hanging even on parsing blank fields for the first time...
-
 mergeOperator :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
 mergeOperator = choice [
   try (char '#' >> spaces >> return (#)),
@@ -201,23 +178,11 @@ mergeOperator = choice [
   (string "|/|" >> spaces >> return (|/|))
   ]
 
--- specificPatternDouble :: String -> (Pattern Double -> ParamPattern) -> Parser (ParamPattern)
+specificPatternDouble :: String -> (Pattern Double -> ParamPattern) -> Parser (ParamPattern)
 specificPatternDouble s f = string s >> spaces >> doublePattern >>= return . f
 
--- specificPatternGeneric :: Parseable a => String -> (Pattern a -> ParamPattern) -> Parser (ParamPattern)
+specificPatternGeneric :: (Parseable a, Enumerable a) => String -> (Pattern a -> ParamPattern) -> Parser (ParamPattern)
 specificPatternGeneric s f = string s >> spaces >> genericPattern >>= return . f
-
-{-
-paramPatternGeneric :: Parseable a => String -> (Pattern a -> ParamPattern) -> Parser ParamPattern
-paramPatternGeneric s f = do
-  string s >> spaces
-  x <- choice [
-    try genericPattern,
-
-
-  ]
-  return $ f x
--}
 
 specificParamPattern :: Parser (ParamPattern)
 specificParamPattern = choice [
