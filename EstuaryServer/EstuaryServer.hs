@@ -19,6 +19,7 @@ import qualified Network.Wai as WS
 import qualified Network.Wai.Handler.WebSockets as WS
 import Network.Wai.Application.Static (staticApp, defaultWebAppSettings, ssIndices)
 import Network.Wai.Handler.Warp (run)
+import Network.Wai.Middleware.Gzip
 import WaiAppStatic.Types (unsafeToPiece)
 import Data.Time
 import Data.Time.Clock.POSIX
@@ -53,7 +54,12 @@ mainWithDatabase db = do
   postLog db $ (show (size es)) ++ " ensembles restored from database"
   s <- newMVar $ newServer { password = pwd, ensembles = es }
   let settings = (defaultWebAppSettings "Estuary.jsexe") { ssIndices = [unsafeToPiece "index.html"] }
-  run port $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+  run port $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+
+gzipMiddleware :: WS.Middleware
+gzipMiddleware = gzip $ def {
+  gzipFiles = GzipPreCompressed GzipIgnore
+}
 
 closeDatabaseOnException :: SQLite.Connection -> SomeException -> IO ()
 closeDatabaseOnException db e = do

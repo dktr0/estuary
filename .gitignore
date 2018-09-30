@@ -1,3 +1,5 @@
+estuary-client.tgz
+closure-compiler.jar
 Estuary.db
 *.lkshf
 *.jsexe
@@ -8,6 +10,7 @@ Estuary.db
 bin
 .stack-work/*
 .stack-work
+.stack-work-production/
 static/
 .DS_Store
 *~

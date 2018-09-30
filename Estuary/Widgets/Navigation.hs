@@ -21,8 +21,12 @@ import Estuary.Types.Hint
 import Estuary.Types.View
 import Estuary.Types.Definition
 import Estuary.Types.Terminal
+import Estuary.Types.Context
+import Estuary.Types.Language
 
 import Estuary.Widgets.View
+import Estuary.Reflex.Utility
+import qualified Estuary.Types.Term as Term
 
 
 data Navigation =
@@ -35,11 +39,11 @@ data Navigation =
   Collaborate String
 
 
-navigation :: MonadWidget t m => UTCTime -> Event t Command -> Event t [ServerResponse] ->
+navigation :: MonadWidget t m => UTCTime -> Dynamic t Context -> Event t Command -> Event t [ServerResponse] ->
   m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint)
-navigation now commands wsDown = mdo
-  let initialPage = page commands wsDown now Splash
-  let rebuild = fmap (page commands wsDown now) navEvents
+navigation now ctx commands wsDown = mdo
+  let initialPage = page ctx commands wsDown now Splash
+  let rebuild = fmap (page ctx commands wsDown now) navEvents
   w <- widgetHold initialPage rebuild
   values <- liftM joinDyn $ mapDyn (\(x,_,_,_)->x) w
   wsUp <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_,_)->x) w
@@ -47,83 +51,83 @@ navigation now commands wsDown = mdo
   navEvents <- liftM switchPromptlyDyn $ mapDyn (\(_,_,_,x)->x) w
   return (values,wsUp,hints)
 
-page :: MonadWidget t m => Event t Command -> Event t [ServerResponse] -> UTCTime -> Navigation ->
+page :: MonadWidget t m => Dynamic t Context -> Event t Command -> Event t [ServerResponse] -> UTCTime -> Navigation ->
   m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
 
-page _ wsDown _ Splash = do
-  x <- liftM (TutorialList <$) $ el "div" $ button "Tutorials"
-  y <- liftM (Solo <$)  $ el "div" $ button "Solo"
-  z <- liftM (Lobby <$)  $ el "div" $ button "Collaborate"
+page ctx _ wsDown _ Splash = do
+  x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
+  y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
+  z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
   let navEvents = leftmost [x,y,z]
   return (constDyn [],never,never,navEvents)
 
-page _ wsDown _ TutorialList = do
+page ctx _ wsDown _ TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   t1 <- liftM (Tutorial "Structure editing" <$) $ el "div" $ button "Structure editing"
   t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"
-  back <- liftM (Splash <$) $ button "Return to splashscreen"
+  back <- liftM (Splash <$) $ button  "<----"
   let navEvents = leftmost [t1,t2,back]
   return (constDyn [],never,never,navEvents)
 
-page _ wsDown _ (Tutorial "Structure editing") = do
+page ctx _ wsDown _ (Tutorial "Structure editing") = do
   text "Tutorial placeholder"
-  x <- liftM (Splash <$) $ button "back to splash"
+  x <- liftM (Splash <$) $ button  "<----"
   return (constDyn [],never,never,x)
 
-page _ wsDown _ (Tutorial "TidalCycles text editing") = do
+page ctx _ wsDown _ (Tutorial "TidalCycles text editing") = do
   text "Tutorial placeholder"
-  x <- liftM (Splash <$) $ button "back to splash"
+  x <- liftM (Splash <$) $ button "<----"
   return (constDyn [],never,never,x)
 
-page _ wsDown _ (Tutorial _) = do
+page ctx _ wsDown _ (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
-  x <- liftM (Splash <$) $ button "back to splash"
+  x <- liftM (Splash <$) $ button "<----"
   return (constDyn [],never,never,x)
 
-page _ wsDown _ Solo = do
+page ctx _ wsDown _ Solo = do
   (defMap,hints) <- viewInSoloWidget standardView
   patterns <- mapDyn (justStructures . elems) defMap
-  x <- liftM (Splash <$) $ button "Return to splashscreen"
+  x <- liftM (Splash <$) $ button "<----"
   return (patterns,never,hints,x)
 
-page _ wsDown _ Lobby = do
+page ctx _ wsDown _ Lobby = do
   requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
   spaceList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
   join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
   join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation
-  create <- liftM (CreateEnsemblePage <$) $ el "div" $ button "Create New Ensemble"
-  back <- liftM (Splash <$) $ el "div" $ button "back to splash"
+  create <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
+  back <- liftM (Splash <$) $ el "div" $ button "<----"
   return (constDyn [],requestEnsembleList,never,leftmost [back,join'',create])
 
-page _ _ _ CreateEnsemblePage = do
-  el "div" $ text "Create A New Ensemble"
-  el "div" $ text "Note: To successfully create an ensemble you need to know and enter the correct admin password."
+page ctx _ _ _ CreateEnsemblePage = do
+  el "div" $ dynText =<< translateDyn Term.CreateNewEnsemble ctx
+  el "div" $ dynText =<< translateDyn Term.CreateNewEnsembleNote ctx
   adminPwd <- el "div" $ do
-    text "Admin Password: "
+    translateDyn Term.AdministratorPassword ctx >>= dynText
     let attrs = constDyn ("class" =: "webSocketTextInputs")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   name <- el "div" $ do
-    text "Ensemble Name: "
+    translateDyn Term.EnsembleName ctx >>= dynText
     let attrs = constDyn ("class" =: "webSocketTextInputs")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   password <- el "div" $ do
-    text "Ensemble Password: "
+    translateDyn Term.EnsemblePassword ctx >>= dynText
     let attrs = constDyn ("class" =: "webSocketTextInputs")
     liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
   nameAndPassword <- combineDyn (,) name password
-  confirm <- el "div" $ button "Confirm"
+  confirm <- el "div" $ dynButton =<< translateDyn Term.Confirm ctx
   let createEnsemble = fmap (\(a,b) -> CreateEnsemble a b) $ tagDyn nameAndPassword confirm
   let authenticateAdmin = fmap Authenticate $ updated adminPwd
-  cancel <- el "div" $ button "Cancel"
+  cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
   let serverRequests = leftmost [createEnsemble,authenticateAdmin]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
   return (constDyn [], serverRequests, never, navEvents)
 
-page commands wsDown now (Collaborate w) = do
+page ctx commands wsDown now (Collaborate w) = do
   (defMap,wsUp,hints) <- viewInEnsembleWidget w now commands wsDown
   patterns <- mapDyn (justStructures . elems) defMap
-  x <- liftM (Lobby <$) $ button "back to lobby"
+  x <- liftM (Lobby <$) $ button  "<----"
   return (patterns,wsUp,hints,x)
 
 
@@ -146,22 +150,3 @@ tempoWidget deltas = do
   return edits
 -}
 
-diagnostics :: MonadWidget t m =>
-  Dynamic t (Map Int TransformedPattern) ->
-  Event t ServerRequest ->
-  Event t [ServerResponse] ->
-  Event t Hint ->
-  m ()
-diagnostics values deltasUp deltasDown hints = do
-  el "div" $ do
-    text "Values:"
-    mapDyn encode values >>= display
-  el "div" $ do
-    text "DeltasUp:"
-    (holdDyn "" $ fmap encode deltasUp) >>= display
-  el "div" $ do
-    text "DeltasDown:"
-    (holdDyn "" $ fmap encode deltasDown) >>= display
-  el "div" $ do
-    text "Hints:"
-    (holdDyn "" $ fmap show hints) >>= display

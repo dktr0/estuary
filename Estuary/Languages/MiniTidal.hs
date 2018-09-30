@@ -1,4 +1,4 @@
-module Estuary.Languages.MiniTidal (miniTidalPattern) where
+module Estuary.Languages.MiniTidal (miniTidalParser) where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
@@ -6,11 +6,11 @@ import Data.List (intercalate)
 import Data.Bool (bool)
 import qualified Sound.Tidal.Context as Tidal
 
-miniTidalPattern :: String -> Tidal.ParamPattern
-miniTidalPattern x = either (const Tidal.silence) id $ parse miniTidalParser "(unknown)" $ filter (/='?') x
+miniTidalParser :: String -> Tidal.ParamPattern
+miniTidalParser x = either (const Tidal.silence) id $ parse miniTidal "(unknown)" $ filter (/='?') x
 
-miniTidalParser :: GenParser Char a Tidal.ParamPattern
-miniTidalParser = spaces >> patternOrTransformedPattern
+miniTidal :: GenParser Char a Tidal.ParamPattern
+miniTidal = spaces >> patternOrTransformedPattern
 
 patternOrTransformedPattern :: GenParser Char a (Tidal.ParamPattern)
 patternOrTransformedPattern = choice [
@@ -227,7 +227,7 @@ specificPattern = choice [
   specificPatternGeneric "unit" Tidal.unit
   ]
 
-genericPattern :: Tidal.Parseable b => GenParser Char a (Tidal.Pattern b)
+genericPattern :: (Tidal.Parseable b, Tidal.Enumerable b) => GenParser Char a (Tidal.Pattern b)
 genericPattern = do
   char '"'
   x <- many (noneOf "\"")

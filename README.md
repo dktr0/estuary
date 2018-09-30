@@ -1,22 +1,29 @@
-# Building Estuary
+# Four Ways to Start Using Estuary
 
-First of all, note that, depending on your purpose and circumstances, you probably
-don't need to build Estuary at all!
-
-- At the time of writing, a stable, recent Estuary server is online 24/7 at a
-  test server belonging to the research group at McMaster University that is working
+- (Easiest) The completely zero installation route: At the time of writing, a stable, recent version of Estuary is online
+  24/7 at a test server belonging to the research group at McMaster University that is working
   on the server - you can try it out anytime at the following URL (and if you have
-  questions take them either to the &num;estuary channel on the live coding slack space
+  questions take them either to the &num;estuary channel on talk.lurk.org
   or the "estuary" Google group): http://intramuros.mcmaster.ca:8002
 
-- For stand-alone usage (ie. solo live coding without networked collaboration), you
-  can download a built "release" from github, and add a sample library - no need to
-  build anything. Just use your web browser to open the file index.html in your downloaded
-  release and you're good to go!
+- (Easy) The almost zero installation route: For stand-alone usage (ie. solo live coding without networked collaboration), you
+  can download the most recent compiled JavaScript "release" from github, unzip it, and add a sample library - no need to
+  build anything. Just use your web browser to open the file index.html in your downloaded and unzipped
+  release and you're good to go! Estuary expects the sample library to be a folder called samples under a folder called Dirt in your unzipped folder. You might download Dirt-Samples from the TidalCycles project (here https://github.com/tidalcycles/Dirt-Samples) and then put all of those sample folders in a folder called samples in a folder called Dirt in your unzipped Estuary folder, for example.
 
-If - despite the above much easier and quicker options - you're still intent on building
-Estuary's client and server "from scratch" on your machine, the recommended method is via
-the Haskell stack application, although other methods may be possible.
+- (Somewhat easy) Building the server while using a pre-built JavaScript client: It is typically much easier to build the Estuary server
+  than to build the Estuary client, so the Estuary Makefile provides targets for getting and incorporating a pre-built Estuary client into the Estuary project folder, alongside a server that you build yourself. If you don't have it already, install a recent version of the Haskell "stack" tool. The instructions below, executed in the Estuary folder/directory, show the complete process of building and installing the server, getting a copy of Dirt from the TidalCycles project (as one suitable choice for a sample library), grabbing the most recent released client without having to build it, then launching the complete and newly minted Estuary setup:
+
+```
+make installServer
+cd static; git clone https://github.com/TidalCycles/Dirt.git; cd ..
+cd static/Dirt; git submodule init; git submodule update; cd ../..
+make curlReleaseClient
+EstuaryServer/EstuaryServer someSecurePasswordYouPick
+```
+
+- (Difficult) If - despite the above three much easier and quicker options - you are for some reason still intent on building
+  both Estuary's client and server "from scratch" on your machine, follow the detailed instructions below.
 
 ## Building on Debian 9.1 (Stretch)
 
@@ -33,8 +40,14 @@ apt-get install libghc-entropy-dev
 apt-get install happy
 apt-get install zlib1g-dev
 apt-get install haskell-stack
+apt-get install ghc
+apt-get install cabal-install
 exit
 ```
+
+(Note: some might ask why we need to install ghc and cabal-install when we will be using stack as our build tool.
+The answer is that it seems that the version of ghcjs we are using requires that an older version of cabal-install
+(version 1.24.0.1 is confirmed as working) be available on the path.)
 
 Now we need to upgrade stack, as the default package installed
 on Debian is somewhat old. As your preferred (not root) user:
@@ -100,3 +113,53 @@ you would open your web browser and point it to: 127.0.0.1:8002
 The overall process is similar on OS X (we should add more detailed instructions soon...).
 We have not been able to build the client on Windows so far, but the server yes. Windows
 users can use a release of the client with their own build of the server.
+
+
+
+## Building on Windows
+
+To build on Windows you need to enable the Windows Subsystem for Linux. The following instructions pertain to a Debian installation on Windows
+
+Enable Windows Subsystem for Linux  - run power shell as administrator and enter:
+
+```Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux```
+
+Disable legacy mode from command prompt: open a Command Prompt, right click on the header bar and click properties, uncheck legacy mode
+
+Install Debian: You can install it directly from the Microsoft store.
+
+Open Debian - initialize and set up a user (follow prompts)
+
+Get latest apt packages in Debian terminal
+```
+sudo apt-get update
+sudo apt-get upgrade
+```
+
+
+Install haskell platform, haskell stack, git, and curl for Debian
+
+```
+sudo apt-get install haskell-platform haskell-stack curl git
+```
+
+Install nodejs
+
+```
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+In a regular windows Command prompt (ie. not WSL) clone the Estuary repository:
+
+```
+git clone https://github.com/d0kt0r0/Estuary.git
+```
+
+Now back in the Debian terminal you should be able to find the cloned repository in: /mnt/c/<....path to cloned repo on windows...>
+
+```
+cd /mnt/c/ ...<path to cloned repo>
+```
+
+Follow the rest of the instructions under Linux detailed above after ```git clone https://gitub.com/d0kt0r0/Estuary.git``` in the Debian terminal.

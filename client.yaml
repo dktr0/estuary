@@ -8,9 +8,6 @@ setup-info:
         url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
         sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
 
-build:
-  haddock-hyperlink-source: false
-
 allow-newer: true
 
 packages:
@@ -21,11 +18,6 @@ extra-deps:
 - reflex-dom-0.3
 - reflex-0.4.0
 - ref-tf-0.4
-- haskell-src-exts-1.16.0.1
-- reflex-dom-contrib-0.4.1
-- tidal-0.9.4
-- hosc-0.15
-- hmt-0.15
-- multiset-comb-0.2.4.1
-- permutation-0.5.0.5
+- hosc-0.16
+- tidal-0.9.9
 - parsec-numbers-0.1.0

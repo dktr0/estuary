@@ -1,5 +1,6 @@
 module Estuary.Types.View where
 
+import Text.ParserCombinators.Parsec
 import Text.JSON
 import Estuary.Utility (firstKey)
 
@@ -10,7 +11,7 @@ data View =
   StructureView Int |
   TidalTextView Int |
   EvaluableTextView Int
-  deriving (Show)
+  deriving (Show,Eq)
 
 instance JSON View where
   showJSON (Views xs) = encJSDict [("Views",xs)]
@@ -28,12 +29,139 @@ instance JSON View where
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Estuary.Protocol.View: " ++ (show x)
   readJSON _ = Error $ "Unable to parse non-JSObject as Estuary.Protocol.View"
 
-defaultView :: View
-defaultView = Views [
+standardView :: View
+standardView = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
   ViewDiv "eightTopR" (Views [LabelView 3, StructureView 4]),
   ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6]),
   ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8]),
-  ViewDiv "eightBottomL" (Views [LabelView 9, EvaluableTextView 10]),
+  ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10]),
   ViewDiv "eightBottomR" (Views [LabelView 11, EvaluableTextView 12])
   ]
+
+emptyView :: View
+emptyView = Views []
+
+viewsParser :: GenParser Char a View
+viewsParser = do
+  spaces
+  many1 viewParser >>= return . Views
+
+viewParser :: GenParser Char a View
+viewParser = do
+  v <- choice [viewDiv,labelView,structureView,tidalTextView,evaluableTextView]
+  spaces
+  return v
+
+viewDiv = between (char '{') (char '}') $ do
+  spaces
+  cssClass <- many1 alphaNum
+  skipMany1 space
+  vs <- viewsParser
+  spaces
+  return $ ViewDiv cssClass vs
+
+labelView = string "label:" >> (read <$> many1 digit) >>= return . LabelView
+structureView = string "structure:" >> (read <$> many1 digit) >>= return . StructureView
+evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
+tidalTextView = string "tidal:" >> (read <$> many1 digit) >>= return . TidalTextView
+
+presetView :: String -> View
+
+presetView "iclc2017" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15]),
+  ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17]),
+  ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19]),
+  ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21]),
+  ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23]),
+  ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25]),
+  ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27]),
+  ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29]),
+  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31]),
+  ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35])
+  ]
+
+presetView "Bogota" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15]),
+  ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17]),
+  ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19]),
+  ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21]),
+  ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23]),
+  ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25]),
+  ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27]),
+  ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29]),
+  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31]),
+  ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35])
+  ]
+
+presetView "Manizales" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7])
+  ]
+
+presetView "Medellin" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7])
+  ]
+
+presetView "Lima" = Views [
+    ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+    ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
+    ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+    ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+    ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
+    ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
+    ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
+    ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15])
+    ]
+
+presetView "Uio" = Views [
+    ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+    ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
+    ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+    ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7]),
+    ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9]),
+    ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11]),
+    ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13]),
+    ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15]),
+    ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17]),
+    ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19]),
+    ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21]),
+    ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23]),
+    ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25]),
+    ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27]),
+    ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29]),
+    ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31]),
+    ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33]),
+    ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35])
+    ]
+
+
+presetView "RGGTRN" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7])
+  ]
+
+presetView _ = standardView

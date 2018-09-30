@@ -20,15 +20,18 @@ import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.EnsembleState
+import Estuary.Types.Context
+import Estuary.Reflex.Utility
+import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
 
-terminalWidget :: MonadWidget t m =>
+terminalWidget :: MonadWidget t m => Dynamic t Context ->
   Event t ServerRequest -> Event t [ServerResponse] -> m (Event t Terminal.Command)
-terminalWidget deltasUp deltasDown = divClass "terminal" $ mdo
+terminalWidget ctx deltasUp deltasDown = divClass "terminal" $ mdo
   currentSpace <- mostRecentEnsemble deltasUp
   (sendButton,inputWidget) <- divClass "terminalHeader" $ do
-    sendButton' <- divClass "webSocketButtons" $ button "Send"
-    divClass "webSocketButtons" $ text "Terminal/Chat:"
+    sendButton' <- divClass "webSocketButtons" $ dynButton =<< translateDyn Term.Send ctx
+    divClass "webSocketButtons" $ dynText =<< translateDyn Term.TerminalChat ctx
     let resetText = fmap (const "") terminalInput
     let attrs = constDyn $ fromList [("class","webSocketTextInputs"),("style","width: 100%")]
     inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs

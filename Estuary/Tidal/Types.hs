@@ -5,10 +5,8 @@ import Data.List as List (intercalate, zip)
 import Data.Map as Map
 import Data.Ratio
 import qualified Sound.Tidal.Context as Tidal
-import Estuary.Languages.CQenze
-import Estuary.Languages.MiniTidal
-import Estuary.Languages.Morelia
 
+import Estuary.Languages.TidalParser
 import Estuary.Utility
 
 -- This module defines types that model elements of the notation employed in the Tidal language
@@ -467,66 +465,44 @@ applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern 
 
 
 data TransformedPattern =
-  TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern |
+  TransformedPattern PatternTransformer TransformedPattern |
+  UntransformedPattern SpecificPattern |
   EmptyTransformedPattern |
-  TextPatternChain String String String |
-  CQenzePattern (Live String) |
-  MiniTidalPattern (Live String) |
-  MoreliaPattern (Live String)
+  TidalTextPattern (Live (TidalParser,String))
   deriving (Eq)
 
 instance Show TransformedPattern where
   show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
-  show (TextPatternChain a b c) = (show a) ++ " " ++ (show b) ++ " " ++ (show c)
-  show (CQenzePattern x) = "CQenzePattern: " ++ (show x)
-  show (MiniTidalPattern x) = "MiniTidalPattern: " ++ (show x)
-  show (MoreliaPattern x) = "MoreliaPattern: " ++ (show x)
+  show (TidalTextPattern x) = "TidalTextPattern: " ++ (show x)
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
   showJSON (UntransformedPattern s) = encJSDict [("UP",showJSON s)]
   showJSON (EmptyTransformedPattern) = showJSON "E"
-  showJSON (TextPatternChain a b c) = encJSDict [("Text",a),("b",b),("c",c)]
-  showJSON (CQenzePattern x) = encJSDict [("CQenzePattern",x)]
-  showJSON (MiniTidalPattern x) = encJSDict [("MiniTidalPattern",x)]
-  showJSON (MoreliaPattern x) = encJSDict [("MoreliaPattern",x)]
+  showJSON (TidalTextPattern x) = encJSDict [("TidalTextPattern",x)]
   readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
   readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
   readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
-  readJSON (JSObject x) | firstKey x == "Text" = TextPatternChain <$> valFromObj "Text" x <*> valFromObj "b" x <*> valFromObj "c" x
-  readJSON (JSObject x) | firstKey x == "CQenzePattern" = CQenzePattern <$> valFromObj "CQenzePattern" x
-  readJSON (JSObject x) | firstKey x == "MiniTidalPattern" = MiniTidalPattern <$> valFromObj "MiniTidalPattern" x
-  readJSON (JSObject x) | firstKey x == "MoreliaPattern" = MoreliaPattern <$> valFromObj "MoreliaPattern" x
+  readJSON (JSObject x) | firstKey x == "TidalTextPattern" = TidalTextPattern <$> valFromObj "TidalTextPattern" x
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern (Combine sPat comb) EmptyTransformedPattern) = toParamPattern sPat
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
-  toParamPattern (EmptyTransformedPattern) = Tidal.silence -- @ is this correct?
-  toParamPattern (TextPatternChain a b c) = toParamPattern $ TransformedPattern (Combine a' Merge) $ TransformedPattern (Combine b' Merge) $ UntransformedPattern c'
-    where a' = Sound (TextPattern a)
-          b' = Up (TextPattern b)
-          c' = Vowel (TextPattern c)
-  toParamPattern (CQenzePattern x) = cqenzeParamPattern (forRendering x)
-  toParamPattern (MiniTidalPattern x) = miniTidalPattern (forRendering x)
-  toParamPattern (MoreliaPattern x) = morelia (forRendering x)
+  toParamPattern (EmptyTransformedPattern) = Tidal.silence
+  toParamPattern (TidalTextPattern x) = uncurry tidalParser $ forRendering x
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
-  isEmptyFuture (TextPatternChain _ _ _) = False
-  isEmptyFuture (CQenzePattern _) = False
-  isEmptyFuture (MiniTidalPattern _) = False
-  isEmptyFuture (MoreliaPattern _) = False
+  isEmptyFuture (TidalTextPattern _) = False
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
-  isEmptyPast (TextPatternChain _ _ _) = False
-  isEmptyPast (CQenzePattern _) = False
-  isEmptyPast (MiniTidalPattern _) = False
-  isEmptyPast (MoreliaPattern _) = False
+  isEmptyPast (TidalTextPattern _) = False
+
 
 data StackedPatterns = StackedPatterns [TransformedPattern]
 
