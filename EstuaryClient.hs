@@ -90,6 +90,7 @@ header wsStatus clientCount = divClass "header" $ do
     dynText statusMsg
   divClass "webDirt" $ divClass "webDirtMute" $ do
       text "SuperDirt:"
+      text "anyone home"
       sdInput <- checkbox False $ def
       text "WebDirt:"
       wdInput <- checkbox True $ def
