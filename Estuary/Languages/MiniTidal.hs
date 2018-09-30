@@ -21,13 +21,17 @@ miniTidal = choice [
 
 paramPattern :: Parser ParamPattern
 paramPattern = choice [
-  try $ transformedPattern0,
-  try $ transformedPattern1 specificParamPattern,
-  specificParamPattern
+  try $ inBrackets paramPattern,
+  try $ inBracketsOrNot transformedPattern0,
+  try $ inBracketsOrNot $ transformedPattern1 specificParamPattern,
+  inBracketsOrNot specificParamPattern
   ]
 
 pattern :: Parser (Pattern a) -> Parser (Pattern a)
-pattern p = choice [ try $ transformedPattern1 p, p]
+pattern p = choice [
+  try $ inBracketsOrNot $ transformedPattern1 p,
+  inBracketsOrNot p
+  ]
 
 transformedPattern0 :: Parser ParamPattern -- specialized for ParamPattern because so are the merge operators...
 transformedPattern0 = do
@@ -266,5 +270,14 @@ applied p = do
   spaces
   return x
 
+notInBrackets :: Parser a -> Parser a
+notInBrackets p = do
+  x <- p
+  spaces
+  return x
+
 inBracketsOrApplied :: Parser a -> Parser a
 inBracketsOrApplied p = inBrackets p <|> applied p
+
+inBracketsOrNot :: Parser a -> Parser a
+inBracketsOrNot p = inBrackets p <|> notInBrackets p

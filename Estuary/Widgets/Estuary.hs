@@ -38,7 +38,7 @@ estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
   (values,deltasUp,hints) <- divClass "page" $ navigation (startTime initialContext) ctx commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
   (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime initialContext) deltasUp
-  p <- mapDyn (toParamPattern . StackedPatterns) values
+  p <- mapDyn (toParamPattern . StackedPatterns) values -- ** TODO: anytime anything changes everything is parsed...
   let patternChanges = fmap setPattern $ updated p
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
@@ -51,7 +51,7 @@ estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
   performHint wd hints
 
 changeTheme :: MonadWidget t m => Event t String -> m ()
-changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle 
+changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle
 
 foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
@@ -89,7 +89,7 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ d
        ]
   translateDyn Term.Theme ctx >>= dynText
   styleChange <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
-  let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context) 
+  let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
   translateDyn Term.Language ctx >>= dynText
   let langMap = constDyn $ fromList $ zip languages (fmap show languages)
   langChange <- _dropdown_change <$> (dropdown English langMap def)
@@ -101,5 +101,3 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ d
   wdInput <- checkbox True $ def
   let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
   return $ mergeWith (.) [langChange',sdOn,wdOn,styleChange']
-
-
