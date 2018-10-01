@@ -46,3 +46,21 @@ main = hspec $ do
 
     it "parses addition of simple patterns" $
       "n (\"0 1\" + \"2 3\")" `parsesTo` (n ("0 1" + "2 3"))
+
+    it "parses multiplication of simple patterns as a merged parampattern" $
+      "s \"arpy*8\" # up (\"3\" * \"2\")" `parsesTo` (s "arpy*8" # up ("3" * "2"))
+
+    it "parses pan patterns" $
+      "pan \"0 0.25 0.5 0.75 1\"" `parsesTo` (pan "0 0.25 0.5 0.75 1")
+
+    it "parses sinewave oscillators" $
+      "pan sinewave" `parsesTo` (pan sinewave)
+
+    it "parses sinewave1 oscillators" $
+      "pan sinewave1" `parsesTo` (pan sinewave1)
+
+    it "parses sinewave1 oscillators used in pan patterns" $
+      "s \"arpy*8\" # pan sinewave1" `parsesTo` (s "arpy*8" # pan sinewave1)
+
+    it "parses fast transformations of parampatterns" $
+      "fast 2 $ s \"bd cp\"" `parsesTo` (fast 2 $ s "bd cp")

@@ -20,32 +20,46 @@ miniTidal = choice [
   ]
 
 paramPattern :: Parser ParamPattern
-paramPattern = choice [
-  try $ inBrackets paramPattern,
-  try $ inBracketsOrNot transformedPattern0,
-  try $ inBracketsOrNot $ transformedPattern1 specificParamPattern,
-  inBracketsOrNot specificParamPattern
+paramPattern = chainl1 unmergedParamPattern paramPatternMergeOperators
+
+unmergedParamPattern :: Parser ParamPattern
+unmergedParamPattern = choice [
+  inBrackets paramPattern,
+  try $ transformedPattern paramPattern,
+  specificParamPattern
   ]
 
-pattern :: Parser (Pattern a) -> Parser (Pattern a)
-pattern p = choice [
-  try $ inBracketsOrNot $ transformedPattern1 p,
-  inBracketsOrNot p
-  ]
-
-transformedPattern0 :: Parser ParamPattern -- specialized for ParamPattern because so are the merge operators...
-transformedPattern0 = do
-  x <- specificParamPattern
-  m <- mergeOperator
-  y <- paramPattern
-  spaces
-  return $ m x y
-
-transformedPattern1 :: Parser (Pattern a) -> Parser (Pattern a)
-transformedPattern1 p = do
+transformedPattern :: Parser (Pattern a) -> Parser (Pattern a)
+transformedPattern p = do
   t <- patternTransformation p
-  p <- inBracketsOrApplied (pattern p)
-  return $ t p
+  p' <- inBracketsOrApplied p
+  return $ t p'
+
+doublePattern :: Parser (Pattern Double)
+doublePattern = chainl1 unmergedDoublePattern numPatternMergeOperators
+
+unmergedDoublePattern :: Parser (Pattern Double)
+unmergedDoublePattern = choice [
+  inBrackets doublePattern,
+  try $ transformedPattern doublePattern,
+  simplePattern,
+  oscillators
+  ]
+
+genericPattern :: (Parseable a, Enumerable a) => Parser (Pattern a)
+genericPattern = choice [
+  inBrackets genericPattern,
+  try $ transformedPattern genericPattern,
+  simplePattern
+  ]
+
+numPatternMergeOperators :: (Num a, Parseable a,Fractional a) => Parser (Pattern a -> Pattern a -> Pattern a)
+numPatternMergeOperators = choice [
+  spaces >> char '+' >> spaces >> return (+),
+  spaces >> char '-' >> spaces >> return (-),
+  spaces >> char '*' >> spaces >> return (*),
+  spaces >> char '/' >> spaces >> return (/)
+  ]
 
 paramPatternTransformation :: Parser (ParamPattern -> ParamPattern)
 paramPatternTransformation = inBracketsOrApplied paramPatternTransformations
@@ -154,26 +168,27 @@ whenmod p = do
 append :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
 append p = do
   string "append" >> spaces
-  x <- pattern p
+  x <- p
   spaces
   return $ T.append x
+
 
 mergedPattern :: Parser (ParamPattern -> ParamPattern)
 mergedPattern = do
   x <- paramPattern
   spaces
-  m <- mergeOperator
+  m <- paramPatternMergeOperators
   return $ m x
 
 mergedPattern1 :: Parser (ParamPattern -> ParamPattern)
 mergedPattern1 = do
-  m <- mergeOperator
+  m <- paramPatternMergeOperators
   spaces
   x <- paramPattern
   return $ \y -> m y x
 
-mergeOperator :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
-mergeOperator = choice [
+paramPatternMergeOperators :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
+paramPatternMergeOperators = choice [
   try (char '#' >> spaces >> return (#)),
   try (string "|=|" >> spaces >> return (|=|)),
   try (string "|+|" >> spaces >> return (|+|)),
@@ -183,17 +198,29 @@ mergeOperator = choice [
   ]
 
 specificPatternDouble :: String -> (Pattern Double -> ParamPattern) -> Parser (ParamPattern)
-specificPatternDouble s f = string s >> spaces >> doublePattern >>= return . f
+specificPatternDouble s f = do
+  string s >> spaces
+  x <- choice [
+    char '$' >> spaces >> doublePattern,
+    doublePattern
+    ]
+  return $ f x
 
 specificPatternGeneric :: (Parseable a, Enumerable a) => String -> (Pattern a -> ParamPattern) -> Parser (ParamPattern)
-specificPatternGeneric s f = string s >> spaces >> genericPattern >>= return . f
+specificPatternGeneric s f = do
+  string s >> spaces
+  x <- choice [
+    char '$' >> spaces >> genericPattern,
+    genericPattern
+    ]
+  return $ f x
 
 specificParamPattern :: Parser (ParamPattern)
 specificParamPattern = choice [
   try (string "silence" >> spaces >> return silence),
   try (specificPatternGeneric "s" s),
   try (specificPatternGeneric "sound" sound),
-  try (specificPatternGeneric "n" n),
+  try (specificPatternDouble "n" n),
   try (specificPatternDouble "up" up),
   try (specificPatternDouble "speed" speed),
   try (specificPatternGeneric "vowel" vowel),
@@ -220,36 +247,33 @@ specificParamPattern = choice [
   specificPatternGeneric "unit" unit
   ]
 
-genericPattern :: (Parseable b, Enumerable b) => Parser (Pattern b)
-genericPattern = do
+simplePattern :: (Parseable b, Enumerable b) => Parser (Pattern b)
+simplePattern = do
   char '"'
   x <- Text.ParserCombinators.Parsec.many (noneOf "\"")
   char '"'
   spaces
   return $ p x
 
-doublePattern :: Parser (Pattern Double)
-doublePattern = (try genericPattern) <|> oscillators
-
 oscillators :: Parser (Pattern Double)
 oscillators = choice [
-  try (string "sinewave" >> spaces >> return sinewave),
   try (string "sinewave1" >> spaces >> return sinewave1),
-  try (string "sine" >> spaces >> return sine),
+  try (string "sinewave" >> spaces >> return sinewave),
   try (string "sine1" >> spaces >> return sine1),
+  try (string "sine" >> spaces >> return sine),
 --  try (string "cosine" >> spaces >> return cosine),
-  try (string "sawwave" >> spaces >> return sawwave),
   try (string "sawwave1" >> spaces >> return sawwave1),
-  try (string "saw" >> spaces >> return saw),
+  try (string "sawwave" >> spaces >> return sawwave),
   try (string "saw1" >> spaces >> return saw1),
-  try (string "tri" >> spaces >> return tri),
-  try (string "tri1" >> spaces >> return tri1),
-  try (string "triwave" >> spaces >> return triwave),
+  try (string "saw" >> spaces >> return saw),
   try (string "triwave1" >> spaces >> return triwave1),
-  try (string "square" >> spaces >> return square),
+  try (string "triwave" >> spaces >> return triwave),
+  try (string "tri1" >> spaces >> return tri1),
+  try (string "tri" >> spaces >> return tri),
+  try (string "squarewave1" >> spaces >> return squarewave1),
   try (string "square1" >> spaces >> return square1),
-  try (string "squarewave" >> spaces >> return squarewave),
-  string "squarewave1" >> spaces >> return squarewave1
+  try (string "square" >> spaces >> return square),
+  string "squarewave" >> spaces >> return squarewave
   ]
 
 inBrackets :: Parser a -> Parser a
