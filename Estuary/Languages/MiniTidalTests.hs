@@ -64,3 +64,16 @@ main = hspec $ do
 
     it "parses fast transformations of parampatterns" $
       "fast 2 $ s \"bd cp\"" `parsesTo` (fast 2 $ s "bd cp")
+
+    it "parses fast transformations of parampatterns when in brackets" $
+      "(fast 2) $ s \"bd cp\"" `parsesTo` ((fast 2) $ s "bd cp")
+
+    it "parses multiple fast transformations of parampatterns" $
+      "fast 2 $ fast 2 $ s \"bd cp\"" `parsesTo` (fast 2 $ fast 2 $ s "bd cp")
+
+    it "parses a transformed pattern merged with a pattern constructed from parampatterning an arithmetic expression on patterns" $
+      "(every 2 (fast 2) $ s \"arpy*8\") # up (\"[0 4 7 2,16 12 12 16]\" - \"<0 3 5 7>\")" `parsesTo` ((every 2 (fast 2) $ s "arpy*8") # up ("[0 4 7 2,16 12 12 16]" - "<0 3 5 7>"))
+
+    it "parses a fast transformation applied to a simple (ie. non-param) pattern" $
+      "up (fast 2 \"<0 2 3 5>\")" `parsesTo`
+        (up (fast 2 "<0 2 3 5>"))

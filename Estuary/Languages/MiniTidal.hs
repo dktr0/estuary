@@ -24,7 +24,7 @@ paramPattern = chainl1 unmergedParamPattern paramPatternMergeOperators
 
 unmergedParamPattern :: Parser ParamPattern
 unmergedParamPattern = choice [
-  inBrackets paramPattern,
+  try $ inBrackets paramPattern,
   try $ transformedPattern paramPattern,
   specificParamPattern
   ]
@@ -35,12 +35,19 @@ transformedPattern p = do
   p' <- inBracketsOrApplied p
   return $ t p'
 
+transformedPattern' :: Parser (Pattern a) -> Parser (Pattern a)
+transformedPattern' p = do
+  t <- patternTransformation p
+  p' <- p
+  return $ t p'
+
 doublePattern :: Parser (Pattern Double)
 doublePattern = chainl1 unmergedDoublePattern numPatternMergeOperators
 
 unmergedDoublePattern :: Parser (Pattern Double)
 unmergedDoublePattern = choice [
   inBrackets doublePattern,
+  try $ transformedPattern' simplePattern,
   try $ transformedPattern doublePattern,
   simplePattern,
   oscillators
@@ -62,10 +69,10 @@ numPatternMergeOperators = choice [
   ]
 
 paramPatternTransformation :: Parser (ParamPattern -> ParamPattern)
-paramPatternTransformation = inBracketsOrApplied paramPatternTransformations
+paramPatternTransformation = inBracketsOrNot paramPatternTransformations
 
 patternTransformation :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
-patternTransformation p = inBracketsOrApplied (patternTransformations p)
+patternTransformation p = inBracketsOrNot (patternTransformations p)
 
 paramPatternTransformations :: Parser (ParamPattern -> ParamPattern)
 paramPatternTransformations = choice [
