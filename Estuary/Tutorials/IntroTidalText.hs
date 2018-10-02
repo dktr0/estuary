@@ -7,11 +7,11 @@ import Estuary.Types.Language
 
 v1 :: Language -> (View, Definition)
 v1 English = (LabelView 0, LabelText "Welcome to the introductory tutorial to Tidalcycles (or MiniTidal)")
-v1 a = (LableView 0, LabelText $ translationDNE a)
+v1 a = (LabelView 0, LabelText $ translationDNE a)
 
 v2 :: Language -> (View, Definition)
 v2 English = (LabelView 1, LabelText "Click 'MidiTidal' to listen to the pattern below")
-v2 a = (LableView 1, LabelText $ translateDNE a)
+v2 a = (LabelView 1, LabelText $ translationDNE a)
 
 v3:: Language -> (View, Definition)
 v3 _ = (TidalTextView 2, EvaluableText "s \"bd bd\" ")

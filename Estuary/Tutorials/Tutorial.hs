@@ -1,4 +1,4 @@
-module Estuary.Tutorials.Tutorial (generateTutorial, tutorials) where
+module Estuary.Tutorials.Tutorial where
 
 import Reflex
 import Reflex.Dom
@@ -12,8 +12,7 @@ import Estuary.Types.Request
 import Estuary.Types.Hint
 import Estuary.Types.Context
 import Estuary.Widgets.View
-
-import Estuary.Tutorial.IntroTidalText
+import Estuary.Widgets.Generic
 
 
 type TutorialPage = (View, DefinitionMap)
@@ -24,10 +23,6 @@ data Tutorial = Tutorial {
   tutorialId::TutorialId,
   pages:: Map Language [TutorialPage]
   }
-
--- To be populated once tutorials exist
-tutorials:: Map TutorialID Tutorial
-tutorials = M.fromList $ fmap (\x->(tutorialId x,x)) [introTidalText]
 
 page :: Language -> [Language -> (View,Definition)] -> TutorialPage
 page lang widgets = (Views $ vs lang, M.fromList $ zip (fmap getIndex $ vs lang) (defs lang))
@@ -44,8 +39,9 @@ generateTutorial pgs = M.fromList $ fmap (\l -> (l,fmap (page l) pgs)) languages
 tutorialWidget :: MonadWidget t m => Tutorial -> Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
 tutorialWidget t ctx = do
   pageMap <- forDyn ctx $ (\c-> (M.!) (pages t) (language c)) -- Dyn [(View,DefMap)] == Dyn TutorialPage
-  backButton <- button "back" >>= count
-  nextButton <- button "next" >>= count
+
+  backButton <- clickableDivClass' "back" "tutorial_back" () >>= count
+  nextButton <- clickableDivClass' "next" "tutorial_next" () >>= count
   pageNum <- combineDyn (-) nextButton backButton
   pageNumSafe <- combineDyn (\pn p-> max 0 $ min (length p) pn) pageNum pageMap -- TODO make safer/fix case of over counting
   page <- combineDyn (!!) pageMap pageNumSafe -- TODO Make safe
@@ -58,9 +54,6 @@ tutorialWidget t ctx = do
   defMap <- liftM joinDyn $ mapDyn (\(a,_,_)->a) r
   hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)->a) r
 
-  -- dynWidget <- forDyn page $ (\(v,dm) -> viewWidget v dm never)
-  -- defMap <- liftM joinDyn $ mapDyn (\(d,_,_)-> d) dynWidget
-  -- hs <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h) -> h) dynWidget
   return (defMap, hints)
 
   --
