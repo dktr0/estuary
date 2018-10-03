@@ -7,6 +7,7 @@ import Reflex
 import Reflex.Dom
 import GHCJS.DOM.EventM
 import Control.Monad
+import Control.Monad.IO.Class
 import Estuary.Reflex.Utility
 import Data.Map
 import Data.List
@@ -77,6 +78,8 @@ isChangeValue (ChangeValue _) = True
 isChangeValue _ = False
 --data EditSignal = DeleteMe | MakeGroup |
 
+debug::(MonadWidget t m, Show a) => Event t a -> m ()
+debug e = performEvent_ $ fmap (liftIO . putStrLn . show) e
 
 clickableDiv :: MonadWidget t m => String -> m (Event t ())
 clickableDiv label = do
@@ -128,6 +131,12 @@ clickableDivAttrs' label val attrs _ _= do
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   let event = (val <$) clickEv
   return $ constDyn ((),event)
+
+clickableDivDynAttrs :: MonadWidget t m => String -> a -> Dynamic t (Map String String) -> m (Event t a)
+clickableDivDynAttrs label val attrs = do
+  (element,_) <- elDynAttr' "div" attrs $ text label
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  return $ (val <$) clickEv
 
 -- with displayed text that can change
 clickableSpanClass:: MonadWidget t m => Dynamic t String -> String -> a -> m (Event t a)

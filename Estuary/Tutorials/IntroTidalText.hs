@@ -18,6 +18,7 @@ v3 _ = (TidalTextView 2, EvaluableText "s \"bd bd\" ")
 
 p1= [v1,v2,v3]
 
+p2 = [v1,v2,v3]
   -- where
   --   x = zip (repeat languages) pgs -- [([Language],[[Lang->(View, Def)]])]
   --   y = fmap (\(ls,ps)-> fmap (\l -> fmap (page l) ps) ls) x  -- [ ]
@@ -26,7 +27,7 @@ p1= [v1,v2,v3]
   --
 
 introTidalText :: Tutorial
-introTidalText = Tutorial IntroTidalText (generateTutorial [p1])
+introTidalText = Tutorial IntroTidalText (generateTutorial [p1,p2])
 
 -- type TutorialPage = [(View, Definition)]
 --

@@ -68,25 +68,15 @@ page ctx _ wsDown _ TutorialList = do
   bs <- sequence $ fmap (\b-> liftM ((Tutorial b) <$)  $ button $ show $ T.tutorialId b) $ elems tutorials --m [ Event t Navigation]
   -- t1 <- liftM (Tutorial  <$) $ el "div" $ button "Structure editing"
   -- t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"
-  back <- liftM (Splash <$) $ button  "<----"
+  back <- liftM (Splash <$) $ el "div" $ button  "<----"
   let navEvents = leftmost $ bs ++ [back]
   return (constDyn [],never,never,navEvents)
 
 page ctx _ wsDown _ (Tutorial t) = do
   (dm, h) <- T.tutorialWidget t ctx
   patterns <- mapDyn (justStructures . elems) dm
-  x <- liftM (Splash <$) $ button "<----"
+  x <- liftM (Splash <$) $ el "div" $ button "<-- Back to tutorial list"
   return (patterns, never, h, x)
-
--- page ctx _ wsDown _ (Tutorial "Structure editing") = do
---   text "Tutorial placeholder"
---   x <- liftM (Splash <$) $ button  "<----"
---   return (constDyn [],never,never,x)
---
--- page ctx _ wsDown _ (Tutorial "TidalCycles text editing") = do
---   text "Tutorial placeholder"
---   x <- liftM (Splash <$) $ button "<----"
---   return (constDyn [],never,never,x)
 
 page ctx _ wsDown _ (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"

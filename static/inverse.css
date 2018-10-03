@@ -202,7 +202,11 @@ button {
 
 }
 
-.textPatternChain {
+.tidalTextWidget {
+	width: 100%;
+}
+
+.labelWidget{
 	width: 100%;
 }
 

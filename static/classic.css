@@ -29,6 +29,10 @@ button {
 
 }
 
+.displayNone{
+	display:none;
+}
+
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
 	padding-top: 5px;
 	padding-bottom: 5px;
@@ -201,7 +205,11 @@ button {
 
 }
 
-.textPatternChain {
+.tidalTextWidget {
+	width: 100%;
+}
+
+.labelWidget{
 	width: 100%;
 }
 
@@ -274,6 +282,38 @@ button {
 }
 
 
+/*
+______________________________
+         Tutorial classes
+______________________________
+*/
+
+/* next button to navigate to next page */
+.tutorial_next{
+	float:right;
+	background-color:  hsl(0,0%,20%);
+	padding-left:1%;
+	padding-right:1%;
+	padding-bottom:5px;
+	border-radius: 5%;
+}
+
+.tutorial_next:hover{
+	background-color: rgba(0,255,0,0.2);
+}
+
+.tutorial_back{
+	float:left;
+	background-color:  hsl(0,0%,20%);
+	padding-left:1%;
+	padding-right:1%;
+	padding-bottom:5px;
+	border-radius: 5%;
+}
+
+.tutorial_back:hover{
+	background-color: rgba(0,255,0,0.2);
+}
 
 
 /*
