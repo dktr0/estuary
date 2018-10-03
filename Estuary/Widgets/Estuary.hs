@@ -51,7 +51,7 @@ estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
   performHint wd hints
 
 changeTheme :: MonadWidget t m => Event t String -> m ()
-changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle 
+changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle
 
 foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
@@ -83,16 +83,13 @@ header ctx = divClass "header" $ do
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ do
-  let styleMap = fromList [
-       ("classic.css","Classic"),
-       ("inverse.css","Inverse")
-       ]
+  let styleMap =  fromList [("classic.css", "Classic"),("inverse.css","Inverse")]
   translateDyn Term.Theme ctx >>= dynText
-  styleChange <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
-  let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context) 
+  styleChange <-   _dropdown_change <$>  dropdown "classic.css" (constDyn styleMap) def -- Event t String
+  let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
   translateDyn Term.Language ctx >>= dynText
   let langMap = constDyn $ fromList $ zip languages (fmap show languages)
-  langChange <- _dropdown_change <$> (dropdown English langMap def)
+  langChange <- divClass "dropdown" $ _dropdown_change <$> (dropdown English langMap def)
   let langChange' = fmap (\x c -> c { language = x }) langChange
   text "SuperDirt:"
   sdInput <- checkbox False $ def
@@ -100,6 +97,4 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ d
   text "WebDirt:"
   wdInput <- checkbox True $ def
   let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
-  return $ mergeWith (.) [langChange',sdOn,wdOn,styleChange']
-
-
+  return $ mergeWith (.) [langChange',sdOn,wdOn, styleChange']
