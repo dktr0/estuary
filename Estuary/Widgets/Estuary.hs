@@ -38,7 +38,7 @@ estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
   (values,deltasUp,hints) <- divClass "page" $ navigation (startTime initialContext) ctx commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
   (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime initialContext) deltasUp
-  p <- mapDyn (toParamPattern . StackedPatterns) values
+  p <- mapDyn (toParamPattern . StackedPatterns) values -- ** TODO: anytime anything changes everything is parsed...
   let patternChanges = fmap setPattern $ updated p
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
@@ -85,7 +85,7 @@ clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event
 clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ do
   let styleMap =  fromList [("classic.css", "Classic"),("inverse.css","Inverse")]
   translateDyn Term.Theme ctx >>= dynText
-  styleChange <-   _dropdown_change <$>  dropdown "classic.css" (constDyn styleMap) def -- Event t String
+  styleChange <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
   let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
   translateDyn Term.Language ctx >>= dynText
   let langMap = constDyn $ fromList $ zip languages (fmap show languages)

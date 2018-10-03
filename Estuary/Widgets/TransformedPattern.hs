@@ -7,7 +7,6 @@ import Reflex.Dom
 import Estuary.Tidal.Types
 import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Utility
-import Estuary.Widgets.PatternTransformer
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Container
 import Control.Monad
