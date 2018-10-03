@@ -26,6 +26,7 @@ import Estuary.Utility
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
+import Estuary.Widgets.DynSvg
 import Estuary.Languages.TidalParser
 
 viewInEnsembleWidget :: MonadWidget t m =>
@@ -146,3 +147,7 @@ viewWidget (EvaluableTextView n) i deltasDown = do
   return (constDyn Map.empty,editsOrEvals',never)
   where f (EvaluableText x) = x
         f _ = ""
+
+viewWidget SvgDisplayView _ _ = do
+  testOurDynSvg
+  return (constDyn Map.empty, never, never)

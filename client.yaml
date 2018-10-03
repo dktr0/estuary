@@ -21,3 +21,4 @@ extra-deps:
 - hosc-0.16
 - tidal-0.9.9
 - parsec-numbers-0.1.0
+- reflex-dom-contrib-0.4.1
