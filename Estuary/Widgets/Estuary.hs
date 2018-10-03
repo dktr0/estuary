@@ -89,7 +89,7 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ d
   let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
   translateDyn Term.Language ctx >>= dynText
   let langMap = constDyn $ fromList $ zip languages (fmap show languages)
-  langChange <- divClass "dropdown" $ _dropdown_change <$> (dropdown English langMap def)
+  langChange <- _dropdown_change <$> (dropdown English langMap def)
   let langChange' = fmap (\x c -> c { language = x }) langChange
   text "SuperDirt:"
   sdInput <- checkbox False $ def
