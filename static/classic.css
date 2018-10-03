@@ -25,6 +25,7 @@ button {
 	border-radius: 4px;
 }
 
+
 .estuary { /* the entire interface, contains .header .page and .footer */
 
 }
@@ -35,6 +36,14 @@ button {
 	padding-left: 15px;
 	padding-right: 15px;
 }
+
+select {
+	background-color: black;
+	color: hsl(120,100%,80%);
+	border: 1px solid;
+	border-color: hsl(120,100%,80%);
+}
+
 
 .page { /* contains the interface for programming on menu selected in pageMenu */
 	border: 1px solid;

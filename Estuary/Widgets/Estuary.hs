@@ -83,10 +83,7 @@ header ctx = divClass "header" $ do
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ do
-  let styleMap = fromList [
-       ("classic.css","Classic"),
-       ("inverse.css","Inverse")
-       ]
+  let styleMap =  fromList [("classic.css", "Classic"),("inverse.css","Inverse")]
   translateDyn Term.Theme ctx >>= dynText
   styleChange <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
   let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
@@ -100,4 +97,4 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ d
   text "WebDirt:"
   wdInput <- checkbox True $ def
   let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
-  return $ mergeWith (.) [langChange',sdOn,wdOn,styleChange']
+  return $ mergeWith (.) [langChange',sdOn,wdOn, styleChange']

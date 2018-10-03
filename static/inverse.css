@@ -37,6 +37,8 @@ button {
 	padding-right: 15px;
 }
 
+
+
 .page { /* contains the interface for programming on menu selected in pageMenu */
 	border: 1px solid;
 	border-radius: 10px;
