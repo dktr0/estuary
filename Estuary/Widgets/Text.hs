@@ -14,6 +14,8 @@ import Control.Monad
 import GHCJS.DOM.EventM
 import Data.Maybe
 import Data.Map (fromList)
+import Data.Monoid
+
 
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Definition
@@ -29,18 +31,18 @@ textWidgetForPatternChain i delta = do
   let value = _textInput_value x
   return (value,edits)
 
-textAreaWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
-textAreaWidgetForPatternChain i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
+textAreaWidgetForPatternChain :: MonadWidget t m => Int -> String -> Event t String -> m (Dynamic t String, Event t String)
+textAreaWidgetForPatternChain rows i delta = do
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine" <> "rows" =: show rows)
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let edits = _textArea_input x
   let value = _textArea_value x
   return (value,edits)
 
 tidalTextWidget :: forall t m. MonadWidget t m =>
-  TransformedPattern -> Event t [TransformedPattern] ->
+  Int -> TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-tidalTextWidget i delta = divClass "textPatternChain" $ do -- *** TODO: css class name should be tidalTextWidget (in CSS also)
+tidalTextWidget rows i delta = divClass "textPatternChain" $ do -- *** TODO: css class name should be tidalTextWidget (in CSS also)
   let i' = transformedPatternToTidalTextPatternContents i
   let delta' = fmap transformedPatternToTidalTextPatternContents $ fmapMaybe lastOrNothing delta
   let deltaFuture = fmap forEditing delta'
@@ -54,7 +56,7 @@ tidalTextWidget i delta = divClass "textPatternChain" $ do -- *** TODO: css clas
     let parserEvent = _dropdown_change d
     b <- divClass "textInputLabel" $ button "eval"
     let initialText = snd $ forEditing i'
-    (textValue,textEvent) <- textAreaWidgetForPatternChain initialText textFuture
+    (textValue,textEvent) <- textAreaWidgetForPatternChain rows initialText textFuture
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagDyn v' b

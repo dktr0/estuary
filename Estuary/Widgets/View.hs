@@ -120,10 +120,10 @@ viewWidget (StructureView n) i deltasDown = do
   where f (Structure x) = x
         f _ = EmptyTransformedPattern
 
-viewWidget (TidalTextView n) i deltasDown = do
+viewWidget (TidalTextView n rows) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure (TidalTextPattern (Live (MiniTidal,"") L3))) n i
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
-  (value,edits,hints) <- tidalTextWidget i' deltasDown'
+  (value,edits,hints) <- tidalTextWidget rows i' deltasDown'
   value' <- mapDyn (Map.singleton n . Structure) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
   return (value',edits',hints)
