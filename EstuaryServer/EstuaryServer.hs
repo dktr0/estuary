@@ -17,10 +17,10 @@ import System.Environment (getArgs)
 import qualified Network.WebSockets as WS
 import qualified Network.Wai as WS
 import qualified Network.Wai.Handler.WebSockets as WS
-import Network.Wai.Application.Static (staticApp, defaultWebAppSettings, ssIndices)
+import Network.Wai.Application.Static (staticApp, defaultWebAppSettings, ssIndices, ssMaxAge)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.Gzip
-import WaiAppStatic.Types (unsafeToPiece)
+import WaiAppStatic.Types (unsafeToPiece,MaxAge(..))
 import Data.Time
 import Data.Time.Clock.POSIX
 import Data.Map
@@ -53,7 +53,10 @@ mainWithDatabase db = do
   es <- readEnsembles db
   postLog db $ (show (size es)) ++ " ensembles restored from database"
   s <- newMVar $ newServer { password = pwd, ensembles = es }
-  let settings = (defaultWebAppSettings "Estuary.jsexe") { ssIndices = [unsafeToPiece "index.html"] }
+  let settings = (defaultWebAppSettings "Estuary.jsexe") {
+    ssIndices = [unsafeToPiece "index.html"],
+    ssMaxAge = MaxAgeSeconds 120 -- two minutes max cache time
+    }
   run port $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
 
 gzipMiddleware :: WS.Middleware
@@ -267,7 +270,7 @@ processEnsembleRequest db _ _ _ _ = postLog db $ "warning: action failed pattern
 
 send :: ServerResponse -> [Client] -> IO ()
 send x cs = forM_ cs $ \y -> do
-  (WS.sendTextData (connection y) $ (T.pack . encodeStrict) x)  
+  (WS.sendTextData (connection y) $ (T.pack . encodeStrict) x)
   `catch` \(SomeException e) -> putStrLn $ "send exception: " ++ (show e)
 
 respond :: MVar Server -> ClientHandle -> ServerResponse -> IO ()
