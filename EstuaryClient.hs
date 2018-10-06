@@ -1,3 +1,5 @@
+{-# LANGUAGE JavaScriptFFI #-}
+
 module Main where
 
 import Reflex.Dom
@@ -13,6 +15,7 @@ import Estuary.WebDirt.SampleEngine
 
 main :: IO ()
 main = do
+  warnBeforeGoingBackInBrowser
   now <- Data.Time.getCurrentTime
   let initialContext = emptyContext now
   wd <- webDirt
@@ -21,3 +24,7 @@ main = do
   r <- newMVar $ render wd sd initialContext
   renderThread r
   mainWidget $ estuaryWidget r wd sd protocol initialContext
+
+foreign import javascript safe
+  "window.addEventListener('beforeunload', function (e) { e.preventDefault(); e.returnValue = ''; });"
+  warnBeforeGoingBackInBrowser :: IO ()
