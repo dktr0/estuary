@@ -107,12 +107,6 @@ getIndex (AlobestiaView i) = i
 
 
 
-
-
-
-
-
-
 standardView :: View
 standardView = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),

@@ -23,6 +23,8 @@ import Control.Applicative (liftA2)
 import Estuary.Types.Hint
 
 
+
+
 generalContainerLive' :: (MonadWidget t m, Eq a, Show a)
   => (Dynamic t Liveness -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)), Event t Hint)))
   -> GeneralPattern a

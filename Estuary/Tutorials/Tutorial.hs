@@ -40,9 +40,13 @@ generateTutorial pgs = M.fromList $ fmap (\l -> (l,fmap (page l) pgs)) languages
 -- maybe TutorialID instead? tutorialWidget :: MonadWidget t m => TutorialID -> Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
 tutorialWidget :: MonadWidget t m => Tutorial -> Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
 tutorialWidget t ctx = mdo
-  currentLang <- mapDyn language ctx
+  lang <- mapDyn language ctx
+  let lang' = nubDyn lang
+  -- lang' <- (nubDyn lang)::MonadWidget t m => m (Dynamic t Language)
+  -- let currentLang = current lang  -- behavior lang
+  -- let changedLang = ffilter (!=) $ attach currentLang lang
   -- pageMap <- forDyn ctx $ (\c-> (M.!) (pages t) (language c)) -- Dyn [(View,DefMap)] == Dyn TutorialPage
-  pageMap <- mapDyn ((M.!) (pages t)) currentLang
+  pageMap <- mapDyn (\x-> (M.!) (pages t) x) lang'
 -- [H]   holdUniqDyn   :: Eq a => Dynamic a -> m (Dynamic a)
   -- clickableDivDynAttrs :: MonadWidget t m => String -> a -> Dynamic t (Map String String) -> m (Event t a)
   backButton <- clickableDivDynAttrs "back" () backAttrs >>= count

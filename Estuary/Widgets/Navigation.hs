@@ -30,6 +30,7 @@ import Estuary.Widgets.View
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 
+import Estuary.Widgets.Sequencer
 
 data Navigation =
   Splash |
@@ -38,7 +39,8 @@ data Navigation =
   Solo |
   Lobby |
   CreateEnsemblePage |
-  Collaborate String
+  Collaborate String |
+  Test
 
 
 navigation :: MonadWidget t m => UTCTime -> Dynamic t Context -> Event t Command -> Event t [ServerResponse] ->
@@ -60,7 +62,8 @@ page ctx _ wsDown _ Splash = do
   x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
   y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
   z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
-  let navEvents = leftmost [x,y,z]
+  t <- liftM (Test <$) $ button "test"
+  let navEvents = leftmost [x,y,z,t]
   return (constDyn [],never,never,navEvents)
 
 page ctx _ wsDown _ TutorialList = do
@@ -128,6 +131,25 @@ page ctx commands wsDown now (Collaborate w) = do
   patterns <- mapDyn (justStructures . elems) defMap
   x <- liftM (Lobby <$) $ button  "<----"
   return (patterns,wsUp,hints,x)
+
+-- page :: MonadWidget t m => Dynamic t Context -> Event t Command -> Event t [ServerResponse] -> UTCTime -> Navigation ->
+    -- m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
+page ctx commands wsDown now (Test) = do
+  p <- sequencer igp never >>= mapDyn (\(x,_,_)-> [UntransformedPattern  $ S x])
+  return (p,never,never,never)
+  where
+    igp = Layers (Live (ls,Once) L4) Inert
+    ls = fmap f ["bd"::String,"cp","dr","techno"]
+    f s = Group (Live (take 4 $ repeat (Atom s Inert Once),Once) L4) Inert
+
+
+    -- data GeneralPattern a =
+    --   Atom a (Potential a) RepOrDiv |
+    --   Blank (Potential a) |
+    --   Group (Live  ([GeneralPattern a],RepOrDiv)) (Potential a) |
+    --   Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
+    --   TextPattern String
+    --   deriving (Eq)
 
 
 joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation)
