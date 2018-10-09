@@ -8,6 +8,7 @@ import qualified Sound.Tidal.Context as Tidal
 
 import Estuary.Languages.TidalParser
 import Estuary.Utility
+import Estuary.Types.Live
 
 -- This module defines types that model elements of the notation employed in the Tidal language
 -- including both notations within Tidal's pattern notation (i.e. within "quotation marks") as well
@@ -43,16 +44,6 @@ instance JSON RepOrDiv where
                         | otherwise = Error $ "can't parse JSObject as RepOrDiv: " ++ (show x)
   readJSON _ = Error "can't parse as RepOrDiv (not JSString nor JSObject)"
 
-data Liveness = L3 | L4 deriving (Eq,Show)
-
-instance JSON Liveness where
-  showJSON L3 = showJSON "L3"
-  showJSON L4 = showJSON "L4"
-  readJSON (JSString x) | fromJSString x == "L3" = Ok L3
-  readJSON (JSString x) | fromJSString x == "L4" = Ok L4
-  readJSON _ = Error "can't parse as Liveness"
-
-
 data Potential a = Potential a | PotentialDelete
     | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness
     | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq,Show) --show just for testing
@@ -75,33 +66,6 @@ instance JSON a => JSON (Potential a) where
   readJSON (JSString x) | fromJSString x == "Prd" = Ok PotentialRepOrDiv
   readJSON (JSObject x) | firstKey x == "Ps" = Potentials <$> valFromObj "Ps" x
   readJSON _ = Error "can't parse as Potential"
-
-
-data Live a = Live a Liveness | Edited a a deriving(Eq)
-
-forRendering :: Live a -> a
-forRendering (Live a _) = a
-forRendering (Edited a _) = a
-
-forEditing :: Live a -> a
-forEditing (Live a _) = a
-forEditing (Edited _ a) = a
-
-instance Show a => Show (Live a) where
-  show (Live a L3) = "L3:"++(show a)
-  show (Live a L4) = "L4:"++(show a)
-  show (Edited a b) = "L3e:"++(show a)++":"++(show b)
-
-instance JSON a => JSON (Live a) where
-  showJSON (Live a liveness) = encJSDict [("Live",showJSON a),("l",showJSON liveness)]
-  showJSON (Edited past future) = encJSDict [("Edited",past),("f",future)]
-  readJSON (JSObject x) | firstKey x == "Live" = Live <$> valFromObj "Live" x <*> valFromObj "l" x
-  readJSON (JSObject x) | firstKey x == "Edited" = Edited <$> valFromObj "Edited" x <*> valFromObj "f" x
-  readJSON _ = Error "can't parse as Live"
-
-isEdited :: Live a -> Bool
-isEdited (Edited _ _) = True
-isEdited _ = False
 
 data GeneralPattern a =
   Atom a (Potential a) RepOrDiv |
@@ -467,25 +431,25 @@ applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern 
 data TransformedPattern =
   TransformedPattern PatternTransformer TransformedPattern |
   UntransformedPattern SpecificPattern |
-  EmptyTransformedPattern |
-  TidalTextPattern (Live (TidalParser,String))
+  EmptyTransformedPattern
+--  TidalTextPattern (Live (TidalParser,String))
   deriving (Eq)
 
 instance Show TransformedPattern where
   show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
-  show (TidalTextPattern x) = "TidalTextPattern: " ++ (show x)
+--  show (TidalTextPattern x) = "TidalTextPattern: " ++ (show x)
 
 instance JSON TransformedPattern where
   showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
   showJSON (UntransformedPattern s) = encJSDict [("UP",showJSON s)]
   showJSON (EmptyTransformedPattern) = showJSON "E"
-  showJSON (TidalTextPattern x) = encJSDict [("TidalTextPattern",x)]
+--  showJSON (TidalTextPattern x) = encJSDict [("TidalTextPattern",x)]
   readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
   readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
   readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
-  readJSON (JSObject x) | firstKey x == "TidalTextPattern" = TidalTextPattern <$> valFromObj "TidalTextPattern" x
+--  readJSON (JSObject x) | firstKey x == "TidalTextPattern" = TidalTextPattern <$> valFromObj "TidalTextPattern" x
   readJSON _ = Error "can't parse as TransformedPattern"
 
 instance ParamPatternable TransformedPattern where
@@ -493,15 +457,15 @@ instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern t p) = applyPatternTransformer t (toParamPattern p)
   toParamPattern (UntransformedPattern u) = toParamPattern u
   toParamPattern (EmptyTransformedPattern) = Tidal.silence
-  toParamPattern (TidalTextPattern x) = uncurry tidalParser $ forRendering x
+--  toParamPattern (TidalTextPattern x) = uncurry tidalParser $ forRendering x
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
-  isEmptyFuture (TidalTextPattern _) = False
+--  isEmptyFuture (TidalTextPattern _) = False
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
-  isEmptyPast (TidalTextPattern _) = False
+--  isEmptyPast (TidalTextPattern _) = False
 
 
 data StackedPatterns = StackedPatterns [TransformedPattern]
