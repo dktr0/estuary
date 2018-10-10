@@ -5,15 +5,15 @@ module Estuary.Types.Live where
 import Text.JSON
 import Text.JSON.Generic
 
-data Liveness = L3 | L4 deriving (Eq,Show)
+data Liveness = L3 | L4 deriving (Eq,Show,Data,Typeable)
 
 instance JSON Liveness where
   showJSON = toJSON
   readJSON = fromJSON
 
-data Live a = Live a Liveness | Edited a a deriving(Eq)
+data Live a = Live a Liveness | Edited a a deriving(Eq,Data,Typeable)
 
-instance JSON a => JSON (Live a) where
+instance Data a => JSON (Live a) where
   showJSON = toJSON
   readJSON = fromJSON
 

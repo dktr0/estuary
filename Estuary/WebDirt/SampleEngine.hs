@@ -11,7 +11,13 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad.Loops
 import Data.Functor (void)
+import Data.Map (elems)
+
+import Estuary.Types.Live
 import Estuary.Types.Context
+import Estuary.Types.Definition
+import Estuary.Types.TextNotation
+import Estuary.Tidal.Types
 
 class SampleEngine e where
   getClockDiff :: e -> IO Double -- diff btw clock used to play sample events and POSIX
@@ -40,11 +46,14 @@ type Renderer = UTCTime -> IO ()
 
 render :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> Renderer
 render wd sd c logicalTime = do
-  let sounds = renderTidalPattern logicalTime (0.1::NominalDiffTime) (tempo c) (pattern c)
+  let patterns1 = (fmap toParamPattern . justStructures . elems . definitions) c
+  let patterns2 = (fmap (tidalTextToParamPattern . forRendering) . justTextPrograms . elems . definitions) c
+  let patterns = patterns1 ++ patterns2 -- :: [ParamPattern]
+  let sounds = concat $ fmap (renderTidalPattern logicalTime (0.1::NominalDiffTime) (tempo c)) patterns
   if webDirtOn c then sendSounds wd (tempo c) sounds else return ()
   if superDirtOn c then sendSounds sd (tempo c) sounds else return ()
 
-dynamicRender :: (SampleEngine wd, SampleEngine sd, MonadWidget t m) => MVar Renderer -> wd -> sd -> Dynamic t Context -> m () 
+dynamicRender :: (SampleEngine wd, SampleEngine sd, MonadWidget t m) => MVar Renderer -> wd -> sd -> Dynamic t Context -> m ()
 dynamicRender r wd sd c = performEvent_ $ fmap (liftIO . void . swapMVar r .  render wd sd) $ updated c
 
 runRender :: MVar Renderer -> UTCTime -> IO UTCTime
@@ -54,7 +63,7 @@ runRender r t = do
   now <- getCurrentTime
   let next = addUTCTime (0.1::NominalDiffTime) t
   let diff = diffUTCTime next now
-  let delay = floor $ realToFrac diff * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time   
+  let delay = floor $ realToFrac diff * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
   -- putStrLn $ "now=" ++ show now ++ "  next=" ++ show next ++ "  diff=" ++ show diff ++ "  delay=" ++ show delay
   threadDelay delay
   return next
@@ -64,4 +73,3 @@ renderThread r = do
   renderStart <- getCurrentTime
   forkIO $ iterateM_ (runRender r) renderStart
   return ()
-

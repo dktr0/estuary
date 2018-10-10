@@ -1,6 +1,9 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Estuary.Tidal.Types where
 
 import Text.JSON
+import Text.JSON.Generic
 import Data.List as List (intercalate, zip)
 import Data.Map as Map
 import Data.Ratio
@@ -24,48 +27,26 @@ class ParamPatternable a where
   isEmptyPast :: a -> Bool
 
 
-data RepOrDiv = Once | Rep Int | Div Int deriving (Eq)
+data RepOrDiv = Once | Rep Int | Div Int deriving (Eq,Data,Typeable)
+
+instance JSON RepOrDiv where
+  showJSON = toJSON
+  readJSON = fromJSON
 
 instance Show RepOrDiv where
   show Once = ""
-  --show (Rep 1) = ""
   show (Rep n) = "*" ++ (show n)
-  --show (Div 1) = ""
   show (Div n) = "/" ++ (show n)
 
-instance JSON RepOrDiv where
-  showJSON Once = showJSON "o"
-  showJSON (Rep n) = encJSDict [("r",n)]
-  showJSON (Div n) = encJSDict [("d",n)]
-  readJSON (JSString x) | fromJSString x == "o" = Ok (Once)
-                        | otherwise = Error $ "can't parse JSString as RepOrDiv: " ++ (show x)
-  readJSON (JSObject x) | firstKey x == "r" = Rep <$> valFromObj "r" x
-                        | firstKey x == "d" = Div <$> valFromObj "d" x
-                        | otherwise = Error $ "can't parse JSObject as RepOrDiv: " ++ (show x)
-  readJSON _ = Error "can't parse as RepOrDiv (not JSString nor JSObject)"
 
 data Potential a = Potential a | PotentialDelete
     | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness
-    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq,Show) --show just for testing
+    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq,Show,Data,Typeable) --show just for testing
 
-instance JSON a => JSON (Potential a) where
-  showJSON (Potential a) = encJSDict [("P",a)]
-  showJSON PotentialDelete = showJSON "Pd"
-  showJSON PotentialMakeGroup = showJSON "Pmg"
-  showJSON PotentialMakeLayer = showJSON "Pml"
-  showJSON (PotentialLiveness x) = encJSDict [("Pl",showJSON x)]
-  showJSON Inert = showJSON "I"
-  showJSON PotentialRepOrDiv = showJSON "Prd"
-  showJSON (Potentials xs) = encJSDict [("Ps",xs)]
-  readJSON (JSObject x) | firstKey x == "P" = Potential <$> valFromObj "P" x
-  readJSON (JSString x) | fromJSString x == "Pd" = Ok PotentialDelete
-  readJSON (JSString x) | fromJSString x == "Pmg" = Ok PotentialMakeGroup
-  readJSON (JSString x) | fromJSString x == "Pml" = Ok PotentialMakeLayer
-  readJSON (JSObject x) | firstKey x == "Pl" = PotentialLiveness <$> valFromObj "Pl" x
-  readJSON (JSString x) | fromJSString x == "I" = Ok Inert
-  readJSON (JSString x) | fromJSString x == "Prd" = Ok PotentialRepOrDiv
-  readJSON (JSObject x) | firstKey x == "Ps" = Potentials <$> valFromObj "Ps" x
-  readJSON _ = Error "can't parse as Potential"
+instance Data a => JSON (Potential a) where
+  showJSON = toJSON
+  readJSON = fromJSON
+
 
 data GeneralPattern a =
   Atom a (Potential a) RepOrDiv |
@@ -73,7 +54,11 @@ data GeneralPattern a =
   Group (Live  ([GeneralPattern a],RepOrDiv)) (Potential a) |
   Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
   TextPattern String
-  deriving (Eq)
+  deriving (Eq,Data,Typeable)
+
+instance Data a => JSON (GeneralPattern a) where
+  showJSON = toJSON
+  readJSON = fromJSON
 
 isGroup (Group _ _)= True
 isGroup _ = False
@@ -84,7 +69,7 @@ isAtom _ = False
 isBlank (Blank _) = True
 isBlank _ = False
 
-generalPatternIsEmptyFuture::GeneralPattern a -> Bool
+generalPatternIsEmptyFuture :: GeneralPattern a -> Bool
 generalPatternIsEmptyFuture (Atom _ _ _) = False
 generalPatternIsEmptyFuture (Blank _) = True
 generalPatternIsEmptyFuture (Group (Live (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
@@ -93,7 +78,7 @@ generalPatternIsEmptyFuture (Layers (Live (xs,_) _) _) = and $ fmap generalPatte
 generalPatternIsEmptyFuture (Layers (Edited _ (xs,_)) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyFuture (TextPattern x) = length x == 0
 
-generalPatternIsEmptyPast::GeneralPattern a -> Bool
+generalPatternIsEmptyPast :: GeneralPattern a -> Bool
 generalPatternIsEmptyPast (Atom _ _ _) = False
 generalPatternIsEmptyPast (Blank _) = True
 generalPatternIsEmptyPast (Group (Live (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
@@ -102,8 +87,8 @@ generalPatternIsEmptyPast (Layers (Live (xs,_) _) _) = and $ fmap generalPattern
 generalPatternIsEmptyPast (Layers (Edited (xs,_) _) _) = and $ fmap generalPatternIsEmptyFuture xs
 generalPatternIsEmptyPast (TextPattern x) = length x == 0
 
-showNoQuotes::(Show a)=> a->String
-showNoQuotes x= if ((head x'=='"' && (last x')=='"') || (head x'== '\'' && last x'=='\'')) then if x''=="" then "~" else x'' else show x
+showNoQuotes :: (Show a) => a -> String
+showNoQuotes x = if ((head x'=='"' && (last x')=='"') || (head x'== '\'' && last x'=='\'')) then if x''=="" then "~" else x'' else show x
   where x' = show x
         x''=(tail (init x'))
 
@@ -120,33 +105,19 @@ instance Show a => Show (GeneralPattern a) where
   show (Layers (Edited (xs,r) _) _) = "[" ++ (intercalate ", " $ Prelude.map (show) xs)  ++ "]" ++ (show r)
   show (TextPattern x) = Prelude.filter (not . (`elem` "?")) x
 
-instance JSON a => JSON (GeneralPattern a) where
-  showJSON (Atom a p r) = encJSDict [("a",showJSON a),("p",showJSON p),("r",showJSON r)]
-  showJSON (Blank p) = encJSDict [("b",showJSON p)]
-  showJSON (Group x p) = encJSDict [("g",showJSON x),("p",showJSON p)]
-  showJSON (Layers x p) = encJSDict [("l",showJSON x),("p",showJSON p)]
-  showJSON (TextPattern t) = encJSDict [("t",showJSON t)]
-  readJSON (JSObject x) | firstKey x == "a" = Atom <$> valFromObj "a" x <*> valFromObj "p" x <*> valFromObj "r" x
-  readJSON (JSObject x) | firstKey x == "b" = Blank <$> valFromObj "b" x
-  readJSON (JSObject x) | firstKey x == "g" = Group <$> valFromObj "g" x <*> valFromObj "p" x
-  readJSON (JSObject x) | firstKey x == "l" = Layers <$> valFromObj "l" x <*> valFromObj "p" x
-  readJSON (JSObject x) | firstKey x == "t" = TextPattern <$> valFromObj "t" x
-
 
 type SampleName = String
 
-newtype Sample = Sample (SampleName,Int) deriving (Eq)
+newtype Sample = Sample (SampleName,Int) deriving (Eq,Data,Typeable)
 
 instance JSON Sample where
-  showJSON (Sample (x,y)) = encJSDict [("s",showJSON x),("n",showJSON y)]
-  readJSON (JSObject x) | firstKey x == "s" = (\a b -> Sample (a,b)) <$> c <*> d
-    where c = valFromObj "s" x
-          d = valFromObj "n" x
-  readJSON _ = Error "can't parsed as Sample"
+  showJSON = toJSON
+  readJSON = fromJSON
 
 instance Show Sample where
   show (Sample (x,0)) = showNoQuotes x
   show (Sample (x,y)) = (showNoQuotes x) ++ ":" ++ (show y)
+
 
 data SpecificPattern =  Accelerate (GeneralPattern Double) | Bandf (GeneralPattern Int)
   | Bandq (GeneralPattern Double) | Begin (GeneralPattern Double) | Coarse (GeneralPattern Int)
@@ -157,7 +128,7 @@ data SpecificPattern =  Accelerate (GeneralPattern Double) | Bandf (GeneralPatte
   | Pan (GeneralPattern Double)
   | Resonance (GeneralPattern Double) | S (GeneralPattern SampleName) | Shape (GeneralPattern Double)
   | Sound (GeneralPattern Sample) | Speed (GeneralPattern Double) | Unit (GeneralPattern Char)
-  | Up (GeneralPattern Double) | Vowel (GeneralPattern Char) deriving (Eq)
+  | Up (GeneralPattern Double) | Vowel (GeneralPattern Char) deriving (Eq,Data,Typeable)
 
 
 instance Show SpecificPattern where
@@ -271,66 +242,18 @@ instance ParamPatternable SpecificPattern where
   isEmptyFuture (Vowel x) = generalPatternIsEmptyFuture x
 
 instance JSON SpecificPattern where
-  showJSON (Accelerate x) = encJSDict [("a",x)]
-  showJSON (Bandf x) = encJSDict [("bf",x)]
-  showJSON (Bandq x) = encJSDict [("bq",x)]
-  showJSON (Begin x) = encJSDict [("b",x)]
-  showJSON (Coarse x) = encJSDict [("co",x)]
-  showJSON (Crush x) = encJSDict [("cr",x)]
-  showJSON (Cut x) = encJSDict [("cut",x)]
-  showJSON (Cutoff x) = encJSDict [("cu",x)]
-  showJSON (Delay x) = encJSDict [("de",x)]
-  showJSON (Delayfeedback x) = encJSDict [("df",x)]
-  showJSON (Delaytime x) = encJSDict [("dt",x)]
-  showJSON (End x) = encJSDict [("e",x)]
-  showJSON (Gain x) = encJSDict [("g",x)]
-  showJSON (Hcutoff x) = encJSDict [("hc",x)]
-  showJSON (Hresonance x) = encJSDict [("hr",x)]
-  showJSON (Loop x) = encJSDict [("l",x)]
-  showJSON (N x) = encJSDict [("n",x)]
-  showJSON (Pan x) = encJSDict [("p",x)]
-  showJSON (Resonance x) = encJSDict [("r",x)]
-  showJSON (S x) = encJSDict [("s",x)]
-  showJSON (Shape x) = encJSDict [("sh",x)]
-  showJSON (Sound x) = encJSDict [("so",x)]
-  showJSON (Speed x) = encJSDict [("sp",x)]
-  showJSON (Unit x) = encJSDict [("un",x)]
-  showJSON (Up x) = encJSDict [("u",x)]
-  showJSON (Vowel x) = encJSDict [("v",x)]
-  readJSON (JSObject x) | firstKey x == "a" = Accelerate <$> valFromObj "a" x
-  readJSON (JSObject x) | firstKey x == "bf" = Bandf <$> valFromObj "bf" x
-  readJSON (JSObject x) | firstKey x == "bq" = Bandq <$> valFromObj "bq" x
-  readJSON (JSObject x) | firstKey x == "b" = Begin <$> valFromObj "b" x
-  readJSON (JSObject x) | firstKey x == "co" = Coarse <$> valFromObj "co" x
-  readJSON (JSObject x) | firstKey x == "cr" = Crush <$> valFromObj "cr" x
-  readJSON (JSObject x) | firstKey x == "cut" = Cut <$> valFromObj "cut" x
-  readJSON (JSObject x) | firstKey x == "cu" = Cutoff <$> valFromObj "cu" x
-  readJSON (JSObject x) | firstKey x == "de" = Delay <$> valFromObj "de" x
-  readJSON (JSObject x) | firstKey x == "df" = Delayfeedback <$> valFromObj "df" x
-  readJSON (JSObject x) | firstKey x == "dt" = Delaytime <$> valFromObj "dt" x
-  readJSON (JSObject x) | firstKey x == "e" = End <$> valFromObj "e" x
-  readJSON (JSObject x) | firstKey x == "g" = Gain <$> valFromObj "g" x
-  readJSON (JSObject x) | firstKey x == "hc" = Hcutoff <$> valFromObj "hc" x
-  readJSON (JSObject x) | firstKey x == "hr" = Hresonance <$> valFromObj "hr" x
-  readJSON (JSObject x) | firstKey x == "l" = Loop <$> valFromObj "l" x
-  readJSON (JSObject x) | firstKey x == "n" = N <$> valFromObj "n" x
-  readJSON (JSObject x) | firstKey x == "p" = Pan <$> valFromObj "p" x
-  readJSON (JSObject x) | firstKey x == "r" = Resonance <$> valFromObj "r" x
-  readJSON (JSObject x) | firstKey x == "s" = S <$> valFromObj "s" x
-  readJSON (JSObject x) | firstKey x == "sh" = Shape <$> valFromObj "sh" x
-  readJSON (JSObject x) | firstKey x == "so" = Sound <$> valFromObj "so" x
-  readJSON (JSObject x) | firstKey x == "sp" = Speed <$> valFromObj "sp" x
-  readJSON (JSObject x) | firstKey x == "un" = Unit <$> valFromObj "un" x
-  readJSON (JSObject x) | firstKey x == "u" = Up <$> valFromObj "u" x
-  readJSON (JSObject x) | firstKey x == "v" = Vowel <$> valFromObj "v" x
-  readJSON _ = Error "can't parse as SpecificPattern"
-
+  showJSON = toJSON
+  readJSON = fromJSON
 
 emptySPattern :: SpecificPattern
 emptySPattern = S (Blank Inert)
 
 
-data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read)
+data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read,Data,Typeable)
+
+instance JSON PatternCombinator where
+  showJSON = toJSON
+  readJSON = fromJSON
 
 instance Show PatternCombinator where
   show (Merge) = "|=|"
@@ -346,19 +269,6 @@ toTidalCombinator Subtract = (Tidal.|-|)
 toTidalCombinator Multiply = (Tidal.|*|)
 toTidalCombinator Divide = (Tidal.|/|)
 
-instance JSON PatternCombinator where
-  showJSON Merge = showJSON "M"
-  showJSON Add = showJSON "A"
-  showJSON Subtract = showJSON "S"
-  showJSON Multiply = showJSON "Mu"
-  showJSON Divide = showJSON "D"
-  readJSON (JSString x) | fromJSString x == "M" = Ok Merge
-  readJSON (JSString x) | fromJSString x == "A" = Ok Add
-  readJSON (JSString x) | fromJSString x == "S" = Ok Subtract
-  readJSON (JSString x) | fromJSString x == "Mu" = Ok Multiply
-  readJSON (JSString x) | fromJSString x == "D" = Ok Divide
-  readJSON _ = Error "can't parse as PatternCombinator"
-
 
 data PatternTransformer =
   NoTransformer |
@@ -372,7 +282,7 @@ data PatternTransformer =
   Jux PatternTransformer |
   Chop Int |
   Combine SpecificPattern PatternCombinator
-  deriving (Eq)
+  deriving (Eq,Data,Typeable)
 
 instance Show PatternTransformer where
   show NoTransformer = ""
@@ -388,30 +298,8 @@ instance Show PatternTransformer where
   show (Combine p c) = (show p) ++ " " ++ (show c) ++ " "
 
 instance JSON PatternTransformer where
-  showJSON NoTransformer = showJSON "No"
-  showJSON Rev = showJSON "Rev"
-  showJSON (Slow f) = encJSDict [("Slow",numerator f),("d",denominator f)]
-  showJSON (Density f) = encJSDict [("Density",numerator f),("d",denominator f)]
-  showJSON Degrade = showJSON "Degrade"
-  showJSON (DegradeBy f) = encJSDict [("DegradeBy",f)]
-  showJSON (Every n t) = encJSDict [("Every",showJSON n),("t",showJSON t)]
-  showJSON (Brak) = showJSON "Brak"
-  showJSON (Jux f) = encJSDict [("Jux",f)]
-  showJSON (Chop i) = encJSDict [("Chop",i)]
-  showJSON (Combine p c) = encJSDict [("Combine",showJSON p),("c",showJSON c)]
-  readJSON (JSString x) | fromJSString x == "No" = Ok NoTransformer
-  readJSON (JSString x) | fromJSString x == "Rev" = Ok Rev
-  readJSON (JSObject x) | firstKey x == "Slow" = (\a b -> Slow (a%b)) <$> valFromObj "Slow" x <*> valFromObj "d" x
-  readJSON (JSObject x) | firstKey x == "Density" = (\a b -> Density (a%b)) <$> valFromObj "Density" x <*> valFromObj "d" x
-  readJSON (JSString x) | fromJSString x == "Degrade" = Ok Degrade
-  readJSON (JSObject x) | firstKey x == "DegradeBy" = DegradeBy <$> valFromObj "DegradeBy" x
-  readJSON (JSObject x) | firstKey x == "Every" = Every <$> valFromObj "Every" x <*> valFromObj "t" x
-  readJSON (JSString x) | fromJSString x == "Brak" = Ok Brak
-  readJSON (JSObject x) | firstKey x == "Jux" = Jux <$> valFromObj "Jux" x
-  readJSON (JSObject x) | firstKey x == "Chop" = Chop <$> valFromObj "Chop" x
-  readJSON (JSObject x) | firstKey x == "Combine" = Combine <$> valFromObj "Combine" x <*> valFromObj "c" x
-  readJSON _ = Error "can't parse as PatternTransformer"
-
+  showJSON = toJSON
+  readJSON = fromJSON
 
 applyPatternTransformer :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
 applyPatternTransformer NoTransformer = id
@@ -427,30 +315,20 @@ applyPatternTransformer (Chop t) = Tidal.chop $ pure t
 applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern p
 
 
-
 data TransformedPattern =
   TransformedPattern PatternTransformer TransformedPattern |
   UntransformedPattern SpecificPattern |
   EmptyTransformedPattern
---  TidalTextPattern (Live (TidalParser,String))
-  deriving (Eq)
+  deriving (Eq,Data,Typeable)
 
 instance Show TransformedPattern where
   show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
---  show (TidalTextPattern x) = "TidalTextPattern: " ++ (show x)
 
 instance JSON TransformedPattern where
-  showJSON (TransformedPattern t p) = encJSDict [("TP",showJSON t),("p",showJSON p)]
-  showJSON (UntransformedPattern s) = encJSDict [("UP",showJSON s)]
-  showJSON (EmptyTransformedPattern) = showJSON "E"
---  showJSON (TidalTextPattern x) = encJSDict [("TidalTextPattern",x)]
-  readJSON (JSObject x) | firstKey x == "TP" = TransformedPattern <$> valFromObj "TP" x <*>  valFromObj "p" x
-  readJSON (JSObject x) | firstKey x == "UP" = UntransformedPattern <$> valFromObj "UP" x
-  readJSON (JSString x) | fromJSString x == "E" = Ok EmptyTransformedPattern
---  readJSON (JSObject x) | firstKey x == "TidalTextPattern" = TidalTextPattern <$> valFromObj "TidalTextPattern" x
-  readJSON _ = Error "can't parse as TransformedPattern"
+  showJSON = toJSON
+  readJSON = fromJSON
 
 instance ParamPatternable TransformedPattern where
   toParamPattern (TransformedPattern (Combine sPat comb) EmptyTransformedPattern) = toParamPattern sPat
@@ -461,22 +339,19 @@ instance ParamPatternable TransformedPattern where
   isEmptyFuture (UntransformedPattern u) = isEmptyFuture u
   isEmptyFuture (TransformedPattern t p) = isEmptyFuture p
   isEmptyFuture (EmptyTransformedPattern) = True
---  isEmptyFuture (TidalTextPattern _) = False
   isEmptyPast (TransformedPattern t p) = isEmptyPast p
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
---  isEmptyPast (TidalTextPattern _) = False
 
 
-data StackedPatterns = StackedPatterns [TransformedPattern]
+data StackedPatterns = StackedPatterns [TransformedPattern] deriving (Eq,Data,Typeable)
+
+instance JSON StackedPatterns where
+  showJSON = toJSON
+  readJSON = fromJSON
 
 instance Show StackedPatterns where
   show (StackedPatterns xs) = "stack [" ++ (intercalate ", " (Prelude.map show xs)) ++ "]"
-
-instance JSON StackedPatterns where
-  showJSON (StackedPatterns xs) = encJSDict [("StackedPatterns",xs)]
-  readJSON (JSObject x) | firstKey x == "StackedPatterns" = StackedPatterns <$> valFromObj "StackedPatterns" x
-  readJSON _ = Error "can't parse as StackedPatterns"
 
 instance ParamPatternable StackedPatterns where
   toParamPattern (StackedPatterns xs) = Tidal.stack $ Prelude.map toParamPattern $ Prelude.filter (not . isEmptyPast) xs

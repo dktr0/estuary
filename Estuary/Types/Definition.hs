@@ -14,7 +14,7 @@ import Estuary.Types.TextNotation
 
 data Definition =
   Structure TransformedPattern | -- *** this should be renamed to TidalStructure
-  TextProgam (Live (TextNotation,String)) |
+  TextProgram (Live (TextNotation,String)) |
   EvaluableText String |
   LabelText String
   deriving (Eq,Show,Data,Typeable)
@@ -28,6 +28,11 @@ instance JSON Definition where
 justStructures :: [Definition] -> [TransformedPattern]
 justStructures = mapMaybe f
   where f (Structure x) = Just x
+        f _ = Nothing
+
+justTextPrograms :: [Definition] -> [Live (TextNotation,String)]
+justTextPrograms = mapMaybe f
+  where f (TextProgram x) = Just x
         f _ = Nothing
 
 justEvaluableTexts :: [Definition] -> [String]

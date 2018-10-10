@@ -6,15 +6,14 @@ import Data.Map
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
 import Estuary.Types.Language
-import Estuary.Types.Program
+import Estuary.Types.Definition
 
 data Context = Context {
   language :: Language,
   theme :: String,
   startTime :: UTCTime,
   tempo :: Tidal.Tempo,
---  pattern :: Tidal.ParamPattern,
-  programs :: Map Int Programs,
+  definitions :: DefinitionMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   peakLevels :: [Double],
@@ -29,8 +28,7 @@ emptyContext now = Context {
   theme = "classic.css",
   startTime = now,
   tempo = Tidal.Tempo now 0.0 0.5 False 0.2,
---  pattern = Tidal.silence,
-  programs = empty,
+  definitions = empty,
   webDirtOn = True,
   superDirtOn = False,
   peakLevels = [],
@@ -56,8 +54,5 @@ setRmsLevels xs c = c { rmsLevels = xs }
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
--- setPattern :: Tidal.ParamPattern -> ContextChange
--- setPattern x c = c { pattern = x }
-
-setPrograms :: Map Int Program -> ContextChange
-setPrograms x c = c { programs = x }
+setDefinitions :: DefinitionMap -> ContextChange
+setDefinitions x c = c { definitions = x }
