@@ -41,52 +41,84 @@ sendSounds e t sounds = do
   catch (mapM_ (playSample e) sounds')
     (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))
 
-
-type Renderer = UTCTime -> IO ()
-
-render :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> Renderer
-render wd sd c logicalTime = do
-  let patterns1 = (fmap toParamPattern . justStructures . elems . definitions) c
-  let patterns2 = (fmap (tidalTextToParamPattern . forRendering) . justTextPrograms . elems . definitions) c
-  let patterns = patterns1 ++ patterns2 -- :: [ParamPattern]
-  let sounds = concat $ fmap (renderTidalPattern logicalTime (0.1::NominalDiffTime) (tempo c)) patterns
+oldRenderer :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> RenderState -> IO RenderState
+oldRenderer wd sd c s = do
+  let defs = elems $ definitions c
+  let patterns1 = (fmap toParamPattern . justStructures) defs
+  let patterns2 = (fmap (tidalTextToParamPattern . forRendering) . justTextPrograms) defs
+  let patterns = patterns1 ++ patterns2
+  let sounds = concat $ fmap (renderTidalPattern (logicalTime s) (0.1::NominalDiffTime) (tempo c)) patterns
   if webDirtOn c then sendSounds wd (tempo c) sounds else return ()
   if superDirtOn c then sendSounds sd (tempo c) sounds else return ()
+  return s
 
-dynamicRender :: (SampleEngine wd, SampleEngine sd, MonadWidget t m) => MVar Renderer -> wd -> sd -> Dynamic t Context -> m ()
-dynamicRender r wd sd c = performEvent_ $ fmap (liftIO . void . swapMVar r .  render wd sd) $ updated c
+newRenderer :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> RenderState -> IO RenderState
+newRenderer wd sd c s = do
+  let s' = execState (purePartOfNewRender c) s
+  if webDirtOn c then sendSounds wd (tempo c) (dirtEvents s') else return ()
+  if superDirtOn c then sendSounds sd (tempo c) (dirtEvents s') else return ()
+  return s' { dirtEvents = [] }
+
+purePartOfNewRender :: Context -> State RenderState ()
+purePartOfNewRender c = defsToPatterns c >> patternsToDirtEvents c
+
+defsToPatterns :: Context -> State RenderState ()
+defsToPatterns c = do
+  prevDefs <- gets cachedDefs
+
+  let changes = differenceWith (\old new -> if old == new   ) prevDefs newDefs
+  differenceWith :: Ord k => (a -> b -> Maybe a) -> Map k a -> Map k b -> Map k a
+
+
+  let patterns1 = (fmap toParamPattern . justStructures) changed
+  let patterns2 = (fmap (tidalTextToParamPattern . forRendering) . justTextPrograms) changed
+  let patterns3 =
+
+patternsToDirtEvents :: Context -> RenderState
 
 data RenderState = RenderState {
-  nextLogicalStart :: UTCTime,
+  logicalTime :: UTCTime,
+  cachedDefs :: DefinitionMap, -- only defs that have changed affect newRender
+  paramPatterns :: Map Int Tidal.ParamPattern,
+  -- defStatusMap :: Map Int DefinitionStatus
+  dirtEvents :: [(UTCTime,Tidal.ParamMap)] -- for now just a pile, but later we may want to keep separate by source
   renderTimes :: [NominalDiffTime],
   avgRenderTime :: NominalDiffTime
   }
+
+
+
+type Renderer = RenderState -> IO RenderState
+
+dynamicRender :: (SampleEngine wd, SampleEngine sd, MonadWidget t m) => MVar Renderer -> wd -> sd -> Dynamic t Context -> m ()
+dynamicRender r wd sd c = performEvent_ $ fmap (liftIO . void . swapMVar r .  oldRenderer wd sd) $ updated c
 
 runRender :: MVar Renderer -> RenderState -> IO RenderState
 runRender r s = do
   r' <- readMVar r
   t1 <- getCurrentTime
-  r' (nextLogicalStart s)
+  let s' = r' s
   t2 <- getCurrentTime
   let renderTime = diffUTCTime t2 t1
-  let newRenderTimes = take 10 $ renderTime:renderTimes s
+  let newRenderTimes = take 10 $ renderTime:renderTimes s'
   let newAvgRenderTime = sum newRenderTimes / (fromIntegral $ length newRenderTimes)
   putStrLn $ show newAvgRenderTime
-  let next = addUTCTime (0.1::NominalDiffTime) (nextLogicalStart s)
+  let next = addUTCTime (0.1::NominalDiffTime) (logicalTime s')
   let diff = diffUTCTime next t2
   let delay = floor $ realToFrac diff * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
   -- putStrLn $ "now=" ++ show now ++ "  next=" ++ show next ++ "  diff=" ++ show diff ++ "  delay=" ++ show delay
   threadDelay delay
-  return $ s {
-    nextLogicalStart = next,
+  return $ s' {
+    logicalTime = next,
     renderTimes = newRenderTimes,
-    avgRenderTime = newAvgRenderTime}
+    avgRenderTime = newAvgRenderTime
+    }
 
 renderThread :: MVar Renderer -> IO ()
 renderThread r = do
   renderStart <- getCurrentTime
   let initialRenderState = RenderState {
-    nextLogicalStart = renderStart,
+    logicalTime = renderStart,
     renderTimes = [],
     avgRenderTime = 0::NominalDiffTime
     }
