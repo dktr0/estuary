@@ -37,7 +37,7 @@ sendSounds e t sounds = do
   clockDiff <- getClockDiff e
   let latency = Tidal.clockLatency t
   let sounds' = fmap (\(x,y) -> (realToFrac (utcTimeToPOSIXSeconds x) - clockDiff + latency,y)) sounds
-  putStrLn $ show sounds'
+  -- putStrLn $ show sounds'
   catch (mapM_ (playSample e) sounds')
     (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))
 
@@ -56,20 +56,39 @@ render wd sd c logicalTime = do
 dynamicRender :: (SampleEngine wd, SampleEngine sd, MonadWidget t m) => MVar Renderer -> wd -> sd -> Dynamic t Context -> m ()
 dynamicRender r wd sd c = performEvent_ $ fmap (liftIO . void . swapMVar r .  render wd sd) $ updated c
 
-runRender :: MVar Renderer -> UTCTime -> IO UTCTime
-runRender r t = do
+data RenderState = RenderState {
+  nextLogicalStart :: UTCTime,
+  renderTimes :: [NominalDiffTime],
+  avgRenderTime :: NominalDiffTime
+  }
+
+runRender :: MVar Renderer -> RenderState -> IO RenderState
+runRender r s = do
   r' <- readMVar r
-  r' t
-  now <- getCurrentTime
-  let next = addUTCTime (0.1::NominalDiffTime) t
-  let diff = diffUTCTime next now
+  t1 <- getCurrentTime
+  r' (nextLogicalStart s)
+  t2 <- getCurrentTime
+  let renderTime = diffUTCTime t2 t1
+  let newRenderTimes = take 10 $ renderTime:renderTimes s
+  let newAvgRenderTime = sum newRenderTimes / (fromIntegral $ length newRenderTimes)
+  putStrLn $ show newAvgRenderTime
+  let next = addUTCTime (0.1::NominalDiffTime) (nextLogicalStart s)
+  let diff = diffUTCTime next t2
   let delay = floor $ realToFrac diff * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
   -- putStrLn $ "now=" ++ show now ++ "  next=" ++ show next ++ "  diff=" ++ show diff ++ "  delay=" ++ show delay
   threadDelay delay
-  return next
+  return $ s {
+    nextLogicalStart = next,
+    renderTimes = newRenderTimes,
+    avgRenderTime = newAvgRenderTime}
 
 renderThread :: MVar Renderer -> IO ()
 renderThread r = do
   renderStart <- getCurrentTime
-  forkIO $ iterateM_ (runRender r) renderStart
+  let initialRenderState = RenderState {
+    nextLogicalStart = renderStart,
+    renderTimes = [],
+    avgRenderTime = 0::NominalDiffTime
+    }
+  forkIO $ iterateM_ (runRender r) initialRenderState
   return ()
