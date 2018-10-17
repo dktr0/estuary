@@ -114,6 +114,16 @@ button {
         display: block;
 }
 
+.translationDNEWidget {
+	text-align: center;
+	color:yellow;
+	margin:auto;
+	width: 50%;
+	border-radius: 5pt;
+	border: 1pt solid rgb(229, 229, 0);
+	background: rgba(229,229,0,0.5)
+}
+
 .whiteSpaceAdd { /* possibly a temporary class... */
 	white-space: pre-wrap;
 	display: inline-block;
@@ -288,6 +298,14 @@ ______________________________
          Sequencer classes
 ______________________________
 */
+.sequencerRow .delete{
+	border: 1pt solid rgba(255,0,0,0.2);
+}
+
+.sequencerRow .delete:hover{
+	border: 1pt solid rgba(255,0,0,0.2);
+	background-color: rgba(255,0,0,0.2);
+}
 
 .sequencer{
 	border:1pt solid grey;

@@ -39,8 +39,7 @@ data Navigation =
   Solo |
   Lobby |
   CreateEnsemblePage |
-  Collaborate String |
-  Test
+  Collaborate String
 
 
 navigation :: MonadWidget t m => UTCTime -> Dynamic t Context -> Event t Command -> Event t [ServerResponse] ->
@@ -62,7 +61,7 @@ page ctx _ wsDown _ Splash = do
   x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
   y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
   z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
-  t <- liftM (Test <$) $ button "test"
+  -- t <- liftM (Test <$) $ button "test"
   let navEvents = leftmost [x,y,z,t]
   return (constDyn [],never,never,navEvents)
 
@@ -132,24 +131,22 @@ page ctx commands wsDown now (Collaborate w) = do
   x <- liftM (Lobby <$) $ button  "<----"
   return (patterns,wsUp,hints,x)
 
--- page :: MonadWidget t m => Dynamic t Context -> Event t Command -> Event t [ServerResponse] -> UTCTime -> Navigation ->
-    -- m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
-page ctx commands wsDown now (Test) = do
-  p <- sequencer igp never >>= mapDyn (\(x,_,_)-> [UntransformedPattern  $ S x])
-  return (p,never,never,never)
-  where
-    igp = Layers (Live (ls,Once) L4) Inert
-    ls = fmap f ["bd"::String,"cp","dr","techno"]
-    f s = Group (Live (take 4 $ repeat (Atom s Inert Once),Once) L4) Inert
+-- page ctx commands wsDown now (Test) = do
+--   spat <- sequencer (Just "~") isgp never
+--   -- spat' <- mapDyn (\(a,_,_)->a) spat
+--   upPat <- sequencer (Just 0) iugp never
+--   -- p <- sequencer (Just "~") isgp never >>= mapDyn (\(x,_,_)-> [UntransformedPattern  $ S x])
+--   p <- combineDyn (\(s,_,_) (u,_,_) -> [TransformedPattern (Combine (S s) Merge) $ UntransformedPattern $ Up u]) spat upPat
+--   debug $ updated p
+--   return (p,never,never,never)
+--   where
+--     isgp = Layers (Live (ls,Once) L4) Inert
+--     ls = fmap f ["bd"::String,"cp","dr","techno"]
+--     f s = Group (Live (take 8 $ repeat (Blank Inert),Once) L4) Inert
+--     iugp = Layers (Live (uls,Once) L4) Inert
+--     uls = fmap uf [0::Float]
+--     uf s = Group (Live (take 8 $ repeat (Atom 0 Inert Once),Once) L4) Inert
 
-
-    -- data GeneralPattern a =
-    --   Atom a (Potential a) RepOrDiv |
-    --   Blank (Potential a) |
-    --   Group (Live  ([GeneralPattern a],RepOrDiv)) (Potential a) |
-    --   Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
-    --   TextPattern String
-    --   deriving (Eq)
 
 
 joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation)
