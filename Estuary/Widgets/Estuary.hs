@@ -26,6 +26,8 @@ import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
+import Estuary.Types.LanguageHelp
+import Estuary.Languages.TidalParser
 import qualified Estuary.Types.Term as Term
 import GHCJS.Types
 import GHCJS.Marshal.Pure
@@ -49,6 +51,8 @@ estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
   changeTheme t'
   dynamicRender renderM wd sd ctx
   performHint wd hints
+
+  
 
 changeTheme :: MonadWidget t m => Event t String -> m ()
 changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle

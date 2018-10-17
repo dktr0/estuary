@@ -39,7 +39,7 @@ sonidos :: GenParser Char a String
 sonidos = choice [
         --coloca aqui los nombres de tus muestras de audio
         --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "hola coche" >> espacios >> return "sitar" ),
+        try (string "hola choche" >> espacios >> return "sitar" ),
         try (string "unas chelas" >> espacios >> return "ifdrums" ),
         try (string "mi germa" >> espacios >> return "metal" ),
         try (string "vamos a" >> espacios >> return "casio"),

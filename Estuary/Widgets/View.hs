@@ -28,6 +28,7 @@ import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.DynSvg
 import Estuary.Languages.TidalParser
+import Estuary.Types.LanguageHelp
 
 viewInEnsembleWidget :: MonadWidget t m =>
   String -> UTCTime -> Event t Command -> Event t [ServerResponse] ->
@@ -150,4 +151,12 @@ viewWidget (EvaluableTextView n) i deltasDown = do
 
 viewWidget SvgDisplayView _ _ = do
   testOurDynSvg
+  return (constDyn Map.empty, never, never)
+
+viewWidget MiniTidalHelpView _ _ = do
+  languageHelpWidget MiniTidal
+  return (constDyn Map.empty, never, never)
+
+viewWidget LaCalleHelpView _ _ = do
+  languageHelpWidget LaCalle
   return (constDyn Map.empty, never, never)

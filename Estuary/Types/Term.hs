@@ -2,7 +2,7 @@ module Estuary.Types.Term where
 
 import Estuary.Types.Language
 
-data Term = 
+data Term =
   EstuaryDescription |
   Tutorials |
   Solo |
@@ -16,14 +16,14 @@ data Term =
   AdministratorPassword |
   EnsembleName |
   EnsemblePassword |
-  TerminalChat | 
-  Theme
+  TerminalChat |
+  Theme 
   deriving (Show,Eq)
-  
+
 translate :: Term -> Language -> String
 
 translate EstuaryDescription English = "estuary (a live coding symbiont)"
-translate EstuaryDescription Español = "estuary (una simbionte live coding)" 
+translate EstuaryDescription Español = "estuary (una simbionte live coding)"
 
 translate Tutorials Español = "Tutoriales"
 translate Tutorials English = "Tutorials"
@@ -71,4 +71,3 @@ translate Theme English = "Theme"
 translate Theme Español = "Tema"
 
 translate x _ = "?" ++ show x
-

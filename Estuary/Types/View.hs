@@ -11,7 +11,9 @@ data View =
   StructureView Int |
   TidalTextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   EvaluableTextView Int |
-  SvgDisplayView
+  SvgDisplayView |
+  MiniTidalHelpView |
+  LaCalleHelpView
   deriving (Show,Eq)
 
 instance JSON View where
@@ -22,6 +24,8 @@ instance JSON View where
   showJSON (TidalTextView n rows) = encJSDict [("TidalTextView",n),("rows",rows)]
   showJSON (EvaluableTextView n) = encJSDict [("EvaluableTextView",n)]
   showJSON (SvgDisplayView) = encJSDict [("SvgDisplayView",0::Int)]
+  showJSON (MiniTidalHelpView) = encJSDict [("MiniTidalHelpView", 0:: Int)]
+  showJSON (LaCalleHelpView) = encJSDict [("LaCalleHelpView", 0:: Int)]
   readJSON (JSObject x) | firstKey x == "Views" = Views <$> valFromObj "Views" x
   readJSON (JSObject x) | firstKey x == "ViewDiv" = ViewDiv <$> valFromObj "ViewDiv" x <*> valFromObj "v" x
   readJSON (JSObject x) | firstKey x == "LabelView" = LabelView <$> valFromObj "LabelView" x
@@ -29,6 +33,10 @@ instance JSON View where
   readJSON (JSObject x) | firstKey x == "TidalTextView" = TidalTextView <$> valFromObj "TidalTextView" x <*> valFromObj "rows" x
   readJSON (JSObject x) | firstKey x == "EvaluableTextView" = EvaluableTextView <$> valFromObj "EvaluableTextView" x
   readJSON (JSObject x) | firstKey x == "SvgDisplayView" = return $ SvgDisplayView
+  readJSON (JSObject x) | firstKey x == "MiniTidalHelpView" = return $ MiniTidalHelpView
+  readJSON (JSObject x) | firstKey x == "LaCalleHelpView" = return $ LaCalleHelpView
+
+
   readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Estuary.Protocol.View: " ++ (show x)
   readJSON _ = Error $ "Unable to parse non-JSObject as Estuary.Protocol.View"
 
@@ -58,7 +66,10 @@ viewParser = do
     try structureView,
     try tidalTextView,
     try evaluableTextView,
-    svgDisplayView]
+    try svgDisplayView,
+    try miniTidalHelpView,
+    laCalleHelpView
+    ]
   spaces
   return v
 
@@ -80,6 +91,8 @@ tidalTextView = do
   y <- read <$> many1 digit
   return $ TidalTextView x y
 svgDisplayView = string "svgDisplayView:" >> return SvgDisplayView
+miniTidalHelpView = string "miniTidalHelpView:" >> return MiniTidalHelpView
+laCalleHelpView = string "laCalleHelpView:" >> return LaCalleHelpView
 
 presetView :: String -> View
 
@@ -177,8 +190,8 @@ presetView "RGGTRN" = Views [
 presetView "working" = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
   ViewDiv "eightTopR" (Views [LabelView 3, SvgDisplayView]),
-  ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 7]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 7]),
+  ViewDiv "eightMiddleL" (Views [LabelView 5, MiniTidalHelpView]),
+  ViewDiv "eightMiddleR" (Views [LabelView 7, LaCalleHelpView]),
   ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10 7]),
   ViewDiv "eightBottomR" (Views [LabelView 11, EvaluableTextView 12])
   ]
