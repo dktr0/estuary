@@ -52,11 +52,15 @@ tidalTextWidget rows i delta = divClass "textPatternChain" $ do -- *** TODO: css
     let initialParser = fst $ forEditing i'
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,show x)) tidalParsers
     d <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
-    let parserValue = _dropdown_value d
+    let parserValue = _dropdown_value d -- Dynamic t TidalParser
     let parserEvent = _dropdown_change d
     b <- divClass "textInputLabel" $ button "eval"
     let initialText = snd $ forEditing i'
-    (textValue,textEvent) <- textAreaWidgetForPatternChain rows initialText textFuture
+    -- helpButton <- divClass "textInputLabel" $ button "?"
+    textVisible <- toggle True never -- really: toggle True helpButton
+    -- helpVisible <- toggle False helpButton
+    (textValue,textEvent) <- hideableWidget textVisible "someclass" $ textAreaWidgetForPatternChain rows initialText textFuture
+    -- hideableWidget helpVisible "someclass" $ text "here is something helpful"
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagDyn v' b

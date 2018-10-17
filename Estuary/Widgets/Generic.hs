@@ -317,3 +317,9 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
   c <- button' "[]" MakeGroup
   d <- button' "{}" MakeLayer
   return $ leftmost [b,c,d]
+
+hideableWidget :: MonadWidget t m => Dynamic t Bool -> String -> m a -> m a
+hideableWidget b c m = do
+  attrs <- mapDyn (bool (fromList [("hidden","true"),("class",c)]) (singleton "class" c)) b
+  elDynAttr "div" attrs m
+  
