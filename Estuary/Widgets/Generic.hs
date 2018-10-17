@@ -145,6 +145,14 @@ clickableSpanClass label c e = do
   clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
   return $ (e <$) clickEv
 
+clickableTdClass::MonadWidget t m => Dynamic t String -> Dynamic t String -> a -> m (Event t a)
+clickableTdClass label c val = do
+  attrs <- mapDyn (singleton "class") c
+  (element, _) <- elDynAttr' "td" attrs $ dynText label
+  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  return $ ((val) <$) clickEv
+
+
 pingButton :: MonadWidget t m => String -> m (Event t ())
 pingButton label = liftM (() <$) $ button label
 
@@ -173,6 +181,7 @@ pingDiv' :: MonadWidget t m => String -> m (Dynamic t ((),Event t ()))
 pingDiv' label = do
   x <- pingDiv label
   return $ constDyn ((),x)
+
 
 tdButtonAttrs:: MonadWidget t m => String -> a -> Map String String -> m (Event t a)
 tdButtonAttrs s val attrs = do

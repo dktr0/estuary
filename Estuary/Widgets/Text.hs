@@ -40,7 +40,7 @@ textAreaWidgetForPatternChain i delta = do
 tidalTextWidget :: forall t m. MonadWidget t m =>
   TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-tidalTextWidget i delta = divClass "tidalTextWidget" $ do -- *** TODO: css class name should be tidalTextWidget (in CSS also)
+tidalTextWidget i delta = divClass "tidalTextWidget" $ do
   let i' = transformedPatternToTidalTextPatternContents i
   let delta' = fmap transformedPatternToTidalTextPatternContents $ fmapMaybe lastOrNothing delta
   let deltaFuture = fmap forEditing delta'
@@ -80,9 +80,9 @@ evaluableTextWidget i delta = divClass "textWidget" $ do
   let delta' = fmapMaybe lastOrNothing delta
   let attrs = constDyn $ fromList [  ("class","textWidgetTextArea"), ("rows","5")]
   y <- textArea $ def & textAreaConfig_setValue .~ delta' & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
-  let edits = fmap (Edit . EvaluableText) $ _textArea_input y
+  let edits = fmap (Edit . EvaluableText . ((flip Live) L3)) $ _textArea_input y
   evals <- button "eval"
-  let evals' = fmap (Evaluate . EvaluableText) $ tagDyn (_textArea_value y) evals
+  let evals' = fmap (Evaluate . EvaluableText . ((flip Live) L3)) $ tagDyn (_textArea_value y) evals
   return $ leftmost [edits,evals']
 
 labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))

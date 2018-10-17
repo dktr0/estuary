@@ -8,7 +8,8 @@ import qualified Data.Map as Map
 
 data Definition =
   Structure TransformedPattern |
-  EvaluableText String |
+  EvaluableText (Live String) |
+  -- EvaluableText String |
   LabelText String
   deriving (Eq,Show)
 
@@ -29,7 +30,7 @@ justStructures = mapMaybe f
   where f (Structure x) = Just x
         f _ = Nothing
 
-justEvaluableTexts :: [Definition] -> [String]
+justEvaluableTexts :: [Definition] -> [Live String]
 justEvaluableTexts = mapMaybe f
   where f (EvaluableText x) = Just x
         f _ = Nothing
@@ -38,4 +39,3 @@ justLabelTexts :: [Definition] -> [String]
 justLabelTexts = mapMaybe f
   where f (LabelText x) = Just x
         f _ = Nothing
-

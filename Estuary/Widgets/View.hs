@@ -27,6 +27,7 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
 import Estuary.Languages.TidalParser
+import Estuary.Widgets.Generic (debug)
 
 viewInEnsembleWidget :: MonadWidget t m =>
   String -> UTCTime -> Event t Command -> Event t [ServerResponse] ->
@@ -120,13 +121,21 @@ viewWidget (StructureView n) i deltasDown = do
         f _ = EmptyTransformedPattern
 
 viewWidget (TidalTextView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Structure (TidalTextPattern (Live (MiniTidal,"") L3))) n i
+  -- let i' = f $ Map.findWithDefault (Structure (TidalTextPattern (Live (MiniTidal,"") L3))) n i
+  let i'' = Map.findWithDefault (Structure (TidalTextPattern (Live (MiniTidal,"") L3))) n i
+  let i' = f i''
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  pb <- getPostBuild
+  debug $ fmap (const $ "i'': "++show i'') pb
+  debug $ fmap (const $ "def map: "++show i) pb
+  debug $ fmap (const $ "n : "++show n) pb
+
   (value,edits,hints) <- tidalTextWidget i' deltasDown'
   value' <- mapDyn (Map.singleton n . Structure) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
   return (value',edits',hints)
-  where f (Structure x) = x
+  where f (EvaluableText (Live s l)) = TidalTextPattern (Live (MiniTidal,s) l)
+        f (EvaluableText (Edited a b)) = TidalTextPattern (Edited (MiniTidal,a) (MiniTidal,b))
         f _ = EmptyTransformedPattern
 
 viewWidget (LabelView n) i deltasDown = do
@@ -139,10 +148,15 @@ viewWidget (LabelView n) i deltasDown = do
         f _ = ""
 
 viewWidget (EvaluableTextView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (EvaluableText "") n i
+  let i' = f $ Map.findWithDefault (EvaluableText (Live "" L3)) n i
   let deltasDown' = fmap (justEvaluableTexts . justEditsInZone n) deltasDown
-  editsOrEvals <- evaluableTextWidget i' deltasDown'
+  editsOrEvals <- evaluableTextWidget i' $ fmap (fmap getStr) deltasDown'
   let editsOrEvals' = fmap (ZoneRequest . Sited n) editsOrEvals
   return (constDyn Map.empty,editsOrEvals',never)
-  where f (EvaluableText x) = x
-        f _ = ""
+  where
+    f (EvaluableText (Live s _)) = s
+    f (EvaluableText (Edited a _)) = a
+    f _ = ""
+    getStr (Live s _) = s
+    getStr (Edited a _) = a
+    getStr _ = ""
