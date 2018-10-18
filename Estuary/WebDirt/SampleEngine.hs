@@ -6,12 +6,14 @@ import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import qualified Sound.Tidal.Context as Tidal
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State
 import Control.Exception
 import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad.Loops
 import Data.Functor (void)
-import Data.Map (elems)
+import Data.Map
+import Data.Maybe
 
 import Estuary.Types.Live
 import Estuary.Types.Context
@@ -41,86 +43,141 @@ sendSounds e t sounds = do
   catch (mapM_ (playSample e) sounds')
     (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))
 
-oldRenderer :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> RenderState -> IO RenderState
-oldRenderer wd sd c s = do
-  let defs = elems $ definitions c
-  let patterns1 = (fmap toParamPattern . justStructures) defs
-  let patterns2 = (fmap (tidalTextToParamPattern . forRendering) . justTextPrograms) defs
-  let patterns = patterns1 ++ patterns2
+type RenderM = StateT RenderState IO
+
+flushEvents :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> RenderM ()
+flushEvents wd sd c = do
+  events <- gets dirtEvents
+  liftIO $ if webDirtOn c then sendSounds wd (tempo c) events else return ()
+  liftIO $ if superDirtOn c then sendSounds sd (tempo c) events else return ()
+  return ()
+
+-- the old Estuary renderer re-parses every definition every frame - not very efficient!...
+oldRenderer :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> RenderM ()
+oldRenderer wd sd c = do
+  oldDefsToPatterns c
+  t1 <- liftIO $ getCurrentTime
+  modify $ (\x -> x { parseEndTime = t1 })
+  oldPatternsToDirtEvents c
+  t2 <- liftIO $ getCurrentTime
+  modify $ (\x -> x { patternsToEventsEndTime = t2 })
+  flushEvents wd sd c
+
+oldDefsToPatterns :: Context -> RenderM ()
+oldDefsToPatterns c = do
+  s <- get
+  let patterns = Data.Map.mapMaybe definitionToPattern $ definitions c
+  put $ s { paramPatterns = patterns }
+
+oldPatternsToDirtEvents :: Context -> RenderM ()
+oldPatternsToDirtEvents c = do
+  s <- get
+  let patterns = paramPatterns s
   let sounds = concat $ fmap (renderTidalPattern (logicalTime s) (0.1::NominalDiffTime) (tempo c)) patterns
-  if webDirtOn c then sendSounds wd (tempo c) sounds else return ()
-  if superDirtOn c then sendSounds sd (tempo c) sounds else return ()
-  return s
+  put $ s { dirtEvents = sounds }
 
-newRenderer :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> RenderState -> IO RenderState
-newRenderer wd sd c s = do
-  let s' = execState (purePartOfNewRender c) s
-  if webDirtOn c then sendSounds wd (tempo c) (dirtEvents s') else return ()
-  if superDirtOn c then sendSounds sd (tempo c) (dirtEvents s') else return ()
-  return s' { dirtEvents = [] }
+-- the new Estuary renderer re-parses only when a definition changes, caching results
+newRenderer :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> RenderM ()
+newRenderer wd sd c = do
+  defsToPatterns c
+  t1 <- liftIO $ getCurrentTime
+  modify $ (\x -> x { parseEndTime = t1 })
+  patternsToDirtEvents c
+  t2 <- liftIO $ getCurrentTime
+  modify $ (\x -> x { patternsToEventsEndTime = t2 })
+  flushEvents wd sd c
 
-purePartOfNewRender :: Context -> State RenderState ()
-purePartOfNewRender c = defsToPatterns c >> patternsToDirtEvents c
+defaultRenderer :: (SampleEngine wd, SampleEngine sd) => wd -> sd -> Context -> RenderM ()
+defaultRenderer = newRenderer
 
-defsToPatterns :: Context -> State RenderState ()
+defsToPatterns :: Context -> RenderM ()
 defsToPatterns c = do
-  prevDefs <- gets cachedDefs
+  s <- get
+  let prevDefs = cachedDefs s
+  let prevPatterns = paramPatterns s
+  let newDefs = definitions c
+  let additionsChanges = differenceWith (\x y -> if x == y then Nothing else Just x) newDefs prevDefs
+  let newPatterns = Data.Map.mapMaybe definitionToPattern additionsChanges
+  let newPatterns' = union newPatterns prevPatterns
+  let deletions = difference prevDefs newDefs
+  let newPatterns'' = difference newPatterns' deletions
+  put $ s { paramPatterns = newPatterns'', cachedDefs = newDefs }
 
-  let changes = differenceWith (\old new -> if old == new   ) prevDefs newDefs
-  differenceWith :: Ord k => (a -> b -> Maybe a) -> Map k a -> Map k b -> Map k a
-
-
-  let patterns1 = (fmap toParamPattern . justStructures) changed
-  let patterns2 = (fmap (tidalTextToParamPattern . forRendering) . justTextPrograms) changed
-  let patterns3 =
-
-patternsToDirtEvents :: Context -> RenderState
+patternsToDirtEvents :: Context -> RenderM ()
+patternsToDirtEvents c = do
+  s <- get
+  let lt = logicalTime s
+  let tempo' = tempo c
+  let ps = paramPatterns s
+  let events = concat $ fmap (renderTidalPattern lt (0.1::NominalDiffTime) tempo') ps
+  put $ s { dirtEvents = events }
 
 data RenderState = RenderState {
   logicalTime :: UTCTime,
-  cachedDefs :: DefinitionMap, -- only defs that have changed affect newRender
+  cachedDefs :: DefinitionMap,
   paramPatterns :: Map Int Tidal.ParamPattern,
-  -- defStatusMap :: Map Int DefinitionStatus
-  dirtEvents :: [(UTCTime,Tidal.ParamMap)] -- for now just a pile, but later we may want to keep separate by source
+  -- defStatusMap :: Map Int DefinitionStatus,
+  dirtEvents :: [(UTCTime,Tidal.ParamMap)],
+  renderStartTime :: UTCTime,
+  parseEndTime :: UTCTime,
+  patternsToEventsEndTime :: UTCTime,
+  renderEndTime :: UTCTime,
   renderTimes :: [NominalDiffTime],
   avgRenderTime :: NominalDiffTime
   }
 
+initialRenderState :: UTCTime -> RenderState
+initialRenderState t = RenderState {
+  logicalTime = t,
+  cachedDefs = empty,
+  paramPatterns = empty,
+  dirtEvents = [],
+  renderStartTime = t,
+  parseEndTime = t,
+  patternsToEventsEndTime = t,
+  renderEndTime = t,
+  renderTimes = [],
+  avgRenderTime = 0
+  }
 
-
-type Renderer = RenderState -> IO RenderState
+type Renderer = RenderM ()
 
 dynamicRender :: (SampleEngine wd, SampleEngine sd, MonadWidget t m) => MVar Renderer -> wd -> sd -> Dynamic t Context -> m ()
-dynamicRender r wd sd c = performEvent_ $ fmap (liftIO . void . swapMVar r .  oldRenderer wd sd) $ updated c
+dynamicRender r wd sd c = performEvent_ $ fmap (liftIO . void . swapMVar r .  defaultRenderer wd sd) $ updated c
 
-runRender :: MVar Renderer -> RenderState -> IO RenderState
-runRender r s = do
-  r' <- readMVar r
-  t1 <- getCurrentTime
-  let s' = r' s
-  t2 <- getCurrentTime
-  let renderTime = diffUTCTime t2 t1
-  let newRenderTimes = take 10 $ renderTime:renderTimes s'
-  let newAvgRenderTime = sum newRenderTimes / (fromIntegral $ length newRenderTimes)
-  putStrLn $ show newAvgRenderTime
-  let next = addUTCTime (0.1::NominalDiffTime) (logicalTime s')
-  let diff = diffUTCTime next t2
+runRender :: MVar Renderer -> RenderM ()
+runRender r = do
+  t1 <- liftIO $ getCurrentTime
+  modify $ \x -> x { renderStartTime = t1 }
+  currentRenderer <- liftIO $ readMVar r
+  currentRenderer
+  t2 <- liftIO $ getCurrentTime
+  modify $ \x -> x { renderEndTime = t2 }
+  calculateRenderTimes
+  sleepUntilNextRender
+
+sleepUntilNextRender :: RenderM ()
+sleepUntilNextRender = do
+  s <- get
+  let next = addUTCTime (0.1::NominalDiffTime) (logicalTime s)
+  let diff = diffUTCTime next (renderEndTime s)
   let delay = floor $ realToFrac diff * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
-  -- putStrLn $ "now=" ++ show now ++ "  next=" ++ show next ++ "  diff=" ++ show diff ++ "  delay=" ++ show delay
-  threadDelay delay
-  return $ s' {
-    logicalTime = next,
+  liftIO $ threadDelay delay
+  put $ s { logicalTime = next }
+
+calculateRenderTimes :: RenderM ()
+calculateRenderTimes = do
+  s <- get
+  let renderTime = diffUTCTime (renderEndTime s) (renderStartTime s)
+  let newRenderTimes = take 50 $ renderTime:(renderTimes s)
+  let newAvgRenderTime = sum newRenderTimes / (fromIntegral $ length newRenderTimes)
+  -- liftIO $ putStrLn $ show newAvgRenderTime
+  put $ s {
     renderTimes = newRenderTimes,
     avgRenderTime = newAvgRenderTime
     }
 
-renderThread :: MVar Renderer -> IO ()
-renderThread r = do
+forkRenderThread :: MVar Renderer -> IO ()
+forkRenderThread r = do
   renderStart <- getCurrentTime
-  let initialRenderState = RenderState {
-    logicalTime = renderStart,
-    renderTimes = [],
-    avgRenderTime = 0::NominalDiffTime
-    }
-  forkIO $ iterateM_ (runRender r) initialRenderState
-  return ()
+  void $ forkIO $ iterateM_ (execStateT $ runRender r) (initialRenderState renderStart)

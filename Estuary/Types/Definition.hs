@@ -6,6 +6,7 @@ import Text.JSON
 import Text.JSON.Generic
 import Data.Maybe (mapMaybe)
 import qualified Data.Map as Map
+import qualified Sound.Tidal.Context as Tidal
 
 import Estuary.Utility (firstKey)
 import Estuary.Tidal.Types
@@ -24,6 +25,11 @@ type DefinitionMap = Map.Map Int Definition
 instance JSON Definition where
   showJSON = toJSON
   readJSON = fromJSON
+
+definitionToPattern :: Definition -> Maybe Tidal.ParamPattern
+definitionToPattern (Structure x) = Just $ toParamPattern x
+definitionToPattern (TextProgram x) = Just $ tidalTextToParamPattern $ forRendering x
+definitionToPattern _ = Nothing
 
 justStructures :: [Definition] -> [TransformedPattern]
 justStructures = mapMaybe f

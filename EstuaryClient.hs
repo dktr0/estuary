@@ -21,8 +21,8 @@ main = do
   wd <- webDirt
   sd <- superDirt
   protocol <- estuaryProtocol
-  r <- newMVar $ render wd sd initialContext
-  renderThread r
+  r <- newMVar $ defaultRenderer wd sd initialContext
+  forkRenderThread r
   mainWidget $ estuaryWidget r wd sd protocol initialContext
 
 foreign import javascript safe
