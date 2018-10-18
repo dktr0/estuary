@@ -40,7 +40,7 @@ data Navigation =
 
 
 navigation :: MonadWidget t m => UTCTime -> Dynamic t Context -> Event t Command -> Event t [ServerResponse] ->
-  m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint)
+  m (Dynamic t DefinitionMap,Event t ServerRequest,Event t Hint)
 navigation now ctx commands wsDown = mdo
   let initialPage = page ctx commands wsDown now Splash
   let rebuild = fmap (page ctx commands wsDown now) navEvents
@@ -52,14 +52,14 @@ navigation now ctx commands wsDown = mdo
   return (values,wsUp,hints)
 
 page :: MonadWidget t m => Dynamic t Context -> Event t Command -> Event t [ServerResponse] -> UTCTime -> Navigation ->
-  m (Dynamic t [TransformedPattern],Event t ServerRequest,Event t Hint,Event t Navigation)
+  m (Dynamic t DefinitionMap,Event t ServerRequest,Event t Hint,Event t Navigation)
 
 page ctx _ wsDown _ Splash = do
   x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
   y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
   z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
   let navEvents = leftmost [x,y,z]
-  return (constDyn [],never,never,navEvents)
+  return (constDyn empty,never,never,navEvents)
 
 page ctx _ wsDown _ TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
@@ -67,28 +67,27 @@ page ctx _ wsDown _ TutorialList = do
   t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"
   back <- liftM (Splash <$) $ button  "<----"
   let navEvents = leftmost [t1,t2,back]
-  return (constDyn [],never,never,navEvents)
+  return (constDyn empty,never,never,navEvents)
 
 page ctx _ wsDown _ (Tutorial "Structure editing") = do
   text "Tutorial placeholder"
   x <- liftM (Splash <$) $ button  "<----"
-  return (constDyn [],never,never,x)
+  return (constDyn empty,never,never,x)
 
 page ctx _ wsDown _ (Tutorial "TidalCycles text editing") = do
   text "Tutorial placeholder"
   x <- liftM (Splash <$) $ button "<----"
-  return (constDyn [],never,never,x)
+  return (constDyn empty,never,never,x)
 
 page ctx _ wsDown _ (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
   x <- liftM (Splash <$) $ button "<----"
-  return (constDyn [],never,never,x)
+  return (constDyn empty,never,never,x)
 
 page ctx _ wsDown _ Solo = do
-  (defMap,hints) <- viewInSoloWidget standardView
-  patterns <- mapDyn (justStructures . elems) defMap
+  (values,hints) <- viewInSoloWidget standardView
   x <- liftM (Splash <$) $ button "<----"
-  return (patterns,never,hints,x)
+  return (values,never,hints,x)
 
 page ctx _ wsDown _ Lobby = do
   requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
@@ -98,7 +97,7 @@ page ctx _ wsDown _ Lobby = do
   let join'' = switchPromptlyDyn join' -- Event t Navigation
   create <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
   back <- liftM (Splash <$) $ el "div" $ button "<----"
-  return (constDyn [],requestEnsembleList,never,leftmost [back,join'',create])
+  return (constDyn empty,requestEnsembleList,never,leftmost [back,join'',create])
 
 page ctx _ _ _ CreateEnsemblePage = do
   el "div" $ dynText =<< translateDyn Term.CreateNewEnsemble ctx
@@ -122,13 +121,12 @@ page ctx _ _ _ CreateEnsemblePage = do
   cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
   let serverRequests = leftmost [createEnsemble,authenticateAdmin]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
-  return (constDyn [], serverRequests, never, navEvents)
+  return (constDyn empty, serverRequests, never, navEvents)
 
 page ctx commands wsDown now (Collaborate w) = do
-  (defMap,wsUp,hints) <- viewInEnsembleWidget w now commands wsDown
-  patterns <- mapDyn (justStructures . elems) defMap
+  (values,wsUp,hints) <- viewInEnsembleWidget w now commands wsDown
   x <- liftM (Lobby <$) $ button  "<----"
-  return (patterns,wsUp,hints,x)
+  return (values,wsUp,hints,x)
 
 
 joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation)
@@ -149,4 +147,3 @@ tempoWidget deltas = do
   let edits = fmap (TempoChange "") t'
   return edits
 -}
-

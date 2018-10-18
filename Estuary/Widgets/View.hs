@@ -22,12 +22,13 @@ import Estuary.Types.EditOrEval
 import Estuary.Types.Terminal
 import Estuary.Tidal.Types
 import Estuary.Utility
-
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.DynSvg
 import Estuary.Languages.TidalParser
+import Estuary.Types.Live
+import Estuary.Types.TextNotation
 
 viewInEnsembleWidget :: MonadWidget t m =>
   String -> UTCTime -> Event t Command -> Event t [ServerResponse] ->
@@ -121,14 +122,14 @@ viewWidget (StructureView n) i deltasDown = do
         f _ = EmptyTransformedPattern
 
 viewWidget (TidalTextView n rows) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Structure (TidalTextPattern (Live (MiniTidal,"") L3))) n i
-  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
+  let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
   (value,edits,hints) <- tidalTextWidget rows i' deltasDown'
-  value' <- mapDyn (Map.singleton n . Structure) value
-  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  value' <- mapDyn (Map.singleton n . TextProgram) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . TextProgram) edits
   return (value',edits',hints)
-  where f (Structure x) = x
-        f _ = EmptyTransformedPattern
+  where f (TextProgram x) = x
+        f _ = Live (TidalTextNotation MiniTidal,"") L3
 
 viewWidget (LabelView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (LabelText "") n i

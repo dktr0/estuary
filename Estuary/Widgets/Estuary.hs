@@ -38,11 +38,10 @@ estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
   (values,deltasUp,hints) <- divClass "page" $ navigation (startTime initialContext) ctx commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
   (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime initialContext) deltasUp
-  p <- mapDyn (toParamPattern . StackedPatterns) values -- ** TODO: anytime anything changes everything is parsed...
-  let patternChanges = fmap setPattern $ updated p
+  let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
-  let contextChanges = mergeWith (.) [patternChanges,headerChanges,ccChange]
+  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange]
   ctx <- foldDyn ($) initialContext contextChanges -- Dynamic t Context
   t <- mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String

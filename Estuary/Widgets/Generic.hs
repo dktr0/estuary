@@ -7,12 +7,13 @@ import Reflex
 import Reflex.Dom
 import GHCJS.DOM.EventM
 import Control.Monad
-import Estuary.Reflex.Utility
 import Data.Map
 import Data.List
 import Data.Bool(bool)
-import Estuary.Tidal.Types
 
+import Estuary.Reflex.Utility
+import Estuary.Tidal.Types
+import Estuary.Types.Live
 import Estuary.Reflex.Container
 import Data.Maybe
 import Text.Read (readMaybe)
