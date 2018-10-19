@@ -1,7 +1,5 @@
 module Estuary.Renderer where
 
-import Reflex
-import Reflex.Dom
 import Data.Time.Clock
 import qualified Sound.Tidal.Context as Tidal
 import Control.Monad.IO.Class (liftIO)
@@ -13,11 +11,8 @@ import Data.Functor (void)
 import Data.Map
 import Data.Maybe
 
-import Estuary.Types.Live
 import Estuary.Types.Context
 import Estuary.Types.Definition
-import Estuary.Types.TextNotation
-import Estuary.Tidal.Types
 import Estuary.WebDirt.SampleEngine
 
 data RenderState = RenderState {
@@ -64,33 +59,8 @@ renderTidalPattern start range t p = Prelude.map (\(o,_,m) -> (addUTCTime (realT
     end = realToFrac range * Tidal.cps t + start' -- end time in cycles since beginning of tempo
     events = Tidal.seqToRelOnsetDeltas (toRational start',toRational end) p -- times expressed as fractions of start->range
 
--- the old Estuary renderer re-parses every definition every frame - not very efficient!...
-oldRenderer :: Context -> Renderer
-oldRenderer c = do
-  oldDefsToPatterns c
-  t1 <- liftIO $ getCurrentTime
-  modify $ (\x -> x { parseEndTime = t1 })
-  oldPatternsToDirtEvents c
-  t2 <- liftIO $ getCurrentTime
-  modify $ (\x -> x { patternsToEventsEndTime = t2 })
-  flushEvents c
-
-oldDefsToPatterns :: Context -> Renderer
-oldDefsToPatterns c = do
-  s <- get
-  let patterns = Data.Map.mapMaybe definitionToPattern $ definitions c
-  put $ s { paramPatterns = patterns }
-
-oldPatternsToDirtEvents :: Context -> Renderer
-oldPatternsToDirtEvents c = do
-  s <- get
-  let patterns = paramPatterns s
-  let sounds = concat $ fmap (renderTidalPattern (logicalTime s) (0.1::NominalDiffTime) (tempo c)) patterns
-  put $ s { dirtEvents = sounds }
-
--- the new Estuary renderer re-parses only when a definition changes, caching results
-newRenderer :: Context -> Renderer
-newRenderer c = do
+render :: Context -> Renderer
+render c = do
   defsToPatterns c
   t1 <- liftIO $ getCurrentTime
   modify $ (\x -> x { parseEndTime = t1 })
@@ -121,15 +91,12 @@ patternsToDirtEvents c = do
   let events = concat $ fmap (renderTidalPattern lt (0.1::NominalDiffTime) tempo') ps
   put $ s { dirtEvents = events }
 
-updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
-updateContext cMvar cDyn = performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn
-
 runRender :: MVar Context -> MVar RenderState -> Renderer
 runRender c s = do
   t1 <- liftIO $ getCurrentTime
   modify $ \x -> x { renderStartTime = t1 }
   c' <- liftIO $ readMVar c
-  newRenderer c'
+  render c'
   t2 <- liftIO $ getCurrentTime
   modify $ \x -> x { renderEndTime = t2 }
   calculateRenderTimes

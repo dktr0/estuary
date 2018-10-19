@@ -12,6 +12,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
 import GHCJS.Marshal.Pure
+import Data.Functor (void)
 
 import Estuary.Tidal.Types
 import Estuary.Protocol.Foreign
@@ -46,6 +47,9 @@ estuaryWidget ctxM rsM protocol ic = divClass "estuary" $ mdo
   changeTheme t'
   updateContext ctxM ctx
   performHint (webDirt ic) hints
+
+updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
+updateContext cMvar cDyn = performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn
 
 changeTheme :: MonadWidget t m => Event t String -> m ()
 changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle
