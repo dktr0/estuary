@@ -10,11 +10,12 @@ import Data.Map
 import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
+import GHCJS.Types
+import GHCJS.Marshal.Pure
 
 import Estuary.Tidal.Types
 import Estuary.Protocol.Foreign
 import Estuary.Widgets.Navigation
-
 import Estuary.WebDirt.SampleEngine
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
@@ -27,27 +28,24 @@ import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
 import qualified Estuary.Types.Term as Term
-import GHCJS.Types
-import GHCJS.Marshal.Pure
+import Estuary.Renderer
 
-estuaryWidget :: MonadWidget t m
-  => MVar Renderer -> WebDirt -> SuperDirt -> EstuaryProtocolObject -> Context -> m ()
-estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
-  -- levelMeterWidget context
+estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderState -> EstuaryProtocolObject -> Context -> m ()
+estuaryWidget ctxM rsM protocol ic = divClass "estuary" $ mdo
   headerChanges <- header ctx
-  (values,deltasUp,hints) <- divClass "page" $ navigation (startTime initialContext) ctx commands deltasDown'
+  (values,deltasUp,hints) <- divClass "page" $ navigation (startTime ic) ctx commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
-  (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime initialContext) deltasUp
+  (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime ic) deltasUp
   let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange]
-  ctx <- foldDyn ($) initialContext contextChanges -- Dynamic t Context
+  ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
   t <- mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
-  dynamicRender renderM wd sd ctx
-  performHint wd hints
+  updateContext ctxM ctx
+  performHint (webDirt ic) hints
 
 changeTheme :: MonadWidget t m => Event t String -> m ()
 changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle

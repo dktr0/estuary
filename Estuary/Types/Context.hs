@@ -7,8 +7,12 @@ import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
+import Estuary.WebDirt.WebDirt
+import Estuary.WebDirt.SuperDirt
 
 data Context = Context {
+  webDirt :: WebDirt,
+  superDirt :: SuperDirt,
   language :: Language,
   theme :: String,
   startTime :: UTCTime,
@@ -22,8 +26,10 @@ data Context = Context {
   clientCount :: Int
   }
 
-emptyContext :: UTCTime -> Context
-emptyContext now = Context {
+initialContext :: UTCTime -> WebDirt -> SuperDirt -> Context
+initialContext now wd sd = Context {
+  webDirt = wd,
+  superDirt = sd,
   language = English,
   theme = "classic.css",
   startTime = now,

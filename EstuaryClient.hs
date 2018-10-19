@@ -12,18 +12,20 @@ import Estuary.Protocol.Foreign
 import Estuary.Types.Context
 import Estuary.Widgets.Estuary
 import Estuary.WebDirt.SampleEngine
+import Estuary.Renderer
 
 main :: IO ()
 main = do
   warnBeforeGoingBackInBrowser
   now <- Data.Time.getCurrentTime
-  let initialContext = emptyContext now
-  wd <- webDirt
-  sd <- superDirt
+  wd <- newWebDirt
+  sd <- newSuperDirt
   protocol <- estuaryProtocol
-  r <- newMVar $ defaultRenderer wd sd initialContext
-  forkRenderThread r
-  mainWidget $ estuaryWidget r wd sd protocol initialContext
+  let ic = initialContext now wd sd
+  c <- newMVar $ ic
+  s <- newMVar $ initialRenderState now
+  forkRenderThread c s
+  mainWidget $ estuaryWidget c s protocol ic
 
 foreign import javascript safe
   "window.addEventListener('beforeunload', function (e) { e.preventDefault(); e.returnValue = ''; });"
