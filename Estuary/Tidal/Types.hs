@@ -9,7 +9,7 @@ import Data.Map as Map
 import Data.Ratio
 import qualified Sound.Tidal.Context as Tidal
 
-import Estuary.Languages.TidalParser
+-- import Estuary.Languages.TidalParser
 import Estuary.Utility
 import Estuary.Types.Live
 

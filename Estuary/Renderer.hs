@@ -13,13 +13,17 @@ import Data.Maybe
 
 import Estuary.Types.Context
 import Estuary.Types.Definition
+import Estuary.Types.TextNotation
+import Estuary.Tidal.Types
+import Estuary.Types.Live
+import Estuary.Languages.TidalParsers
 import Estuary.WebDirt.SampleEngine
 
 data RenderState = RenderState {
   logicalTime :: UTCTime,
   cachedDefs :: DefinitionMap,
   paramPatterns :: Map Int Tidal.ParamPattern,
-  -- defStatusMap :: Map Int DefinitionStatus,
+  errors :: Map Int String,
   dirtEvents :: [(UTCTime,Tidal.ParamMap)],
   renderStartTime :: UTCTime,
   parseEndTime :: UTCTime,
@@ -34,6 +38,7 @@ initialRenderState t = RenderState {
   logicalTime = t,
   cachedDefs = empty,
   paramPatterns = empty,
+  errors = empty,
   dirtEvents = [],
   renderStartTime = t,
   parseEndTime = t,
@@ -59,6 +64,19 @@ renderTidalPattern start range t p = Prelude.map (\(o,_,m) -> (addUTCTime (realT
     end = realToFrac range * Tidal.cps t + start' -- end time in cycles since beginning of tempo
     events = Tidal.seqToRelOnsetDeltas (toRational start',toRational end) p -- times expressed as fractions of start->range
 
+-- definitionToPattern is here rather than in Estuary.Types.Definition so that the
+-- server does not depend on mini-language parsers
+definitionToPattern :: Definition -> Either String (Maybe Tidal.ParamPattern)
+definitionToPattern (Structure x) = Right $ Just $ toParamPattern x
+definitionToPattern (TextProgram x) = either Left (Right . Just) $ tidalTextToParamPattern $ forRendering x
+definitionToPattern _ = Right $ Nothing
+
+-- this is here rather than in Estuary.Types.TextNotation so that the server does not
+-- depend on mini-language parsers
+tidalTextToParamPattern :: (TextNotation,String) -> Either String Tidal.ParamPattern
+tidalTextToParamPattern (TidalTextNotation x,y) = either (Left . show) Right $ tidalParser x y
+tidalTextToParamPattern _ = Left "internal error: tidalTextToParamPattern called on unrecognized notation"
+
 render :: Context -> Renderer
 render c = do
   defsToPatterns c
@@ -74,13 +92,19 @@ defsToPatterns c = do
   s <- get
   let prevDefs = cachedDefs s
   let prevPatterns = paramPatterns s
+  let prevErrors = errors s
   let newDefs = definitions c
+  --
   let additionsChanges = differenceWith (\x y -> if x == y then Nothing else Just x) newDefs prevDefs
-  let newPatterns = Data.Map.mapMaybe definitionToPattern additionsChanges
-  let newPatterns' = union newPatterns prevPatterns
   let deletions = difference prevDefs newDefs
+  --
+  let (newErrors,newPatterns) = Data.Map.mapEither definitionToPattern additionsChanges
+  let newPatterns' = union (Data.Map.mapMaybe id newPatterns) prevPatterns
   let newPatterns'' = difference newPatterns' deletions
-  put $ s { paramPatterns = newPatterns'', cachedDefs = newDefs }
+  let newErrors' = union newErrors prevErrors
+  let newErrors'' = difference newErrors' deletions
+  let newErrors''' = difference newErrors'' newPatterns''
+  put $ s { paramPatterns = newPatterns'', errors = newErrors''', cachedDefs = newDefs }
 
 patternsToDirtEvents :: Context -> Renderer
 patternsToDirtEvents c = do

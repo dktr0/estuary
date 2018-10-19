@@ -20,7 +20,8 @@ import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Definition
 import Estuary.Types.EditOrEval
 import Estuary.Types.Hint
-import Estuary.Languages.TidalParser
+import Estuary.Types.TidalParser
+import Estuary.Languages.TidalParsers
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 

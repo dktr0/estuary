@@ -4,9 +4,8 @@ module Estuary.Types.TextNotation where
 
 import Text.JSON
 import Text.JSON.Generic
-import qualified Sound.Tidal.Context as Tidal
 
-import Estuary.Languages.TidalParser
+import Estuary.Types.TidalParser
 
 data TextNotation =
   TidalTextNotation TidalParser
@@ -15,8 +14,3 @@ data TextNotation =
 instance JSON TextNotation where
   showJSON = toJSON
   readJSON = fromJSON
-
--- *** note: the definition below should evolve soon to return Maybe Tidal.ParamPattern
-tidalTextToParamPattern :: (TextNotation,String) -> Tidal.ParamPattern
-tidalTextToParamPattern (TidalTextNotation x,y) = tidalParser x y
-tidalTextToParamPattern _ = Tidal.silence

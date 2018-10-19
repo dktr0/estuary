@@ -26,7 +26,7 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.DynSvg
-import Estuary.Languages.TidalParser
+import Estuary.Types.TidalParser
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 

@@ -6,8 +6,8 @@ import Data.List (intercalate)
 import Data.Bool (bool)
 import Sound.Tidal.Context as T hiding ((<|>))
 
-miniTidalParser :: String -> ParamPattern
-miniTidalParser x = either (const silence) id $ parse miniTidal "(unknown)" $ filter (/='?') x
+miniTidalParser :: String -> Either ParseError ParamPattern
+miniTidalParser x = parse miniTidal "miniTidal" $ filter (/='?') x
 
 miniTidal :: Parser ParamPattern
 miniTidal = choice [

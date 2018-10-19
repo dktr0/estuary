@@ -45,8 +45,10 @@ prodInstallClient: # make prodBuildClient first!
 installServer: buildServer
 	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
 
-test: installClient installServer
+test:
 	EstuaryServer/EstuaryServer test
+
+prodCleanBuildInstall: prodClean clean prodBuildClient buildServer prodInstallClient installServer
 
 prodReleaseClient: # make prodInstallClient first!
 	rm -rf temp
@@ -70,6 +72,9 @@ clean:
 	rm -rf $$(stack path --local-install-root --stack-yaml=server.yaml)/bin
 	stack clean --stack-yaml=client.yaml
 	stack clean --stack-yaml=server.yaml
+
+prodClean: clean
+	stack --work-dir .stack-work-production/ clean --stack-yaml=client.yaml
 
 style:
 	cp static/classic.css Estuary.jsexe
