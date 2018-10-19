@@ -29,10 +29,11 @@ import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
 import qualified Estuary.Types.Term as Term
-import Estuary.Renderer
+import Estuary.RenderState
 
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderState -> EstuaryProtocolObject -> Context -> m ()
 estuaryWidget ctxM rsM protocol ic = divClass "estuary" $ mdo
+  -- mapDyn renderErrors ctx >>= display
   headerChanges <- header ctx
   (values,deltasUp,hints) <- divClass "page" $ navigation (startTime ic) ctx commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
@@ -40,7 +41,8 @@ estuaryWidget ctxM rsM protocol ic = divClass "estuary" $ mdo
   let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
-  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange]
+  -- renderStateChanges <- pollRenderStateChanges rsM
+  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange {- ,renderStateChanges -} ]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
   t <- mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
@@ -50,6 +52,14 @@ estuaryWidget ctxM rsM protocol ic = divClass "estuary" $ mdo
 
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 updateContext cMvar cDyn = performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn
+
+pollRenderStateChanges :: MonadWidget t m => MVar RenderState -> m (Event t ContextChange)
+pollRenderStateChanges rsMvar = do
+  now <- liftIO $ getCurrentTime
+  rsInitial <- liftIO $ readMVar rsMvar
+  ticks <- tickLossy (0.104::NominalDiffTime) now
+  newState <- performEvent $ fmap (liftIO . const (readMVar rsMvar)) ticks
+  return $ fmap setRenderErrors newState
 
 changeTheme :: MonadWidget t m => Event t String -> m ()
 changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle

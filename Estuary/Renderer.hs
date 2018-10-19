@@ -18,35 +18,7 @@ import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
 import Estuary.WebDirt.SampleEngine
-
-data RenderState = RenderState {
-  logicalTime :: UTCTime,
-  cachedDefs :: DefinitionMap,
-  paramPatterns :: Map Int Tidal.ParamPattern,
-  errors :: Map Int String,
-  dirtEvents :: [(UTCTime,Tidal.ParamMap)],
-  renderStartTime :: UTCTime,
-  parseEndTime :: UTCTime,
-  patternsToEventsEndTime :: UTCTime,
-  renderEndTime :: UTCTime,
-  renderTimes :: [NominalDiffTime],
-  avgRenderTime :: NominalDiffTime
-  }
-
-initialRenderState :: UTCTime -> RenderState
-initialRenderState t = RenderState {
-  logicalTime = t,
-  cachedDefs = empty,
-  paramPatterns = empty,
-  errors = empty,
-  dirtEvents = [],
-  renderStartTime = t,
-  parseEndTime = t,
-  patternsToEventsEndTime = t,
-  renderEndTime = t,
-  renderTimes = [],
-  avgRenderTime = 0
-  }
+import Estuary.RenderState
 
 type Renderer = StateT RenderState IO ()
 

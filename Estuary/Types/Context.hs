@@ -9,6 +9,7 @@ import Estuary.Types.Language
 import Estuary.Types.Definition
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
+import Estuary.RenderState
 
 data Context = Context {
   webDirt :: WebDirt,
@@ -23,7 +24,8 @@ data Context = Context {
   peakLevels :: [Double],
   rmsLevels :: [Double],
   wsStatus :: String,
-  clientCount :: Int
+  clientCount :: Int,
+  renderErrors :: Map Int String
   }
 
 initialContext :: UTCTime -> WebDirt -> SuperDirt -> Context
@@ -40,7 +42,8 @@ initialContext now wd sd = Context {
   peakLevels = [],
   rmsLevels = [],
   wsStatus = "",
-  clientCount = 0
+  clientCount = 0,
+  renderErrors = empty
 }
 
 type ContextChange = Context -> Context
@@ -62,3 +65,6 @@ setClientCount x c = c { clientCount = x }
 
 setDefinitions :: DefinitionMap -> ContextChange
 setDefinitions x c = c { definitions = x }
+
+setRenderErrors :: RenderState -> ContextChange
+setRenderErrors x c = c { renderErrors = errors x }
