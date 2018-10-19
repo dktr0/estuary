@@ -24,6 +24,12 @@ instance JSON Definition where
   showJSON = toJSON
   readJSON = fromJSON
 
+definitionForRendering :: Definition -> Definition
+definitionForRendering (Structure x) = Structure x
+definitionForRendering (TextProgram x) = TextProgram (Live (forRendering x) L4)
+definitionForRendering (EvaluableText x) = EvaluableText x
+definitionForRendering (LabelText x) = LabelText x
+
 justStructures :: [Definition] -> [TransformedPattern]
 justStructures = mapMaybe f
   where f (Structure x) = Just x

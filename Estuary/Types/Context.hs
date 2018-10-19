@@ -25,7 +25,7 @@ data Context = Context {
   rmsLevels :: [Double],
   wsStatus :: String,
   clientCount :: Int,
-  renderErrors :: Map Int String
+  renderState :: RenderState
   }
 
 initialContext :: UTCTime -> WebDirt -> SuperDirt -> Context
@@ -43,7 +43,7 @@ initialContext now wd sd = Context {
   rmsLevels = [],
   wsStatus = "",
   clientCount = 0,
-  renderErrors = empty
+  renderState = initialRenderState now
 }
 
 type ContextChange = Context -> Context
@@ -66,5 +66,8 @@ setClientCount x c = c { clientCount = x }
 setDefinitions :: DefinitionMap -> ContextChange
 setDefinitions x c = c { definitions = x }
 
-setRenderErrors :: RenderState -> ContextChange
-setRenderErrors x c = c { renderErrors = errors x }
+-- setRenderErrors :: RenderState -> ContextChange
+-- setRenderErrors x c = c { renderErrors = errors x }
+
+setRenderState :: RenderState -> ContextChange
+setRenderState x c = c { renderState = x }

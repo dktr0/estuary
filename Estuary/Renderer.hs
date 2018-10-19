@@ -65,7 +65,7 @@ defsToPatterns c = do
   let prevDefs = cachedDefs s
   let prevPatterns = paramPatterns s
   let prevErrors = errors s
-  let newDefs = definitions c
+  let newDefs = fmap definitionForRendering $ definitions c
   --
   let additionsChanges = differenceWith (\x y -> if x == y then Nothing else Just x) newDefs prevDefs
   let deletions = difference prevDefs newDefs
@@ -75,7 +75,8 @@ defsToPatterns c = do
   let newPatterns'' = difference newPatterns' deletions
   let newErrors' = union newErrors prevErrors
   let newErrors'' = difference newErrors' deletions
-  let newErrors''' = difference newErrors'' newPatterns''
+  let newErrors''' = difference newErrors'' newPatterns
+  -- liftIO $ if Data.Map.null newErrors''' then return () else putStrLn (show newErrors''')
   put $ s { paramPatterns = newPatterns'', errors = newErrors''', cachedDefs = newDefs }
 
 patternsToDirtEvents :: Context -> Renderer

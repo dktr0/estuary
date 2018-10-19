@@ -33,7 +33,7 @@ import Estuary.RenderState
 
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderState -> EstuaryProtocolObject -> Context -> m ()
 estuaryWidget ctxM rsM protocol ic = divClass "estuary" $ mdo
-  -- mapDyn renderErrors ctx >>= display
+  -- mapDyn (avgRenderTime . renderState) ctx >>= display
   headerChanges <- header ctx
   (values,deltasUp,hints) <- divClass "page" $ navigation (startTime ic) ctx commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
@@ -58,8 +58,9 @@ pollRenderStateChanges rsMvar = do
   now <- liftIO $ getCurrentTime
   rsInitial <- liftIO $ readMVar rsMvar
   ticks <- tickLossy (0.104::NominalDiffTime) now
-  newState <- performEvent $ fmap (liftIO . const (readMVar rsMvar)) ticks
-  return $ fmap setRenderErrors newState
+  -- newState <- performEvent $ fmap (liftIO . const (readMVar rsMvar)) ticks
+  newState <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (readMVar rsMvar >>= cb)
+  return $ fmap setRenderState newState
 
 changeTheme :: MonadWidget t m => Event t String -> m ()
 changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle

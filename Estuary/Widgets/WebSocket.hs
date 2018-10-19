@@ -39,13 +39,13 @@ estuaryWebSocket addr pwd toSend = mdo
     isOk _ = Just (ProtocolError "unknown protocol error")
 -}
 
-
 alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t ServerRequest ->
   m (Event t [ServerResponse],Dynamic t String)
 alternateWebSocket obj now toSend = do
   performEvent_ $ fmap (liftIO . (send obj) . encode) toSend
   ticks <- tickLossy (0.1::NominalDiffTime) now
-  responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
+  -- responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
+  responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
   let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status
