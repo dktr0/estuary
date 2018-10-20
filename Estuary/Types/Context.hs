@@ -1,7 +1,7 @@
 module Estuary.Types.Context where
 
 import Data.Time
-import Data.Map
+import Data.IntMap.Strict
 
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
@@ -24,8 +24,7 @@ data Context = Context {
   peakLevels :: [Double],
   rmsLevels :: [Double],
   wsStatus :: String,
-  clientCount :: Int,
-  renderState :: RenderState
+  clientCount :: Int
   }
 
 initialContext :: UTCTime -> WebDirt -> SuperDirt -> Context
@@ -42,8 +41,7 @@ initialContext now wd sd = Context {
   peakLevels = [],
   rmsLevels = [],
   wsStatus = "",
-  clientCount = 0,
-  renderState = initialRenderState now
+  clientCount = 0
 }
 
 type ContextChange = Context -> Context
@@ -65,9 +63,3 @@ setClientCount x c = c { clientCount = x }
 
 setDefinitions :: DefinitionMap -> ContextChange
 setDefinitions x c = c { definitions = x }
-
--- setRenderErrors :: RenderState -> ContextChange
--- setRenderErrors x c = c { renderErrors = errors x }
-
-setRenderState :: RenderState -> ContextChange
-setRenderState x c = c { renderState = x }

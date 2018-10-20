@@ -24,9 +24,9 @@ main = do
   protocol <- estuaryProtocol
   let ic = initialContext now wd sd
   c <- newMVar $ ic
-  s <- newMVar $ initialRenderState now
-  forkRenderThread c s
-  mainWidget $ estuaryWidget c s protocol ic
+  ri <- newMVar $ emptyRenderInfo
+  forkRenderThread c ri
+  mainWidget $ estuaryWidget c ri protocol
 
 foreign import javascript safe
   "window.addEventListener('beforeunload', function (e) { e.preventDefault(); e.returnValue = ''; });"

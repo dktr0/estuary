@@ -2,7 +2,7 @@
 
 module Estuary.Widgets.View where
 
-import qualified Data.Map as Map
+import qualified Data.IntMap.Strict as Map
 import Control.Monad
 import Reflex
 import Reflex.Dom

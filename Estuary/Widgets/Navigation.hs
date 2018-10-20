@@ -10,7 +10,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Control.Monad (liftM)
-import Data.Map
+import Data.IntMap.Strict
 import Text.Read
 import Text.JSON
 import Data.Time.Clock

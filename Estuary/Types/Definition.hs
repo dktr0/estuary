@@ -5,7 +5,7 @@ module Estuary.Types.Definition where
 import Text.JSON
 import Text.JSON.Generic
 import Data.Maybe (mapMaybe)
-import qualified Data.Map as Map
+import qualified Data.IntMap.Strict as IntMap
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
@@ -18,7 +18,7 @@ data Definition =
   LabelText String
   deriving (Eq,Show,Data,Typeable)
 
-type DefinitionMap = Map.Map Int Definition
+type DefinitionMap = IntMap.IntMap Definition
 
 instance JSON Definition where
   showJSON = toJSON

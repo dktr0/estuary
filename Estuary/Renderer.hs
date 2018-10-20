@@ -3,12 +3,12 @@ module Estuary.Renderer where
 import Data.Time.Clock
 import qualified Sound.Tidal.Context as Tidal
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad.Loops
 import Data.Functor (void)
-import Data.Map
+import Data.IntMap.Strict as IntMap
 import Data.Maybe
 
 import Estuary.Types.Context
@@ -21,6 +21,9 @@ import Estuary.WebDirt.SampleEngine
 import Estuary.RenderState
 
 type Renderer = StateT RenderState IO ()
+
+renderPeriod :: NominalDiffTime
+renderPeriod = 0.2
 
 flushEvents :: Context -> Renderer
 flushEvents c = do
@@ -53,10 +56,10 @@ render :: Context -> Renderer
 render c = do
   defsToPatterns c
   t1 <- liftIO $ getCurrentTime
-  modify $ (\x -> x { parseEndTime = t1 })
+  modify' $ (\x -> x { parseEndTime = t1 })
   patternsToDirtEvents c
   t2 <- liftIO $ getCurrentTime
-  modify $ (\x -> x { patternsToEventsEndTime = t2 })
+  modify' $ (\x -> x { patternsEndTime = t2 })
   flushEvents c
 
 defsToPatterns :: Context -> Renderer
@@ -64,20 +67,22 @@ defsToPatterns c = do
   s <- get
   let prevDefs = cachedDefs s
   let prevPatterns = paramPatterns s
-  let prevErrors = errors s
+  let prevErrors = errors (info s)
   let newDefs = fmap definitionForRendering $ definitions c
-  --
+  modify' $ \x -> x { cachedDefs = newDefs }
+  -- determine which definitions (for rendering purposes) have either changed or been deleted
   let additionsChanges = differenceWith (\x y -> if x == y then Nothing else Just x) newDefs prevDefs
   let deletions = difference prevDefs newDefs
-  --
-  let (newErrors,newPatterns) = Data.Map.mapEither definitionToPattern additionsChanges
-  let newPatterns' = union (Data.Map.mapMaybe id newPatterns) prevPatterns
+  -- parse definitions into ParamPatterns or errors, add new ParamPatterns to previous patterns, delete patterns when defs deleted
+  let (newErrors,newPatterns) = IntMap.mapEither definitionToPattern additionsChanges
+  let newPatterns' = union (IntMap.mapMaybe id newPatterns) prevPatterns
   let newPatterns'' = difference newPatterns' deletions
+  modify' $ \x -> x { paramPatterns = newPatterns'' }
+  -- maintain map of errors by adding new errors, subtracting deleted defs and subtracting any for new successful ParamPatterns
   let newErrors' = union newErrors prevErrors
   let newErrors'' = difference newErrors' deletions
   let newErrors''' = difference newErrors'' newPatterns
-  -- liftIO $ if Data.Map.null newErrors''' then return () else putStrLn (show newErrors''')
-  put $ s { paramPatterns = newPatterns'', errors = newErrors''', cachedDefs = newDefs }
+  modify' $ \x -> x { info = (info s) { errors = newErrors''' } }
 
 patternsToDirtEvents :: Context -> Renderer
 patternsToDirtEvents c = do
@@ -85,26 +90,26 @@ patternsToDirtEvents c = do
   let lt = logicalTime s
   let tempo' = tempo c
   let ps = paramPatterns s
-  let events = concat $ fmap (renderTidalPattern lt (0.1::NominalDiffTime) tempo') ps
-  put $ s { dirtEvents = events }
+  let events = concat $ fmap (renderTidalPattern lt renderPeriod tempo') ps
+  modify' $ \x -> x { dirtEvents = events }
 
-runRender :: MVar Context -> MVar RenderState -> Renderer
-runRender c s = do
+runRender :: MVar Context -> MVar RenderInfo -> Renderer
+runRender c ri = do
   t1 <- liftIO $ getCurrentTime
-  modify $ \x -> x { renderStartTime = t1 }
+  modify' $ \x -> x { renderStartTime = t1 }
   c' <- liftIO $ readMVar c
   render c'
   t2 <- liftIO $ getCurrentTime
-  modify $ \x -> x { renderEndTime = t2 }
+  modify' $ \x -> x { renderEndTime = t2 }
   calculateRenderTimes
-  s' <- get -- get the final state...
-  liftIO $ swapMVar s s' -- and copy it into MVar so widgets can reflect it as necessary
+  ri' <- gets info -- RenderInfo from the state maintained by this iteration...
+  liftIO $ swapMVar ri ri' -- ...is copied to an MVar so it can be read elsewhere.
   sleepUntilNextRender
 
 sleepUntilNextRender :: Renderer
 sleepUntilNextRender = do
   s <- get
-  let next = addUTCTime (0.1::NominalDiffTime) (logicalTime s)
+  let next = addUTCTime renderPeriod (logicalTime s)
   let diff = diffUTCTime next (renderEndTime s)
   let delay = floor $ realToFrac diff * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
   liftIO $ threadDelay delay
@@ -113,12 +118,38 @@ sleepUntilNextRender = do
 calculateRenderTimes :: Renderer
 calculateRenderTimes = do
   s <- get
+  --
   let renderTime = diffUTCTime (renderEndTime s) (renderStartTime s)
-  let newRenderTimes = take 50 $ renderTime:(renderTimes s)
+  let newRenderTimes = take 20 $ renderTime:(renderTimes s)
   let newAvgRenderTime = sum newRenderTimes / (fromIntegral $ length newRenderTimes)
-  put $ s { renderTimes = newRenderTimes, avgRenderTime = newAvgRenderTime }
+  let newPeakRenderTime = maximum newRenderTimes
+  let newAvgRenderLoad = ceiling (newAvgRenderTime * 100 / renderPeriod)
+  let newPeakRenderLoad = ceiling (newPeakRenderTime * 100 / renderPeriod)
+  modify' $ \x -> x { renderTimes = newRenderTimes }
+  modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
+  modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
+  --
+  let parseTime = diffUTCTime (parseEndTime s) (renderStartTime s)
+  let newParseTimes = take 20 $ parseTime:(parseTimes s)
+  let newAvgParseTime = sum newParseTimes / (fromIntegral $ length newParseTimes)
+  let newPeakParseTime = maximum newParseTimes
+  let newAvgParseLoad = ceiling (newAvgParseTime * 100 / renderPeriod)
+  let newPeakParseLoad = ceiling (newPeakParseTime * 100 / renderPeriod)
+  modify' $ \x -> x { parseTimes = newParseTimes }
+  modify' $ \x -> x { info = (info x) { avgParseLoad = newAvgParseLoad }}
+  modify' $ \x -> x { info = (info x) { peakParseLoad = newPeakParseLoad }}
+  --
+  let patternsTime = diffUTCTime (patternsEndTime s) (parseEndTime s)
+  let newPatternsTimes = take 20 $ patternsTime:(patternsTimes s)
+  let newAvgPatternsTime = sum newPatternsTimes / (fromIntegral $ length newPatternsTimes)
+  let newPeakPatternsTime = maximum newPatternsTimes
+  let newAvgPatternsLoad = ceiling (newAvgPatternsTime * 100 / renderPeriod)
+  let newPeakPatternsLoad = ceiling (newPeakPatternsTime * 100 / renderPeriod)
+  modify' $ \x -> x { patternsTimes = newPatternsTimes }
+  modify' $ \x -> x { info = (info x) { avgPatternsLoad = newAvgPatternsLoad }}
+  modify' $ \x -> x { info = (info x) { peakPatternsLoad = newPeakPatternsLoad }}
 
-forkRenderThread :: MVar Context -> MVar RenderState -> IO ()
-forkRenderThread c s = do
+forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
+forkRenderThread c ri = do
   renderStart <- getCurrentTime
-  void $ forkIO $ iterateM_ (execStateT $ runRender c s) (initialRenderState renderStart)
+  void $ forkIO $ iterateM_ (execStateT $ runRender c ri) (initialRenderState renderStart)
