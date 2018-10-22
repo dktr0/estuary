@@ -34,14 +34,14 @@ data LanguageReference =
   deriving (Show,Eq)
 
 languageReference :: LanguageReference -> String
-languageReference MiniTidalReference = (miniTidalReference Palindrome) ++ (miniTidalReference Brak)
-languageReference LaCalleReference = laCalleReference HolaChoche
+languageReference MiniTidalReference = (miniTidalReference Palindrome)  ++ (miniTidalReference Brak)
+languageReference LaCalleReference = (laCalleReference HolaChoche) ++ (laCalleReference UnasChelas)
 
 tidalParserToHelp :: TidalParser -> String
 tidalParserToHelp MiniTidal = languageReference MiniTidalReference
 tidalParserToHelp LaCalle = languageReference LaCalleReference
 
-languageHelpWidget :: (MonadWidget t m) => TidalParser -> m ()
+languageHelpWidget :: (MonadWidget t m) => TidalParser -> m () --this should be TidalParser -> Language -> m (Event t String)
 languageHelpWidget t  = do
     helpText <- el "div" $ text (tidalParserToHelp t)
     -- clickEv <- wrapDomEvent (_el_element helpText) (onEventName Click) mouseOffsetXY

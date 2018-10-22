@@ -39,6 +39,7 @@ textAreaWidgetForPatternChain rows i delta = do
   let value = _textArea_value x
   return (value,edits)
 
+  -- where Int is a zones, TransformedPattern i. THis widget needs a Dynamic ctx
 tidalTextWidget :: forall t m. MonadWidget t m =>
   Int -> TransformedPattern -> Event t [TransformedPattern] ->
   m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
@@ -52,7 +53,7 @@ tidalTextWidget rows i delta = divClass "textPatternChain" $ do -- *** TODO: css
     let initialParser = fst $ forEditing i'
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,show x)) tidalParsers
     d <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
-    let parserValue = _dropdown_value d
+    let parserValue = _dropdown_value d --Dynamic t TidalParser
     let parserEvent = _dropdown_change d
     b <- divClass "textInputLabel" $ button "eval"
     let initialText = snd $ forEditing i'

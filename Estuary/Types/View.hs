@@ -12,7 +12,7 @@ data View =
   TidalTextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   EvaluableTextView Int |
   SvgDisplayView |
-  MiniTidalHelpView |
+  MiniTidalHelpView | -- not needed. use instead work with TidalTextView. Not sustainable
   LaCalleHelpView
   deriving (Show,Eq)
 
