@@ -50,7 +50,7 @@ test:
 
 prodCleanBuildInstall: prodClean clean prodBuildClient buildServer prodInstallClient installServer
 
-prodReleaseClient: # make prodInstallClient first!
+releaseClient: # make installClient or prodInstallClient first!
 	rm -rf temp
 	mkdir temp
 	cp -Rf Estuary.jsexe temp
@@ -61,7 +61,7 @@ prodReleaseClient: # make prodInstallClient first!
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181019/estuary-client-20181019.zip
+	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181022/estuary-client-20181022.zip
 	unzip temp.zip
 	rm -rf temp.zip
 	cp -Rf static/Dirt Estuary.jsexe
