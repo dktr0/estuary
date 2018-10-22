@@ -18,6 +18,7 @@ import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
 import Estuary.WebDirt.SampleEngine
+import Estuary.RenderInfo
 import Estuary.RenderState
 
 type Renderer = StateT RenderState IO ()

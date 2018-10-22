@@ -25,6 +25,8 @@ import Estuary.Languages.TidalParsers
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 
+import Estuary.Types.Context
+
 textWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
 textWidgetForPatternChain i delta = do
   let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
@@ -41,10 +43,10 @@ textAreaWidgetForPatternChain rows i delta = do
   let value = _textArea_value x
   return (value,edits)
 
-tidalTextWidget :: forall t m. MonadWidget t m =>
+tidalTextWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
   m (Dynamic t (Live (TextNotation,String)),Event t (Live (TextNotation,String)),Event t Hint)
-tidalTextWidget rows i delta = divClass "textPatternChain" $ do -- *** TODO: css class name should be tidalTextWidget (in CSS also)
+tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class to tidalTextWidget
   let deltaFuture = fmap forEditing delta
   let parserFuture = fmap fst deltaFuture
   let textFuture = fmap snd deltaFuture
@@ -54,7 +56,10 @@ tidalTextWidget rows i delta = divClass "textPatternChain" $ do -- *** TODO: css
     d <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
     let parserValue = _dropdown_value d -- Dynamic t TidalParser
     let parserEvent = _dropdown_change d
-    b <- divClass "textInputLabel" $ button "eval"
+    b <- divClass "textInputLabel" $ do
+      x <- button "eval"
+      dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
+      return x
     let initialText = snd $ forEditing i
     -- helpButton <- divClass "textInputLabel" $ button "?"
     textVisible <- toggle True never -- really: toggle True helpButton

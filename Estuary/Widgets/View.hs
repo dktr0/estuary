@@ -29,12 +29,14 @@ import Estuary.Widgets.DynSvg
 import Estuary.Types.TidalParser
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
+import Estuary.Types.Context
+import Estuary.RenderInfo
 
-viewInEnsembleWidget :: MonadWidget t m =>
+viewInEnsembleWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo ->
   String -> UTCTime -> Event t Command -> Event t [ServerResponse] ->
   m (Dynamic t DefinitionMap, Event t ServerRequest, Event t Hint)
 
-viewInEnsembleWidget ensemble now commands deltasDown = mdo
+viewInEnsembleWidget ctx renderInfo ensemble now commands deltasDown = mdo
 
   -- UI for global ensemble parameters
   (hdl,pwdRequest,tempoRequest) <- divClass "ensembleHeader" $ do
@@ -66,15 +68,15 @@ viewInEnsembleWidget ensemble now commands deltasDown = mdo
   let requestChanges = fmap requestsToStateChanges edits
   ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
 
-  tempoHints <- liftM (fmap TempoHint . updated . nubDyn) $ mapDyn tempo ensembleState
+  tempoHints <- liftM (fmap TempoHint . updated . nubDyn) $ mapDyn Estuary.Types.EnsembleState.tempo ensembleState
 
   -- dynamic View UI
-  let initialWidget = viewWidget emptyView Map.empty ensembleResponses
+  let initialWidget = viewWidget ctx renderInfo emptyView Map.empty ensembleResponses
   currentView <- liftM nubDyn $ mapDyn getActiveView ensembleState
   let newView = updated currentView
   currentDefs <- mapDyn zones ensembleState
   let newDefsAndView = attachDyn currentDefs newView
-  let rebuildWidget = fmap (\(ds,v) -> viewWidget v ds ensembleResponses) newDefsAndView
+  let rebuildWidget = fmap (\(ds,v) -> viewWidget ctx renderInfo v ds ensembleResponses) newDefsAndView
   ui <- widgetHold initialWidget rebuildWidget
   defMap <- liftM joinDyn $ mapDyn (\(y,_,_) -> y) ui
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,y,_) -> y) ui
@@ -89,29 +91,28 @@ viewInEnsembleWidget ensemble now commands deltasDown = mdo
   return (defMap,requests,hints)
 
 
-viewInSoloWidget :: MonadWidget t m => View -> m (Dynamic t DefinitionMap, Event t Hint)
-viewInSoloWidget view = do
-  (zones,edits,hints) <- viewWidget view Map.empty never
+viewInSoloWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> m (Dynamic t DefinitionMap, Event t Hint)
+viewInSoloWidget ctx renderInfo view = do
+  (zones,edits,hints) <- viewWidget ctx renderInfo view Map.empty never
   return (zones,hints)
 
 
-viewWidget :: MonadWidget t m => View -> DefinitionMap -> Event t [EnsembleResponse Definition] ->
-  m (Dynamic t DefinitionMap, Event t (EnsembleRequest Definition), Event t Hint)
+viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse Definition] -> m (Dynamic t DefinitionMap, Event t (EnsembleRequest Definition), Event t Hint)
 
-viewWidget (Views xs) initialDefs deltasDown = foldM f i xs
+viewWidget ctx renderInfo (Views xs) initialDefs deltasDown = foldM f i xs
   where
     i = (constDyn (Map.empty :: DefinitionMap), never, never)
     f b a = do
       let (prevZoneMap,prevEdits,prevHints) = b
-      (zoneMap,edits,hints) <- viewWidget a initialDefs deltasDown
+      (zoneMap,edits,hints) <- viewWidget ctx renderInfo a initialDefs deltasDown
       newZoneMap <- combineDyn Map.union prevZoneMap zoneMap
       let newEdits = leftmost [prevEdits,edits]
       let newHints = leftmost [prevHints,hints]
       return (newZoneMap,newEdits,newHints)
 
-viewWidget (ViewDiv c v) i deltasDown = divClass c $ viewWidget v i deltasDown
+viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass c $ viewWidget ctx renderInfo v i deltasDown
 
-viewWidget (StructureView n) i deltasDown = do
+viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
   (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
@@ -121,17 +122,18 @@ viewWidget (StructureView n) i deltasDown = do
   where f (Structure x) = x
         f _ = EmptyTransformedPattern
 
-viewWidget (TidalTextView n rows) i deltasDown = do
+viewWidget ctx renderInfo (TidalTextView n rows) i deltasDown = do
   let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
-  (value,edits,hints) <- tidalTextWidget rows i' deltasDown'
+  e <- mapDyn (Map.lookup n . errors) renderInfo
+  (value,edits,hints) <- tidalTextWidget ctx e rows i' deltasDown'
   value' <- mapDyn (Map.singleton n . TextProgram) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . TextProgram) edits
   return (value',edits',hints)
   where f (TextProgram x) = x
         f _ = Live (TidalTextNotation MiniTidal,"") L3
 
-viewWidget (LabelView n) i deltasDown = do
+viewWidget _ _ (LabelView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (LabelText "") n i
   let deltasDown' = fmap (justLabelTexts . justEditsInZone n) deltasDown
   edits <- labelWidget i' deltasDown'
@@ -140,7 +142,7 @@ viewWidget (LabelView n) i deltasDown = do
   where f (LabelText x) = x
         f _ = ""
 
-viewWidget (EvaluableTextView n) i deltasDown = do
+viewWidget _ _ (EvaluableTextView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (EvaluableText "") n i
   let deltasDown' = fmap (justEvaluableTexts . justEditsInZone n) deltasDown
   editsOrEvals <- evaluableTextWidget i' deltasDown'
@@ -149,6 +151,6 @@ viewWidget (EvaluableTextView n) i deltasDown = do
   where f (EvaluableText x) = x
         f _ = ""
 
-viewWidget SvgDisplayView _ _ = do
+viewWidget _ _ SvgDisplayView _ _ = do
   testOurDynSvg
   return (constDyn Map.empty, never, never)

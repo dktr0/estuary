@@ -12,6 +12,7 @@ import Estuary.Protocol.Foreign
 import Estuary.Types.Context
 import Estuary.Widgets.Estuary
 import Estuary.WebDirt.SampleEngine
+import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Renderer
 

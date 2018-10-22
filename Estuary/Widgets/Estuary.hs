@@ -29,14 +29,14 @@ import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
 import qualified Estuary.Types.Term as Term
-import Estuary.RenderState
+import Estuary.RenderInfo
 
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
 estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
   ic <- liftIO $ readMVar ctxM
   renderInfo <- pollRenderInfoChanges riM
   headerChanges <- header ctx renderInfo
-  (values,deltasUp,hints) <- divClass "page" $ navigation (startTime ic) ctx commands deltasDown'
+  (values,deltasUp,hints) <- divClass "page" $ navigation (startTime ic) ctx renderInfo commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
   (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime ic) deltasUp
   let definitionChanges = fmap setDefinitions $ updated values

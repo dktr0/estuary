@@ -29,7 +29,7 @@ topLevelTransformedPatternWidget :: MonadWidget t m =>
     Event t Hint -- hints (currently for WebDirt sample loading only)
   )
 topLevelTransformedPatternWidget i delta = do
-  let updates = fmap midLevelTransformedPatternWidget $ fmapMaybe lastOrNothing delta
+  let updates = fmap (midLevelTransformedPatternWidget) $ fmapMaybe lastOrNothing delta
   w <- widgetHold (midLevelTransformedPatternWidget i) updates
   x <- mapDyn (\(a,_,_) -> a) w
   y <- mapDyn (\(_,a,_) -> a) w
@@ -40,7 +40,8 @@ topLevelTransformedPatternWidget i delta = do
   return (x',y',z')
 
 
-midLevelTransformedPatternWidget:: MonadWidget t m => TransformedPattern -> m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
+midLevelTransformedPatternWidget:: MonadWidget t m =>
+  TransformedPattern -> m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
 midLevelTransformedPatternWidget iTransPat = do
   tuple <- resettableTransformedPatternWidget iTransPat never
   pat <- mapDyn (\(x,_,_)->x) tuple
