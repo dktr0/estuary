@@ -3,8 +3,10 @@
 module Estuary.Widgets.Text where
 
 import Reflex
-import Reflex.Dom
+import Reflex.Dom hiding (getKeyEvent)
+import Reflex.Dom.Contrib.KeyEvent
 import Control.Monad
+import Control.Monad.Trans
 import GHCJS.DOM.EventM
 import Data.Maybe
 import Data.Map (fromList)
@@ -35,13 +37,18 @@ textWidgetForPatternChain i delta = do
   let value = _textInput_value x
   return (value,edits)
 
-textAreaWidgetForPatternChain :: MonadWidget t m => Int -> String -> Event t String -> m (Dynamic t String, Event t String)
+textAreaWidgetForPatternChain :: MonadWidget t m => Int -> String -> Event t String -> m (Dynamic t String, Event t String,Event t ())
 textAreaWidgetForPatternChain rows i delta = do
   let attrs = constDyn $ ("class" =: "textInputToEndOfLine" <> "rows" =: show rows)
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
+  --let keys = _textArea_keypress x
+  let e = _textArea_element x
+  e' <- wrapDomEvent (e) (onEventName Keypress) getKeyEvent
+  let evalEvent = fmap (const ()) $ ffilter (==True) $ fmap keyPressWasShiftEnter e'
   let edits = _textArea_input x
   let value = _textArea_value x
-  return (value,edits)
+  return (value,edits,evalEvent)
+  where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
 tidalTextWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
@@ -65,11 +72,11 @@ tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TOD
     textVisible <- toggle True never -- really: toggle True helpButton
     -- helpVisible <- toggle False helpButton
     -- (textValue,textEvent) <- hideableWidget textVisible "someclass" $ textAreaWidgetForPatternChain rows initialText textFuture
-    (textValue,textEvent) <- textAreaWidgetForPatternChain rows initialText textFuture
+    (textValue,textEvent,shiftEnter) <- textAreaWidgetForPatternChain rows initialText textFuture
     -- hideableWidget helpVisible "someclass" $ text "here is something helpful"
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent = tagDyn v' b
+    let evalEvent = tagDyn v' $ leftmost [b,shiftEnter]
     return (editEvent,evalEvent)
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
