@@ -43,8 +43,11 @@ textAreaWidgetForPatternChain rows i delta = do
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   --let keys = _textArea_keypress x
   let e = _textArea_element x
-  e' <- wrapDomEvent (e) (onEventName Keypress) getKeyEvent
-  let evalEvent = fmap (const ()) $ ffilter (==True) $ fmap keyPressWasShiftEnter e'
+  e' <- wrapDomEvent (e) (onEventName Keypress) $ do
+    y <- getKeyEvent
+    if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
+  -- let evalEvent = fmap (const ()) $ ffilter (==True) $ fmap keyPressWasShiftEnter e'
+  let evalEvent = fmap (const ()) $ ffilter (==True) e'
   let edits = _textArea_input x
   let value = _textArea_value x
   return (value,edits,evalEvent)
