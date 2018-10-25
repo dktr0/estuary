@@ -32,72 +32,8 @@ import Estuary.Types.TextNotation
 import Estuary.Types.Context
 import Estuary.RenderInfo
 
-viewInEnsembleWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo ->
-  String -> UTCTime -> Event t Command -> Event t [ServerResponse] ->
-  m (Dynamic t DefinitionMap, Event t ServerRequest, Event t Hint)
 
-viewInEnsembleWidget ctx renderInfo ensemble now commands deltasDown = mdo
-
-  -- UI for global ensemble parameters
-  (hdl,pwdRequest,tempoRequest) <- divClass "ensembleHeader" $ do
-    divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
-    hdl' <- divClass "ensembleHandle" $ do
-      text "Name:"
-      let attrs = constDyn ("class" =: "ensembleHandle")
-      handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
-      return $ _textInput_input handleInput
-    pwdRequest' <- divClass "ensemblePassword" $ do
-      text "password:"
-      let attrs = constDyn ("class" =: "ensemblePassword")
-      pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-      return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
-    tempoRequest' <- divClass "ensembleTempo" $ do
-      text "Ensemble Tempo:"
-      let attrs = constDyn ("class" =: "ensembleTempo")
-      tempoInput <- textInput $ def & textInputConfig_attributes .~ attrs
-      let newTempo = fmapMaybe (readMaybe :: String -> Maybe Double) $ _textInput_input tempoInput
-      return $ fmap TempoChange newTempo
-    return (hdl',pwdRequest',tempoRequest')
-
-  -- management of EnsembleState
-  let initialState = newEnsembleState ensemble now
-  let commandChanges = fmap commandsToStateChanges commands
-  let ensembleResponses = fmap (justSited ensemble . justEnsembleResponses) deltasDown
-  let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
-  let handleChanges = fmap (\x es -> es { userHandle = x}) hdl
-  let requestChanges = fmap requestsToStateChanges edits
-  ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
-
-  tempoHints <- liftM (fmap TempoHint . updated . nubDyn) $ mapDyn Estuary.Types.EnsembleState.tempo ensembleState
-
-  -- dynamic View UI
-  let initialWidget = viewWidget ctx renderInfo emptyView Map.empty ensembleResponses
-  currentView <- liftM nubDyn $ mapDyn getActiveView ensembleState
-  let newView = updated currentView
-  currentDefs <- mapDyn zones ensembleState
-  let newDefsAndView = attachDyn currentDefs newView
-  let rebuildWidget = fmap (\(ds,v) -> viewWidget ctx renderInfo v ds ensembleResponses) newDefsAndView
-  ui <- widgetHold initialWidget rebuildWidget
-  defMap <- liftM joinDyn $ mapDyn (\(y,_,_) -> y) ui
-  edits <- liftM switchPromptlyDyn $ mapDyn (\(_,y,_) -> y) ui
-  hintsUi <- liftM switchPromptlyDyn $ mapDyn (\(_,_,y) -> y) ui
-  let hints = leftmost [tempoHints,hintsUi] -- *** note: might this occasionally lose a hint?
-
-  -- form requests to send to server
-  joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
-  let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands
-  let ensembleRequests = fmap (EnsembleRequest . Sited ensemble) $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
-  let requests = leftmost [joinRequest,ensembleRequests]
-  return (defMap,requests,hints)
-
-
-viewInSoloWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> m (Dynamic t DefinitionMap, Event t Hint)
-viewInSoloWidget ctx renderInfo view = do
-  (zones,edits,hints) <- viewWidget ctx renderInfo view Map.empty never
-  return (zones,hints)
-
-
-viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse Definition] -> m (Dynamic t DefinitionMap, Event t (EnsembleRequest Definition), Event t Hint)
+viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse] -> m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint)
 
 viewWidget ctx renderInfo (Views xs) initialDefs deltasDown = foldM f i xs
   where

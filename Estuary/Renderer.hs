@@ -15,11 +15,13 @@ import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Tidal.Types
+import Estuary.Tidal.ParamPatternable
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
 import Estuary.WebDirt.SampleEngine
 import Estuary.RenderInfo
 import Estuary.RenderState
+import Estuary.Types.Tempo
 
 type Renderer = StateT RenderState IO ()
 
@@ -29,15 +31,15 @@ renderPeriod = 0.2
 flushEvents :: Context -> Renderer
 flushEvents c = do
   events <- gets dirtEvents
-  liftIO $ if webDirtOn c then sendSounds (webDirt c) (tempo c) events else return ()
-  liftIO $ if superDirtOn c then sendSounds (superDirt c) (tempo c) events else return ()
+  liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
+  liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
   return ()
 
-renderTidalPattern :: UTCTime -> NominalDiffTime -> Tidal.Tempo -> Tidal.ParamPattern -> [(UTCTime,Tidal.ParamMap)]
+renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ParamPattern -> [(UTCTime,Tidal.ParamMap)]
 renderTidalPattern start range t p = Prelude.map (\(o,_,m) -> (addUTCTime (realToFrac o*range) start,m)) events
   where
-    start' = (realToFrac $ diffUTCTime start (Tidal.at t)) * Tidal.cps t + Tidal.beat t -- start time in cycles since beginning of tempo
-    end = realToFrac range * Tidal.cps t + start' -- end time in cycles since beginning of tempo
+    start' = (realToFrac $ diffUTCTime start (at t)) * cps t + beat t -- start time in cycles since beginning of tempo
+    end = realToFrac range * cps t + start' -- end time in cycles since beginning of tempo
     events = Tidal.seqToRelOnsetDeltas (toRational start',toRational end) p -- times expressed as fractions of start->range
 
 -- definitionToPattern is here rather than in Estuary.Types.Definition so that the

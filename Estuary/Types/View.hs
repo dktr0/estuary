@@ -1,7 +1,9 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Estuary.Types.View where
 
-import Text.ParserCombinators.Parsec
 import Text.JSON
+import Text.JSON.Generic
 import Estuary.Utility (firstKey)
 
 data View =
@@ -12,25 +14,11 @@ data View =
   TidalTextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   EvaluableTextView Int |
   SvgDisplayView
-  deriving (Show,Eq)
+  deriving (Show,Eq,Data,Typeable)
 
 instance JSON View where
-  showJSON (Views xs) = encJSDict [("Views",xs)]
-  showJSON (ViewDiv c v) = encJSDict [("ViewDiv",showJSON c),("v",showJSON v)]
-  showJSON (LabelView n) = encJSDict [("LabelView",n)]
-  showJSON (StructureView n) = encJSDict [("StructureView",n)]
-  showJSON (TidalTextView n rows) = encJSDict [("TidalTextView",n),("rows",rows)]
-  showJSON (EvaluableTextView n) = encJSDict [("EvaluableTextView",n)]
-  showJSON (SvgDisplayView) = encJSDict [("SvgDisplayView",0::Int)]
-  readJSON (JSObject x) | firstKey x == "Views" = Views <$> valFromObj "Views" x
-  readJSON (JSObject x) | firstKey x == "ViewDiv" = ViewDiv <$> valFromObj "ViewDiv" x <*> valFromObj "v" x
-  readJSON (JSObject x) | firstKey x == "LabelView" = LabelView <$> valFromObj "LabelView" x
-  readJSON (JSObject x) | firstKey x == "StructureView" = StructureView <$> valFromObj "StructureView" x
-  readJSON (JSObject x) | firstKey x == "TidalTextView" = TidalTextView <$> valFromObj "TidalTextView" x <*> valFromObj "rows" x
-  readJSON (JSObject x) | firstKey x == "EvaluableTextView" = EvaluableTextView <$> valFromObj "EvaluableTextView" x
-  readJSON (JSObject x) | firstKey x == "SvgDisplayView" = return $ SvgDisplayView
-  readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Estuary.Protocol.View: " ++ (show x)
-  readJSON _ = Error $ "Unable to parse non-JSObject as Estuary.Protocol.View"
+  showJSON = toJSON
+  readJSON = fromJSON
 
 standardView :: View
 standardView = Views [
@@ -44,42 +32,6 @@ standardView = Views [
 
 emptyView :: View
 emptyView = Views []
-
-viewsParser :: GenParser Char a View
-viewsParser = do
-  spaces
-  many1 viewParser >>= return . Views
-
-viewParser :: GenParser Char a View
-viewParser = do
-  v <- choice [
-    try viewDiv,
-    try labelView,
-    try structureView,
-    try tidalTextView,
-    try evaluableTextView,
-    svgDisplayView]
-  spaces
-  return v
-
-viewDiv = between (char '{') (char '}') $ do
-  spaces
-  cssClass <- many1 alphaNum
-  skipMany1 space
-  vs <- viewsParser
-  spaces
-  return $ ViewDiv cssClass vs
-
-labelView = string "label:" >> (read <$> many1 digit) >>= return . LabelView
-structureView = string "structure:" >> (read <$> many1 digit) >>= return . StructureView
-evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
-tidalTextView = do
-  string "tidal:"
-  x <- read <$> many1 digit
-  skipMany1 space
-  y <- read <$> many1 digit
-  return $ TidalTextView x y
-svgDisplayView = string "svgDisplayView:" >> return SvgDisplayView
 
 presetView :: String -> View
 

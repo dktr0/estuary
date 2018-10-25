@@ -24,7 +24,6 @@ import WaiAppStatic.Types (unsafeToPiece,MaxAge(..))
 import Data.Time
 import Data.Time.Clock.POSIX
 import Data.Map
-import qualified Sound.Tidal.Tempo as Tidal
 
 import Estuary.Utility
 import Estuary.Types.Definition
@@ -146,11 +145,11 @@ onlyIfAuthenticatedInEnsemble s h f = do
   if (authenticatedInEnsemble c) then f else putStrLn "ignoring request from client not authenticated in ensemble"
 
 
-processResult :: SQLite.Connection -> MVar Server -> ClientHandle -> Result ServerRequest -> IO ()
+processResult :: SQLite.Connection -> MVar Server -> ClientHandle -> Result Request -> IO ()
 processResult db _ c (Error x) = postLog db $ "Error (processResult): " ++ x
 processResult db s c (Ok x) = processRequest db s c x
 
-processRequest :: SQLite.Connection -> MVar Server -> ClientHandle -> ServerRequest -> IO ()
+processRequest :: SQLite.Connection -> MVar Server -> ClientHandle -> Request -> IO ()
 
 processRequest db s c (Authenticate x) = do
   pwd <- getPassword s
@@ -172,7 +171,7 @@ processRequest db s c (JoinEnsemble x) = do
   s' <- takeMVar s
   let e = ensembles s' Map.! x -- *** this is unsafe and should be refactored, same problem below in f too ***
   let t = E.tempo e
-  respond' s' c $ EnsembleResponse (Sited x (Tempo (Tidal.cps t) (toRational . utcTimeToPOSIXSeconds $ Tidal.at t) (Tidal.beat t)))
+  respond' s' c $ EnsembleResponse (Sited x (NewTempo t))
   let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
   mapM_ (respond' s' c) $ defs'
   respond' s' c $ EnsembleResponse (Sited x (DefaultView (E.defaultView e)))
@@ -200,10 +199,10 @@ processRequest db s c GetServerClientCount = do
   getServerClientCount s >>= respond s c . ServerClientCount
 
 
-processInEnsemble :: SQLite.Connection -> MVar Server -> ClientHandle -> Sited String (EnsembleRequest Definition) -> IO ()
+processInEnsemble :: SQLite.Connection -> MVar Server -> ClientHandle -> Sited String EnsembleRequest -> IO ()
 processInEnsemble db s c (Sited e x) = processEnsembleRequest db s c e x
 
-processEnsembleRequest :: SQLite.Connection -> MVar Server -> ClientHandle -> String -> EnsembleRequest Definition -> IO ()
+processEnsembleRequest :: SQLite.Connection -> MVar Server -> ClientHandle -> String -> EnsembleRequest -> IO ()
 
 processEnsembleRequest db s c e x@(AuthenticateInEnsemble p2) = do
   p1 <- getEnsemblePassword s e
@@ -254,13 +253,12 @@ processEnsembleRequest db s c e (DeleteView x) = do
   updateServer s $ deleteView e x
   saveEnsembleToDatabase s e db
 
-processEnsembleRequest db s c e x@(TempoChange newCps) = onlyIfAuthenticatedInEnsemble s c $ do
-  timeNow <- Data.Time.getCurrentTime
-  updateServer s $ tempoChangeInEnsemble e timeNow newCps
-  newTempo <- getTempoInEnsemble s e
+processEnsembleRequest db s c e x@(SetTempo t) = onlyIfAuthenticatedInEnsemble s c $ do
+  updateServer s $ tempoChangeInEnsemble e t
+  newTempo <- getTempoInEnsemble s e -- *** this one too
   if isJust newTempo then do
     let newTempo' = fromJust newTempo
-    respondAll s $ EnsembleResponse (Sited e (Tempo (Tidal.cps newTempo') (toRational . utcTimeToPOSIXSeconds $ Tidal.at newTempo') (Tidal.beat newTempo') ))
+    respondAll s $ EnsembleResponse $ Sited e $ NewTempo newTempo'
     postLog db $ "TempoChange in " ++ e
     saveEnsembleToDatabase s e db
   else postLog db $ "attempt to TempoChange in non-existent ensemble " ++ e
@@ -268,28 +266,28 @@ processEnsembleRequest db s c e x@(TempoChange newCps) = onlyIfAuthenticatedInEn
 processEnsembleRequest db _ _ _ _ = postLog db $ "warning: action failed pattern matching"
 
 
-send :: ServerResponse -> [Client] -> IO ()
+send :: Response -> [Client] -> IO ()
 send x cs = forM_ cs $ \y -> do
   (WS.sendTextData (connection y) $ (T.pack . encodeStrict) x)
   `catch` \(SomeException e) -> putStrLn $ "send exception: " ++ (show e)
 
-respond :: MVar Server -> ClientHandle -> ServerResponse -> IO ()
+respond :: MVar Server -> ClientHandle -> Response -> IO ()
 respond s c x = withMVar s $ (send x) . (:[]) . (Map.! c)  . clients
 
 -- respond' is for use when one already has a lock on the server MVar'
-respond' :: Server -> ClientHandle -> ServerResponse -> IO ()
+respond' :: Server -> ClientHandle -> Response -> IO ()
 respond' s c x = send x $ (:[]) $ (Map.! c) $ clients s
 
-respondAll :: MVar Server -> ServerResponse -> IO ()
+respondAll :: MVar Server -> Response -> IO ()
 respondAll s x = withMVar s $ (send x) . Map.elems . clients
 
-respondAllNoOrigin :: MVar Server -> ClientHandle -> ServerResponse -> IO ()
+respondAllNoOrigin :: MVar Server -> ClientHandle -> Response -> IO ()
 respondAllNoOrigin s c x = withMVar s $ (send x) . Map.elems . Map.delete c . clients
 
-respondEnsemble :: MVar Server -> String -> ServerResponse -> IO ()
+respondEnsemble :: MVar Server -> String -> Response -> IO ()
 respondEnsemble s e x = withMVar s $ (send x) . Map.elems . ensembleFilter e . clients
 
-respondEnsembleNoOrigin :: MVar Server -> ClientHandle -> String -> ServerResponse -> IO ()
+respondEnsembleNoOrigin :: MVar Server -> ClientHandle -> String -> Response -> IO ()
 respondEnsembleNoOrigin s c e x = withMVar s $ (send x) . Map.elems . Map.delete c . ensembleFilter e . clients
 
 ensembleFilter :: String -> Map.Map ClientHandle Client -> Map.Map ClientHandle Client

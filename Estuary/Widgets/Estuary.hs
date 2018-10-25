@@ -36,13 +36,14 @@ estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
   ic <- liftIO $ readMVar ctxM
   renderInfo <- pollRenderInfoChanges riM
   headerChanges <- header ctx renderInfo
-  (values,deltasUp,hints) <- divClass "page" $ navigation (startTime ic) ctx renderInfo commands deltasDown'
+  (values,deltasUp,hints,tempoChanges) <- divClass "page" $ navigation ctx renderInfo commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
-  (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime ic) deltasUp
+  (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
   let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
-  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange]
+  let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
+  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange,tempoChanges']
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
   t <- mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String

@@ -1,19 +1,19 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Estuary.Types.Sited where
 
 import Text.JSON
-import Estuary.Utility (firstKey)
+import Text.JSON.Generic
 import Data.Maybe
 
 data Sited a b = Sited {
   site :: a,
   thing :: b
-  } deriving (Eq)
+  } deriving (Eq,Data,Typeable)
 
-instance (JSON a, JSON b) => JSON (Sited a b) where
-  showJSON (Sited s x) = encJSDict [("at",showJSON s),("x",showJSON x)]
-  readJSON (JSObject x) | firstKey x == "at" = Sited <$> valFromObj "at" x <*> valFromObj "x" x
-  readJSON (JSObject x) | otherwise = Error $ "Unable to parse JSObject as Estuary.Types.Sited" ++ (show x)
-  readJSON _ = Error "Unable to parse as Estuary.Types.Sited"
+instance (Data a,Data b) => JSON (Sited a b) where
+  showJSON = toJSON
+  readJSON = fromJSON
 
 justSited :: Eq a => a -> [Sited a b] -> [b]
 justSited x1 = mapMaybe f
