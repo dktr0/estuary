@@ -16,44 +16,31 @@ miniTidal = choice [
   try $ spaces >> eof >> return T.silence,
   do
     spaces
-    x <- paramPattern
+    x <- mergedParamPatterns
     eof
     return x
   ]
 
-paramPattern :: Parser ParamPattern
-paramPattern = chainl1 unmergedParamPattern paramPatternMergeOperators
+mergedParamPatterns :: Parser ParamPattern
+mergedParamPatterns = chainl1 paramPattern paramPatternMergeOperators
 
-unmergedParamPattern :: Parser ParamPattern
-unmergedParamPattern = choice [
-  brackets paramPattern,
-  transformedPattern paramPatternTransformations paramPattern,
-  specificParamPattern
-  ]
+mergedDoublePatterns :: Parser (Pattern Double)
+mergedDoublePatterns = chainl1 doublePattern numPatternMergeOperators
 
-transformedPattern :: (Parser (Pattern a -> Pattern a)) -> Parser (Pattern a) -> Parser (Pattern a)
-transformedPattern t p = t <*> inBracketsOrApplied p
+mergedIntPatterns :: Parser (Pattern Int)
+mergedIntPatterns = chainl1 intPattern intPatternMergeOperators
 
-transformedPattern' :: (Parser (Pattern a -> Pattern a)) -> Parser (Pattern a) -> Parser (Pattern a)
-transformedPattern' t p = t <*> p
+mergedTimePatterns :: Parser (Pattern Time)
+mergedTimePatterns = chainl1 timePattern numPatternMergeOperators
 
-doublePattern :: Parser (Pattern Double)
-doublePattern = chainl1 unmergedDoublePattern numPatternMergeOperators
-
-unmergedDoublePattern :: Parser (Pattern Double)
-unmergedDoublePattern = choice [
-  brackets doublePattern,
-  try $ transformedPattern' (patternTransformations genericPattern) simplePattern,
-  try $ transformedPattern (patternTransformations genericPattern) doublePattern,
-  simplePattern,
-  oscillators
-  ]
-
-genericPattern :: (Parseable a, Enumerable a) => Parser (Pattern a)
-genericPattern = choice [
-  brackets genericPattern,
-  try $ transformedPattern (patternTransformations genericPattern) genericPattern,
-  simplePattern
+paramPatternMergeOperators :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
+paramPatternMergeOperators = choice [
+  reservedOp "#" >> return (T.#),
+  reservedOp "|=|" >> return (T.|=|),
+  reservedOp "|+|" >> return (T.|+|),
+  reservedOp "|-|" >> return (T.|-|),
+  reservedOp "|*|" >> return (T.|*|),
+  reservedOp "|/|" >> return (T.|/|)
   ]
 
 numPatternMergeOperators :: (Num a, Parseable a,Fractional a) => Parser (Pattern a -> Pattern a -> Pattern a)
@@ -64,37 +51,99 @@ numPatternMergeOperators = choice [
   reservedOp "/" >> return (/)
   ]
 
-paramPatternTransformation :: Parser (ParamPattern -> ParamPattern)
-paramPatternTransformation = inBracketsOrNot paramPatternTransformations
-
-patternTransformation :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
-patternTransformation p = inBracketsOrNot (patternTransformations p)
-
-paramPatternTransformations :: Parser (ParamPattern -> ParamPattern)
-paramPatternTransformations = choice [
-  reserved "chop" >> intAsPattern >>= return . T.chop,
-  reserved "striate" >> intAsPattern >>= return . T.striate,
-  (reserved "striate'" >> return T.striate) <*> intAsPattern <*> double,
-  (reserved "stut" >> return T.stut) <*> integerAsPattern <*> doubleAsPattern <*> rationalPattern,
-  reserved "jux" >> paramPatternTransformation >>= return . T.jux,
-  patternTransformations paramPattern
+intPatternMergeOperators :: Parser (Pattern Int -> Pattern Int -> Pattern Int)
+intPatternMergeOperators = choice [
+  reservedOp "+" >> return (+),
+  reservedOp "-" >> return (-),
+  reservedOp "*" >> return (*)
   ]
 
+silence :: Parser (Pattern a)
+silence = reserved "silence" >> return T.silence
 
-patternTransformations :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
-patternTransformations p = choice [
+paramPattern :: Parser ParamPattern
+paramPattern = choice [
+  silence,
+  parens mergedParamPatterns,
+  parensOrNot specificPatternDouble <*> simplePattern, -- *** rework later as "manyParensOrNot"
+  parensOrNot specificPatternDouble <*> applied mergedDoublePatterns,
+  parensOrNot specificPatternDouble <*> parens mergedDoublePatterns,
+  parensOrNot specificPatternInt <*> simplePattern,
+  parensOrNot specificPatternInt <*> applied mergedIntPatterns,
+  parensOrNot specificPatternInt <*> parens mergedIntPatterns,
+  parensOrNot specificPatternString <*> simplePattern,
+  parensOrNot paramPatternTransformation <*> silence,
+  parensOrNot paramPatternTransformation <*> applied mergedParamPatterns,
+  parensOrNot paramPatternTransformation <*> parens mergedParamPatterns
+  ]
+
+doublePattern :: Parser (Pattern Double)
+doublePattern = choice [
+  silence,
+  oscillator,
+  simplePattern,
+  parens mergedDoublePatterns,
+  parensOrNot (patternTransformation doublePattern) <*> silence, -- *** not sure if doublePattern is sufficiently general here
+  parensOrNot (patternTransformation doublePattern) <*> oscillator,
+  parensOrNot (patternTransformation doublePattern) <*> simplePattern,
+  parensOrNot (patternTransformation doublePattern) <*> parens mergedDoublePatterns,
+  parensOrNot (patternTransformation doublePattern) <*> applied mergedDoublePatterns
+  ]
+
+intPattern :: Parser (Pattern Int)
+intPattern = choice [
+  silence,
+  simplePattern,
+  parens mergedIntPatterns,
+  parensOrNot (patternTransformation intPattern) <*> silence, -- *** not sure if intPattern is sufficiently general here
+  parensOrNot (patternTransformation intPattern) <*> simplePattern,
+  parensOrNot (patternTransformation intPattern) <*> parens mergedIntPatterns,
+  parensOrNot (patternTransformation intPattern) <*> applied mergedIntPatterns
+  ]
+
+timePattern :: Parser (Pattern Time)
+timePattern = choice [
+  silence,
+  simpleTime,
+  simplePattern,
+  parens mergedTimePatterns,
+  parensOrNot (patternTransformation timePattern) <*> silence, -- ** not sure if timePattern is sufficiently general here
+  parensOrNot (patternTransformation timePattern) <*> simpleTime,
+  parensOrNot (patternTransformation timePattern) <*> simplePattern,
+  parensOrNot (patternTransformation timePattern) <*> parens mergedTimePatterns,
+  parensOrNot (patternTransformation timePattern) <*> applied mergedTimePatterns
+  ]
+
+simpleTime :: Parser (Pattern Time)
+simpleTime = (pure . fromIntegral <$> integer) <|> (pure . toRational <$> double)
+
+simpleInteger :: Parser (Pattern Integer)
+simpleInteger = pure <$> integer
+
+paramPatternTransformation :: Parser (ParamPattern -> ParamPattern)
+paramPatternTransformation = choice [
+  reserved "chop" >> intPattern >>= return . T.chop,
+  reserved "striate" >> intPattern >>= return . T.striate,
+  (reserved "striate'" >> return T.striate') <*> intPattern <*> doublePattern,
+  (reserved "stut" >> return T.stut) <*> simpleInteger <*> doublePattern <*> timePattern, -- *** simpleInteger needs to be "integerPattern" which we don't have (why is this Integer instead of Int? maybe just an accident in the Tidal codebase)
+  reserved "jux" >> parens paramPatternTransformation >>= return . T.jux,
+  patternTransformation paramPattern
+  ]
+
+patternTransformation :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
+patternTransformation p = choice [
   reserved "brak" >> return T.brak,
   reserved "rev" >> return T.rev,
   reserved "palindrome" >> return T.palindrome,
   reserved "fast" >> timePattern >>= return . T.fast,
   reserved "density" >> timePattern >>= return . T.density,
   reserved "slow" >> timePattern >>= return . T.slow,
-  reserved "iter" >> intAsPattern >>= return . T.iter,
+  reserved "iter" >> intPattern >>= return . T.iter,
   reserved "trunc" >> timePattern >>= return . T.trunc,
   shiftLeft,
   shiftRight,
-  (reserved "swingBy" >> return T.swingBy) <*> timePattern <*> timePattern, -- do we need fromIntegral on second argument (int)?
-  (reserved "every" >> return T.every) <*> intAsPattern <*> patternTransformation p,
+  (reserved "swingBy" >> return T.swingBy) <*> timePattern <*> timePattern,
+  (reserved "every" >> return T.every) <*> intPattern <*> patternTransformation p, -- *** note: the recursion without the transformation type isn't adequate for parampatterns
   (reserved "whenmod" >> return T.whenmod) <*> int <*> int <*> patternTransformation p,
   (reserved "append" >> return T.append) <*> p
   ]
@@ -111,64 +160,43 @@ shiftRight = do
   reservedOp "~>"
   return $ (x T.~>)
 
-paramPatternMergeOperators :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
-paramPatternMergeOperators = choice [
-  reservedOp "#" >> return (T.#),
-  reservedOp "|=|" >> return (T.|=|),
-  reservedOp "|+|" >> return (T.|+|),
-  reservedOp "|-|" >> return (T.|-|),
-  reservedOp "|*|" >> return (T.|*|),
-  reservedOp "|/|" >> return (T.|/|)
+specificPatternDouble :: Parser (Pattern Double -> ParamPattern)
+specificPatternDouble = choice [
+  reserved "n" >> return T.n,
+  reserved "up" >> return T.up,
+  reserved "speed" >> return T.speed,
+  reserved "pan" >> return T.pan,
+  reserved "shape" >> return T.shape,
+  reserved "gain" >> return T.gain,
+  reserved "accelerate" >> return T.accelerate,
+  reserved "bandf" >> return T.bandf,
+  reserved "bandq" >> return T.bandq,
+  reserved "begin" >> return T.begin,
+  reserved "crush" >> return T.crush,
+  reserved "cutoff" >> return T.cutoff,
+  reserved "delayfeedback" >> return T.delayfeedback,
+  reserved "delaytime" >> return T.delaytime,
+  reserved "delay" >> return T.delay,
+  reserved "end" >> return T.end,
+  reserved "hcutoff" >> return T.hcutoff,
+  reserved "hresonance" >> return T.hresonance,
+  reserved "resonance" >> return T.resonance,
+  reserved "shape" >> return T.shape,
+  reserved "loop" >> return T.loop
   ]
 
-specificPatternDouble :: String -> (Pattern Double -> ParamPattern) -> Parser (ParamPattern)
-specificPatternDouble s f = do
-  reserved s >> spaces
-  x <- choice [
-    reservedOp "$" >> doublePattern,
-    doublePattern
-    ]
-  return $ f x
+specificPatternString :: Parser (Pattern String -> ParamPattern)
+specificPatternString = choice [
+  reserved "s" >> return T.s,
+  reserved "sound" >> return T.sound,
+  reserved "vowel" >> return T.vowel,
+  reserved "unit" >> return T.unit
+  ]
 
-specificPatternGeneric :: (Parseable a, Enumerable a) => String -> (Pattern a -> ParamPattern) -> Parser (ParamPattern)
-specificPatternGeneric s f = do
-  reserved s >> spaces
-  x <- choice [
-    reservedOp "$" >> genericPattern,
-    genericPattern
-    ]
-  return $ f x
-
-specificParamPattern :: Parser (ParamPattern)
-specificParamPattern = choice [
-  reserved "silence" >> return T.silence,
-  specificPatternGeneric "s" T.s,
-  specificPatternGeneric "sound" T.sound,
-  specificPatternDouble "n" T.n,
-  specificPatternDouble "up" T.up,
-  specificPatternDouble "speed" T.speed,
-  specificPatternGeneric "vowel" T.vowel,
-  specificPatternDouble "pan" T.pan,
-  specificPatternDouble "shape" T.shape,
-  specificPatternDouble "gain" T.gain,
-  specificPatternDouble "accelerate" T.accelerate,
-  specificPatternDouble "bandf" T.bandf,
-  specificPatternDouble "bandq" T.bandq,
-  specificPatternDouble "begin" T.begin,
-  specificPatternGeneric "coarse" T.coarse,
-  specificPatternDouble "crush" T.crush,
-  specificPatternGeneric "cut" T.cut,
-  specificPatternDouble "cutoff" T.cutoff,
-  specificPatternDouble "delayfeedback" T.delayfeedback,
-  specificPatternDouble "delaytime" T.delaytime,
-  specificPatternDouble "delay" T.delay,
-  specificPatternDouble "end" T.end,
-  specificPatternDouble "hcutoff" T.hcutoff,
-  specificPatternDouble "hresonance" T.hresonance,
-  specificPatternGeneric "loop" T.loop,
-  specificPatternDouble "resonance" T.resonance,
-  specificPatternDouble "shape" T.shape,
-  specificPatternGeneric "unit" T.unit
+specificPatternInt :: Parser (Pattern Int -> ParamPattern)
+specificPatternInt = choice [
+  reserved "coarse" >> return T.coarse,
+  reserved "cut" >> return T.cut
   ]
 
 simplePattern :: (Parseable b, Enumerable b) => Parser (Pattern b)
@@ -178,8 +206,8 @@ simplePattern = do
   reservedOp "\""
   return $ T.p x
 
-oscillators :: Parser (Pattern Double)
-oscillators = choice [
+oscillator :: Parser (Pattern Double)
+oscillator = choice [
   reserved "sinewave1" >> return T.sinewave1,
   reserved "sinewave" >> return T.sinewave,
   reserved "sine1" >> return T.sine1,
@@ -198,42 +226,28 @@ oscillators = choice [
   reserved "squarewave" >> return T.squarewave
   ]
 
-timePattern :: Parser (Pattern Time)
-timePattern = do
-  x <- double
-  return $ pure (fromIntegral x)
-
-rationalPattern :: Parser (Pattern Rational)
-rationalPattern = do
-  x <- double
-  return $ pure (fromIntegral x)
-
-intAsPattern :: Parser (Pattern Int)
-intAsPattern = do
-  x <- int
-  return $ pure x
-
 integerAsPattern :: Parser (Pattern Integer)
 integerAsPattern = do
   x <- integer
   return $ pure x
 
-doubleAsPattern :: Parser (Pattern Double)
-doubleAsPattern = do
-  x <- double
-  return $ pure x
+double :: GenParser Char a Double
+double = choice [float,fromIntegral <$> integer]
 
-
-
+int :: GenParser Char a Int
+int = fmap (fromIntegral) integer
 
 applied :: Parser a -> Parser a
 applied p = reservedOp "$" >> p
 
-inBracketsOrApplied :: Parser a -> Parser a
-inBracketsOrApplied p = brackets p <|> applied p
+parensOrApplied :: Parser a -> Parser a
+parensOrApplied p = parens p <|> applied p
 
-inBracketsOrNot :: Parser a -> Parser a
-inBracketsOrNot p = brackets p <|> p
+parensOrNot :: Parser a -> Parser a
+parensOrNot p = parens p <|> p
+
+parensAppliedOrNot :: Parser a -> Parser a
+parensAppliedOrNot p = parens p <|> applied p <|> p
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
@@ -275,9 +289,3 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
-
-double :: GenParser Char a Double
-double = choice $ fmap try [float,fromIntegral <$> integer]
-
-int :: GenParser Char a Int
-int = fmap (fromIntegral) integer
