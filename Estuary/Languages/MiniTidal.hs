@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Estuary.Languages.MiniTidal (miniTidalParser) where
 
 import Text.ParserCombinators.Parsec
@@ -5,231 +7,236 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
 import Data.List (intercalate)
 import Data.Bool (bool)
-import Sound.Tidal.Context (ParamPattern,Pattern,Enumerable,Parseable,Time)
+import Data.Ratio
+import Sound.Tidal.Context (ParamPattern,Pattern,Enumerable,Parseable,Time,ParamMap)
 import qualified Sound.Tidal.Context as T
 
 miniTidalParser :: String -> Either ParseError ParamPattern
 miniTidalParser x = parse miniTidal "miniTidal" $ filter (/='?') x
 
 miniTidal :: Parser ParamPattern
-miniTidal = choice [
-  try $ spaces >> eof >> return T.silence,
+miniTidal = whiteSpace >> choice [
+  eof >> return T.silence,
   do
-    spaces
-    x <- mergedParamPatterns
+    x <- topLevelParamPattern
     eof
     return x
   ]
 
-mergedParamPatterns :: Parser ParamPattern
-mergedParamPatterns = chainl1 paramPattern paramPatternMergeOperators
+class Pattern' a where
+  simplePattern :: Parser (Pattern a)
+  complexPattern :: Parser (Pattern a)
+  mergeOperator :: Parser (Pattern a -> Pattern a -> Pattern a)
+  transformationWithoutArgs :: Parser (Pattern a -> Pattern a)
+  transformationWithArgs :: Parser (Pattern a -> Pattern a)
 
-mergedDoublePatterns :: Parser (Pattern Double)
-mergedDoublePatterns = chainl1 doublePattern numPatternMergeOperators
+topLevelParamPattern :: Parser ParamPattern
+topLevelParamPattern = chainl1 pattern paramPatternMergeOperator
 
-mergedIntPatterns :: Parser (Pattern Int)
-mergedIntPatterns = chainl1 intPattern intPatternMergeOperators
-
-mergedTimePatterns :: Parser (Pattern Time)
-mergedTimePatterns = chainl1 timePattern numPatternMergeOperators
-
-paramPatternMergeOperators :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
-paramPatternMergeOperators = choice [
-  reservedOp "#" >> return (T.#),
-  reservedOp "|=|" >> return (T.|=|),
-  reservedOp "|+|" >> return (T.|+|),
-  reservedOp "|-|" >> return (T.|-|),
-  reservedOp "|*|" >> return (T.|*|),
-  reservedOp "|/|" >> return (T.|/|)
-  ]
-
-numPatternMergeOperators :: (Num a, Parseable a,Fractional a) => Parser (Pattern a -> Pattern a -> Pattern a)
-numPatternMergeOperators = choice [
-  reservedOp "+" >> return (+),
-  reservedOp "-" >> return (-),
-  reservedOp "*" >> return (*),
-  reservedOp "/" >> return (/)
-  ]
-
-intPatternMergeOperators :: Parser (Pattern Int -> Pattern Int -> Pattern Int)
-intPatternMergeOperators = choice [
-  reservedOp "+" >> return (+),
-  reservedOp "-" >> return (-),
-  reservedOp "*" >> return (*)
+pattern :: Pattern' a => Parser (Pattern a)
+pattern = choice [
+  nestedParens $ chainl1 pattern mergeOperator,
+  parensOrNot complexPattern,
+  parensOrNot transformedPattern,
+  parensOrNot simplePattern,
+  silence
   ]
 
 silence :: Parser (Pattern a)
-silence = reserved "silence" >> return T.silence
+silence = function "silence" >> return T.silence
 
-paramPattern :: Parser ParamPattern
-paramPattern = choice [
-  silence,
-  parens mergedParamPatterns,
-  parensOrNot specificPatternDouble <*> simplePattern, -- *** rework later as "manyParensOrNot"
-  parensOrNot specificPatternDouble <*> applied mergedDoublePatterns,
-  parensOrNot specificPatternDouble <*> parens mergedDoublePatterns,
-  parensOrNot specificPatternInt <*> simplePattern,
-  parensOrNot specificPatternInt <*> applied mergedIntPatterns,
-  parensOrNot specificPatternInt <*> parens mergedIntPatterns,
-  parensOrNot specificPatternString <*> simplePattern,
-  parensOrNot paramPatternTransformation <*> silence,
-  parensOrNot paramPatternTransformation <*> applied mergedParamPatterns,
-  parensOrNot paramPatternTransformation <*> parens mergedParamPatterns
+transformedPattern :: Pattern' a => Parser (Pattern a)
+transformedPattern = (transformationWithArgs <|> transformationWithoutArgs) <*> patternArg
+
+patternArg :: Pattern' a => Parser (Pattern a)
+patternArg = choice [
+  try $ parensOrApplied $ chainl1 pattern mergeOperator,
+  try $ parensOrApplied transformedPattern,
+  try $ parensOrApplied complexPattern,
+  appliedOrNot simplePattern,
+  appliedOrNot silence
   ]
 
-doublePattern :: Parser (Pattern Double)
-doublePattern = choice [
-  silence,
-  oscillator,
-  simplePattern,
-  parens mergedDoublePatterns,
-  parensOrNot (patternTransformation doublePattern) <*> silence, -- *** not sure if doublePattern is sufficiently general here
-  parensOrNot (patternTransformation doublePattern) <*> oscillator,
-  parensOrNot (patternTransformation doublePattern) <*> simplePattern,
-  parensOrNot (patternTransformation doublePattern) <*> parens mergedDoublePatterns,
-  parensOrNot (patternTransformation doublePattern) <*> applied mergedDoublePatterns
+
+instance Pattern' ParamMap where
+  simplePattern = choice []
+  complexPattern = specificParamPatterns
+  mergeOperator = paramPatternMergeOperator
+  transformationWithArgs = paramPatternTransformation <|> patternTransformationWithArgs
+  transformationWithoutArgs = patternTransformationWithoutArgs
+
+paramPatternMergeOperator :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
+paramPatternMergeOperator = choice [
+  opParens "#" >> return (T.#),
+  opParens "|=|" >> return (T.|=|),
+  opParens "|+|" >> return (T.|+|),
+  opParens "|-|" >> return (T.|-|),
+  opParens "|*|" >> return (T.|*|),
+  opParens "|/|" >> return (T.|/|)
   ]
 
-intPattern :: Parser (Pattern Int)
-intPattern = choice [
-  silence,
-  simplePattern,
-  parens mergedIntPatterns,
-  parensOrNot (patternTransformation intPattern) <*> silence, -- *** not sure if intPattern is sufficiently general here
-  parensOrNot (patternTransformation intPattern) <*> simplePattern,
-  parensOrNot (patternTransformation intPattern) <*> parens mergedIntPatterns,
-  parensOrNot (patternTransformation intPattern) <*> applied mergedIntPatterns
+specificParamPatterns :: Parser ParamPattern
+specificParamPatterns = choice [
+  (function "coarse" >> return T.coarse) <*> patternArg,
+  (function "cut" >> return T.cut) <*> patternArg,
+  (function "n" >> return T.n) <*> patternArg,
+  (function "up" >> return T.up) <*> patternArg,
+  (function "speed" >> return T.speed) <*> patternArg,
+  (function "pan" >> return T.pan) <*> patternArg,
+  (function "shape" >> return T.shape) <*> patternArg,
+  (function "gain" >> return T.gain) <*> patternArg,
+  (function "accelerate" >> return T.accelerate) <*> patternArg,
+  (function "bandf" >> return T.bandf) <*> patternArg,
+  (function "bandq" >> return T.bandq) <*> patternArg,
+  (function "begin" >> return T.begin) <*> patternArg,
+  (function "crush" >> return T.crush) <*> patternArg,
+  (function "cutoff" >> return T.cutoff) <*> patternArg,
+  (function "delayfeedback" >> return T.delayfeedback) <*> patternArg,
+  (function "delaytime" >> return T.delaytime) <*> patternArg,
+  (function "delay" >> return T.delay) <*> patternArg,
+  (function "end" >> return T.end) <*> patternArg,
+  (function "hcutoff" >> return T.hcutoff) <*> patternArg,
+  (function "hresonance" >> return T.hresonance) <*> patternArg,
+  (function "resonance" >> return T.resonance) <*> patternArg,
+  (function "shape" >> return T.shape) <*> patternArg,
+  (function "loop" >> return T.loop) <*> patternArg,
+  (function "s" >> return T.s) <*> patternArg,
+  (function "sound" >> return T.sound) <*> patternArg,
+  (function "vowel" >> return T.vowel) <*> patternArg,
+  (function "unit" >> return T.unit) <*> patternArg
   ]
-
-timePattern :: Parser (Pattern Time)
-timePattern = choice [
-  silence,
-  simpleTime,
-  simplePattern,
-  parens mergedTimePatterns,
-  parensOrNot (patternTransformation timePattern) <*> silence, -- ** not sure if timePattern is sufficiently general here
-  parensOrNot (patternTransformation timePattern) <*> simpleTime,
-  parensOrNot (patternTransformation timePattern) <*> simplePattern,
-  parensOrNot (patternTransformation timePattern) <*> parens mergedTimePatterns,
-  parensOrNot (patternTransformation timePattern) <*> applied mergedTimePatterns
-  ]
-
-simpleTime :: Parser (Pattern Time)
-simpleTime = (pure . fromIntegral <$> integer) <|> (pure . toRational <$> double)
-
-simpleInteger :: Parser (Pattern Integer)
-simpleInteger = pure <$> integer
 
 paramPatternTransformation :: Parser (ParamPattern -> ParamPattern)
 paramPatternTransformation = choice [
-  reserved "chop" >> intPattern >>= return . T.chop,
-  reserved "striate" >> intPattern >>= return . T.striate,
-  (reserved "striate'" >> return T.striate') <*> intPattern <*> doublePattern,
-  (reserved "stut" >> return T.stut) <*> simpleInteger <*> doublePattern <*> timePattern, -- *** simpleInteger needs to be "integerPattern" which we don't have (why is this Integer instead of Int? maybe just an accident in the Tidal codebase)
-  reserved "jux" >> parens paramPatternTransformation >>= return . T.jux,
-  patternTransformation paramPattern
+  function "chop" >> patternArg >>= return . T.chop,
+  function "striate" >> patternArg >>= return . T.striate,
+  (function "striate'" >> return T.striate') <*> patternArg <*> patternArg,
+  (function "stut" >> return T.stut) <*> patternArg <*> patternArg <*> patternArg,
+  function "jux" >> patternTransformationArg >>= return . T.jux
   ]
 
-patternTransformation :: Parser (Pattern a) -> Parser (Pattern a -> Pattern a)
-patternTransformation p = choice [
-  reserved "brak" >> return T.brak,
-  reserved "rev" >> return T.rev,
-  reserved "palindrome" >> return T.palindrome,
-  reserved "fast" >> timePattern >>= return . T.fast,
-  reserved "density" >> timePattern >>= return . T.density,
-  reserved "slow" >> timePattern >>= return . T.slow,
-  reserved "iter" >> intPattern >>= return . T.iter,
-  reserved "trunc" >> timePattern >>= return . T.trunc,
-  shiftLeft,
-  shiftRight,
-  (reserved "swingBy" >> return T.swingBy) <*> timePattern <*> timePattern,
-  (reserved "every" >> return T.every) <*> intPattern <*> patternTransformation p, -- *** note: the recursion without the transformation type isn't adequate for parampatterns
-  (reserved "whenmod" >> return T.whenmod) <*> int <*> int <*> patternTransformation p,
-  (reserved "append" >> return T.append) <*> p
+patternTransformationArg :: Pattern' a => Parser (Pattern a -> Pattern a)
+patternTransformationArg = appliedOrNot transformationWithoutArgs <|> parensOrApplied transformationWithArgs
+
+patternTransformationWithoutArgs :: Pattern' a => Parser (Pattern a -> Pattern a)
+patternTransformationWithoutArgs = choice [
+  function "brak" >> return T.brak,
+  function "rev" >> return T.rev,
+  function "palindrome" >> return T.palindrome
   ]
 
-shiftLeft :: Parser (Pattern a -> Pattern a)
-shiftLeft = do
-  x <- timePattern
-  reservedOp "<~"
-  return $ (x T.<~)
-
-shiftRight :: Parser (Pattern a -> Pattern a)
-shiftRight = do
-  x <- timePattern
-  reservedOp "~>"
-  return $ (x T.~>)
-
-specificPatternDouble :: Parser (Pattern Double -> ParamPattern)
-specificPatternDouble = choice [
-  reserved "n" >> return T.n,
-  reserved "up" >> return T.up,
-  reserved "speed" >> return T.speed,
-  reserved "pan" >> return T.pan,
-  reserved "shape" >> return T.shape,
-  reserved "gain" >> return T.gain,
-  reserved "accelerate" >> return T.accelerate,
-  reserved "bandf" >> return T.bandf,
-  reserved "bandq" >> return T.bandq,
-  reserved "begin" >> return T.begin,
-  reserved "crush" >> return T.crush,
-  reserved "cutoff" >> return T.cutoff,
-  reserved "delayfeedback" >> return T.delayfeedback,
-  reserved "delaytime" >> return T.delaytime,
-  reserved "delay" >> return T.delay,
-  reserved "end" >> return T.end,
-  reserved "hcutoff" >> return T.hcutoff,
-  reserved "hresonance" >> return T.hresonance,
-  reserved "resonance" >> return T.resonance,
-  reserved "shape" >> return T.shape,
-  reserved "loop" >> return T.loop
+patternTransformationWithArgs :: Pattern' a => Parser (Pattern a -> Pattern a)
+patternTransformationWithArgs= parensOrNot $ choice [
+  function "fast" >> patternArg >>= return . T.fast,
+  function "density" >> patternArg >>= return . T.density,
+  function "slow" >> patternArg >>= return . T.slow,
+  function "iter" >> patternArg >>= return . T.iter,
+  function "trunc" >> patternArg >>= return . T.trunc,
+  (function "swingBy" >> return T.swingBy) <*> patternArg <*> patternArg,
+  (function "append" >> return T.append) <*> patternArg,
+  (function "every" >> return T.every) <*> patternArg <*> patternTransformationArg,
+  (function "whenmod" >> return T.whenmod) <*> int <*> int <*> patternTransformationArg
   ]
-
-specificPatternString :: Parser (Pattern String -> ParamPattern)
-specificPatternString = choice [
-  reserved "s" >> return T.s,
-  reserved "sound" >> return T.sound,
-  reserved "vowel" >> return T.vowel,
-  reserved "unit" >> return T.unit
-  ]
-
-specificPatternInt :: Parser (Pattern Int -> ParamPattern)
-specificPatternInt = choice [
-  reserved "coarse" >> return T.coarse,
-  reserved "cut" >> return T.cut
-  ]
-
-simplePattern :: (Parseable b, Enumerable b) => Parser (Pattern b)
-simplePattern = do
-  reservedOp "\""
-  x <- Text.ParserCombinators.Parsec.many (noneOf "\"") -- ** this bypassing of tokenizing is probably not correct
-  reservedOp "\""
-  return $ T.p x
 
 oscillator :: Parser (Pattern Double)
 oscillator = choice [
-  reserved "sinewave1" >> return T.sinewave1,
-  reserved "sinewave" >> return T.sinewave,
-  reserved "sine1" >> return T.sine1,
-  reserved "sine" >> return T.sine,
-  reserved "sawwave1" >> return T.sawwave1,
-  reserved "sawwave" >> return T.sawwave,
-  reserved "saw1" >> return T.saw1,
-  reserved "saw" >> return T.saw,
-  reserved "triwave1" >> return T.triwave1,
-  reserved "triwave" >> return T.triwave,
-  reserved "tri1" >> return T.tri1,
-  reserved "tri" >> return T.tri,
-  reserved "squarewave1" >> return T.squarewave1,
-  reserved "square1" >> return T.square1,
-  reserved "square" >> return T.square,
-  reserved "squarewave" >> return T.squarewave
+  function "sinewave1" >> return T.sinewave1,
+  function "sinewave" >> return T.sinewave,
+  function "sine1" >> return T.sine1,
+  function "sine" >> return T.sine,
+  function "sawwave1" >> return T.sawwave1,
+  function "sawwave" >> return T.sawwave,
+  function "saw1" >> return T.saw1,
+  function "saw" >> return T.saw,
+  function "triwave1" >> return T.triwave1,
+  function "triwave" >> return T.triwave,
+  function "tri1" >> return T.tri1,
+  function "tri" >> return T.tri,
+  function "squarewave1" >> return T.squarewave1,
+  function "square1" >> return T.square1,
+  function "square" >> return T.square,
+  function "squarewave" >> return T.squarewave
   ]
 
-integerAsPattern :: Parser (Pattern Integer)
-integerAsPattern = do
-  x <- integer
-  return $ pure x
+
+instance Pattern' Int where
+  simplePattern = choice [
+    pure <$> int,
+    T.p <$> stringLiteral
+    ]
+  complexPattern = choice [
+    function "pure" >> int >>= return . pure,
+    function "return" >> int >>= return . return
+    ]
+  mergeOperator = numMergeOperator
+  transformationWithoutArgs = patternTransformationWithoutArgs
+  transformationWithArgs = patternTransformationWithArgs
+
+
+instance Pattern' Integer where
+  simplePattern = choice [
+    pure <$> integer,
+    T.p <$> stringLiteral
+    ]
+  complexPattern = choice [
+    function "pure" >> integer >>= return . pure,
+    function "return" >> integer >>= return . return
+    ]
+  mergeOperator = numMergeOperator
+  transformationWithoutArgs = patternTransformationWithoutArgs
+  transformationWithArgs = patternTransformationWithArgs
+
+
+instance Pattern' Double where
+  simplePattern = choice [
+    oscillator,
+    pure <$> double,
+    T.p <$> stringLiteral
+    ]
+  complexPattern = choice [
+    function "pure" >> double >>= return . pure,
+    function "return" >> double >>= return . return
+    ]
+  mergeOperator = numMergeOperator <|> fractionalMergeOperator
+  transformationWithoutArgs = patternTransformationWithoutArgs
+  transformationWithArgs = patternTransformationWithArgs
+
+
+instance Pattern' (Ratio Integer) where
+  simplePattern = choice [
+    pure . fromIntegral <$> integer,
+    pure . toRational <$> double,
+    T.p <$> stringLiteral
+    ]
+  complexPattern = choice [
+    function "pure" >> integer >>= return . pure . fromIntegral,
+    function "return" >> double >>= return . return . toRational
+    ]
+  mergeOperator = numMergeOperator <|> fractionalMergeOperator
+  transformationWithoutArgs = patternTransformationWithoutArgs
+  transformationWithArgs = patternTransformationWithArgs
+
+
+instance Pattern' String where
+  simplePattern = T.p <$> stringLiteral
+  complexPattern = choice [
+    function "pure" >> stringLiteral >>= return . pure,
+    function "return" >> stringLiteral >>= return . return
+    ]
+  mergeOperator = choice [] -- ??
+  transformationWithoutArgs = patternTransformationWithoutArgs
+  transformationWithArgs = patternTransformationWithArgs
+
+
+fractionalMergeOperator :: Fractional a => Parser (Pattern a -> Pattern a -> Pattern a)
+fractionalMergeOperator = opParens "/" >> return (/)
+
+numMergeOperator :: Num a => Parser (Pattern a -> Pattern a -> Pattern a)
+numMergeOperator = choice [
+  opParens "+" >> return (+),
+  opParens "-" >> return (-),
+  opParens "*" >> return (*)
+  ]
 
 double :: GenParser Char a Double
 double = choice [float,fromIntegral <$> integer]
@@ -237,17 +244,26 @@ double = choice [float,fromIntegral <$> integer]
 int :: GenParser Char a Int
 int = fmap (fromIntegral) integer
 
-applied :: Parser a -> Parser a
-applied p = reservedOp "$" >> p
+function :: String -> Parser ()
+function x = reserved x <|> try (parens (function x))
 
-parensOrApplied :: Parser a -> Parser a
-parensOrApplied p = parens p <|> applied p
+opParens :: String -> Parser ()
+opParens x = reservedOp x <|> try (parens (opParens x))
 
 parensOrNot :: Parser a -> Parser a
-parensOrNot p = parens p <|> p
+parensOrNot p = p <|> try (parens (parensOrNot p))
 
-parensAppliedOrNot :: Parser a -> Parser a
-parensAppliedOrNot p = parens p <|> applied p <|> p
+nestedParens :: Parser a -> Parser a
+nestedParens p = try (parens p) <|> try (parens (nestedParens p))
+
+applied :: Parser a -> Parser a
+applied p = opParens "$" >> p
+
+appliedOrNot :: Parser a -> Parser a
+appliedOrNot p = applied p <|> p
+
+parensOrApplied :: Parser a -> Parser a
+parensOrApplied p = try (parens p) <|> try (applied p)
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
@@ -257,7 +273,8 @@ tokenParser = P.makeTokenParser $ haskellDef {
     "accelerate","bandf","bandq","begin","coarse","crush","cut","cutoff","delayfeedback",
     "delaytime","delay","end","hcutoff","hresonance","loop","resonance","shape","unit",
     "sinewave1","sinewave","sine1","sine","sawwave1","sawwave","saw1","saw",
-    "triwave1","triwave","tri1","tri","squarewave1","square1","square","squarewave"],
+    "triwave1","triwave","tri1","tri","squarewave1","square1","square","squarewave",
+    "pure","return"],
   P.reservedOpNames = ["+","-","*","/","<~","~>","#","|=|","|+|","|-|","|*|","|/|","$","\""]
   }
 
