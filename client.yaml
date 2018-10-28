@@ -13,12 +13,16 @@ allow-newer: true
 packages:
 - '.'
 
+- location:
+    git: https://github.com/d0kt0r0/Tidal.git
+    commit: fa532752ab2f4360fe80033d113021b7072a3edb
+  extra-dep: true
+
 extra-deps:
 - ghcjs-dom-0.2.3.1
 - reflex-dom-0.3
 - reflex-0.4.0
 - ref-tf-0.4
 - hosc-0.16
-- tidal-0.9.9
 - parsec-numbers-0.1.0
 - reflex-dom-contrib-0.4.1

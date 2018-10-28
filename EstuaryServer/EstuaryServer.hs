@@ -54,7 +54,7 @@ mainWithDatabase db = do
   s <- newMVar $ newServer { password = pwd, ensembles = es }
   let settings = (defaultWebAppSettings "Estuary.jsexe") {
     ssIndices = [unsafeToPiece "index.html"],
-    ssMaxAge = MaxAgeSeconds 120 -- two minutes max cache time
+    ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
     }
   run port $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
 
