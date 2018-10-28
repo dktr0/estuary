@@ -4,15 +4,15 @@ on Estuary's github page. Also, if there are items not on this list you would re
 
 Operators:
 
-- #
+- \#
 - |=|
 - |+|
 - |-|
 - |*|
 - |/|
-- +
-- -
-- *
+- \+
+- \-
+- \*
 
 atom, pure, and return all work as ways to turn a simple literal value into a pattern. Numeric values without atom, pure and return will also be read as simple patterns when necessary.
 
