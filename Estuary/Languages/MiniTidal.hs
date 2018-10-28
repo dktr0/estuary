@@ -67,12 +67,12 @@ instance Pattern' ParamMap where
 
 paramPatternMergeOperator :: Parser (ParamPattern -> ParamPattern -> ParamPattern)
 paramPatternMergeOperator = choice [
-  opParens "#" >> return (T.#),
-  opParens "|=|" >> return (T.|=|),
-  opParens "|+|" >> return (T.|+|),
-  opParens "|-|" >> return (T.|-|),
-  opParens "|*|" >> return (T.|*|),
-  opParens "|/|" >> return (T.|/|)
+  op "#" >> return (T.#),
+  op "|=|" >> return (T.|=|),
+  op "|+|" >> return (T.|+|),
+  op "|-|" >> return (T.|-|),
+  op "|*|" >> return (T.|*|),
+  op "|/|" >> return (T.|/|)
   ]
 
 specificParamPatterns :: Parser ParamPattern
@@ -229,13 +229,13 @@ instance Pattern' String where
 
 
 fractionalMergeOperator :: Fractional a => Parser (Pattern a -> Pattern a -> Pattern a)
-fractionalMergeOperator = opParens "/" >> return (/)
+fractionalMergeOperator = op "/" >> return (/)
 
 numMergeOperator :: Num a => Parser (Pattern a -> Pattern a -> Pattern a)
 numMergeOperator = choice [
-  opParens "+" >> return (+),
-  opParens "-" >> return (-),
-  opParens "*" >> return (*)
+  op "+" >> return (+),
+  op "-" >> return (-),
+  op "*" >> return (*)
   ]
 
 double :: GenParser Char a Double
@@ -247,8 +247,8 @@ int = fmap (fromIntegral) integer
 function :: String -> Parser ()
 function x = reserved x <|> try (parens (function x))
 
-opParens :: String -> Parser ()
-opParens x = reservedOp x <|> try (parens (opParens x))
+op :: String -> Parser ()
+op x = reservedOp x <|> try (parens (op x))
 
 parensOrNot :: Parser a -> Parser a
 parensOrNot p = p <|> try (parens (parensOrNot p))
@@ -257,7 +257,7 @@ nestedParens :: Parser a -> Parser a
 nestedParens p = try (parens p) <|> try (parens (nestedParens p))
 
 applied :: Parser a -> Parser a
-applied p = opParens "$" >> p
+applied p = op "$" >> p
 
 appliedOrNot :: Parser a -> Parser a
 appliedOrNot p = applied p <|> p
