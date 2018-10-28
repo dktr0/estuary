@@ -238,11 +238,11 @@ numMergeOperator = choice [
   op "*" >> return (*)
   ]
 
-double :: GenParser Char a Double
-double = choice [float,fromIntegral <$> integer]
+double :: Parser Double
+double = parensOrNot $ choice [float,fromIntegral <$> integer]
 
-int :: GenParser Char a Int
-int = fmap (fromIntegral) integer
+int :: Parser Int
+int = parensOrNot $ fromIntegral <$> integer
 
 function :: String -> Parser ()
 function x = reserved x <|> try (parens (function x))
