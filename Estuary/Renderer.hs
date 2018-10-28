@@ -114,9 +114,17 @@ sleepUntilNextRender = do
   s <- get
   let next = addUTCTime renderPeriod (logicalTime s)
   let diff = diffUTCTime next (renderEndTime s)
-  let delay = floor $ realToFrac diff * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
+  next' <- liftIO $ if diff > 0 then return next else do
+    putStrLn "*** logical time too far behind clock time - fast forwarding"
+    return $ addUTCTime (diff * (-1) + 0.01) next -- fast forward so next logical time is 10 milliseconds after clock time
+  let diff' = diffUTCTime next' (renderEndTime s)
+  next'' <- liftIO $ if diff' < (renderPeriod*2) then return next' else do -- not allowed to get more than 1 render period ahead
+    putStrLn "*** logical time too far ahead of clock time - rewinding"
+    return $ addUTCTime renderPeriod $ renderEndTime s
+  let diff'' = diffUTCTime next'' (renderEndTime s)
+  let delay = floor $ realToFrac diff'' * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
   liftIO $ threadDelay delay
-  put $ s { logicalTime = next }
+  put $ s { logicalTime = next'' }
 
 calculateRenderTimes :: Renderer
 calculateRenderTimes = do
