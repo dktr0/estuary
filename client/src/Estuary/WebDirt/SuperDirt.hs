@@ -8,7 +8,7 @@ import qualified Estuary.WebDirt.SampleEngine as S
 import Estuary.WebDirt.Foreign (createObjFromMap)
 
 
-data SuperDirt = SuperDirt T.JSVal
+newtype SuperDirt = SuperDirt T.JSVal
 
 instance S.SampleEngine SuperDirt where
   getClockDiff _ = return 0.0

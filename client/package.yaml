@@ -1,0 +1,89 @@
+name: estuary
+version: '0.0.0.1'
+synopsis: Projectional editor for TidalCycles
+description: Please see README.md
+category: Web
+author: David Ogborn, Jamie Beverley and others
+maintainer: ogbornd@mcmaster.ca
+copyright: 2015-17 David Ogborn and others
+license: GPL-3
+homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
+
+# Our build is a Simple build with a preTest hook for running tests with
+# puppeteer.
+# build-type: Custom
+# custom-setup:
+#   dependencies:
+#     - base
+#     - Cabal == 1.22.8.2 
+#     - filepath
+#     - directory
+
+dependencies:
+  - base
+  - estuary-common
+  - reflex
+  - reflex-dom
+  - tidal
+  - hosc
+  - containers
+  - safe
+  - ghcjs-base
+  - ghcjs-dom
+  - text
+  - array
+  - ghcjs-prim
+  - data-default
+  - transformers
+  - file-embed
+  - time
+  - monad-loops
+  - json
+  - bytestring
+  - parsec
+  - parsec-numbers
+  - reflex-dom-contrib
+  - mtl
+
+library:
+  source-dirs: 
+    - ./src
+# Add common to stack.yaml (and dependencies) and reexport those modules here
+
+executables:
+  Estuary:
+    main: Main.hs
+    source-dirs:
+      - ./app
+    dependencies:
+      - estuary
+
+  simple-test:
+    main: Simple.hs
+    source-dirs:
+      - ./test
+    dependencies:
+      - estuary
+      - hspec
+      - async
+
+################################
+# TESTS
+################################
+
+_test-base: &test-base
+  source-dirs:
+    - ./test
+  dependencies:
+    - estuary
+    - hspec
+
+tests:
+  mini-tidal: 
+    <<: *test-base
+    main: MiniTidalTests.hs
+    ghc-options: -main-is MiniTidalTests
+    dependencies:
+      - estuary
+      - hspec
+      - directory

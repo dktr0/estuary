@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Languages.MiniTidalTests where
+module MiniTidalTests where
 
 import Test.Hspec
 import Estuary.Languages.MiniTidal

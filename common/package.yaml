@@ -1,0 +1,20 @@
+name: estuary-common
+version: '0.0.0.1'
+synopsis: Projectional editor for TidalCycles
+description: Please see README.md
+category: Web
+author: David Ogborn, Jamie Beverley and others
+maintainer: ogbornd@mcmaster.ca
+copyright: 2015-17 David Ogborn and others
+license: GPL-3
+homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
+
+dependencies:
+  - base
+  - json
+  - time
+  - containers
+
+library:
+  source-dirs: 
+    - ./src

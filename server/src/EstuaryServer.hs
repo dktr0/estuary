@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main where
+module EstuaryServer where
 
 import Data.Text (Text)
 import Data.List ((\\))
@@ -13,7 +13,6 @@ import Control.Exception
 
 import qualified Database.SQLite.Simple as SQLite
 import Text.JSON
-import System.Environment (getArgs)
 import qualified Network.WebSockets as WS
 import qualified Network.Wai as WS
 import qualified Network.Wai.Handler.WebSockets as WS
@@ -39,19 +38,13 @@ import Estuary.Types.Client
 import Estuary.Types.Server
 import Estuary.Types.Database
 
-main :: IO ()
-main = do
-  db <- openDatabase
-  mainWithDatabase db `catch` (closeDatabaseOnException db)
-
-mainWithDatabase :: SQLite.Connection -> IO ()
-mainWithDatabase db = do
-  (pwd,port) <- getArgs >>= return . processArgs
+runServerWithDatabase :: String -> Int -> SQLite.Connection -> IO ()
+runServerWithDatabase pswd port db = do
   putStrLn $ "Estuary collaborative editing server, listening on port " ++ (show port)
-  putStrLn $ "password: " ++ pwd
+  putStrLn $ "password: " ++ pswd
   es <- readEnsembles db
   postLog db $ (show (size es)) ++ " ensembles restored from database"
-  s <- newMVar $ newServer { password = pwd, ensembles = es }
+  s <- newMVar $ newServer { password = pswd, ensembles = es }
   let settings = (defaultWebAppSettings "Estuary.jsexe") {
     ssIndices = [unsafeToPiece "index.html"],
     ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
@@ -62,18 +55,6 @@ gzipMiddleware :: WS.Middleware
 gzipMiddleware = gzip $ def {
   gzipFiles = GzipPreCompressed GzipIgnore
 }
-
-closeDatabaseOnException :: SQLite.Connection -> SomeException -> IO ()
-closeDatabaseOnException db e = do
-  postLog db $ "quitting due to unhandled exception (" ++ (show e) ++ ")..."
-  closeDatabase db
-  putStrLn "database connection closed."
-
-processArgs :: [String] -> (String,Int) -- (password,port)
-processArgs xs = case length xs of
-  0 -> ("",8002)
-  1 -> (xs!!0,8002)
-  _ -> (xs!!0,read (xs!!1))
 
 postLog :: SQLite.Connection -> String -> IO ()
 postLog db msg = do
@@ -144,7 +125,6 @@ onlyIfAuthenticatedInEnsemble s h f = do
   let c = clients s' Map.! h
   if (authenticatedInEnsemble c) then f else putStrLn "ignoring request from client not authenticated in ensemble"
 
-
 processResult :: SQLite.Connection -> MVar Server -> ClientHandle -> Result Request -> IO ()
 processResult db _ c (Error x) = postLog db $ "Error (processResult): " ++ x
 processResult db s c (Ok x) = processRequest db s c x
@@ -197,7 +177,6 @@ processRequest db s c (EnsembleRequest x) = processInEnsemble db s c x
 processRequest db s c GetServerClientCount = do
   postLog db "GetServerClientCount"
   getServerClientCount s >>= respond s c . ServerClientCount
-
 
 processInEnsemble :: SQLite.Connection -> MVar Server -> ClientHandle -> Sited String EnsembleRequest -> IO ()
 processInEnsemble db s c (Sited e x) = processEnsembleRequest db s c e x

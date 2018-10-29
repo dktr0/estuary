@@ -3,7 +3,8 @@ compiler: ghc-8.0.2
 compiler-check: match-exact
 
 packages:
-- 'EstuaryServer'
+- '.'
+- '../common'
 
 extra-deps:
 - sqlite-simple-0.4.14.0

@@ -12,7 +12,7 @@ import qualified Estuary.WebDirt.SampleEngine as S
 import Estuary.WebDirt.Foreign (createObjFromMap)
 import Estuary.Types.Hint
 
-data WebDirt = WebDirt T.JSVal
+newtype WebDirt = WebDirt T.JSVal
 
 instance S.SampleEngine WebDirt where
   getClockDiff wd = getClockDiff wd
