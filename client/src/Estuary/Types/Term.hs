@@ -75,5 +75,6 @@ translate Theme Español = "Tema"
 translate Load English = "load"
 
 translate Peak English = "peak"
+translate Peak Español = "tope"
 
 translate x _ = "?" ++ show x
