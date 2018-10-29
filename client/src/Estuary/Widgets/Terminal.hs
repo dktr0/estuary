@@ -24,10 +24,12 @@ import Estuary.Types.Context
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
+import Estuary.Types.Hint
+
 
 terminalWidget :: MonadWidget t m => Dynamic t Context ->
-  Event t Request -> Event t [Response] -> m (Event t Terminal.Command)
-terminalWidget ctx deltasUp deltasDown = divClass "terminal" $ mdo
+  Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
+terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
   currentSpace <- mostRecentEnsemble deltasUp
   (sendButton,inputWidget) <- divClass "terminalHeader" $ do
     sendButton' <- divClass "webSocketButtons" $ dynButton =<< translateDyn Term.Send ctx
@@ -42,16 +44,22 @@ terminalWidget ctx deltasUp deltasDown = divClass "terminal" $ mdo
   let commands = fmapMaybe (either (const Nothing) Just) parsedInput
   let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " ++) . show) (const Nothing)) parsedInput
 
+  let hintMsgs = fmap (\x -> [x]) $ fmapMaybe hintsToMessages hints
+
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
   let spaceAndDeltasDown = attachDyn currentSpace deltasDown'
   let justInSpace = fmap (\(x,y) -> justSited x $ y) spaceAndDeltasDown
   let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) justInSpace
-  let messages = mergeWith (++) [responseMsgs,errorMsgs]
+  let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
   simpleList mostRecent $ \v -> divClass "chatMessage" $ dynText v
 
   return commands
+
+hintsToMessages :: Hint -> Maybe String
+hintsToMessages (LogMessage x) = Just x
+hintsToMessages _ = Nothing
 
 mostRecentEnsemble :: (MonadWidget t m) => Event t Request -> m (Dynamic t String)
 mostRecentEnsemble requests = do

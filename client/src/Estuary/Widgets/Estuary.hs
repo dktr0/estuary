@@ -37,7 +37,7 @@ estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
   renderInfo <- pollRenderInfoChanges riM
   headerChanges <- header ctx renderInfo
   (values,deltasUp,hints,tempoChanges) <- divClass "page" $ navigation ctx renderInfo commands deltasDown'
-  commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
+  commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown' hints
   (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
   let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown

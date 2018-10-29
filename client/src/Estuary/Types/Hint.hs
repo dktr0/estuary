@@ -4,8 +4,9 @@ import Estuary.Types.Tempo
 
 data Hint =
   SampleHint String |
-  TempoHint Tempo
-  deriving (Eq)
+  LogMessage String |
+  TempoHint Tempo -- ??? what is this for ???
+  deriving (Eq,Show)
 
 maybeTempoHint :: Hint -> Maybe Tempo
 maybeTempoHint (TempoHint x) = Just x

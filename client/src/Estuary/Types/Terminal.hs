@@ -16,6 +16,7 @@ data Command =
   GetView String | -- request a specific named view from the ensemble server
   ListViews | -- request the list of all named views from the ensemble server
   DeleteView String | -- delete a named view from the ensemble server
+  DumpView | -- dump whatever is currently displayed
   Chat String  -- send a chat message
   deriving (Show,Eq)
 
@@ -36,7 +37,8 @@ terminalCommand = char '!' >> choice [
   try publishDefaultViewP,
   try getViewP,
   try listViewsP,
-  try deleteViewP]
+  try deleteViewP,
+  try dumpViewP]
 
 setViewP = string "setview" >> spaces >> viewsParser >>= return . SetView
 standardViewP = string "standardview" >> return StandardView
@@ -49,3 +51,4 @@ getViewP = string "getview" >> spaces >> many1 alphaNum >>= return . GetView
 listViewsP = string "listviews" >> return ListViews
 deleteViewP = string "deleteview" >> spaces >> many1 alphaNum >>= return . DeleteView
 chatP = many1 anyChar >>= return . Chat
+dumpViewP = string "dumpview" >> return DumpView

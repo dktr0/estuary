@@ -31,10 +31,13 @@ ensembleView :: MonadWidget t m
 ensembleView ctx renderInfo ensemble commands deltasDown = mdo
 
   let initialView = if ensemble == "" then standardView else emptyView
+  -- *** is it dangerous to have initialView exist separate from initialState (below)?
 
   -- management of EnsembleState
   now <- liftIO getCurrentTime
-  let initialState = newEnsembleState ensemble now
+  let initialState = (newEnsembleState ensemble now) {
+    defaultView = initialView
+    }
   let commandChanges = fmap commandsToStateChanges commands
   let ensembleResponses = fmap (justSited ensemble . justEnsembleResponses) deltasDown
   let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
@@ -76,7 +79,8 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   defMap <- liftM joinDyn $ mapDyn (\(y,_,_) -> y) ui
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,y,_) -> y) ui
   hintsUi <- liftM switchPromptlyDyn $ mapDyn (\(_,_,y) -> y) ui
-  let hints = leftmost [tempoHints,hintsUi] -- *** note: might this occasionally lose a hint?
+  let commandHints = attachDynWithMaybe commandToHint ensembleState commands
+  let hints = leftmost [commandHints,tempoHints,hintsUi] -- *** note: might this occasionally lose a hint?
 
   -- form requests to send to server (but only if we are in a collaborative ensemble, ie. ensemble is not "")
   requests <- if ensemble == "" then return never else do

@@ -4,6 +4,7 @@ import Data.Map
 import qualified Data.IntMap.Strict as IntMap
 import Data.Time
 import Data.Time.Clock.POSIX
+import Data.Maybe
 
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
@@ -13,6 +14,8 @@ import Estuary.Types.Sited
 import Estuary.Types.EditOrEval
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Tempo
+import Estuary.Types.Hint
+import Estuary.Types.ViewsParser
 
 data EnsembleState = EnsembleState {
   ensembleName :: String,
@@ -24,6 +27,16 @@ data EnsembleState = EnsembleState {
   activeView :: Maybe String, -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews
   tempo :: Tempo
 }
+
+commandToHint :: EnsembleState -> Terminal.Command -> Maybe Hint
+commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (currentView es)
+commandToHint _ _ = Nothing
+
+currentView :: EnsembleState -> View
+currentView es | isNothing (activeView es) = defaultView es
+currentView es | activeView es == Just "" = customView es
+currentView es | otherwise = findWithDefault (Views []) x (publishedViews es)
+  where x = fromJust $ activeView es
 
 newEnsembleState :: String -> UTCTime -> EnsembleState
 newEnsembleState x now = EnsembleState {
