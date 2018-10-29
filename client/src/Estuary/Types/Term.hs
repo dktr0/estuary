@@ -73,6 +73,7 @@ translate Theme English = "Theme"
 translate Theme Español = "Tema"
 
 translate Load English = "load"
+translate Load Español = "carga"
 
 translate Peak English = "peak"
 translate Peak Español = "tope"
