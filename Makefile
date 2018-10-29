@@ -50,7 +50,8 @@ prodInstallClient: # make prodBuildClient first!
 	rm -rf Estuary.jsexe/index.html.template
 
 installServer: buildServer
-	cp $(SERVER_INSTALL_DIR) ./EstuaryServer
+	mkdir -p EstuaryServer
+	cp $(SERVER_INSTALL_DIR) ./EstuaryServer/EstuaryServer
 
 prodCleanBuildInstall: prodClean clean prodBuildClient buildServer prodInstallClient installServer
 
