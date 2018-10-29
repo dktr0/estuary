@@ -2,7 +2,6 @@ module Estuary.Types.EnsembleState where
 
 import Data.Map
 import qualified Data.IntMap.Strict as IntMap
-import qualified Sound.Tidal.Tempo as Tidal
 import Data.Time
 import Data.Time.Clock.POSIX
 
@@ -13,6 +12,7 @@ import Estuary.Types.View
 import Estuary.Types.Sited
 import Estuary.Types.EditOrEval
 import qualified Estuary.Types.Terminal as Terminal
+import Estuary.Types.Tempo
 
 data EnsembleState = EnsembleState {
   ensembleName :: String,
@@ -22,7 +22,7 @@ data EnsembleState = EnsembleState {
   defaultView :: View,
   customView :: View,
   activeView :: Maybe String, -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews
-  tempo :: Tidal.Tempo
+  tempo :: Tempo
 }
 
 newEnsembleState :: String -> UTCTime -> EnsembleState
@@ -34,8 +34,11 @@ newEnsembleState x now = EnsembleState {
   defaultView = emptyView,
   customView = emptyView,
   activeView = Nothing,
-  tempo = Tidal.Tempo { Tidal.at=now, Tidal.beat=0.0, Tidal.cps=0.5, Tidal.paused=False, Tidal.clockLatency=0.0 }
+  tempo = Tempo { at=now, beat=0.0, cps=0.5 }
 }
+
+setEnsembleTempo :: Tempo -> EnsembleState -> EnsembleState
+setEnsembleTempo t e = e { tempo = t }
 
 getActiveView :: EnsembleState -> View
 getActiveView e = f (activeView e)
@@ -55,21 +58,20 @@ commandsToStateChanges Terminal.PublishDefaultView es = es { defaultView = getAc
 commandsToStateChanges (Terminal.DeleteView x) es = es { publishedViews = delete x (publishedViews es) }
 commandsToStateChanges _ es = es
 
-requestsToStateChanges :: EnsembleRequest Definition -> EnsembleState -> EnsembleState
+requestsToStateChanges :: EnsembleRequest -> EnsembleState -> EnsembleState
 requestsToStateChanges (ZoneRequest (Sited n (Edit x))) es = es { zones = IntMap.insert n x (zones es) }
 requestsToStateChanges _ es = es
 
-responsesToStateChanges :: EnsembleResponse Definition -> EnsembleState -> EnsembleState
+responsesToStateChanges :: EnsembleResponse -> EnsembleState -> EnsembleState
 responsesToStateChanges (ZoneResponse (Sited n (Edit v))) es = es { zones = newZones }
   where newZones = IntMap.insert n v (zones es)
 responsesToStateChanges (View (Sited s v)) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)
 responsesToStateChanges (DefaultView v) es = es { defaultView = v }
-responsesToStateChanges (Tempo c a b) es = es { tempo = (tempo es) { Tidal.cps = c } }
-  where a' = (posixSecondsToUTCTime . fromRational) a
+responsesToStateChanges (NewTempo t) es = es { tempo = t }
 responsesToStateChanges _ es = es
 
-commandsToRequests :: EnsembleState -> Terminal.Command -> Maybe (EnsembleRequest Definition)
+commandsToRequests :: EnsembleState -> Terminal.Command -> Maybe EnsembleRequest
 commandsToRequests es (Terminal.PublishView x) = Just (PublishView (Sited x (getActiveView es)))
 commandsToRequests es (Terminal.PublishDefaultView) = Just (PublishDefaultView (getActiveView es))
 commandsToRequests es (Terminal.GetView x) = Just (GetView x)
@@ -78,9 +80,9 @@ commandsToRequests es (Terminal.DeleteView x) = Just (DeleteView x)
 commandsToRequests es (Terminal.Chat x) = Just (SendChat (userHandle es) x)
 commandsToRequests _ _ = Nothing
 
-messageForEnsembleResponse :: EnsembleResponse Definition -> Maybe String
+messageForEnsembleResponse :: EnsembleResponse -> Maybe String
 messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
 messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
 messageForEnsembleResponse (View (Sited x _)) = Just $ "received view " ++ x
-messageForEnsembleResponse (Tempo c a b) = Just $ "received new tempo " ++ (show c) ++ " " ++ (show a) ++ " " ++ (show b)
+messageForEnsembleResponse (NewTempo t) = Just $ "received new tempo " ++ (show (cps t))
 messageForEnsembleResponse _ = Nothing

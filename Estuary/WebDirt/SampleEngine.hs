@@ -11,10 +11,10 @@ class SampleEngine e where
   getPeakLevels :: e -> IO [Double]
   getRmsLevels :: e -> IO [Double]
 
-sendSounds :: SampleEngine e => e -> Tidal.Tempo -> [(UTCTime,Tidal.ParamMap)] -> IO ()
-sendSounds e t sounds = do
+sendSounds :: SampleEngine e => e -> [(UTCTime,Tidal.ParamMap)] -> IO ()
+sendSounds e sounds = do
   clockDiff <- getClockDiff e
-  let latency = Tidal.clockLatency t
+  let latency = 0.2 -- hardwired latency for now???
   let sounds' = fmap (\(x,y) -> (realToFrac (utcTimeToPOSIXSeconds x) - clockDiff + latency,y)) sounds
   -- putStrLn $ show sounds'
   catch (mapM_ (playSample e) sounds')

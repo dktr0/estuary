@@ -3,21 +3,20 @@ module Estuary.Types.Context where
 import Data.Time
 import Data.IntMap.Strict
 
-import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
+import Estuary.Types.Tempo
 
 data Context = Context {
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
   language :: Language,
   theme :: String,
-  startTime :: UTCTime,
-  tempo :: Tidal.Tempo,
+  tempo :: Tempo,
   definitions :: DefinitionMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
@@ -33,8 +32,7 @@ initialContext now wd sd = Context {
   superDirt = sd,
   language = English,
   theme = "classic.css",
-  startTime = now,
-  tempo = Tidal.Tempo now 0.0 0.5 False 0.2,
+  tempo = Tempo { cps = 0.5, at = now, beat = 0.0 },
   definitions = empty,
   webDirtOn = True,
   superDirtOn = False,

@@ -26,7 +26,7 @@ import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
 
 terminalWidget :: MonadWidget t m => Dynamic t Context ->
-  Event t ServerRequest -> Event t [ServerResponse] -> m (Event t Terminal.Command)
+  Event t Request -> Event t [Response] -> m (Event t Terminal.Command)
 terminalWidget ctx deltasUp deltasDown = divClass "terminal" $ mdo
   currentSpace <- mostRecentEnsemble deltasUp
   (sendButton,inputWidget) <- divClass "terminalHeader" $ do
@@ -53,7 +53,7 @@ terminalWidget ctx deltasUp deltasDown = divClass "terminal" $ mdo
 
   return commands
 
-mostRecentEnsemble :: (MonadWidget t m, Eq a) => Event t (Request a) -> m (Dynamic t String)
+mostRecentEnsemble :: (MonadWidget t m) => Event t Request -> m (Dynamic t String)
 mostRecentEnsemble requests = do
   let ensembleJoins = fmapMaybe f requests
   let ensembleLeaves = fmap (const "") $ ffilter (==LeaveEnsemble) requests
