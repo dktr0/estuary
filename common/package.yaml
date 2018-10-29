@@ -12,9 +12,7 @@ homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
 dependencies:
   - base
   - json
-  - parsec
   - time
-  - tidal
   - containers
 
 library:

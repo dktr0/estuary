@@ -14,8 +14,6 @@ dependencies:
 - estuary-common
 - containers
 - text
-- tidal
-- hosc
 - json
 - websockets
 - wai
@@ -23,8 +21,6 @@ dependencies:
 - wai-websockets
 - wai-app-static
 - wai-extra
-- parsec
-- parsec-numbers
 - time
 - sqlite-simple
 

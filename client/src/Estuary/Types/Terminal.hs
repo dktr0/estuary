@@ -3,6 +3,7 @@ module Estuary.Types.Terminal (Command(..),parseCommand) where
 import Text.ParserCombinators.Parsec
 
 import Estuary.Types.View
+import Estuary.Types.ViewsParser
 
 data Command =
   SetView View | -- change the current active view to a specific literal view

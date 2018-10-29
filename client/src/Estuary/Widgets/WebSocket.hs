@@ -39,9 +39,10 @@ estuaryWebSocket addr pwd toSend = mdo
     isOk _ = Just (ProtocolError "unknown protocol error")
 -}
 
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> UTCTime -> Event t ServerRequest ->
-  m (Event t [ServerResponse],Dynamic t String)
-alternateWebSocket obj now toSend = do
+alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Event t Request ->
+  m (Event t [Response],Dynamic t String)
+alternateWebSocket obj toSend = do
+  now <- liftIO $ getCurrentTime
   performEvent_ $ fmap (liftIO . (send obj) . encode) toSend
   ticks <- tickLossy (0.1::NominalDiffTime) now
   -- responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks

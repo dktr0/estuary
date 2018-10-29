@@ -6,15 +6,13 @@ import Control.Concurrent.MVar
 import Data.List ((\\))
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock
-import Sound.Tidal.Tempo
 
+import Estuary.Types.Tempo
 import Estuary.Types.Client
-
 import Estuary.Types.Definition
 import Estuary.Types.Sited
 import Estuary.Types.Response
 import Estuary.Types.View
-
 import qualified Estuary.Types.Ensemble as E
 
 data Server = Server {
@@ -83,7 +81,7 @@ setDefaultView w v s = s { ensembles = Map.adjust (E.editDefaultView v) w (ensem
 deleteView :: String -> String -> Server -> Server
 deleteView e v s = s { ensembles = Map.adjust (E.deleteView v) e (ensembles s) }
 
-getEnsembleList :: MVar Server -> IO ServerResponse
+getEnsembleList :: MVar Server -> IO Response
 getEnsembleList s = readMVar s >>= return . EnsembleList . Map.keys . ensembles
 
 getViews :: MVar Server -> String -> IO [String]
@@ -102,8 +100,8 @@ getServerClientCount s = readMVar s >>= return . Map.size . clients
 getEnsemblePassword :: MVar Server -> String -> IO String
 getEnsemblePassword s e = readMVar s >>= return . fromMaybe [] . fmap (E.password) . Map.lookup e . ensembles
 
-tempoChangeInEnsemble :: String -> UTCTime -> Double -> Server -> Server
-tempoChangeInEnsemble e time newCps s = s { ensembles = Map.adjust (E.tempoChange time newCps) e (ensembles s) }
+tempoChangeInEnsemble :: String -> Tempo -> Server -> Server
+tempoChangeInEnsemble e t s = s { ensembles = Map.adjust (E.tempoChange t) e (ensembles s) }
 
 getTempoInEnsemble :: MVar Server -> String -> IO (Maybe Tempo)
 getTempoInEnsemble s e = readMVar s >>= return . fmap E.tempo . Map.lookup e . ensembles
