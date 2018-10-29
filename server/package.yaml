@@ -29,7 +29,7 @@ library:
     - ./src
 
 executables:
-  Estuary:
+  EstuaryServer:
     main: Main.hs
     source-dirs:
       - ./app
