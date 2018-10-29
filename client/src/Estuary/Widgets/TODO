@@ -1,0 +1,28 @@
+cleanup 
+popupmenus don't always close
+l3/l4 switch what's displayed
+
+randomness crashing
+groups and layers into new design
+pattern transformer widgets changing
+	more vertically?
+	vertical whitespace	that can be turned into transformers
+Extend 
+
+Webdirt glitch with accelerate of '2' - '1'
+
+Problem was: 
+	Initializing new widgets with 'liveness' consistent with what everything else was. 
+	Fixes I thought of:
+		Every time a new object is added to the container, send another event to all children to change their liveness
+		to what it was
+
+		What I went with - have dynamic value constantly reporting the liveness - all new objects just use that value
+
+
+
+func::(a -> Event t b -> Dynamic t (a, Event t b) -> (Dynamic Context -> a -> Event t b -> Dynamic t (a,Event t b))
+func b= (\x-> b) 
+
+dependency chart
+svg file - inkscape

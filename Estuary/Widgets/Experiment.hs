@@ -1,4 +1,4 @@
-module Experiment where
+module Estuary.Widgets.Experiment where
 
 -- data TransformedPattern = TransformedPattern PatternTransformer TransformedPattern | UntransformedPattern SpecificPattern | EmptyTransformedPattern deriving (Eq)
 

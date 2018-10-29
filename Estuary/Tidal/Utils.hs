@@ -1,4 +1,4 @@
-module Tidal.Utils where
+module Estuary.Tidal.Utils where
 
 import Sound.Tidal.Context
 import Sound.Tidal.Utils (fst',snd',thd')

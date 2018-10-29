@@ -16,3 +16,8 @@ static/
 *~
 EstuaryServer/EstuaryServer
 EstuaryServer/EstuaryServer.exe
+
+**/.stack-work/**/*
+**/.stack-work-*/**/*
+**/node_modules/**/*
+**/*.cabal
