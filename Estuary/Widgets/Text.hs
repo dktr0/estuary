@@ -4,24 +4,30 @@ module Estuary.Widgets.Text where
 
 import Reflex
 import Reflex.Dom
-import Estuary.Tidal.Types
-import Estuary.WebDirt.Foreign
-import Estuary.Reflex.Container
-import Estuary.Widgets.GeneralPattern
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Generic
 import Control.Monad
 import GHCJS.DOM.EventM
 import Data.Maybe
 import Data.Map (fromList)
 import Data.Monoid
 
-
+import Estuary.Tidal.Types
+import Estuary.WebDirt.Foreign
+import Estuary.Reflex.Container
+import Estuary.Widgets.GeneralPattern
+import Estuary.Reflex.Utility
+import Estuary.Widgets.Generic
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Definition
 import Estuary.Types.EditOrEval
 import Estuary.Types.Hint
-import Estuary.Languages.TidalParser
+import Estuary.Types.TidalParser
+import Estuary.Languages.TidalParsers
+import Estuary.Types.Live
+import Estuary.Types.TextNotation
+import Estuary.Types.LanguageHelp
+import Estuary.Types.MiniTidalReference
+
+import Estuary.Types.Context
 
 textWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
 textWidgetForPatternChain i delta = do
@@ -39,44 +45,49 @@ textAreaWidgetForPatternChain rows i delta = do
   let value = _textArea_value x
   return (value,edits)
 
+
   -- where Int is a zones, TransformedPattern i. THis widget needs a Dynamic ctx
-tidalTextWidget :: forall t m. MonadWidget t m =>
-  Int -> TransformedPattern -> Event t [TransformedPattern] ->
-  m (Dynamic t TransformedPattern,Event t TransformedPattern,Event t Hint)
-tidalTextWidget rows i delta = divClass "textPatternChain" $ do -- *** TODO: css class name should be tidalTextWidget (in CSS also)
-  let i' = transformedPatternToTidalTextPatternContents i
-  let delta' = fmap transformedPatternToTidalTextPatternContents $ fmapMaybe lastOrNothing delta
-  let deltaFuture = fmap forEditing delta'
+tidalTextWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
+  Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
+  m (Dynamic t (Live (TextNotation,String)),Event t (Live (TextNotation,String)),Event t Hint)
+tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class to tidalTextWidget
+  let deltaFuture = fmap forEditing delta
   let parserFuture = fmap fst deltaFuture
   let textFuture = fmap snd deltaFuture
   (edit,eval) <- divClass "labelAndTextPattern" $ do
-    let initialParser = fst $ forEditing i'
-    let parserMap = constDyn $ fromList $ fmap (\x -> (x,show x)) tidalParsers
+    let initialParser = fst $ forEditing i
+    let parserMap = constDyn $ fromList $ fmap (\x -> (TidalTextNotation x,show x)) tidalParsers
     d <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
-    let parserValue = _dropdown_value d --Dynamic t TidalParser
+    let parserValue = _dropdown_value d -- Dynamic t TidalParser
     let parserEvent = _dropdown_change d
-    b <- divClass "textInputLabel" $ button "eval"
-    let initialText = snd $ forEditing i'
-    (textValue,textEvent) <- textAreaWidgetForPatternChain rows initialText textFuture
+    b <- divClass "textInputLabel" $ do
+      x <- button "eval"
+      dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
+      return x
+    let initialText = snd $ forEditing i
+    infoButton <- divClass "referenceButton" $ button "?"
+    textVisible <- toggle True infoButton--toggle True never
+    helpVisible <- toggle False infoButton
+    (textValue,textEvent) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
+    let languageToDisplayHelp = (TidalTextNotation MiniTidal)
+    -- let languageToDisplayHelp = ( _dropdown_value d)
+    hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagDyn v' b
     return (editEvent,evalEvent)
-  let deltaPast = fmap forRendering delta'
-  pastValue <- holdDyn (forRendering i') $ leftmost [deltaPast,eval]
-  futureValue <- holdDyn (forEditing i') $ leftmost [deltaFuture,edit]
-  value <- combineDyn (\p f -> TidalTextPattern (g p f)) pastValue futureValue
+  let deltaPast = fmap forRendering delta
+  pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
+  futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]
+  value <- combineDyn f pastValue futureValue
   let deltaUpEdit = tagDyn value edit
   let deltaUpEval = tagDyn value eval
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
   return (value,deltaUp,never)
   where
-    g p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
+    f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
           | otherwise = Edited p x
 
-transformedPatternToTidalTextPatternContents :: TransformedPattern -> Live (TidalParser,String)
-transformedPatternToTidalTextPatternContents (TidalTextPattern x) = x
-transformedPatternToTidalTextPatternContents _ = Live (MiniTidal,"") L3
 
 evaluableTextWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
 evaluableTextWidget i delta = divClass "textWidget" $ do

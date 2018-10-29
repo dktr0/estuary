@@ -49,10 +49,10 @@ sonidos = choice [
 trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
 trans = choice [
               --coloca aqui los nombres de tus transformaciones
-         try (string "tu manyas mi jato" >> spaces >> fractional3 False  >>= return . Tidal.slow),
-         try (string "bien helenas y vamos a jatear" >> spaces >> fractional3 False  >>= return . Tidal.fast),
-         try (string "palta con el tombo">> spaces >> int >>= return . Tidal.iter),
-         try (string "mi cerro causa" >> spaces >> int >>= return . Tidal.chop),
+         try (string "tu manyas" >> spaces >> fractional3 False  >>= return . Tidal.slow),
+         try (string "bien helenas" >> spaces >> fractional3 False  >>= return . Tidal.fast),
+         try (string "palta con el">> spaces >> int >>= return . Tidal.iter),
+         try (string "mi cerro" >> spaces >> int >>= return . Tidal.chop),
          try (descartarTexto >> return id)
                 ]
 
@@ -69,5 +69,5 @@ exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-laCalle :: String -> Tidal.ParamPattern
-laCalle s = either (const Tidal.silence) id $ parse exprStack "unNombreparaTuLenguage" s
+laCalle :: String -> Either ParseError Tidal.ParamPattern
+laCalle s = parse exprStack "LaCalle" s

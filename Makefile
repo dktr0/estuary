@@ -45,10 +45,12 @@ prodInstallClient: # make prodBuildClient first!
 installServer: buildServer
 	cp $$(stack path --local-install-root --stack-yaml=server.yaml)/bin/EstuaryServer ./EstuaryServer
 
-test: installClient installServer
+test:
 	EstuaryServer/EstuaryServer test
 
-prodReleaseClient: # make prodInstallClient first!
+prodCleanBuildInstall: prodClean clean prodBuildClient buildServer prodInstallClient installServer
+
+releaseClient: # make installClient or prodInstallClient first!
 	rm -rf temp
 	mkdir temp
 	cp -Rf Estuary.jsexe temp
@@ -59,7 +61,7 @@ prodReleaseClient: # make prodInstallClient first!
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181005/estuary-client-20181005.zip
+	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181022/estuary-client-20181022.zip
 	unzip temp.zip
 	rm -rf temp.zip
 	cp -Rf static/Dirt Estuary.jsexe
@@ -70,6 +72,9 @@ clean:
 	rm -rf $$(stack path --local-install-root --stack-yaml=server.yaml)/bin
 	stack clean --stack-yaml=client.yaml
 	stack clean --stack-yaml=server.yaml
+
+prodClean: clean
+	stack --work-dir .stack-work-production/ clean --stack-yaml=client.yaml
 
 style:
 	cp static/classic.css Estuary.jsexe

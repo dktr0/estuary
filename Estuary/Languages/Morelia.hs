@@ -6,8 +6,8 @@ import Data.List (intercalate)
 import Data.Bool (bool)
 import qualified Sound.Tidal.Context as Tidal
 
-morelia :: String -> Tidal.ParamPattern
-morelia x = either (const Tidal.silence) id $ parse moreliaParser "(unknown)" $ filter (/='?') x
+morelia :: String -> Either ParseError Tidal.ParamPattern
+morelia x = parse moreliaParser "morelia" $ filter (/='?') x
 
 moreliaParser :: GenParser Char a Tidal.ParamPattern
 moreliaParser = do

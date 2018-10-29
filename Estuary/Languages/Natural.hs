@@ -61,5 +61,5 @@ exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-natural :: String -> Tidal.ParamPattern
-natural s = either (const Tidal.silence) id $ parse exprStack "unNombre" s
+natural :: String -> Either ParseError Tidal.ParamPattern
+natural s = parse exprStack "natural" s

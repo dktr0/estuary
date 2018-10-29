@@ -3,7 +3,12 @@ body {
 	color: hsl(120,100%,80%);
 	height: 100%;
 	margin: 0;
-	font-family: sans;
+	font-family: 'Inconsolata';
+}
+
+@font-face {
+   font-family: estuaryFont;
+   src: url(Estuary.otf);
 }
 
 input {
@@ -16,7 +21,23 @@ input {
 textarea {
 	background-color: black;
 	color: hsl(120,100%,80%);
+	width: 100%;
+	height: 100%;
 }
+
+.visibleArea{
+	width: 100%;
+	height:100%;
+
+}
+
+.languageHelp {
+	font-size: 70%;
+  overflow: scroll;
+	height:90px;
+
+}
+
 
 button {
 	background-color: hsl(0,0%,20%);
@@ -30,12 +51,15 @@ button {
 
 }
 
-.header { /* the header area containing logo, webDirt, pageMenu and hintArea */
+.header  { /* the header area containing logo, webDirt, pageMenu and hintArea */
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+  font-family: estuaryFont;
+
 }
+
 
 select {
 	background-color: black;
@@ -77,7 +101,8 @@ select {
 
 .webDirtMute {
 	float: right;
-	font-size: 60%;
+	font-size: 50%;
+
 }
 
 
@@ -240,6 +265,15 @@ select {
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
+
+}
+
+.referenceButton {
+  font-size: 100%;
+	width: auto;
+	height: 90%;
+	position: relative;
+
 }
 
 .textInputToEndOfLine {
@@ -251,6 +285,7 @@ select {
 	border: none;
 	padding: 0px;
 	margin: 0px;
+	height: 100%;
 }
 
 
@@ -472,14 +507,14 @@ td {
 	text-align:center
 }
 
-/* The '▲' arrow td */
+/* The 'â–²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The '▼' arrow td */
+/* The 'â–¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
@@ -598,6 +633,8 @@ td {
 .terminalHeader {
 	display: flex;
 	flex-direction: row;
+	font-family: estuaryFont;
+	font-size: 75%;
 }
 
 .terminalInput {
@@ -627,4 +664,82 @@ td {
 .ensembleTempo {
   margin-right: 1em;
 	border: none;
+}
+
+/* help files  */
+
+.helpWrapper {
+	display:flex;
+	font-size: 80%;
+	margin-left: 1%;
+}
+
+.RefExampleButton button {
+	background-color: transparent;
+	width: 100%;
+	font-size: 115%;
+}
+
+.RefExampleButton button:hover {
+    background-color: hsl(120,100%,80%); /* Green */
+    color: black;
+
+}
+
+.RefExampleButton button:active {
+    background-color: hsl(120,100%,80%); /* Green */
+    color: black;
+}
+
+
+/* about */
+
+.exampleText {
+}
+
+.referenceText {
+
+}
+
+.about {
+/* 	margin-left: 1px; */
+	background-color: hsl(120,100%,80%);
+			font-weight: bold;
+
+	color: black;
+	text-align: center;
+  border-radius: 3px;
+	margin-bottom: 4px;
+}
+
+.aboutWrapper {
+/* 	margin-left: 1px; */
+	background-color: hsl(120,100%,80%);
+	color: black;
+	text-align: center;
+  border-radius: 3px;
+	margin-bottom: 4px;
+}
+
+.aboutTitle {
+		font-weight: bold;
+		font-size: 100%;
+/* 	position: relative;
+	right: 5%; */
+
+}
+
+.AboutButton button{
+	 background-color: transparent;
+    color: black;
+			font-weight: bold;
+		font-size: 115%;
+/* 	position: relative;
+	left: 6.6%;
+top:10%; */
+}
+
+.aboutText {
+		font-size: 80%;
+
 }

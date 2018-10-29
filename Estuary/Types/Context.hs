@@ -1,16 +1,24 @@
 module Estuary.Types.Context where
 
 import Data.Time
+import Data.IntMap.Strict
+
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
 import Estuary.Types.Language
+import Estuary.Types.Definition
+import Estuary.WebDirt.WebDirt
+import Estuary.WebDirt.SuperDirt
+import Estuary.RenderState
 
 data Context = Context {
+  webDirt :: WebDirt,
+  superDirt :: SuperDirt,
   language :: Language,
   theme :: String,
   startTime :: UTCTime,
   tempo :: Tidal.Tempo,
-  pattern :: Tidal.ParamPattern,
+  definitions :: DefinitionMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   peakLevels :: [Double],
@@ -19,13 +27,15 @@ data Context = Context {
   clientCount :: Int
   }
 
-emptyContext :: UTCTime -> Context
-emptyContext now = Context {
+initialContext :: UTCTime -> WebDirt -> SuperDirt -> Context
+initialContext now wd sd = Context {
+  webDirt = wd,
+  superDirt = sd,
   language = English,
   theme = "classic.css",
   startTime = now,
   tempo = Tidal.Tempo now 0.0 0.5 False 0.2,
-  pattern = Tidal.silence,
+  definitions = empty,
   webDirtOn = True,
   superDirtOn = False,
   peakLevels = [],
@@ -51,5 +61,5 @@ setRmsLevels xs c = c { rmsLevels = xs }
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
-setPattern :: Tidal.ParamPattern -> ContextChange
-setPattern x c = c { pattern = x }
+setDefinitions :: DefinitionMap -> ContextChange
+setDefinitions x c = c { definitions = x }

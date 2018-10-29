@@ -1,11 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+module Estuary.Languages.TidalParsers where
 
-module Estuary.Languages.TidalParser where
-
-import Text.JSON
-import Text.JSON.Generic
+import Text.ParserCombinators.Parsec
 import qualified Sound.Tidal.Context as Tidal
 
+import Estuary.Types.TidalParser
 import Estuary.Languages.MiniTidal
 import Estuary.Languages.CQenze
 import Estuary.Languages.Morelia
@@ -25,14 +23,6 @@ import Estuary.Languages.Vocesotrevez
 import Estuary.Languages.Imagina
 import Estuary.Languages.Alobestia
 
-data TidalParser = MiniTidal | CQenze | Morelia | Saborts |
-  Saludos | ColombiaEsPasion | Si | Sentidos | Natural | Medellin | LaCalle |
-  Maria | Crudo | Puntoyya | Sucixxx | Vocesotrevez | Imagina | Alobestia
-  deriving (Show,Read,Eq,Ord,Data,Typeable)
-
-instance JSON TidalParser where
-  showJSON = toJSON
-  readJSON = fromJSON
 
 tidalParsers :: [TidalParser]
 tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
@@ -40,7 +30,7 @@ tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
   Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia
   ]
 
-tidalParser :: TidalParser -> String -> Tidal.ParamPattern
+tidalParser :: TidalParser -> String -> Either ParseError Tidal.ParamPattern
 tidalParser MiniTidal = miniTidalParser
 tidalParser CQenze = cqenzeParamPattern
 tidalParser Morelia = morelia

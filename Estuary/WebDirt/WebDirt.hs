@@ -1,6 +1,6 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
-module Estuary.WebDirt.WebDirt (WebDirt, webDirt, performHint) where
+module Estuary.WebDirt.WebDirt (WebDirt, newWebDirt, performHint) where
 
 import qualified GHCJS.Types as T
 import Control.Monad.IO.Class (liftIO)
@@ -20,8 +20,8 @@ instance S.SampleEngine WebDirt where
   getPeakLevels wd = peakLevels wd
   getRmsLevels wd = rmsLevels wd
 
-webDirt :: IO WebDirt
-webDirt = webDirt_ >>= return . WebDirt
+newWebDirt :: IO WebDirt
+newWebDirt = webDirt_ >>= return . WebDirt
 
 getCurrentTime :: WebDirt -> IO Double
 getCurrentTime (WebDirt j) = getCurrentTime_ j

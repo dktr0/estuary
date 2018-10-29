@@ -7,7 +7,9 @@ import Estuary.Languages.MiniTidal
 import Sound.Tidal.Context as Tidal
 
 parsesTo :: String -> ParamPattern -> Expectation
-parsesTo s p = (arc (miniTidalParser s) $ (0,16)) `shouldBe` (arc p $ (0,16))
+parsesTo s p = x `shouldBe` y
+  where x = arc <$> miniTidalParser s <*> Right (0,16)
+        y = Right $ arc p $ (0,16)
 
 main :: IO ()
 main = hspec $ do

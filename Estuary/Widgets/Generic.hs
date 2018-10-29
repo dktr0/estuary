@@ -7,12 +7,13 @@ import Reflex
 import Reflex.Dom
 import GHCJS.DOM.EventM
 import Control.Monad
-import Estuary.Reflex.Utility
 import Data.Map
 import Data.List
 import Data.Bool(bool)
-import Estuary.Tidal.Types
 
+import Estuary.Reflex.Utility
+import Estuary.Tidal.Types
+import Estuary.Types.Live
 import Estuary.Reflex.Container
 import Data.Maybe
 import Text.Read (readMaybe)
@@ -317,3 +318,14 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
   c <- button' "[]" MakeGroup
   d <- button' "{}" MakeLayer
   return $ leftmost [b,c,d]
+
+hideableWidget :: MonadWidget t m => Dynamic t Bool -> String -> m a -> m a
+hideableWidget b c m = do
+  attrs <- mapDyn (bool (fromList [("hidden","true"),("class",c)]) (singleton "class" c)) b
+  elDynAttr "div" attrs m
+
+
+hideableWidget' :: MonadWidget t m => Dynamic t Bool -> m a -> m a
+hideableWidget' b m = do
+  attrs <- mapDyn (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
+  elDynAttr "div" attrs m

@@ -17,7 +17,9 @@ data Term =
   EnsembleName |
   EnsemblePassword |
   TerminalChat |
-  Theme 
+  Theme |
+  Load |
+  Peak
   deriving (Show,Eq)
 
 translate :: Term -> Language -> String
@@ -69,5 +71,9 @@ translate Send Español = "enviar"
 
 translate Theme English = "Theme"
 translate Theme Español = "Tema"
+
+translate Load English = "load"
+
+translate Peak English = "peak"
 
 translate x _ = "?" ++ show x

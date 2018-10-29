@@ -5,8 +5,8 @@ import Data.List (intercalate)
 import Data.Bool (bool)
 import qualified Sound.Tidal.Context as Tidal
 
-cqenzeParamPattern :: String -> Tidal.ParamPattern
-cqenzeParamPattern x = either (const Tidal.silence) id $ parse cqenzeParser "(unknown)" x
+cqenzeParamPattern :: String -> Either ParseError Tidal.ParamPattern
+cqenzeParamPattern x = parse cqenzeParser "CQenze" x
 
 cqenzeParser :: GenParser Char a Tidal.ParamPattern
 cqenzeParser = sepBy cqenzeLine (char '\n') >>= return . Tidal.stack

@@ -4,14 +4,9 @@ where
 
 import Reflex
 import Reflex.Dom
-import Estuary.WebDirt.Foreign
-import Estuary.Reflex.Container
-import Estuary.Tidal.Types
-import Estuary.Reflex.Utility
 import Data.Bool (bool)
 import Data.Map
 import Data.Maybe
-import Estuary.Widgets.Generic
 import Control.Monad
 import Data.List(intersperse, findIndex, elem, elemIndex)
 import Data.Either(partitionEithers)
@@ -21,7 +16,12 @@ import Text.Read(readMaybe)
 import Control.Applicative (liftA2)
 
 import Estuary.Types.Hint
-
+import Estuary.Types.Live
+import Estuary.Widgets.Generic
+import Estuary.WebDirt.Foreign
+import Estuary.Reflex.Container
+import Estuary.Tidal.Types
+import Estuary.Reflex.Utility
 
 generalContainerLive' :: (MonadWidget t m, Eq a, Show a)
   => (Dynamic t Liveness -> GeneralPattern a -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)), Event t Hint)))

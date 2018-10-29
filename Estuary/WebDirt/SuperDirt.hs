@@ -1,6 +1,6 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
-module Estuary.WebDirt.SuperDirt (SuperDirt, superDirt) where
+module Estuary.WebDirt.SuperDirt (SuperDirt, newSuperDirt) where
 
 import qualified GHCJS.Types as T
 import qualified Sound.Tidal.Context as Tidal
@@ -16,8 +16,8 @@ instance S.SampleEngine SuperDirt where
   getPeakLevels sd = return []
   getRmsLevels sd = return []
 
-superDirt :: IO SuperDirt
-superDirt = superDirt_ >>= return . SuperDirt
+newSuperDirt :: IO SuperDirt
+newSuperDirt = superDirt_ >>= return . SuperDirt
 
 playSample :: SuperDirt -> (Double,Tidal.ParamMap) -> IO ()
 playSample (SuperDirt x) (t,e) = do

@@ -10,11 +10,13 @@ import Data.Map
 import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
+import GHCJS.Types
+import GHCJS.Marshal.Pure
+import Data.Functor (void)
 
 import Estuary.Tidal.Types
 import Estuary.Protocol.Foreign
 import Estuary.Widgets.Navigation
-
 import Estuary.WebDirt.SampleEngine
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
@@ -27,32 +29,41 @@ import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
 import Estuary.Types.LanguageHelp
-import Estuary.Languages.TidalParser
+import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
-import GHCJS.Types
-import GHCJS.Marshal.Pure
+import Estuary.RenderInfo
 
-estuaryWidget :: MonadWidget t m
-  => MVar Renderer -> WebDirt -> SuperDirt -> EstuaryProtocolObject -> Context -> m ()
-estuaryWidget renderM wd sd protocol initialContext = divClass "estuary" $ mdo
-  -- levelMeterWidget context
-  headerChanges <- header ctx
-  (values,deltasUp,hints) <- divClass "page" $ navigation (startTime initialContext) ctx commands deltasDown'
+estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
+estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
+  ic <- liftIO $ readMVar ctxM
+  renderInfo <- pollRenderInfoChanges riM
+  headerChanges <- header ctx renderInfo
+  (values,deltasUp,hints) <- divClass "page" $ navigation (startTime ic) ctx renderInfo commands deltasDown'
   commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown'
-  (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime initialContext) deltasUp
-  p <- mapDyn (toParamPattern . StackedPatterns) values -- ** TODO: anytime anything changes everything is parsed...
-  let patternChanges = fmap setPattern $ updated p
+  (deltasDown,wsStatus) <- alternateWebSocket protocol (startTime ic) deltasUp
+  let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
-  let contextChanges = mergeWith (.) [patternChanges,headerChanges,ccChange]
-  ctx <- foldDyn ($) initialContext contextChanges -- Dynamic t Context
+  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange]
+  ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
   t <- mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
-  dynamicRender renderM wd sd ctx
-  performHint wd hints
+  updateContext ctxM ctx
+  performHint (webDirt ic) hints
 
-  
+updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
+updateContext cMvar cDyn = performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn
+
+pollRenderInfoChanges :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
+pollRenderInfoChanges riM = do
+  now <- liftIO $ getCurrentTime
+  riInitial <- liftIO $ readMVar riM
+  ticks <- tickLossy (0.204::NominalDiffTime) now
+  newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
+  holdDyn riInitial newInfo
+
+
 
 changeTheme :: MonadWidget t m => Event t String -> m ()
 changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle
@@ -61,14 +72,23 @@ foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: JSVal -> IO ()
 
-header :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
-header ctx = divClass "header" $ do
+header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
+header ctx renderInfo = divClass "header" $ do
   tick <- getPostBuild
   hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
   divClass "logo" $ dynText =<< translateDyn Term.EstuaryDescription ctx
+  do
+    dynText =<< translateDyn Term.Load ctx
+    text ": "
+    dynText =<< mapDyn (show . avgRenderLoad) renderInfo
+    text "% ("
+    dynText =<< mapDyn (show . peakRenderLoad) renderInfo
+    text "% "
+    dynText =<< translateDyn Term.Peak ctx
+    text ") "
   wsStatus' <- mapDyn wsStatus ctx
   clientCount' <- mapDyn clientCount ctx
   statusMsg <- combineDyn f wsStatus' clientCount'
@@ -83,7 +103,6 @@ header ctx = divClass "header" $ do
   where
     f "connection open" c = "(" ++ (show c) ++ " clients)"
     f x _ = x
-
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ do

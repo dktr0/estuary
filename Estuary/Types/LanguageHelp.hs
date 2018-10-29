@@ -7,42 +7,27 @@ import Reflex.Dom
 import GHCJS.DOM.EventM -- just used for our test, maybe delete-able later
 import Estuary.Types.MiniTidalReference
 import Estuary.Types.LaCalleReference
-import Estuary.Languages.TidalParser
+import Estuary.Types.TidalParser
+import Estuary.Languages.TidalParsers
+import Estuary.Types.TextNotation
+import Data.Map
 
-import Estuary.Languages.MiniTidal
-import Estuary.Languages.CQenze
-import Estuary.Languages.Morelia
-import Estuary.Languages.Saborts
-import Estuary.Languages.Saludos
-import Estuary.Languages.ColombiaEsPasion
-import Estuary.Languages.Si
-import Estuary.Languages.Sentidos
-import Estuary.Languages.Natural
-import Estuary.Languages.Medellin
-import Estuary.Languages.LaCalle
-import Estuary.Languages.Maria
-import Estuary.Languages.Crudo
-import Estuary.Languages.Puntoyya
-import Estuary.Languages.Sucixxx
-import Estuary.Languages.Vocesotrevez
-import Estuary.Languages.Imagina
-import Estuary.Languages.Alobestia
 
-data LanguageReference =
-  MiniTidalReference |
-  LaCalleReference
-  deriving (Show,Eq)
+-- tidalParserToHelp :: TextNotation -> m ()
+tidalParserToHelp (TidalTextNotation MiniTidal) = miniTidalHelpFile
+tidalParserToHelp (TidalTextNotation LaCalle) = laCalleHelpFile
 
-languageReference :: LanguageReference -> String
-languageReference MiniTidalReference = (miniTidalReference Palindrome)  ++ (miniTidalReference Brak)
-languageReference LaCalleReference = (laCalleReference HolaChoche) ++ (laCalleReference UnasChelas)
+-- a widget  that renders a TidalTextNotation
+languageHelpWidget' :: (MonadWidget t m) => TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t String)
+languageHelpWidget' t = do
+   tidalParserToHelp  t
+   return ()
 
-tidalParserToHelp :: TidalParser -> String
-tidalParserToHelp MiniTidal = languageReference MiniTidalReference
-tidalParserToHelp LaCalle = languageReference LaCalleReference
-
-languageHelpWidget :: (MonadWidget t m) => TidalParser -> m () --this should be TidalParser -> Language -> m (Event t String)
-languageHelpWidget t  = do
-    helpText <- el "div" $ text (tidalParserToHelp t)
-    -- clickEv <- wrapDomEvent (_el_element helpText) (onEventName Click) mouseOffsetXY
-    return ()
+-- a widget  that renders a dynamic TidalTextNotation
+-- languageHelpWidget :: (MonadWidget t m) => Dynamic t TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t String)
+-- languageHelpWidget t = do
+--    t' <- mapDyn (\x -> TidalTextNotation x) t  --Dynamic t  TextNotation
+--    -- let t = constDyn $ (TidalTextNotation MiniTidal)
+--    p <- mapDyn (\x -> tidalParserToHelp  x) t
+--
+--    return ()

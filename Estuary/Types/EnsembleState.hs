@@ -1,6 +1,7 @@
 module Estuary.Types.EnsembleState where
 
 import Data.Map
+import qualified Data.IntMap.Strict as IntMap
 import qualified Sound.Tidal.Tempo as Tidal
 import Data.Time
 import Data.Time.Clock.POSIX
@@ -16,7 +17,7 @@ import qualified Estuary.Types.Terminal as Terminal
 data EnsembleState = EnsembleState {
   ensembleName :: String,
   userHandle :: String,
-  zones :: Map Int Definition,
+  zones :: IntMap.IntMap Definition,
   publishedViews :: Map String View,
   defaultView :: View,
   customView :: View,
@@ -28,7 +29,7 @@ newEnsembleState :: String -> UTCTime -> EnsembleState
 newEnsembleState x now = EnsembleState {
   ensembleName = x,
   userHandle = "",
-  zones = empty,
+  zones = IntMap.empty,
   publishedViews = empty,
   defaultView = emptyView,
   customView = emptyView,
@@ -55,12 +56,12 @@ commandsToStateChanges (Terminal.DeleteView x) es = es { publishedViews = delete
 commandsToStateChanges _ es = es
 
 requestsToStateChanges :: EnsembleRequest Definition -> EnsembleState -> EnsembleState
-requestsToStateChanges (ZoneRequest (Sited n (Edit x))) es = es { zones = insert n x (zones es) }
+requestsToStateChanges (ZoneRequest (Sited n (Edit x))) es = es { zones = IntMap.insert n x (zones es) }
 requestsToStateChanges _ es = es
 
 responsesToStateChanges :: EnsembleResponse Definition -> EnsembleState -> EnsembleState
 responsesToStateChanges (ZoneResponse (Sited n (Edit v))) es = es { zones = newZones }
-  where newZones = insert n v (zones es)
+  where newZones = IntMap.insert n v (zones es)
 responsesToStateChanges (View (Sited s v)) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)
 responsesToStateChanges (DefaultView v) es = es { defaultView = v }

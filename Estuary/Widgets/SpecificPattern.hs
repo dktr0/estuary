@@ -1,16 +1,9 @@
 {-# LANGUAGE RecursiveDo #-}
-module Estuary.Widgets.SpecificPattern
-where
+module Estuary.Widgets.SpecificPattern where
 
 import Reflex
 import Reflex.Dom
-import Estuary.WebDirt.Foreign
-import Estuary.Reflex.Container
-import qualified Estuary.Widgets.GeneralPattern as G
-import Estuary.Tidal.Types
-import Estuary.Reflex.Utility
 import Data.Map
-import Estuary.Widgets.Generic
 import Control.Monad
 import Data.List(intersperse, findIndex)
 import GHCJS.DOM.EventM
@@ -18,6 +11,13 @@ import Data.Maybe(isJust)
 import Text.Read(readMaybe)
 
 import Estuary.Types.Hint
+import Estuary.Types.Live
+import Estuary.Widgets.Generic
+import Estuary.WebDirt.Foreign
+import Estuary.Reflex.Container
+import qualified Estuary.Widgets.GeneralPattern as G
+import Estuary.Tidal.Types
+import Estuary.Reflex.Utility
 
 -- see ICOAH vowel widget for example (using vowelButtonWidget)
 -- Vowel Pattern
