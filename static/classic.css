@@ -96,22 +96,27 @@ select {
 
 .splash-margin {
 	min-width: 50%;
-
 	box-sizing: border-box;
 	padding: 0.4em;
 }
 
 .splash-panel {
 	font-family: estuaryFont;
-  border: 0.25em solid;
-  border-radius: 4px;
-  padding: 0.5em;
-  text-align: center;
-  height: 100%;
-  box-sizing: border-box;
-  max-height: 16em;
-  display: flex;
-  flex-direction: column;
+	border: 0.25em solid;
+	border-radius: 4px;
+	padding: 0.5em;
+	text-align: center;
+	height: 100%;
+	box-sizing: border-box;
+	max-height: 16em;
+	display: flex;
+	flex-direction: column;
+}
+
+.splash-panel > img {
+	/* A trick to get the images to behave in firefox as they do in chrome, they "flex" to determine the size */
+	min-width: 0;
+	min-height: 0;
 }
 
 .splash-title {
