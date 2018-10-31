@@ -728,8 +728,9 @@ font-family: estuaryFont;
 .refExampleButton button {
 	background-color: transparent;
 	width: 100%;
-	font-size: 115%;
+	font-size: 100%;
 	font-variant:small-caps;
+	margin-bottom: 7%;
 }
 
 .refExampleButton button:hover {
@@ -744,16 +745,20 @@ font-family: estuaryFont;
 /* about */
 
 .exampleText {
-font-family: Inconsolata;  font-style: italic;
+	display: flex;
+    font-family: 'Inconsolata';
+	color:  hsl(120,100%,80%);
+	font-style: italic;
+/* 	margin-right:  5%; */
 }
 
 .referenceText {
-			font-variant:small-caps;
+/* 			font-variant:small-caps; */
 }
 
 .about {
-	font-variant:small-caps;
-	color:  hsl(120,100%,70%);;
+/* 	font-variant:small-caps; */
+	color:  hsl(120,100%,70%);
 	text-align: center;
   border-radius: 3px;
 	margin-bottom: 4px;
@@ -768,7 +773,7 @@ font-family: Inconsolata;  font-style: italic;
 }
 
 .aboutTitle {
-	font-variant:small-caps;
+/* 	font-variant:small-caps; */
 			color:  hsl(120,100%,70%);
 
 }
@@ -784,8 +789,19 @@ top:10%; */
 }
 
 .aboutText {
-		font-size: 80%;
+		font-size: 95%;
 	text-align: center;
-	font-variant:small-caps;
-	color:  hsl(120,100%,80%);
+/* 	font-variant:small-caps; */
+	color:  hsl(120,100%,70%);
+	margin-bottom: 1%;
+}
+
+.samples {
+	color: hsl(120,100%,90%, 100%);
+}
+
+
+.listenButton button {
+	margin-left: 20%;
+	font-size:  95%;
 }
