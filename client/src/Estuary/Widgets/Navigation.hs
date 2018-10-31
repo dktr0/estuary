@@ -196,7 +196,7 @@ aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph" $ do
     \initially for the project \"Projectional interfaces for musical live coding\", and more recently \
     \as part of the project \"Platforms  and  practices  for networked, language-neutral live coding\". \ \Estuary builds upon, and depends on, the work of many others, including but not limited to all \
     \those who contribute to Reflex and TidalCycles. Estuary is free and open source software, released \ \ under the terms of the GNU Public License (version 3)."),
-    (Español,"El desarrollo del estuario es el resultado del trabajo colaborativo que se ha realizado \
+    (Español,"El desarrollo de Estuary es el resultado del trabajo colaborativo que se ha realizado \
     \apoyado por dos becas del Consejo de Investigación de Ciencias Sociales y Humanidades de Canadá (SSHRC) -\
     \inicialmente para el proyecto \"Interfaces proyectivas para la codificación musical en vivo\", y más recientemente \
     \como parte del proyecto \"Plataformas y prácticas para la codificación en vivo en red y en idioma neutral\". Estuary se construye desde del trabajo de muchos otres, incluyendo pero no limitado a todes \
