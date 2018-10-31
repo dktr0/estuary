@@ -67,6 +67,18 @@ executables:
       - hspec
       - async
 
+  interaction-test:
+    main: Interaction.hs
+    source-dirs:
+      - ./test
+    js-sources:
+      - ./test/Estuary/Test/protocol-inspector.js
+    dependencies:
+      - estuary
+      - estuary-common
+      - hspec
+      - async
+
 ################################
 # TESTS
 ################################
