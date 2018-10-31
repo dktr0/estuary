@@ -79,6 +79,10 @@ button {
 	padding-right: 15px;
 }
 
+.aboutEstuaryParagraph {
+	font-family: 'Inconsolata';
+}
+
 .logo {
 	display: inline-block;
 }

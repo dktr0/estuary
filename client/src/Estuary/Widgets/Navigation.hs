@@ -63,15 +63,14 @@ page ctx _ _ wsDown Splash = do
   -- z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
   -- let navEvents = leftmost [x,y,z]
   -- return (constDyn empty,never,never,navEvents,never)
-  
+
   navEvents <- divClass "splash-container" $ do
     divClass "splash-margin" $ do
       divClass "splash-panel" $ do
         divClass "splash-title" $ do
           text "Estuary"
           divClass "splash-line" blank
-        divClass "splash-info" $ do
-          text "Lorem ipsum dolor sit amen."
+        divClass "splash-info" $ aboutEstuaryParagraph ctx
 
     gotoTutorialEv <- liftM (TutorialList <$) $ do
       divClass "splash-margin" $ do
@@ -163,3 +162,32 @@ joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation)
 joinButton x = do
   b <- clickableDivClass'' x "placeholderClass" ()
   return $ Collaborate <$> tagDyn x b
+
+aboutEstuaryParagraph :: MonadWidget t m => Dynamic t Context -> m ()
+aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph" $ do
+  dynText =<< translationList ctx [
+    (English,"Estuary is a platform for collaboration and learning through live coding. It enables you to create sound, music, and visuals in a web browser. Key features include:")
+    ]
+  el "ul" $ do
+    el "li" $ dynText =<< translationList ctx [
+      (English,"built-in tutorials and reference materials")
+      ]
+    el "li" $ dynText =<< translationList ctx [
+      (English,"a growing collection of different interfaces and live coding languages")
+      ]
+    el "li" $ dynText =<< translationList ctx [
+      (English,"support for networked ensembles (whether in the same room or distributed around the world)")
+      ]
+    el "li" $ dynText =<< translationList ctx [
+      (English,"text localization to an expanding set of natural languages")
+      ]
+    el "li" $ dynText =<< translationList ctx [
+      (English,"visual customization via themes (described by CSS)")
+      ]
+  dynText =<< translationList ctx [
+    (English,"The development of Estuary is the result of ongoing collaborative work that has been \
+    \supported by two grants from Canada's Social Sciences and Humanities Research Council (SSHRC) - \
+    \initially for the project \"Projectional interfaces for musical live coding\", and more recently \
+    \as part of the project \"Platforms  and  practices  for networked, language-neutral live coding\". \ \Estuary builds upon, and depends on, the work of many others, including but not limited to all \
+    \those who contribute to Reflex and TidalCycles. Estuary is free and open source software, released \ \ under the terms of the GNU Public License (version 3).")
+    ]

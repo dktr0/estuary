@@ -122,6 +122,10 @@ select {
 	text-align: left;
 }
 
+.aboutEstuaryParagraph {
+	font-family: 'Inconsolata';
+}
+
 .logo {
 	display: inline-block;
 }
