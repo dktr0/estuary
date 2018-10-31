@@ -1,0 +1,28 @@
+resolver: lts-6.30
+compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
+compiler-check: match-exact
+setup-info:
+  ghcjs:
+    source:
+      ghcjs-0.2.0.9006030_ghc-7.10.3:
+        url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
+        sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
+
+allow-newer: true
+
+packages:
+- '.'
+- '../common'
+- location:
+    git: https://github.com/d0kt0r0/Tidal.git
+    commit: fa532752ab2f4360fe80033d113021b7072a3edb
+  extra-dep: true
+
+extra-deps:
+- ghcjs-dom-0.2.3.1
+- reflex-dom-0.3
+- reflex-0.4.0
+- ref-tf-0.4
+- hosc-0.16
+- parsec-numbers-0.1.0
+- reflex-dom-contrib-0.4.1

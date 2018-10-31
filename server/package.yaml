@@ -1,0 +1,38 @@
+name: estuary-server
+version: '0.0.0.1'
+synopsis: Projectional editor for TidalCycles
+description: Please see README.md
+category: Web
+author: David Ogborn, Jamie Beverley and others
+maintainer: ogbornd@mcmaster.ca
+copyright: 2015-17 David Ogborn and others
+license: GPL-3
+homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
+
+dependencies:
+- base
+- estuary-common
+- containers
+- text
+- json
+- websockets
+- wai
+- warp
+- wai-websockets
+- wai-app-static
+- wai-extra
+- time
+- sqlite-simple
+
+library:
+  source-dirs: 
+    - ./src
+
+executables:
+  EstuaryServer:
+    main: Main.hs
+    source-dirs:
+      - ./app
+    dependencies:
+      - estuary-server
+    ghc-options: -threaded

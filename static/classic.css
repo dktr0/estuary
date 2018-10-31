@@ -19,7 +19,7 @@ input {
 
 
 textarea {
-	background-color: black;
+	background-color: transparent;
 	color: hsl(120,100%,80%);
 	width: 100%;
 	height: 100%;
@@ -27,14 +27,16 @@ textarea {
 
 .visibleArea{
 	width: 100%;
-	height:100%;
+	height:45px;
 
 }
 
 .languageHelp {
+	position: relative;
+		bottom: 30px;
 	font-size: 70%;
   overflow: scroll;
-	height:90px;
+	height:80px;
 
 }
 
@@ -236,47 +238,66 @@ select {
 }
 
 .textPatternChain {
+/* 	background-color: blue; */
 	width: 100%;
 }
 
 .labelAndTextPattern {
+/* 	background-color: red; */
 	width: 100%;
-	display: inline-flex;
+/* 	display: inline-flex; */
 	margin: 0px;
 	padding: 0px;
 }
 
 .labelWidgetDiv {
+/* 	background-color: white; */
 	width: 100%;
 	display: inline-flex;
 }
 
 
 .labelWidgetTextInput {
+	font-family: estuaryFont;
+	font-size: 80%;
+/* 	background-color: yellow; */
 	flex:1;
 	color: hsl(120,0%,80%);
 	border: none;
 }
 
 .textInputLabel {
+
 	width: 4em;
 	font-size: 100%;
 	font-weight: normal;
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
+	position: relative;
+	left: 25%;
+	bottom: 20px;
+/* 	background-color: green; */
+}
 
+.textInputLabel button {
+/* 	font-family: estuaryFont;
+	font-size: 80%; */
 }
 
 .referenceButton {
+/* 	background-color: brown; */
   font-size: 100%;
-	width: auto;
-	height: 90%;
+	width: 3%;
 	position: relative;
-
+	left: 95%;
+	bottom: 40px;
 }
 
 .textInputToEndOfLine {
+	position: relative;
+	bottom: 5px;
+/* 	background-color: pink; */
 	flex: 1;
 	vertical-align: middle;
 	font-size: 100%;
@@ -507,14 +528,14 @@ td {
 	text-align:center
 }
 
-/* The 'â–²' arrow td */
+/* The 'Ã¢â€“Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The 'â–¼' arrow td */
+/* The 'Ã¢â€“Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
@@ -627,6 +648,13 @@ td {
 	color: lightgreen;
 }
 
+.backToSplash button{
+font-family: estuaryFont;
+/* 	font-size: 30%; */
+
+}
+
+
 .terminal {
 }
 
@@ -644,6 +672,9 @@ td {
 .ensembleHeader {
 	display: flex;
 	flex-direction: row;
+
+	font-family: estuaryFont;
+	font-size: 90%;
 }
 
 .ensembleName {
@@ -652,84 +683,97 @@ td {
 }
 
 .ensembleHandle {
+
   margin-right: 1em;
 	border: none;
 }
 
 .ensemblePassword {
+	font-family: estuaryFont;
+
   margin-right: 1em;
 	border: none;
 }
 
+
 .ensembleTempo {
+/* 	background-color: blue; */
+	display: flex;
+	border: none;
+	width: 30%;
+}
+
+
+.ensembleTempo textarea{
+
+	font-family: estuaryFont;
+	font-size: 80%;
   margin-right: 1em;
 	border: none;
+	width: 50%;
+}
+.ensembleTempo button{
+	border: none;
+	width: 50%;
 }
 
 /* help files  */
 
 .helpWrapper {
 	display:flex;
-	font-size: 80%;
+	font-size: 100%;
 	margin-left: 1%;
 }
 
-.RefExampleButton button {
+.refExampleButton button {
 	background-color: transparent;
 	width: 100%;
 	font-size: 115%;
+	font-variant:small-caps;
 }
 
-.RefExampleButton button:hover {
+.refExampleButton button:hover {
     background-color: hsl(120,100%,80%); /* Green */
     color: black;
-
+	cursor: help;
 }
 
-.RefExampleButton button:active {
-    background-color: hsl(120,100%,80%); /* Green */
-    color: black;
-}
+
 
 
 /* about */
 
 .exampleText {
+font-family: Inconsolata;  font-style: italic;
 }
 
 .referenceText {
-
+			font-variant:small-caps;
 }
 
 .about {
-/* 	margin-left: 1px; */
-	background-color: hsl(120,100%,80%);
-			font-weight: bold;
-
-	color: black;
+	font-variant:small-caps;
+	color:  hsl(120,100%,70%);;
 	text-align: center;
   border-radius: 3px;
 	margin-bottom: 4px;
 }
 
 .aboutWrapper {
-/* 	margin-left: 1px; */
-	background-color: hsl(120,100%,80%);
-	color: black;
 	text-align: center;
   border-radius: 3px;
 	margin-bottom: 4px;
+			font-size: 100%;
+
 }
 
 .aboutTitle {
-		font-weight: bold;
-		font-size: 100%;
-/* 	position: relative;
-	right: 5%; */
+	font-variant:small-caps;
+			color:  hsl(120,100%,70%);
 
 }
 
-.AboutButton button{
+.aboutButton button{
 	 background-color: transparent;
     color: black;
 			font-weight: bold;
@@ -741,5 +785,7 @@ top:10%; */
 
 .aboutText {
 		font-size: 80%;
-
+	text-align: center;
+	font-variant:small-caps;
+	color:  hsl(120,100%,80%);
 }
