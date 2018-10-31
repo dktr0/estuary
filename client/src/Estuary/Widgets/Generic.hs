@@ -323,4 +323,8 @@ hideableWidget :: MonadWidget t m => Dynamic t Bool -> String -> m a -> m a
 hideableWidget b c m = do
   attrs <- mapDyn (bool (fromList [("hidden","true"),("class",c)]) (singleton "class" c)) b
   elDynAttr "div" attrs m
-  
+
+hideableWidget' :: MonadWidget t m => Dynamic t Bool -> m a -> m a
+hideableWidget' b m = do
+  attrs <- mapDyn (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
+  elDynAttr "div" attrs m

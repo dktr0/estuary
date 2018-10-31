@@ -81,6 +81,9 @@ clean:
 prodClean: clean
 	$(STACK_PRODUCTION_CLIENT) clean
 
+prodClean: clean
+	stack --work-dir .stack-work-production/ clean --stack-yaml=client.yaml
+
 style:
 	cp static/classic.css Estuary.jsexe
 

@@ -2,7 +2,6 @@ module Estuary.Types.Context where
 
 import Data.Time
 import Data.IntMap.Strict
-
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition

@@ -130,7 +130,7 @@ presetView "working" = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
   ViewDiv "eightTopR" (Views [LabelView 3, SvgDisplayView]),
   ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 7]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 7]),
+  ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 7 ]),
   ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10 7]),
   ViewDiv "eightBottomR" (Views [LabelView 11, EvaluableTextView 12])
   ]

@@ -10,6 +10,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Control.Monad (liftM)
+import qualified Data.Map as Map
 import Data.IntMap.Strict
 import Text.Read
 import Text.JSON
@@ -40,7 +41,6 @@ data Navigation =
   CreateEnsemblePage |
   Collaborate String
 
-
 navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t DefinitionMap,Event t Request,Event t Hint,Event t Tempo)
 navigation ctx renderInfo commands wsDown = mdo
   let initialPage = page ctx renderInfo commands wsDown Splash
@@ -58,38 +58,65 @@ page :: MonadWidget t m
   -> m (Dynamic t DefinitionMap,Event t Request,Event t Hint,Event t Navigation,Event t Tempo)
 
 page ctx _ _ wsDown Splash = do
-  x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
-  y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
-  z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
-  let navEvents = leftmost [x,y,z]
+  -- x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
+  -- y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
+  -- z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
+  -- let navEvents = leftmost [x,y,z]
+  -- return (constDyn empty,never,never,navEvents,never)
+  
+  navEvents <- divClass "splash-container" $ do
+    divClass "splash-margin" $ do
+      divClass "splash-panel" $ do
+        divClass "splash-title" $ do
+          text "Estuary"
+          divClass "splash-line" blank
+        divClass "splash-info" $ do
+          text "Lorem ipsum dolor sit amen."
+
+    gotoTutorialEv <- liftM (TutorialList <$) $ do
+      divClass "splash-margin" $ do
+        dynButtonWithChild "splash-panel" $ do
+          dynText =<< translateDyn Term.Tutorials ctx
+          elAttr "img" (Map.fromList [("src", "tutorial-icon.svg")]) blank
+    gotoSoloEv <- liftM (Solo <$) $ do
+      divClass "splash-margin" $ do
+        dynButtonWithChild "splash-panel" $ do
+          dynText =<< translateDyn Term.Solo ctx
+          elAttr "img" (Map.fromList [("src", "solo-icon.svg")]) blank
+    gotoCollaborateEv <- liftM (Lobby <$) $ do
+      divClass "splash-margin" $ do
+        dynButtonWithChild "splash-panel" $ do
+          dynText =<< translateDyn Term.Collaborate ctx
+          elAttr "img" (Map.fromList [("src", "collaborate-icon.svg")]) blank
+    return $ leftmost [gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
   return (constDyn empty,never,never,navEvents,never)
 
 page ctx _ _ wsDown TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   t1 <- liftM (Tutorial "Structure editing" <$) $ el "div" $ button "Structure editing"
   t2 <- liftM (Tutorial "TidalCycles text editing" <$) $ el "div" $ button "TidalCycles text editing"
-  back <- liftM (Splash <$) $ button  "<----"
+  back <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
   let navEvents = leftmost [t1,t2,back]
   return (constDyn empty,never,never,navEvents,never)
 
 page ctx _ _ wsDown (Tutorial "Structure editing") = do
   text "Tutorial placeholder"
-  x <- liftM (Splash <$) $ button  "<----"
+  x <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
   return (constDyn empty,never,never,x,never)
 
 page ctx _ _ wsDown (Tutorial "TidalCycles text editing") = do
   text "Tutorial placeholder"
-  x <- liftM (Splash <$) $ button "<----"
+  x <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
   return (constDyn empty,never,never,x,never)
 
 page ctx _ _ wsDown (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
-  x <- liftM (Splash <$) $ button "<----"
+  x <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
   return (constDyn empty,never,never,x,never)
 
 page ctx renderInfo commands wsDown Solo = do
   (values,hints,tempoEvents) <- soloView ctx renderInfo commands
-  x <- liftM (Splash <$) $ button "<----"
+  x <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
   return (values,never,hints,x,tempoEvents)
 
 page ctx _ _ wsDown Lobby = do
@@ -99,7 +126,7 @@ page ctx _ _ wsDown Lobby = do
   join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation
   create <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
-  back <- liftM (Splash <$) $ el "div" $ button "<----"
+  back <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
   return (constDyn empty,requestEnsembleList,never,leftmost [back,join'',create],never)
 
 page ctx _ _ _ CreateEnsemblePage = do
@@ -128,7 +155,7 @@ page ctx _ _ _ CreateEnsemblePage = do
 
 page ctx renderInfo commands wsDown (Collaborate w) = do
   (values,wsUp,hints,tempoEvents) <- ensembleView ctx renderInfo w commands wsDown
-  x <- liftM (Lobby <$) $ button  "<----"
+  x <- divClass "backToSplash" $ do liftM (Lobby <$) $ button  "<--"
   return (values,wsUp,hints,x,tempoEvents)
 
 

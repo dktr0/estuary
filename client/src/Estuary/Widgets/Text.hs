@@ -26,6 +26,8 @@ import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
+import Estuary.Types.LanguageHelp
+import Estuary.Types.MiniTidalReference
 
 import Estuary.Types.Context
 
@@ -71,12 +73,13 @@ tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TOD
       dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
       return x
     let initialText = snd $ forEditing i
-    -- helpButton <- divClass "textInputLabel" $ button "?"
-    textVisible <- toggle True never -- really: toggle True helpButton
-    -- helpVisible <- toggle False helpButton
-    -- (textValue,textEvent) <- hideableWidget textVisible "someclass" $ textAreaWidgetForPatternChain rows initialText textFuture
-    (textValue,textEvent,shiftEnter) <- textAreaWidgetForPatternChain rows initialText textFuture
-    -- hideableWidget helpVisible "someclass" $ text "here is something helpful"
+    infoButton <- divClass "referenceButton" $ button "?"
+    textVisible <- toggle True infoButton--toggle True never
+    helpVisible <- toggle False infoButton
+    (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
+    let languageToDisplayHelp = (TidalTextNotation MiniTidal)
+    -- let languageToDisplayHelp = ( _dropdown_value d)
+    hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagDyn v' $ leftmost [b,shiftEnter]

@@ -33,6 +33,11 @@ translationList c m = do
 dynButton :: MonadWidget t m => Dynamic t String -> m (Event t ())
 dynButton = (mapDyn button) >=> dynE
 
+dynButtonWithChild :: MonadWidget t m => String -> m () -> m (Event t ())
+dynButtonWithChild cls child = do
+  (e, _) <- elAttr' "div" (fromList [("type", "button"), ("class", cls)]) child
+  return $ domEvent Click e
+
 -- | dynE is like dyn from Reflex, specialized for widgets that return
 -- events. A dynamic argument updates the widget, and the return value is
 -- already flattened to just being the events returned by the child widget.

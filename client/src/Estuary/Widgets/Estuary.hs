@@ -28,6 +28,8 @@ import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
+import Estuary.Types.LanguageHelp
+import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
 

@@ -3,7 +3,12 @@ body {
 	color: hsl(120,100%,80%);
 	height: 100%;
 	margin: 0;
-	font-family: sans;
+	font-family: 'Inconsolata';
+}
+
+@font-face {
+   font-family: estuaryFont;
+   src: url(Estuary.otf);
 }
 
 input {
@@ -14,9 +19,27 @@ input {
 
 
 textarea {
-	background-color: black;
+	background-color: transparent;
 	color: hsl(120,100%,80%);
+	width: 100%;
+	height: 100%;
 }
+
+.visibleArea{
+	width: 100%;
+	height:45px;
+
+}
+
+.languageHelp {
+	position: relative;
+		bottom: 30px;
+	font-size: 70%;
+  overflow: scroll;
+	height:80px;
+
+}
+
 
 button {
 	background-color: hsl(0,0%,20%);
@@ -30,12 +53,15 @@ button {
 
 }
 
-.header { /* the header area containing logo, webDirt, pageMenu and hintArea */
+.header  { /* the header area containing logo, webDirt, pageMenu and hintArea */
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+  font-family: estuaryFont;
+
 }
+
 
 select {
 	background-color: black;
@@ -61,6 +87,41 @@ select {
 	padding-right: 15px;
 }
 
+.splash-container {
+	display: flex;
+	flex-wrap: wrap;
+	width: 100%;
+	height: 100%;
+}
+
+.splash-margin {
+	min-width: 50%;
+
+	box-sizing: border-box;
+	padding: 0.4em;
+}
+
+.splash-panel {
+	font-family: estuaryFont;
+  border: 0.25em solid;
+  border-radius: 4px;
+  padding: 0.5em;
+  text-align: center;
+  height: 100%;
+  box-sizing: border-box;
+  max-height: 16em;
+  display: flex;
+  flex-direction: column;
+}
+
+.splash-title {
+	text-align: left;
+}
+
+.splash-info {
+	text-align: left;
+}
+
 .logo {
 	display: inline-block;
 }
@@ -77,7 +138,8 @@ select {
 
 .webDirtMute {
 	float: right;
-	font-size: 60%;
+	font-size: 50%;
+
 }
 
 
@@ -211,38 +273,66 @@ select {
 }
 
 .textPatternChain {
+/* 	background-color: blue; */
 	width: 100%;
 }
 
 .labelAndTextPattern {
+/* 	background-color: red; */
 	width: 100%;
-	display: inline-flex;
+/* 	display: inline-flex; */
 	margin: 0px;
 	padding: 0px;
 }
 
 .labelWidgetDiv {
+/* 	background-color: white; */
 	width: 100%;
 	display: inline-flex;
 }
 
 
 .labelWidgetTextInput {
+	font-family: estuaryFont;
+	font-size: 80%;
+/* 	background-color: yellow; */
 	flex:1;
 	color: hsl(120,0%,80%);
 	border: none;
 }
 
 .textInputLabel {
+
 	width: 4em;
 	font-size: 100%;
 	font-weight: normal;
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
+	position: relative;
+	left: 25%;
+	bottom: 20px;
+/* 	background-color: green; */
+}
+
+.textInputLabel button {
+/* 	font-family: estuaryFont;
+	font-size: 80%; */
+}
+
+.referenceButton {
+/* 	background-color: brown; */
+  font-size: 100%;
+	width: 3%;
+	position: relative;
+	left: 95%;
+	bottom: 40px;
 }
 
 .textInputToEndOfLine {
+	position: relative;
+	bottom: 5px;
+/* 	background-color: pink; */
 	flex: 1;
 	vertical-align: middle;
 	font-size: 100%;
@@ -251,6 +341,7 @@ select {
 	border: none;
 	padding: 0px;
 	margin: 0px;
+	height: 100%;
 }
 
 
@@ -472,14 +563,14 @@ td {
 	text-align:center
 }
 
-/* The '▲' arrow td */
+/* The 'Ã¢â€“Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The '▼' arrow td */
+/* The 'Ã¢â€“Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
@@ -592,12 +683,21 @@ td {
 	color: lightgreen;
 }
 
+.backToSplash button{
+font-family: estuaryFont;
+/* 	font-size: 30%; */
+
+}
+
+
 .terminal {
 }
 
 .terminalHeader {
 	display: flex;
 	flex-direction: row;
+	font-family: estuaryFont;
+	font-size: 75%;
 }
 
 .terminalInput {
@@ -607,6 +707,9 @@ td {
 .ensembleHeader {
 	display: flex;
 	flex-direction: row;
+
+	font-family: estuaryFont;
+	font-size: 90%;
 }
 
 .ensembleName {
@@ -615,16 +718,125 @@ td {
 }
 
 .ensembleHandle {
+
   margin-right: 1em;
 	border: none;
 }
 
 .ensemblePassword {
+	font-family: estuaryFont;
+
   margin-right: 1em;
 	border: none;
 }
 
+
 .ensembleTempo {
+/* 	background-color: blue; */
+	display: flex;
+	border: none;
+	width: 30%;
+}
+
+
+.ensembleTempo textarea{
+
+	font-family: estuaryFont;
+	font-size: 80%;
   margin-right: 1em;
 	border: none;
+	width: 50%;
+}
+.ensembleTempo button{
+	border: none;
+	width: 50%;
+}
+
+/* help files  */
+
+.helpWrapper {
+	display:flex;
+	font-size: 100%;
+	margin-left: 1%;
+}
+
+.refExampleButton button {
+	background-color: transparent;
+	width: 100%;
+	font-size: 100%;
+	font-variant:small-caps;
+	margin-bottom: 7%;
+}
+
+.refExampleButton button:hover {
+    background-color: hsl(120,100%,80%); /* Green */
+    color: black;
+	cursor: help;
+}
+
+
+
+
+/* about */
+
+.exampleText {
+	display: flex;
+    font-family: 'Inconsolata';
+	color:  hsl(120,100%,80%);
+	font-style: italic;
+/* 	margin-right:  5%; */
+}
+
+.referenceText {
+/* 			font-variant:small-caps; */
+}
+
+.about {
+/* 	font-variant:small-caps; */
+	color:  hsl(120,100%,70%);
+	text-align: center;
+  border-radius: 3px;
+	margin-bottom: 4px;
+}
+
+.aboutWrapper {
+	text-align: center;
+  border-radius: 3px;
+	margin-bottom: 4px;
+			font-size: 100%;
+
+}
+
+.aboutTitle {
+/* 	font-variant:small-caps; */
+			color:  hsl(120,100%,70%);
+
+}
+
+.aboutButton button{
+	 background-color: transparent;
+    color: black;
+			font-weight: bold;
+		font-size: 115%;
+/* 	position: relative;
+	left: 6.6%;
+top:10%; */
+}
+
+.aboutText {
+		font-size: 95%;
+	text-align: center;
+/* 	font-variant:small-caps; */
+	color:  hsl(120,100%,70%);
+	margin-bottom: 1%;
+}
+
+.samples {
+	color: hsl(120,100%,90%, 100%);
+}
+
+
+.listenButton button {
+	margin-left: 20%;
+	font-size:  95%;
 }
