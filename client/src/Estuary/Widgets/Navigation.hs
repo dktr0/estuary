@@ -10,6 +10,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Control.Monad (liftM)
+import qualified Data.Map as Map
 import Data.IntMap.Strict
 import Text.Read
 import Text.JSON
@@ -57,10 +58,37 @@ page :: MonadWidget t m
   -> m (Dynamic t DefinitionMap,Event t Request,Event t Hint,Event t Navigation,Event t Tempo)
 
 page ctx _ _ wsDown Splash = do
-  x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
-  y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
-  z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
-  let navEvents = leftmost [x,y,z]
+  -- x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
+  -- y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
+  -- z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
+  -- let navEvents = leftmost [x,y,z]
+  -- return (constDyn empty,never,never,navEvents,never)
+  
+  navEvents <- divClass "splash-container" $ do
+    divClass "splash-margin" $ do
+      divClass "splash-panel" $ do
+        divClass "splash-title" $ do
+          text "Estuary"
+          divClass "splash-line" blank
+        divClass "splash-info" $ do
+          text "Lorem ipsum dolor sit amen."
+
+    gotoTutorialEv <- liftM (TutorialList <$) $ do
+      divClass "splash-margin" $ do
+        dynButtonWithChild "splash-panel" $ do
+          dynText =<< translateDyn Term.Tutorials ctx
+          elAttr "img" (Map.fromList [("src", "tutorial-icon.svg")]) blank
+    gotoSoloEv <- liftM (Solo <$) $ do
+      divClass "splash-margin" $ do
+        dynButtonWithChild "splash-panel" $ do
+          dynText =<< translateDyn Term.Solo ctx
+          elAttr "img" (Map.fromList [("src", "solo-icon.svg")]) blank
+    gotoCollaborateEv <- liftM (Lobby <$) $ do
+      divClass "splash-margin" $ do
+        dynButtonWithChild "splash-panel" $ do
+          dynText =<< translateDyn Term.Collaborate ctx
+          elAttr "img" (Map.fromList [("src", "collaborate-icon.svg")]) blank
+    return $ leftmost [gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
   return (constDyn empty,never,never,navEvents,never)
 
 page ctx _ _ wsDown TutorialList = do
