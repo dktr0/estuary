@@ -126,92 +126,64 @@ select {
 
 .splash-info {
 	text-align: justify;
-	width:50%;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.50vw;
+}
+
+@media only screen and (max-width: 2000px ) {
+.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.55vw;
+}
+}
+
+@media only screen and (max-width: 1600px) {
+.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.72vw;
+}
+}
+
+@media only screen and (max-width: 1450px) {
+.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.75vw;
+}
+}
+
+@media only screen and (max-width: 1200px) {
+	.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.9vw;
+}
+}
+
+@media only screen and (max-width: 950px) {
+	.splash-info {
+   	text-align: justify;
+	  width:50px;
+		min-width: 100%;
+	  font-size: 1vw;
+}
 }
 
 .splash-line {
 	display: none;
 }
-
-.aboutEstuaryParagraph ::-webkit-scrollbar-track {
-    background: blue;
-}
-
-
-
-@media only screen and (max-width: 1600px) {
 .aboutEstuaryParagraph {
 	text-justify: auto;
 	text-overflow: auto;
-	overflow-y: scroll;
-	width: 740px;
-	height: 210px;
 	font-family: 'Inconsolata';
-	font-size: 80%;
 }
-}
-
-@media only screen and (max-width: 1440px) {
-.aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	overflow-y: scroll;
-	width: 650px;
-	height: 210px;
-	font-family: 'Inconsolata';
-	font-size: 100%;
-}
-}
-
-@media only screen and (max-width: 1366px) {
-   .aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	overflow-y: scroll;
-	width: 620px;
-	height: 210px;
-	font-family: 'Inconsolata';
-	font-size: 80%;
-}
-}
-
-@media only screen and (max-width: 1280px) {
-   .aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	overflow-y: scroll;
-	width: 580px;
-	height: 210px;
-	font-family: 'Inconsolata';
-	font-size: 70%;
-}
-}
-
-@media only screen and (max-width: 1024px) {
-   .aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	overflow-y: scroll;
-	width: 440px;
-	height: 210px;
-	font-family: 'Inconsolata';
-	font-size: 70%;
-}
-}
-
-@media only screen and (max-width: 800px) {
-   .aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	overflow-y: scroll;
-	width: 320px;
-	height: 210px;
-	font-family: 'Inconsolata';
-	font-size: 60%;
-}
-}
-
-
 .paragraphList {
 	font-family: 'Inconsolata';
 
@@ -658,14 +630,14 @@ td {
 	text-align:center
 }
 
-/* The 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â²' arrow td */
+/* The 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼' arrow td */
+/* The 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
@@ -913,9 +885,6 @@ font-family: estuaryFont;
     color: black;
 			font-weight: bold;
 		font-size: 115%;
-/* 	position: relative;
-	left: 6.6%;
-top:10%; */
 }
 
 .aboutText {
