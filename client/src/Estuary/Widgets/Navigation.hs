@@ -71,7 +71,6 @@ page ctx _ _ wsDown Splash = do
           text "Estuary"
           divClass "splash-line" blank
         divClass "splash-info" $ aboutEstuaryParagraph ctx
-
     gotoTutorialEv <- liftM (TutorialList <$) $ do
       divClass "splash-margin" $ do
         dynButtonWithChild "splash-panel" $ do

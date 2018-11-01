@@ -120,15 +120,101 @@ select {
 }
 
 .splash-title {
-	text-align: left;
+	text-align: justify;
+	margin-bottom: 1%;
 }
 
 .splash-info {
-	text-align: left;
+	text-align: justify;
+	width:50%;
 }
 
+.splash-line {
+	display: none;
+}
+
+.aboutEstuaryParagraph ::-webkit-scrollbar-track {
+    background: blue;
+}
+
+
+
+@media only screen and (max-width: 1600px) {
 .aboutEstuaryParagraph {
+	text-justify: auto;
+	text-overflow: auto;
+	overflow-y: scroll;
+	width: 740px;
+	height: 210px;
 	font-family: 'Inconsolata';
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 1440px) {
+.aboutEstuaryParagraph {
+	text-justify: auto;
+	text-overflow: auto;
+	overflow-y: scroll;
+	width: 650px;
+	height: 210px;
+	font-family: 'Inconsolata';
+	font-size: 100%;
+}
+}
+
+@media only screen and (max-width: 1366px) {
+   .aboutEstuaryParagraph {
+	text-justify: auto;
+	text-overflow: auto;
+	overflow-y: scroll;
+	width: 620px;
+	height: 210px;
+	font-family: 'Inconsolata';
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 1280px) {
+   .aboutEstuaryParagraph {
+	text-justify: auto;
+	text-overflow: auto;
+	overflow-y: scroll;
+	width: 580px;
+	height: 210px;
+	font-family: 'Inconsolata';
+	font-size: 70%;
+}
+}
+
+@media only screen and (max-width: 1024px) {
+   .aboutEstuaryParagraph {
+	text-justify: auto;
+	text-overflow: auto;
+	overflow-y: scroll;
+	width: 440px;
+	height: 210px;
+	font-family: 'Inconsolata';
+	font-size: 70%;
+}
+}
+
+@media only screen and (max-width: 800px) {
+   .aboutEstuaryParagraph {
+	text-justify: auto;
+	text-overflow: auto;
+	overflow-y: scroll;
+	width: 320px;
+	height: 210px;
+	font-family: 'Inconsolata';
+	font-size: 60%;
+}
+}
+
+
+.paragraphList {
+	font-family: 'Inconsolata';
+
 }
 
 .logo {
@@ -572,14 +658,14 @@ td {
 	text-align:center
 }
 
-/* The 'Ã¢â€“Â²' arrow td */
+/* The 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The 'Ã¢â€“Â¼' arrow td */
+/* The 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
