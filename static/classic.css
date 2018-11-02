@@ -1,3 +1,9 @@
+.fullWidth {
+	width: 100%;
+	padding: 0px 0px 0px 0px;
+	margin: 0px 0px 0px 0px;
+}
+
 body {
 	background-color: black;
 	/* color: rgb(98, 221, 115); */
@@ -28,7 +34,7 @@ textarea {
 
 .visibleArea{
 	width: 100%;
-	height:45px;
+	/* height:45px; */
 
 }
 
@@ -37,7 +43,8 @@ textarea {
 		bottom: 30px;
 	font-size: 70%;
   overflow: scroll;
-	height:80px;
+	display: none;
+	/* height:80px; */
 
 }
 

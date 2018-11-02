@@ -62,19 +62,23 @@ tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TOD
   let deltaFuture = fmap forEditing delta
   let parserFuture = fmap fst deltaFuture
   let textFuture = fmap snd deltaFuture
-  (edit,eval) <- divClass "labelAndTextPattern" $ do
+
+  (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     let initialParser = fst $ forEditing i
     let parserMap = constDyn $ fromList $ fmap (\x -> (TidalTextNotation x,show x)) tidalParsers
-    d <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
-    let parserValue = _dropdown_value d -- Dynamic t TidalParser
-    let parserEvent = _dropdown_change d
-    b <- divClass "textInputLabel" $ do
+    d' <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
+    evalButton' <- divClass "textInputLabel" $ do
       x <- button "eval"
       dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
       return x
+    infoButton' <- divClass "referenceButton" $ button "?"
+    return (d',evalButton',infoButton')
+
+  (edit,eval) <- divClass "labelAndTextPattern" $ do
+    let parserValue = _dropdown_value d -- Dynamic t TidalParser
+    let parserEvent = _dropdown_change d
     let initialText = snd $ forEditing i
-    infoButton <- divClass "referenceButton" $ button "?"
-    textVisible <- toggle True infoButton--toggle True never
+    textVisible <- toggle True infoButton
     helpVisible <- toggle False infoButton
     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
     let languageToDisplayHelp = (TidalTextNotation MiniTidal)
@@ -82,7 +86,7 @@ tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TOD
     hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent = tagDyn v' $ leftmost [b,shiftEnter]
+    let evalEvent = tagDyn v' $ leftmost [evalButton,shiftEnter]
     return (editEvent,evalEvent)
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
