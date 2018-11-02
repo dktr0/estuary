@@ -80,14 +80,15 @@ header ctx renderInfo = divClass "header" $ do
   port' <- holdDyn "" port
   divClass "logo" $ dynText =<< translateDyn Term.EstuaryDescription ctx
   do
-    dynText =<< translateDyn Term.Load ctx
-    text ": "
-    dynText =<< mapDyn (show . avgRenderLoad) renderInfo
-    text "% ("
-    dynText =<< mapDyn (show . peakRenderLoad) renderInfo
-    text "% "
-    dynText =<< translateDyn Term.Peak ctx
-    text ") "
+    divClass "peak" $ do
+      dynText =<< translateDyn Term.Load ctx
+      text ": "
+      dynText =<< mapDyn (show . avgRenderLoad) renderInfo
+      text "% ("
+      dynText =<< mapDyn (show . peakRenderLoad) renderInfo
+      text "% "
+      dynText =<< translateDyn Term.Peak ctx
+      text ") "
   wsStatus' <- mapDyn wsStatus ctx
   clientCount' <- mapDyn clientCount ctx
   statusMsg <- combineDyn f wsStatus' clientCount'
@@ -104,19 +105,21 @@ header ctx renderInfo = divClass "header" $ do
     f x _ = x
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
-clientConfigurationWidgets ctx = divClass "webDirt" $ divClass "webDirtMute" $ do
-  let styleMap =  fromList [("classic.css", "Classic"),("inverse.css","Inverse")]
-  translateDyn Term.Theme ctx >>= dynText
-  styleChange <- _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
-  let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
-  translateDyn Term.Language ctx >>= dynText
-  let langMap = constDyn $ fromList $ zip languages (fmap show languages)
-  langChange <- _dropdown_change <$> (dropdown English langMap def)
-  let langChange' = fmap (\x c -> c { language = x }) langChange
-  text "SuperDirt:"
-  sdInput <- checkbox False $ def
-  let sdOn = fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
-  text "WebDirt:"
-  wdInput <- checkbox True $ def
-  let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
-  return $ mergeWith (.) [langChange',sdOn,wdOn, styleChange']
+clientConfigurationWidgets ctx = divClass "webDirt" $ do
+  divClass "logoIcon" $ do elAttr "img" (fromList [("src", "estuary-logo-green.svg"), ("class", "estuaryLogoIcon")]) blank
+  divClass "webDirtMute" $ divClass "webDirtContent" $ do
+    let styleMap =  fromList [("classic.css", "Classic"),("inverse.css","Inverse")]
+    translateDyn Term.Theme ctx >>= dynText
+    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
+    let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
+    translateDyn Term.Language ctx >>= dynText
+    let langMap = constDyn $ fromList $ zip languages (fmap show languages)
+    langChange <- divClass "languageSelector" $ do _dropdown_change <$> (dropdown English langMap def)
+    let langChange' = fmap (\x c -> c { language = x }) langChange
+    text "SuperDirt:"
+    sdInput <- divClass "superDirtCheckbox" $ checkbox False $ def
+    let sdOn = fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
+    text "WebDirt:"
+    wdInput <-divClass "webDirtCheckbox" $ checkbox True $ def
+    let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
+    return $ mergeWith (.) [langChange',sdOn,wdOn, styleChange']

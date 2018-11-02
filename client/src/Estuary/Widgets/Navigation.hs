@@ -66,7 +66,7 @@ page ctx _ _ wsDown Splash = do
 
   navEvents <- divClass "splash-container" $ do
     divClass "splash-margin" $ do
-      divClass "splash-panel" $ do
+      divClass "splash-panel-title" $ do
         divClass "splash-title" $ do
           text "Estuary"
           divClass "splash-line" blank

@@ -1,6 +1,7 @@
 body {
 	background-color: black;
-	color: hsl(120,100%,80%);
+	/* color: rgb(98, 221, 115); */
+	color: rgb(98, 221, 115);
 	height: 100%;
 	margin: 0;
 	font-family: 'Inconsolata';
@@ -13,14 +14,14 @@ body {
 
 input {
 	background-color: black;
-	color: hsl(120,100%,80%);
+	color: rgb(98, 221, 115);
 	margin: 1px;
 }
 
 
 textarea {
 	background-color: transparent;
-	color: hsl(120,100%,80%);
+	color: rgb(98, 221, 115);
 	width: 100%;
 	height: 100%;
 }
@@ -43,7 +44,7 @@ textarea {
 
 button {
 	background-color: hsl(0,0%,20%);
-	color: hsl(120,100%,70%);
+	color: rgb(98, 221, 115);
 	border: none;
 	border-radius: 4px;
 }
@@ -59,25 +60,127 @@ button {
 	padding-left: 15px;
 	padding-right: 15px;
   font-family: estuaryFont;
+  height: 70px;
+  margin-top:0.6em;
+}
 
+.logo {
+	display: inline-block;
+	color: transparent;
+}
+
+.peak{
+	display: inline-block;
+/*   position: relative; */
+  float: right;
+}
+
+.server {
+ position: relative;
+ top: 1.25em;
+ left: 2em;
+	border-left: 1px solid;
+	margin-left: 0.5em;
+	padding-left: 0.5em;
+}
+
+.webDirt { /* webDirt status area in top right of header */
+	display: flex;
+	position: relative;
+	bottom: 20px;
+	width: 100%;
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+	padding-top: 0.25em;
+	padding-bottom: 0.05em;
+	margin-top: 0.30em;
+	margin-bottom:0.05em;
+	font-size:1.5em;
+}
+
+.webDirtMute {
+	display: flex;
+	font-size: 50%;
+	width:80vw;
+	padding-top: 1em;
+}
+
+.webDirtContent {
+ display: flex;
+	margin-left: auto;
+}
+
+.logoIcon{
+		box-sizing: border-box;
+    width: 50%;
+		margin-left: 0.20em;
 }
 
 
-select {
-	background-color: black;
-	color: hsl(120,100%,80%);
+
+select { /*theme and language dropdown menus */
+	background-color: transparent;
+	color: rgb(98, 221, 115);
 	border: 1px solid;
-	border-color: hsl(120,100%,80%);
+	border-color: rgb(98, 221, 115);
+	min-width: 15%;
+	margin-right: 1em;
+
+
 }
+
+.themeSelector {
+		position: relative;
+	bottom: 0.5em;
+	border-right: 1px solid;
+	padding-right: 0.0em;
+	padding-left: 0.5em;
+  margin-right: 0.5em;
+
+
+}
+
+.languageSelector {
+			position: relative;
+	bottom: 0.5em;
+	border-right: 1px solid;
+	padding-right: 0.0em;
+	padding-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+.superDirtCheckbox {
+		position: relative;
+	bottom: 0.5em;
+	border-right: 1px solid;
+	padding-right: 0.5em;
+	padding-left: 0.5em;
+	  margin-right: 0.75em;
+}
+
+.webDirtCheckbox {
+		position: relative;
+	bottom: 0.5em;
+	padding-right: 0.5em;
+	padding-left: 0.5em;
+}
+
+.estuaryLogoIcon {
+  width: 5%;
+/* 	float: left; */
+}
+
+
 
 
 .page { /* contains the interface for programming on menu selected in pageMenu */
-	border: 1px solid;
-	border-radius: 10px;
+	border-bottom: 1px solid;
+/* 	border-radius: 10px; */
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+	margin-bottom:0.25em;
 }
 
 .footer { /* the header area containing logo, webDirt, pageMenu and hintArea */
@@ -101,6 +204,7 @@ select {
 }
 
 .splash-panel {
+	background: rgb(25, 25, 25);
 	font-family: estuaryFont;
 	border: 0.25em solid;
 	border-radius: 4px;
@@ -119,9 +223,23 @@ select {
 	min-height: 0;
 }
 
+.splash-panel-title {
+	font-family: estuaryFont;
+	text-align: center;
+	height: 100%;
+	box-sizing: border-box;
+	max-height: 16em;
+	display: flex;
+	flex-direction: column;
+			padding-right: 0.4em;
+
+}
+
 .splash-title {
+	display: flex;
 	text-align: justify;
 	margin-bottom: 1%;
+	font-size: 2em;
 }
 
 .splash-info {
@@ -129,6 +247,9 @@ select {
 	width:50px;
 	min-width: 100%;
 	font-size: 0.50vw;
+	height: 100%;
+	border: 0.35em solid;
+  border-radius: 4px;
 }
 
 @media only screen and (max-width: 2000px ) {
@@ -145,7 +266,7 @@ select {
 	text-align: justify;
 	width:50px;
 	min-width: 100%;
-	font-size: 0.72vw;
+	font-size: 0.70vw;
 }
 }
 
@@ -163,50 +284,38 @@ select {
 	text-align: justify;
 	width:50px;
 	min-width: 100%;
-	font-size: 0.9vw;
+	font-size: 0.8vw;
 }
+
 }
 
 @media only screen and (max-width: 950px) {
+
 	.splash-info {
    	text-align: justify;
 	  width:50px;
 		min-width: 100%;
 	  font-size: 1vw;
 }
+
+
 }
 
 .splash-line {
-	display: none;
+/* 	display: none; */
+	background-color: rgb(98, 221, 115);
+  border-radius: 4px;
+	margin-left: 2%;
+	margin-top: 0.4em;
+	width: 100%;
+	height: 0.1em;
 }
+
 .aboutEstuaryParagraph {
 	text-justify: auto;
 	text-overflow: auto;
 	font-family: 'Inconsolata';
-}
-.paragraphList {
-	font-family: 'Inconsolata';
-
-}
-
-.logo {
-	display: inline-block;
-}
-
-.server {
-	display: inline-block;
-}
-
-.webDirt { /* webDirt status area in top right of header */
-	display: inline-block;
-	float: right;
-	/* width: 49%; */
-}
-
-.webDirtMute {
-	float: right;
-	font-size: 50%;
-
+	padding: 0.5em;
 }
 
 
@@ -229,8 +338,6 @@ select {
 	display: inline-block;
 	width: 50%;
 }
-
-
 
 .pageMenu { /* contains page menu in bottom left of header */
 	display: inline-block;
@@ -361,7 +468,7 @@ select {
 
 .labelWidgetTextInput {
 	font-family: estuaryFont;
-	font-size: 80%;
+	font-size: 60%;
 /* 	background-color: yellow; */
 	flex:1;
 	color: hsl(120,0%,80%);
@@ -369,23 +476,125 @@ select {
 }
 
 .textInputLabel {
-
+	/* 	background-color: green; */
 	width: 4em;
 	font-size: 100%;
 	font-weight: normal;
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
-	position: relative;
-	left: 25%;
+ 		position: relative;
+	left: 30%;
 	bottom: 20px;
-/* 	background-color: green; */
 }
 
-.textInputLabel button {
-/* 	font-family: estuaryFont;
-	font-size: 80%; */
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
 }
+
+@media only screen and (max-width: 2000px ) {
+   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+ 		position: relative;
+	left: 17%;
+	bottom: 20px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 1600px) {
+   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+ 		position: relative;
+	left: 21%;
+	bottom: 20px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 1450px) {
+   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+ 		position: relative;
+	left: 23%;
+	bottom: 20px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 1200px) {
+   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+ 		position: relative;
+	left: 27%;
+	bottom: 20px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 950px) {
+	   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+ 		position: relative;
+	left: 35%;
+	bottom: 20px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+
+}
+
+
 
 .referenceButton {
 /* 	background-color: brown; */
@@ -398,13 +607,13 @@ select {
 
 .textInputToEndOfLine {
 	position: relative;
-	bottom: 5px;
+	bottom: 35px;
 /* 	background-color: pink; */
 	flex: 1;
 	vertical-align: middle;
 	font-size: 100%;
 	font-weight: normal;
-	color: hsl(120,100%,80%);
+	color: rgb(98, 221, 115);
 	border: none;
 	padding: 0px;
 	margin: 0px;
@@ -630,14 +839,14 @@ td {
 	text-align:center
 }
 
-/* The 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â²' arrow td */
+/* The 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¼' arrow td */
+/* The 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
@@ -802,21 +1011,25 @@ font-family: estuaryFont;
 /* 	background-color: blue; */
 	display: flex;
 	border: none;
-	width: 30%;
+	width: 25%;
 }
 
 
 .ensembleTempo textarea{
-
+/*  background-color: white; */
 	font-family: estuaryFont;
-	font-size: 80%;
+	font-size: 75%;
   margin-right: 1em;
+	position: relative;
+	top: 0.25em;
 	border: none;
-	width: 50%;
+	max-width:13em;
+	text-align: center;
 }
+
 .ensembleTempo button{
 	border: none;
-	width: 50%;
+
 }
 
 /* help files  */
@@ -836,7 +1049,7 @@ font-family: estuaryFont;
 }
 
 .refExampleButton button:hover {
-    background-color: hsl(120,100%,80%); /* Green */
+    background-color: rgb(98, 221, 115); /* Green */
     color: black;
 	cursor: help;
 }
@@ -849,7 +1062,7 @@ font-family: estuaryFont;
 .exampleText {
 	display: flex;
     font-family: 'Inconsolata';
-	color:  hsl(120,100%,80%);
+	color:  rgb(98, 221, 115);
 	font-style: italic;
 /* 	margin-right:  5%; */
 }
@@ -860,7 +1073,7 @@ font-family: estuaryFont;
 
 .about {
 /* 	font-variant:small-caps; */
-	color:  hsl(120,100%,70%);
+	color:  rgb(98, 221, 115);
 	text-align: center;
   border-radius: 3px;
 	margin-bottom: 4px;
@@ -876,7 +1089,7 @@ font-family: estuaryFont;
 
 .aboutTitle {
 /* 	font-variant:small-caps; */
-			color:  hsl(120,100%,70%);
+			color:  rgb(98, 221, 115);
 
 }
 
@@ -891,14 +1104,13 @@ font-family: estuaryFont;
 		font-size: 95%;
 	text-align: center;
 /* 	font-variant:small-caps; */
-	color:  hsl(120,100%,70%);
+	color:  rgb(98, 221, 115);
 	margin-bottom: 1%;
 }
 
 .samples {
 	color: hsl(120,100%,90%, 100%);
 }
-
 
 .listenButton button {
 	margin-left: 20%;
