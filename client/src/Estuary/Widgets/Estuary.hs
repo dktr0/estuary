@@ -24,6 +24,7 @@ import Estuary.Widgets.WebSocket
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Context
+import Estuary.Types.Hint
 import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
@@ -32,6 +33,7 @@ import Estuary.Types.LanguageHelp
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
+import qualified Estuary.Types.Terminal as Terminal
 
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
 estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
@@ -39,7 +41,7 @@ estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
   renderInfo <- pollRenderInfoChanges riM
   headerChanges <- header ctx renderInfo
   (values,deltasUp,hints,tempoChanges) <- divClass "page" $ navigation ctx renderInfo commands deltasDown'
-  commands <- divClass "chat" $ terminalWidget ctx deltasUp deltasDown' hints
+  commands <- footer ctx renderInfo deltasUp deltasDown' hints
   (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
   let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
@@ -73,32 +75,23 @@ foreign import javascript safe
 
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
 header ctx renderInfo = divClass "header" $ do
+  elAttr "img" (fromList [("src", "estuary-logo-green.svg"), ("class", "estuaryLogoIcon")]) blank
   tick <- getPostBuild
   hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
   divClass "logo" $ dynText =<< translateDyn Term.EstuaryDescription ctx
-  do
-    divClass "peak" $ do
-      dynText =<< translateDyn Term.Load ctx
-      text ": "
-      dynText =<< mapDyn (show . avgRenderLoad) renderInfo
-      text "% ("
-      dynText =<< mapDyn (show . peakRenderLoad) renderInfo
-      text "% "
-      dynText =<< translateDyn Term.Peak ctx
-      text ") "
   wsStatus' <- mapDyn wsStatus ctx
   clientCount' <- mapDyn clientCount ctx
   statusMsg <- combineDyn f wsStatus' clientCount'
-  divClass "server" $ do
+{-  divClass "server" $ do
     text "server: "
     dynText hostName'
     text ":"
     dynText port'
     text ": "
-    dynText statusMsg
+    dynText statusMsg -}
   clientConfigurationWidgets ctx
   where
     f "connection open" c = "(" ++ (show c) ++ " clients)"
@@ -106,7 +99,6 @@ header ctx renderInfo = divClass "header" $ do
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "webDirt" $ do
-  divClass "logoIcon" $ do elAttr "img" (fromList [("src", "estuary-logo-green.svg"), ("class", "estuaryLogoIcon")]) blank
   divClass "webDirtMute" $ divClass "webDirtContent" $ do
     let styleMap =  fromList [("classic.css", "Classic"),("inverse.css","Inverse")]
     translateDyn Term.Theme ctx >>= dynText
@@ -123,3 +115,17 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ do
     wdInput <-divClass "webDirtCheckbox" $ checkbox True $ def
     let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
     return $ mergeWith (.) [langChange',sdOn,wdOn, styleChange']
+
+footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
+  -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
+footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
+  divClass "peak" $ do
+    dynText =<< translateDyn Term.Load ctx
+    text ": "
+    dynText =<< mapDyn (show . avgRenderLoad) renderInfo
+    text "% ("
+    dynText =<< mapDyn (show . peakRenderLoad) renderInfo
+    text "% "
+    dynText =<< translateDyn Term.Peak ctx
+    text ") "
+  terminalWidget ctx deltasDown deltasUp hints

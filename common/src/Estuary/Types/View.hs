@@ -136,14 +136,14 @@ presetView "working" = Views [
   ]
 
 presetView "cybernetic" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 1, TidalTextView 2 5]),
-  ViewDiv "eightMiddleR" (Views [LabelView 3, TidalTextView 4 5]),
-  ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 5]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 5]),
-  ViewDiv "eightMiddleL" (Views [LabelView 9, TidalTextView 10 5]),
-  ViewDiv "eightMiddleR" (Views [LabelView 11, TidalTextView 12 5]),
-  ViewDiv "eightMiddleL" (Views [LabelView 13, TidalTextView 14 5]),
-  ViewDiv "eightMiddleR" (Views [LabelView 15, TidalTextView 16 5])
+  ViewDiv "eightMiddleL" (Views [LabelView 1, TidalTextView 2 4]),
+  ViewDiv "eightMiddleR" (Views [LabelView 3, TidalTextView 4 4]),
+  ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 4]),
+  ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 4]),
+  ViewDiv "eightMiddleL" (Views [LabelView 9, TidalTextView 10 4]),
+  ViewDiv "eightMiddleR" (Views [LabelView 11, TidalTextView 12 4]),
+  ViewDiv "eightMiddleL" (Views [LabelView 13, TidalTextView 14 4]),
+  ViewDiv "eightMiddleR" (Views [LabelView 15, TidalTextView 16 4])
   ]
 
 presetView _ = standardView

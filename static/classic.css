@@ -57,68 +57,40 @@ button {
 }
 
 .header  { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	padding-top: 5px;
-	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+	margin-top: 0.5em;
   font-family: estuaryFont;
-  height: 70px;
-  margin-top:0.6em;
-}
-
-.logo {
-	display: inline-block;
-	color: transparent;
 }
 
 .peak{
-	display: inline-block;
-/*   position: relative; */
   float: right;
+	font-size: 80%;
 }
 
 .server {
- position: relative;
- top: 1.25em;
- left: 2em;
-	border-left: 1px solid;
-	margin-left: 0.5em;
-	padding-left: 0.5em;
+  position: relative;
+  top: 1.25em;
+  left: 2em;
+  margin-left: 0.5em;
+  padding-left: 0.5em;
+  margin-bottom: 0.6em;
 }
 
 .webDirt { /* webDirt status area in top right of header */
-	display: flex;
-	position: relative;
-	bottom: 20px;
-	width: 100%;
-	border-top: 1px solid;
-	border-bottom: 1px solid;
-	padding-top: 0.25em;
-	padding-bottom: 0.05em;
-	margin-top: 0.30em;
-	margin-bottom:0.05em;
 	font-size:1.5em;
+	float: right;
 }
 
 .webDirtMute {
 	display: flex;
 	font-size: 50%;
-	width:80vw;
-	padding-top: 1em;
 }
 
 .webDirtContent {
  display: flex;
 	margin-left: auto;
 }
-
-.logoIcon{
-		box-sizing: border-box;
-    width: 50%;
-		margin-left: 0.20em;
-}
-
-
 
 select { /*theme and language dropdown menus */
 	background-color: transparent;
@@ -132,19 +104,13 @@ select { /*theme and language dropdown menus */
 }
 
 .themeSelector {
-		position: relative;
-	bottom: 0.5em;
 	border-right: 1px solid;
 	padding-right: 0.0em;
 	padding-left: 0.5em;
   margin-right: 0.5em;
-
-
 }
 
 .languageSelector {
-			position: relative;
-	bottom: 0.5em;
 	border-right: 1px solid;
 	padding-right: 0.0em;
 	padding-left: 0.5em;
@@ -152,8 +118,6 @@ select { /*theme and language dropdown menus */
 }
 
 .superDirtCheckbox {
-		position: relative;
-	bottom: 0.5em;
 	border-right: 1px solid;
 	padding-right: 0.5em;
 	padding-left: 0.5em;
@@ -161,14 +125,13 @@ select { /*theme and language dropdown menus */
 }
 
 .webDirtCheckbox {
-		position: relative;
-	bottom: 0.5em;
 	padding-right: 0.5em;
 	padding-left: 0.5em;
 }
 
 .estuaryLogoIcon {
-  width: 5%;
+  width: 1.5em;
+	margin-right: 1em;
 /* 	float: left; */
 }
 
@@ -176,6 +139,7 @@ select { /*theme and language dropdown menus */
 
 
 .page { /* contains the interface for programming on menu selected in pageMenu */
+	border-top: 1px solid;
 	border-bottom: 1px solid;
 /* 	border-radius: 10px; */
 	padding-top: 5px;
@@ -337,8 +301,8 @@ select { /*theme and language dropdown menus */
 }
 
 .logo { /* logo in top left of header area */
-	display: inline-block;
-	width: 50%;
+	display: inline;
+	vertical-align: top;
 }
 
 .pageMenu { /* contains page menu in bottom left of header */
@@ -957,6 +921,7 @@ font-family: estuaryFont;
 }
 
 .terminalHeader {
+	width: 60%;
 	display: flex;
 	flex-direction: row;
 	font-family: estuaryFont;

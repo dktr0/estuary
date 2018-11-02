@@ -24,8 +24,8 @@ data Term =
 
 translate :: Term -> Language -> String
 
-translate EstuaryDescription English = "(a live coding symbiont)"
-translate EstuaryDescription Español = "(una simbionte live coding)"
+translate EstuaryDescription English = "Estuary (a live coding symbiont)"
+translate EstuaryDescription Español = "Estuary (una simbionte live coding)"
 
 translate Tutorials Español = "Tutoriales"
 translate Tutorials English = "Tutorials"
