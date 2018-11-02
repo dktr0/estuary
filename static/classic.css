@@ -39,13 +39,8 @@ textarea {
 }
 
 .languageHelp {
-	position: relative;
-		bottom: 30px;
 	font-size: 70%;
   overflow: scroll;
-	display: none;
-	/* height:80px; */
-
 }
 
 
@@ -484,15 +479,12 @@ select { /*theme and language dropdown menus */
 
 .textInputLabel {
 	/* 	background-color: green; */
-	width: 4em;
 	font-size: 100%;
 	font-weight: normal;
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
- 		position: relative;
-	left: 30%;
-	bottom: 20px;
+	display: inline;
 }
 
  .textInputLabel button {
@@ -509,9 +501,6 @@ select { /*theme and language dropdown menus */
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
- 		position: relative;
-	left: 17%;
-	bottom: 20px;
 }
 
  .textInputLabel button {
@@ -529,9 +518,6 @@ select { /*theme and language dropdown menus */
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
- 		position: relative;
-	left: 21%;
-	bottom: 20px;
 }
 
  .textInputLabel button {
@@ -549,9 +535,6 @@ select { /*theme and language dropdown menus */
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
- 		position: relative;
-	left: 23%;
-	bottom: 20px;
 }
 
  .textInputLabel button {
@@ -569,9 +552,6 @@ select { /*theme and language dropdown menus */
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
- 		position: relative;
-	left: 27%;
-	bottom: 20px;
 }
 
  .textInputLabel button {
@@ -589,9 +569,6 @@ select { /*theme and language dropdown menus */
 	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
- 		position: relative;
-	left: 35%;
-	bottom: 20px;
 }
 
  .textInputLabel button {
@@ -606,25 +583,28 @@ select { /*theme and language dropdown menus */
 .referenceButton {
 /* 	background-color: brown; */
   font-size: 100%;
-	width: 3%;
+	margin-left: 1em;
+	margin-right: 1em;
+	float: right;
+	/* width: 3%;
 	position: relative;
 	left: 95%;
-	bottom: 40px;
+	bottom: 40px; */
 }
 
 .textInputToEndOfLine {
-	position: relative;
-	bottom: 35px;
-/* 	background-color: pink; */
-	flex: 1;
-	vertical-align: middle;
 	font-size: 100%;
 	font-weight: normal;
 	color: rgb(98, 221, 115);
 	border: none;
 	padding: 0px;
-	margin: 0px;
-	height: 100%;
+	margin-top: 0.5em;
+	margin-bottom: 0px;
+	margin-left: 0px;
+	margin-right: 0px;
+	height: auto;
+	resize: none;
+	overflow: hidden;
 }
 
 
