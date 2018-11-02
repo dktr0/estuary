@@ -41,7 +41,7 @@ textWidgetForPatternChain i delta = do
 
 textAreaWidgetForPatternChain :: MonadWidget t m => Int -> String -> Event t String -> m (Dynamic t String, Event t String,Event t ())
 textAreaWidgetForPatternChain rows i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine" <> "rows" =: show rows)
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine" <> "rows" =: show rows <> "style" =: "height: auto")
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   --let keys = _textArea_keypress x
   let e = _textArea_element x
