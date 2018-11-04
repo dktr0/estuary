@@ -2,9 +2,9 @@ module Estuary.Languages.TidalParsers where
 
 import Text.ParserCombinators.Parsec
 import qualified Sound.Tidal.Context as Tidal
+import Sound.Tidal.MiniTidal
 
 import Estuary.Types.TidalParser
-import Estuary.Languages.MiniTidal
 import Estuary.Languages.CQenze
 import Estuary.Languages.Morelia
 import Estuary.Languages.Saborts
