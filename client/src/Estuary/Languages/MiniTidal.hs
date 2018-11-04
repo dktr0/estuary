@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Estuary.Languages.MiniTidal (miniTidalParser) where
+module Estuary.Languages.MiniTidal (miniTidal) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -8,14 +8,16 @@ import Text.Parsec.Language (haskellDef)
 import Data.List (intercalate)
 import Data.Bool (bool)
 import Data.Ratio
-import Sound.Tidal.Context (ParamPattern,Pattern,Enumerable,Parseable,Time,ParamMap,Arc)
+import Sound.Tidal.Context (Pattern,ParamPattern,Enumerable,Parseable,Time,ParamMap,Arc,TPat)
 import qualified Sound.Tidal.Context as T
 
-miniTidalParser :: String -> Either ParseError ParamPattern
-miniTidalParser = parse miniTidal "miniTidal"
+-- | This, the only definition exported by this module, is depended upon by
+-- Estuary, and changes to its type will cause problems downstream for Estuary.
+miniTidal :: String -> Either ParseError ParamPattern
+miniTidal x = parse miniTidalParser "miniTidal" x
 
-miniTidal :: Parser ParamPattern
-miniTidal = whiteSpace >> choice [
+miniTidalParser :: Parser ParamPattern
+miniTidalParser = whiteSpace >> choice [
   eof >> return T.silence,
   do
     x <- pattern
@@ -72,11 +74,11 @@ silence = function "silence" >> return T.silence
 
 genericComplexPatterns :: Pattern' a => Parser (Pattern a)
 genericComplexPatterns = choice [
-  function "stack" >> listPatternArg  >>= return . T.stack,
-  function "fastcat" >> listPatternArg >>= return . T.fastcat,
-  function "slowcat" >> listPatternArg >>= return . T.slowcat,
-  function "cat" >> listPatternArg >>= return . T.cat,
-  function "listToPat" >> listLiteralArg >>= return . T.listToPat,
+  (function "stack" >> return T.stack) <*> listPatternArg,
+  (function "fastcat" >> return T.fastcat) <*> listPatternArg,
+  (function "slowcat" >> return T.slowcat) <*> listPatternArg,
+  (function "cat" >> return T.cat) <*> listPatternArg,
+  (function "listToPat" >> return T.listToPat) <*> listLiteralArg,
   (function "fit" >> return T.fit) <*> literalArg <*> listLiteralArg <*> patternArg,
   (function "choose" >> return T.choose) <*> listLiteralArg,
   (function "randcat" >> return T.randcat) <*> listPatternArg,
@@ -283,7 +285,7 @@ simpleDoublePatterns = choice [
 instance Pattern' Int where
   simplePattern = choice [
     pure <$> int,
-    T.p <$> stringLiteral
+    p'
     ]
   complexPattern = (atom <*> int) <|> enumComplexPatterns <|> numComplexPatterns <|> intComplexPatterns
   mergeOperator = numMergeOperator
@@ -295,7 +297,7 @@ instance Pattern' Int where
 instance Pattern' Integer where
   simplePattern = choice [
     pure <$> integer,
-    T.p <$> stringLiteral
+    p'
     ]
   complexPattern = (atom <*> integer) <|> enumComplexPatterns <|> numComplexPatterns
   mergeOperator = numMergeOperator
@@ -305,7 +307,7 @@ instance Pattern' Integer where
 
 instance Pattern' Double where
   simplePattern = choice [
-    T.p <$> stringLiteral,
+    p',
     pure <$> double,
     simpleDoublePatterns
     ]
@@ -319,7 +321,7 @@ instance Pattern' Double where
 instance Pattern' Time where
   simplePattern = choice [
     pure <$> literal,
-    T.p <$> stringLiteral
+    p'
     ]
   complexPattern = atom <*> literal <|> numComplexPatterns
   mergeOperator = numMergeOperator <|> fractionalMergeOperator
@@ -341,7 +343,7 @@ instance Pattern' Arc where
     if length xs == 2 then return (xs!!0,xs!!1) else unexpected "Arcs must contain exactly two values"
 
 instance Pattern' String where
-  simplePattern = T.p <$> stringLiteral
+  simplePattern = p'
   complexPattern = atom <*> stringLiteral
   mergeOperator = choice [] -- ??
   transformationWithoutArgs = patternTransformationWithoutArgs
@@ -439,3 +441,41 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
+
+p' :: (Enumerable a, Parseable' a) => Parser (Pattern a)
+p' = parseTPat' >>= return . T.toPat
+
+-- The class Parseable' and instances below basically just duplicate the class
+-- Parseable in Tidal but incorporates the parser into our parser instead of
+-- running it.
+
+class Parseable' a where
+  parseTPat' :: Parser (TPat a)
+
+instance Parseable' Double where
+  parseTPat' = parseRhythm' T.pDouble
+
+instance Parseable' String where
+  parseTPat' = parseRhythm' T.pVocable
+
+instance Parseable' Bool where
+  parseTPat' = parseRhythm' T.pBool
+
+instance Parseable' Int where
+  parseTPat' = parseRhythm' T.pIntegral
+
+instance Parseable' Integer where
+  parseTPat' = parseRhythm' T.pIntegral
+
+instance Parseable' Rational where
+  parseTPat' = parseRhythm' T.pRational
+
+parseRhythm' :: Parseable a => Parser (TPat a) -> Parser (TPat a)
+parseRhythm' f = do
+  reservedOp "\""
+  x <- T.pSequence f'
+  reservedOp "\""
+  return x
+  where f' = f
+             <|> do symbol "~" <?> "rest"
+                    return T.TPat_Silence

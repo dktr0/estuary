@@ -9,16 +9,16 @@ import Data.Either
 
 parsesTo :: String -> ParamPattern -> Expectation
 parsesTo s p = x `shouldBe` y
-  where x = arc <$> miniTidalParser s <*> Right (0,16)
+  where x = arc <$> miniTidal s <*> Right (0,16)
         y = Right $ arc p $ (0,16)
 
 causesParseError :: String -> Expectation
-causesParseError s = isLeft (miniTidalParser s) `shouldBe` True
+causesParseError s = isLeft (miniTidal s) `shouldBe` True
 
 main :: IO ()
 main = hspec $ do
 
-  describe "miniTidalParser" $ do
+  describe "miniTidal" $ do
 
     it "parses the empty string as silence" $
       "" `parsesTo` silence
