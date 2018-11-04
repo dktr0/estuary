@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Estuary.Languages.MiniTidal (miniTidal) where
+module Estuary.Languages.MiniTidal (miniTidal,miniTidalIO,miniTidalMain) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -8,13 +8,13 @@ import Text.Parsec.Language (haskellDef)
 import Data.List (intercalate)
 import Data.Bool (bool)
 import Data.Ratio
+import Control.Monad (forever)
 import Sound.Tidal.Context (Pattern,ParamPattern,Enumerable,Parseable,Time,ParamMap,Arc,TPat)
 import qualified Sound.Tidal.Context as T
 
--- | This, the only definition exported by this module, is depended upon by
--- Estuary, and changes to its type will cause problems downstream for Estuary.
+-- This is depended upon by Estuary, and changes to its type will cause problems downstream for Estuary.
 miniTidal :: String -> Either ParseError ParamPattern
-miniTidal x = parse miniTidalParser "miniTidal" x
+miniTidal = parse miniTidalParser "miniTidal"
 
 miniTidalParser :: Parser ParamPattern
 miniTidalParser = whiteSpace >> choice [
@@ -281,7 +281,6 @@ simpleDoublePatterns = choice [
   function "cosine" >> return T.cosine
   ]
 
-
 instance Pattern' Int where
   simplePattern = choice [
     pure <$> int,
@@ -292,7 +291,6 @@ instance Pattern' Int where
   transformationWithoutArgs = patternTransformationWithoutArgs
   transformationWithArgs = patternTransformationWithArgs
   literal = int
-
 
 instance Pattern' Integer where
   simplePattern = choice [
@@ -316,7 +314,6 @@ instance Pattern' Double where
   transformationWithoutArgs = patternTransformationWithoutArgs
   transformationWithArgs = patternTransformationWithArgs
   literal = double
-
 
 instance Pattern' Time where
   simplePattern = choice [
@@ -349,7 +346,6 @@ instance Pattern' String where
   transformationWithoutArgs = patternTransformationWithoutArgs
   transformationWithArgs = patternTransformationWithArgs
   literal = stringLiteral
-
 
 fractionalMergeOperator :: Fractional a => Parser (Pattern a -> Pattern a -> Pattern a)
 fractionalMergeOperator = op "/" >> return (/)
@@ -409,7 +405,9 @@ tokenParser = P.makeTokenParser $ haskellDef {
     "choose","degradeBy","unDegradeBy","degradeOverBy","sometimesBy","sometimes","often",
     "rarely","almostNever","almostAlways","never","always","someCyclesBy","somecyclesBy",
     "someCycles","somecycles","substruct'","repeatCycles","spaceOut","fill","ply","shuffle",
-    "scramble","breakUp","degrade","randcat","randStruct","toScale'","toScale","cycleChoose"],
+    "scramble","breakUp","degrade","randcat","randStruct","toScale'","toScale","cycleChoose",
+    "d1","d2","d3","d4","d5","d6","d7","d8","d9","t1","t2","t3","t4","t5","t6","t7","t8","t9",
+    "cps","xfadeIn"],
   P.reservedOpNames = ["+","-","*","/","<~","~>","#","|=|","|+|","|-|","|*|","|/|","$","\""]
   }
 
@@ -447,7 +445,7 @@ p' = parseTPat' >>= return . T.toPat
 
 -- The class Parseable' and instances below basically just duplicate the class
 -- Parseable in Tidal but incorporates the parser into our parser instead of
--- running it.
+-- running it. Probably this idea should just be part of Parseable instead.
 
 class Parseable' a where
   parseTPat' :: Parser (TPat a)
@@ -479,3 +477,75 @@ parseRhythm' f = do
   where f' = f
              <|> do symbol "~" <?> "rest"
                     return T.TPat_Silence
+
+-- a temporary model of a Tidal runtime environment, likely obsolete given
+-- recent work on Tidal...
+data Tidal = Tidal {
+  ds :: [ParamPattern -> IO ()],
+  ts :: [(Time -> [ParamPattern] -> ParamPattern) -> ParamPattern -> IO ()],
+  cps' :: Double -> IO ()
+  }
+
+miniTidalIO :: Tidal -> String -> Either ParseError (IO ())
+miniTidalIO tidal = parse (miniTidalIOParser tidal) "miniTidal"
+
+miniTidalIOParser :: Tidal -> Parser (IO ())
+miniTidalIOParser tidal = whiteSpace >> choice [
+  eof >> return (return ()),
+  dParser tidal <*> patternArg,
+  tParser tidal <*> transitionArg <*> patternArg,
+  (reserved "cps" >> return (cps' tidal)) <*> literalArg
+  ]
+
+dParser :: Tidal -> Parser (ParamPattern -> IO ())
+dParser tidal = choice [
+  reserved "d1" >> return ((ds tidal)!!0),
+  reserved "d2" >> return ((ds tidal)!!1),
+  reserved "d3" >> return ((ds tidal)!!2),
+  reserved "d4" >> return ((ds tidal)!!3),
+  reserved "d5" >> return ((ds tidal)!!4),
+  reserved "d6" >> return ((ds tidal)!!5),
+  reserved "d7" >> return ((ds tidal)!!6),
+  reserved "d8" >> return ((ds tidal)!!7),
+  reserved "d9" >> return ((ds tidal)!!8)
+  ]
+
+tParser :: Tidal -> Parser ((Time -> [ParamPattern] -> ParamPattern) -> ParamPattern -> IO ())
+tParser tidal = choice [
+  reserved "t1" >> return ((ts tidal)!!0),
+  reserved "t2" >> return ((ts tidal)!!1),
+  reserved "t3" >> return ((ts tidal)!!2),
+  reserved "t4" >> return ((ts tidal)!!3),
+  reserved "t5" >> return ((ts tidal)!!4),
+  reserved "t6" >> return ((ts tidal)!!5),
+  reserved "t7" >> return ((ts tidal)!!6),
+  reserved "t8" >> return ((ts tidal)!!7),
+  reserved "t9" >> return ((ts tidal)!!8)
+  ]
+
+transitionArg :: Parser (Time -> [ParamPattern] -> ParamPattern)
+transitionArg = choice [
+  parensOrApplied $ (reserved "xfadeIn" >> return T.xfadeIn) <*> literalArg
+  ]
+
+miniTidalMain :: IO ()
+miniTidalMain = do
+  putStrLn "miniTidal"
+  (cps, getNow) <- T.cpsUtils
+  (d1,t1) <- T.superDirtSetters getNow
+  (d2,t2) <- T.superDirtSetters getNow
+  (d3,t3) <- T.superDirtSetters getNow
+  (d4,t4) <- T.superDirtSetters getNow
+  (d5,t5) <- T.superDirtSetters getNow
+  (d6,t6) <- T.superDirtSetters getNow
+  (d7,t7) <- T.superDirtSetters getNow
+  (d8,t8) <- T.superDirtSetters getNow
+  (d9,t9) <- T.superDirtSetters getNow
+  let tidal = Tidal {
+    ds = [d1,d2,d3,d4,d5,d6,d7,d8,d9],
+    ts = [t1,t2,t3,t4,t5,t6,t7,t8,t9],
+    cps' = cps
+  }
+  forever $ do
+    cmd <- miniTidalIO tidal <$> getLine
+    either (\x -> putStrLn $ "error: " ++ show x) id cmd
