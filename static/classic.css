@@ -340,6 +340,26 @@ ______________________________
 
 /*
 ______________________________
+         Plot classes
+______________________________
+*/
+
+.plot {
+ border: 1pt solid grey;
+	border-radius: 5px;
+}
+
+.plot canvas{
+	border: 1pt solid rgb(100,100,100);
+	border-radius: 5px;
+}
+
+.plot div{
+	left:0%;
+}
+
+/*
+______________________________
          Tutorial classes
 ______________________________
 */

@@ -46,26 +46,32 @@ tidalTextWidget i delta = divClass "tidalTextWidget" $ do
   let deltaFuture = fmap forEditing delta'
   let parserFuture = fmap fst deltaFuture
   let textFuture = fmap snd deltaFuture
-  (edit,eval) <- divClass "labelAndTextPattern" $ do
+  (edit,eval,slnc) <- divClass "labelAndTextPattern" $ do
     let initialParser = fst $ forEditing i'
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,show x)) tidalParsers
     d <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
     let parserValue = _dropdown_value d
     let parserEvent = _dropdown_change d
-    b <- divClass "textInputLabel" $ button "eval"
+    (b,s) <- divClass "textInputLabel" $ do
+      ev <- el "div" $ button "eval"
+      si <- el "div" $ button "silence"
+      return (ev,si)
     let initialText = snd $ forEditing i'
     (textValue,textEvent) <- textAreaWidgetForPatternChain initialText textFuture
-    v' <- combineDyn (,) parserValue textValue
+    textVal' <- holdDyn initialText $ leftmost [tagDyn textValue b,updated textValue, (<$) "" s]
+    v' <- combineDyn (,) parserValue textVal'
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent = tagDyn v' b
-    return (editEvent,evalEvent)
+    let evalEvent = tagDyn v' $ leftmost [s, b]
+    let silenceEvent =  fmap (const EmptyTransformedPattern) s
+    return (editEvent,evalEvent,silenceEvent)
   let deltaPast = fmap forRendering delta'
   pastValue <- holdDyn (forRendering i') $ leftmost [deltaPast,eval]
   futureValue <- holdDyn (forEditing i') $ leftmost [deltaFuture,edit]
   value <- combineDyn (\p f -> TidalTextPattern (g p f)) pastValue futureValue
   let deltaUpEdit = tagDyn value edit
   let deltaUpEval = tagDyn value eval
-  let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
+  let deltaUpSilence = slnc
+  let deltaUp = leftmost [deltaUpEdit,deltaUpEval, deltaUpSilence]
   return (value,deltaUp,never)
   where
     g p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions

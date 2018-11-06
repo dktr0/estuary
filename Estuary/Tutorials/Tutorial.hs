@@ -17,6 +17,13 @@ import Estuary.Types.Context
 import Estuary.Widgets.View
 import Estuary.Widgets.Generic
 
+-- data Definition =
+--   Structure TransformedPattern |
+--   EvaluableText String |
+--   LabelText String
+--   deriving (Eq,Show)
+--
+-- type DefinitionMap = Map.Map Int Definition
 
 type TutorialPage = (View, DefinitionMap)
 
@@ -37,30 +44,28 @@ defaultPages t = maybe (maybe lastResort id $ fstElement (toList $ pages t)) id 
     lastResort = [errorView]
     errorView = (LabelView 1, singleton 1 (LabelText "Oops, an error has occurred - please raise an issue at github.com/d0kt0r0/estuary"))
 
+toTutorialPage::[(Int->View,Definition)] -> TutorialPage
+toTutorialPage xs = (Views vs, fromList defs) where
+  (vs, defs) = unzip $ zipWith (\i (vf,d)-> (vf i, (i,d))) [(0::Int)..] xs  -- ([view],[defmap])
+
 page :: Language -> [Language -> (View,Definition)] -> TutorialPage
 page lang widgets = (Views $ vs lang, M.fromList $ zip (fmap getIndex $ vs lang) (defs lang))
   where
     vs l = fst $ unzip $ fmap (\f -> f l) widgets
     defs l = snd $ unzip $ fmap (\f -> f l) widgets
 
-
-
 generateTutorial :: [[Language->(View, Definition)]] -> Map Language [TutorialPage]
 generateTutorial pgs = M.fromList $ fmap (\l -> (l,fmap (page l) pgs)) languages
 
-
--- maybe TutorialID instead? tutorialWidget :: MonadWidget t m => TutorialID -> Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
 tutorialWidget :: MonadWidget t m => Tutorial -> Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
 tutorialWidget t ctx = mdo
   lang <- liftM nubDyn $ mapDyn language ctx
   pageMapMaybe <- mapDyn ((flip M.lookup) (pages t)) lang
   pageMap <- mapDyn (maybe (defaultPages t) id) pageMapMaybe
   pb <- getPostBuild
+  debug $ (<$) (pages t) pb
   let iLang = attachWith (\l _ -> M.lookup l (pages t)) (fmap language $ current ctx) pb
   translationDNEWidget "translationDNEWidget" False lang $ fmap isNothing $ leftmost [updated pageMapMaybe, iLang]
-  -- attachDynWith noTranslationmessage lang' $ fmap isNothing $ updated pageMap
--- [H]   holdUniqDyn   :: Eq a => Dynamic a -> m (Dynamic a)
-  -- clickableDivDynAttrs :: MonadWidget t m => String -> a -> Dynamic t (Map String String) -> m (Event t a)
   backButton <- clickableDivDynAttrs "back" () backAttrs >>= count
   nextButton <- clickableDivDynAttrs "next" () nextAttrs >>= count
   pageNum <- combineDyn (-) nextButton backButton
@@ -70,8 +75,6 @@ tutorialWidget t ctx = mdo
   page <- combineDyn (!!) pageMap pageNumSafe -- TODO Make safe
   let initialPage = attachDynWith (!!) pageMap  $ (<$) 0 pb
   let rebuild = fmap (\(v,dm) -> viewWidget v dm never) $ leftmost [updated page, initialPage]
-  -- performEvent_ $ fmap (const $ lifIO $ putStrLn "test") rebuild
-  -- debug $ fmap (const "test") initialPage
   r <- widgetHold (return (constDyn M.empty, never,never)) rebuild
   defMap <- liftM joinDyn $ mapDyn (\(a,_,_)->a) r
   hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)->a) r

@@ -30,8 +30,6 @@ import Estuary.Widgets.View
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 
-import Estuary.Widgets.Sequencer
-
 data Navigation =
   Splash |
   TutorialList |
@@ -61,8 +59,7 @@ page ctx _ wsDown _ Splash = do
   x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
   y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
   z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
-  -- t <- liftM (Test <$) $ button "test"
-  let navEvents = leftmost [x,y,z,t]
+  let navEvents = leftmost [x,y,z]
   return (constDyn [],never,never,navEvents)
 
 page ctx _ wsDown _ TutorialList = do
@@ -131,21 +128,6 @@ page ctx commands wsDown now (Collaborate w) = do
   x <- liftM (Lobby <$) $ button  "<----"
   return (patterns,wsUp,hints,x)
 
--- page ctx commands wsDown now (Test) = do
---   spat <- sequencer (Just "~") isgp never
---   -- spat' <- mapDyn (\(a,_,_)->a) spat
---   upPat <- sequencer (Just 0) iugp never
---   -- p <- sequencer (Just "~") isgp never >>= mapDyn (\(x,_,_)-> [UntransformedPattern  $ S x])
---   p <- combineDyn (\(s,_,_) (u,_,_) -> [TransformedPattern (Combine (S s) Merge) $ UntransformedPattern $ Up u]) spat upPat
---   debug $ updated p
---   return (p,never,never,never)
---   where
---     isgp = Layers (Live (ls,Once) L4) Inert
---     ls = fmap f ["bd"::String,"cp","dr","techno"]
---     f s = Group (Live (take 8 $ repeat (Blank Inert),Once) L4) Inert
---     iugp = Layers (Live (uls,Once) L4) Inert
---     uls = fmap uf [0::Float]
---     uf s = Group (Live (take 8 $ repeat (Atom 0 Inert Once),Once) L4) Inert
 
 
 

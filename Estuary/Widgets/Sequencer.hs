@@ -9,6 +9,7 @@ import GHCJS.DOM.EventM
 import Control.Monad
 import Data.Map as M
 import Data.Ratio
+import Safe.Foldable (maximumMay)
 import Text.Read (readMaybe)
 
 import Estuary.Tidal.Types
@@ -17,6 +18,8 @@ import Estuary.Widgets.Generic -- for EditSignal... TODO move that
 
 import qualified Sound.Tidal.Context as T
 import qualified Text.ParserCombinators.Parsec as P
+
+import Estuary.Widgets.Plot
 
 
 toPattern :: (T.Parseable a, Show a, T.Enumerable a) => GeneralPattern a -> T.Pattern a
@@ -75,6 +78,16 @@ rowToGenPat (val,pos) = Group (Live (fmap toAtom pos,Once) L4) Inert
   where
     toAtom b = if b then maybe (Blank Inert) (\x-> Atom x Inert Once) val else Blank Inert
 
+
+rowToGenPat'::Read a => (String,[Bool]) -> GeneralPattern a
+rowToGenPat' (val,pos) = Group (Live (fmap toAtom pos,Once) L4) Inert
+  where
+    toAtom b = if b then parsed else Blank Inert
+    parsed = maybe (maybe (Blank Inert) f $ readMaybe $ "\""++val++"\"") f $ readMaybe val
+    f x = Atom x Inert Once
+
+
+
 sequencer::(Read a, Ord a, MonadWidget t m, Show a, Eq a,T.Parseable a, T.Enumerable a) => Maybe a -> GeneralPattern a -> Event t (EditSignal (Sequence a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)), Event t Hint))
 sequencer dflt igp edits = elClass "table" "sequencer" $ mdo
   let parentEvents = fmap (fmap Just) $ fmapMaybe (\a -> case a of (ChangeValue a) -> Just a; otherwise -> Nothing) edits -- Event (Map a (Maybe [Bool]))
@@ -82,7 +95,7 @@ sequencer dflt igp edits = elClass "table" "sequencer" $ mdo
   let s = toSequence 0 igp -- Map Int (a,[Bool])
   let seqLen = maximum $ elems $ fmap (length . snd) s
   vals <- liftM joinDynThroughMap $ listWithKeyShallowDiff s es (const sequencerRow) -- Dynamic (Map Int (GeneralPattern, Event t Edit))
-  maxKey <- mapDyn (maximum . keys) vals
+  maxKey <- mapDyn (maybe 0 id . maximumMay . keys) vals
   let emptyGroup = Group (Live (take seqLen $ repeat $ Blank Inert,Once) L4) Inert
   plusButton <- el "tr" $ clickableTdClass (constDyn " + ") (constDyn "") ()
   let newRow = attachWith (\k _-> fmap Just $ singleton (k+1) (dflt,take seqLen $ repeat False)) (current maxKey) plusButton
@@ -96,25 +109,24 @@ sequencer dflt igp edits = elClass "table" "sequencer" $ mdo
   mapDyn (\x-> (x, never, never)) genPat
 
 
+typeCheck::  Maybe a -> Maybe a -> Maybe a
+typeCheck _ a = a
 
 sequencerRow ::(MonadWidget t m, Show a, Ord a, Read a) => (Maybe a,[Bool]) -> Event t (Maybe a,[Bool]) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal a)))
 sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
   let buttonIVals = M.fromList $ attachIndex vals
   deleteMe <- clickableTdClass (constDyn " - ") (constDyn "delete") DeleteMe
   rowInput <- el "td" $ growingTextInput $ def & textInputConfig_initialValue .~ (maybe "~" showNoQuotes iVal)
-  rowValue <- mapDyn readSafe $ _textInput_value rowInput -- maybe a
   buttons <-  liftM joinDynThroughMap $ listWithKeyShallowDiff buttonIVals (fmap (fmap Just . M.fromList . attachIndex . snd) edits) sequencerButton  -- Dyn (Map Int Bool)
-  genPat <- combineDyn (\val positions-> rowToGenPat $ (val,elems positions)) rowValue buttons
+  genPat <- combineDyn (\val positions-> rowToGenPat' (val,elems positions)) (_textInput_value rowInput) buttons
   mapDyn (\x->(x,deleteMe)) genPat
-  where
-    readSafe r = maybe (readMaybe $ "\"" ++ r ++ "\"") id $ readMaybe r
+
+
 
 sequencerButton::(MonadWidget t m) => Int -> Bool -> Event t Bool -> m (Dynamic t Bool)
 sequencerButton pos val edits = mdo
   (element,_) <- elDynAttr' "td" attrs $ return ()
   clickEv <- wrapDomEvent (_el_element element) (onEventName Mousedown) (return ())
-  touchEv <- wrapDomEvent (_el_element element) (onEventName Touchstart) (return())
-
   let clickUpdates = attachWith (\v _-> not v) (current isActive) $ leftmost [clickEv]
   isActive <- holdDyn val $ leftmost [edits, clickUpdates]
   debug $ updated isActive
