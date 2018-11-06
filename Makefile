@@ -38,7 +38,7 @@ installClient: buildClient
 
 prodInstallClient: # make prodBuildClient first!
 	rm -rf ./Estuary.jsexe
-	cp -Rf $(PRODUCTION_CLIENT_INSTALL_DIR) Estuary.jsexe
+	cp -Rf $(PRODUCTION_CLIENT_INSTALL_DIR) .
 	cp -Rf static/* Estuary.jsexe
 	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -DPRODUCTION -o ../Estuary.jsexe/index.html
 	rm -rf Estuary.jsexe/runmain.js

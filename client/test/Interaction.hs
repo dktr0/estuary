@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, ScopedTypeVariables #-}
 
 module Main(main) where
 
@@ -25,13 +25,13 @@ import Estuary.Types.Context
 import Estuary.Types.Hint
 import Estuary.Types.View
 import Estuary.Types.Definition
-import Estuary.Types.Terminal
 import Estuary.Types.Tempo
 import Estuary.Types.Sited
 import Estuary.Types.Live
 import Estuary.Types.EditOrEval
 import Estuary.Types.TidalParser
 import Estuary.Types.TextNotation
+import Estuary.Types.EnsembleResponse
 
 import Estuary.Test.Protocol
 import Estuary.Test.Estuary
@@ -51,27 +51,40 @@ main :: IO ()
 main = hspec $ do
   describe "clicking the eval button on a minitidal widget" $ do
     (reqStream, respStream) <- runIO $ do
-      protocol <- silentEstuaryWithInitialPage $ Collaborate "abc"
-      (reqStream, respStream) <- attachProtocolInspectors protocol
+      (protocol, reqStream, respStream) <- estuaryProtocolWithInspectors
 
+      silentEstuaryWithInitialPage protocol $ Collaborate "abc"
+
+      let password = "abc"
+      performRequest protocol $ EnsembleRequest (Sited "abc" (AuthenticateInEnsemble password))
+      
+      EnsembleResponse (Sited _ (DefaultView view)) <- expectMessage respStream $ do
+        withinMillis 10000
+        toMatch $ \case
+          EnsembleResponse (Sited "abc" (DefaultView view)) -> Matches
+          _ -> DoesNotMatch
+
+      -- The editors should not take more that 1s to appear after receiving the
+      -- expected layout.
       threadDelay $ 1000 * 1000
 
-      Just editor  <- findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
-      Just evalBtn <- findMatchingSelector (editor :: Element) "button"
-      Just txtArea <- findMatchingSelector (editor :: Element) "textarea"
+      Just (editor :: Element) <- findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
+      Just (evalBtn :: HTMLElement) <- findMatchingSelector editor "button"
+      Just (txtArea :: HTMLTextAreaElement) <- findMatchingSelector editor "textarea"
 
-      HTMLTextAreaElement.setValue (txtArea :: HTMLTextAreaElement) $ Just "s \"bd\""
-      HTMLElement.click (evalBtn :: HTMLElement)
+      HTMLTextAreaElement.setValue txtArea $ Just "s \"bd\""
+      HTMLElement.click evalBtn
 
       return (reqStream, respStream)
 
     it "produces an ensemble request for evaluating the text" $ do 
-      expectRequest reqStream $ do
-        withinMillis 1000
+      expectMessage reqStream $ do
+        withinMillis 3000
         toMatch $ \case
           EnsembleRequest (Sited _ (ZoneRequest (Sited _ editOrEval))) -> 
             case editOrEval of
-              Evaluate (TextProgram (Live (TidalTextNotation MiniTidal, "s \"bd\"") L3)) ->
+              Edit (TextProgram (Live (TidalTextNotation MiniTidal, "s \"bd\"") L3)) ->
                 Matches
               _ -> AlmostMatches
           _ -> DoesNotMatch
+      return ()

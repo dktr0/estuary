@@ -1,9 +1,12 @@
+{-# LANGUAGE RecursiveDo #-}
+
 module Estuary.Test.Protocol where
 
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.Chan
 import Control.Concurrent.MVar
+import Control.Concurrent.QSem
 import Control.Monad
 
 import Test.Hspec
@@ -28,6 +31,7 @@ data MessageMatchStatus
   = Matches
   | AlmostMatches
   | DoesNotMatch
+  deriving (Show)
 
 instance Monoid MessageMatchStatus where
   mempty = Matches
@@ -79,41 +83,45 @@ withinMillis t = emptyMessageExpectation { messageTimeout = Just t }
 toMatch :: MatchTest a -> MessageExpectation a ()
 toMatch test = emptyMessageExpectation { matchTest = test }
 
-expectRequest :: Chan (Maybe Request) -> MessageExpectation Request a -> IO ()
-expectRequest reqChan e@(MessageExpectation Nothing _ _) = 
-  expectRequest reqChan $ e { messageTimeout = Just 1000 }
-expectRequest reqChan (MessageExpectation (Just ms) test _) = do
+expectMessage :: (JSON r) => Chan (Maybe r) -> MessageExpectation r a -> IO r
+expectMessage chan e@(MessageExpectation Nothing _ _) = 
+  expectMessage chan $ e { messageTimeout = Just 1000 }
+expectMessage chan (MessageExpectation (Just ms) test _) = do
   almostReqsVar <- newMVar []
 
-  result <- race (threadDelay $ ms * 1000) (checkRequest reqChan test almostReqsVar)
+  result <- race (threadDelay $ ms * 1000) (checkStreamForMatch chan test almostReqsVar)
   case result of
-    Right _ -> return ()
+    Right match -> return match
     Left _ -> do
       almostReqs <- readMVar almostReqsVar
       let desc = case almostReqs of
             [] -> "    No similar messages produced."
             almostMatches -> foldr (\l r -> l ++ "\n" ++ r) "" $ fmap (\r -> "    - " ++ encode r) almostMatches
-      expectationFailure $ "Message was not produced within " ++ show ms ++ "ms." ++ desc
+      expectationFailure $ "Message was not produced within " ++ show ms ++ "ms.\n" ++ desc
+      error ""
 
-checkRequest :: Chan (Maybe Request) -> MatchTest Request -> MVar [Request] -> IO Request
-checkRequest chan test almost = do
+checkStreamForMatch :: (JSON a) => Chan (Maybe a) -> MatchTest a -> MVar [a] -> IO a
+checkStreamForMatch chan test almost = do
   mReq <- readChan chan
   case mReq of
-    Nothing -> checkRequest chan test almost
+    Nothing -> checkStreamForMatch chan test almost
     Just req -> case test req of
       Matches -> return req
       AlmostMatches -> do
         modifyMVar_ almost $ return . ((:) req)
-        checkRequest chan test almost
-      DoesNotMatch -> checkRequest chan test almost
+        checkStreamForMatch chan test almost
+      DoesNotMatch -> checkStreamForMatch chan test almost
+
+performRequest :: EstuaryProtocolObject -> Request -> IO ()
+performRequest protocol = send protocol . encode
 
 
 
 attachMsgRecvProtocolInspector :: EstuaryProtocolObject -> (Maybe Response -> IO ()) -> IO ()
 attachMsgRecvProtocolInspector (EstuaryProtocolObject protocol) inspect = do
-  cb <- asyncCallback1 $ \nJsSerResp -> 
+  cb <- asyncCallback1 $ \nJsSerResp ->
     inspect $ do -- in Maybe 
-      jsSerResp <- mfilter isNull (pure nJsSerResp)
+      jsSerResp <- mfilter (not . isNull) (pure nJsSerResp)
       serResp <- pFromJSVal jsSerResp
       case decode serResp of
         Ok resp -> return resp
@@ -125,7 +133,7 @@ attachSendMsgProtocolInspector :: EstuaryProtocolObject -> (Maybe Request -> IO 
 attachSendMsgProtocolInspector (EstuaryProtocolObject protocol) inspect = do
   cb <- asyncCallback1 $ \nJsSerReq -> 
     inspect $ do -- in Maybe 
-      jsSerReq <- mfilter isNull (pure nJsSerReq)
+      jsSerReq <- mfilter (not . isNull) (pure nJsSerReq)
       serResp <- pFromJSVal jsSerReq
       case decode serResp of
         Ok resp -> return resp
@@ -135,11 +143,11 @@ attachSendMsgProtocolInspector (EstuaryProtocolObject protocol) inspect = do
 
 foreign import javascript safe
   "estuaryProtocolInspector.onRecvMsg($1, $2)"
-  js_attachOnRecvMsg:: JSVal -> Callback (JSVal -> IO ()) -> IO ()
+  js_attachOnRecvMsg :: JSVal -> Callback (JSVal -> IO ()) -> IO ()
 
 foreign import javascript safe
   "estuaryProtocolInspector.onSendMsg($1, $2)"
-  js_attachOnSendMsg:: JSVal -> Callback (JSVal -> IO ()) -> IO ()
+  js_attachOnSendMsg :: JSVal -> Callback (JSVal -> IO ()) -> IO ()
 
 attachProtocolInspectors :: EstuaryProtocolObject -> IO (Chan (Maybe Request), Chan (Maybe Response))
 attachProtocolInspectors protocol = do
@@ -150,3 +158,28 @@ attachProtocolInspectors protocol = do
   attachMsgRecvProtocolInspector protocol $ writeChan respChan
 
   return (reqChan, respChan)
+
+foreign import javascript safe
+  "estuaryProtocolInspector.onConnect($1, $2)"
+  js_attachOnConnect :: JSVal -> Callback (IO ()) -> IO ()
+
+waitUntilConnected :: EstuaryProtocolObject -> IO ()
+waitUntilConnected (EstuaryProtocolObject protocol) = do
+  done <- newEmptyMVar
+  
+  rec cb <- asyncCallback $ do
+        putMVar done ()
+        releaseCallback cb
+
+  js_attachOnConnect protocol cb
+
+  takeMVar done
+
+estuaryProtocolWithInspectors :: IO (EstuaryProtocolObject, Chan (Maybe Request), Chan (Maybe Response))
+estuaryProtocolWithInspectors = do
+  protocol <- estuaryProtocol
+  (reqs, resps) <- attachProtocolInspectors protocol
+
+  waitUntilConnected protocol
+
+  return (protocol, reqs, resps)

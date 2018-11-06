@@ -5,7 +5,7 @@ var estuaryProtocolInspector = (function () {
       var oldLen = protocol.responses.length;
 
       var result = oldOnMessage.apply(protocol, arguments);
-      
+
       var newLen = protocol.responses.length;
       if (oldLen !== newLen) {
         // The parse succeeded and a response was added to
@@ -28,16 +28,28 @@ var estuaryProtocolInspector = (function () {
     protocol.send = function (/*...arguments*/) {
       var data = arguments[0];
       try {
-        callback(JSON.stringify(data));
+        JSON.stringify(data);
+        callback(data);
       } catch (e) {
         callback(null);
       }
-      return oldOnMessage.apply(protocol, arguments);
+      return oldSend.apply(protocol, arguments);
     };
+  }
+
+  function onConnect(protocol, callback) {
+    if (protocol.wsReady)
+      return callback();
+
+    protocol.onReadyStateChange(function (wsReady) {
+      if (wsReady)
+        callback();
+    });
   }
 
   return {
     onRecvMsg: onRecvMsg,
-    onSendMsg: onSendMsg
+    onSendMsg: onSendMsg,
+    onConnect: onConnect
   }
 })();

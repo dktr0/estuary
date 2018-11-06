@@ -79,33 +79,25 @@ controllableEstuaryWidget pageId ctxVar renderInfoVar protocol = divClass "estua
   updateContext ctxVar ctx
   performHint (webDirt initialCtx) hints
 
-silentEstuaryWithInitialPage :: Navigation -> IO EstuaryProtocolObject
-silentEstuaryWithInitialPage pageId = do
+silentEstuaryWithInitialPage :: EstuaryProtocolObject -> Navigation -> IO ()
+silentEstuaryWithInitialPage protocol pageId = do
   initialCtx <- initCtx
   ctxVar <- newMVar $ initialCtx
 
   renderInfoVar <- newMVar $ emptyRenderInfo
   forkRenderThread ctxVar renderInfoVar
-
-  protocol <- estuaryProtocol
   
   renderSync_ $ 
     controllableEstuaryWidget pageId ctxVar renderInfoVar protocol
 
-  return protocol
-
-silentEstuary :: IO EstuaryProtocolObject
-silentEstuary = do
+silentEstuary :: EstuaryProtocolObject -> IO ()
+silentEstuary protocol = do
   ic <- initCtx
   c <- newMVar $ ic
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
-
-  protocol <- estuaryProtocol
   
   renderSync_ $ estuaryWidget c ri protocol
-
-  return protocol
 
 initCtx :: IO Context
 initCtx = do
