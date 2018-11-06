@@ -3,8 +3,15 @@ body {
 	color: black;
 	height: 100%;
 	margin: 0;
-	font-family: sans;
+	font-family: 'Inconsolata';
 }
+
+
+@font-face {
+   font-family: estuaryFont;
+   src: url(Estuary.otf);
+}
+
 
 input {
 	background-color: whitesmoke;
@@ -16,7 +23,22 @@ input {
 textarea {
 	background-color: whitesmoke;
 	color: black;
-	}
+width: 100%;
+	height: 100%;
+}
+
+.visibleArea{
+	width: 100%;
+	height:100%;
+
+}
+
+.languageHelp {
+	font-size: 70%;
+  overflow: scroll;
+	height:90px;
+
+}
 
 button {
 	background-color: hsl(0,0%,20%);
@@ -35,7 +57,11 @@ button {
   margin-bottom: 3px;
 	padding-left: 15px;
 	padding-right: 15px;
+	 font-family: estuaryFont;
+
 }
+
+
 
 .page { /* contains the interface for programming on menu selected in pageMenu */
 	border: 1px solid;
@@ -51,6 +77,10 @@ button {
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+}
+
+.aboutEstuaryParagraph {
+	font-family: 'Inconsolata';
 }
 
 .logo {
@@ -594,6 +624,7 @@ td {
 .terminalHeader {
 	display: flex;
 	flex-direction: row;
+	font-family: estuaryFont;
 }
 
 .terminalInput {
@@ -623,4 +654,83 @@ td {
 .ensembleTempo {
   margin-right: 1em;
 	border: none;
+}
+
+/*
+----------------------------------------
+
+help files
+--------------------------------------
+*/
+
+.helpWrapper {
+	display:flex;
+	font-size: 100%;
+	margin-left: 1%;
+}
+
+.refExampleButton button {
+	background-color: transparent;
+	width: 100%;
+	font-size: 115%;
+	font-variant:small-caps;
+	color: black;
+}
+
+.refExampleButton button:hover {
+    background-color: black;
+    color: whitesmoke;
+	cursor: help;
+}
+
+
+
+
+/* about */
+
+.exampleText {
+font-family: Inconsolata;  font-style: italic; font-weight: 400;
+	color: #20242b;
+}
+
+.referenceText {
+			font-variant:small-caps;
+}
+
+.about {
+	font-variant:small-caps;
+	color: black;
+	text-align: center;
+  border-radius: 3px;
+	margin-bottom: 4px;
+}
+
+.aboutWrapper {
+	text-align: center;
+  border-radius: 3px;
+	margin-bottom: 4px;
+			font-size: 100%;
+
+}
+
+.aboutTitle {
+	font-variant:small-caps;
+			color:  black;
+
+}
+
+.aboutButton button{
+	 background-color: transparent;
+    color: black;
+			font-weight: bold;
+		font-size: 115%;
+/* 	position: relative;
+	left: 6.6%;
+top:10%; */
+}
+
+.aboutText {
+		font-size: 80%;
+	font-variant:small-caps;
+	color:  black;
 }

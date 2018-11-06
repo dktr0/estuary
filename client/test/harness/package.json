@@ -1,0 +1,10 @@
+{
+  "name": "harness",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "puppeteer": "^1.9.0"
+  }
+}

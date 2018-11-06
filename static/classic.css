@@ -1,52 +1,157 @@
+.fullWidth {
+	width: 100%;
+	padding: 0px 0px 0px 0px;
+	margin: 0px 0px 0px 0px;
+}
+
 body {
 	background-color: black;
-	color: hsl(120,100%,80%);
+	/* color: rgb(98, 221, 115); */
+	color: rgb(98, 221, 115);
 	height: 100%;
 	margin: 0;
-	font-family: sans;
+	font-family: 'Inconsolata';
+}
+
+@font-face {
+   font-family: estuaryFont;
+   src: url(Estuary.otf);
 }
 
 input {
 	background-color: black;
-	color: hsl(120,100%,80%);
+	color: rgb(98, 221, 115);
 	margin: 1px;
 }
 
 
 textarea {
-	background-color: black;
-	color: hsl(120,100%,80%);
+	background-color: transparent;
+	color: rgb(98, 221, 115);
+	width: 100%;
+	height: 100%;
 }
+
+.visibleArea{
+	width: 100%;
+	/* height:45px; */
+
+}
+
+.languageHelp {
+	font-size: 70%;
+  overflow: scroll;
+}
+
 
 button {
 	background-color: hsl(0,0%,20%);
-	color: hsl(120,100%,70%);
+	color: rgb(98, 221, 115);
 	border: none;
 	border-radius: 4px;
 }
+
 
 .estuary { /* the entire interface, contains .header .page and .footer */
 
 }
 
+<<<<<<< HEAD
 .displayNone{
 	display:none;
 }
 
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	padding-top: 5px;
-	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+	margin-top: 0.5em;
+  font-family: estuaryFont;
 }
 
-.page { /* contains the interface for programming on menu selected in pageMenu */
+.peak{
+  float: right;
+	font-size: 80%;
+}
+
+.server {
+  position: relative;
+  top: 1.25em;
+  left: 2em;
+  margin-left: 0.5em;
+  padding-left: 0.5em;
+  margin-bottom: 0.6em;
+}
+
+.webDirt { /* webDirt status area in top right of header */
+	font-size:1.5em;
+	float: right;
+}
+
+.webDirtMute {
+	display: flex;
+	font-size: 50%;
+}
+
+.webDirtContent {
+ display: flex;
+	margin-left: auto;
+}
+
+select { /*theme and language dropdown menus */
+	background-color: transparent;
+	color: rgb(98, 221, 115);
 	border: 1px solid;
-	border-radius: 10px;
+	border-color: rgb(98, 221, 115);
+	min-width: 15%;
+	margin-right: 1em;
+
+
+}
+
+.themeSelector {
+	border-right: 1px solid;
+	padding-right: 0.0em;
+	padding-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+.languageSelector {
+	border-right: 1px solid;
+	padding-right: 0.0em;
+	padding-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+.superDirtCheckbox {
+	border-right: 1px solid;
+	padding-right: 0.5em;
+	padding-left: 0.5em;
+	  margin-right: 0.75em;
+}
+
+.webDirtCheckbox {
+	padding-right: 0.5em;
+	padding-left: 0.5em;
+}
+
+.estuaryLogoIcon {
+  width: 1.5em;
+	margin-right: 1em;
+/* 	float: left; */
+}
+
+
+
+
+.page { /* contains the interface for programming on menu selected in pageMenu */
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+/* 	border-radius: 10px; */
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+	margin-bottom:0.25em;
 }
 
 .footer { /* the header area containing logo, webDirt, pageMenu and hintArea */
@@ -56,23 +161,132 @@ button {
 	padding-right: 15px;
 }
 
-.logo {
-	display: inline-block;
+.splash-container {
+	display: flex;
+	flex-wrap: wrap;
+	width: 100%;
+	height: 100%;
 }
 
-.server {
-	display: inline-block;
+.splash-margin {
+	min-width: 50%;
+	box-sizing: border-box;
+	padding: 0.4em;
 }
 
-.webDirt { /* webDirt status area in top right of header */
-	display: inline-block;
-	float: right;
-	/* width: 49%; */
+.splash-panel {
+	background: rgb(25, 25, 25);
+	font-family: estuaryFont;
+	border: 0.25em solid;
+	border-radius: 4px;
+	padding: 0.5em;
+	text-align: center;
+	height: 100%;
+	box-sizing: border-box;
+	max-height: 16em;
+	display: flex;
+	flex-direction: column;
 }
 
-.webDirtMute {
-	float: right;
-	font-size: 60%;
+.splash-panel > img {
+	/* A trick to get the images to behave in firefox as they do in chrome, they "flex" to determine the size */
+	min-width: 0;
+	min-height: 0;
+}
+
+.splash-panel-title {
+	font-family: estuaryFont;
+	text-align: center;
+	height: 100%;
+	box-sizing: border-box;
+	max-height: 16em;
+	display: flex;
+	flex-direction: column;
+			padding-right: 0.4em;
+
+}
+
+.splash-title {
+	display: flex;
+	text-align: justify;
+	margin-bottom: 1%;
+	font-size: 2em;
+}
+
+.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.50vw;
+	height: 100%;
+	border: 0.35em solid;
+  border-radius: 4px;
+}
+
+@media only screen and (max-width: 2000px ) {
+.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.55vw;
+}
+}
+
+@media only screen and (max-width: 1600px) {
+.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.70vw;
+}
+}
+
+@media only screen and (max-width: 1450px) {
+.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.75vw;
+}
+}
+
+@media only screen and (max-width: 1200px) {
+	.splash-info {
+	text-align: justify;
+	width:50px;
+	min-width: 100%;
+	font-size: 0.8vw;
+}
+
+}
+
+@media only screen and (max-width: 950px) {
+
+	.splash-info {
+   	text-align: justify;
+	  width:50px;
+		min-width: 100%;
+	  font-size: 1vw;
+}
+
+
+}
+
+.splash-line {
+/* 	display: none; */
+	background-color: rgb(98, 221, 115);
+  border-radius: 4px;
+	margin-left: 2%;
+	margin-top: 0.4em;
+	width: 100%;
+	height: 0.1em;
+}
+
+.aboutEstuaryParagraph {
+	text-justify: auto;
+	text-overflow: auto;
+	font-family: 'Inconsolata';
+	padding: 0.5em;
 }
 
 
@@ -92,11 +306,9 @@ button {
 }
 
 .logo { /* logo in top left of header area */
-	display: inline-block;
-	width: 50%;
+	display: inline;
+	vertical-align: top;
 }
-
-
 
 .pageMenu { /* contains page menu in bottom left of header */
 	display: inline-block;
@@ -219,30 +431,54 @@ button {
 	width: 100%;
 }
 
-.labelWidget{
+
+.textPatternChain {
+/* 	background-color: blue; */
 	width: 100%;
 }
 
 .labelAndTextPattern {
+/* 	background-color: red; */
 	width: 100%;
-	display: inline-flex;
+/* 	display: inline-flex; */
 	margin: 0px;
 	padding: 0px;
 }
 
 .labelWidgetDiv {
+/* 	background-color: white; */
 	width: 100%;
 	display: inline-flex;
 }
 
 
 .labelWidgetTextInput {
+	font-family: estuaryFont;
+	font-size: 60%;
+/* 	background-color: yellow; */
 	flex:1;
 	color: hsl(120,0%,80%);
 	border: none;
 }
 
 .textInputLabel {
+	/* 	background-color: green; */
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+	display: inline;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+
+@media only screen and (max-width: 2000px ) {
+   .textInputLabel {
+	/* 	background-color: green; */
 	width: 4em;
 	font-size: 100%;
 	font-weight: normal;
@@ -251,15 +487,108 @@ button {
 	margin: 0px;
 }
 
-.textInputToEndOfLine {
-	flex: 1;
-	vertical-align: middle;
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 1600px) {
+   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
 	font-size: 100%;
 	font-weight: normal;
-	color: hsl(120,100%,80%);
-	border: none;
+	vertical-align: bottom;
 	padding: 0px;
 	margin: 0px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 1450px) {
+   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 1200px) {
+   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+}
+
+@media only screen and (max-width: 950px) {
+	   .textInputLabel {
+	/* 	background-color: green; */
+	width: 4em;
+	font-size: 100%;
+	font-weight: normal;
+	vertical-align: bottom;
+	padding: 0px;
+	margin: 0px;
+}
+
+ .textInputLabel button {
+/* 	 font-family: estuaryFont; */
+	font-size: 80%;
+}
+
+}
+
+
+
+.referenceButton {
+/* 	background-color: brown; */
+  font-size: 100%;
+	margin-left: 1em;
+	margin-right: 1em;
+	float: right;
+	/* width: 3%;
+	position: relative;
+	left: 95%;
+	bottom: 40px; */
+}
+
+.textInputToEndOfLine {
+	font-size: 100%;
+	font-weight: normal;
+	color: rgb(98, 221, 115);
+	border: none;
+	padding: 0px;
+	margin-top: 0.5em;
+	margin-bottom: 0px;
+	margin-left: 0px;
+	margin-right: 0px;
+	height: auto;
+	resize: none;
+	overflow: hidden;
 }
 
 
@@ -579,14 +908,14 @@ td {
 	text-align:center
 }
 
-/* The '▲' arrow td */
+/* The 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The '▼' arrow td */
+/* The 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
@@ -699,12 +1028,22 @@ td {
 	color: lightgreen;
 }
 
+.backToSplash button{
+font-family: estuaryFont;
+/* 	font-size: 30%; */
+
+}
+
+
 .terminal {
 }
 
 .terminalHeader {
+	width: 60%;
 	display: flex;
 	flex-direction: row;
+	font-family: estuaryFont;
+	font-size: 75%;
 }
 
 .terminalInput {
@@ -714,6 +1053,9 @@ td {
 .ensembleHeader {
 	display: flex;
 	flex-direction: row;
+
+	font-family: estuaryFont;
+	font-size: 90%;
 }
 
 .ensembleName {
@@ -722,16 +1064,125 @@ td {
 }
 
 .ensembleHandle {
+
   margin-right: 1em;
 	border: none;
 }
 
 .ensemblePassword {
+	font-family: estuaryFont;
+
   margin-right: 1em;
 	border: none;
 }
 
+
 .ensembleTempo {
-  margin-right: 1em;
+/* 	background-color: blue; */
+	display: flex;
 	border: none;
+	width: 25%;
+}
+
+
+.ensembleTempo textarea{
+/*  background-color: white; */
+	font-family: estuaryFont;
+	font-size: 75%;
+  margin-right: 1em;
+	position: relative;
+	top: 0.25em;
+	border: none;
+	max-width:13em;
+	text-align: center;
+}
+
+.ensembleTempo button{
+	border: none;
+
+}
+
+/* help files  */
+
+.helpWrapper {
+	display:flex;
+	font-size: 100%;
+	margin-left: 1%;
+}
+
+.refExampleButton button {
+	background-color: transparent;
+	width: 100%;
+	font-size: 100%;
+	font-variant:small-caps;
+	margin-bottom: 7%;
+}
+
+.refExampleButton button:hover {
+    background-color: rgb(98, 221, 115); /* Green */
+    color: black;
+	cursor: help;
+}
+
+
+
+
+/* about */
+
+.exampleText {
+	display: flex;
+    font-family: 'Inconsolata';
+	color:  rgb(98, 221, 115);
+	font-style: italic;
+/* 	margin-right:  5%; */
+}
+
+.referenceText {
+/* 			font-variant:small-caps; */
+}
+
+.about {
+/* 	font-variant:small-caps; */
+	color:  rgb(98, 221, 115);
+	text-align: center;
+  border-radius: 3px;
+	margin-bottom: 4px;
+}
+
+.aboutWrapper {
+	text-align: center;
+  border-radius: 3px;
+	margin-bottom: 4px;
+			font-size: 100%;
+
+}
+
+.aboutTitle {
+/* 	font-variant:small-caps; */
+			color:  rgb(98, 221, 115);
+
+}
+
+.aboutButton button{
+	 background-color: transparent;
+    color: black;
+			font-weight: bold;
+		font-size: 115%;
+}
+
+.aboutText {
+		font-size: 95%;
+	text-align: center;
+/* 	font-variant:small-caps; */
+	color:  rgb(98, 221, 115);
+	margin-bottom: 1%;
+}
+
+.samples {
+	color: hsl(120,100%,90%, 100%);
+}
+
+.listenButton button {
+	margin-left: 20%;
+	font-size:  95%;
 }
