@@ -104,3 +104,14 @@ viewWidget _ _ (EvaluableTextView n) i deltasDown = do
 viewWidget _ _ SvgDisplayView _ _ = do
   testOurDynSvg
   return (constDyn Map.empty, never, never)
+
+
+viewWidget ctx renderInfo (StructureView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern

@@ -28,7 +28,7 @@ standardView = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 3]),
   ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 3]),
   ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10 3]),
-  ViewDiv "eightBottomR" (Views [LabelView 11, SequenceView 12]) 
+  ViewDiv "eightBottomR" (Views [LabelView 11, SequenceView 12])
   ]
 
 emptyView :: View
