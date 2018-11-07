@@ -10,6 +10,7 @@ data View =
   Views [View] |
   ViewDiv String View |
   LabelView Int |
+  SequencerView Int |
   StructureView Int |
   TidalTextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   EvaluableTextView Int |
