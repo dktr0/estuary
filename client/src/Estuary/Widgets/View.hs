@@ -69,20 +69,20 @@ viewWidget ctx renderInfo (TidalTextView n rows) i deltasDown = do
   where f (TextProgram x) = x
         f _ = Live (TidalTextNotation MiniTidal,"") L3
 
-{- sequencer' :: MonadWidget t m => [(String,[Bool])] -> Event t [(String,[Bool])] ->
- m (Dynamic t [(String,[Bool])], Event t [(String,[Bool]), Event t Hint) -}
-
 viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Sequence []) n i
+  let i' = f $ Map.findWithDefault (Sequence defaultValue) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justSequences . justEditsInZone n) deltasDown
-  (value,edits,hints) <- sequencer Nothing
-
-  tidalTextWidget ctx e rows i' deltasDown'
-  value' <- mapDyn (Map.singleton n . TextProgram) value
-  let edits' = fmap (ZoneRequest . Sited n . Edit . TextProgram) edits
+  -- (value,edits,hints) <- sequencer' i' deltasDown'
+  let value = constDyn [] -- placeholder 
+  let edits = never -- placeholder
+  let hints = never -- placeholder
+  value' <- mapDyn (Map.singleton n . Sequence) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Sequence) edits
   return (value',edits',hints)
-  where f (TextProgram x) = x
-        f _ = Live (TidalTextNotation MiniTidal,"") L3
+  where f (Sequence x) = x
+        f _ = defaultValue
+        defaultValue = [("",replicate 8 False)]
+
 viewWidget _ _ (LabelView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (LabelText "") n i
   let deltasDown' = fmap (justLabelTexts . justEditsInZone n) deltasDown

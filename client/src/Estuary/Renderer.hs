@@ -8,6 +8,7 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad.Loops
 import Data.Functor (void)
+import Data.List (intercalate)
 import Data.IntMap.Strict as IntMap
 import Data.Maybe
 
@@ -47,6 +48,7 @@ renderTidalPattern start range t p = Prelude.map (\(o,_,m) -> (addUTCTime (realT
 definitionToPattern :: Definition -> Either String (Maybe Tidal.ParamPattern)
 definitionToPattern (Structure x) = Right $ Just $ toParamPattern x
 definitionToPattern (TextProgram x) = either Left (Right . Just) $ tidalTextToParamPattern $ forRendering x
+definitionToPattern (Sequence x) = Right $ Just $ Tidal.stack $ fmap sequenceToParamPattern x
 definitionToPattern _ = Right $ Nothing
 
 -- this is here rather than in Estuary.Types.TextNotation so that the server does not
@@ -54,6 +56,11 @@ definitionToPattern _ = Right $ Nothing
 tidalTextToParamPattern :: (TextNotation,String) -> Either String Tidal.ParamPattern
 tidalTextToParamPattern (TidalTextNotation x,y) = either (Left . show) Right $ tidalParser x y
 tidalTextToParamPattern _ = Left "internal error: tidalTextToParamPattern called on unrecognized notation"
+
+sequenceToParamPattern :: (String,[Bool]) -> Tidal.ParamPattern
+sequenceToParamPattern (sampleName,pat) = Tidal.s $ Tidal.p $ intercalate " " $ fmap f pat
+  where f False = "~"
+        f True = sampleName
 
 render :: Context -> Renderer
 render c = do
