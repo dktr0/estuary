@@ -14,7 +14,8 @@ import Estuary.Types.TextNotation
 data Definition =
   Structure TransformedPattern | -- *** this should be renamed to TidalStructure
   TextProgram (Live (TextNotation,String)) |
-  EvaluableText String |
+  Sequence [(String,[Bool])] |
+  EvaluableText String | -- *** deprecated ***
   LabelText String
   deriving (Eq,Show,Data,Typeable)
 
@@ -43,6 +44,11 @@ justTextPrograms = mapMaybe f
 justEvaluableTexts :: [Definition] -> [String]
 justEvaluableTexts = mapMaybe f
   where f (EvaluableText x) = Just x
+        f _ = Nothing
+
+justSequences :: [Definition] -> [(String,[Bool])]
+justSequences = mapMaybe f
+  where f (Sequence x) = Just x
         f _ = Nothing
 
 justLabelTexts :: [Definition] -> [String]

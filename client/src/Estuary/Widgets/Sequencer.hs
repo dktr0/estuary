@@ -85,6 +85,8 @@ rowToGenPat' (val,pos) = Group (Live (fmap toAtom pos,Once) L4) Inert
     parsed = maybe (maybe (Blank Inert) f $ readMaybe $ "\""++val++"\"") f $ readMaybe val
     f x = Atom x Inert Once
 
+{-    sequencer' :: MonadWidget t m => [(String,[Bool])] -> Event t [(String,[Bool])] ->
+     m (Dynamic t [(String,[Bool])], Event t [(String,[Bool]), Event t Hint) -}
 
 
 sequencer::(Read a, Ord a, MonadWidget t m, Show a, Eq a,T.Parseable a, T.Enumerable a) => Maybe a -> GeneralPattern a -> Event t (EditSignal (Sequence a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)), Event t Hint))
