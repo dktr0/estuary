@@ -30,6 +30,7 @@ definitionForRendering (Structure x) = Structure x
 definitionForRendering (TextProgram x) = TextProgram (Live (forRendering x) L4)
 definitionForRendering (EvaluableText x) = EvaluableText x
 definitionForRendering (LabelText x) = LabelText x
+definitionForRendering (Sequence x) = Sequence x
 
 justStructures :: [Definition] -> [TransformedPattern]
 justStructures = mapMaybe f
