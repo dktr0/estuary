@@ -86,6 +86,14 @@ rowToGenPat' (val,pos) = Group (Live (fmap toAtom pos,Once) L4) Inert
     f x = Atom x Inert Once
 
 
+sequencer' ::MonadWidget t m => [(String, [Bool])] -> Event t (EditSignal ([(String,[Bool])])) -> m (Dynamic t ([(String,[Bool])], Event t (EditSignal ([(String,[Bool])])), Event t Hint))
+sequencer' i update = do
+  let iVal = toGenPat $ fromList $ zip [0..] $ fmap (\(x,y)->(Just x,y)) i -- GeneralPattern String
+  let e = getChangeValues update
+  v <- sequencer Nothing iVal e
+  mapDyn (\(v,ev,h) -> (toSequence 0 v, fmap (toSequence 0) $ getChangeValues ev,h))
+  where
+    getChangeValues eve = fmapMaybe $ fmap (\x-> case x of ChangeValue (a,b) -> Just (Just a,b); otherwise-> Nothing) eve
 
 
 sequencer::(Read a, Ord a, MonadWidget t m, Show a, Eq a,T.Parseable a, T.Enumerable a) => Maybe a -> GeneralPattern a -> Event t (EditSignal (Sequence a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)), Event t Hint))

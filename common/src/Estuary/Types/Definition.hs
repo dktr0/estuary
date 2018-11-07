@@ -46,7 +46,7 @@ justEvaluableTexts = mapMaybe f
   where f (EvaluableText x) = Just x
         f _ = Nothing
 
-justSequences :: [Definition] -> [(String,[Bool])]
+justSequences :: [Definition] -> [[(String,[Bool])]]
 justSequences = mapMaybe f
   where f (Sequence x) = Just x
         f _ = Nothing
