@@ -69,20 +69,6 @@ viewWidget ctx renderInfo (TidalTextView n rows) i deltasDown = do
   where f (TextProgram x) = x
         f _ = Live (TidalTextNotation MiniTidal,"") L3
 
-{- sequencer' :: MonadWidget t m => [(String,[Bool])] -> Event t [(String,[Bool])] ->
- m (Dynamic t [(String,[Bool])], Event t [(String,[Bool]), Event t Hint) -}
-
-viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Sequence []) n i
-  let deltasDown' = fmapMaybe (lastOrNothing . justSequences . justEditsInZone n) deltasDown
-  (value,edits,hints) <- sequencer Nothing
-
-  tidalTextWidget ctx e rows i' deltasDown'
-  value' <- mapDyn (Map.singleton n . TextProgram) value
-  let edits' = fmap (ZoneRequest . Sited n . Edit . TextProgram) edits
-  return (value',edits',hints)
-  where f (TextProgram x) = x
-        f _ = Live (TidalTextNotation MiniTidal,"") L3
 viewWidget _ _ (LabelView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (LabelText "") n i
   let deltasDown' = fmap (justLabelTexts . justEditsInZone n) deltasDown
@@ -104,3 +90,14 @@ viewWidget _ _ (EvaluableTextView n) i deltasDown = do
 viewWidget _ _ SvgDisplayView _ _ = do
   testOurDynSvg
   return (constDyn Map.empty, never, never)
+
+
+viewWidget ctx renderInfo (StructureView n) i deltasDown = do
+  let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
+  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
+  (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
+  value' <- mapDyn (Map.singleton n . Structure) value
+  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  return (value',edits',hints)
+  where f (Structure x) = x
+        f _ = EmptyTransformedPattern

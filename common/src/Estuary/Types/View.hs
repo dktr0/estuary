@@ -10,7 +10,6 @@ data View =
   Views [View] |
   ViewDiv String View |
   LabelView Int |
-  SequencerView Int |
   StructureView Int |
   TidalTextView Int Int | -- first int is zone to edit, second int is number of lines in editor -- ** name should change to TextView or something like that soon...
   SequenceView Int |
@@ -29,7 +28,7 @@ standardView = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 3]),
   ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 3]),
   ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10 3]),
-  ViewDiv "eightBottomR" (Views [LabelView 11, SequenceView 12]) 
+  ViewDiv "eightBottomR" (Views [LabelView 11, SequenceView 12])
   ]
 
 emptyView :: View
