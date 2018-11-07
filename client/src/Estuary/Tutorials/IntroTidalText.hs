@@ -13,6 +13,9 @@ import Estuary.Tidal.Types
 introTidalText::MonadWidget t m => Tutorial t m
 introTidalText = Tutorial IntroTidalText (const $ return (constDyn empty, never))
 
+{-
+
+
 
 miniTidalWidget :: MonadWidget t m => Int -> String -> m (Dynamic t (Int, Definition),Event t Hint)
 miniTidalWidget index initial = do
@@ -67,7 +70,7 @@ miniTidalWidget index initial = do
 
 
 
-widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
+widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)) -}
 {- |
 v1 :: Language -> (View, Definition)
 v1 English = (LabelView 0, LabelText "Welcome to the introductory tutorial to Tidalcycles (or MiniTidal)")
