@@ -36,7 +36,7 @@ flushEvents c = do
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
   return ()
 
-renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ParamPattern -> [(UTCTime,Tidal.ParamMap)]
+renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
 renderTidalPattern start range t p = Prelude.map (\(o,_,m) -> (addUTCTime (realToFrac o*range) start,m)) events
   where
     start' = (realToFrac $ diffUTCTime start (at t)) * cps t + beat t -- start time in cycles since beginning of tempo
@@ -45,20 +45,20 @@ renderTidalPattern start range t p = Prelude.map (\(o,_,m) -> (addUTCTime (realT
 
 -- definitionToPattern is here rather than in Estuary.Types.Definition so that the
 -- server does not depend on mini-language parsers
-definitionToPattern :: Definition -> Either String (Maybe Tidal.ParamPattern)
+definitionToPattern :: Definition -> Either String (Maybe Tidal.ControlPattern)
 definitionToPattern (Structure x) = Right $ Just $ toParamPattern x
-definitionToPattern (TextProgram x) = either Left (Right . Just) $ tidalTextToParamPattern $ forRendering x
-definitionToPattern (Sequence x) = Right $ Just $ Tidal.stack $ fmap sequenceToParamPattern x
+definitionToPattern (TextProgram x) = either Left (Right . Just) $ tidalTextToControlPattern $ forRendering x
+definitionToPattern (Sequence x) = Right $ Just $ Tidal.stack $ fmap sequenceToControlPattern x
 definitionToPattern _ = Right $ Nothing
 
 -- this is here rather than in Estuary.Types.TextNotation so that the server does not
 -- depend on mini-language parsers
-tidalTextToParamPattern :: (TextNotation,String) -> Either String Tidal.ParamPattern
-tidalTextToParamPattern (TidalTextNotation x,y) = either (Left . show) Right $ tidalParser x y
-tidalTextToParamPattern _ = Left "internal error: tidalTextToParamPattern called on unrecognized notation"
+tidalTextToControlPattern :: (TextNotation,String) -> Either String Tidal.ControlPattern
+tidalTextToControlPattern (TidalTextNotation x,y) = either (Left . show) Right $ tidalParser x y
+tidalTextToControlPattern _ = Left "internal error: tidalTextToControlPattern called on unrecognized notation"
 
-sequenceToParamPattern :: (String,[Bool]) -> Tidal.ParamPattern
-sequenceToParamPattern (sampleName,pat) = Tidal.s $ Tidal.p $ intercalate " " $ fmap f pat
+sequenceToControlPattern :: (String,[Bool]) -> Tidal.ControlPattern
+sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " " $ fmap f pat
   where f False = "~"
         f True = sampleName
 
@@ -83,12 +83,12 @@ defsToPatterns c = do
   -- determine which definitions (for rendering purposes) have either changed or been deleted
   let additionsChanges = differenceWith (\x y -> if x == y then Nothing else Just x) newDefs prevDefs
   let deletions = difference prevDefs newDefs
-  -- parse definitions into ParamPatterns or errors, add new ParamPatterns to previous patterns, delete patterns when defs deleted
+  -- parse definitions into ControlPatterns or errors, add new ControlPatterns to previous patterns, delete patterns when defs deleted
   let (newErrors,newPatterns) = IntMap.mapEither definitionToPattern additionsChanges
   let newPatterns' = union (IntMap.mapMaybe id newPatterns) prevPatterns
   let newPatterns'' = difference newPatterns' deletions
   modify' $ \x -> x { paramPatterns = newPatterns'' }
-  -- maintain map of errors by adding new errors, subtracting deleted defs and subtracting any for new successful ParamPatterns
+  -- maintain map of errors by adding new errors, subtracting deleted defs and subtracting any for new successful ControlPatterns
   let newErrors' = union newErrors prevErrors
   let newErrors'' = difference newErrors' deletions
   let newErrors''' = difference newErrors'' newPatterns

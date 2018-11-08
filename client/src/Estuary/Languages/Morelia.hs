@@ -5,16 +5,17 @@ import Text.ParserCombinators.Parsec.Number
 import Data.List (intercalate)
 import Data.Bool (bool)
 import qualified Sound.Tidal.Context as Tidal
+import Estuary.Tidal.ParamPatternable (parseBP')
 
-morelia :: String -> Either ParseError Tidal.ParamPattern
+morelia :: String -> Either ParseError Tidal.ControlPattern
 morelia x = parse moreliaParser "morelia" $ filter (/='?') x
 
-moreliaParser :: GenParser Char a Tidal.ParamPattern
+moreliaParser :: GenParser Char a Tidal.ControlPattern
 moreliaParser = do
   xs <- many thingParser
   return $ Tidal.stack xs
 
-thingParser :: GenParser Char a Tidal.ParamPattern
+thingParser :: GenParser Char a Tidal.ControlPattern
 thingParser = do
   xs <- many (oneOf " ")
   ys <- romanNumeral
@@ -22,8 +23,8 @@ thingParser = do
   char '~'
   return $ anotherFunction (length xs) ys (length zs)
 
-anotherFunction :: Int -> String -> Int -> Tidal.ParamPattern
-anotherFunction pos sampleName divider = Tidal.s $ Tidal.p x
+anotherFunction :: Int -> String -> Int -> Tidal.ControlPattern
+anotherFunction pos sampleName divider = Tidal.s $ parseBP' x
   where
     x = tildes ++ " " ++ sampleName ++ "/" ++ (show divider)
     tildes = intercalate " " (replicate pos "~")

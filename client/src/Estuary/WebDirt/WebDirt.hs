@@ -29,7 +29,7 @@ getCurrentTime (WebDirt j) = getCurrentTime_ j
 getClockDiff :: WebDirt -> IO Double
 getClockDiff (WebDirt j) = getClockDiff_ j
 
-playSample :: WebDirt -> (Double,Tidal.ParamMap) -> IO ()
+playSample :: WebDirt -> (Double,Tidal.ControlMap) -> IO ()
 playSample (WebDirt j) (t,e) = do
   object <- createObjFromMap t e
   playSample_ j object

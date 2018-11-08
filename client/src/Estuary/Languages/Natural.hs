@@ -4,11 +4,12 @@ import Text.ParserCombinators.Parsec
 import Data.List (intercalate)
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
+import Estuary.Tidal.ParamPatternable (parseBP')
 
 --natural
 -- <nombre de sonido> <transformacion> <paramatrosd de Transf>
 
-lengExpr :: GenParser Char a Tidal.ParamPattern
+lengExpr :: GenParser Char a Tidal.ControlPattern
 lengExpr = do
   espacios
   char 'a'
@@ -31,8 +32,8 @@ lengExpr = do
   espacios
   return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-nuestroTextoATidal :: String -> Tidal.ParamPattern
-nuestroTextoATidal s = Tidal.s $ Tidal.p s
+nuestroTextoATidal :: String -> Tidal.ControlPattern
+nuestroTextoATidal s = Tidal.s $ parseBP' s
 
 espacios :: GenParser Char a String
 espacios = many (oneOf " ")
@@ -48,7 +49,7 @@ animal = choice [
 descartarTexto :: GenParser Char a String
 descartarTexto = many (oneOf "\n")
 
-accion :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+accion :: GenParser Char a (Tidal.ControlPattern -> Tidal.ControlPattern)
 accion = choice [
                 try (string "vuelo"  >> espacios >> return Tidal.rev),
                 try (string "caza" >> espacios >> int >>= return . Tidal.striate),
@@ -56,10 +57,10 @@ accion = choice [
                 try (descartarTexto >> return id)
                 ]
 
-exprStack :: GenParser Char a Tidal.ParamPattern
+exprStack :: GenParser Char a Tidal.ControlPattern
 exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-natural :: String -> Either ParseError Tidal.ParamPattern
+natural :: String -> Either ParseError Tidal.ControlPattern
 natural s = parse exprStack "natural" s

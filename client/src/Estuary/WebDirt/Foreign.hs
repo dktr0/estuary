@@ -17,9 +17,9 @@ import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
 
 
-createObjFromMap:: Double -> Tidal.ParamMap -> IO T.JSVal
+createObjFromMap:: Double -> Tidal.ControlMap -> IO T.JSVal
 createObjFromMap when paramMap = do
-  let paramMap' = mapKeys (\x-> case Tidal.name x of "n"->"sample_n"; "s"->"sample_name";otherwise->Tidal.name x) paramMap -- Map String (Value)
+  let paramMap' = mapKeys (\x-> case x of "n"->"sample_n"; "s"->"sample_name";otherwise-> x) paramMap -- Map String (Value)
 --  let paramMap'' = Data.Map.map (maybe (T.nullRef) (valueToJSVal)) paramMap':: Map String T.JSVal -- Map String JSVal
   let paramMap'' = Data.Map.map (valueToJSVal) paramMap':: Map String T.JSVal -- Map String JSVal
   obj <- createEmpty

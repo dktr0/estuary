@@ -2,6 +2,7 @@
 
 module Estuary.Widgets.Sequencer where
 
+{-
 import Reflex
 import Reflex.Dom
 import GHCJS.DOM.EventM
@@ -13,6 +14,7 @@ import Safe.Foldable (maximumMay)
 import Text.Read (readMaybe)
 
 import Estuary.Tidal.Types
+import Estuary.Tidal.ParamPatternable (parseBP')
 import Estuary.Types.Hint
 import Estuary.Widgets.Generic -- for EditSignal... TODO move that
 import Estuary.Types.Live
@@ -22,7 +24,7 @@ import qualified Sound.Tidal.Context as T
 import qualified Text.ParserCombinators.Parsec as P
 
 toPattern :: (T.Parseable a, Show a, T.Enumerable a) => GeneralPattern a -> T.Pattern a
-toPattern = T.p . show
+toPattern = parseBP' . show
 
 
 toPatternMaybe :: (T.Parseable a, Show a, T.Enumerable a) => GeneralPattern a -> T.Pattern (Maybe a)
@@ -38,12 +40,12 @@ attachIndex l = zip (take (length l) [0..]) l
 
 toPat' :: T.Enumerable a => T.TPat a -> T.Pattern (Maybe a)
 toPat' a = case a of
-  T.TPat_Atom x -> T.atom  (Just x)
+  T.TPat_Atom x -> pure  (Just x)
   T.TPat_Density t x -> T.density (T.toPat t) $ toPat' x
   T.TPat_Slow t x -> T.slow (T.toPat t) $ toPat' x
   T.TPat_Zoom arc x -> T.zoom arc $ toPat' x
   T.TPat_DegradeBy amt x -> T._degradeBy amt $ toPat' x
-  T.TPat_Silence -> T.atom Nothing
+  T.TPat_Silence -> pure Nothing
   T.TPat_Cat xs -> T.fastcat $ Prelude.map toPat' xs
   T.TPat_TimeCat xs -> T.timeCat $ Prelude.map (\(n, p) -> (toRational n, toPat' p)) $ T.durations xs
   T.TPat_Overlay x0 x1 -> T.overlay (toPat' x0) (toPat' x1)
@@ -140,3 +142,4 @@ sequencerButton pos val edits = mdo
   debug $ updated isActive
   attrs <- mapDyn (\x-> singleton "class" $ if x then "sequencerButtonActived" else "sequencerButtonDeactivated") isActive
   return isActive
+-}

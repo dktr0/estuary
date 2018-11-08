@@ -7,11 +7,11 @@ import Control.Exception
 
 class SampleEngine e where
   getClockDiff :: e -> IO Double -- diff btw clock used to play sample events and POSIX
-  playSample :: e -> (Double,Tidal.ParamMap) -> IO ()
+  playSample :: e -> (Double,Tidal.ControlMap) -> IO ()
   getPeakLevels :: e -> IO [Double]
   getRmsLevels :: e -> IO [Double]
 
-sendSounds :: SampleEngine e => e -> [(UTCTime,Tidal.ParamMap)] -> IO ()
+sendSounds :: SampleEngine e => e -> [(UTCTime,Tidal.ControlMap)] -> IO ()
 sendSounds e sounds = do
   clockDiff <- getClockDiff e
   let latency = 0.2 -- hardwired latency for now???

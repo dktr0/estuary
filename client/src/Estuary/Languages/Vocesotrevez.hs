@@ -5,9 +5,9 @@ import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
 --vocesotrevez
 -- <nombre sonido> <transf1> <parametros>
+import Estuary.Tidal.ParamPatternable (parseBP')
 
-
-lengExpr :: GenParser Char a Tidal.ParamPattern
+lengExpr :: GenParser Char a Tidal.ControlPattern
 lengExpr = do
 --coloca aquí los parsers
   espacios
@@ -33,8 +33,8 @@ lengExpr = do
   espacios
   return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-nuestroTextoATidal ::  String  -> Tidal.ParamPattern
-nuestroTextoATidal s = Tidal.s $ Tidal.p s
+nuestroTextoATidal ::  String  -> Tidal.ControlPattern
+nuestroTextoATidal s = Tidal.s $ parseBP' s
 
 sonidos :: GenParser Char a String
 sonidos = choice [
@@ -46,7 +46,7 @@ sonidos = choice [
         try (descartarTexto >> return " ")
         ]
 
-trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+trans :: GenParser Char a (Tidal.ControlPattern -> Tidal.ControlPattern)
 trans = choice [
               --coloca aqui los nombres de tus transformaciones
          try (char ',' >> spaces >> fractional3 False >>= return . Tidal.fast),
@@ -65,10 +65,10 @@ espacios = many (oneOf " ")
 descartarTexto :: GenParser Char a String
 descartarTexto = many (oneOf "\n")
 
-exprStack :: GenParser Char a Tidal.ParamPattern
+exprStack :: GenParser Char a Tidal.ControlPattern
 exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-vocesotrevez :: String -> Either ParseError Tidal.ParamPattern
+vocesotrevez :: String -> Either ParseError Tidal.ControlPattern
 vocesotrevez s = parse exprStack "vocesotrevez" s

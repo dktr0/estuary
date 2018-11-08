@@ -10,8 +10,8 @@ import Estuary.RenderInfo
 data RenderState = RenderState {
   logicalTime :: !UTCTime,
   cachedDefs :: !DefinitionMap,
-  paramPatterns :: !(IntMap Tidal.ParamPattern),
-  dirtEvents :: ![(UTCTime,Tidal.ParamMap)],
+  paramPatterns :: !(IntMap Tidal.ControlPattern),
+  dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
   renderStartTime :: !UTCTime,
   parseEndTime :: !UTCTime,
   patternsEndTime :: !UTCTime,

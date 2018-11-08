@@ -8,37 +8,44 @@ import Estuary.Tidal.Types
 -- Estuary's Tidal-esque notations to an actual Tidal ParamPattern representation.
 
 class ParamPatternable a where
-  toParamPattern :: a -> Tidal.ParamPattern
+  toParamPattern :: a -> Tidal.ControlPattern
   isEmptyFuture :: a -> Bool
   isEmptyPast :: a -> Bool
 
+-- Tidal's main pattern parser comes in two flavours currently,
+-- a flavour that returns an Either ParseError a, and a flavour that
+-- throws exceptions. When using this parser in the service of our
+-- structure editor we want neither of this - just silent failure.
+parseBP' :: (Tidal.Enumerable a, Tidal.Parseable a) => String -> Tidal.Pattern a
+parseBP' = (either (const Tidal.silence)  id). Tidal.parseBP 
+
 instance ParamPatternable SpecificPattern where
-  toParamPattern (Accelerate x) = Tidal.accelerate $ Tidal.p $ show x
-  toParamPattern (Bandf x) = Tidal.bandf $ Tidal.p $ show x
-  toParamPattern (Bandq x) = Tidal.bandq $ Tidal.p $ show x
-  toParamPattern (Begin x) = Tidal.begin $ Tidal.p $ show x
-  toParamPattern (Coarse x) = Tidal.coarse $ Tidal.p $ show x
-  toParamPattern (Crush x) = Tidal.crush $ Tidal.p $ show x
-  toParamPattern (Cut x) = Tidal.cut $ Tidal.p $ show x
-  toParamPattern (Cutoff x) = Tidal.cutoff $ Tidal.p $ show x
-  toParamPattern (Delay x) = Tidal.delay $ Tidal.p $ show x
-  toParamPattern (Delaytime x) = Tidal.delaytime $ Tidal.p $ show x
-  toParamPattern (Delayfeedback x) = Tidal.delayfeedback $ Tidal.p $ show x
-  toParamPattern (End x) = if isEmptyPast $ End x then Tidal.end $ Tidal.p "1" else Tidal.end $ Tidal.p $ show x
-  toParamPattern (Gain x) = Tidal.gain $ Tidal.p $ show x
-  toParamPattern (Hcutoff x) = Tidal.hcutoff $ Tidal.p $ show x
-  toParamPattern (Hresonance x) = Tidal.hresonance $ Tidal.p $ show x
-  toParamPattern (Loop x) = Tidal.loop $ Tidal.p $ show x
-  toParamPattern (N x) = if isEmptyPast $ N x then Tidal.n $ Tidal.p "0" else Tidal.n $ Tidal.p $ show x
-  toParamPattern (Pan x) = Tidal.pan $ Tidal.p $ show x
-  toParamPattern (Resonance x) = Tidal.resonance $ Tidal.p $ show x
-  toParamPattern (S x) = Tidal.s $ Tidal.p $ show x
-  toParamPattern (Shape x) = Tidal.shape $ Tidal.p $ show x
-  toParamPattern (Sound x) = Tidal.sound $ Tidal.p $ show x
-  toParamPattern (Speed x) = Tidal.speed $ Tidal.p $ show x
-  toParamPattern (Up x) = if isEmptyPast $ Up x then Tidal.up $ Tidal.p "0" else Tidal.up $ Tidal.p $ show x
-  toParamPattern (Unit x) = Tidal.unit $ Tidal.p $ show x
-  toParamPattern (Vowel x) = if isEmptyPast $ Vowel x then Tidal.vowel $ Tidal.p $ "t" else Tidal.vowel $ Tidal.p $ show x
+  toParamPattern (Accelerate x) = Tidal.accelerate $ parseBP' $ show x
+  toParamPattern (Bandf x) = Tidal.bandf $ parseBP' $ show x
+  toParamPattern (Bandq x) = Tidal.bandq $ parseBP' $ show x
+  toParamPattern (Begin x) = Tidal.begin $ parseBP' $ show x
+  toParamPattern (Coarse x) = Tidal.coarse $ parseBP' $ show x
+  toParamPattern (Crush x) = Tidal.crush $ parseBP' $ show x
+  toParamPattern (Cut x) = Tidal.cut $ parseBP' $ show x
+  toParamPattern (Cutoff x) = Tidal.cutoff $ parseBP' $ show x
+  toParamPattern (Delay x) = Tidal.delay $ parseBP' $ show x
+  toParamPattern (Delaytime x) = Tidal.delaytime $ parseBP' $ show x
+  toParamPattern (Delayfeedback x) = Tidal.delayfeedback $ parseBP' $ show x
+  toParamPattern (End x) = if isEmptyPast $ End x then Tidal.end $ parseBP' "1" else Tidal.end $ parseBP' $ show x
+  toParamPattern (Gain x) = Tidal.gain $ parseBP' $ show x
+  toParamPattern (Hcutoff x) = Tidal.hcutoff $ parseBP' $ show x
+  toParamPattern (Hresonance x) = Tidal.hresonance $ parseBP' $ show x
+  toParamPattern (Loop x) = Tidal.loop $ parseBP' $ show x
+  toParamPattern (N x) = if isEmptyPast $ N x then Tidal.n $ parseBP' "0" else Tidal.n $ parseBP' $ show x
+  toParamPattern (Pan x) = Tidal.pan $ parseBP' $ show x
+  toParamPattern (Resonance x) = Tidal.resonance $ parseBP' $ show x
+  toParamPattern (S x) = Tidal.s $ parseBP' $ show x
+  toParamPattern (Shape x) = Tidal.shape $ parseBP' $ show x
+  toParamPattern (Sound x) = Tidal.sound $ parseBP' $ show x
+  toParamPattern (Speed x) = Tidal.speed $ parseBP' $ show x
+  toParamPattern (Up x) = if isEmptyPast $ Up x then Tidal.up $ parseBP' "0" else Tidal.up $ parseBP' $ show x
+  toParamPattern (Unit x) = Tidal.unit $ parseBP' $ show x
+  toParamPattern (Vowel x) = if isEmptyPast $ Vowel x then Tidal.vowel $ parseBP' $ "t" else Tidal.vowel $ parseBP' $ show x
   isEmptyPast (Accelerate x) = generalPatternIsEmptyPast x
   isEmptyPast (Bandf x) = generalPatternIsEmptyPast x
   isEmptyPast (Bandq x) = generalPatternIsEmptyPast x
@@ -104,7 +111,7 @@ instance ParamPatternable TransformedPattern where
   isEmptyPast (UntransformedPattern u) = isEmptyPast u
   isEmptyPast (EmptyTransformedPattern) = True
 
-applyPatternTransformer :: PatternTransformer -> (Tidal.ParamPattern -> Tidal.ParamPattern)
+applyPatternTransformer :: PatternTransformer -> (Tidal.ControlPattern -> Tidal.ControlPattern)
 applyPatternTransformer NoTransformer = id
 applyPatternTransformer Rev = Tidal.rev
 applyPatternTransformer (Slow f) = Tidal.slow $ pure f
@@ -117,8 +124,8 @@ applyPatternTransformer (Jux t) = Tidal.jux (applyPatternTransformer t)
 applyPatternTransformer (Chop t) = Tidal.chop $ pure t
 applyPatternTransformer (Combine p c) =  (toTidalCombinator c) $ toParamPattern p
 
-toTidalCombinator :: PatternCombinator -> (Tidal.ParamPattern -> Tidal.ParamPattern -> Tidal.ParamPattern)
-toTidalCombinator Merge = (Tidal.|=|)
+toTidalCombinator :: PatternCombinator -> (Tidal.ControlPattern -> Tidal.ControlPattern -> Tidal.ControlPattern)
+toTidalCombinator Merge = (Tidal.#)
 toTidalCombinator Add = (Tidal.|+|)
 toTidalCombinator Subtract = (Tidal.|-|)
 toTidalCombinator Multiply = (Tidal.|*|)

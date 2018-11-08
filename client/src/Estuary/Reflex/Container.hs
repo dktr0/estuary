@@ -74,9 +74,9 @@ container :: (Ord k, Num k, Show k, Eq v, Show v, MonadWidget t m)
    -> m ( (Dynamic t (Map k v)) , Event t (Map k x) )
 
 container initialValue cEvents rEvents mkChild = mdo
-  let cEventsIn = traceEvent "cEventsIn" cEvents
-  let existingMap' = traceDyn "existingMap'" $ values
-  let cEvents' = traceEvent "cEvents'" $ attachDynWith (constructionDiff) existingMap' cEventsIn
+  let cEventsIn = cEvents
+  let existingMap' = values
+  let cEvents' = attachDynWith (constructionDiff) existingMap' cEventsIn
   let selector = fanMap rEvents
   let mkChild' k v = mkChild v $ select selector $ (Const2 k)
   widgets <- liftM (joinDynThroughMap) $ listHoldWithKey initialValue cEvents' mkChild' -- Dynamic t (Map k (v,Event t x))
