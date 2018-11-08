@@ -37,11 +37,15 @@ flushEvents c = do
   return ()
 
 renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
-renderTidalPattern start range t p = Prelude.map (\(o,_,m) -> (addUTCTime (realToFrac o*range) start,m)) events
+renderTidalPattern start range t p = events''
   where
     start' = (realToFrac $ diffUTCTime start (at t)) * cps t + beat t -- start time in cycles since beginning of tempo
     end = realToFrac range * cps t + start' -- end time in cycles since beginning of tempo
-    events = Tidal.seqToRelOnsetDeltas (toRational start',toRational end) p -- times expressed as fractions of start->range
+    events = Tidal.queryArc p (toRational start',toRational end) -- events with t in cycles
+    events' = Prelude.filter Tidal.eventHasOnset events
+    events'' = f <$> events'
+    f (((w1,_),(_,_)),cMap) = (addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t),cMap)
+
 
 -- definitionToPattern is here rather than in Estuary.Types.Definition so that the
 -- server does not depend on mini-language parsers
