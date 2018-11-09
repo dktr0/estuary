@@ -15,7 +15,7 @@ packages:
 - '../common'
 - location:
     git: https://github.com/d0kt0r0/Tidal.git
-    commit: 6b6814634b3d5af6d5959526df71104a7d1eaa61
+    commit: b6bdf0fb9b159c62c3d60567682c6c4496777aea
   extra-dep: true
 
 extra-deps:
