@@ -13,9 +13,20 @@ allow-newer: true
 packages:
 - '.'
 - '../common'
+
 - location:
     git: https://github.com/d0kt0r0/Tidal.git
     commit: b6bdf0fb9b159c62c3d60567682c6c4496777aea
+  extra-dep: true
+
+- location:
+    git: https://github.com/d0kt0r0/MusicW.git
+    commit: f300f8da234e3a6958a3477b56728a2fcb885d73
+  extra-dep: true
+
+- location:
+    git: https://github.com/d0kt0r0/Punctual.git
+    commit: 021b35edb552e05384d719a7d92a16794cb31788
   extra-dep: true
 
 extra-deps:
