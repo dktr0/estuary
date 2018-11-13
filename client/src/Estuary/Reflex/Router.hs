@@ -1,6 +1,8 @@
 {-# LANGUAGE RecursiveDo, ScopedTypeVariables #-}
 
-module Estuary.Reflex.Router where
+module Estuary.Reflex.Router(
+  router
+) where
 
 import Control.Monad.IO.Class
 

@@ -27,3 +27,9 @@ poc = do
       click <- button (show x)
       return $ ((P1 $ '1':s) <$ click, s)
   mapDyn snd dynRouterData
+
+main :: IO ()
+main = 
+  mainWidget $ do
+    dynRouterData <- poc
+    dynText dynRouterData

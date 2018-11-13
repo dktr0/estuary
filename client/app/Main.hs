@@ -16,8 +16,6 @@ import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Renderer
 
-import Estuary.Reflex.POC
-
 main :: IO ()
 main = do
   warnBeforeGoingBackInBrowser
@@ -29,10 +27,7 @@ main = do
   c <- newMVar $ ic
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
-  --mainWidget $ estuaryWidget c ri protocol
-  mainWidget $ do
-    dynRouterData <- poc
-    dynText dynRouterData
+  mainWidget $ estuaryWidget c ri protocol
 
 foreign import javascript safe
   "window.addEventListener('beforeunload', function (e) { e.preventDefault(); e.returnValue = ''; });"
