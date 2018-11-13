@@ -1,38 +1,45 @@
-{-# LANGUAGE RecursiveDo, OverloadedStrings,ScopedTypeVariables #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings, ScopedTypeVariables, DeriveGeneric, DeriveAnyClass #-}
 
 module Estuary.Widgets.Navigation where
 
-import Reflex
-import Reflex.Dom
-import Estuary.WebDirt.Foreign
+import Control.Monad (liftM)
+
+import Data.IntMap.Strict
+import qualified Data.Map as Map
+import Data.Time.Clock
+
+import Estuary.Reflex.Router
+import Estuary.Reflex.Utility
+import Estuary.RenderInfo
 import Estuary.Tidal.Types
+import Estuary.Tutorials.Context
+import qualified Estuary.Tutorials.Tutorial as T
+import Estuary.Types.Context
+import Estuary.Types.Definition
+import Estuary.Types.Hint
+import Estuary.Types.Language
+import Estuary.Types.Request
+import Estuary.Types.Response
+import Estuary.Types.Tempo
+import qualified Estuary.Types.Term as Term
+import Estuary.Types.Terminal
+import Estuary.Types.View
+import Estuary.WebDirt.Foreign
+import Estuary.Widgets.Ensemble
 import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
-import Control.Monad (liftM)
-import qualified Data.Map as Map
-import Data.IntMap.Strict
-import Text.Read
-import Text.JSON
-import Data.Time.Clock
-
-import Estuary.Types.Request
-import Estuary.Types.Response
-import Estuary.Types.Hint
-import Estuary.Types.View
-import Estuary.Types.Definition
-import Estuary.Types.Terminal
-import Estuary.Types.Context
-import Estuary.Types.Language
-import Estuary.RenderInfo
-import Estuary.Types.Tempo
-import qualified Estuary.Tutorials.Tutorial as T
-import Estuary.Tutorials.Context
 import Estuary.Widgets.View
-import Estuary.Widgets.Ensemble
-import Estuary.Reflex.Utility
-import qualified Estuary.Types.Term as Term
 
+import GHC.Generics
+
+import GHCJS.Marshal
+
+import Reflex
+import Reflex.Dom
+
+import Text.JSON
+import Text.Read
 
 data Navigation =
   Splash |
@@ -42,31 +49,26 @@ data Navigation =
   Lobby |
   CreateEnsemblePage |
   Collaborate String
+  deriving (Generic, FromJSVal, ToJSVal)
 
-navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t DefinitionMap,Event t Request,Event t Hint,Event t Tempo)
-navigation ctx renderInfo commands wsDown = mdo
-  let initialPage = page ctx renderInfo commands wsDown Splash
-  let rebuild = fmap (page ctx renderInfo commands wsDown) navEvents
-  w <- widgetHold initialPage rebuild
-  values <- liftM joinDyn $ mapDyn (\(x,_,_,_,_)->x) w
-  wsUp <- liftM switchPromptlyDyn $ mapDyn (\(_,x,_,_,_)->x) w
-  hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,x,_,_)->x) w
-  navEvents <- liftM switchPromptlyDyn $ mapDyn (\(_,_,_,x,_)->x) w
-  tempoEvents <- liftM switchPromptlyDyn $ mapDyn (\(_,_,_,_,x)->x) w
-  return (values,wsUp,hints,tempoEvents)
+navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo)
+navigation ctx renderInfo commands wsDown = do
+  dynPage <- router Splash $ page ctx renderInfo commands wsDown
+  
+  dynPageData <- mapDyn snd dynPage
+  dynValues <- liftM joinDyn           $ mapDyn (\(x, _, _, _) -> x) dynPageData
+  wsUpEv    <- liftM switchPromptlyDyn $ mapDyn (\(_, x, _, _) -> x) dynPageData
+  hintEv    <- liftM switchPromptlyDyn $ mapDyn (\(_, _, x, _) -> x) dynPageData
+  tempoEv   <- liftM switchPromptlyDyn $ mapDyn (\(_, _, _, x) -> x) dynPageData
+  
+  return (dynValues, wsUpEv, hintEv, tempoEv)
 
 page :: forall t m. (MonadWidget t m)
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> Navigation
-  -> m (Dynamic t DefinitionMap,Event t Request,Event t Hint,Event t Navigation,Event t Tempo)
+  -> m (Event t Navigation, (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo))
 
 page ctx _ _ wsDown Splash = do
-  -- x <- liftM (TutorialList <$) $ el "div" $ dynButton =<< translateDyn Term.Tutorials ctx
-  -- y <- liftM (Solo <$)  $ el "div" $ dynButton =<< translateDyn Term.Solo ctx
-  -- z <- liftM (Lobby <$)  $ el "div" $ dynButton =<< translateDyn Term.Collaborate ctx
-  -- let navEvents = leftmost [x,y,z]
-  -- return (constDyn empty,never,never,navEvents,never)
-
-  navEvents <- divClass "splash-container" $ do
+  navEv <- divClass "splash-container" $ do
     divClass "splash-margin" $ do
       divClass "splash-panel-title" $ do
         divClass "splash-title" $ do
@@ -89,24 +91,20 @@ page ctx _ _ wsDown Splash = do
           dynText =<< translateDyn Term.Collaborate ctx
           elAttr "img" (Map.fromList [("src", "collaborate-icon.svg")]) blank
     return $ leftmost [gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
-  return (constDyn empty,never,never,navEvents,never)
+  return (navEv, (constDyn empty, never, never, never))
 
 page ctx _ _ wsDown TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ button $ show $ T.tutorialId b) (tutorials::[T.Tutorial t m])
-  back <- liftM (Splash <$) $ el "div" $ button  "<----"
-  let navEvents = leftmost [back]
-  return (constDyn empty,never,never,navEvents,never)
+  return (never, (constDyn empty, never, never, never))
 
 page ctx _ _ wsDown (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
-  x <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
-  return (constDyn empty,never,never,x,never)
+  return (never, (constDyn empty, never, never, never))
 
 page ctx renderInfo commands wsDown Solo = do
   (values,hints,tempoEvents) <- soloView ctx renderInfo commands
-  x <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
-  return (values,never,hints,x,tempoEvents)
+  return (never, (values, never, hints, tempoEvents))
 
 page ctx _ _ wsDown Lobby = do
   requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
@@ -115,8 +113,7 @@ page ctx _ _ wsDown Lobby = do
   join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation
   create <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
-  back <- divClass "backToSplash" $ do liftM (Splash <$) $ button  "<--"
-  return (constDyn empty,requestEnsembleList,never,leftmost [back,join'',create],never)
+  return (leftmost [join'', create], (constDyn empty, requestEnsembleList, never, never))
 
 page ctx _ _ _ CreateEnsemblePage = do
   el "div" $ dynText =<< translateDyn Term.CreateNewEnsemble ctx
@@ -140,12 +137,11 @@ page ctx _ _ _ CreateEnsemblePage = do
   cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
   let serverRequests = leftmost [createEnsemble,authenticateAdmin]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
-  return (constDyn empty, serverRequests, never, navEvents,never)
+  return (navEvents, (constDyn empty, serverRequests, never, never))
 
 page ctx renderInfo commands wsDown (Collaborate w) = do
   (values,wsUp,hints,tempoEvents) <- ensembleView ctx renderInfo w commands wsDown
-  x <- divClass "backToSplash" $ do liftM (Lobby <$) $ button  "<--"
-  return (values,wsUp,hints,x,tempoEvents)
+  return (never, (values, wsUp, hints, tempoEvents))
 
 
 joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation)
