@@ -26,7 +26,7 @@ import Reflex.Dom
 -- pushState :: (MonadIO m, ToJSString title, ToJSString url) =>
 --     History -> JSVal -> title -> url -> m ()
 
-router :: (MonadWidget t m, FromJSVal state, ToJSVal state) => state -> (state -> m (Event t state)) -> m ()
+router :: (MonadWidget t m, FromJSVal state, ToJSVal state) => state -> (state -> m (Event t state, a)) -> m (Dynamic t (Event t state, a))
 router def renderPage = mdo
   state <- liftIO $ getInitialState def
 
@@ -36,10 +36,10 @@ router def renderPage = mdo
   -- be decoded, fall back into the initial state.
   popStateEv :: Event t state <- fmap (fromMaybe def) <$> getPopStateEv
 
-  -- Triggered via a page widget (stateChangeEvEv is returned from the dyn below).
-  -- Needs to be flattened because dyn actually returns an event of the returned event.
+  -- Triggered via a page widget (dynPage is the recursive value from further below).
   -- When a change is explicitly triggered, we notify the history via pushPageState.
-  triggeredStateChangeEv :: Event t state <- switchPromptly never stateChangeEvEv
+  dynStateChangeEv :: Dynamic t (Event t state) <- mapDyn fst dynPage
+  let triggeredStateChangeEv = switchPromptlyDyn dynStateChangeEv
   performEvent_ $ ffor triggeredStateChangeEv $ \state -> liftIO $ do
     pushPageState state "?test"
 
@@ -47,12 +47,9 @@ router def renderPage = mdo
   -- a child page triggers a change.
   let stateChangeEv = leftmost [popStateEv, triggeredStateChangeEv]
 
-  dynPage :: Dynamic t (m (Event t state)) <- holdDyn initialPage (renderPage <$> stateChangeEv)
-  
-  -- Dynamic t (Event t State)
-  stateChangeEvEv :: Event t (Event t state) <- dyn dynPage
+  dynPage :: Dynamic t (Event t state, a) <- widgetHold initialPage (renderPage <$> stateChangeEv)
 
-  return ()
+  return dynPage
 
 getInitialState :: (FromJSVal state) => state -> IO (state)
 getInitialState def = 

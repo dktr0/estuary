@@ -1,11 +1,10 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 
 module Estuary.Reflex.POC where
 
 import Control.Monad.IO.Class
 
 import GHCJS.Marshal
-import GHCJS.Marshal.Pure
 
 import Estuary.Reflex.Router
 
@@ -18,12 +17,13 @@ data T
   | P2 String
   deriving (Show, Eq, Generic, FromJSVal, ToJSVal)
 
-poc :: (MonadWidget t m) => m ()
+poc :: (MonadWidget t m) => m (Dynamic t String)
 poc = do
-  router (P1 "start") $ \x -> case x of
+  dynRouterData <- router (P1 "start") $ \x -> case x of
     P1 s -> do
       click <- button (show x)
-      return $ (P2 s) <$ click
+      return $ ((P2 $ '2':s) <$ click, s)
     P2 s -> do
       click <- button (show x)
-      return $ (P1 s) <$ click
+      return $ ((P1 $ '1':s) <$ click, s)
+  mapDyn snd dynRouterData

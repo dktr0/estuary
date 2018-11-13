@@ -30,7 +30,9 @@ main = do
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
   --mainWidget $ estuaryWidget c ri protocol
-  mainWidget poc
+  mainWidget $ do
+    dynRouterData <- poc
+    dynText dynRouterData
 
 foreign import javascript safe
   "window.addEventListener('beforeunload', function (e) { e.preventDefault(); e.returnValue = ''; });"
