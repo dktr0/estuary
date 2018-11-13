@@ -49,6 +49,12 @@ prodInstallClient: # make prodBuildClient first!
 	rm -rf Estuary.jsexe/out.stats
 	rm -rf Estuary.jsexe/index.html.template
 
+installInteractionTestClient:
+	$(STACK_CLIENT) build estuary:exe:interaction-test
+	cp -Rf $$($(STACK_CLIENT) path --local-install-root)/bin/interaction-test.jsexe/* Estuary.jsexe
+	cp -Rf static/* Estuary.jsexe
+	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -o ../Estuary.jsexe/index.html
+
 installServer: buildServer
 	mkdir -p EstuaryServer
 	cp $(SERVER_INSTALL_DIR) ./EstuaryServer/EstuaryServer
