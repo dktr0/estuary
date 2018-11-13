@@ -43,7 +43,7 @@ router def renderPage = mdo
   dynStateChangeEv :: Dynamic t (Event t state) <- mapDyn fst dynPage
   let triggeredStateChangeEv = switchPromptlyDyn dynStateChangeEv
   performEvent_ $ ffor triggeredStateChangeEv $ \state -> liftIO $ do
-    pushPageState state "?test"
+    pushPageState state ""
 
   -- The router state is changed when either the browser buttons are pressed or
   -- a child page triggers a change.
