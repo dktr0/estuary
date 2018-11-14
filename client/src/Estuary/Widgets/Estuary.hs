@@ -2,6 +2,8 @@
 
 module Estuary.Widgets.Estuary where
 
+import Control.Monad (liftM)
+
 import Reflex
 import Reflex.Dom
 import Text.JSON
@@ -75,7 +77,8 @@ foreign import javascript safe
 
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
 header ctx renderInfo = divClass "header" $ do
-  elAttr "img" (fromList [("src", "estuary-logo-green.svg"), ("class", "estuaryLogoIcon")]) blank
+  divClass  "estuary-logo-icon" $ text "A"
+  -- elAttr "img" (fromList [("src", "estuary-logo-green.svg"), ("class", "estuaryLogoIcon")]) blank
   tick <- getPostBuild
   hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
@@ -100,9 +103,9 @@ header ctx renderInfo = divClass "header" $ do
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "webDirt" $ do
   divClass "webDirtMute" $ divClass "webDirtContent" $ do
-    let styleMap =  fromList [("classic.css", "Classic"),("inverse.css","Inverse")]
+    let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale")]
     translateDyn Term.Theme ctx >>= dynText
-    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
+    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) def -- Event t String
     let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
     translateDyn Term.Language ctx >>= dynText
     let langMap = constDyn $ fromList $ zip languages (fmap show languages)

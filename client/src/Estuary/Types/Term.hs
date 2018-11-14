@@ -19,7 +19,8 @@ data Term =
   TerminalChat |
   Theme |
   Load |
-  Peak
+  Peak |
+  About
   deriving (Show,Eq)
 
 translate :: Term -> Language -> String
@@ -29,8 +30,11 @@ translate EstuaryDescription Español = "Estuary (una simbionte live coding)"
 translate Tutorials Español = "Tutoriales"
 translate Tutorials English = "Tutorials"
 
-translate Solo English = "Solo"
-translate Solo Español = "Solo"
+translate About Español = "Acerca de"
+translate About English = "About"
+
+translate Solo Español = "Modo Solo"
+translate Solo English = "Solo Mode"
 
 translate Collaborate Español = "Colaborar"
 translate Collaborate English = "Collaborate"

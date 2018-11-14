@@ -1,66 +1,41 @@
+/*source  */
 .fullWidth {
 	width: 100%;
 	padding: 0px 0px 0px 0px;
 	margin: 0px 0px 0px 0px;
 }
 
-body {
-	background-color: black;
-	/* color: rgb(98, 221, 115); */
-	color: rgb(98, 221, 115);
-	height: 100%;
-	margin: 0;
-	font-family: 'Inconsolata';
+@font-face {
+   font-family: estuaryFont;
+   src: url(../fonts/Estuary.otf);
 }
 
 @font-face {
-   font-family: estuaryFont;
-   src: url(Estuary.otf);
+   font-family: estuary-icons;
+   src: url(../icons/estuary-icons.otf);
 }
 
-input {
-	background-color: black;
-	color: rgb(98, 221, 115);
-	margin: 1px;
-}
-
-
-textarea {
-	background-color: transparent;
-	color: rgb(98, 221, 115);
-	width: 100%;
-	height: 100%;
-}
-
+/* contains the coding textarea or view (source)*/
 .visibleArea{
 	width: 100%;
-	/* height:45px; */
-
 }
 
+/* modifies the help view (source)*/
 .languageHelp {
 	font-size: 70%;
   overflow: scroll;
 }
 
-
-button {
-	background-color: hsl(0,0%,20%);
-	color: rgb(98, 221, 115);
-	border: none;
-	border-radius: 4px;
-}
-
-
+/* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
-
 }
 
-<<<<<<< HEAD
+/* source  */
 .displayNone{
 	display:none;
 }
 
+/* source  */
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
 	padding-left: 15px;
 	padding-right: 15px;
@@ -68,11 +43,13 @@ button {
   font-family: estuaryFont;
 }
 
+/* source  */
 .peak{
   float: right;
 	font-size: 80%;
 }
 
+/* source  */
 .server {
   position: relative;
   top: 1.25em;
@@ -82,32 +59,25 @@ button {
   margin-bottom: 0.6em;
 }
 
+/* source  */
 .webDirt { /* webDirt status area in top right of header */
 	font-size:1.5em;
 	float: right;
 }
 
+/* source  */
 .webDirtMute {
 	display: flex;
 	font-size: 50%;
 }
 
+/* source  */
 .webDirtContent {
  display: flex;
 	margin-left: auto;
 }
 
-select { /*theme and language dropdown menus */
-	background-color: transparent;
-	color: rgb(98, 221, 115);
-	border: 1px solid;
-	border-color: rgb(98, 221, 115);
-	min-width: 15%;
-	margin-right: 1em;
-
-
-}
-
+/*modifies the theme dropdown menu  (source)*/
 .themeSelector {
 	border-right: 1px solid;
 	padding-right: 0.0em;
@@ -115,6 +85,7 @@ select { /*theme and language dropdown menus */
   margin-right: 0.5em;
 }
 
+/*modifies the language dropdown menu  (source)*/
 .languageSelector {
 	border-right: 1px solid;
 	padding-right: 0.0em;
@@ -122,6 +93,7 @@ select { /*theme and language dropdown menus */
   margin-right: 0.5em;
 }
 
+/*modifies the superDirtCheckbox  (source)*/
 .superDirtCheckbox {
 	border-right: 1px solid;
 	padding-right: 0.5em;
@@ -129,24 +101,31 @@ select { /*theme and language dropdown menus */
 	  margin-right: 0.75em;
 }
 
+/*modifies the webDirtCheckbox  (source)*/
 .webDirtCheckbox {
 	padding-right: 0.5em;
 	padding-left: 0.5em;
 }
 
-.estuaryLogoIcon {
-  width: 1.5em;
+/* modifies the estuary logo icon (source) */
+.estuary-logo-icon {
+	font-family: estuary-icons;
+	font-size: 1.6em;
 	margin-right: 1em;
-/* 	float: left; */
+	display: inline;
+	vertical-align:middle;
+
 }
 
+.logo { /* logo in top left of header area (source)*/
+	display: inline;
+	vertical-align:middle;
+}
 
-
-
-.page { /* contains the interface for programming on menu selected in pageMenu */
+/* contains the navigation buttons on the homepage (source)*/
+.page {
 	border-top: 1px solid;
 	border-bottom: 1px solid;
-/* 	border-radius: 10px; */
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
@@ -154,28 +133,28 @@ select { /*theme and language dropdown menus */
 	margin-bottom:0.25em;
 }
 
-.footer { /* the header area containing logo, webDirt, pageMenu and hintArea */
+.footer { /* the header area containing logo, webDirt, pageMenu and hintArea (source)*/
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
 }
 
-.splash-container {
+
+.splash-container { /*contains the four buttons in the home page  (source) */
 	display: flex;
 	flex-wrap: wrap;
 	width: 100%;
 	height: 100%;
 }
 
-.splash-margin {
+.splash-margin {/*sets the padding between the home-page buttons (source)*/
 	min-width: 50%;
 	box-sizing: border-box;
 	padding: 0.4em;
 }
 
-.splash-panel {
-	background: rgb(25, 25, 25);
+.splash-panel {/*contains the tutorial, solo and collaboration buttons (source)*/
 	font-family: estuaryFont;
 	border: 0.25em solid;
 	border-radius: 4px;
@@ -188,13 +167,15 @@ select { /*theme and language dropdown menus */
 	flex-direction: column;
 }
 
+
+
 .splash-panel > img {
-	/* A trick to get the images to behave in firefox as they do in chrome, they "flex" to determine the size */
+	/* A trick to get the images to behave in firefox as they do in chrome, they "flex" to determine the size  (source)*/
 	min-width: 0;
 	min-height: 0;
 }
 
-.splash-panel-title {
+.splash-panel-title { /*contains the about info on the home page (source)*/
 	font-family: estuaryFont;
 	text-align: center;
 	height: 100%;
@@ -206,82 +187,43 @@ select { /*theme and language dropdown menus */
 
 }
 
-.splash-title {
+.splash-title { /*contains the title "estuary" on the homepage  (source)*/
 	display: flex;
-	text-align: justify;
 	margin-bottom: 1%;
-	font-size: 2em;
+	margin:auto;
+	font-size: 2.3em;
 }
 
+.splash-icon-container {
+		display: flex;
+
+
+}
+
+.splash-icon {
+/* 		display: flex; */
+
+/* 	background-color: blue; */
+	font-family: estuary-icons;
+	width:100%;
+	font-size: 13em;
+	margin: auto;
+/* 	min-width: 0; */
+/* 	min-height: 0; */
+}
+
+/*contains the container of the about text  (source)*/
 .splash-info {
-	text-align: justify;
+	/* text-align: justify;
 	width:50px;
 	min-width: 100%;
 	font-size: 0.50vw;
 	height: 100%;
 	border: 0.35em solid;
-  border-radius: 4px;
+  border-radius: 4px; */
 }
 
-@media only screen and (max-width: 2000px ) {
-.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.55vw;
-}
-}
-
-@media only screen and (max-width: 1600px) {
-.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.70vw;
-}
-}
-
-@media only screen and (max-width: 1450px) {
-.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.75vw;
-}
-}
-
-@media only screen and (max-width: 1200px) {
-	.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.8vw;
-}
-
-}
-
-@media only screen and (max-width: 950px) {
-
-	.splash-info {
-   	text-align: justify;
-	  width:50px;
-		min-width: 100%;
-	  font-size: 1vw;
-}
-
-
-}
-
-.splash-line {
-/* 	display: none; */
-	background-color: rgb(98, 221, 115);
-  border-radius: 4px;
-	margin-left: 2%;
-	margin-top: 0.4em;
-	width: 100%;
-	height: 0.1em;
-}
-
+/*contains the about text (source)*/
 .aboutEstuaryParagraph {
 	text-justify: auto;
 	text-overflow: auto;
@@ -289,44 +231,27 @@ select { /*theme and language dropdown menus */
 	padding: 0.5em;
 }
 
-
-.textWidgetTextArea {
+.textWidgetTextArea {/*modifies the extramuros-like view (source)*/
 	width: 100%;
 	border: none;
 	font-size: 100%;
 }
 
-.webSocketTextInputs {
+.webSocketTextInputs { /*modifies the terminal text area (source)*/
 	border: none;
 }
 
-.webSocketButtons {
+.webSocketButtons {/*contains the "send" button and "terminal/chat" label (source)*/
 	display: inline;
 	margin-right: 5px;
 }
 
-.logo { /* logo in top left of header area */
-	display: inline;
-	vertical-align: top;
-}
 
-.pageMenu { /* contains page menu in bottom left of header */
-	display: inline-block;
-	width: 50%;
-}
-
-.hintArea { /* hint area in bottom right of header */
-	display: inline-block;
-	width: 49%;
-}
-
-
-
-.chatMessage {
+.chatMessage { /*modifies the chat messages (source)*/
         display: block;
 }
 
-.translationDNEWidget {
+.translationDNEWidget { /*source*/
 	text-align: center;
 	color:yellow;
 	margin:auto;
@@ -336,30 +261,30 @@ select { /*theme and language dropdown menus */
 	background: rgba(229,229,0,0.5)
 }
 
-.whiteSpaceAdd { /* possibly a temporary class... */
+.whiteSpaceAdd { /* possibly a temporary class... (source)*/
 	white-space: pre-wrap;
 	display: inline-block;
 }
 
-.whiteSpaceClickable { /* possibly a temporary class... */
+.whiteSpaceClickable { /* possibly a temporary class...(source)*/
 	white-space: pre-wrap;
 	display: inline-block;
 }
 
-.twoStackedPatternsLeft { /* for one of the two divs in the two stacked patterns page */
+.twoStackedPatternsLeft { /* for one of the two divs in the two stacked patterns page (source)*/
 	display: inline-block;
 	vertical-align: top;
 	border-right: 1px solid black;
 	width: 50%;
 }
 
-.twoStackedPatternsRight { /* for one of the two divs in the two stacked patterns page */
+.twoStackedPatternsRight { /* for one of the two divs in the two stacked patterns page (source)*/
 	display: inline-block;
 	vertical-align: top;
 	width: 49%;
 }
 
-.eightTopL {
+.eightTopL {/*modifies the topLeft view*/
 	border-right: 1px solid hsl(0,0%,10%);
 	border-bottom: 1px solid hsl(0,0%,10%);
 	height: 215px;
@@ -369,7 +294,7 @@ select { /*theme and language dropdown menus */
 	width: 48%;
 }
 
-.eightTopR {
+.eightTopR {/*modifies the top right view*/
 	border-left: 1px solid hsl(0,0%,10%);
 	border-bottom: 1px solid hsl(0,0%,10%);
  	height: 215px;
@@ -379,7 +304,7 @@ select { /*theme and language dropdown menus */
 	width: 48%;
 }
 
-.eightMiddleL {
+.eightMiddleL {/*modifies the middle left view*/
 	border-bottom: 1px solid hsl(0,0%,10%);
 	border-right: 1px solid hsl(0,0%,10%);
 	/* height: 125px; */
@@ -389,7 +314,7 @@ select { /*theme and language dropdown menus */
 	width: 48%;
 }
 
-.eightMiddleR {
+.eightMiddleR {/*modifies the middle right view*/
 	border-bottom: 1px solid hsl(0,0%,10%);
 	border-left: 1px solid hsl(0,0%,10%);
  	/* height: 125px; */
@@ -399,7 +324,7 @@ select { /*theme and language dropdown menus */
 	width: 48%;
 }
 
-.eightBottomL {
+.eightBottomL {/*modifies the bottom left view*/
 	border-right: 1px solid hsl(0,0%,10%);
 	height: 215px;
 	padding: 5px;
@@ -408,7 +333,7 @@ select { /*theme and language dropdown menus */
 	width: 48%;
 }
 
-.eightBottomR {
+.eightBottomR {/*modifies the bottom right view*/
 	border-left: 1px solid hsl(0,0%,10%);
  	height: 215px;
 	padding: 5px;
@@ -417,26 +342,28 @@ select { /*theme and language dropdown menus */
 	width: 48%;
 }
 
-.paddedText {
+/* deprecated? (source) */
+/* .paddedText {
 	vertical-align: top;
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 5px;
 	padding-right: 5px;
+} */
 
-
-}
-
-.tidalTextWidget {
+/* deprecated? (source) */
+/* .tidalTextWidget {
 	width: 100%;
 }
+ */
 
-
+/*contains the elements parser selector, name-tag area, textarea, eval button and info button (source) */
 .textPatternChain {
 /* 	background-color: blue; */
 	width: 100%;
 }
 
+/* coding textarea */
 .labelAndTextPattern {
 /* 	background-color: red; */
 	width: 100%;
@@ -445,13 +372,14 @@ select { /*theme and language dropdown menus */
 	padding: 0px;
 }
 
+/* contains the name-tag textarea */
 .labelWidgetDiv {
 /* 	background-color: white; */
 	width: 100%;
 	display: inline-flex;
 }
 
-
+/* name-tag textarea */
 .labelWidgetTextInput {
 	font-family: estuaryFont;
 	font-size: 60%;
@@ -461,6 +389,7 @@ select { /*theme and language dropdown menus */
 	border: none;
 }
 
+/*contains the "eval" button (should change name)  */
 .textInputLabel {
 	/* 	background-color: green; */
 	font-size: 100%;
@@ -471,99 +400,13 @@ select { /*theme and language dropdown menus */
 	display: inline;
 }
 
+/* the "eval" button */
  .textInputLabel button {
 /* 	 font-family: estuaryFont; */
 	font-size: 80%;
 }
 
-@media only screen and (max-width: 2000px ) {
-   .textInputLabel {
-	/* 	background-color: green; */
-	width: 4em;
-	font-size: 100%;
-	font-weight: normal;
-	vertical-align: bottom;
-	padding: 0px;
-	margin: 0px;
-}
-
- .textInputLabel button {
-/* 	 font-family: estuaryFont; */
-	font-size: 80%;
-}
-}
-
-@media only screen and (max-width: 1600px) {
-   .textInputLabel {
-	/* 	background-color: green; */
-	width: 4em;
-	font-size: 100%;
-	font-weight: normal;
-	vertical-align: bottom;
-	padding: 0px;
-	margin: 0px;
-}
-
- .textInputLabel button {
-/* 	 font-family: estuaryFont; */
-	font-size: 80%;
-}
-}
-
-@media only screen and (max-width: 1450px) {
-   .textInputLabel {
-	/* 	background-color: green; */
-	width: 4em;
-	font-size: 100%;
-	font-weight: normal;
-	vertical-align: bottom;
-	padding: 0px;
-	margin: 0px;
-}
-
- .textInputLabel button {
-/* 	 font-family: estuaryFont; */
-	font-size: 80%;
-}
-}
-
-@media only screen and (max-width: 1200px) {
-   .textInputLabel {
-	/* 	background-color: green; */
-	width: 4em;
-	font-size: 100%;
-	font-weight: normal;
-	vertical-align: bottom;
-	padding: 0px;
-	margin: 0px;
-}
-
- .textInputLabel button {
-/* 	 font-family: estuaryFont; */
-	font-size: 80%;
-}
-}
-
-@media only screen and (max-width: 950px) {
-	   .textInputLabel {
-	/* 	background-color: green; */
-	width: 4em;
-	font-size: 100%;
-	font-weight: normal;
-	vertical-align: bottom;
-	padding: 0px;
-	margin: 0px;
-}
-
- .textInputLabel button {
-/* 	 font-family: estuaryFont; */
-	font-size: 80%;
-}
-
-}
-
-
-
+/* contains the reference button  */
 .referenceButton {
 /* 	background-color: brown; */
   font-size: 100%;
@@ -576,6 +419,7 @@ select { /*theme and language dropdown menus */
 	bottom: 40px; */
 }
 
+/*contains the tempo and coding textareas  */
 .textInputToEndOfLine {
 	font-size: 100%;
 	font-weight: normal;
@@ -592,6 +436,7 @@ select { /*theme and language dropdown menus */
 }
 
 
+/*deprecated?  */
 /*ex. each 'pattern' in ICLCfixed (Sound,End, Up,Vowel) is enclosed in one of these divs*/
 .singlePatternDiv {
 
@@ -619,7 +464,6 @@ select { /*theme and language dropdown menus */
  	font-size:100%;
  	margin:5px
 }
-
 
 
 /*
@@ -720,6 +564,8 @@ ______________________________
 	background-color: rgba(0,255,0,0.2);
 }
 
+/* deprecated? */
+
 
 /*
 --------------------------------------------------------------------
@@ -760,6 +606,7 @@ ______________________________
 }
 
 
+
 /*
 ***************************************************************************************************
 For aGLNumberWidget_____ see any pattern that takes a list of Numbers as input (for example 'speed' or 'crush') in iclcStackedPattern
@@ -779,7 +626,6 @@ For aGLNumberWidget_____ see any pattern that takes a list of Numbers as input (
 .aGLNumberWidgetTable-textFieldtd{
 	width:45px;
 }
-
 
 /* Styles the td that contains the '  -  ' (delete) button in widgets that take doubles*/
 .aGLNumberWidgetTable-deletetd{
@@ -908,14 +754,14 @@ td {
 	text-align:center
 }
 
-/* The 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â²' arrow td */
+/* The 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬ ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â²' arrow td */
 .countWidgetTable-upArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
 	color: lightgreen;
 }
 
-/* The 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼' arrow td */
+/* The 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬ ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼' arrow td */
 .countWidgetTable-downArrowtd{
 	text-align:center;
 	background-color: hsl(0,0%,10%);
