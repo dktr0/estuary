@@ -30,9 +30,9 @@ tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
   Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia
   ]
 
-tidalParser :: TidalParser -> String -> Either ParseError Tidal.ParamPattern
+tidalParser :: TidalParser -> String -> Either ParseError Tidal.ControlPattern
 tidalParser MiniTidal = miniTidal
-tidalParser CQenze = cqenzeParamPattern
+tidalParser CQenze = cqenzeControlPattern
 tidalParser Morelia = morelia
 tidalParser Saborts = saborts
 tidalParser Saludos = saludos

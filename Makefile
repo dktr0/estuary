@@ -49,6 +49,12 @@ prodInstallClient: # make prodBuildClient first!
 	rm -rf Estuary.jsexe/out.stats
 	rm -rf Estuary.jsexe/index.html.template
 
+installInteractionTestClient:
+	$(STACK_CLIENT) build estuary:exe:interaction-test
+	cp -Rf $$($(STACK_CLIENT) path --local-install-root)/bin/interaction-test.jsexe/* Estuary.jsexe
+	cp -Rf static/* Estuary.jsexe
+	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -o ../Estuary.jsexe/index.html
+
 installServer: buildServer
 	mkdir -p EstuaryServer
 	cp $(SERVER_INSTALL_DIR) ./EstuaryServer/EstuaryServer
@@ -66,7 +72,7 @@ releaseClient: # make installClient or prodInstallClient first!
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181028/estuary-client-20181028.zip
+	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181108/estuary-client-20181108.zip
 	unzip temp.zip
 	rm -rf temp.zip
 	cp -Rf static/Dirt Estuary.jsexe

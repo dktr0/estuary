@@ -4,10 +4,12 @@ import Text.ParserCombinators.Parsec
 import Data.List (intercalate)
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
+import Estuary.Tidal.ParamPatternable (parseBP')
+
 --trans
 -- <nombre de sonido> trans_<transformacion>
 
-lengExpr :: GenParser Char a Tidal.ParamPattern
+lengExpr :: GenParser Char a Tidal.ControlPattern
 lengExpr = do
   espacios
   char 's'
@@ -30,8 +32,8 @@ lengExpr = do
   espacios
   return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-nuestroTextoATidal ::  String  -> Tidal.ParamPattern
-nuestroTextoATidal s = Tidal.s $ Tidal.p s
+nuestroTextoATidal ::  String  -> Tidal.ControlPattern
+nuestroTextoATidal s = Tidal.s $ parseBP' s
 
 espacios :: GenParser Char a String
 espacios = many (oneOf " ")
@@ -46,14 +48,14 @@ sonidos = choice [
 descartarTexto :: GenParser Char a String
 descartarTexto = many (oneOf "\n")
 
-trans' :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+trans' :: GenParser Char a (Tidal.ControlPattern -> Tidal.ControlPattern)
 trans' = choice [
                 try (string "fast" >> spaces >> fractional3 False >>= return . Tidal.fast),
                 try (string "density" >> spaces >> fractional3 False >>= return . Tidal.density),
                 try (descartarTexto >> return id)
                 ]
 
-trans'' :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+trans'' :: GenParser Char a (Tidal.ControlPattern -> Tidal.ControlPattern)
 trans'' =  do
   espacios
   string "trans_"
@@ -61,16 +63,16 @@ trans'' =  do
   espacios
   return t
 
-trans :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+trans :: GenParser Char a (Tidal.ControlPattern -> Tidal.ControlPattern)
 trans =  choice [
                try trans'',
                try (descartarTexto >> return id)
                 ]
 
-exprStack :: GenParser Char a Tidal.ParamPattern
+exprStack :: GenParser Char a Tidal.ControlPattern
 exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-medellin :: String -> Either ParseError Tidal.ParamPattern
+medellin :: String -> Either ParseError Tidal.ControlPattern
 medellin s = parse exprStack "Medellin" s

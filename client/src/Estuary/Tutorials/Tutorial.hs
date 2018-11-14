@@ -1,25 +1,31 @@
-{-# LANGUAGE RecursiveDo,GADTs #-}
+{-# LANGUAGE RecursiveDo, GADTs, DeriveGeneric, DeriveAnyClass #-}
 
 module Estuary.Tutorials.Tutorial where
 
-import Reflex
-import Reflex.Dom
 import Control.Monad (liftM)
-import qualified Data.Map as M
+
 import Data.IntMap.Strict as I
+import qualified Data.Map as M
 import Data.Maybe (isNothing)
 
-import Estuary.Types.View
+import Estuary.RenderInfo
+import Estuary.Types.Context
 import Estuary.Types.Definition
+import Estuary.Types.Hint
 import Estuary.Types.Language
 import Estuary.Types.Request
-import Estuary.Types.Hint
-import Estuary.Types.Context
-import Estuary.Widgets.View
-import Estuary.RenderInfo
+import Estuary.Types.View
 import Estuary.Widgets.Generic
+import Estuary.Widgets.View
 
-data TutorialId = IntroTidalText deriving (Eq, Show, Ord)
+import GHC.Generics
+
+import GHCJS.Marshal
+
+import Reflex
+import Reflex.Dom
+
+data TutorialId = IntroTidalText deriving (Eq, Show, Ord, Generic, FromJSVal, ToJSVal)
 
 
 data Tutorial t m = Tutorial {

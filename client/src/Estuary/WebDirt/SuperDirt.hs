@@ -19,7 +19,7 @@ instance S.SampleEngine SuperDirt where
 newSuperDirt :: IO SuperDirt
 newSuperDirt = superDirt_ >>= return . SuperDirt
 
-playSample :: SuperDirt -> (Double,Tidal.ParamMap) -> IO ()
+playSample :: SuperDirt -> (Double,Tidal.ControlMap) -> IO ()
 playSample (SuperDirt x) (t,e) = do
   object <- createObjFromMap t e
   playSample_ x object

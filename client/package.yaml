@@ -15,7 +15,7 @@ homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
 # custom-setup:
 #   dependencies:
 #     - base
-#     - Cabal == 1.22.8.2 
+#     - Cabal == 1.22.8.2
 #     - filepath
 #     - directory
 
@@ -25,6 +25,7 @@ dependencies:
   - reflex
   - reflex-dom
   - tidal
+  - punctual
   - hosc
   - containers
   - safe
@@ -46,7 +47,7 @@ dependencies:
   - mtl
 
 library:
-  source-dirs: 
+  source-dirs:
     - ./src
 # Add common to stack.yaml (and dependencies) and reexport those modules here
 
@@ -67,6 +68,18 @@ executables:
       - hspec
       - async
 
+#  interaction-test:
+#    main: Interaction.hs
+#    source-dirs:
+#      - ./test
+#    js-sources:
+#      - ./test/Estuary/Test/protocol-inspector.js
+#    dependencies:
+#      - estuary
+#      - estuary-common
+#      - hspec
+#      - async
+
 ################################
 # TESTS
 ################################
@@ -79,7 +92,7 @@ _test-base: &test-base
     - hspec
 
 tests:
-  mini-tidal: 
+  mini-tidal:
     <<: *test-base
     main: MiniTidalTests.hs
     ghc-options: -main-is MiniTidalTests

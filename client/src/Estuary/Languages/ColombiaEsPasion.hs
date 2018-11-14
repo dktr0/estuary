@@ -4,12 +4,13 @@ import Text.ParserCombinators.Parsec
 import Data.List (intercalate)
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
+import Estuary.Tidal.ParamPatternable (parseBP')
 
 -- <nombreDelSample><transformacion1><transformacion2>
 --voz soacha
 --voz motesta 4
 
-lengExpr :: GenParser Char a Tidal.ParamPattern
+lengExpr :: GenParser Char a Tidal.ControlPattern
 lengExpr = do
   espacios
   char '"'
@@ -34,8 +35,8 @@ lengExpr = do
   espacios
   return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
 
-nuestroTextoATidal :: String -> Tidal.ParamPattern
-nuestroTextoATidal s = Tidal.s $ Tidal.p s
+nuestroTextoATidal :: String -> Tidal.ControlPattern
+nuestroTextoATidal s = Tidal.s $ parseBP' s
 
 espacios :: GenParser Char a String
 espacios = many (oneOf " ")
@@ -51,7 +52,7 @@ pasion = choice [
 descartarTexto :: GenParser Char a String
 descartarTexto = many (oneOf "\n")
 
-sustantivos :: GenParser Char a (Tidal.ParamPattern -> Tidal.ParamPattern)
+sustantivos :: GenParser Char a (Tidal.ControlPattern -> Tidal.ControlPattern)
 sustantivos = choice [
                 try (string "educación" >> spaces >> fractional3 False >>= return . Tidal.slow),
                 try (string "motesta" >> spaces >> fractional3 False >>= return . Tidal.fast),
@@ -60,10 +61,10 @@ sustantivos = choice [
                 ]
 
 
-exprStack :: GenParser Char a Tidal.ParamPattern
+exprStack :: GenParser Char a Tidal.ControlPattern
 exprStack = do
    expr <- many lengExpr
    return $ Tidal.stack expr
 
-colombiaEsPasion :: String -> Either ParseError Tidal.ParamPattern
+colombiaEsPasion :: String -> Either ParseError Tidal.ControlPattern
 colombiaEsPasion s = parse exprStack "pasion" s
