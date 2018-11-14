@@ -15,12 +15,8 @@ data RenderState = RenderState {
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
   punctuals :: !(IntMap Punctual.PunctualW),
   renderStartTime :: !UTCTime,
-  parseEndTime :: !UTCTime,
-  patternsEndTime :: !UTCTime,
   renderEndTime :: !UTCTime,
   renderTimes :: ![NominalDiffTime],
-  parseTimes :: ![NominalDiffTime],
-  patternsTimes :: ![NominalDiffTime],
   info :: !RenderInfo
   }
 
@@ -32,11 +28,7 @@ initialRenderState t = RenderState {
   dirtEvents = [],
   punctuals = empty,
   renderStartTime = t,
-  parseEndTime = t,
-  patternsEndTime = t,
   renderEndTime = t,
   renderTimes = [],
-  parseTimes = [],
-  patternsTimes = [],
   info = emptyRenderInfo
   }

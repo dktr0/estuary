@@ -34,6 +34,7 @@ flushEvents c = do
   events <- gets dirtEvents
   liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
+  modify' $ \x -> x { dirtEvents = []}
   return ()
 
 renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
@@ -46,66 +47,72 @@ renderTidalPattern start range t p = events''
     events'' = f <$> events'
     f (((w1,_),(_,_)),cMap) = (addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t),cMap)
 
-
--- definitionToPattern is here rather than in Estuary.Types.Definition so that the
--- server does not depend on mini-language parsers
-definitionToPattern :: Definition -> Either String (Maybe Tidal.ControlPattern)
-definitionToPattern (Structure x) = Right $ Just $ toParamPattern x
-definitionToPattern (TextProgram x) = either Left (Right . Just) $ tidalTextToControlPattern $ forRendering x
-definitionToPattern (Sequence x) = Right $ Just $ Tidal.stack $ fmap sequenceToControlPattern x
-definitionToPattern _ = Right $ Nothing
-
--- this is here rather than in Estuary.Types.TextNotation so that the server does not
--- depend on mini-language parsers
-tidalTextToControlPattern :: (TextNotation,String) -> Either String Tidal.ControlPattern
-tidalTextToControlPattern (TidalTextNotation x,y) = either (Left . show) Right $ tidalParser x y
-tidalTextToControlPattern _ = Left "internal error: tidalTextToControlPattern called on unrecognized notation"
-
 sequenceToControlPattern :: (String,[Bool]) -> Tidal.ControlPattern
 sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " " $ fmap f pat
   where f False = "~"
         f True = sampleName
 
+
 render :: Context -> Renderer
 render c = do
-  defsToPatterns c
-  t1 <- liftIO $ getCurrentTime
-  modify' $ (\x -> x { parseEndTime = t1 })
-  patternsToDirtEvents c
-  t2 <- liftIO $ getCurrentTime
-  modify' $ (\x -> x { patternsEndTime = t2 })
+  traverseWithKey (renderZone c) (definitions c)
   flushEvents c
 
-defsToPatterns :: Context -> Renderer
-defsToPatterns c = do
-  s <- get
-  let prevDefs = cachedDefs s
-  let prevPatterns = paramPatterns s
-  let prevErrors = errors (info s)
-  let newDefs = fmap definitionForRendering $ definitions c
-  modify' $ \x -> x { cachedDefs = newDefs }
-  -- determine which definitions (for rendering purposes) have either changed or been deleted
-  let additionsChanges = differenceWith (\x y -> if x == y then Nothing else Just x) newDefs prevDefs
-  let deletions = difference prevDefs newDefs
-  -- parse definitions into ControlPatterns or errors, add new ControlPatterns to previous patterns, delete patterns when defs deleted
-  let (newErrors,newPatterns) = IntMap.mapEither definitionToPattern additionsChanges
-  let newPatterns' = union (IntMap.mapMaybe id newPatterns) prevPatterns
-  let newPatterns'' = difference newPatterns' deletions
-  modify' $ \x -> x { paramPatterns = newPatterns'' }
-  -- maintain map of errors by adding new errors, subtracting deleted defs and subtracting any for new successful ControlPatterns
-  let newErrors' = union newErrors prevErrors
-  let newErrors'' = difference newErrors' deletions
-  let newErrors''' = difference newErrors'' newPatterns
-  modify' $ \x -> x { info = (info s) { errors = newErrors''' } }
 
-patternsToDirtEvents :: Context -> Renderer
-patternsToDirtEvents c = do
+renderZone :: Context -> Int -> Definition -> Renderer
+renderZone c z d = do
   s <- get
+  let prevDef = IntMap.lookup z $ cachedDefs s
+  if prevDef == (Just d) then return () else renderZoneChanged c z d
+  modify' $ \x -> x { cachedDefs = insert z d (cachedDefs s) }
+  renderZoneAlways c z d
+
+
+renderZoneChanged :: Context -> Int -> Definition -> Renderer
+renderZoneChanged c z (Structure x) = do
+  let newParamPattern = toParamPattern x
+  s <- get
+  modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
+renderZoneChanged c z (TextProgram x) = renderTextProgramChanged c z $ forRendering x
+renderZoneChanged c z (Sequence xs) = do
+  let newParamPattern = Tidal.stack $ fmap sequenceToControlPattern xs
+  s <- get
+  modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
+renderZoneChanged _ _ _ = return ()
+
+renderZoneAlways :: Context -> Int -> Definition -> Renderer
+renderZoneAlways c z (Structure _) = renderControlPattern c z
+renderZoneAlways c z (TextProgram x) = renderTextProgramAlways c z $ forRendering x
+renderZoneAlways c z (Sequence _) = renderControlPattern c z
+renderZoneAlways _ _ _ = return ()
+
+
+renderTextProgramChanged :: Context -> Int -> (TextNotation,String) -> Renderer
+renderTextProgramChanged c z (TidalTextNotation x,y) = do
+  s <- get
+  let parseResult = tidalParser x y -- :: Either ParseError ControlPattern
+  let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
+  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
+
+
+renderTextProgramChanged c z (Punctual,s) = return () -- placeholder
+
+renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
+renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
+renderTextProgramAlways c z (Punctual,s) = return () -- placeholder
+
+
+renderControlPattern :: Context -> Int -> Renderer
+renderControlPattern c z = do
+  s <- get
+  let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s
   let tempo' = tempo c
   let ps = paramPatterns s
-  let events = concat $ fmap (renderTidalPattern lt renderPeriod tempo') ps
-  modify' $ \x -> x { dirtEvents = events }
+  let events = maybe [] id $ fmap (renderTidalPattern lt renderPeriod tempo') controlPattern
+  modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
+
 
 runRender :: MVar Context -> MVar RenderInfo -> Renderer
 runRender c ri = do
@@ -150,26 +157,6 @@ calculateRenderTimes = do
   modify' $ \x -> x { renderTimes = newRenderTimes }
   modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
   modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
-  --
-  let parseTime = diffUTCTime (parseEndTime s) (renderStartTime s)
-  let newParseTimes = take 20 $ parseTime:(parseTimes s)
-  let newAvgParseTime = sum newParseTimes / (fromIntegral $ length newParseTimes)
-  let newPeakParseTime = maximum newParseTimes
-  let newAvgParseLoad = ceiling (newAvgParseTime * 100 / renderPeriod)
-  let newPeakParseLoad = ceiling (newPeakParseTime * 100 / renderPeriod)
-  modify' $ \x -> x { parseTimes = newParseTimes }
-  modify' $ \x -> x { info = (info x) { avgParseLoad = newAvgParseLoad }}
-  modify' $ \x -> x { info = (info x) { peakParseLoad = newPeakParseLoad }}
-  --
-  let patternsTime = diffUTCTime (patternsEndTime s) (parseEndTime s)
-  let newPatternsTimes = take 20 $ patternsTime:(patternsTimes s)
-  let newAvgPatternsTime = sum newPatternsTimes / (fromIntegral $ length newPatternsTimes)
-  let newPeakPatternsTime = maximum newPatternsTimes
-  let newAvgPatternsLoad = ceiling (newAvgPatternsTime * 100 / renderPeriod)
-  let newPeakPatternsLoad = ceiling (newPeakPatternsTime * 100 / renderPeriod)
-  modify' $ \x -> x { patternsTimes = newPatternsTimes }
-  modify' $ \x -> x { info = (info x) { avgPatternsLoad = newAvgPatternsLoad }}
-  modify' $ \x -> x { info = (info x) { peakPatternsLoad = newPeakPatternsLoad }}
 
 forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThread c ri = do
