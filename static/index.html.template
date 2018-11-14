@@ -2,7 +2,7 @@
 <html>
   <head>
     <link href="classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="source.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 #ifndef PRODUCTION

@@ -6,38 +6,17 @@ body {
 	font-family: 'Inconsolata';
 }
 
-
-@font-face {
-   font-family: estuaryFont;
-   src: url(Estuary.otf);
-}
-
-
 input {
 	background-color: whitesmoke;
 	color: black;
 	margin: 1px;
 }
 
-
 textarea {
 	background-color: whitesmoke;
 	color: black;
-width: 100%;
+  width: 100%;
 	height: 100%;
-}
-
-.visibleArea{
-	width: 100%;
-	height:100%;
-
-}
-
-.languageHelp {
-	font-size: 70%;
-  overflow: scroll;
-	height:90px;
-
 }
 
 button {
@@ -47,189 +26,12 @@ button {
 	border-radius: 4px;
 }
 
-.estuary { /* the entire interface, contains .header .page and .footer */
-
-}
-
-.header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	padding-top: 5px;
-	padding-bottom: 5px;
-  margin-bottom: 3px;
-	padding-left: 15px;
-	padding-right: 15px;
-	 font-family: estuaryFont;
-
-}
-
-
-
-.page { /* contains the interface for programming on menu selected in pageMenu */
-	border: 1px solid;
-	border-radius: 10px;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-}
-
-.footer { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-}
-
-.aboutEstuaryParagraph {
-	font-family: 'Inconsolata';
-}
-
-.logo {
-	display: inline-block;
-}
-
-.server {
-	display: inline-block;
-}
-
-.webDirt { /* webDirt status area in top right of header */
-	display: inline-block;
-	float: right;
-	/* width: 49%; */
-}
-
-.webDirtMute {
-	float: right;
-	font-size: 60%;
-}
-
-
-.textWidgetTextArea {
-	width: 100%;
-	border: none;
-	font-size: 100%;
-}
-
-.webSocketTextInputs {
-	border: none;
-}
-
-.webSocketButtons {
-	display: inline;
-	margin-right: 5px;
-}
-
-.logo { /* logo in top left of header area */
-	display: inline-block;
-	width: 50%;
-}
-
-
-
-.pageMenu { /* contains page menu in bottom left of header */
-	display: inline-block;
-	width: 50%;
-}
-
-.hintArea { /* hint area in bottom right of header */
-	display: inline-block;
-	width: 49%;
-}
-
-
-
-.chatMessage {
-        display: block;
-}
-
-.whiteSpaceAdd { /* possibly a temporary class... */
-	white-space: pre-wrap;
-	display: inline-block;
-}
-
-.whiteSpaceClickable { /* possibly a temporary class... */
-	white-space: pre-wrap;
-	display: inline-block;
-}
-
-.twoStackedPatternsLeft { /* for one of the two divs in the two stacked patterns page */
-	display: inline-block;
-	vertical-align: top;
-	border-right: 1px solid black;
-	width: 50%;
-}
-
-.twoStackedPatternsRight { /* for one of the two divs in the two stacked patterns page */
-	display: inline-block;
-	vertical-align: top;
-	width: 49%;
-}
-
-.eightTopL {
-	border-right: 1px solid hsl(0,0%,10%);
-	border-bottom: 1px solid hsl(0,0%,10%);
-	height: 215px;
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightTopR {
-	border-left: 1px solid hsl(0,0%,10%);
-	border-bottom: 1px solid hsl(0,0%,10%);
- 	height: 215px;
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightMiddleL {
-	border-bottom: 1px solid hsl(0,0%,10%);
-	border-right: 1px solid hsl(0,0%,10%);
-	/* height: 125px; */
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightMiddleR {
-	border-bottom: 1px solid hsl(0,0%,10%);
-	border-left: 1px solid hsl(0,0%,10%);
- 	/* height: 125px; */
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightBottomL {
-	border-right: 1px solid hsl(0,0%,10%);
-	height: 215px;
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightBottomR {
-	border-left: 1px solid hsl(0,0%,10%);
- 	height: 215px;
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
 .paddedText {
 	vertical-align: top;
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 5px;
 	padding-right: 5px;
-
-
 }
 
 .tidalTextWidget {

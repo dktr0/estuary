@@ -1,30 +1,20 @@
-.fullWidth {
-	width: 100%;
-	padding: 0px 0px 0px 0px;
-	margin: 0px 0px 0px 0px;
-}
-
 body {
 	background-color: black;
-	/* color: rgb(98, 221, 115); */
 	color: rgb(98, 221, 115);
 	height: 100%;
 	margin: 0;
 	font-family: 'Inconsolata';
 }
 
-@font-face {
-   font-family: estuaryFont;
-   src: url(Estuary.otf);
-}
 
+/*modfifies the name and terminal textareas*/
 input {
 	background-color: black;
 	color: rgb(98, 221, 115);
 	margin: 1px;
 }
 
-
+/* modifies the coding textarea or view */
 textarea {
 	background-color: transparent;
 	color: rgb(98, 221, 115);
@@ -32,18 +22,7 @@ textarea {
 	height: 100%;
 }
 
-.visibleArea{
-	width: 100%;
-	/* height:45px; */
-
-}
-
-.languageHelp {
-	font-size: 70%;
-  overflow: scroll;
-}
-
-
+/*modifies all Estuary buttons */
 button {
 	background-color: hsl(0,0%,20%);
 	color: rgb(98, 221, 115);
@@ -51,370 +30,14 @@ button {
 	border-radius: 4px;
 }
 
-
-.estuary { /* the entire interface, contains .header .page and .footer */
-
-}
-
-<<<<<<< HEAD
-.displayNone{
-	display:none;
-}
-
-.header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	padding-left: 15px;
-	padding-right: 15px;
-	margin-top: 0.5em;
-  font-family: estuaryFont;
-}
-
-.peak{
-  float: right;
-	font-size: 80%;
-}
-
-.server {
-  position: relative;
-  top: 1.25em;
-  left: 2em;
-  margin-left: 0.5em;
-  padding-left: 0.5em;
-  margin-bottom: 0.6em;
-}
-
-.webDirt { /* webDirt status area in top right of header */
-	font-size:1.5em;
-	float: right;
-}
-
-.webDirtMute {
-	display: flex;
-	font-size: 50%;
-}
-
-.webDirtContent {
- display: flex;
-	margin-left: auto;
-}
-
-select { /*theme and language dropdown menus */
+/*modifies the theme and language dropdown menus   */
+select {
 	background-color: transparent;
 	color: rgb(98, 221, 115);
 	border: 1px solid;
 	border-color: rgb(98, 221, 115);
 	min-width: 15%;
 	margin-right: 1em;
-
-
-}
-
-.themeSelector {
-	border-right: 1px solid;
-	padding-right: 0.0em;
-	padding-left: 0.5em;
-  margin-right: 0.5em;
-}
-
-.languageSelector {
-	border-right: 1px solid;
-	padding-right: 0.0em;
-	padding-left: 0.5em;
-  margin-right: 0.5em;
-}
-
-.superDirtCheckbox {
-	border-right: 1px solid;
-	padding-right: 0.5em;
-	padding-left: 0.5em;
-	  margin-right: 0.75em;
-}
-
-.webDirtCheckbox {
-	padding-right: 0.5em;
-	padding-left: 0.5em;
-}
-
-.estuaryLogoIcon {
-  width: 1.5em;
-	margin-right: 1em;
-/* 	float: left; */
-}
-
-
-
-
-.page { /* contains the interface for programming on menu selected in pageMenu */
-	border-top: 1px solid;
-	border-bottom: 1px solid;
-/* 	border-radius: 10px; */
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-	margin-bottom:0.25em;
-}
-
-.footer { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-}
-
-.splash-container {
-	display: flex;
-	flex-wrap: wrap;
-	width: 100%;
-	height: 100%;
-}
-
-.splash-margin {
-	min-width: 50%;
-	box-sizing: border-box;
-	padding: 0.4em;
-}
-
-.splash-panel {
-	background: rgb(25, 25, 25);
-	font-family: estuaryFont;
-	border: 0.25em solid;
-	border-radius: 4px;
-	padding: 0.5em;
-	text-align: center;
-	height: 100%;
-	box-sizing: border-box;
-	max-height: 16em;
-	display: flex;
-	flex-direction: column;
-}
-
-.splash-panel > img {
-	/* A trick to get the images to behave in firefox as they do in chrome, they "flex" to determine the size */
-	min-width: 0;
-	min-height: 0;
-}
-
-.splash-panel-title {
-	font-family: estuaryFont;
-	text-align: center;
-	height: 100%;
-	box-sizing: border-box;
-	max-height: 16em;
-	display: flex;
-	flex-direction: column;
-			padding-right: 0.4em;
-
-}
-
-.splash-title {
-	display: flex;
-	text-align: justify;
-	margin-bottom: 1%;
-	font-size: 2em;
-}
-
-.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.50vw;
-	height: 100%;
-	border: 0.35em solid;
-  border-radius: 4px;
-}
-
-@media only screen and (max-width: 2000px ) {
-.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.55vw;
-}
-}
-
-@media only screen and (max-width: 1600px) {
-.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.70vw;
-}
-}
-
-@media only screen and (max-width: 1450px) {
-.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.75vw;
-}
-}
-
-@media only screen and (max-width: 1200px) {
-	.splash-info {
-	text-align: justify;
-	width:50px;
-	min-width: 100%;
-	font-size: 0.8vw;
-}
-
-}
-
-@media only screen and (max-width: 950px) {
-
-	.splash-info {
-   	text-align: justify;
-	  width:50px;
-		min-width: 100%;
-	  font-size: 1vw;
-}
-
-
-}
-
-.splash-line {
-/* 	display: none; */
-	background-color: rgb(98, 221, 115);
-  border-radius: 4px;
-	margin-left: 2%;
-	margin-top: 0.4em;
-	width: 100%;
-	height: 0.1em;
-}
-
-.aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	font-family: 'Inconsolata';
-	padding: 0.5em;
-}
-
-
-.textWidgetTextArea {
-	width: 100%;
-	border: none;
-	font-size: 100%;
-}
-
-.webSocketTextInputs {
-	border: none;
-}
-
-.webSocketButtons {
-	display: inline;
-	margin-right: 5px;
-}
-
-.logo { /* logo in top left of header area */
-	display: inline;
-	vertical-align: top;
-}
-
-.pageMenu { /* contains page menu in bottom left of header */
-	display: inline-block;
-	width: 50%;
-}
-
-.hintArea { /* hint area in bottom right of header */
-	display: inline-block;
-	width: 49%;
-}
-
-
-
-.chatMessage {
-        display: block;
-}
-
-.translationDNEWidget {
-	text-align: center;
-	color:yellow;
-	margin:auto;
-	width: 50%;
-	border-radius: 5pt;
-	border: 1pt solid rgb(229, 229, 0);
-	background: rgba(229,229,0,0.5)
-}
-
-.whiteSpaceAdd { /* possibly a temporary class... */
-	white-space: pre-wrap;
-	display: inline-block;
-}
-
-.whiteSpaceClickable { /* possibly a temporary class... */
-	white-space: pre-wrap;
-	display: inline-block;
-}
-
-.twoStackedPatternsLeft { /* for one of the two divs in the two stacked patterns page */
-	display: inline-block;
-	vertical-align: top;
-	border-right: 1px solid black;
-	width: 50%;
-}
-
-.twoStackedPatternsRight { /* for one of the two divs in the two stacked patterns page */
-	display: inline-block;
-	vertical-align: top;
-	width: 49%;
-}
-
-.eightTopL {
-	border-right: 1px solid hsl(0,0%,10%);
-	border-bottom: 1px solid hsl(0,0%,10%);
-	height: 215px;
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightTopR {
-	border-left: 1px solid hsl(0,0%,10%);
-	border-bottom: 1px solid hsl(0,0%,10%);
- 	height: 215px;
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightMiddleL {
-	border-bottom: 1px solid hsl(0,0%,10%);
-	border-right: 1px solid hsl(0,0%,10%);
-	/* height: 125px; */
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightMiddleR {
-	border-bottom: 1px solid hsl(0,0%,10%);
-	border-left: 1px solid hsl(0,0%,10%);
- 	/* height: 125px; */
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightBottomL {
-	border-right: 1px solid hsl(0,0%,10%);
-	height: 215px;
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
-}
-
-.eightBottomR {
-	border-left: 1px solid hsl(0,0%,10%);
- 	height: 215px;
-	padding: 5px;
-	display: inline-block;
-	vertical-align: top;
-	width: 48%;
 }
 
 .paddedText {
@@ -423,8 +46,6 @@ select { /*theme and language dropdown menus */
 	padding-bottom: 5px;
 	padding-left: 5px;
 	padding-right: 5px;
-
-
 }
 
 .tidalTextWidget {
