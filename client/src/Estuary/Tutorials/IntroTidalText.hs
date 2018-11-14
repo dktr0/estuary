@@ -10,64 +10,72 @@ import Estuary.Types.Definition
 import Estuary.Types.Language
 import Estuary.Tidal.Types
 
-introTidalText::MonadWidget t m => Tutorial t m
-introTidalText = Tutorial IntroTidalText (const $ return (constDyn empty, never))
+-- introTidalText::MonadWidget t m => Tutorial t m
+-- introTidalText = Tutorial IntroTidalText (const $ return (constDyn empty, never))
 
 
-miniTidalWidget :: MonadWidget t m => Int -> String -> m (Dynamic t (Int, Definition),Event t Hint)
-miniTidalWidget index initial = do
-
-
-
+-- miniTidalWidget :: MonadWidget t m => Int -> String -> m (Dynamic t (Int, Definition),Event t Hint)
+-- miniTidalWidget index initial =
 
 
 
 
+--
+--
+-- tidalTextWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
+--   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
+--   m (Dynamic t (Live (TextNotation,String)),Event t (Live (TextNotation,String)),Event t Hint)
+-- tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css
+--
 
-  let deltaFuture = fmap forEditing delta
-  let textFuture = fmap snd deltaFuture
+-- miniTidalWidget :: MonadWidget t m => Int -> String -> m (Dynamic t (Int, Definition),Event t Hint)
+-- miniTidalWidget index initial = do
+--   let deltaFuture = fmap forEditing delta
+--   -- let parserFuture = fmap fst deltaFuture
+--   let textFuture = fmap snd deltaFuture
+--
+--   (evalButton,infoButton) <- divClass "fullWidthDiv" $ do
+--     -- let initialParser = fst $ forEditing i
+--     -- let parserMap = constDyn $ fromList $ fmap (\x -> (TidalTextNotation x,show x)) tidalParsers
+--     -- d' <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
+--     evalButton' <- divClass "textInputLabel" $ do
+--       x <- button "eval"
+--       dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
+--       return x
+--     infoButton' <- divClass "referenceButton" $ button "?"
+--     return (evalButton',infoButton')
+--
+--   (edit,eval) <- divClass "labelAndTextPattern" $ do
+--     -- let parserValue = _dropdown_value d -- Dynamic t TidalParser
+--     -- let parserEvent = _dropdown_change d
+--     -- let initialText = snd $ forEditing i
+--     textVisible <- toggle True infoButton
+--     helpVisible <- toggle False infoButton
+--     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
+--     let languageToDisplayHelp = (TidalTextNotation MiniTidal)
+--     -- let languageToDisplayHelp = ( _dropdown_value d)
+--     hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
+--     v' <- mapDyn (\x-> (MiniTidal,))  textValue
+--     let editEvent = tagDyn v' $ leftmost [() <$ textEvent]
+--     let evalEvent = tagDyn v' $ leftmost [evalButton,shiftEnter]
+--     return (editEvent,evalEvent)
+--   let deltaPast = fmap forRendering delta
+--   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
+--   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]
+--   value <- combineDyn f pastValue futureValue
+--   let deltaUpEdit = tagDyn value edit
+--   let deltaUpEval = tagDyn value eval
+--   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
+--   return (value,deltaUp,never)
+--   where
+--     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
+--           | otherwise = Edited p x
 
-  (evalButton,infoButton) <- divClass "fullWidthDiv" $ do
-    -- let initialParser = fst $ forEditing i
-    -- let parserMap = constDyn $ fromList $ fmap (\x -> (TidalTextNotation x,show x)) tidalParsers
-    -- d' <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
-    evalButton' <- divClass "textInputLabel" $ do
-      x <- button "eval"
-      dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
-      return x
-    infoButton' <- divClass "referenceButton" $ button "?"
-    return (evalButton',infoButton')
-
-  (edit,eval) <- divClass "labelAndTextPattern" $ do
-    -- let parserValue = _dropdown_value d -- Dynamic t TidalParser
-    -- let parserEvent = _dropdown_change d
-    -- let initialText = snd $ forEditing i
-    textVisible <- toggle True infoButton
-    helpVisible <- toggle False infoButton
-    (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
-    let languageToDisplayHelp = (TidalTextNotation MiniTidal)
-    -- let languageToDisplayHelp = ( _dropdown_value d)
-    hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
-    v' <- mapDyn (\x-> (MiniTidal,))  textValue
-    let editEvent = tagDyn v' $ leftmost [() <$ textEvent]
-    let evalEvent = tagDyn v' $ leftmost [evalButton,shiftEnter]
-    return (editEvent,evalEvent)
-  let deltaPast = fmap forRendering delta
-  pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
-  futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]
-  value <- combineDyn f pastValue futureValue
-  let deltaUpEdit = tagDyn value edit
-  let deltaUpEval = tagDyn value eval
-  let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
-  return (value,deltaUp,never)
-  where
-    f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
-          | otherwise = Edited p x
 
 
 
+-- widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
 
-widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
 {- |
 v1 :: Language -> (View, Definition)
 v1 English = (LabelView 0, LabelText "Welcome to the introductory tutorial to Tidalcycles (or MiniTidal)")

@@ -11,6 +11,7 @@ import Data.Map as M
 import Data.Ratio
 import Safe.Foldable (maximumMay)
 import Text.Read (readMaybe)
+import Data.Maybe (catMaybes)
 
 import Estuary.Tidal.Types
 import Estuary.Types.Hint
@@ -85,15 +86,30 @@ rowToGenPat' (val,pos) = Group (Live (fmap toAtom pos,Once) L4) Inert
     parsed = maybe (maybe (Blank Inert) f $ readMaybe $ "\""++val++"\"") f $ readMaybe val
     f x = Atom x Inert Once
 
+--
+-- type Sequence a = Map Int (Maybe a,[Bool])
+--
+-- [(Maybe String,[Bool])] -> ChangeValue Sequence
+--
+-- Map Int (Maybe B)
+--
+-- . fromList . attachIndex
 
 sequencer' ::MonadWidget t m => [(String, [Bool])] -> Event t (EditSignal ([(String,[Bool])])) -> m (Dynamic t ([(String,[Bool])], Event t (EditSignal ([(String,[Bool])])), Event t Hint))
 sequencer' i update = do
   let iVal = toGenPat $ fromList $ zip [0..] $ fmap (\(x,y)->(Just x,y)) i -- GeneralPattern String
-  let e = getChangeValues update
-  v <- sequencer Nothing iVal e
-  mapDyn (\(v,ev,h) -> (toSequence 0 v, fmap (toSequence 0) $ getChangeValues ev,h))
+  let e' = getChangeValues update
+  v <- sequencer Nothing iVal (fmap (ChangeValue . fromList . attachIndex) e')
+  mapDyn (\(v,ev,h) -> (toStrBoolList v, f ev,h)) v
   where
-    getChangeValues eve = fmapMaybe $ fmap (\x-> case x of ChangeValue (a,b) -> Just (Just a,b); otherwise-> Nothing) eve
+    getChangeValues eve = fmapMaybe (\x-> case x of
+      (ChangeValue a) -> Just (fmap (\(t,t2)->(Just t,t2)) a)
+      otherwise-> Nothing) eve -- Ev (EditSig ([(String,[Bool])])) -> Ev ([(Maybe String, [Bool])])
+    f ev = fmapMaybe (\x -> case x of
+      (ChangeValue a) -> Just $ ChangeValue $ toStrBoolList a
+      otherwise -> Nothing) ev
+    -- Ev (EditSignal (GenPat a)) -> Ev (EditSig ([(String,[Bool])]))
+    toStrBoolList gp = catMaybes $ fmap (\(a,b) -> maybe Nothing (\x-> Just (x,b)) a) $ elems $ toSequence 0 gp -- Gp-> [(String,[Bool])]
 
 
 sequencer::(Read a, Ord a, MonadWidget t m, Show a, Eq a,T.Parseable a, T.Enumerable a) => Maybe a -> GeneralPattern a -> Event t (EditSignal (Sequence a)) -> m (Dynamic t (GeneralPattern a, Event t (EditSignal (GeneralPattern a)), Event t Hint))
