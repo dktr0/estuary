@@ -1,9 +1,10 @@
 EstuaryProtocol = function () {
   this.status = "initializing...";
   this.wsReady = false;
+  this.readyStatChangeListeners = [];
   this.responses = new Array;
-  var port = "";
-  if(location.port != "") port = ":" + location.port;
+
+  var port = location.port !== '' ? ':' + location.port : '';
   this.setUrl("ws://" + location.hostname + port + location.pathname);
 }
 
@@ -16,33 +17,36 @@ EstuaryProtocol.prototype.setUrl = function(x) {
   this.connect();
 }
 
+EstuaryProtocol.prototype.onReadyStateChange = function (cb) {
+  this.readyStatChangeListeners.push(cb);
+}
+
 EstuaryProtocol.prototype.log = function(x) {
   console.log("EstuaryProtocol (" + this.url + "): " + x);
   this.status = x;
 }
 
-EstuaryProtocol.prototype.connect = function() {
+EstuaryProtocol.prototype.changeStatus = function (status, wsReady) {
+  this.log(status);
+  this.wsReady = wsReady;
+  this.readyStatChangeListeners.forEach(cb => cb(wsReady));
+}
+
+EstuaryProtocol.prototype.connect = function () {
   this.log("opening connection");
   window.WebSocket = window.WebSocket || window.MozWebSocket;
   var closure = this;
   try {
     this.ws = new WebSocket(this.url);
-    this.ws.onopen = function () {
-      closure.log("connection open");
-      closure.wsReady = true;
-    };
-    this.ws.onerror = function () {
-      closure.log("error");
-      closure.wsReady = false;
-    };
+    this.ws.onopen = this.changeStatus.bind(this, 'connection open', true);
+    this.ws.onerror = this.changeStatus.bind(this, 'error', false);
     this.ws.onclose = function () {
-      closure.log("closed (retry in 1s)");
-      closure.wsReady = false;
+      closure.changeStatus('closed (retry in 1s)', false);
       closure.ws = null;
       setTimeout(function() {
         closure.connect();
-      },1000);
-    };
+      }, 1000);
+    }
     this.ws.onmessage = function (m) {
       closure.onMessage(m);
     }
@@ -51,7 +55,7 @@ EstuaryProtocol.prototype.connect = function() {
     this.log("exception (retry in 1s)");
     setTimeout(function() {
       closure.connect();
-    },1000);
+    }, 1000);
   }
 }
 
