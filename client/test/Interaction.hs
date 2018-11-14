@@ -57,15 +57,15 @@ main = hspec $ do
 
       let password = "abc"
       performRequest protocol $ EnsembleRequest (Sited "abc" (AuthenticateInEnsemble password))
-      
+
       EnsembleResponse (Sited _ (DefaultView view)) <- expectMessage respStream $ do
         withinMillis 10000
         toMatch $ \case
           EnsembleResponse (Sited "abc" (DefaultView view)) -> Matches
           _ -> DoesNotMatch
 
-      -- The editors should not take more that 1s to appear after receiving the
-      -- expected layout.
+      The editors should not take more that 1s to appear after receiving the
+      expected layout.
       threadDelay $ 1000 * 1000
 
       Just (editor :: Element) <- findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
@@ -77,11 +77,11 @@ main = hspec $ do
 
       return (reqStream, respStream)
 
-    it "produces an ensemble request for evaluating the text" $ do 
+    it "produces an ensemble request for evaluating the text" $ do
       expectMessage reqStream $ do
         withinMillis 3000
         toMatch $ \case
-          EnsembleRequest (Sited _ (ZoneRequest (Sited _ editOrEval))) -> 
+          EnsembleRequest (Sited _ (ZoneRequest (Sited _ editOrEval))) ->
             case editOrEval of
               Edit (TextProgram (Live (TidalTextNotation MiniTidal, "s \"bd\"") L3)) ->
                 Matches
