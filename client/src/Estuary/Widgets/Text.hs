@@ -55,17 +55,20 @@ textAreaWidgetForPatternChain rows i delta = do
   return (value,edits,evalEvent)
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
-tidalTextWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
+textNotationParsers :: [TextNotation]
+textNotationParsers = [Punctual] ++ (fmap TidalTextNotation tidalParsers)
+
+textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
   m (Dynamic t (Live (TextNotation,String)),Event t (Live (TextNotation,String)),Event t Hint)
-tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class to tidalTextWidget
+textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
   let deltaFuture = fmap forEditing delta
   let parserFuture = fmap fst deltaFuture
   let textFuture = fmap snd deltaFuture
 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     let initialParser = fst $ forEditing i
-    let parserMap = constDyn $ fromList $ fmap (\x -> (TidalTextNotation x,show x)) tidalParsers
+    let parserMap = constDyn $ fromList $ fmap (\x -> (x,show x)) textNotationParsers
     d' <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- button "eval"
