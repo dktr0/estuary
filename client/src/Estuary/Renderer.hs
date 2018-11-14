@@ -68,9 +68,10 @@ renderZone :: Context -> Int -> Definition -> Renderer
 renderZone c z d = do
   s <- get
   let prevDef = IntMap.lookup z $ cachedDefs s
-  if prevDef == (Just d) then return () else renderZoneChanged c z d
-  modify' $ \x -> x { cachedDefs = insert z d (cachedDefs s) }
-  renderZoneAlways c z d
+  let d' = definitionForRendering d
+  when (prevDef /= (Just d')) $ renderZoneChanged c z d'
+  modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
+  renderZoneAlways c z d'
 
 
 renderZoneChanged :: Context -> Int -> Definition -> Renderer
