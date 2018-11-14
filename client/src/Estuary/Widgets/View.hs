@@ -62,7 +62,7 @@ viewWidget ctx renderInfo (TidalTextView n rows) i deltasDown = do
   let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
   e <- mapDyn (Map.lookup n . errors) renderInfo
-  (value,edits,hints) <- tidalTextWidget ctx e rows i' deltasDown'
+  (value,edits,hints) <- textNotationWidget ctx e rows i' deltasDown'
   value' <- mapDyn (Map.singleton n . TextProgram) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . TextProgram) edits
   return (value',edits',hints)
@@ -73,7 +73,7 @@ viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Sequence defaultValue) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justSequences . justEditsInZone n) deltasDown
   -- (value,edits,hints) <- sequencer' i' deltasDown'
-  let value = constDyn [] -- placeholder 
+  let value = constDyn [] -- placeholder
   let edits = never -- placeholder
   let hints = never -- placeholder
   value' <- mapDyn (Map.singleton n . Sequence) value

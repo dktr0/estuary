@@ -33,7 +33,7 @@ CLIENT_GCC_PREPROCESSOR=$(STACK_CLIENT) exec -- gcc -E -x c -P -C -nostdinc
 
 installClient: buildClient
 	cp -Rf $(CLIENT_INSTALL_DIR) .
-	cp -Rf -u static/* Estuary.jsexe
+	cp -Rf static/* Estuary.jsexe
 	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -o ../Estuary.jsexe/index.html
 
 prodInstallClient: # make prodBuildClient first!
