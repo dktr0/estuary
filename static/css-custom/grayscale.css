@@ -41,3 +41,13 @@ select {
 .splash-panel:hover {
 	border-color: black;
 }
+
+.ensembleTempo textarea{
+ color: black;
+}
+
+
+/*modifies the text from the structured-view dropdown menus  */
+.atomPopup{
+	color:whitesmoke;
+}

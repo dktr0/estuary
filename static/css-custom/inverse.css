@@ -41,3 +41,8 @@ select {
 .splash-panel:hover {
 	border-color: black;
 }
+
+/*modifies the text from the structured-view dropdown menus  */
+.atomPopup{
+	color:rgb(98, 221, 115);;
+}
