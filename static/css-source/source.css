@@ -175,6 +175,11 @@
 	min-height: 0;
 }
 
+/* modifies the border of the homepage buttons when hovering on */
+.splash-panel:hover {
+	border: 0.5em solid; 
+}
+
 .splash-panel-title { /*contains the about info on the home page (source)*/
 	font-family: estuaryFont;
 	text-align: center;
@@ -1006,7 +1011,6 @@ font-family: estuaryFont;
 .aboutTitle {
 /* 	font-variant:small-caps; */
 			color:  rgb(98, 221, 115);
-
 }
 
 .aboutButton button{
