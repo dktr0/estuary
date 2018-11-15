@@ -30,7 +30,7 @@ initialContext now wd sd = Context {
   webDirt = wd,
   superDirt = sd,
   language = English,
-  theme = "classic.css",
+  theme = "../css-custom/classic.css",
   tempo = Tempo { cps = 0.5, at = now, beat = 0.0 },
   definitions = empty,
   webDirtOn = True,

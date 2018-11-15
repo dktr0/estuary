@@ -98,7 +98,7 @@ style:
 test: installClient installServer
 	EstuaryServer/EstuaryServer test
 
-buildTest: buildClient installClient installServer
+buildTest: buildClient installClient
 		EstuaryServer/EstuaryServer test
 
 openClient: installClient
