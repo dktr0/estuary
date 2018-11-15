@@ -11,6 +11,10 @@ import Data.Functor (void)
 import Data.List (intercalate)
 import Data.IntMap.Strict as IntMap
 import Data.Maybe
+import Data.Either
+
+import qualified Sound.Punctual.PunctualW as Punctual
+import qualified Sound.Punctual.Types as Punctual
 
 import Estuary.Types.Context
 import Estuary.Types.Definition
@@ -23,6 +27,7 @@ import Estuary.WebDirt.SampleEngine
 import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Types.Tempo
+
 
 type Renderer = StateT RenderState IO ()
 
@@ -63,9 +68,10 @@ renderZone :: Context -> Int -> Definition -> Renderer
 renderZone c z d = do
   s <- get
   let prevDef = IntMap.lookup z $ cachedDefs s
-  if prevDef == (Just d) then return () else renderZoneChanged c z d
-  modify' $ \x -> x { cachedDefs = insert z d (cachedDefs s) }
-  renderZoneAlways c z d
+  let d' = definitionForRendering d
+  when (prevDef /= (Just d')) $ renderZoneChanged c z d'
+  modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
+  renderZoneAlways c z d'
 
 
 renderZoneChanged :: Context -> Int -> Definition -> Renderer
@@ -96,11 +102,23 @@ renderTextProgramChanged c z (TidalTextNotation x,y) = do
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
 
-renderTextProgramChanged c z (Punctual,s) = return () -- placeholder
+renderTextProgramChanged c z (Punctual,x) = do
+  s <- get
+  let parseResult = Punctual.runPunctualParser x
+  if isLeft parseResult then return () else do
+    let exprs = either (const []) id parseResult
+    now <- liftIO $ getCurrentTime
+    let eval = (exprs,now)
+    let prevPunctualW = findWithDefault Punctual.emptyPunctualW z (punctuals s)
+    newPunctualW <- liftIO $ Punctual.updatePunctualW prevPunctualW eval
+    modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
+  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { info = (info s) { errors = newErrors }}
+
 
 renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
-renderTextProgramAlways c z (Punctual,s) = return () -- placeholder
+renderTextProgramAlways c z (Punctual,s) = return ()
 
 
 renderControlPattern :: Context -> Int -> Renderer
