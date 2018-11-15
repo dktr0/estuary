@@ -105,7 +105,7 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ do
   divClass "webDirtMute" $ divClass "webDirtContent" $ do
     let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale")]
     translateDyn Term.Theme ctx >>= dynText
-    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) def -- Event t String
+    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
     let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
     translateDyn Term.Language ctx >>= dynText
     let langMap = constDyn $ fromList $ zip languages (fmap show languages)

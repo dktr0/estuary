@@ -96,5 +96,8 @@ style:
 test: installClient installServer
 	EstuaryServer/EstuaryServer test
 
+buildTest: buildClient 
+		EstuaryServer/EstuaryServer test
+
 openClient: installClient
 	open Estuary.jsexe/index.html
