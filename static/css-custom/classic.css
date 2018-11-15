@@ -42,5 +42,5 @@ select {
 
 /* modifies the border of the homepage buttons when hovering on */
 .splash-panel:hover {
-	border: 0.5em solid rgb(98, 221, 115);
+	border-color: rgb(98, 221, 115);
 }
