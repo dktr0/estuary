@@ -91,12 +91,14 @@ prodClean: clean
 	stack --work-dir .stack-work-production/ clean --stack-yaml=client.yaml
 
 style:
-	cp static/classic.css Estuary.jsexe
+	cp -r static/css-custom/ Estuary.jsexe
+	cp -r static/css-source/ Estuary.jsexe
+
 
 test: installClient installServer
 	EstuaryServer/EstuaryServer test
 
-buildTest: buildClient 
+buildTest: buildClient installClient installServer
 		EstuaryServer/EstuaryServer test
 
 openClient: installClient
