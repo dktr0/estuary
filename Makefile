@@ -1,3 +1,12 @@
+# If 'rsync' installed, use it to perform copies which only update if newer
+# otherwise falling back to a plain 'cp'.
+RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
+ifdef RSYNC_EXISTS
+CP_RECURSIVE=rsync --recursive --update --perms --executability
+else
+CP_RECURSIVE=cp -rf
+endif
+
 STACK_CLIENT=cd client/ && stack
 STACK_SERVER=cd server/ && stack
 STACK_PRODUCTION_CLIENT=cd client/ && stack --work-dir .stack-work-production/
@@ -10,18 +19,18 @@ setupClient:
 	$(STACK_CLIENT) setup
 
 buildClient: setupClient
-	$(STACK_CLIENT) build
+	$(STACK_CLIENT) build estuary:exe:Estuary
 
 EXTERNS=--externs=static/SuperDirt.js --externs=static/EstuaryProtocol.js --externs=static/WebDirt/WebDirt.js --externs=static/WebDirt/SampleBank.js --externs=static/WebDirt/Graph.js
 CLOSURE_COMPILER="java -jar closure-compiler.jar"
 
 prodBuildClient: setupClient
-	$(STACK_PRODUCTION_CLIENT) build --ghc-options="-DGHCJS_BROWSER -O2"
+	$(STACK_PRODUCTION_CLIENT) build --ghc-options="-DGHCJS_BROWSER -O2" estuary:exe:Estuary
 	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=ADVANCED_OPTIMIZATIONS --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
 	gzip -fk "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js"
 
 buildClientForceDirty:
-	$(STACK_CLIENT) build --force-dirty
+	$(STACK_CLIENT) build --force-dirty estuary:exe:Estuary
 
 setupServer:
 	$(STACK_SERVER) setup
@@ -32,14 +41,14 @@ buildServer: setupServer
 CLIENT_GCC_PREPROCESSOR=$(STACK_CLIENT) exec -- gcc -E -x c -P -C -nostdinc
 
 installClient: buildClient
-	cp -Rf $(CLIENT_INSTALL_DIR) .
-	cp -Rf static/* Estuary.jsexe
+	$(CP_RECURSIVE) $(CLIENT_INSTALL_DIR) .
+	$(CP_RECURSIVE) static/* Estuary.jsexe
 	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -o ../Estuary.jsexe/index.html
 
 prodInstallClient: # make prodBuildClient first!
 	rm -rf ./Estuary.jsexe
 	cp -Rf $(PRODUCTION_CLIENT_INSTALL_DIR) .
-	cp -Rf static/* Estuary.jsexe
+	$(CP_RECURSIVE) static/* Estuary.jsexe
 	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -DPRODUCTION -o ../Estuary.jsexe/index.html
 	rm -rf Estuary.jsexe/runmain.js
 	rm -rf Estuary.jsexe/rts.js
@@ -51,8 +60,8 @@ prodInstallClient: # make prodBuildClient first!
 
 installInteractionTestClient:
 	$(STACK_CLIENT) build estuary:exe:interaction-test
-	cp -Rf $$($(STACK_CLIENT) path --local-install-root)/bin/interaction-test.jsexe/* Estuary.jsexe
-	cp -Rf static/* Estuary.jsexe
+	$(CP_RECURSIVE) $$($(STACK_CLIENT) path --local-install-root)/bin/interaction-test.jsexe/* Estuary.jsexe
+	$(CP_RECURSIVE) static/* Estuary.jsexe
 	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -o ../Estuary.jsexe/index.html
 
 installServer: buildServer
@@ -87,13 +96,9 @@ clean:
 prodClean: clean
 	$(STACK_PRODUCTION_CLIENT) clean
 
-prodClean: clean
-	stack --work-dir .stack-work-production/ clean --stack-yaml=client.yaml
-
 style:
 	cp -r static/css-custom/ Estuary.jsexe
 	cp -r static/css-source/ Estuary.jsexe
-
 
 test: installClient installServer
 	EstuaryServer/EstuaryServer test
