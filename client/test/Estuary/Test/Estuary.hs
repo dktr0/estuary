@@ -34,9 +34,9 @@ import Estuary.Renderer
 
 import Estuary.Test.Reflex
 
-estuaryWidget -> deltasUp is an event for web socket events
- they are passed to the EstuaryProtocolObject
- alternateProtocol in WebSocket serializes the Requests
+-- estuaryWidget -> deltasUp is an event for web socket events
+--  they are passed to the EstuaryProtocolObject
+--  alternateProtocol in WebSocket serializes the Requests
 
 controllableNavigationWidget :: MonadWidget t m => Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo)
 controllableNavigationWidget pageId ctx renderInfo commands wsDown = mdo

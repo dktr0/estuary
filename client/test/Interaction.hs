@@ -64,8 +64,8 @@ main = hspec $ do
           EnsembleResponse (Sited "abc" (DefaultView view)) -> Matches
           _ -> DoesNotMatch
 
-      The editors should not take more that 1s to appear after receiving the
-      expected layout.
+      -- The editors should not take more that 1s to appear after receiving the
+      -- expected layout.
       threadDelay $ 1000 * 1000
 
       Just (editor :: Element) <- findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
