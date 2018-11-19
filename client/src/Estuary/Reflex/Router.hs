@@ -1,7 +1,8 @@
 {-# LANGUAGE RecursiveDo, ScopedTypeVariables #-}
 
 module Estuary.Reflex.Router(
-  router
+  router,
+  getInitialState
 ) where
 
 import Control.Monad.IO.Class
@@ -30,9 +31,7 @@ import Reflex.Dom
 
 router :: (MonadWidget t m, FromJSVal state, ToJSVal state) => state -> (state -> m (Event t state, a)) -> m (Dynamic t (Event t state, a))
 router def renderPage = mdo
-  state <- liftIO $ getInitialState def
-
-  let initialPage = renderPage state
+  let initialPage = renderPage def
 
   -- Triggered ambiently (back button or otherwise). If the state is null or can't
   -- be decoded, fall back into the initial state.
