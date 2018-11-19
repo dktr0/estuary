@@ -37,13 +37,18 @@ import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
 import qualified Estuary.Types.Terminal as Terminal
 
-estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
-estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
+estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   ic <- liftIO $ readMVar ctxM
   renderInfo <- pollRenderInfoChanges riM
+
   headerChanges <- header ctx renderInfo
-  (values,deltasUp,hints,tempoChanges) <- divClass "page" $ navigation ctx renderInfo commands deltasDown'
+
+  (values,deltasUp,hints,tempoChanges) <- divClass "page" $ 
+    navigation initialPage ctx renderInfo commands deltasDown'
+
   commands <- footer ctx renderInfo deltasUp deltasDown' hints
+
   (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
   let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
@@ -51,10 +56,13 @@ estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
   let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange,tempoChanges']
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
+
   t <- mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
+
   updateContext ctxM ctx
+  
   performHint (webDirt ic) hints
 
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()

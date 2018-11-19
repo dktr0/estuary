@@ -35,7 +35,7 @@ import Estuary.Types.EnsembleResponse
 
 import Estuary.Test.Protocol
 import Estuary.Test.Estuary
-import Estuary.Test.Dom
+import qualified Estuary.Test.Dom as DomUtils
 
 import Estuary.Widgets.Navigation
 
@@ -68,12 +68,12 @@ main = hspec $ do
       -- expected layout.
       threadDelay $ 1000 * 1000
 
-      Just (editor :: Element) <- findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
-      Just (evalBtn :: HTMLElement) <- findMatchingSelector editor "button"
-      Just (txtArea :: HTMLTextAreaElement) <- findMatchingSelector editor "textarea"
+      Just (editor :: Element) <- DomUtils.findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
+      Just (evalBtn :: HTMLElement) <- DomUtils.findMatchingSelector editor "button"
+      Just (txtArea :: HTMLTextAreaElement) <- DomUtils.findMatchingSelector editor "textarea"
 
-      HTMLTextAreaElement.setValue txtArea $ Just "s \"bd\""
-      HTMLElement.click evalBtn
+      DomUtils.changeValue txtArea "s \"bd\""
+      DomUtils.click evalBtn
 
       return (reqStream, respStream)
 

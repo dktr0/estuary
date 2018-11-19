@@ -9,6 +9,7 @@ import GHCJS.Types
 
 import GHCJS.Prim(toJSArray, fromJSArray)
 
+import qualified GHCJS.DOM.HTMLInputElement as HTMLInputElement
 import qualified GHCJS.DOM.HTMLElement as HTMLElement
 
 -- querySelector :: (MonadIO m, IsDocument self, ToJSString selectors) =>
@@ -39,7 +40,18 @@ findAllMatchingSelector container query =
 
 
 click :: (IsHTMLElement e) => e -> IO ()
-click =  HTMLElement.click
+click = HTMLElement.click
+
+changeValue :: (IsGObject e) => e -> String -> IO ()
+changeValue e value = do
+  let e' :: HTMLInputElement
+      e' = unsafeCastGObject $ toGObject e
+      
+  HTMLInputElement.setValue e' (Just value)
+  notifyChanged e'
+
+notifyChanged :: (IsEventTarget e) => e -> IO ()
+notifyChanged e = js_dispatchInputEvent (pToJSVal $ toEventTarget e)
 
 ------------------------------------------
 -- JS FFI
@@ -60,3 +72,7 @@ foreign import javascript safe
 foreign import javascript safe
   "Array.from($1.querySelector($2))"
   js_querySelectorAll :: JSVal -> JSString -> IO (JSVal)
+
+foreign import javascript safe
+  "$1.dispatchEvent(new Event('input'))"
+  js_dispatchInputEvent :: JSVal -> IO ()

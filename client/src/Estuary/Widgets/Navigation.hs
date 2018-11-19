@@ -52,9 +52,9 @@ data Navigation =
   Collaborate String
   deriving (Generic, FromJSVal, ToJSVal)
 
-navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo)
-navigation ctx renderInfo commands wsDown = do
-  dynPage <- router Splash $ page ctx renderInfo commands wsDown
+navigation :: MonadWidget t m => Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo)
+navigation initialPage ctx renderInfo commands wsDown = do
+  dynPage <- router initialPage $ page ctx renderInfo commands wsDown
 
   dynPageData <- mapDyn snd dynPage
   dynValues <- liftM joinDyn           $ mapDyn (\(x, _, _, _) -> x) dynPageData
