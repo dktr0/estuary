@@ -27,6 +27,7 @@ import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Context
 import Estuary.Types.Hint
+import Estuary.Types.Samples
 import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
@@ -42,6 +43,15 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   ic <- liftIO $ readMVar ctxM
   renderInfo <- pollRenderInfoChanges riM
 
+  -- load the samples map, if there is a better way to triiger an event from an async callback
+  -- then this should be update to reflect that.
+  postBuild <- getPostBuild
+  samplesLoadedEv <- performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
+    loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
+      case maybeMap of
+        Nothing -> return () -- Couldn't load the map
+        Just map -> triggerEv $ setSampleMap map
+
   headerChanges <- header ctx renderInfo
 
   (values,deltasUp,hints,tempoChanges) <- divClass "page" $ 
@@ -54,7 +64,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange,tempoChanges']
+  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
   t <- mapDyn theme ctx -- Dynamic t String
