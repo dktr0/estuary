@@ -13,7 +13,7 @@ dumpView (StructureView x) = "structure:" ++ show x
 dumpView (LabelView x) = "label:" ++ show x
 dumpView (TidalTextView x y) = "textView:" ++ show x ++ " " ++ show y
 dumpView (EvaluableTextView x) = "evaluable:" ++ show x
-dumpView (SvgDisplayView) = "svgDisplayView:"
+dumpView (SvgDisplayView z) = "svgDisplayView:" ++ show z
 
 viewsParser :: GenParser Char a View
 viewsParser = do
@@ -49,4 +49,4 @@ tidalTextView = do
   skipMany1 space
   y <- read <$> many1 digit
   return $ TidalTextView x y
-svgDisplayView = string "svgDisplayView:" >> return SvgDisplayView
+svgDisplayView = string "svgDisplayView:" >> (read <$> many1 digit) >>= return . SvgDisplayView

@@ -9,12 +9,14 @@ import Estuary.Types.TidalParser
 
 data TextNotation =
   TidalTextNotation TidalParser |
-  Punctual
+  Punctual |
+  SuperContinent
   deriving (Read,Eq,Ord,Data,Typeable)
 
 instance Show TextNotation where
   show (TidalTextNotation x) = show x
   show Punctual = "Punctual"
+  show SuperContinent = "SuperContinent"
 
 instance JSON TextNotation where
   showJSON = toJSON

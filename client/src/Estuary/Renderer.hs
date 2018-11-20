@@ -15,6 +15,7 @@ import Data.Either
 
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Types as Punctual
+import qualified Estuary.Languages.SuperContinent as SuperContinent
 
 import Estuary.Types.Context
 import Estuary.Types.Definition
@@ -116,9 +117,17 @@ renderTextProgramChanged c z (Punctual,x) = do
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
 
 
+renderTextProgramChanged c z (SuperContinent,x) = do
+  s <- get
+  let parseResult = SuperContinent.superContinent x
+  let ops = either (const Nothing) Just parseResult
+  let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { info = (info s) { errors = errs, svgOps = ops }}
+
+
 renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
-renderTextProgramAlways c z (Punctual,s) = return ()
+renderTextProgramAlways _ _ _ = return ()
 
 
 renderControlPattern :: Context -> Int -> Renderer

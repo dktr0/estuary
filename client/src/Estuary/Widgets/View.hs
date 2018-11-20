@@ -101,10 +101,7 @@ viewWidget _ _ (EvaluableTextView n) i deltasDown = do
   where f (EvaluableText x) = x
         f _ = ""
 
-viewWidget _ _ SvgDisplayView _ _ = do
-  testOurDynSvg
-  return (constDyn Map.empty, never, never)
-
+viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i

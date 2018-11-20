@@ -14,7 +14,7 @@ data View =
   TidalTextView Int Int | -- first int is zone to edit, second int is number of lines in editor -- ** name should change to TextView or something like that soon...
   SequenceView Int |
   EvaluableTextView Int |
-  SvgDisplayView
+  SvgDisplayView Int -- Int is z-index
   deriving (Show,Eq,Data,Typeable)
 
 instance JSON View where
@@ -24,7 +24,7 @@ instance JSON View where
 standardView :: View
 standardView = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
-  ViewDiv "eightTopR" (Views [LabelView 3, StructureView 4]),
+  ViewDiv "eightTopR" (Views [LabelView 3, SvgDisplayView 0]),
   ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 3]),
   ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 3]),
   ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10 3]),
@@ -129,7 +129,7 @@ presetView "RGGTRN" = Views [
 
 presetView "working" = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
-  ViewDiv "eightTopR" (Views [LabelView 3, SvgDisplayView]),
+  ViewDiv "eightTopR" (Views [LabelView 3, SvgDisplayView 0]),
   ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 7]),
   ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 7 ]),
   ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10 7]),
