@@ -14,7 +14,7 @@ svgDisplay :: MonadWidget t m => Int -> Dynamic t RenderInfo -> m ()
 svgDisplay z rInfo = do
   instructions <- mapDyn svgOps rInfo
   instructions' <- holdDyn [] $ fmapMaybe id $ updated $ nubDyn instructions
-  let attrs = fromList [("width","100%"),("height","100%"),("z-index",show z)]
+  let attrs = fromList [("class","svgDisplay"),("style","z-index:" ++ show z)]
   x <- mapDyn instructionsToWidgets instructions' -- Dynamic t (m ())
   svgAttr "svg" attrs $ dyn x
   return ()
