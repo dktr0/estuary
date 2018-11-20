@@ -5,6 +5,7 @@ import Data.IntMap.Strict
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
+import Estuary.Types.Samples
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
@@ -17,6 +18,7 @@ data Context = Context {
   theme :: String,
   tempo :: Tempo,
   definitions :: DefinitionMap,
+  samples :: SampleMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   peakLevels :: [Double],
@@ -33,6 +35,7 @@ initialContext now wd sd = Context {
   theme = "../css-custom/classic.css",
   tempo = Tempo { cps = 0.5, at = now, beat = 0.0 },
   definitions = empty,
+  samples = emptySampleMap,
   webDirtOn = True,
   superDirtOn = False,
   peakLevels = [],
@@ -60,3 +63,6 @@ setClientCount x c = c { clientCount = x }
 
 setDefinitions :: DefinitionMap -> ContextChange
 setDefinitions x c = c { definitions = x }
+
+setSampleMap :: SampleMap -> ContextChange
+setSampleMap x c = c { samples = x}

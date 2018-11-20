@@ -27,6 +27,7 @@ import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Context
 import Estuary.Types.Hint
+import Estuary.Types.Samples
 import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
@@ -37,24 +38,41 @@ import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
 import qualified Estuary.Types.Terminal as Terminal
 
-estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
-estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
+estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   ic <- liftIO $ readMVar ctxM
   renderInfo <- pollRenderInfoChanges riM
+
+  -- load the samples map, if there is a better way to triiger an event from an async callback
+  -- then this should be update to reflect that.
+  postBuild <- getPostBuild
+  samplesLoadedEv <- performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
+    loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
+      case maybeMap of
+        Nothing -> return () -- Couldn't load the map
+        Just map -> triggerEv $ setSampleMap map
+
   headerChanges <- header ctx renderInfo
-  (values,deltasUp,hints,tempoChanges) <- divClass "page" $ navigation ctx renderInfo commands deltasDown'
+
+  (values,deltasUp,hints,tempoChanges) <- divClass "page" $ 
+    navigation initialPage ctx renderInfo commands deltasDown'
+
   commands <- footer ctx renderInfo deltasUp deltasDown' hints
+
   (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
   let definitionChanges = fmap setDefinitions $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange,tempoChanges']
+  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
+
   t <- mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
+
   updateContext ctxM ctx
+  
   performHint (webDirt ic) hints
 
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
