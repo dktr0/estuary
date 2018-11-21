@@ -61,7 +61,7 @@ int = choice [
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
   P.reservedNames = ["label","structure","evaluable","sequenceView","textView","svgDisplayView"],
-  P.reservedOpNames = []
+  P.reservedOpNames = [":"]
   }
 
 identifier = P.identifier tokenParser

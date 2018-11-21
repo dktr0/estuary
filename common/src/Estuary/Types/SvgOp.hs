@@ -30,5 +30,5 @@ data Stroke = Stroke {
 
 data SvgOp =
   Line Double Double Double Double Stroke |
-  Rect Double Double Double Double Stroke
+  Rect Double Double Double Double Stroke 
   deriving (Show,Eq)
