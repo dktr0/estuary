@@ -25,7 +25,7 @@ import Estuary.Utility
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
-import Estuary.Widgets.DynSvg
+import Estuary.Widgets.SvgDisplay
 import Estuary.Types.TidalParser
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
@@ -58,7 +58,7 @@ viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   where f (Structure x) = x
         f _ = EmptyTransformedPattern
 
-viewWidget ctx renderInfo (TidalTextView n rows) i deltasDown = do
+viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
   let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
   e <- mapDyn (Map.lookup n . errors) renderInfo

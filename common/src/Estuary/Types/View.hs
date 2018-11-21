@@ -11,7 +11,7 @@ data View =
   ViewDiv String View |
   LabelView Int |
   StructureView Int |
-  TidalTextView Int Int | -- first int is zone to edit, second int is number of lines in editor -- ** name should change to TextView or something like that soon...
+  TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   SequenceView Int |
   EvaluableTextView Int |
   SvgDisplayView Int -- Int is z-index
@@ -25,11 +25,11 @@ standardView :: View
 standardView = Views [
   ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
   ViewDiv "eightTopR" (Views [LabelView 3, StructureView 4]),
-  ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 3]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 3]),
-  ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10 3]),
+  ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 3]),
+  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 3]),
+  ViewDiv "eightBottomL" (Views [LabelView 9, TextView 10 3]),
   ViewDiv "eightBottomR" (Views [LabelView 11, SequenceView 12]),
-  SvgDisplayView 1
+  SvgDisplayView (-1)
   ]
 
 emptyView :: View
@@ -38,114 +38,105 @@ emptyView = Views []
 presetView :: String -> View
 
 presetView "iclc2017" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35 2])
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,TextView 9 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,TextView 11 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,TextView 13 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 16,TextView 17 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 18,TextView 19 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 20,TextView 21 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 22,TextView 23 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 24,TextView 25 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 26,TextView 27 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
   ]
 
 presetView "Bogota" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31 2]),
-  ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35 2])
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,TextView 9 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,TextView 11 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,TextView 13 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 16,TextView 17 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 18,TextView 19 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 20,TextView 21 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 22,TextView 23 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 24,TextView 25 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 26,TextView 27 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
+  ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
   ]
 
 presetView "Manizales" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3 10]),
-  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7 10])
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 10]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 10]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 10]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10])
   ]
 
 presetView "Medellin" = presetView "Manizales"
 
 presetView "Lima" = Views [
-    ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3 5]),
-    ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7 5]),
-    ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11 5]),
-    ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15 5])
+    ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 5]),
+    ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 5]),
+    ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 5]),
+    ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 5]),
+    ViewDiv "eightMiddleL" (Views [LabelView 8,TextView 9 5]),
+    ViewDiv "eightMiddleR" (Views [LabelView 10,TextView 11 5]),
+    ViewDiv "eightMiddleL" (Views [LabelView 12,TextView 13 5]),
+    ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 5])
     ]
 
 presetView "Uio" = Views [
-    ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3 2]),
-    ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7 2]),
-    ViewDiv "eightMiddleL" (Views [LabelView 8,TidalTextView 9 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 10,TidalTextView 11 2]),
-    ViewDiv "eightMiddleL" (Views [LabelView 12,TidalTextView 13 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 14,TidalTextView 15 2]),
-    ViewDiv "eightMiddleL" (Views [LabelView 16,TidalTextView 17 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 18,TidalTextView 19 2]),
-    ViewDiv "eightMiddleL" (Views [LabelView 20,TidalTextView 21 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 22,TidalTextView 23 2]),
-    ViewDiv "eightMiddleL" (Views [LabelView 24,TidalTextView 25 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 26,TidalTextView 27 2]),
-    ViewDiv "eightMiddleL" (Views [LabelView 28,TidalTextView 29 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 30,TidalTextView 31 2]),
-    ViewDiv "eightMiddleL" (Views [LabelView 32,TidalTextView 33 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 34,TidalTextView 35 2])
+    ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 2]),
+    ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 2]),
+    ViewDiv "eightMiddleL" (Views [LabelView 8,TextView 9 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 10,TextView 11 2]),
+    ViewDiv "eightMiddleL" (Views [LabelView 12,TextView 13 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 2]),
+    ViewDiv "eightMiddleL" (Views [LabelView 16,TextView 17 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 18,TextView 19 2]),
+    ViewDiv "eightMiddleL" (Views [LabelView 20,TextView 21 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 22,TextView 23 2]),
+    ViewDiv "eightMiddleL" (Views [LabelView 24,TextView 25 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 26,TextView 27 2]),
+    ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
+    ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
+    ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
     ]
 
-
 presetView "RGGTRN" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,TidalTextView 1 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 2,TidalTextView 3 10]),
-  ViewDiv "eightMiddleL" (Views [LabelView 4,TidalTextView 5 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TidalTextView 7 10])
-  ]
-
-presetView "working" = Views [
-  ViewDiv "eightTopL" (Views [LabelView 1, StructureView 2]),
-  ViewDiv "eightTopR" (Views [LabelView 3, SvgDisplayView 0]),
-  ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 7]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 7 ]),
-  ViewDiv "eightBottomL" (Views [LabelView 9, TidalTextView 10 7]),
-  ViewDiv "eightBottomR" (Views [LabelView 11, EvaluableTextView 12])
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 10]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 10]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 10]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10])
   ]
 
 presetView "cybernetic" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 1, TidalTextView 2 4]),
-  ViewDiv "eightMiddleR" (Views [LabelView 3, TidalTextView 4 4]),
-  ViewDiv "eightMiddleL" (Views [LabelView 5, TidalTextView 6 4]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TidalTextView 8 4]),
-  ViewDiv "eightMiddleL" (Views [LabelView 9, TidalTextView 10 4]),
-  ViewDiv "eightMiddleR" (Views [LabelView 11, TidalTextView 12 4]),
-  ViewDiv "eightMiddleL" (Views [LabelView 13, TidalTextView 14 4]),
-  ViewDiv "eightMiddleR" (Views [LabelView 15, TidalTextView 16 4])
+  ViewDiv "eightMiddleL" (Views [LabelView 1, TextView 2 4]),
+  ViewDiv "eightMiddleR" (Views [LabelView 3, TextView 4 4]),
+  ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 4]),
+  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 4]),
+  ViewDiv "eightMiddleL" (Views [LabelView 9, TextView 10 4]),
+  ViewDiv "eightMiddleR" (Views [LabelView 11, TextView 12 4]),
+  ViewDiv "eightMiddleL" (Views [LabelView 13, TextView 14 4]),
+  ViewDiv "eightMiddleR" (Views [LabelView 15, TextView 16 4]),
+  SvgDisplayView (-1)
   ]
 
 presetView _ = standardView

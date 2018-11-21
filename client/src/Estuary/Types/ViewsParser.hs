@@ -13,7 +13,7 @@ dumpView (Views xs) = intercalate " " $ fmap dumpView xs
 dumpView (ViewDiv css v) = "{ " ++ css ++ " " ++ dumpView v ++ " }"
 dumpView (StructureView x) = "structure:" ++ showInt x
 dumpView (LabelView x) = "label:" ++ showInt x
-dumpView (TidalTextView x y) = "textView:" ++ showInt x ++ " " ++ showInt y
+dumpView (TextView x y) = "textView:" ++ showInt x ++ " " ++ showInt y
 dumpView (EvaluableTextView x) = "evaluable:" ++ showInt x
 dumpView (SvgDisplayView z) = "svgDisplayView:" ++ showInt z
 dumpView (SequenceView z) = "sequenceView:" ++ showInt z
@@ -49,7 +49,7 @@ labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
 structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
 evaluableTextView = reserved "evaluable" >> reservedOp ":" >> (EvaluableTextView <$> int)
 sequenceView = reserved "sequenceView" >> reservedOp ":" >> (SequenceView <$> int)
-tidalTextView = reserved "textView" >> reservedOp ":" >> (TidalTextView <$> int <*> int)
+tidalTextView = reserved "textView" >> reservedOp ":" >> (TextView <$> int <*> int)
 svgDisplayView = reserved "svgDisplayView" >> reservedOp ":" >> (SvgDisplayView <$> int)
 
 int :: Parser Int

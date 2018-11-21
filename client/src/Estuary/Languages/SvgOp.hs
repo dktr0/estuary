@@ -1,4 +1,4 @@
-module Estuary.Languages.SuperContinent (superContinent) where
+module Estuary.Languages.SvgOp (svgOp) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -6,11 +6,11 @@ import Text.Parsec.Language (haskellDef)
 
 import Estuary.Types.SvgOp
 
-superContinent :: String -> Either ParseError [SvgOp]
-superContinent = parse superContinentParser "SuperContinent"
+svgOp :: String -> Either ParseError [SvgOp]
+svgOp = parse svgOpParser "SvgOp"
 
-superContinentParser :: Parser [SvgOp]
-superContinentParser = do
+svgOpParser :: Parser [SvgOp]
+svgOpParser = do
   whiteSpace
   ops <- semiSep ops
   eof

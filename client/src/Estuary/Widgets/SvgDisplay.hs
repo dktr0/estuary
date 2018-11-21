@@ -1,6 +1,6 @@
 {-# LANGUAGE RecursiveDo #-}
 
-module Estuary.Widgets.DynSvg (svgDisplay) where
+module Estuary.Widgets.SvgDisplay (svgDisplay) where
 
 import Reflex
 import Reflex.Dom
