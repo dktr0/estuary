@@ -10,13 +10,53 @@ superContinent :: String -> Either ParseError [SvgOp]
 superContinent = parse superContinentParser "SuperContinent"
 
 superContinentParser :: Parser [SvgOp]
-superContinentParser = whiteSpace >> choice [line, rect] >>= return . (:[])
+superContinentParser = do
+  whiteSpace
+  ops <- semiSep ops
+  eof
+  return ops
+
+ops :: Parser SvgOp
+ops = choice [ line, rect]
 
 line :: Parser SvgOp
-line = (reserved "line" >> return Line) <*> double <*> double <*> double <*> double
+line = (reserved "line" >> return Line) <*> double <*> double <*> double <*> double <*> stroke
 
 rect :: Parser SvgOp
-rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double
+rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double <*> stroke
+
+stroke :: Parser Stroke
+stroke = do
+  c <- option (RGBA 100 100 100 100) color
+  t <- option 1 double
+  lc <- option Butt lineCap
+  lj <- option Miter lineJoin
+  return $ Stroke c t lc lj
+
+color :: Parser Color
+color = parens $ do
+  r <- double
+  comma
+  g <- double
+  comma
+  b <- double
+  comma
+  a <- double
+  return $ RGBA r g b a
+
+lineCap :: Parser LineCap
+lineCap = choice [
+  reserved "Butt" >> return Butt,
+  reserved "Square" >> return Square,
+  reserved "RoundCap" >> return RoundCap
+  ]
+
+lineJoin :: Parser LineJoin
+lineJoin = choice [
+  reserved "Miter" >> return Miter,
+  reserved "RoundJoin" >> return RoundJoin,
+  reserved "Bevel" >> return Bevel
+  ]
 
 double :: Parser Double
 double = choice [try float,fromIntegral <$> integer]

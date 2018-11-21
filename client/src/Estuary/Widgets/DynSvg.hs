@@ -24,8 +24,27 @@ instructionsToWidgets = mapM_ instructionToWidget
 
 instructionToWidget :: MonadWidget t m => SvgOp -> m ()
 
-instructionToWidget (Line x1 y1 x2 y2) = svgAttr "line" attrs $ return ()
-  where attrs = fromList [("x1",show x1 ++ "%"),("y1",show y1 ++ "%"),("x2",show x2 ++ "%"),("y2",show y2 ++ "%"),("stroke","white")]
+instructionToWidget (Line x1 y1 x2 y2 s) = svgAttr "line" attrs $ return ()
+  where attrs = fromList [
+         ("x1",show x1 ++ "%"),
+         ("y1",show y1 ++ "%"),
+         ("x2",show x2 ++ "%"),
+         ("y2",show y2 ++ "%"),
+         ("stroke-linecap",show (strokeLineCap s)),
+         ("stroke-linejoin",show (strokeLineJoin s)),
+         ("stroke-width",show (strokeWidth s) ++ "%"),
+         ("stroke",show (strokeColor s))
+         ]
 
-instructionToWidget (Rect x y w h) = svgAttr "rect" attrs $ return ()
-  where attrs = fromList [("x",show x ++ "%"),("y",show y ++ "%"),("width",show w ++ "%"),("height",show h ++ "%"),("stroke","white"),("fill","green")]
+instructionToWidget (Rect x y w h s) = svgAttr "rect" attrs $ return ()
+  where attrs = fromList [
+         ("x",show x ++ "%"),
+         ("y",show y ++ "%"),
+         ("width",show w ++ "%"),
+         ("height",show h ++ "%"),
+         ("stroke-linecap",show (strokeLineCap s)),
+         ("stroke-linejoin",show (strokeLineJoin s)),
+         ("stroke-width",show (strokeWidth s) ++ "%"),
+         ("stroke",show (strokeColor s)),
+         ("fill","green")
+         ]
