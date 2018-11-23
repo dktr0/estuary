@@ -14,8 +14,11 @@ import Data.Maybe
 import Data.Either
 
 import qualified Sound.Punctual.PunctualW as Punctual
+import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.Types as Punctual
-import qualified Estuary.Languages.SuperContinent as SuperContinent
+import qualified Sound.Punctual.Parser as Punctual
+import qualified Estuary.Languages.SvgOp as SvgOp
+import qualified Estuary.Languages.CanvasOp as CanvasOp
 
 import Estuary.Types.Context
 import Estuary.Types.Definition
@@ -61,6 +64,7 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: Context -> Renderer
 render c = do
+  modify' $ \s -> s { info = (info s) { canvasOps = [] }}
   traverseWithKey (renderZone c) (definitions c)
   flushEvents c
 
@@ -103,32 +107,55 @@ renderTextProgramChanged c z (TidalTextNotation x,y) = do
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
 
-renderTextProgramChanged c z (Punctual,x) = do
+renderTextProgramChanged c z (PunctualAudio,x) = do
   s <- get
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
-    now <- liftIO $ getCurrentTime
-    let eval = (exprs,now)
-    let prevPunctualW = findWithDefault Punctual.emptyPunctualW z (punctuals s)
+    t <- liftIO $ getCurrentTime
+    let eval = (exprs,t)
+    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW t) z (punctuals s)
     newPunctualW <- liftIO $ Punctual.updatePunctualW prevPunctualW eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
 
-
-renderTextProgramChanged c z (SuperContinent,x) = do
+renderTextProgramChanged c z (PunctualVideo,x) = do
   s <- get
-  let parseResult = SuperContinent.superContinent x
+  let parseResult = Punctual.runPunctualParser x
+  if isLeft parseResult then return () else do
+    let exprs = either (const []) id parseResult
+    t <- liftIO $ getCurrentTime
+    let eval = (exprs,t)
+    let prevPunctualVideo = findWithDefault (Punctual.emptyPunctualState t) z (punctualVideo s)
+    let newPunctualVideo = Punctual.updatePunctualState prevPunctualVideo eval
+    modify' $ \x -> x { punctualVideo = insert z newPunctualVideo (punctualVideo s)}
+  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { info = (info s) { errors = newErrors }}
+
+renderTextProgramChanged c z (SvgOp,x) = do
+  s <- get
+  let parseResult = SvgOp.svgOp x
   let ops = either (const Nothing) Just parseResult
   let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = errs, svgOps = ops }}
 
+renderTextProgramChanged c z (CanvasOp,x) = do
+  s <- get
+  let parseResult = CanvasOp.canvasOp x
+  let ops = either (const []) id parseResult
+  let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { info = (info s) { errors = errs, canvasOps = ops }}
+
+renderTextProgramChanged _ _ _ = return ()
 
 renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
+renderTextProgramAlways c z (PunctualVideo,_) = renderPunctualVideo c z
 renderTextProgramAlways _ _ _ = return ()
 
+renderPunctualVideo :: Context -> Int -> Renderer
+renderPunctualVideo c z = return () -- placeholder
 
 renderControlPattern :: Context -> Int -> Renderer
 renderControlPattern c z = do

@@ -1,29 +1,54 @@
-module Estuary.Languages.SuperContinent (superContinent) where
+module Estuary.Languages.CanvasOp (canvasOp) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
 
-import Estuary.Types.SvgOp
+import Estuary.Types.CanvasOp
+import Estuary.Types.Color
 
-superContinent :: String -> Either ParseError [SvgOp]
-superContinent = parse superContinentParser "SuperContinent"
+canvasOp :: String -> Either ParseError [CanvasOp]
+canvasOp = parse canvasOpParser "CanvasOp"
 
-superContinentParser :: Parser [SvgOp]
-superContinentParser = whiteSpace >> choice [line, rect] >>= return . (:[])
+canvasOpParser :: Parser [CanvasOp]
+canvasOpParser = do
+  whiteSpace
+  ops <- semiSep ops
+  eof
+  return ops
 
-line :: Parser SvgOp
-line = (reserved "line" >> return Line) <*> double <*> double <*> double <*> double
+ops :: Parser CanvasOp
+ops = choice [ lineTo, moveTo, rect, strokeStyle]
 
-rect :: Parser SvgOp
+lineTo :: Parser CanvasOp
+lineTo = (reserved "lineTo" >> return LineTo) <*> double <*> double
+
+moveTo :: Parser CanvasOp
+moveTo = (reserved "moveTo" >> return MoveTo) <*> double <*> double
+
+rect :: Parser CanvasOp
 rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double
+
+strokeStyle :: Parser CanvasOp
+strokeStyle = (reserved "strokeStyle" >> return StrokeStyle) <*> color
+
+color :: Parser Color
+color = parens $ do
+  r <- double
+  comma
+  g <- double
+  comma
+  b <- double
+  comma
+  a <- double
+  return $ RGBA r g b a
 
 double :: Parser Double
 double = choice [try float,fromIntegral <$> integer]
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["line","rect"],
+  P.reservedNames = ["lineTo","moveTo","rect"],
   P.reservedOpNames = []
   }
 

@@ -25,12 +25,14 @@ import Estuary.Utility
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
-import Estuary.Widgets.DynSvg
+import Estuary.Widgets.SvgDisplay
+import Estuary.Widgets.CanvasDisplay
 import Estuary.Types.TidalParser
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 import Estuary.Types.Context
 import Estuary.RenderInfo
+import Estuary.Widgets.Sequencer
 
 
 viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse] -> m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint)
@@ -58,7 +60,7 @@ viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   where f (Structure x) = x
         f _ = EmptyTransformedPattern
 
-viewWidget ctx renderInfo (TidalTextView n rows) i deltasDown = do
+viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
   let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
   e <- mapDyn (Map.lookup n . errors) renderInfo
@@ -69,13 +71,19 @@ viewWidget ctx renderInfo (TidalTextView n rows) i deltasDown = do
   where f (TextProgram x) = x
         f _ = Live (TidalTextNotation MiniTidal,"") L3
 
+
+
 viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Sequence defaultValue) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justSequences . justEditsInZone n) deltasDown
-  -- (value,edits,hints) <- sequencer' i' deltasDown'
-  let value = constDyn [] -- placeholder
-  let edits = never -- placeholder
-  let hints = never -- placeholder
+  v <- sequencer i' deltasDown'
+  value <- mapDyn (\(a,_,_) -> a) v
+  edits <- liftM switchPromptlyDyn $ mapDyn (\(_,a,_)-> a) v
+  hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)-> a) v
+
+  -- let value = constDyn [] -- placeholder
+  -- let edits = never -- placeholder
+  -- let hints = never -- placeholder
   value' <- mapDyn (Map.singleton n . Sequence) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . Sequence) edits
   return (value',edits',hints)
@@ -102,6 +110,8 @@ viewWidget _ _ (EvaluableTextView n) i deltasDown = do
         f _ = ""
 
 viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
+
+viewWidget _ rInfo (CanvasDisplayView z) _ _ = canvasDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i

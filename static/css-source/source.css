@@ -5,6 +5,24 @@
 	margin: 0px 0px 0px 0px;
 }
 
+.svgDisplay {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	left: 0px;
+	top: 0px;
+	pointer-events: none;
+}
+
+.canvasDisplay {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	left: 0px;
+	top: 0px;
+	pointer-events: none;
+}
+
 @font-face {
    font-family: estuaryFont;
    src: url(../fonts/Estuary.otf);
@@ -124,6 +142,9 @@
 
 /* contains the navigation buttons on the homepage (source)*/
 .page {
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+	left: 0px;
+	top: 0px;
 	border-top: 1px solid;
 	border-bottom: 1px solid;
 	padding-top: 5px;
@@ -290,6 +311,9 @@
 }
 
 .eightTopL {/*modifies the topLeft view*/
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+	left: 0px;
+	top: 0px;
 	border-right: 1px solid hsl(0,0%,10%);
 	border-bottom: 1px solid hsl(0,0%,10%);
 	height: 215px;
@@ -300,6 +324,9 @@
 }
 
 .eightTopR {/*modifies the top right view*/
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+	left: 0px;
+	top: 0px;
 	border-left: 1px solid hsl(0,0%,10%);
 	border-bottom: 1px solid hsl(0,0%,10%);
  	height: 215px;
@@ -310,6 +337,9 @@
 }
 
 .eightMiddleL {/*modifies the middle left view*/
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+	left: 0px;
+	top: 0px;
 	border-bottom: 1px solid hsl(0,0%,10%);
 	border-right: 1px solid hsl(0,0%,10%);
 	/* height: 125px; */
@@ -320,6 +350,9 @@
 }
 
 .eightMiddleR {/*modifies the middle right view*/
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+	left: 0px;
+	top: 0px;
 	border-bottom: 1px solid hsl(0,0%,10%);
 	border-left: 1px solid hsl(0,0%,10%);
  	/* height: 125px; */
@@ -330,6 +363,9 @@
 }
 
 .eightBottomL {/*modifies the bottom left view*/
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+	left: 0px;
+	top: 0px;
 	border-right: 1px solid hsl(0,0%,10%);
 	height: 215px;
 	padding: 5px;
@@ -339,6 +375,9 @@
 }
 
 .eightBottomR {/*modifies the bottom right view*/
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+	left: 0px;
+	top: 0px;
 	border-left: 1px solid hsl(0,0%,10%);
  	height: 215px;
 	padding: 5px;
