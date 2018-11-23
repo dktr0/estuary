@@ -14,7 +14,8 @@ data View =
   TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   SequenceView Int |
   EvaluableTextView Int |
-  SvgDisplayView Int -- Int is z-index
+  SvgDisplayView Int | -- Int is z-index
+  CanvasDisplayView Int -- Int is z-index
   deriving (Show,Eq,Data,Typeable)
 
 instance JSON View where
@@ -29,7 +30,8 @@ standardView = Views [
   ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 3]),
   ViewDiv "eightBottomL" (Views [LabelView 9, TextView 10 3]),
   ViewDiv "eightBottomR" (Views [LabelView 11, SequenceView 12]),
-  SvgDisplayView (-1)
+  SvgDisplayView (-2),
+  CanvasDisplayView (-1)
   ]
 
 emptyView :: View
@@ -55,7 +57,9 @@ presetView "iclc2017" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
   ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
   ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2]),
+  SvgDisplayView (-2),
+  CanvasDisplayView (-1)
   ]
 
 presetView "Bogota" = Views [
@@ -76,14 +80,18 @@ presetView "Bogota" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
   ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
   ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2]),
+  SvgDisplayView (-2),
+  CanvasDisplayView (-1)
   ]
 
 presetView "Manizales" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 10]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 10]),
   ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10])
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10]),
+  SvgDisplayView (-2),
+  CanvasDisplayView (-1)
   ]
 
 presetView "Medellin" = presetView "Manizales"
@@ -96,7 +104,9 @@ presetView "Lima" = Views [
     ViewDiv "eightMiddleL" (Views [LabelView 8,TextView 9 5]),
     ViewDiv "eightMiddleR" (Views [LabelView 10,TextView 11 5]),
     ViewDiv "eightMiddleL" (Views [LabelView 12,TextView 13 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 5])
+    ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 5]),
+    SvgDisplayView (-2),
+    CanvasDisplayView (-1)
     ]
 
 presetView "Uio" = Views [
@@ -117,14 +127,18 @@ presetView "Uio" = Views [
     ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
     ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
     ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
+    ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2]),
+    SvgDisplayView (-2),
+    CanvasDisplayView (-1)
     ]
 
 presetView "RGGTRN" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 10]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 10]),
   ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10])
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10]),
+  SvgDisplayView (-2),
+  CanvasDisplayView (-1)
   ]
 
 presetView "cybernetic" = Views [
@@ -136,7 +150,8 @@ presetView "cybernetic" = Views [
   ViewDiv "eightMiddleR" (Views [LabelView 11, TextView 12 4]),
   ViewDiv "eightMiddleL" (Views [LabelView 13, TextView 14 4]),
   ViewDiv "eightMiddleR" (Views [LabelView 15, TextView 16 4]),
-  SvgDisplayView (-1)
+  SvgDisplayView (-2),
+  CanvasDisplayView (-1)
   ]
 
 presetView _ = standardView

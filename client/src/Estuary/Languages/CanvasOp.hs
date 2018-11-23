@@ -1,38 +1,36 @@
-module Estuary.Languages.SvgOp (svgOp) where
+module Estuary.Languages.CanvasOp (canvasOp) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
 
+import Estuary.Types.CanvasOp
 import Estuary.Types.Color
-import Estuary.Types.SvgOp
 
-svgOp :: String -> Either ParseError [SvgOp]
-svgOp = parse svgOpParser "SvgOp"
+canvasOp :: String -> Either ParseError [CanvasOp]
+canvasOp = parse canvasOpParser "CanvasOp"
 
-svgOpParser :: Parser [SvgOp]
-svgOpParser = do
+canvasOpParser :: Parser [CanvasOp]
+canvasOpParser = do
   whiteSpace
   ops <- semiSep ops
   eof
   return ops
 
-ops :: Parser SvgOp
-ops = choice [ line, rect]
+ops :: Parser CanvasOp
+ops = choice [ lineTo, moveTo, rect, strokeStyle]
 
-line :: Parser SvgOp
-line = (reserved "line" >> return Line) <*> double <*> double <*> double <*> double <*> stroke
+lineTo :: Parser CanvasOp
+lineTo = (reserved "lineTo" >> return LineTo) <*> double <*> double
 
-rect :: Parser SvgOp
-rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double <*> stroke
+moveTo :: Parser CanvasOp
+moveTo = (reserved "moveTo" >> return MoveTo) <*> double <*> double
 
-stroke :: Parser Stroke
-stroke = do
-  c <- option (RGBA 100 100 100 100) color
-  t <- option 1 double
-  lc <- option Butt lineCap
-  lj <- option Miter lineJoin
-  return $ Stroke c t lc lj
+rect :: Parser CanvasOp
+rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double
+
+strokeStyle :: Parser CanvasOp
+strokeStyle = (reserved "strokeStyle" >> return StrokeStyle) <*> color
 
 color :: Parser Color
 color = parens $ do
@@ -45,26 +43,12 @@ color = parens $ do
   a <- double
   return $ RGBA r g b a
 
-lineCap :: Parser LineCap
-lineCap = choice [
-  reserved "Butt" >> return Butt,
-  reserved "Square" >> return Square,
-  reserved "RoundCap" >> return RoundCap
-  ]
-
-lineJoin :: Parser LineJoin
-lineJoin = choice [
-  reserved "Miter" >> return Miter,
-  reserved "RoundJoin" >> return RoundJoin,
-  reserved "Bevel" >> return Bevel
-  ]
-
 double :: Parser Double
 double = choice [try float,fromIntegral <$> integer]
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["line","rect"],
+  P.reservedNames = ["lineTo","moveTo","rect"],
   P.reservedOpNames = []
   }
 

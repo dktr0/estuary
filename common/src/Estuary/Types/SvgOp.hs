@@ -1,11 +1,6 @@
 module Estuary.Types.SvgOp where
 
-data Color =
-  RGBA Double Double Double Double
-  deriving (Eq)
-
-instance Show Color where
-  show (RGBA r g b a) = "rgba(" ++ show r ++ "%," ++ show g ++ "%," ++ show b ++ "%," ++ show (a/100) ++ ")"
+import Estuary.Types.Color
 
 data LineCap = Butt | Square | RoundCap deriving (Eq)
 
@@ -30,5 +25,5 @@ data Stroke = Stroke {
 
 data SvgOp =
   Line Double Double Double Double Stroke |
-  Rect Double Double Double Double Stroke 
+  Rect Double Double Double Double Stroke
   deriving (Show,Eq)

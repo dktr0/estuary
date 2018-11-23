@@ -16,6 +16,7 @@ import Data.Either
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Types as Punctual
 import qualified Estuary.Languages.SvgOp as SvgOp
+import qualified Estuary.Languages.CanvasOp as CanvasOp
 
 import Estuary.Types.Context
 import Estuary.Types.Definition
@@ -103,7 +104,7 @@ renderTextProgramChanged c z (TidalTextNotation x,y) = do
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
 
-renderTextProgramChanged c z (Punctual,x) = do
+renderTextProgramChanged c z (PunctualAudio,x) = do
   s <- get
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
@@ -116,7 +117,6 @@ renderTextProgramChanged c z (Punctual,x) = do
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
 
-
 renderTextProgramChanged c z (SvgOp,x) = do
   s <- get
   let parseResult = SvgOp.svgOp x
@@ -124,6 +124,14 @@ renderTextProgramChanged c z (SvgOp,x) = do
   let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = errs, svgOps = ops }}
 
+renderTextProgramChanged c z (CanvasOp,x) = do
+  s <- get
+  let parseResult = CanvasOp.canvasOp x
+  let ops = either (const []) id parseResult
+  let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { info = (info s) { errors = errs, canvasOps = ops }}
+
+renderTextProgramChanged _ _ _ = return ()
 
 renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z

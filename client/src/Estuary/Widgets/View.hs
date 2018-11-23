@@ -26,6 +26,7 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.SvgDisplay
+import Estuary.Widgets.CanvasDisplay
 import Estuary.Types.TidalParser
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
@@ -109,6 +110,8 @@ viewWidget _ _ (EvaluableTextView n) i deltasDown = do
         f _ = ""
 
 viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
+
+viewWidget _ rInfo (CanvasDisplayView z) _ _ = canvasDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
