@@ -84,9 +84,9 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
     textVisible <- toggle True infoButton
     helpVisible <- toggle False infoButton
     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
-    let languageToDisplayHelp = (TidalTextNotation MiniTidal)
-    -- let languageToDisplayHelp = ( _dropdown_value d)
-    hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
+    -- let languageToDisplayHelp = constDyn (TidalTextNotation LaCalle)
+    languageHelpToDisplay <- _dropdown_value d
+    help <- hideableWidget helpVisible "visibleArea" $ languageHelpWidget languageHelpToDisplay
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagDyn v' $ leftmost [evalButton,shiftEnter]
