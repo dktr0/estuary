@@ -62,6 +62,7 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: Context -> Renderer
 render c = do
+  modify' $ \s -> s { info = (info s) { canvasOps = [] }}
   traverseWithKey (renderZone c) (definitions c)
   flushEvents c
 
