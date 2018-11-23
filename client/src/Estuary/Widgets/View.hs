@@ -31,6 +31,7 @@ import Estuary.Types.Live
 import Estuary.Types.TextNotation
 import Estuary.Types.Context
 import Estuary.RenderInfo
+import Estuary.Widgets.Sequencer
 
 
 viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse] -> m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint)
@@ -69,13 +70,19 @@ viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
   where f (TextProgram x) = x
         f _ = Live (TidalTextNotation MiniTidal,"") L3
 
+
+
 viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Sequence defaultValue) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justSequences . justEditsInZone n) deltasDown
-  -- (value,edits,hints) <- sequencer' i' deltasDown'
-  let value = constDyn [] -- placeholder
-  let edits = never -- placeholder
-  let hints = never -- placeholder
+  v <- sequencer i' deltasDown'
+  value <- mapDyn (\(a,_,_) -> a) v
+  edits <- liftM switchPromptlyDyn $ mapDyn (\(_,a,_)-> a) v
+  hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)-> a) v
+
+  -- let value = constDyn [] -- placeholder
+  -- let edits = never -- placeholder
+  -- let hints = never -- placeholder
   value' <- mapDyn (Map.singleton n . Sequence) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . Sequence) edits
   return (value',edits',hints)
