@@ -7,6 +7,8 @@ import Reflex.Dom
 import Reflex.Dom.Contrib.Widgets.Svg
 import Data.Map
 
+import Estuary.Types.Color
+import Estuary.Types.Stroke
 import Estuary.Types.SvgOp
 import Estuary.RenderInfo
 
@@ -36,7 +38,7 @@ instructionToWidget (Line x1 y1 x2 y2 s) = svgAttr "line" attrs $ return ()
          ("stroke",show (strokeColor s))
          ]
 
-instructionToWidget (Rect x y w h s) = svgAttr "rect" attrs $ return ()
+instructionToWidget (Rect x y w h f s) = svgAttr "rect" attrs $ return ()
   where attrs = fromList [
          ("x",show x ++ "%"),
          ("y",show y ++ "%"),
@@ -46,5 +48,40 @@ instructionToWidget (Rect x y w h s) = svgAttr "rect" attrs $ return ()
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("fill","green")
+         ("fill", show f)
+         ]
+
+instructionToWidget (Circle x y r f s) = svgAttr "circle" attrs $ return ()
+  where attrs = fromList [
+         ("cx",show x ++ "%"),
+         ("cy",show y ++ "%"),
+         ("r",show r ++ "%"),
+         ("stroke-linecap",show (strokeLineCap s)),
+         ("stroke-linejoin",show (strokeLineJoin s)),
+         ("stroke-width",show (strokeWidth s) ++ "%"),
+         ("stroke",show (strokeColor s)),
+         ("fill", show f)
+         ]
+
+instructionToWidget (Ellipse x y rx ry f s) = svgAttr "ellipse" attrs $ return ()
+  where attrs = fromList [
+         ("cx",show x ++ "%"),
+         ("cy",show y ++ "%"),
+         ("rx",show rx ++ "%"),
+         ("ry",show ry ++ "%"),
+         ("stroke-linecap",show (strokeLineCap s)),
+         ("stroke-linejoin",show (strokeLineJoin s)),
+         ("stroke-width",show (strokeWidth s) ++ "%"),
+         ("stroke",show (strokeColor s)),
+         ("fill", show f)
+         ]
+
+instructionToWidget (Triangle ax ay bx by cx cy f s) = svgAttr "polygon" attrs $ return ()
+  where attrs = fromList [
+         ("points", show ax ++ "," ++ show ay ++ " " ++ show bx ++ "," ++ show by ++ " " ++ show cx ++ "," ++ show cy),
+         ("stroke-linecap",show (strokeLineCap s)),
+         ("stroke-linejoin",show (strokeLineJoin s)),
+         ("stroke-width",show (strokeWidth s) ++ "%"),
+         ("stroke",show (strokeColor s)),
+         ("fill", show f)
          ]

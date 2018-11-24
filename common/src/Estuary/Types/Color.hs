@@ -5,4 +5,4 @@ data Color =
   deriving (Eq)
 
 instance Show Color where
-  show (RGBA r g b a) = "rgba(" ++ show r ++ "%," ++ show g ++ "%," ++ show b ++ "%," ++ show (a/100) ++ ")"
+  show (RGBA r g b a) = "rgba(" ++ show r ++ "%," ++ show g ++ "%," ++ show b ++ "%," ++ show a ++ "%" ++ ")"

@@ -29,9 +29,9 @@ standardView = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 3]),
   ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 3]),
   ViewDiv "eightBottomL" (Views [LabelView 9, TextView 10 3]),
-  ViewDiv "eightBottomR" (Views [LabelView 11, SequenceView 12]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  -- ViewDiv "eightBottomR" (Views [LabelView 11, SequenceView 12]),
+  SvgDisplayView (-2)
+  -- CanvasDisplayView (-1)
   ]
 
 emptyView :: View
