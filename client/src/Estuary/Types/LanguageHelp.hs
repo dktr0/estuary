@@ -14,16 +14,15 @@ import Data.Map
 import Control.Monad
 
 tidalParserToHelp :: (MonadWidget t m) => TextNotation -> m ()
-tidalParserToHelp x
-               | x <= (TidalTextNotation MiniTidal) = miniTidalHelpFile
-               | x <= (TidalTextNotation LaCalle) = laCalleHelpFile
+tidalParserToHelp (TidalTextNotation MiniTidal) = miniTidalHelpFile
+tidalParserToHelp (TidalTextNotation LaCalle) = laCalleHelpFile
 
 -- tidalParserToHelpDyn (TidalTextNotation LaCalle) = laCalleHelpFile
 -- a widget  that renders a TidalTextNotation
--- languageHelpWidget' :: (MonadWidget t m) => TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t String)
--- languageHelpWidget' t = do
---    tidalParserToHelp  t -- m ()
---    return ()
+languageHelpWidget' :: (MonadWidget t m) => TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t String)
+languageHelpWidget' t = do
+   tidalParserToHelp  t -- m ()
+   return ()
 
 -- a widget  that renders a dynamic TidalTextNotation
 languageHelpWidget :: (MonadWidget t m) => Dynamic t TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t String)
