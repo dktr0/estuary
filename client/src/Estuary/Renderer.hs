@@ -8,7 +8,7 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Monad.Loops
 import Data.Functor (void)
-import Data.List (intercalate)
+import Data.List (intercalate,zipWith4)
 import Data.IntMap.Strict as IntMap
 import Data.Maybe
 import Data.Either
@@ -17,8 +17,11 @@ import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.Types as Punctual
 import qualified Sound.Punctual.Parser as Punctual
+import qualified Sound.Punctual.Sample as Punctual
 import qualified Estuary.Languages.SvgOp as SvgOp
 import qualified Estuary.Languages.CanvasOp as CanvasOp
+import qualified Estuary.Types.CanvasOp as CanvasOp
+import Estuary.Types.Color
 
 import Estuary.Types.Context
 import Estuary.Types.Definition
@@ -155,7 +158,35 @@ renderTextProgramAlways c z (PunctualVideo,_) = renderPunctualVideo c z
 renderTextProgramAlways _ _ _ = return ()
 
 renderPunctualVideo :: Context -> Int -> Renderer
-renderPunctualVideo c z = return () -- placeholder
+renderPunctualVideo c z = do
+  s <- get
+  let pv = IntMap.lookup z $ punctualVideo s
+  let lt = logicalTime s
+  let newOps = maybe [] id $ fmap (punctualVideoToOps lt renderPeriod) pv
+  modify' $ \x -> x { info = (info x) { canvasOps = canvasOps (info s) ++ newOps } }
+
+punctualVideoToOps :: UTCTime -> NominalDiffTime -> Punctual.PunctualState -> [CanvasOp.CanvasOp]
+punctualVideoToOps lt p s = concat $ fmap (\(c,d) -> [c,d]) $ zip strokes rects
+  where
+    n = 20 :: Int
+    ts = fmap (flip addUTCTime $ lt) $ fmap ((*(renderPeriod/(fromIntegral n :: NominalDiffTime))) . fromIntegral) [0 .. n]
+    r = fmap biPolarToPercent $ sampleWithDefault "r" 1 s ts
+    g = fmap biPolarToPercent $ sampleWithDefault "g" 1 s ts
+    b = fmap biPolarToPercent $ sampleWithDefault "b" 1 s ts
+    a = fmap biPolarToPercent $ sampleWithDefault "a" 1 s ts
+    x = fmap biPolarToPercent $ sampleWithDefault "x" 0 s ts
+    y = fmap biPolarToPercent $ sampleWithDefault "y" 0 s ts
+    w = fmap biPolarToPercent $ sampleWithDefault "w" (-0.995) s ts
+    h = fmap biPolarToPercent $ sampleWithDefault "h" (-0.995) s ts
+    strokes = fmap CanvasOp.StrokeStyle $ zipWith4 RGBA r g b a
+    rects = zipWith4 CanvasOp.Rect x y w h
+
+sampleWithDefault :: String -> Double -> Punctual.PunctualState -> [UTCTime] -> [Double]
+sampleWithDefault targetName d s ts = maybe (replicate (length ts) d) f $ Punctual.findGraphForTarget targetName s
+  where f g = fmap (\t -> Punctual.sampleGraph (Punctual.startTime s) t 0 g) ts
+
+biPolarToPercent :: Double -> Double
+biPolarToPercent x = (x + 1) * 50
 
 renderControlPattern :: Context -> Int -> Renderer
 renderControlPattern c z = do
@@ -163,7 +194,6 @@ renderControlPattern c z = do
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s
   let tempo' = tempo c
-  let ps = paramPatterns s
   let events = maybe [] id $ fmap (renderTidalPattern lt renderPeriod tempo') controlPattern
   modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
 

@@ -154,4 +154,20 @@ presetView "cybernetic" = Views [
   CanvasDisplayView (-1)
   ]
 
+presetView "iclc2019" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 1, SequenceView 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 3, TextView 4 10]),
+  ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 10]),
+  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 10]),
+  SvgDisplayView (-2),
+  CanvasDisplayView (-1)
+  ]
+
+presetView "iclc2019noVisuals" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 1, SequenceView 2]),
+  ViewDiv "eightMiddleR" (Views [LabelView 3, TextView 4 10]),
+  ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 10]),
+  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 10])
+  ]
+
 presetView _ = standardView
