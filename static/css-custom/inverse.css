@@ -44,5 +44,12 @@ select {
 
 /*modifies the text from the structured-view dropdown menus  */
 .atomPopup{
-	color:rgb(98, 221, 115);;
+	color:rgb(98, 221, 115);
+}
+
+/* The div wrapping popupMenus */
+.popupMenu{
+		color:rgb(98, 221, 115);
+	background-color:hsl(0,0%,10%);
+	border: 2pt solid hsl(0,0%,10%);
 }

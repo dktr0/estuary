@@ -5,6 +5,7 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
 
 import Estuary.Types.Color
+import Estuary.Types.Stroke
 import Estuary.Types.SvgOp
 
 svgOp :: String -> Either ParseError [SvgOp]
@@ -18,13 +19,31 @@ svgOpParser = do
   return ops
 
 ops :: Parser SvgOp
-ops = choice [ line, rect]
+ops = choice [line, rect, circle, ellipse, triangle]
 
 line :: Parser SvgOp
 line = (reserved "line" >> return Line) <*> double <*> double <*> double <*> double <*> stroke
 
 rect :: Parser SvgOp
-rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double <*> stroke
+rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double <*> fill <*> stroke
+
+circle :: Parser SvgOp
+circle = (reserved "circle" >> return Circle) <*> double <*> double <*> double <*> fill <*> stroke
+
+ellipse :: Parser SvgOp
+ellipse = (reserved "ellipse" >> return Ellipse) <*> double <*> double <*> double <*> double <*> fill <*> stroke
+
+triangle :: Parser SvgOp
+triangle = (reserved "triangle" >> return Triangle) <*> double <*> double <*> double <*> double <*> double <*> double <*> fill <*> stroke
+
+double :: Parser Double
+double = choice [try float,fromIntegral <$> integer]
+
+-- point :: Parser (Double, Double)
+-- point = do
+--   p1 <- double
+--   p2 <- double
+--   return $ show p1 ++ "," ++ show p2
 
 stroke :: Parser Stroke
 stroke = do
@@ -41,9 +60,15 @@ color = parens $ do
   g <- double
   comma
   b <- double
-  comma
-  a <- double
+  option "," comma
+  a <- option 100 double
   return $ RGBA r g b a
+
+
+fill :: Parser Color
+fill = do
+  f <- option (RGBA 100 100 100 100) color
+  return $ f
 
 lineCap :: Parser LineCap
 lineCap = choice [
@@ -59,12 +84,10 @@ lineJoin = choice [
   reserved "Bevel" >> return Bevel
   ]
 
-double :: Parser Double
-double = choice [try float,fromIntegral <$> integer]
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["line","rect"],
+  P.reservedNames = ["line", "rect", "circle", "ellipse", "triangle"],
   P.reservedOpNames = []
   }
 

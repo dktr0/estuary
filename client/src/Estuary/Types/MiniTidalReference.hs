@@ -11,11 +11,10 @@ import Estuary.Widgets.Generic
 miniTidalHelpFile :: MonadWidget t m => m ()
 miniTidalHelpFile = divClass "languageHelp" $ do
     about
-    samples
-    palindrome
-    brak
-    fast
-    fit
+    -- palindrome
+    -- brak
+    -- fast
+    -- fit
     return ()
 
 -- about
@@ -26,14 +25,14 @@ about = do
   divClass "aboutText" $ text  "A live coding langugae that allows you to make musical patterns with text, describing sequences and ways of transforming and combining them, exploring complex interactions between simple parts."
 -- a list of MiniTidal samples
 
-samples :: MonadWidget t m => m ()
-samples = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "samples:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ divClass "samples" $ text "flick sid can metal future gabba sn mouth co gretsch mt arp h cp cr newnotes bass crow hc tabla bass0 hh bass1 bass2 oc bass3 ho odx diphone2 house off ht tink perc bd industrial pluck trump printshort jazz voodoo birds3 procshort blip drum jvbass psr wobble drumtraks koy rave bottle kurt latibro rm sax lighter lt arpy feel less stab ul" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "Each one is a folder containing one or more wav files. For example when you put bd:1 in a sequence, you’re picking up the second wav file in the bd folder. If you ask for the ninth sample and there are only seven in the folder, it’ll wrap around and play the second one." --languageHelpWidget MiniTidal
-   return ()
+-- samples :: MonadWidget t m => m ()
+-- samples = divClass "helpWrapper" $ do
+--    switchToReference <- divClass "refExampleButton" $ button "samples:"
+--    exampleVisible <- toggle True switchToReference
+--    referenceVisible <- toggle False switchToReference
+--    hideableWidget exampleVisible "exampleText" $ divClass "samples" $ text "flick sid can metal future gabba sn mouth co gretsch mt arp h cp cr newnotes bass crow hc tabla bass0 hh bass1 bass2 oc bass3 ho odx diphone2 house off ht tink perc bd industrial pluck trump printshort jazz voodoo birds3 procshort blip drum jvbass psr wobble drumtraks koy rave bottle kurt latibro rm sax lighter lt arpy feel less stab ul" --languageHelpWidget MiniTidal
+--    hideableWidget referenceVisible "referenceText" $ text "Each one is a folder containing one or more wav files. For example when you put bd:1 in a sequence, you’re picking up the second wav file in the bd folder. If you ask for the ninth sample and there are only seven in the folder, it’ll wrap around and play the second one." --languageHelpWidget MiniTidal
+--    return ()
 
 
 palindrome :: MonadWidget t m => m ()
@@ -41,10 +40,10 @@ palindrome = divClass "helpWrapper" $ do
   switchToReference <- divClass "refExampleButton" $ button "palindrome:"
   exampleVisible <- toggle True switchToReference
   referenceVisible <- toggle False switchToReference
-  hideableWidget exampleVisible "exampleText" $ text "palindrome $ s \"arpy:0 arpy:1 arpy:2 arpy:3\"" --languageHelpWidget MiniTidal
-  listenButton <- hideableWidget exampleVisible "listenButton" $ button "♫"
+  listenButton <- hideableWidget exampleVisible "listenButton"  $ button "♫"
   hideableWidget referenceVisible "referenceText" $ text "applies rev to a pattern every other cycle, so that the pattern alternates between forwards and backwards." --languageHelpWidget MiniTidal
   return ()
+
 -- help files for functions
 
    -- help files for functions
