@@ -6,6 +6,7 @@ import Text.Parsec.Language (haskellDef)
 
 import Estuary.Types.Color
 import Estuary.Types.Stroke
+import Estuary.Types.Transform
 import Estuary.Types.SvgOp
 
 svgOp :: String -> Either ParseError [SvgOp]
@@ -25,7 +26,7 @@ line :: Parser SvgOp
 line = (reserved "line" >> return Line) <*> double <*> double <*> double <*> double <*> stroke
 
 rect :: Parser SvgOp
-rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double <*> fill <*> stroke
+rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double <*> transform <*> fill <*> stroke
 
 circle :: Parser SvgOp
 circle = (reserved "circle" >> return Circle) <*> double <*> double <*> double <*> fill <*> stroke
@@ -44,6 +45,36 @@ double = choice [try float,fromIntegral <$> integer]
 --   p1 <- double
 --   p2 <- double
 --   return $ show p1 ++ "," ++ show p2
+
+transform :: Parser Transform
+transform = do
+  r <- option (Rotate 0) rotate
+  s <- option (Scale 1) scale
+  sk <- option (Skew 0) skew
+  t <- option (Translate 0 0) translate
+  return $ Transform r s sk t
+
+rotate :: Parser Rotate
+rotate = do
+  x <- double
+  return $ Rotate x
+
+scale :: Parser Scale
+scale = do
+  x <- double
+  return $ Scale x
+
+translate :: Parser Translate
+translate = parens $ do
+  x <- double
+  comma
+  y <- double
+  return $ Translate x y
+
+skew :: Parser Skew
+skew = do
+  x <- double
+  return $ Skew x
 
 stroke :: Parser Stroke
 stroke = do

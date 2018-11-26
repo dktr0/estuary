@@ -9,6 +9,7 @@ import Data.Map
 
 import Estuary.Types.Color
 import Estuary.Types.Stroke
+import Estuary.Types.Transform
 import Estuary.Types.SvgOp
 import Estuary.RenderInfo
 
@@ -38,7 +39,7 @@ instructionToWidget (Line x1 y1 x2 y2 s) = svgAttr "line" attrs $ return ()
          ("stroke",show (strokeColor s))
          ]
 
-instructionToWidget (Rect x y w h f s) = svgAttr "rect" attrs $ return ()
+instructionToWidget (Rect x y w h t f s) = svgAttr "rect" attrs $ return ()
   where attrs = fromList [
          ("x",show x ++ "%"),
          ("y",show y ++ "%"),
@@ -48,7 +49,8 @@ instructionToWidget (Rect x y w h f s) = svgAttr "rect" attrs $ return ()
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("fill", show f)
+         ("fill", show f),
+         ("style", "transform:" ++ show (tRotate t) ++ show (tScale t) ++ show (tSkew t) ++ show (tTranslate t))
          ]
 
 instructionToWidget (Circle x y r f s) = svgAttr "circle" attrs $ return ()
