@@ -19,16 +19,19 @@ import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Renderer
 
-import GHC.Conc(setUncaughtExceptionHandler)
+import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
 import GHCJS.Prim(toJSString)
 import GHCJS.Types(JSVal)
 
 main :: IO ()
 main = do
-  setUncaughtExceptionHandler visuallyCrash
-
   warnBeforeGoingBackInBrowser
+  existingUncaughtHandler <- getUncaughtExceptionHandler
+  setUncaughtExceptionHandler $ \e -> do
+    existingUncaughtHandler e
+    visuallyCrash e
+  
   now <- Data.Time.getCurrentTime
   wd <- newWebDirt
   sd <- newSuperDirt
