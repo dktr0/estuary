@@ -19,11 +19,15 @@ import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Renderer
 
+import GHC.Conc(setUncaughtExceptionHandler)
+
 import GHCJS.Prim(toJSString)
 import GHCJS.Types(JSVal)
 
 main :: IO ()
-main = handle visuallyCrash $ do
+main = do
+  setUncaughtExceptionHandler visuallyCrash
+
   warnBeforeGoingBackInBrowser
   now <- Data.Time.getCurrentTime
   wd <- newWebDirt
@@ -45,9 +49,17 @@ visuallyCrash e =
   in js_confirmReload $ toJSString $ intercalate "\n" lines
 
 foreign import javascript unsafe
-  "if (window.confirm($1)) window.location.reload();"
+  "if (window.confirm($1)) {        \
+  \  window.___forcedReload = true; \
+  \  window.location.reload();      \
+  \}"
   js_confirmReload :: JSVal -> IO ()
 
 foreign import javascript safe
-  "window.addEventListener('beforeunload', function (e) { e.preventDefault(); e.returnValue = ''; });"
+  "window.addEventListener('beforeunload', function (e) { \
+  \  if (!window.___forcedReload) {                       \
+  \    e.preventDefault();                                \
+  \    e.returnValue = '';                                \
+  \  }                                                    \
+  \});"
   warnBeforeGoingBackInBrowser :: IO ()
