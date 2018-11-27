@@ -3,8 +3,10 @@
 module Main where
 
 import Reflex.Dom
+import Data.List(intercalate)
 import Data.Time
 import Control.Concurrent.MVar
+import Control.Exception
 
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
@@ -17,8 +19,11 @@ import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Renderer
 
+import GHCJS.Prim(toJSString)
+import GHCJS.Types(JSVal)
+
 main :: IO ()
-main = do
+main = handle visuallyCrash $ do
   warnBeforeGoingBackInBrowser
   now <- Data.Time.getCurrentTime
   wd <- newWebDirt
@@ -29,6 +34,19 @@ main = do
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
   mainWidget $ estuaryWidget Splash c ri protocol
+
+visuallyCrash :: SomeException -> IO ()
+visuallyCrash e = 
+  let lines = [
+          "Unhandled exception: ",
+          displayException e,
+          "Click 'OK' to reload the page or 'Cancel' to remain on the page which will be unresponsive."
+        ]
+  in js_confirmReload $ toJSString $ intercalate "\n" lines
+
+foreign import javascript unsafe
+  "if (window.confirm($1)) window.location.reload();"
+  js_confirmReload :: JSVal -> IO ()
 
 foreign import javascript safe
   "window.addEventListener('beforeunload', function (e) { e.preventDefault(); e.returnValue = ''; });"
