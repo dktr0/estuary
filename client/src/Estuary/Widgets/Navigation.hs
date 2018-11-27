@@ -5,6 +5,7 @@ module Estuary.Widgets.Navigation where
 import Control.Monad (liftM)
 
 import Data.IntMap.Strict
+import Data.Maybe
 import qualified Data.Map as Map
 import Data.Time.Clock
 
@@ -52,7 +53,7 @@ data Navigation =
   Collaborate String
   deriving (Generic, FromJSVal, ToJSVal)
 
-navigation :: MonadWidget t m => Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo)
+navigation :: MonadWidget t m => Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t (Maybe DefinitionMap), Event t Request, Event t Hint, Event t Tempo)
 navigation initialPage ctx renderInfo commands wsDown = do
   dynPage <- router initialPage $ page ctx renderInfo commands wsDown
 
@@ -66,7 +67,7 @@ navigation initialPage ctx renderInfo commands wsDown = do
 
 page :: forall t m. (MonadWidget t m)
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> Navigation
-  -> m (Event t Navigation, (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo))
+  -> m (Event t Navigation, (Dynamic t (Maybe DefinitionMap), Event t Request, Event t Hint, Event t Tempo))
 
 page ctx _ _ wsDown Splash = do
   navEv <- divClass "splash-container" $ do
@@ -119,24 +120,25 @@ page ctx _ _ wsDown Splash = do
             -- elAttr "img" (Map.fromList [("src", "collaborate-icon.svg"), ("class", "splash-icon")]) blank
 
     return $ leftmost [gotoAboutEv, gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
-  return (navEv, (constDyn empty, never, never, never))
+  return (navEv, (constDyn Nothing, never, never, never))
 
 page ctx _ _ wsDown TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ button $ show $ T.tutorialId b) (tutorials::[T.Tutorial t m])
-  return (never, (constDyn empty, never, never, never))
+  return (never, (constDyn $ Just empty, never, never, never))
 
 page ctx _ _ wsDown About = do
   divClass "splash-info" $ aboutEstuaryParagraph ctx
-  return (never, (constDyn empty, never, never, never))
+  return (never, (constDyn $ Just empty, never, never, never))
 
 page ctx _ _ wsDown (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
-  return (never, (constDyn empty, never, never, never))
+  return (never, (constDyn $ Just empty, never, never, never))
 
 page ctx renderInfo commands wsDown Solo = do
   (values,hints,tempoEvents) <- soloView ctx renderInfo commands
-  return (never, (values, never, hints, tempoEvents))
+  values' <- mapDyn Just values
+  return (never, (values', never, hints, tempoEvents))
 
 page ctx _ _ wsDown Lobby = do
   requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
@@ -145,7 +147,7 @@ page ctx _ _ wsDown Lobby = do
   join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation
   create <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
-  return (leftmost [join'', create], (constDyn empty, requestEnsembleList, never, never))
+  return (leftmost [join'', create], (constDyn Nothing, requestEnsembleList, never, never))
 
 page ctx _ _ _ CreateEnsemblePage = do
   el "div" $ dynText =<< translateDyn Term.CreateNewEnsemble ctx
@@ -169,11 +171,12 @@ page ctx _ _ _ CreateEnsemblePage = do
   cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
   let serverRequests = leftmost [createEnsemble,authenticateAdmin]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
-  return (navEvents, (constDyn empty, serverRequests, never, never))
+  return (navEvents, (constDyn $ Just empty, serverRequests, never, never))
 
 page ctx renderInfo commands wsDown (Collaborate w) = do
   (values,wsUp,hints,tempoEvents) <- ensembleView ctx renderInfo w commands wsDown
-  return (never, (values, wsUp, hints, tempoEvents))
+  values' <- mapDyn Just values
+  return (never, (values', wsUp, hints, tempoEvents))
 
 
 joinButton :: MonadWidget t m => Dynamic t String -> m (Event t Navigation)

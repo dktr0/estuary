@@ -60,7 +60,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   commands <- footer ctx renderInfo deltasUp deltasDown' hints
 
   (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
-  let definitionChanges = fmap setDefinitions $ updated values
+  let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
