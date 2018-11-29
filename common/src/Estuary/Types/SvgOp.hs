@@ -6,10 +6,12 @@ import Estuary.Types.Transform
 
 
 data SvgOp =
-  Line Double Double Double Double Stroke |
-  Rect Double Double Double Double Transform Color Stroke  |
-  Circle Double Double Double Color Stroke |
-  Ellipse Double Double Double Double Color Stroke |
-  Triangle Double Double Double Double Double Double Color Stroke
+  Line Double Double Double Double Stroke  Transform|
+  Rect Double Double Double Double  Color Stroke  Transform|
+  Circle Double Double Double Color Stroke  Transform|
+  Ellipse Double Double Double Double Color Stroke  Transform|
+  Triangle Double Double Double Double Double Double Color Stroke Transform |
+  Polyline [Double] Color Stroke Transform |
+  Polygon [Double] Color Stroke Transform
 
   deriving (Show,Eq)

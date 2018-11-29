@@ -16,9 +16,15 @@ instance Show LineJoin where
   show RoundJoin = "round"
   show Bevel = "bevel"
 
+data DashArray = DashArray Double Double deriving (Eq)
+
+instance Show DashArray where
+  show (DashArray x y) = show x ++ "," ++ show y
+
 data Stroke = Stroke {
   strokeColor :: Color,
   strokeWidth :: Double,
   strokeLineCap :: LineCap,
-  strokeLineJoin :: LineJoin
+  strokeLineJoin :: LineJoin,
+  strokeDashArray :: DashArray
   } deriving (Show,Eq)
