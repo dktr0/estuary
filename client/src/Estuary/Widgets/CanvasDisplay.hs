@@ -16,11 +16,14 @@ import Estuary.RenderInfo
 
 canvasDisplay :: MonadWidget t m => Int -> Dynamic t RenderInfo -> m ()
 canvasDisplay z rInfo = do
-  let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z)]
-  e <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
-  ctx <- liftIO $ getContext e
+  let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z),("width","1920"),("height","1080")]
+  cvs <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
+  ctx <- liftIO $ getContext cvs
   instructions <- liftM updated $ mapDyn canvasOps rInfo
-  performEvent_ $ fmap (liftIO . mapM_ (canvasOp ctx)) instructions
+  performEvent_ $ fmap (liftIO . adjustOps cvs ctx) instructions
+
+adjustOps :: HTMLCanvasElement -> JSVal -> [CanvasOp] -> IO ()
+adjustOps cvs ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080) ops
 
 canvasOp :: JSVal -> CanvasOp -> IO ()
 canvasOp ctx (Rect x y w h) = beginPath ctx >> rect ctx x y w h >> stroke ctx >> fill ctx
