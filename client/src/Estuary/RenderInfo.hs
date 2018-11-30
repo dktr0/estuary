@@ -9,7 +9,7 @@ data RenderInfo = RenderInfo {
   avgRenderLoad :: !Int,
   peakRenderLoad :: !Int,
   svgOps :: Maybe [SvgOp],
-  canvasOps :: [CanvasOp]
+  canvasOps :: [(UTCTime,CanvasOp)]
   } deriving (Show)
 
 emptyRenderInfo :: RenderInfo
