@@ -13,14 +13,11 @@ data TextNotation =
   PunctualVideo |
   SvgOp |
   CanvasOp
-  deriving (Read,Eq,Ord,Data,Typeable)
+  deriving (Read,Eq,Ord,Data,Typeable,Show)
 
-instance Show TextNotation where
-  show (TidalTextNotation x) = show x
-  show PunctualAudio = "PunctualAudio"
-  show PunctualVideo = "PunctualVideo"
-  show SvgOp = "SvgOp"
-  show CanvasOp = "CanvasOp"
+textNotationDropDownLabel :: TextNotation -> String
+textNotationDropDownLabel (TidalTextNotation x) = show x
+textNotationDropDownLabel x = show x
 
 instance JSON TextNotation where
   showJSON = toJSON

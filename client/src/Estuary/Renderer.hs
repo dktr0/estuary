@@ -106,6 +106,7 @@ renderTextProgramChanged c z (TidalTextNotation x,y) = do
   s <- get
   let parseResult = tidalParser x y -- :: Either ParseError ControlPattern
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
+  liftIO $ either (putStrLn . show) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
