@@ -166,10 +166,11 @@ renderPunctualVideo c z = do
   modify' $ \x -> x { info = (info x) { canvasOps = canvasOps (info s) ++ newOps } }
 
 punctualVideoToOps :: UTCTime -> NominalDiffTime -> Punctual.PunctualState -> [CanvasOp.CanvasOp]
-punctualVideoToOps lt p s = concat $ fmap (\(c,d) -> [c,d]) $ zip strokes rects
+punctualVideoToOps lt p s = concat $ zipWith4 (\c d e f -> [c,d,e,f]) clears strokes fills rects
   where
     n = 20 :: Int
     ts = fmap (flip addUTCTime $ lt) $ fmap ((*(renderPeriod/(fromIntegral n :: NominalDiffTime))) . fromIntegral) [0 .. n]
+    clear = fmap biPolarToPercent $ sampleWithDefault "clear" (-1) s ts
     r = fmap biPolarToPercent $ sampleWithDefault "r" 1 s ts
     g = fmap biPolarToPercent $ sampleWithDefault "g" 1 s ts
     b = fmap biPolarToPercent $ sampleWithDefault "b" 1 s ts
@@ -178,7 +179,9 @@ punctualVideoToOps lt p s = concat $ fmap (\(c,d) -> [c,d]) $ zip strokes rects
     y = fmap biPolarToPercent $ sampleWithDefault "y" 0 s ts
     w = fmap biPolarToPercent $ sampleWithDefault "w" (-0.995) s ts
     h = fmap biPolarToPercent $ sampleWithDefault "h" (-0.995) s ts
+    clears = fmap CanvasOp.Clear clear
     strokes = fmap CanvasOp.StrokeStyle $ zipWith4 RGBA r g b a
+    fills = fmap CanvasOp.FillStyle $ zipWith4 RGBA r g b a
     rects = zipWith4 CanvasOp.Rect x y w h
 
 sampleWithDefault :: String -> Double -> Punctual.PunctualState -> [UTCTime] -> [Double]
