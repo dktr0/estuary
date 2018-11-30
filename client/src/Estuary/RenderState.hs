@@ -8,6 +8,7 @@ import qualified Sound.Punctual.Evaluation as Punctual
 
 import Estuary.Types.Definition
 import Estuary.RenderInfo
+import Estuary.Types.CanvasOp
 
 data RenderState = RenderState {
   logicalTime :: !UTCTime,
@@ -19,7 +20,8 @@ data RenderState = RenderState {
   renderStartTime :: !UTCTime,
   renderEndTime :: !UTCTime,
   renderTimes :: ![NominalDiffTime],
-  info :: !RenderInfo
+  info :: !RenderInfo,
+  canvasOps :: [(UTCTime,CanvasOp)]
   }
 
 initialRenderState :: UTCTime -> RenderState
@@ -33,5 +35,6 @@ initialRenderState t = RenderState {
   renderStartTime = t,
   renderEndTime = t,
   renderTimes = [],
-  info = emptyRenderInfo
+  info = emptyRenderInfo,
+  canvasOps = []
   }

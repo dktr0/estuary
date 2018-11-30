@@ -10,6 +10,7 @@ import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
 import Estuary.Types.Tempo
+import Estuary.Types.CanvasOp
 
 data Context = Context {
   webDirt :: WebDirt,
@@ -24,7 +25,8 @@ data Context = Context {
   peakLevels :: [Double],
   rmsLevels :: [Double],
   wsStatus :: String,
-  clientCount :: Int
+  clientCount :: Int,
+  canvasOps :: MVar [(UTCTime,CanvasOp)]
   }
 
 initialContext :: UTCTime -> WebDirt -> SuperDirt -> Context

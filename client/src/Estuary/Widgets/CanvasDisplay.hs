@@ -8,6 +8,7 @@ import GHCJS.DOM.Types (HTMLCanvasElement,castToHTMLCanvasElement)
 import GHCJS.Types (JSVal)
 import Data.JSString
 import Data.Map
+import Data.List
 import Control.Monad
 import Control.Monad.Trans
 import Control.Concurrent.MVar
@@ -17,16 +18,35 @@ import Estuary.Types.Color
 import Estuary.Types.CanvasOp
 import Estuary.RenderInfo
 
-canvasDisplay :: MonadWidget t m => Int -> Dynamic t RenderInfo -> m ()
-canvasDisplay z rInfo = do
+canvasDisplay :: MonadWidget t m => Int -> Dynamic t Context -> m ()
+canvasDisplay z = do
   let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z),("width","1920"),("height","1080")]
   cvs <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
   ctx <- liftIO $ getContext cvs
-  instructions <- liftM updated $ mapDyn canvasOps rInfo
-  performEvent_ $ fmap (liftIO . adjustOps cvs ctx) instructions
+  liftIO $ requestAnimationFrame ctx mv
 
-adjustOps :: HTMLCanvasElement -> JSVal -> [(UTCTime,CanvasOp)] -> IO ()
-adjustOps cvs ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080 . snd) ops
+addCanvasOps :: MVar [(UTCTime,CanvasOp)] -> [(UTCTime,CanvasOp)] -> IO ()
+addCanvasOps mv newEvents = takeMVar mv >>= (putMVar mv . (++ newEvents))
+
+redrawCanvas :: JSVal -> MVar [(UTCTime,CanvasOp)] -> JSVal -> IO ()
+redrawCanvas ctx mv _ = do
+  modifyMVar_ mv $ flushCanvasOps ctx
+  requestAnimationFrame ctx mv
+
+requestAnimationFrame :: JSVal -> MVar [(UTCTime,CanvasOp)] -> IO ()
+requestAnimationFrame ctx mv = do
+  cb <- syncCallback1 ContinueAsync $ redrawCanvas ctx mv
+  requestAnimationFrame_ cb
+
+flushCanvasOps :: JSVal -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]
+flushCanvasOps ctx ops = do
+  now <- getCurrentTime
+  let (opsForNow,opsForLater) = partition ((<= now) . fst) ops
+  performCanvasOps ctx opsForNow
+  return opsForLater
+
+performCanvasOps :: JSVal -> [(UTCTime,CanvasOp)] -> IO ()
+performCanvasOps ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080 . snd) ops
 
 canvasOp :: JSVal -> CanvasOp -> IO ()
 canvasOp ctx (Clear a) = do
@@ -79,7 +99,4 @@ foreign import javascript safe
 
 foreign import javascript safe
   "window.requestAnimationFrame($1)"
-  requestAnimationFrame :: JSVal -> IO ()
-
-addCanvasOpEvents :: MVar [(UTCTime,CanvasOp)] -> [(UTCTime,CanvasOp)] -> IO ()
-addCanvasOpEvents mv newEvents = takeMVar mv >>= (putMVar mv . (++ newEvents))
+  requestAnimationFrame_ :: JSVal -> IO ()

@@ -35,7 +35,6 @@ import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Types.Tempo
 
-
 type Renderer = StateT RenderState IO ()
 
 renderPeriod :: NominalDiffTime
@@ -43,10 +42,15 @@ renderPeriod = 0.2
 
 flushEvents :: Context -> Renderer
 flushEvents c = do
+  -- flush events for SuperDirt and WebDirt
   events <- gets dirtEvents
   liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
-  modify' $ \x -> x { dirtEvents = []}
+  -- flush CanvasOps to an MVar queue (list)
+  oldOps <- liftIO $ takeMVar $ canvasOpsMVar c
+  newOps <- gets canvasOps
+  liftIO $ putMVar (canvasOpsMVar c) (oldOps ++ newOps)
+  modify' $ \x -> x { dirtEvents = [], canvasOps = []}
   return ()
 
 renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
@@ -149,7 +153,7 @@ renderTextProgramChanged c z (CanvasOp,x) = do
   let parseResult = CanvasOp.canvasOp x
   let ops = either (const []) (fmap (\op -> (logicalTime s, op))) parseResult
   let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
-  modify' $ \x -> x { info = (info s) { errors = errs, canvasOps = ops }}
+  modify' $ \x -> x { info = (info s) { errors = errs }, canvasOps = { canvasOps s ++ ops } }
 
 renderTextProgramChanged _ _ _ = return ()
 
@@ -164,7 +168,7 @@ renderPunctualVideo c z = do
   let pv = IntMap.lookup z $ punctualVideo s
   let lt = logicalTime s
   let newOps = maybe [] id $ fmap (punctualVideoToOps lt renderPeriod) pv
-  modify' $ \x -> x { info = (info x) { canvasOps = canvasOps (info s) ++ newOps } }
+  modify' $ \x -> x { canvasOps = canvasOps s ++ newOps }
 
 punctualVideoToOps :: UTCTime -> NominalDiffTime -> Punctual.PunctualState -> [(UTCTime,CanvasOp.CanvasOp)]
 punctualVideoToOps lt p s = concat $ zipWith4 (\c d e f -> [c,d,e,f]) clears strokes fills rects
