@@ -1,54 +1,44 @@
 module Estuary.Languages.LaCalle (laCalle) where
 
 import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Number
+import qualified Text.ParserCombinators.Parsec.Token as P
+-- import Estuary.Tidal.ParamPatternable (parseBP')
+import Text.Parsec.Language (haskellDef)
+import           Control.Monad (forever)
+
+
+
+import Sound.Tidal.MiniTidal (miniTidal,miniTidalIO,main)
+import           Sound.Tidal.Context (Pattern,ControlMap,ControlPattern,Enumerable,Parseable,Time,Arc,TPat,StreamparseBP')
 import qualified Sound.Tidal.Context as Tidal
-import Estuary.Tidal.ParamPatternable (parseBP')
 
 --lima
 -- <nombre sonido> <transf1> <parametros>
 
-lengExpr :: GenParser Char a Tidal.ControlPattern
-lengExpr = do
---coloca aquí los parsers
-  espacios
-  char '"'
-  espacios
-  s1 <- sonidos
-  espacios
-  s2 <- sonidos
-  espacios
-  s3 <- sonidos
-  espacios
-  s4 <- sonidos
-  espacios
-  char '"'
-  espacios
-  t1 <- trans
-  espacios
-  t2 <- trans
-  espacios
-  t3 <- trans
-  espacios
-  t4 <- trans
-  espacios
-  return $ t1 $ t2 $ t3 $ t4 $ nuestroTextoATidal $ s1 ++ " " ++ s2 ++ " " ++ s3 ++ " " ++ s4 ++ " "
+laCalle :: String -> Either ParseError ControlPattern
+laCalle = parse lengExpr "LaCalle"
 
-nuestroTextoATidal ::  String  -> Tidal.ControlPattern
+exprStack :: Parser ControlPattern
+exprStack = do
+   expr <- many lengExpr
+   return $ Tidal.stack expr
+
+lengExpr :: Parser ControlPattern
+lengExpr = whiteSpace >> choice [
+  eof >> return Tidal.silence,
+  do
+    s <- sonidos
+    eof --m ()
+    return $ nuestroTextoATidal s
+    ]
+
+nuestroTextoATidal ::  String  -> ControlPattern
 nuestroTextoATidal s = Tidal.s $ parseBP' s
 
-sonidos :: GenParser Char a String
-sonidos = choice [
-        --coloca aqui los nombres de tus muestras de audio
-        --ej. try (string "bombo" >> espacios >> "bd")
-        try (string "hola choche" >> espacios >> return "sitar" ),
-        try (string "unas chelas" >> espacios >> return "ifdrums" ),
-        try (string "mi germa" >> espacios >> return "metal" ),
-        try (string "vamos a" >> espacios >> return "casio"),
-        try (descartarTexto >> return " ")
-        ]
+sonidos :: Parser String
+sonidos = (reserved "hola" >> return "sitar" )
 
-trans :: GenParser Char a (Tidal.ControlPattern -> Tidal.ControlPattern)
+trans :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 trans = choice [
               --coloca aqui los nombres de tus transformaciones
          try (string "tu manyas" >> spaces >> fractional3 False  >>= return . Tidal.slow),
@@ -59,17 +49,53 @@ trans = choice [
                 ]
 
 --descartar espacios
-espacios :: GenParser Char a String
+espacios :: Parser String
 espacios = many (oneOf " ")
 
 --descartar texto
-descartarTexto :: GenParser Char a String
+descartarTexto :: Parser String
 descartarTexto = many (oneOf "\n")
 
-exprStack :: GenParser Char a Tidal.ControlPattern
-exprStack = do
-   expr <- many lengExpr
-   return $ Tidal.stack expr
 
-laCalle :: String -> Either ParseError Tidal.ControlPattern
-laCalle s = parse exprStack "LaCalle" s
+tokenParser :: P.TokenParser a
+tokenParser = P.makeTokenParser $ haskellDef {
+  P.reservedNames = ["hola"],
+  P.reservedOpNames = []
+  }
+
+identifier = P.identifier tokenParser
+reserved = P.reserved tokenParser
+operator = P.operator tokenParser
+reservedOp = P.reservedOp tokenParser
+charLiteral = P.charLiteral tokenParser
+stringLiteral = P.stringLiteral tokenParser
+natural = P.natural tokenParser
+integer = P.integer tokenParser
+float = P.float tokenParser
+naturalOrFloat = P.naturalOrFloat tokenParser
+decimal = P.decimal tokenParser
+hexadecimal = P.hexadecimal tokenParser
+octal = P.octal tokenParser
+symbol = P.symbol tokenParser
+lexeme = P.lexeme tokenParser
+whiteSpace = P.whiteSpace tokenParser
+parens = P.parens tokenParser
+braces = P.braces tokenParser
+angles = P.angles tokenParser
+brackets = P.brackets tokenParser
+semi = P.semi tokenParser
+comma = P.comma tokenParser
+colon = P.colon tokenParser
+dot = P.dot tokenParser
+semiSep = P.semiSep tokenParser
+semiSep1 = P.semiSep1 tokenParser
+commaSep = P.commaSep tokenParser
+commaSep1 = P.commaSep1 tokenParser
+
+main :: IO ()
+main = do
+  putStrLn "laCalle"
+  tidal <- Tidal.startTidal Tidal.superdirtTarget Tidal.defaultConfig
+  forever $ do
+    cmd <- miniTidalIO tidal <$> getLine
+    either (\x -> putStrLn $ "error: " ++ show x) id cmd
