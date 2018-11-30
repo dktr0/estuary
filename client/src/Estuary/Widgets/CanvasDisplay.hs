@@ -10,23 +10,35 @@ import Data.JSString
 import Data.Map
 import Control.Monad
 import Control.Monad.Trans
+import Data.Time.Clock
 
+import Estuary.Types.Color
 import Estuary.Types.CanvasOp
 import Estuary.RenderInfo
 
 canvasDisplay :: MonadWidget t m => Int -> Dynamic t RenderInfo -> m ()
 canvasDisplay z rInfo = do
-  let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z)]
-  e <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
-  ctx <- liftIO $ getContext e
+  let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z),("width","1920"),("height","1080")]
+  cvs <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
+  ctx <- liftIO $ getContext cvs
   instructions <- liftM updated $ mapDyn canvasOps rInfo
-  performEvent_ $ fmap (liftIO . mapM_ (canvasOp ctx)) instructions
+  performEvent_ $ fmap (liftIO . adjustOps cvs ctx) instructions
+
+adjustOps :: HTMLCanvasElement -> JSVal -> [(UTCTime,CanvasOp)] -> IO ()
+adjustOps cvs ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080 . snd) ops
 
 canvasOp :: JSVal -> CanvasOp -> IO ()
+canvasOp ctx (Clear a) = do
+  fillStyle ctx (pack $ show $ RGBA 0 0 0 a)
+  strokeStyle ctx (pack $ show $ RGBA 0 0 0 a)
+  rect ctx 0 0 1920 1080
+  stroke ctx
+  fill ctx
 canvasOp ctx (Rect x y w h) = beginPath ctx >> rect ctx x y w h >> stroke ctx >> fill ctx
 canvasOp ctx (MoveTo x y) = moveTo ctx x y
 canvasOp ctx (LineTo x y) = beginPath ctx >> lineTo ctx x y >> stroke ctx >> fill ctx
 canvasOp ctx (StrokeStyle c) = strokeStyle ctx (pack $ show c)
+canvasOp ctx (FillStyle c) = fillStyle ctx (pack $ show c)
 
 foreign import javascript safe
   "$r=$1.getContext('2d')"
@@ -47,6 +59,10 @@ foreign import javascript safe
 foreign import javascript safe
   "$1.strokeStyle = $2"
   strokeStyle :: JSVal -> JSString -> IO ()
+
+foreign import javascript safe
+  "$1.fillStyle = $2"
+  fillStyle :: JSVal -> JSString -> IO ()
 
 foreign import javascript safe
   "$1.rect($2,$3,$4,$5)"
