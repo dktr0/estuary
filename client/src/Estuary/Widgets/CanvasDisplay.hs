@@ -10,6 +10,7 @@ import Data.JSString
 import Data.Map
 import Control.Monad
 import Control.Monad.Trans
+import Data.Time.Clock
 
 import Estuary.Types.Color
 import Estuary.Types.CanvasOp
@@ -23,8 +24,8 @@ canvasDisplay z rInfo = do
   instructions <- liftM updated $ mapDyn canvasOps rInfo
   performEvent_ $ fmap (liftIO . adjustOps cvs ctx) instructions
 
-adjustOps :: HTMLCanvasElement -> JSVal -> [CanvasOp] -> IO ()
-adjustOps cvs ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080) ops
+adjustOps :: HTMLCanvasElement -> JSVal -> [(UTCTime,CanvasOp)] -> IO ()
+adjustOps cvs ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080 . snd) ops
 
 canvasOp :: JSVal -> CanvasOp -> IO ()
 canvasOp ctx (Clear a) = do

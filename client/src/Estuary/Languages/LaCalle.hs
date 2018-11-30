@@ -3,10 +3,7 @@ module Estuary.Languages.LaCalle (laCalle) where
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
--- import Estuary.Tidal.ParamPatternable (parseBP')
-
-parseBP' :: (Tidal.Enumerable a, Tidal.Parseable a) => String -> Tidal.Pattern a
-parseBP' = (either (const Tidal.silence)  id). Tidal.parseBP
+import Estuary.Tidal.ParamPatternable (parseBP')
 
 --lima
 -- <nombre sonido> <transf1> <parametros>
