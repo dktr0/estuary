@@ -10,6 +10,7 @@ import Data.JSString
 import Data.Map
 import Control.Monad
 import Control.Monad.Trans
+import Control.Concurrent.MVar
 import Data.Time.Clock
 
 import Estuary.Types.Color
@@ -75,3 +76,10 @@ foreign import javascript safe
 foreign import javascript safe
   "$1.lineTo($2,$3)"
   lineTo :: JSVal -> Double -> Double -> IO ()
+
+foreign import javascript safe
+  "window.requestAnimationFrame($1)"
+  requestAnimationFrame :: JSVal -> IO ()
+
+addCanvasOpEvents :: MVar [(UTCTime,CanvasOp)] -> [(UTCTime,CanvasOp)] -> IO ()
+addCanvasOpEvents mv newEvents = takeMVar mv >>= (putMVar mv . (++ newEvents))
