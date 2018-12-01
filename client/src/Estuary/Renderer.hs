@@ -47,9 +47,9 @@ flushEvents c = do
   liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
   -- flush CanvasOps to an MVar queue (list)
-  oldOps <- liftIO $ takeMVar $ canvasOpsMVar c
+  oldOps <- liftIO $ takeMVar $ canvasOpsQueue c
   newOps <- gets canvasOps
-  liftIO $ putMVar (canvasOpsMVar c) (oldOps ++ newOps)
+  liftIO $ putMVar (canvasOpsQueue c) (oldOps ++ newOps)
   modify' $ \x -> x { dirtEvents = [], canvasOps = []}
   return ()
 
@@ -71,7 +71,6 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: Context -> Renderer
 render c = do
-  modify' $ \s -> s { info = (info s) { canvasOps = [] }}
   traverseWithKey (renderZone c) (definitions c)
   flushEvents c
 
@@ -153,7 +152,7 @@ renderTextProgramChanged c z (CanvasOp,x) = do
   let parseResult = CanvasOp.canvasOp x
   let ops = either (const []) (fmap (\op -> (logicalTime s, op))) parseResult
   let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
-  modify' $ \x -> x { info = (info s) { errors = errs }, canvasOps = { canvasOps s ++ ops } }
+  modify' $ \x -> x { info = (info s) { errors = errs }, canvasOps = canvasOps s ++ ops }
 
 renderTextProgramChanged _ _ _ = return ()
 

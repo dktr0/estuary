@@ -6,6 +6,7 @@ import Reflex
 import Reflex.Dom
 import GHCJS.DOM.Types (HTMLCanvasElement,castToHTMLCanvasElement)
 import GHCJS.Types (JSVal)
+import GHCJS.Foreign.Callback
 import Data.JSString
 import Data.Map
 import Data.List
@@ -18,30 +19,28 @@ import Estuary.Types.Color
 import Estuary.Types.CanvasOp
 import Estuary.RenderInfo
 
-canvasDisplay :: MonadWidget t m => Int -> Dynamic t Context -> m ()
-canvasDisplay z = do
+canvasDisplay :: MonadWidget t m => Int -> MVar [(UTCTime,CanvasOp)] -> m ()
+canvasDisplay z mv = do
   let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z),("width","1920"),("height","1080")]
   cvs <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
   ctx <- liftIO $ getContext cvs
   liftIO $ requestAnimationFrame ctx mv
-
-addCanvasOps :: MVar [(UTCTime,CanvasOp)] -> [(UTCTime,CanvasOp)] -> IO ()
-addCanvasOps mv newEvents = takeMVar mv >>= (putMVar mv . (++ newEvents))
-
-redrawCanvas :: JSVal -> MVar [(UTCTime,CanvasOp)] -> JSVal -> IO ()
-redrawCanvas ctx mv _ = do
-  modifyMVar_ mv $ flushCanvasOps ctx
-  requestAnimationFrame ctx mv
+  -- *** note: also need to consider how to interrupt requestAnimationFrame when widget is destroyed
 
 requestAnimationFrame :: JSVal -> MVar [(UTCTime,CanvasOp)] -> IO ()
 requestAnimationFrame ctx mv = do
   cb <- syncCallback1 ContinueAsync $ redrawCanvas ctx mv
   requestAnimationFrame_ cb
 
+redrawCanvas :: JSVal -> MVar [(UTCTime,CanvasOp)] -> JSVal -> IO ()
+redrawCanvas ctx mv _ = do
+  modifyMVar_ mv $ flushCanvasOps ctx
+  requestAnimationFrame ctx mv
+
 flushCanvasOps :: JSVal -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]
 flushCanvasOps ctx ops = do
   now <- getCurrentTime
-  let (opsForNow,opsForLater) = partition ((<= now) . fst) ops
+  let (opsForNow,opsForLater) = Data.List.partition ((<= now) . fst) ops
   performCanvasOps ctx opsForNow
   return opsForLater
 
@@ -99,4 +98,4 @@ foreign import javascript safe
 
 foreign import javascript safe
   "window.requestAnimationFrame($1)"
-  requestAnimationFrame_ :: JSVal -> IO ()
+  requestAnimationFrame_ :: Callback (JSVal -> IO()) -> IO ()

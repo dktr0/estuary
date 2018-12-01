@@ -111,7 +111,10 @@ viewWidget _ _ (EvaluableTextView n) i deltasDown = do
 
 viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
-viewWidget _ rInfo (CanvasDisplayView z) _ _ = canvasDisplay z rInfo >> return (constDyn Map.empty, never, never)
+viewWidget ctx _ (CanvasDisplayView z) _ _ = do
+  mv <- fmap canvasOpsQueue $ sample $ current ctx
+  canvasDisplay z mv
+  return (constDyn Map.empty, never, never)
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
