@@ -28,15 +28,16 @@ togoPatternAsArg = choice [ parens togoPattern, samplePattern, silence ]
 
 euclidPattern :: Parser ControlPattern
 euclidPattern = do
-  a <- fromIntegral <$> natural
+  a <- natural
   reservedOp "x"
-  b <- fromIntegral <$> natural
+  b <- natural
   c <- togoPatternAsArg
   d <- option (Tidal.silence) togoPatternAsArg
-  return $ Tidal.euclidFull (pure a) (pure b) c d
-  -- *** parsing is okay, but the calculation is not what we want
-  -- need to assemble a resulting pattern such that on/off patterns are
-  -- squeezed into euclid slots not simply sampled once during them...
+  let on = pure $ fromIntegral a
+  let off = pure $ fromIntegral b
+  let onPattern = Tidal.fast (pure $ fromIntegral b) c
+  let offPattern = Tidal.fast (pure $ fromIntegral b) d
+  return $ Tidal.euclidFull on off onPattern offPattern
 
 samplePattern :: Parser ControlPattern
 samplePattern = do
