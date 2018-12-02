@@ -21,10 +21,26 @@ togoParser = whiteSpace >> choice [
     ]
 
 togoPattern :: Parser ControlPattern
-togoPattern = choice [ parens togoPattern, euclidPattern, samplePattern, silence ]
+togoPattern = choice [parens togoPattern, euclidPatterns, samplePattern, silence ]
 
 togoPatternAsArg :: Parser ControlPattern
 togoPatternAsArg = choice [ parens togoPattern, samplePattern, silence ]
+
+euclidPatterns :: Parser ControlPattern
+euclidPatterns = choice [try euclidFullPattern,try euclidPattern,euclidInvPattern]
+
+euclidFullPattern :: Parser ControlPattern
+euclidFullPattern = do
+  a <- natural
+  reservedOp "X"
+  b <- natural
+  c <- togoPatternAsArg
+  d <- togoPatternAsArg
+  let n1 = pure $ fromIntegral a
+  let n2 = pure $ fromIntegral b
+  let onPattern = Tidal.fast (pure $ fromIntegral b) c
+  let offPattern = Tidal.fast (pure $ fromIntegral b) d
+  return $ Tidal.euclidFull n1 n2 onPattern offPattern
 
 euclidPattern :: Parser ControlPattern
 euclidPattern = do
@@ -32,12 +48,21 @@ euclidPattern = do
   reservedOp "x"
   b <- natural
   c <- togoPatternAsArg
-  d <- option (Tidal.silence) togoPatternAsArg
-  let on = pure $ fromIntegral a
-  let off = pure $ fromIntegral b
+  let n1 = pure $ fromIntegral a
+  let n2 = pure $ fromIntegral b
   let onPattern = Tidal.fast (pure $ fromIntegral b) c
-  let offPattern = Tidal.fast (pure $ fromIntegral b) d
-  return $ Tidal.euclidFull on off onPattern offPattern
+  return $ Tidal.euclid n1 n2 onPattern
+
+euclidInvPattern :: Parser ControlPattern
+euclidInvPattern = do
+  a <- natural
+  reservedOp "_"
+  b <- natural
+  c <- togoPatternAsArg
+  let n1 = pure $ fromIntegral a
+  let n2 = pure $ fromIntegral b
+  let offPattern = Tidal.fast (pure $ fromIntegral b) c
+  return $ Tidal.euclidInv n1 n2 offPattern
 
 samplePattern :: Parser ControlPattern
 samplePattern = do
