@@ -1,93 +1,55 @@
 module Estuary.Languages.Togo (togo) where
 
 import Text.ParserCombinators.Parsec
-import qualified Text.ParserCombinators.Parsec.Token as P
--- import Estuary.Tidal.ParamPatternable (parseBP')
-import Text.ParserCombinators.Parsec.Number
-
 import Text.Parsec.Language (haskellDef)
-import           Control.Monad (forever)
-
-
-
-import Sound.Tidal.MiniTidal (miniTidal,miniTidalIO,main)
-import           Sound.Tidal.Context (Pattern,ControlMap,ControlPattern,Enumerable,Parseable,Time,Arc,TPat)
+import qualified Text.ParserCombinators.Parsec.Token as P
+import Sound.Tidal.Context (ControlPattern)
 import qualified Sound.Tidal.Context as Tidal
 
---lima
--- <nombre sonido> <transf1> <parametros>
+import Estuary.Tidal.ParamPatternable
 
 togo :: String -> Either ParseError ControlPattern
-togo = parse lengExpr "togo"
+togo = parse togoParser "togo"
 
-lengExpr :: Parser ControlPattern
-lengExpr = whiteSpace >> choice [
+togoParser :: Parser ControlPattern
+togoParser = whiteSpace >> choice [
   eof >> return Tidal.silence,
   do
-    p <- pattern
-    eof --m ()
-    return $ p
+    ps <- semiSep1 togoPattern
+    eof
+    return $ Tidal.stack ps
     ]
 
-pattern :: Parser ControlPattern
-pattern = do
-  char '\"'
-  x <- pattern'
-  char '\"'
-  return x
+togoPattern :: Parser ControlPattern
+togoPattern = choice [ parens togoPattern, euclidPattern, samplePattern, silence ]
 
-pattern' :: Parser ControlPattern
-pattern' =  choice [
-   pattern''
-      ]
+togoPatternAsArg :: Parser ControlPattern
+togoPatternAsArg = choice [ parens togoPattern, samplePattern, silence ]
 
-pattern'' :: Parser ControlPattern
-pattern'' = do
-     whiteSpace
-     x <- parseBP'
-     y <- nPattern
-     whiteSpace
-     return $ Tidal.s x
+euclidPattern :: Parser ControlPattern
+euclidPattern = do
+  a <- fromIntegral <$> natural
+  reservedOp "x"
+  b <- fromIntegral <$> natural
+  c <- togoPatternAsArg
+  d <- option (Tidal.silence) togoPatternAsArg
+  return $ Tidal.euclidFull (pure a) (pure b) c d
+  -- *** parsing is okay, but the calculation is not what we want
+  -- need to assemble a resulting pattern such that on/off patterns are
+  -- squeezed into euclid slots not simply sampled once during them...
 
-nPattern :: Parser ControlPattern
-nPattern = do
-     reserved "n" >> whiteSpace
-     x' <- parseBP'
-     whiteSpace
-     return $ Tidal.n x'
+samplePattern :: Parser ControlPattern
+samplePattern = do
+  s <- stringLiteral
+  return $ Tidal.s $ parseBP' s
 
-parseBP' :: (Enumerable a, Parseable a) => Parser (Pattern a)
-parseBP' = parseTPat' >>= return . Tidal.toPat
-
-parseBP'' :: (Enumerable a, Parseable a) => Parser (Pattern a)
-parseBP'' = parseTPat'' >>= return . Tidal.toPat
-
-parseTPat'' :: Parseable a => Parser (TPat a)
-parseTPat'' = Tidal.tPatParser
-
-parseTPat' :: Parseable a => Parser (TPat a)
-parseTPat' = Tidal.pSequence Tidal.tPatParser
-  --parseRhythm' Tidal.tPatParser
-
--- parseRhythm' :: Parseable a => Parser (TPat a) -> Parser (TPat a)
--- parseRhythm' f = do
---   x <-  f' --Tidal.pSequence f'
---   return x
---   where f' = f
---              <|> do _ <- symbol "~" <?> "rest"
---                     return Tidal.TPat_Silence
---
--- parseRhythmWPattern :: Parseable a => Parser (TPat a) -> Parser (TPat a)
--- parseRhythmWPattern f = do
---   char '\"' >> whiteSpace
---   f' <- f
---   char '\"' >> whiteSpace
---   return f'
+silence :: Parser ControlPattern
+silence = choice [ reserved "silence", reserved "~" ] >> return Tidal.silence
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = [],
-  P.reservedOpNames = ["s", "n"]
+  P.reservedNames = ["silence","~"],
+  P.reservedOpNames = ["x"]
   }
 
 identifier = P.identifier tokenParser
@@ -118,11 +80,3 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
-
-main :: IO ()
-main = do
-  putStrLn "laCalle"
-  tidal <- Tidal.startTidal Tidal.superdirtTarget Tidal.defaultConfig
-  forever $ do
-    cmd <- miniTidalIO tidal <$> getLine
-    either (\x -> putStrLn $ "error: " ++ show x) id cmd
