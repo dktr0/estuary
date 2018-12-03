@@ -187,7 +187,7 @@ punctualVideoToOps lt p s = concat $ zipWith4 (\c d e f -> [c,d,e,f]) clears str
     clears = zip ts $ fmap CanvasOp.Clear clear
     strokes = zip ts $ fmap CanvasOp.StrokeStyle $ zipWith4 RGBA r g b a
     fills = zip ts $ fmap CanvasOp.FillStyle $ zipWith4 RGBA r g b a
-    rects = zip ts $ zipWith4 CanvasOp.Rect x y w h
+    rects = zip ts $ zipWith4 (\x' y' w' h' -> CanvasOp.Rect (x' - (w' * 0.5)) (y' - (h'*0.5)) w' h') x y w h
 
 prependLogicalTime :: UTCTime -> a -> (UTCTime,a)
 prependLogicalTime lt a = (lt,a)
