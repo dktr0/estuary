@@ -164,22 +164,23 @@ renderPunctualVideo c z = do
   let pv = IntMap.lookup z $ punctualVideo s
   let lt = logicalTime s
   let newOps = maybe [] id $ fmap (punctualVideoToOps lt renderPeriod) pv
-  modify' $ \x -> x { info = (info x) { canvasOps = canvasOps (info s) ++ newOps } }
+  let newOps' = fmap (\(t,e) -> (addUTCTime 0.2 t,e)) newOps -- add latency
+  modify' $ \x -> x { info = (info x) { canvasOps = canvasOps (info s) ++ newOps' } }
 
 punctualVideoToOps :: UTCTime -> NominalDiffTime -> Punctual.PunctualState -> [(UTCTime,CanvasOp.CanvasOp)]
 punctualVideoToOps lt p s = concat $ zipWith4 (\c d e f -> [c,d,e,f]) clears strokes fills rects
   where
     n = 30 :: Int -- how many sampling/drawing operations per renderPeriod
     ts = fmap (flip addUTCTime $ lt) $ fmap ((*(renderPeriod/(fromIntegral n :: NominalDiffTime))) . fromIntegral) [0 .. n]
-    clear = fmap biPolarToPercent $ sampleWithDefault "clear" (-1) s ts
-    r = fmap biPolarToPercent $ sampleWithDefault "r" 1 s ts
-    g = fmap biPolarToPercent $ sampleWithDefault "g" 1 s ts
-    b = fmap biPolarToPercent $ sampleWithDefault "b" 1 s ts
-    a = fmap biPolarToPercent $ sampleWithDefault "a" 1 s ts
-    x = fmap biPolarToPercent $ sampleWithDefault "x" 0 s ts
-    y = fmap biPolarToPercent $ sampleWithDefault "y" 0 s ts
-    w = fmap biPolarToPercent $ sampleWithDefault "w" (-0.995) s ts
-    h = fmap biPolarToPercent $ sampleWithDefault "h" (-0.995) s ts
+    clear = fmap biPolarToPercent $! sampleWithDefault "clear" (-1) s ts
+    r = fmap biPolarToPercent $! sampleWithDefault "r" 1 s ts
+    g = fmap biPolarToPercent $! sampleWithDefault "g" 1 s ts
+    b = fmap biPolarToPercent $! sampleWithDefault "b" 1 s ts
+    a = fmap biPolarToPercent $! sampleWithDefault "a" 1 s ts
+    x = fmap biPolarToPercent $! sampleWithDefault "x" 0 s ts
+    y = fmap biPolarToPercent $! sampleWithDefault "y" 0 s ts
+    w = fmap biPolarToPercent $! sampleWithDefault "w" (-0.995) s ts
+    h = fmap biPolarToPercent $! sampleWithDefault "h" (-0.995) s ts
     clears = zip ts $ fmap CanvasOp.Clear clear
     strokes = zip ts $ fmap CanvasOp.StrokeStyle $ zipWith4 RGBA r g b a
     fills = zip ts $ fmap CanvasOp.FillStyle $ zipWith4 RGBA r g b a
