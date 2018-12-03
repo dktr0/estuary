@@ -40,7 +40,7 @@ euclidFullPattern = do
   let n2 = pure $ fromIntegral b
   let onPattern = Tidal.fast (pure $ fromIntegral b) c
   let offPattern = Tidal.fast (pure $ fromIntegral b) d
-  return $ Tidal.euclidFull n1 n2 onPattern offPattern
+  return $ Tidal.stack [Tidal.euclid n1 n2 onPattern, Tidal.euclidInv n1 n2 offPattern]
 
 euclidPattern :: Parser ControlPattern
 euclidPattern = do
