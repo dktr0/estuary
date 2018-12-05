@@ -27,6 +27,7 @@ import Estuary.Types.Terminal
 import Estuary.Types.View
 import Estuary.WebDirt.Foreign
 import Estuary.Widgets.Ensemble
+import Estuary.Widgets.EstuaryIcon
 import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
@@ -89,7 +90,9 @@ page ctx _ _ wsDown Splash = do
           divClass "splash-title" $ do
             dynText =<< translateDyn Term.About ctx
           divClass "splash-icon-container" $ do
-            divClass  "splash-icon" $ text "A"
+            divClass "splash-icon" $ do
+              estuaryIcon
+            -- divClass  "splash-icon" $ text "A"
             -- elAttr "img" (Map.fromList [("src", "estuary-logo-green.svg"),  ("class", "splash-icon")]) blank
 
     gotoTutorialEv <- liftM (TutorialList <$) $ do
