@@ -3,10 +3,16 @@ module Estuary.Languages.Togo (togo) where
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
-import Sound.Tidal.Context (ControlPattern)
+import Sound.Tidal.Context (Pattern,ControlPattern)
 import qualified Sound.Tidal.Context as Tidal
 
 import Estuary.Tidal.ParamPatternable
+
+-- 3x8/8<<1 "bd n=0 shape=0.2" "cp"
+-- 3X8 (2x2 "bd" "cp") "sn"
+-- 3x8 "bd:0"
+-- 3_8 "cp"
+
 
 togo :: String -> Either ParseError ControlPattern
 togo = parse togoParser "togo"
@@ -34,43 +40,88 @@ euclidFullPattern = do
   a <- natural
   reservedOp "X"
   b <- natural
+  rotation <- (Tidal.rotR . toRational . (/fromIntegral b)) <$> rotationParser
+  slowness <- slownessParser
   c <- togoPatternAsArg
   d <- togoPatternAsArg
   let n1 = pure $ fromIntegral a
   let n2 = pure $ fromIntegral b
   let onPattern = Tidal.fast (pure $ fromIntegral b) c
   let offPattern = Tidal.fast (pure $ fromIntegral b) d
-  return $ Tidal.stack [Tidal.euclid n1 n2 onPattern, Tidal.euclidInv n1 n2 offPattern]
+  return $ slowness $ rotation $ Tidal.stack [Tidal.euclid n1 n2 onPattern, Tidal.euclidInv n1 n2 offPattern]
+
+slownessParser :: Parser (ControlPattern -> ControlPattern)
+slownessParser = option (Tidal.slow 1) $ reservedOp "/" >> double >>= return . Tidal.slow . pure . toRational
+
+rotationParser :: Parser Double
+rotationParser = option 0 $ choice [
+  reservedOp ">>" >> double,
+  reservedOp "<<" >> (* (-1)) <$> double
+  ]
 
 euclidPattern :: Parser ControlPattern
 euclidPattern = do
   a <- natural
   reservedOp "x"
   b <- natural
+  rotation <- (Tidal.rotR . toRational . (/fromIntegral b)) <$> rotationParser
+  slowness <- slownessParser
   c <- togoPatternAsArg
   let n1 = pure $ fromIntegral a
   let n2 = pure $ fromIntegral b
   let onPattern = Tidal.fast (pure $ fromIntegral b) c
-  return $ Tidal.euclid n1 n2 onPattern
+  return $ slowness $ rotation $ Tidal.euclid n1 n2 onPattern
 
 euclidInvPattern :: Parser ControlPattern
 euclidInvPattern = do
   a <- natural
   reservedOp "_"
   b <- natural
+  rotation <- (Tidal.rotR . toRational . (/fromIntegral b)) <$> rotationParser
+  slowness <- slownessParser
   c <- togoPatternAsArg
   let n1 = pure $ fromIntegral a
   let n2 = pure $ fromIntegral b
   let offPattern = Tidal.fast (pure $ fromIntegral b) c
-  return $ Tidal.euclidInv n1 n2 offPattern
+  return $ slowness $ rotation $ Tidal.euclidInv n1 n2 offPattern
 
 samplePattern :: Parser ControlPattern
 samplePattern = do
-  s <- stringLiteral
-  return $ Tidal.s $ parseBP' s
+  char '\"' >> whiteSpace
+  s <- identifier
+  kv <- keysValuesParser
+  char '\"' >> whiteSpace
+  return $ kv $ (Tidal.s (parseBP' s))
+
+keysValuesParser :: Parser (ControlPattern -> ControlPattern)
+keysValuesParser = option id $ do
+  xs <- many1 keyValueParser
+  return $ foldl1 (.) xs
+
+keyValueParser :: Parser (ControlPattern -> ControlPattern)
+keyValueParser = do
+  x <- choice [
+    (reserved "n" >> reservedOp "=" >> return Tidal.n) <*> doublePatternParser,
+    (reserved "shape" >> reservedOp "=" >> return Tidal.shape) <*> doublePatternParser,
+    (reserved "up" >> reservedOp "=" >> return Tidal.up) <*> doublePatternParser,
+    (reserved "note" >> reservedOp "=" >> return Tidal.note) <*> doublePatternParser
+    ]
+  return $ \cp -> cp Tidal.# x
+
+intPatternParser :: Parser (Pattern Int)
+intPatternParser = fromIntegral <$> integer
+
+doublePatternParser :: Parser (Pattern Double)
+doublePatternParser = pure <$> double
 
 silence :: Parser ControlPattern
 silence = choice [ reserved "silence", reserved "~" ] >> return Tidal.silence
+
+double :: Parser Double
+double = choice [
+  try $ float,
+  fromInteger <$> integer
+  ]
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
