@@ -53,6 +53,10 @@
 	display:none;
 }
 
+.btn {
+	cursor: pointer;
+}
+
 /* source  */
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
 	padding-left: 15px;
