@@ -11,6 +11,7 @@ import Data.Functor (void)
 import Data.List (intercalate)
 import Data.IntMap.Strict as IntMap
 import Data.Maybe
+import qualified Data.Map as Map
 
 import Estuary.Types.Context
 import Estuary.Types.Definition
@@ -75,7 +76,7 @@ renderZoneChanged c z (Structure x) = do
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
 renderZoneChanged c z (TextProgram x) = renderTextProgramChanged c z $ forRendering x
 renderZoneChanged c z (Sequence xs) = do
-  let newParamPattern = Tidal.stack $ fmap sequenceToControlPattern xs
+  let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   s <- get
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
 renderZoneChanged _ _ _ = return ()

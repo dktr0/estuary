@@ -8,6 +8,7 @@ import Reflex
 import Reflex.Dom
 import Text.Read
 import Data.Time.Clock
+import Data.Map as M (fromList)
 
 import Estuary.Types.Response
 import Estuary.Types.Definition
@@ -79,16 +80,12 @@ viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
   value <- mapDyn (\(a,_,_) -> a) v
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,a,_)-> a) v
   hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)-> a) v
-
-  -- let value = constDyn [] -- placeholder
-  -- let edits = never -- placeholder
-  -- let hints = never -- placeholder
   value' <- mapDyn (Map.singleton n . Sequence) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . Sequence) edits
   return (value',edits',hints)
   where f (Sequence x) = x
         f _ = defaultValue
-        defaultValue = [("",replicate 8 False)]
+        defaultValue = M.fromList [(0,("",replicate 8 False))]
 
 viewWidget _ _ (LabelView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (LabelText "") n i

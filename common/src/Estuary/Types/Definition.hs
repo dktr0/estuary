@@ -5,6 +5,7 @@ module Estuary.Types.Definition where
 import Text.JSON
 import Text.JSON.Generic
 import Data.Maybe (mapMaybe)
+import qualified Data.Map as M
 import qualified Data.IntMap.Strict as IntMap
 
 import Estuary.Tidal.Types
@@ -14,7 +15,7 @@ import Estuary.Types.TextNotation
 data Definition =
   Structure TransformedPattern | -- *** this should be renamed to TidalStructure
   TextProgram (Live (TextNotation,String)) |
-  Sequence [(String,[Bool])] |
+  Sequence (M.Map Int (String,[Bool])) |
   EvaluableText String | -- *** deprecated ***
   LabelText String
   deriving (Eq,Show,Data,Typeable)
@@ -47,7 +48,7 @@ justEvaluableTexts = mapMaybe f
   where f (EvaluableText x) = Just x
         f _ = Nothing
 
-justSequences :: [Definition] -> [[(String,[Bool])]]
+justSequences :: [Definition] -> [M.Map Int (String,[Bool])]
 justSequences = mapMaybe f
   where f (Sequence x) = Just x
         f _ = Nothing
