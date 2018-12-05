@@ -1,4 +1,6 @@
-module Estuary.Languages.SuperContinent (parseSuperContinent,emptyState,runProgram,stateToSvgOps) where
+module Estuary.Languages.SuperContinent {- (parseSuperContinent,emptyState,runProgram,stateToSvgOps) -} where
+
+{-
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -200,3 +202,5 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
+
+-}
