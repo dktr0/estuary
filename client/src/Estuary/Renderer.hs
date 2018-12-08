@@ -12,6 +12,7 @@ import Data.List (intercalate,zipWith4)
 import Data.IntMap.Strict as IntMap
 import Data.Maybe
 import Data.Either
+import qualified Data.Map as Map
 
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
@@ -92,7 +93,7 @@ renderZoneChanged c z (Structure x) = do
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
 renderZoneChanged c z (TextProgram x) = renderTextProgramChanged c z $ forRendering x
 renderZoneChanged c z (Sequence xs) = do
-  let newParamPattern = Tidal.stack $ fmap sequenceToControlPattern xs
+  let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   s <- get
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
 renderZoneChanged _ _ _ = return ()
