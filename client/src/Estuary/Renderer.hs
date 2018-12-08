@@ -59,10 +59,14 @@ renderTidalPattern start range t p = events''
   where
     start' = (realToFrac $ diffUTCTime start (at t)) * cps t + beat t -- start time in cycles since beginning of tempo
     end = realToFrac range * cps t + start' -- end time in cycles since beginning of tempo
-    events = Tidal.queryArc p (toRational start',toRational end) -- events with t in cycles
+    events = Tidal.queryArc p (Tidal.Arc (toRational start') (toRational end)) -- events with t in cycles
     events' = Prelude.filter Tidal.eventHasOnset events
     events'' = f <$> events'
-    f (((w1,_),(_,_)),cMap) = (addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t),cMap)
+--    f (((w1,_),(_,_)),cMap) = (addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t),cMap)
+    f e = (utcTime,Tidal.event e)
+      where
+        utcTime = addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t)
+        w1 = Tidal.start $ Tidal.whole e
 
 sequenceToControlPattern :: (String,[Bool]) -> Tidal.ControlPattern
 sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " " $ fmap f pat
