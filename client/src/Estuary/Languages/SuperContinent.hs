@@ -1,4 +1,4 @@
-module Estuary.Languages.SuperContinent (parseSuperContinent,emptyState,runProgram,stateToSvgOps) where
+module Estuary.Languages.SuperContinent (parseSuperContinent,Program,SuperContinentState,emptyState,runProgram,stateToSvgOps) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -66,7 +66,8 @@ data Property =
   Type |
   X0 | Y0 |
   X1 | Y1 |
-  X2 | Y2
+  X2 | Y2 |
+  R | G | B | A
   deriving (Show,Ord,Eq)
 
 propertyParser :: Parser Property
@@ -77,7 +78,11 @@ propertyParser = choice [
   reserved "x1" >> return X1,
   reserved "y1" >> return Y1,
   reserved "x2" >> return X2,
-  reserved "y2" >> return Y2
+  reserved "y2" >> return Y2,
+  reserved "r" >> return R,
+  reserved "g" >> return G,
+  reserved "b" >> return B,
+  reserved "a" >> return A
   ]
 
 -- ie. a graph that will eventually be reduced to a loosely-typed value
@@ -159,8 +164,9 @@ data SuperContinentState = SuperContinentState {
   -- placeholder: will also soon need a random number generator here
   }
 
-emptyState :: IO SuperContinentState
-emptyState = return $ SuperContinentState { objects = empty }
+-- note: will need to be IO SuperContinentState when we incorporate randomness
+emptyState :: SuperContinentState
+emptyState = SuperContinentState { objects = empty }
 
 stateToSvgOps :: SuperContinentState -> [SvgOp.SvgOp]
 stateToSvgOps s = concat $ fmap objectToSvgOps $ elems (objects s)
@@ -180,10 +186,10 @@ objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s emptyTransform
     y1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y1 obj
     x2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X2 obj
     y2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y2 obj
-    r = 1
-    g = 0
-    b = 0
-    a = 1
+    r = valueAsDouble $ Map.findWithDefault (ValueDouble 0) R obj
+    g = valueAsDouble $ Map.findWithDefault (ValueDouble 0) G obj
+    b = valueAsDouble $ Map.findWithDefault (ValueDouble 0) B obj
+    a = valueAsDouble $ Map.findWithDefault (ValueDouble 100) A obj
     c = RGBA r g b a
     s = defaultStroke { strokeColor = RGBA r g b a }
 
@@ -232,7 +238,7 @@ getValueFromGraph (Random) = return $ ValueDouble 0.5 -- *** placeholder ***
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["type","x0","y0","x1","y1","x2","y2","nil","triangle","audio","random"],
+  P.reservedNames = ["type","x0","y0","x1","y1","x2","y2","nil","triangle","audio","random","r","g","b","a"],
   P.reservedOpNames = ["..","=","*","+"]
   }
 

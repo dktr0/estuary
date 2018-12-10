@@ -19,6 +19,7 @@ import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.Types as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.Punctual.Sample as Punctual
+import qualified Estuary.Languages.SuperContinent as SuperContinent
 import qualified Estuary.Languages.SvgOp as SvgOp
 import qualified Estuary.Languages.CanvasOp as CanvasOp
 import qualified Estuary.Types.CanvasOp as CanvasOp
@@ -117,6 +118,12 @@ renderTextProgramChanged c z (TidalTextNotation x,y) = do
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
+renderTextProgramChanged c z (SuperContinent,x) = do
+  s <- get
+  let parseResult = SuperContinent.parseSuperContinent x
+  let newProgram = either (const $ superContinentProgram s) id parseResult
+  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { superContinentProgram = newProgram, info = (info s) { errors = newErrors } }
 
 renderTextProgramChanged c z (PunctualAudio,x) = do
   s <- get
@@ -162,8 +169,20 @@ renderTextProgramChanged _ _ _ = return ()
 
 renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
+renderTextProgramAlways c z (SuperContinent,_) = renderSuperContinent c z
 renderTextProgramAlways c z (PunctualVideo,_) = renderPunctualVideo c z
 renderTextProgramAlways _ _ _ = return ()
+
+renderSuperContinent :: Context -> Int -> Renderer
+renderSuperContinent c z = do
+  s <- get
+  let audio = 0.5 -- placeholder
+  let program = superContinentProgram s
+  let scState = superContinentState s
+  scState' <- liftIO $ SuperContinent.runProgram audio program scState
+  let newOps = Just $ SuperContinent.stateToSvgOps scState'
+  liftIO $ putStrLn $ show newOps
+  modify' $ \x -> x { superContinentState = scState', info = (info s) { svgOps = newOps } }
 
 renderPunctualVideo :: Context -> Int -> Renderer
 renderPunctualVideo c z = do
