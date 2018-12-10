@@ -162,7 +162,7 @@ valueParser = choice [
 data SuperContinentState = SuperContinentState {
   objects :: IntMap Object
   -- placeholder: will also soon need a random number generator here
-  }
+  } deriving (Show)
 
 -- note: will need to be IO SuperContinentState when we incorporate randomness
 emptyState :: SuperContinentState
@@ -191,7 +191,7 @@ objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s emptyTransform
     b = valueAsDouble $ Map.findWithDefault (ValueDouble 0) B obj
     a = valueAsDouble $ Map.findWithDefault (ValueDouble 100) A obj
     c = RGBA r g b a
-    s = defaultStroke { strokeColor = RGBA r g b a }
+    s = defaultStroke { strokeColor = c }
 
 runProgram :: Double -> Program -> SuperContinentState -> IO SuperContinentState
 runProgram audio program prevState = execStateT (mapM (runSuperContinentStatement audio) program) prevState
@@ -210,28 +210,28 @@ selectOrInstantiateObjects (NumberedObjects ns) m = union m $ fromList $ fmap (\
 selectOrInstantiateObjects AllObjects m = m
 
 runDeltasOnObjects :: Double -> IntMap Object -> [Delta] -> ST (IntMap Object)
-runDeltasOnObjects audio x deltas = foldM (runDeltaOnObjects audio) x deltas
+runDeltasOnObjects audio objs deltas = foldM (runDeltaOnObjects audio) objs deltas
 
 runDeltaOnObjects :: Double -> IntMap Object -> Delta -> ST (IntMap Object)
 runDeltaOnObjects audio objs delta = mapM (runDeltaOnObject audio delta) objs
 
 runDeltaOnObject :: Double -> Delta -> Object -> ST Object
 runDeltaOnObject audio (Delta prop graph) obj = do
-  val <- getValueFromGraph graph
+  val <- getValueFromGraph audio graph
   return $ Map.insert prop val obj
 
-getValueFromGraph :: ValueGraph -> ST Value
-getValueFromGraph (Constant v) = return v
-getValueFromGraph (Sum x y) = do
-  x' <- getValueFromGraph x
-  y' <- getValueFromGraph y
+getValueFromGraph :: Double -> ValueGraph -> ST Value
+getValueFromGraph _ (Constant v) = return v
+getValueFromGraph audio (Sum x y) = do
+  x' <- getValueFromGraph audio x
+  y' <- getValueFromGraph audio y
   return $ sumOfValues x' y'
-getValueFromGraph (Product x y) = do
-  x' <- getValueFromGraph x
-  y' <- getValueFromGraph y
+getValueFromGraph audio (Product x y) = do
+  x' <- getValueFromGraph audio x
+  y' <- getValueFromGraph audio y
   return $ productOfValues x' y'
-getValueFromGraph (AudioProperty) = return $ ValueDouble 0.5 -- *** placeholder ***
-getValueFromGraph (Random) = return $ ValueDouble 0.5 -- *** placeholder ***
+getValueFromGraph audio (AudioProperty) = return $ ValueDouble audio
+getValueFromGraph _ (Random) = return $ ValueDouble 0.5 -- *** placeholder ***
 
 
 -- below this line all there is is our Parsec tokenized parsing definitions
