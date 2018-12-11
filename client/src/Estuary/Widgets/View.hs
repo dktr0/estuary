@@ -8,6 +8,7 @@ import Reflex
 import Reflex.Dom
 import Text.Read
 import Data.Time.Clock
+import Data.Map as M (fromList)
 
 import Estuary.Types.Response
 import Estuary.Types.Definition
@@ -80,16 +81,12 @@ viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
   value <- mapDyn (\(a,_,_) -> a) v
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,a,_)-> a) v
   hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)-> a) v
-
-  -- let value = constDyn [] -- placeholder
-  -- let edits = never -- placeholder
-  -- let hints = never -- placeholder
   value' <- mapDyn (Map.singleton n . Sequence) value
   let edits' = fmap (ZoneRequest . Sited n . Edit . Sequence) edits
   return (value',edits',hints)
   where f (Sequence x) = x
         f _ = defaultValue
-        defaultValue = [("",replicate 8 False)]
+        defaultValue = M.fromList [(0,("",replicate 8 False))]
 
 viewWidget _ _ (LabelView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (LabelText "") n i
@@ -111,7 +108,10 @@ viewWidget _ _ (EvaluableTextView n) i deltasDown = do
 
 viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
-viewWidget _ rInfo (CanvasDisplayView z) _ _ = canvasDisplay z rInfo >> return (constDyn Map.empty, never, never)
+viewWidget ctx _ (CanvasDisplayView z) _ _ = do
+  mv <- fmap canvasOpsQueue $ sample $ current ctx
+  canvasDisplay z mv
+  return (constDyn Map.empty, never, never)
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i

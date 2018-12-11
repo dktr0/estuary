@@ -2,6 +2,8 @@ module Estuary.Types.Context where
 
 import Data.Time
 import Data.IntMap.Strict
+import Control.Concurrent.MVar
+
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
@@ -10,6 +12,7 @@ import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
 import Estuary.Types.Tempo
+import Estuary.Types.CanvasOp
 
 data Context = Context {
   webDirt :: WebDirt,
@@ -24,11 +27,12 @@ data Context = Context {
   peakLevels :: [Double],
   rmsLevels :: [Double],
   wsStatus :: String,
-  clientCount :: Int
+  clientCount :: Int,
+  canvasOpsQueue :: MVar [(UTCTime,CanvasOp)]
   }
 
-initialContext :: UTCTime -> WebDirt -> SuperDirt -> Context
-initialContext now wd sd = Context {
+initialContext :: UTCTime -> WebDirt -> SuperDirt -> MVar [(UTCTime,CanvasOp)] -> Context
+initialContext now wd sd mv = Context {
   webDirt = wd,
   superDirt = sd,
   language = English,
@@ -41,7 +45,8 @@ initialContext now wd sd = Context {
   peakLevels = [],
   rmsLevels = [],
   wsStatus = "",
-  clientCount = 0
+  clientCount = 0,
+  canvasOpsQueue = mv
 }
 
 type ContextChange = Context -> Context

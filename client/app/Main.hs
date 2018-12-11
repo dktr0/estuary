@@ -48,7 +48,8 @@ main = do
   wd <- newWebDirt
   sd <- newSuperDirt
   protocol <- estuaryProtocol
-  let ic = initialContext now wd sd
+  mv <- newMVar []
+  let ic = initialContext now wd sd mv
   c <- newMVar $ ic
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri

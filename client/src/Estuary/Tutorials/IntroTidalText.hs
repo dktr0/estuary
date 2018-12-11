@@ -17,7 +17,10 @@ import Estuary.Tidal.Types
 -- miniTidalWidget :: MonadWidget t m => Int -> String -> m (Dynamic t (Int, Definition),Event t Hint)
 -- miniTidalWidget index initial =
 
-
+-- data Tutorial t m = Tutorial {
+--   tutorialId::TutorialId,
+--   widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
+-- }
 
 
 --
@@ -28,6 +31,7 @@ import Estuary.Tidal.Types
 -- tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css
 --
 
+-- -- Returned integer is just integer given. this makes it ease to construct a definition map when writing tutorials (just a union operation)
 -- miniTidalWidget :: MonadWidget t m => Int -> String -> m (Dynamic t (Int, Definition),Event t Hint)
 -- miniTidalWidget index initial = do
 --   let deltaFuture = fmap forEditing delta

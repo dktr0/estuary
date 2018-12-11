@@ -2,7 +2,7 @@
 <html>
 <head>
   <link defer href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
-  <link defer href="../css-source/source.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
+  <link defer href="../css-source/source.css" rel="stylesheet" type="text/css"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 #ifndef PRODUCTION
