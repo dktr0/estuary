@@ -30,6 +30,8 @@ import GHCJS.Types
 
 import Reflex.Host.Class (HostFrame)
 
+import System.Timeout(timeout)
+
 main :: IO ()
 main = do
   warnBeforeGoingBackInBrowser
@@ -37,7 +39,11 @@ main = do
   setUncaughtExceptionHandler $ \e -> do
     existingUncaughtHandler e
     visuallyCrash e
-  
+
+  js_signalEstuaryLoaded
+  -- Wait for 10k ms or click, which ever happens first
+  waitForInteractionOrTimeout 10000
+
   now <- Data.Time.getCurrentTime
   wd <- newWebDirt
   sd <- newSuperDirt
@@ -59,6 +65,11 @@ visuallyCrash e =
         ]
   in js_confirmReload $ toJSString $ intercalate "\n" lines
 
+waitForInteractionOrTimeout :: Int -> IO ()
+waitForInteractionOrTimeout ms = do
+  timeout (ms * 1000) js_waitForClickBody
+  return ()
+
 mainWidgetAtRoot :: (IsHTMLElement e) => e -> Widget Spider (Gui Spider (WithWebView SpiderHost) (HostFrame Spider)) () -> IO ()
 mainWidgetAtRoot root widget = runWebGUI $ \webView -> do
   Just doc <- liftM (fmap castToHTMLDocument) $ webViewGetDomDocument webView
@@ -70,6 +81,10 @@ foreign import javascript unsafe
   \  window.location.reload();      \
   \}"
   js_confirmReload :: JSVal -> IO ()
+
+foreign import javascript interruptible
+  "document.body.addEventListener('click', $c, {once: true});"
+  js_waitForClickBody :: IO ()
 
 foreign import javascript safe
   "window.addEventListener('beforeunload', function (e) { \
@@ -83,3 +98,7 @@ foreign import javascript safe
 foreign import javascript safe
   "document.querySelector('#estuary-root')"
   js_estuaryMountPoint :: IO JSVal
+
+foreign import javascript safe
+  "document.querySelector('#estuary-splash').classList.add('btn')"
+  js_signalEstuaryLoaded :: IO ()
