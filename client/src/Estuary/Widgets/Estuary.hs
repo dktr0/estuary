@@ -98,25 +98,19 @@ foreign import javascript safe
 
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange, Event t ())
 header ctx renderInfo = divClass "header" $ do
-  clickedLogoEv <- dynButtonWithChild "estuary-logo-icon" $ text "A"
-
-  -- elAttr "img" (fromList [("src", "estuary-logo-green.svg"), ("class", "estuaryLogoIcon")]) blank
   tick <- getPostBuild
   hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
-  divClass "logo" $ dynText =<< translateDyn Term.EstuaryDescription ctx
+
+  clickedLogoEv <- dynButtonWithChild "logo" $ 
+    dynText =<< translateDyn Term.EstuaryDescription ctx
+
   wsStatus' <- mapDyn wsStatus ctx
   clientCount' <- mapDyn clientCount ctx
   statusMsg <- combineDyn f wsStatus' clientCount'
-{-  divClass "server" $ do
-    text "server: "
-    dynText hostName'
-    text ":"
-    dynText port'
-    text ": "
-    dynText statusMsg -}
+
   ctxChangeEv <- clientConfigurationWidgets ctx
   return (ctxChangeEv, clickedLogoEv)
   where
