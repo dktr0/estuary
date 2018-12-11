@@ -231,16 +231,15 @@
 }
 
 .splash-icon {
-/* 		display: flex; */
-
-/* 	background-color: blue; */
 	font-family: estuary-icons;
 	width:100%;
 	font-size: 13em;
-	/*margin: auto;*/
-/* 	min-width: 0; */
-/* 	min-height: 0; */
 }
+
+.splash-icon > canvas {
+    max-width: 100%;
+    max-height: 100%;
+  }
 
 /*contains the container of the about text  (source)*/
 .splash-info {

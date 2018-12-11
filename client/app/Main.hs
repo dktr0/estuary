@@ -7,6 +7,7 @@ import Data.List(intercalate)
 import Data.Time
 import Control.Concurrent.MVar
 import Control.Exception
+import Control.Monad(liftM)
 
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
@@ -21,8 +22,13 @@ import Estuary.Renderer
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
+import GHCJS.DOM
+import GHCJS.DOM.Types hiding (toJSString)
+import GHCJS.Marshal.Pure
 import GHCJS.Prim(toJSString)
-import GHCJS.Types(JSVal)
+import GHCJS.Types
+
+import Reflex.Host.Class (HostFrame)
 
 main :: IO ()
 main = do
@@ -40,7 +46,9 @@ main = do
   c <- newMVar $ ic
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
-  mainWidget $ estuaryWidget Splash c ri protocol
+
+  root <- fmap pFromJSVal js_estuaryMountPoint :: IO HTMLDivElement
+  mainWidgetAtRoot root $ estuaryWidget Splash c ri protocol
 
 visuallyCrash :: SomeException -> IO ()
 visuallyCrash e = 
@@ -50,6 +58,11 @@ visuallyCrash e =
           "Click 'OK' to reload the page or 'Cancel' to remain on the page which will be unresponsive."
         ]
   in js_confirmReload $ toJSString $ intercalate "\n" lines
+
+mainWidgetAtRoot :: (IsHTMLElement e) => e -> Widget Spider (Gui Spider (WithWebView SpiderHost) (HostFrame Spider)) () -> IO ()
+mainWidgetAtRoot root widget = runWebGUI $ \webView -> do
+  Just doc <- liftM (fmap castToHTMLDocument) $ webViewGetDomDocument webView
+  attachWidget root webView widget
 
 foreign import javascript unsafe
   "if (window.confirm($1)) {        \
@@ -66,3 +79,7 @@ foreign import javascript safe
   \  }                                                    \
   \});"
   warnBeforeGoingBackInBrowser :: IO ()
+
+foreign import javascript safe
+  "document.querySelector('#estuary-root')"
+  js_estuaryMountPoint :: IO JSVal

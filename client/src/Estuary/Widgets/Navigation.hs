@@ -92,9 +92,7 @@ page ctx _ _ wsDown Splash = do
           divClass "splash-icon-container" $ do
             divClass "splash-icon" $ do
               estuaryIcon
-            -- divClass  "splash-icon" $ text "A"
-            -- elAttr "img" (Map.fromList [("src", "estuary-logo-green.svg"),  ("class", "splash-icon")]) blank
-
+              
     gotoTutorialEv <- liftM (TutorialList <$) $ do
       divClass "splash-margin" $ do
         dynButtonWithChild "splash-panel" $ do
