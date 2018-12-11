@@ -1,22 +1,21 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <link href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
-    <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+  <link defer href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
+  <link defer href="../css-source/source.css" rel="stylesheet" type="text/css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 #ifndef PRODUCTION
-    <script language="javascript" src="rts.js"></script>
-    <script language="javascript" src="lib.js"></script>
-    <script language="javascript" src="out.js"></script>
+  <script defer language="javascript" src="rts.js"></script>
+  <script defer language="javascript" src="lib.js"></script>
+  <script defer language="javascript" src="out.js"></script>
 #endif
-    <script language="javascript" src="EstuaryProtocol.js"></script>
-    <script language="javascript" src="SuperDirt.js"></script>
-    <script language="javascript" src="WebDirt/WebDirt.js"></script>
-    <script language="javascript" src="WebDirt/Graph.js"></script>
-    <script language="javascript" src="WebDirt/SampleBank.js"></script>
-    <script language="javascript">
-
+  <script defer language="javascript" src="EstuaryProtocol.js"></script>
+  <script defer language="javascript" src="SuperDirt.js"></script>
+  <script defer language="javascript" src="WebDirt/WebDirt.js"></script>
+  <script defer language="javascript" src="WebDirt/Graph.js"></script>
+  <script defer language="javascript" src="WebDirt/SampleBank.js"></script>
+  <script defer language="javascript">
 function downloadJS() {
   var element4 = document.createElement("script");
 #ifdef PRODUCTION
@@ -34,7 +33,50 @@ function start(){
   ___globalWebDirt.initializeWebAudio();
   downloadJS();
 }
-    </script>
-  </head>
-  <body onload="start()"></body>
+  </script>
+  <style type="text/css">
+    .full-screen {
+      position: fixed;
+      width: 100vw;
+      height: 100vh;
+      top: 0;
+      left: 0;
+    }
+
+    .estuary-logo {
+      background-color: black;
+      display: flex;
+    }
+
+    .estuary-logo > canvas {
+      margin: auto;
+      max-width: 100%;
+      max-height: 100%;
+    }
+  </style>
+  <script type="text/javascript" src="estuary-icon.js"></script>
+</head>
+<body onload="start()">
+  <div id="estuary-root"></div>
+  <div id="estuary-splash" class="estuary-logo full-screen"></div>
+  <script type="text/javascript">
+    var EstuaryIcon = (function() {
+      var container = document.querySelector('#estuary-splash');
+      
+      var icons = new EstuaryIcons(800, 800, {
+        linesPerSec: 15,
+        secUntilFullRadius: 10
+      });
+      var display = icons.addDisplay();
+      container.appendChild(display.canvas);
+
+      icons.startRendering();
+
+      return {
+        display: display,
+        renderer: icons
+      };
+    })();
+  </script>
+</body>
 </html>

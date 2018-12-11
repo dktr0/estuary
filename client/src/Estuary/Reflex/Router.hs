@@ -29,8 +29,8 @@ import Reflex.Dom
 -- pushState :: (MonadIO m, ToJSString title, ToJSString url) =>
 --     History -> JSVal -> title -> url -> m ()
 
-router :: (MonadWidget t m, FromJSVal state, ToJSVal state) => state -> (state -> m (Event t state, a)) -> m (Dynamic t (Event t state, a))
-router def renderPage = mdo
+router :: (MonadWidget t m, FromJSVal state, ToJSVal state) => state -> Event t state -> (state -> m (Event t state, a)) -> m (Dynamic t (Event t state, a))
+router def inStatChangeEv renderPage = mdo
   let initialPage = renderPage def
 
   -- Triggered ambiently (back button or otherwise). If the state is null or can't
@@ -40,7 +40,10 @@ router def renderPage = mdo
   -- Triggered via a page widget (dynPage is the recursive value from further below).
   -- When a change is explicitly triggered, we notify the history via pushPageState.
   dynStateChangeEv :: Dynamic t (Event t state) <- mapDyn fst dynPage
-  let triggeredStateChangeEv = switchPromptlyDyn dynStateChangeEv
+  let triggeredStateChangeEv = leftmost [
+          inStatChangeEv,
+          switchPromptlyDyn dynStateChangeEv
+        ]
   performEvent_ $ ffor triggeredStateChangeEv $ \state -> liftIO $ do
     pushPageState state ""
 

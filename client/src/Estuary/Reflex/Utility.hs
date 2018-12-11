@@ -35,7 +35,7 @@ dynButton = (mapDyn button) >=> dynE
 
 dynButtonWithChild :: MonadWidget t m => String -> m () -> m (Event t ())
 dynButtonWithChild cls child = do
-  (e, _) <- elAttr' "div" (fromList [("type", "button"), ("class", cls)]) child
+  (e, _) <- elAttr' "div" (fromList [("type", "button"), ("class", cls ++ " btn")]) child
   return $ domEvent Click e
 
 -- | dynE is like dyn from Reflex, specialized for widgets that return

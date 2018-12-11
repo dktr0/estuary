@@ -69,7 +69,14 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   let tempoRequest = fmap SetTempo tempoSetEvents
 
   -- dynamic View UI
-  let initialWidget = viewWidget ctx renderInfo initialView Map.empty ensembleResponses
+  initialDefs <- sample $ fmap definitions $ current ctx
+  let initialWidget = do
+        (newInitialDefs, y, z) <- viewWidget ctx renderInfo initialView initialDefs ensembleResponses
+        -- Skip the first rendered def and use the initialDefs to prevent audio pause when
+        -- first rejoining an ensemble as the newInitialDefs are temporarily empty.
+        replaceDefsEv <- tailE $ updated newInitialDefs
+        newDefs <- holdDyn initialDefs $ replaceDefsEv
+        return (newDefs, y, z)
   currentView <- liftM nubDyn $ mapDyn getActiveView ensembleState
   let newView = updated currentView
   currentDefs <- mapDyn zones ensembleState

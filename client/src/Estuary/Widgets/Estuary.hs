@@ -23,11 +23,14 @@ import Estuary.WebDirt.SampleEngine
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.Widgets.WebSocket
+import Estuary.Types.Definition
 import Estuary.Types.Request
 import Estuary.Types.Response
+import Estuary.Types.Terminal
 import Estuary.Types.Context
 import Estuary.Types.Hint
 import Estuary.Types.Samples
+import Estuary.Types.Tempo
 import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
@@ -52,15 +55,15 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
         Nothing -> return () -- Couldn't load the map
         Just map -> triggerEv $ setSampleMap map
 
-  headerChanges <- header ctx renderInfo
+  (headerChanges, clickedLogoEv) <- header ctx renderInfo
 
-  (values,deltasUp,hints,tempoChanges) <- divClass "page" $ 
-    navigation initialPage ctx renderInfo commands deltasDown'
+  (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
+    navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
 
   commands <- footer ctx renderInfo deltasUp deltasDown' hints
 
   (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
-  let definitionChanges = fmap setDefinitions $ updated values
+  let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
@@ -93,27 +96,23 @@ foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: JSVal -> IO ()
 
-header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
+header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange, Event t ())
 header ctx renderInfo = divClass "header" $ do
-  divClass  "estuary-logo-icon" $ text "A"
-  -- elAttr "img" (fromList [("src", "estuary-logo-green.svg"), ("class", "estuaryLogoIcon")]) blank
   tick <- getPostBuild
   hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
-  divClass "logo" $ dynText =<< translateDyn Term.EstuaryDescription ctx
+
+  clickedLogoEv <- dynButtonWithChild "logo" $ 
+    dynText =<< translateDyn Term.EstuaryDescription ctx
+
   wsStatus' <- mapDyn wsStatus ctx
   clientCount' <- mapDyn clientCount ctx
   statusMsg <- combineDyn f wsStatus' clientCount'
-{-  divClass "server" $ do
-    text "server: "
-    dynText hostName'
-    text ":"
-    dynText port'
-    text ": "
-    dynText statusMsg -}
-  clientConfigurationWidgets ctx
+
+  ctxChangeEv <- clientConfigurationWidgets ctx
+  return (ctxChangeEv, clickedLogoEv)
   where
     f "connection open" c = "(" ++ (show c) ++ " clients)"
     f x _ = x
