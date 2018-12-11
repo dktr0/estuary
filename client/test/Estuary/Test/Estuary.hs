@@ -1,6 +1,6 @@
 {-# LANGUAGE RecursiveDo #-}
 module Estuary.Test.Estuary where
-BROKEN
+{- BROKEN -}
 import Reflex.Dom
 import Data.Time
 
@@ -65,3 +65,4 @@ foreign import javascript safe
 foreign import javascript safe
   "null"
   js_nullSuperDirt :: SuperDirt
+  
