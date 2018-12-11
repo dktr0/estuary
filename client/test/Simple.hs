@@ -42,7 +42,8 @@ main = do
 initCtx :: IO Context
 initCtx = do
   now <- Data.Time.getCurrentTime
-  let ctx = initialContext now nullWebDirt nullSuperDirt
+  mv <- newMVar []
+  let ctx = initialContext now nullWebDirt nullSuperDirt mv
   return $ ctx {
     webDirtOn = False
   }

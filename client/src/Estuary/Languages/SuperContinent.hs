@@ -1,8 +1,16 @@
-module Estuary.Languages.SuperContinent (parseSuperContinent,emptyState,runProgram,stateToSvgOps) where
+module Estuary.Languages.SuperContinent (parseSuperContinent,Program,SuperContinentState,emptyState,runProgram,stateToSvgOps) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
+import Data.IntMap.Strict
+import qualified Data.Map.Strict as Map
+import Control.Monad.State
+
+import qualified Estuary.Types.SvgOp as SvgOp
+import Estuary.Types.Color
+import Estuary.Types.Transform
+import Estuary.Types.Stroke
 
 parseSuperContinent :: String -> Either ParseError Program
 parseSuperContinent = parse programParser "SuperContinent"
@@ -58,8 +66,9 @@ data Property =
   Type |
   X0 | Y0 |
   X1 | Y1 |
-  X2 | Y2
-  deriving (Show)
+  X2 | Y2 |
+  R | G | B | A
+  deriving (Show,Ord,Eq)
 
 propertyParser :: Parser Property
 propertyParser = choice [
@@ -69,7 +78,11 @@ propertyParser = choice [
   reserved "x1" >> return X1,
   reserved "y1" >> return Y1,
   reserved "x2" >> return X2,
-  reserved "y2" >> return Y2
+  reserved "y2" >> return Y2,
+  reserved "r" >> return R,
+  reserved "g" >> return G,
+  reserved "b" >> return B,
+  reserved "a" >> return A
   ]
 
 -- ie. a graph that will eventually be reduced to a loosely-typed value
@@ -80,6 +93,7 @@ data ValueGraph =
   AudioProperty | -- for now there is only one audio property... but later this type can have more values
   Random -- a random value between -1 and 1
   deriving (Show)
+  -- *** should add a property reflecting current position in meter as well!
 
 valueGraphParser :: Parser ValueGraph
 valueGraphParser = chainl1 productOfGraphs (reservedOp "+" >> return Sum)
@@ -102,12 +116,12 @@ data Value =
   ValueType ObjectType |
   ValueInt Int |
   ValueDouble Double
-  deriving (Show)
+  deriving (Show,Eq)
 
 data ObjectType =
   Nil |
   Triangle
-  deriving (Show)
+  deriving (Show,Eq)
 
 valueAsType :: Value -> ObjectType
 valueAsType (ValueType x) = x
@@ -127,6 +141,16 @@ valueAsDouble (ValueType x) = fromIntegral $ valueAsInt (ValueType x)
 valueAsDouble (ValueInt x) = fromIntegral x
 valueAsDouble (ValueDouble x) = x
 
+sumOfValues :: Value -> Value -> Value
+sumOfValues (ValueDouble x) y = ValueDouble (x + valueAsDouble y)
+sumOfValues x (ValueDouble y) = ValueDouble (y + valueAsDouble x)
+sumOfValues x y = ValueInt (valueAsInt x + valueAsInt y)
+
+productOfValues :: Value -> Value -> Value
+productOfValues (ValueDouble x) y = ValueDouble (x * valueAsDouble y)
+productOfValues x (ValueDouble y) = ValueDouble (y * valueAsDouble x)
+productOfValues x y = ValueInt (valueAsInt x * valueAsInt y)
+
 valueParser :: Parser Value
 valueParser = choice [
   try $ float >>= return . ValueDouble,
@@ -140,35 +164,81 @@ data SuperContinentState = SuperContinentState {
   -- placeholder: will also soon need a random number generator here
   }
 
-emptyState :: IO SuperContinentState
-emptyState = return $ SuperContinentState { objects = empty }
+-- note: will need to be IO SuperContinentState when we incorporate randomness
+emptyState :: SuperContinentState
+emptyState = SuperContinentState { objects = empty }
 
-stateToSvgOps :: SuperContinentState -> [SvgOp]
+stateToSvgOps :: SuperContinentState -> [SvgOp.SvgOp]
 stateToSvgOps s = concat $ fmap objectToSvgOps $ elems (objects s)
 
-type Object = Map Property Value
+type Object = Map.Map Property Value
 
-objectToSvgOps :: Object -> [SvgOp]
-objectToSvgOps x | lookup Type x == Just Triangle = .... *** working here ***
+objectToSvgOps :: Object -> [SvgOp.SvgOp]
+objectToSvgOps x | Map.lookup Type x == Just (ValueType Triangle) = [objectToTriangle x] -- *** note: this doesn't actually do the loose typing thing...
 objectToSvgOps x | otherwise = []
 
+objectToTriangle :: Object -> SvgOp.SvgOp
+objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s emptyTransform
+  where
+    x0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X0 obj
+    y0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y0 obj
+    x1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X1 obj
+    y1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y1 obj
+    x2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X2 obj
+    y2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y2 obj
+    r = valueAsDouble $ Map.findWithDefault (ValueDouble 0) R obj
+    g = valueAsDouble $ Map.findWithDefault (ValueDouble 0) G obj
+    b = valueAsDouble $ Map.findWithDefault (ValueDouble 0) B obj
+    a = valueAsDouble $ Map.findWithDefault (ValueDouble 100) A obj
+    c = RGBA r g b a
+    s = defaultStroke { strokeColor = RGBA r g b a }
 
-runSuperContinentProgram :: Double -> SuperContinentState -> Program -> IO SuperContinentState
-runSuperContinentProgram audio prevState program = foldM (runSuperContinentStatement audio) prevState program
+runProgram :: Double -> Program -> SuperContinentState -> IO SuperContinentState
+runProgram audio program prevState = execStateT (mapM (runSuperContinentStatement audio) program) prevState
 
-runSuperContinentStatement :: Double -> SuperContinentState -> Statement -> IO SuperContinentState
-runSuperContinentStatement audio prevState (With sel deltas) = do
-  -- *** working here also ***
-  -- get the objects (make new ones if necessary)
-  -- run the delta on each object to form modified objects
-  -- (note that running the delta involves io because of randomness)
-  -- insert the modified objects back in the state
+type ST = StateT SuperContinentState IO
+
+runSuperContinentStatement :: Double -> Statement -> ST ()
+runSuperContinentStatement audio (With sel deltas) = do
+  prevState <- get
+  let objs = selectOrInstantiateObjects sel $ objects prevState
+  objs' <- runDeltasOnObjects audio objs deltas
+  modify' $ \s -> s { objects = union objs' $ objects s }
+
+selectOrInstantiateObjects :: Selector -> IntMap Object -> IntMap Object
+selectOrInstantiateObjects (NumberedObjects ns) m = union m $ fromList $ fmap (\x -> (x,Map.empty)) ns
+selectOrInstantiateObjects AllObjects m = m
+
+runDeltasOnObjects :: Double -> IntMap Object -> [Delta] -> ST (IntMap Object)
+runDeltasOnObjects audio x deltas = foldM (runDeltaOnObjects audio) x deltas
+
+runDeltaOnObjects :: Double -> IntMap Object -> Delta -> ST (IntMap Object)
+runDeltaOnObjects audio objs delta = mapM (runDeltaOnObject audio delta) objs
+
+runDeltaOnObject :: Double -> Delta -> Object -> ST Object
+runDeltaOnObject audio (Delta prop graph) obj = do
+  val <- getValueFromGraph graph
+  return $ Map.insert prop val obj
+
+getValueFromGraph :: ValueGraph -> ST Value
+getValueFromGraph (Constant v) = return v
+getValueFromGraph (Sum x y) = do
+  x' <- getValueFromGraph x
+  y' <- getValueFromGraph y
+  return $ sumOfValues x' y'
+getValueFromGraph (Product x y) = do
+  x' <- getValueFromGraph x
+  y' <- getValueFromGraph y
+  return $ productOfValues x' y'
+getValueFromGraph (AudioProperty) = return $ ValueDouble 0.5 -- *** placeholder ***
+getValueFromGraph (Random) = return $ ValueDouble 0.5 -- *** placeholder ***
+
 
 -- below this line all there is is our Parsec tokenized parsing definitions
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["type","x0","y0","x1","y1","x2","y2","nil","triangle","audio","random"],
+  P.reservedNames = ["type","x0","y0","x1","y1","x2","y2","nil","triangle","audio","random","r","g","b","a"],
   P.reservedOpNames = ["..","=","*","+"]
   }
 

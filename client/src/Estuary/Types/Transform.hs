@@ -23,3 +23,6 @@ data Transform = Transform {
   tSkew :: Skew,
   tTranslate :: Translate
 } deriving (Show,Eq)
+
+emptyTransform :: Transform
+emptyTransform = Transform { tRotate = Rotate 0, tScale = Scale 1, tSkew = Skew 0, tTranslate = Translate 0 0 }

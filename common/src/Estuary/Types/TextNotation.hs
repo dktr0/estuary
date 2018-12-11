@@ -11,6 +11,7 @@ data TextNotation =
   TidalTextNotation TidalParser |
   PunctualAudio |
   PunctualVideo |
+  SuperContinent |
   SvgOp |
   CanvasOp
   deriving (Read,Eq,Ord,Data,Typeable,Show)

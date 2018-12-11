@@ -16,6 +16,7 @@ dumpView (LabelView x) = "label:" ++ showInt x
 dumpView (TextView x y) = "textView:" ++ showInt x ++ " " ++ showInt y
 dumpView (EvaluableTextView x) = "evaluable:" ++ showInt x
 dumpView (SvgDisplayView z) = "svgDisplayView:" ++ showInt z
+dumpView (CanvasDisplayView z) = "canvasDisplayView:" ++ showInt z
 dumpView (SequenceView z) = "sequenceView:" ++ showInt z
 
 showInt :: Int -> String
@@ -41,7 +42,9 @@ viewParser = do
     try sequenceView,
     try tidalTextView,
     try evaluableTextView,
-    svgDisplayView]
+    try svgDisplayView,
+    canvasDisplayView
+    ]
   return v
 
 viewDiv = braces $ (ViewDiv <$> identifier <*> viewsParser)
@@ -51,6 +54,7 @@ evaluableTextView = reserved "evaluable" >> reservedOp ":" >> (EvaluableTextView
 sequenceView = reserved "sequenceView" >> reservedOp ":" >> (SequenceView <$> int)
 tidalTextView = reserved "textView" >> reservedOp ":" >> (TextView <$> int <*> int)
 svgDisplayView = reserved "svgDisplayView" >> reservedOp ":" >> (SvgDisplayView <$> int)
+canvasDisplayView = reserved "canvasDisplayView" >> reservedOp ":" >> (CanvasDisplayView <$> int)
 
 int :: Parser Int
 int = choice [
@@ -60,7 +64,10 @@ int = choice [
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["label","structure","evaluable","sequenceView","textView","svgDisplayView"],
+  P.reservedNames = [
+    "label","structure","evaluable","sequenceView","textView","svgDisplayView",
+    "canvasDisplayView"
+    ],
   P.reservedOpNames = [":"]
   }
 

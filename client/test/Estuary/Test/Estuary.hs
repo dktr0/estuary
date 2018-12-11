@@ -52,7 +52,8 @@ silentEstuary protocol = silentEstuaryWithInitialPage protocol Splash
 initCtx :: IO Context
 initCtx = do
   now <- Data.Time.getCurrentTime
-  let ctx = initialContext now js_nullWebDirt js_nullSuperDirt
+  mv <- newMVar []
+  let ctx = initialContext now js_nullWebDirt js_nullSuperDirt mv
   return $ ctx {
     webDirtOn = False
   }

@@ -12,12 +12,14 @@ import Data.List (intercalate,zipWith4)
 import Data.IntMap.Strict as IntMap
 import Data.Maybe
 import Data.Either
+import qualified Data.Map as Map
 
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.Types as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.Punctual.Sample as Punctual
+import qualified Estuary.Languages.SuperContinent as SuperContinent
 import qualified Estuary.Languages.SvgOp as SvgOp
 import qualified Estuary.Languages.CanvasOp as CanvasOp
 import qualified Estuary.Types.CanvasOp as CanvasOp
@@ -58,10 +60,13 @@ renderTidalPattern start range t p = events''
   where
     start' = (realToFrac $ diffUTCTime start (at t)) * cps t + beat t -- start time in cycles since beginning of tempo
     end = realToFrac range * cps t + start' -- end time in cycles since beginning of tempo
-    events = Tidal.queryArc p (toRational start',toRational end) -- events with t in cycles
+    events = Tidal.queryArc p (Tidal.Arc (toRational start') (toRational end)) -- events with t in cycles
     events' = Prelude.filter Tidal.eventHasOnset events
     events'' = f <$> events'
-    f (((w1,_),(_,_)),cMap) = (addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t),cMap)
+    f e = (utcTime,Tidal.event e)
+      where
+        utcTime = addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t)
+        w1 = Tidal.start $ Tidal.whole e
 
 sequenceToControlPattern :: (String,[Bool]) -> Tidal.ControlPattern
 sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " " $ fmap f pat
@@ -92,7 +97,7 @@ renderZoneChanged c z (Structure x) = do
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
 renderZoneChanged c z (TextProgram x) = renderTextProgramChanged c z $ forRendering x
 renderZoneChanged c z (Sequence xs) = do
-  let newParamPattern = Tidal.stack $ fmap sequenceToControlPattern xs
+  let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   s <- get
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
 renderZoneChanged _ _ _ = return ()
@@ -113,6 +118,12 @@ renderTextProgramChanged c z (TidalTextNotation x,y) = do
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
+renderTextProgramChanged c z (SuperContinent,x) = do
+  s <- get
+  let parseResult = SuperContinent.parseSuperContinent x
+  let newProgram = either (const $ superContinentProgram s) id parseResult
+  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { superContinentProgram = newProgram, info = (info s) { errors = newErrors } }
 
 renderTextProgramChanged c z (PunctualAudio,x) = do
   s <- get
@@ -158,8 +169,20 @@ renderTextProgramChanged _ _ _ = return ()
 
 renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
+renderTextProgramAlways c z (SuperContinent,_) = renderSuperContinent c z
 renderTextProgramAlways c z (PunctualVideo,_) = renderPunctualVideo c z
 renderTextProgramAlways _ _ _ = return ()
+
+renderSuperContinent :: Context -> Int -> Renderer
+renderSuperContinent c z = do
+  s <- get
+  let audio = 0.5 -- placeholder
+  let program = superContinentProgram s
+  let scState = superContinentState s
+  scState' <- liftIO $ SuperContinent.runProgram audio program scState
+  let newOps = Just $ SuperContinent.stateToSvgOps scState'
+  liftIO $ putStrLn $ show newOps
+  modify' $ \x -> x { superContinentState = scState', info = (info s) { svgOps = newOps } }
 
 renderPunctualVideo :: Context -> Int -> Renderer
 renderPunctualVideo c z = do

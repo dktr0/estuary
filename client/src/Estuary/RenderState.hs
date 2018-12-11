@@ -9,6 +9,7 @@ import qualified Sound.Punctual.Evaluation as Punctual
 import Estuary.Types.Definition
 import Estuary.RenderInfo
 import Estuary.Types.CanvasOp
+import qualified Estuary.Languages.SuperContinent as SuperContinent
 
 data RenderState = RenderState {
   logicalTime :: !UTCTime,
@@ -17,6 +18,8 @@ data RenderState = RenderState {
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
   punctuals :: !(IntMap Punctual.PunctualW),
   punctualVideo :: !(IntMap Punctual.PunctualState),
+  superContinentProgram :: SuperContinent.Program,
+  superContinentState :: SuperContinent.SuperContinentState,
   renderStartTime :: !UTCTime,
   renderEndTime :: !UTCTime,
   renderTimes :: ![NominalDiffTime],
@@ -32,6 +35,8 @@ initialRenderState t = RenderState {
   dirtEvents = [],
   punctuals = empty,
   punctualVideo = empty,
+  superContinentProgram = [],
+  superContinentState = SuperContinent.emptyState,
   renderStartTime = t,
   renderEndTime = t,
   renderTimes = [],

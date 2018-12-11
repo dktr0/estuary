@@ -386,6 +386,28 @@
 	width: 48%;
 }
 
+.fullRowTopOrBottom {
+	position: relative;
+	left: 0px;
+	top: 0px;
+	width: 100%;
+	padding: 5px;
+	display: inline-block;
+	vertical-align: top;
+}
+
+.fullRowMiddle {
+	position: relative;
+	left: 0px;
+	top: 0px;
+	border-top: 1px solid hsl(0,0%,10%);
+	border-bottom: 1px solid hsl(0,0%,10%);
+	width: 100%;
+	padding: 5px;
+	display: inline-block;
+	vertical-align: top;
+}
+
 /* deprecated? (source) */
 /* .paddedText {
 	vertical-align: top;

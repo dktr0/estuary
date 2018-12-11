@@ -142,14 +142,10 @@ presetView "RGGTRN" = Views [
   ]
 
 presetView "cybernetic" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 1, TextView 2 4]),
-  ViewDiv "eightMiddleR" (Views [LabelView 3, TextView 4 4]),
-  ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 4]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 4]),
-  ViewDiv "eightMiddleL" (Views [LabelView 9, TextView 10 4]),
-  ViewDiv "eightMiddleR" (Views [LabelView 11, TextView 12 4]),
-  ViewDiv "eightMiddleL" (Views [LabelView 13, TextView 14 4]),
-  ViewDiv "eightMiddleR" (Views [LabelView 15, TextView 16 4]),
+  ViewDiv "fullRowTopOrBottom" (Views [LabelView 1, SequenceView 2]),
+  ViewDiv "fullRowMiddle" (Views [LabelView 3, TextView 4 4]),
+  ViewDiv "fullRowMiddle" (Views [LabelView 5, TextView 6 4]),
+  ViewDiv "fullRowMiddle" (Views [LabelView 7, TextView 8 4]),
   SvgDisplayView (-2),
   CanvasDisplayView (-1)
   ]
