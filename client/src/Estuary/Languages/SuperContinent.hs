@@ -206,7 +206,8 @@ runSuperContinentStatement audio (With sel deltas) = do
   modify' $ \s -> s { objects = union objs' $ objects s }
 
 selectOrInstantiateObjects :: Selector -> IntMap Object -> IntMap Object
-selectOrInstantiateObjects (NumberedObjects ns) m = union m $ fromList $ fmap (\x -> (x,Map.empty)) ns
+selectOrInstantiateObjects (NumberedObjects ns) m = differenceWith (\_ b -> Just b) newObjects m
+  where newObjects = fromList $ fmap (\x -> (x,Map.empty)) ns
 selectOrInstantiateObjects AllObjects m = m
 
 runDeltasOnObjects :: Double -> IntMap Object -> [Delta] -> ST (IntMap Object)
