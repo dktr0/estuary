@@ -1,4 +1,4 @@
-module Estuary.Types.LaCalleReference where
+module Estuary.Help.Sucixxx where
 
 import Reflex
 import Reflex.Dom
@@ -8,8 +8,8 @@ import Estuary.Widgets.Generic
 -- import Estuary.Types.Language
 
 --render multiple sub-help files
-laCalleHelpFile :: MonadWidget t m => m ()
-laCalleHelpFile = divClass "languageHelp" $ do
+sucixxxHelpFile :: MonadWidget t m => m ()
+sucixxxHelpFile = divClass "languageHelp" $ do
     about
     holaChoche
     unasChelas

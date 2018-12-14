@@ -23,25 +23,25 @@ ops :: Parser SvgOp
 ops = choice [line, rect, circle, ellipse, triangle, polyline, polygon]
 
 line :: Parser SvgOp
-line = (reserved "line" >> return Line) <*> double <*> double <*> double <*> double <*> stroke <*> transform
+line = (reserved "line" >> return Line) <*> double <*> double <*> double <*> double <*> stroke
 
 rect :: Parser SvgOp
-rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double <*> fill <*> stroke <*> transform
+rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double <*> fill <*> stroke
 
 circle :: Parser SvgOp
-circle = (reserved "circle" >> return Circle) <*> double <*> double <*> double <*> fill <*> stroke <*> transform
+circle = (reserved "circle" >> return Circle) <*> double <*> double <*> double <*> fill <*> stroke
 
 ellipse :: Parser SvgOp
-ellipse = (reserved "ellipse" >> return Ellipse) <*> double <*> double <*> double <*> double <*> fill <*> stroke <*> transform
+ellipse = (reserved "ellipse" >> return Ellipse) <*> double <*> double <*> double <*> double <*> fill <*> stroke
 
 triangle :: Parser SvgOp
-triangle = (reserved "triangle" >> return Triangle) <*> double <*> double <*> double <*> double <*> double <*> double <*> fill <*> stroke <*> transform
+triangle = (reserved "triangle" >> return Triangle) <*> double <*> double <*> double <*> double <*> double <*> double <*> fill <*> stroke
 
 polyline :: Parser SvgOp
-polyline = (reserved "polyline" >> return Polyline) <*> listOfDoubles <*> fill <*> stroke <*> transform
+polyline = (reserved "polyline" >> return Polyline) <*> listOfDoubles <*> fill <*> stroke
 
 polygon :: Parser SvgOp
-polygon = (reserved "polygon" >> return Polygon) <*> listOfDoubles <*> fill <*> stroke <*> transform
+polygon = (reserved "polygon" >> return Polygon) <*> listOfDoubles <*> fill <*> stroke
 
 double :: Parser Double
 double = choice [try float,fromIntegral <$> integer]
@@ -61,10 +61,6 @@ stroke = do
   s <- option (Stroke (RGBA 100 100 100 100) 1 Butt Miter (DashArray 0 0)) (reserved "s" >> stroke')
   return $ s
 
-transform :: Parser Transform
-transform = do
-  t <- option (Transform (Rotate 0) (Scale 1) (Skew 0) (Translate 0 0)) (reserved "t" >> transform')
-  return $ t
 
 stroke' :: Parser Stroke
 stroke' = brackets $ do
@@ -74,14 +70,6 @@ stroke' = brackets $ do
   lj <- option Miter lineJoin
   d <- option (DashArray 0 0) dashArray
   return $ Stroke c t lc lj d
-
-transform' :: Parser Transform
-transform' = brackets $ do
-    r <- option (Rotate 0) rotate
-    s <- option (Scale 1) scale
-    sk <- option (Skew 0) skew
-    t <- option (Translate 0 0) translate
-    return $ Transform r s sk t
 
 color :: Parser Color
 color =  parens $ do
@@ -99,29 +87,6 @@ fill' = do
   char 'f'
   f <- color
   return $ f
-
-
-rotate :: Parser Rotate
-rotate = do
-  x <- double
-  return $ Rotate x
-
-scale :: Parser Scale
-scale = do
-  x <- double
-  return $ Scale x
-
-translate :: Parser Translate
-translate = parens $ do
-  x <- double
-  comma
-  y <- double
-  return $ Translate x y
-
-skew :: Parser Skew
-skew = do
-  x <- double
-  return $ Skew x
 
 lineCap :: Parser LineCap
 lineCap = choice [

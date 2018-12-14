@@ -178,7 +178,7 @@ objectToSvgOps x | Map.lookup Type x == Just (ValueType Triangle) = [objectToTri
 objectToSvgOps x | otherwise = []
 
 objectToTriangle :: Object -> SvgOp.SvgOp
-objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s emptyTransform
+objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s
   where
     x0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X0 obj
     y0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y0 obj

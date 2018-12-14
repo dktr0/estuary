@@ -1,4 +1,4 @@
-module Estuary.Help.SvgOp where
+module Estuary.Help.SuperContinent where
 
 import Reflex
 import Reflex.Dom
@@ -8,8 +8,8 @@ import Estuary.Widgets.Generic
 -- import Estuary.Types.Language
 
 --render multiple sub-help files
-svgOpHelpFile :: MonadWidget t m => m ()
-svgOpHelpFile = divClass "languageHelp" $ do
+superContinentHelpFile :: MonadWidget t m => m ()
+superContinentHelpFile = divClass "languageHelp" $ do
     about
     line
     rect
