@@ -21,7 +21,9 @@ data Ensemble = Ensemble {
   defs :: Map.Map Int Definition,
   views :: Map.Map String View,
   defaultView :: View,
-  tempo :: Tempo
+  tempo :: Tempo,
+  totalClientCount :: Int,
+  authenticatedClientCount :: Int
   } deriving (Data,Typeable)
 
 instance JSON Ensemble where
@@ -34,7 +36,9 @@ emptyEnsemble t = Ensemble {
   defs = Map.empty,
   views = Map.empty,
   defaultView = standardView,
-  tempo = Tempo { at=t, beat=0.0, cps=0.5 }
+  tempo = Tempo { at=t, beat=0.0, cps=0.5 },
+  totalClientCount = 0,
+  authenticatedClientCount = 0
   }
 
 setPassword :: String -> Ensemble -> Ensemble
