@@ -65,9 +65,10 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
   let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
+  let wsChange = fmap (\w x -> x { wsStatus = w }) $ (updated . nubDyn) wsStatus
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv]
+  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsChange]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
   t <- mapDyn theme ctx -- Dynamic t String
@@ -103,19 +104,10 @@ header ctx renderInfo = divClass "header" $ do
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
-
   clickedLogoEv <- dynButtonWithChild "logo" $
     dynText =<< translateDyn Term.EstuaryDescription ctx
-
-  wsStatus' <- mapDyn wsStatus ctx
-  clientCount' <- mapDyn clientCount ctx
-  statusMsg <- combineDyn f wsStatus' clientCount'
-
   ctxChangeEv <- clientConfigurationWidgets ctx
   return (ctxChangeEv, clickedLogoEv)
-  where
-    f "connection open" c = "(" ++ (show c) ++ " clients)"
-    f x _ = x
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "webDirt" $ do
@@ -140,6 +132,11 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak" $ do
+    text "server "
+    wsStatus' <- mapDyn wsStatus ctx
+    clientCount' <- mapDyn clientCount ctx
+    dynText =<< combineDyn f wsStatus' clientCount'
+    text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
     dynText =<< mapDyn (show . avgRenderLoad) renderInfo
@@ -149,3 +146,6 @@ footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
     dynText =<< translateDyn Term.Peak ctx
     text ") "
   terminalWidget ctx deltasDown deltasUp hints
+  where
+    f "connection open" c = "(" ++ (show c) ++ " connections)"
+    f x _ = "(" ++ x ++ ")"
