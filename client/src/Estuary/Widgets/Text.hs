@@ -57,6 +57,7 @@ textAreaWidgetForPatternChain rows i delta = do
 textNotationParsers :: [TextNotation]
 textNotationParsers = [PunctualAudio,PunctualVideo,SuperContinent,SvgOp,CanvasOp] ++ (fmap TidalTextNotation tidalParsers)
 
+
 textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
   m (Dynamic t (Live (TextNotation,String)),Event t (Live (TextNotation,String)),Event t Hint)
