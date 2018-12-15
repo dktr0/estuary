@@ -26,8 +26,7 @@ import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
-import Estuary.Types.LanguageHelp
-import Estuary.Types.MiniTidalReference
+import Estuary.Help.LanguageHelp
 
 import Estuary.Types.Context
 
@@ -84,9 +83,8 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
     textVisible <- toggle True infoButton
     helpVisible <- toggle False infoButton
     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
-    let languageToDisplayHelp = (TidalTextNotation MiniTidal)
-    -- let languageToDisplayHelp = ( _dropdown_value d)
-    hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
+    let languageToDisplayHelp = ( _dropdown_value d)
+    hideableWidget helpVisible "visibleArea" $ languageHelpWidget languageToDisplayHelp
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagDyn v' $ leftmost [evalButton,shiftEnter]

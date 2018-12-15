@@ -39,6 +39,13 @@ emptyView = Views []
 
 presetView :: String -> View
 
+presetView "fulltexteditor" = Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 2]),
+  SvgDisplayView (-2),
+  CanvasDisplayView (-1)
+  ]
+
+
 presetView "iclc2017" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 2]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 2]),

@@ -35,7 +35,7 @@ import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
-import Estuary.Types.LanguageHelp
+import Estuary.Help.LanguageHelp
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
@@ -75,7 +75,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   changeTheme t'
 
   updateContext ctxM ctx
-  
+
   performHint (webDirt ic) hints
 
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
@@ -104,7 +104,7 @@ header ctx renderInfo = divClass "header" $ do
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
 
-  clickedLogoEv <- dynButtonWithChild "logo" $ 
+  clickedLogoEv <- dynButtonWithChild "logo" $
     dynText =<< translateDyn Term.EstuaryDescription ctx
 
   wsStatus' <- mapDyn wsStatus ctx

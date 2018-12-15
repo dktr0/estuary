@@ -32,7 +32,7 @@ instructionsToWidgets = mapM_ instructionToWidget
 
 instructionToWidget :: MonadWidget t m => SvgOp -> m ()
 
-instructionToWidget (Line x1 y1 x2 y2 s t) = svgAttr "line" attrs $ return ()
+instructionToWidget (Line x1 y1 x2 y2 s) = svgAttr "line" attrs $ return ()
   where attrs = fromList [
          ("x1",show x1 ++ "%"),
          ("y1",show y1 ++ "%"),
@@ -42,11 +42,10 @@ instructionToWidget (Line x1 y1 x2 y2 s t) = svgAttr "line" attrs $ return ()
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("stroke-dasharray", show (strokeDashArray s)),
-         ("style", "transform:" ++ show (tRotate t) ++ show (tScale t) ++ show (tSkew t) ++ show (tTranslate t))
+         ("stroke-dasharray", show (strokeDashArray s))
          ]
 
-instructionToWidget (Rect x y w h f s t) = svgAttr "rect" attrs $ return ()
+instructionToWidget (Rect x y w h f s) = svgAttr "rect" attrs $ return ()
   where attrs = fromList [
          ("x",show x ++ "%"),
          ("y",show y ++ "%"),
@@ -57,11 +56,10 @@ instructionToWidget (Rect x y w h f s t) = svgAttr "rect" attrs $ return ()
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("stroke-dasharray", show (strokeDashArray s)),
-         ("style", "transform:" ++ show (tRotate t) ++ show (tScale t) ++ show (tSkew t) ++ show (tTranslate t))
+         ("stroke-dasharray", show (strokeDashArray s))
          ]
 
-instructionToWidget (Circle x y r f s t) = svgAttr "circle" attrs $ return ()
+instructionToWidget (Circle x y r f s) = svgAttr "circle" attrs $ return ()
   where attrs = fromList [
          ("cx",show x ++ "%"),
          ("cy",show y ++ "%"),
@@ -71,11 +69,10 @@ instructionToWidget (Circle x y r f s t) = svgAttr "circle" attrs $ return ()
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("stroke-dasharray", show (strokeDashArray s)),
-         ("style", "transform:" ++ show (tRotate t) ++ show (tScale t) ++ show (tSkew t) ++ show (tTranslate t))
+         ("stroke-dasharray", show (strokeDashArray s))
          ]
 
-instructionToWidget (Ellipse x y rx ry f s t) = svgAttr "ellipse" attrs $ return ()
+instructionToWidget (Ellipse x y rx ry f s) = svgAttr "ellipse" attrs $ return ()
   where attrs = fromList [
          ("cx",show x ++ "%"),
          ("cy",show y ++ "%"),
@@ -86,12 +83,10 @@ instructionToWidget (Ellipse x y rx ry f s t) = svgAttr "ellipse" attrs $ return
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("stroke-dasharray", show (strokeDashArray s)),
-         ("style", "transform:" ++ show (tRotate t) ++ show (tScale t) ++ show (tSkew t) ++ show (tTranslate t))
-
+         ("stroke-dasharray", show (strokeDashArray s))
          ]
 
-instructionToWidget (Triangle ax ay bx by cx cy f s t) = svgAttr "polygon" attrs $ return ()
+instructionToWidget (Triangle ax ay bx by cx cy f s) = svgAttr "polygon" attrs $ return ()
   where attrs = fromList [
          ("points", show ax ++ "," ++ show ay ++ " " ++ show bx ++ "," ++ show by ++ " " ++ show cx ++ "," ++ show cy),
          ("fill", show f),
@@ -99,11 +94,10 @@ instructionToWidget (Triangle ax ay bx by cx cy f s t) = svgAttr "polygon" attrs
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("stroke-dasharray", show (strokeDashArray s)),
-         ("style", "transform:" ++ show (tRotate t) ++ show (tScale t) ++ show (tSkew t) ++ show (tTranslate t))
+         ("stroke-dasharray", show (strokeDashArray s))
          ]
 
-instructionToWidget (Polyline p f s t) = svgAttr "polyline" attrs $ return ()
+instructionToWidget (Polyline p f s) = svgAttr "polyline" attrs $ return ()
   where attrs = fromList [
          ("points", (listToString' p)),
          ("fill", show f),
@@ -111,11 +105,10 @@ instructionToWidget (Polyline p f s t) = svgAttr "polyline" attrs $ return ()
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("stroke-dasharray", show (strokeDashArray s)),
-         ("style", "transform:" ++ show (tRotate t) ++ show (tScale t) ++ show (tSkew t) ++ show (tTranslate t))
-                ]
+         ("stroke-dasharray", show (strokeDashArray s))
+         ]
 
-instructionToWidget (Polygon p f s t) = svgAttr "polygon" attrs $ return ()
+instructionToWidget (Polygon p f s) = svgAttr "polygon" attrs $ return ()
   where attrs = fromList [
          ("points", (listToString' p)),
          ("fill", show f),
@@ -123,6 +116,5 @@ instructionToWidget (Polygon p f s t) = svgAttr "polygon" attrs $ return ()
          ("stroke-linejoin",show (strokeLineJoin s)),
          ("stroke-width",show (strokeWidth s) ++ "%"),
          ("stroke",show (strokeColor s)),
-         ("stroke-dasharray", show (strokeDashArray s)),
-         ("style", "transform:" ++ show (tRotate t) ++ show (tScale t) ++ show (tSkew t) ++ show (tTranslate t))
-                ]
+         ("stroke-dasharray", show (strokeDashArray s))
+            ]
