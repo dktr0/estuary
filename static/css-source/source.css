@@ -63,6 +63,12 @@
 	padding-right: 15px;
 	margin-top: 0.5em;
   font-family: estuaryFont;
+  
+  /* Force the browser to try it's best to float properly on overflow. 
+     When the window doesn't fit the entire header, this ensures that moving
+     the controls to the next line doesn't leak out of it's parent container
+     preventing interation with it. */
+  overflow: hidden; 
 }
 
 /* source  */
