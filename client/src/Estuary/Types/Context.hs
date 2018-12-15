@@ -20,6 +20,7 @@ data Context = Context {
   language :: Language,
   theme :: String,
   tempo :: Tempo,
+  activeDefsEnsemble :: String, -- ^ The name of the ensemble in which the current definitions in the context belong to.
   definitions :: DefinitionMap,
   samples :: SampleMap,
   webDirtOn :: Bool,
@@ -38,6 +39,7 @@ initialContext now wd sd mv = Context {
   language = English,
   theme = "../css-custom/classic.css",
   tempo = Tempo { cps = 0.5, at = now, beat = 0.0 },
+  activeDefsEnsemble = "",
   definitions = empty,
   samples = emptySampleMap,
   webDirtOn = True,
@@ -66,8 +68,11 @@ setRmsLevels xs c = c { rmsLevels = xs }
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
-setDefinitions :: DefinitionMap -> ContextChange
-setDefinitions x c = c { definitions = x }
+setDefinitions :: (String, DefinitionMap) -> ContextChange
+setDefinitions (x, y) c = c { 
+  activeDefsEnsemble = x, 
+  definitions = y 
+}
 
 setSampleMap :: SampleMap -> ContextChange
 setSampleMap x c = c { samples = x}
