@@ -1,7 +1,9 @@
 module Estuary.Types.ViewsParser where
 
 import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Number
+import qualified Text.ParserCombinators.Parsec.Token as P
+import Text.Parsec.Language (haskellDef)
+
 import Data.List (intercalate)
 
 import Estuary.Types.View
@@ -9,44 +11,91 @@ import Estuary.Types.View
 dumpView :: View -> String
 dumpView (Views xs) = intercalate " " $ fmap dumpView xs
 dumpView (ViewDiv css v) = "{ " ++ css ++ " " ++ dumpView v ++ " }"
-dumpView (StructureView x) = "structure:" ++ show x
-dumpView (LabelView x) = "label:" ++ show x
-dumpView (TidalTextView x y) = "textView:" ++ show x ++ " " ++ show y
-dumpView (EvaluableTextView x) = "evaluable:" ++ show x
-dumpView (SvgDisplayView) = "svgDisplayView:"
+dumpView (StructureView x) = "structure:" ++ showInt x
+dumpView (LabelView x) = "label:" ++ showInt x
+dumpView (TextView x y) = "textView:" ++ showInt x ++ " " ++ showInt y
+dumpView (EvaluableTextView x) = "evaluable:" ++ showInt x
+dumpView (SvgDisplayView z) = "svgDisplayView:" ++ showInt z
+dumpView (CanvasDisplayView z) = "canvasDisplayView:" ++ showInt z
+dumpView (SequenceView z) = "sequenceView:" ++ showInt z
 
-viewsParser :: GenParser Char a View
-viewsParser = do
-  spaces
-  many1 viewParser >>= return . Views
+showInt :: Int -> String
+showInt x | x >= 0 = show x
+showInt x | otherwise = "(" ++ show x ++ ")"
 
-viewParser :: GenParser Char a View
+topLevelViewsParser :: Parser View
+topLevelViewsParser = do
+  whiteSpace
+  v <- viewsParser
+  eof
+  return v
+
+viewsParser :: Parser View
+viewsParser = Views <$> many1 viewParser
+
+viewParser :: Parser View
 viewParser = do
   v <- choice [
     try viewDiv,
     try labelView,
     try structureView,
+    try sequenceView,
     try tidalTextView,
     try evaluableTextView,
-    svgDisplayView]
-  spaces
+    try svgDisplayView,
+    canvasDisplayView
+    ]
   return v
 
-viewDiv = between (char '{') (char '}') $ do
-  spaces
-  cssClass <- many1 alphaNum
-  skipMany1 space
-  vs <- viewsParser
-  spaces
-  return $ ViewDiv cssClass vs
+viewDiv = braces $ (ViewDiv <$> identifier <*> viewsParser)
+labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
+structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
+evaluableTextView = reserved "evaluable" >> reservedOp ":" >> (EvaluableTextView <$> int)
+sequenceView = reserved "sequenceView" >> reservedOp ":" >> (SequenceView <$> int)
+tidalTextView = reserved "textView" >> reservedOp ":" >> (TextView <$> int <*> int)
+svgDisplayView = reserved "svgDisplayView" >> reservedOp ":" >> (SvgDisplayView <$> int)
+canvasDisplayView = reserved "canvasDisplayView" >> reservedOp ":" >> (CanvasDisplayView <$> int)
 
-labelView = string "label:" >> (read <$> many1 digit) >>= return . LabelView
-structureView = string "structure:" >> (read <$> many1 digit) >>= return . StructureView
-evaluableTextView = string "evaluable:" >> (read <$> many1 digit) >>= return . EvaluableTextView
-tidalTextView = do
-  string "textView:"
-  x <- read <$> many1 digit
-  skipMany1 space
-  y <- read <$> many1 digit
-  return $ TidalTextView x y
-svgDisplayView = string "svgDisplayView:" >> return SvgDisplayView
+int :: Parser Int
+int = choice [
+  parens $ (fromIntegral <$> integer),
+  fromIntegral <$> integer
+  ]
+
+tokenParser :: P.TokenParser a
+tokenParser = P.makeTokenParser $ haskellDef {
+  P.reservedNames = [
+    "label","structure","evaluable","sequenceView","textView","svgDisplayView",
+    "canvasDisplayView"
+    ],
+  P.reservedOpNames = [":"]
+  }
+
+identifier = P.identifier tokenParser
+reserved = P.reserved tokenParser
+operator = P.operator tokenParser
+reservedOp = P.reservedOp tokenParser
+charLiteral = P.charLiteral tokenParser
+stringLiteral = P.stringLiteral tokenParser
+natural = P.natural tokenParser
+integer = P.integer tokenParser
+float = P.float tokenParser
+naturalOrFloat = P.naturalOrFloat tokenParser
+decimal = P.decimal tokenParser
+hexadecimal = P.hexadecimal tokenParser
+octal = P.octal tokenParser
+symbol = P.symbol tokenParser
+lexeme = P.lexeme tokenParser
+whiteSpace = P.whiteSpace tokenParser
+parens = P.parens tokenParser
+braces = P.braces tokenParser
+angles = P.angles tokenParser
+brackets = P.brackets tokenParser
+semi = P.semi tokenParser
+comma = P.comma tokenParser
+colon = P.colon tokenParser
+dot = P.dot tokenParser
+semiSep = P.semiSep tokenParser
+semiSep1 = P.semiSep1 tokenParser
+commaSep = P.commaSep tokenParser
+commaSep1 = P.commaSep1 tokenParser

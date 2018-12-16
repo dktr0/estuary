@@ -22,12 +22,12 @@ import Estuary.Languages.Sucixxx
 import Estuary.Languages.Vocesotrevez
 import Estuary.Languages.Imagina
 import Estuary.Languages.Alobestia
-
+import Estuary.Languages.Togo
 
 tidalParsers :: [TidalParser]
 tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
   Saludos,ColombiaEsPasion,Si,Sentidos,Natural,Medellin,LaCalle,
-  Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia
+  Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia,Togo
   ]
 
 tidalParser :: TidalParser -> String -> Either ParseError Tidal.ControlPattern
@@ -49,3 +49,4 @@ tidalParser Sucixxx = sucixxx
 tidalParser Vocesotrevez = vocesotrevez
 tidalParser Imagina = imagina
 tidalParser Alobestia = alobestia
+tidalParser Togo = togo

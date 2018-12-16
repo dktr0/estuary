@@ -105,3 +105,9 @@ tempoChangeInEnsemble e t s = s { ensembles = Map.adjust (E.tempoChange t) e (en
 
 getTempoInEnsemble :: MVar Server -> String -> IO (Maybe Tempo)
 getTempoInEnsemble s e = readMVar s >>= return . fmap E.tempo . Map.lookup e . ensembles
+
+getTotalEnsembleClientCount :: MVar Server -> String -> IO (Maybe Int)
+getTotalEnsembleClientCount s e = readMVar s >>= return . fmap E.totalClientCount . Map.lookup e . ensembles
+
+getAuthenticatedEnsembleClientCount :: MVar Server -> String -> IO (Maybe Int)
+getAuthenticatedEnsembleClientCount s e = readMVar s >>= return . fmap E.authenticatedClientCount . Map.lookup e . ensembles

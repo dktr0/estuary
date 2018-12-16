@@ -16,7 +16,7 @@ packages:
 
 - location:
     git: https://github.com/d0kt0r0/Tidal.git
-    commit: b6bdf0fb9b159c62c3d60567682c6c4496777aea
+    commit: 633c7f882d3009a50af61076179fa17eb8c0d55b
   extra-dep: true
 
 - location:
@@ -26,7 +26,7 @@ packages:
 
 - location:
     git: https://github.com/d0kt0r0/Punctual.git
-    commit: 021b35edb552e05384d719a7d92a16794cb31788
+    commit: b15af7354592b201e29fd90f9770f329cf306b70
   extra-dep: true
 
 extra-deps:

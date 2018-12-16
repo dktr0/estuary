@@ -26,8 +26,7 @@ import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
-import Estuary.Types.LanguageHelp
-import Estuary.Types.MiniTidalReference
+import Estuary.Help.LanguageHelp
 
 import Estuary.Types.Context
 
@@ -56,7 +55,8 @@ textAreaWidgetForPatternChain rows i delta = do
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = [Punctual] ++ (fmap TidalTextNotation tidalParsers)
+textNotationParsers = [PunctualAudio,PunctualVideo,SuperContinent,SvgOp,CanvasOp] ++ (fmap TidalTextNotation tidalParsers)
+
 
 textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
@@ -68,7 +68,7 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     let initialParser = fst $ forEditing i
-    let parserMap = constDyn $ fromList $ fmap (\x -> (x,show x)) textNotationParsers
+    let parserMap = constDyn $ fromList $ fmap (\x -> (x,textNotationDropDownLabel x)) textNotationParsers
     d' <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- button "eval"
@@ -84,9 +84,8 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
     textVisible <- toggle True infoButton
     helpVisible <- toggle False infoButton
     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
-    let languageToDisplayHelp = (TidalTextNotation MiniTidal)
-    -- let languageToDisplayHelp = ( _dropdown_value d)
-    hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
+    let languageToDisplayHelp = ( _dropdown_value d)
+    hideableWidget helpVisible "visibleArea" $ languageHelpWidget languageToDisplayHelp
     v' <- combineDyn (,) parserValue textValue
     let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagDyn v' $ leftmost [evalButton,shiftEnter]

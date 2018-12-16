@@ -26,7 +26,8 @@ import Estuary.Utility
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Text
 import Estuary.Widgets.Terminal
-import Estuary.Widgets.DynSvg
+import Estuary.Widgets.SvgDisplay
+import Estuary.Widgets.CanvasDisplay
 import Estuary.Types.TidalParser
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
@@ -60,7 +61,7 @@ viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   where f (Structure x) = x
         f _ = EmptyTransformedPattern
 
-viewWidget ctx renderInfo (TidalTextView n rows) i deltasDown = do
+viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
   let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
   e <- mapDyn (Map.lookup n . errors) renderInfo
@@ -105,10 +106,12 @@ viewWidget _ _ (EvaluableTextView n) i deltasDown = do
   where f (EvaluableText x) = x
         f _ = ""
 
-viewWidget _ _ SvgDisplayView _ _ = do
-  testOurDynSvg
-  return (constDyn Map.empty, never, never)
+viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
+viewWidget ctx _ (CanvasDisplayView z) _ _ = do
+  mv <- fmap canvasOpsQueue $ sample $ current ctx
+  canvasDisplay z mv
+  return (constDyn Map.empty, never, never)
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i

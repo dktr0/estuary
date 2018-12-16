@@ -2,6 +2,8 @@
 
 module Estuary.Widgets.Estuary where
 
+import Control.Monad (liftM)
+
 import Reflex
 import Reflex.Dom
 import Text.JSON
@@ -21,38 +23,60 @@ import Estuary.WebDirt.SampleEngine
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.Widgets.WebSocket
+import Estuary.Types.Definition
 import Estuary.Types.Request
 import Estuary.Types.Response
+import Estuary.Types.Terminal
 import Estuary.Types.Context
 import Estuary.Types.Hint
+import Estuary.Types.Samples
+import Estuary.Types.Tempo
 import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
-import Estuary.Types.LanguageHelp
+import Estuary.Help.LanguageHelp
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
 import qualified Estuary.Types.Terminal as Terminal
 
-estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
-estuaryWidget ctxM riM protocol = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
+estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   ic <- liftIO $ readMVar ctxM
   renderInfo <- pollRenderInfoChanges riM
-  headerChanges <- header ctx renderInfo
-  (values,deltasUp,hints,tempoChanges) <- divClass "page" $ navigation ctx renderInfo commands deltasDown'
+
+  -- load the samples map, if there is a better way to triiger an event from an async callback
+  -- then this should be update to reflect that.
+  postBuild <- getPostBuild
+  samplesLoadedEv <- performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
+    loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
+      case maybeMap of
+        Nothing -> return () -- Couldn't load the map
+        Just map -> triggerEv $ setSampleMap map
+
+  (headerChanges, clickedLogoEv) <- header ctx renderInfo
+
+  (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
+    navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
+
   commands <- footer ctx renderInfo deltasUp deltasDown' hints
+
   (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
-  let definitionChanges = fmap setDefinitions $ updated values
+  let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
+  let wsChange = fmap (\w x -> x { wsStatus = w }) $ (updated . nubDyn) wsStatus
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let contextChanges = mergeWith (.) [definitionChanges,headerChanges,ccChange,tempoChanges']
+  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsChange]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
+
   t <- mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
+
   updateContext ctxM ctx
+
   performHint (webDirt ic) hints
 
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
@@ -73,36 +97,24 @@ foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: JSVal -> IO ()
 
-header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
+header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange, Event t ())
 header ctx renderInfo = divClass "header" $ do
-  elAttr "img" (fromList [("src", "estuary-logo-green.svg"), ("class", "estuaryLogoIcon")]) blank
   tick <- getPostBuild
   hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
   port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
   hostName' <- holdDyn "" hostName
   port' <- holdDyn "" port
-  divClass "logo" $ dynText =<< translateDyn Term.EstuaryDescription ctx
-  wsStatus' <- mapDyn wsStatus ctx
-  clientCount' <- mapDyn clientCount ctx
-  statusMsg <- combineDyn f wsStatus' clientCount'
-{-  divClass "server" $ do
-    text "server: "
-    dynText hostName'
-    text ":"
-    dynText port'
-    text ": "
-    dynText statusMsg -}
-  clientConfigurationWidgets ctx
-  where
-    f "connection open" c = "(" ++ (show c) ++ " clients)"
-    f x _ = x
+  clickedLogoEv <- dynButtonWithChild "logo" $
+    dynText =<< translateDyn Term.EstuaryDescription ctx
+  ctxChangeEv <- clientConfigurationWidgets ctx
+  return (ctxChangeEv, clickedLogoEv)
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "webDirt" $ do
   divClass "webDirtMute" $ divClass "webDirtContent" $ do
-    let styleMap =  fromList [("classic.css", "Classic"),("inverse.css","Inverse")]
+    let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale")]
     translateDyn Term.Theme ctx >>= dynText
-    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "classic.css" (constDyn styleMap) def -- Event t String
+    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) def -- Event t String
     let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
     translateDyn Term.Language ctx >>= dynText
     let langMap = constDyn $ fromList $ zip languages (fmap show languages)
@@ -120,6 +132,11 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak" $ do
+    text "server "
+    wsStatus' <- mapDyn wsStatus ctx
+    clientCount' <- mapDyn clientCount ctx
+    dynText =<< combineDyn f wsStatus' clientCount'
+    text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
     dynText =<< mapDyn (show . avgRenderLoad) renderInfo
@@ -129,3 +146,6 @@ footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
     dynText =<< translateDyn Term.Peak ctx
     text ") "
   terminalWidget ctx deltasDown deltasUp hints
+  where
+    f "connection open" c = "(" ++ (show c) ++ " connections)"
+    f x _ = "(" ++ x ++ ")"

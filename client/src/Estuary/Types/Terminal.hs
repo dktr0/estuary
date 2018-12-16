@@ -23,10 +23,10 @@ data Command =
 parseCommand :: String -> Either ParseError Command
 parseCommand = parse terminal "(unknown)"
 
-terminal :: GenParser Char a Command
+terminal :: Parser Command
 terminal = spaces >> (terminalCommand <|> chatP)
 
-terminalCommand :: GenParser Char a Command
+terminalCommand :: Parser Command
 terminalCommand = char '!' >> choice [
   try setViewP,
   try standardViewP,
