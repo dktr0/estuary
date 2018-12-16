@@ -54,13 +54,13 @@ data Navigation =
 navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo)
 navigation ctx renderInfo commands wsDown = do
   dynPage <- router Splash $ page ctx renderInfo commands wsDown
-  
+
   dynPageData <- mapDyn snd dynPage
   dynValues <- liftM joinDyn           $ mapDyn (\(x, _, _, _) -> x) dynPageData
   wsUpEv    <- liftM switchPromptlyDyn $ mapDyn (\(_, x, _, _) -> x) dynPageData
   hintEv    <- liftM switchPromptlyDyn $ mapDyn (\(_, _, x, _) -> x) dynPageData
   tempoEv   <- liftM switchPromptlyDyn $ mapDyn (\(_, _, _, x) -> x) dynPageData
-  
+
   return (dynValues, wsUpEv, hintEv, tempoEv)
 
 page :: forall t m. (MonadWidget t m)
@@ -96,11 +96,19 @@ page ctx _ _ wsDown Splash = do
 page ctx _ _ wsDown TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ button $ show $ T.tutorialId b) (tutorials::[T.Tutorial t m])
-  return (never, (constDyn empty, never, never, never))
+  return (leftmost bs, (constDyn empty, never, never, never))
 
-page ctx _ _ wsDown (Tutorial _) = do
-  text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
-  return (never, (constDyn empty, never, never, never))
+  -- widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
+  -- -> m (Event t Navigation, (Dynamic t DefinitionMap, Event t Request, Event t Hint, Event t Tempo))
+
+page ctx _ _ wsDown (Tutorial tid) = do
+  let widget = (Map.lookup tid tutorialMap)::Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
+  (dm, hint) <- maybe errMsg id (fmap (\x-> x ctx) widget)
+  return (never, (dm, never, hint, never))
+  where
+    errMsg = do
+      text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
+      return (constDyn empty, never)
 
 page ctx renderInfo commands wsDown Solo = do
   (values,hints,tempoEvents) <- soloView ctx renderInfo commands
