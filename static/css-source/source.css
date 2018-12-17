@@ -63,6 +63,12 @@
 	padding-right: 15px;
 	margin-top: 0.5em;
   font-family: estuaryFont;
+  
+  /* Force the browser to try it's best to float properly on overflow. 
+     When the window doesn't fit the entire header, this ensures that moving
+     the controls to the next line doesn't leak out of it's parent container
+     preventing interation with it. */
+  overflow: hidden; 
 }
 
 /* source  */
@@ -228,6 +234,10 @@
 		display: flex;
 		width: 100%;
 		height: 100%;
+
+		max-width: 16em; /* Taken from .splash-panel */
+		margin: auto; /* centered */
+		min-height: 0; /* Fixes flex stretching for underspecified boxes to be the flex'd height rather than parent height. */
 }
 
 .splash-icon {
@@ -239,6 +249,10 @@
 .splash-icon > canvas {
     max-width: 100%;
     max-height: 100%;
+
+    /* only clicking the icon when it is in place (over the panel) should 
+       trigger the event for the panel, not during the animation. */
+    pointer-events: none; 
   }
 
 /*contains the container of the about text  (source)*/
