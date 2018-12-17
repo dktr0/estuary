@@ -1060,7 +1060,7 @@ font-family: estuaryFont;
 /* about */
 
 .exampleText {
-	display: flex;
+	/* display: flex; */
 	font-style: italic;
 }
 
