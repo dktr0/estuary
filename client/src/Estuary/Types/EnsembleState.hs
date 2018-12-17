@@ -28,6 +28,9 @@ data EnsembleState = EnsembleState {
   tempo :: Tempo
 }
 
+soloEnsembleName :: String
+soloEnsembleName = ""
+
 commandToHint :: EnsembleState -> Terminal.Command -> Maybe Hint
 commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (currentView es)
 commandToHint _ _ = Nothing

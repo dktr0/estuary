@@ -17,6 +17,7 @@ import Estuary.Tutorials.Context
 import qualified Estuary.Tutorials.Tutorial as T
 import Estuary.Types.Context
 import Estuary.Types.Definition
+import Estuary.Types.EnsembleState(soloEnsembleName)
 import Estuary.Types.Hint
 import Estuary.Types.Language
 import Estuary.Types.Request
@@ -54,7 +55,7 @@ data Navigation =
   Collaborate String
   deriving (Generic, FromJSVal, ToJSVal)
 
-navigation :: MonadWidget t m => Navigation -> Event t Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t (Maybe DefinitionMap), Event t Request, Event t Hint, Event t Tempo)
+navigation :: MonadWidget t m => Navigation -> Event t Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t (Maybe (String, DefinitionMap)), Event t Request, Event t Hint, Event t Tempo)
 navigation initialPage stateChangeEv ctx renderInfo commands wsDown = do
   dynPage <- router initialPage stateChangeEv $ page ctx renderInfo commands wsDown
 
@@ -68,7 +69,7 @@ navigation initialPage stateChangeEv ctx renderInfo commands wsDown = do
 
 page :: forall t m. (MonadWidget t m)
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> Navigation
-  -> m (Event t Navigation, (Dynamic t (Maybe DefinitionMap), Event t Request, Event t Hint, Event t Tempo))
+  -> m (Event t Navigation, (Dynamic t (Maybe (String, DefinitionMap)), Event t Request, Event t Hint, Event t Tempo))
 
 page ctx _ _ wsDown Splash = do
   navEv <- divClass "splash-container" $ do
@@ -126,19 +127,19 @@ page ctx _ _ wsDown Splash = do
 page ctx _ _ wsDown TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ button $ show $ T.tutorialId b) (tutorials::[T.Tutorial t m])
-  return (never, (constDyn $ Just empty, never, never, never))
+  return (never, (constDyn $ Just (soloEnsembleName, empty), never, never, never))
 
 page ctx _ _ wsDown About = do
   divClass "splash-info" $ aboutEstuaryParagraph ctx
-  return (never, (constDyn $ Just empty, never, never, never))
+  return (never, (constDyn $ Just (soloEnsembleName, empty), never, never, never))
 
 page ctx _ _ wsDown (Tutorial _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
-  return (never, (constDyn $ Just empty, never, never, never))
+  return (never, (constDyn $ Just (soloEnsembleName, empty), never, never, never))
 
 page ctx renderInfo commands wsDown Solo = do
   (values,hints,tempoEvents) <- soloView ctx renderInfo commands
-  values' <- mapDyn Just values
+  values' <- mapDyn (\x -> Just (soloEnsembleName, x)) values
   return (never, (values', never, hints, tempoEvents))
 
 page ctx _ _ wsDown Lobby = do
@@ -172,11 +173,11 @@ page ctx _ _ _ CreateEnsemblePage = do
   cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
   let serverRequests = leftmost [createEnsemble,authenticateAdmin]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
-  return (navEvents, (constDyn $ Just empty, serverRequests, never, never))
+  return (navEvents, (constDyn $ Just (soloEnsembleName, empty), serverRequests, never, never))
 
-page ctx renderInfo commands wsDown (Collaborate w) = do
-  (values,wsUp,hints,tempoEvents) <- ensembleView ctx renderInfo w commands wsDown
-  values' <- mapDyn Just values
+page ctx renderInfo commands wsDown (Collaborate ensembleName) = do
+  (values,wsUp,hints,tempoEvents) <- ensembleView ctx renderInfo ensembleName commands wsDown
+  values' <- mapDyn (\x -> Just (ensembleName, x)) values
   return (never, (values', wsUp, hints, tempoEvents))
 
 

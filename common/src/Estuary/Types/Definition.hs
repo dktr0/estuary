@@ -22,6 +22,9 @@ data Definition =
 
 type DefinitionMap = IntMap.IntMap Definition
 
+emptyDefinitionMap :: DefinitionMap
+emptyDefinitionMap = IntMap.empty
+
 instance JSON Definition where
   showJSON = toJSON
   readJSON = fromJSON
