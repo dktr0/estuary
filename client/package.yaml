@@ -19,6 +19,12 @@ homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
 #     - filepath
 #     - directory
 
+flags:
+  build-test-executables:
+    description: Build the test executables.
+    manual: true
+    default: false
+
 dependencies:
   - base
   - estuary-common
@@ -51,6 +57,14 @@ library:
     - ./src
 # Add common to stack.yaml (and dependencies) and reexport those modules here
 
+_test-executable: &test-executable
+  when:
+    - condition: flag(build-test-executables)
+      then:
+        buildable: true
+      else:
+        buildable: false
+
 executables:
   Estuary:
     main: Main.hs
@@ -59,7 +73,8 @@ executables:
     dependencies:
       - estuary
 
-  simple-test:
+  simple-test: 
+    <<: *test-executable
     main: Simple.hs
     source-dirs:
       - ./test
@@ -69,6 +84,7 @@ executables:
       - async
 
   interaction-test:
+    <<: *test-executable
     main: Interaction.hs
     source-dirs:
       - ./test

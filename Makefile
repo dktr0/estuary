@@ -59,7 +59,7 @@ prodInstallClient: # make prodBuildClient first!
 	rm -rf Estuary.jsexe/index.html.template
 
 installInteractionTestClient:
-	$(STACK_CLIENT) build estuary:exe:interaction-test
+	$(STACK_CLIENT) build estuary:exe:interaction-test --flag estuary:build-test-executables
 	$(CP_RECURSIVE) $$($(STACK_CLIENT) path --local-install-root)/bin/interaction-test.jsexe/* Estuary.jsexe
 	$(CP_RECURSIVE) static/* Estuary.jsexe
 	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -o ../Estuary.jsexe/index.html
