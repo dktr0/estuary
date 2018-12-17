@@ -13,7 +13,6 @@ data View =
   StructureView Int |
   TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   SequenceView Int |
-  EvaluableTextView Int |
   SvgDisplayView Int | -- Int is z-index
   CanvasDisplayView Int -- Int is z-index
   deriving (Show,Eq,Data,Typeable)

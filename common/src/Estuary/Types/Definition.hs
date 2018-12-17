@@ -16,7 +16,6 @@ data Definition =
   Structure TransformedPattern | -- *** this should be renamed to TidalStructure
   TextProgram (Live (TextNotation,String)) |
   Sequence (M.Map Int (String,[Bool])) |
-  EvaluableText String | -- *** deprecated ***
   LabelText String
   deriving (Eq,Show,Data,Typeable)
 
@@ -32,7 +31,6 @@ instance JSON Definition where
 definitionForRendering :: Definition -> Definition
 definitionForRendering (Structure x) = Structure x
 definitionForRendering (TextProgram x) = TextProgram (Live (forRendering x) L4)
-definitionForRendering (EvaluableText x) = EvaluableText x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Sequence x) = Sequence x
 
@@ -44,11 +42,6 @@ justStructures = mapMaybe f
 justTextPrograms :: [Definition] -> [Live (TextNotation,String)]
 justTextPrograms = mapMaybe f
   where f (TextProgram x) = Just x
-        f _ = Nothing
-
-justEvaluableTexts :: [Definition] -> [String]
-justEvaluableTexts = mapMaybe f
-  where f (EvaluableText x) = Just x
         f _ = Nothing
 
 justSequences :: [Definition] -> [M.Map Int (String,[Bool])]

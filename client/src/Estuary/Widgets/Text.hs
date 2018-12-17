@@ -20,7 +20,6 @@ import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Definition
-import Estuary.Types.EditOrEval
 import Estuary.Types.Hint
 import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
@@ -56,7 +55,6 @@ textAreaWidgetForPatternChain rows i delta = do
 
 textNotationParsers :: [TextNotation]
 textNotationParsers = [PunctualAudio,PunctualVideo,SuperContinent,SvgOp,CanvasOp] ++ (fmap TidalTextNotation tidalParsers)
-
 
 textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
@@ -102,20 +100,9 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
           | otherwise = Edited p x
 
-
-evaluableTextWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
-evaluableTextWidget i delta = divClass "textWidget" $ do
-  let delta' = fmapMaybe lastOrNothing delta
-  let attrs = constDyn $ fromList [  ("class","textWidgetTextArea"), ("rows","5")]
-  y <- textArea $ def & textAreaConfig_setValue .~ delta' & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
-  let edits = fmap (Edit . EvaluableText) $ _textArea_input y
-  evals <- button "eval"
-  let evals' = fmap (Evaluate . EvaluableText) $ tagDyn (_textArea_value y) evals
-  return $ leftmost [edits,evals']
-
-labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t (EditOrEval Definition))
+labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t Definition)
 labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let delta' = fmapMaybe lastOrNothing delta
   let attrs = constDyn $ ("class" =: "labelWidgetTextInput")
   y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
-  return $ fmap (Edit . LabelText) $ _textInput_input y
+  return $ fmap LabelText $ _textInput_input y
