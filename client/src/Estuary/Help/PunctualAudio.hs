@@ -19,7 +19,7 @@ punctualAudio = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about" $ text "PunctualAudio reference"
+  divClass "about" $ text "PunctualAudio"
   divClass "aboutText" $ text "A mini language for synthesis in the browser."
 
 -- help files for samples
