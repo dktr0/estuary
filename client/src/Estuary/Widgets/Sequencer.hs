@@ -43,7 +43,7 @@ sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
   let strUpdate = fmap fst edits
   let buttonUpdates = fmap (M.fromList . attachIndex . fmap Just . snd) edits
   let textInputAttrs = singleton "class" "sequencerTextInputTd"
-  deleteMe <- clickableTdClass (constDyn " - ") (constDyn "delete") ()
+  deleteMe <- elClass "td" "delete" $ button "-" -- clickableTdClass (constDyn " - ") (constDyn "delete") ()
   rowInput <- elClass "td" "sequencerTextInputTd" $ textInput $ def & textInputConfig_initialValue .~ iVal & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn empty)
   -- rowInput <- el "td" $ growingTextInput $ def & textInputConfig_initialValue .~ iVal & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn textInputAttrs)
   buttons <-  liftM joinDynThroughMap $ listWithKeyShallowDiff buttonIVals buttonUpdates sequencerButton  -- Dyn (Map Int Bool)

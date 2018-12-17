@@ -63,12 +63,12 @@
 	padding-right: 15px;
 	margin-top: 0.5em;
   font-family: estuaryFont;
-  
-  /* Force the browser to try it's best to float properly on overflow. 
+
+  /* Force the browser to try it's best to float properly on overflow.
      When the window doesn't fit the entire header, this ensures that moving
      the controls to the next line doesn't leak out of it's parent container
      preventing interation with it. */
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 /* source  */
@@ -250,9 +250,9 @@
     max-width: 100%;
     max-height: 100%;
 
-    /* only clicking the icon when it is in place (over the panel) should 
+    /* only clicking the icon when it is in place (over the panel) should
        trigger the event for the panel, not during the animation. */
-    pointer-events: none; 
+    pointer-events: none;
   }
 
 /*contains the container of the about text  (source)*/
@@ -555,26 +555,28 @@ ______________________________
 ______________________________
 */
 .sequencerRow .delete{
-	border: 1pt solid rgba(255,0,0,0.2);
-	color: rgb(255,0,0);
-	width: 5%;
-	text-align: center;
+	flex-grow: 1;
 }
 
-.sequencerRow .delete:hover{
-	border: 1pt solid rgba(255,0,0,0.2);
-	background-color: rgba(255,0,0,0.2);
+.sequencerRow .delete button {
+	top:5%;
+	width: 100%;
+	color: red;
+	position: relative;
+	height: 90%;
 }
+
 
 .sequencer{
-	border:1pt solid grey;
+/* 	border:1pt solid grey; */
 	border-radius: 5px;
 	display: flex;
 	flex-direction: column;
 	padding:2%;
 	flex-grow: 1;
 /* 	width: 100%; */
-	height: 85%;
+	height: 98%;
+	margin: 1%;
 }
 
 .sequencerRow{
@@ -591,11 +593,13 @@ ______________________________
 }
 
 .sequencerTextInputTd input{
-/* 	background-color:rgb(190,190,190); */
 	width: 90%;
+	left:5%;
 	display: block;
-	height: 80%;
-	margin: auto;
+	height: 90%;
+	position: relative;
+	box-sizing: border-box;
+	top:5%;
 	border: 2pt solid grey;
 	border-radius: 5px;
 	text-align: center;
@@ -617,10 +621,9 @@ ______________________________
 }
 
 
-.actived:hover{
-	background-color: rgba(0,255,0,0.6);
+.activated:hover{
+	background-color: rgba(0,255,0,0.4);
 }
-
 
 /*
 ______________________________
