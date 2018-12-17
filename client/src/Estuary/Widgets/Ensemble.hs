@@ -1,6 +1,9 @@
 {-# LANGUAGE RecursiveDo #-}
 
-module Estuary.Widgets.Ensemble where
+module Estuary.Widgets.Ensemble (
+  ensembleView,
+  soloView
+) where
 
 import Reflex
 import Reflex.Dom
@@ -25,12 +28,20 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.Sited
 import Estuary.Types.View
 
+extractInitialDefs :: (MonadWidget t m) => String -> Dynamic t Context -> m (DefinitionMap)
+extractInitialDefs ensemble dynCtx = do
+  ctx <- sample $ current dynCtx
+  if ensemble == activeDefsEnsemble ctx then
+    return $ definitions ctx
+  else
+    return $ emptyDefinitionMap
+
 ensembleView :: MonadWidget t m
   => Dynamic t Context -> Dynamic t RenderInfo -> String -> Event t Command -> Event t [Response] ->
   m (Dynamic t DefinitionMap, Event t Request, Event t Hint,Event t Tempo)
 ensembleView ctx renderInfo ensemble commands deltasDown = mdo
 
-  let initialView = if ensemble == "" then standardView else emptyView
+  let initialView = if ensemble == soloEnsembleName then standardView else emptyView
   -- *** is it dangerous to have initialView exist separate from initialState (below)?
 
   -- management of EnsembleState
@@ -47,7 +58,7 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges,tempoChanges]
 
   -- Ensemble name and password UI (created only if ensemble is not "")
-  (hdl,pwdRequest) <- if ensemble == "" then return (never,never) else divClass "ensembleHeader" $ do
+  (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader" $ do
     divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
     hdl' <- divClass "ensembleHandle" $ do
       text "Name:"
@@ -69,7 +80,7 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   let tempoRequest = fmap SetTempo tempoSetEvents
 
   -- dynamic View UI
-  initialDefs <- sample $ fmap definitions $ current ctx
+  initialDefs <- extractInitialDefs ensemble ctx
   let initialWidget = do
         (newInitialDefs, y, z) <- viewWidget ctx renderInfo initialView initialDefs ensembleResponses
         -- Skip the first rendered def and use the initialDefs to prevent audio pause when
@@ -90,7 +101,7 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   let hints = leftmost [commandHints,tempoHints,hintsUi] -- *** note: might this occasionally lose a hint?
 
   -- form requests to send to server (but only if we are in a collaborative ensemble, ie. ensemble is not "")
-  requests <- if ensemble == "" then return never else do
+  requests <- if ensemble == soloEnsembleName then return never else do
     joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
     let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands
     let ensembleRequests = fmap (EnsembleRequest . Sited ensemble) $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
@@ -106,5 +117,5 @@ soloView :: MonadWidget t m
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command
   -> m (Dynamic t DefinitionMap, Event t Hint,Event t Tempo)
 soloView ctx renderInfo commands = do
-  (defMap,_,hints,tempoEvents) <- ensembleView ctx renderInfo "" commands never
+  (defMap,_,hints,tempoEvents) <- ensembleView ctx renderInfo soloEnsembleName commands never
   return (defMap,hints,tempoEvents)

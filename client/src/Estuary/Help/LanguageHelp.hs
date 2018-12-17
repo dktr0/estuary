@@ -39,7 +39,7 @@ import Control.Monad
 
 parserToHelp :: (MonadWidget t m) => TextNotation -> m ()
 parserToHelp (TidalTextNotation Alobestia) = alobestiaHelpFile
-parserToHelp (TidalTextNotation ColombiaEsPasion) = alobestiaHelpFile
+parserToHelp (TidalTextNotation ColombiaEsPasion) = colombiaEsPasionHelpFile
 parserToHelp (TidalTextNotation CQenze) = cqenzeHelpFile
 parserToHelp (TidalTextNotation Crudo) = crudoHelpFile
 parserToHelp (TidalTextNotation Imagina) = imaginaHelpFile
@@ -64,8 +64,6 @@ parserToHelp PunctualVideo = punctualVideo
 parserToHelp SuperContinent = superContinentHelpFile
 parserToHelp _ = noHelpFile
 
-
--- tidalParserToHelpDyn (TidalTextNotation LaCalle) = laCalleHelpFile
 -- a widget  that renders a TidalTextNotation
 languageHelpWidget' :: (MonadWidget t m) => TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t String)
 languageHelpWidget' t = do
@@ -81,7 +79,3 @@ languageHelpWidget t = do
         --a' <-- hold never a -- :: Behavior t (Event t String)switch
         --let a'' = switch a' --:: Event t String
    return ()
-
--- let initialWidget = f initialNotation
--- let widgetChanges = updated z
--- widgetHold initialWidgets widgetxChabges

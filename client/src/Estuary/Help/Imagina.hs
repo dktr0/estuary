@@ -5,113 +5,78 @@ import Reflex.Dom
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 
--- import Estuary.Types.Language
 
 --render multiple sub-help files
 imaginaHelpFile :: MonadWidget t m => m ()
 imaginaHelpFile = divClass "languageHelp" $ do
-    about
-    holaChoche
-    unasChelas
-    miGerma
-    vamosA
-    bienHelenas
-    paltaConEl
-    miCerro
-    return ()
+  about
+  functionRef "imagina"
+  functionRef "sueña"
+  functionRef "mechita"
+  functionRef "el agua"
+  functionRef "las hojas"
+  functionRef "el pájaro"
+  functionRef "del río"
+  functionRef "cayendo"
+  functionRef "del mar"
+  functionRef "del árbol"
+  functionRef "caer"
+  functionRef "crecer"
+  functionRef "cantando"
+  functionRef "comiendo"
+  functionRef "volando"
+  return ()
 
 
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about" $ text "LaCalle reference"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Lima (Peru) by Ivanka Cotrina, using slang characteristic of that city’s working-class neighbourhoods."
+ divClass "about" $ text "imagina"
+ divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador."
 
+exampleText :: String -> String
+
+exampleText "imagina" = "imagina el agua"
+exampleText "sueña" = "sueña las hojas"
+exampleText "mechita" = "mechita el agua"
+exampleText "el agua" =  "sueña el agua"
+exampleText "las hojas" = "imagina las hojas"
+exampleText "el pájaro" = "mechita el pájaro"
+exampleText "del río" = "imagina el agua del rio"
+exampleText "cayendo" = "sueña las hojas cayendo"
+exampleText "del mar" = "imagina el agua del mar"
+exampleText "del árbol" = "imagina las hojas del arbol"
+exampleText "caer" = "sueña el pájaro caer"
+exampleText "crecer" = "imagina las hojas crecer"
+exampleText "cantando" = "sueña el pájaro cantando"
+exampleText "comiendo" = "imagina el pájaro comiendo"
+exampleText "volando" = "sueña las hojas volando"
+
+referenceText :: String -> String
+
+referenceText "imagina" = "returns and empty string"
+referenceText "sueña" = "returns and empty string"
+referenceText "mechita" = "returns and empty string"
+referenceText "el agua" =  "returns Dirt's \"pluck\" sample"
+referenceText "las hojas" = "returns Dirt's \"wind\" sample"
+referenceText "el pájaro" = "returns Dirt's \"birds3\" sample"
+referenceText "del río" = "returns TidalCycles' palindrome"
+referenceText "cayendo" = "returns TidalCycles' slow"
+referenceText "del mar" = "returns TidalCycles' density"
+referenceText "del árbol" = "returns TidalCycles' palindrome"
+referenceText "caer" = "returns TidalCycles' slow"
+referenceText "crecer" = "returns TidalCycles' density"
+referenceText "cantando" = "returns TidalCycles' fast"
+referenceText "volando" = "returns TidalCycles' density"
+referenceText "comiendo" = "returns TidalCycles' trunc"
 
 
 -- help files for samples
-holaChoche :: MonadWidget t m => m ()
-holaChoche = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "hola Choche:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "\"hola choche\"" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "is slang for 'hi friend' and translates to the Tidal sample 'sitar'." --languageHelpWidget MiniTidal
-   return ()
-
-
-   -- help files for samples
-unasChelas :: MonadWidget t m => m ()
-unasChelas = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "unas chelas:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "\"unas chelas\"" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "is slang for 'some beers' and translates to the Tidal sample 'ifdrums'." --languageHelpWidget MiniTidal
-   return ()
-
-
-   -- help files for samples
-miGerma :: MonadWidget t m => m ()
-miGerma = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "mi germa:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "\"mi germa\"" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "is slang for 'my girlfriend' and translates to the Tidal sample 'metal'." --languageHelpWidget MiniTidal
-   return ()
-
-
-   -- help files for samples
-vamosA :: MonadWidget t m => m ()
-vamosA = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "vamos a:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "\"vamos a\"" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "is slang for 'go to somewhere' and translates to the Tidal sample 'casio'." --languageHelpWidget MiniTidal
-   return ()
-
-
--- help files for functions
-tuManyas :: MonadWidget t m => m ()
-tuManyas = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "tu manyas:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "\"hola choche\" tu manyas 2" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "is slang for 'you know' and translates to the Tidal function 'slow'." --languageHelpWidget MiniTidal
-   return ()
-
-
--- help files for functions
-bienHelenas :: MonadWidget t m => m ()
-bienHelenas = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "bien helenas:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "\"unas chelas\" bien helenas 0.5" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "is slang for 'frozen/very cold' and translates to the Tidal function 'delay'." --languageHelpWidget MiniTidal
-   return ()
-
-
--- help files for functions
-paltaConEl :: MonadWidget t m => m ()
-paltaConEl = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "palta con el:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "\"mi germa\" palta con el 4" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "is slang for 'what a shame' and translates to the Tidal function 'iter'." --languageHelpWidget MiniTidal
-   return ()
-
-
--- help files for functions
-miCerro :: MonadWidget t m => m ()
-miCerro = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "mi cerro:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "\"vamos a\" mi cerro" --languageHelpWidget MiniTidal
-   hideableWidget referenceVisible "referenceText" $ text "is slang for 'my neighborhood (a peripheral place)' and translates to the Tidal function 'chop'." --languageHelpWidget MiniTidal
-   return ()
+functionRef :: MonadWidget t m => String -> m ()
+functionRef x = divClass "helpWrapper" $ do
+ switchToReference <- divClass "refExampleButton" $ button x
+ exampleVisible <- toggle True switchToReference
+ referenceVisible <- toggle False switchToReference
+ hideableWidget exampleVisible "exampleText" $ text (exampleText x)
+ hideableWidget referenceVisible "referenceText" $ text (referenceText x)
+ return ()

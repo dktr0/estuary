@@ -3,110 +3,132 @@ module Estuary.Widgets.EstuaryWidget where
 import Reflex
 import Reflex.Dom
 
-import Estuary.Types.Hint
 import Estuary.Types.Context
 import Estuary.RenderInfo
+import Estuary.Types.Hint
 
 data EstuaryWidget t m a b = EstuaryWidget {
-  widget :: Dynamic t Context -> Dynamic t RenderInfo -> a -> Event t a -> m (b, Event t a, Event t Hint)
-  }
+  widget :: Dynamic t Context -> Dynamic t RenderInfo -> Dynamic t a -> m (b, Dynamic t a, Event t Hint)
+  } -- note: dynamic t a argument represents initial value + deltas, Dynamic t a result represents initial value + edits
 
 runEstuaryWidget :: MonadWidget t m => EstuaryWidget t m a b
-  -> Dynamic t Context -> Dynamic t RenderInfo -> a -> Event t a
-  -> m (Dynamic t a, Event t a, Event t Hint)
-runEstuaryWidget e ctx ri i d = do
-  (b,edits,hints) <- (widget e) ctx ri i d
-  v <- holdDyn i $ leftmost [edits,d]
+  -> Dynamic t Context -> Dynamic t RenderInfo -> Dynamic t a
+  -> m (Dynamic t a, Dynamic t a, Event t Hint) -- (current value [deltas+edits],edits only, hints)
+runEstuaryWidget e ctx ri d = do
+  (_,edits,hints) <- (widget e) ctx ri d
+  i <- (sample . current) d
+  v <- holdDyn i $ leftmost [updated edits,updated d]
   return (v,edits,hints)
 
 instance MonadWidget t m => Functor (EstuaryWidget t m a) where
-  fmap f x = EstuaryWidget $ \ctx ri i d -> do
-    (b,edits,hints) <- (widget x) ctx ri i d
-    return (f b,edits,hints)
+  fmap f x = EstuaryWidget $ \ctx ri d -> do
+    (a,edits,hints) <- (widget x) ctx ri d
+    return (f a,edits,hints)
 
 instance MonadWidget t m => Applicative (EstuaryWidget t m a) where
-  pure x = EstuaryWidget $ \_ _ _ _ -> return (x, never, never)
-  f <*> a = EstuaryWidget $ \ctx ri i d -> do
-    (f',edit1,hint1) <- (widget f) ctx ri i d
-    (a',edit2,hint2) <- (widget a) ctx ri i d
-    let combinedEdits = leftmost [edit2,edit1]
+  pure x = EstuaryWidget $ \_ _ d -> do
+    i <- (sample . current) d
+    return (x, constDyn i, never)
+  f <*> a = EstuaryWidget $ \ctx ri d -> do
+    (f',edit1,hint1) <- (widget f) ctx ri d
+    (a',edit2,hint2) <- (widget a) ctx ri d
+    i <- (sample . current) d
+    let combinedEdits = leftmost [updated edit2,updated edit1,updated d]
+    combinedEdits' <- holdDyn i combinedEdits
     let combinedHints = leftmost [hint1,hint2]
-    return (f' a',combinedEdits,combinedHints)
+    return (f' a',combinedEdits',combinedHints)
 
 instance MonadWidget t m => Monad (EstuaryWidget t m a) where
-  x >>= f = EstuaryWidget $ \ctx ri v deltaV -> do
-    (a,edit1,hint1) <- (widget x) ctx ri v deltaV
-    (b,edit2,hint2) <- (widget $ f a) ctx ri v deltaV
-    let combinedEdits = leftmost [edit2,edit1]
+  x >>= f = EstuaryWidget $ \ctx ri d -> do
+    (a,edit1,hint1) <- (widget x) ctx ri d
+    (b,edit2,hint2) <- (widget $ f a) ctx ri d
+    i <- (sample . current) d
+    let combinedEdits = leftmost [updated edit2,updated edit1,updated d]
+    combinedEdits' <- holdDyn i combinedEdits
     let combinedHints = leftmost [hint1,hint2]
-    return (b,combinedEdits,combinedHints)
+    return (b,combinedEdits',combinedHints)
 
 context :: MonadWidget t m => EstuaryWidget t m a (Dynamic t Context)
-context = EstuaryWidget $ \ctx _ _ _ -> return (ctx, never, never)
+context = EstuaryWidget $ \ctx _ d -> do
+  i <- (sample . current) d
+  return (ctx, constDyn i, never)
 
 renderInfo :: MonadWidget t m => EstuaryWidget t m a (Dynamic t RenderInfo)
-renderInfo = EstuaryWidget $ \_ ri _ _ -> return (ri, never, never)
+renderInfo = EstuaryWidget $ \_ ri d -> do
+  i <- (sample . current) d
+  return (ri, constDyn i, never)
 
 initialValue :: MonadWidget t m => EstuaryWidget t m a a
-initialValue = EstuaryWidget $ \_ _ a _ -> return (a, never, never)
+initialValue = EstuaryWidget $ \_ _ d -> do
+  i <- (sample . current) d
+  return (i, constDyn i, never)
 
-delta :: MonadWidget t m => EstuaryWidget t m a (Event t a)
-delta = EstuaryWidget $ \_ _ _ d -> return (d, never, never)
+delta :: MonadWidget t m => EstuaryWidget t m a (Dynamic t a)
+delta = EstuaryWidget $ \_ _ d -> do
+  i <- (sample . current) d
+  return (d, constDyn i, never)
 
-edit :: MonadWidget t m => Event t a -> EstuaryWidget t m a ()
-edit x = EstuaryWidget $ \_ _ _ _ -> return ((),x,never)
+edit :: MonadWidget t m => Dynamic t a -> EstuaryWidget t m a ()
+edit x = EstuaryWidget $ \_ _ d -> do
+  i <- (sample . current) d
+  d' <- holdDyn i $ updated x
+  return ((),d',never)
 
 hint :: MonadWidget t m => Event t Hint -> EstuaryWidget t m a ()
-hint x = EstuaryWidget $ \_ _ _ _ -> return ((),never,x)
+hint x = EstuaryWidget $ \_ _ d -> do
+  i <- (sample . current) d
+  return ((),constDyn i,x)
 
 reflex :: MonadWidget t m => m b -> EstuaryWidget t m a b
-reflex m = EstuaryWidget $ \_ _ _ _ -> do
+reflex m = EstuaryWidget $ \_ _ d -> do
   b <- m
-  return (b,never,never)
+  i <- (sample . current) d
+  return (b,constDyn i,never)
 
-reflex' :: MonadWidget t m => (a -> Event t a -> m b) -> EstuaryWidget t m a b
-reflex' m = EstuaryWidget $ \_ _ i d -> do
-  b <- m i d
-  return (b,never,never)
+embed :: MonadWidget t m => (c -> a) -> EstuaryWidget t m a b -> EstuaryWidget t m c (Dynamic t a)
+embed f w = EstuaryWidget $ \ctx ri deltaC -> do
+  deltaA <- mapDyn f deltaC
+  (_,editsA,hints) <- (widget w) ctx ri deltaA
+  i <- (sample . current) deltaC
+  return (editsA,constDyn i,hints)
 
-embed :: MonadWidget t m => (c -> a) -> EstuaryWidget t m a b -> EstuaryWidget t m c (b,Event t a)
-embed f w = EstuaryWidget $ \ctx ri initialC deltaC -> do
-  let initialA = f initialC
-  let deltaA = fmap f deltaC
-  (b,editsA,hints) <- (widget w) ctx ri initialA deltaA
-  return ((b,editsA),never,hints)
+embed' :: MonadWidget t m => (c -> a) -> EstuaryWidget t m a b -> EstuaryWidget t m c (b,Dynamic t a)
+embed' f w = EstuaryWidget $ \ctx ri deltaC -> do
+  deltaA <- mapDyn f deltaC
+  (b,editsA,hints) <- (widget w) ctx ri deltaA
+  i <- (sample . current) deltaC
+  return ((b,editsA),constDyn i,hints)
 
-embed_ :: MonadWidget t m => (c -> a) -> EstuaryWidget t m a b -> EstuaryWidget t m c (Event t a)
-embed_ f w = EstuaryWidget $ \ctx ri initialC deltaC -> do
-  let initialA = f initialC
-  let deltaA = fmap f deltaC
-  (_,editsA,hints) <- (widget w) ctx ri initialA deltaA
-  return (editsA,never,hints)
+-- | We provide two "Applicative-esque" operators that are particularly useful for combining
+-- edits from sub-widgets in the edit values produced a widget. <$$> and <**> are very much like
+-- <$> and <*> except specialized to EstuaryWidget computations containing Dynamics.
 
-textArea' :: MonadWidget t m => String -> Event t String -> m (Event t String)
-textArea' _ _ = return never -- ...this is just to compile-check the examples below...
+(<**>) :: MonadWidget t m
+  => EstuaryWidget t m z (Dynamic t (a -> b))
+  -> EstuaryWidget t m z (Dynamic t a)
+  -> EstuaryWidget t m z (Dynamic t b)
+f <**> a = do
+  f' <- f
+  a' <- a
+  reflex $ combineDyn ($) f' a'
 
-example :: MonadWidget t m => EstuaryWidget t m String ()
-example = do
-  i <- initialValue
-  d <- delta
-  reflex (textArea' i d) >>= edit
+(<$$>) :: MonadWidget t m
+  => (a -> b)
+  -> EstuaryWidget t m z (Dynamic t a)
+  -> EstuaryWidget t m z (Dynamic t b)
+f <$$> a = a >>= (reflex . mapDyn f)
 
-example2 :: MonadWidget t m => EstuaryWidget t m String ()
-example2 = reflex' textArea' >>= edit
+-- examples:
+{-
+textArea' :: MonadWidget t m => Dynamic t String -> m (Dynamic t String)
+textArea' x = (sample . current) x >>= return . constDyn -- ...this is just to compile-check the examples below...
 
-example3 :: MonadWidget t m => EstuaryWidget t m (String,String) ()
-example3 = do
-  reflex $ text "editor1"
-  x <- embed_ fst example2 -- x :: Event t String
-  reflex $ text "editor2"
-  y <- embed_ snd example2 -- x :: Event t String
-  i <- initialValue
-  x' <- reflex $ holdDyn (fst i) x
-  y' <- reflex $ holdDyn (snd i) y
-  xy <- reflex $ combineDyn (\a b -> (a,b)) x' y'
-  edit $ updated xy
+example1 :: MonadWidget t m => EstuaryWidget t m String ()
+example1 = delta >>= (reflex . textArea') >>= edit
 
--- working here: example3 is okay... but it would be really nice to not have to
--- put all that boilerplate stuff in the second half of the definition re-combining
--- the two components of the "value of interest"...
+example2 :: MonadWidget t m => EstuaryWidget t m (String,String) ()
+example2 = do
+  let x = (reflex $ text "editor1") >> embed fst example1
+  let y = (reflex $ text "editor2") >> embed snd example1
+  edit =<< (\a b -> (a,b)) <$$> x <**> y
+-}

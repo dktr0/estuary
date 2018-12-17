@@ -26,6 +26,7 @@ palindrome = divClass "helpWrapper" $ do
   switchToReference <- divClass "refExampleButton" $ button "palindrome:"
   exampleVisible <- toggle True switchToReference
   referenceVisible <- toggle False switchToReference
+  hideableWidget exampleVisible "exampleText" $ text "palindrome $sound \"bd sn kurt\"" --languageHelpWidget MiniTidal
   listenButton <- hideableWidget exampleVisible "listenButton"  $ button "♫"
   hideableWidget referenceVisible "referenceText" $ text "applies rev to a pattern every other cycle, so that the pattern alternates between forwards and backwards." --languageHelpWidget MiniTidal
   return ()
@@ -46,7 +47,7 @@ fast = divClass "helpWrapper" $ do
    switchToReference <- divClass "refExampleButton" $ button "fast:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "sound (fast 2 \"bd sn kurt\")" --languageHelpWidget MiniTidal
+   hideableWidget exampleVisible "exampleText" $ text "sound fast 2 \"bd sn kurt\"" --languageHelpWidget MiniTidal
    listenButton <- hideableWidget exampleVisible "listenButton" $ button "♫"
    hideableWidget referenceVisible "referenceText" $ text "Speed up a pattern. " --languageHelpWidget MiniTidal
    return ()
