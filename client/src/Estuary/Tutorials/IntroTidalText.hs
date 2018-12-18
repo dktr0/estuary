@@ -3,155 +3,51 @@ module Estuary.Tutorials.IntroTidalText where
 import Reflex
 import Reflex.Dom
 
-import Data.IntMap.Strict
+import qualified Data.IntMap.Strict as IM
+import Data.Map as M
 import Estuary.Tutorials.Tutorial
-import Estuary.Types.View
-import Estuary.Types.Definition
 import Estuary.Types.Language
-import Estuary.Tidal.Types
 
--- introTidalText::MonadWidget t m => Tutorial t m
--- introTidalText = Tutorial IntroTidalText (const $ return (constDyn empty, never))
+import Estuary.Types.Definition
 
-
--- miniTidalWidget :: MonadWidget t m => Int -> String -> m (Dynamic t (Int, Definition),Event t Hint)
--- miniTidalWidget index initial =
-
--- data Tutorial t m = Tutorial {
---   tutorialId::TutorialId,
---   widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
--- }
+-- miniTidalWidget
+import Estuary.Types.Context
+import Estuary.Types.Hint
 
 
---
---
--- tidalTextWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
---   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
---   m (Dynamic t (Live (TextNotation,String)),Event t (Live (TextNotation,String)),Event t Hint)
--- tidalTextWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css
---
+introTidalText ::MonadWidget t m => Tutorial t m
+introTidalText = Tutorial IntroTidalText introTidalTextWidget
 
--- -- Returned integer is just integer given. this makes it ease to construct a definition map when writing tutorials (just a union operation)
--- miniTidalWidget :: MonadWidget t m => Int -> String -> m (Dynamic t (Int, Definition),Event t Hint)
--- miniTidalWidget index initial = do
---   let deltaFuture = fmap forEditing delta
---   -- let parserFuture = fmap fst deltaFuture
---   let textFuture = fmap snd deltaFuture
---
---   (evalButton,infoButton) <- divClass "fullWidthDiv" $ do
---     -- let initialParser = fst $ forEditing i
---     -- let parserMap = constDyn $ fromList $ fmap (\x -> (TidalTextNotation x,show x)) tidalParsers
---     -- d' <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
---     evalButton' <- divClass "textInputLabel" $ do
---       x <- button "eval"
---       dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
---       return x
---     infoButton' <- divClass "referenceButton" $ button "?"
---     return (evalButton',infoButton')
---
---   (edit,eval) <- divClass "labelAndTextPattern" $ do
---     -- let parserValue = _dropdown_value d -- Dynamic t TidalParser
---     -- let parserEvent = _dropdown_change d
---     -- let initialText = snd $ forEditing i
---     textVisible <- toggle True infoButton
---     helpVisible <- toggle False infoButton
---     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "visibleArea" $ textAreaWidgetForPatternChain rows initialText textFuture
---     let languageToDisplayHelp = (TidalTextNotation MiniTidal)
---     -- let languageToDisplayHelp = ( _dropdown_value d)
---     hideableWidget helpVisible "visibleArea" $ languageHelpWidget' languageToDisplayHelp
---     v' <- mapDyn (\x-> (MiniTidal,))  textValue
---     let editEvent = tagDyn v' $ leftmost [() <$ textEvent]
---     let evalEvent = tagDyn v' $ leftmost [evalButton,shiftEnter]
---     return (editEvent,evalEvent)
---   let deltaPast = fmap forRendering delta
---   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
---   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]
---   value <- combineDyn f pastValue futureValue
---   let deltaUpEdit = tagDyn value edit
---   let deltaUpEval = tagDyn value eval
---   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
---   return (value,deltaUp,never)
---   where
---     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
---           | otherwise = Edited p x
+introTidalTextWidget::MonadWidget t m => Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
+introTidalTextWidget ctx = elClass "div" "tutorial" $ do
+  title $ labelWidget ctx $ M.fromList [(English, "Welcome to the introductory tutorial to Tidalcycles (or MiniTidal)!")]
+  labelWidget ctx $ M.fromList [(English,"This tutorial will cover some of the basics of making music with TidalCycles. MiniTidal is a subset of TidalCycles that supports most typical Tidal operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles.")]
 
+  el "div" $ labelWidget ctx $ fromList [(English, "Lets make some sound! Click 'eval' below. You should here a simple \"bassdrum clap\" drum pattern. (hit 'silence' on the right to stop it)")]
+  (v1,h1) <- miniTidalWidget ctx 1 1 "s \"bd cp\""
 
+  el "div" $ labelWidget ctx $ fromList [(English, "In the text field above, we've specified a pattern of samples (specifically 'bd' and 'cp') that fill up a 'cycle' (which can be thought of sort of like musical bars if you like). Everything that appears within the quotes (\"\") divides a cycle into equal parts: the \"bd\" sample gets the first half of the cycle, and the \"cp\" gets the second half. ")]
 
+  el "div" $ labelWidget ctx $ fromList [(English,"If we put a third element into our pattern we get a different rhythm:")]
 
--- widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
+  (v2,h2) <- miniTidalWidget ctx 1 2 "s \"bd cp hh\""
 
-{- |
-v1 :: Language -> (View, Definition)
-v1 English = (LabelView 0, LabelText "Welcome to the introductory tutorial to Tidalcycles (or MiniTidal)")
-v1 a = (LabelView 0, LabelText $ translationDNE a)
+  el "div" $ labelWidget ctx $ fromList [(English,"Each sample gets 1/3rd of a cycle.")]
 
-v2 :: Language -> (View, Definition)
-v2 English = (LabelView 1, LabelText "Click 'MidiTidal' to listen to the pattern below")
-v2 a = (LabelView 1, LabelText $ translationDNE a)
+  el "div" $ labelWidget ctx $ fromList [(English,"A \"~\" placed in a Tidal pattern has a special designation as a 'rest'. So we can get rid of the 'hh' in the above example but preserve the rhythm:")]
+  (v3,h3) <- miniTidalWidget ctx 1 3 "s \"bd cp ~\""
 
-v3:: Language -> (View, Definition)
-v3 _ = (TidalTextView 2, EvaluableText (Edited "" "s \"bd bd\""))
+  el "div" $ labelWidget ctx $ fromList [(English,"Sometimes we want to subdivide a part of a cycle - for instance if we want 2 samples to play in the last half of a cycle instead of just one: ")]
+  (v4, h4) <- miniTidalWidget ctx 1 4 "s \"bd [cp hh]\""
 
-p1= [v1,v2,v3]
+  el "div" $ labelWidget ctx $ fromList [(English,"Or if we want two samples to play at the same time we can enclose them in square brackets with a comma between them: ")]
+  (v5, h5) <- miniTidalWidget ctx 1 5 "s \"bd [cp,hh]\""
 
-v4 :: Language -> (View, Definition)
-v4 English = (LabelView 0, LabelText "Welcome to the introductory tutorial to Tidalcycles (or MiniTidal)")
-v4 a = (LabelView 0, LabelText $ translationDNE a)
+  el "div" $ labelWidget ctx $ fromList [(English,"Both ideas together: ")]
+  (v6, h6) <- miniTidalWidget ctx 1 5 "s \"bd [cp,hh casio]\""
 
-v5 :: Language -> (View, Definition)
-v5 English = (LabelView 1, LabelText "Click 'MidiTidal' to listen to the pattern below")
-v5 a = (LabelView 1, LabelText $ translationDNE a)
+  el "div" $ labelWidget ctx $ fromList [(English,"")]
 
-v6:: Language -> (View, Definition)
-v6 _ = (TidalTextView 2, EvaluableText $ Edited "" "s \"bd bd\" ")
-
-p2 = [v4,v5,v6]
-
--- data Tutorial = Tutorial {
---   tutorialId::TutorialId,
---   pages:: Map Language [TutorialPage],
---   defaultLang::Language -- shown by default when a translation DNE to current lang
---   }
---
---   data Definition =
---     Structure TransformedPattern |
---     EvaluableText (Live String) |
---     -- EvaluableText String |
---     LabelText String
---     deriving (Eq,Show)
---
---   type DefinitionMap = Map.Map Int Definition
---
--- type TutorialPage = (View, DefinitionMap)
-
-eng:: [TutorialPage]
-eng = [ep1]
-
-
-
-ep1::TutorialPage
-ep1 = toTutorialPage [v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16] where
-  v1 = (ViewDiv "tutorialTitle" . LabelView, LabelText "Welcome to the Introductory TidalCycles (or MiniTidal) tutorial!")
-  v2 = (LabelView, LabelText "This tutorial will cover some of the basics of making music with TidalCycles. MiniTidal is a subset of TidalCycles that supports most typical Tidal operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles.")
-  v3 = (LabelView, LabelText "Lets make some sound! Click 'eval' below. You should here a simple \"bassdrum clap\" drum pattern. (hit 'silence' to stop it)")
-  v4 = (TidalTextView, EvaluableText (Edited "" "s \"bd cp\""))
-  v5 = (LabelView, LabelText "In the text field above, we've specified a pattern of samples (specifically 'bd' and 'cp') that fill up a 'cycle' (which can be thought of sort of like musical bars if you like). Everything that appears within the quotes (\"\") divides a cycle into equal parts: the \"bd\" sample gets the first half of the cycle, and the \"cp\" gets the second half")
-  v6 = (LabelView, LabelText "If we put a third element into our pattern we get a different rhythm:")
-  v7 = (TidalTextView, EvaluableText (Edited "" "s \"bd cp hh\""))
-  v8 = (LabelView, LabelText "Each sample gets 1/3rd of a cycle.")
-  v9 = (LabelView, LabelText "A \"~\" placed in a Tidal pattern has a special designation as a 'rest'. So we can get rid of the 'hh' in the above example but preserve the rhythm:")
-  v10 = (TidalTextView, EvaluableText (Edited "" "s \"bd cp ~\""))
-  v11 = (LabelView, LabelText "Sometimes we want to subdivide a part of a cycle - for instance if we want 2 samples to play in the last half of a cycle instead of just one: ")
-  v12 = (TidalTextView, EvaluableText (Edited "" "s \"bd [cp hh]\""))
-  v13 = (LabelView, LabelText "Or if we want two samples to play at the same time we can enclose them in square brackets with a comma between them: ")
-  v14 = (TidalTextView, EvaluableText (Edited "" "s \"bd [cp,hh]\""))
-  v15 = (LabelView, LabelText "Both ideas together: ")
-  v16 = (TidalTextView, EvaluableText (Edited "" "s \"bd [cp casio,hh]\""))
-
-introTidalText :: Tutorial
--- introTidalText = Tutorial IntroTidalText (generateTutorial [p1,p2]) English
--- introTidalText = Tutorial IntroTidalText (singleton English [(LabelView 1,fromList [(1,LabelText "tesssst")])]) English
--- introTidalText = Tutorial IntroTidalText (singleton English [(TidalTextView 1,fromList [(1,EvaluableText (Edited "" "s \"bd cp\"") )])]) English
-introTidalText = Tutorial IntroTidalText (singleton English eng) English
-
-| -}
+  v <- dynList [v1, v2, v3, v4,v5,v6] >>= mapDyn IM.fromList
+  let hints = leftmost [h1,h2,h3,h4,h5,h6]
+  return (v, hints)

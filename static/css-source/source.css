@@ -63,12 +63,12 @@
 	padding-right: 15px;
 	margin-top: 0.5em;
   font-family: estuaryFont;
-  
-  /* Force the browser to try it's best to float properly on overflow. 
+
+  /* Force the browser to try it's best to float properly on overflow.
      When the window doesn't fit the entire header, this ensures that moving
      the controls to the next line doesn't leak out of it's parent container
      preventing interation with it. */
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 /* source  */
@@ -250,9 +250,9 @@
     max-width: 100%;
     max-height: 100%;
 
-    /* only clicking the icon when it is in place (over the panel) should 
+    /* only clicking the icon when it is in place (over the panel) should
        trigger the event for the panel, not during the animation. */
-    pointer-events: none; 
+    pointer-events: none;
   }
 
 /*contains the container of the about text  (source)*/
@@ -549,50 +549,80 @@
  	margin:5px
 }
 
-
 /*
 ______________________________
          Sequencer classes
 ______________________________
 */
 .sequencerRow .delete{
-	border: 1pt solid rgba(255,0,0,0.2);
+	flex-grow: 1;
 }
 
-.sequencerRow .delete:hover{
-	border: 1pt solid rgba(255,0,0,0.2);
-	background-color: rgba(255,0,0,0.2);
+.sequencerRow .delete button {
+	top:5%;
+	width: 100%;
+	color: red;
+	position: relative;
+	height: 90%;
 }
+
 
 .sequencer{
-	border:1pt solid grey;
+/* 	border:1pt solid grey; */
 	border-radius: 5px;
+	display: flex;
+	flex-direction: column;
+	padding:2%;
+	flex-grow: 1;
+/* 	width: 100%; */
+	height: 98%;
+	margin: 1%;
 }
 
 .sequencerRow{
-	border: 1pt solid grey;
+/* 	border: 1pt solid grey; */
+	display: flex;
+	width: 100%;
+	flex-grow: 1;
+	min-height: 0px;
+
 }
 
-.sequencerButtonDeactivated{
+.sequencerTextInputTd{
+	width: 20%;
+}
+
+.sequencerTextInputTd input{
+	width: 90%;
+	left:5%;
+	display: block;
+	height: 90%;
+	position: relative;
+	box-sizing: border-box;
+	top:5%;
+	border: 2pt solid grey;
+	border-radius: 5px;
+	text-align: center;
+}
+
+.sequencerButton{
+	flex-grow: 1;
 	width:20px;
 	border:1pt solid grey;
 	border-radius: 5px;
 }
 
-.sequencerButtonDeactivated:hover{
+.sequencerButton:hover{
 	background-color: rgba(255,255,255,0.25);
 }
 
-
-.sequencerButtonActived{
-	width:20px;
+.activated{
 	background-color: rgba(0,255,0,0.3);
-	border:1pt solid grey;
-	border-radius: 5px;
 }
 
-.sequencerButtonActived:hover{
-	background-color: rgba(0,255,0,0.6);
+
+.activated:hover{
+	background-color: rgba(0,255,0,0.4);
 }
 
 /*
@@ -614,42 +644,37 @@ ______________________________
 .plot div{
 	left:0%;
 }
-
 /*
 ______________________________
          Tutorial classes
 ______________________________
 */
 
-/* next button to navigate to next page */
-.tutorial_next{
-	float:right;
-	background-color:  hsl(0,0%,20%);
-	padding-left:1%;
-	padding-right:1%;
-	padding-bottom:5px;
-	border-radius: 5%;
+.tutorial{
+	font-family: helvetica;
+	padding:2%;
 }
 
-.tutorial_next:hover{
-	background-color: rgba(0,255,0,0.2);
+.tutorial .panel{
+	background-color: rgba(40,40,40);
+	border-radius: 5px;
+	margin:1%;
+	padding:1%;
+}
+.tutorial .panel textarea{
+	background-color: black;
+	margin: 1%;
+	padding:1%;
+	display: block;
+	width: 96%;
+	border-radius: 5px;
 }
 
-.tutorial_back{
-	float:left;
-	background-color:  hsl(0,0%,20%);
-	padding-left:1%;
-	padding-right:1%;
-	padding-bottom:5px;
-	border-radius: 5%;
+.title{
+	font-size: 18pt;
+	padding:1%;
+	text-align: center;
 }
-
-.tutorial_back:hover{
-	background-color: rgba(0,255,0,0.2);
-}
-
-/* deprecated? */
-
 
 /*
 --------------------------------------------------------------------

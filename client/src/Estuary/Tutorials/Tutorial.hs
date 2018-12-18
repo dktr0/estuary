@@ -4,8 +4,8 @@ module Estuary.Tutorials.Tutorial where
 
 import Control.Monad (liftM)
 
-import Data.IntMap.Strict as I
-import qualified Data.Map as M
+import qualified Data.IntMap.Strict as IM
+import Data.Map as M
 import Data.Maybe (isNothing)
 
 import Estuary.RenderInfo
@@ -17,7 +17,9 @@ import Estuary.Types.Request
 import Estuary.Types.View
 import Estuary.Widgets.Generic
 import Estuary.Widgets.View
-
+import Estuary.Widgets.Text (textNotationWidget)
+import Estuary.Types.TidalParser
+import Estuary.Types.TextNotation
 import GHC.Generics
 
 import GHCJS.Marshal
@@ -25,89 +27,49 @@ import GHCJS.Marshal
 import Reflex
 import Reflex.Dom
 
-data TutorialId = IntroTidalText deriving (Eq, Show, Ord, Generic, FromJSVal, ToJSVal)
+import Estuary.Types.Language
+import Estuary.Tidal.Types
+import Estuary.Types.Live
+import Estuary.Widgets.Generic (clickableDivAttrs)
+import Estuary.Reflex.Utility (buttonDynAttrs)
 
+-- ! Don't forget to add show instance when adding new tutorial
+data TutorialId = IntroTidalText deriving (Eq, Ord, Generic, FromJSVal, ToJSVal)
+
+instance Show TutorialId where
+  show IntroTidalText = "A Breif Introduction to Tidal (MiniTidal)"
+  show _ = "<tutorial>"
 
 data Tutorial t m = Tutorial {
   tutorialId::TutorialId,
   widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
 }
--- data Tutorial t m where
---   Tutorial:: (MonadWidget t m) => TutorialId -> (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)) -> Tutorial t m
-
---
--- tutorialId:: Tutorial t m -> TutorialId
--- tutorialId (Tutorial a _) = a
--- --
--- widget::(MonadWidget t m)=> Tutorial t m -> (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
--- widget (Tutorial _ a) = a
-
-tutorialWidget :: MonadWidget t m => Tutorial t m -> Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
-tutorialWidget _ _ = return (constDyn I.empty, never)
 
 
+attachIndex:: [a] -> [(Int,a)]
+attachIndex l = zip (take (length l) [0..]) l
 
--- -- Default based on lanuage
--- defaultPages:: Tutorial -> [TutorialPage]
--- defaultPages t = maybe (maybe lastResort id $ fstElement (toList $ pages t)) id $ M.lookup (defaultLang t) (pages t)
---   where
---     fstElement ((l,ps):xs) = Just ps
---     fstElement _ = Nothing
---     lastResort = [errorView]
---     errorView = (LabelView 1, singleton 1 (LabelText "Oops, an error has occurred - please raise an issue at github.com/d0kt0r0/estuary"))
+dynList::MonadWidget t m => [Dynamic t a] -> m (Dynamic t [a])
+dynList l = mapDyn elems $ joinDynThroughMap $ constDyn $ fromList $ attachIndex l
 
--- toTutorialPage::[(Int->View,Definition)] -> TutorialPage
--- toTutorialPage xs = (Views vs, fromList defs) where
---   (vs, defs) = unzip $ zipWith (\i (vf,d)-> (vf i, (i,d))) [(0::Int)..] xs  -- ([view],[defmap])
+title::MonadWidget t m => m a -> m a
+title widget = elClass "div" "title" widget
 
--- page :: Language -> [Language -> (View,Definition)] -> TutorialPage
--- page lang widgets = (Views $ vs lang, M.fromList $ zip (fmap getIndex $ vs lang) (defs lang))
---   where
---     vs l = fst $ unzip $ fmap (\f -> f l) widgets
---     defs l = snd $ unzip $ fmap (\f -> f l) widgets
+labelWidget::MonadWidget t m => Dynamic t Context -> M.Map Language String -> m ()
+labelWidget ctx txt = do
+  let dflt = safeHead "" $ elems txt
+  str <- mapDyn (\c-> maybe dflt id $ M.lookup (language c) txt) ctx
+  dynText str
+  where
+    safeHead a [] = a
+    safeHead _ (x:xs) = x
 
--- generateTutorial :: [[Language->(View, Definition)]] -> Map Language [TutorialPage]
--- generateTutorial pgs = M.fromList $ fmap (\l -> (l,fmap (page l) pgs)) languages
-
-
-
--- tutorialWidget :: MonadWidget t m => Tutorial -> Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
--- tutorialWidget t ctx = mdo
---   lang <- liftM nubDyn $ mapDyn language ctx
---   pageMapMaybe <- mapDyn ((flip M.lookup) (pages t)) lang
---   pageMap <- mapDyn (maybe ([]) id) pageMapMaybe
---   pb <- getPostBuild
---   debug $ (<$) (pages t) pb
---   let iLang = attachWith (\l _ -> M.lookup l (pages t)) (fmap language $ current ctx) pb
---   translationDNEWidget "translationDNEWidget" False lang $ fmap isNothing $ leftmost [updated pageMapMaybe, iLang]
---   backButton <- clickableDivDynAttrs "back" () backAttrs >>= count
---   nextButton <- clickableDivDynAttrs "next" () nextAttrs >>= count
---   pageNum <- combineDyn (-) nextButton backButton
---   pageNumSafe <- combineDyn (\pn p-> max 0 $ min (length p) pn) pageNum pageMap -- TODO make safer/fix case of over counting
---   nextAttrs <- combineDyn (\n pm-> singleton "class" $ if (length pm > n+1) then "tutorial_next" else "tutorial_next displayNone") pageNumSafe pageMap
---   backAttrs <- mapDyn (\n-> singleton "class" $ if (n>0) then "tutorial_back" else "tutorial_back displayNone") pageNumSafe
---   page <- combineDyn (!!) pageMap pageNumSafe -- TODO Make safe
---   let initialPage = attachDynWith (!!) pageMap  $ (<$) 0 pb
---   let rebuild = fmap (\(v,dm) -> viewWidget ctx (constDyn emptyRenderInfo) v dm never) $ leftmost [updated page, initialPage]
---   r <- widgetHold (return (constDyn I.empty, never,never)) rebuild
---   defMap <- liftM joinDyn $ mapDyn (\(a,_,_)->a) r
---   hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)->a) r
---   return (defMap, hints)
---
--- -- viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse] -> m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint)
---
--- -- translation does not exist widget
--- translationDNEWidget :: MonadWidget t m => String -> Bool -> Dynamic t Language -> Event t Bool -> m ()
--- translationDNEWidget cssClass iShowing lang b  = do
---   str <- mapDyn translationDNE lang
---   attrs <- holdDyn iShowing b >>= mapDyn (\x-> union (singleton "class" cssClass) (if x then empty else singleton "style" "display:none"))
---   elDynAttr "div" attrs $ dynText str
---   return ()
---
---
-
-
-
-
-
-  --
+miniTidalWidget :: MonadWidget t m => Dynamic t Context -> Int -> Int -> String -> m (Dynamic t (Int, Definition), Event t Hint)
+miniTidalWidget ctx rows index initialText = elClass "div" "panel" $ do
+  let silent = (Live (TidalTextNotation MiniTidal,"") L3)
+  pb <- liftM (silent <$) $ getPostBuild -- TODO PB used to block things from playing immediately.. should probably be less hacky about this
+  shh <- buttonDynAttrs "silence" silent (constDyn $ M.fromList [("style","float:right")])
+  (v, _, hints) <- textNotationWidget ctx (constDyn Nothing) rows (Live (TidalTextNotation MiniTidal, initialText) L3) never
+  v' <- holdDyn (Live (TidalTextNotation MiniTidal, initialText) L3) $  leftmost [pb, updated v, shh]
+  defn <- mapDyn (\v-> (index,(TextProgram v))) v'
+  return (defn, hints)

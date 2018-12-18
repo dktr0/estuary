@@ -93,7 +93,7 @@ page ctx _ _ wsDown Splash = do
           divClass "splash-icon-container" $ do
             divClass "splash-icon" $ do
               estuaryIcon
-              
+
     gotoTutorialEv <- liftM (TutorialList <$) $ do
       divClass "splash-margin" $ do
         dynButtonWithChild "splash-panel" $ do
@@ -127,14 +127,20 @@ page ctx _ _ wsDown Splash = do
 page ctx _ _ wsDown TutorialList = do
   el "div" $ text "Click on a button to select a tutorial interface:"
   bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ button $ show $ T.tutorialId b) (tutorials::[T.Tutorial t m])
-  return (never, (constDyn $ Just (soloEnsembleName, empty), never, never, never))
+  return (leftmost bs, (constDyn Nothing, never, never, never))
+
+page ctx _ _ wsDown (Tutorial tid) = do
+  let widget = (Map.lookup tid tutorialMap)::Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
+  (dm, hint) <- maybe errMsg id (fmap (\x-> x ctx) widget)
+  dm' <- mapDyn (\x-> Just ("",x)) dm
+  return (never, (dm', never, hint, never))
+  where
+    errMsg = do
+      text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
+      return (constDyn empty, never)
 
 page ctx _ _ wsDown About = do
   divClass "splash-info" $ aboutEstuaryParagraph ctx
-  return (never, (constDyn $ Just (soloEnsembleName, empty), never, never, never))
-
-page ctx _ _ wsDown (Tutorial _) = do
-  text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
   return (never, (constDyn $ Just (soloEnsembleName, empty), never, never, never))
 
 page ctx renderInfo commands wsDown Solo = do
