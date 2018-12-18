@@ -29,7 +29,6 @@ import Estuary.Types.Definition
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
-import Estuary.Types.EditOrEval
 import qualified Estuary.Types.Ensemble as E
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -152,7 +151,7 @@ processRequest db s c (JoinEnsemble x) = do
   let e = ensembles s' Map.! x -- *** this is unsafe and should be refactored, same problem below in f too ***
   let t = E.tempo e
   respond' s' c $ EnsembleResponse (Sited x (NewTempo t))
-  let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
+  let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ E.defs e
   mapM_ (respond' s' c) $ defs'
   respond' s' c $ EnsembleResponse (Sited x (DefaultView (E.defaultView e)))
   let views' = fmap (EnsembleResponse . Sited x . View) $ Map.mapWithKey Sited $ E.views e
@@ -198,15 +197,11 @@ processEnsembleRequest db s c e x@(SendChat name msg) = onlyIfAuthenticatedInEns
   postLog db $ "SendChat in " ++ e ++ " from " ++ name ++ ": " ++ msg
   respondEnsemble s e $ EnsembleResponse (Sited e (Chat name msg))
 
-processEnsembleRequest db s c e x@(ZoneRequest (Sited zone (Edit value))) = onlyIfAuthenticatedInEnsemble s c $ do
+processEnsembleRequest db s c e x@(ZoneRequest (Sited zone value)) = onlyIfAuthenticatedInEnsemble s c $ do
   postLog db $ "Edit in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
   updateServer s $ edit e zone value
-  respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone (Edit value))))
+  respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone value)))
   saveEnsembleToDatabase s e db
-
-processEnsembleRequest db s c e x@(ZoneRequest (Sited zone (Evaluate value))) = onlyIfAuthenticatedInEnsemble s c $ do
-  postLog db $ "Eval in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
-  respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone (Evaluate value))))
 
 processEnsembleRequest db s c e ListViews = do
   postLog db $ "ListViews in " ++ e

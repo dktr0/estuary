@@ -11,7 +11,6 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.Sited
-import Estuary.Types.EditOrEval
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Tempo
 import Estuary.Types.Hint
@@ -75,11 +74,11 @@ commandsToStateChanges (Terminal.DeleteView x) es = es { publishedViews = delete
 commandsToStateChanges _ es = es
 
 requestsToStateChanges :: EnsembleRequest -> EnsembleState -> EnsembleState
-requestsToStateChanges (ZoneRequest (Sited n (Edit x))) es = es { zones = IntMap.insert n x (zones es) }
+requestsToStateChanges (ZoneRequest (Sited n x)) es = es { zones = IntMap.insert n x (zones es) }
 requestsToStateChanges _ es = es
 
 responsesToStateChanges :: EnsembleResponse -> EnsembleState -> EnsembleState
-responsesToStateChanges (ZoneResponse (Sited n (Edit v))) es = es { zones = newZones }
+responsesToStateChanges (ZoneResponse (Sited n v)) es = es { zones = newZones }
   where newZones = IntMap.insert n v (zones es)
 responsesToStateChanges (View (Sited s v)) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)

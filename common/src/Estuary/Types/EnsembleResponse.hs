@@ -8,14 +8,13 @@ import Text.JSON
 import Text.JSON.Generic
 
 import Estuary.Types.Sited
-import Estuary.Types.EditOrEval
 import Estuary.Types.View
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
 
 data EnsembleResponse =
   Chat String String | -- name message
-  ZoneResponse (Sited Int (EditOrEval Definition)) |
+  ZoneResponse (Sited Int Definition) |
   ViewList [String] |
   View (Sited String View) |
   DefaultView View |
@@ -30,7 +29,7 @@ instance JSON EnsembleResponse where
 justEditsInZone :: Int -> [EnsembleResponse] -> [Definition]
 justEditsInZone z1 = mapMaybe f
   where
-    f (ZoneResponse (Sited z2 (Edit a))) | z1 ==z2 = Just a
+    f (ZoneResponse (Sited z2 a)) | z1 ==z2 = Just a
     f _ = Nothing
 
 justChats :: [EnsembleResponse] -> [(String,String)]

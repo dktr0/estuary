@@ -274,12 +274,6 @@
 	padding: 0.5em;
 }
 
-.textWidgetTextArea {/*modifies the extramuros-like view (source)*/
-	width: 100%;
-	border: none;
-	font-size: 100%;
-}
-
 .webSocketTextInputs { /*modifies the terminal text area (source)*/
 	border: none;
 }
