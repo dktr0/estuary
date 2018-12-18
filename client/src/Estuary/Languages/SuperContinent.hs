@@ -6,6 +6,7 @@ import Text.Parsec.Language (haskellDef)
 import Data.IntMap.Strict
 import qualified Data.Map.Strict as Map
 import Control.Monad.State
+import System.Random.MWC
 
 import qualified Estuary.Types.SvgOp as SvgOp
 import Estuary.Types.Color
@@ -160,13 +161,17 @@ valueParser = choice [
   ]
 
 data SuperContinentState = SuperContinentState {
-  objects :: IntMap Object
-  -- placeholder: will also soon need a random number generator here
-  } deriving (Show)
+  objects :: IntMap Object,
+  randomGen :: GenIO
+  }
 
--- note: will need to be IO SuperContinentState when we incorporate randomness
-emptyState :: SuperContinentState
-emptyState = SuperContinentState { objects = empty }
+emptyState :: IO SuperContinentState
+emptyState = do
+  rg <- create
+  return $ SuperContinentState {
+    objects = empty,
+    randomGen = rg
+  }
 
 stateToSvgOps :: SuperContinentState -> [SvgOp.SvgOp]
 stateToSvgOps s = concat $ fmap objectToSvgOps $ elems (objects s)
@@ -232,8 +237,10 @@ getValueFromGraph audio (Product x y) = do
   y' <- getValueFromGraph audio y
   return $ productOfValues x' y'
 getValueFromGraph audio (AudioProperty) = return $ ValueDouble audio
-getValueFromGraph _ (Random) = return $ ValueDouble 0.5 -- *** placeholder ***
-
+getValueFromGraph _ (Random) = do
+  x <- gets randomGen
+  y <- liftIO $ uniform x
+  return $ ValueDouble y
 
 -- below this line all there is is our Parsec tokenized parsing definitions
 

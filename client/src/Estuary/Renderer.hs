@@ -279,4 +279,5 @@ calculateRenderTimes = do
 forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThread c ri = do
   renderStart <- getCurrentTime
-  void $ forkIO $ iterateM_ (execStateT $ runRender c ri) (initialRenderState renderStart)
+  irs <- initialRenderState renderStart
+  void $ forkIO $ iterateM_ (execStateT $ runRender c ri) irs

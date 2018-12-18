@@ -51,6 +51,7 @@ dependencies:
   - parsec-numbers
   - reflex-dom-contrib
   - mtl
+  - mwc-random
 
 library:
   source-dirs:
@@ -73,7 +74,7 @@ executables:
     dependencies:
       - estuary
 
-  simple-test: 
+  simple-test:
     <<: *test-executable
     main: Simple.hs
     source-dirs:
