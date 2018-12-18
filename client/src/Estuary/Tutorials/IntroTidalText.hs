@@ -20,7 +20,7 @@ introTidalText = Tutorial IntroTidalText introTidalTextWidget
 
 introTidalTextWidget::MonadWidget t m => Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
 introTidalTextWidget ctx = elClass "div" "tutorial" $ do
-  title $ labelWidget ctx $ M.fromList [(English, "Welcome to the introductory tutorial to Tidalcycles (or MiniTidal)!")]
+  title $ labelWidget ctx $ M.fromList [(English, "Welcome to the introductory tutorial to TidalCycles (or MiniTidal)!")]
   labelWidget ctx $ M.fromList [(English,"This tutorial will cover some of the basics of making music with TidalCycles. MiniTidal is a subset of TidalCycles that supports most typical Tidal operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles.")]
 
   el "div" $ labelWidget ctx $ fromList [(English, "Lets make some sound! Click 'eval' below. You should here a simple \"bassdrum clap\" drum pattern. (hit 'silence' on the right to stop it)")]

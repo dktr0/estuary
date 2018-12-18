@@ -37,7 +37,7 @@ import Estuary.Reflex.Utility (buttonDynAttrs)
 data TutorialId = IntroTidalText deriving (Eq, Ord, Generic, FromJSVal, ToJSVal)
 
 instance Show TutorialId where
-  show IntroTidalText = "A Breif Introduction to Tidal (MiniTidal)"
+  show IntroTidalText = "A Brief Introduction to TidalCycles (MiniTidal)"
   show _ = "<tutorial>"
 
 data Tutorial t m = Tutorial {
