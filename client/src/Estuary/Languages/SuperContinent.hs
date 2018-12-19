@@ -92,7 +92,8 @@ data ValueGraph =
   Sum ValueGraph ValueGraph |
   Product ValueGraph ValueGraph |
   AudioProperty | -- for now there is only one audio property... but later this type can have more values
-  Random -- a random value between -1 and 1
+  Random | -- a random value between -1 and 1
+  ObjectN -- the number of the currently relevant object
   deriving (Show)
   -- *** should add a property reflecting current position in meter as well!
 
@@ -107,6 +108,7 @@ valueGraphComponent = choice [
   parens valueGraphParser,
   reserved "audio" >> return AudioProperty,
   reserved "random" >> return Random,
+  reserved "n" >> return ObjectN,
   valueParser >>= return . Constant
   ]
 
@@ -219,34 +221,35 @@ runDeltasOnObjects :: Double -> IntMap Object -> [Delta] -> ST (IntMap Object)
 runDeltasOnObjects audio objs deltas = foldM (runDeltaOnObjects audio) objs deltas
 
 runDeltaOnObjects :: Double -> IntMap Object -> Delta -> ST (IntMap Object)
-runDeltaOnObjects audio objs delta = mapM (runDeltaOnObject audio delta) objs
-
-runDeltaOnObject :: Double -> Delta -> Object -> ST Object
-runDeltaOnObject audio (Delta prop graph) obj = do
-  val <- getValueFromGraph audio graph
+runDeltaOnObjects audio objs delta = sequence $ mapWithKey (\k v -> runDeltaOnObject k audio delta v) objs
+  
+runDeltaOnObject :: Int -> Double -> Delta -> Object -> ST Object
+runDeltaOnObject objectN audio (Delta prop graph) obj = do
+  val <- getValueFromGraph objectN audio graph
   return $ Map.insert prop val obj
 
-getValueFromGraph :: Double -> ValueGraph -> ST Value
-getValueFromGraph _ (Constant v) = return v
-getValueFromGraph audio (Sum x y) = do
-  x' <- getValueFromGraph audio x
-  y' <- getValueFromGraph audio y
+getValueFromGraph :: Int -> Double -> ValueGraph -> ST Value
+getValueFromGraph _ _ (Constant v) = return v
+getValueFromGraph objectN audio (Sum x y) = do
+  x' <- getValueFromGraph objectN audio x
+  y' <- getValueFromGraph objectN audio y
   return $ sumOfValues x' y'
-getValueFromGraph audio (Product x y) = do
-  x' <- getValueFromGraph audio x
-  y' <- getValueFromGraph audio y
+getValueFromGraph objectN audio (Product x y) = do
+  x' <- getValueFromGraph objectN audio x
+  y' <- getValueFromGraph objectN audio y
   return $ productOfValues x' y'
-getValueFromGraph audio (AudioProperty) = return $ ValueDouble audio
-getValueFromGraph _ (Random) = do
+getValueFromGraph _ audio (AudioProperty) = return $ ValueDouble audio
+getValueFromGraph _ _ (Random) = do
   x <- gets randomGen
   y <- liftIO $ uniform x
   return $ ValueDouble y
+getValueFromGraph objectN _ ObjectN = return $ ValueInt objectN
 
 -- below this line all there is is our Parsec tokenized parsing definitions
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["type","x0","y0","x1","y1","x2","y2","nil","triangle","audio","random","r","g","b","a"],
+  P.reservedNames = ["type","x0","y0","x1","y1","x2","y2","nil","triangle","audio","random","r","g","b","a","n"],
   P.reservedOpNames = ["..","=","*","+"]
   }
 
