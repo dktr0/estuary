@@ -55,6 +55,14 @@ canvasOp ctx (Clear a) = do
   stroke ctx
   fill ctx
 canvasOp ctx (Rect x y w h) = beginPath ctx >> rect ctx x y w h >> stroke ctx >> fill ctx
+canvasOp ctx (Tri x0 y0 x1 y1 x2 y2) = do
+  beginPath ctx
+  moveTo ctx x0 y0
+  lineTo ctx x1 y1
+  lineTo ctx x2 y2
+  lineTo ctx x0 y0
+  stroke ctx
+  fill ctx
 canvasOp ctx (MoveTo x y) = moveTo ctx x y
 canvasOp ctx (LineTo x y) = beginPath ctx >> lineTo ctx x y >> stroke ctx >> fill ctx
 canvasOp ctx (StrokeStyle c) = strokeStyle ctx (pack $ show c)

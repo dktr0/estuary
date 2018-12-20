@@ -18,7 +18,7 @@ canvasOpParser = do
   return ops
 
 ops :: Parser CanvasOp
-ops = choice [ lineTo, moveTo, rect, strokeStyle]
+ops = choice [ lineTo, moveTo, rect, tri, strokeStyle, fillStyle]
 
 lineTo :: Parser CanvasOp
 lineTo = (reserved "lineTo" >> return LineTo) <*> double <*> double
@@ -29,8 +29,14 @@ moveTo = (reserved "moveTo" >> return MoveTo) <*> double <*> double
 rect :: Parser CanvasOp
 rect = (reserved "rect" >> return Rect) <*> double <*> double <*> double <*> double
 
+tri :: Parser CanvasOp
+tri = (reserved "tri" >> return Tri) <*> double <*> double <*> double <*> double <*> double <*> double
+
 strokeStyle :: Parser CanvasOp
 strokeStyle = (reserved "strokeStyle" >> return StrokeStyle) <*> color
+
+fillStyle :: Parser CanvasOp
+fillStyle = (reserved "fillStyle" >> return FillStyle) <*> color
 
 color :: Parser Color
 color = parens $ do
@@ -48,7 +54,7 @@ double = choice [try float,fromIntegral <$> integer]
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["lineTo","moveTo","rect"],
+  P.reservedNames = ["lineTo","moveTo","rect","tri","strokeStyle","fillStyle"],
   P.reservedOpNames = []
   }
 
