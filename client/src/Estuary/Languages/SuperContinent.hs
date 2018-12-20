@@ -1,4 +1,4 @@
-module Estuary.Languages.SuperContinent (parseSuperContinent,Program,SuperContinentState,emptyState,runProgram,stateToSvgOps) where
+module Estuary.Languages.SuperContinent (parseSuperContinent,Program,SuperContinentState,emptyState,runProgram,stateToSvgOps,stateToCanvasOps) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -9,6 +9,7 @@ import Control.Monad.State
 import System.Random.MWC
 
 import qualified Estuary.Types.SvgOp as SvgOp
+import qualified Estuary.Types.CanvasOp as CanvasOp
 import Estuary.Types.Color
 import Estuary.Types.Transform
 import Estuary.Types.Stroke
@@ -178,11 +179,21 @@ emptyState = do
 stateToSvgOps :: SuperContinentState -> [SvgOp.SvgOp]
 stateToSvgOps s = concat $ fmap objectToSvgOps $ elems (objects s)
 
+stateToCanvasOps :: SuperContinentState -> [CanvasOp.CanvasOp]
+stateToCanvasOps s = a ++ b
+  where
+    a = [CanvasOp.StrokeStyle (RGBA 0 0 0 100),CanvasOp.FillStyle (RGBA 0 0 0 100),CanvasOp.Rect 0 0 100 100]
+    b = concat $ fmap objectToCanvasOps $ elems (objects s)
+
 type Object = Map.Map Property Value
 
 objectToSvgOps :: Object -> [SvgOp.SvgOp]
 objectToSvgOps x | Map.lookup Type x == Just (ValueType Triangle) = [objectToTriangle x] -- *** note: this doesn't actually do the loose typing thing...
 objectToSvgOps x | otherwise = []
+
+objectToCanvasOps :: Object -> [CanvasOp.CanvasOp]
+objectToCanvasOps x | Map.lookup Type x == Just (ValueType Triangle) = objectToTriangle' x -- *** note: this doesn't actually do the loose typing thing...
+objectToCanvasOps x | otherwise = []
 
 objectToTriangle :: Object -> SvgOp.SvgOp
 objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s
@@ -199,6 +210,23 @@ objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s
     a = valueAsDouble $ Map.findWithDefault (ValueDouble 100) A obj
     c = RGBA r g b a
     s = defaultStroke { strokeColor = c }
+
+objectToTriangle' :: Object -> [CanvasOp.CanvasOp]
+objectToTriangle' obj = [s,f,CanvasOp.Tri x0 y0 x1 y1 x2 y2]
+  where
+    x0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X0 obj
+    y0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y0 obj
+    x1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X1 obj
+    y1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y1 obj
+    x2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X2 obj
+    y2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y2 obj
+    r = valueAsDouble $ Map.findWithDefault (ValueDouble 0) R obj
+    g = valueAsDouble $ Map.findWithDefault (ValueDouble 0) G obj
+    b = valueAsDouble $ Map.findWithDefault (ValueDouble 0) B obj
+    a = valueAsDouble $ Map.findWithDefault (ValueDouble 100) A obj
+    c = RGBA r g b a
+    s = CanvasOp.StrokeStyle c
+    f = CanvasOp.FillStyle c
 
 runProgram :: Double -> Program -> SuperContinentState -> IO SuperContinentState
 runProgram audio program prevState = execStateT (mapM (runSuperContinentStatement audio) program) prevState
@@ -222,7 +250,7 @@ runDeltasOnObjects audio objs deltas = foldM (runDeltaOnObjects audio) objs delt
 
 runDeltaOnObjects :: Double -> IntMap Object -> Delta -> ST (IntMap Object)
 runDeltaOnObjects audio objs delta = sequence $ mapWithKey (\k v -> runDeltaOnObject k audio delta v) objs
-  
+
 runDeltaOnObject :: Int -> Double -> Delta -> Object -> ST Object
 runDeltaOnObject objectN audio (Delta prop graph) obj = do
   val <- getValueFromGraph objectN audio graph
