@@ -177,6 +177,8 @@ processRequest db s c GetServerClientCount = do
   postLog db "GetServerClientCount"
   getServerClientCount s >>= respond s c . ServerClientCount
 
+processRequest _ s c (Ping t) = respond s c (Pong t)
+
 processInEnsemble :: SQLite.Connection -> MVar Server -> ClientHandle -> Sited String EnsembleRequest -> IO ()
 processInEnsemble db s c (Sited e x) = processEnsembleRequest db s c e x
 

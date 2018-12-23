@@ -5,6 +5,7 @@ module Estuary.Types.Response where
 import Data.Maybe (mapMaybe)
 import Text.JSON
 import Text.JSON.Generic
+import Data.Time.Clock
 
 import Estuary.Utility
 import Estuary.Types.Sited
@@ -14,7 +15,8 @@ import Estuary.Types.Definition
 data Response =
   EnsembleList [String] |
   EnsembleResponse (Sited String EnsembleResponse) |
-  ServerClientCount Int
+  ServerClientCount Int |
+  Pong UTCTime
   deriving (Data,Typeable)
 
 instance JSON Response where

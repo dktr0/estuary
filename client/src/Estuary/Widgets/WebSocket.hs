@@ -41,13 +41,19 @@ estuaryWebSocket addr pwd toSend = mdo
 
 alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Event t Request ->
   m (Event t [Response],Dynamic t String)
-alternateWebSocket obj toSend = do
+alternateWebSocket obj toSend = mdo
   now <- liftIO $ getCurrentTime
-  performEvent_ $ fmap (liftIO . (send obj) . encode) toSend
+  performEvent_ $ fmap (liftIO . (send obj) . encode) $ leftmost [toSend,pingRequest]
   ticks <- tickLossy (0.1::NominalDiffTime) now
   -- responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
   let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status
+
+  socketIsOpen <- mapDyn (=="connection open") status'
+  pingTick <- tickLossy (3::NominalDiffTime) now
+  let pingTick' = gate (current socketIsOpen) pingTick
+  let pingRequest = fmap (Ping . _tickInfo_lastUTC) pingTick'
+
   return (responses',status')

@@ -34,7 +34,11 @@ requestAnimationFrame ctx mv = do
 
 redrawCanvas :: JSVal -> MVar [(UTCTime,CanvasOp)] -> JSVal -> IO ()
 redrawCanvas ctx mv _ = do
+  t1 <- getCurrentTime
   modifyMVar_ mv $ flushCanvasOps ctx
+  t2 <- getCurrentTime
+  let t = diffUTCTime t2 t1
+  putStrLn $ show t
   requestAnimationFrame ctx mv
 
 flushCanvasOps :: JSVal -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]
