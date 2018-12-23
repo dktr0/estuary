@@ -28,6 +28,7 @@ data Context = Context {
   peakLevels :: [Double],
   rmsLevels :: [Double],
   wsStatus :: String,
+  serverLatency :: NominalDiffTime,
   clientCount :: Int,
   canvasOpsQueue :: MVar [(UTCTime,CanvasOp)]
   }
@@ -47,6 +48,7 @@ initialContext now wd sd mv = Context {
   peakLevels = [],
   rmsLevels = [],
   wsStatus = "",
+  serverLatency = 0,
   clientCount = 0,
   canvasOpsQueue = mv
 }

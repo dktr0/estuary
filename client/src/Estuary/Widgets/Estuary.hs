@@ -62,13 +62,12 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
 
   commands <- footer ctx renderInfo deltasUp deltasDown' hints
 
-  (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
+  (deltasDown,wsCtxChanges) <- alternateWebSocket protocol deltasUp
   let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
-  let wsChange = fmap (\w x -> x { wsStatus = w }) $ (updated . nubDyn) wsStatus
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsChange]
+  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
   t <- mapDyn theme ctx -- Dynamic t String
@@ -133,9 +132,7 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak" $ do
     text "server "
-    wsStatus' <- mapDyn wsStatus ctx
-    clientCount' <- mapDyn clientCount ctx
-    dynText =<< combineDyn f wsStatus' clientCount'
+    dynText =<< mapDyn f ctx 
     text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
@@ -147,5 +144,6 @@ footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
     text ") "
   terminalWidget ctx deltasDown deltasUp hints
   where
-    f "connection open" c = "(" ++ (show c) ++ " connections)"
-    f x _ = "(" ++ x ++ ")"
+    f c | wsStatus c == "connection open" = "(" ++ show (clientCount c) ++ " connections, latency " ++ show (serverLatency c) ++ ")"
+    f c | otherwise = "(" ++ wsStatus c ++ ")"
+

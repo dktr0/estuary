@@ -19,6 +19,18 @@ import Estuary.Types.Term
 import Estuary.Types.Context
 import Estuary.Types.Language
 
+mapDyn' :: MonadWidget t m => (a -> b) -> m (Dynamic t a) -> m (Dynamic t b)
+mapDyn' f a = do
+  let f' = constDyn f
+  a' <- a
+  combineDyn ($) f' a'
+
+apDyn :: MonadWidget t m => m (Dynamic t (a -> b)) -> m (Dynamic t a) -> m (Dynamic t b)
+apDyn f a = do
+  f' <- f
+  a' <- a
+  combineDyn ($) f' a'
+
 translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t String)
 translateDyn t = mapDyn (translate t . language)
 

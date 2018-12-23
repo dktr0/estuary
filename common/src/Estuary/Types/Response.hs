@@ -37,3 +37,9 @@ justServerClientCount :: [Response] -> Maybe Int
 justServerClientCount = lastOrNothing . mapMaybe f
   where f (ServerClientCount x) = Just x
         f _ = Nothing
+
+justPongs :: [Response] -> Maybe UTCTime
+justPongs = lastOrNothing . mapMaybe f
+  where f (Pong t) = Just t
+        f _ = Nothing
+

@@ -97,10 +97,10 @@ processLoop db ws s h = do
 
 processMessage :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle -> Text -> IO ()
 processMessage db ws s h m = do
-  let m' = decode (T.unpack m) :: Result JSString
-  case m' of
-    Ok m'' -> processResult db s h $ decode (fromJSString m'')
-    Error x'' -> postLog db $ "Error: " ++ x''
+   let m' = decode (T.unpack m) :: Result JSString
+   case m' of
+     Ok m'' -> processResult db s h $ decode (fromJSString m'')
+     Error x'' -> postLog db $ "Error: " ++ x''
 
 processMessageExceptions :: SQLite.Connection -> SomeException -> IO ()
 processMessageExceptions db e = postLog db $ "Exception (processResult): " ++ (show e)
