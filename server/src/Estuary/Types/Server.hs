@@ -81,21 +81,12 @@ setDefaultView w v s = s { ensembles = Map.adjust (E.editDefaultView v) w (ensem
 deleteView :: String -> String -> Server -> Server
 deleteView e v s = s { ensembles = Map.adjust (E.deleteView v) e (ensembles s) }
 
-getEnsembleList :: MVar Server -> IO Response
-getEnsembleList s = readMVar s >>= return . EnsembleList . Map.keys . ensembles
-
-getViews :: MVar Server -> String -> IO [String]
-getViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.keys . E.views) . Map.lookup w . ensembles
-
 getView :: MVar Server -> String -> String -> IO (Maybe View)
 getView s e v = do
   s' <- readMVar s
   return $ do
     e' <- Map.lookup e (ensembles s')
     Map.lookup v (E.views e')
-
-getServerClientCount :: MVar Server -> IO Int
-getServerClientCount s = readMVar s >>= return . Map.size . clients
 
 getEnsemblePassword :: MVar Server -> String -> IO String
 getEnsemblePassword s e = readMVar s >>= return . fromMaybe [] . fmap (E.password) . Map.lookup e . ensembles

@@ -16,7 +16,7 @@ data Request =
   JoinEnsemble String |
   LeaveEnsemble |
   CreateEnsemble String String | -- ensembleName ensemblePassword (or "" for no password)
-  EnsembleRequest (Sited String EnsembleRequest) |
+  EnsembleRequest EnsembleRequest |
   GetServerClientCount |
   Ping UTCTime
   deriving (Eq,Data,Typeable)

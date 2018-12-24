@@ -7,16 +7,15 @@ import Data.Ratio
 import Text.JSON
 import Text.JSON.Generic
 
-import Estuary.Types.Sited
 import Estuary.Types.View
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
 
 data EnsembleResponse =
   Chat String String | -- name message
-  ZoneResponse (Sited Int Definition) |
+  ZoneResponse Int Definition |
   ViewList [String] |
-  View (Sited String View) |
+  View String View |
   DefaultView View |
   NewTempo Tempo |
   EnsembleClientCount Int
@@ -29,7 +28,7 @@ instance JSON EnsembleResponse where
 justEditsInZone :: Int -> [EnsembleResponse] -> [Definition]
 justEditsInZone z1 = mapMaybe f
   where
-    f (ZoneResponse (Sited z2 a)) | z1 ==z2 = Just a
+    f (ZoneResponse z2 a) | z1==z2 = Just a
     f _ = Nothing
 
 justChats :: [EnsembleResponse] -> [(String,String)]
@@ -37,7 +36,7 @@ justChats = mapMaybe f
   where f (Chat x y) = Just (x,y)
         f _ = Nothing
 
-justViews :: [EnsembleResponse] -> [Sited String View]
+justViews :: [EnsembleResponse] -> [(String,View)]
 justViews = mapMaybe f
-  where f (View x) = Just x
+  where f (View x y) = Just (x,y)
         f _ = Nothing

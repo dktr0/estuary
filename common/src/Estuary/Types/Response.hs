@@ -14,7 +14,7 @@ import Estuary.Types.Definition
 
 data Response =
   EnsembleList [String] |
-  EnsembleResponse (Sited String EnsembleResponse) |
+  EnsembleResponse EnsembleResponse |
   ServerClientCount Int |
   Pong UTCTime
   deriving (Data,Typeable)
@@ -23,7 +23,7 @@ instance JSON Response where
   showJSON = toJSON
   readJSON = fromJSON
 
-justEnsembleResponses :: [Response] -> [Sited String EnsembleResponse]
+justEnsembleResponses :: [Response] -> [EnsembleResponse]
 justEnsembleResponses = mapMaybe f
   where f (EnsembleResponse x) = Just x
         f _ = Nothing
