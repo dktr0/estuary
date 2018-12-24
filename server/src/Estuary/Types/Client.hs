@@ -1,18 +1,18 @@
 module Estuary.Types.Client where
 
-import qualified Network.WebSockets as WS
+import Network.WebSockets
 
 type ClientHandle = Int
 
 data Client = Client {
   handle :: ClientHandle,
-  connection :: WS.Connection,
+  connection :: Connection,
   authenticated :: Bool,
   ensemble :: Maybe String,
   authenticatedInEnsemble :: Bool
 }
 
-newClient :: ClientHandle -> WS.Connection -> Client
+newClient :: ClientHandle -> Connection -> Client
 newClient h c = Client {
   handle = h,
   connection = c,
@@ -20,10 +20,4 @@ newClient h c = Client {
   ensemble = Nothing,
   authenticatedInEnsemble = False
 }
-
-setAuthenticatedInEnsemble :: Bool -> Client -> Client
-setAuthenticatedInEnsemble x c = c { authenticatedInEnsemble = x }
-
-
-
 

@@ -34,6 +34,7 @@ createLogTable c = execute_ c "CREATE TABLE IF NOT EXISTS log (time TEXT,msg TEX
 postLogToDatabase :: Connection -> String -> IO ()
 postLogToDatabase c l = do
   now <- getCurrentTime
+  putStrLn $ show now ++ ": " ++ l
   execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,l)
 
 writeNewEnsemble :: Connection -> String -> Ensemble -> IO ()

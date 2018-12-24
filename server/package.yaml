@@ -23,6 +23,7 @@ dependencies:
 - wai-extra
 - time
 - sqlite-simple
+- mtl
 
 library:
   source-dirs: 
