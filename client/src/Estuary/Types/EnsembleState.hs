@@ -74,20 +74,20 @@ commandsToStateChanges (Terminal.DeleteView x) es = es { publishedViews = delete
 commandsToStateChanges _ es = es
 
 requestsToStateChanges :: EnsembleRequest -> EnsembleState -> EnsembleState
-requestsToStateChanges (ZoneRequest (Sited n x)) es = es { zones = IntMap.insert n x (zones es) }
+requestsToStateChanges (ZoneRequest n x) es = es { zones = IntMap.insert n x (zones es) }
 requestsToStateChanges _ es = es
 
 responsesToStateChanges :: EnsembleResponse -> EnsembleState -> EnsembleState
-responsesToStateChanges (ZoneResponse (Sited n v)) es = es { zones = newZones }
+responsesToStateChanges (ZoneResponse n v) es = es { zones = newZones }
   where newZones = IntMap.insert n v (zones es)
-responsesToStateChanges (View (Sited s v)) es = es { publishedViews = newViews }
+responsesToStateChanges (View s v) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)
 responsesToStateChanges (DefaultView v) es = es { defaultView = v }
 responsesToStateChanges (NewTempo t) es = es { tempo = t }
 responsesToStateChanges _ es = es
 
 commandsToRequests :: EnsembleState -> Terminal.Command -> Maybe EnsembleRequest
-commandsToRequests es (Terminal.PublishView x) = Just (PublishView (Sited x (getActiveView es)))
+commandsToRequests es (Terminal.PublishView x) = Just (PublishView x (getActiveView es))
 commandsToRequests es (Terminal.PublishDefaultView) = Just (PublishDefaultView (getActiveView es))
 commandsToRequests es (Terminal.GetView x) = Just (GetView x)
 commandsToRequests es Terminal.ListViews = Just ListViews
@@ -98,6 +98,6 @@ commandsToRequests _ _ = Nothing
 messageForEnsembleResponse :: EnsembleResponse -> Maybe String
 messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
 messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
-messageForEnsembleResponse (View (Sited x _)) = Just $ "received view " ++ x
+messageForEnsembleResponse (View x _) = Just $ "received view " ++ x
 messageForEnsembleResponse (NewTempo t) = Just $ "received new tempo " ++ (show (cps t))
 messageForEnsembleResponse _ = Nothing

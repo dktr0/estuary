@@ -50,7 +50,7 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
     defaultView = initialView
     }
   let commandChanges = fmap commandsToStateChanges commands
-  let ensembleResponses = fmap (justSited ensemble . justEnsembleResponses) deltasDown
+  let ensembleResponses = fmap justEnsembleResponses deltasDown
   let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
   let handleChanges = fmap (\x es -> es { userHandle = x}) hdl
   let requestChanges = fmap requestsToStateChanges edits
@@ -104,7 +104,7 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   requests <- if ensemble == soloEnsembleName then return never else do
     joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
     let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands
-    let ensembleRequests = fmap (EnsembleRequest . Sited ensemble) $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
+    let ensembleRequests = fmap EnsembleRequest $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
     return $ leftmost [joinRequest,ensembleRequests]
 
   return (defMap,requests,hints,tempoDeltas)

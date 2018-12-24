@@ -48,9 +48,7 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
 
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
-  let spaceAndDeltasDown = attachDyn currentSpace deltasDown'
-  let justInSpace = fmap (\(x,y) -> justSited x $ y) spaceAndDeltasDown
-  let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) justInSpace
+  let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) deltasDown'
   let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
   simpleList mostRecent $ \v -> divClass "chatMessage" $ dynText v
