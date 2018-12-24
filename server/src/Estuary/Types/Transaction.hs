@@ -88,6 +88,13 @@ close msg = do
   modify' $ deleteClient cHandle
   return ()
 
+closeAnotherConnection :: Client -> Transaction ()
+closeAnotherConnection c = do
+  postLog $ "closing connection (for another client)"
+  let cHandle = Estuary.Types.Client.handle c
+  modify' $ deleteClient cHandle
+  return ()
+
 isAuthenticated :: Transaction Bool
 isAuthenticated = getClient >>= return . authenticated
 
@@ -119,11 +126,16 @@ whenNotAuthenticatedInEnsemble t = do
   return ()
 
 send :: Response -> [Client] -> Transaction ()
-send x cs = forM_ cs $ \y -> do
-  y <- liftIO $ try (WS.sendTextData (connection y) $ (T.pack . encodeStrict) x) 
+send x cs = forM_ cs $ \c -> do
+  y <- liftIO $ try (WS.sendTextData (connection c) $ (T.pack . encodeStrict) x) 
   case y of
     Right x -> return ()
-    Left (SomeException e) -> throwError $ "send exception: " ++ (show e) 
+    Left (SomeException e) -> do
+      let ce = fromException (SomeException e)
+      case ce of 
+        Just (WS.CloseRequest _ _) -> closeAnotherConnection c
+        Just WS.ConnectionClosed -> closeAnotherConnection c
+        otherwise -> throwError $ "send exception: " ++ show e 
 
 respond :: Response -> Transaction ()
 respond x = do

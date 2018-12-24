@@ -79,10 +79,15 @@ webSocketsApp db sMVar ws = do
 processLoop :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle -> IO ()
 processLoop db ws sMVar cHandle = do
   m <- try $ WS.receiveData ws
+
   case m of
     Right m' -> do
       s <- takeMVar sMVar
-      s' <- runTransaction (processMessage m') db cHandle s
+      s' <- if (isJust $ Data.Map.lookup cHandle (clients s))
+        then runTransaction (processMessage m') db cHandle s
+        else do
+          postLogToDatabase db $ "*** warning - failed sanity check: WS.receiveData succeeded for client already deleted from server"
+          return s
       putMVar sMVar s'
       processLoop db ws sMVar cHandle
     Left WS.ConnectionClosed -> do
@@ -96,6 +101,7 @@ processLoop db ws sMVar cHandle = do
     Left (WS.ParseException e) -> do
       postLogToDatabase db $ "parse exception: " ++ e
       processLoop db ws sMVar cHandle
+    Left _ -> postLogToDatabase db $ "***unknown exception in processLoop - terminating this client's connection***"
     -- Left (WS.UnicodeException e) -> do
     --  postLog db $ "Unicode exception: " ++ e
     --  processLoop db ws s h
