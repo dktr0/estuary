@@ -91,8 +91,3 @@ getView s e v = do
 tempoChangeInEnsemble :: String -> Tempo -> Server -> Server
 tempoChangeInEnsemble e t s = s { ensembles = Map.adjust (E.tempoChange t) e (ensembles s) }
 
-getTotalEnsembleClientCount :: MVar Server -> String -> IO (Maybe Int)
-getTotalEnsembleClientCount s e = readMVar s >>= return . fmap E.totalClientCount . Map.lookup e . ensembles
-
-getAuthenticatedEnsembleClientCount :: MVar Server -> String -> IO (Maybe Int)
-getAuthenticatedEnsembleClientCount s e = readMVar s >>= return . fmap E.authenticatedClientCount . Map.lookup e . ensembles

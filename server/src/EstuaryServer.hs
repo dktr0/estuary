@@ -238,3 +238,14 @@ processEnsembleRequest (SetTempo t) = do
   respondAll $ EnsembleResponse $ NewTempo $ E.tempo e
   saveEnsembleToDatabase
 
+processEnsembleRequest GetEnsembleClientCount = do
+  eName <- getEnsembleName
+  x <- gets (Map.size . Map.filter (\c -> ensemble c == Just eName) . clients)
+  respond $ EnsembleResponse $ EnsembleClientCount x
+
+
+ 
+
+
+
+
