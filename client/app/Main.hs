@@ -13,6 +13,7 @@ import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.Protocol.Foreign
 import Estuary.Types.Context
+import Estuary.Types.CanvasState
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
 import Estuary.WebDirt.SampleEngine
@@ -48,7 +49,7 @@ main = do
   wd <- newWebDirt
   sd <- newSuperDirt
   protocol <- estuaryProtocol
-  mv <- newMVar []
+  mv <- emptyCanvasState >>= newMVar
   let ic = initialContext now wd sd mv
   c <- newMVar $ ic
   ri <- newMVar $ emptyRenderInfo

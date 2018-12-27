@@ -99,7 +99,7 @@ viewWidget _ _ (LabelView n) i deltasDown = do
 viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
 viewWidget ctx _ (CanvasDisplayView z) _ _ = do
-  mv <- fmap canvasOpsQueue $ sample $ current ctx
+  mv <- fmap canvasState $ sample $ current ctx
   canvasDisplay z mv
   return (constDyn Map.empty, never, never)
 

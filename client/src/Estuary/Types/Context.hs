@@ -12,7 +12,7 @@ import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
 import Estuary.Types.Tempo
-import Estuary.Types.CanvasOp
+import Estuary.Types.CanvasState
 
 data Context = Context {
   webDirt :: WebDirt,
@@ -30,10 +30,10 @@ data Context = Context {
   wsStatus :: String,
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
-  canvasOpsQueue :: MVar [(UTCTime,CanvasOp)]
+  canvasState :: MVar CanvasState
   }
 
-initialContext :: UTCTime -> WebDirt -> SuperDirt -> MVar [(UTCTime,CanvasOp)] -> Context
+initialContext :: UTCTime -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
 initialContext now wd sd mv = Context {
   webDirt = wd,
   superDirt = sd,
@@ -50,7 +50,7 @@ initialContext now wd sd mv = Context {
   wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
-  canvasOpsQueue = mv
+  canvasState = mv
 }
 
 type ContextChange = Context -> Context

@@ -17,9 +17,10 @@ import Data.Time.Clock
 
 import Estuary.Types.Color
 import Estuary.Types.CanvasOp
+import Estuary.Types.CanvasState
 import Estuary.RenderInfo
 
-canvasDisplay :: MonadWidget t m => Int -> MVar [(UTCTime,CanvasOp)] -> m ()
+canvasDisplay :: MonadWidget t m => Int -> MVar CanvasState -> m ()
 canvasDisplay z mv = do
   let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z),("width","1920"),("height","1080")]
   cvs <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
@@ -27,18 +28,25 @@ canvasDisplay z mv = do
   liftIO $ requestAnimationFrame ctx mv
   -- *** note: also need to consider how to interrupt requestAnimationFrame when widget is destroyed
 
-requestAnimationFrame :: JSVal -> MVar [(UTCTime,CanvasOp)] -> IO ()
+requestAnimationFrame :: JSVal -> MVar CanvasState -> IO ()
 requestAnimationFrame ctx mv = do
   cb <- syncCallback1 ContinueAsync $ redrawCanvas ctx mv
   requestAnimationFrame_ cb
 
-redrawCanvas :: JSVal -> MVar [(UTCTime,CanvasOp)] -> JSVal -> IO ()
+redrawCanvas :: JSVal -> MVar CanvasState -> JSVal -> IO ()
 redrawCanvas ctx mv _ = do
   t1 <- getCurrentTime
-  modifyMVar_ mv $ flushCanvasOps ctx
-  t2 <- getCurrentTime
-  let t = diffUTCTime t2 t1
-  putStrLn $ show t
+  cState <- takeMVar mv
+  let ops = queuedOps cState
+  let n1 = Prelude.length ops
+  ops' <- flushCanvasOps ctx ops
+  let n2 = Prelude.length ops'
+  putMVar mv $ cState { queuedOps = ops', previousDrawStart = t1 }
+  t3 <- getCurrentTime
+  let interFrameDelay = diffUTCTime t1 (previousDrawStart cState)
+  let drawDelay = diffUTCTime t3 t1
+  let opsDrawn = n1 - n2
+  putStrLn $ "interFrameDelay = " ++ show interFrameDelay ++ "; drawDelay = " ++ show drawDelay ++ " (" ++ show opsDrawn ++ " ops drawn)"
   requestAnimationFrame ctx mv
 
 flushCanvasOps :: JSVal -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]

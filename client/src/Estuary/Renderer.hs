@@ -23,6 +23,7 @@ import qualified Estuary.Languages.SuperContinent as SuperContinent
 import qualified Estuary.Languages.SvgOp as SvgOp
 import qualified Estuary.Languages.CanvasOp as CanvasOp
 import qualified Estuary.Types.CanvasOp as CanvasOp
+import Estuary.Types.CanvasState
 import Estuary.Types.Color
 
 import Estuary.Types.Context
@@ -40,7 +41,7 @@ import Estuary.Types.Tempo
 type Renderer = StateT RenderState IO ()
 
 renderPeriod :: NominalDiffTime
-renderPeriod = 0.2
+renderPeriod = 0.032
 
 flushEvents :: Context -> Renderer
 flushEvents c = do
@@ -49,9 +50,9 @@ flushEvents c = do
   liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
   -- flush CanvasOps to an MVar queue (list)
-  oldOps <- liftIO $ takeMVar $ canvasOpsQueue c
+  oldCvsState <- liftIO $ takeMVar $ canvasState c
   newOps <- gets canvasOps
-  liftIO $ putMVar (canvasOpsQueue c) (oldOps ++ newOps)
+  liftIO $ putMVar (canvasState c) $ pushCanvasOps newOps oldCvsState
   modify' $ \x -> x { dirtEvents = [], canvasOps = []}
   return ()
 
@@ -180,25 +181,25 @@ renderSuperContinent c z = do
   let program = superContinentProgram s
   let scState = superContinentState s
   scState1 <- liftIO $ SuperContinent.runProgram audio program scState
-  scState2 <- liftIO $ SuperContinent.runProgram audio program scState1
-  scState3 <- liftIO $ SuperContinent.runProgram audio program scState2
-  scState4 <- liftIO $ SuperContinent.runProgram audio program scState3
-  scState5 <- liftIO $ SuperContinent.runProgram audio program scState4
-  scState6 <- liftIO $ SuperContinent.runProgram audio program scState5
+--  scState2 <- liftIO $ SuperContinent.runProgram audio program scState1
+--  scState3 <- liftIO $ SuperContinent.runProgram audio program scState2
+--  scState4 <- liftIO $ SuperContinent.runProgram audio program scState3
+--  scState5 <- liftIO $ SuperContinent.runProgram audio program scState4
+--  scState6 <- liftIO $ SuperContinent.runProgram audio program scState5
   let newOps1 = SuperContinent.stateToCanvasOps scState1
-  let newOps2 = SuperContinent.stateToCanvasOps scState2
-  let newOps3 = SuperContinent.stateToCanvasOps scState3
-  let newOps4 = SuperContinent.stateToCanvasOps scState4
-  let newOps5 = SuperContinent.stateToCanvasOps scState5
-  let newOps6 = SuperContinent.stateToCanvasOps scState6
+--  let newOps2 = SuperContinent.stateToCanvasOps scState2
+--  let newOps3 = SuperContinent.stateToCanvasOps scState3
+--  let newOps4 = SuperContinent.stateToCanvasOps scState4
+--  let newOps5 = SuperContinent.stateToCanvasOps scState5
+--  let newOps6 = SuperContinent.stateToCanvasOps scState6
   let newOps1' = fmap (\o -> (addUTCTime 0.2 (logicalTime s),o)) newOps1
-  let newOps2' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.166)) (logicalTime s),o)) newOps2
-  let newOps3' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.333)) (logicalTime s),o)) newOps3
-  let newOps4' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.499))(logicalTime s),o)) newOps4
-  let newOps5' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.667)) (logicalTime s),o)) newOps5
-  let newOps6' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.833)) (logicalTime s),o)) newOps6
-  let newOps = newOps1' ++ newOps2' ++ newOps3' ++ newOps4' ++ newOps5' ++ newOps6'
-  modify' $ \x -> x { superContinentState = scState6, canvasOps = canvasOps s ++ newOps }
+--  let newOps2' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.166)) (logicalTime s),o)) newOps2
+--  let newOps3' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.333)) (logicalTime s),o)) newOps3
+--  let newOps4' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.499))(logicalTime s),o)) newOps4
+--  let newOps5' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.667)) (logicalTime s),o)) newOps5
+--  let newOps6' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.833)) (logicalTime s),o)) newOps6
+--  let newOps = newOps1' ++ newOps2' ++ newOps3' ++ newOps4' ++ newOps5' ++ newOps6'
+  modify' $ \x -> x { superContinentState = scState1, canvasOps = canvasOps s ++ newOps1' }
 
 renderPunctualVideo :: Context -> Int -> Renderer
 renderPunctualVideo c z = do
@@ -259,6 +260,7 @@ runRender c ri = do
   calculateRenderTimes
   ri' <- gets info -- RenderInfo from the state maintained by this iteration...
   liftIO $ swapMVar ri ri' -- ...is copied to an MVar so it can be read elsewhere.
+  liftIO $ putStrLn $ "render time (approx) " ++ show (diffUTCTime t2 t1)
   sleepUntilNextRender
 
 sleepUntilNextRender :: Renderer
@@ -274,8 +276,9 @@ sleepUntilNextRender = do
     putStrLn "*** logical time too far ahead of clock time - rewinding"
     return $ addUTCTime renderPeriod $ renderEndTime s
   let diff'' = diffUTCTime next'' (renderEndTime s)
-  let delay = floor $ realToFrac diff'' * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
-  liftIO $ threadDelay delay
+  when (diff'' > (renderPeriod / 4 )) $ do -- if next render cycle is more than a quarter of a render period away then sleep
+   let delay = floor $ realToFrac diff'' * 1000000 - 2000 -- ie. wakeup ~ 2 milliseconds before next logical time
+   liftIO $ threadDelay delay
   put $ s { logicalTime = next'' }
 
 calculateRenderTimes :: Renderer
@@ -297,3 +300,4 @@ forkRenderThread c ri = do
   renderStart <- getCurrentTime
   irs <- initialRenderState renderStart
   void $ forkIO $ iterateM_ (execStateT $ runRender c ri) irs
+  
