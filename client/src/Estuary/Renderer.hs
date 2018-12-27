@@ -49,9 +49,10 @@ flushEvents c = do
   liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
   -- flush CanvasOps to an MVar queue (list)
-  oldOps <- liftIO $ takeMVar $ canvasOpsQueue c
-  newOps <- gets canvasOps
-  liftIO $ putMVar (canvasOpsQueue c) (oldOps ++ newOps)
+  when (canvasOn c) $ do
+    oldOps <- liftIO $ takeMVar $ canvasOpsQueue c
+    newOps <- gets canvasOps
+    liftIO $ putMVar (canvasOpsQueue c) (oldOps ++ newOps)
   modify' $ \x -> x { dirtEvents = [], canvasOps = []}
   return ()
 
@@ -174,7 +175,7 @@ renderTextProgramAlways c z (PunctualVideo,_) = renderPunctualVideo c z
 renderTextProgramAlways _ _ _ = return ()
 
 renderSuperContinent :: Context -> Int -> Renderer
-renderSuperContinent c z = do
+renderSuperContinent c z = when (canvasOn c) $ do
   s <- get
   let audio = 0.5 -- placeholder
   let program = superContinentProgram s
@@ -201,7 +202,7 @@ renderSuperContinent c z = do
   modify' $ \x -> x { superContinentState = scState6, canvasOps = canvasOps s ++ newOps }
 
 renderPunctualVideo :: Context -> Int -> Renderer
-renderPunctualVideo c z = do
+renderPunctualVideo c z = when (canvasOn c) $ do
   s <- get
   let pv = IntMap.lookup z $ punctualVideo s
   let lt = logicalTime s
@@ -239,7 +240,7 @@ biPolarToPercent :: Double -> Double
 biPolarToPercent x = (x + 1) * 50
 
 renderControlPattern :: Context -> Int -> Renderer
-renderControlPattern c z = do
+renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s

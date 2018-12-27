@@ -25,6 +25,7 @@ data Context = Context {
   samples :: SampleMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
+  canvasOn :: Bool,
   peakLevels :: [Double],
   rmsLevels :: [Double],
   wsStatus :: String,
@@ -45,6 +46,7 @@ initialContext now wd sd mv = Context {
   samples = emptySampleMap,
   webDirtOn = True,
   superDirtOn = False,
+  canvasOn = True,
   peakLevels = [],
   rmsLevels = [],
   wsStatus = "",
@@ -71,9 +73,9 @@ setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
 setDefinitions :: (String, DefinitionMap) -> ContextChange
-setDefinitions (x, y) c = c { 
-  activeDefsEnsemble = x, 
-  definitions = y 
+setDefinitions (x, y) c = c {
+  activeDefsEnsemble = x,
+  definitions = y
 }
 
 setSampleMap :: SampleMap -> ContextChange
