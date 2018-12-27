@@ -46,7 +46,7 @@ redrawCanvas ctx mv _ = do
   let interFrameDelay = diffUTCTime t1 (previousDrawStart cState)
   let drawDelay = diffUTCTime t3 t1
   let opsDrawn = n1 - n2
-  putStrLn $ "interFrameDelay = " ++ show interFrameDelay ++ "; drawDelay = " ++ show drawDelay ++ " (" ++ show opsDrawn ++ " ops drawn)"
+  -- putStrLn $ "interFrameDelay = " ++ show interFrameDelay ++ "; drawDelay = " ++ show drawDelay ++ " (" ++ show opsDrawn ++ " ops drawn)"
   requestAnimationFrame ctx mv
 
 flushCanvasOps :: JSVal -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]

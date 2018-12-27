@@ -57,13 +57,21 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
 
   (headerChanges, clickedLogoEv) <- header ctx renderInfo
 
-  (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
-    navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
+  -- TEMP (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
+  -- TEMP  navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
+  let hints = never
+  let tempoChanges = never
+  let deltasUp = never
 
-  commands <- footer ctx renderInfo deltasUp deltasDown' hints
+  -- commands <- footer ctx renderInfo deltasUp deltasDown' hints
+  -- let commands = never -- TEMP
 
   (deltasDown,wsCtxChanges) <- alternateWebSocket protocol deltasUp
-  let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
+  -- let deltasDown = never -- TEMP
+  -- let wsCtxChanges = never -- TEMP 
+
+  -- TEMP let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
+  let definitionChanges = never -- TEMP
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
@@ -85,7 +93,8 @@ pollRenderInfoChanges :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t Rend
 pollRenderInfoChanges riM = do
   now <- liftIO $ getCurrentTime
   riInitial <- liftIO $ readMVar riM
-  ticks <- tickLossy (0.204::NominalDiffTime) now
+  -- ticks <- tickLossy (0.204::NominalDiffTime) now -- *** TEMP ***
+  let ticks = never
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 
@@ -119,20 +128,23 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ do
     let langMap = constDyn $ fromList $ zip languages (fmap show languages)
     langChange <- divClass "languageSelector" $ do _dropdown_change <$> (dropdown English langMap def)
     let langChange' = fmap (\x c -> c { language = x }) langChange
+    text "Canvas:"
+    canvasInput <- divClass "superDirtCheckbox" $ checkbox True $ def
+    let cvsOn = fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
     text "SuperDirt:"
     sdInput <- divClass "superDirtCheckbox" $ checkbox False $ def
     let sdOn = fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
     text "WebDirt:"
     wdInput <-divClass "webDirtCheckbox" $ checkbox True $ def
     let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
-    return $ mergeWith (.) [langChange',sdOn,wdOn, styleChange']
+    return $ mergeWith (.) [langChange',cvsOn,sdOn,wdOn, styleChange']
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak" $ do
     text "server "
-    dynText =<< mapDyn f ctx 
+    dynText =<< mapDyn f ctx
     text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
@@ -146,4 +158,3 @@ footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   where
     f c | wsStatus c == "connection open" = "(" ++ show (clientCount c) ++ " connections, latency " ++ show (serverLatency c) ++ ")"
     f c | otherwise = "(" ++ wsStatus c ++ ")"
-

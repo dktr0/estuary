@@ -56,7 +56,8 @@ main = do
   forkRenderThread c ri
 
   root <- fmap pFromJSVal js_estuaryMountPoint :: IO HTMLDivElement
-  mainWidgetAtRoot root $ estuaryWidget Splash c ri protocol
+  -- mainWidgetAtRoot root $ estuaryWidget Splash c ri protocol
+  mainWidget $ estuaryWidget Splash c ri protocol
 
 visuallyCrash :: SomeException -> IO ()
 visuallyCrash e = 

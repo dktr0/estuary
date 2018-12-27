@@ -50,9 +50,10 @@ flushEvents c = do
   liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
   -- flush CanvasOps to an MVar queue (list)
-  oldCvsState <- liftIO $ takeMVar $ canvasState c
-  newOps <- gets canvasOps
-  liftIO $ putMVar (canvasState c) $ pushCanvasOps newOps oldCvsState
+  when (canvasOn c) $ do
+    oldCvsState <- liftIO $ takeMVar $ canvasState c
+    newOps <- gets canvasOps
+    liftIO $ putMVar (canvasState c) $ pushCanvasOps newOps oldCvsState
   modify' $ \x -> x { dirtEvents = [], canvasOps = []}
   return ()
 
@@ -175,7 +176,7 @@ renderTextProgramAlways c z (PunctualVideo,_) = renderPunctualVideo c z
 renderTextProgramAlways _ _ _ = return ()
 
 renderSuperContinent :: Context -> Int -> Renderer
-renderSuperContinent c z = do
+renderSuperContinent c z = when (canvasOn c) $ do
   s <- get
   let audio = 0.5 -- placeholder
   let program = superContinentProgram s
@@ -202,7 +203,7 @@ renderSuperContinent c z = do
   modify' $ \x -> x { superContinentState = scState1, canvasOps = canvasOps s ++ newOps1' }
 
 renderPunctualVideo :: Context -> Int -> Renderer
-renderPunctualVideo c z = do
+renderPunctualVideo c z = when (canvasOn c) $ do
   s <- get
   let pv = IntMap.lookup z $ punctualVideo s
   let lt = logicalTime s
@@ -240,7 +241,7 @@ biPolarToPercent :: Double -> Double
 biPolarToPercent x = (x + 1) * 50
 
 renderControlPattern :: Context -> Int -> Renderer
-renderControlPattern c z = do
+renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s
@@ -260,7 +261,7 @@ runRender c ri = do
   calculateRenderTimes
   ri' <- gets info -- RenderInfo from the state maintained by this iteration...
   liftIO $ swapMVar ri ri' -- ...is copied to an MVar so it can be read elsewhere.
-  liftIO $ putStrLn $ "render time (approx) " ++ show (diffUTCTime t2 t1)
+--  liftIO $ putStrLn $ "render time (approx) " ++ show (diffUTCTime t2 t1)
   sleepUntilNextRender
 
 sleepUntilNextRender :: Renderer
@@ -278,6 +279,7 @@ sleepUntilNextRender = do
   let diff'' = diffUTCTime next'' (renderEndTime s)
   when (diff'' > (renderPeriod / 4 )) $ do -- if next render cycle is more than a quarter of a render period away then sleep
    let delay = floor $ realToFrac diff'' * 1000000 - 2000 -- ie. wakeup ~ 2 milliseconds before next logical time
+   liftIO $ putStrLn $ "threadDelay " ++ show delay
    liftIO $ threadDelay delay
   put $ s { logicalTime = next'' }
 
@@ -296,8 +298,8 @@ calculateRenderTimes = do
   modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
 
 forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
-forkRenderThread c ri = do
+forkRenderThread c ri = return () {- do
   renderStart <- getCurrentTime
   irs <- initialRenderState renderStart
   void $ forkIO $ iterateM_ (execStateT $ runRender c ri) irs
-  
+  -}
