@@ -277,7 +277,6 @@ popup buildEvents = do
 clickableWhiteSpace :: MonadWidget t m => m (Event t ())
 clickableWhiteSpace = do
   (element,_) <- elAttr' "div" (singleton "class" "clickableWhiteSpace") $ text "clickableWhiteSpace"
---  clickEv <- wrapDomEvent (_el_element element) (`on` G.click) (mouseXY)
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
