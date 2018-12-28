@@ -15,7 +15,8 @@ import GHCJS.DOM.Types(ToJSString(..), FromJSString(..))
 import GHCJS.DOM(currentWindow,)
 import GHCJS.DOM.History
 import qualified GHCJS.DOM.PopStateEvent as PopStateEvent
-import qualified GHCJS.DOM.Window as Window(getHistory, popState)
+import qualified GHCJS.DOM.Window as Window(getHistory)
+import qualified GHCJS.DOM.WindowEventHandlers as Window (popState)
 
 import GHCJS.Marshal
 import GHCJS.Marshal.Pure
@@ -56,26 +57,26 @@ router def inStatChangeEv renderPage = mdo
   return dynPage
 
 getInitialState :: (FromJSVal state) => state -> IO (state)
-getInitialState def = 
+getInitialState def =
   maybeIO def currentWindow $ \window ->
-    maybeIO def (Window.getHistory window) $ \history -> do
+    maybeIO def (Just <$> Window.getHistory window) $ \history -> do
       maybeIO def (pFromJSVal <$> pToJSVal <$> getState history) $ \state ->
         maybeIO def (liftIO $ fromJSVal state) return
 
 pushPageState :: (ToJSVal state, ToJSString url) => state -> url -> IO ()
 pushPageState state url = do
   maybeIO () currentWindow $ \window ->
-    maybeIO () (Window.getHistory window) $ \history -> do
+    maybeIO () (Just <$> Window.getHistory window) $ \history -> do
       jsState <- liftIO $ toJSVal state
       -- Mozilla reccomends to pass "" as title to keep things future proof
-      pushState history jsState "" url
+      pushState history jsState "" (Just url)
 
 getPopStateEv :: (MonadWidget t m, FromJSVal state) => m (Event t (Maybe state))
 getPopStateEv = do
   mWindow <- liftIO $ currentWindow
   case mWindow of
     Nothing -> return never
-    Just window -> 
+    Just window ->
       wrapDomEvent window (\e -> on e Window.popState) $ do
         -- in (EventM t PopState) which is (ReaderT PopState IO)
         eventData <- event -- ask
