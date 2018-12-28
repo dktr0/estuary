@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.Sequencer where
 
@@ -7,6 +7,8 @@ import Reflex.Dom
 import GHCJS.DOM.EventM
 import Control.Monad
 import Data.Map as M
+import Data.Text (Text)
+import qualified Data.Text as T
 import Safe.Foldable (maximumMay)
 import Text.Read (readMaybe)
 import Estuary.Types.Hint
@@ -40,20 +42,20 @@ sequencer iMap update = elClass "table" "sequencer" $ mdo
 sequencerRow ::(MonadWidget t m) => (String,[Bool]) -> Event t (String,[Bool]) -> m (Dynamic t ((String,[Bool]), Event t ()))
 sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
   let buttonIVals = M.fromList $ attachIndex vals
-  let strUpdate = fmap fst edits
+  let strUpdate = fmap (T.pack . fst) edits
   let buttonUpdates = fmap (M.fromList . attachIndex . fmap Just . snd) edits
   let textInputAttrs = singleton "class" "sequencerTextInputTd"
   deleteMe <- elClass "td" "delete" $ button "-" -- clickableTdClass (constDyn " - ") (constDyn "delete") ()
-  rowInput <- elClass "td" "sequencerTextInputTd" $ textInput $ def & textInputConfig_initialValue .~ iVal & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn empty)
+  rowInput <- elClass "td" "sequencerTextInputTd" $ textInput $ def & textInputConfig_initialValue .~ (T.pack iVal) & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn empty)
   -- rowInput <- el "td" $ growingTextInput $ def & textInputConfig_initialValue .~ iVal & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn textInputAttrs)
   buttons <-  liftM joinDynThroughMap $ listWithKeyShallowDiff buttonIVals buttonUpdates sequencerButton  -- Dyn (Map Int Bool)
-  val <- combineDyn (\s b -> (s, elems b)) (_textInput_value rowInput) buttons
+  val <- combineDyn (\s b -> (T.unpack s, elems b)) (_textInput_value rowInput) buttons
   mapDyn (\x->(x,deleteMe)) val
 
 sequencerButton::(MonadWidget t m) => Int -> Bool -> Event t Bool -> m (Dynamic t Bool)
 sequencerButton pos val edits = mdo
   (element,_) <- elDynAttr' "td" attrs $ return ()
-  clickEv <- wrapDomEvent (_el_element element) (onEventName Mousedown) (return ())
+  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Mousedown) (return ())
   let clickUpdates = attachWith (\v _-> not v) (current isActive) $ leftmost [clickEv]
   isActive <- holdDyn val $ leftmost [edits, clickUpdates]
   attrs <- mapDyn (\x-> singleton "class" $ if x then "sequencerButton activated" else "sequencerButton") isActive

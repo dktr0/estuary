@@ -31,8 +31,8 @@ import Estuary.Types.Hint
 data EditSignal a = ChangeValue a | MakeNew | Close | DeleteMe | RepDiv | MakeGroup | MakeLayer
  | RebuildMe | MakeL3 | MakeL4 | MakeRepOrDiv | Eval | DeleteContainer | LayerSplit | TransformMe deriving (Eq)
 
---data EditSignal a = RebuildMe | PotentialSignal (Potential a)
-
+instance Functor EditSignal where
+  fmap f (ChangeValue x) = ChangeValue $ f x
 
 toPotential::EditSignal a -> Potential a
 toPotential (ChangeValue a) = Potential a
@@ -44,8 +44,7 @@ toPotential (MakeGroup) = PotentialMakeGroup
 toPotential (MakeLayer) = PotentialMakeLayer
 toPotential (DeleteMe) = PotentialDelete
 
-
-toEditSigGenPat::EditSignal a -> EditSignal (GeneralPattern a)
+toEditSigGenPat :: EditSignal a -> EditSignal (GeneralPattern a)
 toEditSigGenPat (ChangeValue a) = ChangeValue (Atom a Inert Once)
 toEditSigGenPat (MakeL4) = MakeL4
 toEditSigGenPat (MakeL3) = MakeL3
