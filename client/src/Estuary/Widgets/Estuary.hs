@@ -1,11 +1,11 @@
-{-# LANGUAGE RecursiveDo, JavaScriptFFI #-}
+{-# LANGUAGE RecursiveDo, JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Widgets.Estuary where
 
 import Control.Monad (liftM)
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import Data.Time
 import Data.Map
@@ -15,6 +15,7 @@ import Control.Concurrent.MVar
 import GHCJS.Types
 import GHCJS.Marshal.Pure
 import Data.Functor (void)
+import qualified Data.Text as T
 
 import Estuary.Tidal.Types
 import Estuary.Protocol.Foreign
@@ -116,8 +117,8 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ do
     styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) def -- Event t String
     let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
     translateDyn Term.Language ctx >>= dynText
-    let langMap = constDyn $ fromList $ zip languages (fmap show languages)
-    langChange <- divClass "languageSelector" $ do _dropdown_change <$> (dropdown English langMap def)
+    let langMap = constDyn $ fromList $ zip languages (fmap (T.pack . show) languages)
+    langChange <- divClass "languageSelector" $ _dropdown_change <$> (dropdown English langMap def)
     let langChange' = fmap (\x c -> c { language = x }) langChange
     text "Canvas:"
     canvasInput <- divClass "superDirtCheckbox" $ checkbox True $ def
@@ -135,13 +136,13 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak" $ do
     text "server "
-    dynText =<< mapDyn f ctx
+    dynText =<< mapDyn (T.pack . f) ctx
     text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
-    dynText =<< mapDyn (show . avgRenderLoad) renderInfo
+    dynText =<< mapDyn (T.pack . show . avgRenderLoad) renderInfo
     text "% ("
-    dynText =<< mapDyn (show . peakRenderLoad) renderInfo
+    dynText =<< mapDyn (T.pack . show . peakRenderLoad) renderInfo
     text "% "
     dynText =<< translateDyn Term.Peak ctx
     text ") "

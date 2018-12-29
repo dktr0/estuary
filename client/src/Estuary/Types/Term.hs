@@ -1,5 +1,7 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Types.Term where
 
+import Data.Text
 import Estuary.Types.Language
 
 data Term =
@@ -23,7 +25,7 @@ data Term =
   About
   deriving (Show,Eq)
 
-translate :: Term -> Language -> String
+translate :: Term -> Language -> Text
 translate EstuaryDescription English = "Estuary (a live coding symbiont)"
 translate EstuaryDescription Español = "Estuary (una simbionte live coding)"
 
@@ -81,4 +83,4 @@ translate Load Español = "carga"
 translate Peak English = "peak"
 translate Peak Español = "tope"
 
-translate x _ = "?" ++ show x
+translate x _ = pack $ "?" ++ show x

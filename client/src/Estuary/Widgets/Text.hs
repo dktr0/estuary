@@ -1,9 +1,9 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, OverloadedStrings #-}
 
 module Estuary.Widgets.Text where
 
 import Reflex
-import Reflex.Dom hiding (getKeyEvent)
+import Reflex.Dom hiding (getKeyEvent,preventDefault)
 import Reflex.Dom.Contrib.KeyEvent
 import Control.Monad
 import Control.Monad.Trans
@@ -11,6 +11,7 @@ import GHCJS.DOM.EventM
 import Data.Maybe
 import Data.Map (fromList)
 import Data.Monoid
+import qualified Data.Text as T
 
 import Estuary.Tidal.Types
 import Estuary.WebDirt.Foreign
@@ -32,15 +33,15 @@ import Estuary.Types.Context
 textWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
 textWidgetForPatternChain i delta = do
   let attrs = constDyn $ ("class" =: "textInputToEndOfLine")
-  x <- textInput $ def & textInputConfig_setValue .~ delta & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
-  let edits = _textInput_input x
-  let value = _textInput_value x
+  x <- textInput $ def & textInputConfig_setValue .~ (fmap T.pack delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
+  let edits = fmap T.unpack $ _textInput_input x
+  let value = fmap T.unpack $ _textInput_value x
   return (value,edits)
 
 textAreaWidgetForPatternChain :: MonadWidget t m => Int -> String -> Event t String -> m (Dynamic t String, Event t String,Event t ())
 textAreaWidgetForPatternChain rows i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine" <> "rows" =: show rows <> "style" =: "height: auto")
-  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
+  x <- textArea $ def & textAreaConfig_setValue .~ (fmap T.pack delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ (T.pack i)
   --let keys = _textArea_keypress x
   let e = _textArea_element x
   e' <- wrapDomEvent (e) (onEventName Keypress) $ do
@@ -48,8 +49,8 @@ textAreaWidgetForPatternChain rows i delta = do
     if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
   -- let evalEvent = fmap (const ()) $ ffilter (==True) $ fmap keyPressWasShiftEnter e'
   let evalEvent = fmap (const ()) $ ffilter (==True) e'
-  let edits = _textArea_input x
-  let value = _textArea_value x
+  let edits = fmap T.unpack $ _textArea_input x
+  let value = fmap T.unpack $ _textArea_value x
   return (value,edits,evalEvent)
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
@@ -66,7 +67,7 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     let initialParser = fst $ forEditing i
-    let parserMap = constDyn $ fromList $ fmap (\x -> (x,textNotationDropDownLabel x)) textNotationParsers
+    let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
     d' <- dropdown initialParser parserMap $ (def :: DropdownConfig t TidalParser) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- button "eval"
@@ -102,7 +103,7 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
 
 labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t Definition)
 labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
-  let delta' = fmapMaybe lastOrNothing delta
+  let delta' = fmap T.pack $ fmapMaybe lastOrNothing delta
   let attrs = constDyn $ ("class" =: "labelWidgetTextInput")
-  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
-  return $ fmap LabelText $ _textInput_input y
+  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
+  return $ fmap (LabelText . T.unpack) $ _textInput_input y

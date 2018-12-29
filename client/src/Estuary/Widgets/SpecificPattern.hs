@@ -1,14 +1,16 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 module Estuary.Widgets.SpecificPattern where
 
 import Reflex
-import Reflex.Dom
+import Reflex.Dom hiding (Delete,Insert,End)
 import Data.Map
 import Control.Monad
 import Data.List(intersperse, findIndex)
 import GHCJS.DOM.EventM
 import Data.Maybe(isJust)
 import Text.Read(readMaybe)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Types.Hint
 import Estuary.Types.Live

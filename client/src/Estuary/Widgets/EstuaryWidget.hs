@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Widgets.EstuaryWidget where
 
 import Reflex
