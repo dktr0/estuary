@@ -58,21 +58,14 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
 
   (headerChanges, clickedLogoEv) <- header ctx renderInfo
 
-  -- TEMP (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
-  -- TEMP  navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
-  let hints = never
-  let tempoChanges = never
-  let deltasUp = never
+  (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
+    navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
 
-  -- commands <- footer ctx renderInfo deltasUp deltasDown' hints
-  -- let commands = never -- TEMP
+  commands <- footer ctx renderInfo deltasUp deltasDown' hints
 
   (deltasDown,wsCtxChanges) <- alternateWebSocket protocol deltasUp
-  -- let deltasDown = never -- TEMP
-  -- let wsCtxChanges = never -- TEMP 
 
-  -- TEMP let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
-  let definitionChanges = never -- TEMP
+  let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
@@ -94,8 +87,7 @@ pollRenderInfoChanges :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t Rend
 pollRenderInfoChanges riM = do
   now <- liftIO $ getCurrentTime
   riInitial <- liftIO $ readMVar riM
-  -- ticks <- tickLossy (0.204::NominalDiffTime) now -- *** TEMP ***
-  let ticks = never
+  ticks <- tickLossy (0.204::NominalDiffTime) now
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 

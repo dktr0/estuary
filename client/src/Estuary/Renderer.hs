@@ -261,7 +261,6 @@ runRender c ri = do
   calculateRenderTimes
   ri' <- gets info -- RenderInfo from the state maintained by this iteration...
   liftIO $ swapMVar ri ri' -- ...is copied to an MVar so it can be read elsewhere.
---  liftIO $ putStrLn $ "render time (approx) " ++ show (diffUTCTime t2 t1)
   sleepUntilNextRender
 
 sleepUntilNextRender :: Renderer
@@ -279,7 +278,6 @@ sleepUntilNextRender = do
   let diff'' = diffUTCTime next'' (renderEndTime s)
   when (diff'' > (renderPeriod / 4 )) $ do -- if next render cycle is more than a quarter of a render period away then sleep
    let delay = floor $ realToFrac diff'' * 1000000 - 2000 -- ie. wakeup ~ 2 milliseconds before next logical time
-   liftIO $ putStrLn $ "threadDelay " ++ show delay
    liftIO $ threadDelay delay
   put $ s { logicalTime = next'' }
 
@@ -298,8 +296,7 @@ calculateRenderTimes = do
   modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
 
 forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
-forkRenderThread c ri = return () {- do
+forkRenderThread c ri = do
   renderStart <- getCurrentTime
   irs <- initialRenderState renderStart
   void $ forkIO $ iterateM_ (execStateT $ runRender c ri) irs
-  -}
