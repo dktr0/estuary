@@ -48,18 +48,13 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   -- *** is it dangerous to have initialView exist separate from initialState (below)?
 
   -- management of EnsembleState
-  iCtx <- (sample . current) ctx
-  now <- liftIO $ getAudioTime (audioContext iCtx)
-  let initialState = (newEnsembleState ensemble now) {
-    defaultView = initialView
-    }
+  let initialState = (newEnsembleState ensemble) { defaultView = initialView }
   let commandChanges = fmap commandsToStateChanges commands
   let ensembleResponses = fmap justEnsembleResponses deltasDown
   let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
   let handleChanges = fmap (\x es -> es { userHandle = T.unpack x}) hdl
   let requestChanges = fmap requestsToStateChanges edits
-  let tempoChanges = fmap setEnsembleTempo tempoSetEvents
-  ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges,tempoChanges]
+  ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
 
   -- Ensemble name and password UI (created only if ensemble is not "")
   (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader" $ do
@@ -77,11 +72,9 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
     return (hdl',pwdRequest')
 
   -- management of tempo including tempoWidget
-  let initialTempo = Estuary.Types.EnsembleState.tempo initialState
-  tempoDeltas <- liftM (updated . nubDyn) $ mapDyn Estuary.Types.EnsembleState.tempo ensembleState
-  let tempoHints = fmap TempoHint tempoDeltas
-  tempoSetEvents <- tempoWidget ctx initialTempo tempoDeltas
-  let tempoRequest = fmap SetTempo tempoSetEvents
+  (tempoChanges,tempoEdits) <- tempoWidget ctx ensembleResponses
+  let tempoHints = fmap TempoHint tempoChanges
+  let tempoRequest = fmap SetTempo tempoEdits
 
   -- dynamic View UI
   initialDefs <- extractInitialDefs ensemble ctx
@@ -111,7 +104,7 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
     let ensembleRequests = fmap EnsembleRequest $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
     return $ leftmost [joinRequest,ensembleRequests]
 
-  return (defMap,requests,hints,tempoDeltas)
+  return (defMap,requests,hints,tempoChanges)
 
 
 -- | A solo view is just an ensemble view that doesn't send or respond to

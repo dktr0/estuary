@@ -38,6 +38,7 @@ import Estuary.Types.View
 import Estuary.Types.Client
 import Estuary.Types.Server
 import Estuary.Types.Database
+import Estuary.Types.Tempo
 import Estuary.Types.Transaction
 
 runServerWithDatabase :: String -> Int -> SQLite.Connection -> IO ()
@@ -110,10 +111,10 @@ processLoop db ws sMVar cHandle = do
 processMessage :: Text -> Transaction ()
 processMessage msg = do
   let msg' = decode (T.unpack msg) :: Result JSString
-  case msg' of 
+  case msg' of
     Ok x -> processResult $ decode (fromJSString x)
     Error x -> throwError x
-  
+
 processResult :: Result Request -> Transaction ()
 processResult (Ok x) = processRequest x
 processResult (Error x) = throwError $ "Error (processResult): " ++ x
@@ -134,9 +135,9 @@ processRequest GetEnsembleList = do
   respond $ EnsembleList es
 
 processRequest (Authenticate x) = do
-  pwd <- gets password 
+  pwd <- gets password
   if x == pwd
-    then do 
+    then do
       postLog $ "Authenticate with correct password"
       modifyClient $ \x -> x { authenticated = True }
     else do
@@ -156,10 +157,11 @@ processRequest (JoinEnsemble x) = do
   postLog $ "joining ensemble " ++ x
   s <- get
   e <- justOrError (Data.Map.lookup x $ ensembles s) "attempt to join non-existent ensemble"
-  respond $ EnsembleResponse $ NewTempo $ E.tempo e 
+  now <- liftIO getCurrentTime
+  respond $ EnsembleResponse $ NewTempo (E.tempo e) now
   mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ZoneResponse $ E.defs e
   respond $ EnsembleResponse $ DefaultView $ E.defaultView e
-  mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey View $ E.views e 
+  mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey View $ E.views e
   modifyClient $ \c -> c { ensemble = Just x }
   modifyClient $ \c -> c { authenticatedInEnsemble = E.password e == "" }
 
@@ -212,7 +214,7 @@ processEnsembleRequest (PublishView key value) = do
   whenNotAuthenticatedInEnsemble $ throwError "ignoring PublishView from client not authenticated in ensemble"
   eName <- getEnsembleName
   postLog $ "PublishView in (" ++ eName ++ "," ++ key ++ "): " ++ (show value)
-  modify' $ setView eName key value 
+  modify' $ setView eName key value
   saveEnsembleToDatabase
 
 processEnsembleRequest (PublishDefaultView v) = do
@@ -233,19 +235,17 @@ processEnsembleRequest (SetTempo t) = do
   whenNotAuthenticatedInEnsemble $ throwError "ignoring SetTempo from client not authenticated in ensemble"
   eName <- getEnsembleName
   postLog $ "TempoChange in " ++ eName
-  modify' $ tempoChangeInEnsemble eName t
-  e <- getEnsemble
-  respondAll $ EnsembleResponse $ NewTempo $ E.tempo e
+  now <- liftIO $ getCurrentTime
+  let t' = Tempo {
+    cps = cps t,
+    at = addUTCTime (-0.075) now, -- TODO: should use Cristian's algorithm, but for now assume set 75 msec ago
+    beat = beat t
+  }
+  modify' $ tempoChangeInEnsemble eName t'
+  respondEnsembleNoOrigin $ EnsembleResponse $ NewTempo t' now
   saveEnsembleToDatabase
 
 processEnsembleRequest GetEnsembleClientCount = do
   eName <- getEnsembleName
   x <- gets (Map.size . Map.filter (\c -> ensemble c == Just eName) . clients)
   respond $ EnsembleResponse $ EnsembleClientCount x
-
-
- 
-
-
-
-

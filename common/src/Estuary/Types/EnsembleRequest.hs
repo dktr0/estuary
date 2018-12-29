@@ -8,6 +8,7 @@ import Text.JSON.Generic
 import Estuary.Types.View
 import Estuary.Types.Definition
 import Estuary.Types.Tempo
+import Data.Time
 
 data EnsembleRequest =
   AuthenticateInEnsemble String |

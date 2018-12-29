@@ -6,6 +6,7 @@ import Data.Maybe (mapMaybe)
 import Data.Ratio
 import Text.JSON
 import Text.JSON.Generic
+import Data.Time
 
 import Estuary.Types.View
 import Estuary.Types.Tempo
@@ -17,7 +18,7 @@ data EnsembleResponse =
   ViewList [String] |
   View String View |
   DefaultView View |
-  NewTempo Tempo |
+  NewTempo Tempo UTCTime | -- the tempo plus the time it was sent by the server
   EnsembleClientCount Int
   deriving (Data,Typeable)
 

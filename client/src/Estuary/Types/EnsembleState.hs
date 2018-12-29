@@ -15,6 +15,7 @@ import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.ViewsParser
+import Estuary.Render.AudioContext
 
 data EnsembleState = EnsembleState {
   ensembleName :: String,
@@ -23,8 +24,7 @@ data EnsembleState = EnsembleState {
   publishedViews :: Map String View,
   defaultView :: View,
   customView :: View,
-  activeView :: Maybe String, -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews
-  tempo :: Tempo
+  activeView :: Maybe String -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews
 }
 
 soloEnsembleName :: String
@@ -40,20 +40,16 @@ currentView es | activeView es == Just "" = customView es
 currentView es | otherwise = findWithDefault (Views []) x (publishedViews es)
   where x = fromJust $ activeView es
 
-newEnsembleState :: String -> UTCTime -> EnsembleState
-newEnsembleState x now = EnsembleState {
+newEnsembleState :: String -> EnsembleState
+newEnsembleState x = EnsembleState {
   ensembleName = x,
   userHandle = "",
   zones = IntMap.empty,
   publishedViews = empty,
   defaultView = emptyView,
   customView = emptyView,
-  activeView = Nothing,
-  tempo = Tempo { at=now, beat=0.0, cps=0.5 }
+  activeView = Nothing
 }
-
-setEnsembleTempo :: Tempo -> EnsembleState -> EnsembleState
-setEnsembleTempo t e = e { tempo = t }
 
 getActiveView :: EnsembleState -> View
 getActiveView e = f (activeView e)
@@ -83,7 +79,6 @@ responsesToStateChanges (ZoneResponse n v) es = es { zones = newZones }
 responsesToStateChanges (View s v) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)
 responsesToStateChanges (DefaultView v) es = es { defaultView = v }
-responsesToStateChanges (NewTempo t) es = es { tempo = t }
 responsesToStateChanges _ es = es
 
 commandsToRequests :: EnsembleState -> Terminal.Command -> Maybe EnsembleRequest
@@ -99,5 +94,5 @@ messageForEnsembleResponse :: EnsembleResponse -> Maybe String
 messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
 messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
 messageForEnsembleResponse (View x _) = Just $ "received view " ++ x
-messageForEnsembleResponse (NewTempo t) = Just $ "received new tempo " ++ (show (cps t))
+messageForEnsembleResponse (NewTempo t _) = Just $ "received new tempo " ++ (show (cps t))
 messageForEnsembleResponse _ = Nothing
