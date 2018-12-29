@@ -26,7 +26,7 @@ CLOSURE_COMPILER="java -jar closure-compiler.jar"
 
 prodBuildClient: setupClient
 	$(STACK_PRODUCTION_CLIENT) build --ghc-options="-DGHCJS_BROWSER -O2" estuary:exe:Estuary
-	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=ADVANCED_OPTIMIZATIONS --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
+	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=ADVANCED --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
 	gzip -fk "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js"
 
 buildClientForceDirty:
@@ -81,7 +81,7 @@ releaseClient: # make installClient or prodInstallClient first!
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181220/estuary-client-20181220.zip
+	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181229/estuary-client-20181229.zip
 	unzip temp.zip
 	rm -rf temp.zip
 	cp -Rf static/Dirt Estuary.jsexe
