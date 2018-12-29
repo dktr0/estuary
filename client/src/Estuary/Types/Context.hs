@@ -13,29 +13,30 @@ import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.CanvasState
+import Estuary.Render.AudioContext
 
 data Context = Context {
+  audioContext :: AudioContext,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
   language :: Language,
   theme :: String,
   tempo :: Tempo,
-  activeDefsEnsemble :: String, -- ^ The name of the ensemble in which the current definitions in the context belong to.
+  activeDefsEnsemble :: String, -- ^ The name of the ensemble that the current definitions in the context belong to.
   definitions :: DefinitionMap,
   samples :: SampleMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   canvasOn :: Bool,
-  peakLevels :: [Double],
-  rmsLevels :: [Double],
   wsStatus :: String,
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
   canvasState :: MVar CanvasState
   }
 
-initialContext :: UTCTime -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
-initialContext now wd sd mv = Context {
+initialContext :: UTCTime -> AudioContext -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
+initialContext now ac wd sd mv = Context {
+  audioContext = ac,
   webDirt = wd,
   superDirt = sd,
   language = English,
@@ -47,8 +48,6 @@ initialContext now wd sd mv = Context {
   webDirtOn = True,
   superDirtOn = False,
   canvasOn = True,
-  peakLevels = [],
-  rmsLevels = [],
   wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
@@ -62,12 +61,6 @@ setTheme x c = c {theme = x}
 
 setLanguage :: Language -> ContextChange
 setLanguage x c = c { language = x }
-
-setPeakLevels :: [Double] -> ContextChange
-setPeakLevels xs c = c { peakLevels = xs }
-
-setRmsLevels :: [Double] -> ContextChange
-setRmsLevels xs c = c { rmsLevels = xs }
 
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }

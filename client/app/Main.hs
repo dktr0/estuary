@@ -9,6 +9,7 @@ import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad(liftM)
 
+import Estuary.Render.AudioContext
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.Protocol.Foreign
@@ -45,13 +46,15 @@ main = do
   -- Wait for 10k ms or click, which ever happens first
   waitForInteractionOrTimeout 10000
 
-  now <- Data.Time.getCurrentTime
-  wd <- newWebDirt
+  ac <- getAudioContext
+--  now <- getAudioTime ac
+  now <- getCurrentTime
+  wd <- newWebDirt ac
+  initializeWebAudio wd
   sd <- newSuperDirt
   protocol <- estuaryProtocol
   mv <- emptyCanvasState >>= newMVar
-  let ic = initialContext now wd sd mv
-  c <- newMVar $ ic
+  c <- newMVar $ initialContext now ac wd sd mv
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
 

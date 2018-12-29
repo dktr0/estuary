@@ -32,7 +32,6 @@ import Estuary.Types.Context
 import Estuary.Types.Hint
 import Estuary.Types.Samples
 import Estuary.Types.Tempo
-import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language

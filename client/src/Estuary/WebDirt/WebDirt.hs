@@ -1,18 +1,31 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
-module Estuary.WebDirt.WebDirt (WebDirt, newWebDirt, performHint) where
+module Estuary.WebDirt.WebDirt (WebDirt, newWebDirt, initializeWebAudio,performHint) where
 
-import qualified GHCJS.Types as T
+import GHCJS.Types
+import GHCJS.Marshal.Pure
 import Control.Monad.IO.Class (liftIO)
-import qualified GHCJS.Marshal.Pure as P
-import qualified Sound.Tidal.Context as Tidal
 import Reflex.Dom
+import qualified Sound.Tidal.Context as Tidal
 
 import qualified Estuary.WebDirt.SampleEngine as S
 import Estuary.WebDirt.Foreign (createObjFromMap)
 import Estuary.Types.Hint
+import Estuary.Render.AudioContext
 
-newtype WebDirt = WebDirt T.JSVal
+newtype WebDirt = WebDirt JSVal
+
+instance PToJSVal WebDirt where pToJSVal (WebDirt x) = x
+
+instance PFromJSVal WebDirt where pFromJSVal = WebDirt
+
+foreign import javascript unsafe
+  "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null,null,null,$1)"
+  newWebDirt :: AudioContext -> IO WebDirt
+
+foreign import javascript unsafe
+  "$1.initializeWebAudio()"
+  initializeWebAudio :: WebDirt -> IO ()
 
 instance S.SampleEngine WebDirt where
   getClockDiff wd = getClockDiff wd
@@ -20,75 +33,61 @@ instance S.SampleEngine WebDirt where
   getPeakLevels wd = peakLevels wd
   getRmsLevels wd = rmsLevels wd
 
-newWebDirt :: IO WebDirt
-newWebDirt = webDirt_ >>= return . WebDirt
+foreign import javascript unsafe
+  "try { $r = $1.getCurrentTime() } catch(e) { console.log(e)} "
+  getCurrentTime :: WebDirt -> IO Double
 
-getCurrentTime :: WebDirt -> IO Double
-getCurrentTime (WebDirt j) = getCurrentTime_ j
+foreign import javascript unsafe
+  "try { $r = $1.clockDiff; } catch(e) { console.log(e)}"
+  getClockDiff :: WebDirt -> IO Double
 
-getClockDiff :: WebDirt -> IO Double
-getClockDiff (WebDirt j) = getClockDiff_ j
 
 playSample :: WebDirt -> (Double,Tidal.ControlMap) -> IO ()
-playSample (WebDirt j) (t,e) = do
+playSample wd (t,e) = do
   object <- createObjFromMap t e
-  playSample_ j object
+  playSample_ wd object
 
-doHint :: WebDirt -> Hint -> IO ()
-doHint (WebDirt j) (SampleHint x) = sampleHint_ j (P.pToJSVal x)
-doHint _ _ = return ()
+foreign import javascript unsafe
+  "try { $1.playSample($2) } catch(e) { console.log(e)} "
+  playSample_ :: WebDirt -> JSVal -> IO ()
 
 
 performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
 
+doHint :: WebDirt -> Hint -> IO ()
+doHint wd (SampleHint x) = sampleHint wd (pToJSVal x)
+doHint _ _ = return ()
+
+foreign import javascript unsafe
+  "$1.sampleHint($2)"
+  sampleHint :: WebDirt -> JSVal -> IO ()
+
+
 peakLevels :: WebDirt -> IO [Double]
-peakLevels (WebDirt j) = do
-  l <- peakLevelLeft_ j
-  r <- peakLevelRight_ j
+peakLevels wd = do
+  l <- peakLevelLeft wd
+  r <- peakLevelRight wd
   return [l,r]
 
 rmsLevels :: WebDirt -> IO [Double]
-rmsLevels (WebDirt j) = do
-  l <- rmsLevelLeft_ j
-  r <- rmsLevelRight_ j
+rmsLevels wd = do
+  l <- rmsLevelLeft wd
+  r <- rmsLevelRight wd
   return [l,r]
-
-
--- FFI definitions below this line:
-
-foreign import javascript unsafe
-  "$r = ___globalWebDirt"
-  webDirt_ :: IO T.JSVal
-
-foreign import javascript unsafe
-  "try { $r = $1.getCurrentTime() } catch(e) { console.log(e)} "
-  getCurrentTime_ :: T.JSVal -> IO Double
-
-foreign import javascript unsafe
-  "try { $r = $1.clockDiff; } catch(e) { console.log(e)}"
-  getClockDiff_ :: T.JSVal -> IO Double
-
-foreign import javascript unsafe
-  "try { ___globalWebDirt.playSample($2)} catch(e) { console.log(e)} "
-  playSample_ :: T.JSVal -> T.JSVal -> IO ()
-
-foreign import javascript safe
-  "$1.sampleHint($2)"
-  sampleHint_ :: T.JSVal -> T.JSVal -> IO ()
 
 foreign import javascript unsafe
   "$r = $1.levelMeter.peak[0]"
-  peakLevelLeft_ :: T.JSVal -> IO Double
+  peakLevelLeft :: WebDirt -> IO Double
 
 foreign import javascript unsafe
   "$r = $1.levelMeter.peak[1]"
-  peakLevelRight_ :: T.JSVal -> IO Double
+  peakLevelRight :: WebDirt -> IO Double
 
 foreign import javascript unsafe
   "$r = $1.levelMeter.rms[0]"
-  rmsLevelLeft_ :: T.JSVal -> IO Double
+  rmsLevelLeft :: WebDirt -> IO Double
 
 foreign import javascript unsafe
   "$r = $1.levelMeter.rms[1]"
-  rmsLevelRight_ :: T.JSVal -> IO Double
+  rmsLevelRight :: WebDirt -> IO Double
