@@ -37,6 +37,7 @@ import Estuary.WebDirt.SampleEngine
 import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Types.Tempo
+import Estuary.Render.AudioContext
 
 type Renderer = StateT RenderState IO ()
 
@@ -132,7 +133,7 @@ renderTextProgramChanged c z (PunctualAudio,x) = do
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
-    t <- liftIO $ getCurrentTime
+    t <- liftIO $ getAudioTime (audioContext c)
     let eval = (exprs,t)
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW t) z (punctuals s)
     newPunctualW <- liftIO $ Punctual.updatePunctualW prevPunctualW eval
@@ -145,7 +146,7 @@ renderTextProgramChanged c z (PunctualVideo,x) = do
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
-    t <- liftIO $ getCurrentTime
+    t <- liftIO $ getAudioTime (audioContext c)
     let eval = (exprs,t)
     let prevPunctualVideo = findWithDefault (Punctual.emptyPunctualState t) z (punctualVideo s)
     let newPunctualVideo = Punctual.updatePunctualState prevPunctualVideo eval
@@ -252,34 +253,38 @@ renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
 
 runRender :: MVar Context -> MVar RenderInfo -> Renderer
 runRender c ri = do
+  c' <- liftIO $ readMVar c
   t1 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderStartTime = t1 }
-  c' <- liftIO $ readMVar c
   render c'
   t2 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderEndTime = t2 }
   calculateRenderTimes
   ri' <- gets info -- RenderInfo from the state maintained by this iteration...
   liftIO $ swapMVar ri ri' -- ...is copied to an MVar so it can be read elsewhere.
-  sleepUntilNextRender
+  scheduleNextRender c'
 
-sleepUntilNextRender :: Renderer
-sleepUntilNextRender = do
+scheduleNextRender :: Context -> Renderer
+scheduleNextRender c = do
   s <- get
   let next = addUTCTime renderPeriod (logicalTime s)
-  let diff = diffUTCTime next (renderEndTime s)
-  next' <- liftIO $ if diff > 0 then return next else do
-    putStrLn "*** logical time too far behind clock time - fast forwarding"
-    return $ addUTCTime (diff * (-1) + 0.01) next -- fast forward so next logical time is 10 milliseconds after clock time
-  let diff' = diffUTCTime next' (renderEndTime s)
-  next'' <- liftIO $ if diff' < (renderPeriod*2) then return next' else do -- not allowed to get more than 1 render period ahead
-    putStrLn "*** logical time too far ahead of clock time - rewinding"
-    return $ addUTCTime renderPeriod $ renderEndTime s
-  let diff'' = diffUTCTime next'' (renderEndTime s)
-  when (diff'' > (renderPeriod / 4 )) $ do -- if next render cycle is more than a quarter of a render period away then sleep
-   let delay = floor $ realToFrac diff'' * 1000000 - 2000 -- ie. wakeup ~ 2 milliseconds before next logical time
-   liftIO $ threadDelay delay
-  put $ s { logicalTime = next'' }
+  tNow <- liftIO $ getAudioTime (audioContext c)
+  let diff = diffUTCTime next tNow
+  -- if next logical time is more than 0.2 seconds in the past or future
+  -- fast-forward or rewind by half of the difference
+  let adjustment = if diff >= (-0.2) && diff <= 0.2 then 0 else (diff*(-0.5))
+  when (diff < (-0.2)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
+  when (diff > 0.2) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
+  let diff' = diff + adjustment
+  let next' = addUTCTime diff' tNow
+  -- if the (potentially adjusted) next logical time is more than a half period from now
+  -- sleep (threadDelay) so that next logical time is approximately a half period from then
+  let halfPeriod = renderPeriod / 2
+  when (diff' > halfPeriod) $ do
+    let wakeTime = addUTCTime (0-halfPeriod) next'
+    let delay = diffUTCTime wakeTime tNow
+    liftIO $ threadDelay $ floor $ realToFrac $ delay * 1000000
+  put $ s { logicalTime = next' }
 
 calculateRenderTimes :: Renderer
 calculateRenderTimes = do
@@ -297,6 +302,6 @@ calculateRenderTimes = do
 
 forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThread c ri = do
-  renderStart <- getCurrentTime
+  renderStart <- readMVar c >>= getAudioTime . audioContext
   irs <- initialRenderState renderStart
   void $ forkIO $ iterateM_ (execStateT $ runRender c ri) irs

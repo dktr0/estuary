@@ -11,7 +11,7 @@ import Estuary.WebDirt.Foreign (createObjFromMap)
 newtype SuperDirt = SuperDirt T.JSVal
 
 instance S.SampleEngine SuperDirt where
-  getClockDiff _ = return 0.0
+  getClockDiff _ = return 0.0 -- *** TODO: broken since change in interpretation of getClockDiff
   playSample sd x = playSample sd x
   getPeakLevels sd = return []
   getRmsLevels sd = return []

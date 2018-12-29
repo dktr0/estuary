@@ -15,7 +15,12 @@ sendSounds :: SampleEngine e => e -> [(UTCTime,Tidal.ControlMap)] -> IO ()
 sendSounds e sounds = do
   clockDiff <- getClockDiff e
   let latency = 0.2 -- hardwired latency for now???
-  let sounds' = fmap (\(x,y) -> (realToFrac (utcTimeToPOSIXSeconds x) - clockDiff + latency,y)) sounds
+  -- putStrLn $ show sounds
+--  let sounds' = fmap (\(x,y) -> (realToFrac (utcTimeToPOSIXSeconds x) - clockDiff + latency,y)) sounds
+  let sounds' = fmap (\(x,y) -> (utcTimeToDouble x - clockDiff + latency,y)) sounds
   -- putStrLn $ show sounds'
   catch (mapM_ (playSample e) sounds')
     (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))
+
+utcTimeToDouble :: UTCTime -> Double
+utcTimeToDouble t = realToFrac $ diffUTCTime t (UTCTime (toEnum 0) (toEnum 0))

@@ -47,8 +47,7 @@ main = do
   waitForInteractionOrTimeout 10000
 
   ac <- getAudioContext
---  now <- getAudioTime ac
-  now <- getCurrentTime
+  now <- getAudioTime ac
   wd <- newWebDirt ac
   initializeWebAudio wd
   sd <- newSuperDirt

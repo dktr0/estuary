@@ -28,19 +28,10 @@ foreign import javascript unsafe
   initializeWebAudio :: WebDirt -> IO ()
 
 instance S.SampleEngine WebDirt where
-  getClockDiff wd = getClockDiff wd
+  getClockDiff wd = return 0
   playSample wd x = playSample wd x
   getPeakLevels wd = peakLevels wd
   getRmsLevels wd = rmsLevels wd
-
-foreign import javascript unsafe
-  "try { $r = $1.getCurrentTime() } catch(e) { console.log(e)} "
-  getCurrentTime :: WebDirt -> IO Double
-
-foreign import javascript unsafe
-  "try { $r = $1.clockDiff; } catch(e) { console.log(e)}"
-  getClockDiff :: WebDirt -> IO Double
-
 
 playSample :: WebDirt -> (Double,Tidal.ControlMap) -> IO ()
 playSample wd (t,e) = do
