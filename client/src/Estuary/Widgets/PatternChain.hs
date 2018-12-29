@@ -1,9 +1,9 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.PatternChain where
 
 import Reflex
-import Reflex.Dom
+import Reflex.Dom hiding (Delete,End)
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
 import Estuary.WebDirt.Foreign
@@ -98,5 +98,3 @@ transformedPatternToList x = (Right ()):(f x)
 
 iclcForStacked :: (MonadWidget t m) => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a), Event t Hint))
 iclcForStacked tPat _= resettableTransformedPatternWidget tPat never
-
-

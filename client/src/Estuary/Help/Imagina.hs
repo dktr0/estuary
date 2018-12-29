@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Help.Imagina where
 
 import Reflex
 import Reflex.Dom
+import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 
@@ -34,7 +36,7 @@ about = do
  divClass "about" $ text "imagina"
  divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador."
 
-exampleText :: String -> String
+exampleText :: Text -> Text
 
 exampleText "imagina" = "imagina el agua"
 exampleText "sueña" = "sueña las hojas"
@@ -52,7 +54,7 @@ exampleText "cantando" = "sueña el pájaro cantando"
 exampleText "comiendo" = "imagina el pájaro comiendo"
 exampleText "volando" = "sueña las hojas volando"
 
-referenceText :: String -> String
+referenceText :: Text -> Text
 
 referenceText "imagina" = "returns and empty string"
 referenceText "sueña" = "returns and empty string"
@@ -72,7 +74,7 @@ referenceText "comiendo" = "returns TidalCycles' trunc"
 
 
 -- help files for samples
-functionRef :: MonadWidget t m => String -> m ()
+functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
  switchToReference <- divClass "refExampleButton" $ button x
  exampleVisible <- toggle True switchToReference

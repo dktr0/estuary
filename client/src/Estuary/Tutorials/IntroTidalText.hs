@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Tutorials.IntroTidalText where
 
 import Reflex

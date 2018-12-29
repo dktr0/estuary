@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings, TypeFamilies #-}
 
 module Estuary.Widgets.View where
 
@@ -9,6 +9,7 @@ import Reflex.Dom
 import Text.Read
 import Data.Time.Clock
 import Data.Map as M (fromList)
+import qualified Data.Text as T
 
 import Estuary.Types.Response
 import Estuary.Types.Definition
@@ -48,7 +49,7 @@ viewWidget ctx renderInfo (Views xs) initialDefs deltasDown = foldM f i xs
       let newHints = leftmost [prevHints,hints]
       return (newZoneMap,newEdits,newHints)
 
-viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass c $ viewWidget ctx renderInfo v i deltasDown
+viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass (T.pack c) $ viewWidget ctx renderInfo v i deltasDown
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i

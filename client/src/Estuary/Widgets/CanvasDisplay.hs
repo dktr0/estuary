@@ -1,14 +1,15 @@
-{-# LANGUAGE RecursiveDo, JavaScriptFFI #-}
+{-# LANGUAGE RecursiveDo, JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Widgets.CanvasDisplay (canvasDisplay) where
 
 import Reflex
 import Reflex.Dom
-import GHCJS.DOM.Types (HTMLCanvasElement,castToHTMLCanvasElement)
-import GHCJS.Types (JSVal)
+import GHCJS.DOM.Types (JSVal,HTMLCanvasElement)
+import qualified GHCJS.DOM.Types as G
 import GHCJS.Foreign.Callback
-import Data.JSString
+import Data.JSString as J
 import Data.Map
+import Data.Text as T
 import Data.List
 import Control.Monad
 import Control.Monad.Trans
@@ -22,8 +23,8 @@ import Estuary.RenderInfo
 
 canvasDisplay :: MonadWidget t m => Int -> MVar CanvasState -> m ()
 canvasDisplay z mv = do
-  let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z),("width","1920"),("height","1080")]
-  cvs <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
+  let attrs = fromList [("class","canvasDisplay"),("style",T.pack $ "z-index:" ++ show z),("width","1920"),("height","1080")]
+  cvs <- liftM (G.uncheckedCastTo G.HTMLCanvasElement .  _element_raw . fst) $ elAttr' "canvas" attrs $ return ()
   ctx <- liftIO $ getContext cvs
   liftIO $ requestAnimationFrame ctx mv
   -- *** note: also need to consider how to interrupt requestAnimationFrame when widget is destroyed
@@ -61,8 +62,8 @@ performCanvasOps ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080 
 
 canvasOp :: JSVal -> CanvasOp -> IO ()
 canvasOp ctx (Clear a) = do
-  fillStyle ctx (pack $ show $ RGBA 0 0 0 a)
-  strokeStyle ctx (pack $ show $ RGBA 0 0 0 a)
+  fillStyle ctx (J.pack $ show $ RGBA 0 0 0 a)
+  strokeStyle ctx (J.pack $ show $ RGBA 0 0 0 a)
   rect ctx 0 0 1920 1080
   stroke ctx
   fill ctx
@@ -77,8 +78,8 @@ canvasOp ctx (Tri x0 y0 x1 y1 x2 y2) = do
   fill ctx
 canvasOp ctx (MoveTo x y) = moveTo ctx x y
 canvasOp ctx (LineTo x y) = beginPath ctx >> lineTo ctx x y >> stroke ctx >> fill ctx
-canvasOp ctx (StrokeStyle c) = strokeStyle ctx (pack $ show c)
-canvasOp ctx (FillStyle c) = fillStyle ctx (pack $ show c)
+canvasOp ctx (StrokeStyle c) = strokeStyle ctx (J.pack $ show c)
+canvasOp ctx (FillStyle c) = fillStyle ctx (J.pack $ show c)
 
 foreign import javascript safe
   "$r=$1.getContext('2d')"

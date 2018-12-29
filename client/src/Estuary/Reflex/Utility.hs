@@ -1,10 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Reflex.Utility where
 
 import Reflex
 import Reflex.Dom
 import Control.Monad (liftM)
 import Data.Map
+import Data.Text as T
 import GHCJS.DOM.EventM
+import qualified GHCJS.DOM.Types as G
 import Data.Map
 import Data.Maybe
 import Data.Monoid
@@ -12,7 +16,8 @@ import Control.Monad
 import GHCJS.DOM.HTMLSelectElement as Select
 import Control.Monad hiding (forM_) -- for 'guard'
 import Safe -- for readMay
-import GHCJS.DOM.Element hiding (error) --for 'change'
+-- import GHCJS.DOM.Element hiding (error) --for 'change'
+import GHCJS.DOM.GlobalEventHandlers (change)
 import Data.List (nub, elemIndex)
 
 import Estuary.Types.Term
@@ -31,23 +36,23 @@ apDyn f a = do
   a' <- a
   combineDyn ($) f' a'
 
-translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t String)
+translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t Text)
 translateDyn t = mapDyn (translate t . language)
 
 translationList :: MonadWidget t m => Dynamic t Context -> [(Language,a)] -> m (Dynamic t a)
-translationList c m = do 
+translationList c m = do
   let m' = fromList m
   let d = snd (m!!0)
   l <- mapDyn language c
   mapDyn (\k -> findWithDefault d k m') l
 
 --Button with dynamic label. A final version that uses >=> from Control.Monad to compose together two a -> m b functions
-dynButton :: MonadWidget t m => Dynamic t String -> m (Event t ())
+dynButton :: MonadWidget t m => Dynamic t Text -> m (Event t ())
 dynButton = (mapDyn button) >=> dynE
 
 dynButtonWithChild :: MonadWidget t m => String -> m () -> m (Event t ())
 dynButtonWithChild cls child = do
-  (e, _) <- elAttr' "div" (fromList [("type", "button"), ("class", cls ++ " btn")]) child
+  (e, _) <- elAttr' "div" (fromList [("type", "button"), ("class", T.pack $ cls ++ " btn")]) child
   return $ domEvent Click e
 
 -- | dynE is like dyn from Reflex, specialized for widgets that return
@@ -67,13 +72,13 @@ matchEvent a b = fmap (const  b) . ffilter (==a)
 
 -- a button that, instead of producing Event t (), produces an event of
 -- some constant value
-button' :: (MonadWidget t m) => String -> a -> m (Event t a)
+button' :: (MonadWidget t m) => Text -> a -> m (Event t a)
 button' t r = do
   x <- button t
   return $ fmap (const r) x
 
 -- Button With Dynamic attributes
-buttonDynAttrs :: MonadWidget t m => String -> a -> Dynamic t (Map String String)-> m (Event t a)
+buttonDynAttrs :: MonadWidget t m => Text -> a -> Dynamic t (Map Text Text)-> m (Event t a)
 buttonDynAttrs s val attrs = do
   (e, _) <- elDynAttr' "button" attrs $ text s
   let event = domEvent Click e
@@ -84,21 +89,22 @@ buttonDynAttrs s val attrs = do
 -- to String tuples. The first String of the tuple indicates a subheader,
 -- and the second indicates the selectable item under it. DropdownConfig options
 -- expect the same as with a regular dropdown
-dropdownOpts :: (MonadWidget t m) => Int -> Map Int (String,String) ->  DropdownConfig t Int -> m (Dropdown t Int)
+dropdownOpts :: (MonadWidget t m) => Int -> Map Int (Text,Text) ->  DropdownConfig t Int -> m (Dropdown t Int)
 dropdownOpts k0 setUpMap (DropdownConfig setK attrs) = do
-  let options = fromList $ zip (keys setUpMap) $ fmap snd $ elems setUpMap
-  let optGroups = fromList $ zip (keys setUpMap) $ fmap fst $ elems setUpMap
+  let options = fromList $ Prelude.zip (keys setUpMap) $ fmap snd $ elems setUpMap
+  let optGroups = fromList $ Prelude.zip (keys setUpMap) $ fmap fst $ elems setUpMap
   let optGroupPositions = fmap (\x-> maybe (0) id $ Data.List.elemIndex x (elems optGroups)) $ nub $ elems optGroups -- [Int]
   (eRaw, _) <- elDynAttr' "select" attrs $ do
     let optionsWithDefault = constDyn $ if Data.Map.lookup k0 options == Nothing then Data.Map.union (k0 =: "") options else options
     listWithKey optionsWithDefault $ \k v -> do
       if not (elem k optGroupPositions) then blank else do
         elAttr "optgroup" ("label"=:(maybe "" id $ Data.Map.lookup k optGroups)) $ blank
-      elAttr "option" ("value" =: show k <> if k == k0 then "selected" =: "selected" else mempty) $ dynText v
-  let e = castToHTMLSelectElement $ _el_element eRaw
-  performEvent_ $ fmap (Select.setValue e . Just . show) setK
+      elAttr "option" ("value" =: (T.pack . show) k <> if k == k0 then "selected" =: "selected" else mempty) $ dynText v
+  let e = G.uncheckedCastTo HTMLSelectElement $ _el_element eRaw
+  performEvent_ $ fmap (Select.setValue e . show) setK
   eChange <- wrapDomEvent e (`on` change) $ do
-    kStr <- fromMaybe "" <$> Select.getValue e
+--    kStr <- fromMaybe "" <$> Select.getValue e
+    kStr <- Select.getValue e
     return $ readMay kStr
   let readKey mk = fromMaybe k0 $ do
         k <- mk

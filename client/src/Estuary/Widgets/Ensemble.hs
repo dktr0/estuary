@@ -1,16 +1,18 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.Ensemble (
   ensembleView,
   soloView
 ) where
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response)
 import Data.Time.Clock
 import Control.Monad
 import Control.Monad.Trans
 import qualified Data.IntMap.Strict as Map
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Types.Context
 import Estuary.Types.Terminal
@@ -52,14 +54,14 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   let commandChanges = fmap commandsToStateChanges commands
   let ensembleResponses = fmap justEnsembleResponses deltasDown
   let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
-  let handleChanges = fmap (\x es -> es { userHandle = x}) hdl
+  let handleChanges = fmap (\x es -> es { userHandle = T.unpack x}) hdl
   let requestChanges = fmap requestsToStateChanges edits
   let tempoChanges = fmap setEnsembleTempo tempoSetEvents
   ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges,tempoChanges]
 
   -- Ensemble name and password UI (created only if ensemble is not "")
   (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader" $ do
-    divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
+    divClass "ensembleName" $ text $ "Ensemble: " `T.append` T.pack ensemble
     hdl' <- divClass "ensembleHandle" $ do
       text "Name:"
       let attrs = constDyn ("class" =: "ensembleHandle")
@@ -69,7 +71,7 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
       text "password:"
       let attrs = constDyn ("class" =: "ensemblePassword")
       pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-      return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
+      return $ fmap AuthenticateInEnsemble $ fmap T.unpack $ _textInput_input pwdInput
     return (hdl',pwdRequest')
 
   -- management of tempo including tempoWidget

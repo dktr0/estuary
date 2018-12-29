@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Help.Maria where
 
 import Reflex
 import Reflex.Dom
+import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 
@@ -27,7 +29,7 @@ about = do
  divClass "about" $ text "María"
  divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador."
 
-exampleText :: String -> String
+exampleText :: Text -> Text
 
 exampleText "María" = "María toca"
 exampleText "toca" = "María toca"
@@ -41,9 +43,9 @@ exampleText "suave" = "María toca suave"
 exampleText "ventana" = "María abre la ventana 8"
 exampleText "botella" = "María cierra la botella 4"
 
-referenceText :: String -> String
+referenceText :: Text -> Text
 
-referenceText "María" = "Parses the begining of the document"  
+referenceText "María" = "Parses the begining of the document"
 referenceText "toca" = "returns Dirt's \"bd\" sample"
 referenceText "abre" = "returns Dirt's \"arpy\" sample"
 referenceText "cierra" = "returns Dirt's \"cp\" sample"
@@ -55,7 +57,7 @@ referenceText "suave" = "returns TidalCycles' chop"
 referenceText "ventana" = "returns TidalCycles' striate"
 referenceText "botella" = "returns TidalCycles' iter"
 
-functionRef :: MonadWidget t m => String -> m ()
+functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
  switchToReference <- divClass "refExampleButton" $ button x
  exampleVisible <- toggle True switchToReference

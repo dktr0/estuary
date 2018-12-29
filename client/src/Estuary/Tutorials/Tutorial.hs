@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo, GADTs, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE RecursiveDo, GADTs, DeriveGeneric, DeriveAnyClass, OverloadedStrings #-}
 
 module Estuary.Tutorials.Tutorial where
 
@@ -7,6 +7,8 @@ import Control.Monad (liftM)
 import qualified Data.IntMap.Strict as IM
 import Data.Map as M
 import Data.Maybe (isNothing)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.RenderInfo
 import Estuary.Types.Context
@@ -55,7 +57,7 @@ dynList l = mapDyn elems $ joinDynThroughMap $ constDyn $ fromList $ attachIndex
 title::MonadWidget t m => m a -> m a
 title widget = elClass "div" "title" widget
 
-labelWidget::MonadWidget t m => Dynamic t Context -> M.Map Language String -> m ()
+labelWidget::MonadWidget t m => Dynamic t Context -> M.Map Language Text -> m ()
 labelWidget ctx txt = do
   let dflt = safeHead "" $ elems txt
   str <- mapDyn (\c-> maybe dflt id $ M.lookup (language c) txt) ctx

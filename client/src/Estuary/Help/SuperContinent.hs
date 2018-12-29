@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Help.SuperContinent where
 
 import Reflex

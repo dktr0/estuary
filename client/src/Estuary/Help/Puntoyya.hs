@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Help.Puntoyya where
 
 import Reflex
 import Reflex.Dom
+import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 
@@ -27,7 +29,7 @@ about = do
  divClass "about" $ text "Punto y ya"
  divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador."
 
-exampleText :: String -> String
+exampleText :: Text -> Text
 
 exampleText ". _ ." = ". _ ."
 exampleText ". - ." = ". - ."
@@ -38,7 +40,7 @@ exampleText "oo" =  ". - . oo 0.5"
 exampleText "ooo" = ". \". ooo 2"
 exampleText "oooo" = ". - . oooo 2"
 
-referenceText :: String -> String
+referenceText :: Text -> Text
 
 referenceText ". _ ." = "returns Dirt's \"clap\" sample"
 referenceText ". - ." = "returns Dirt's \"arpy\" sample"
@@ -50,7 +52,7 @@ referenceText "ooo" = "returns TidalCycles' iter"
 referenceText "oooo" = "returns TidalCycles' chop"
 
 -- help files for samples
-functionRef :: MonadWidget t m => String -> m ()
+functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
  switchToReference <- divClass "refExampleButton" $ button x
  exampleVisible <- toggle True switchToReference

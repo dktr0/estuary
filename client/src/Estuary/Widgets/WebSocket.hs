@@ -2,8 +2,8 @@
 
 module Estuary.Widgets.WebSocket where
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import qualified Data.ByteString.Char8 as C
 import Control.Monad.IO.Class (liftIO)
@@ -63,10 +63,9 @@ alternateWebSocket obj toSend = mdo
 
   -- when Pongs are received
   let pongs = fmapMaybe justPongs responses'
-  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pongs 
+  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pongs
   let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
 
   let contextChanges = mergeWith (.) [wsStatusChanges,latencyChanges]
-  
-  return (responses',contextChanges)
 
+  return (responses',contextChanges)

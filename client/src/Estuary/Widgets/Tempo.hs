@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.Tempo where
 
@@ -6,6 +6,7 @@ import Reflex
 import Reflex.Dom
 import Control.Monad.Trans
 import Text.Read
+import Data.Text
 
 import Estuary.Types.Tempo
 import Estuary.Types.Context

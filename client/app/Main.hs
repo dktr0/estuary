@@ -55,12 +55,12 @@ main = do
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
 
-  root <- fmap pFromJSVal js_estuaryMountPoint :: IO HTMLDivElement
+  -- root <- fmap pFromJSVal js_estuaryMountPoint :: IO HTMLDivElement
   -- mainWidgetAtRoot root $ estuaryWidget Splash c ri protocol
   mainWidget $ estuaryWidget Splash c ri protocol
 
 visuallyCrash :: SomeException -> IO ()
-visuallyCrash e = 
+visuallyCrash e =
   let lines = [
           "Unhandled exception: ",
           displayException e,
@@ -73,10 +73,11 @@ waitForInteractionOrTimeout ms = do
   timeout (ms * 1000) js_waitForClickBody
   return ()
 
+{- disactivated temporarily in update to new reflex
 mainWidgetAtRoot :: (IsHTMLElement e) => e -> Widget Spider (Gui Spider (WithWebView SpiderHost) (HostFrame Spider)) () -> IO ()
 mainWidgetAtRoot root widget = runWebGUI $ \webView -> do
   Just doc <- liftM (fmap castToHTMLDocument) $ webViewGetDomDocument webView
-  attachWidget root webView widget
+  attachWidget root webView widget -}
 
 foreign import javascript unsafe
   "if (window.confirm($1)) {        \

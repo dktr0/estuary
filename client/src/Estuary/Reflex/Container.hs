@@ -1,12 +1,14 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 module Estuary.Reflex.Container where
 
 -- The Estuary.Reflex namespace is for definitions that extend Reflex or
 -- Reflex.Dom in ways that do not involve types specific to Estuary (or Tidal).
 -- For example, as in this module, new container widgets for arbitrary widgets.
 
-import Reflex.Dom
+import Reflex.Dom hiding (Delete,Insert)
 import GHCJS.DOM.EventM
+import qualified GHCJS.DOM.GlobalEventHandlers as G
+import qualified GHCJS.DOM.DocumentAndElementEventHandlers as G
 import Data.Map
 import Data.Bool
 import Reflex
@@ -62,8 +64,8 @@ applyConstructionMap oldMap cMap = foldlWithKey (\a k b -> applyConstruction a (
 constructionDiff :: (Num k, Ord k, Eq v) => Map k v -> Map k (Construction v) -> Map k (Maybe v)
 constructionDiff oldMap cMap = unions [deletions,additions,changes]
   where newMap = applyConstructionMap oldMap cMap
-        deletions = fmap (const Nothing) $ difference oldMap newMap -- keys only in oldMap are deletions
-        additions = fmap (Just) $ difference newMap oldMap -- keys only in newMap are additions
+        deletions = fmap (const Nothing) $ Data.Map.difference oldMap newMap -- keys only in oldMap are deletions
+        additions = fmap (Just) $ Data.Map.difference newMap oldMap -- keys only in newMap are additions
         changes = fmap (Just) $ intersection newMap $ Data.Map.filter (id) $ intersectionWith (/=) oldMap newMap
 
 container :: (Ord k, Num k, Show k, Eq v, Show v, MonadWidget t m)
@@ -261,25 +263,10 @@ wfor iVals mkChild = do
 wmap :: (MonadWidget t m) => (a -> m (Dynamic t b)) -> [a] -> m (Dynamic t [b])
 wmap = flip wfor
 
--- resettableWidget: given a standard Estuary widget function, produce a
--- variant with a reset Event of the same main type
--- resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t () -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t () -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
--- resettableWidget :: (MonadWidget t m, Eq a)=> (a -> Event t (EditSignal a) -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t (EditSignal a) -> Event t a -> m (Dynamic t (a,Event t (EditSignal a)))
--- resettableWidget widget i e reset = liftM (joinDyn) $ widgetHold (widget i e) $ fmap (\x -> widget x e) reset
--- after a merge conflict... believe the more general version below holds
 
 resettableWidget :: MonadWidget t m => (a -> Event t b -> m (Dynamic t c)) -> a -> Event t b -> Event t a -> m (Dynamic t c)
 resettableWidget f i e reset = liftM (joinDyn) $ widgetHold (f i e) $ fmap (\x -> f x e) reset
 
-{-
-makeResettableWidget ::  MonadWidget t m => (a -> Event t b -> m (Dynamic t (a,Event t (EditSignal a)))) -> a -> Event t b -> m (Dynamic t (a,Event t (EditSignal a)))
-makeResettableWidget b i e = mdo
-  val <- resettableWidget b i e rebuildEvents'
-  rebuildEvents <- liftM (tagDyn val) $ liftM (switchPromptlyDyn) $ mapDyn (ffilter (==RebuildMe) . snd) val
-  let rebuildEvents' = attachDynWith (\(a,_) _ -> a) val rebuildEvents
-  otherEvents <- liftM (switchPromptlyDyn) $ mapDyn (ffilter (/=RebuildMe) . snd) val
-  mapDyn (\(x,_) -> (x,otherEvents)) val
--}
 
 popup :: MonadWidget t m => Event t (Maybe (m (Event t a))) -> m (Event t a)
 popup buildEvents = do
@@ -287,13 +274,10 @@ popup buildEvents = do
   liftM (switchPromptlyDyn) $ widgetHold (return never) buildEvents'
 
 
--- the following three definitions are just an example of using 'popup' above to implement a popup menu
--- they should probably be moved to an examples folder sometime soon...
-
 clickableWhiteSpace :: MonadWidget t m => m (Event t ())
 clickableWhiteSpace = do
   (element,_) <- elAttr' "div" (singleton "class" "clickableWhiteSpace") $ text "clickableWhiteSpace"
-  clickEv <- wrapDomEvent (_el_element element) (onEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
 flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
