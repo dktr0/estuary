@@ -29,6 +29,7 @@ import Estuary.Types.Request
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Sited
 import Estuary.Types.View
+import Estuary.Render.AudioContext
 
 extractInitialDefs :: (MonadWidget t m) => String -> Dynamic t Context -> m (DefinitionMap)
 extractInitialDefs ensemble dynCtx = do
@@ -47,7 +48,8 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   -- *** is it dangerous to have initialView exist separate from initialState (below)?
 
   -- management of EnsembleState
-  now <- liftIO getCurrentTime
+  iCtx <- (sample . current) ctx
+  now <- liftIO $ getAudioTime (audioContext iCtx)
   let initialState = (newEnsembleState ensemble now) {
     defaultView = initialView
     }

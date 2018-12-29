@@ -47,12 +47,12 @@ main = do
   waitForInteractionOrTimeout 10000
 
   ac <- getAudioContext
-  now <- getAudioTime ac
   wd <- newWebDirt ac
   initializeWebAudio wd
   sd <- newSuperDirt
   protocol <- estuaryProtocol
   mv <- emptyCanvasState >>= newMVar
+  now <- getAudioTime ac
   c <- newMVar $ initialContext now ac wd sd mv
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri

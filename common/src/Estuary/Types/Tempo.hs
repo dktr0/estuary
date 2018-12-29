@@ -10,14 +10,11 @@ data Tempo = Tempo {
   cps :: Double,
   at :: UTCTime,
   beat :: Double
-  } deriving (Eq,Data,Typeable)
+  } deriving (Eq,Data,Typeable,Show)
 
 instance JSON Tempo where
   showJSON = toJSON
   readJSON = fromJSON
-
-instance Show Tempo where
-  show _ = "a tempo"
 
 adjustCps :: Tempo -> UTCTime -> Double -> Tempo
 adjustCps prevTempo now newCps = Tempo {
