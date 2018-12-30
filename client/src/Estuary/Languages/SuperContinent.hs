@@ -84,34 +84,45 @@ propertyParser = choice [
 -- ie. a graph that will eventually be reduced to a loosely-typed value
 data ValueGraph =
   Constant Value |
-  BinaryOp (Value -> Value -> Value) ValueGraph ValueGraph |
+  UnaryFunctionWithContext ((Double,Int,Double) -> Value -> Value) ValueGraph |
+  BinaryFunction (Value -> Value -> Value) ValueGraph ValueGraph |
   AudioProperty | -- for now there is only one audio property... but later this type can have more values
   Random | -- a random value between -1 and 1
-  ObjectN | -- the number of the currently relevant object
-  CyclePhase ValueGraph -- phase of current logical time relative to metre length provided by ValueGraph
+  ObjectN  -- the number of the currently relevant object
 
 valueGraphParser :: Parser ValueGraph
 valueGraphParser = chainl1 productOfGraphs $ choice [
-  reservedOp "+" >> return (BinaryOp sumOfValues),
-  reservedOp "-" >> return (BinaryOp diffOfValues)
+  reservedOp "+" >> return (BinaryFunction sumOfValues),
+  reservedOp "-" >> return (BinaryFunction diffOfValues)
   ]
 
 productOfGraphs :: Parser ValueGraph
 productOfGraphs = chainl1 valueGraphComponent $ choice [
-  reservedOp "*" >> return (BinaryOp productOfValues),
-  reservedOp "/" >> return (BinaryOp quotientOfValues),
-  reservedOp "%" >> return (BinaryOp modOfValues),
-  reservedOp "++" >> return (BinaryOp rayOfValues)
+  reservedOp "*" >> return (BinaryFunction productOfValues),
+  reservedOp "/" >> return (BinaryFunction quotientOfValues),
+  reservedOp "%" >> return (BinaryFunction modOfValues),
+  reservedOp "++" >> return (BinaryFunction rayOfValues)
   ]
 
 valueGraphComponent :: Parser ValueGraph
 valueGraphComponent = choice [
   try $ pointParser,
   parens valueGraphParser,
-  reserved "audio" >> return AudioProperty,
-  reserved "random" >> return Random,
-  symbol "?" >> return Random,
-  (symbol "@" >> return CyclePhase) <*> valueGraphComponent,
+  reserved "rms" >> return AudioProperty,
+  reserved "rnd" >> return Random,
+  (reserved "phs" >> return (UnaryFunctionWithContext phs)) <*> valueGraphArgument,
+  reserved "n" >> return ObjectN,
+  valueParser >>= return . Constant
+  ]
+
+-- only expressions that don't require parentheses
+-- (which includes expressions that don't require them because they have them...)
+valueGraphArgument :: Parser ValueGraph
+valueGraphArgument = choice [
+  try $ pointParser,
+  parens valueGraphParser,
+  reserved "rms" >> return AudioProperty,
+  reserved "rnd" >> return Random,
   reserved "n" >> return ObjectN,
   valueParser >>= return . Constant
   ]
@@ -121,7 +132,7 @@ pointParser = parens $ do
   x <- valueGraphParser
   symbol ","
   y <- valueGraphParser
-  return $ BinaryOp ValuePoint x y
+  return $ BinaryFunction ValuePoint x y
 
 -- a loosely typed value, with semantics similar to those in javascript
 -- ie. the value contains a value of a specific type but we support
@@ -310,28 +321,33 @@ runDeltaOnObject objectN (cycleTime,audio) (Delta prop graph) obj = do
 
 getValueFromGraph :: (Double,Int,Double) -> ValueGraph -> ST Value
 getValueFromGraph _ (Constant v) = return v
-getValueFromGraph ctx (BinaryOp f x y) = do
+getValueFromGraph ctx (UnaryFunctionWithContext f x) = do
+  x' <- getValueFromGraph ctx x
+  return $ f ctx x'
+getValueFromGraph ctx (BinaryFunction f x y) = do
   x' <- getValueFromGraph ctx x
   y' <- getValueFromGraph ctx y
   return $ f x' y'
-getValueFromGraph (_,_,audio) (AudioProperty) = return $ ValueDouble audio
-getValueFromGraph _ (Random) = do
+getValueFromGraph (_,_,audio) AudioProperty = return $ ValueDouble audio
+getValueFromGraph _ Random = do
   x <- gets randomGen
   y <- liftIO $ uniform x
   return $ ValueDouble y
 getValueFromGraph (_,objectN,_) ObjectN = return $ ValueInt objectN
-getValueFromGraph ctx@(cycleT,_,_) (CyclePhase metre) = do
-  metre' <- valueAsDouble <$> getValueFromGraph ctx metre
-  let sinceDownBeat = cycleT - ((fromIntegral $ floor $ cycleT/metre') * metre')
-  return $ ValueDouble $ sinceDownBeat / metre'
+
+phs :: (Double,Int,Double) -> Value -> Value
+phs (cycleT,_,_) metre = ValueDouble $ sinceDownBeat / metre'
+  where
+    metre' = valueAsDouble metre
+    sinceDownBeat = cycleT - ((fromIntegral $ floor $ cycleT/metre') * metre')
 
 
 -- below this line all there is are our Parsec tokenized parsing definitions
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["type","v0","v1","v2","nil","tri","rect","audio","random","r","g","b","a","n"],
-  P.reservedOpNames = ["..","=","*","/","%","+","-","++","@"]
+  P.reservedNames = ["type","v0","v1","v2","nil","tri","rect","rms","rnd","phs","r","g","b","a","n"],
+  P.reservedOpNames = ["..","=","*","/","%","+","-","++"]
   }
 
 identifier = P.identifier tokenParser
