@@ -1,4 +1,4 @@
-module Estuary.Languages.SuperContinent (parseSuperContinent,Program,SuperContinentState,emptyState,runProgram,stateToSvgOps,stateToCanvasOps) where
+module Estuary.Languages.SuperContinent (parseSuperContinent,Program,SuperContinentState,emptyState,runProgram,stateToCanvasOps) where
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -134,19 +134,22 @@ data Value =
 
 data ObjectType =
   Nil |
-  Triangle
+  Triangle |
+  Rectangle
   deriving (Show,Eq)
 
 valueAsType :: Value -> ObjectType
 valueAsType (ValueType x) = x
 valueAsType (ValueInt 0) = Nil
 valueAsType (ValueInt 1) = Triangle
+valueAsType (ValueInt 2) = Rectangle
 valueAsType (ValueInt _) = Nil
 valueAsType (ValueDouble x) = valueAsType (ValueInt (floor x))
 valueAsType (ValuePoint x _) = valueAsType x
 
 valueAsInt :: Value -> Int
 valueAsInt (ValueType Triangle) = 1
+valueAsInt (ValueType Rectangle) = 2
 valueAsInt (ValueType _) = 0
 valueAsInt (ValueInt x) = x
 valueAsInt (ValueDouble x) = floor x
@@ -193,7 +196,8 @@ valueParser = choice [
   try $ float >>= return . ValueDouble,
   try $ (fromIntegral <$> integer) >>= return . ValueInt,
   try $ reserved "nil" >> return (ValueType Nil),
-  try $ reserved "triangle" >> return (ValueType Triangle)
+  try $ reserved "tri" >> return (ValueType Triangle),
+  try $ reserved "rect" >> return (ValueType Rectangle)
   ]
 
 
@@ -210,44 +214,37 @@ emptyState = do
     randomGen = rg
   }
 
-stateToSvgOps :: SuperContinentState -> [SvgOp.SvgOp]
-stateToSvgOps s = concat $ fmap objectToSvgOps $ elems (objects s)
-
 stateToCanvasOps :: SuperContinentState -> [CanvasOp.CanvasOp]
-stateToCanvasOps s = a ++ b
-  where
-    a = [CanvasOp.StrokeStyle (RGBA 0 0 0 100),CanvasOp.FillStyle (RGBA 0 0 0 100),CanvasOp.Rect 0 0 100 100]
-    b = concat $ fmap objectToCanvasOps $ elems (objects s)
+stateToCanvasOps s = concat $ fmap objectToCanvasOps $ elems (objects s)
 
 type Object = Map.Map Property Value
 
-objectToSvgOps :: Object -> [SvgOp.SvgOp]
-objectToSvgOps x | Map.lookup Type x == Just (ValueType Triangle) = [objectToTriangle x] -- *** note: this doesn't actually do the loose typing thing...
-objectToSvgOps x | otherwise = []
-
 objectToCanvasOps :: Object -> [CanvasOp.CanvasOp]
-objectToCanvasOps x | Map.lookup Type x == Just (ValueType Triangle) = objectToTriangle' x -- *** note: this doesn't actually do the loose typing thing...
+objectToCanvasOps x | (valueAsType <$> Map.lookup Type x) == Just Triangle = objectToTriangle x
+objectToCanvasOps x | (valueAsType <$> Map.lookup Type x) == Just Rectangle = objectToRectangle x
 objectToCanvasOps x | otherwise = []
 
-objectToTriangle :: Object -> SvgOp.SvgOp
-objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s
+objectToTriangle :: Object -> [CanvasOp.CanvasOp]
+objectToTriangle obj = [s,f,CanvasOp.Tri x0 y0 x1 y1 x2 y2]
   where
-    (x0,y0) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V0 obj
-    (x1,y1) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V1 obj
-    (x2,y2) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V2 obj
+    (x0,y0) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 50) (ValueDouble 50)) V0 obj
+    (x1,y1) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 50) (ValueDouble 50)) V1 obj
+    (x2,y2) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 50) (ValueDouble 50)) V2 obj
     r = valueAsDouble $ Map.findWithDefault (ValueDouble 0) R obj
     g = valueAsDouble $ Map.findWithDefault (ValueDouble 0) G obj
     b = valueAsDouble $ Map.findWithDefault (ValueDouble 0) B obj
     a = valueAsDouble $ Map.findWithDefault (ValueDouble 100) A obj
     c = RGBA r g b a
-    s = defaultStroke { strokeColor = c }
+    s = CanvasOp.StrokeStyle c
+    f = CanvasOp.FillStyle c
 
-objectToTriangle' :: Object -> [CanvasOp.CanvasOp]
-objectToTriangle' obj = [s,f,CanvasOp.Tri x0 y0 x1 y1 x2 y2]
+objectToRectangle :: Object -> [CanvasOp.CanvasOp]
+objectToRectangle obj = [s,f,CanvasOp.Rect x0 y0 w h]
   where
-    (x0,y0) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V0 obj
-    (x1,y1) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V1 obj
-    (x2,y2) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V2 obj
+    (x0,y0) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 50) (ValueDouble 50)) V0 obj
+    (x1,y1) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 50) (ValueDouble 50)) V1 obj
+    w = x1-x0
+    h = y1-y0
     r = valueAsDouble $ Map.findWithDefault (ValueDouble 0) R obj
     g = valueAsDouble $ Map.findWithDefault (ValueDouble 0) G obj
     b = valueAsDouble $ Map.findWithDefault (ValueDouble 0) B obj
