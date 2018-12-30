@@ -91,7 +91,8 @@ data ValueGraph =
   Point ValueGraph ValueGraph |
   AudioProperty | -- for now there is only one audio property... but later this type can have more values
   Random | -- a random value between -1 and 1
-  ObjectN -- the number of the currently relevant object
+  ObjectN | -- the number of the currently relevant object
+  CycleTime -- logical time in cycles relative to current tempo
   deriving (Show)
   -- *** should add a property reflecting current position in meter as well!
 
@@ -109,8 +110,10 @@ valueGraphComponent = choice [
   try $ pointParser,
   parens valueGraphParser,
   reserved "audio" >> return AudioProperty,
-  reserved "rand" >> return Random,
+  reserved "random" >> return Random,
   symbol "?" >> return Random,
+  reserved "cycle" >> return CycleTime,
+  symbol "@" >> return CycleTime,
   reserved "n" >> return ObjectN,
   valueParser >>= return . Constant
   ]
@@ -253,16 +256,16 @@ objectToRectangle obj = [s,f,CanvasOp.Rect x0 y0 w h]
     s = CanvasOp.StrokeStyle c
     f = CanvasOp.FillStyle c
 
-runProgram :: Double -> Program -> SuperContinentState -> IO SuperContinentState
-runProgram audio program prevState = execStateT (mapM (runSuperContinentStatement audio) program) prevState
+runProgram :: (Double,Double) -> Program -> SuperContinentState -> IO SuperContinentState
+runProgram ctx program prevState = execStateT (mapM (runSuperContinentStatement ctx) program) prevState
 
 type ST = StateT SuperContinentState IO
 
-runSuperContinentStatement :: Double -> Statement -> ST ()
-runSuperContinentStatement audio (With sel deltas) = do
+runSuperContinentStatement :: (Double,Double) -> Statement -> ST ()
+runSuperContinentStatement ctx (With sel deltas) = do
   prevState <- get
   let objs = selectOrInstantiateObjects sel $ objects prevState
-  objs' <- runDeltasOnObjects audio objs deltas
+  objs' <- runDeltasOnObjects ctx objs deltas
   modify' $ \s -> s { objects = union objs' $ objects s }
 
 selectOrInstantiateObjects :: Selector -> IntMap Object -> IntMap Object
@@ -270,47 +273,49 @@ selectOrInstantiateObjects (NumberedObjects ns) m = differenceWith (\_ b -> Just
   where newObjects = fromList $ fmap (\x -> (x,Map.empty)) ns
 selectOrInstantiateObjects AllObjects m = m
 
-runDeltasOnObjects :: Double -> IntMap Object -> [Delta] -> ST (IntMap Object)
-runDeltasOnObjects audio objs deltas = foldM (runDeltaOnObjects audio) objs deltas
+runDeltasOnObjects :: (Double,Double) -> IntMap Object -> [Delta] -> ST (IntMap Object)
+runDeltasOnObjects ctx objs deltas = foldM (runDeltaOnObjects ctx) objs deltas
 
-runDeltaOnObjects :: Double -> IntMap Object -> Delta -> ST (IntMap Object)
-runDeltaOnObjects audio objs delta = sequence $ mapWithKey (\k v -> runDeltaOnObject k audio delta v) objs
+runDeltaOnObjects :: (Double,Double) -> IntMap Object -> Delta -> ST (IntMap Object)
+runDeltaOnObjects ctx objs delta = sequence $ mapWithKey (\k v -> runDeltaOnObject k ctx delta v) objs
 
-runDeltaOnObject :: Int -> Double -> Delta -> Object -> ST Object
-runDeltaOnObject objectN audio (Delta prop graph) obj = do
-  val <- getValueFromGraph objectN audio graph
+runDeltaOnObject :: Int -> (Double,Double) -> Delta -> Object -> ST Object
+runDeltaOnObject objectN (cycleTime,audio) (Delta prop graph) obj = do
+  val <- getValueFromGraph (cycleTime,objectN,audio) graph
   return $ Map.insert prop val obj
 
-getValueFromGraph :: Int -> Double -> ValueGraph -> ST Value
-getValueFromGraph _ _ (Constant v) = return v
-getValueFromGraph objectN audio (Sum x y) = do
-  x' <- getValueFromGraph objectN audio x
-  y' <- getValueFromGraph objectN audio y
+getValueFromGraph :: (Double,Int,Double) -> ValueGraph -> ST Value
+getValueFromGraph _ (Constant v) = return v
+getValueFromGraph ctx (Sum x y) = do
+  x' <- getValueFromGraph ctx x
+  y' <- getValueFromGraph ctx y
   return $ sumOfValues x' y'
-getValueFromGraph objectN audio (Product x y) = do
-  x' <- getValueFromGraph objectN audio x
-  y' <- getValueFromGraph objectN audio y
+getValueFromGraph ctx (Product x y) = do
+  x' <- getValueFromGraph ctx x
+  y' <- getValueFromGraph ctx y
   return $ productOfValues x' y'
-getValueFromGraph objectN audio (Ray a b) = do
-  a' <- getValueFromGraph objectN audio a
-  b' <- getValueFromGraph objectN audio b
+getValueFromGraph ctx (Ray a b) = do
+  a' <- getValueFromGraph ctx a
+  b' <- getValueFromGraph ctx b
   return $ rayOfValues a' b'
-getValueFromGraph objectN audio (Point x y) = do
-  x' <- getValueFromGraph objectN audio x
-  y' <- getValueFromGraph objectN audio y
+getValueFromGraph ctx (Point x y) = do
+  x' <- getValueFromGraph ctx x
+  y' <- getValueFromGraph ctx y
   return $ ValuePoint x' y'
-getValueFromGraph _ audio (AudioProperty) = return $ ValueDouble audio
-getValueFromGraph _ _ (Random) = do
+getValueFromGraph (_,_,audio) (AudioProperty) = return $ ValueDouble audio
+getValueFromGraph _ (Random) = do
   x <- gets randomGen
   y <- liftIO $ uniform x
   return $ ValueDouble y
-getValueFromGraph objectN _ ObjectN = return $ ValueInt objectN
+getValueFromGraph (_,objectN,_) ObjectN = return $ ValueInt objectN
+getValueFromGraph (cycleT,_,_) CycleTime = return $ ValueDouble cycleT
+
 
 -- below this line all there is is our Parsec tokenized parsing definitions
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["type","v0","v1","v2","nil","triangle","audio","rand","r","g","b","a","n"],
+  P.reservedNames = ["type","v0","v1","v2","nil","triangle","audio","random","cycle","r","g","b","a","n"],
   P.reservedOpNames = ["..","=","*","+","++"]
   }
 

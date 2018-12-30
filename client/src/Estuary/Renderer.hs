@@ -179,29 +179,14 @@ renderTextProgramAlways _ _ _ = return ()
 renderSuperContinent :: Context -> Int -> Renderer
 renderSuperContinent c z = when (canvasOn c) $ do
   s <- get
+  let cycleTime = elapsedCycles (tempo c) (logicalTime s)
   let audio = 0.5 -- placeholder
   let program = superContinentProgram s
   let scState = superContinentState s
-  scState1 <- liftIO $ SuperContinent.runProgram audio program scState
---  scState2 <- liftIO $ SuperContinent.runProgram audio program scState1
---  scState3 <- liftIO $ SuperContinent.runProgram audio program scState2
---  scState4 <- liftIO $ SuperContinent.runProgram audio program scState3
---  scState5 <- liftIO $ SuperContinent.runProgram audio program scState4
---  scState6 <- liftIO $ SuperContinent.runProgram audio program scState5
-  let newOps1 = SuperContinent.stateToCanvasOps scState1
---  let newOps2 = SuperContinent.stateToCanvasOps scState2
---  let newOps3 = SuperContinent.stateToCanvasOps scState3
---  let newOps4 = SuperContinent.stateToCanvasOps scState4
---  let newOps5 = SuperContinent.stateToCanvasOps scState5
---  let newOps6 = SuperContinent.stateToCanvasOps scState6
-  let newOps1' = fmap (\o -> (addUTCTime 0.2 (logicalTime s),o)) newOps1
---  let newOps2' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.166)) (logicalTime s),o)) newOps2
---  let newOps3' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.333)) (logicalTime s),o)) newOps3
---  let newOps4' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.499))(logicalTime s),o)) newOps4
---  let newOps5' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.667)) (logicalTime s),o)) newOps5
---  let newOps6' = fmap (\o -> (addUTCTime (0.2 + (renderPeriod*0.833)) (logicalTime s),o)) newOps6
---  let newOps = newOps1' ++ newOps2' ++ newOps3' ++ newOps4' ++ newOps5' ++ newOps6'
-  modify' $ \x -> x { superContinentState = scState1, canvasOps = canvasOps s ++ newOps1' }
+  scState' <- liftIO $ SuperContinent.runProgram (cycleTime,audio) program scState
+  let newOps = SuperContinent.stateToCanvasOps scState'
+  let newOps' = fmap (\o -> (addUTCTime 0.2 (logicalTime s),o)) newOps
+  modify' $ \x -> x { superContinentState = scState', canvasOps = canvasOps s ++ newOps' }
 
 renderPunctualVideo :: Context -> Int -> Renderer
 renderPunctualVideo c z = when (canvasOn c) $ do
