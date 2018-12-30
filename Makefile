@@ -26,7 +26,7 @@ CLOSURE_COMPILER="java -jar closure-compiler.jar"
 
 prodBuildClient: setupClient
 	$(STACK_PRODUCTION_CLIENT) build --ghc-options="-DGHCJS_BROWSER -O2" estuary:exe:Estuary
-	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=ADVANCED --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
+	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=SIMPLE --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
 	gzip -fk "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js"
 
 buildClientForceDirty:
