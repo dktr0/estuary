@@ -66,21 +66,16 @@ deltaParser = do
 
 data Property =
   Type |
-  X0 | Y0 |
-  X1 | Y1 |
-  X2 | Y2 |
+  V0 | V1 | V2 |
   R | G | B | A
   deriving (Show,Ord,Eq)
 
 propertyParser :: Parser Property
 propertyParser = choice [
   reserved "type" >> return Type,
-  reserved "x0" >> return X0,
-  reserved "y0" >> return Y0,
-  reserved "x1" >> return X1,
-  reserved "y1" >> return Y1,
-  reserved "x2" >> return X2,
-  reserved "y2" >> return Y2,
+  reserved "v0" >> return V0,
+  reserved "v1" >> return V1,
+  reserved "v2" >> return V2,
   reserved "r" >> return R,
   reserved "g" >> return G,
   reserved "b" >> return B,
@@ -92,6 +87,8 @@ data ValueGraph =
   Constant Value |
   Sum ValueGraph ValueGraph |
   Product ValueGraph ValueGraph |
+  Ray ValueGraph ValueGraph |
+  Point ValueGraph ValueGraph |
   AudioProperty | -- for now there is only one audio property... but later this type can have more values
   Random | -- a random value between -1 and 1
   ObjectN -- the number of the currently relevant object
@@ -102,16 +99,28 @@ valueGraphParser :: Parser ValueGraph
 valueGraphParser = chainl1 productOfGraphs (reservedOp "+" >> return Sum)
 
 productOfGraphs :: Parser ValueGraph
-productOfGraphs = chainl1 valueGraphComponent (reservedOp "*" >> return Product)
+productOfGraphs = chainl1 valueGraphComponent $ choice [
+  (reservedOp "*" >> return Product),
+  (reservedOp "++" >> return Ray)
+  ]
 
 valueGraphComponent :: Parser ValueGraph
 valueGraphComponent = choice [
+  try $ pointParser,
   parens valueGraphParser,
   reserved "audio" >> return AudioProperty,
-  reserved "random" >> return Random,
+  reserved "rand" >> return Random,
+  symbol "?" >> return Random,
   reserved "n" >> return ObjectN,
   valueParser >>= return . Constant
   ]
+
+pointParser :: Parser ValueGraph
+pointParser = parens $ do
+  x <- valueGraphParser
+  symbol ","
+  y <- valueGraphParser
+  return $ Point x y
 
 -- a loosely typed value, with semantics similar to those in javascript
 -- ie. the value contains a value of a specific type but we support
@@ -119,7 +128,8 @@ valueGraphComponent = choice [
 data Value =
   ValueType ObjectType |
   ValueInt Int |
-  ValueDouble Double
+  ValueDouble Double |
+  ValuePoint Value Value
   deriving (Show,Eq)
 
 data ObjectType =
@@ -133,27 +143,50 @@ valueAsType (ValueInt 0) = Nil
 valueAsType (ValueInt 1) = Triangle
 valueAsType (ValueInt _) = Nil
 valueAsType (ValueDouble x) = valueAsType (ValueInt (floor x))
+valueAsType (ValuePoint x _) = valueAsType x
 
 valueAsInt :: Value -> Int
 valueAsInt (ValueType Triangle) = 1
 valueAsInt (ValueType _) = 0
 valueAsInt (ValueInt x) = x
 valueAsInt (ValueDouble x) = floor x
+valueAsInt (ValuePoint x _) = valueAsInt x
 
 valueAsDouble :: Value -> Double
 valueAsDouble (ValueType x) = fromIntegral $ valueAsInt (ValueType x)
 valueAsDouble (ValueInt x) = fromIntegral x
 valueAsDouble (ValueDouble x) = x
+valueAsDouble (ValuePoint x _) = valueAsDouble x
+
+valueAsPoint :: Value -> (Double,Double)
+valueAsPoint (ValueType x) = (x',x')
+  where x' = valueAsDouble $ ValueType x
+valueAsPoint (ValueInt x) = (fromIntegral x,fromIntegral x)
+valueAsPoint (ValueDouble x) = (x,x)
+valueAsPoint (ValuePoint x y) = (valueAsDouble x,valueAsDouble y)
 
 sumOfValues :: Value -> Value -> Value
+sumOfValues (ValuePoint x0 y0) (ValuePoint x1 y1) = ValuePoint (sumOfValues x0 x1) (sumOfValues y0 y1)
+sumOfValues (ValuePoint x0 y0) z = ValuePoint (sumOfValues x0 z) (sumOfValues y0 z)
+sumOfValues z (ValuePoint x0 y0) = ValuePoint (sumOfValues x0 z) (sumOfValues y0 z)
 sumOfValues (ValueDouble x) y = ValueDouble (x + valueAsDouble y)
 sumOfValues x (ValueDouble y) = ValueDouble (y + valueAsDouble x)
 sumOfValues x y = ValueInt (valueAsInt x + valueAsInt y)
 
 productOfValues :: Value -> Value -> Value
+productOfValues (ValuePoint x0 y0) (ValuePoint x1 y1) = ValuePoint (productOfValues x0 x1) (productOfValues y0 y1)
+productOfValues (ValuePoint x0 y0) z = ValuePoint (productOfValues x0 z) (productOfValues y0 z)
+productOfValues z (ValuePoint x0 y0) = ValuePoint (productOfValues x0 z) (productOfValues y0 z)
 productOfValues (ValueDouble x) y = ValueDouble (x * valueAsDouble y)
 productOfValues x (ValueDouble y) = ValueDouble (y * valueAsDouble x)
 productOfValues x y = ValueInt (valueAsInt x * valueAsInt y)
+
+rayOfValues :: Value -> Value -> Value
+rayOfValues x y = ValuePoint (ValueDouble $ x0 + (hyp*sin theta)) (ValueDouble $ y0 + (hyp*cos theta))
+  where
+    (x0,y0) = valueAsPoint x
+    (hyp,angleInDegrees) = valueAsPoint y
+    theta = angleInDegrees / 180 * pi
 
 valueParser :: Parser Value
 valueParser = choice [
@@ -162,6 +195,7 @@ valueParser = choice [
   try $ reserved "nil" >> return (ValueType Nil),
   try $ reserved "triangle" >> return (ValueType Triangle)
   ]
+
 
 data SuperContinentState = SuperContinentState {
   objects :: IntMap Object,
@@ -198,12 +232,9 @@ objectToCanvasOps x | otherwise = []
 objectToTriangle :: Object -> SvgOp.SvgOp
 objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s
   where
-    x0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X0 obj
-    y0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y0 obj
-    x1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X1 obj
-    y1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y1 obj
-    x2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X2 obj
-    y2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y2 obj
+    (x0,y0) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V0 obj
+    (x1,y1) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V1 obj
+    (x2,y2) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V2 obj
     r = valueAsDouble $ Map.findWithDefault (ValueDouble 0) R obj
     g = valueAsDouble $ Map.findWithDefault (ValueDouble 0) G obj
     b = valueAsDouble $ Map.findWithDefault (ValueDouble 0) B obj
@@ -214,12 +245,9 @@ objectToTriangle obj = SvgOp.Triangle x0 y0 x1 y1 x2 y2 c s
 objectToTriangle' :: Object -> [CanvasOp.CanvasOp]
 objectToTriangle' obj = [s,f,CanvasOp.Tri x0 y0 x1 y1 x2 y2]
   where
-    x0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X0 obj
-    y0 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y0 obj
-    x1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X1 obj
-    y1 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y1 obj
-    x2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) X2 obj
-    y2 = valueAsDouble $ Map.findWithDefault (ValueDouble 0) Y2 obj
+    (x0,y0) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V0 obj
+    (x1,y1) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V1 obj
+    (x2,y2) = valueAsPoint $ Map.findWithDefault (ValuePoint (ValueDouble 0) (ValueDouble 0)) V2 obj
     r = valueAsDouble $ Map.findWithDefault (ValueDouble 0) R obj
     g = valueAsDouble $ Map.findWithDefault (ValueDouble 0) G obj
     b = valueAsDouble $ Map.findWithDefault (ValueDouble 0) B obj
@@ -266,6 +294,14 @@ getValueFromGraph objectN audio (Product x y) = do
   x' <- getValueFromGraph objectN audio x
   y' <- getValueFromGraph objectN audio y
   return $ productOfValues x' y'
+getValueFromGraph objectN audio (Ray a b) = do
+  a' <- getValueFromGraph objectN audio a
+  b' <- getValueFromGraph objectN audio b
+  return $ rayOfValues a' b'
+getValueFromGraph objectN audio (Point x y) = do
+  x' <- getValueFromGraph objectN audio x
+  y' <- getValueFromGraph objectN audio y
+  return $ ValuePoint x' y'
 getValueFromGraph _ audio (AudioProperty) = return $ ValueDouble audio
 getValueFromGraph _ _ (Random) = do
   x <- gets randomGen
@@ -277,8 +313,8 @@ getValueFromGraph objectN _ ObjectN = return $ ValueInt objectN
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["type","x0","y0","x1","y1","x2","y2","nil","triangle","audio","random","r","g","b","a","n"],
-  P.reservedOpNames = ["..","=","*","+"]
+  P.reservedNames = ["type","v0","v1","v2","nil","triangle","audio","rand","r","g","b","a","n"],
+  P.reservedOpNames = ["..","=","*","+","++"]
   }
 
 identifier = P.identifier tokenParser
