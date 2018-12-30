@@ -27,13 +27,12 @@ programParser = semiSep statementParser
 data Statement =
   With Selector [Delta]
   -- Assignment String Expression -- for later...
-  deriving (Show)
 
 statementParser :: Parser Statement
 statementParser = With <$> selectorParser <*> deltasParser
 
 
-data Selector = NumberedObjects [Int] | AllObjects deriving (Show)
+data Selector = NumberedObjects [Int] | AllObjects
 
 selectorParser :: Parser Selector
 selectorParser = choice [
@@ -52,7 +51,7 @@ selectorParser = choice [
   ]
 
 
-data Delta = Delta Property ValueGraph deriving (Show)
+data Delta = Delta Property ValueGraph
 
 deltasParser :: Parser [Delta]
 deltasParser = commaSep deltaParser
@@ -85,24 +84,24 @@ propertyParser = choice [
 -- ie. a graph that will eventually be reduced to a loosely-typed value
 data ValueGraph =
   Constant Value |
-  Sum ValueGraph ValueGraph |
-  Product ValueGraph ValueGraph |
-  Ray ValueGraph ValueGraph |
-  Point ValueGraph ValueGraph |
+  BinaryOp (Value -> Value -> Value) ValueGraph ValueGraph |
   AudioProperty | -- for now there is only one audio property... but later this type can have more values
   Random | -- a random value between -1 and 1
   ObjectN | -- the number of the currently relevant object
-  CycleTime -- logical time in cycles relative to current tempo
-  deriving (Show)
-  -- *** should add a property reflecting current position in meter as well!
+  CyclePhase ValueGraph -- phase of current logical time relative to metre length provided by ValueGraph
 
 valueGraphParser :: Parser ValueGraph
-valueGraphParser = chainl1 productOfGraphs (reservedOp "+" >> return Sum)
+valueGraphParser = chainl1 productOfGraphs $ choice [
+  reservedOp "+" >> return (BinaryOp sumOfValues),
+  reservedOp "-" >> return (BinaryOp diffOfValues)
+  ]
 
 productOfGraphs :: Parser ValueGraph
 productOfGraphs = chainl1 valueGraphComponent $ choice [
-  (reservedOp "*" >> return Product),
-  (reservedOp "++" >> return Ray)
+  reservedOp "*" >> return (BinaryOp productOfValues),
+  reservedOp "/" >> return (BinaryOp quotientOfValues),
+  reservedOp "%" >> return (BinaryOp modOfValues),
+  reservedOp "++" >> return (BinaryOp rayOfValues)
   ]
 
 valueGraphComponent :: Parser ValueGraph
@@ -112,8 +111,7 @@ valueGraphComponent = choice [
   reserved "audio" >> return AudioProperty,
   reserved "random" >> return Random,
   symbol "?" >> return Random,
-  reserved "cycle" >> return CycleTime,
-  symbol "@" >> return CycleTime,
+  (symbol "@" >> return CyclePhase) <*> valueGraphComponent,
   reserved "n" >> return ObjectN,
   valueParser >>= return . Constant
   ]
@@ -123,7 +121,7 @@ pointParser = parens $ do
   x <- valueGraphParser
   symbol ","
   y <- valueGraphParser
-  return $ Point x y
+  return $ BinaryOp ValuePoint x y
 
 -- a loosely typed value, with semantics similar to those in javascript
 -- ie. the value contains a value of a specific type but we support
@@ -179,6 +177,14 @@ sumOfValues (ValueDouble x) y = ValueDouble (x + valueAsDouble y)
 sumOfValues x (ValueDouble y) = ValueDouble (y + valueAsDouble x)
 sumOfValues x y = ValueInt (valueAsInt x + valueAsInt y)
 
+diffOfValues :: Value -> Value -> Value
+diffOfValues (ValuePoint x0 y0) (ValuePoint x1 y1) = ValuePoint (diffOfValues x0 x1) (diffOfValues y0 y1)
+diffOfValues (ValuePoint x0 y0) z = ValuePoint (diffOfValues x0 z) (diffOfValues y0 z)
+diffOfValues z (ValuePoint x0 y0) = ValuePoint (diffOfValues x0 z) (diffOfValues y0 z)
+diffOfValues (ValueDouble x) y = ValueDouble (x - valueAsDouble y)
+diffOfValues x (ValueDouble y) = ValueDouble (y - valueAsDouble x)
+diffOfValues x y = ValueInt (valueAsInt x - valueAsInt y)
+
 productOfValues :: Value -> Value -> Value
 productOfValues (ValuePoint x0 y0) (ValuePoint x1 y1) = ValuePoint (productOfValues x0 x1) (productOfValues y0 y1)
 productOfValues (ValuePoint x0 y0) z = ValuePoint (productOfValues x0 z) (productOfValues y0 z)
@@ -186,6 +192,24 @@ productOfValues z (ValuePoint x0 y0) = ValuePoint (productOfValues x0 z) (produc
 productOfValues (ValueDouble x) y = ValueDouble (x * valueAsDouble y)
 productOfValues x (ValueDouble y) = ValueDouble (y * valueAsDouble x)
 productOfValues x y = ValueInt (valueAsInt x * valueAsInt y)
+
+quotientOfValues :: Value -> Value -> Value
+quotientOfValues (ValuePoint x0 y0) (ValuePoint x1 y1) = ValuePoint (quotientOfValues x0 x1) (quotientOfValues y0 y1)
+quotientOfValues (ValuePoint x0 y0) z = ValuePoint (quotientOfValues x0 z) (quotientOfValues y0 z)
+quotientOfValues z (ValuePoint x0 y0) = ValuePoint (quotientOfValues x0 z) (quotientOfValues y0 z)
+quotientOfValues (ValueDouble x) y = ValueDouble (x / valueAsDouble y)
+quotientOfValues x (ValueDouble y) = ValueDouble (y / valueAsDouble x)
+quotientOfValues x y = ValueInt (div (valueAsInt x) (valueAsInt y))
+
+modOfValues :: Value -> Value -> Value
+modOfValues (ValuePoint x0 y0) (ValuePoint x1 y1) = ValuePoint (modOfValues x0 x1) (modOfValues y0 y1)
+modOfValues (ValuePoint x0 y0) z = ValuePoint (modOfValues x0 z) (modOfValues y0 z)
+modOfValues z (ValuePoint x0 y0) = ValuePoint (modOfValues x0 z) (modOfValues y0 z)
+modOfValues (ValueDouble x) y = ValueDouble $ x - (fromIntegral (floor (x/y')) * y')
+  where y' = valueAsDouble y
+modOfValues x (ValueDouble y) = ValueDouble $ x' - (fromIntegral (floor (x'/y)) * y)
+  where x' = valueAsDouble x
+modOfValues x y = ValueInt $ (mod (valueAsInt x) (valueAsInt y))
 
 rayOfValues :: Value -> Value -> Value
 rayOfValues x y = ValuePoint (ValueDouble $ x0 + (hyp*sin theta)) (ValueDouble $ y0 + (hyp*cos theta))
@@ -286,37 +310,28 @@ runDeltaOnObject objectN (cycleTime,audio) (Delta prop graph) obj = do
 
 getValueFromGraph :: (Double,Int,Double) -> ValueGraph -> ST Value
 getValueFromGraph _ (Constant v) = return v
-getValueFromGraph ctx (Sum x y) = do
+getValueFromGraph ctx (BinaryOp f x y) = do
   x' <- getValueFromGraph ctx x
   y' <- getValueFromGraph ctx y
-  return $ sumOfValues x' y'
-getValueFromGraph ctx (Product x y) = do
-  x' <- getValueFromGraph ctx x
-  y' <- getValueFromGraph ctx y
-  return $ productOfValues x' y'
-getValueFromGraph ctx (Ray a b) = do
-  a' <- getValueFromGraph ctx a
-  b' <- getValueFromGraph ctx b
-  return $ rayOfValues a' b'
-getValueFromGraph ctx (Point x y) = do
-  x' <- getValueFromGraph ctx x
-  y' <- getValueFromGraph ctx y
-  return $ ValuePoint x' y'
+  return $ f x' y'
 getValueFromGraph (_,_,audio) (AudioProperty) = return $ ValueDouble audio
 getValueFromGraph _ (Random) = do
   x <- gets randomGen
   y <- liftIO $ uniform x
   return $ ValueDouble y
 getValueFromGraph (_,objectN,_) ObjectN = return $ ValueInt objectN
-getValueFromGraph (cycleT,_,_) CycleTime = return $ ValueDouble cycleT
+getValueFromGraph ctx@(cycleT,_,_) (CyclePhase metre) = do
+  metre' <- valueAsDouble <$> getValueFromGraph ctx metre
+  let sinceDownBeat = cycleT - ((fromIntegral $ floor $ cycleT/metre') * metre')
+  return $ ValueDouble $ sinceDownBeat / metre'
 
 
--- below this line all there is is our Parsec tokenized parsing definitions
+-- below this line all there is are our Parsec tokenized parsing definitions
 
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
-  P.reservedNames = ["type","v0","v1","v2","nil","triangle","audio","random","cycle","r","g","b","a","n"],
-  P.reservedOpNames = ["..","=","*","+","++"]
+  P.reservedNames = ["type","v0","v1","v2","nil","tri","rect","audio","random","r","g","b","a","n"],
+  P.reservedOpNames = ["..","=","*","/","%","+","-","++","@"]
   }
 
 identifier = P.identifier tokenParser
