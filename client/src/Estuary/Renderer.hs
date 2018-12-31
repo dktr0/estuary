@@ -130,12 +130,13 @@ renderTextProgramChanged c z (SuperContinent,x) = do
 
 renderTextProgramChanged c z (PunctualAudio,x) = do
   s <- get
+  let ac = audioContext c
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
     t <- liftIO $ getAudioTime (audioContext c)
     let eval = (exprs,t)
-    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW t) z (punctuals s)
+    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac t) z (punctuals s)
     newPunctualW <- liftIO $ Punctual.updatePunctualW prevPunctualW eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult

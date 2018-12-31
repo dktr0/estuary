@@ -32,6 +32,7 @@ dependencies:
   - reflex-dom
   - tidal
   - punctual
+  - musicw
   - hosc
   - containers
   - safe

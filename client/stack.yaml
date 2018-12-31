@@ -40,12 +40,12 @@ packages:
 
 - location:
     git: https://github.com/d0kt0r0/MusicW.git
-    commit: f300f8da234e3a6958a3477b56728a2fcb885d73
+    commit: e8f084fe949c39ec77e4e1756ab14cb6be587387
   extra-dep: true
 
 - location:
     git: https://github.com/d0kt0r0/Punctual.git
-    commit: e9c6999e06179e4baee219d4478df6a305687cf5
+    commit: 7e71ff075d170f3d99090a512ef59dafb04ad531
   extra-dep: true
 
 extra-deps:
@@ -59,4 +59,3 @@ extra-deps:
   - monoidal-containers-0.4.0.0
   - hosc-0.16
   - parsec-numbers-0.1.0
-  

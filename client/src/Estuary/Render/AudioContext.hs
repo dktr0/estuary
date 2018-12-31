@@ -1,33 +1,19 @@
 {-# LANGUAGE JavaScriptFFI #-}
-module Estuary.Render.AudioContext where
+module Estuary.Render.AudioContext (module Sound.MusicW.AudioRoutingGraph, module Estuary.Render.AudioContext) where
 
 import GHCJS.Types
 import GHCJS.Marshal.Pure
 import Data.Time
+import Sound.MusicW.AudioRoutingGraph
 
-newtype AudioContext = AudioContext { audioContextJSVal :: JSVal }
+-- | This 'utility' module is for definitions (probably only ever a few) that extend the
+-- interface to the Web Audio API provided to us by MusicW. It re-exports the relevant
+-- MusicW module, so typically just this module would be imported in other Estuary modules.
 
-instance PToJSVal AudioContext where pToJSVal (AudioContext x) = x
 
-instance PFromJSVal AudioContext where pFromJSVal = AudioContext
-
-foreign import javascript safe
-  "if (window.___ac == null) { \
-  \    window.___ac = new (window.AudioContext || window.webkitAudioContext)();\
-  \} $r = window.___ac;"
-  getAudioContext :: IO AudioContext
-
-foreign import javascript safe
-  "$1.currentTime"
-  getAudioTimeDouble :: AudioContext -> IO Double
-
-getAudioTime :: AudioContext -> IO UTCTime
-getAudioTime ctx = do
-  x <- getAudioTimeDouble ctx
-  return $ UTCTime {
-    utctDay = toEnum 0,
-    utctDayTime = realToFrac x -- *** this might not work if audio context runs for more than one day...
-  }
+-- | Calculate how far ahead current system time is relative to audio context time.
+-- (Subtract this from a system time to get an audio context time.)
+-- (Add this to an audio context time to get a system time.)
 
 audioClockDiff :: AudioContext -> IO NominalDiffTime
 audioClockDiff ctx = diffUTCTime <$> getCurrentTime <*> getAudioTime ctx
