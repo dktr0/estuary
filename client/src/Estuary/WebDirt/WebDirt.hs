@@ -12,6 +12,8 @@ import qualified Estuary.WebDirt.SampleEngine as S
 import Estuary.WebDirt.Foreign (createObjFromMap)
 import Estuary.Types.Hint
 import Estuary.Render.AudioContext
+import Sound.MusicW
+import Sound.MusicW.AudioRoutingGraph
 
 newtype WebDirt = WebDirt JSVal
 
@@ -20,8 +22,11 @@ instance PToJSVal WebDirt where pToJSVal (WebDirt x) = x
 instance PFromJSVal WebDirt where pFromJSVal = WebDirt
 
 foreign import javascript unsafe
-  "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null,null,null,$1)"
-  newWebDirt :: AudioContext -> IO WebDirt
+  "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',0,null,0.010,$1,$2)"
+  newWebDirt :: AudioContext -> JSVal -> IO WebDirt
+  -- 0 is additional delay/latency added to all events sent to WebDirt
+  -- 0.010 is maximum lateness after which WebDirt silently drops sample events
+  -- JSVal is web audio node provided as a sink/destination for all synths
 
 foreign import javascript unsafe
   "$1.initializeWebAudio()"

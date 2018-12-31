@@ -9,6 +9,8 @@ import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad(liftM)
 
+import Sound.MusicW
+
 import Estuary.Render.AudioContext
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
@@ -47,7 +49,10 @@ main = do
   waitForInteractionOrTimeout 10000
 
   ac <- getAudioContext
-  wd <- newWebDirt ac
+  masterGain <- instantiateSourceSinkNode (Gain (Db 0)) ac
+  acDestination <- instantiateSinkNode Destination ac
+  connect masterGain acDestination
+  wd <- newWebDirt ac (Sound.MusicW.jsval masterGain)
   initializeWebAudio wd
   sd <- newSuperDirt
   protocol <- estuaryProtocol
