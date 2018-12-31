@@ -200,7 +200,7 @@ renderPunctualVideo c z = when (canvasOn c) $ do
 punctualVideoToOps :: UTCTime -> NominalDiffTime -> Punctual.PunctualState -> [(UTCTime,CanvasOp.CanvasOp)]
 punctualVideoToOps lt p s = concat $ zipWith4 (\c d e f -> [c,d,e,f]) clears strokes fills rects
   where
-    n = 30 :: Int -- how many sampling/drawing operations per renderPeriod
+    n = 5 :: Int -- how many sampling/drawing operations per renderPeriod
     ts = fmap (flip addUTCTime $ lt) $ fmap ((*(renderPeriod/(fromIntegral n :: NominalDiffTime))) . fromIntegral) [0 .. n]
     clear = fmap biPolarToPercent $! sampleWithDefault "clear" (-1) s ts
     r = fmap biPolarToPercent $! sampleWithDefault "r" 1 s ts
