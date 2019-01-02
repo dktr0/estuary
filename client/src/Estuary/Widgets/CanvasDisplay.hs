@@ -15,6 +15,8 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Concurrent.MVar
 import Data.Time.Clock
+import JavaScript.Web.AnimationFrame
+import GHCJS.Concurrent
 
 import Estuary.Types.Color
 import Estuary.Types.CanvasOp
@@ -31,11 +33,11 @@ canvasDisplay z mv = do
 
 requestAnimationFrame :: JSVal -> MVar CanvasState -> IO ()
 requestAnimationFrame ctx mv = do
-  cb <- syncCallback1 ContinueAsync $ redrawCanvas ctx mv
-  requestAnimationFrame_ cb
+  inAnimationFrame ThrowWouldBlock $ redrawCanvas ctx mv
+  return ()
 
-redrawCanvas :: JSVal -> MVar CanvasState -> JSVal -> IO ()
-redrawCanvas ctx mv _ = do
+redrawCanvas :: JSVal -> MVar CanvasState -> Double -> IO ()
+redrawCanvas ctx mv _ = synchronously $ do
   t1 <- getCurrentTime
   cState <- takeMVar mv
   let ops = queuedOps cState
@@ -47,6 +49,7 @@ redrawCanvas ctx mv _ = do
   let interFrameDelay = diffUTCTime t1 (previousDrawStart cState)
   let drawDelay = diffUTCTime t3 t1
   let opsDrawn = n1 - n2
+  -- putStrLn $ show drawDelay ++ "s for " ++ show opsDrawn ++ " ops"
   -- putStrLn $ "interFrameDelay = " ++ show interFrameDelay ++ "; drawDelay = " ++ show drawDelay ++ " (" ++ show opsDrawn ++ " ops drawn)"
   requestAnimationFrame ctx mv
 
@@ -85,38 +88,34 @@ foreign import javascript safe
   "$r=$1.getContext('2d')"
   getContext :: HTMLCanvasElement -> IO JSVal
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.beginPath()"
   beginPath :: JSVal -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.stroke()"
   stroke :: JSVal -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.fill()"
   fill :: JSVal -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.strokeStyle = $2"
   strokeStyle :: JSVal -> JSString -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.fillStyle = $2"
   fillStyle :: JSVal -> JSString -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.rect($2,$3,$4,$5)"
   rect :: JSVal -> Double -> Double -> Double -> Double -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.moveTo($2,$3)"
   moveTo :: JSVal -> Double -> Double -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.lineTo($2,$3)"
   lineTo :: JSVal -> Double -> Double -> IO ()
-
-foreign import javascript safe
-  "window.requestAnimationFrame($1)"
-  requestAnimationFrame_ :: Callback (JSVal -> IO()) -> IO ()
