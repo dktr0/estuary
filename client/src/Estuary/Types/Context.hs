@@ -3,6 +3,7 @@ module Estuary.Types.Context where
 import Data.Time
 import Data.IntMap.Strict
 import Control.Concurrent.MVar
+import GHCJS.Types
 
 import Estuary.Tidal.Types
 import Estuary.Types.Language
@@ -14,9 +15,11 @@ import Estuary.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.CanvasState
 import Estuary.Render.AudioContext
+import Sound.MusicW (Node)
 
 data Context = Context {
   audioContext :: AudioContext,
+  masterBusNode :: Node,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
   language :: Language,
@@ -34,9 +37,10 @@ data Context = Context {
   canvasState :: MVar CanvasState
   }
 
-initialContext :: UTCTime -> AudioContext -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
-initialContext now ac wd sd mv = Context {
+initialContext :: UTCTime -> AudioContext -> Node -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
+initialContext now ac mBusNode wd sd mv = Context {
   audioContext = ac,
+  masterBusNode = mBusNode,
   webDirt = wd,
   superDirt = sd,
   language = English,

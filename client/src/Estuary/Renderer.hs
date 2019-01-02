@@ -136,7 +136,7 @@ renderTextProgramChanged c z (PunctualAudio,x) = do
     let exprs = either (const []) id parseResult
     t <- liftIO $ getAudioTime (audioContext c)
     let eval = (exprs,t)
-    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac t) z (punctuals s)
+    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac (masterBusNode c) t) z (punctuals s)
     newPunctualW <- liftIO $ Punctual.updatePunctualW prevPunctualW eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
