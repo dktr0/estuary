@@ -10,6 +10,8 @@ import qualified Data.Map.Strict as Map
 import Control.Monad
 import Control.Concurrent.MVar
 import Control.Exception
+import Control.Monad.State
+import Control.Monad.Except
 
 import qualified Database.SQLite.Simple as SQLite
 import Text.JSON
@@ -29,7 +31,6 @@ import Estuary.Types.Definition
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
-import Estuary.Types.EditOrEval
 import qualified Estuary.Types.Ensemble as E
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -37,13 +38,15 @@ import Estuary.Types.View
 import Estuary.Types.Client
 import Estuary.Types.Server
 import Estuary.Types.Database
+import Estuary.Types.Tempo
+import Estuary.Types.Transaction
 
 runServerWithDatabase :: String -> Int -> SQLite.Connection -> IO ()
 runServerWithDatabase pswd port db = do
-  putStrLn $ "Estuary collaborative editing server, listening on port " ++ (show port)
-  putStrLn $ "password: " ++ pswd
+  postLogToDatabase db $ "Estuary collaborative editing server, listening on port " ++ (show port)
+  postLogToDatabase db $ "administrative password: " ++ pswd
   es <- readEnsembles db
-  postLog db $ (show (size es)) ++ " ensembles restored from database"
+  postLogToDatabase db $ (show (size es)) ++ " ensembles restored from database"
   s <- newMVar $ newServer { password = pswd, ensembles = es }
   let settings = (defaultWebAppSettings "Estuary.jsexe") {
     ssIndices = [unsafeToPiece "index.html"],
@@ -56,234 +59,193 @@ gzipMiddleware = gzip $ def {
   gzipFiles = GzipPreCompressed GzipIgnore
 }
 
-postLog :: SQLite.Connection -> String -> IO ()
-postLog db msg = do
-  postLogToDatabase db msg
-  putStrLn msg
-
 webSocketsApp :: SQLite.Connection -> MVar Server -> WS.ServerApp -- = PendingConnection -> IO ()
-webSocketsApp db s ws = do
+webSocketsApp db sMVar ws = do
   ws' <- try $ WS.acceptRequest ws
   case ws' of
     Right ws'' -> do
-      ss <- takeMVar s
-      let (h,ss') = addClient ss ws''
-      let cc = connectionCount ss' + 1
-      let ss'' = ss' { connectionCount=cc }
-      putMVar s ss''
-      postLog db $ "received new connection (" ++ (show cc) ++ " connections since launch)"
-      (WS.forkPingThread ws'' 30) `catch`
-        \(SomeException e) -> postLog db $ "exception in forking ping thread: " ++ (show e)
-      (getServerClientCount s >>= respondAll s . ServerClientCount) `catch`
-        \(SomeException e) -> postLog db $ "exception during transmission of serverClientCount: " ++ (show e)
-      processLoop db ws'' s h
+      postLogToDatabase db $ "received new connection"
+      ss <- takeMVar sMVar
+      let (cHandle,ss') = addClient ss ws''
+      let ss'' = ss' { connectionCount = connectionCount ss' + 1 }
+      ss''' <- runTransaction broadcastServerClientCount db cHandle ss'
+      putMVar sMVar ss'''
+      (WS.forkPingThread ws'' 30) `catch` \(SomeException e) -> postLogToDatabase db $ "exception in forking ping thread: " ++ (show e)
+      processLoop db ws'' sMVar cHandle
     Left (SomeException e) -> do
-      postLog db $ "exception during WS.acceptRequest: " ++ (show e)
+      postLogToDatabase db $ "exception during WS.acceptRequest: " ++ (show e)
+
+
 
 processLoop :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle -> IO ()
-processLoop db ws s h = do
+processLoop db ws sMVar cHandle = do
   m <- try $ WS.receiveData ws
+
   case m of
     Right m' -> do
-      processMessage db ws s h m' `catch` processMessageExceptions db
-      processLoop db ws s h
-    Left WS.ConnectionClosed -> close db s h "unexpected loss of connection"
-    Left (WS.CloseRequest _ _) -> close db s h "connection closed by request from peer"
+      s <- takeMVar sMVar
+      s' <- if (isJust $ Data.Map.lookup cHandle (clients s))
+        then runTransaction (processMessage m') db cHandle s
+        else do
+          postLogToDatabase db $ "*** warning - failed sanity check: WS.receiveData succeeded for client already deleted from server"
+          return s
+      putMVar sMVar s'
+      processLoop db ws sMVar cHandle
+    Left WS.ConnectionClosed -> do
+      s <- takeMVar sMVar
+      s' <- runTransaction (close "unexpected loss of connection") db cHandle s
+      putMVar sMVar s'
+    Left (WS.CloseRequest _ _) -> do
+      s <- takeMVar sMVar
+      s' <- runTransaction (close "connection closed by request from peer") db cHandle s
+      putMVar sMVar s'
     Left (WS.ParseException e) -> do
-      postLog db $ "parse exception: " ++ e
-      processLoop db ws s h
+      postLogToDatabase db $ "parse exception: " ++ e
+      processLoop db ws sMVar cHandle
+    Left _ -> postLogToDatabase db $ "***unknown exception in processLoop - terminating this client's connection***"
     -- Left (WS.UnicodeException e) -> do
     --  postLog db $ "Unicode exception: " ++ e
     --  processLoop db ws s h
 
-processMessage :: SQLite.Connection -> WS.Connection -> MVar Server -> ClientHandle -> Text -> IO ()
-processMessage db ws s h m = do
-  let m' = decode (T.unpack m) :: Result JSString
-  case m' of
-    Ok m'' -> processResult db s h $ decode (fromJSString m'')
-    Error x'' -> postLog db $ "Error: " ++ x''
 
-processMessageExceptions :: SQLite.Connection -> SomeException -> IO ()
-processMessageExceptions db e = postLog db $ "Exception (processResult): " ++ (show e)
+processMessage :: Text -> Transaction ()
+processMessage msg = do
+  let msg' = decode (T.unpack msg) :: Result JSString
+  case msg' of
+    Ok x -> processResult $ decode (fromJSString x)
+    Error x -> throwError x
 
-close :: SQLite.Connection -> MVar Server -> ClientHandle -> String -> IO ()
-close db s h msg = do
-  postLog db $ "closing connection: " ++ msg
-  updateServer s $ deleteClient h
-  return ()
+processResult :: Result Request -> Transaction ()
+processResult (Ok x) = processRequest x
+processResult (Error x) = throwError $ "Error (processResult): " ++ x
 
 
-onlyIfAuthenticated :: MVar Server -> ClientHandle -> IO () -> IO ()
-onlyIfAuthenticated s h f = do
-  s' <- readMVar s
-  let c = clients s' Map.! h
-  if (authenticated c) then f else putStrLn "ignoring request from non-authenticated client"
+processRequest :: Request -> Transaction ()
 
-onlyIfAuthenticatedInEnsemble :: MVar Server -> ClientHandle -> IO () -> IO ()
-onlyIfAuthenticatedInEnsemble s h f = do
-  s' <- readMVar s
-  let c = clients s' Map.! h
-  if (authenticatedInEnsemble c) then f else putStrLn "ignoring request from client not authenticated in ensemble"
+processRequest GetServerClientCount = do
+  postLog "GetServerClientCount"
+  n <- gets (size . clients)
+  respond $ ServerClientCount n
 
-processResult :: SQLite.Connection -> MVar Server -> ClientHandle -> Result Request -> IO ()
-processResult db _ c (Error x) = postLog db $ "Error (processResult): " ++ x
-processResult db s c (Ok x) = processRequest db s c x
+processRequest (Ping t) = respond $ Pong t
 
-processRequest :: SQLite.Connection -> MVar Server -> ClientHandle -> Request -> IO ()
+processRequest GetEnsembleList = do
+  postLog $ "GetEnsembleList"
+  es <- gets (keys . ensembles)
+  respond $ EnsembleList es
 
-processRequest db s c (Authenticate x) = do
-  pwd <- getPassword s
+processRequest (Authenticate x) = do
+  pwd <- gets password
   if x == pwd
     then do
-      postLog db $ "received authenticate with correct password"
-      updateClient s c $ \x -> x { authenticated = True }
+      postLog $ "Authenticate with correct password"
+      modifyClient $ \x -> x { authenticated = True }
     else do
-      postLog db $ "received authenticate with wrong password"
-      updateClient s c $ \x -> x { authenticated = False }
+      postLog $ "Authenticate with incorrect password"
+      modifyClient $ \x -> x { authenticated = False }
 
-processRequest db s c GetEnsembleList = do
-  postLog db $ "GetEnsembleList"
-  getEnsembleList s >>= respond s c
+processRequest (CreateEnsemble name pwd) = do
+  whenNotAuthenticated $ throwError "ignoring CreateEnsemble from non-authenticated client"
+  postLog $ "CreateEnsemble " ++ name
+  t <- liftIO $ getCurrentTime
+  modify' $ createEnsemble name pwd t
+  es <- gets (keys . ensembles)
+  respondAll $ EnsembleList es
+  saveNewEnsembleToDatabase name
 
-processRequest db s c (JoinEnsemble x) = do
-  postLog db $ "joining ensemble " ++ x
-  updateClientWithServer s c f
-  s' <- takeMVar s
-  let e = ensembles s' Map.! x -- *** this is unsafe and should be refactored, same problem below in f too ***
-  let t = E.tempo e
-  respond' s' c $ EnsembleResponse (Sited x (NewTempo t))
-  let defs' = fmap (EnsembleResponse . Sited x . ZoneResponse) $ Map.mapWithKey Sited $ fmap Edit $ E.defs e
-  mapM_ (respond' s' c) $ defs'
-  respond' s' c $ EnsembleResponse (Sited x (DefaultView (E.defaultView e)))
-  let views' = fmap (EnsembleResponse . Sited x . View) $ Map.mapWithKey Sited $ E.views e
-  mapM_ (respond' s' c) $ views'
-  putMVar s s'
-  where
-    f s' c' = c' { ensemble = Just x, authenticatedInEnsemble = E.password ((ensembles s') Map.! x) == "" }
+processRequest (JoinEnsemble x) = do
+  postLog $ "joining ensemble " ++ x
+  s <- get
+  e <- justOrError (Data.Map.lookup x $ ensembles s) "attempt to join non-existent ensemble"
+  now <- liftIO getCurrentTime
+  respond $ EnsembleResponse $ NewTempo (E.tempo e) now
+  mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ZoneResponse $ E.defs e
+  respond $ EnsembleResponse $ DefaultView $ E.defaultView e
+  mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey View $ E.views e
+  modifyClient $ \c -> c { ensemble = Just x }
+  modifyClient $ \c -> c { authenticatedInEnsemble = E.password e == "" }
 
-processRequest db s c LeaveEnsemble = do
-  postLog db $ "leaving ensemble"
-  updateClient s c $ \c' -> c' { ensemble = Nothing, authenticatedInEnsemble = False }
+processRequest LeaveEnsemble = do
+  postLog $ "leaving ensemble"
+  modifyClient $ \c -> c { ensemble = Nothing, authenticatedInEnsemble = False }
 
-processRequest db s c (CreateEnsemble name pwd) = onlyIfAuthenticated s c $ do
-  postLog db $ "CreateEnsemble " ++ name
-  t <- getCurrentTime
-  updateServer s $ createEnsemble name pwd t
-  getEnsembleList s >>= respondAll s
-  saveNewEnsembleToDatabase s name db
+processRequest (EnsembleRequest x) = processEnsembleRequest x
 
-processRequest db s c (EnsembleRequest x) = processInEnsemble db s c x
+processEnsembleRequest :: EnsembleRequest -> Transaction ()
 
-processRequest db s c GetServerClientCount = do
-  postLog db "GetServerClientCount"
-  getServerClientCount s >>= respond s c . ServerClientCount
+processEnsembleRequest (AuthenticateInEnsemble p2) = do
+  e <- getEnsemble
+  let p1 = E.password e
+  when (p1 /= p2 && p2 /= "") $ do
+    modifyClient $ \c -> c { authenticatedInEnsemble = False }
+    throwError $ "failed AuthenticateInEnsemble"
+  -- otherwise...
+  postLog $ "successful AuthenticateInEnsemble"
+  modifyClient $ \c -> c { authenticatedInEnsemble = True }
 
-processInEnsemble :: SQLite.Connection -> MVar Server -> ClientHandle -> Sited String EnsembleRequest -> IO ()
-processInEnsemble db s c (Sited e x) = processEnsembleRequest db s c e x
+processEnsembleRequest (SendChat name msg) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring SendChat from client not authenticated in ensemble"
+  eName <- getEnsembleName
+  postLog $ "SendChat in " ++ eName ++ " from " ++ name ++ ": " ++ msg
+  respondEnsemble $ EnsembleResponse (Chat name msg)
 
-processEnsembleRequest :: SQLite.Connection -> MVar Server -> ClientHandle -> String -> EnsembleRequest -> IO ()
+processEnsembleRequest (ZoneRequest zone value) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring ZoneRequest from client not authenticated in ensemble"
+  eName <- getEnsembleName
+  postLog $ "Edit in (" ++ eName ++ "," ++ (show zone) ++ "): " ++ (show value)
+  modify' $ edit eName zone value
+  respondEnsembleNoOrigin $ EnsembleResponse $ ZoneResponse zone value
+  saveEnsembleToDatabase
 
-processEnsembleRequest db s c e x@(AuthenticateInEnsemble p2) = do
-  p1 <- getEnsemblePassword s e
-  let p2' = if p1 == "" then "" else p2
-  if p1 == p2'
-    then do
-      postLog db $ "successful AuthenticateInEnsemble in " ++ e
-      updateClient s c $ setAuthenticatedInEnsemble True
-    else do
-      postLog db $ "failed AuthenticateInEnsemble in " ++ e
-      updateClient s c $ setAuthenticatedInEnsemble False
+processEnsembleRequest ListViews = do
+  eName <- getEnsembleName
+  postLog $ "ListViews in " ++ eName
+  vs <- (Map.keys . E.views) <$> getEnsemble
+  respond $ EnsembleResponse $ ViewList vs
 
-processEnsembleRequest db s c e x@(SendChat name msg) = onlyIfAuthenticatedInEnsemble s c $ do
-  postLog db $ "SendChat in " ++ e ++ " from " ++ name ++ ": " ++ msg
-  respondEnsemble s e $ EnsembleResponse (Sited e (Chat name msg))
+processEnsembleRequest (GetView v) = do
+  eName <- getEnsembleName
+  postLog $ "GetView " ++ v ++ " in ensemble " ++ eName
+  e <- getEnsemble
+  v' <- justOrError (Data.Map.lookup v $ E.views e) $ "attempt to get unknown view in " ++ eName
+  respond $ EnsembleResponse $ View v v'
 
-processEnsembleRequest db s c e x@(ZoneRequest (Sited zone (Edit value))) = onlyIfAuthenticatedInEnsemble s c $ do
-  postLog db $ "Edit in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
-  updateServer s $ edit e zone value
-  respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone (Edit value))))
-  saveEnsembleToDatabase s e db
+processEnsembleRequest (PublishView key value) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring PublishView from client not authenticated in ensemble"
+  eName <- getEnsembleName
+  postLog $ "PublishView in (" ++ eName ++ "," ++ key ++ "): " ++ (show value)
+  modify' $ setView eName key value
+  saveEnsembleToDatabase
 
-processEnsembleRequest db s c e x@(ZoneRequest (Sited zone (Evaluate value))) = onlyIfAuthenticatedInEnsemble s c $ do
-  postLog db $ "Eval in (" ++ e ++ "," ++ (show zone) ++ "): " ++ (show value)
-  respondEnsembleNoOrigin s c e $ EnsembleResponse (Sited e (ZoneResponse (Sited zone (Evaluate value))))
+processEnsembleRequest (PublishDefaultView v) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring PublishDefaultView from client not authenticated in ensemble"
+  eName <- getEnsembleName
+  postLog $ "PublishDefaultView in " ++ eName
+  modify' $ setDefaultView eName v
+  saveEnsembleToDatabase
 
-processEnsembleRequest db s c e ListViews = do
-  postLog db $ "ListViews in " ++ e
-  vs <- getViews s e -- IO [String]
-  respond s c (EnsembleResponse (Sited e (ViewList vs)))
+processEnsembleRequest (DeleteView x) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring DeleteView from client not authenticated in ensemble"
+  eName <- getEnsembleName
+  postLog $ "DeleteView " ++ x ++ " in ensemble " ++ eName
+  modify' $ deleteView eName x
+  saveEnsembleToDatabase
 
-processEnsembleRequest db s c e (GetView v) = do
-  postLog db $ "GetView " ++ v ++ " in ensemble " ++ e
-  getView s e v >>= maybe (return ()) (\v' -> respond s c (EnsembleResponse (Sited e (View (Sited v v')))))
+processEnsembleRequest (SetTempo t) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring SetTempo from client not authenticated in ensemble"
+  eName <- getEnsembleName
+  postLog $ "TempoChange in " ++ eName
+  now <- liftIO $ getCurrentTime
+  let t' = Tempo {
+    cps = cps t,
+    at = addUTCTime (-0.075) now, -- TODO: should use Cristian's algorithm, but for now assume set 75 msec ago
+    beat = beat t
+  }
+  modify' $ tempoChangeInEnsemble eName t'
+  respondEnsembleNoOrigin $ EnsembleResponse $ NewTempo t' now
+  saveEnsembleToDatabase
 
-processEnsembleRequest db s c e (PublishView (Sited key value)) = onlyIfAuthenticatedInEnsemble s c $ do
-  postLog db $ "PublishView in (" ++ e ++ "," ++ key ++ "): " ++ (show value)
-  updateServer s $ setView e key value
-  saveEnsembleToDatabase s e db
-
-processEnsembleRequest db s c e (PublishDefaultView v) = onlyIfAuthenticatedInEnsemble s c $ do
-  postLog db $ "PublishDefaultView in " ++ e
-  updateServer s $ setDefaultView e v
-  saveEnsembleToDatabase s e db
-
-processEnsembleRequest db s c e (DeleteView x) = do
-  postLog db $ "DeleteView " ++ x ++ " in ensemble " ++ e
-  updateServer s $ deleteView e x
-  saveEnsembleToDatabase s e db
-
-processEnsembleRequest db s c e x@(SetTempo t) = onlyIfAuthenticatedInEnsemble s c $ do
-  updateServer s $ tempoChangeInEnsemble e t
-  newTempo <- getTempoInEnsemble s e -- *** this one too
-  if isJust newTempo then do
-    let newTempo' = fromJust newTempo
-    respondAll s $ EnsembleResponse $ Sited e $ NewTempo newTempo'
-    postLog db $ "TempoChange in " ++ e
-    saveEnsembleToDatabase s e db
-  else postLog db $ "attempt to TempoChange in non-existent ensemble " ++ e
-
-processEnsembleRequest db _ _ _ _ = postLog db $ "warning: action failed pattern matching"
-
-
-send :: Response -> [Client] -> IO ()
-send x cs = forM_ cs $ \y -> do
-  (WS.sendTextData (connection y) $ (T.pack . encodeStrict) x)
-  `catch` \(SomeException e) -> putStrLn $ "send exception: " ++ (show e)
-
-respond :: MVar Server -> ClientHandle -> Response -> IO ()
-respond s c x = withMVar s $ (send x) . (:[]) . (Map.! c)  . clients
-
--- respond' is for use when one already has a lock on the server MVar'
-respond' :: Server -> ClientHandle -> Response -> IO ()
-respond' s c x = send x $ (:[]) $ (Map.! c) $ clients s
-
-respondAll :: MVar Server -> Response -> IO ()
-respondAll s x = withMVar s $ (send x) . Map.elems . clients
-
-respondAllNoOrigin :: MVar Server -> ClientHandle -> Response -> IO ()
-respondAllNoOrigin s c x = withMVar s $ (send x) . Map.elems . Map.delete c . clients
-
-respondEnsemble :: MVar Server -> String -> Response -> IO ()
-respondEnsemble s e x = withMVar s $ (send x) . Map.elems . ensembleFilter e . clients
-
-respondEnsembleNoOrigin :: MVar Server -> ClientHandle -> String -> Response -> IO ()
-respondEnsembleNoOrigin s c e x = withMVar s $ (send x) . Map.elems . Map.delete c . ensembleFilter e . clients
-
-ensembleFilter :: String -> Map.Map ClientHandle Client -> Map.Map ClientHandle Client
-ensembleFilter e = Map.filter $ (==(Just e)) . ensemble
-
-saveNewEnsembleToDatabase :: MVar Server -> String -> SQLite.Connection -> IO ()
-saveNewEnsembleToDatabase s name db = do
-  s' <- readMVar s
-  f $ Data.Map.lookup name (ensembles s')
-  where
-    f (Just e) = writeNewEnsemble db name e
-    f Nothing = postLog db $ "saveNewEnsembleToDatabase lookup failure for ensemble " ++ name
-
-saveEnsembleToDatabase :: MVar Server -> String -> SQLite.Connection -> IO ()
-saveEnsembleToDatabase s name db = do
-  s' <- readMVar s
-  f $ Data.Map.lookup name (ensembles s')
-  where
-    f (Just e) = writeEnsemble db name e
-    f Nothing = postLog db $ "saveEnsembleToDatabase lookup failure for ensemble " ++ name
+processEnsembleRequest GetEnsembleClientCount = do
+  eName <- getEnsembleName
+  x <- gets (Map.size . Map.filter (\c -> ensemble c == Just eName) . clients)
+  respond $ EnsembleResponse $ EnsembleClientCount x

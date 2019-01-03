@@ -4,6 +4,7 @@ module Estuary.Help.LanguageHelp where
 
 import Reflex
 import Reflex.Dom
+import Data.Text
 import GHCJS.DOM.EventM -- just used for our test, maybe delete-able later
 import Estuary.Help.MiniTidal
 import Estuary.Help.LaCalle

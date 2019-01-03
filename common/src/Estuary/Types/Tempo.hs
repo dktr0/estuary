@@ -10,24 +10,18 @@ data Tempo = Tempo {
   cps :: Double,
   at :: UTCTime,
   beat :: Double
-  } deriving (Eq,Data,Typeable)
+  } deriving (Eq,Data,Typeable,Show)
 
 instance JSON Tempo where
   showJSON = toJSON
   readJSON = fromJSON
 
-instance Show Tempo where
-  show _ = "a tempo"
+elapsedCycles :: Tempo -> UTCTime -> Double
+elapsedCycles t now = elapsedT * cps t + beat t
+  where elapsedT = realToFrac $ diffUTCTime now (at t)
 
-adjustCps :: Tempo -> UTCTime -> Double -> Tempo
-adjustCps prevTempo now newCps = Tempo {
-  cps = newCps,
-  at = now,
-  beat = elapsedTime * cps prevTempo + beat prevTempo
-  }
-  where elapsedTime = realToFrac $ diffUTCTime now (at prevTempo)
+adjustCps :: Double -> Tempo -> UTCTime -> Tempo
+adjustCps newCps prevTempo now = Tempo { cps = newCps, at = now, beat = elapsedCycles prevTempo now }
 
-adjustCpsNow :: Tempo -> Double -> IO Tempo
-adjustCpsNow prevTempo newCps = do
-  now <- getCurrentTime
-  return $ adjustCps prevTempo now newCps
+adjustCpsNow :: Double -> Tempo -> IO Tempo
+adjustCpsNow newCps prevTempo = getCurrentTime >>= return . adjustCps newCps prevTempo

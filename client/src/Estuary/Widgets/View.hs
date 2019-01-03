@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings, TypeFamilies #-}
 
 module Estuary.Widgets.View where
 
@@ -9,6 +9,7 @@ import Reflex.Dom
 import Text.Read
 import Data.Time.Clock
 import Data.Map as M (fromList)
+import qualified Data.Text as T
 
 import Estuary.Types.Response
 import Estuary.Types.Definition
@@ -19,7 +20,6 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.EnsembleState
 import Estuary.Types.Hint
-import Estuary.Types.EditOrEval
 import Estuary.Types.Terminal
 import Estuary.Tidal.Types
 import Estuary.Utility
@@ -49,14 +49,14 @@ viewWidget ctx renderInfo (Views xs) initialDefs deltasDown = foldM f i xs
       let newHints = leftmost [prevHints,hints]
       return (newZoneMap,newEdits,newHints)
 
-viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass c $ viewWidget ctx renderInfo v i deltasDown
+viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass (T.pack c) $ viewWidget ctx renderInfo v i deltasDown
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
   (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
   value' <- mapDyn (Map.singleton n . Structure) value
-  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  let edits' = fmap (ZoneRequest n . Structure) edits
   return (value',edits',hints)
   where f (Structure x) = x
         f _ = EmptyTransformedPattern
@@ -67,7 +67,7 @@ viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
   e <- mapDyn (Map.lookup n . errors) renderInfo
   (value,edits,hints) <- textNotationWidget ctx e rows i' deltasDown'
   value' <- mapDyn (Map.singleton n . TextProgram) value
-  let edits' = fmap (ZoneRequest . Sited n . Edit . TextProgram) edits
+  let edits' = fmap (ZoneRequest n . TextProgram) edits
   return (value',edits',hints)
   where f (TextProgram x) = x
         f _ = Live (TidalTextNotation MiniTidal,"") L3
@@ -82,7 +82,7 @@ viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
   edits <- liftM switchPromptlyDyn $ mapDyn (\(_,a,_)-> a) v
   hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)-> a) v
   value' <- mapDyn (Map.singleton n . Sequence) value
-  let edits' = fmap (ZoneRequest . Sited n . Edit . Sequence) edits
+  let edits' = fmap (ZoneRequest n . Sequence) edits
   return (value',edits',hints)
   where f (Sequence x) = x
         f _ = defaultValue
@@ -92,24 +92,15 @@ viewWidget _ _ (LabelView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (LabelText "") n i
   let deltasDown' = fmap (justLabelTexts . justEditsInZone n) deltasDown
   edits <- labelWidget i' deltasDown'
-  let edits' = fmap (ZoneRequest . Sited n) edits
+  let edits' = fmap (ZoneRequest n) edits
   return (constDyn Map.empty,edits',never)
   where f (LabelText x) = x
-        f _ = ""
-
-viewWidget _ _ (EvaluableTextView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (EvaluableText "") n i
-  let deltasDown' = fmap (justEvaluableTexts . justEditsInZone n) deltasDown
-  editsOrEvals <- evaluableTextWidget i' deltasDown'
-  let editsOrEvals' = fmap (ZoneRequest . Sited n) editsOrEvals
-  return (constDyn Map.empty,editsOrEvals',never)
-  where f (EvaluableText x) = x
         f _ = ""
 
 viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
 viewWidget ctx _ (CanvasDisplayView z) _ _ = do
-  mv <- fmap canvasOpsQueue $ sample $ current ctx
+  mv <- fmap canvasState $ sample $ current ctx
   canvasDisplay z mv
   return (constDyn Map.empty, never, never)
 
@@ -118,7 +109,7 @@ viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
   (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
   value' <- mapDyn (Map.singleton n . Structure) value
-  let edits' = fmap (ZoneRequest . Sited n . Edit . Structure) edits
+  let edits' = fmap (ZoneRequest n . Structure) edits
   return (value',edits',hints)
   where f (Structure x) = x
         f _ = EmptyTransformedPattern

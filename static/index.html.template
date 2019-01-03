@@ -29,8 +29,6 @@ function downloadJS() {
 }
 
 function start(){
-  ___globalWebDirt = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',null, function() {console.log('callback from WebDirt constructor completed');})
-  ___globalWebDirt.initializeWebAudio();
   downloadJS();
 }
   </script>
@@ -62,7 +60,7 @@ function start(){
   <script type="text/javascript">
     var EstuaryIcon = (function() {
       var container = document.querySelector('#estuary-splash');
-      
+
       var icons = new EstuaryIcons(800, 800, {
         linesPerSec: 15,
         secUntilFullRadius: 10

@@ -25,8 +25,13 @@ EXTERNS=--externs=static/SuperDirt.js --externs=static/EstuaryProtocol.js --exte
 CLOSURE_COMPILER="java -jar closure-compiler.jar"
 
 prodBuildClient: setupClient
-	$(STACK_PRODUCTION_CLIENT) build --ghc-options="-DGHCJS_BROWSER -O2" estuary:exe:Estuary
-	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=ADVANCED_OPTIMIZATIONS --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
+	$(STACK_PRODUCTION_CLIENT) build --ghc-options="-DGHCJS_BROWSER -O2 -dedupe" estuary:exe:Estuary
+	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=SIMPLE --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
+	gzip -fk "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js"
+
+prodBuildClientForceDirty: setupClient
+	$(STACK_PRODUCTION_CLIENT) build --force-dirty --ghc-options="-DGHCJS_BROWSER -O2 -dedupe" estuary:exe:Estuary
+	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=SIMPLE --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
 	gzip -fk "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js"
 
 buildClientForceDirty:
@@ -59,7 +64,7 @@ prodInstallClient: # make prodBuildClient first!
 	rm -rf Estuary.jsexe/index.html.template
 
 installInteractionTestClient:
-	$(STACK_CLIENT) build estuary:exe:interaction-test
+	$(STACK_CLIENT) build estuary:exe:interaction-test --flag estuary:build-test-executables
 	$(CP_RECURSIVE) $$($(STACK_CLIENT) path --local-install-root)/bin/interaction-test.jsexe/* Estuary.jsexe
 	$(CP_RECURSIVE) static/* Estuary.jsexe
 	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -o ../Estuary.jsexe/index.html
@@ -81,7 +86,7 @@ releaseClient: # make installClient or prodInstallClient first!
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181211/estuary-client-20181211.zip
+	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20181230/estuary-client-20181230.zip
 	unzip temp.zip
 	rm -rf temp.zip
 	cp -Rf static/Dirt Estuary.jsexe

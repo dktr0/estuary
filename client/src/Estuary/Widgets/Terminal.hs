@@ -2,8 +2,8 @@
 
 module Estuary.Widgets.Terminal (terminalWidget) where
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import qualified Data.ByteString.Char8 as C
 import Control.Monad.IO.Class (liftIO)
@@ -11,6 +11,7 @@ import Data.Time
 import Data.Either
 import Data.Maybe
 import Data.Map (fromList)
+import qualified Data.Text as T
 
 import Estuary.Protocol.Foreign
 import Estuary.Types.Definition
@@ -40,7 +41,7 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
     return (sendButton',inputWidget')
   let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
   let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [sendButton,enterPressed]
-  let parsedInput = fmap Terminal.parseCommand terminalInput
+  let parsedInput = fmap (Terminal.parseCommand . T.unpack) terminalInput
   let commands = fmapMaybe (either (const Nothing) Just) parsedInput
   let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " ++) . show) (const Nothing)) parsedInput
 
@@ -48,12 +49,11 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
 
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
-  let spaceAndDeltasDown = attachDyn currentSpace deltasDown'
-  let justInSpace = fmap (\(x,y) -> justSited x $ y) spaceAndDeltasDown
-  let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) justInSpace
+  let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) deltasDown'
   let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
-  simpleList mostRecent $ \v -> divClass "chatMessage" $ dynText v
+  mostRecent' <- mapDyn (fmap T.pack) mostRecent
+  simpleList mostRecent' $ \v -> divClass "chatMessage" $ dynText v
 
   return commands
 

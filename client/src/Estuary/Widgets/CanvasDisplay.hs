@@ -1,101 +1,86 @@
-{-# LANGUAGE RecursiveDo, JavaScriptFFI #-}
+{-# LANGUAGE RecursiveDo, JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Widgets.CanvasDisplay (canvasDisplay) where
 
 import Reflex
 import Reflex.Dom
-import GHCJS.DOM.Types (HTMLCanvasElement,castToHTMLCanvasElement)
-import GHCJS.Types (JSVal)
+import GHCJS.DOM.Types (JSVal,HTMLCanvasElement(..),pToJSVal,uncheckedCastTo)
 import GHCJS.Foreign.Callback
-import Data.JSString
 import Data.Map
 import Data.List
+import Data.Text as T
 import Control.Monad
 import Control.Monad.Trans
 import Control.Concurrent.MVar
-import Data.Time.Clock
+import Data.Time
+import JavaScript.Web.AnimationFrame
+import JavaScript.Web.Canvas
+import GHCJS.Concurrent
 
 import Estuary.Types.Color
 import Estuary.Types.CanvasOp
+import Estuary.Types.CanvasState
 import Estuary.RenderInfo
 
-canvasDisplay :: MonadWidget t m => Int -> MVar [(UTCTime,CanvasOp)] -> m ()
+canvasDisplay :: MonadWidget t m => Int -> MVar CanvasState -> m ()
 canvasDisplay z mv = do
-  let attrs = fromList [("class","canvasDisplay"),("style","z-index:" ++ show z),("width","1920"),("height","1080")]
-  cvs <- liftM (castToHTMLCanvasElement .  _el_element . fst) $ elAttr' "canvas" attrs $ return ()
-  ctx <- liftIO $ getContext cvs
+  let attrs = fromList [("class","canvasDisplay"),("style",T.pack $ "z-index:" ++ show z),("width","1920"),("height","1080")]
+  cvs <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elAttr' "canvas" attrs $ return ()
+  ctx <- liftIO $ getContext (unsafeToCanvas $ pToJSVal cvs)
   liftIO $ requestAnimationFrame ctx mv
   -- *** note: also need to consider how to interrupt requestAnimationFrame when widget is destroyed
 
-requestAnimationFrame :: JSVal -> MVar [(UTCTime,CanvasOp)] -> IO ()
+requestAnimationFrame :: Context -> MVar CanvasState -> IO ()
 requestAnimationFrame ctx mv = do
-  cb <- syncCallback1 ContinueAsync $ redrawCanvas ctx mv
-  requestAnimationFrame_ cb
+  inAnimationFrame ThrowWouldBlock $ redrawCanvas ctx mv
+  return ()
 
-redrawCanvas :: JSVal -> MVar [(UTCTime,CanvasOp)] -> JSVal -> IO ()
-redrawCanvas ctx mv _ = do
-  modifyMVar_ mv $ flushCanvasOps ctx
+redrawCanvas :: Context -> MVar CanvasState -> Double -> IO ()
+redrawCanvas ctx mv _ = synchronously $ do
+  t1 <- getCurrentTime
+  cState <- takeMVar mv
+  let ops = queuedOps cState
+  let n1 = Prelude.length ops
+  ops' <- flushCanvasOps ctx ops
+  let n2 = Prelude.length ops'
+  putMVar mv $ cState { queuedOps = ops', previousDrawStart = t1 }
+  t3 <- getCurrentTime
+  let interFrameDelay = diffUTCTime t1 (previousDrawStart cState)
+  let drawDelay = diffUTCTime t3 t1
+  let opsDrawn = n1 - n2
+  -- putStrLn $ show drawDelay ++ "s for " ++ show opsDrawn ++ " ops"
+  -- putStrLn $ "interFrameDelay = " ++ show interFrameDelay ++ "; drawDelay = " ++ show drawDelay ++ " (" ++ show opsDrawn ++ " ops drawn)"
   requestAnimationFrame ctx mv
 
-flushCanvasOps :: JSVal -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]
+flushCanvasOps :: Context -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]
 flushCanvasOps ctx ops = do
   now <- getCurrentTime
   let (opsForNow,opsForLater) = Data.List.partition ((<= now) . fst) ops
   performCanvasOps ctx opsForNow
   return opsForLater
 
-performCanvasOps :: JSVal -> [(UTCTime,CanvasOp)] -> IO ()
+performCanvasOps :: Context -> [(UTCTime,CanvasOp)] -> IO ()
 performCanvasOps ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080 . snd) ops
 
-canvasOp :: JSVal -> CanvasOp -> IO ()
+canvasOp :: Context -> CanvasOp -> IO ()
 canvasOp ctx (Clear a) = do
-  fillStyle ctx (pack $ show $ RGBA 0 0 0 a)
-  strokeStyle ctx (pack $ show $ RGBA 0 0 0 a)
-  rect ctx 0 0 1920 1080
+  fillStyle 0 0 0 (a/100) ctx
+  strokeStyle 0 0 0 (a/100) ctx
+  rect 0 0 1920 1080 ctx
   stroke ctx
   fill ctx
-canvasOp ctx (Rect x y w h) = beginPath ctx >> rect ctx x y w h >> stroke ctx >> fill ctx
-canvasOp ctx (MoveTo x y) = moveTo ctx x y
-canvasOp ctx (LineTo x y) = beginPath ctx >> lineTo ctx x y >> stroke ctx >> fill ctx
-canvasOp ctx (StrokeStyle c) = strokeStyle ctx (pack $ show c)
-canvasOp ctx (FillStyle c) = fillStyle ctx (pack $ show c)
-
-foreign import javascript safe
-  "$r=$1.getContext('2d')"
-  getContext :: HTMLCanvasElement -> IO JSVal
-
-foreign import javascript safe
-  "$1.beginPath()"
-  beginPath :: JSVal -> IO ()
-
-foreign import javascript safe
-  "$1.stroke()"
-  stroke :: JSVal -> IO ()
-
-foreign import javascript safe
-  "$1.fill()"
-  fill :: JSVal -> IO ()
-
-foreign import javascript safe
-  "$1.strokeStyle = $2"
-  strokeStyle :: JSVal -> JSString -> IO ()
-
-foreign import javascript safe
-  "$1.fillStyle = $2"
-  fillStyle :: JSVal -> JSString -> IO ()
-
-foreign import javascript safe
-  "$1.rect($2,$3,$4,$5)"
-  rect :: JSVal -> Double -> Double -> Double -> Double -> IO ()
-
-foreign import javascript safe
-  "$1.moveTo($2,$3)"
-  moveTo :: JSVal -> Double -> Double -> IO ()
-
-foreign import javascript safe
-  "$1.lineTo($2,$3)"
-  lineTo :: JSVal -> Double -> Double -> IO ()
-
-foreign import javascript safe
-  "window.requestAnimationFrame($1)"
-  requestAnimationFrame_ :: Callback (JSVal -> IO()) -> IO ()
+canvasOp ctx (Rect x y w h) = beginPath ctx >> rect x y w h ctx >> stroke ctx >> fill ctx
+canvasOp ctx (Tri x0 y0 x1 y1 x2 y2) = do
+  beginPath ctx
+  moveTo x0 y0 ctx
+  lineTo x1 y1 ctx
+  lineTo x2 y2 ctx
+  lineTo x0 y0 ctx
+  stroke ctx
+  fill ctx
+canvasOp ctx (MoveTo x y) = moveTo x y ctx
+canvasOp ctx (LineTo x y) = beginPath ctx >> lineTo x y ctx >> stroke ctx >> fill ctx
+canvasOp ctx (StrokeStyle (RGBA r g b a)) = strokeStyle (f r) (f g) (f b) (a/100) ctx
+  where f x = round $ x*255/100
+canvasOp ctx (FillStyle (RGBA r g b a)) = fillStyle (f r) (f g) (f b) (a/100) ctx
+  where f x = round $ x*255/100

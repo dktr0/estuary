@@ -2,8 +2,8 @@
 
 module Estuary.Widgets.WebSocket where
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import qualified Data.ByteString.Char8 as C
 import Control.Monad.IO.Class (liftIO)
@@ -17,6 +17,7 @@ import Estuary.Types.Response
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
+import Estuary.Types.Context
 
 -- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
 -- for collaborative editing. While the password is dynamic, like the Reflex WebSocket the socket address
@@ -40,14 +41,31 @@ estuaryWebSocket addr pwd toSend = mdo
 -}
 
 alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Event t Request ->
-  m (Event t [Response],Dynamic t String)
-alternateWebSocket obj toSend = do
+  m (Event t [Response], Event t (Context->Context))
+alternateWebSocket obj toSend = mdo
   now <- liftIO $ getCurrentTime
-  performEvent_ $ fmap (liftIO . (send obj) . encode) toSend
-  ticks <- tickLossy (0.1::NominalDiffTime) now
+
+  performEvent_ $ fmap (liftIO . (send obj) . encode) $ leftmost [toSend,pingRequest]
+  ticks <- tickLossy (0.025::NominalDiffTime) now
   -- responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
   let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status
-  return (responses',status')
+  let wsStatusChanges = fmap (\w x -> x { wsStatus = w }) $ (updated . nubDyn) status'
+
+ -- issue Pings to track latency with server, but only when WebSocket connection is open
+  socketIsOpen <- mapDyn (=="connection open") status'
+  pingTick <- tickLossy (5::NominalDiffTime) now
+  pingTick' <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
+  let pingTick'' = gate (current socketIsOpen) pingTick'
+  let pingRequest = fmap Ping pingTick''
+
+  -- when Pongs are received
+  let pongs = fmapMaybe justPongs responses'
+  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pongs
+  let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
+
+  let contextChanges = mergeWith (.) [wsStatusChanges,latencyChanges]
+
+  return (responses',contextChanges)

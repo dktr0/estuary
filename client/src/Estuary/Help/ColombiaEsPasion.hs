@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Help.ColombiaEsPasion where
 
 import Reflex
 import Reflex.Dom
+import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 
@@ -24,7 +26,7 @@ about = do
   divClass "about" $ text "Colombia Es Pasion"
   divClass "aboutText" $ text "A mini live coding esolang developed in Bogotá, Colombia."
 
-exampleText :: String -> String
+exampleText :: Text -> Text
 
 exampleText "voz" = "voz"
 exampleText "pasión" = "pasión"
@@ -33,7 +35,7 @@ exampleText "educación" =  "pasión educación 2"
 exampleText "protesta" = "paz protesta 3"
 exampleText "soacha" = "voz soacha"
 
-referenceText :: String -> String
+referenceText :: Text -> Text
 
 referenceText "voz" = "returns Dirt's \"birds3\" sample"
 referenceText "pasión" = "returns Dirt's \"blip\" sample"
@@ -43,7 +45,7 @@ referenceText "protesta" = "returns TidalCycles' fast"
 referenceText "soacha" = "returns TidalCycles' brak"
 
 -- help files for samples
-functionRef :: MonadWidget t m => String -> m ()
+functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
    switchToReference <- divClass "refExampleButton" $ button x
    exampleVisible <- toggle True switchToReference

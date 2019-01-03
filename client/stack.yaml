@@ -1,12 +1,13 @@
-resolver: lts-6.30
-compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
+resolver: lts-9.21
+compiler: ghcjs-0.2.1.9009021_ghc-8.0.2
 compiler-check: match-exact
+
 setup-info:
   ghcjs:
     source:
-      ghcjs-0.2.0.9006030_ghc-7.10.3:
-        url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
-        sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
+      ghcjs-0.2.1.9009021_ghc-8.0.2:
+           url: https://github.com/matchwood/ghcjs-stack-dist/raw/master/ghcjs-0.2.1.9009021.tar.gz
+           sha1: b1740c3c99e5039ac306702894cd6e58283f4d31
 
 allow-newer: true
 
@@ -15,25 +16,46 @@ packages:
 - '../common'
 
 - location:
+    git: https://github.com/reflex-frp/reflex.git
+    commit: 2c089a255184ac1ae8250be44dcb44fddad7ddd5
+  extra-dep: true
+
+- location:
+    git: https://github.com/reflex-frp/reflex-dom.git
+    commit: 8bde2d72193369c92a995820ca1f56690d3c8ec3
+  subdirs:
+  - reflex-dom-core
+  - reflex-dom
+  extra-dep: true
+
+- location:
+    git: https://github.com/reflex-frp/reflex-dom-contrib
+    commit: 3efa8e4fa35161ea967252106ef7177a8360485b
+  extra-dep: true
+
+- location:
     git: https://github.com/d0kt0r0/Tidal.git
     commit: 633c7f882d3009a50af61076179fa17eb8c0d55b
   extra-dep: true
 
 - location:
     git: https://github.com/d0kt0r0/MusicW.git
-    commit: f300f8da234e3a6958a3477b56728a2fcb885d73
+    commit: 8cabe5b444cab078627df11ade916abf382b49b3
   extra-dep: true
 
 - location:
     git: https://github.com/d0kt0r0/Punctual.git
-    commit: b15af7354592b201e29fd90f9770f329cf306b70
+    commit: bc57a77037663326047d2e580bbb980f93da2b79
   extra-dep: true
 
 extra-deps:
-- ghcjs-dom-0.2.3.1
-- reflex-dom-0.3
-- reflex-0.4.0
-- ref-tf-0.4
-- hosc-0.16
-- parsec-numbers-0.1.0
-- reflex-dom-contrib-0.4.1
+  - prim-uniq-0.1.0.1
+  - ref-tf-0.4.0.1
+  - ghcjs-dom-0.9.2.0
+  - ghcjs-dom-jsffi-0.9.2.0
+  - dependent-sum-template-0.0.0.6
+  - jsaddle-0.9.5.0
+  - zenc-0.1.1
+  - monoidal-containers-0.4.0.0
+  - hosc-0.16
+  - parsec-numbers-0.1.0

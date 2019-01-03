@@ -27,19 +27,21 @@ data RenderState = RenderState {
   canvasOps :: [(UTCTime,CanvasOp)]
   }
 
-initialRenderState :: UTCTime -> RenderState
-initialRenderState t = RenderState {
-  logicalTime = t,
-  cachedDefs = empty,
-  paramPatterns = empty,
-  dirtEvents = [],
-  punctuals = empty,
-  punctualVideo = empty,
-  superContinentProgram = [],
-  superContinentState = SuperContinent.emptyState,
-  renderStartTime = t,
-  renderEndTime = t,
-  renderTimes = [],
-  info = emptyRenderInfo,
-  canvasOps = []
+initialRenderState :: UTCTime -> IO RenderState
+initialRenderState t = do
+  scs <- SuperContinent.emptyState
+  return $ RenderState {
+    logicalTime = t,
+    cachedDefs = empty,
+    paramPatterns = empty,
+    dirtEvents = [],
+    punctuals = empty,
+    punctualVideo = empty,
+    superContinentProgram = [],
+    superContinentState = scs,
+    renderStartTime = t,
+    renderEndTime = t,
+    renderTimes = [],
+    info = emptyRenderInfo,
+    canvasOps = []
   }

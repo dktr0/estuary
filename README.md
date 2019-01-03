@@ -172,4 +172,4 @@ Now back in the Debian terminal you should be able to find the cloned repository
 cd /mnt/c/ ...<path to cloned repo>
 ```
 
-Follow the rest of the instructions under Linux detailed above after ```git clone https://gitub.com/d0kt0r0/Estuary.git``` in the Debian terminal.
+Follow the instructions under Linux detailed above after ```git clone https://gitub.com/d0kt0r0/Estuary.git``` in the Debian terminal to build the Estuary Client. Once you get to building the server (ie. the step ```make setupServer```) switch back to a Windows terminal - the server does not depend on Reflex/Reflex DOM. You may have issues creating ensembles if running the server from the WSL.

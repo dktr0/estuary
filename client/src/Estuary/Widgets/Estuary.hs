@@ -1,11 +1,11 @@
-{-# LANGUAGE RecursiveDo, JavaScriptFFI #-}
+{-# LANGUAGE RecursiveDo, JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Widgets.Estuary where
 
 import Control.Monad (liftM)
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import Data.Time
 import Data.Map
@@ -15,6 +15,7 @@ import Control.Concurrent.MVar
 import GHCJS.Types
 import GHCJS.Marshal.Pure
 import Data.Functor (void)
+import qualified Data.Text as T
 
 import Estuary.Tidal.Types
 import Estuary.Protocol.Foreign
@@ -31,7 +32,6 @@ import Estuary.Types.Context
 import Estuary.Types.Hint
 import Estuary.Types.Samples
 import Estuary.Types.Tempo
-import Estuary.Widgets.LevelMeters
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
@@ -62,13 +62,13 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
 
   commands <- footer ctx renderInfo deltasUp deltasDown' hints
 
-  (deltasDown,wsStatus) <- alternateWebSocket protocol deltasUp
+  (deltasDown,wsCtxChanges) <- alternateWebSocket protocol deltasUp
+
   let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
   let deltasDown' = ffilter (not . Prelude.null) deltasDown
-  let wsChange = fmap (\w x -> x { wsStatus = w }) $ (updated . nubDyn) wsStatus
   let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsChange]
+  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
   t <- mapDyn theme ctx -- Dynamic t String
@@ -117,35 +117,36 @@ clientConfigurationWidgets ctx = divClass "webDirt" $ do
     styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) def -- Event t String
     let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
     translateDyn Term.Language ctx >>= dynText
-    let langMap = constDyn $ fromList $ zip languages (fmap show languages)
-    langChange <- divClass "languageSelector" $ do _dropdown_change <$> (dropdown English langMap def)
+    let langMap = constDyn $ fromList $ zip languages (fmap (T.pack . show) languages)
+    langChange <- divClass "languageSelector" $ _dropdown_change <$> (dropdown English langMap def)
     let langChange' = fmap (\x c -> c { language = x }) langChange
+    text "Canvas:"
+    canvasInput <- divClass "superDirtCheckbox" $ checkbox True $ def
+    let cvsOn = fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
     text "SuperDirt:"
     sdInput <- divClass "superDirtCheckbox" $ checkbox False $ def
     let sdOn = fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
     text "WebDirt:"
     wdInput <-divClass "webDirtCheckbox" $ checkbox True $ def
     let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
-    return $ mergeWith (.) [langChange',sdOn,wdOn, styleChange']
+    return $ mergeWith (.) [langChange',cvsOn,sdOn,wdOn, styleChange']
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak" $ do
     text "server "
-    wsStatus' <- mapDyn wsStatus ctx
-    clientCount' <- mapDyn clientCount ctx
-    dynText =<< combineDyn f wsStatus' clientCount'
+    dynText =<< mapDyn (T.pack . f) ctx
     text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
-    dynText =<< mapDyn (show . avgRenderLoad) renderInfo
+    dynText =<< mapDyn (T.pack . show . avgRenderLoad) renderInfo
     text "% ("
-    dynText =<< mapDyn (show . peakRenderLoad) renderInfo
+    dynText =<< mapDyn (T.pack . show . peakRenderLoad) renderInfo
     text "% "
     dynText =<< translateDyn Term.Peak ctx
     text ") "
   terminalWidget ctx deltasDown deltasUp hints
   where
-    f "connection open" c = "(" ++ (show c) ++ " connections)"
-    f x _ = "(" ++ x ++ ")"
+    f c | wsStatus c == "connection open" = "(" ++ show (clientCount c) ++ " connections, latency " ++ show (serverLatency c) ++ ")"
+    f c | otherwise = "(" ++ wsStatus c ++ ")"

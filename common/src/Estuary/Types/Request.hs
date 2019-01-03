@@ -4,6 +4,7 @@ module Estuary.Types.Request where
 
 import Text.JSON
 import Text.JSON.Generic
+import Data.Time.Clock
 
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
@@ -15,8 +16,9 @@ data Request =
   JoinEnsemble String |
   LeaveEnsemble |
   CreateEnsemble String String | -- ensembleName ensemblePassword (or "" for no password)
-  EnsembleRequest (Sited String EnsembleRequest) |
-  GetServerClientCount
+  EnsembleRequest EnsembleRequest |
+  GetServerClientCount |
+  Ping UTCTime
   deriving (Eq,Data,Typeable)
 
 instance JSON Request where

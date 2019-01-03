@@ -1,16 +1,18 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.Ensemble (
   ensembleView,
   soloView
 ) where
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response)
 import Data.Time.Clock
 import Control.Monad
 import Control.Monad.Trans
 import qualified Data.IntMap.Strict as Map
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Types.Context
 import Estuary.Types.Terminal
@@ -27,6 +29,7 @@ import Estuary.Types.Request
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Sited
 import Estuary.Types.View
+import Estuary.Render.AudioContext
 
 extractInitialDefs :: (MonadWidget t m) => String -> Dynamic t Context -> m (DefinitionMap)
 extractInitialDefs ensemble dynCtx = do
@@ -45,21 +48,17 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   -- *** is it dangerous to have initialView exist separate from initialState (below)?
 
   -- management of EnsembleState
-  now <- liftIO getCurrentTime
-  let initialState = (newEnsembleState ensemble now) {
-    defaultView = initialView
-    }
+  let initialState = (newEnsembleState ensemble) { defaultView = initialView }
   let commandChanges = fmap commandsToStateChanges commands
-  let ensembleResponses = fmap (justSited ensemble . justEnsembleResponses) deltasDown
+  let ensembleResponses = fmap justEnsembleResponses deltasDown
   let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
-  let handleChanges = fmap (\x es -> es { userHandle = x}) hdl
+  let handleChanges = fmap (\x es -> es { userHandle = T.unpack x}) hdl
   let requestChanges = fmap requestsToStateChanges edits
-  let tempoChanges = fmap setEnsembleTempo tempoSetEvents
-  ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges,tempoChanges]
+  ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
 
   -- Ensemble name and password UI (created only if ensemble is not "")
   (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader" $ do
-    divClass "ensembleName" $ text $ "Ensemble: " ++ ensemble
+    divClass "ensembleName" $ text $ "Ensemble: " `T.append` T.pack ensemble
     hdl' <- divClass "ensembleHandle" $ do
       text "Name:"
       let attrs = constDyn ("class" =: "ensembleHandle")
@@ -69,15 +68,13 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
       text "password:"
       let attrs = constDyn ("class" =: "ensemblePassword")
       pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-      return $ fmap AuthenticateInEnsemble $ _textInput_input pwdInput
+      return $ fmap AuthenticateInEnsemble $ fmap T.unpack $ _textInput_input pwdInput
     return (hdl',pwdRequest')
 
   -- management of tempo including tempoWidget
-  let initialTempo = Estuary.Types.EnsembleState.tempo initialState
-  tempoDeltas <- liftM (updated . nubDyn) $ mapDyn Estuary.Types.EnsembleState.tempo ensembleState
-  let tempoHints = fmap TempoHint tempoDeltas
-  tempoSetEvents <- tempoWidget ctx initialTempo tempoDeltas
-  let tempoRequest = fmap SetTempo tempoSetEvents
+  (tempoChanges,tempoEdits) <- tempoWidget ctx ensembleResponses
+  let tempoHints = fmap TempoHint tempoChanges
+  let tempoRequest = fmap SetTempo tempoEdits
 
   -- dynamic View UI
   initialDefs <- extractInitialDefs ensemble ctx
@@ -104,10 +101,10 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   requests <- if ensemble == soloEnsembleName then return never else do
     joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
     let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands
-    let ensembleRequests = fmap (EnsembleRequest . Sited ensemble) $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
+    let ensembleRequests = fmap EnsembleRequest $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
     return $ leftmost [joinRequest,ensembleRequests]
 
-  return (defMap,requests,hints,tempoDeltas)
+  return (defMap,requests,hints,tempoChanges)
 
 
 -- | A solo view is just an ensemble view that doesn't send or respond to

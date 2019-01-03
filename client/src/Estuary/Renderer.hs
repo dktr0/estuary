@@ -23,6 +23,7 @@ import qualified Estuary.Languages.SuperContinent as SuperContinent
 import qualified Estuary.Languages.SvgOp as SvgOp
 import qualified Estuary.Languages.CanvasOp as CanvasOp
 import qualified Estuary.Types.CanvasOp as CanvasOp
+import Estuary.Types.CanvasState
 import Estuary.Types.Color
 
 import Estuary.Types.Context
@@ -36,11 +37,12 @@ import Estuary.WebDirt.SampleEngine
 import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Types.Tempo
+import Estuary.Render.AudioContext
 
 type Renderer = StateT RenderState IO ()
 
 renderPeriod :: NominalDiffTime
-renderPeriod = 0.2
+renderPeriod = 0.032
 
 flushEvents :: Context -> Renderer
 flushEvents c = do
@@ -49,9 +51,10 @@ flushEvents c = do
   liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
   -- flush CanvasOps to an MVar queue (list)
-  oldOps <- liftIO $ takeMVar $ canvasOpsQueue c
-  newOps <- gets canvasOps
-  liftIO $ putMVar (canvasOpsQueue c) (oldOps ++ newOps)
+  when (canvasOn c) $ do
+    oldCvsState <- liftIO $ takeMVar $ canvasState c
+    newOps <- gets canvasOps
+    liftIO $ putMVar (canvasState c) $ pushCanvasOps newOps oldCvsState
   modify' $ \x -> x { dirtEvents = [], canvasOps = []}
   return ()
 
@@ -127,12 +130,13 @@ renderTextProgramChanged c z (SuperContinent,x) = do
 
 renderTextProgramChanged c z (PunctualAudio,x) = do
   s <- get
+  let ac = audioContext c
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
-    t <- liftIO $ getCurrentTime
+    t <- liftIO $ getAudioTime (audioContext c)
     let eval = (exprs,t)
-    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW t) z (punctuals s)
+    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac (masterBusNode c) t) z (punctuals s)
     newPunctualW <- liftIO $ Punctual.updatePunctualW prevPunctualW eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
@@ -143,7 +147,7 @@ renderTextProgramChanged c z (PunctualVideo,x) = do
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
-    t <- liftIO $ getCurrentTime
+    t <- liftIO $ getAudioTime (audioContext c)
     let eval = (exprs,t)
     let prevPunctualVideo = findWithDefault (Punctual.emptyPunctualState t) z (punctualVideo s)
     let newPunctualVideo = Punctual.updatePunctualState prevPunctualVideo eval
@@ -174,18 +178,19 @@ renderTextProgramAlways c z (PunctualVideo,_) = renderPunctualVideo c z
 renderTextProgramAlways _ _ _ = return ()
 
 renderSuperContinent :: Context -> Int -> Renderer
-renderSuperContinent c z = do
+renderSuperContinent c z = when (canvasOn c) $ do
   s <- get
+  let cycleTime = elapsedCycles (tempo c) (logicalTime s)
   let audio = 0.5 -- placeholder
   let program = superContinentProgram s
   let scState = superContinentState s
-  scState' <- liftIO $ SuperContinent.runProgram audio program scState
-  let newOps = Just $ SuperContinent.stateToSvgOps scState'
-  liftIO $ putStrLn $ show newOps
-  modify' $ \x -> x { superContinentState = scState', info = (info s) { svgOps = newOps } }
+  scState' <- liftIO $ SuperContinent.runProgram (cycleTime,audio) program scState
+  let newOps = SuperContinent.stateToCanvasOps scState'
+  let newOps' = fmap (\o -> (addUTCTime 0.2 (logicalTime s),o)) newOps
+  modify' $ \x -> x { superContinentState = scState', canvasOps = canvasOps s ++ newOps' }
 
 renderPunctualVideo :: Context -> Int -> Renderer
-renderPunctualVideo c z = do
+renderPunctualVideo c z = when (canvasOn c) $ do
   s <- get
   let pv = IntMap.lookup z $ punctualVideo s
   let lt = logicalTime s
@@ -196,7 +201,7 @@ renderPunctualVideo c z = do
 punctualVideoToOps :: UTCTime -> NominalDiffTime -> Punctual.PunctualState -> [(UTCTime,CanvasOp.CanvasOp)]
 punctualVideoToOps lt p s = concat $ zipWith4 (\c d e f -> [c,d,e,f]) clears strokes fills rects
   where
-    n = 30 :: Int -- how many sampling/drawing operations per renderPeriod
+    n = 5 :: Int -- how many sampling/drawing operations per renderPeriod
     ts = fmap (flip addUTCTime $ lt) $ fmap ((*(renderPeriod/(fromIntegral n :: NominalDiffTime))) . fromIntegral) [0 .. n]
     clear = fmap biPolarToPercent $! sampleWithDefault "clear" (-1) s ts
     r = fmap biPolarToPercent $! sampleWithDefault "r" 1 s ts
@@ -223,7 +228,7 @@ biPolarToPercent :: Double -> Double
 biPolarToPercent x = (x + 1) * 50
 
 renderControlPattern :: Context -> Int -> Renderer
-renderControlPattern c z = do
+renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s
@@ -234,33 +239,38 @@ renderControlPattern c z = do
 
 runRender :: MVar Context -> MVar RenderInfo -> Renderer
 runRender c ri = do
+  c' <- liftIO $ readMVar c
   t1 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderStartTime = t1 }
-  c' <- liftIO $ readMVar c
   render c'
   t2 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderEndTime = t2 }
   calculateRenderTimes
   ri' <- gets info -- RenderInfo from the state maintained by this iteration...
   liftIO $ swapMVar ri ri' -- ...is copied to an MVar so it can be read elsewhere.
-  sleepUntilNextRender
+  scheduleNextRender c'
 
-sleepUntilNextRender :: Renderer
-sleepUntilNextRender = do
+scheduleNextRender :: Context -> Renderer
+scheduleNextRender c = do
   s <- get
   let next = addUTCTime renderPeriod (logicalTime s)
-  let diff = diffUTCTime next (renderEndTime s)
-  next' <- liftIO $ if diff > 0 then return next else do
-    putStrLn "*** logical time too far behind clock time - fast forwarding"
-    return $ addUTCTime (diff * (-1) + 0.01) next -- fast forward so next logical time is 10 milliseconds after clock time
-  let diff' = diffUTCTime next' (renderEndTime s)
-  next'' <- liftIO $ if diff' < (renderPeriod*2) then return next' else do -- not allowed to get more than 1 render period ahead
-    putStrLn "*** logical time too far ahead of clock time - rewinding"
-    return $ addUTCTime renderPeriod $ renderEndTime s
-  let diff'' = diffUTCTime next'' (renderEndTime s)
-  let delay = floor $ realToFrac diff'' * 1000000 - 10000 -- ie. wakeup ~ 10 milliseconds before next logical time
-  liftIO $ threadDelay delay
-  put $ s { logicalTime = next'' }
+  tNow <- liftIO $ getAudioTime (audioContext c)
+  let diff = diffUTCTime next tNow
+  -- if next logical time is more than 0.2 seconds in the past or future
+  -- fast-forward or rewind by half of the difference
+  let adjustment = if diff >= (-0.2) && diff <= 0.2 then 0 else (diff*(-0.5))
+  when (diff < (-0.2)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
+  when (diff > 0.2) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
+  let diff' = diff + adjustment
+  let next' = addUTCTime diff' tNow
+  -- if the (potentially adjusted) next logical time is more than a half period from now
+  -- sleep (threadDelay) so that next logical time is approximately a half period from then
+  let halfPeriod = renderPeriod / 2
+  when (diff' > halfPeriod) $ do
+    let wakeTime = addUTCTime (0-halfPeriod) next'
+    let delay = diffUTCTime wakeTime tNow
+    liftIO $ threadDelay $ floor $ realToFrac $ delay * 1000000
+  put $ s { logicalTime = next' }
 
 calculateRenderTimes :: Renderer
 calculateRenderTimes = do
@@ -278,5 +288,6 @@ calculateRenderTimes = do
 
 forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThread c ri = do
-  renderStart <- getCurrentTime
-  void $ forkIO $ iterateM_ (execStateT $ runRender c ri) (initialRenderState renderStart)
+  renderStart <- readMVar c >>= getAudioTime . audioContext
+  irs <- initialRenderState renderStart
+  void $ forkIO $ iterateM_ (execStateT $ runRender c ri) irs

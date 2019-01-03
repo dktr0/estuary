@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Widgets.EstuaryWidget where
 
 import Reflex
@@ -99,36 +100,61 @@ embed' f w = EstuaryWidget $ \ctx ri deltaC -> do
   i <- (sample . current) deltaC
   return ((b,editsA),constDyn i,hints)
 
--- | We provide two "Applicative-esque" operators that are particularly useful for combining
--- edits from sub-widgets in the edit values produced a widget. <$$> and <**> are very much like
--- <$> and <*> except specialized to EstuaryWidget computations containing Dynamics.
+
+-- | We provide four operators that are particularly useful for combining edits
+-- from sub-widgets in the edit values produced a widget. <$$>, <$$$>, <**>, and
+-- <***> are very much like <$> and <*> except specialized to EstuaryWidget
+-- computations containing Dynamics. The versions with two symbols (<$$> and <**>)
+-- take Dynamic values not wrapped in a monadic type, which makes them convenient
+-- for use with values that have been bound in a do expression. The versions with
+-- three symbols (<$$$> and <***>) take Dynamic values wrapped in an EstuaryWidget
+-- structure, which makes them convenient for use in a more "Applicative" style.
+-- Examples of both patterns are provided further below.
 
 (<**>) :: MonadWidget t m
   => EstuaryWidget t m z (Dynamic t (a -> b))
-  -> EstuaryWidget t m z (Dynamic t a)
+  -> Dynamic t a
   -> EstuaryWidget t m z (Dynamic t b)
 f <**> a = do
+  f' <- f
+  reflex $ combineDyn ($) f' a
+
+(<***>) :: MonadWidget t m
+  => EstuaryWidget t m z (Dynamic t (a -> b))
+  -> EstuaryWidget t m z (Dynamic t a)
+  -> EstuaryWidget t m z (Dynamic t b)
+f <***> a = do
   f' <- f
   a' <- a
   reflex $ combineDyn ($) f' a'
 
 (<$$>) :: MonadWidget t m
   => (a -> b)
+  -> Dynamic t a
+  -> EstuaryWidget t m z (Dynamic t b)
+f <$$> a = reflex $ mapDyn f a
+
+(<$$$>) :: MonadWidget t m
+  => (a -> b)
   -> EstuaryWidget t m z (Dynamic t a)
   -> EstuaryWidget t m z (Dynamic t b)
-f <$$> a = a >>= (reflex . mapDyn f)
+f <$$$> a = a >>= (reflex . mapDyn f)
 
 -- examples:
-{-
-textArea' :: MonadWidget t m => Dynamic t String -> m (Dynamic t String)
-textArea' x = (sample . current) x >>= return . constDyn -- ...this is just to compile-check the examples below...
 
-example1 :: MonadWidget t m => EstuaryWidget t m String ()
-example1 = delta >>= (reflex . textArea') >>= edit
+placeholder :: MonadWidget t m => EstuaryWidget t m String ()
+placeholder = return ()
+
+example1 :: MonadWidget t m => EstuaryWidget t m (String,String) ()
+example1 = do
+  reflex $ text "editor1"
+  x <- embed fst placeholder
+  reflex $ text "editor2"
+  y <- embed snd placeholder
+  edit =<< (\a b -> (a,b)) <$$> x <**> y -- 2-character operators because x and y are just Dynamic t String
 
 example2 :: MonadWidget t m => EstuaryWidget t m (String,String) ()
 example2 = do
-  let x = (reflex $ text "editor1") >> embed fst example1
-  let y = (reflex $ text "editor2") >> embed snd example1
-  edit =<< (\a b -> (a,b)) <$$> x <**> y
--}
+  let x = (reflex $ text "editor1") >> embed fst placeholder
+  let y = (reflex $ text "editor2") >> embed snd placeholder
+  edit =<< (\a b -> (a,b)) <$$$> x <***> y -- 3-character operators because x and y are m (Dynamic t String)

@@ -3,6 +3,7 @@ module Estuary.Types.Context where
 import Data.Time
 import Data.IntMap.Strict
 import Control.Concurrent.MVar
+import GHCJS.Types
 
 import Estuary.Tidal.Types
 import Estuary.Types.Language
@@ -12,28 +13,34 @@ import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
 import Estuary.Types.Tempo
-import Estuary.Types.CanvasOp
+import Estuary.Types.CanvasState
+import Estuary.Render.AudioContext
+import Sound.MusicW (Node)
 
 data Context = Context {
+  audioContext :: AudioContext,
+  masterBusNode :: Node,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
   language :: Language,
   theme :: String,
   tempo :: Tempo,
-  activeDefsEnsemble :: String, -- ^ The name of the ensemble in which the current definitions in the context belong to.
+  activeDefsEnsemble :: String, -- ^ The name of the ensemble that the current definitions in the context belong to.
   definitions :: DefinitionMap,
   samples :: SampleMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
-  peakLevels :: [Double],
-  rmsLevels :: [Double],
+  canvasOn :: Bool,
   wsStatus :: String,
+  serverLatency :: NominalDiffTime,
   clientCount :: Int,
-  canvasOpsQueue :: MVar [(UTCTime,CanvasOp)]
+  canvasState :: MVar CanvasState
   }
 
-initialContext :: UTCTime -> WebDirt -> SuperDirt -> MVar [(UTCTime,CanvasOp)] -> Context
-initialContext now wd sd mv = Context {
+initialContext :: UTCTime -> AudioContext -> Node -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
+initialContext now ac mBusNode wd sd mv = Context {
+  audioContext = ac,
+  masterBusNode = mBusNode,
   webDirt = wd,
   superDirt = sd,
   language = English,
@@ -44,11 +51,11 @@ initialContext now wd sd mv = Context {
   samples = emptySampleMap,
   webDirtOn = True,
   superDirtOn = False,
-  peakLevels = [],
-  rmsLevels = [],
+  canvasOn = True,
   wsStatus = "",
+  serverLatency = 0,
   clientCount = 0,
-  canvasOpsQueue = mv
+  canvasState = mv
 }
 
 type ContextChange = Context -> Context
@@ -59,19 +66,13 @@ setTheme x c = c {theme = x}
 setLanguage :: Language -> ContextChange
 setLanguage x c = c { language = x }
 
-setPeakLevels :: [Double] -> ContextChange
-setPeakLevels xs c = c { peakLevels = xs }
-
-setRmsLevels :: [Double] -> ContextChange
-setRmsLevels xs c = c { rmsLevels = xs }
-
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
 setDefinitions :: (String, DefinitionMap) -> ContextChange
-setDefinitions (x, y) c = c { 
-  activeDefsEnsemble = x, 
-  definitions = y 
+setDefinitions (x, y) c = c {
+  activeDefsEnsemble = x,
+  definitions = y
 }
 
 setSampleMap :: SampleMap -> ContextChange

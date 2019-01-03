@@ -1,9 +1,9 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.TransformedPattern where
 
 import Reflex
-import Reflex.Dom
+import Reflex.Dom hiding (Subtract,End)
 import Estuary.Tidal.Types
 import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Utility
@@ -12,6 +12,8 @@ import Estuary.Reflex.Container
 import Control.Monad
 import Data.Map
 import Data.List
+import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Estuary.Widgets.SpecificPattern as Sp
 import GHC.Real
 import Data.Maybe (fromJust)
@@ -103,7 +105,7 @@ specificPatternPopup actionList = elClass "div" "popupMenu" $ do
   dd <- dropdown (-1) ddMap def
   let specPatKey = _dropdown_value dd
   specChange <- mapDyn (Just . ChangeValue . maybe (S $ Blank Inert) id . (flip Data.Map.lookup) specMap) specPatKey
-  let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
   edits <- liftM id $ Control.Monad.sequence popupList
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ (leftmost $ edits ++[closeMenu,updated specChange])
@@ -139,7 +141,7 @@ specificPatternPopup actionList = elClass "div" "popupMenu" $ do
 dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (),Event t Hint))
 dropdownPatternWidget iPattern _ = do
   let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"]
-  let patternType = head $ words $ show iPattern
+  let patternType = T.pack $ head $ words $ show iPattern
   let initialIndex = maybe (0) id $ Data.List.findIndex (==patternType) paramShowList -- Int of initalFunc
   let patMap = Data.Map.insert initialIndex (Sp.specificContainer iPattern never) $ fromList $ zip [0..] builderList
   let initialFunc = maybe (builderList!!0) (id) $ Data.Map.lookup initialIndex patMap
@@ -182,7 +184,7 @@ dropdownPatternWidget iPattern _ = do
 patternCombinatorDropDown :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
 patternCombinatorDropDown iValue _ = do
   let ddMapVals = fromList $ zip [(1::Int)..] [Merge,Add,Subtract,Multiply,Divide]
-  let ddMap = constDyn $ fromList $ zip [(1::Int)..] $ fmap show [Merge,Add,Subtract,Multiply,Divide]
+  let ddMap = constDyn $ fromList $ zip [(1::Int)..] $ fmap (T.pack . show) [Merge,Add,Subtract,Multiply,Divide]
   dd <- dropdown iIndex ddMap def
   --mapDyn show (_dropdown_value dd) >>= dynText
   let choice = _dropdown_value dd
@@ -318,42 +320,42 @@ paramWidget (Jux trans) = do
   return val'
 paramWidget (Every num trans) = do
   let attrs = fromList $ zip ["type","style"] ["number","width:25px"]
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn attrs) & textInputConfig_initialValue .~ (show num)
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn attrs) & textInputConfig_initialValue .~ (T.pack $ show num)
   let input' = _textInput_value input -- Dyn string
-  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
+  val <- forDyn input' (\x->maybe 1 id (readMaybe (T.unpack x)::Maybe Int))
   nextTrans <- parameteredPatternTransformer trans never
   val'<-combineDyn (\k (next,_)-> Every k next) val nextTrans
   return val'
 paramWidget (Slow i) = do
   let numer = numerator i
   let denom = denominator i
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:25px"])) & textInputConfig_initialValue .~ (show numer)
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:25px"])) & textInputConfig_initialValue .~ (T.pack $ show numer)
   let input' = _textInput_value input -- Dyn string
-  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (show denom)
+  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (T.pack $ show denom)
   let input2' = _textInput_value input2 -- Dyn string
-  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Integer))
-  val2 <- forDyn input2' (\x-> maybe 1 id (readMaybe x::Maybe Integer))
+  val <- forDyn input' (\x->maybe 1 id (readMaybe (T.unpack x)::Maybe Integer))
+  val2 <- forDyn input2' (\x-> maybe 1 id (readMaybe (T.unpack x)::Maybe Integer))
   combineDyn (\x y->  Slow ((x%y)::Rational)) val val2
 paramWidget (Density i)= do
   let numer = numerator i
   let denom = denominator i
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"]))  & textInputConfig_initialValue .~ (show numer)
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"]))  & textInputConfig_initialValue .~ (T.pack $ show numer)
   let input' = _textInput_value input -- Dyn string
-  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (show denom)
+  input2 <- textInput $ def & textInputConfig_attributes .~ (constDyn (fromList $ zip ["type","style"] ["number","width:30px"])) & textInputConfig_initialValue .~ (T.pack $ show denom)
   let input2' = _textInput_value input2 -- Dyn string
-  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Integer))
-  val2 <- forDyn input2' (\x-> maybe 1 id (readMaybe x::Maybe Integer))
+  val <- forDyn input' (\x->maybe 1 id (readMaybe (T.unpack x)::Maybe Integer))
+  val2 <- forDyn input2' (\x-> maybe 1 id (readMaybe (T.unpack x)::Maybe Integer))
   combineDyn (\x y-> Density $ (x%y::Rational) ) val val2
 paramWidget (DegradeBy i) = do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (show i)
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (T.pack $ show i)
   let input' = _textInput_value input -- Dyn string
-  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Double))
+  val <- forDyn input' (\x->maybe 1 id (readMaybe (T.unpack x)::Maybe Double))
   val'<-forDyn val (\k-> DegradeBy k)
   return val'
 paramWidget (Chop i) = do
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (show i)
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn ("type"=:"number")) & textInputConfig_initialValue .~ (T.pack $ show i)
   let input' = _textInput_value input -- Dyn string
-  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
+  val <- forDyn input' (\x->maybe 1 id (readMaybe (T.unpack x)::Maybe Int))
   val'<-forDyn val (\k-> Chop k)
   return val'
 paramWidget (Combine iSPat iPatComb) = do
@@ -405,9 +407,9 @@ paramWidget' (Jux trans) = do
   return val'
 paramWidget' (Every num trans) = do
   let attrs = fromList $ zip ["type","style"] ["number","width:25px"]
-  input <- textInput $ def & textInputConfig_attributes .~ (constDyn attrs) & textInputConfig_initialValue .~ (show num)
+  input <- textInput $ def & textInputConfig_attributes .~ (constDyn attrs) & textInputConfig_initialValue .~ (T.pack $ show num)
   let input' = _textInput_value input -- Dyn string
-  val <- forDyn input' (\x->maybe 1 id (readMaybe x::Maybe Int))
+  val <- forDyn input' (\x->maybe 1 id (readMaybe (T.unpack x)::Maybe Int))
   nextTrans <- patternTransformerWidget trans never
   val'<-combineDyn (\k (next,_)-> Every k next) val nextTrans
   return val'
@@ -457,7 +459,7 @@ patternTransformerPopup actionList = elClass "div" "popupMenu" $ do
   dd <- dropdown (-1) ddMap def
   let transformerKey = _dropdown_value dd
   transformerChange <- mapDyn (Just . ChangeValue . maybe NoTransformer id . (flip Data.Map.lookup) transMap) transformerKey
-  let popupList = fmap (\x->clickableDivClass' (show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
   edits <- liftM id $ Control.Monad.sequence popupList
   closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
   return $ (leftmost $ edits ++[closeMenu,updated transformerChange])

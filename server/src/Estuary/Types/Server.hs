@@ -81,12 +81,6 @@ setDefaultView w v s = s { ensembles = Map.adjust (E.editDefaultView v) w (ensem
 deleteView :: String -> String -> Server -> Server
 deleteView e v s = s { ensembles = Map.adjust (E.deleteView v) e (ensembles s) }
 
-getEnsembleList :: MVar Server -> IO Response
-getEnsembleList s = readMVar s >>= return . EnsembleList . Map.keys . ensembles
-
-getViews :: MVar Server -> String -> IO [String]
-getViews s w = readMVar s >>= return . fromMaybe [] . fmap (Map.keys . E.views) . Map.lookup w . ensembles
-
 getView :: MVar Server -> String -> String -> IO (Maybe View)
 getView s e v = do
   s' <- readMVar s
@@ -94,20 +88,6 @@ getView s e v = do
     e' <- Map.lookup e (ensembles s')
     Map.lookup v (E.views e')
 
-getServerClientCount :: MVar Server -> IO Int
-getServerClientCount s = readMVar s >>= return . Map.size . clients
-
-getEnsemblePassword :: MVar Server -> String -> IO String
-getEnsemblePassword s e = readMVar s >>= return . fromMaybe [] . fmap (E.password) . Map.lookup e . ensembles
-
 tempoChangeInEnsemble :: String -> Tempo -> Server -> Server
 tempoChangeInEnsemble e t s = s { ensembles = Map.adjust (E.tempoChange t) e (ensembles s) }
 
-getTempoInEnsemble :: MVar Server -> String -> IO (Maybe Tempo)
-getTempoInEnsemble s e = readMVar s >>= return . fmap E.tempo . Map.lookup e . ensembles
-
-getTotalEnsembleClientCount :: MVar Server -> String -> IO (Maybe Int)
-getTotalEnsembleClientCount s e = readMVar s >>= return . fmap E.totalClientCount . Map.lookup e . ensembles
-
-getAuthenticatedEnsembleClientCount :: MVar Server -> String -> IO (Maybe Int)
-getAuthenticatedEnsembleClientCount s e = readMVar s >>= return . fmap E.authenticatedClientCount . Map.lookup e . ensembles

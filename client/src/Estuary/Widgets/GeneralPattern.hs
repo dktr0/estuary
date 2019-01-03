@@ -1,12 +1,13 @@
-{-# LANGUAGE RecursiveDo #-}
-module Estuary.Widgets.GeneralPattern
-where
+{-# LANGUAGE RecursiveDo, OverloadedStrings, TypeFamilies #-}
+module Estuary.Widgets.GeneralPattern where
 
 import Reflex
-import Reflex.Dom
+import Reflex.Dom hiding (Insert,Delete)
 import Data.Bool (bool)
 import Data.Map
 import Data.Maybe
+import Data.Text (Text)
+import qualified Data.Text as T
 import Control.Monad
 import Data.List(intersperse, findIndex, elem, elemIndex)
 import Data.Either(partitionEithers)
@@ -95,7 +96,7 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
     initialMap (Group (Edited (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Atom iVal p iReps) = fromList $ zip [0::Int,1,2] [Right (),Left $ Atom iVal p iReps, Right ()]
     leftBuilder live = aGLWidgetLive live b
-    rightBuilder live= whitespace live (i) "whiteSpaceAdd" [ChangeValue (Blank Inert),DeleteContainer]
+    rightBuilder live = whitespace live (i) "whiteSpaceAdd" [ChangeValue (Blank Inert),DeleteContainer]
     insertList (Atom iVal p r) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ Atom (iVal) p r))])
     insertList (Layers (Edited (xs,_) _) _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
     insertList (Layers (Live (xs,_) _) _) = Prelude.map (\k -> [(k,Insert (Right ())),(k+1,Insert (Left $ xs!!0))])
@@ -132,7 +133,7 @@ typedAtomWidget defaultVal  liveness iGenPat editEv = elClass "div" "atomPopup" 
   inputMouseOut <- liftM (False <$) $ wrapDomEvent (_textInput_element textField) (onEventName Mouseout) mouseXY
   isMouseOverInput <- holdDyn False $ leftmost [inputMouseOut, inputMouseOver]
   inputAttrs <- mapDyn (fromList . (\x-> [x]) . ((,) "class") . bool "atomPopupInput" "atomPopupInputMouseOver") isMouseOverInput
-  textField <- growingTextInput $ def & textInputConfig_attributes .~  inputAttrs & textInputConfig_initialValue .~ (showNoQuotes iVal)
+  textField <- growingTextInput $ def & textInputConfig_attributes .~  inputAttrs & textInputConfig_initialValue .~ (T.pack $ showNoQuotes iVal)
 
   let textInputChange = updated $ _textInput_value textField
   onClickEv <- wrapDomEvent (_textInput_element textField) (onEventName Click) (mouseXY)
@@ -147,7 +148,7 @@ typedAtomWidget defaultVal  liveness iGenPat editEv = elClass "div" "atomPopup" 
   let layerEv = fmap (\x->case x of (Just MakeLayer)->MakeLayer;otherwise->Close) $ ffilter (\x->case x of (Just MakeLayer)->True;otherwise->False) popupMenu
   popupToggle <- holdDyn (case iPotential of Inert->False;otherwise->True) $ leftmost [False <$ textInputChange, ffilter id $ updated $ _textInput_hasFocus textField, False <$ popupMenu, True <$ onClickEv]
   -- This is kind of an ugly hack to deal with parsing a string in a string, but allows for the general 'a' in the type signature here
-  inVal <- mapDyn (\x-> if ((maybe defaultVal id $ readMaybe x) == defaultVal) then maybe defaultVal id (readMaybe $ show x) else maybe defaultVal id (readMaybe x)) $ _textInput_value textField
+  inVal <- mapDyn (\x-> if ((maybe defaultVal id $ readMaybe (T.unpack x)) == defaultVal) then maybe defaultVal id (readMaybe $ show (T.unpack x)) else maybe defaultVal id (readMaybe (T.unpack x))) $ _textInput_value textField
   potential <- liftM updated (mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle) >>= holdDyn iPotential
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
@@ -181,16 +182,16 @@ popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
   let layerEv = fmap (\x->case x of (Just MakeLayer)->MakeLayer;otherwise->Close) $ ffilter (\x->case x of (Just MakeLayer)->True;otherwise->False) popupMenu
   let sampleChanges = fmap (\x-> maybe (Blank Inert ) (\y-> case y of (ChangeValue z)-> Atom z Inert Once; otherwise -> Blank Inert) x) $ ffilter (\x-> maybe False (isChangeValue) x) popupMenu -- Event t (GeneralPat)
   popupToggle <- toggle (case iPotential of Inert -> False; otherwise-> True) $ leftmost [(() <$) sample, (()<$) popupMenu]
-  inVal <- holdDyn iSamp $ fmap show sampleChanges
+  inVal <- holdDyn iSamp $ fmap (T.pack . show) sampleChanges
   potential <- holdDyn iPotential $ fmap (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) (updated popupToggle)
   rdv <- holdDyn iRepDiv $ fmap (\x-> if x then Rep 4 else Once) (updated repDivToggle)
-  atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repDivVal
+  atomVal <- combineDyn (\val pot -> Atom (T.unpack val) pot) inVal potential >>= combineDyn (\r con ->con r) repDivVal
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
   let groupEvVal = tag (current groupVal) groupEv
   layerVal <- combineDyn (\v l -> if l==L4 then Layers (Live ([v],Once) L4) Inert  else Layers (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
   let layerEvVal = tag (current layerVal) layerEv
   genPat <- liftM joinDyn $ holdDyn atomVal $ leftmost $ fmap (fmap constDyn) [groupEvVal,layerEvVal]
-  let upSig = fmap toEditSigGenPat $ leftmost [deleteEv, livenessEv,(RebuildMe <$) groupEv, (RebuildMe <$) layerEv] --, (RebuildMe <$) $ updated
+  let upSig = fmap (toEditSigGenPat . fmap T.unpack) $ leftmost [deleteEv, livenessEv,(RebuildMe <$) groupEv, (RebuildMe <$) layerEv]
   mapDyn (\x-> (x,upSig,hintEv)) genPat
   where
     popupActions = [MakeRepOrDiv, MakeGroup, MakeLayer, DeleteMe]
@@ -198,11 +199,11 @@ popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
     popup = samplePickerPopup liveness sampleMap popupActions
     iRepDivViewable = (iRepDiv/=Once)
     (iSamp,iRepDiv,iPotential) = case iVal of
-                    (Group (Edited (oldV,oldR) (newV,newR)) p) -> (show $ oldV!!0,oldR,p)
-                    (Group (Live (newV,newR) lness) p) -> (show $ newV!!0,newR,p)
-                    (Layers (Edited (oldV,oldR) (newV,newR)) p) -> (show $ oldV!!0,oldR,p)
-                    (Layers (Live (newV,newR) lness) p) -> (show $ newV!!0,newR,p)
-                    (Atom v p r) -> (v,r,p)
+                    (Group (Edited (oldV,oldR) (newV,newR)) p) -> (T.pack $ show $ oldV!!0,oldR,p)
+                    (Group (Live (newV,newR) lness) p) -> (T.pack $ show $ newV!!0,newR,p)
+                    (Layers (Edited (oldV,oldR) (newV,newR)) p) -> (T.pack $ show $ oldV!!0,oldR,p)
+                    (Layers (Live (newV,newR) lness) p) -> (T.pack $ show $ newV!!0,newR,p)
+                    (Atom v p r) -> (T.pack v,r,p)
                     otherwise -> ("~",Once,Inert)
 
 
@@ -211,7 +212,7 @@ popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
 popupIntWidget :: MonadWidget t m => Int -> Int -> Int -> Int -> Dynamic t Liveness -> GeneralPattern Int -> Event t (EditSignal (GeneralPattern Int)) -> m (Dynamic t (GeneralPattern Int, Event t (EditSignal (GeneralPattern Int)), Event t Hint))
 popupIntWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
   let (iVal,iRepDiv,iPotential) = getIVal iGenPat
-  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ (constDyn ("style"=:"width:30px; border: none"))
+  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (T.pack $ show iVal) & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ (constDyn ("style"=:"width:30px; border: none"))
   let iRepDivViewable = (iRepDiv/=Once)
   repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
   popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (popup) (case iPotential of Inert->False; otherwise->True) $ updated popupToggle
@@ -224,7 +225,7 @@ popupIntWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "
   let groupEv = fmap (\x->case x of (Just MakeGroup)->MakeGroup;otherwise->Close) $ ffilter (\x->case x of (Just MakeGroup)->True;otherwise->False) popupMenu
   let layerEv = fmap (\x->case x of (Just MakeLayer)->MakeLayer;otherwise->Close) $ ffilter (\x->case x of (Just MakeLayer)->True;otherwise->False) popupMenu
   popupToggle <- toggle (case iPotential of Inert->False; otherwise->True) $ leftmost [(()<$) popupMenu,(()<$) livenessEv , (()<$) $ ffilter id $ updated $ _textInput_hasFocus textField,(() <$)closeEvent,(() <$) groupEv, (() <$) layerEv]
-  inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Int)) $ _textInput_value textField
+  inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Int) . T.unpack) $ _textInput_value textField
   potential <- liftM updated (mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle) >>= holdDyn iPotential
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
@@ -235,7 +236,7 @@ popupIntWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "
   let upSig = fmap toEditSigGenPat $ leftmost [deleteEv, livenessEv,(RebuildMe <$) groupEv, (RebuildMe <$) layerEv]
   mapDyn (\x-> (x,upSig, never)) genPat
   where
-    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",show step, show minVal, show maxVal]
+    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",T.pack $ show step, T.pack $ show minVal, T.pack $ show maxVal]
     popupActions = [MakeRepOrDiv::EditSignal Int, MakeGroup, MakeLayer, DeleteMe]
     popup = basicPopup liveness popupActions
     getIVal gP = case gP of
@@ -249,7 +250,7 @@ popupIntWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "
 popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Double -> Dynamic t Liveness -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double)), Event t Hint))
 popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
   let (iVal,iRepDiv,iPotential) = getIVal iGenPat
-  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ (constDyn ("style"=:"width:30px; border: none;"))
+  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (T.pack $ show iVal) & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ (constDyn ("style"=:"width:30px; border: none;"))
   let iRepDivViewable = (iRepDiv/=Once)
   repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
   popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (popup) (case iPotential of Inert->False; otherwise->True) $ updated popupToggle
@@ -262,7 +263,7 @@ popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClas
   let groupEv = fmap (\x->case x of (Just MakeGroup)->MakeGroup;otherwise->Close) $ ffilter (\x->case x of (Just MakeGroup)->True;otherwise->False) popupMenu
   let layerEv = fmap (\x->case x of (Just MakeLayer)->MakeLayer;otherwise->Close) $ ffilter (\x->case x of (Just MakeLayer)->True;otherwise->False) popupMenu
   popupToggle <- toggle (case iPotential of Inert->False; otherwise->True) $ leftmost [(()<$) popupMenu,(()<$) livenessEv , (()<$) $ ffilter id $ updated $ _textInput_hasFocus textField,(() <$)closeEvent,(() <$) groupEv, (() <$) layerEv]
-  inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Double)) $ _textInput_value textField
+  inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Double) . T.unpack) $ _textInput_value textField
   potential <- liftM updated (mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle) >>= holdDyn iPotential
   atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
   groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
@@ -273,7 +274,7 @@ popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClas
   let upSig = fmap toEditSigGenPat $ leftmost [deleteEv, livenessEv,(RebuildMe <$) groupEv, (RebuildMe <$) layerEv]
   mapDyn (\x-> (x,upSig, never)) genPat
   where
-    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",show step, show minVal, show maxVal]
+    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",T.pack $ show step, T.pack $ show minVal, T.pack $ show maxVal]
     popupActions = [MakeRepOrDiv::EditSignal Double, MakeGroup, MakeLayer, DeleteMe]
     popup = basicPopup liveness popupActions
     getIVal gP = case gP of
@@ -281,40 +282,6 @@ popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClas
       (Group (Edited (xs,r) _) p) -> ((\(x,_,_)->x) $ getIVal (xs!!0),r,p)
       (Atom v p r) -> (v,r,p)
       otherwise -> (defaultVal, Once,Inert)
-
---popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Double -> Dynamic t Liveness -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double)), Event t Hint))
---popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
---  let (iVal,iRepDiv,iPotential) = getIVal iGenPat
---  textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
---  let iRepDivViewable = (and $ fmap (/=iRepDiv) [Rep 1, Div 1, Once])
---  repOrDivEv <- liftM switchPromptlyDyn $ flippableWidget (return never) (repDivWidget' iRepDiv never) iRepDivViewable $ updated repDivToggle
---  inVal <- mapDyn (maybe iVal id . (readMaybe::String -> Maybe Double)) $ _textInput_value textField
---  popupMenu <- liftM (switchPromptlyDyn) $ flippableWidget (return never) (popup) (case iPotential of Inert->False; otherwise->True) $ updated popupDisplayEv
---  repDivToggle <- toggle iRepDivViewable $ ffilter (== Just MakeRepOrDiv) popupMenu
---  repOrDiv <- holdDyn iRepDiv repOrDivEv >>= combineDyn (\tog val-> if tog then val else Once) repDivToggle
---  let closeEvent = (False <$)  $ ffilter (isNothing)  popupMenu
---  let groupLayerEv = fmap fromJust $ ffilter (\x-> case x of (Just MakeGroup)->True; (Just MakeLayer)->True; otherwise -> False ) popupMenu
---  popupToggle <- toggle (case iPotential of Inert->False; otherwise->True) $ leftmost [(()<$) popupMenu, (()<$) $ ffilter id $ updated $ _textInput_hasFocus textField,(() <$)closeEvent]
---  potential <- liftM updated (mapDyn (\x-> if x then Potentials (fmap toPotential popupActions) else Inert) popupToggle) >>= holdDyn iPotential
---  popupDisplayEv <- toggle (case iPotential of Inert->False; otherwise->True) $ updated potential
-
---  atomVal <- combineDyn (\val pot -> Atom val pot) inVal potential >>= combineDyn (\r con ->con r) repOrDiv
---  groupToggle <- toggle (isGroup iGenPat) $ ffilter (==MakeGroup) groupLayerEv
---  groupVal <- combineDyn (\v l -> if l==L4 then Group  (Live ([v],Once) L4) Inert  else Group (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
---  layerToggle <- toggle (isLayers iGenPat) $ ffilter (==MakeLayer) groupLayerEv
---  layerVal <- combineDyn (\v l -> if l==L4 then Layers (Live ([v],Once) L4) Inert  else Layers (Edited ([v],Once) ([v],Once)) Inert) atomVal liveness
---  genPat <- liftM joinDyn $ combineDyn (\gr lay-> if gr then groupVal else if lay then layerVal else atomVal) groupToggle layerToggle
---  let upEvent = leftmost [fmap (toEditSigGenPat . fromJust) $ ffilter (\x-> or [x==Just MakeL3, x==Just MakeL4, x==Just Eval, x==Just DeleteMe]) popupMenu, (RebuildMe <$) groupLayerEv]
---  mapDyn (\x-> (x,upEvent,never)) genPat
---  where
---    attrs = fromList $ zip ["class","step","min","max","style"] ["atomPopupInput",show step, show minVal, show maxVal,"width:30px"]
---    popupActions = [MakeRepOrDiv::EditSignal Double, MakeGroup, MakeLayer, DeleteMe]
---    popup = basicPopup liveness popupActions
---    getIVal gP = case gP of
---      (Group (Live (xs,r) _) p) -> ((\(x,_,_)->x) $ getIVal (xs!!0),r,p)
---      (Group (Edited (xs,r) _) p) -> ((\(x,_,_)->x) $ getIVal (xs!!0),r,p)
---      (Atom v p r) -> (v,r,p)
---      otherwise -> (defaultVal, Once,Inert)
 
 
 
@@ -326,12 +293,12 @@ popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClas
 sliderWidget::MonadWidget t m => (Double,Double)-> Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal a), Event t Hint))
 sliderWidget (minVal,maxVal) stepsize iGenPat _ = do
   let iVal = getIVal iGenPat
-  text $ show minVal
-  let attrs = constDyn $ fromList $ zip ["type","min","max","step","style"] ["range",show minVal,show maxVal,show stepsize,"width:75px"]
+  text $ T.pack $ show minVal
+  let attrs = constDyn $ fromList $ zip ["type","min","max","step","style"] ["range",T.pack $ show minVal,T.pack $ show maxVal,T.pack $ show stepsize,"width:75px"]
   slider<-textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs
-  text $ show maxVal
+  text $ (T.pack . show) maxVal
   let panVal = _textInput_value slider
-  panVal' <- forDyn panVal (\x-> if isJust (readMaybe x::Maybe Double) then Atom (read x::Double) Inert Once else Atom ((minVal+maxVal)/2) Inert Once)
+  panVal' <- forDyn panVal (\x-> if isJust (readMaybe (T.unpack x)::Maybe Double) then Atom (read (T.unpack x)::Double) Inert Once else Atom ((minVal+maxVal)/2) Inert Once)
   deleteButton <- button' "-" DeleteMe
   forDyn panVal' (\k -> (k,deleteButton,never))
   where
@@ -357,7 +324,7 @@ clickListWidget cycleMap iGenPat updatedReps = mdo
   str <- holdDyn (iVal) str'
   reps <- holdDyn (iReps) updatedReps
   returnSample <- combineDyn (\x r -> Atom x Inert r) str reps
-  showVal <- mapDyn show returnSample
+  showVal <- mapDyn (T.pack . show) returnSample
   mapDyn (\x->(x,never)) returnSample
   where
     getIVal i = case i of
@@ -382,9 +349,9 @@ repDivWidget (Rep iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
       return val
     num <- el "td" $ do
       let attrs = fromList $ zip ["style","step","min"] ["width:35px;","1", "0"]
-      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (T.pack $ show iVal) & textInputConfig_inputType .~"number"
       let inVal = _textInput_value textField
-      forDyn inVal (\x-> maybe 1 id $ ((readMaybe x)::Maybe Int))
+      forDyn inVal (\x-> maybe 1 id $ ((readMaybe (T.unpack x))::Maybe Int))
     combineDyn (\rd val -> if rd then Rep val else Div val) repOrDiv num
   return val
 repDivWidget (Div iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
@@ -401,9 +368,9 @@ repDivWidget (Div iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
       return val
     num <- el "td" $ do
       let attrs = fromList $ zip ["style","step","min"] ["width:35px;","1", "0"]
-      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+      textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (T.pack $ show iVal) & textInputConfig_inputType .~"number"
       let inVal = _textInput_value textField
-      forDyn inVal (\x-> maybe 1 id $ ((readMaybe x)::Maybe Int))
+      forDyn inVal (\x-> maybe 1 id $ ((readMaybe (T.unpack x))::Maybe Int))
     combineDyn (\rd val -> if rd then Rep val else Div val) repOrDiv num
   return val
 repDivWidget _ = repDivWidget (Rep 1)
@@ -428,7 +395,7 @@ countStepWidget step iGenPat _ = elAttr "table" ("class"=:"countWidgetTable") $ 
     downButton <- tdButtonAttrs "▼" () ("class"=:"countWidgetTable-downArrowtd") >>= count
     return $ (deleteButton, downButton)
   upVal <- combineDyn (\a b ->  (a*step)-(b*step)+(iUpVal)) upCount downCount
-  upValShow <- forDyn upVal show
+  upValShow <- forDyn upVal (T.pack . show)
   --repsHold <- holdDyn iUpVal $ updated repeats
   mapDyn (\x->(Atom x Inert Once,deleteEvent)) upVal
   where
@@ -444,10 +411,10 @@ doubleSliderWidget::MonadWidget t m => (Double,Double) -> Double -> GeneralPatte
 doubleSliderWidget (minVal,maxVal) stepsize iGenPat _ = elAttr "table" ("class"=:"doubleSliderWidget") $ mdo
   let iVal = fst $ getIVal iGenPat
   slider <- el "tr" $ elAttr "td" (Data.Map.union ("colspan"=:"3") ("style"=:"text-align:left")) $ do
-      let attrs = constDyn $ fromList $ zip ["min","max","step","style"] [show minVal,show maxVal, show stepsize,"width:100px"]
-      rangeInput <- textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs & textInputConfig_setValue .~ sliderUpdateVal & textInputConfig_initialValue .~ (show iVal)
-      let rangeVal = _textInput_value rangeInput
-      mapDyn (\x-> maybe 0.5 id (readMaybe x::Maybe Double)) rangeVal
+    let attrs = constDyn $ fromList $ zip ["min","max","step","style"] [T.pack $ show minVal,T.pack $ show maxVal, T.pack $ show stepsize,"width:100px"]
+    rangeInput <- textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs & textInputConfig_setValue .~ sliderUpdateVal & textInputConfig_initialValue .~ (T.pack $ show iVal)
+    let rangeVal = _textInput_value rangeInput
+    mapDyn (\x-> maybe 0.5 id (readMaybe (T.unpack x)::Maybe Double)) rangeVal
   (begEv,endEv,delEv) <- el "tr" $ do
     begPlus <- tdButtonAttrs "<" (-0.05) ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black")
     endPlus <- tdButtonAttrs ">" (0.05) ("style"=:"text-align:center;background-color:lightblue;border: 1pt solid black")
@@ -456,7 +423,7 @@ doubleSliderWidget (minVal,maxVal) stepsize iGenPat _ = elAttr "table" ("class"=
   let buttons = leftmost [endEv,begEv]
   let sliderValBeh = current slider
   let sliderAndButtonVal = attachWith (\a b -> max 0 $ min 1 $ a+b) sliderValBeh buttons
-  let sliderUpdateVal = fmap show sliderAndButtonVal
+  let sliderUpdateVal = fmap (T.pack . show) sliderAndButtonVal
   mapDyn (\x-> (Atom x Inert Once,delEv)) slider
   where
   getIVal i = case i of
@@ -486,7 +453,7 @@ faderButtonWidget iGenPat _ = elAttr "td" ("style"=:"text-align:center;margin:10
     endVal' <- foldDyn (\a b-> min 1 $ max 0 $ a+b) iEnd buttons
     endVal <- mapDyn (\x-> (fromInteger $ round $ x*100)/100) endVal'
     endGradient <- forDyn endVal makeStyleString
-    tableAttrs <- forDyn endGradient (\x->"style"=:("text-align:center;display:inline-table;width:100pt;border-spacing:5px;border:2pt solid black;"++x))
+    tableAttrs <- forDyn endGradient (\x->"style"=:("text-align:center;display:inline-table;width:100pt;border-spacing:5px;border:2pt solid black;" `T.append` x))
     val <- mapDyn (\x-> (Atom x Inert Once,delEv)) endVal
     return $ (val, tableAttrs)
   return returnVal
@@ -503,9 +470,9 @@ faderButtonWidget iGenPat _ = elAttr "td" ("style"=:"text-align:center;margin:10
 charWidget'::MonadWidget t m => GeneralPattern Char-> Event t () -> m (Dynamic t (GeneralPattern Char,Event t (EditSignal a)))
 charWidget' iGenPat _ = do
   let (iVal,reps) = getIVal iGenPat
-  textField <-textInput $ def & textInputConfig_attributes .~ (constDyn $ fromList $ zip ["style", " maxlength"] ["width:40px", "1"]) & textInputConfig_initialValue .~ [iVal]
+  textField <-textInput $ def & textInputConfig_attributes .~ (constDyn $ fromList $ zip ["style", " maxlength"] ["width:40px", "1"]) & textInputConfig_initialValue .~ (T.singleton iVal)
   let inputVal = _textInput_value textField
-  inputChar <- mapDyn (\c-> if length c ==1 then c!!0 else  '~') inputVal
+  inputChar <- mapDyn (\c-> if T.length c ==1 then T.head c else  '~') inputVal
   plusButton <- buttonDynAttrs "▲" () (constDyn ("style"=:"width:20px;text-align:center")) >>= count
   minusButton <- buttonDynAttrs "▼" () (constDyn ("style"=:"width:20px;text-align:center")) >>= count
   deleteButton <- buttonDynAttrs "-" (DeleteMe) $ constDyn ("style"=:"width:20px")
@@ -528,9 +495,9 @@ charWidget _ iGenPat _ = elAttr "table" ("class"=:"aGLStringWidgetTable") $ mdo
   let (iVal,iReps) = getIVal iGenPat
   genPat <- el "tr" $ do
     val <- el "td" $ do
-      inputField <- textInput $ def & textInputConfig_attributes .~ constDyn ("class"=:"aGLNumberWidgetTable-textFieldtd") & textInputConfig_initialValue .~ ([iVal])
+      inputField <- textInput $ def & textInputConfig_attributes .~ constDyn ("class"=:"aGLNumberWidgetTable-textFieldtd") & textInputConfig_initialValue .~ (T.singleton iVal)
       let val = _textInput_value inputField
-      forDyn val (\x-> maybe (' ') id $ listToMaybe x)
+      forDyn val (\x-> maybe (' ') id $ listToMaybe (T.unpack x))
     reps <- repDivWidget iReps
     combineDyn (\x y -> Atom x Inert y) val reps
   (layerEvent, groupEvent, deleteEvent) <- el "tr" $ elAttr "td" ("colspan"=:"3") $ el "tr" $ do
@@ -576,7 +543,7 @@ charWidget _ iGenPat _ = elAttr "table" ("class"=:"aGLStringWidgetTable") $ mdo
 
 intWidget::MonadWidget t m => GeneralPattern Int-> Event t () -> m (Dynamic t (GeneralPattern Int,Event t (EditSignal a)))
 intWidget iVal _ = do
-  let attrs = def & textInputConfig_attributes .~ constDyn ("style"=:"width:20px;") & textInputConfig_initialValue .~ (show iVal) & textInputConfig_inputType .~"number"
+  let attrs = def & textInputConfig_attributes .~ constDyn ("style"=:"width:20px;") & textInputConfig_initialValue .~ (T.pack $ show iVal) & textInputConfig_inputType .~"number"
   textField <-textInput attrs
   let inputVal = _textInput_value textField
   plusButton <- buttonDynAttrs "▲" () (constDyn ("style"=:"width:20px;text-align:center")) >>= count
@@ -584,7 +551,7 @@ intWidget iVal _ = do
   deleteButton <- buttonDynAttrs "-" (DeleteMe) $ constDyn ("style"=:"width:20px")
   repeats <- combineDyn (\a b ->(a+1-b)) plusButton minusButton
   repeats' <- forDyn repeats (\k->if k>0 then Rep k else Div (abs (k-2)))
-  genPat <- combineDyn (\str rep-> if isJust (readMaybe str::Maybe Int) then Atom (read str::Int) Inert rep else Atom 0 Inert rep ) inputVal repeats'
+  genPat <- combineDyn (\str rep-> if isJust (readMaybe (T.unpack str)::Maybe Int) then Atom (read (T.unpack str)::Int) Inert rep else Atom 0 Inert rep ) inputVal repeats'
   forDyn genPat (\k-> (k,deleteButton))
 
 
@@ -596,10 +563,10 @@ crushWidget::MonadWidget t m => GeneralPattern Int -> Event t () -> m (Dynamic t
 crushWidget iVal _ = do
   text "0"
   let attrs = constDyn $ fromList $ zip ["type","min","max","step","style"] ["range","0","16","1","width:75px"]
-  slider<-textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs
+  slider <- textInput $ def & textInputConfig_inputType .~ "range" & textInputConfig_attributes .~ attrs
   text "16"
   let panVal = _textInput_value slider
-  panVal' <- forDyn panVal (\x-> if isJust (readMaybe x::Maybe Int) then Atom (read x::Int) Inert Once else Atom 16 Inert Once)
+  panVal' <- forDyn panVal (\x-> if isJust (readMaybe (T.unpack x)::Maybe Int) then Atom (read (T.unpack x)::Int) Inert Once else Atom 16 Inert Once)
   deleteButton <- button' "-" DeleteMe
   forDyn panVal' (\k -> (k,deleteButton))
 
@@ -672,7 +639,7 @@ sButtonWidget iSamp reps = mdo
   num <- count sampleButton >>= mapDyn (\x-> (x+iNum) `mod` length sMap)
   sName <- mapDyn (\x-> maybe ("~") id $ Data.Map.lookup x sMap) num
   atom <- combineDyn (\v r ->Atom v Inert r) sName reps
-  showSample <- mapDyn (show) atom
+  showSample <- mapDyn (T.pack . show) atom
   return sName
 
 -- returns atom of a character
@@ -688,7 +655,7 @@ vowelButtonWidget iGenPat _ = elAttr "td" ("style"=:"text-align:center") $ elAtt
   let char' = updated char''
   char <- holdDyn (iVowel) char'
   vowel <- mapDyn (\x -> Atom x Inert Once) char
-  showVowel <- mapDyn show vowel
+  showVowel <- mapDyn (T.pack . show) vowel
   mapDyn (\x->(x,deleteButton)) vowel
   where
       getIVal i = case i of
@@ -701,7 +668,7 @@ vowelButtonWidget iGenPat _ = elAttr "td" ("style"=:"text-align:center") $ elAtt
 
 
 -- For faderButtonWidget - gradient string used to show the
-makeStyleString gradient =
+makeStyleString gradient = T.pack $
   "background: -webkit-linear-gradient(90deg,lightgreen "++ (show $ x+1) ++ "%, white "++(show $ x) ++ "%);"++
     "background: -o-linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white "++ (show x)++ "%);" ++
       "background: -moz-linear-gradient(90deg, lightgreen "++ (show $ x+1) ++ "%, white "++ (show x) ++ "%);" ++
