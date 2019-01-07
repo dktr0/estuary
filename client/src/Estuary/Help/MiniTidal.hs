@@ -174,7 +174,7 @@ about = do
   divClass "about" $ text  "MiniTidal reference"
   divClass "aboutText" $ text  "A live coding langugae that allows you to make musical patterns with text, describing sequences and ways of transforming and combining them, exploring complex interactions between simple parts."
 
-exampleText :: String -> String
+exampleText :: Text -> Text
 
 exampleText "silence" = "silence"
 exampleText "stack" = "stack [sound \"bd bd*2\", sound \"hh*2 [sn cp] cp future*4\", sound \"arpy\" +| n \"0 .. 15\"]"
@@ -332,7 +332,7 @@ exampleText "cosine" = "sound \"bd*8\" # pan cosine # speed (sine + 0.5)"
 -- exampleText "\-"
 -- exampleText "\*"
 
-referenceText :: String -> String
+referenceText :: Text -> Text
 
 referenceText "silence" = "is the empty pattern, it contains nothing, nada. It's still useful, though!"
 referenceText "stack" = "takes a list of patterns and combines them into a new pattern by layering them up - effectively playing all of the patterns in the list simultaneously."
@@ -492,7 +492,7 @@ referenceText "cosine" = "A cosine wave, i.e. a sine shifted in time by a quarte
 
 
 -- help files for samples
-functionRef :: MonadWidget t m => String -> m ()
+functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
    switchToReference <- divClass "refExampleButton" $ button x
    exampleVisible <- toggle True switchToReference
