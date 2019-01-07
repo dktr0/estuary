@@ -14,6 +14,8 @@ import Data.Maybe
 import Data.Either
 import qualified Data.Map as Map
 
+import Sound.MusicW.AudioContext
+
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.Types as Punctual
@@ -130,14 +132,14 @@ renderTextProgramChanged c z (SuperContinent,x) = do
 
 renderTextProgramChanged c z (PunctualAudio,x) = do
   s <- get
-  let ac = audioContext c
+  ac <- liftAudioIO $ audioContext
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
-    t <- liftIO $ getAudioTime (audioContext c)
+    t <- liftAudioIO $ audioUTCTime
     let eval = (exprs,t)
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac (masterBusNode c) t) z (punctuals s)
-    newPunctualW <- liftIO $ Punctual.updatePunctualW prevPunctualW eval
+    newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
@@ -147,7 +149,7 @@ renderTextProgramChanged c z (PunctualVideo,x) = do
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
-    t <- liftIO $ getAudioTime (audioContext c)
+    t <- liftAudioIO $ audioUTCTime
     let eval = (exprs,t)
     let prevPunctualVideo = findWithDefault (Punctual.emptyPunctualState t) z (punctualVideo s)
     let newPunctualVideo = Punctual.updatePunctualState prevPunctualVideo eval
@@ -254,7 +256,7 @@ scheduleNextRender :: Context -> Renderer
 scheduleNextRender c = do
   s <- get
   let next = addUTCTime renderPeriod (logicalTime s)
-  tNow <- liftIO $ getAudioTime (audioContext c)
+  tNow <- liftAudioIO $ audioUTCTime
   let diff = diffUTCTime next tNow
   -- if next logical time is more than 0.2 seconds in the past or future
   -- fast-forward or rewind by half of the difference
@@ -288,6 +290,6 @@ calculateRenderTimes = do
 
 forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThread c ri = do
-  renderStart <- readMVar c >>= getAudioTime . audioContext
+  renderStart <- liftAudioIO $ audioUTCTime
   irs <- initialRenderState renderStart
   void $ forkIO $ iterateM_ (execStateT $ runRender c ri) irs

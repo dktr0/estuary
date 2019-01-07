@@ -5,6 +5,7 @@ import Data.IntMap.Strict
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
+import Sound.MusicW.AudioContext
 
 import Estuary.Types.Definition
 import Estuary.RenderInfo
@@ -16,7 +17,7 @@ data RenderState = RenderState {
   cachedDefs :: !DefinitionMap,
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
-  punctuals :: !(IntMap Punctual.PunctualW),
+  punctuals :: !(IntMap (Punctual.PunctualW AudioContextIO)),
   punctualVideo :: !(IntMap Punctual.PunctualState),
   superContinentProgram :: SuperContinent.Program,
   superContinentState :: SuperContinent.SuperContinentState,

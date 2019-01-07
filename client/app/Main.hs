@@ -48,22 +48,23 @@ main = do
   -- Wait for 10k ms or click, which ever happens first
   waitForInteractionOrTimeout 10000
 
-  ac <- getAudioContext  
-  compressor <- instantiateSourceSinkNode (Compressor (Db (-10)) (Db 3) (Amp 4) (Millis 50) (Millis 100)) ac
-  -- Compressor threshold knee ratio attack release
-  masterGain <- instantiateSourceSinkNode (Gain (Db 0)) ac
-  acDestination <- instantiateSinkNode Destination ac
-  connect compressor masterGain
-  connect masterGain acDestination
-  let masterBus = compressor
+  masterBusNode <- liftAudioIO $ do
+    acDestination <- createDestination
+    (nRef,s) <- playSynthNow acDestination $ do
+      x <- audioIn
+      y <- compressor (-10) 3 4 0.050 0.100 x -- args are: threshold knee ratio attack release input
+      z <- gain 1.0 y
+      audioOut z
+      return x
+    nodeRefToNode nRef s
 
-  wd <- newWebDirt ac (Sound.MusicW.jsval masterBus)
+  wd <- liftAudioIO $ newWebDirt masterBusNode
   initializeWebAudio wd
   sd <- newSuperDirt
   protocol <- estuaryProtocol
   mv <- emptyCanvasState >>= newMVar
-  now <- getAudioTime ac
-  c <- newMVar $ initialContext now ac masterBus wd sd mv
+  now <- liftAudioIO $ audioUTCTime
+  c <- newMVar $ initialContext now masterBusNode wd sd mv
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
 

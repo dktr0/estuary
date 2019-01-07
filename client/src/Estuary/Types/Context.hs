@@ -18,7 +18,6 @@ import Estuary.Render.AudioContext
 import Sound.MusicW (Node)
 
 data Context = Context {
-  audioContext :: AudioContext,
   masterBusNode :: Node,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
@@ -37,9 +36,8 @@ data Context = Context {
   canvasState :: MVar CanvasState
   }
 
-initialContext :: UTCTime -> AudioContext -> Node -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
-initialContext now ac mBusNode wd sd mv = Context {
-  audioContext = ac,
+initialContext :: UTCTime -> Node -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
+initialContext now mBusNode wd sd mv = Context {
   masterBusNode = mBusNode,
   webDirt = wd,
   superDirt = sd,
