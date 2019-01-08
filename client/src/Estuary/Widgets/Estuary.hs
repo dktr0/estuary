@@ -99,11 +99,6 @@ foreign import javascript safe
 
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange, Event t ())
 header ctx renderInfo = divClass "header" $ do
-  tick <- getPostBuild
-  hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
-  port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
-  hostName' <- holdDyn "" hostName
-  port' <- holdDyn "" port
   clickedLogoEv <- dynButtonWithChild "logo" $
     dynText =<< translateDyn Term.EstuaryDescription ctx
   ctxChangeEv <- clientConfigurationWidgets ctx
@@ -135,14 +130,13 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak" $ do
-    text "server "
-    dynText =<< mapDyn (T.pack . f) ctx
+    dynText . nubDyn =<< mapDyn (T.pack . f) ctx
     text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
-    dynText =<< mapDyn (T.pack . show . avgRenderLoad) renderInfo
+    dynText . nubDyn =<< mapDyn (T.pack . show . avgRenderLoad) renderInfo
     text "% ("
-    dynText =<< mapDyn (T.pack . show . peakRenderLoad) renderInfo
+    dynText . nubDyn =<< mapDyn (T.pack . show . peakRenderLoad) renderInfo
     text "% "
     dynText =<< translateDyn Term.Peak ctx
     text ") "
