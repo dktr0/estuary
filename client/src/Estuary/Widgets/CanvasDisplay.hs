@@ -17,6 +17,8 @@ import JavaScript.Web.AnimationFrame
 import JavaScript.Web.Canvas
 import GHCJS.Concurrent
 
+import Sound.MusicW.AudioContext
+
 import Estuary.Types.Color
 import Estuary.Types.CanvasOp
 import Estuary.Types.CanvasState
@@ -37,14 +39,14 @@ requestAnimationFrame ctx mv = do
 
 redrawCanvas :: Context -> MVar CanvasState -> Double -> IO ()
 redrawCanvas ctx mv _ = synchronously $ do
-  t1 <- getCurrentTime
+  t1 <- liftAudioIO $ audioUTCTime
   cState <- takeMVar mv
   let ops = queuedOps cState
   let n1 = Prelude.length ops
   ops' <- flushCanvasOps ctx ops
   let n2 = Prelude.length ops'
   putMVar mv $ cState { queuedOps = ops', previousDrawStart = t1 }
-  t3 <- getCurrentTime
+  t3 <- liftAudioIO $ audioUTCTime
   let interFrameDelay = diffUTCTime t1 (previousDrawStart cState)
   let drawDelay = diffUTCTime t3 t1
   let opsDrawn = n1 - n2
@@ -54,8 +56,12 @@ redrawCanvas ctx mv _ = synchronously $ do
 
 flushCanvasOps :: Context -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]
 flushCanvasOps ctx ops = do
-  now <- getCurrentTime
-  let (opsForNow,opsForLater) = Data.List.partition ((<= now) . fst) ops
+  now <- liftAudioIO $ audioUTCTime
+  let dropTime = addUTCTime (-0.1) now -- drop anything that is more than 1/10 second late
+  let (opsToDrop,opsToKeep) = Data.List.partition ((< dropTime) . fst) ops
+  let nOpsToDrop = Data.List.length opsToDrop
+  when (nOpsToDrop > 0) $ putStrLn $ "dropping " ++ show nOpsToDrop ++ " canvas ops"
+  let (opsForNow,opsForLater) = Data.List.partition ((<= now) . fst) opsToKeep
   performCanvasOps ctx opsForNow
   return opsForLater
 
