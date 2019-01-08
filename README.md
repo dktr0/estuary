@@ -100,7 +100,9 @@ cd Estuary
 git submodule init
 git submodule update
 cd static
-git clone https://github.com/TidalCycles/Dirt.git
+git clone https://github.com/TidalCycles/Dirt-Samples.git
+mv Dirt-Samples samples
+make makeSampleMap
 cd Dirt
 git submodule init
 git submodule update
