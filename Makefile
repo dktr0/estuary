@@ -91,6 +91,9 @@ curlReleaseClient: # this uses curl to download and unzip a recent pre-built cli
 	rm -rf temp.zip
 	cp -Rf static/Dirt Estuary.jsexe
 
+makeSampleMap:
+	cd static/samples; ../WebDirt/makeSampleMap.sh . > sampleMap.json
+
 clean:
 	rm -rf Estuary.jsexe
 	rm -rf $$($(STACK_CLIENT) path --local-install-root)/bin
