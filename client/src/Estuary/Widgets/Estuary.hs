@@ -71,7 +71,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
-  t <- mapDyn theme ctx -- Dynamic t String
+  t <- nubDyn <$> mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
 
