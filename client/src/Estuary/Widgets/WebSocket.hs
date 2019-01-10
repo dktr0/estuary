@@ -46,9 +46,9 @@ alternateWebSocket obj toSend = mdo
   now <- liftIO $ getCurrentTime
 
   performEvent_ $ fmap (liftIO . (send obj) . encode) $ leftmost [toSend,pingRequest]
-  ticks <- tickLossy (0.025::NominalDiffTime) now
-  -- responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
-  responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
+  ticks <- tickLossy (0.1::NominalDiffTime) now
+  responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
+  -- responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
   let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status

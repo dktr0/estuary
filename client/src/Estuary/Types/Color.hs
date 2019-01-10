@@ -1,7 +1,7 @@
 module Estuary.Types.Color where
 
 data Color =
-  RGBA Double Double Double Double
+  RGBA !Double !Double !Double !Double
   deriving (Eq)
 
 instance Show Color where
