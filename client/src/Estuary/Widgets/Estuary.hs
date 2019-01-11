@@ -75,6 +75,10 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   let t' = updated t -- Event t String
   changeTheme t'
 
+  let sd = superDirt ic
+  sdOn <- nubDyn <$> mapDyn superDirtOn ctx
+  performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
+
   updateContext ctxM ctx
 
   performHint (webDirt ic) hints

@@ -1,16 +1,15 @@
 SuperDirt = function () {
+  this.url = "ws://127.0.0.1:7772";
   this.status = "initializing...";
   this.wsReady = false;
-  this.setUrl("ws://127.0.0.1:7772");
+  this.active = false;
+  this.connectionInProgress = false;
 }
 
-SuperDirt.prototype.setUrl = function(x) {
-  if(x == this.url) return;
-  if(this.wsReady) {
-    this.close();
-  }
-  this.url = x;
-  this.connect();
+SuperDirt.prototype.setActive = function(x) {
+  if(x == this.active) return;
+  this.active = x;
+  if(x == true) this.connect();
 }
 
 SuperDirt.prototype.log = function(x) {
@@ -19,7 +18,12 @@ SuperDirt.prototype.log = function(x) {
 }
 
 SuperDirt.prototype.connect = function() {
-  this.log("opening connection to " + this.url + "...");
+  if(this.active == false) return;
+  if(this.wsReady == true) return;
+  if(this.connectionInProgress == true) return;
+  connectionInProgress = true;
+
+  this.log("opening SuperDirt socket connection to " + this.url + "...");
   window.WebSocket = window.WebSocket || window.MozWebSocket;
   var closure = this;
   try {
@@ -27,28 +31,37 @@ SuperDirt.prototype.connect = function() {
     this.ws.onopen = function () {
       closure.log("connection open");
       closure.wsReady = true;
+      closure.connectionInProgress = false;
     };
     this.ws.onerror = function () {
       closure.log("error");
       closure.wsReady = false;
+      closure.connectionInProgress = false;
     };
     this.ws.onclose = function () {
-      // closure.log("closed (retrying in 5 seconds)");
+      closure.log("SuperDirt socket closed (retrying in 5 seconds)");
+      closure.connectionInProgress = false;
       closure.wsReady = false;
       closure.ws = null;
-      setTimeout(function() {
-        closure.connect();
-      },5000);
+      if(closure.active == true) {
+        setTimeout(function() {
+          closure.connect();
+        },5000);
+      }
     };
     this.ws.onmessage = function (m) {
       closure.onMessage(m);
     }
   }
   catch(e) {
-    this.log("exception in new WebSocket (retry in 5 seconds)");
-    setTimeout(function() {
-      closure.connect();
-    },5000);
+    closure.log("exception in new WebSocket (retry in 5 seconds)");
+    closure.connectionInProgress = false;
+    closure.wsReady = false;
+    if(closure.active == true) {
+      setTimeout(function() {
+        closure.connect();
+      },5000);
+    }
   }
 }
 
