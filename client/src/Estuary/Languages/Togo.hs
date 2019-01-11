@@ -3,8 +3,10 @@ module Estuary.Languages.Togo (togo) where
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
+import Data.Bool
 import Sound.Tidal.Context (Pattern,ControlPattern)
 import qualified Sound.Tidal.Context as Tidal
+import qualified Sound.Tidal.Bjorklund as Tidal
 
 -- Examples:
 -- 3x8/8<<1 "bd n=0 shape=0.2" "cp"
@@ -42,14 +44,12 @@ euclidFullPattern = do
   slowness <- slownessParser
   c <- togoPatternAsArg
   d <- togoPatternAsArg
-  let n1 = pure $ fromIntegral a
-  let n2 = pure $ fromIntegral b
-  let onPattern = Tidal.fast (pure $ fromIntegral b) c
-  let offPattern = Tidal.fast (pure $ fromIntegral b) d
-  return $ slowness $ rotation $ Tidal.stack [Tidal.euclid n1 n2 onPattern, Tidal.euclidInv n1 n2 offPattern]
+  let n1 = fromIntegral a
+  let n2 = fromIntegral b
+  return $ slowness $ rotation $ _euclidFull n1 n2 c d
 
 slownessParser :: Parser (ControlPattern -> ControlPattern)
-slownessParser = option (Tidal.slow 1) $ reservedOp "/" >> double >>= return . Tidal.slow . pure . toRational
+slownessParser = option (Tidal._slow 1) $ reservedOp "/" >> double >>= return . Tidal._slow . toRational
 
 rotationParser :: Parser Double
 rotationParser = option 0 $ choice [
@@ -65,10 +65,9 @@ euclidPattern = do
   rotation <- (Tidal.rotR . toRational . (/fromIntegral b)) <$> rotationParser
   slowness <- slownessParser
   c <- togoPatternAsArg
-  let n1 = pure $ fromIntegral a
-  let n2 = pure $ fromIntegral b
-  let onPattern = Tidal.fast (pure $ fromIntegral b) c
-  return $ slowness $ rotation $ Tidal.euclid n1 n2 onPattern
+  let n1 = fromIntegral a
+  let n2 = fromIntegral b
+  return $ slowness $ rotation $ _euclid n1 n2 c
 
 euclidInvPattern :: Parser ControlPattern
 euclidInvPattern = do
@@ -78,10 +77,20 @@ euclidInvPattern = do
   rotation <- (Tidal.rotR . toRational . (/fromIntegral b)) <$> rotationParser
   slowness <- slownessParser
   c <- togoPatternAsArg
-  let n1 = pure $ fromIntegral a
-  let n2 = pure $ fromIntegral b
-  let offPattern = Tidal.fast (pure $ fromIntegral b) c
-  return $ slowness $ rotation $ Tidal.euclidInv n1 n2 offPattern
+  let n1 = fromIntegral a
+  let n2 = fromIntegral b
+  return $ slowness $ rotation $ _euclidInv n1 n2 c
+
+-- alternate definitions of _euclid,_euclidInv,and _euclidFull for performance gains...
+
+_euclid :: Int -> Int -> ControlPattern -> ControlPattern
+_euclid n k a = Tidal.fastcat $ fmap (bool Tidal.silence a) $ Tidal.bjorklund (n,k)
+
+_euclidInv :: Int -> Int -> ControlPattern -> ControlPattern
+_euclidInv n k a = Tidal.fastcat $ fmap (bool Tidal.silence a) $ Tidal.bjorklund (n,k)
+
+_euclidFull :: Int -> Int -> ControlPattern -> ControlPattern -> ControlPattern
+_euclidFull n k a b = Tidal.fastcat $ fmap (bool b a) $ Tidal.bjorklund (n,k)
 
 samplePattern :: Parser ControlPattern
 samplePattern = do
