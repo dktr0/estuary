@@ -57,7 +57,7 @@ redrawCanvas ctx mv _ = synchronously $ do
 flushCanvasOps :: Context -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]
 flushCanvasOps ctx ops = do
   now <- liftAudioIO $ audioUTCTime
-  let dropTime = addUTCTime (-0.1) now -- drop anything that is more than 1/10 second late
+  let dropTime = addUTCTime (-0.2) now -- drop anything that is more than 1/5 second late
   let (opsToDrop,opsToKeep) = Data.List.partition ((< dropTime) . fst) ops
   let nOpsToDrop = Data.List.length opsToDrop
   when (nOpsToDrop > 0) $ putStrLn $ "dropping " ++ show nOpsToDrop ++ " canvas ops"
