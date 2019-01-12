@@ -25,3 +25,6 @@ adjustCps newCps prevTempo now = Tempo { cps = newCps, at = now, beat = elapsedC
 
 adjustCpsNow :: Double -> Tempo -> IO Tempo
 adjustCpsNow newCps prevTempo = getCurrentTime >>= return . adjustCps newCps prevTempo
+
+beatZero :: Tempo -> UTCTime
+beatZero x = addUTCTime (realToFrac $ beat x * (-1) / cps x) (at x)

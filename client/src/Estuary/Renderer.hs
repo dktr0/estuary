@@ -139,7 +139,10 @@ renderTextProgramChanged c z (PunctualAudio,x) = do
     t <- liftAudioIO $ audioUTCTime
     let eval = (exprs,t)
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac (masterBusNode c) t) z (punctuals s)
-    newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW eval
+    let tempo' = tempo c
+    let beat0 = utcTimeToDouble $ beatZero tempo'
+    let cps' = cps tempo'
+    newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,cps') eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
@@ -206,14 +209,14 @@ punctualVideoToOps lt p s = concat $ zipWith4 (\c d e f -> [c,d,e,f]) clears str
     n = 5 :: Int -- how many sampling/drawing operations per renderPeriod
     ts = fmap (flip addUTCTime $ lt) $ fmap ((*(renderPeriod/(fromIntegral n :: NominalDiffTime))) . fromIntegral) [0 .. n]
     clear = fmap biPolarToPercent $! sampleWithDefault "clear" (-1) s ts
-    r = fmap biPolarToPercent $! sampleWithDefault "r" 1 s ts
-    g = fmap biPolarToPercent $! sampleWithDefault "g" 1 s ts
-    b = fmap biPolarToPercent $! sampleWithDefault "b" 1 s ts
-    a = fmap biPolarToPercent $! sampleWithDefault "a" 1 s ts
+    r = fmap biPolarToPercent $! sampleWithDefault "red" 1 s ts
+    g = fmap biPolarToPercent $! sampleWithDefault "green" 1 s ts
+    b = fmap biPolarToPercent $! sampleWithDefault "blue" 1 s ts
+    a = fmap biPolarToPercent $! sampleWithDefault "alpha" 1 s ts
     x = fmap biPolarToPercent $! sampleWithDefault "x" 0 s ts
     y = fmap biPolarToPercent $! sampleWithDefault "y" 0 s ts
-    w = fmap biPolarToPercent $! sampleWithDefault "w" (-0.995) s ts
-    h = fmap biPolarToPercent $! sampleWithDefault "h" (-0.995) s ts
+    w = fmap biPolarToPercent $! sampleWithDefault "width" (-0.995) s ts
+    h = fmap biPolarToPercent $! sampleWithDefault "height" (-0.995) s ts
     clears = zip ts $ fmap CanvasOp.Clear clear
     strokes = zip ts $ fmap CanvasOp.StrokeStyle $ zipWith4 RGBA r g b a
     fills = zip ts $ fmap CanvasOp.FillStyle $ zipWith4 RGBA r g b a
@@ -223,7 +226,7 @@ prependLogicalTime :: UTCTime -> a -> (UTCTime,a)
 prependLogicalTime lt a = (lt,a)
 
 sampleWithDefault :: String -> Double -> Punctual.PunctualState -> [UTCTime] -> [Double]
-sampleWithDefault targetName d s ts = maybe (replicate (length ts) d) f $ Punctual.findGraphForTarget targetName s
+sampleWithDefault outputName d s ts = maybe (replicate (length ts) d) f $ Punctual.findGraphForOutput outputName s
   where f g = fmap (\t -> Punctual.sampleGraph (Punctual.startTime s) t 0 g) ts
 
 biPolarToPercent :: Double -> Double
