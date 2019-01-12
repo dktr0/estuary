@@ -45,7 +45,7 @@ packages:
 
 - location:
     git: https://github.com/d0kt0r0/Punctual.git
-    commit: d9ebad5f1dbc8b1935522200c1f03f0824c93a72
+    commit: a4d274718d54d0b22ef602b300320fa0ba50376a
   extra-dep: true
 
 extra-deps:
