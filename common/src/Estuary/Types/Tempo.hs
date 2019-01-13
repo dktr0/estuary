@@ -28,3 +28,11 @@ adjustCpsNow newCps prevTempo = getCurrentTime >>= return . adjustCps newCps pre
 
 beatZero :: Tempo -> UTCTime
 beatZero x = addUTCTime (realToFrac $ beat x * (-1) / cps x) (at x)
+
+adjustByClockDiff :: UTCTime -> Tempo -> IO Tempo
+adjustByClockDiff x t = do
+  tSystem <- getCurrentTime
+  let clockDiff = diffUTCTime tSystem x
+  return $ t {
+    at = addUTCTime (clockDiff*(-1)) (at t)
+  }

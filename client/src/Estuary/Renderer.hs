@@ -137,10 +137,13 @@ renderTextProgramChanged c z (PunctualAudio,x) = do
   if isLeft parseResult then return () else do
     let exprs = either (const []) id parseResult
     t <- liftAudioIO $ audioUTCTime
+    -- liftIO$ putStrLn $ "audioUTCTime=" ++ show t
     let eval = (exprs,t)
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac (masterBusNode c) t) z (punctuals s)
     let tempo' = tempo c
-    let beat0 = utcTimeToDouble $ beatZero tempo'
+    -- liftIO $ putStrLn $ "render tempo'=" ++ show tempo'
+    let beat0 = beatZero tempo'
+    -- liftIO $ putStrLn $ " beatZero :: UTCTime = " ++ show beat0
     let cps' = cps tempo'
     newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,cps') eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
