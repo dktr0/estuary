@@ -42,28 +42,14 @@ redrawCanvas ctx mv _ = synchronously $ do
   t1 <- liftAudioIO $ audioUTCTime
   cState <- takeMVar mv
   let ops = queuedOps cState
-  let n1 = Prelude.length ops
-  ops' <- flushCanvasOps ctx ops
-  let n2 = Prelude.length ops'
-  putMVar mv $ cState { queuedOps = ops', previousDrawStart = t1 }
-  t3 <- liftAudioIO $ audioUTCTime
-  let interFrameDelay = diffUTCTime t1 (previousDrawStart cState)
-  let drawDelay = diffUTCTime t3 t1
-  let opsDrawn = n1 - n2
-  -- putStrLn $ show drawDelay ++ "s for " ++ show opsDrawn ++ " ops"
-  -- putStrLn $ "interFrameDelay = " ++ show interFrameDelay ++ "; drawDelay = " ++ show drawDelay ++ " (" ++ show opsDrawn ++ " ops drawn)"
-  requestAnimationFrame ctx mv
-
-flushCanvasOps :: Context -> [(UTCTime,CanvasOp)] -> IO [(UTCTime,CanvasOp)]
-flushCanvasOps ctx ops = do
-  now <- liftAudioIO $ audioUTCTime
-  let dropTime = addUTCTime (-0.2) now -- drop anything that is more than 1/5 second late
+  let dropTime = addUTCTime (-0.2) t1 -- drop anything that is more than 1/5 second late
   let (opsToDrop,opsToKeep) = Data.List.partition ((< dropTime) . fst) ops
   let nOpsToDrop = Data.List.length opsToDrop
   when (nOpsToDrop > 0) $ putStrLn $ "dropping " ++ show nOpsToDrop ++ " canvas ops"
-  let (opsForNow,opsForLater) = Data.List.partition ((<= now) . fst) opsToKeep
+  let (opsForNow,opsForLater) = Data.List.partition ((<= t1) . fst) opsToKeep
+  putMVar mv $ cState { queuedOps = opsForLater, previousDrawStart = t1 }
   performCanvasOps ctx opsForNow
-  return opsForLater
+  requestAnimationFrame ctx mv
 
 performCanvasOps :: Context -> [(UTCTime,CanvasOp)] -> IO ()
 performCanvasOps ctx ops = mapM_ (canvasOp ctx) $ fmap (toActualWandH 1920 1080 . snd) ops
