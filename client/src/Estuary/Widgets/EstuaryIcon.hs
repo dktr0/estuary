@@ -5,6 +5,9 @@ import Control.Monad.IO.Class(liftIO)
 import qualified GHCJS.DOM.ChildNode as Dom
 import qualified GHCJS.DOM.Node as Dom
 import qualified GHCJS.DOM.Types as Dom
+import qualified GHCJS.DOM.Element as Element
+import qualified GHCJS.DOM.DOMTokenList as ClassList
+
 import GHCJS.Types
 
 import GHCJS.Marshal.Pure
@@ -23,7 +26,7 @@ estuaryIcon = do
   postMountEv <- getPostBuild
 
   jsIconInstance <- liftIO $ js_splashIconInstance
-  jsContainerEl <- liftIO $ (fmap pFromJSVal js_splashScreenContainerEl :: IO (Maybe Dom.ChildNode))
+  jsContainerEl <- liftIO $ (fmap pFromJSVal js_splashScreenContainerEl :: IO (Maybe Dom.Element))
   jsCanvas <- liftIO $ (fmap pFromJSVal (js_getCanvas jsIconInstance) :: IO (Dom.Element))
   
   case jsContainerEl of
@@ -33,9 +36,10 @@ estuaryIcon = do
       let duration = 3 -- seconds
       startPos <- liftIO $ js_snapshotPosition jsIconInstance
       placeRawElement jsCanvas
-      performEvent_ $ ffor postMountEv $ \_ -> liftIO $ do
+      liftIO $ do
         js_animateFrom jsIconInstance startPos duration
-        Dom.remove screen
+        classList <- Element.getClassList screen
+        ClassList.add classList ["loaded"]
 
     -- Don't animate, we are not transitioning from the splash screen.
     Nothing -> placeRawElement jsCanvas
@@ -52,7 +56,7 @@ foreign import javascript safe
   js_getCanvas :: IconDisplay -> IO JSVal
 
 foreign import javascript safe
-  "document.querySelector('#estuary-splash')"
+  "document.querySelector('#estuary-splash:not(.loaded)')"
   js_splashScreenContainerEl :: IO JSVal
 
 foreign import javascript safe

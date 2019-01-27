@@ -99,6 +99,8 @@
     if (canvas == null)
       canvas = document.createElement('canvas');
 
+    canvas.classList.add('estuary-icon-display');
+
     canvas.width = this.width;
     canvas.height = this.height;
 
@@ -189,9 +191,12 @@
 
       var animation = display.animation;
       if (animation != null) {
-        if (animation.endPos == null) {
-          // Wait until mounted as the snapshot will return null until then.
+        if (animation.endPos == null)
+          // Wait until mounted as the snapshot will return null until
           animation.endPos = snapshotPosition(display);
+
+        if (animation.endPos == null) {
+          doTransitionFrame(animation.startPos, animation.startPos, 1, display.canvas);
           continue;
         }
 
