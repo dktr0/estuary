@@ -28,22 +28,24 @@
       + ' scale(' +  width / bboxEnd.width + ', ' + height / bboxEnd.height + ')';
   }
 
-  function animateTo(display, newParent, duration) {
+  /* export */ EstuaryIcons.snapshotPosition = snapshotPosition;
+  function snapshotPosition(display) {
     var canvas = display.canvas;
 
-    var startBBox = canvas.getBoundingClientRect();
-    var startPos = {
-      top: startBBox.top, left: startBBox.left,
-      width: startBBox.width, height: startBBox.height
+    var bbox = canvas.getBoundingClientRect();
+    // If width and height is 0, it is not mounted or not visible.
+    if (bbox.width === 0 && bbox.height === 0)
+      return null;
+
+    return {
+      top: bbox.top, left: bbox.left,
+      width: bbox.width, height: bbox.height
     };
-    
-    newParent.appendChild(canvas);
-    newParent.scrollLeft;
-    var endBBox = canvas.getBoundingClientRect();
-    var endPos = {
-      top: endBBox.top, left: endBBox.left,
-      width: endBBox.width, height: endBBox.height
-    };
+  }
+
+  /* export */ EstuaryIcons.animateFrom = animateFrom;
+  function animateFrom(display, startPos, duration) {
+    var endPos = snapshotPosition(display);
 
     display.animation = {
       startPos: startPos,
@@ -187,6 +189,12 @@
 
       var animation = display.animation;
       if (animation != null) {
+        if (animation.endPos == null) {
+          // Wait until mounted as the snapshot will return null until then.
+          animation.endPos = snapshotPosition(display);
+          continue;
+        }
+
         var startTime = animation.startTime;
         if (startTime == null)
           animation.startTime = startTime = now;
@@ -203,6 +211,5 @@
     }
   }
 
-  EstuaryIcons.animateTo = animateTo;
   return EstuaryIcons;
 })();
