@@ -42,12 +42,11 @@ findAllMatchingSelector container query =
 click :: (IsHTMLElement e) => e -> IO ()
 click = HTMLElement.click
 
-changeValue :: (IsGObject e) => e -> String -> IO ()
+changeValue :: (IsGObject e, ToJSString val) => e -> val -> IO ()
 changeValue e value = do
-  let e' :: HTMLInputElement
-      e' = unsafeCastGObject $ toGObject e
+  let e' = uncheckedCastTo HTMLInputElement $ e
       
-  HTMLInputElement.setValue e' (Just value)
+  HTMLInputElement.setValue e' value
   notifyChanged e'
 
 notifyChanged :: (IsEventTarget e) => e -> IO ()

@@ -21,7 +21,6 @@ import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 
-import GHCJS.DOM.Types
 import GHCJS.Marshal
 import GHCJS.Marshal.Pure
 import GHCJS.Types

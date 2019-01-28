@@ -11,7 +11,7 @@ import Data.Map
 import Data.Maybe
 import Data.Time
 
-import GHCJS.DOM.Types(Element, HTMLElement, HTMLTextAreaElement, castToHTMLElement, fromJSString)
+import GHCJS.DOM.Types(HTMLElement(..), HTMLTextAreaElement(..), uncheckedCastTo, fromJSString)
 import qualified GHCJS.DOM.HTMLElement as HTMLElement
 import qualified GHCJS.DOM.HTMLTextAreaElement as HTMLTextAreaElement
 
@@ -28,7 +28,6 @@ import Estuary.Types.Definition
 import Estuary.Types.Tempo
 import Estuary.Types.Sited
 import Estuary.Types.Live
-import Estuary.Types.EditOrEval
 import Estuary.Types.TidalParser
 import Estuary.Types.TextNotation
 import Estuary.Types.EnsembleResponse
@@ -56,19 +55,19 @@ main = hspec $ do
       silentEstuaryWithInitialPage protocol $ Collaborate "abc"
 
       let password = "abc"
-      performRequest protocol $ EnsembleRequest (Sited "abc" (AuthenticateInEnsemble password))
+      performRequest protocol $ EnsembleRequest (AuthenticateInEnsemble password)
 
-      EnsembleResponse (Sited _ (DefaultView view)) <- expectMessage respStream $ do
+      EnsembleResponse (DefaultView view) <- expectMessage respStream $ do
         withinMillis 10000
         toMatch $ \case
-          EnsembleResponse (Sited "abc" (DefaultView view)) -> Matches
+          EnsembleResponse (DefaultView view) -> Matches
           _ -> DoesNotMatch
 
       -- The editors should not take more that 1s to appear after receiving the
       -- expected layout.
       threadDelay $ 1000 * 1000
 
-      Just (editor :: Element) <- DomUtils.findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
+      Just (editor :: HTMLElement) <- DomUtils.findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
       Just (evalBtn :: HTMLElement) <- DomUtils.findMatchingSelector editor "button"
       Just (txtArea :: HTMLTextAreaElement) <- DomUtils.findMatchingSelector editor "textarea"
 
@@ -81,9 +80,9 @@ main = hspec $ do
       expectMessage reqStream $ do
         withinMillis 3000
         toMatch $ \case
-          EnsembleRequest (Sited _ (ZoneRequest (Sited _ editOrEval))) ->
-            case editOrEval of
-              Edit (TextProgram (Live (TidalTextNotation MiniTidal, "s \"bd\"") L3)) ->
+          EnsembleRequest (ZoneRequest _ definition) ->
+            case definition of
+              TextProgram (Live (TidalTextNotation MiniTidal, "s \"bd\"") L3) ->
                 Matches
               _ -> AlmostMatches
           _ -> DoesNotMatch
