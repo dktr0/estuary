@@ -110,26 +110,37 @@ header ctx renderInfo = divClass "header" $ do
   return (ctxChangeEv, clickedLogoEv)
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
-clientConfigurationWidgets ctx = divClass "webDirt" $ do
-  divClass "webDirtMute" $ divClass "webDirtContent" $ do
+clientConfigurationWidgets ctx = divClass "config-toolbar" $ do  
+  themeChangeEv <- divClass "config-entry" $ do
     let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale")]
     translateDyn Term.Theme ctx >>= dynText
-    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) def -- Event t String
-    let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
+    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "config-dropdown")) -- Event t String
+    return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
+  
+  langChangeEv <- divClass "config-entry" $ do
     translateDyn Term.Language ctx >>= dynText
-    let langMap = constDyn $ fromList $ zip languages (fmap (T.pack . show) languages)
-    langChange <- divClass "languageSelector" $ _dropdown_change <$> (dropdown English langMap def)
-    let langChange' = fmap (\x c -> c { language = x }) langChange
+    let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
+    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "config-dropdown"))
+    return $ fmap (\x c -> c { language = x }) langChange
+
+  let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
+
+  canvasEnabledEv <- divClass "config-entry" $ do
     text "Canvas:"
-    canvasInput <- divClass "superDirtCheckbox" $ checkbox True $ def
-    let cvsOn = fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+    canvasInput <- checkbox True condigCheckboxAttrs
+    return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+    
+  superDirtEnabledEv <- divClass "config-entry" $ do
     text "SuperDirt:"
-    sdInput <- divClass "superDirtCheckbox" $ checkbox False $ def
-    let sdOn = fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
+    sdInput <- checkbox False condigCheckboxAttrs
+    return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
+  
+  webDirtEnabledEv <- divClass "config-entry" $ do
     text "WebDirt:"
-    wdInput <-divClass "webDirtCheckbox" $ checkbox True $ def
-    let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
-    return $ mergeWith (.) [langChange',cvsOn,sdOn,wdOn, styleChange']
+    wdInput <- checkbox True condigCheckboxAttrs
+    return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
+  
+  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv]
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)

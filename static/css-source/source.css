@@ -98,52 +98,38 @@
   margin-bottom: 0.6em;
 }
 
-/* source  */
-.webDirt { /* webDirt status area in top right of header */
-	font-size:1.5em;
+/*
+--------------------------------------------------------------------
+							CONFIGURATION
+--------------------------------------------------------------------
+*/
+
+.config-toolbar {
+	font-size: 0.75em;
 	float: right;
+	display: table-row;
 }
 
-/* source  */
-.webDirtMute {
-	display: flex;
-	font-size: 50%;
-}
-
-/* source  */
-.webDirtContent {
- display: flex;
-	margin-left: auto;
-}
-
-/*modifies the theme dropdown menu  (source)*/
-.themeSelector {
+.config-entry {
 	border-right: 1px solid;
-	padding-right: 0.0em;
-	padding-left: 0.5em;
-  margin-right: 0.5em;
+	padding: 0.25em 0.5em;
+	display: table-cell;
 }
 
-/*modifies the language dropdown menu  (source)*/
-.languageSelector {
-	border-right: 1px solid;
-	padding-right: 0.0em;
-	padding-left: 0.5em;
-  margin-right: 0.5em;
+.config-entry:last-child {
+	border-right: none;
 }
 
-/*modifies the superDirtCheckbox  (source)*/
-.superDirtCheckbox {
-	border-right: 1px solid;
-	padding-right: 0.5em;
-	padding-left: 0.5em;
-	  margin-right: 0.75em;
+.config-dropdown {
+	margin-left: 0.5em;
+	vertical-align: middle;
+	cursor: pointer;
 }
 
-/*modifies the webDirtCheckbox  (source)*/
-.webDirtCheckbox {
-	padding-right: 0.5em;
-	padding-left: 0.5em;
+.config-checkbox {
+	margin-left: 0.5em;
+	vertical-align: middle;
+	cursor: pointer;
 }
 
 /* modifies the estuary logo icon (source) */
@@ -237,8 +223,8 @@
 .splash-title { /*contains the title "estuary" on the homepage  (source)*/
 	display: flex;
 	margin-bottom: 1%;
-	margin:auto;
-	font-size: 2.3em;
+	margin: auto;
+	font-size: calc(16px + 1.5vw); /* scales a bit nicer with the viewport */
 }
 
 .splash-icon-container {
