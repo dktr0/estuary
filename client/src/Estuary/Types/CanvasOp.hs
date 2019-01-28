@@ -3,13 +3,13 @@ module Estuary.Types.CanvasOp where
 import Estuary.Types.Color
 
 data CanvasOp =
-  Clear Double |
-  MoveTo Double Double |
-  LineTo Double Double |
-  Rect Double Double Double Double |
-  Tri Double Double Double Double Double Double |
-  StrokeStyle Color |
-  FillStyle Color
+  Clear !Double |
+  MoveTo !Double !Double |
+  LineTo !Double !Double |
+  Rect !Double !Double !Double !Double |
+  Tri !Double !Double !Double !Double !Double !Double |
+  StrokeStyle !Color |
+  FillStyle !Color
   deriving (Show,Eq)
 
 toActualWandH :: Int -> Int -> CanvasOp -> CanvasOp

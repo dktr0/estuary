@@ -47,7 +47,7 @@ instance JSON SampleMap where
   showJSON map = JSON.encJSDict $ Map.toList $ unSampleMap $ map
 
 defaultSampleMapURL :: JSString
-defaultSampleMapURL = "WebDirt/sampleMap.json"
+defaultSampleMapURL = "samples/sampleMap.json"
 
 loadSampleMapAsync :: (ToJSString url) => url -> (Maybe SampleMap -> IO ()) -> IO ()
 loadSampleMapAsync url onLoad = do
@@ -68,7 +68,7 @@ loadSampleMapAsync url onLoad = do
 -- TODO should this not be connected to webdirt?
 foreign import javascript safe
   "var xhr = new XMLHttpRequest();                 \n\
-  \xhr.open('GET', $1, true);                      \n\     
+  \xhr.open('GET', $1, true);                      \n\
   \xhr.responseType = 'text';                      \n\
   \xhr.onload  = function() { $2(xhr.response); }; \n\
   \xhr.onabort = function() { $2(null); };         \n\

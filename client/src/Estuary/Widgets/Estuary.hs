@@ -71,9 +71,13 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
-  t <- mapDyn theme ctx -- Dynamic t String
+  t <- nubDyn <$> mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
+
+  let sd = superDirt ic
+  sdOn <- nubDyn <$> mapDyn superDirtOn ctx
+  performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
   updateContext ctxM ctx
 
@@ -99,11 +103,6 @@ foreign import javascript safe
 
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange, Event t ())
 header ctx renderInfo = divClass "header" $ do
-  tick <- getPostBuild
-  hostName <- performEvent $ fmap (liftIO . (\_ -> getHostName)) tick
-  port <- performEvent $ fmap (liftIO . (\_ -> getPort)) tick
-  hostName' <- holdDyn "" hostName
-  port' <- holdDyn "" port
   clickedLogoEv <- dynButtonWithChild "logo" $
     dynText =<< translateDyn Term.EstuaryDescription ctx
   ctxChangeEv <- clientConfigurationWidgets ctx
@@ -146,14 +145,13 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak" $ do
-    text "server "
-    dynText =<< mapDyn (T.pack . f) ctx
+    dynText . nubDyn =<< mapDyn (T.pack . f) ctx
     text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
-    dynText =<< mapDyn (T.pack . show . avgRenderLoad) renderInfo
+    dynText . nubDyn =<< mapDyn (T.pack . show . avgRenderLoad) renderInfo
     text "% ("
-    dynText =<< mapDyn (T.pack . show . peakRenderLoad) renderInfo
+    dynText . nubDyn =<< mapDyn (T.pack . show . peakRenderLoad) renderInfo
     text "% "
     dynText =<< translateDyn Term.Peak ctx
     text ") "

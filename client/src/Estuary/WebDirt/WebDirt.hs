@@ -25,7 +25,7 @@ newWebDirt n = do
   liftIO $ js_newWebDirt ctx n
 
 foreign import javascript unsafe
-  "$r = new WebDirt('WebDirt/sampleMap.json','Dirt/samples',0,null,0.010,$1,$2)"
+  "$r = new WebDirt('samples/sampleMap.json','samples',0,null,0.010,$1,$2)"
   js_newWebDirt :: AudioContext -> Node -> IO WebDirt
   -- 0 is additional delay/latency added to all events sent to WebDirt
   -- 0.010 is maximum lateness after which WebDirt silently drops sample events

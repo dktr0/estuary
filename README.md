@@ -19,16 +19,14 @@ The development of Estuary is the result of ongoing collaborative work that has 
 - (Easy) The almost zero installation route: For stand-alone usage (ie. solo live coding without networked collaboration), you
   can download the most recent compiled JavaScript "release" from github, unzip it, and add a sample library - no need to
   build anything. Just use your web browser to open the file index.html in your downloaded and unzipped
-  release and you're good to go! Estuary expects the sample library to be a folder called samples under a folder called Dirt in your unzipped folder. You might download Dirt-Samples from the TidalCycles project (here https://github.com/tidalcycles/Dirt-Samples) and then put all of those sample folders in a folder called samples in a folder called Dirt in your unzipped Estuary folder, for example.
+  release and you're good to go! Estuary expects the sample library to be a folder called samples in your unzipped folder. You might download Dirt-Samples from the TidalCycles project (here https://github.com/tidalcycles/Dirt-Samples) and then copy all of the sample folders from there to your Estuary samples folder, as one way to get started, for example.
 
 - (Somewhat easy) Building the server while using a pre-built JavaScript client: It is typically much easier to build the Estuary server
-  than to build the Estuary client, so the Estuary Makefile provides targets for getting and incorporating a pre-built Estuary client into the Estuary project folder, alongside a server that you build yourself. If you don't have it already, install a recent version of the Haskell "stack" tool. The instructions below, executed in the Estuary folder/directory, show the complete process of building and installing the server, getting a copy of Dirt from the TidalCycles project (as one suitable choice for a sample library), grabbing the most recent released client without having to build it, then launching the complete and newly minted Estuary setup:
-
+  than to build the Estuary client, so the Estuary Makefile provides targets for getting and incorporating a pre-built Estuary client into the Estuary project folder, alongside a server that you build yourself. If you don't have it already, install a recent version of the Haskell "stack" tool. The instructions below assume you have provided a sample library (for example, Dirt-Samples from the TidalCycles project) in the folder static/samples - in particular the makeSampleMap step will go through that folder and generate a file used to index all of the available samples:
 ```
 make installServer
-cd static; git clone https://github.com/TidalCycles/Dirt.git; cd ..
-cd static/Dirt; git submodule init; git submodule update; cd ../..
 make curlReleaseClient
+make makeSampleMap
 EstuaryServer/EstuaryServer someSecurePasswordYouPick
 ```
 
@@ -102,7 +100,9 @@ cd Estuary
 git submodule init
 git submodule update
 cd static
-git clone https://github.com/TidalCycles/Dirt.git
+git clone https://github.com/TidalCycles/Dirt-Samples.git
+mv Dirt-Samples samples
+make makeSampleMap
 cd Dirt
 git submodule init
 git submodule update

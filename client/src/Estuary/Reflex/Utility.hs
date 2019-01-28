@@ -37,7 +37,7 @@ apDyn f a = do
   combineDyn ($) f' a'
 
 translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t Text)
-translateDyn t = mapDyn (translate t . language)
+translateDyn t ctx = nubDyn <$> mapDyn (translate t . language) ctx
 
 translationList :: MonadWidget t m => Dynamic t Context -> [(Language,a)] -> m (Dynamic t a)
 translationList c m = do

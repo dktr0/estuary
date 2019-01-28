@@ -40,12 +40,12 @@ packages:
 
 - location:
     git: https://github.com/d0kt0r0/MusicW.git
-    commit: d64b9a81c13e53aa8810fd0e8ab1f31f9a8f38dd
+    commit: 94830ba9f5929abbd09094bc5d21d44c6a88a889
   extra-dep: true
 
 - location:
     git: https://github.com/d0kt0r0/Punctual.git
-    commit: 2cab9c90a791d8f126e9c803b42c65caffa099ac
+    commit: ab0ba53310d6f764bf19490f835623c915a13eb8
   extra-dep: true
 
 extra-deps:

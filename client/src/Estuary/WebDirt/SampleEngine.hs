@@ -4,6 +4,7 @@ import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import qualified Sound.Tidal.Context as Tidal
 import Control.Exception
+import Sound.MusicW.AudioContext (utcTimeToDouble)
 
 class SampleEngine e where
   getClockDiff :: e -> IO Double -- diff btw clock used to play sample events and POSIX
@@ -21,6 +22,3 @@ sendSounds e sounds = do
   -- putStrLn $ show sounds'
   catch (mapM_ (playSample e) sounds')
     (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))
-
-utcTimeToDouble :: UTCTime -> Double
-utcTimeToDouble t = realToFrac $ diffUTCTime t (UTCTime (toEnum 0) (toEnum 0))
