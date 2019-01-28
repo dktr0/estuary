@@ -91,8 +91,13 @@ curlReleaseClient: # this uses curl to download and unzip a recent pre-built cli
 	rm -rf temp.zip
 	cp -Rf static/samples Estuary.jsexe
 
+downloadDirtSamples:
+	cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
+	$(CP_RECURSIVE) static/Dirt-Samples/ static/samples/
+	rm -rf static/Dirt-Samples/
+
 makeSampleMap:
-	cd static/samples; ../WebDirt/makeSampleMap.sh . > sampleMap.json
+	cd static/samples && bash ../WebDirt/makeSampleMap.sh . > sampleMap.json
 
 clean:
 	rm -rf Estuary.jsexe
