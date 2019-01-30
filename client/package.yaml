@@ -74,6 +74,12 @@ executables:
       - ./app
     dependencies:
       - estuary
+    when:
+    - condition: flag(build-test-executables)
+      then:
+        buildable: false
+      else:
+        buildable: true
 
   simple-test:
     <<: *test-executable
@@ -82,6 +88,7 @@ executables:
       - ./test
     dependencies:
       - estuary
+      - bytestring-handle
       - hspec
       - async
 
@@ -95,6 +102,7 @@ executables:
     dependencies:
       - estuary
       - estuary-common
+      - bytestring-handle
       - hspec
       - async
 

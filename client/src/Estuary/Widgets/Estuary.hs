@@ -42,7 +42,7 @@ import Estuary.RenderInfo
 import qualified Estuary.Types.Terminal as Terminal
 
 estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
-estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
+estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
   ic <- liftIO $ readMVar ctxM
   renderInfo <- pollRenderInfoChanges riM
 
@@ -55,21 +55,27 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
         Nothing -> return () -- Couldn't load the map
         Just map -> triggerEv $ setSampleMap map
 
-  (headerChanges, clickedLogoEv) <- header ctx renderInfo
+  (ctx, hints) <- mdo
+    -- ctx's foldDyn creation must come before the structure widgets below incase
+    -- any inspect the `current` value. This will block indefinitly until it has a
+    -- chance to be created.
+    let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
+    let deltasDown' = ffilter (not . Prelude.null) deltasDown
+    let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
+    let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
+    let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
+    ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
-  (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
-    navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
+    (headerChanges, clickedLogoEv) <- header ctx renderInfo
 
-  commands <- footer ctx renderInfo deltasUp deltasDown' hints
+    (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
+      navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
 
-  (deltasDown,wsCtxChanges) <- alternateWebSocket protocol deltasUp
+    commands <- footer ctx renderInfo deltasUp deltasDown' hints
 
-  let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
-  let deltasDown' = ffilter (not . Prelude.null) deltasDown
-  let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
-  let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
-  ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
+    (deltasDown,wsCtxChanges) <- alternateWebSocket protocol deltasUp
+
+    return (ctx, hints)
 
   t <- nubDyn <$> mapDyn theme ctx -- Dynamic t String
   let t' = updated t -- Event t String

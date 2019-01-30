@@ -118,7 +118,7 @@ performRequest protocol = send protocol . encode
 
 attachMsgRecvProtocolInspector :: EstuaryProtocolObject -> (Maybe Response -> IO ()) -> IO ()
 attachMsgRecvProtocolInspector (EstuaryProtocolObject protocol) inspect = do
-  cb <- asyncCallback1 $ \nJsSerResp ->
+  cb <- asyncCallback1 $ \nJsSerResp -> do
     inspect $ do -- in Maybe 
       jsSerResp <- mfilter (not . isNull) (pure nJsSerResp)
       serResp <- pFromJSVal jsSerResp
@@ -130,7 +130,7 @@ attachMsgRecvProtocolInspector (EstuaryProtocolObject protocol) inspect = do
 
 attachSendMsgProtocolInspector :: EstuaryProtocolObject -> (Maybe Request -> IO ()) -> IO ()
 attachSendMsgProtocolInspector (EstuaryProtocolObject protocol) inspect = do
-  cb <- asyncCallback1 $ \nJsSerReq -> 
+  cb <- asyncCallback1 $ \nJsSerReq -> do
     inspect $ do -- in Maybe 
       jsSerReq <- mfilter (not . isNull) (pure nJsSerReq)
       serResp <- pFromJSVal jsSerReq

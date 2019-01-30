@@ -11,11 +11,13 @@ import Data.Map
 import Data.Maybe
 import Data.Time
 
-import GHCJS.DOM.Types(HTMLElement(..), HTMLTextAreaElement(..), uncheckedCastTo, fromJSString)
+import GHCJS.DOM.Types(JSString, HTMLElement(..), HTMLTextAreaElement(..), uncheckedCastTo, fromJSString, toJSString)
 import qualified GHCJS.DOM.HTMLElement as HTMLElement
 import qualified GHCJS.DOM.HTMLTextAreaElement as HTMLTextAreaElement
 
 import Estuary.RenderInfo
+
+import Estuary.Protocol.Foreign
 
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -35,48 +37,38 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Test.Protocol
 import Estuary.Test.Estuary
 import qualified Estuary.Test.Dom as DomUtils
+import Estuary.Test.Util
 
 import Estuary.Widgets.Navigation
 
-import Reflex.Dom hiding (link)
-import Reflex.Dynamic
-
 import Test.Hspec
+
+import Harness
 
 -- type code -> hit eval -> expect certain network message
 --                       -> expect parse icon
 
 main :: IO ()
-main = hspec $ do
+main = hspecInHarness $ do
   describe "clicking the eval button on a minitidal widget" $ do
-    (reqStream, respStream) <- runIO $ do
+    (protocol, reqStream, respStream) <- runIO $ do
       (protocol, reqStream, respStream) <- estuaryProtocolWithInspectors
-
-      silentEstuaryWithInitialPage protocol $ Collaborate "abc"
-
-      let password = "abc"
-      performRequest protocol $ EnsembleRequest (AuthenticateInEnsemble password)
-
-      EnsembleResponse (DefaultView view) <- expectMessage respStream $ do
-        withinMillis 10000
-        toMatch $ \case
-          EnsembleResponse (DefaultView view) -> Matches
-          _ -> DoesNotMatch
-
-      -- The editors should not take more that 1s to appear after receiving the
-      -- expected layout.
-      threadDelay $ 1000 * 1000
-
-      Just (editor :: HTMLElement) <- DomUtils.findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
-      Just (evalBtn :: HTMLElement) <- DomUtils.findMatchingSelector editor "button"
-      Just (txtArea :: HTMLTextAreaElement) <- DomUtils.findMatchingSelector editor "textarea"
-
-      DomUtils.changeValue txtArea "s \"bd\""
-      DomUtils.click evalBtn
-
-      return (reqStream, respStream)
+      initialize protocol reqStream respStream
+      return (protocol, reqStream, respStream)
 
     it "produces an ensemble request for evaluating the text" $ do
+      -- The editors should not take more that 1s to appear after receiving the
+      -- expected layout.
+      evalBtn <- tryUntilTimeout 1000 5 $ do
+        Just (editor :: HTMLElement) <- DomUtils.findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
+        Just (evalBtn :: HTMLElement) <- DomUtils.findMatchingSelector editor "button"
+        Just (txtArea :: HTMLTextAreaElement) <- DomUtils.findMatchingSelector editor "textarea"
+
+        DomUtils.changeValue txtArea "s \"bd\""
+        return evalBtn
+        
+      DomUtils.click evalBtn
+
       expectMessage reqStream $ do
         withinMillis 3000
         toMatch $ \case
@@ -86,4 +78,21 @@ main = hspec $ do
                 Matches
               _ -> AlmostMatches
           _ -> DoesNotMatch
+
       return ()
+
+
+initialize :: EstuaryProtocolObject -> Chan (Maybe Request) -> Chan (Maybe Response) -> IO ()
+initialize protocol reqStream respStream = do
+  silentEstuaryWithInitialPage protocol $ Collaborate "abc"
+
+  let password = "abc"
+  performRequest protocol $ EnsembleRequest (AuthenticateInEnsemble password)
+
+  EnsembleResponse (DefaultView view) <- expectMessage respStream $ do
+    withinMillis 10000
+    toMatch $ \case
+      EnsembleResponse (DefaultView view) -> Matches
+      _ -> DoesNotMatch
+
+  return ()
