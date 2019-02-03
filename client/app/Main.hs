@@ -23,6 +23,7 @@ import Estuary.WebDirt.SampleEngine
 import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Renderer
+import Estuary.Render.DynamicsMode
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
@@ -48,23 +49,14 @@ main = do
   -- Wait for 10k ms or click, which ever happens first
   waitForInteractionOrTimeout 10000
 
-  masterBusNode <- liftAudioIO $ do
-    acDestination <- createDestination
-    (nRef,s) <- playSynthNow acDestination $ do
-      x <- audioIn
-      y <- compressor (-10) 3 4 0.050 0.100 x -- args are: threshold knee ratio attack release input
-      z <- gain 1.0 y
-      audioOut z
-      return x
-    nodeRefToNode nRef s
-
-  wd <- liftAudioIO $ newWebDirt masterBusNode
+  mainBusNodes@(mainBusIn,_,_,_) <- initializeMainBus
+  wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
   sd <- newSuperDirt
   protocol <- estuaryProtocol
   mv <- emptyCanvasState >>= newMVar
   now <- liftAudioIO $ audioUTCTime
-  c <- newMVar $ initialContext now masterBusNode wd sd mv
+  c <- newMVar $ initialContext now mainBusNodes wd sd mv
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
 

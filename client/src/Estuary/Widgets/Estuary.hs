@@ -39,6 +39,7 @@ import Estuary.Help.LanguageHelp
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
+import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Terminal as Terminal
 
 estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
@@ -79,6 +80,8 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   sdOn <- nubDyn <$> mapDyn superDirtOn ctx
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
+  updateDynamicsModes ctx
+
   updateContext ctxM ctx
 
   performHint (webDirt ic) hints
@@ -100,6 +103,13 @@ changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal
 foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: JSVal -> IO ()
+
+updateDynamicsModes :: MonadWidget t m => Dynamic t Context -> m ()
+updateDynamicsModes ctx = do
+  iCtx <- (sample . current) ctx
+  let nodes = mainBus iCtx
+  dynamicsModeChanged <- liftM (updated . nubDyn) $ mapDyn dynamicsMode ctx
+  performEvent_ $ fmap (liftIO . changeDynamicsMode nodes) dynamicsModeChanged
 
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange, Event t ())
 header ctx renderInfo = divClass "header" $ do
@@ -138,8 +148,14 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
     text "WebDirt:"
     wdInput <- checkbox True condigCheckboxAttrs
     return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
-  
-  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv]
+
+  dynamicsModeEv <- divClass "config-entry" $ do
+    text "Dynamics:"
+    let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
+    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "config-dropdown"))
+    return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
+    
+  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
