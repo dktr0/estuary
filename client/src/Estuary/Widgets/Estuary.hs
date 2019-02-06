@@ -39,6 +39,7 @@ import Estuary.Help.LanguageHelp
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
+import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Terminal as Terminal
 
 estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
@@ -79,6 +80,8 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   sdOn <- nubDyn <$> mapDyn superDirtOn ctx
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
+  updateDynamicsModes ctx
+
   updateContext ctxM ctx
 
   performHint (webDirt ic) hints
@@ -101,6 +104,13 @@ foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: JSVal -> IO ()
 
+updateDynamicsModes :: MonadWidget t m => Dynamic t Context -> m ()
+updateDynamicsModes ctx = do
+  iCtx <- (sample . current) ctx
+  let nodes = mainBus iCtx
+  dynamicsModeChanged <- liftM (updated . nubDyn) $ mapDyn dynamicsMode ctx
+  performEvent_ $ fmap (liftIO . changeDynamicsMode nodes) dynamicsModeChanged
+
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange, Event t ())
 header ctx renderInfo = divClass "header" $ do
   clickedLogoEv <- dynButtonWithChild "logo" $
@@ -109,26 +119,43 @@ header ctx renderInfo = divClass "header" $ do
   return (ctxChangeEv, clickedLogoEv)
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
-clientConfigurationWidgets ctx = divClass "webDirt" $ do
-  divClass "webDirtMute" $ divClass "webDirtContent" $ do
+clientConfigurationWidgets ctx = divClass "config-toolbar" $ do  
+  themeChangeEv <- divClass "config-entry" $ do
     let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale")]
     translateDyn Term.Theme ctx >>= dynText
-    styleChange <- divClass "themeSelector" $ do _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) def -- Event t String
-    let styleChange' = fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
+    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "config-dropdown")) -- Event t String
+    return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
+  
+  langChangeEv <- divClass "config-entry" $ do
     translateDyn Term.Language ctx >>= dynText
-    let langMap = constDyn $ fromList $ zip languages (fmap (T.pack . show) languages)
-    langChange <- divClass "languageSelector" $ _dropdown_change <$> (dropdown English langMap def)
-    let langChange' = fmap (\x c -> c { language = x }) langChange
+    let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
+    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "config-dropdown"))
+    return $ fmap (\x c -> c { language = x }) langChange
+
+  let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
+
+  canvasEnabledEv <- divClass "config-entry" $ do
     text "Canvas:"
-    canvasInput <- divClass "superDirtCheckbox" $ checkbox True $ def
-    let cvsOn = fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+    canvasInput <- checkbox True condigCheckboxAttrs
+    return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+    
+  superDirtEnabledEv <- divClass "config-entry" $ do
     text "SuperDirt:"
-    sdInput <- divClass "superDirtCheckbox" $ checkbox False $ def
-    let sdOn = fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
+    sdInput <- checkbox False condigCheckboxAttrs
+    return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
+  
+  webDirtEnabledEv <- divClass "config-entry" $ do
     text "WebDirt:"
-    wdInput <-divClass "webDirtCheckbox" $ checkbox True $ def
-    let wdOn = fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
-    return $ mergeWith (.) [langChange',cvsOn,sdOn,wdOn, styleChange']
+    wdInput <- checkbox True condigCheckboxAttrs
+    return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
+
+  dynamicsModeEv <- divClass "config-entry" $ do
+    text "Dynamics:"
+    let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
+    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "config-dropdown"))
+    return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
+    
+  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)

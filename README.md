@@ -99,14 +99,8 @@ git clone https://github.com/d0kt0r0/Estuary.git
 cd Estuary
 git submodule init
 git submodule update
-cd static
-git clone https://github.com/TidalCycles/Dirt-Samples.git
-mv Dirt-Samples samples
+make downloadDirtSamples
 make makeSampleMap
-cd Dirt
-git submodule init
-git submodule update
-cd ../..
 make setupClient
 make buildClient
 make installClient

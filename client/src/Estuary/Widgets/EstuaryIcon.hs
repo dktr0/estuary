@@ -5,6 +5,9 @@ import Control.Monad.IO.Class(liftIO)
 import qualified GHCJS.DOM.ChildNode as Dom
 import qualified GHCJS.DOM.Node as Dom
 import qualified GHCJS.DOM.Types as Dom
+import qualified GHCJS.DOM.Element as Element
+import qualified GHCJS.DOM.DOMTokenList as ClassList
+
 import GHCJS.Types
 
 import GHCJS.Marshal.Pure
@@ -12,34 +15,37 @@ import GHCJS.Nullable
 
 import Reflex.Dom
 
-estuaryIcon :: MonadWidget t m => m ()
-estuaryIcon = return () -- placeholder during LTS-9.21 transition
+-- m satisfies `DomBuilderSpace m ~ GhcjsDomSpace`, this means that we also
+-- have the constraint `DomSpace m` with `type RawElement GhcjsDomSpace = DOM.Element`
 
-{- -- Same as how reflex creates an element but take don't create the node
+-- likewise m satisfies `DomBuilder t m` with `placeRawElement` defaulting to 
+-- `placeRawElement` in `GhcjsDomSpace` (`append . toNode`).
+
 estuaryIcon :: (MonadWidget t m) => m ()
 estuaryIcon = do
   postMountEv <- getPostBuild
-  mountPoint <- askParent -- get the container dom node of this widget
 
-  performEvent_ $ ffor postMountEv $ \_ -> do
+  jsIconInstance <- liftIO $ js_splashIconInstance
+  jsContainerEl <- liftIO $ (fmap pFromJSVal js_splashScreenContainerEl :: IO (Maybe Dom.Element))
+  jsCanvas <- liftIO $ (fmap pFromJSVal (js_getCanvas jsIconInstance) :: IO (Dom.Element))
+  
+  case jsContainerEl of
 
-    liftIO $ do
-      jsIconInstance <- js_splashIconInstance
-      jsContainerEl <- fmap pFromJSVal js_splashContainerEl :: IO (Maybe Dom.ChildNode)
+    -- Animate, we are transitioning from the splash screen.
+    Just screen -> do
+      let duration = 3 -- seconds
+      startPos <- liftIO $ js_snapshotPosition jsIconInstance
+      placeRawElement jsCanvas
+      liftIO $ do
+        js_animateFrom jsIconInstance startPos duration
+        classList <- Element.getClassList screen
+        ClassList.add classList ["loaded"]
 
-      case jsContainerEl of
-        Just screen -> do
-          let duration = 3 -- seconds
-          js_animateMount jsIconInstance (pToJSVal mountPoint) duration
-          Dom.remove screen
-        Nothing -> do
-          jsCanvas <- js_getCanvas jsIconInstance
-          Dom.appendChild mountPoint (pFromJSVal jsCanvas :: Maybe Dom.HTMLCanvasElement)
-          return ()
+    -- Don't animate, we are not transitioning from the splash screen.
+    Nothing -> placeRawElement jsCanvas
 
-    return () -}
-
-newtype IconDisplay = IconDisplay { jsval :: JSVal }
+newtype IconDisplay = IconDisplay JSVal
+newtype BBox = BBox JSVal
 
 foreign import javascript safe
   "EstuaryIcon != null ? EstuaryIcon.display : null"
@@ -50,9 +56,13 @@ foreign import javascript safe
   js_getCanvas :: IconDisplay -> IO JSVal
 
 foreign import javascript safe
-  "document.querySelector('#estuary-splash')"
-  js_splashContainerEl :: IO JSVal
+  "document.querySelector('#estuary-splash:not(.loaded)')"
+  js_splashScreenContainerEl :: IO JSVal
 
 foreign import javascript safe
-  "EstuaryIcons.animateTo($1, $2, $3);"
-  js_animateMount :: IconDisplay -> JSVal -> Double -> IO ()
+  "EstuaryIcons.snapshotPosition($1)"
+  js_snapshotPosition :: IconDisplay -> IO BBox
+
+foreign import javascript safe
+  "EstuaryIcons.animateFrom($1, $2, $3);"
+  js_animateFrom :: IconDisplay -> BBox -> Double -> IO ()

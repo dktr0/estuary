@@ -139,7 +139,8 @@ renderTextProgramChanged c z (PunctualAudio,x) = do
     t <- liftAudioIO $ audioUTCTime
     -- liftIO$ putStrLn $ "audioUTCTime=" ++ show t
     let eval = (exprs,t)
-    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac (masterBusNode c) t) z (punctuals s)
+    let (mainBusIn,_,_,_) = mainBus c
+    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn t) z (punctuals s)
     let tempo' = tempo c
     -- liftIO $ putStrLn $ "render tempo'=" ++ show tempo'
     let beat0 = beatZero tempo'

@@ -86,13 +86,18 @@ releaseClient: # make installClient or prodInstallClient first!
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20190115/estuary-client-20190115.zip
+	curl -o temp.zip -L https://github.com/d0kt0r0/estuary/releases/download/20190203/estuary-client-20190203.zip
 	unzip temp.zip
 	rm -rf temp.zip
 	cp -Rf static/samples Estuary.jsexe
 
+downloadDirtSamples:
+	cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
+	$(CP_RECURSIVE) static/Dirt-Samples/ static/samples/
+	rm -rf static/Dirt-Samples/
+
 makeSampleMap:
-	cd static/samples; ../WebDirt/makeSampleMap.sh . > sampleMap.json
+	cd static/samples && bash ../WebDirt/makeSampleMap.sh . > sampleMap.json
 
 clean:
 	rm -rf Estuary.jsexe

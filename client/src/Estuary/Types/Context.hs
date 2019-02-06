@@ -15,10 +15,12 @@ import Estuary.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.CanvasState
 import Estuary.Render.AudioContext
+import Estuary.Render.DynamicsMode
 import Sound.MusicW (Node)
 
 data Context = Context {
-  masterBusNode :: Node,
+  mainBus :: (Node,Node,Node,Node), -- ^ main bus input, pregain, compressor, postgain
+  dynamicsMode :: DynamicsMode,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
   language :: Language,
@@ -35,10 +37,11 @@ data Context = Context {
   clientCount :: Int,
   canvasState :: MVar CanvasState
   }
-
-initialContext :: UTCTime -> Node -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
-initialContext now mBusNode wd sd mv = Context {
-  masterBusNode = mBusNode,
+ 
+initialContext :: UTCTime -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
+initialContext now mBus wd sd mv = Context {
+  mainBus = mBus,
+  dynamicsMode = DefaultDynamics,
   webDirt = wd,
   superDirt = sd,
   language = English,

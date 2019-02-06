@@ -10,8 +10,6 @@ body {
 input {
 	background-color: lightgray;
 	color: black;
-	margin: 1px;
-
 }
 
 /* modifies the coding textarea or view */
@@ -35,8 +33,6 @@ button {
 select {
 	background-color: transparent;
 	border: 1px solid;
-	min-width: 15%;
-	margin-right: 1em;
 }
 
 /* modifies the border of the homepage buttons when hovering on */
