@@ -4,8 +4,8 @@ const puppeteer = require('puppeteer');
   const browser = await puppeteer.launch({args: ['--no-sandbox']});
   const page = await browser.newPage();
 
-  await page.evaluateOnNewDocument(() => window['ESTUARY_TEST_HARNESS_ENABLED'] = true);
   await page.evaluateOnNewDocument(() => {
+    window['ESTUARY_TEST_HARNESS_ENABLED'] = true
     window['ESTUARY_TEST_HARNESS_RESULTS'] = new Promise((resolve, reject) => {
       window['ESTUARY_TEST_HARNESS_RESULTS_CB'] = resolve;
     });
@@ -24,7 +24,8 @@ const puppeteer = require('puppeteer');
   const performanceTiming = JSON.parse(
     await page.evaluate(() => JSON.stringify(window.performance.timing))
   );
-  console.log(performanceTiming);
+  //console.log(performanceTiming);
 
   await browser.close();
+  process.exitCode = results.success ? 0 : 1;
 })();

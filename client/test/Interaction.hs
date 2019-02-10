@@ -50,27 +50,23 @@ import Harness
 
 main :: IO ()
 main = hspecInHarness $ do
-  describe "clicking the eval button on a minitidal widget" $ do
-    (protocol, reqStream, respStream) <- runIO $ do
-      (protocol, reqStream, respStream) <- estuaryProtocolWithInspectors
-      initialize protocol reqStream respStream
-      return (protocol, reqStream, respStream)
+  (protocol, reqStream, respStream) <- runIO $ do
+    (protocol, reqStream, respStream) <- estuaryProtocolWithInspectors
+    initialize protocol reqStream respStream
+    return (protocol, reqStream, respStream)
 
+  describe "clicking the eval button on a minitidal widget" $ do
     it "produces an ensemble request for evaluating the text" $ do
       -- The editors should not take more that 1s to appear after receiving the
       -- expected layout.
-      evalBtn <- tryUntilTimeout 1000 5 $ do
+      editor <- tryUntilTimeout 1000 5 $ do
         Just (editor :: HTMLElement) <- DomUtils.findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
-        Just (evalBtn :: HTMLElement) <- DomUtils.findMatchingSelector editor "button"
-        Just (txtArea :: HTMLTextAreaElement) <- DomUtils.findMatchingSelector editor "textarea"
+        return editor
 
-        DomUtils.changeValue txtArea "s \"bd\""
-        return evalBtn
-        
-      DomUtils.click evalBtn
+      evalText editor "s \"bd\""
 
       expectMessage reqStream $ do
-        withinMillis 3000
+        withinMillis 5000
         toMatch $ \case
           EnsembleRequest (ZoneRequest _ definition) ->
             case definition of
@@ -81,6 +77,17 @@ main = hspecInHarness $ do
 
       return ()
 
+    it "indicates an error for incorrect code" $ do
+      editor <- tryUntilTimeout 1000 5 $ do
+        Just (editor :: HTMLElement) <- DomUtils.findMatchingSelectorInDocument ".estuary .page .eightMiddleL .textPatternChain:nth-child(2)"
+        return editor
+
+      evalText editor "definitelyNotTidalCode!!!"
+
+      Just (evalBtnContainer :: HTMLElement) <- DomUtils.findMatchingSelector editor ".textInputLabel"
+      tryUntilTimeout 100 5 $ do
+        (errText :: String) <- DomUtils.immediateText evalBtnContainer
+        errText `shouldBe` "!"
 
 initialize :: EstuaryProtocolObject -> Chan (Maybe Request) -> Chan (Maybe Response) -> IO ()
 initialize protocol reqStream respStream = do
@@ -96,3 +103,12 @@ initialize protocol reqStream respStream = do
       _ -> DoesNotMatch
 
   return ()
+
+evalText :: HTMLElement -> String -> IO ()
+evalText editor text = do
+  Just (evalBtn :: HTMLElement) <- DomUtils.findMatchingSelector editor "button"
+  Just (txtArea :: HTMLTextAreaElement) <- DomUtils.findMatchingSelector editor "textarea"
+  
+  DomUtils.changeValue txtArea text  
+  threadDelay $ 100 * 1000 -- somewhat arbitrary, there needs to be a delay because of a race in the reflex event loop
+  DomUtils.click evalBtn

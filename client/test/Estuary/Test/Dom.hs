@@ -42,12 +42,18 @@ findAllMatchingSelector container query =
 click :: (IsHTMLElement e) => e -> IO ()
 click = HTMLElement.click
 
-changeValue :: (IsGObject e, ToJSString val) => e -> val -> IO ()
+innerText :: (IsHTMLElement e, FromJSString s) => e -> IO (s)
+innerText = HTMLElement.getInnerText
+
+-- Like textContent but only for immediate children of the input element
+immediateText :: (IsElement e, FromJSString s) => e -> IO (s)
+immediateText el = fromJSString <$> js_immediateText (pToJSVal $ toElement el)
+
+changeValue :: (IsHTMLElement e, ToJSString val) => e -> val -> IO ()
 changeValue e value = do
-  let e' = uncheckedCastTo HTMLInputElement $ e
-      
-  HTMLInputElement.setValue e' value
-  notifyChanged e'
+  js_setValue (pToJSVal $ toElement e) (toJSString value)
+  notifyChanged e
+
 
 notifyChanged :: (IsEventTarget e) => e -> IO ()
 notifyChanged e = js_dispatchInputEvent (pToJSVal $ toEventTarget e)
@@ -55,6 +61,10 @@ notifyChanged e = js_dispatchInputEvent (pToJSVal $ toEventTarget e)
 ------------------------------------------
 -- JS FFI
 ------------------------------------------
+
+foreign import javascript safe
+  "$1.value = $2;"
+  js_setValue :: JSVal -> JSString -> IO ()
 
 foreign import javascript safe
   "document.querySelector($1)"
@@ -73,5 +83,12 @@ foreign import javascript safe
   js_querySelectorAll :: JSVal -> JSString -> IO (JSVal)
 
 foreign import javascript safe
-  "$1.dispatchEvent(new Event('input'))"
+  "$1.dispatchEvent(new Event('input', {bubbles: true, cancelable: true}))"
   js_dispatchInputEvent :: JSVal -> IO ()
+
+foreign import javascript safe
+  "$r = Array.from($1.childNodes)\
+  \.filter(function (n) { return n.nodeType === 3; })\
+  \.map(function (n) { return n.nodeValue; })\
+  \.join('');"
+  js_immediateText :: JSVal -> IO (JSString)
