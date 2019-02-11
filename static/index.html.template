@@ -5,33 +5,22 @@
   <link defer href="../css-source/source.css" rel="stylesheet" type="text/css"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-#ifndef PRODUCTION
-  <script defer language="javascript" src="rts.js"></script>
-  <script defer language="javascript" src="lib.js"></script>
-  <script defer language="javascript" src="out.js"></script>
-#endif
-  <script defer language="javascript" src="EstuaryProtocol.js"></script>
-  <script defer language="javascript" src="SuperDirt.js"></script>
-  <script defer language="javascript" src="WebDirt/WebDirt.js"></script>
-  <script defer language="javascript" src="WebDirt/Graph.js"></script>
-  <script defer language="javascript" src="WebDirt/SampleBank.js"></script>
-  <script defer language="javascript">
-function downloadJS() {
-  var element4 = document.createElement("script");
-#ifdef PRODUCTION
-  element4.setAttribute('src', "all.min.js");
-#else
-  element4.setAttribute('src', "runmain.js");
-#endif
-  element4.defer;
-  document.head.appendChild(element4);
-  console.log("elements added");
-}
+  <script defer type="text/javascript" src="EstuaryProtocol.js"></script>
+  <script defer type="text/javascript" src="SuperDirt.js"></script>
+  <script defer type="text/javascript" src="WebDirt/WebDirt.js"></script>
+  <script defer type="text/javascript" src="WebDirt/Graph.js"></script>
+  <script defer type="text/javascript" src="WebDirt/SampleBank.js"></script>
 
-function start(){
-  downloadJS();
-}
-  </script>
+#ifdef PRODUCTION
+  <script defer type="text/javascript" src="all.min.js"></script>
+#else
+  <script defer type="text/javascript" src="rts.js"></script>
+  <script defer type="text/javascript" src="lib.js"></script>
+  <script defer type="text/javascript" src="out.js"></script>
+  <script defer type="text/javascript" src="runmain.js"></script>
+#endif
+
+#ifndef TEST
   <style type="text/css">
     .full-screen {
       position: fixed;
@@ -65,9 +54,11 @@ function start(){
     }
   </style>
   <script type="text/javascript" src="estuary-icon.js"></script>
+#endif
 </head>
-<body onload="start()">
+<body>
   <div id="estuary-root"></div>
+#ifndef TEST
   <div id="estuary-splash" class="estuary-logo full-screen"></div>
   <script type="text/javascript">
     var EstuaryIcon = (function() {
@@ -88,5 +79,6 @@ function start(){
       };
     })();
   </script>
+#endif
 </body>
 </html>

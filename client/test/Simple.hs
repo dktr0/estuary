@@ -8,7 +8,7 @@ import Data.Map
 import Data.Maybe
 import Data.Time
 
-import GHCJS.DOM.Types(Element, IsHTMLElement, castToHTMLElement, fromJSString)
+import GHCJS.DOM.Types(IsHTMLElement, fromJSString)
 import GHCJS.DOM.HTMLElement(getInnerText)
 
 import Estuary.RenderInfo
@@ -19,6 +19,7 @@ import Estuary.Widgets.Estuary(header)
 
 import Estuary.Test.Reflex(renderSync)
 import Estuary.Test.Dom
+import Estuary.Test.Estuary
 
 import Reflex.Dom hiding (link)
 import Reflex.Dynamic
@@ -31,27 +32,18 @@ main = do
     describe "header" $ do
       it "changes the header when the language changes" $ do
         ctx <- initCtx
-        let dynCtx = constDyn ctx
-        let dynRenferInfo = constDyn emptyRenderInfo
-        let widget = header dynCtx dynRenferInfo
-
-        h <- renderSync widget
+        h <- renderSync $ do
+          let dynCtx = constDyn ctx
+          let dynRenferInfo = constDyn emptyRenderInfo
+          header dynCtx dynRenferInfo
+          return ()
         text <- elInnerText h
         text `shouldStartWith` "BLAH"
-
-initCtx :: IO Context
-initCtx = do
-  now <- Data.Time.getCurrentTime
-  mv <- newMVar []
-  let ctx = initialContext now nullWebDirt nullSuperDirt mv
-  return $ ctx {
-    webDirtOn = False
-  }
 
 elInnerText :: (IsHTMLElement e) => e -> IO (String)
 elInnerText el = do
   mTextJs <- getInnerText $ el
-  return $ maybe "" id mTextJs
+  return mTextJs
 
 foreign import javascript safe
   "null"
