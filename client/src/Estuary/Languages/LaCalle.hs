@@ -27,140 +27,34 @@ laCalleParser = whiteSpace >> choice [
 sepEmpty p = sepBy p (symbol "_")
 
 -- endOfDoc :: m Char
-endOfDoc = choice [comma, dot, try (symbol "?")]
-joinSentence = choice [comma, try (symbol "y"), try (symbol "pá")]
-
+initSymbol = choice [try (symbol "¿"), try (symbol "¡"), try (symbol "!")]
+endingSymbol = choice [comma, dot, try (symbol "?")]
+joinSentence = choice [comma, try (symbol "y"), try (symbol "pá"), try (symbol "para"), try (symbol "de")]
 
 laCallePattern :: Parser Tidal.ControlPattern
-laCallePattern = choice [
-                         -- try simpleNoun,
-                         -- try simpleVerb,
-                         try simpleSentenceWGreeting
-                         ,try simpleSentenceWPronoun
-                         -- ,try simpleSentenceWQuantity
-                         -- ,try simpleQuestion
-                         ,simpleAndCompundQuestion
-                         ,try simpleSentenceStartingWNoun
-                        ]
+laCallePattern = pronounAndNoun
 
-simpleSentenceWGreeting :: Parser Tidal.ControlPattern
-simpleSentenceWGreeting = do
-  c <- greeting
-  n <- option [" "] (many noun)
+
+pronounAndNoun :: Parser Tidal.ControlPattern
+pronounAndNoun = do
+  i <- option "" initSymbol
+  option [" "] (many pronounOrSimile)
   v <- option id verb
-  e <- option "," endOfDoc
-  return $ v $ Tidal.s $ parseBP' (unwords n)
-
-simpleSentenceWPronoun :: Parser Tidal.ControlPattern
-simpleSentenceWPronoun = do
-  c <- pronoun
-  n <- option [" "] (many noun)
-  v <- option id verb
-  e <- option "," endOfDoc
-  return $ v $ Tidal.s $ parseBP' (unwords n)
-
--- simpleSentenceWQuantity:: Parser Tidal.ControlPattern
--- simpleSentenceWQuantity = do
---   c <- pronoun
---   n <- option [" "] (many noun)
---   v <- option id taypa
---   e <- option "," endOfDoc
---   return $ v $ Tidal.s $ parseBP' (unwords n)
-
-simpleSentenceStartingWNoun :: Parser Tidal.ControlPattern
-simpleSentenceStartingWNoun = do
+  option [" "] (many pronounOrSimile)
   n <- many noun
-  v <- option id verb
-  e <- option "," endOfDoc
-  return $ v $ Tidal.s $ parseBP' (unwords n)
-
-
-simpleNoun :: Parser Tidal.ControlPattern
-simpleNoun = do
-  n <- many noun
-  e <- option "," endOfDoc
-  return $ Tidal.s $ parseBP' (unwords n)
-
-simpleVerb :: Parser Tidal.ControlPattern
-simpleVerb = do
-  n <- verb
-  e <- option "," endOfDoc
-  return $ Tidal.silence
-
-
-simpleQuestion:: Parser Tidal.ControlPattern
-simpleQuestion = do
-  i <- symbol "¿"
-  -- n <- option [" "] (many noun)
-  c <- option " " question
-  v <- option id verb
-  n <- option [" "] (many noun)
-  e <- option "?" endOfDoc
-  return $ v $ Tidal.s $ parseBP' (unwords n)
-
-
-simpleAndCompundQuestion:: Parser Tidal.ControlPattern
-simpleAndCompundQuestion = do
-  i <- symbol "¿"
-  -- n <- option [" "] (many noun)
-  c <- option [" "] (many connector)
-  v <- option id verb
-  n <- option [" "] (many noun)
-  j <- option " " joinSentence
-  c' <- option [" "] (many connector)
+  option [" "] (many pronounOrSimile)
   v' <- option id verb
-  n' <- option [" "] (many noun)
+  option [" "] (many pronounOrSimile)
+  j <- option " " joinSentence
+  p' <- option [" "] (many pronounOrSimile)
   v'' <- option id verb
-  e <- option "?" endOfDoc
-  return $ v'' $ v' $ v $ Tidal.s $ parseBP' $ (unwords n) ++ " " ++  (unwords n')
-
-
-verb :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-verb = choice [verb', verb''', try taypa, try helenas]
-
-connector :: Parser String
-connector = choice [try question, try connector', try pronoun]
-
-question :: Parser String
-question = choice [
-         (reserved "qué" >> return ""),
-         (reserved "Qué" >> return "")
-       ]
-
-possesive :: Parser String
-possesive = choice [
-        (reserved "mi" >> return ""),
-        (reserved "Mi" >> return "")
-        ]
-
-connector' :: Parser String
-connector' = choice [
-        (reserved "asu" >> return ""),
-        (reserved "mare" >> return ""),
-        (reserved "en" >> return "")
-        ]
-
-greeting :: Parser String
-greeting = choice [
-      (reserved "habla" >> return ""),
-      (reserved "Habla" >> return "")
-
-      ]
-
-pronoun :: Parser String
-pronoun = choice [
-        (reserved "el" >> return ""),
-        (reserved "el" >> return ""),
-        (reserved "El" >> return ""),
-        (reserved "un" >> return ""),
-        (reserved "Un" >> return ""),
-        (reserved "la" >> return ""),
-        (reserved "La" >> return ""),
-        (reserved "Una" >> return ""),
-        (reserved "una" >> return ""),
-        (reserved "unas" >> return ""),
-        (reserved "Unas" >> return "")
-      ]
+  option [" "] (many pronounOrSimile)
+  n' <- option [" "] (many noun)
+  option [" "] (many pronounOrSimile)
+  v''' <- option id verb
+  option [" "] (many pronounOrSimile)
+  e <- option "" endingSymbol
+  return $ v''' $ v'' $ v' $ v $ Tidal.s $ parseBP' $ (unwords n) ++ " " ++  (unwords n')
 
 noun :: Parser String
 noun = choice [
@@ -174,32 +68,33 @@ noun = choice [
         (reserved "cevillano" >> return "kurt:2"),
         (reserved "Batería" >> return "kurt:3"),
         (reserved "batería" >> return "kurt:3"),
-        (reserved "Chancha" >> return "arpy"),
-        (reserved "chancha" >> return "arpy"),
-        (reserved "chelas" >> return "arpy"),
-        (reserved "Cholo" >> return "arpy"),
-        (reserved "cholo" >> return "arpy"),
-        (reserved "viejita" >> return "arpy"),
-        (reserved "Viejita" >> return "arpy"),
-        (reserved "jato" >> return "arpy"),
-        (reserved "Tombo" >> return "arpy"),
-        (reserved "tombo" >> return "arpy"),
-        (reserved "zampado" >> return "arpy"),
-        (reserved "Tío" >> return "arpy"),
-        (reserved "tío" >> return "arpy"),
-        (reserved "Tía" >> return "arpy"),
-        (reserved "tía" >> return "arpy"),
-        (reserved "Brother" >> return "arpy"),
+        (reserved "Chancha" >> return "laCalle"),
+        (reserved "chancha" >> return "laCalle"),
+        (reserved "chelas" >> return "laCalle:1"),
+        (reserved "Cholo" >> return "laCalle:2"),
+        (reserved "cholo" >> return "laCalle:2"),
+        (reserved "viejita" >> return "laCalle:3"),
+        (reserved "Viejita" >> return "laCalle:3"),
+        (reserved "jato" >> return "laCalle:4"),
+        (reserved "Tombo" >> return "laCalle:5"),
+        (reserved "tombo" >> return "laCalle:5"),
+        (reserved "zampado" >> return "laCalle:6"),
+        (reserved "Tío" >> return "laCalle:7"),
+        (reserved "tío" >> return "laCalle:7"),
+        (reserved "Tía" >> return "laCalle:8"),
+        (reserved "tía" >> return "laCalle:8"),
+        (reserved "Brother" >> return "laCalle:9"),
+        (reserved "brother" >> return "laCalle:9"),
+        (reserved "Roche" >> return "arpy"),
+        (reserved "roche" >> return "arpy"),
+        (reserved "Sajiro" >> return "arpy"),
+        (reserved "sajiro" >> return "arpy"),
+        (reserved "flaquita" >> return "arpy"),
+        (reserved "motivo" >> return "arpy"),
+        (reserved "chamba" >> return "arpy"),
+        (reserved "Chamba" >> return "arpy"),
         (reserved "~" >> return "~")
-
         ]
-
-verb' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-verb' = choice [
-         (reserved "manyas" >> option (Tidal.slow 1) (double >>= return . Tidal.slow . pure . toRational)),
-         (reserved "mare" >> option (Tidal.iter 0) (int >>= return . Tidal.iter . pure))
-
-         ]
 
 verb'' :: Parser Tidal.ControlPattern
 verb'' = choice [
@@ -208,20 +103,27 @@ verb'' = choice [
          (reserved "acompáñame" >> return Tidal.up) <*> option 0 doublePattern,
          (reserved "alucina" >> return Tidal.loop) <*> option 0 doublePattern,
          (reserved "gané" >> return Tidal.pan) <*> option 0 (return Tidal.rand),
-         (reserved "quito" >> return Tidal.pan) <*> option 0 (return $Tidal.rand*10),
+         (reserved "quito" >> return Tidal.pan) <*> option 0 (return $ Tidal.rand*10),
          (reserved "saca" >> return Tidal.pan) <*> option 0 doublePattern,
-         (reserved "fué" >> return Tidal.delaytime) <*> option 0 doublePattern,
          (reserved "sabes" >> return Tidal.hresonance) <*> option 0 doublePattern,
-         (reserved "estas" >> return Tidal.accelerate) <*> option 0 doublePattern,
-         (reserved "está" >> return Tidal.delay) <*> option 0 doublePattern,
-        (reserved "sírvame" >> return Tidal.crush) <*> option 0 doublePattern
-        ]
+         (reserved "estás" >> return Tidal.accelerate) <*> option 0 doublePattern,
+         (reserved "está" >> return Tidal.gain) <*> option 0.75 doublePattern,
+         (reserved "estoy" >> return Tidal.resonance) <*> option 0.5 doublePattern,
+         (reserved "sírvame" >> return Tidal.crush) <*> option 0 doublePattern,
+         (reserved "fué" >> return Tidal.coarse) <*> option 0 intPattern
+                 ]
 
 verb''' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 verb''' = do
   x <- verb''
   return (Tidal.# x)
 
+verb'''':: Parser (Pattern a -> Pattern a)
+verb''''  = choice [
+  reserved "dices" >> return Tidal.brak,
+  reserved "es" >> return Tidal.palindrome,
+  reserved "mando" >> return Tidal.stretch
+  ]
 
 taypa :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 taypa = do
@@ -234,6 +136,64 @@ helenas = do
   t <- option (Tidal.chop 0) (int >>= return . Tidal.chop . pure)
   s <- string "helenas"
   return t
+
+verb :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+verb = choice [verb', verb''', verb'''', try taypa, try helenas]
+
+pronounOrSimile :: Parser String
+pronounOrSimile = choice [try possessive, try connector', try intejection, try pronoun]
+
+possessive :: Parser String
+possessive = choice [
+        (reserved "mi" >> return ""),
+        (reserved "Mi" >> return "")
+
+        ]
+
+connector' :: Parser String
+connector' = choice [
+        (reserved "asu" >> return ""),
+        (reserved "mare" >> return ""),
+        (reserved "en" >> return "")
+        ]
+
+intejection :: Parser String
+intejection = choice [
+      (reserved "habla" >> return ""),
+      (reserved "Habla" >> return "")
+      ]
+
+
+pronoun :: Parser String
+pronoun = choice [
+        (reserved "el" >> return ""),
+        (reserved "el" >> return ""),
+        (reserved "El" >> return ""),
+        (reserved "un" >> return ""),
+        (reserved "Un" >> return ""),
+        (reserved "la" >> return ""),
+        (reserved "La" >> return ""),
+        (reserved "Una" >> return ""),
+        (reserved "una" >> return ""),
+        (reserved "unas" >> return ""),
+        (reserved "Unas" >> return ""),
+        (reserved "qué" >> return ""),
+        (reserved "Qué" >> return ""),
+        (reserved "que" >> return ""),
+        (reserved "Que" >> return ""),
+        (reserved "me" >> return ""),
+        (reserved "Me" >> return "")
+      ]
+
+
+
+verb' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+verb' = choice [
+         (reserved "manyas" >> option (Tidal.slow 1) (double >>= return . Tidal.slow . pure . toRational)),
+         (reserved "mare" >> option (Tidal.iter 0) (int >>= return . Tidal.iter . pure))
+         ]
+
+
 
 --descartar texto
 descartarTexto :: GenParser Char a String
@@ -258,15 +218,13 @@ doublePattern = choice [
     reserved "cosine" >> return Tidal.cosine
     ]
 
--- pan' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
--- pan' = do
---   s <- string "saca'"
---   t <- return Tidal.pan <*> option 0 (many doublePattern)
---   return t
+intPattern :: Parser (Pattern Int)
+intPattern = pure <$> int
+
 
 double = choice [
    float,
-   fromInteger <$> integer, --TO DO: his doesnt work with ints like 1 only if they have decimals 1.0
+   fromInteger <$> integer, --TO DO: this doesnt work with ints like 1 only if they have decimals 1.0
    adjectiveFloat,
    fromInteger <$> adjectiveInteger
    ]

@@ -3,6 +3,7 @@ module Estuary.Help.Togo where
 
 import Reflex
 import Reflex.Dom
+import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 
