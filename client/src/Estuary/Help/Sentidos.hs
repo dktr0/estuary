@@ -29,20 +29,28 @@ about = do
 exampleText :: Text -> Text
 
 exampleText "rocoso" = "rocoso"
-exampleText "melodioso" = "melodioso"
-exampleText "ondulado" = "ondulado"
-exampleText "agitado" = "rocoso agitado 4"
-exampleText "tristeza" =  "meliodioso tristeza 6"
-exampleText "amor" =  "ondulado amor 3"
+exampleText "melodioso" = "\"melodioso\""
+exampleText "ondulado" = "\"ondulado\""
+exampleText "agitado" = "\"rocoso\" #agitado 4"
+exampleText "calma" =  "\"ondulado\" #calma 10"
+exampleText "tristeza" =  "\"meliodioso\" #tristeza"
+exampleText "felicidad" =  "\"rocoso\" #felicidad 0.5"
+exampleText "amor" =  "\"ondulado\" #amor 3"
+
 
 referenceText :: Text -> Text
 
 referenceText "rocoso" = "returns Dirt's \"flick\" sample"
 referenceText "melodioso" = "returns Dirt's \"sid\" sample"
 referenceText "ondulado" = "returns Dirt's \"tabla\" sample"
-referenceText "agitado" =  "returns TidalCycles' chop"
-referenceText "tristeza" =  "returns TidalCycles' trunc"
+referenceText "agitado" =  "returns TidalCycles' fast"
+referenceText "calma" =  "returns TidalCycles' density"
+referenceText "tristeza" =  "returns TidalCycles' chop"
+referenceText "felicidad" =  "returns TidalCycles' trunc"
 referenceText "amor" =  "returns TidalCycles' iter"
+
+
+
 
   -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()

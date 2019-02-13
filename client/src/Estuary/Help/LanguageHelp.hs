@@ -1,4 +1,4 @@
--- {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Estuary.Help.LanguageHelp where
 
@@ -51,6 +51,7 @@ parserToHelp (TidalTextNotation Natural) = naturalHelpFile
 parserToHelp (TidalTextNotation Puntoyya) = puntoyyaHelpFile
 parserToHelp (TidalTextNotation Saborts) = sabortsHelpFile
 parserToHelp (TidalTextNotation Saludos) = saludosHelpFile
+parserToHelp (TidalTextNotation Sentidos) = sentidosHelpFile
 parserToHelp (TidalTextNotation Si) = siHelpFile
 parserToHelp (TidalTextNotation Sucixxx) = sucixxxHelpFile
 parserToHelp (TidalTextNotation MiniTidal) = miniTidalHelpFile
@@ -60,8 +61,8 @@ parserToHelp (TidalTextNotation Togo) = togoHelpFile
 
 parserToHelp CanvasOp = canvasOpHelpFile
 parserToHelp SvgOp = svgOpHelpFile
-parserToHelp PunctualAudio = punctualAudio
-parserToHelp PunctualVideo = punctualVideo
+parserToHelp PunctualAudio = punctualAudioHelpFile
+parserToHelp PunctualVideo = punctualVideoHelpFile
 parserToHelp SuperContinent = superContinentHelpFile
 parserToHelp _ = noHelpFile
 

@@ -27,11 +27,11 @@ about = do
 
 exampleText :: Text -> Text
 
-exampleText "hola" = "hola"
-exampleText "cómo estas" = "cómo estas"
-exampleText "saludos" = "saludos"
-exampleText "que tal" = "hola todo bien"
-exampleText "todo bien" =  "saludos todo bien 2"
+exampleText "hola" = "¡hola!"
+exampleText "cómo estas" = "¡cómo estas!"
+exampleText "saludos" = "¡saludos!"
+exampleText "que tal" = "¡hola! que tal"
+exampleText "todo bien" =  "¡saludos! todo bien 2"
 
 referenceText :: Text -> Text
 

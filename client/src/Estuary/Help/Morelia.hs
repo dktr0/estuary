@@ -34,17 +34,17 @@ about = do
 
 exampleText :: Text -> Text
 
-exampleText "~" = "X ~"
-exampleText "X" = "X X X x ~"
-exampleText "IX" = "IX IX ~"
-exampleText "VIII" = "VIII ~"
-exampleText "VII" = "VII VII VII ~"
-exampleText "VI" =  "VI VI ~"
-exampleText "V" = "V ~ "
-exampleText "IV" = "IV IV IV IV ~"
-exampleText "III" = "III III III ~"
-exampleText "II" = "II II ~"
-exampleText "I" = "I ~"
+exampleText "~" = "\"X\" ~"
+exampleText "X" = "\"X X X X\" ~"
+exampleText "IX" = "\"IX IX\" ~"
+exampleText "VIII" = "\"VIII\" ~"
+exampleText "VII" = "\"VII VII VII\" ~"
+exampleText "VI" =  "\"VI VI\" ~"
+exampleText "V" = "\"V\" ~"
+exampleText "IV" = "\"IV IV IV IV\" ~"
+exampleText "III" = "\"III III III\" ~"
+exampleText "II" = "\"II II\" ~"
+exampleText "I" = "\"I\" ~"
 
 referenceText :: Text -> Text
 

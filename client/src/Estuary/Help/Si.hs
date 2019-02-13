@@ -32,14 +32,14 @@ about = do
 
 exampleText :: Text -> Text
 
-exampleText "Nose" = "Nose"
-exampleText "Willy" = "Willy"
-exampleText "Gracioso" = "Gracioso"
-exampleText "Elefante" = "Elefante"
-exampleText "Pegado" =  "Willy Pegado "
-exampleText "Lejos" =  "Nose lejos 4"
-exampleText "Tortuga" =  "Gracioso Tortuga 0.5"
-exampleText "Comadreja" =  "Elefante Comadreja 2"
+exampleText "Nose" = "#Nose"
+exampleText "Willy" = "#Willy"
+exampleText "Gracioso" = "#Gracioso"
+exampleText "Elefante" = "#Elefante"
+exampleText "Pegado" =  "#Willy Pegado 2"
+exampleText "Lejos" =  "#Nose Lejos 4"
+exampleText "Tortuga" =  "#Gracioso Tortuga 0.5"
+exampleText "Comadreja" =  "#Elefante Comadreja 2"
 
 referenceText :: Text -> Text
 

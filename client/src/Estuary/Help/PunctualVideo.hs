@@ -7,60 +7,87 @@ import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 
--- import Estuary.Types.Language
 
 --render multiple sub-help files
-punctualVideo :: MonadWidget t m => m ()
-punctualVideo = divClass "languageHelp" $ do
+punctualVideoHelpFile :: MonadWidget t m => m ()
+punctualVideoHelpFile = divClass "languageHelp" $ do
     about
-    clear
-    sine
-    saw
-    tri
+    functionRef "sin"
+    functionRef "tri"
+    functionRef "sqr"
+    functionRef "saw"
+    functionRef "x"
+    functionRef "y"
+    functionRef "red"
+    functionRef "green"
+    functionRef "blue"
+    functionRef "alpha"
+    functionRef "width"
+    functionRef "height"
+    -- functionRef "db"
+    -- functionRef "<s>"
+    -- functionRef "<ms>"
+    -- functionRef "<c>"
+    -- functionRef "@"
+    -- functionRef "@()"
+    -- functionRef "@<>"
+    -- functionRef ":"
+    -- functionRef "+-"
+    -- functionRef ".."
     return ()
 
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about" $ text "PunctualVideo"
-  divClass "aboutText" $ text "A mini language for synthesis in the browser."
+  divClass "about" $ text "PunctualAudio reference"
+  divClass "aboutText" $ text "Punctual is a language for live coding audio and visuals. It allows you to build and change networks of signal processors (oscillators, filters, etc) on the fly. Punctual was created by David Ogborn, building on top of the MusicW synthesis library (by David Ogborn, Spencer Park, Jamie Beverley, and others). Conceptually, Punctual extends the work of Julian Rohrhuber and others on SuperCollider's JITlib notations."
+
+exampleText :: Text -> Text
+
+exampleText "sin" = "sin 0.5 => x"
+exampleText "tri" = "tri 0.5 => x"
+exampleText "sqr" = "sqr 0.5 => y"
+exampleText "saw" = "saw 0.5 => y"
+exampleText "x" = "saw 20 => x; sin 20 => y"
+exampleText "y" = "saw 10 => x; sin 20 => y"
+exampleText "red" = "saw 10m => x; Saw 20m => red; saw 31m  => green; 1 => blue"
+exampleText "green" = "saw 10m => x; saw 10m => y; Saw 20m => red; saw 31m  => green; 1 => blue"
+exampleText "blue" = "saw 10m => x; Saw 20m => red; saw 31m  => green; 1 => blue"
+exampleText "alpha" = "Saw 10m => x; Sin 20 => y; -0.98 => clear; Tri 5m => width; 0.99 => height; Saw 20m => red; saw 31m  => green; 1 => blue; 0 => alpha"
+exampleText "width" = "0 => clear; Saw 0m => x; Sin 10 => y; Tri 5m => width; 0.99 => height"
+exampleText "height" = "0 => clear; Saw 0m => x; Sin 10 => y; Tri 5m => width; 0.99 => height"
+-- exampleText "db" = "sin 57m * -10 db => centre"
+-- exampleText "<s>" = "<8s> sin 440 => centre"
+-- exampleText "<ms>" = "<2500ms> sin 440 => centre"
+-- exampleText "<c>" = "<1.5c> sin 440 => centre"
+-- exampleText "@" = "@4c sin 440 => centre"
+-- exampleText "@()" = "@(2c,0.5c) sin 440 => centre"
+-- exampleText "@<>" = "@2c <2c> sin 440 => centre"
+-- exampleText ":" = "sin (440 : sin 1)"
+-- exampleText "+-" = "saw (24m +- 3% : sin 1) => centre"
+-- exampleText ".." = "lpf (saw 24m) (100 .. 1000 : sin 1) 1 => centre"
+
+referenceText :: Text -> Text
+
+referenceText "sin" = "a sin wave"
+referenceText "tri" = "a tri wave"
+referenceText "sqr" = "a sqr wave"
+referenceText "saw" = "a saw wave"
+referenceText "x" = "sets the x coordinate of the pixel"
+referenceText "y" = "sets the y coordinat of the pixel"
+referenceText "red" = "sets the RGBA red value"
+referenceText "green" = "sets the RGBA green value"
+referenceText "blue" = "sets the RGBA blue value"
+referenceText "alpha" = "sets the RGBA alpha value"
+referenceText "width" = "sets the width of the pixel"
+referenceText "height" = "sets the height of the pixel"
 
 -- help files for samples
-clear :: MonadWidget t m => m ()
-clear = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "clear:"
+functionRef :: MonadWidget t m => Text -> m ()
+functionRef x = divClass "helpWrapper" $ do
+   switchToReference <- divClass "refExampleButton" $ button x
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "clear"
-   hideableWidget referenceVisible "referenceText" $ text "Clears the visuals from the display" --languageHelpWidget MiniTidal
-   return ()
-
-sine :: MonadWidget t m => m ()
-sine = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "sin:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "x <> sin 0.9; y <> sin 0.4; w <> 0; h <> 0; clear <> 0.34"
-   hideableWidget referenceVisible "referenceText" $ text "Generates a sine wave." --languageHelpWidget MiniTidal
-   return ()
-
-   -- help files for samples
-saw :: MonadWidget t m => m ()
-saw = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "saw:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "x <> -1; y <> -1; w <>  saw 30m ; h <> saw 35m ; clear <> 0.14"
-   hideableWidget referenceVisible "referenceText" $ text "Generates a saw wave." --languageHelpWidget MiniTidal
-   return ()
-
-
-   -- help files for samples
-tri :: MonadWidget t m => m ()
-tri = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button "tri:"
-   exampleVisible <- toggle True switchToReference
-   referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text "x <> tri 6; y <> tri 3; w <> -0.5 ; h <> -0.5 ; clear <> -1 .. -0.9 {saw 0.1}; r <> saw 40m..45m"
-   hideableWidget referenceVisible "referenceText" $ text "generates a triangle wave."
+   hideableWidget exampleVisible "exampleText" $ text (exampleText x)
+   hideableWidget referenceVisible "referenceText" $ text (referenceText x)
    return ()

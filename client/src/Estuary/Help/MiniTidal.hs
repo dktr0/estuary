@@ -375,7 +375,7 @@ referenceText "shape" = " produces wave shaping distortion, a pattern of numbers
 -- referenceText "loop"
 referenceText "s" = "tells us we’re making a pattern of sound samples"
 referenceText "sound" = "tells us we’re making a pattern of sound samples"
-referenceText "vowel"= "turns a string pattern into a control pattern that creates a formant filter to produce vowel sounds on samples. Use values a, e, i, o, and u to add the effect."
+referenceText "vowel"= "turns a Text pattern into a control pattern that creates a formant filter to produce vowel sounds on samples. Use values a, e, i, o, and u to add the effect."
 -- referenceText "unit"
 referenceText "chop" = "cuts each sample into the given number of parts, allowing you to explore a technique known as 'granular synthesis'. It turns a pattern of samples into a pattern of parts of samples."
 referenceText "striate" = "is a kind of granulator, cutting samples into bits in a similar to chop, but the resulting bits are organised differently. "

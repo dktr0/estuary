@@ -41,8 +41,8 @@ exampleText "viento" = " \"viento\""
 exampleText "cueva" = " \"short\""
 exampleText "eco" = " \"trueno\" eco 2"
 exampleText "oscuridad" = " \"río\" oscuridad 2"
-exampleText "salvaje" = " \"rama\" salvaje 3"
-exampleText "este" = " \"viento\" este 2"
+exampleText "salvaje" = " \"rama rama rama rama\" salvaje 3"
+exampleText "este" = " \"viento\" este 8"
 exampleText "oeste" = " \"cueva\" oeste 0.75"
 
 referenceText :: Text -> Text

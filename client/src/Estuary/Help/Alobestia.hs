@@ -26,17 +26,17 @@ alobestiaHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "Alobestia reference"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador."
+  divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador by Gaby Dávila y Lenin Moncayo."
 
 exampleText :: Text -> Text
 
-exampleText "boom" = "boom"
-exampleText "clap" = "zap"
-exampleText "zap" = "zap"
-exampleText "rapido" =  "boom rapido 2"
-exampleText "lento" = "clap lento 2"
-exampleText "distorsion" = "zap distorsion 2"
-exampleText "densidad" = "zap densidad 4"
+exampleText "boom" = "\"boom\""
+exampleText "clap" = "\"zap\""
+exampleText "zap" = "\"bass\""
+exampleText "rapido" =  "\"boom\" rapido 2"
+exampleText "lento" = "\"clap\" lento 2"
+exampleText "distorsion" = "\"zap\" distorsion 2"
+exampleText "densidad" = "\"zap\" densidad 4"
 
 referenceText :: Text -> Text
 

@@ -39,14 +39,14 @@ exampleText "b" = "bev++++b"
 exampleText "c" = "bass++++c"
 
 referenceText :: Text -> Text
-referenceText "+" = "returns a beat."
+referenceText "+" = "returns a beat"
 referenceText "-" = "returns a silence"
 referenceText "?" = "returns TidalCycles' degrade"
-referenceText "f" = "returns TidalCycles' fast"
-referenceText "s" = "returns TidalCycles' slow"
+referenceText "f" = "returns TidalCycles' fast 2"
+referenceText "s" = "returns TidalCycles' slow 2"
 referenceText "r" = "returns TidalCycles' rev"
 referenceText "b" = "returns TidalCycles' brak"
-referenceText "c" = "returns TidalCycles' chop"
+referenceText "c" = "returns TidalCycles' chop 2"
 
   -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
