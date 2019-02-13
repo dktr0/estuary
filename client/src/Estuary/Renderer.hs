@@ -68,7 +68,7 @@ renderTidalPattern start range t p = events''
     events = Tidal.queryArc p (Tidal.Arc (toRational start') (toRational end)) -- events with t in cycles
     events' = Prelude.filter Tidal.eventHasOnset events
     events'' = f <$> events'
-    f e = (utcTime,Tidal.event e)
+    f e = (utcTime,Tidal.value e)
       where
         utcTime = addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t)
         w1 = Tidal.start $ Tidal.whole e

@@ -34,8 +34,8 @@ packages:
   extra-dep: true
 
 - location:
-    git: https://github.com/dktr0/Tidal.git
-    commit: 633c7f882d3009a50af61076179fa17eb8c0d55b
+    git: https://github.com/TidalCycles/Tidal.git
+    commit: 65724857fad9983b35dd24fe37fb36a0cb7dbbb8
   extra-dep: true
 
 - location:

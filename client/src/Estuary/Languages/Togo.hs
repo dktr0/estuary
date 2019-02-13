@@ -81,13 +81,13 @@ euclidInvPattern = do
   let n2 = fromIntegral b
   return $ slowness $ rotation $ _euclidInv n1 n2 c
 
--- alternate definitions of _euclid,_euclidInv,and _euclidFull for performance gains...
+-- alternate definitions of _euclid,_euclidInv,and _euclidFull for performance gains... keeping them for now because Tidal has only adopted one of them and we're not sure what the performance impact of that is...
 
 _euclid :: Int -> Int -> ControlPattern -> ControlPattern
 _euclid n k a = Tidal.fastcat $ fmap (bool Tidal.silence a) $ Tidal.bjorklund (n,k)
 
 _euclidInv :: Int -> Int -> ControlPattern -> ControlPattern
-_euclidInv n k a = Tidal.fastcat $ fmap (bool Tidal.silence a) $ Tidal.bjorklund (n,k)
+_euclidInv n k a = Tidal.fastcat $ fmap (bool a Tidal.silence) $ Tidal.bjorklund (n,k)
 
 _euclidFull :: Int -> Int -> ControlPattern -> ControlPattern -> ControlPattern
 _euclidFull n k a b = Tidal.fastcat $ fmap (bool b a) $ Tidal.bjorklund (n,k)
