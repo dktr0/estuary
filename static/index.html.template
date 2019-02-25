@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8"/>
+  
   <link href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
   <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
