@@ -8,6 +8,7 @@ import Data.Time
 import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad(liftM)
+import Control.Monad.IO.Class(liftIO)
 
 import Sound.MusicW
 
@@ -45,10 +46,6 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  js_signalEstuaryLoaded
-  -- Wait for 10k ms or click, which ever happens first
-  waitForInteractionOrTimeout 10000
-
   mainBusNodes@(mainBusIn,_,_,_) <- initializeMainBus
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
@@ -60,9 +57,20 @@ main = do
   ri <- newMVar $ emptyRenderInfo
   forkRenderThread c ri
 
-  -- root <- fmap pFromJSVal js_estuaryMountPoint :: IO HTMLDivElement
-  -- mainWidgetAtRoot root $ estuaryWidget Splash c ri protocol
   mainWidgetInElementById "estuary-root" $ estuaryWidget Splash c ri protocol
+
+  -- Signal the splash page that estuary is loaded.
+  js_setIconStateLoaded
+
+  -- Resume the audio context after interaction.
+  js_waitForClickBody
+  mErr <- liftAudioIO $ do
+    ac <- audioContext
+    liftIO $ resumeSync ac
+  case mErr of
+    Just err -> putStrLn $ show err
+    Nothing -> return ()
+
 
 visuallyCrash :: SomeException -> IO ()
 visuallyCrash e =
@@ -72,17 +80,6 @@ visuallyCrash e =
           "Click 'OK' to reload the page or 'Cancel' to remain on the page which will be unresponsive."
         ]
   in js_confirmReload $ toJSString $ intercalate "\n" lines
-
-waitForInteractionOrTimeout :: Int -> IO ()
-waitForInteractionOrTimeout ms = do
-  timeout (ms * 1000) js_waitForClickBody
-  return ()
-
-{- disactivated temporarily in update to new reflex
-mainWidgetAtRoot :: (IsHTMLElement e) => e -> Widget Spider (Gui Spider (WithWebView SpiderHost) (HostFrame Spider)) () -> IO ()
-mainWidgetAtRoot root widget = runWebGUI $ \webView -> do
-  Just doc <- liftM (fmap castToHTMLDocument) $ webViewGetDomDocument webView
-  attachWidget root webView widget -}
 
 foreign import javascript unsafe
   "if (window.confirm($1)) {        \
@@ -109,5 +106,5 @@ foreign import javascript safe
   js_estuaryMountPoint :: IO JSVal
 
 foreign import javascript safe
-  "document.querySelector('#estuary-splash').classList.add('btn')"
-  js_signalEstuaryLoaded :: IO ()
+  "EstuaryIcon.state = 'loaded';"
+  js_setIconStateLoaded :: IO () 

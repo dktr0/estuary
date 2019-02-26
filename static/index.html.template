@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link defer href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
-  <link defer href="../css-source/source.css" rel="stylesheet" type="text/css"/>
+  <meta charset="utf-8"/>
+  
+  <link href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
+  <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script defer type="text/javascript" src="EstuaryProtocol.js"></script>
@@ -35,12 +37,19 @@
       display: flex;
     }
 
+    .estuary-icon-display.center-screen {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      position: fixed;
+    }
+
     .estuary-icon-display {
       margin: auto;
       max-width: 100%;
       max-height: 100%;
       z-index: 10;
-      position: relative; /* must be positioned so that z-index has an effect. */
+      position: relative;
     }
 
     div#estuary-splash {
@@ -49,8 +58,38 @@
     }
 
     div#estuary-splash.loaded {
+      cursor: pointer;
+    }
+
+    div#estuary-splash.started {
       opacity: 0;
       pointer-events: none;
+    }
+
+    div#estuary-splash .info {
+      padding: 5vh 5vw;
+      z-index: 20;
+      position: fixed;
+      color: rgb(98, 221, 115); /* estuary green */
+      font-family: 'estuaryFont';
+    }
+
+    div#estuary-splash .info .title {
+      font-size: 7vh;
+      margin-bottom: 0;
+    }
+
+    div#estuary-splash .info .status {
+      font-size: 3vh;
+      margin-top: 0.5em;
+    }
+
+    div#estuary-splash.started .info {
+      display: none;
+    }
+
+    div#estuary-splash .status {
+      padding: 0 1em;
     }
   </style>
   <script type="text/javascript" src="estuary-icon.js"></script>
@@ -59,10 +98,16 @@
 <body>
   <div id="estuary-root"></div>
 #ifndef TEST
-  <div id="estuary-splash" class="estuary-logo full-screen"></div>
+  <div id="estuary-splash" class="estuary-logo full-screen">
+    <div class="info">
+      <h1 class="title">Estuary</h1>
+      <h5 class="status">Loading...</h5>
+    </div>
+  </div>
   <script type="text/javascript">
     var EstuaryIcon = (function() {
       var container = document.querySelector('#estuary-splash');
+      var statusDisplay = container.querySelector('.status');
 
       var icons = new EstuaryIcons(800, 800, {
         linesPerSec: 15,
@@ -73,10 +118,49 @@
 
       icons.startRendering();
 
-      return {
+      var splash = {
+        claim: container,
         display: display,
         renderer: icons
       };
+
+      var state = '';
+      Object.defineProperty(splash, 'state', {
+        enumerable: true,
+        configurable: true,
+        get: function get() { return state; },
+        set: function set(nextState) {
+          switch (nextState) {
+            case 'loading':
+              // The app is loading and no interaction is available yet.
+              container.classList = 'estuary-logo full-screen';
+              display.canvas.classList.add('center-screen');
+              statusDisplay.innerText = 'Loading...';
+              container.appendChild(display.canvas);
+              break;
+            case 'loaded':
+              // The app has loaded and the splash is ready to click.
+              container.classList = 'estuary-logo full-screen loaded';
+              statusDisplay.innerText = 'Click to start';
+              container.addEventListener('click', function() {
+                splash.state = 'started';
+              }, {once: true});
+              break;
+            case 'started':
+              // The app has loaded and the splash was clicked.
+              container.classList = 'estuary-logo full-screen started';
+              var startPos = EstuaryIcons.snapshotPosition(display); 
+              display.canvas.classList.remove('center-screen');
+              EstuaryIcons.animateFrom(display, startPos, /* duration */ 3);
+              break;
+          }
+
+          state = nextState;
+        }
+      });
+      splash.state = 'loading';
+
+      return splash;
     })();
   </script>
 #endif

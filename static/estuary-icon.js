@@ -1,4 +1,4 @@
-;var EstuaryIcons = (function() {
+var EstuaryIcons = (function() {
   var MAX_COLOR_VALUE = 255;
   var CENTER_VARIATION_RADIUS = 0.03125; // % of width or height for x or y resp
   var PADDING = 0.03125; // % of width or height
@@ -74,7 +74,7 @@
 
     this.running = false;
 
-    /** @member {Display} */
+    /** @member {Display[]} */
     this.displays = [];
 
     this.renderStartTime = NaN;
@@ -119,7 +119,7 @@
     // TODO limit to 60fps to allow for GC in between
 
     var numLinesNow = Math.max(0, Math.floor(timeSinceStart * this.linesPerSec));
-    var numLinesToDraw = numLinesNow - this.lineCount;
+    var numLinesToDraw = Math.min(numLinesNow - this.lineCount, 100); // Limit this incase it gets put in the background for a day
 
     this.lineCount = numLinesNow;
 
@@ -208,7 +208,6 @@
         if (progress > 1) {
           delete display.animation;
           display.canvas.style.transform = '';
-          display.canvas.style.position = '';
         } else {
           doTransitionFrame(animation.startPos, animation.endPos, progress, display.canvas);
         }
