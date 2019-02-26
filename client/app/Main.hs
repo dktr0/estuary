@@ -8,6 +8,7 @@ import Data.Time
 import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad(liftM)
+import Control.Monad.IO.Class(liftIO)
 
 import Sound.MusicW
 
@@ -58,7 +59,18 @@ main = do
 
   mainWidgetInElementById "estuary-root" $ estuaryWidget Splash c ri protocol
 
+  -- Signal the splash page that estuary is loaded.
   js_setIconStateLoaded
+
+  -- Resume the audio context after interaction.
+  js_waitForClickBody
+  mErr <- liftAudioIO $ do
+    ac <- audioContext
+    liftIO $ resumeSync ac
+  case mErr of
+    Just err -> putStrLn $ show err
+    Nothing -> return ()
+
 
 visuallyCrash :: SomeException -> IO ()
 visuallyCrash e =
@@ -75,6 +87,10 @@ foreign import javascript unsafe
   \  window.location.reload();      \
   \}"
   js_confirmReload :: JSVal -> IO ()
+
+foreign import javascript interruptible
+  "document.body.addEventListener('click', $c, {once: true});"
+  js_waitForClickBody :: IO ()
 
 foreign import javascript safe
   "window.addEventListener('beforeunload', function (e) { \
