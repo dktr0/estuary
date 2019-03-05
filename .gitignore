@@ -22,3 +22,6 @@ EstuaryServer/EstuaryServer.exe
 **/.stack-work-*/**/*
 **/node_modules/**/*
 **/*.cabal
+
+### nix
+result

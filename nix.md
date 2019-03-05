@@ -89,3 +89,33 @@ path is '/nix/store/...'
 ```
 
 That last line is the `sha256`.
+
+### Project structure
+
+The `cabal.project` allows an incremental build with multiple local packages. This means we can work on `common` and `client` at the same time for example.
+
+Haskell dependency management:
+https://github.com/Gabriel439/haskell-nix/blob/master/project4/README.md
+
+*   **jailbreak**: when applied to a haskell package means ignore the version constraints on it.
+
+
+From https://gitlab.com/mightybyte/hexplore/blob/master/default.nix
+```nix
+{ rpRef ? "ea3c9a1536a987916502701fb6d319a880fdec96" }:
+
+let rp = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${rpRef}.tar.gz";
+
+in
+
+(import rp {}).project ({ pkgs, ... }:
+with pkgs.haskell.lib;
+{
+```
+
+### LTS package sets
+
+https://github.com/reflex-frp/reflex-platform/blob/develop/nixpkgs/github.json
+The above holds the `nixpkgs` pin which in turn contains a currated package set of haskell packages that build together. As of writing this, that set is https://raw.githubusercontent.com/NixOS/nixpkgs/4507926b80c6b8f73053775ffee17f6781c7e7c8/pkgs/development/haskell-modules/hackage-packages.nix. 
+
+This means that the version of `reflex-project` used **determines the base package set**!
