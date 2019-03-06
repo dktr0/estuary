@@ -61,7 +61,7 @@ parserToHelp (TidalTextNotation Togo) = togoHelpFile
 
 parserToHelp CanvasOp = canvasOpHelpFile
 parserToHelp SvgOp = svgOpHelpFile
-parserToHelp PunctualAudio = punctualAudioHelpFile
+parserToHelp Punctual = punctualAudioHelpFile
 parserToHelp PunctualVideo = punctualVideoHelpFile
 parserToHelp SuperContinent = superContinentHelpFile
 parserToHelp _ = noHelpFile

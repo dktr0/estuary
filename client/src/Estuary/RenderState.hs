@@ -4,8 +4,10 @@ import Data.Time.Clock
 import Data.IntMap.Strict
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
+import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
 import Sound.MusicW.AudioContext
+import GHCJS.DOM.Types
 
 import Estuary.Types.Definition
 import Estuary.RenderInfo
@@ -15,9 +17,11 @@ import qualified Estuary.Languages.SuperContinent as SuperContinent
 data RenderState = RenderState {
   logicalTime :: !UTCTime,
   cachedDefs :: !DefinitionMap,
+  cachedCanvasElement :: !(Maybe HTMLCanvasElement),
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
   punctuals :: !(IntMap (Punctual.PunctualW AudioContextIO)),
+  punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
   punctualVideo :: !(IntMap Punctual.PunctualState),
   superContinentProgram :: SuperContinent.Program,
   superContinentState :: SuperContinent.SuperContinentState,
@@ -34,9 +38,11 @@ initialRenderState t = do
   return $ RenderState {
     logicalTime = t,
     cachedDefs = empty,
+    cachedCanvasElement = Nothing,
     paramPatterns = empty,
     dirtEvents = [],
     punctuals = empty,
+    punctualWebGLs = empty,
     punctualVideo = empty,
     superContinentProgram = [],
     superContinentState = scs,

@@ -55,7 +55,7 @@ textAreaWidgetForPatternChain rows i delta = do
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = [PunctualAudio,PunctualVideo,SuperContinent,SvgOp,CanvasOp] ++ (fmap TidalTextNotation tidalParsers)
+textNotationParsers = [Punctual,PunctualVideo,SuperContinent,SvgOp,CanvasOp] ++ (fmap TidalTextNotation tidalParsers)
 
 textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->

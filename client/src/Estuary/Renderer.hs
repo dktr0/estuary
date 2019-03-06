@@ -18,6 +18,7 @@ import Sound.MusicW.AudioContext
 
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
+import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Types as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.Punctual.Sample as Punctual
@@ -78,12 +79,26 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
   where f False = "~"
         f True = sampleName
 
-
 render :: Context -> Renderer
 render c = do
+  s <- get
+  when (canvasElement c /= cachedCanvasElement s) $ do
+    traverseWithKey (canvasChanged c) (definitions c)
+    modify' $ \x -> x { cachedCanvasElement = canvasElement c }
   traverseWithKey (renderZone c) (definitions c)
   flushEvents c
 
+canvasChanged :: Context -> Int -> Definition -> Renderer
+canvasChanged c z (TextProgram x) = canvasChangedTextProgram c z $ forRendering x
+canvasChanged _ _ _ = return ()
+
+canvasChangedTextProgram :: Context -> Int -> (TextNotation,String) -> Renderer
+canvasChangedTextProgram c z (Punctual,x) = do
+  webGLs <- gets punctualWebGLs
+  let prevWebGL = IntMap.findWithDefault Punctual.emptyPunctualWebGL z webGLs
+  newWebGL <- liftIO $ Punctual.updateRenderingContext prevWebGL (canvasElement c)
+  modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
+canvasChangedTextProgram _ _ _ = return ()
 
 renderZone :: Context -> Int -> Definition -> Renderer
 renderZone c z d = do
@@ -94,6 +109,22 @@ renderZone c z d = do
   modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
   renderZoneAlways c z d'
 
+renderAnimation :: Context -> Renderer
+renderAnimation c = do
+  tNow <- liftAudioIO $ audioTime
+  traverseWithKey (renderZoneAnimation tNow c) (definitions c)
+  return ()
+
+renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
+renderZoneAnimation tNow c z (TextProgram x) = renderZoneAnimationTextProgram tNow c z $ forRendering x
+renderZoneAnimation _ _ _ _ = return ()
+
+renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,String) -> Renderer
+renderZoneAnimationTextProgram tNow c z (Punctual,x) = do
+  webGLs <- gets punctualWebGLs
+  let webGL = findWithDefault Punctual.emptyPunctualWebGL z webGLs
+  liftIO $ Punctual.drawFrame tNow webGL
+renderZoneAnimationTextProgram _ _ _ _ = return ()
 
 renderZoneChanged :: Context -> Int -> Definition -> Renderer
 renderZoneChanged c z (Structure x) = do
@@ -130,24 +161,27 @@ renderTextProgramChanged c z (SuperContinent,x) = do
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { superContinentProgram = newProgram, info = (info s) { errors = newErrors } }
 
-renderTextProgramChanged c z (PunctualAudio,x) = do
+renderTextProgramChanged c z (Punctual,x) = do
   s <- get
   ac <- liftAudioIO $ audioContext
   let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
+    -- A. update PunctualW (audio state) in response to new, syntactically correct program
     let exprs = either (const []) id parseResult
     t <- liftAudioIO $ audioUTCTime
-    -- liftIO$ putStrLn $ "audioUTCTime=" ++ show t
     let eval = (exprs,t)
     let (mainBusIn,_,_,_) = mainBus c
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn t) z (punctuals s)
     let tempo' = tempo c
-    -- liftIO $ putStrLn $ "render tempo'=" ++ show tempo'
     let beat0 = beatZero tempo'
-    -- liftIO $ putStrLn $ " beatZero :: UTCTime = " ++ show beat0
     let cps' = cps tempo'
     newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,cps') eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
+    -- B. update Punctual WebGL state in response to new, syntactically correct program
+    webGLs <- gets punctualWebGLs
+    let prevWebGL = IntMap.findWithDefault Punctual.emptyPunctualWebGL z webGLs
+    newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL (beat0,cps') eval
+    modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
 
