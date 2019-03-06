@@ -75,16 +75,6 @@ page :: forall t m. (MonadWidget t m)
 page ctx _ _ wsDown Splash = do
   navEv <- divClass "splash-container" $ do
 
-    -- gotoAboutEv <- liftM (TutorialList <$) $ do
-    --   divClass "splash-margin" $ do
-    --     dynButtonWithChild "splash-panel" $ do
-    --       divClass "splash-title" $ do
-    --         dynText =<< translateDyn Term.About ctx
-    --         divClass "splash-icon-container" $ do
-    --           elAttr "img" (Map.fromList [("src", "estuary-logo-green.svg"), ("class", "splash-icon")]) blank
-          -- divClass "splash-line" blank
-        -- divClass "splash-info" $ aboutEstuaryParagraph ctx
-
 
     gotoAboutEv <- liftM (About <$) $ do
       divClass "splash-margin" $ do
@@ -141,7 +131,7 @@ page ctx _ _ wsDown (Tutorial tid) = do
       return (constDyn empty, never)
 
 page ctx _ _ wsDown About = do
-  divClass "splash-info" $ aboutEstuaryParagraph ctx
+  aboutEstuaryParagraph ctx
   return (never, (constDyn $ Just (soloEnsembleName, empty), never, never, never))
 
 page ctx renderInfo commands wsDown Solo = do

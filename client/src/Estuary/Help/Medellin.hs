@@ -22,7 +22,7 @@ medellinHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
  divClass "about" $ text "Medellin"
- divClass "aboutText" $ text "A mini live coding esolang developed in Medellin, Colombia."
+ divClass "about" $ text "A mini live coding esolang developed in Medellin, Colombia."
 
 exampleText :: Text -> Text
 

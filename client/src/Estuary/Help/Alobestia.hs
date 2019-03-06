@@ -26,7 +26,7 @@ alobestiaHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "Alobestia reference"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador by Gaby Dávila y Lenin Moncayo."
+  divClass "about" $ text "A mini live coding esolang developed in Quito, Ecuador by Gaby Dávila y Lenin Moncayo."
 
 exampleText :: Text -> Text
 

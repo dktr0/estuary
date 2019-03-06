@@ -24,7 +24,7 @@ naturalHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "Natural"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Manizales, Colombia."
+  divClass "about" $ text "A mini live coding esolang developed in Manizales, Colombia."
 
 exampleText :: Text -> Text
 

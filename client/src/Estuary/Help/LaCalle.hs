@@ -27,7 +27,7 @@ laCalleHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "LaCalle reference"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Lima (Peru) by Ivanka Cotrina, using slang characteristic of that city’s working-class neighbourhoods."
+  divClass "about" $ text "A mini live coding esolang developed in Lima (Peru) by Ivanka Cotrina, using slang characteristic of that city’s working-class neighbourhoods."
 
 
 

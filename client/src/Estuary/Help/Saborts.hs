@@ -33,7 +33,7 @@ sabortsHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "Saborts"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador by RGGTRN."
+  divClass "about" $ text "A mini live coding esolang developed in Quito, Ecuador by RGGTRN."
 
 exampleText :: Text -> Text
 
