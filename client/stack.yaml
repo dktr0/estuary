@@ -43,11 +43,10 @@ packages:
     commit: d7d4c57a54f47eb60144dbd36e16009ae5d73925
   extra-dep: true
 
-- '../../Punctual'
-#- location:
-#    git: https://github.com/dktr0/Punctual.git
-#    commit: ab0ba53310d6f764bf19490f835623c915a13eb8
-#  extra-dep: true
+- location:
+    git: https://github.com/dktr0/Punctual.git
+    commit: 37968562ff7d85082ff4a38e6871b552b228cb56
+  extra-dep: true
 
 extra-deps:
   - prim-uniq-0.1.0.1
