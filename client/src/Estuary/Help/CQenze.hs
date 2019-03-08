@@ -25,7 +25,7 @@ cqenzeHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
     divClass "about" $ text "CQenze"
-    divClass "aboutText" $ text "A mini live-coding language based on the ChucK based CQenze by Estaban Betancur."
+    divClass "about" $ text "A mini live-coding language based on the ChucK based CQenze by Estaban Betancur."
 
 exampleText :: Text -> Text
 

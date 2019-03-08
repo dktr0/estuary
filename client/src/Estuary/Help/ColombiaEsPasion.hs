@@ -24,7 +24,7 @@ colombiaEsPasionHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "Colombia Es Pasion"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Bogotá, Colombia."
+  divClass "about" $ text "A mini live coding esolang developed in Bogotá, Colombia."
 
 exampleText :: Text -> Text
 

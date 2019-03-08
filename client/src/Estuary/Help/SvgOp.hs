@@ -26,7 +26,7 @@ svgOpHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "SvgOp reference"
-  divClass "aboutText" $ text "A mini language mapping SVG and HTML properties."
+  divClass "about" $ text "A mini language mapping SVG and HTML properties."
 
 
 -- help files for samples
