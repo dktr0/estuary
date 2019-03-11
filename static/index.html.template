@@ -2,6 +2,16 @@
 <html>
 <head>
   <meta charset="utf-8"/>
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon/favicon-16x16.png">
+  <link rel="manifest" href="/icons/favicon/site.webmanifest">
+  <link rel="mask-icon" href="/icons/favicon/safari-pinned-tab.svg" color="#62dd73">
+  <link rel="shortcut icon" href="/icons/favicon/favicon.ico">
+  <meta name="msapplication-TileColor" content="#000000">
+  <meta name="msapplication-config" content="/icons/favicon/browserconfig.xml">
+  <meta name="theme-color" content="#62dd73">
   
   <link href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
   <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
