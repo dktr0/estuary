@@ -6,67 +6,10 @@ var EstuaryIcons = (function() {
   var STROKE_RANGE_HIGH = 5.5; // px
   var STROKE_RANGE_LOW = 0.5;
 
-  function interpolate(start, end, percentage) {
-    return ((end - start) * percentage) + start;
-  }
-
-  /**
-   * @param {DOMRect} bboxStart
-   * @param {DOMRect} bboxEnd
-   * @param {number} percentage
-   */
-  function doTransitionFrame(bboxStart, bboxEnd, percentage, element) {
-    // TODO since using transform, might be better to calculate directly.
-    var top = interpolate(bboxStart.top, bboxEnd.top, percentage);
-    var left = interpolate(bboxStart.left, bboxEnd.left, percentage);
-    var width = interpolate(bboxStart.width, bboxEnd.width, percentage);
-    var height = interpolate(bboxStart.height, bboxEnd.height, percentage);
-
-    element.style.transformOrigin = '0 0';
-    // translate must go first or it throws off the origin in chrome...
-    element.style.transform = 'translate(' + (left - bboxEnd.left) + 'px, ' + (top - bboxEnd.top) + 'px)' 
-      + ' scale(' +  width / bboxEnd.width + ', ' + height / bboxEnd.height + ')';
-  }
-
-  /* export */ EstuaryIcons.snapshotPosition = snapshotPosition;
-  function snapshotPosition(display) {
-    var canvas = display.canvas;
-
-    var bbox = canvas.getBoundingClientRect();
-    // If width and height is 0, it is not mounted or not visible.
-    if (bbox.width === 0 && bbox.height === 0)
-      return null;
-
-    return {
-      top: bbox.top, left: bbox.left,
-      width: bbox.width, height: bbox.height
-    };
-  }
-
-  /* export */ EstuaryIcons.animateFrom = animateFrom;
-  function animateFrom(display, startPos, duration) {
-    var endPos = snapshotPosition(display);
-
-    display.animation = {
-      startPos: startPos,
-      endPos: endPos,
-      duration: duration
-    };
-  }
-
   /**
    * @typedef {Object} Display
    * @property {HTMLCanvasElement} canvas
    * @property {CanvasRenderingContext2D} ctx
-   * @property {Animation} [animation]
-   */
-
-  /**
-   * @typedef {Object} Animation
-   * @property {DOMRect} startPos
-   * @property {DOMRect} endPos
-   * @property {number} duration - in seconds
-   * @property {number} [startTime] - in seconds
    */
 
   function EstuaryIcons(width, height, options) {
@@ -178,41 +121,8 @@ var EstuaryIcons = (function() {
       }
     }
 
-    this.renderAnimation(now);
-
     if (this.running)
       requestAnimationFrame(this.renderFrame.bind(this));
-  }
-
-  EstuaryIcons.prototype.renderAnimation = function renderAnimation(now) {
-    var displays = this.displays;
-    for (var i = 0, len = displays.length; i < len; i++) {
-      var display = displays[i];
-
-      var animation = display.animation;
-      if (animation != null) {
-        if (animation.endPos == null)
-          // Wait until mounted as the snapshot will return null until
-          animation.endPos = snapshotPosition(display);
-
-        if (animation.endPos == null) {
-          doTransitionFrame(animation.startPos, animation.startPos, 1, display.canvas);
-          continue;
-        }
-
-        var startTime = animation.startTime;
-        if (startTime == null)
-          animation.startTime = startTime = now;
-
-        var progress = (now - startTime) / (animation.duration * 1000);
-        if (progress > 1) {
-          delete display.animation;
-          display.canvas.style.transform = '';
-        } else {
-          doTransitionFrame(animation.startPos, animation.endPos, progress, display.canvas);
-        }
-      }
-    }
   }
 
   return EstuaryIcons;
