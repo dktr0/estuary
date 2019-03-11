@@ -2,6 +2,18 @@
 <html>
 <head>
   <meta charset="utf-8"/>
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon/favicon-16x16.png">
+  <link rel="manifest" href="/icons/favicon/site.webmanifest">
+  <link rel="mask-icon" href="/icons/favicon/safari-pinned-tab.svg" color="#62dd73">
+  <link rel="shortcut icon" href="/icons/favicon/favicon.ico">
+  <meta name="msapplication-TileColor" content="#000000">
+  <meta name="msapplication-config" content="/icons/favicon/browserconfig.xml">
+  <meta name="theme-color" content="#62dd73">
+
+  <title>Estuary</title>
   
   <link href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
   <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
@@ -54,7 +66,7 @@
 
     div#estuary-splash {
       opacity: 1;
-      transition: opacity 3s ease-out;
+      transition: opacity 1s ease-out;
     }
 
     div#estuary-splash.loaded {
@@ -82,14 +94,11 @@
     div#estuary-splash .info .status {
       font-size: 3vh;
       margin-top: 0.5em;
+      padding: 0 1em;
     }
 
     div#estuary-splash.started .info {
       display: none;
-    }
-
-    div#estuary-splash .status {
-      padding: 0 1em;
     }
   </style>
   <script type="text/javascript" src="estuary-icon.js"></script>
@@ -149,9 +158,7 @@
             case 'started':
               // The app has loaded and the splash was clicked.
               container.classList = 'estuary-logo full-screen started';
-              var startPos = EstuaryIcons.snapshotPosition(display); 
               display.canvas.classList.remove('center-screen');
-              EstuaryIcons.animateFrom(display, startPos, /* duration */ 3);
               break;
           }
 

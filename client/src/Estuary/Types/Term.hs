@@ -32,8 +32,8 @@ translate EstuaryDescription Español = "Estuary (una simbionte live coding)"
 translate Tutorials Español = "Tutoriales"
 translate Tutorials English = "Tutorials"
 
-translate About Español = "Acerca de"
-translate About English = "About"
+translate About Español = "Acerca de Estuary"
+translate About English = "About Estuary"
 
 translate Solo Español = "Modo Solo"
 translate Solo English = "Solo Mode"
