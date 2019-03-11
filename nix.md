@@ -119,3 +119,7 @@ https://github.com/reflex-frp/reflex-platform/blob/develop/nixpkgs/github.json
 The above holds the `nixpkgs` pin which in turn contains a currated package set of haskell packages that build together. As of writing this, that set is https://raw.githubusercontent.com/NixOS/nixpkgs/4507926b80c6b8f73053775ffee17f6781c7e7c8/pkgs/development/haskell-modules/hackage-packages.nix. 
 
 This means that the version of `reflex-project` used **determines the base package set**!
+
+### nix-shell
+
+In the `nix-shell -A shells.ghcjs`, use `hpack client/ && hpack common/ && cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all` to generate cabal files and build the frontend (with common).

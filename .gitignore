@@ -21,7 +21,11 @@ EstuaryServer/EstuaryServer.exe
 **/.stack-work/**/*
 **/.stack-work-*/**/*
 **/node_modules/**/*
-**/*.cabal
 
 ### nix
 result
+
+### cabal
+**/*.cabal
+dist-*/
+.ghc.environment*
