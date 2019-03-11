@@ -13,6 +13,8 @@ import Data.IntMap.Strict as IntMap
 import Data.Maybe
 import Data.Either
 import qualified Data.Map as Map
+import JavaScript.Web.AnimationFrame
+import GHCJS.Concurrent
 
 import Sound.MusicW.AudioContext
 
@@ -81,12 +83,17 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: Context -> Renderer
 render c = do
+  t1 <- liftIO $ getCurrentTime
   s <- get
   when (canvasElement c /= cachedCanvasElement s) $ do
     traverseWithKey (canvasChanged c) (definitions c)
     modify' $ \x -> x { cachedCanvasElement = canvasElement c }
   traverseWithKey (renderZone c) (definitions c)
   flushEvents c
+  t2 <- liftIO $ getCurrentTime
+  modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
+  calculateRenderTimes
+  scheduleNextRender
 
 canvasChanged :: Context -> Int -> Definition -> Renderer
 canvasChanged c z (TextProgram x) = canvasChangedTextProgram c z $ forRendering x
@@ -96,6 +103,7 @@ canvasChangedTextProgram :: Context -> Int -> (TextNotation,String) -> Renderer
 canvasChangedTextProgram c z (Punctual,x) = do
   webGLs <- gets punctualWebGLs
   let prevWebGL = IntMap.findWithDefault Punctual.emptyPunctualWebGL z webGLs
+  liftIO $ putStrLn "about to Punctual.updateRenderingContext"
   newWebGL <- liftIO $ Punctual.updateRenderingContext prevWebGL (canvasElement c)
   modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
 canvasChangedTextProgram _ _ _ = return ()
@@ -179,8 +187,10 @@ renderTextProgramChanged c z (Punctual,x) = do
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
     -- B. update Punctual WebGL state in response to new, syntactically correct program
     webGLs <- gets punctualWebGLs
-    let prevWebGL = IntMap.findWithDefault Punctual.emptyPunctualWebGL z webGLs
-    newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL (beat0,cps') eval
+    let prevWebGL = IntMap.lookup z webGLs
+    prevWebGL' <- if isJust prevWebGL then return (fromJust prevWebGL) else
+      liftIO $ Punctual.updateRenderingContext Punctual.emptyPunctualWebGL (canvasElement c)
+    newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL' (beat0,cps') eval
     modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
@@ -279,42 +289,6 @@ renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   let events = maybe [] id $ fmap (renderTidalPattern lt renderPeriod tempo') controlPattern
   modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
 
-
-runRender :: MVar Context -> MVar RenderInfo -> Renderer
-runRender c ri = do
-  c' <- liftIO $ readMVar c
-  t1 <- liftIO $ getCurrentTime
-  modify' $ \x -> x { renderStartTime = t1 }
-  render c'
-  t2 <- liftIO $ getCurrentTime
-  modify' $ \x -> x { renderEndTime = t2 }
-  calculateRenderTimes
-  ri' <- gets info -- RenderInfo from the state maintained by this iteration...
-  liftIO $ swapMVar ri ri' -- ...is copied to an MVar so it can be read elsewhere.
-  scheduleNextRender c'
-
-scheduleNextRender :: Context -> Renderer
-scheduleNextRender c = do
-  s <- get
-  let next = addUTCTime renderPeriod (logicalTime s)
-  tNow <- liftAudioIO $ audioUTCTime
-  let diff = diffUTCTime next tNow
-  -- if next logical time is more than 0.2 seconds in the past or future
-  -- fast-forward or rewind by half of the difference
-  let adjustment = if diff >= (-0.2) && diff <= 0.2 then 0 else (diff*(-0.5))
-  when (diff < (-0.2)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
-  when (diff > 0.2) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
-  let diff' = diff + adjustment
-  let next' = addUTCTime diff' tNow
-  -- if the (potentially adjusted) next logical time is more than a half period from now
-  -- sleep (threadDelay) so that next logical time is approximately a half period from then
-  let halfPeriod = renderPeriod / 2
-  when (diff' > halfPeriod) $ do
-    let wakeTime = addUTCTime (0-halfPeriod) next'
-    let delay = diffUTCTime wakeTime tNow
-    liftIO $ threadDelay $ floor $ realToFrac $ delay * 1000000
-  put $ s { logicalTime = next' }
-
 calculateRenderTimes :: Renderer
 calculateRenderTimes = do
   s <- get
@@ -329,8 +303,56 @@ calculateRenderTimes = do
   modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
   modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
 
-forkRenderThread :: MVar Context -> MVar RenderInfo -> IO ()
-forkRenderThread c ri = do
+scheduleNextRender :: Renderer
+scheduleNextRender = do
+  s <- get
+  let next = addUTCTime renderPeriod (logicalTime s)
+  tNow <- liftAudioIO $ audioUTCTime
+  let diff = diffUTCTime next tNow
+  -- if next logical time is more than 0.2 seconds in the past or future
+  -- fast-forward or rewind by half of the difference
+  let adjustment = if diff >= (-0.2) && diff <= 0.2 then 0 else (diff*(-0.5))
+  when (diff < (-0.2)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
+  when (diff > 0.2) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
+  let diff' = diff + adjustment
+  let next' = addUTCTime diff' tNow
+  put $ s { logicalTime = next' }
+
+-- if the (potentially adjusted) next logical time is more than a half period from now
+-- sleep (threadDelay) so that next logical time is approximately a half period from then
+sleepIfNecessary :: Renderer
+sleepIfNecessary = do
+  next <- gets logicalTime
+  tNow <- liftAudioIO $ audioUTCTime
+  let halfPeriod = renderPeriod / 2
+  let diff = diffUTCTime next tNow
+  when (diff > halfPeriod) $ do
+    let wakeTime = addUTCTime (0-halfPeriod) next
+    let delay = diffUTCTime wakeTime tNow
+    liftIO $ threadDelay $ floor $ realToFrac $ delay * 1000000
+
+forkRenderThreads :: MVar Context -> MVar RenderInfo -> IO ()
+forkRenderThreads ctxM riM = do
   renderStart <- liftAudioIO $ audioUTCTime
   irs <- initialRenderState renderStart
-  void $ forkIO $ iterateM_ (execStateT $ runRender c ri) irs
+  rsM <- newMVar irs
+  void $ forkIO $ mainRenderThread ctxM riM rsM
+  void $ forkIO $ animationThread ctxM riM rsM
+
+mainRenderThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
+mainRenderThread ctxM riM rsM = do
+  ctx <- readMVar ctxM
+  rs <- takeMVar rsM
+  rs' <- execStateT (render ctx) rs
+  putMVar rsM rs'
+  swapMVar riM (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
+  execStateT sleepIfNecessary rs'
+  mainRenderThread ctxM riM rsM
+
+animationThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
+animationThread ctxM riM rsM = void $ inAnimationFrame ThrowWouldBlock $ \_ -> do
+  rs <- takeMVar rsM
+  ctx <- readMVar ctxM
+  rs' <- execStateT (renderAnimation ctx) rs
+  putMVar rsM rs'
+  animationThread ctxM riM rsM

@@ -55,7 +55,7 @@ main = do
   now <- liftAudioIO $ audioUTCTime
   c <- newMVar $ initialContext now mainBusNodes wd sd mv
   ri <- newMVar $ emptyRenderInfo
-  forkRenderThread c ri
+  forkRenderThreads c ri
 
   mainWidgetInElementById "estuary-root" $ estuaryWidget Splash c ri protocol
 
@@ -107,4 +107,4 @@ foreign import javascript safe
 
 foreign import javascript safe
   "EstuaryIcon.state = 'loaded';"
-  js_setIconStateLoaded :: IO () 
+  js_setIconStateLoaded :: IO ()

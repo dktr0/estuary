@@ -13,6 +13,7 @@ import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
+import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..))
 import GHCJS.Marshal.Pure
 import Data.Functor (void)
 import qualified Data.Text as T
@@ -44,10 +45,17 @@ import qualified Estuary.Types.Terminal as Terminal
 
 estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
 estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
-  ic <- liftIO $ readMVar ctxM
+  ic0 <- liftIO $ takeMVar ctxM
+  let canvasAttrs = fromList [("class","canvas"),("style",T.pack $ "z-index: -1;"), ("width","1920"), ("height","1080")]
+  canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elAttr' "canvas" canvasAttrs $ return ()
+  let ic = ic0 { canvasElement = Just canvas }
+  liftIO $ putMVar ctxM ic
+
   renderInfo <- pollRenderInfoChanges riM
 
-  -- load the samples map, if there is a better way to triiger an event from an async callback
+
+
+  -- load the samples map, if there is a better way to trigger an event from an async callback
   -- then this should be update to reflect that.
   postBuild <- getPostBuild
   samplesLoadedEv <- performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
@@ -122,13 +130,13 @@ header ctx renderInfo = divClass "header" $ do
   clientConfigurationWidgets ctx
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
-clientConfigurationWidgets ctx = divClass "config-toolbar" $ do  
+clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
   themeChangeEv <- divClass "config-entry" $ do
     let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale")]
     translateDyn Term.Theme ctx >>= dynText
     styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "config-dropdown")) -- Event t String
     return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
-  
+
   langChangeEv <- divClass "config-entry" $ do
     translateDyn Term.Language ctx >>= dynText
     let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
@@ -141,12 +149,12 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
     text "Canvas:"
     canvasInput <- checkbox True condigCheckboxAttrs
     return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
-    
+
   superDirtEnabledEv <- divClass "config-entry" $ do
     text "SuperDirt:"
     sdInput <- checkbox False condigCheckboxAttrs
     return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
-  
+
   webDirtEnabledEv <- divClass "config-entry" $ do
     text "WebDirt:"
     wdInput <- checkbox True condigCheckboxAttrs
@@ -157,7 +165,7 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
     let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
     dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "config-dropdown"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
-    
+
   return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
