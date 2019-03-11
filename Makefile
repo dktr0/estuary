@@ -86,7 +86,7 @@ releaseClient: # make installClient or prodInstallClient first!
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/dktr0/estuary/releases/download/20190301/estuary-client-20190301.zip
+	curl -o temp.zip -L https://github.com/dktr0/estuary/releases/download/20190311/estuary-client-20190311.zip
 	unzip temp.zip
 	rm -rf temp.zip
 	cp -Rf static/samples Estuary.jsexe
