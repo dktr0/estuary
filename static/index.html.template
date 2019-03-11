@@ -12,6 +12,8 @@
   <meta name="msapplication-TileColor" content="#000000">
   <meta name="msapplication-config" content="/icons/favicon/browserconfig.xml">
   <meta name="theme-color" content="#62dd73">
+
+  <title>Estuary</title>
   
   <link href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
   <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
