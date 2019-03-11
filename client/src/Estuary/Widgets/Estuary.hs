@@ -67,10 +67,10 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
     let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
     ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
-    (headerChanges, clickedLogoEv) <- header ctx renderInfo
+    headerChanges <- header ctx renderInfo
 
     (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
-      navigation initialPage (Splash <$ clickedLogoEv) ctx renderInfo commands deltasDown
+      navigation initialPage never ctx renderInfo commands deltasDown
 
     commands <- footer ctx renderInfo deltasUp deltasDown' hints
 
@@ -117,12 +117,9 @@ updateDynamicsModes ctx = do
   dynamicsModeChanged <- liftM (updated . nubDyn) $ mapDyn dynamicsMode ctx
   performEvent_ $ fmap (liftIO . changeDynamicsMode nodes) dynamicsModeChanged
 
-header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange, Event t ())
+header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
 header ctx renderInfo = divClass "header" $ do
-  clickedLogoEv <- dynButtonWithChild "logo" $
-    dynText =<< translateDyn Term.EstuaryDescription ctx
-  ctxChangeEv <- clientConfigurationWidgets ctx
-  return (ctxChangeEv, clickedLogoEv)
+  clientConfigurationWidgets ctx
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "config-toolbar" $ do  
