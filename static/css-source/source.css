@@ -111,13 +111,13 @@
 .config-toolbar {
 	font-size: 0.75em;
 	float: right;
-	display: table-row;
+	display: block;
 }
 
 .config-entry {
 	border-right: 1px solid;
 	padding: 0.25em 0.5em;
-	display: table-cell;
+	display: inline-block;
 }
 
 .config-entry:last-child {
