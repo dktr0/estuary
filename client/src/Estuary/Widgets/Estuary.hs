@@ -45,6 +45,7 @@ import qualified Estuary.Types.Terminal as Terminal
 
 estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
 estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
+
   ic0 <- liftIO $ takeMVar ctxM
   let canvasAttrs = fromList [("class","canvas"),("style",T.pack $ "z-index: -1;"), ("width","1920"), ("height","1080")]
   canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elAttr' "canvas" canvasAttrs $ return ()
@@ -100,6 +101,31 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
 
   performHint (webDirt ic) hints
 
+
+ourPopUp :: MonadWidget t m => Event t () -> m (Event t ContextChange)
+ourPopUp go = mdo
+  let x = fmap (const True) go -- Event t Bool
+  let y = fmap (const False) hide -- Event t Bool
+  let xy = leftmost [x,y] -- Event t Bool
+  visible <- holdDyn False xy -- Dynamic t Bool
+  let visibleStyle = fmap popupVisibilityStyle visible
+  let classStyle = constDyn $ singleton "class" "ourPopUp"
+  let attrs = zipDynWith (union) visibleStyle classStyle 
+  (hide,canvasEnabledEv) <- elDynAttr "div" attrs $ do
+    text "This is our popup."
+    hide' <- button "hide"
+    let configCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
+    canvasEnabledEv <- divClass "config-entry" $ do
+      text "Canvas:"
+      canvasInput <- checkbox True configCheckboxAttrs
+      return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+    return (hide',canvasEnabledEv)
+  return canvasEnabledEv
+
+popupVisibilityStyle :: Bool -> Map T.Text T.Text
+popupVisibilityStyle False = singleton "style" "display: none"
+popupVisibilityStyle True = singleton "style" "display: block"
+
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 updateContext cMvar cDyn = performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn
 
@@ -145,11 +171,6 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
 
   let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
 
-  canvasEnabledEv <- divClass "config-entry" $ do
-    text "Canvas:"
-    canvasInput <- checkbox True condigCheckboxAttrs
-    return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
-
   superDirtEnabledEv <- divClass "config-entry" $ do
     text "SuperDirt:"
     sdInput <- checkbox False condigCheckboxAttrs
@@ -166,7 +187,11 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
     dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "config-dropdown"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
 
-  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
+  popupButton <- button "popup" -- popupButton :: Event t ()
+  popupContextChanges <- ourPopUp popupButton
+
+
+  return $ mergeWith (.) [themeChangeEv, langChangeEv, popupContextChanges, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)

@@ -3,6 +3,18 @@
 							General setup
 --------------------------------------------------------------------
 */
+
+.ourPopUp {
+  position: fixed;
+  left: 7.5vw;
+  top: 7.5vh; 
+  width: 85vw;
+  height: 85vh;
+  z-index: 20;
+  background-color: green;
+  border: 1px solid red;
+}
+
 .canvas {
   position: absolute;
 	width: 100%;
