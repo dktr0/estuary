@@ -1,4 +1,11 @@
-(import ./reflex-platform {}).project ({ pkgs, ghc8_4, hackGet, ... }: {
+{ reflexPlatformVersion ? "a229a74ebb9bac69327f33a4416986d614eda7ea" }:
+
+let reflex-platform = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${reflexPlatformVersion}.tar.gz";
+in
+
+(import reflex-platform {}).project ({ pkgs, ghc8_4, hackGet, ... }: 
+with pkgs.haskell.lib;
+{
   name = "Estuary";
 
   packages = {
@@ -25,24 +32,23 @@
         pkgs.lib.genAttrs [
             "Glob" "mockery" "silently" "unliftio" "conduit" 
             "yaml" "hpack"
-          ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else pkgs.haskell.lib.dontCheck) super.${name});
+          ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else dontCheck) super.${name});
 
       manualOverrides = self: super: {
-        estuary = pkgs.haskell.lib.overrideCabal super.estuary (drv: {
+        estuary = overrideCabal super.estuary (drv: {
           preConfigure = ''
           ${ghc8_4.hpack}/bin/hpack;
           '';
         });
 
-        estuary-common = pkgs.haskell.lib.overrideCabal super.estuary-common (drv: {
+        estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
           ${ghc8_4.hpack}/bin/hpack;
           '';
         });
 
-        # https://prime.haskell.org/wiki/Libraries/Proposals/SemigroupMonoid#Writingcompatiblecode
         musicw = if !(self.ghc.isGhcjs or false) then null
-          else pkgs.haskell.lib.dontHaddock 
+          else dontHaddock 
             (self.callCabal2nix "musicw" (import ./deps/musicw) {});
 
         punctual = if !(self.ghc.isGhcjs or false) then null
@@ -50,7 +56,7 @@
 
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null
-          else pkgs.haskell.lib.doJailbreak 
+          else doJailbreak 
             (self.callCabal2nix "tidal" (import ./deps/tidal) {});
 
         # It is a nix package, but use cabal2nix anyways. The nix one 

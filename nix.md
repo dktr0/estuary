@@ -123,3 +123,5 @@ This means that the version of `reflex-project` used **determines the base packa
 ### nix-shell
 
 In the `nix-shell -A shells.ghcjs`, use `hpack client/ && hpack common/ && cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all` to generate cabal files and build the frontend (with common).
+
+In the `nix-shell -A shells.ghc`, use `hpack server/ && hpack common/ && cabal new-build all` to generate cabal files and build the backend
