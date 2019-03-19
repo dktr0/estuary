@@ -13,6 +13,7 @@ import Estuary.Types.Definition
 import Estuary.RenderInfo
 import Estuary.Types.CanvasOp
 import qualified Estuary.Languages.SuperContinent as SuperContinent
+import Estuary.Types.MovingAverage
 
 data RenderState = RenderState {
   logicalTime :: !UTCTime,
@@ -27,7 +28,7 @@ data RenderState = RenderState {
   superContinentState :: SuperContinent.SuperContinentState,
   renderStartTime :: !UTCTime,
   renderEndTime :: !UTCTime,
-  renderTimes :: ![NominalDiffTime],
+  renderTime :: !MovingAverage,
   info :: !RenderInfo,
   canvasOps :: [(UTCTime,CanvasOp)]
   }
@@ -48,7 +49,7 @@ initialRenderState t = do
     superContinentState = scs,
     renderStartTime = t,
     renderEndTime = t,
-    renderTimes = [],
+    renderTime = newAverage 20,
     info = emptyRenderInfo,
     canvasOps = []
   }

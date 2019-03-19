@@ -42,6 +42,7 @@ import Estuary.WebDirt.SampleEngine
 import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Types.Tempo
+import Estuary.Types.MovingAverage
 import Estuary.Render.AudioContext
 
 type Renderer = StateT RenderState IO ()
@@ -293,13 +294,11 @@ calculateRenderTimes :: Renderer
 calculateRenderTimes = do
   s <- get
   --
-  let renderTime = diffUTCTime (renderEndTime s) (renderStartTime s)
-  let newRenderTimes = take 20 $ renderTime:(renderTimes s)
-  let newAvgRenderTime = sum newRenderTimes / (fromIntegral $ length newRenderTimes)
-  let newPeakRenderTime = maximum newRenderTimes
-  let newAvgRenderLoad = ceiling (newAvgRenderTime * 100 / renderPeriod)
-  let newPeakRenderLoad = ceiling (newPeakRenderTime * 100 / renderPeriod)
-  modify' $ \x -> x { renderTimes = newRenderTimes }
+  let mostRecentRenderTime = diffUTCTime (renderEndTime s) (renderStartTime s)
+  let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
+  let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac renderPeriod)
+  let newPeakRenderLoad = ceiling (getPeak newRenderTime * 100 / realToFrac renderPeriod)
+  modify' $ \x -> x { renderTime = newRenderTime }
   modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
   modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
 
