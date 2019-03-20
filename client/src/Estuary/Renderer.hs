@@ -111,12 +111,18 @@ canvasChangedTextProgram _ _ _ = return ()
 
 renderZone :: Context -> Int -> Definition -> Renderer
 renderZone c z d = do
+  t1 <- liftIO $ getCurrentTime
   s <- get
   let prevDef = IntMap.lookup z $ cachedDefs s
   let d' = definitionForRendering d
-  when (prevDef /= (Just d')) $ renderZoneChanged c z d'
-  modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
+  when (prevDef /= (Just d')) $ do
+    renderZoneChanged c z d'
+    modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
   renderZoneAlways c z d'
+  t2 <- liftIO $ getCurrentTime
+  let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
+  let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
+  modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
 
 renderAnimation :: Context -> Renderer
 renderAnimation c = do
@@ -125,7 +131,14 @@ renderAnimation c = do
   return ()
 
 renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
-renderZoneAnimation tNow c z (TextProgram x) = renderZoneAnimationTextProgram tNow c z $ forRendering x
+renderZoneAnimation tNow c z (TextProgram x) = do
+  s <- get
+  t1 <- liftIO $ getCurrentTime
+  renderZoneAnimationTextProgram tNow c z $ forRendering x
+  t2 <- liftIO $ getCurrentTime
+  let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
+  let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
+  modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
 renderZoneAnimation _ _ _ _ = return ()
 
 renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,String) -> Renderer
@@ -301,6 +314,23 @@ calculateRenderTimes = do
   modify' $ \x -> x { renderTime = newRenderTime }
   modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
   modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
+  traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s
+  traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s
+  return ()
+
+calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
+calculateZoneRenderTimes z zrt = do
+  s <- get
+  let newAvgMap = insert z (getAverage zrt) (avgZoneRenderTime $ info s)
+  let newPeakMap = insert z (getPeak zrt) (peakZoneRenderTime $ info s)
+  modify' $ \x -> x { info = (info x) { avgZoneRenderTime = newAvgMap, peakZoneRenderTime = newPeakMap }}
+
+calculateZoneAnimationTimes :: Int -> MovingAverage -> Renderer
+calculateZoneAnimationTimes z zat = do
+  s <- get
+  let newAvgMap = insert z (getAverage zat) (avgZoneAnimationTime $ info s)
+  let newPeakMap = insert z (getPeak zat) (peakZoneAnimationTime $ info s)
+  modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap, peakZoneAnimationTime = newPeakMap }}
 
 scheduleNextRender :: Renderer
 scheduleNextRender = do

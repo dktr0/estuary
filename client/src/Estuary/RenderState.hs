@@ -29,6 +29,8 @@ data RenderState = RenderState {
   renderStartTime :: !UTCTime,
   renderEndTime :: !UTCTime,
   renderTime :: !MovingAverage,
+  zoneRenderTimes :: !(IntMap MovingAverage),
+  zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo,
   canvasOps :: [(UTCTime,CanvasOp)]
   }
@@ -50,6 +52,8 @@ initialRenderState t = do
     renderStartTime = t,
     renderEndTime = t,
     renderTime = newAverage 20,
+    zoneRenderTimes = empty,
+    zoneAnimationTimes = empty,
     info = emptyRenderInfo,
     canvasOps = []
   }
