@@ -2,10 +2,32 @@
 # otherwise falling back to a plain 'cp'.
 RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
 ifdef RSYNC_EXISTS
+CP=rsync --update --perms --executability
 CP_RECURSIVE=rsync --recursive --update --perms --executability
 else
+CP=cp
 CP_RECURSIVE=cp -rf
 endif
+
+nixPrepStage:
+	-mkdir staging/
+	$(CP) result/ghc/estuary-server/bin/EstuaryServer staging/
+	#-mkdir staging/Estuary.jsexe/
+	#$(CP_RECURSIVE) result/ghcjs/estuary/bin/Estuary.jsexe/ staging/Estuary.jsexe/
+
+GCC_PREPROCESSOR=gcc -E -x c -P -C -nostdinc
+TEMPLATE_SOURCE=static/index.html.template
+nixStageAssets:
+	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -DPRODUCTION -o staging/index.html
+	$(CP_RECURSIVE) static/*.js staging/
+	$(CP_RECURSIVE) static/WebDirt/ staging/WebDirt/
+	$(CP_RECURSIVE) static/css-custom/ staging/css-custom/
+	$(CP_RECURSIVE) static/css-source/ staging/css-source/
+	$(CP_RECURSIVE) static/fonts/ staging/fonts/
+	$(CP_RECURSIVE) static/icons/ staging/icons/
+	$(CP_RECURSIVE) static/samples/ staging/samples/
+
+nixStage
 
 STACK_CLIENT=cd client/ && stack
 STACK_SERVER=cd server/ && stack

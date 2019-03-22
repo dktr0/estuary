@@ -22,6 +22,8 @@ EstuaryServer/EstuaryServer.exe
 **/.stack-work-*/**/*
 **/node_modules/**/*
 
+staging/
+
 ### nix
 result
 

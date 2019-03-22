@@ -15,12 +15,22 @@ with pkgs.haskell.lib;
   };
 
   shells = {
-    ghc = ["estuary" "estuary-common" "estuary-server"];
+    ghc = ["estuary-common" "estuary-server"];
     ghcjs = ["estuary" "estuary-common"];
   };
 
   shellToolOverrides = ghc: super: {
     inherit (ghc8_4) hpack; # always use ghc (not ghcjs) compiled hpack
+  };
+
+  # A shell for staging and packaging releases
+  passthru = {
+    shells.release = pkgs.mkShell {
+      buildInputs = (
+        with pkgs;
+        [closurecompiler gnumake gzip gcc]
+      );
+    };
   };
 
   overrides = 
@@ -37,31 +47,38 @@ with pkgs.haskell.lib;
       manualOverrides = self: super: {
         estuary = overrideCabal super.estuary (drv: {
           preConfigure = ''
-          ${ghc8_4.hpack}/bin/hpack;
+            ${ghc8_4.hpack}/bin/hpack;
           '';
+          postInstall = ''
+            ${pkgs.closurecompiler}/bin/closure-compiler $out/bin/Estuary.jsexe/all.js \
+            --compilation_level=SIMPLE \
+            --js_output_file=$out/bin/all.min.js \
+            --externs=$out/bin/Estuary.jsexe/all.js.externs \
+            --jscomp_off=checkVars
+         '';
         });
 
         estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
-          ${ghc8_4.hpack}/bin/hpack;
+            ${ghc8_4.hpack}/bin/hpack;
           '';
         });
 
+        webdirt = import ./deps/webdirt self;
+
         musicw = if !(self.ghc.isGhcjs or false) then null
-          else dontHaddock 
-            (self.callCabal2nix "musicw" (import ./deps/musicw) {});
+          else dontHaddock (import ./deps/musicw self);
 
         punctual = if !(self.ghc.isGhcjs or false) then null
-          else self.callCabal2nix "punctual" (import ./deps/punctual) {};
+          else import ./deps/punctual self;
 
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null
-          else doJailbreak 
-            (self.callCabal2nix "tidal" (import ./deps/tidal) {});
+          else doJailbreak (import ./deps/tidal self);
 
         # It is a nix package, but use cabal2nix anyways. The nix one 
         # has a bad base constraint.
-        reflex-dom-contrib = self.callCabal2nix "reflex-dom-contrib" (import ./deps/reflex-dom-contrib) {};
+        reflex-dom-contrib = import ./deps/reflex-dom-contrib self;
       };
     in
       pkgs.lib.composeExtensions skipBrokenGhcjsTests manualOverrides;

@@ -1,0 +1,12 @@
+name: webdirt
+
+library:
+  dependencies:
+    - base
+  js-sources:
+    - ./Graph.js
+    - ./SampleBank.js
+    - ./WebDirt.js
+
+data-files:
+  - ./AudioWorklets.js

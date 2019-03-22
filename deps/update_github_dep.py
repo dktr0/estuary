@@ -30,26 +30,26 @@ def get_latest_commit(owner, repo, branch):
 
 def main():
   parser = argparse.ArgumentParser(
-      prog='update_dep',
+      prog='update_github_dep',
       description='Update a github dependency.',
       formatter_class=argparse.RawDescriptionHelpFormatter,
       epilog=textwrap.dedent('''
         example:
 
         Use the latest commit to master:
-        ./update_dep.py punctual
+        ./update_github_dep.py punctual
 
         Use the latest commit to dev:
-        ./update_dep.py punctual --branch dev
+        ./update_github_dep.py punctual --branch dev
 
         Use a specific commit:
-        ./update_dep.py punctual --rev ab0ba53310d6f764bf19490f835623c915a13eb8
+        ./update_github_dep.py punctual --rev ab0ba53310d6f764bf19490f835623c915a13eb8
         
         Use a fork:
-        ./update_dep.py punctual --rev ab0ba53310d6f764bf19490f835623c915a13eb8 --owner dktr0
+        ./update_github_dep.py punctual --rev ab0ba53310d6f764bf19490f835623c915a13eb8 --owner dktr0
 
         Create a new dep:
-        ./update_dep.py punctual --owner dktr0 --repo Punctual
+        ./update_github_dep.py punctual --owner dktr0 --repo Punctual
       '''))
   parser.add_argument('name', type=str, help='The dependency name.')
   parser.add_argument('--owner', required=False, type=str, help='The repository owner. Defaults to the one defined in the github.json.')
