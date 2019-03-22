@@ -1,24 +1,17 @@
 body {
+	font-family: 'Helvetica';
 	background-color: black;
 	color: rgb(98, 221, 115);
 	height: 100%;
 	margin: 0;
-	font-family: 'Inconsolata';
 }
 
-
-/*modfifies the name and terminal textareas*/
-input {
+/*styles the header dropdown menus and checkboxes*/
+.header-dropdown-and-checkbox  {
+	cursor: pointer;
 	background-color: black;
 	color: rgb(98, 221, 115);
-}
-
-/* modifies the coding textarea or view */
-textarea {
-	background-color: transparent;
-	color: rgb(98, 221, 115);
-	width: 100%;
-	height: 100%;
+	border: 1px solid rgb(98, 221, 115);
 }
 
 /*modifies all Estuary buttons */
@@ -29,12 +22,43 @@ button {
 	border-radius: 4px;
 }
 
-/*modifies the theme and language dropdown menus*/
-select {
+/* name-tag textarea */
+.name-tag-textarea {
+	font-family: estuaryFont;
+	font-size: 55%;
+	background-color: transparent;
+	flex:1;
+	border: none;
+}
+
+/*styles the coding language dropdown menu*/
+.coding-language-dropdown {
+	cursor: pointer;
+	background-color: black;
+	color: rgb(98, 221, 115);
+	border: 1px solid rgb(98, 221, 115);
+}
+
+/* styles the coding textarea*/
+.coding-textarea {
+	font-family: 'Helvetica';
 	background-color: transparent;
 	color: rgb(98, 221, 115);
-	border: 1px solid;
-	border-color: rgb(98, 221, 115);
+	border: none;
+}
+
+/* styles the chat textarea*/
+.chat-textarea { /*modifies the terminal text area (source)*/
+	border: none;
+	background-color: transparent;
+}
+
+/* styles the sequencer textarea*/
+.sequencer-textarea input{
+	color: rgb(98, 221, 115);
+	background-color: transparent;
+	border: 2pt solid grey;
+	border-radius: 5px;
 }
 
 /* modifies the border of the homepage buttons when hovering on */

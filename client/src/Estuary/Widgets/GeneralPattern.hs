@@ -87,9 +87,9 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
     initialVal (Group (Edited (iV,_) _) _) = initialVal $ iV!!0
     initialVal (Layers (Live (iV,_) _) _) = initialVal $ iV!!0
     initialVal (Layers (Edited (iV,_) _) _) = initialVal $ iV!!0
-    getClass (Layers _ _) = "generalPattern-layer"
-    getClass (Group _ _) = "generalPattern-group"
-    getClass (Atom _ _ _) = "generalPattern-atom"
+    getClass (Layers _ _) = "generalPattern-group-or-layer-or-atom"
+    getClass (Group _ _) = "generalPattern-group-or-layer-or-atom"
+    getClass (Atom _ _ _) = "generalPattern-group-or-layer-or-atom"
     initialMap (Layers (Live (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Layers (Edited (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Group (Live (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
@@ -132,7 +132,7 @@ typedAtomWidget defaultVal  liveness iGenPat editEv = elClass "div" "atomPopup" 
   inputMouseOver <- liftM (True <$) $ wrapDomEvent (_textInput_element textField) (onEventName Mouseover) mouseXY
   inputMouseOut <- liftM (False <$) $ wrapDomEvent (_textInput_element textField) (onEventName Mouseout) mouseXY
   isMouseOverInput <- holdDyn False $ leftmost [inputMouseOut, inputMouseOver]
-  inputAttrs <- mapDyn (fromList . (\x-> [x]) . ((,) "class") . bool "atomPopupInput" "atomPopupInputMouseOver") isMouseOverInput
+  inputAttrs <- mapDyn (fromList . (\x-> [x]) . ((,) "class") . bool "atomPopupInput .coding-textarea" "atomPopupInputMouseOver") isMouseOverInput
   textField <- growingTextInput $ def & textInputConfig_attributes .~  inputAttrs & textInputConfig_initialValue .~ (T.pack $ showNoQuotes iVal)
 
   let textInputChange = updated $ _textInput_value textField
@@ -317,7 +317,7 @@ clickListWidget::(MonadWidget t m, Show a, Eq a) => Map Int a ->  GeneralPattern
 clickListWidget cycleMap iGenPat updatedReps = mdo
   let (iVal,iReps) = getIVal iGenPat
   let initialNum = maybe (0::Int) id $ Data.List.findIndex (==iVal) $ elems cycleMap
-  sampleButton <- tdButtonAttrs' showVal (iVal) $ "class"=:"clickListtd"
+  sampleButton <- tdButtonAttrs' showVal (iVal) $ "style"=:"text-align:center;width:60px;"
   num <- count sampleButton >>= mapDyn (\x-> (x+initialNum) `mod` length cycleMap)
   str'' <- mapDyn (\x-> maybe iVal id $ Data.Map.lookup x cycleMap) num
   let str' = updated str''
@@ -388,11 +388,11 @@ countStepWidget step iGenPat _ = elAttr "table" ("class"=:"countWidgetTable") $ 
   let iUpVal = fst $ getIVal iGenPat
   upCount <- el "tr" $ do
     elAttr "td" ("class"=:"countWidgetTable") $ dynText upValShow
-    upButton <- tdButtonAttrs "▲" () ("class"=:"countWidgetTable-upArrowtd") >>= count
+    upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;") >>= count
     return upButton
   (deleteEvent,downCount) <- el "tr" $ do
     deleteButton <- tdButtonAttrs "-" (DeleteMe) $ "style"=:"text-align:center; background-color:lightblue;border 1pt solid black"
-    downButton <- tdButtonAttrs "▼" () ("class"=:"countWidgetTable-downArrowtd") >>= count
+    downButton <- tdButtonAttrs "▼" () ("style"=:"text-align:center;") >>= count
     return $ (deleteButton, downButton)
   upVal <- combineDyn (\a b ->  (a*step)-(b*step)+(iUpVal)) upCount downCount
   upValShow <- forDyn upVal (T.pack . show)
@@ -495,15 +495,15 @@ charWidget _ iGenPat _ = elAttr "table" ("class"=:"aGLStringWidgetTable") $ mdo
   let (iVal,iReps) = getIVal iGenPat
   genPat <- el "tr" $ do
     val <- el "td" $ do
-      inputField <- textInput $ def & textInputConfig_attributes .~ constDyn ("class"=:"aGLNumberWidgetTable-textFieldtd") & textInputConfig_initialValue .~ (T.singleton iVal)
+      inputField <- textInput $ def & textInputConfig_attributes .~ constDyn ("style"=:"width:45px;") & textInputConfig_initialValue .~ (T.singleton iVal)
       let val = _textInput_value inputField
       forDyn val (\x-> maybe (' ') id $ listToMaybe (T.unpack x))
     reps <- repDivWidget iReps
     combineDyn (\x y -> Atom x Inert y) val reps
   (layerEvent, groupEvent, deleteEvent) <- el "tr" $ elAttr "td" ("colspan"=:"3") $ el "tr" $ do
-    groupButton <- tdButtonAttrs " [] " (MakeGroup) $ ("class"=:"aGLStringWidgetTable-grouptd")
-    layerButton <- tdButtonAttrs " [,,] " (MakeLayer) $ ("class"=:"aGLStringWidgetTable-layertd")
-    deleteButton <- tdButtonAttrs " - " (DeleteMe) $ ("class"=:"aGLStringWidgetTable-deletetd")
+    groupButton <- tdButtonAttrs " [] " (MakeGroup) $ ("style"=:"text-align:center;")
+    layerButton <- tdButtonAttrs " [,,] " (MakeLayer) $ ("style"=:"text-align:center;")
+    deleteButton <- tdButtonAttrs " - " (DeleteMe) $ ("style"=:"width:45px; text-align:center;")
     return $ (layerButton, groupButton, deleteButton)
   groupToggle <- toggle False groupEvent
   layerToggle <- toggle False layerEvent

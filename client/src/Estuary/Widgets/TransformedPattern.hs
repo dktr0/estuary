@@ -55,7 +55,7 @@ midLevelTransformedPatternWidget iTransPat = do
 
 
 popupSpecificPatternWidget :: (MonadWidget t m)=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal a),Event t Hint))
-popupSpecificPatternWidget iValue _ = elClass "div" "popupSpecificPatternWidget" $ mdo
+popupSpecificPatternWidget iValue _ = elClass "div" "patternTransformerWidget-or-popupSpecificPatternWidget" $ mdo
   let popup = specificPatternPopup [DeleteMe, TransformMe]
   openEv <- clickableSpanClass showSpecPat "noClass" ()
   dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ updated dynOpen
@@ -418,7 +418,7 @@ paramWidget' x = paramWidget x
 
 
 patternTransformerWidget :: (MonadWidget t m)=> PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer, Event t (EditSignal a)))
-patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget" $ mdo
+patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget-or-popupSpecificPatternWidget" $ mdo
   let popup = patternTransformerPopup [DeleteMe]
   openEv <- clickableSpanClass showTransformer' "noClass" ()
   dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ updated dynOpen

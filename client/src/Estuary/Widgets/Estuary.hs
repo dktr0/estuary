@@ -46,7 +46,7 @@ import qualified Estuary.Types.Terminal as Terminal
 estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
 estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
   ic0 <- liftIO $ takeMVar ctxM
-  let canvasAttrs = fromList [("class","canvas"),("style",T.pack $ "z-index: -1;"), ("width","1920"), ("height","1080")]
+  let canvasAttrs = fromList [("class","canvas-or-svg-display"),("style",T.pack $ "z-index: -1;"), ("width","1920"), ("height","1080")]
   canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elAttr' "canvas" canvasAttrs $ return ()
   let ic = ic0 { canvasElement = Just canvas }
   liftIO $ putMVar ctxM ic
@@ -131,31 +131,31 @@ header ctx renderInfo = divClass "header" $ do
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
-  themeChangeEv <- divClass "config-entry" $ do
+  themeChangeEv <- divClass "config-entry display-inline-block" $ do
     let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale")]
     translateDyn Term.Theme ctx >>= dynText
-    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "config-dropdown")) -- Event t String
+    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "header-dropdown-and-checkbox  ")) -- Event t String
     return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
 
-  langChangeEv <- divClass "config-entry" $ do
+  langChangeEv <- divClass "config-entry display-inline-block" $ do
     translateDyn Term.Language ctx >>= dynText
     let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
-    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "config-dropdown"))
+    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "header-dropdown-and-checkbox  "))
     return $ fmap (\x c -> c { language = x }) langChange
 
-  let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
+  let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "header-dropdown-and-checkbox  ")
 
-  canvasEnabledEv <- divClass "config-entry" $ do
+  canvasEnabledEv <- divClass "config-entry display-inline-block" $ do
     text "Canvas:"
     canvasInput <- checkbox True condigCheckboxAttrs
     return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
 
-  superDirtEnabledEv <- divClass "config-entry" $ do
+  superDirtEnabledEv <- divClass "config-entry display-inline-block" $ do
     text "SuperDirt:"
     sdInput <- checkbox False condigCheckboxAttrs
     return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
 
-  webDirtEnabledEv <- divClass "config-entry" $ do
+  webDirtEnabledEv <- divClass "config-entry display-inline-block" $ do
     text "WebDirt:"
     wdInput <- checkbox True condigCheckboxAttrs
     return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
@@ -163,7 +163,7 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
   dynamicsModeEv <- divClass "config-entry" $ do
     text "Dynamics:"
     let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
-    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "config-dropdown"))
+    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "header-dropdown-and-checkbox  "))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
 
   return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]

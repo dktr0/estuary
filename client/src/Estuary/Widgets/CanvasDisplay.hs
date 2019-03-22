@@ -26,7 +26,7 @@ import Estuary.RenderInfo
 
 canvasDisplay :: MonadWidget t m => Int -> MVar CanvasState -> m ()
 canvasDisplay z mv = do
-  let attrs = fromList [("class","canvasDisplay"),("style",T.pack $ "z-index:" ++ show z),("width","1920"),("height","1080")]
+  let attrs = fromList [("class","canvas-or-svg-display"),("style",T.pack $ "z-index:" ++ show z),("width","1920"),("height","1080")]
   cvs <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elAttr' "canvas" attrs $ return ()
   ctx <- liftIO $ getContext (unsafeToCanvas $ pToJSVal cvs)
   liftIO $ requestAnimationFrame ctx mv
