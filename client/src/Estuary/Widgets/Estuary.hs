@@ -54,7 +54,6 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
   renderInfo <- pollRenderInfoChanges riM
 
 
-
   -- load the samples map, if there is a better way to trigger an event from an async callback
   -- then this should be update to reflect that.
   postBuild <- getPostBuild
