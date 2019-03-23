@@ -58,5 +58,5 @@ sequencerButton pos val edits = mdo
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Mousedown) (return ())
   let clickUpdates = attachWith (\v _-> not v) (current isActive) $ leftmost [clickEv]
   isActive <- holdDyn val $ leftmost [edits, clickUpdates]
-  attrs <- mapDyn (\x-> singleton "class" $ if x then "sequencerButton activated" else "sequencerButton") isActive
+  attrs <- mapDyn (\x-> singleton "class" $ if x then "sequencerButton activated" else "sequencerButton sequencer-pads") isActive
   return isActive

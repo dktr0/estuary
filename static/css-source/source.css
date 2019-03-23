@@ -429,8 +429,6 @@ ______________________________
 .sequencerButton{
 	flex-grow: 1;
 	width:20px;
-	border:1pt solid grey;
-	border-radius: 5px;
 }
 
 .sequencerButton:hover{

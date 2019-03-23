@@ -1,9 +1,9 @@
 body {
+	font-family: 'Inconsolata';
 	background-color: rgb(98, 221, 115);
 	color: black;
 	height: 100%;
 	margin: 0;
-	font-family: 'Inconsolata';
 }
 
 /*modfifies the name and terminal textareas*/

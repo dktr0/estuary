@@ -6,6 +6,28 @@ body {
 	margin: 0;
 }
 
+/*styles the code text, including the one in the sequencer*/
+.code-text {
+	  font-family: 'Helvetica';
+		color: rgb(98, 221, 115);
+		font-size: 100%;
+}
+
+/*styles the chat/terminal and the coding-language dropdown menus*/
+.other-text {
+	font-family: 'Helvetica';
+	color: rgb(98, 221, 115);
+	font-size: 100%;
+}
+
+/*styles all Estuary buttons */
+button {
+	background-color: hsl(0,0%,20%);
+	color: rgb(98, 221, 115);
+	border: none;
+	border-radius: 4px;
+}
+
 /*styles the header dropdown menus and checkboxes*/
 .header-dropdown-and-checkbox  {
 	cursor: pointer;
@@ -14,18 +36,9 @@ body {
 	border: 1px solid rgb(98, 221, 115);
 }
 
-/*modifies all Estuary buttons */
-button {
-	background-color: hsl(0,0%,20%);
-	color: rgb(98, 221, 115);
-	border: none;
-	border-radius: 4px;
-}
 
 /* name-tag textarea */
 .name-tag-textarea {
-	font-family: estuaryFont;
-	font-size: 55%;
 	background-color: transparent;
 	flex:1;
 	border: none;
@@ -41,9 +54,7 @@ button {
 
 /* styles the coding textarea*/
 .coding-textarea {
-	font-family: 'Helvetica';
 	background-color: transparent;
-	color: rgb(98, 221, 115);
 	border: none;
 }
 
@@ -55,13 +66,12 @@ button {
 
 /* styles the sequencer textarea*/
 .sequencer-textarea input{
-	color: rgb(98, 221, 115);
 	background-color: transparent;
 	border: 2pt solid grey;
 	border-radius: 5px;
 }
 
-/* modifies the border of the homepage buttons when hovering on */
-.splash-panel:hover {
-	border-color: rgb(98, 221, 115);
+.sequencer-pads {
+	border:1pt solid grey;
+	border-radius: 5px;
 }
