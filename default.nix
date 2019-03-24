@@ -8,11 +8,20 @@ with pkgs.haskell.lib;
 {
   name = "Estuary";
 
-  packages = {
-    estuary = ./client;
-    estuary-common = ./common;
-    estuary-server = ./server;
-  };
+  packages = 
+    let filter = name: type: 
+      pkgs.lib.cleanSourceFilter name type && (
+        let baseName = baseNameOf (toString name);
+        in !(
+          (type == "directory" && (pkgs.lib.hasPrefix ".stack" baseName || baseName == "node_modules"))
+          || (type == "file" && (baseName == "stack.yaml" || pkgs.lib.hasSuffix ".cabal" baseName))
+        )
+      );
+    in {
+      estuary = pkgs.lib.cleanSourceWith {inherit filter; src = ./client; };
+      estuary-common = pkgs.lib.cleanSourceWith {inherit filter; src = ./common; };
+      estuary-server = pkgs.lib.cleanSourceWith {inherit filter; src = ./server; };
+    };
 
   shells = {
     ghc = ["estuary-common" "estuary-server"];
@@ -47,7 +56,7 @@ with pkgs.haskell.lib;
       manualOverrides = self: super: {
         estuary = overrideCabal super.estuary (drv: {
           preConfigure = ''
-            ${ghc8_4.hpack}/bin/hpack;
+            ${ghc8_4.hpack}/bin/hpack --force;
           '';
           postInstall = ''
             ${pkgs.closurecompiler}/bin/closure-compiler $out/bin/Estuary.jsexe/all.js \
@@ -60,7 +69,13 @@ with pkgs.haskell.lib;
 
         estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
-            ${ghc8_4.hpack}/bin/hpack;
+            ${ghc8_4.hpack}/bin/hpack --force;
+          '';
+        });
+
+        estuary-server = overrideCabal super.estuary-server (drv: {
+          preConfigure = ''
+            ${ghc8_4.hpack}/bin/hpack --force;
           '';
         });
 
