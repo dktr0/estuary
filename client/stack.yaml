@@ -40,7 +40,7 @@ packages:
 
 - location:
     git: https://github.com/dktr0/MusicW.git
-    commit: d7d4c57a54f47eb60144dbd36e16009ae5d73925
+    commit: 7ca02828637004611cdd5b6691ea365aee7d3b17
   extra-dep: true
 
 - location:
