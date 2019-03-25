@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables, RankNTypes #-}
 module Estuary.Render.DynamicsMode where 
 
 import Sound.MusicW
@@ -66,3 +67,10 @@ changeDynamicsMode (input,preGain,comp,postGain) WideDynamics = liftAudioIO $ do
   setValue comp Release 0.100
   setValue postGain Gain (dbamp (-20))
   return ()
+
+changeDestination :: (Node, Node, Node, Node) -> (forall m. AudioIO m => m Node) -> IO Node
+changeDestination (_, _, _, postGain) destCreator = liftAudioIO $ do
+  newDest <- destCreator
+  liftIO $ disconnectAll postGain
+  connectNodes postGain newDest
+  return newDest
