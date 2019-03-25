@@ -410,10 +410,6 @@ ______________________________
 
 }
 
-.sequencerTextInputTd{
-	width: 20%;
-}
-
 .sequencer-textarea input {
 	width: 90%;
 	left:5%;
@@ -429,18 +425,6 @@ ______________________________
 .sequencerButton{
 	flex-grow: 1;
 	width:20px;
-}
-
-.sequencerButton:hover{
-	background-color: rgba(255,255,255,0.25);
-}
-
-.activated{
-	background-color: rgba(0,255,0,0.3);
-}
-
-.activated:hover{
-	background-color: rgba(0,255,0,0.4);
 }
 
 /*
@@ -636,7 +620,6 @@ table, tr, td {border: none;}
 	margin-right: 1em;
 	border: none;
 	background-color: transparent;
-	color: 	 rgb(98, 221, 115);
 }
 
 .ensembleTempo textarea{
@@ -690,14 +673,4 @@ table, tr, td {border: none;}
 .listenButton button {
 	margin-left: 20%;
 	font-size:  95%;
-}
-
-input{
-	background-color:transparent;
-		color: rgb(98, 221, 115);
-}
-
-select{
-		background-color:transparent;
-		color: rgb(98, 221, 115);
 }

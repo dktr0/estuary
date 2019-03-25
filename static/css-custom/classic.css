@@ -1,77 +1,11 @@
-body {
-	font-family: 'Helvetica';
-	background-color: black;
-	color: rgb(98, 221, 115);
-	height: 100%;
-	margin: 0;
+.sequencerButton:hover{
+	background-color: blue;
 }
 
-/*styles the code text, including the one in the sequencer*/
-.code-text {
-	  font-family: 'Helvetica';
-		color: rgb(98, 221, 115);
-		font-size: 100%;
+.sequencerButton-activated{
+	background-color: rgba(0,255,0,0.3);
 }
 
-/*styles the chat/terminal and the coding-language dropdown menus*/
-.other-text {
-	font-family: 'Helvetica';
-	color: rgb(98, 221, 115);
-	font-size: 100%;
-}
-
-/*styles all Estuary buttons */
-button {
-	background-color: hsl(0,0%,20%);
-	color: rgb(98, 221, 115);
-	border: none;
-	border-radius: 4px;
-}
-
-/*styles the header dropdown menus and checkboxes*/
-.header-dropdown-and-checkbox  {
-	cursor: pointer;
-	background-color: black;
-	color: rgb(98, 221, 115);
-	border: 1px solid rgb(98, 221, 115);
-}
-
-
-/* name-tag textarea */
-.name-tag-textarea {
-	background-color: transparent;
-	flex:1;
-	border: none;
-}
-
-/*styles the coding language dropdown menu*/
-.coding-language-dropdown {
-	cursor: pointer;
-	background-color: black;
-	color: rgb(98, 221, 115);
-	border: 1px solid rgb(98, 221, 115);
-}
-
-/* styles the coding textarea*/
-.coding-textarea {
-	background-color: transparent;
-	border: none;
-}
-
-/* styles the chat textarea*/
-.chat-textarea { /*modifies the terminal text area (source)*/
-	border: none;
-	background-color: transparent;
-}
-
-/* styles the sequencer textarea*/
-.sequencer-textarea input{
-	background-color: transparent;
-	border: 2pt solid grey;
-	border-radius: 5px;
-}
-
-.sequencer-pads {
-	border:1pt solid grey;
-	border-radius: 5px;
+.sequencerButton-activated:hover{
+	background-color: rgba(0,255,0,0.4);
 }
