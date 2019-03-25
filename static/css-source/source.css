@@ -643,15 +643,14 @@ table, tr, td {border: none;}
 	font-size: 90%;
 }
 
-.refExampleButton button {
-	background-color: transparent;
+.reference-button button {
 	width:100%;
 	min-width: 80px;
   font-size: 100%;
 	margin-bottom: 7%;
 }
 
-.refExampleButton button:hover {
+.reference-button button:hover {
 	cursor: help;
 }
 

@@ -23,6 +23,11 @@ button {
 }
 
 
+.reference-button button {
+	background-color: transparent;
+	color: black;
+}
+
 /*styles the code text, including the one in the sequencer*/
 .code-text {
 	  font-family: 'Helvetica';
@@ -49,7 +54,7 @@ button {
 /*styles the coding language dropdown menu*/
 .coding-language-dropdown {
 	cursor: pointer;
-	background-color: ligh;
+	background-color: lightgray;
 	color: black;
 	border: 1px solid black;
 }
@@ -60,7 +65,6 @@ button {
 	border: none;
 }
 
-/* //this class also modifies the name and pass handlers -> should we separate them? */
 /* styles the chat textarea*/
 .chat-textarea { /*modifies the terminal text area (source)*/
 	border: none;
@@ -70,11 +74,29 @@ button {
 /* styles the sequencer textarea*/
 .sequencer-textarea input{
 	background-color: transparent;
-	border: 2pt solid grey;
+	border: 2pt solid black;
 	border-radius: 5px;
 }
 
+/* styles the sequencer pads */
 .sequencer-pads {
-	border:1pt solid grey;
+	border:1pt solid black;
 	border-radius: 5px;
+}
+
+/* sets the color for the pads when hovering on */
+.sequencer-pads:hover {
+	background-color: hsl(0,0%,20%);
+}
+
+/* sets the color for the pads when activated */
+.sequencer-pads-activated{
+	background-color: darkgray;
+	border:1pt solid black;
+	border-radius: 5px;
+}
+
+/* sets the color for the active pads when hovering on */
+.sequencer-pads-activated:hover{
+	background-color: #797878;
 }
