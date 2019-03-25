@@ -30,6 +30,7 @@ import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
 import GHCJS.DOM
 import GHCJS.DOM.Types hiding (toJSString)
+import GHCJS.Foreign.Callback (Callback, syncCallback1')
 import GHCJS.Marshal.Pure
 import GHCJS.Prim(toJSString)
 import GHCJS.Types
@@ -56,6 +57,16 @@ main = do
   c <- newMVar $ initialContext now mainBusNodes wd sd mv
   ri <- newMVar $ emptyRenderInfo
   forkRenderThreads c ri
+
+  cb <- syncCallback1' $ \dest -> do
+    ctx <- readMVar c
+    node <- changeDestination (mainBus ctx) $
+      if dest `js_eq` pToJSVal ("stream" :: JSString) then
+        getSharedMediaStreamDestination
+      else
+        createDestination
+    return $ pToJSVal node
+  js_registerSetEstuaryAudioDestination cb
 
   mainWidgetInElementById "estuary-root" $ estuaryWidget Splash c ri protocol
 
@@ -108,3 +119,7 @@ foreign import javascript safe
 foreign import javascript safe
   "EstuaryIcon.state = 'loaded';"
   js_setIconStateLoaded :: IO ()
+
+foreign import javascript unsafe
+  "window.___setEstuaryAudioDestination = $1"
+  js_registerSetEstuaryAudioDestination :: Callback (JSVal -> IO JSVal) -> IO ()
