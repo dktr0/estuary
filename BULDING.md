@@ -70,9 +70,47 @@ result
 └── ghcjs
     ├── estuary -> /nix/store/...-estuary-0.0.0.1
     └── estuary-common -> /nix/store/...-estuary-common-0.0.0.1
-```
+``` 
 
 The server binary is located at `result/ghc/estuary-server/bin/EstuaryServer`. 
 
 The client `jsexe` is located at `result/ghcjs/estuary/bin/Estuary.jsexe/`. 
 
+### Creating a release bundle
+
+```shell
+$ make bundleClient
+```
+
+The `bundleClient` target will create an `estuary-client.zip` with the production version of the client, front-end dependencies, and static assets (excluding samples).
+
+### Creating a full local deployment
+
+```shell
+$ make downloadDirtSamples makeSampleMap
+$ make cleanStage stageStaticAssets stageSamples nixBuild nixStageClient nixStageServer
+```
+
+Running `make downloadDirtSamples makeSampleMap` only needs to be run once to use the dirt samples in the deployment.
+
+The `cleanStage` will clean any old `staging/` after which the remaining commands will repopulate.
+
+The `stage*` targets copy the required assets into the `staging/` folder.
+
+The `nix*` targets will build and stage the server binary and client with `nix`. 
+
+## Building for development
+
+It is recommended to have 2 shells open. One for building and staging the client, and another for the server. The staging folder for the development commands is `dev-staging/`.
+
+Run `nix-shell -A shells.ghcjs` in one terminal and `nix-shell -A shells.ghc` in the other.
+
+In the **frontend** shell (`shells.ghcjs`) build the client and put it where the `runDevServer` expects it to be with:
+```shell
+[nix-shell: ...]$ make cabalBuildClient cabalStageClient
+```
+
+In the **backend** shell (`shells.ghc`) build the server, put it in the staging area, and run it with:
+```shell
+[nix-shell: ...]$ make runDevServer
+```

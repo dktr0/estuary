@@ -30,6 +30,7 @@ with pkgs.haskell.lib;
 
   shellToolOverrides = ghc: super: {
     inherit (ghc8_4) hpack; # always use ghc (not ghcjs) compiled hpack
+    python3 = pkgs.python3.withPackages (ps: with ps; [ pyyaml ]);
   };
 
   # A shell for staging and packaging releases
@@ -54,7 +55,7 @@ with pkgs.haskell.lib;
           ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else dontCheck) super.${name});
 
       manualOverrides = self: super: {
-        estuary = overrideCabal super.estuary (drv: {
+        estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe"]) (drv: {
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
@@ -63,7 +64,8 @@ with pkgs.haskell.lib;
             --compilation_level=SIMPLE \
             --js_output_file=$out/bin/all.min.js \
             --externs=$out/bin/Estuary.jsexe/all.js.externs \
-            --jscomp_off=checkVars
+            --jscomp_off=checkVars;
+            gzip -fk "$out/bin/all.min.js"
          '';
         });
 

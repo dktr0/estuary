@@ -23,6 +23,7 @@ EstuaryServer/EstuaryServer.exe
 **/node_modules/**/*
 
 staging/
+dev-staging/
 
 ### nix
 result

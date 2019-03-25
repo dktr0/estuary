@@ -9,102 +9,118 @@ CP=cp
 CP_RECURSIVE=cp -rf
 endif
 
-nixPrepStage:
-	-mkdir staging/
-	$(CP) result/ghc/estuary-server/bin/EstuaryServer staging/
-	#-mkdir staging/Estuary.jsexe/
-	#$(CP_RECURSIVE) result/ghcjs/estuary/bin/Estuary.jsexe/ staging/Estuary.jsexe/
+assertInNixShell:
+ifndef IN_NIX_SHELL
+	$(error Must be run in a nix shell)
+endif
+
+assertInNixGhcjsShell:
+ifndef NIX_GHCJS
+	$(error Must be run in the nix ghcjs shell. "nix-shell -A shells.ghcjs")
+endif
+
+assertInNixGhcShell:
+ifndef NIX_GHC
+	$(error Must be run in the nix ghc shell. "nix-shell -A shells.ghc")
+endif
+
+cabalBuildClient: assertInNixGhcjsShell
+	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all
+
+nixShellBuildClient:
+	nix-shell -A shells.ghcjs --run "make cabalBuildClient"
+
+cabalBuildServer: assertInNixGhcShell
+	cabal new-build all
+
+nixShellBuildServer:
+	nix-shell -A shells.ghc --run "make cabalBuildServer"
+
+nixBuild:
+	nix-build
+
+PROD_STAGING_ROOT=staging/
+DEV_STAGING_ROOT=dev-staging/
+STAGING_ROOT=$(PROD_STAGING_ROOT)
+prepStage:
+	-mkdir $(STAGING_ROOT)
+	-mkdir $(STAGING_ROOT)/Estuary.jsexe/
+prepDevStage: STAGING_ROOT=$(DEV_STAGING_ROOT)
+prepDevStage: prepStage
+
+cleanStage:
+	-rm -rf $(STAGING_ROOT)
+cleanDevStage: STAGING_ROOT=$(DEV_STAGING_ROOT)
+cleanDevStage: cleanStage
+
+stageStaticAssets: prepStage
+	$(CP_RECURSIVE) static/*.js $(STAGING_ROOT)/Estuary.jsexe/
+	$(CP_RECURSIVE) static/WebDirt/ $(STAGING_ROOT)/Estuary.jsexe/WebDirt/
+	$(CP_RECURSIVE) static/css-custom/ $(STAGING_ROOT)/Estuary.jsexe/css-custom/
+	$(CP_RECURSIVE) static/css-source/ $(STAGING_ROOT)/Estuary.jsexe/css-source/
+	$(CP_RECURSIVE) static/fonts/ $(STAGING_ROOT)/Estuary.jsexe/fonts/
+	$(CP_RECURSIVE) static/icons/ $(STAGING_ROOT)/Estuary.jsexe/icons/
+devStageStaticAssets: STAGING_ROOT=$(DEV_STAGING_ROOT)
+devStageStaticAssets: stageStaticAssets
+
+stageSamples: prepStage
+	$(CP_RECURSIVE) static/samples/ $(STAGING_ROOT)/Estuary.jsexe/samples/
+devStageSamples: STAGING_ROOT=$(DEV_STAGING_ROOT)
+devStageSamples: stageSamples
 
 GCC_PREPROCESSOR=gcc -E -x c -P -C -nostdinc
 TEMPLATE_SOURCE=static/index.html.template
-nixStageAssets:
-	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -DPRODUCTION -o staging/index.html
-	$(CP_RECURSIVE) static/*.js staging/
-	$(CP_RECURSIVE) static/WebDirt/ staging/WebDirt/
-	$(CP_RECURSIVE) static/css-custom/ staging/css-custom/
-	$(CP_RECURSIVE) static/css-source/ staging/css-source/
-	$(CP_RECURSIVE) static/fonts/ staging/fonts/
-	$(CP_RECURSIVE) static/icons/ staging/icons/
-	$(CP_RECURSIVE) static/samples/ staging/samples/
 
-nixStage
+GET_CABAL_CLIENT_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('client/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
+GET_GHCJS_VERISON=ghcjs --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
+CABAL_CLIENT_BIN_DIR=dist-ghcjs/build/${system}/ghcjs-${GHCJS_VERSION}/${CABAL_CLIENT_PACKAGE_NAME}/x/Estuary/build/Estuary/Estuary.jsexe/
+cabalStageClient: assertInNixGhcjsShell
+	$(eval export CABAL_CLIENT_PACKAGE_NAME=$(shell $(GET_CABAL_CLIENT_PACKAGE_NAME)))
+	$(eval export GHCJS_VERSION=$(shell $(GET_GHCJS_VERISON)))
+	# compile the index.html template in development mode and stage it
+	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -o $(DEV_STAGING_ROOT)/Estuary.jsexe/index.html
+	# stage the client js
+	for part in lib out rts runmain ; do \
+		$(CP) $(CABAL_CLIENT_BIN_DIR)/$$part.js $(DEV_STAGING_ROOT)/Estuary.jsexe/ ; \
+		chmod a+w $(DEV_STAGING_ROOT)/Estuary.jsexe/$$part.js ; \
+	done
 
-STACK_CLIENT=cd client/ && stack
-STACK_SERVER=cd server/ && stack
-STACK_PRODUCTION_CLIENT=cd client/ && stack --work-dir .stack-work-production/
+nixShellStageClient:
+	nix-shell -A shells.ghcjs --run "make cabalStageClient"
 
-CLIENT_INSTALL_DIR=$$($(STACK_CLIENT) path --local-install-root)/bin/Estuary.jsexe
-SERVER_INSTALL_DIR=$$($(STACK_SERVER) path --local-install-root)/bin/EstuaryServer
-PRODUCTION_CLIENT_INSTALL_DIR=$$($(STACK_PRODUCTION_CLIENT) path --local-install-root)/bin/Estuary.jsexe
+GET_CABAL_SERVER_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('server/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
+GET_GHC_VERISON=ghc --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
+CABAL_SERVER_BIN=dist-newstyle/build/${system}/ghc-${GHC_VERSION}/${CABAL_SERVER_PACKAGE_NAME}/x/EstuaryServer/build/EstuaryServer/EstuaryServer
+cabalStageServer: assertInNixGhcShell
+	$(eval export CABAL_SERVER_PACKAGE_NAME=$(shell $(GET_CABAL_SERVER_PACKAGE_NAME)))
+	$(eval export GHC_VERSION=$(shell $(GET_GHC_VERISON)))
+	# stage the server binary
+	$(CP) $(CABAL_SERVER_BIN) $(DEV_STAGING_ROOT)
+	chmod a+w $(DEV_STAGING_ROOT)/EstuaryServer
 
-setupClient:
-	$(STACK_CLIENT) setup
+nixShellStageServer:
+	nix-shell -A shells.ghc --run "make cabalStageServer"
 
-buildClient: setupClient
-	$(STACK_CLIENT) build estuary:exe:Estuary
+nixStageClient:
+	# compile the index.html template in production mode and stage it
+	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -DPRODUCTION -o $(STAGING_ROOT)/Estuary.jsexe/index.html
+	# stage the minified client
+	$(CP) result/ghcjs/estuary/bin/all.min.js $(STAGING_ROOT)/Estuary.jsexe/
+	chmod a+w $(STAGING_ROOT)/Estuary.jsexe/all.min.js
+	$(CP) result/ghcjs/estuary/bin/all.min.js.gz $(STAGING_ROOT)/Estuary.jsexe/
+	chmod a+w $(STAGING_ROOT)/Estuary.jsexe/all.min.js.gz
+nixDevStageClient: STAGING_ROOT=$(DEV_STAGING_ROOT)
+nixDevStageClient: nixStageClient
 
-EXTERNS=--externs=static/SuperDirt.js --externs=static/EstuaryProtocol.js --externs=static/WebDirt/WebDirt.js --externs=static/WebDirt/SampleBank.js --externs=static/WebDirt/Graph.js
-CLOSURE_COMPILER="java -jar closure-compiler.jar"
+nixStageServer:
+	# stage the server binary
+	$(CP) result/ghc/estuary-server/bin/EstuaryServer $(STAGING_ROOT)
+	chmod a+w $(STAGING_ROOT)/EstuaryServer
+nixDevStageServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
+nixDevStageServer: nixStageServer
 
-prodBuildClient: setupClient
-	$(STACK_PRODUCTION_CLIENT) build --ghc-options="-DGHCJS_BROWSER -O2 -dedupe" estuary:exe:Estuary
-	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=SIMPLE --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
-	gzip -fk "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js"
-
-prodBuildClientForceDirty: setupClient
-	$(STACK_PRODUCTION_CLIENT) build --force-dirty --ghc-options="-DGHCJS_BROWSER -O2 -dedupe" estuary:exe:Estuary
-	"$(CLOSURE_COMPILER)" "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.js" --compilation_level=SIMPLE --jscomp_off=checkVars --js_output_file="$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js" $(EXTERNS)
-	gzip -fk "$(PRODUCTION_CLIENT_INSTALL_DIR)/all.min.js"
-
-buildClientForceDirty:
-	$(STACK_CLIENT) build --force-dirty estuary:exe:Estuary
-
-setupServer:
-	$(STACK_SERVER) setup
-
-buildServer: setupServer
-	$(STACK_SERVER) build
-
-CLIENT_GCC_PREPROCESSOR=$(STACK_CLIENT) exec -- gcc -E -x c -P -C -nostdinc
-
-installClient: buildClient
-	$(CP_RECURSIVE) $(CLIENT_INSTALL_DIR) .
-	$(CP_RECURSIVE) static/* Estuary.jsexe
-	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -o ../Estuary.jsexe/index.html
-
-prodInstallClient: # make prodBuildClient first!
-	rm -rf ./Estuary.jsexe
-	cp -Rf $(PRODUCTION_CLIENT_INSTALL_DIR) .
-	$(CP_RECURSIVE) static/* Estuary.jsexe
-	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -DPRODUCTION -o ../Estuary.jsexe/index.html
-	rm -rf Estuary.jsexe/runmain.js
-	rm -rf Estuary.jsexe/rts.js
-	rm -rf Estuary.jsexe/lib.js
-	rm -rf Estuary.jsexe/out.js
-	rm -rf Estuary.jsexe/all.js
-	rm -rf Estuary.jsexe/out.stats
-	rm -rf Estuary.jsexe/index.html.template
-
-installInteractionTestClient:
-	$(STACK_CLIENT) build estuary:exe:interaction-test --flag estuary:build-test-executables
-	$(CP_RECURSIVE) $$($(STACK_CLIENT) path --local-install-root)/bin/interaction-test.jsexe/* Estuary.jsexe
-	$(CP_RECURSIVE) static/* Estuary.jsexe
-	$(CLIENT_GCC_PREPROCESSOR) ../Estuary.jsexe/index.html.template -DTEST -o ../Estuary.jsexe/index.html
-
-installServer: buildServer
-	mkdir -p EstuaryServer
-	cp $(SERVER_INSTALL_DIR) ./EstuaryServer/EstuaryServer
-
-prodCleanBuildInstall: prodClean clean prodBuildClient buildServer prodInstallClient installServer
-
-releaseClient: # make installClient or prodInstallClient first!
-	rm -rf temp
-	mkdir temp
-	cp -Rf Estuary.jsexe temp
-	rm -rf temp/Estuary.jsexe/samples
-	# tar czf estuary-client.tgz -C temp .
-	cd temp; zip -r ../estuary-client.zip ./*
-	rm -rf temp
+bundleClient: cleanStage stageStaticAssets nixStageClient
+	(cd $(STAGING_ROOT) && zip -r - ./Estuary.jsexe/*) > estuary-client.zip
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
@@ -115,31 +131,20 @@ curlReleaseClient: # this uses curl to download and unzip a recent pre-built cli
 
 downloadDirtSamples:
 	cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
-	$(CP_RECURSIVE) static/Dirt-Samples/ static/samples/
+	find static/Dirt-Samples/* -type d -links 1 -exec $(CP_RECURSIVE) "{}" "static/samples/" \;
 	rm -rf static/Dirt-Samples/
 
 makeSampleMap:
 	cd static/samples && bash ../WebDirt/makeSampleMap.sh . > sampleMap.json
 
-clean:
-	rm -rf Estuary.jsexe
-	rm -rf $$($(STACK_CLIENT) path --local-install-root)/bin
-	rm -rf $$($(STACK_SERVER) path --local-install-root)/bin
-	$(STACK_CLIENT) clean
-	$(STACK_SERVER) clean
+clean: cleanStage cleanDevStage
+	-rm -rf result/
+	-rm -rf dist-newstyle/
+	-rm -rf dist-ghcjs/
 
-prodClean: clean
-	$(STACK_PRODUCTION_CLIENT) clean
+runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
+runDevServer: stageStaticAssets cabalBuildServer
+	cd ./$(STAGING_ROOT) && ./EstuaryServer
 
-style:
-	cp -r static/css-custom/ Estuary.jsexe
-	cp -r static/css-source/ Estuary.jsexe
-
-test: installClient installServer
-	EstuaryServer/EstuaryServer test
-
-buildTest: buildClient installClient
-		EstuaryServer/EstuaryServer test
-
-openClient: installClient
-	open Estuary.jsexe/index.html
+runServer: nixBuild stageStaticAssets stageSamples nixStageClient nixStageServer
+	cd ./$(STAGING_ROOT) && ./EstuaryServer
