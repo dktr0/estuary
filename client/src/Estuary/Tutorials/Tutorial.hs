@@ -48,8 +48,8 @@ data Tutorial t m = Tutorial {
 }
 
 
-attachIndex:: [a] -> [(Int,a)]
-attachIndex l = zip (take (length l) [0..]) l
+attachIndex :: [a] -> [(Int,a)]
+attachIndex = zip [0..]
 
 dynList::MonadWidget t m => [Dynamic t a] -> m (Dynamic t [a])
 dynList l = mapDyn elems $ joinDynThroughMap $ constDyn $ fromList $ attachIndex l

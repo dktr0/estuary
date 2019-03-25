@@ -116,13 +116,3 @@ _test-base: &test-base
   dependencies:
     - estuary
     - hspec
-
-tests:
-  mini-tidal:
-    <<: *test-base
-    main: MiniTidalTests.hs
-    ghc-options: -main-is MiniTidalTests
-    dependencies:
-      - estuary
-      - hspec
-      - directory
