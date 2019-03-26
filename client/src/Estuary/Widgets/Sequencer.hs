@@ -17,8 +17,8 @@ import Estuary.Widgets.Generic
 
 type Sequence a = Map Int (Maybe a,[Bool])
 
-attachIndex:: [a] -> [(Int,a)]
-attachIndex l = zip (take (length l) [0..]) l
+attachIndex :: [a] -> [(Int,a)]
+attachIndex = zip [0..]
 
 
 sequencer ::MonadWidget t m => Map Int (String, [Bool]) -> Event t (Map Int (String,[Bool])) -> m (Dynamic t (Map Int (String,[Bool]), Event t (Map Int (String,[Bool])), Event t Hint))
@@ -34,7 +34,7 @@ sequencer iMap update = elClass "table" "sequencer" $ mdo
   let updateVal = fmapMaybe id $ mergeWith (\a b->Nothing) [Nothing <$ update, fmap Just $ updated (nubDyn values)]
   maxKey <- mapDyn (maybe 0 id . maximumMay . keys) $ nubDyn values
   plusButton <- el "tr" $ clickableTdClass (constDyn " + ") (constDyn "") ()
-  let newRow = attachWith (\k _-> singleton (k+1) (Just ("",take seqLen $ repeat False))) (current maxKey) plusButton
+  let newRow = attachWith (\k _-> singleton (k+1) (Just ("",Prelude.take seqLen $ repeat False))) (current maxKey) plusButton
   mapDyn (\v-> (v, updateVal, never)) values
 
 

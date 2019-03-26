@@ -15,6 +15,9 @@ dependencies:
   - time
   - containers
 
+extra-source-files:
+  - package.yaml
+
 library:
   source-dirs: 
     - ./src

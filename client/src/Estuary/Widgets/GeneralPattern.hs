@@ -72,7 +72,7 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
 
   let splitIndex = coincidence $ fmap (const $ fmap (head . keys . Data.Map.filter (==LayerSplit)) events) $ ffilter (Data.List.elem LayerSplit) events'
 
-  let splitVal = attachDynWith (\l index-> let (vals,rep) = case l of (Edited (old,reps) new) -> (old,reps); (Live (v,reps) _) -> (v,reps); in Layers (Live ([Group (Live (take (div index 2) vals,Once) L4) Inert, Group (Live (reverse $ take ((length vals) - (div index 2)) (reverse vals), Once) L4) Inert],rep) L4) Inert) live splitIndex
+  let splitVal = attachDynWith (\l index-> let (vals,rep) = case l of (Edited (old,reps) new) -> (old,reps); (Live (v,reps) _) -> (v,reps); in Layers (Live ([Group (Live (Prelude.take (div index 2) vals,Once) L4) Inert, Group (Live (reverse $ Prelude.take ((length vals) - (div index 2)) (reverse vals), Once) L4) Inert],rep) L4) Inert) live splitIndex
   let returnEvents = (leftmost [fmap (\x-> if x==L3 then MakeL3 else MakeL4) livenessEv, deleteContainerEv, (RebuildMe <$) $ ffilter (Data.List.elem LayerSplit) events',groupLayerEv])
   retVal <- combineDyn (\l p-> returnF i l p returnEvents hints) live potential
   regVal <- mapDyn (\(x,_,_)->x) retVal
