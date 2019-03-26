@@ -51,7 +51,7 @@ referenceText "c" = "returns TidalCycles' chop 2"
   -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
- switchToReference <- divClass "refExampleButton" $ button x
+ switchToReference <- divClass "reference-button" $ button x
  exampleVisible <- toggle True switchToReference
  referenceVisible <- toggle False switchToReference
  hideableWidget exampleVisible "exampleText" $ text (exampleText x)

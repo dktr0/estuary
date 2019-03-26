@@ -1,27 +1,20 @@
 body {
+	font-family: 'Helvetica';
 	background-color: lightgray;
 	color: black;
 	height: 100%;
 	margin: 0;
-	font-family: 'Inconsolata';
 }
 
-/*modfifies the name and terminal textareas*/
-input {
+/*styles the header dropdown menus and checkboxes*/
+.header-dropdown-and-checkbox  {
+	cursor: pointer;
 	background-color: lightgray;
 	color: black;
+	border: 1px solid black;
 }
 
-/* modifies the coding textarea or view */
-textarea {
-	background-color: lightgray;
-	color: black;
-  width: 100%;
-	height: 100%;
-
-}
-
-/*modifies all Estuary buttons */
+/*styles all Estuary buttons */
 button {
 	background-color: hsl(0,0%,20%);
 	color: lightgray;
@@ -29,34 +22,81 @@ button {
 	border-radius: 4px;
 }
 
-/*modifies the theme and language dropdown menus */
-select {
+
+.reference-button button {
 	background-color: transparent;
-	border: 1px solid;
+	color: black;
 }
 
-/* modifies the border of the homepage buttons when hovering on */
-.splash-panel:hover {
-	border-color: black;
+/*styles the code text, including the one in the sequencer*/
+.code-text {
+	  font-family: 'Helvetica';
+		color: black;
+		font-size: 100%;
 }
 
-.ensembleTempo textarea{
- color: black;
+/*styles the chat/terminal and the coding-language dropdown menus*/
+.other-text {
+	font-family: 'Helvetica';
+	color: black;
+	font-size: 100%;
 }
 
 
-/*modifies the text from the structured-view dropdown menus  */
-.atomPopup{
-	color:lightgray;
-		background-color:black;
-			border: 2pt solid hsl(0,0%,10%);
-
-
+/* name-tag textarea */
+.name-tag-textarea {
+	background-color: transparent;
+	flex:1;
+	border: none;
+	color:black;
 }
 
-/* The div wrapping popupMenus */
-.popupMenu{
-	color: lightgray;
-	background-color:black;
-	border: 2pt solid hsl(0,0%,10%);
+/*styles the coding language dropdown menu*/
+.coding-language-dropdown {
+	cursor: pointer;
+	background-color: lightgray;
+	color: black;
+	border: 1px solid black;
+}
+
+/* styles the coding textarea*/
+.coding-textarea {
+	background-color: transparent;
+	border: none;
+}
+
+/* styles the chat textarea*/
+.chat-textarea { /*modifies the terminal text area (source)*/
+	border: none;
+	background-color: transparent;
+}
+
+/* styles the sequencer textarea*/
+.sequencer-textarea input{
+	background-color: transparent;
+	border: 2pt solid black;
+	border-radius: 5px;
+}
+
+/* styles the sequencer pads */
+.sequencer-pads {
+	border:1pt solid black;
+	border-radius: 5px;
+}
+
+/* sets the color for the pads when hovering on */
+.sequencer-pads:hover {
+	background-color: hsl(0,0%,20%);
+}
+
+/* sets the color for the pads when activated */
+.sequencer-pads-activated{
+	background-color: darkgray;
+	border:1pt solid black;
+	border-radius: 5px;
+}
+
+/* sets the color for the active pads when hovering on */
+.sequencer-pads-activated:hover{
+	background-color: #797878;
 }

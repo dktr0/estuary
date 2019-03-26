@@ -91,9 +91,9 @@ page ctx _ _ wsDown Splash = do
     gotoTutorialEv <- panel ctx TutorialList Term.Tutorials (text "B") -- icon font: tutorial-icon.svg
     gotoSoloEv <- panel ctx Solo Term.Solo (text "C") -- icon font: solo-icon.png
     gotoCollaborateEv <- panel ctx Lobby Term.Collaborate (text "D") -- icon font: collaborate-icon.svg
-    
+
     return $ leftmost [gotoAboutEv, gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
-  
+
   return (navEv, (constDyn Nothing, never, never, never))
 
 page ctx _ _ wsDown TutorialList = do
@@ -135,15 +135,15 @@ page ctx _ _ _ CreateEnsemblePage = do
   el "div" $ dynText =<< translateDyn Term.CreateNewEnsembleNote ctx
   adminPwd <- el "div" $ do
     translateDyn Term.AdministratorPassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    let attrs = constDyn ("class" =: "chat-textarea other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   name <- el "div" $ do
     translateDyn Term.EnsembleName ctx >>= dynText
-    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    let attrs = constDyn ("class" =: "chat-textarea other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   password <- el "div" $ do
     translateDyn Term.EnsemblePassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    let attrs = constDyn ("class" =: "chat-textarea other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
   nameAndPassword <- combineDyn (,) name password
   confirm <- el "div" $ dynButton =<< translateDyn Term.Confirm ctx
