@@ -24,7 +24,7 @@ naturalHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "Natural"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Manizales, Colombia."
+  divClass "about" $ text "A mini live coding esolang developed in Manizales, Colombia."
 
 exampleText :: Text -> Text
 
@@ -46,7 +46,7 @@ referenceText "ruge" =  "returns TidalCycles' slow"
 
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-  switchToReference <- divClass "refExampleButton" $ button x
+  switchToReference <- divClass "reference-button" $ button x
   exampleVisible <- toggle True switchToReference
   referenceVisible <- toggle False switchToReference
   hideableWidget exampleVisible "exampleText" $ text (exampleText x)

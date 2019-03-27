@@ -4,6 +4,7 @@ import Data.Time
 import Data.IntMap.Strict
 import Control.Concurrent.MVar
 import GHCJS.Types
+import GHCJS.DOM.Types (HTMLCanvasElement)
 
 import Estuary.Tidal.Types
 import Estuary.Types.Language
@@ -35,9 +36,10 @@ data Context = Context {
   wsStatus :: String,
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
-  canvasState :: MVar CanvasState
+  canvasState :: MVar CanvasState,
+  canvasElement :: Maybe HTMLCanvasElement
   }
- 
+
 initialContext :: UTCTime -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
 initialContext now mBus wd sd mv = Context {
   mainBus = mBus,
@@ -56,7 +58,8 @@ initialContext now mBus wd sd mv = Context {
   wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
-  canvasState = mv
+  canvasState = mv,
+  canvasElement = Nothing
 }
 
 type ContextChange = Context -> Context

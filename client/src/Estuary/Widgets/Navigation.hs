@@ -1,6 +1,10 @@
 {-# LANGUAGE RecursiveDo, OverloadedStrings, ScopedTypeVariables, DeriveGeneric, DeriveAnyClass, OverloadedStrings #-}
 
-module Estuary.Widgets.Navigation where
+module Estuary.Widgets.Navigation (
+  Navigation(..),
+  navigation,
+  page,
+) where
 
 import Control.Monad (liftM)
 
@@ -68,61 +72,28 @@ navigation initialPage stateChangeEv ctx renderInfo commands wsDown = do
 
   return (dynValues, wsUpEv, hintEv, tempoEv)
 
+panel :: MonadWidget t m => Dynamic t Context -> Navigation -> Term.Term -> m () -> m (Event t Navigation)
+panel ctx targetPage title icon = do
+  liftM (targetPage <$) $ do
+    divClass "splash-margin" $ do
+      dynButtonWithChild "splash-panel" $ do
+        divClass "splash-title" $ do
+          dynText =<< translateDyn title ctx
+        divClass "splash-icon-container" $ do
+          divClass "splash-icon" icon
+
 page :: forall t m. (MonadWidget t m)
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> Navigation
   -> m (Event t Navigation, (Dynamic t (Maybe (String, DefinitionMap)), Event t Request, Event t Hint, Event t Tempo))
-
 page ctx _ _ wsDown Splash = do
   navEv <- divClass "splash-container" $ do
-
-    -- gotoAboutEv <- liftM (TutorialList <$) $ do
-    --   divClass "splash-margin" $ do
-    --     dynButtonWithChild "splash-panel" $ do
-    --       divClass "splash-title" $ do
-    --         dynText =<< translateDyn Term.About ctx
-    --         divClass "splash-icon-container" $ do
-    --           elAttr "img" (Map.fromList [("src", "estuary-logo-green.svg"), ("class", "splash-icon")]) blank
-          -- divClass "splash-line" blank
-        -- divClass "splash-info" $ aboutEstuaryParagraph ctx
-
-
-    gotoAboutEv <- liftM (About <$) $ do
-      divClass "splash-margin" $ do
-        dynButtonWithChild "splash-panel" $ do
-          divClass "splash-title" $ do
-            dynText =<< translateDyn Term.About ctx
-          divClass "splash-icon-container" $ do
-            divClass "splash-icon" $ do
-              estuaryIcon
-
-    gotoTutorialEv <- liftM (TutorialList <$) $ do
-      divClass "splash-margin" $ do
-        dynButtonWithChild "splash-panel" $ do
-          divClass "splash-title" $ do
-            dynText =<< translateDyn Term.Tutorials ctx
-          divClass "splash-icon-container" $ do
-            divClass  "splash-icon" $ text "B"
-            -- elAttr "img" (Map.fromList [("src", "tutorial-icon.svg"),  ("class", "splash-icon")]) blank
-
-    gotoSoloEv <- liftM (Solo <$) $ do
-      divClass "splash-margin" $ do
-        dynButtonWithChild "splash-panel" $ do
-          divClass "splash-title" $ do
-            dynText =<< translateDyn Term.Solo ctx
-          divClass "splash-icon-container" $ do
-            divClass  "splash-icon" $ text "C"
-            -- elAttr "img" (Map.fromList [("src", "solo-icon.png"), ("class", "splash-icon")]) blank
-
-    gotoCollaborateEv <- liftM (Lobby <$) $ do
-      divClass "splash-margin" $ do
-        dynButtonWithChild "splash-panel" $ do
-          divClass "splash-title" $ do
-            dynText =<< translateDyn Term.Collaborate ctx
-          divClass "splash-icon-container" $ do
-            divClass  "splash-icon" $ text "D"
-            -- elAttr "img" (Map.fromList [("src", "collaborate-icon.svg"), ("class", "splash-icon")]) blank
+    gotoAboutEv <- panel ctx About Term.About estuaryIcon
+    gotoTutorialEv <- panel ctx TutorialList Term.Tutorials (text "B") -- icon font: tutorial-icon.svg
+    gotoSoloEv <- panel ctx Solo Term.Solo (text "C") -- icon font: solo-icon.png
+    gotoCollaborateEv <- panel ctx Lobby Term.Collaborate (text "D") -- icon font: collaborate-icon.svg
 
     return $ leftmost [gotoAboutEv, gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
+
   return (navEv, (constDyn Nothing, never, never, never))
 
 page ctx _ _ wsDown TutorialList = do
@@ -141,7 +112,7 @@ page ctx _ _ wsDown (Tutorial tid) = do
       return (constDyn empty, never)
 
 page ctx _ _ wsDown About = do
-  divClass "splash-info" $ aboutEstuaryParagraph ctx
+  aboutEstuaryParagraph ctx
   return (never, (constDyn $ Just (soloEnsembleName, empty), never, never, never))
 
 page ctx renderInfo commands wsDown Solo = do
@@ -164,15 +135,15 @@ page ctx _ _ _ CreateEnsemblePage = do
   el "div" $ dynText =<< translateDyn Term.CreateNewEnsembleNote ctx
   adminPwd <- el "div" $ do
     translateDyn Term.AdministratorPassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    let attrs = constDyn ("class" =: "chat-textarea other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   name <- el "div" $ do
     translateDyn Term.EnsembleName ctx >>= dynText
-    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    let attrs = constDyn ("class" =: "chat-textarea other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   password <- el "div" $ do
     translateDyn Term.EnsemblePassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "webSocketTextInputs")
+    let attrs = constDyn ("class" =: "chat-textarea other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
   nameAndPassword <- combineDyn (,) name password
   confirm <- el "div" $ dynButton =<< translateDyn Term.Confirm ctx

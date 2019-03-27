@@ -19,4 +19,4 @@ superContinentHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
  divClass "about" $ text "SuperContinent"
- divClass "aboutText" $ text "A mini live coding esolang developed in Hamilton, Canada by David Ogborn and others."
+ divClass "about" $ text "A mini live coding esolang developed in Hamilton, Canada by David Ogborn and others."

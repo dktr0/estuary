@@ -9,7 +9,7 @@ import Estuary.Types.TidalParser
 
 data TextNotation =
   TidalTextNotation TidalParser |
-  PunctualAudio |
+  Punctual |
   PunctualVideo |
   SuperContinent |
   SvgOp |

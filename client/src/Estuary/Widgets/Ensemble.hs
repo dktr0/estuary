@@ -61,12 +61,12 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
     divClass "ensembleName" $ text $ "Ensemble: " `T.append` T.pack ensemble
     hdl' <- divClass "ensembleHandle" $ do
       text "Name:"
-      let attrs = constDyn ("class" =: "ensembleHandle")
+      let attrs = constDyn ("class" =: "ensembleHandle other-text")
       handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
       return $ _textInput_input handleInput
     pwdRequest' <- divClass "ensemblePassword" $ do
       text "password:"
-      let attrs = constDyn ("class" =: "ensemblePassword")
+      let attrs = constDyn ("class" =: "ensemblePassword other-text")
       pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
       return $ fmap AuthenticateInEnsemble $ fmap T.unpack $ _textInput_input pwdInput
     return (hdl',pwdRequest')

@@ -1,4 +1,6 @@
-module Estuary.Widgets.EstuaryIcon where
+module Estuary.Widgets.EstuaryIcon (
+  estuaryIcon
+) where
 
 import Control.Monad.IO.Class(liftIO)
 
@@ -23,29 +25,12 @@ import Reflex.Dom
 
 estuaryIcon :: (MonadWidget t m) => m ()
 estuaryIcon = do
-  postMountEv <- getPostBuild
-
   jsIconInstance <- liftIO $ js_splashIconInstance
-  jsContainerEl <- liftIO $ (fmap pFromJSVal js_splashScreenContainerEl :: IO (Maybe Dom.Element))
   jsCanvas <- liftIO $ (fmap pFromJSVal (js_getCanvas jsIconInstance) :: IO (Dom.Element))
   
-  case jsContainerEl of
-
-    -- Animate, we are transitioning from the splash screen.
-    Just screen -> do
-      let duration = 3 -- seconds
-      startPos <- liftIO $ js_snapshotPosition jsIconInstance
-      placeRawElement jsCanvas
-      liftIO $ do
-        js_animateFrom jsIconInstance startPos duration
-        classList <- Element.getClassList screen
-        ClassList.add classList ["loaded"]
-
-    -- Don't animate, we are not transitioning from the splash screen.
-    Nothing -> placeRawElement jsCanvas
+  placeRawElement jsCanvas
 
 newtype IconDisplay = IconDisplay JSVal
-newtype BBox = BBox JSVal
 
 foreign import javascript safe
   "EstuaryIcon != null ? EstuaryIcon.display : null"
@@ -54,15 +39,3 @@ foreign import javascript safe
 foreign import javascript safe
   "$1.canvas"
   js_getCanvas :: IconDisplay -> IO JSVal
-
-foreign import javascript safe
-  "document.querySelector('#estuary-splash:not(.loaded)')"
-  js_splashScreenContainerEl :: IO JSVal
-
-foreign import javascript safe
-  "EstuaryIcons.snapshotPosition($1)"
-  js_snapshotPosition :: IconDisplay -> IO BBox
-
-foreign import javascript safe
-  "EstuaryIcons.animateFrom($1, $2, $3);"
-  js_animateFrom :: IconDisplay -> BBox -> Double -> IO ()

@@ -28,7 +28,7 @@ crudoHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
  divClass "about" $ text "Crudo"
- divClass "aboutText" $ text "A mini live coding esolang developed in Bogotá, Colombia."
+ divClass "about" $ text "A mini live coding esolang developed in Bogotá, Colombia."
 
 exampleText :: Text -> Text
 
@@ -62,7 +62,7 @@ referenceText "oeste" = "returns TidalCycles' trunc"
 
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
- switchToReference <- divClass "refExampleButton" $ button x
+ switchToReference <- divClass "reference-button" $ button x
  exampleVisible <- toggle True switchToReference
  referenceVisible <- toggle False switchToReference
  hideableWidget exampleVisible "exampleText" $ text (exampleText x)

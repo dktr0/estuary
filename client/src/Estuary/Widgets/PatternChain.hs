@@ -50,19 +50,19 @@ iclcFixedStruct iChain _ = elAttr "div" (empty) $ do
 
 
 icoahWidget:: MonadWidget t m => TransformedPattern -> Event t () -> m (Dynamic t (TransformedPattern, Event t (EditSignal a), Event t Hint))
-icoahWidget iChain _ = elAttr "table" ("class"=:"multiPatternTable") $ do
-  (s,hints) <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
+icoahWidget iChain _ = elAttr "table" ("style"=:"cellspacing:0;") $ do
+  (s,hints) <- elAttr "tr" ("style"=:"vertical-align:center;") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "S"
     swidget <- Sp.sampleContainerWidget (S $ Blank Inert) never
     pat <- mapDyn (\(x,_,_) -> x) swidget
     pat' <- mapDyn UntransformedPattern pat
     hints' <- liftM (switchPromptlyDyn) $ mapDyn (\(_,_,x) -> x) swidget
     return (pat',hints')
-  vowel <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
+  vowel <- elAttr "tr" ("style"=:"vertical-align:center;") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "Vowel"
     (pat,_) <- Sp.charContainerWidget (Vowel $ Atom '~' Inert Once) never >>= splitDyn
     forDyn pat UntransformedPattern
-  up <- elAttr "tr" ("class"=:"multiPatternTable-tr") $ do
+  up <- elAttr "tr" ("style"=:"vertical-align:center;") $ do
     elAttr "td" ("class"=:"multiPatternTable-td") $ text "Up"
     (pat,_) <- Sp.upContainerWidget (Up $ Atom 0 Inert Once) never >>= splitDyn
     forDyn pat UntransformedPattern

@@ -40,7 +40,7 @@ punctualVideoHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "PunctualAudio reference"
-  divClass "aboutText" $ text "Punctual is a language for live coding audio and visuals. It allows you to build and change networks of signal processors (oscillators, filters, etc) on the fly. Punctual was created by David Ogborn, building on top of the MusicW synthesis library (by David Ogborn, Spencer Park, Jamie Beverley, and others). Conceptually, Punctual extends the work of Julian Rohrhuber and others on SuperCollider's JITlib notations."
+  divClass "about" $ text "Punctual is a language for live coding audio and visuals. It allows you to build and change networks of signal processors (oscillators, filters, etc) on the fly. Punctual was created by David Ogborn, building on top of the MusicW synthesis library (by David Ogborn, Spencer Park, Jamie Beverley, and others). Conceptually, Punctual extends the work of Julian Rohrhuber and others on SuperCollider's JITlib notations."
 
 exampleText :: Text -> Text
 
@@ -85,7 +85,7 @@ referenceText "height" = "sets the height of the pixel"
 -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-   switchToReference <- divClass "refExampleButton" $ button x
+   switchToReference <- divClass "reference-button" $ button x
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText" $ text (exampleText x)

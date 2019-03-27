@@ -36,7 +36,7 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
     sendButton' <- divClass "webSocketButtons" $ dynButton =<< translateDyn Term.Send ctx
     divClass "webSocketButtons" $ dynText =<< translateDyn Term.TerminalChat ctx
     let resetText = fmap (const "") terminalInput
-    let attrs = constDyn $ fromList [("class","webSocketTextInputs"),("style","width: 100%")]
+    let attrs = constDyn $ fromList [("class","chat-textarea other-text"),("style","width: 100%")]
     inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
     return (sendButton',inputWidget')
   let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget

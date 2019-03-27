@@ -33,7 +33,7 @@ sabortsHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about" $ text "Saborts"
-  divClass "aboutText" $ text "A mini live coding esolang developed in Quito, Ecuador by RGGTRN."
+  divClass "about" $ text "A mini live coding esolang developed in Quito, Ecuador by RGGTRN."
 
 exampleText :: Text -> Text
 
@@ -79,7 +79,7 @@ referenceText "z" =  "returns TidalCycles' gap"
   -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-  switchToReference <- divClass "refExampleButton" $ button x
+  switchToReference <- divClass "reference-button" $ button x
   exampleVisible <- toggle True switchToReference
   referenceVisible <- toggle False switchToReference
   hideableWidget exampleVisible "exampleText" $ text (exampleText x)
