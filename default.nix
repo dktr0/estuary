@@ -1,15 +1,15 @@
-{ reflexPlatformVersion ? "a229a74ebb9bac69327f33a4416986d614eda7ea" }:
+{ reflexPlatformVersion ? "2b26ddebe9b853c3add49ed7295b44ea66bb7080" }:
 
 let reflex-platform = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${reflexPlatformVersion}.tar.gz";
 in
 
-(import reflex-platform {}).project ({ pkgs, ghc8_4, hackGet, ... }: 
+(import reflex-platform {}).project ({ pkgs, ghc8_4, hackGet, ... }:
 with pkgs.haskell.lib;
 {
   name = "Estuary";
 
-  packages = 
-    let filter = name: type: 
+  packages =
+    let filter = name: type:
       pkgs.lib.cleanSourceFilter name type && (
         let baseName = baseNameOf (toString name);
         in !(
@@ -43,14 +43,14 @@ with pkgs.haskell.lib;
     };
   };
 
-  overrides = 
-    let 
-      skipBrokenGhcjsTests = self: super: 
-        # generate an attribute set of 
+  overrides =
+    let
+      skipBrokenGhcjsTests = self: super:
+        # generate an attribute set of
         #   {${name} = pkgs.haskell.lib.dontCheck (super.${name})}
         # if using ghcjs.
         pkgs.lib.genAttrs [
-            "Glob" "mockery" "silently" "unliftio" "conduit" 
+            "Glob" "mockery" "silently" "unliftio" "conduit"
             "yaml" "hpack"
           ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else dontCheck) super.${name});
 
@@ -81,6 +81,12 @@ with pkgs.haskell.lib;
           '';
         });
 
+        # https://github.com/haskell-foundation/foundation/pull/412
+        foundation =
+            if pkgs.stdenv.isDarwin
+            then dontCheck super.foundation
+            else super.foundation;
+            
         webdirt = import ./deps/webdirt self;
 
         musicw = if !(self.ghc.isGhcjs or false) then null
@@ -93,7 +99,7 @@ with pkgs.haskell.lib;
         tidal = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (import ./deps/tidal self);
 
-        # It is a nix package, but use cabal2nix anyways. The nix one 
+        # It is a nix package, but use cabal2nix anyways. The nix one
         # has a bad base constraint.
         reflex-dom-contrib = import ./deps/reflex-dom-contrib self;
       };
