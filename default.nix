@@ -1,4 +1,4 @@
-{ reflexPlatformVersion ? "2b26ddebe9b853c3add49ed7295b44ea66bb7080" }:
+{ reflexPlatformVersion ? "7e002c573a3d7d3224eb2154ae55fc898e67d211" }:
 
 let reflex-platform = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${reflexPlatformVersion}.tar.gz";
 in
@@ -79,14 +79,9 @@ with pkgs.haskell.lib;
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
+
         });
 
-        # https://github.com/haskell-foundation/foundation/pull/412
-        foundation =
-            if pkgs.stdenv.isDarwin
-            then dontCheck super.foundation
-            else super.foundation;
-            
         webdirt = import ./deps/webdirt self;
 
         musicw = if !(self.ghc.isGhcjs or false) then null
@@ -98,6 +93,28 @@ with pkgs.haskell.lib;
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (import ./deps/tidal self);
+
+        wai-websockets = dontCheck pkgs.haskellPackages.wai-websockets;
+
+        # a hacky way of avoiding building unnecessary dependencies with GHCJS
+        # (our system is currently building GHC dependencies even for the front-end...
+        # ...this gets around that to allow a build on OS X
+        # ... in progress - to continue: seems to work for the client build but then breaks the server build**
+        foundation = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.foundation;
+        memory = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.memory;
+        wai-app-static = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.wai-app-static;
+        asn1-types = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.asn1-types;
+        asn1-encoding = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.asn1-encoding;
+        asn1-parse = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.asn1-parse;
+        sqlite-simple = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.sqlite-simple;
+        cryptonite = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.cryptonite;
+        http-client = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.http-client;
+        pem = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.pem;
+        x509 = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.x509;
+        connection = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.connection;
+        tls = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.tls;
+        http-client-tls = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.http-client-tls;
+        hpack = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.hpack;
 
         # It is a nix package, but use cabal2nix anyways. The nix one
         # has a bad base constraint.
