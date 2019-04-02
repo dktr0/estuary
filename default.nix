@@ -69,13 +69,13 @@ with pkgs.haskell.lib;
          '';
         });
 
-        estuary-common = overrideCabal super.estuary-common (drv: {
+        estuary-common = overrideCabal (appendConfigureFlags super.estuary-common ["--ghc-options=-dynamic" "--ghc-options=-threaded"]) (drv: {
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
         });
 
-        estuary-server = overrideCabal super.estuary-server (drv: {
+        estuary-server = overrideCabal (appendConfigureFlags super.estuary-server ["--ghc-options=-dynamic" "--ghc-options=-threaded"]) (drv: {
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
