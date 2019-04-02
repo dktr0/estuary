@@ -79,7 +79,7 @@ with pkgs.haskell.lib;
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
-
+          enableSharedExecutables = false;
         });
 
         webdirt = import ./deps/webdirt self;
@@ -94,7 +94,7 @@ with pkgs.haskell.lib;
         tidal = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (import ./deps/tidal self);
 
-        wai-websockets = dontCheck pkgs.haskellPackages.wai-websockets;
+        wai-websockets = dontCheck pkgs.haskellPackages.wai-websockets; # apparently necessary on OS X
 
         # a hacky way of avoiding building unnecessary dependencies with GHCJS
         # (our system is currently building GHC dependencies even for the front-end...
