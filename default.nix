@@ -79,7 +79,6 @@ with pkgs.haskell.lib;
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
-          enableSharedExecutables = false;
         });
 
         webdirt = import ./deps/webdirt self;
