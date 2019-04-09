@@ -1,4 +1,4 @@
-{-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
+ {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
 module Main where
 

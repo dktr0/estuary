@@ -26,8 +26,8 @@ mariaHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
- divClass "about" $ text "María"
- divClass "about" $ text "A mini live coding esolang developed in Quito, Ecuador."
+ divClass "about foreground-color small-font" $ text "María"
+ divClass "about foreground-color small-font" $ text "A mini live coding esolang developed in Quito, Ecuador."
 
 exampleText :: Text -> Text
 
@@ -59,9 +59,9 @@ referenceText "botella" = "returns TidalCycles' iter"
 
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
- switchToReference <- divClass "reference-button" $ button x
+ switchToReference <- divClass "" $ button x
  exampleVisible <- toggle True switchToReference
  referenceVisible <- toggle False switchToReference
- hideableWidget exampleVisible "exampleText" $ text (exampleText x)
+ hideableWidget exampleVisible "exampleText foreground-color small-font" $ text (exampleText x)
  hideableWidget referenceVisible "referenceText" $ text (referenceText x)
  return ()

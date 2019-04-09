@@ -1,4 +1,5 @@
 {-# LANGUAGE RecursiveDo, OverloadedStrings, TypeFamilies #-}
+
 module Estuary.Widgets.GeneralPattern where
 
 import Reflex
@@ -132,7 +133,7 @@ typedAtomWidget defaultVal  liveness iGenPat editEv = elClass "div" "atomPopup" 
   inputMouseOver <- liftM (True <$) $ wrapDomEvent (_textInput_element textField) (onEventName Mouseover) mouseXY
   inputMouseOut <- liftM (False <$) $ wrapDomEvent (_textInput_element textField) (onEventName Mouseout) mouseXY
   isMouseOverInput <- holdDyn False $ leftmost [inputMouseOut, inputMouseOver]
-  inputAttrs <- mapDyn (fromList . (\x-> [x]) . ((,) "class") . bool "atomPopupInput coding-textarea code-text" "atomPopupInputMouseOver") isMouseOverInput
+  inputAttrs <- mapDyn (fromList . (\x-> [x]) . ((,) "class") . bool "atomPopupInput foreground-color code-font" "atomPopupInputMouseOver") isMouseOverInput
   textField <- growingTextInput $ def & textInputConfig_attributes .~  inputAttrs & textInputConfig_initialValue .~ (T.pack $ showNoQuotes iVal)
 
   let textInputChange = updated $ _textInput_value textField

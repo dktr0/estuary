@@ -44,9 +44,9 @@ sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
   let buttonIVals = M.fromList $ attachIndex vals
   let strUpdate = fmap (T.pack . fst) edits
   let buttonUpdates = fmap (M.fromList . attachIndex . fmap Just . snd) edits
-  let textInputAttrs = singleton "class" "sequencer-textarea code-text"
+  let textInputAttrs = singleton "class" "sequencer-textarea code-font background-color transient-color code-font"
   deleteMe <- elClass "td" "delete" $ button "-" -- clickableTdClass (constDyn " - ") (constDyn "delete") ()
-  rowInput <- elClass "td" "sequencer-textarea code-text" $ textInput $ def & textInputConfig_initialValue .~ (T.pack iVal) & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn empty)
+  rowInput <- elClass "td"  "sequencer-textarea code-font transient-color foreground-color code-font" $ textInput $ def & textInputConfig_initialValue .~ (T.pack iVal) & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn empty)
   -- rowInput <- el "td" $ growingTextInput $ def & textInputConfig_initialValue .~ iVal & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn textInputAttrs)
   buttons <-  liftM joinDynThroughMap $ listWithKeyShallowDiff buttonIVals buttonUpdates sequencerButton  -- Dyn (Map Int Bool)
   val <- combineDyn (\s b -> (T.unpack s, elems b)) (_textInput_value rowInput) buttons
@@ -58,5 +58,5 @@ sequencerButton pos val edits = mdo
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Mousedown) (return ())
   let clickUpdates = attachWith (\v _-> not v) (current isActive) $ leftmost [clickEv]
   isActive <- holdDyn val $ leftmost [edits, clickUpdates]
-  attrs <- mapDyn (\x-> singleton "class" $ if x then "sequencerButton  sequencer-pads-activated" else "sequencerButton sequencer-pads") isActive
+  attrs <- mapDyn (\x-> singleton "class" $ if x then "sequencerButton sequencerButton-activated foreground-color" else "sequencerButton transient-color") isActive
   return isActive

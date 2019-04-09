@@ -18,4 +18,4 @@ noHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about" $ text "No help file available"
+  divClass "about foreground-color small-font" $ text "No help file available"

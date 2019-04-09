@@ -102,7 +102,7 @@ specificPatternPopup actionList = elClass "div" "popupMenu" $ do
   let specMap = fromList $ zip [(0::Int)..] iValueList
   let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
   --let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
-  dd <- dropdown (-1) ddMap (def & attributes .~ constDyn ("class" =: "coding-language-dropdown"))
+  dd <- dropdown (-1) ddMap (def & attributes .~ constDyn ("class" =: "code-font background-color foreground-color"))
   let specPatKey = _dropdown_value dd
   specChange <- mapDyn (Just . ChangeValue . maybe (S $ Blank Inert) id . (flip Data.Map.lookup) specMap) specPatKey
   let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]

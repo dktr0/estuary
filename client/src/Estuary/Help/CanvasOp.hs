@@ -22,8 +22,8 @@ canvasOpHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about" $ text "CanvasOp"
-  divClass "about" $ text "A mini language for building live-coding visual languages like PunctualVideo."
+  divClass "about foreground-color small-font" $ text "CanvasOp"
+  divClass "about foreground-color small-font" $ text "A mini language for building live-coding visual languages like PunctualVideo."
 
 exampleText :: Text -> Text
 
@@ -42,9 +42,9 @@ referenceText "strokeStyle" = "sets the color of the stroke in RGBA values"
 -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-   switchToReference <- divClass "reference-button" $ button x
+   switchToReference <- divClass "" $ button x
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text (exampleText x)
+   hideableWidget exampleVisible "exampleText foreground-color small-font" $ text (exampleText x)
    hideableWidget referenceVisible "referenceText" $ text (referenceText x)
    return ()

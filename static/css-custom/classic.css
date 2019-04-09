@@ -1,102 +1,34 @@
-body {
-	font-family: 'Helvetica';
-	background-color: black;
-	color: rgb(98, 221, 115);
-	height: 100%;
-	margin: 0;
-}
+:root {
+/* sets the background color */
+  --background-color: black;
 
-/*styles the code text*/
-.code-text {
-	  font-family: 'Helvetica';
-		color: rgb(98, 221, 115);
-		font-size: 100%;
-}
+/*set the color of all text and borders*/
+  --foreground-color: rgb(98, 221, 115);
 
-/*styles the chat/terminal and the coding-language dropdown menus*/
-.other-text {
-	font-family: 'Helvetica';
-	color: rgb(98, 221, 115);
-	font-size: 100%;
-}
+/*sets the primary borders */
+  --foreground-border: 1pt solid rgb(98, 221, 115);
 
-/*styles all Estuary buttons */
-button {
-	background-color: hsl(0,0%,20%);
-	color: rgb(98, 221, 115);
-	border: none;
-	border-radius: 4px;
-}
+/* sets the color of the sequencer buttons when hovering over  */
+  --secondary-color: hsl(0,0%,20%);
 
-.reference-button button {
-	background-color: transparent;
-}
+/*sets the button background color*/
+  --transient-color: transparent;
 
-/*styles the header dropdown menus and checkboxes*/
-.header-dropdown-and-checkbox  {
-	cursor: pointer;
-	background-color: black;
-	color: rgb(98, 221, 115);
-	border: 1px solid rgb(98, 221, 115);
-}
+/* sets the fainted border color   */
+  --transient-border: 1pt solid  hsl(0,0%,20%);
 
+/*sets the border radius  */
+  --border-radius: 5px;
 
-/* name-tag textarea */
-.name-tag-textarea {
-	background-color: transparent;
-	flex:1;
-	border: none;
-}
+/*sets the primary font family */
+  --font: 'Helvetica';
 
-/*styles the coding language dropdown menu*/
-.coding-language-dropdown {
-	cursor: pointer;
-	background-color: black;
-	color: rgb(98, 221, 115);
-	border: 1px solid rgb(98, 221, 115);
-}
+/*sets the code font size  */
+  --code-font: 0.85em;
 
-/* styles the coding textarea*/
-.coding-textarea {
-	background-color: transparent;
-	border: none;
-}
+/* sets the header font size */
+  --big-font: 1em;
 
-/* styles the chat textarea*/
-.chat-textarea { /*modifies the terminal text area (source)*/
-	border: none;
-	background-color: transparent;
-}
-
-/* styles the sequencer textarea*/
-.sequencer-textarea input{
-	background-color: transparent;
-	border: 2pt solid grey;
-	border-radius: 5px;
-	color: rgb(98, 221, 115);
-}
-
-/* styles the sequencer pads */
-.sequencer-pads {
-	border:1pt solid grey;
-	border-radius: 5px;
-}
-
-/* sets the color for the pads when hovering on */
-.sequencer-pads:hover {
-	background-color: hsl(0,0%,20%);
-}
-
-/* sets the color for the pads when activated */
-.sequencer-pads-activated{
-	border:1pt solid grey;
-	border-radius: 5px;
-	background-color: rgba(0,255,0,0.3);
-}
-
-/* sets the color for the active pads when hovering on */
-.sequencer-pads-activated:hover{
-	border:1pt solid grey;
-	border-radius: 5px;
-	background-color: rgba(0,255,0,0.4);
+/* sets the information text size  */
+  --small-font: 0.65em;
 }
