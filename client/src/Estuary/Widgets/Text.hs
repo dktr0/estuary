@@ -32,7 +32,7 @@ import Estuary.Types.Context
 
 textWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
 textWidgetForPatternChain i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea background-color foreground-color code-font")
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea background-color primary-color code-font")
   x <- textInput $ def & textInputConfig_setValue .~ (fmap T.pack delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
   let edits = fmap T.unpack $ _textInput_input x
   let value = fmap T.unpack $ _textInput_value x
@@ -40,7 +40,7 @@ textWidgetForPatternChain i delta = do
 
 textAreaWidgetForPatternChain :: MonadWidget t m => Int -> String -> Event t String -> m (Dynamic t String, Event t String,Event t ())
 textAreaWidgetForPatternChain rows i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea background-color foreground-color code-font" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea background-color primary-color code-font" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
   x <- textArea $ def & textAreaConfig_setValue .~ (fmap T.pack delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ (T.pack i)
   --let keys = _textArea_keypress x
   let e = _textArea_element x
@@ -68,7 +68,7 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     let initialParser = fst $ forEditing i
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "code-font background-color foreground-color")) & dropdownConfig_setValue .~ parserFuture
+    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "code-font background-color primary-color")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- button "eval"
       dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
@@ -104,6 +104,6 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
 labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t Definition)
 labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let delta' = fmap T.pack $ fmapMaybe lastOrNothing delta
-  let attrs = constDyn $ ("class" =: "name-tag-textarea code-font background-color foreground-color")
+  let attrs = constDyn $ ("class" =: "name-tag-textarea code-font background-color primary-color")
   y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
   return $ fmap (LabelText . T.unpack) $ _textInput_input y

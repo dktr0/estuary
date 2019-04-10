@@ -135,15 +135,15 @@ page ctx _ _ _ CreateEnsemblePage = do
   el "div" $ dynText =<< translateDyn Term.CreateNewEnsembleNote ctx
   adminPwd <- el "div" $ do
     translateDyn Term.AdministratorPassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "background-color foreground-color other-text")
+    let attrs = constDyn ("class" =: "background-color primary-color other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   name <- el "div" $ do
     translateDyn Term.EnsembleName ctx >>= dynText
-    let attrs = constDyn ("class" =: "background-color foreground-color other-text")
+    let attrs = constDyn ("class" =: "background-color primary-color other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   password <- el "div" $ do
     translateDyn Term.EnsemblePassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "background-color foreground-color other-text")
+    let attrs = constDyn ("class" =: "background-color primary-color other-text")
     liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
   nameAndPassword <- combineDyn (,) name password
   confirm <- el "div" $ dynButton =<< translateDyn Term.Confirm ctx

@@ -20,7 +20,7 @@ import Estuary.Utility (lastOrNothing)
 
 tempoWidget :: MonadWidget t m => Dynamic t Context -> Event t [EnsembleResponse]
   -> m (Event t Tempo,Event t Tempo) -- (all tempo changes, just tempo edits)
-tempoWidget ctx deltas = divClass "ensembleTempo big-font foreground-color" $ mdo
+tempoWidget ctx deltas = divClass "ensembleTempo ui-font primary-color" $ mdo
   iTempo <- tempo <$> (sample . current) ctx
   let deltas' = fmapMaybe (lastOrNothing . fmapMaybe justTempoChanges) deltas -- Event t (Tempo,UTCTime)
   tempoDelta <- performEvent $ fmap (liftIO . adjustTempoDelta) deltas'

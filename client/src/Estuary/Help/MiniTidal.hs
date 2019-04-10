@@ -171,8 +171,8 @@ miniTidalHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about foreground-color small-font" $ text  "MiniTidal reference"
-  divClass "about foreground-color small-font" $ text  "A live coding langugae that allows you to make musical patterns with text, describing sequences and ways of transforming and combining them, exploring complex interactions between simple parts."
+  divClass "about primary-color code-font" $ text  "MiniTidal reference"
+  divClass "about primary-color code-font" $ text  "A live coding langugae that allows you to make musical patterns with text, describing sequences and ways of transforming and combining them, exploring complex interactions between simple parts."
 
 exampleText :: Text -> Text
 
@@ -497,6 +497,6 @@ functionRef x = divClass "helpWrapper" $ do
    switchToReference <- divClass "" $ button x
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText foreground-color small-font" $ text (exampleText x)
-   hideableWidget referenceVisible "referenceText" $ text (referenceText x)
+   hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)
+   hideableWidget referenceVisible "referenceText code-font" $ text (referenceText x)
    return ()

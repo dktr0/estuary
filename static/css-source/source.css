@@ -21,44 +21,25 @@ body {
 }
 
 
-/* styles the body, input background-color */
 body, input, .background-color {
 	background-color: var(--background-color);
-	background-image: var(--background-gradient);
 	}
 
 /* styles the body, input, button foreground color */
-body, input, button, .foreground-color {
-	 color: var( --foreground-color);
-     border-radius: var(--border-radius);
-	 border:var( --foreground-border);
+body, input, button, .primary-color {
+	 color: var( --primary-color);
+     border-radius: 5px;
+	 border:1pt solid var( --primary-color);
 }
+
 
 /* sets the button color */
-button, .transient-color {
-	 background-color: var(--transient-color);
-     border-radius: var(--border-radius);
-	 border: var(--transient-border);
+button {
+	 background-color: var(--secondary-color);
+     border-radius: 5px;
+	 border: var(--secondary-color);
 }
 
-
-/*styles the code font*/
-button, .code-font {
-	  font-family: var(--font);
-	  font-size:var(--code-font);
-}
-
-/*styles the fonts for the header and terminal/chat*/
-select, .big-font {
-	font-family: var(--font);
-	font-size: var(--big-font);
-}
-
-/* styles the information font (e.g. peak) */
-.small-font {
-	font-family: var(--font);
-	font-size:var(--small-font);
-}
 
 /*styles the canvas and svg display */
 .canvas-or-svg-display {
@@ -70,8 +51,6 @@ select, .big-font {
 	pointer-events: none;
 }
 
-
-input {border: none}
 
 /* modifies the help view (source)*/
 .languageHelp {
@@ -467,6 +446,11 @@ ______________________________
 
 }
 
+.sequencer-textarea {
+    border-radius: 5px;
+    border:1pt solid var( --secondary-color);
+    }
+
 .sequencer-textarea input {
 	width: 90%;
 	left:5%;
@@ -475,26 +459,31 @@ ______________________________
 	position: relative;
 	box-sizing: border-box;
 	top:5%;
-	border-radius: 5px;
-	text-align: center;
+    text-align: center;
+    border: none;
 }
 
 .sequencerButton{
+	border-radius: 5px;
+	border: 1pt solid var( --secondary-color);
 	flex-grow: 1;
 	width:20px;
 }
 
 /* sets the color for the pads when hovering on */
 .sequencerButton:hover {
+	border-radius: 5px;
 	background-color: var(--secondary-color);
 }
 
-.sequencerButton-activated {background-color: var(--foreground-color)}
+.sequencerButton-activated {
+    border-radius: 5px;
+	background-color: var(--primary-color)}
 
 /* sets the color for the active pads when hovering on */
 .sequencerButton-activated:hover{
-	border-radius: var(--border-radius);
-	background-color: var( --foreground-color);
+	border-radius:  5px;
+	background-color: var( --primary-color);
 }
 
 /*
@@ -711,13 +700,10 @@ table, tr, td {border: none;}
 							help files
 --------------------------------------------------------------------
 */
-.helpWrapper {
-	display:flex;
-	font-size: 90%;
-}
+.helpWrapper {display:flex;}
 
 .about {
-		border:none;
+	border:none;
 	text-align: center;
 	margin-bottom: 1%;
 }
@@ -726,7 +712,6 @@ table, tr, td {border: none;}
 	border:none;
 	padding: 0.125em;
 	width: 100%;
-	font-size: 90%;
 	border-radius: 5px;
     box-shadow: 0px 0.25px 4px 0.025px grey;
     margin-bottom: auto;
@@ -734,5 +719,5 @@ table, tr, td {border: none;}
 
 .listenButton button {
 	margin-left: 20%;
-	font-size:  95%;
 }
+sequen

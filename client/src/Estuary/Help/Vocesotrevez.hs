@@ -24,8 +24,8 @@ vocesotrevezHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
- divClass "about foreground-color small-font" $ text "Vocesotrevez"
- divClass "about foreground-color small-font" $ text "A mini live coding esolang developed in Quito, Ecuador."
+ divClass "about primary-color code-font" $ text "Vocesotrevez"
+ divClass "about primary-color code-font" $ text "A mini live coding esolang developed in Quito, Ecuador."
 
 exampleText :: Text -> Text
 
@@ -53,6 +53,6 @@ functionRef x = divClass "helpWrapper" $ do
  switchToReference <- divClass "" $ button x
  exampleVisible <- toggle True switchToReference
  referenceVisible <- toggle False switchToReference
- hideableWidget exampleVisible "exampleText foreground-color small-font" $ text (exampleText x)
- hideableWidget referenceVisible "referenceText" $ text (referenceText x)
+ hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)
+ hideableWidget referenceVisible "referenceText code-font" $ text (referenceText x)
  return ()

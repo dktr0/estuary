@@ -39,8 +39,8 @@ punctualAudioHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about foreground-color small-font" $ text "PunctualAudio reference"
-  divClass "about foreground-color small-font" $ text "Punctual is a language for live coding audio and visuals. It allows you to build and change networks of signal processors (oscillators, filters, etc) on the fly. Punctual was created by David Ogborn, building on top of the MusicW synthesis library (by David Ogborn, Spencer Park, Jamie Beverley, and others). Conceptually, Punctual extends the work of Julian Rohrhuber and others on SuperCollider's JITlib notations."
+  divClass "about primary-color code-font" $ text "PunctualAudio reference"
+  divClass "about primary-color code-font" $ text "Punctual is a language for live coding audio and visuals. It allows you to build and change networks of signal processors (oscillators, filters, etc) on the fly. Punctual was created by David Ogborn, building on top of the MusicW synthesis library (by David Ogborn, Spencer Park, Jamie Beverley, and others). Conceptually, Punctual extends the work of Julian Rohrhuber and others on SuperCollider's JITlib notations."
 
 exampleText :: Text -> Text
 
@@ -98,6 +98,6 @@ functionRef x = divClass "helpWrapper" $ do
    switchToReference <- divClass "" $ button x
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText foreground-color small-font" $ text (exampleText x)
-   hideableWidget referenceVisible "referenceText" $ text (referenceText x)
+   hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)
+   hideableWidget referenceVisible "referenceText code-font" $ text (referenceText x)
    return ()

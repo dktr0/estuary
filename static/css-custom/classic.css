@@ -2,33 +2,28 @@
 /* sets the background color */
   --background-color: black;
 
-/*set the color of all text and borders*/
-  --foreground-color: rgb(98, 221, 115);
+/* set the color of all text and typically some borders*/
+  --primary-color: rgb(98, 221, 115);
 
-/*sets the primary borders */
-  --foreground-border: 1pt solid rgb(98, 221, 115);
-
-/* sets the color of the sequencer buttons when hovering over  */
+/* sets the background color of buttons and other borders */
   --secondary-color: hsl(0,0%,20%);
 
-/*sets the button background color*/
-  --transient-color: transparent;
-
-/* sets the fainted border color   */
-  --transient-border: 1pt solid  hsl(0,0%,20%);
-
-/*sets the border radius  */
-  --border-radius: 5px;
-
-/*sets the primary font family */
-  --font: 'Helvetica';
-
-/*sets the code font size  */
-  --code-font: 0.85em;
-
-/* sets the header font size */
-  --big-font: 1em;
-
-/* sets the information text size  */
-  --small-font: 0.65em;
+/* sets the color of things that appear temporarily */
+  --transient-color: orange;
 }
+
+
+/*styles the code font*/
+button, .code-font {
+	  font-family: 'Helvetica';
+	  font-size:0.80em;
+	  }
+
+/* styles the fonts for the header, menus and labels */
+select, .ui-font {
+	font-family: 'Helvetica';
+	font-size: 1em;
+	}
+
+
+/* classes for borders that have variable */
