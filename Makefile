@@ -2,8 +2,8 @@
 # otherwise falling back to a plain 'cp'.
 RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
 ifdef RSYNC_EXISTS
-CP=rsync --update --perms --executability
-CP_RECURSIVE=rsync --recursive --update --perms --executability
+CP=rsync  --perms --executability
+CP_RECURSIVE=rsync --recursive --perms --executability
 else
 CP=cp
 CP_RECURSIVE=cp -rf
@@ -130,11 +130,15 @@ curlReleaseClient: # this uses curl to download and unzip a recent pre-built cli
 	cp -Rf static/samples Estuary.jsexe
 
 downloadDirtSamples:
-	cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
-	find static/Dirt-Samples/* -type d -links 1 -exec $(CP_RECURSIVE) "{}" "static/samples/" \;
+	-cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
+	-mkdir static/samples
+	cd static/Dirt-Samples && cp -Rf * ../samples/
+	# find static/Dirt-Samples/* -type d -links 1 -exec $(CP_RECURSIVE) "{}" "static/samples/" \;
 	rm -rf static/Dirt-Samples/
 
 makeSampleMap:
+	@if [ -d static/samples ]; then echo "Making sample map..."; else (echo Directory static/samples does not exist. Have you provided a sample library, for example, by running 'make downloadDirtSamples'? && exit 1); fi
+	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - you probably have forgotten to 'git submodule update --init --recursive'" && exit 1) 
 	cd static/samples && bash ../WebDirt/makeSampleMap.sh . > sampleMap.json
 
 clean: cleanStage cleanDevStage
