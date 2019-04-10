@@ -56,10 +56,9 @@ with pkgs.haskell.lib;
       # a hacky way of avoiding building unnecessary dependencies with GHCJS
       # (our system is currently building GHC dependencies even for the front-end...
       # ...this gets around that to allow a build on OS X
-      # ... in progress - to continue: seems to work for the client build but then breaks the server build**
       disableServerDependenciesOnGhcjs = self: super:
         pkgs.lib.genAttrs [
-            "foundation" "memory" "wai-app-static" "asn1-types" 
+            "foundation" "memory" "wai-app-static" "asn1-types"
             "asn1-encoding" "asn1-parse" "sqlite-simple" "cryptonite"
             "http-client" "pem" "x509" "connection" "tls" "http-client-tls"
             "hpack"
@@ -92,8 +91,8 @@ with pkgs.haskell.lib;
           '';
           # based on fix from https://github.com/NixOS/nixpkgs/issues/26140
           preFixup = (drv.preFixup or "") + (
-            if !pkgs.stdenv.isLinux 
-            then "" 
+            if !pkgs.stdenv.isLinux
+            then ""
             else ''
               NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
               patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
