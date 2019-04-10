@@ -1,13 +1,13 @@
 # If 'rsync' installed, use it to perform copies which only update if newer
 # otherwise falling back to a plain 'cp'.
 RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
-ifdef RSYNC_EXISTS
-CP=rsync  --perms --executability
-CP_RECURSIVE=rsync --recursive --perms --executability
-else
+#ifdef RSYNC_EXISTS
+#CP=rsync  --perms --executability
+#CP_RECURSIVE=rsync --recursive --perms --executability
+#else
 CP=cp
 CP_RECURSIVE=cp -rf
-endif
+#endif
 
 assertInNixShell:
 ifndef IN_NIX_SHELL
@@ -25,18 +25,21 @@ ifndef NIX_GHC
 endif
 
 cabalBuildClient: assertInNixGhcjsShell
-	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all
+	cd client && hpack --force
+	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation
 
 nixShellBuildClient:
 	nix-shell -A shells.ghcjs --run "make cabalBuildClient"
 
 cabalBuildServer: assertInNixGhcShell
-	cabal new-build all
+	cd common && hpack --force
+	cd server && hpack --force
+	cabal new-build all --disable-library-profiling --disable-documentation
 
 nixShellBuildServer:
 	nix-shell -A shells.ghc --run "make cabalBuildServer"
 
-nixBuild:
+nixBuild: assertInNixShell
 	nix-build
 
 PROD_STAGING_ROOT=staging/
@@ -72,17 +75,18 @@ GCC_PREPROCESSOR=gcc -E -x c -P -C -nostdinc
 TEMPLATE_SOURCE=static/index.html.template
 
 GET_CABAL_CLIENT_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('client/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
-GET_GHCJS_VERISON=ghcjs --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
-CABAL_CLIENT_BIN_DIR=dist-ghcjs/build/${system}/ghcjs-${GHCJS_VERSION}/${CABAL_CLIENT_PACKAGE_NAME}/x/Estuary/build/Estuary/Estuary.jsexe/
+GET_GHCJS_VERSION=ghcjs --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
+CABAL_CLIENT_BIN_DIR=dist-ghcjs/build/x86_64-linux/ghcjs-${GHCJS_VERSION}/${CABAL_CLIENT_PACKAGE_NAME}/x/Estuary/build/Estuary/Estuary.jsexe/
 cabalStageClient: assertInNixGhcjsShell
 	$(eval export CABAL_CLIENT_PACKAGE_NAME=$(shell $(GET_CABAL_CLIENT_PACKAGE_NAME)))
-	$(eval export GHCJS_VERSION=$(shell $(GET_GHCJS_VERISON)))
+	$(eval export GHCJS_VERSION=$(shell $(GET_GHCJS_VERSION)))
 	# compile the index.html template in development mode and stage it
+	-mkdir $(DEV_STAGING_ROOT)Estuary.jsexe
 	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -o $(DEV_STAGING_ROOT)/Estuary.jsexe/index.html
 	# stage the client js
 	for part in lib out rts runmain ; do \
 		$(CP) $(CABAL_CLIENT_BIN_DIR)/$$part.js $(DEV_STAGING_ROOT)/Estuary.jsexe/ ; \
-		chmod a+w $(DEV_STAGING_ROOT)/Estuary.jsexe/$$part.js ; \
+		chmod a+w $(DEV_STAGING_ROOT)Estuary.jsexe/$$part.js ; \
 	done
 
 nixShellStageClient:
@@ -130,16 +134,19 @@ curlReleaseClient: # this uses curl to download and unzip a recent pre-built cli
 	cp -Rf static/samples Estuary.jsexe
 
 downloadDirtSamples:
+	echo "Downloading Dirt samples..."
 	-cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
 	-mkdir static/samples
 	cd static/Dirt-Samples && cp -Rf * ../samples/
 	# find static/Dirt-Samples/* -type d -links 1 -exec $(CP_RECURSIVE) "{}" "static/samples/" \;
 	rm -rf static/Dirt-Samples/
+	@if [ -d static/samples/bd ]; then echo "Dirt samples downloaded."; else (echo "Error: Can't find static/samples/bd - make downloadDirtSamples did NOT work!" && exit 1); fi
 
 makeSampleMap:
 	@if [ -d static/samples ]; then echo "Making sample map..."; else (echo Directory static/samples does not exist. Have you provided a sample library, for example, by running 'make downloadDirtSamples'? && exit 1); fi
-	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - you probably have forgotten to 'git submodule update --init --recursive'" && exit 1) 
+	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - you probably have forgotten to 'git submodule update --init --recursive'" && exit 1)
 	cd static/samples && bash ../WebDirt/makeSampleMap.sh . > sampleMap.json
+	@if [ -f static/samples/sampleMap.json ]; then echo "sampleMap.json created."; else (echo "Error: make makeSampleMap did NOT work!" && exit 1); fi
 
 clean: cleanStage cleanDevStage
 	-rm -rf result/
