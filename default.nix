@@ -53,6 +53,17 @@ with pkgs.haskell.lib;
             "Glob" "mockery" "silently" "unliftio" "conduit"
             "yaml" "hpack"
           ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else dontCheck) super.${name});
+      # a hacky way of avoiding building unnecessary dependencies with GHCJS
+      # (our system is currently building GHC dependencies even for the front-end...
+      # ...this gets around that to allow a build on OS X
+      # ... in progress - to continue: seems to work for the client build but then breaks the server build**
+      disableServerDependenciesOnGhcjs = self: super:
+        pkgs.lib.genAttrs [
+            "foundation" "memory" "wai-app-static" "asn1-types" 
+            "asn1-encoding" "asn1-parse" "sqlite-simple" "cryptonite"
+            "http-client" "pem" "x509" "connection" "tls" "http-client-tls"
+            "hpack"
+          ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
         estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe"]) (drv: {
@@ -79,6 +90,15 @@ with pkgs.haskell.lib;
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
+          # based on fix from https://github.com/NixOS/nixpkgs/issues/26140
+          preFixup = (drv.preFixup or "") + (
+            if !pkgs.stdenv.isLinux 
+            then "" 
+            else ''
+              NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
+              patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
+            ''
+          );
         });
 
         webdirt = import ./deps/webdirt self;
@@ -93,32 +113,14 @@ with pkgs.haskell.lib;
         tidal = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (import ./deps/tidal self);
 
-        wai-websockets = dontCheck pkgs.haskellPackages.wai-websockets; # apparently necessary on OS X
-
-        # a hacky way of avoiding building unnecessary dependencies with GHCJS
-        # (our system is currently building GHC dependencies even for the front-end...
-        # ...this gets around that to allow a build on OS X
-        # ... in progress - to continue: seems to work for the client build but then breaks the server build**
-        foundation = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.foundation;
-        memory = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.memory;
-        wai-app-static = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.wai-app-static;
-        asn1-types = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.asn1-types;
-        asn1-encoding = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.asn1-encoding;
-        asn1-parse = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.asn1-parse;
-        sqlite-simple = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.sqlite-simple;
-        cryptonite = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.cryptonite;
-        http-client = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.http-client;
-        pem = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.pem;
-        x509 = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.x509;
-        connection = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.connection;
-        tls = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.tls;
-        http-client-tls = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.http-client-tls;
-        hpack = if (self.ghc.isGhcjs or false) then null else pkgs.haskellPackages.hpack;
+        wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
         # It is a nix package, but use cabal2nix anyways. The nix one
         # has a bad base constraint.
         reflex-dom-contrib = import ./deps/reflex-dom-contrib self;
       };
     in
-      pkgs.lib.composeExtensions skipBrokenGhcjsTests manualOverrides;
+      pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [
+        skipBrokenGhcjsTests disableServerDependenciesOnGhcjs manualOverrides
+      ];
 })
