@@ -25,15 +25,16 @@ dependencies:
 - sqlite-simple
 - mtl
 
-library:
-  source-dirs:
-    - ./src
+#library:
+#  source-dirs:
+#    - ./src
 
 executables:
   EstuaryServer:
     main: Main.hs
     source-dirs:
       - ./app
-    dependencies:
-      - estuary-server
+      - ./src
+#    dependencies:
+#      - estuary-server
     ghc-options: -threaded

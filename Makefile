@@ -152,3 +152,4 @@ runDevServer: stageStaticAssets cabalBuildServer
 
 runServer: nixBuild stageStaticAssets stageSamples nixStageClient nixStageServer
 	cd ./$(STAGING_ROOT) && ./EstuaryServer
+
