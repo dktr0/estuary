@@ -87,8 +87,15 @@ The `bundleClient` target will create an `estuary-client.zip` with the productio
 ### Creating a full local deployment
 
 ```shell
-$ make downloadDirtSamples makeSampleMap
-$ make cleanStage stageStaticAssets stageSamples nixBuild nixStageClient nixStageServer
+$ git submodule update --init --recursive
+$ make downloadDirtSamples 
+$ make makeSampleMap
+$ make nixBuild
+$ make cleanStage
+$ make stageStaticAssets
+$ make stageSamples
+$ make nixStageClient
+$ make nixStageServer
 ```
 
 Running `make downloadDirtSamples makeSampleMap` only needs to be run once to use the dirt samples in the deployment.
