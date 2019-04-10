@@ -1,15 +1,15 @@
-{ reflexPlatformVersion ? "a229a74ebb9bac69327f33a4416986d614eda7ea" }:
+{ reflexPlatformVersion ? "7e002c573a3d7d3224eb2154ae55fc898e67d211" }:
 
 let reflex-platform = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${reflexPlatformVersion}.tar.gz";
 in
 
-(import reflex-platform {}).project ({ pkgs, ghc8_4, hackGet, ... }: 
+(import reflex-platform {}).project ({ pkgs, ghc8_4, hackGet, ... }:
 with pkgs.haskell.lib;
 {
   name = "Estuary";
 
-  packages = 
-    let filter = name: type: 
+  packages =
+    let filter = name: type:
       pkgs.lib.cleanSourceFilter name type && (
         let baseName = baseNameOf (toString name);
         in !(
@@ -43,16 +43,27 @@ with pkgs.haskell.lib;
     };
   };
 
-  overrides = 
-    let 
-      skipBrokenGhcjsTests = self: super: 
-        # generate an attribute set of 
+  overrides =
+    let
+      skipBrokenGhcjsTests = self: super:
+        # generate an attribute set of
         #   {${name} = pkgs.haskell.lib.dontCheck (super.${name})}
         # if using ghcjs.
         pkgs.lib.genAttrs [
-            "Glob" "mockery" "silently" "unliftio" "conduit" 
+            "Glob" "mockery" "silently" "unliftio" "conduit"
             "yaml" "hpack"
           ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else dontCheck) super.${name});
+      # a hacky way of avoiding building unnecessary dependencies with GHCJS
+      # (our system is currently building GHC dependencies even for the front-end...
+      # ...this gets around that to allow a build on OS X
+      # ... in progress - to continue: seems to work for the client build but then breaks the server build**
+      disableServerDependenciesOnGhcjs = self: super:
+        pkgs.lib.genAttrs [
+            "foundation" "memory" "wai-app-static" "asn1-types" 
+            "asn1-encoding" "asn1-parse" "sqlite-simple" "cryptonite"
+            "http-client" "pem" "x509" "connection" "tls" "http-client-tls"
+            "hpack"
+          ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
         estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe"]) (drv: {
@@ -69,16 +80,25 @@ with pkgs.haskell.lib;
          '';
         });
 
-        estuary-common = overrideCabal super.estuary-common (drv: {
+        estuary-common = overrideCabal (appendConfigureFlags super.estuary-common ["--ghc-options=-dynamic" "--ghc-options=-threaded"]) (drv: {
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
         });
 
-        estuary-server = overrideCabal super.estuary-server (drv: {
+        estuary-server = overrideCabal (appendConfigureFlags super.estuary-server ["--ghc-options=-dynamic" "--ghc-options=-threaded"]) (drv: {
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
+          # based on fix from https://github.com/NixOS/nixpkgs/issues/26140
+          preFixup = (drv.preFixup or "") + (
+            if !pkgs.stdenv.isLinux 
+            then "" 
+            else ''
+              NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
+              patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
+            ''
+          );
         });
 
         webdirt = import ./deps/webdirt self;
@@ -93,10 +113,14 @@ with pkgs.haskell.lib;
         tidal = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (import ./deps/tidal self);
 
-        # It is a nix package, but use cabal2nix anyways. The nix one 
+        wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
+
+        # It is a nix package, but use cabal2nix anyways. The nix one
         # has a bad base constraint.
         reflex-dom-contrib = import ./deps/reflex-dom-contrib self;
       };
     in
-      pkgs.lib.composeExtensions skipBrokenGhcjsTests manualOverrides;
+      pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [
+        skipBrokenGhcjsTests disableServerDependenciesOnGhcjs manualOverrides
+      ];
 })
