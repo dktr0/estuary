@@ -139,7 +139,7 @@ bundleClient: cleanStage stageStaticAssets nixStageClient
 
 curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
 	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/dktr0/estuary/releases/download/20190405/estuary-client-20190405.zip
+	curl -o temp.zip -L https://github.com/dktr0/estuary/releases/download/20190412/estuary-client-20190412.zip
 	unzip temp.zip
 	rm -rf temp.zip
 	cp -Rf static/samples Estuary.jsexe
