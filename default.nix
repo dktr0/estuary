@@ -3,7 +3,7 @@
 let reflex-platform = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${reflexPlatformVersion}.tar.gz";
 in
 
-(import reflex-platform {}).project ({ pkgs, ghc8_4, hackGet, ... }:
+(import reflex-platform {}).project ({ pkgs, ghc8_4, ... }:
 with pkgs.haskell.lib;
 {
   name = "Estuary";
@@ -71,33 +71,33 @@ with pkgs.haskell.lib;
           '';
           postInstall = ''
             ${pkgs.closurecompiler}/bin/closure-compiler $out/bin/Estuary.jsexe/all.js \
-            --compilation_level=SIMPLE \
-            --js_output_file=$out/bin/all.min.js \
-            --externs=$out/bin/Estuary.jsexe/all.js.externs \
-            --jscomp_off=checkVars;
+              --compilation_level=SIMPLE \
+              --js_output_file=$out/bin/all.min.js \
+              --externs=$out/bin/Estuary.jsexe/all.js.externs \
+              --jscomp_off=checkVars;
             gzip -fk "$out/bin/all.min.js"
          '';
         });
 
-        estuary-common = overrideCabal (appendConfigureFlags super.estuary-common ["--ghc-options=-dynamic" "--ghc-options=-threaded"]) (drv: {
+        estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
         });
 
-        estuary-server = overrideCabal (appendConfigureFlags super.estuary-server ["--ghc-options=-dynamic" "--ghc-options=-threaded"]) (drv: {
+        estuary-server = overrideCabal super.estuary-server (drv: {
+          enableSharedExecutables = false;
+          enableSharedLibraries = false;
+          configureFlags = [
+            "--ghc-option=-optl=-pthread"
+            "--ghc-option=-optl=-static"
+            "--ghc-option=-optl=-L${pkgs.gmp6.override { withStatic = true; }}/lib"
+            "--ghc-option=-optl=-L${pkgs.zlib.static}/lib"
+            "--ghc-option=-optl=-L${pkgs.glibc.static}/lib"
+          ];
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
-          # based on fix from https://github.com/NixOS/nixpkgs/issues/26140
-          preFixup = (drv.preFixup or "") + (
-            if !pkgs.stdenv.isLinux
-            then ""
-            else ''
-              NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
-              patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
-            ''
-          );
         });
 
         webdirt = import ./deps/webdirt self;
