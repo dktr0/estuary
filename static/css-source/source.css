@@ -14,6 +14,34 @@
    src: url(../icons/estuary-icons.otf);
 }
 
+
+body {
+ 	height: 100%;
+	margin: 0;
+}
+
+
+body, input, .background-color {
+	background-color: var(--background-color);
+	}
+
+/* styles the body, input, button foreground color */
+body, input, button, .primary-color {
+	 color: var( --primary-color);
+     border-radius: 5px;
+	 border:1pt solid var( --primary-color);
+}
+
+
+/* sets the button color */
+button {
+	 background-color: var(--secondary-color);
+     border-radius: 5px;
+	 border: var(--secondary-color);
+}
+
+
+/*styles the canvas and svg display */
 .canvas-or-svg-display {
 	position: absolute;
 	width: 100%;
@@ -23,9 +51,9 @@
 	pointer-events: none;
 }
 
+
 /* modifies the help view (source)*/
 .languageHelp {
-  font-size: 70%;
   overflow:scroll;
   padding-right: 1.8em;
   height:100%;
@@ -40,8 +68,8 @@
 
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
-}
 
+}
 
 .btn {
 	cursor: pointer;
@@ -51,8 +79,9 @@
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
 	padding-left: 15px;
 	padding-right: 15px;
-	margin-top: 0.5em;
-  font-family: estuaryFont;
+   margin-bottom: 0.05em;
+	border: none;
+
 
   /* Force the browser to try it's best to float properly on overflow.
      When the window doesn't fit the entire header, this ensures that moving
@@ -61,7 +90,7 @@
   overflow: hidden;
 }
 
-select.header-dropdown-and-checkbox {
+.big-font select{
 	margin-left: 0.5em;
 	vertical-align: middle;
 	cursor: pointer;
@@ -70,7 +99,7 @@ select.header-dropdown-and-checkbox {
 /* source  */
 .peak{
   float: right;
-	font-size: 80%;
+  border:none;
 }
 
 /* source  */
@@ -322,12 +351,19 @@ select.header-dropdown-and-checkbox {
 .coding-textarea {
 	width: 100%;
 	height: 100%;
+  border: none;
 }
 
 /* contains the name-tag textarea */
 .labelWidgetDiv {
 	width: 100%;
 	display: inline-flex;
+}
+
+/* name-tag textarea */
+.name-tag-textarea {
+	flex:1;
+	border: none;
 }
 
 /*contains the "eval" button (should change name)  */
@@ -399,7 +435,7 @@ ______________________________
 	padding:2%;
 	flex-grow: 1;
 	height: 98%;
-	margin: 1%;
+	margin: auto;
 }
 
 .sequencerRow{
@@ -410,6 +446,11 @@ ______________________________
 
 }
 
+.sequencer-textarea {
+    border-radius: 5px;
+    border:1pt solid var( --secondary-color);
+    }
+
 .sequencer-textarea input {
 	width: 90%;
 	left:5%;
@@ -418,13 +459,31 @@ ______________________________
 	position: relative;
 	box-sizing: border-box;
 	top:5%;
-	border-radius: 5px;
-	text-align: center;
+    text-align: center;
+    border: none;
 }
 
 .sequencerButton{
+	border-radius: 5px;
+	border: 1pt solid var( --secondary-color);
 	flex-grow: 1;
 	width:20px;
+}
+
+/* sets the color for the pads when hovering on */
+.sequencerButton:hover {
+	border-radius: 5px;
+	background-color: var(--secondary-color);
+}
+
+.sequencerButton-activated {
+    border-radius: 5px;
+	background-color: var(--primary-color)}
+
+/* sets the color for the active pads when hovering on */
+.sequencerButton-activated:hover{
+	border-radius:  5px;
+	background-color: var( --primary-color);
 }
 
 /*
@@ -591,19 +650,23 @@ table, tr, td {border: none;}
 	width: 60%;
 	display: flex;
 	flex-direction: row;
-	font-family: estuaryFont;
-	font-size: 75%;
+	border:none;
 }
 
 .terminalInput {
 	flex-grow: 1;
+	border:none;
+
+}
+
+.terminalInput input {
+	border:none;
 }
 
 .ensembleHeader {
 	display: flex;
 	flex-direction: row;
-	font-family: estuaryFont;
-	font-size: 90%;
+    border:none
 }
 
 .ensembleName {
@@ -624,9 +687,7 @@ table, tr, td {border: none;}
 }
 
 .ensembleTempo textarea{
-	font-family: estuaryFont;
-	font-size: 75%;
-  margin-right: 1em;
+    margin-right: 1em;
 	position: relative;
 	top: 0.25em;
 	border: none;
@@ -639,38 +700,24 @@ table, tr, td {border: none;}
 							help files
 --------------------------------------------------------------------
 */
-.helpWrapper {
-	display:flex;
-	font-size: 90%;
-}
-
-.reference-button button {
-	width:100%;
-	min-width: 80px;
-  font-size: 100%;
-	margin-bottom: 7%;
-}
-
-.reference-button button:hover {
-	cursor: help;
-}
+.helpWrapper {display:flex;}
 
 .about {
+	border:none;
 	text-align: center;
 	margin-bottom: 1%;
-	font-size: 90%;
 }
 
-.exampleText {
+.exampleText, .referenceText {
+	border:none;
 	padding: 0.125em;
-	  width: 100%;
-	  font-size: 90%;
-	  border-radius: 5px;
+	width: 100%;
+	border-radius: 5px;
     box-shadow: 0px 0.25px 4px 0.025px grey;
     margin-bottom: auto;
 }
 
 .listenButton button {
 	margin-left: 20%;
-	font-size:  95%;
 }
+sequen

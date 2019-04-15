@@ -18,5 +18,5 @@ togoHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
- divClass "about" $ text "Togo"
- divClass "about" $ text "A mini live coding esolang developed in Hamilton, Canada by David Ogborn and others."
+ divClass "about primary-color code-font" $ text "Togo"
+ divClass "about primary-color code-font" $ text "A mini live coding esolang developed in Hamilton, Canada by David Ogborn and others."

@@ -57,7 +57,7 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
 
   -- Ensemble name and password UI (created only if ensemble is not "")
-  (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader" $ do
+  (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader primary-color ui-font" $ do
     divClass "ensembleName" $ text $ "Ensemble: " `T.append` T.pack ensemble
     hdl' <- divClass "ensembleHandle" $ do
       text "Name:"

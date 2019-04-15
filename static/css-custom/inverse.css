@@ -1,105 +1,38 @@
-body {
-	font-family: 'Helvetica';
-	background-color: rgb(98, 221, 115);
-	color: black;
-	height: 100%;
-	margin: 0;
-}
+:root {
+/* sets the background color */
+  --background-color: rgb(98, 221, 115);
 
-/*styles the code text*/
-.code-text {
-	  font-family: 'Helvetica';
-		color: black;
-		font-size: 100%;
-}
+/*set the color of all text and borders*/
+  --foreground-color: black;
 
-/*styles the chat/terminal and the coding-language dropdown menus*/
-.other-text {
-	font-family: 'Helvetica';
-	color: black;
-	font-size: 100%;
-}
-
-/*styles all Estuary buttons */
-button {
-	background-color: hsla(0, 0%, 20%, 0.91);
-	color: rgb(98, 221, 115);;
-	border: none;
-	border-radius: 4px;
-}
+/* sets a background color gradient */
+  --background-gradient:  linear-gradient(to bottom right, rgb(98, 221, 115), rgb(98, 205, 115));
 
 
-.reference-button button {
-	background-color: transparent;
-	color: black;
-}
+/*sets the primary borders */
+  --foreground-border: 1pt solid;
 
-/*styles the header dropdown menus and checkboxes*/
-.header-dropdown-and-checkbox  {
-	cursor: pointer;
-	background-color: rgb(98, 221, 115);
-	color: black;
-	border: 1px solid black;
-}
+/* sets the color of the sequencer buttons when hovering over  */
+  --secondary-color: hsl(0,0%,20%);
 
+/*sets the button background color*/
+  --transient-color: transparent;
 
-/* name-tag textarea */
-.name-tag-textarea {
-	background-color: transparent;
-	flex:1;
-	border: none;
-}
+/* sets the fainted border color   */
+  --transient-border: 1pt solid  ;
 
-/*styles the coding language dropdown menu*/
-.coding-language-dropdown {
-	cursor: pointer;
-	background-color: rgb(98, 221, 115);
-	color: black;
-	border: 1px solid black;
-}
+/*sets the border radius  */
+  --border-radius: 5px;
 
-/* styles the coding textarea*/
-.coding-textarea {
-	background-color: transparent;
-	border: none;
-}
+/*sets the primary font family */
+  --font: 'Helvetica';
 
-/* styles the chat textarea*/
-.chat-textarea { /*modifies the terminal text area (source)*/
-	border: none;
-	background-color: transparent;
-}
+/*sets the code font size  */
+  --code-font: 0.85em;
 
-/* styles the sequencer textarea*/
-.sequencer-textarea input{
-	background-color: transparent;
-	border: 2pt solid grey;
-	border-radius: 5px;
-	color: black;
-}
+/* sets the header font size */
+  --big-font: 1em;
 
-/* styles the sequencer pads */
-.sequencer-pads {
-	border:1pt solid grey;
-	border-radius: 5px;
-}
-
-/* sets the color for the pads when hovering on */
-.sequencer-pads:hover {
-	background-color: hsl(0,0%,20%);
-}
-
-/* sets the color for the pads when activated */
-.sequencer-pads-activated{
-	border:1pt solid grey;
-	border-radius: 5px;
-	background-color: hsl(0,0%,20%);
-
-}
-
-/* sets the color for the active pads when hovering on */
-.sequencer-pads-activated:hover{
-	border:1pt solid grey;
-	border-radius: 5px;
-	background-color: black;
+/* sets the information text size  */
+  --small-font: 0.65em;
 }
