@@ -6,7 +6,7 @@ RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
 #CP_RECURSIVE=rsync --recursive --perms --executability
 #else
 CP=cp
-CP_RECURSIVE=cp -rf
+CP_RECURSIVE=cp -Rf
 #endif
 
 assertInNixShell:
@@ -64,11 +64,11 @@ cleanDevStage: cleanStage
 stageStaticAssets: prepStage
 	@ echo "stageStaticAssets:"
 	$(CP_RECURSIVE) static/*.js $(STAGING_ROOT)/Estuary.jsexe/
-	$(CP_RECURSIVE) static/WebDirt/ $(STAGING_ROOT)/Estuary.jsexe/WebDirt/
-	$(CP_RECURSIVE) static/css-custom/ $(STAGING_ROOT)/Estuary.jsexe/css-custom/
-	$(CP_RECURSIVE) static/css-source/ $(STAGING_ROOT)/Estuary.jsexe/css-source/
-	$(CP_RECURSIVE) static/fonts/ $(STAGING_ROOT)/Estuary.jsexe/fonts/
-	$(CP_RECURSIVE) static/icons/ $(STAGING_ROOT)/Estuary.jsexe/icons/
+	$(CP_RECURSIVE) static/WebDirt $(STAGING_ROOT)/Estuary.jsexe/WebDirt
+	$(CP_RECURSIVE) static/css-custom $(STAGING_ROOT)/Estuary.jsexe/css-custom
+	$(CP_RECURSIVE) static/css-source $(STAGING_ROOT)/Estuary.jsexe/css-source
+	$(CP_RECURSIVE) static/fonts $(STAGING_ROOT)/Estuary.jsexe/fonts
+	$(CP_RECURSIVE) static/icons $(STAGING_ROOT)/Estuary.jsexe/icons
 devStageStaticAssets: STAGING_ROOT=$(DEV_STAGING_ROOT)
 devStageStaticAssets: stageStaticAssets
 
