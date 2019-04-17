@@ -6,41 +6,45 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-
 :root {
 /* sets the background color */
-  --background-color: transparent;
+  --background-color: rgb(179, 255, 238);
 
-/* sets a background color gradient */
-  --background-gradient:  linear-gradient(to bottom right, rgb(179, 255, 238), rgb(182, 178, 247));
+/* set the color of all text and typically some borders*/
+  --primary-color: rgb(81, 76, 156);
 
-/*set the color of all text and borders*/
-  --foreground-color: rgb(81, 76, 156);
-
-/*sets the primary borders */
-  --foreground-border: 1pt solid white;
-
-/* sets the color of the sequencer buttons when hovering over  */
+/* sets the background color of buttons and other borders */
   --secondary-color: hsl(0,0%,20%);
 
-/*sets the button background color*/
-  --transient-color:  rgba(255, 255, 255, 0.32);;
-
-/* sets the fainted border color   */
-  --transient-border: 1pt solid rgb(81, 76, 156);
-
-/*sets the border radius  */
-  --border-radius: 5px;
-
-/*sets the primary font family */
-  --font: 'Montserrat';
-
-/*sets the code font size  */
-  --code-font: 0.85em;
-
-/* sets the header font size */
-  --big-font: 0.93em;
-
-/* sets the information text size  */
-  --small-font: 0.55em;
+/* sets the color of things that appear temporarily */
+  --transient-color: orange;
 }
+
+
+/*styles the code font*/
+.code-font {
+	  font-family: 'Montserrat';
+	  font-size:0.80em;
+	  }
+
+/* styles the fonts for the header, menus and labels */
+.ui-font {
+    font-family: 'Montserrat';
+	font-size: 1em;
+	}
+
+  /*styles the background */
+.background {
+    background-color: var(--background-color);
+	background-image: linear-gradient(to bottom right, rgb(179, 255, 238), rgb(182, 178, 247));
+	  }
+
+/* styles the user interface-buttons */
+.ui-buttons {
+  color:white;
+  background-color:var(--primary-color);
+  border-radius: 5px;
+  border: none;
+}
+
+/* classes for borders that have variable */

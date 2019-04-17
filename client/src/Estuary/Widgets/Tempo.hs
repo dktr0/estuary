@@ -17,6 +17,9 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Widgets.Text
 import Estuary.Render.AudioContext
 import Estuary.Utility (lastOrNothing)
+import Estuary.Reflex.Utility
+import qualified Estuary.Types.Term as Term
+import Estuary.Types.Language
 
 tempoWidget :: MonadWidget t m => Dynamic t Context -> Event t [EnsembleResponse]
   -> m (Event t Tempo,Event t Tempo) -- (all tempo changes, just tempo edits)
@@ -26,7 +29,7 @@ tempoWidget ctx deltas = divClass "ensembleTempo ui-font primary-color" $ mdo
   tempoDelta <- performEvent $ fmap (liftIO . adjustTempoDelta) deltas'
   let initialText = show (cps iTempo)
   (tValue,_,tEval) <- textAreaWidgetForPatternChain 1 initialText $ fmap (show . cps) tempoDelta
-  b <- button "set new tempo" -- *** needs to be localized
+  b <-dynButton =<< translateDyn Term.NewTempo ctx
   let cpsEvent = fmapMaybe (readMaybe :: String -> Maybe Double) $ tagDyn tValue $ leftmost [b,tEval]
   tempoEdit <- performEvent $ fmap liftIO $ attachDynWith adjustTempoEdit currentTempo cpsEvent
   currentTempo <- holdDyn iTempo $ leftmost [tempoDelta,tempoEdit]

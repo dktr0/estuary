@@ -22,7 +22,9 @@ data Term =
   Theme |
   Load |
   Peak |
-  About
+  About|
+  NewTempo|
+  Eval
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -72,7 +74,7 @@ translate TerminalChat English = "Terminal/Chat:"
 translate TerminalChat Español = "Terminal/Chat:"
 
 translate Send English = "Send"
-translate Send Español = "enviar"
+translate Send Español = "Enviar"
 
 translate Theme English = "Theme"
 translate Theme Español = "Tema"
@@ -82,5 +84,12 @@ translate Load Español = "carga"
 
 translate Peak English = "peak"
 translate Peak Español = "tope"
+
+translate NewTempo English = "Set new tempo"
+translate NewTempo Español = "Establecer Nuevo tempo"
+
+translate Eval English = "Eval"
+translate Eval Español = "Eval"
+
 
 translate x _ = pack $ "?" ++ show x

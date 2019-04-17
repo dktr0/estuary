@@ -1,38 +1,40 @@
 :root {
 /* sets the background color */
-  --background-color: rgb(98, 221, 115);
+  --background-color: rgb(98, 221, 115);;
 
-/*set the color of all text and borders*/
-  --foreground-color: black;
+/* set the color of all text and typically some borders*/
+  --primary-color: black;
 
-/* sets a background color gradient */
-  --background-gradient:  linear-gradient(to bottom right, rgb(98, 221, 115), rgb(98, 205, 115));
+/* sets the background color of buttons and other borders */
+  --secondary-color: hsl(0,0%,40%);
+
+/* sets the color of things that appear temporarily */
+  --transient-color: orange;
+}
 
 
-/*sets the primary borders */
-  --foreground-border: 1pt solid;
+/*styles the code font*/
+.code-font {
+	  font-family: 'Helvetica';
+	  font-size:0.80em;
+	  }
 
-/* sets the color of the sequencer buttons when hovering over  */
-  --secondary-color: hsl(0,0%,20%);
+/* styles the fonts for the header, menus and labels */
+.ui-font {
+	font-family: 'Helvetica';
+	font-size: 1em;
+	}
 
-/*sets the button background color*/
-  --transient-color: transparent;
+  /*styles the background */
+.background {
+    background-color: var(--background-color);
+	background-image:  linear-gradient(to bottom right, rgb(98, 221, 115), rgb(98, 205, 115));
+	  }
 
-/* sets the fainted border color   */
-  --transient-border: 1pt solid  ;
-
-/*sets the border radius  */
-  --border-radius: 5px;
-
-/*sets the primary font family */
-  --font: 'Helvetica';
-
-/*sets the code font size  */
-  --code-font: 0.85em;
-
-/* sets the header font size */
-  --big-font: 1em;
-
-/* sets the information text size  */
-  --small-font: 0.65em;
+/* styles the user-interface buttons */
+.ui-buttons {
+  color:var(--background-color);
+  background-color:var(--secondary-color);
+  border-radius: 5px;
+  border: none;
 }

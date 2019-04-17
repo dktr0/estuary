@@ -14,16 +14,28 @@
 
 
 /*styles the code font*/
-button, .code-font {
+.code-font {
 	  font-family: 'Helvetica';
 	  font-size:0.80em;
 	  }
 
 /* styles the fonts for the header, menus and labels */
-select, .ui-font {
+.ui-font {
 	font-family: 'Helvetica';
 	font-size: 1em;
 	}
 
+/* styles the user-inteface buttons */
+.ui-buttons {
+  color:var(--primary-color);
+  background-color:var(--secondary-color);
+  border-radius: 5px;
+  border: none;
+}
+
+/*styles the background */
+.background {
+    background-color: var(--background-color);
+	  }
 
 /* classes for borders that have variable */

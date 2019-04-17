@@ -18,26 +18,15 @@
 body {
  	height: 100%;
 	margin: 0;
+	background-color: var(--background-color);
 }
 
 
-body, input, .background-color {
-	background-color: var(--background-color);
-	}
-
-/* styles the body, input, button foreground color */
-body, input, button, .primary-color {
+/* styles the body, input, foreground color */
+body, input, .primary-color {
 	 color: var( --primary-color);
      border-radius: 5px;
 	 border:1pt solid var( --primary-color);
-}
-
-
-/* sets the button color */
-button {
-	 background-color: var(--secondary-color);
-     border-radius: 5px;
-	 border: var(--secondary-color);
 }
 
 
@@ -146,6 +135,7 @@ button {
 	padding-left: 15px;
 	padding-right: 15px;
 	margin-bottom:0.25em;
+
 }
 
 .footer {
@@ -720,4 +710,3 @@ table, tr, td {border: none;}
 .listenButton button {
 	margin-left: 20%;
 }
-sequen
