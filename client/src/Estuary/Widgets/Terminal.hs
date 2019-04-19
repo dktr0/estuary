@@ -14,6 +14,7 @@ import Data.Map (fromList)
 import qualified Data.Text as T
 
 import Estuary.Protocol.Foreign
+import Estuary.Protocol.Peer
 import Estuary.Types.Definition
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -50,10 +51,14 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
   let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) deltasDown'
-  let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs]
+  let streamIdMsgs = fmap (\x -> ["new Peer id: " ++ x]) streamId
+  let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs,streamIdMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
   mostRecent' <- mapDyn (fmap T.pack) mostRecent
   simpleList mostRecent' $ \v -> divClass "chatMessage" $ dynText v
+
+  startStreamingReflex ctx $ ffilter (== Terminal.StartStreaming) commands
+  streamId <- peerProtocolIdReflex ctx $ ffilter (== Terminal.StreamId) commands
 
   return commands
 
@@ -69,3 +74,13 @@ mostRecentEnsemble requests = do
   where
     f (JoinEnsemble x) = Just x
     f _ = Nothing
+
+startStreamingReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m ()
+startStreamingReflex ctx e = do
+  pp <- fmap peerProtocol $ (sample . current) ctx
+  performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
+
+peerProtocolIdReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m (Event t String)
+peerProtocolIdReflex ctx e = do
+  pp <- fmap peerProtocol $ (sample . current) ctx
+  performEvent $ fmap (liftIO . const (peerProtocolId pp)) e

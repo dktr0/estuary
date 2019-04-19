@@ -17,6 +17,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.CanvasState
 import Estuary.Render.AudioContext
 import Estuary.Render.DynamicsMode
+import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 
 data Context = Context {
@@ -37,11 +38,12 @@ data Context = Context {
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
   canvasState :: MVar CanvasState,
-  canvasElement :: Maybe HTMLCanvasElement
+  canvasElement :: Maybe HTMLCanvasElement,
+  peerProtocol :: JSVal
   }
 
-initialContext :: UTCTime -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> MVar CanvasState -> Context
-initialContext now mBus wd sd mv = Context {
+initialContext :: UTCTime -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> MVar CanvasState -> JSVal -> Context
+initialContext now mBus wd sd mv pp = Context {
   mainBus = mBus,
   dynamicsMode = DefaultDynamics,
   webDirt = wd,
@@ -59,7 +61,8 @@ initialContext now mBus wd sd mv = Context {
   serverLatency = 0,
   clientCount = 0,
   canvasState = mv,
-  canvasElement = Nothing
+  canvasElement = Nothing,
+  peerProtocol = pp
 }
 
 type ContextChange = Context -> Context
