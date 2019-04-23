@@ -1,3 +1,10 @@
+/*
+--------------------------------------------------------------------
+Welcome to the 'bubble' theme template: For quick Estuary's interface customization, modify the colors below.
+More advanced customization is available through CSS classes within this document.
+--------------------------------------------------------------------
+*/
+
 @font-face {
   font-family: 'Montserrat';
   font-style: normal;
@@ -14,11 +21,17 @@
   --primary-color: rgb(81, 76, 156);
 
 /* sets the background color of buttons and other borders */
-  --secondary-color: hsl(0,0%,20%);
+  --secondary-color: hsl(0,0%,100%);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
 }
+
+/*
+--------------------------------------------------------------------
+				advanced customization
+--------------------------------------------------------------------
+*/
 
   /*styles the background */
 .background {
@@ -54,5 +67,5 @@
 /*styles other borders (e.g. from the ui-buttons and sequencer)  */
 .other-borders {
     border-radius: 5px;
-    border: 1px solid var(--secondary-color);
+    border: 1px solid hsl(0,0%,40%);
     }

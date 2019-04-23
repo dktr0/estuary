@@ -166,7 +166,7 @@ joinButton x = do
   return $ (Collaborate . T.unpack) <$> tagDyn x b
 
 aboutEstuaryParagraph :: MonadWidget t m => Dynamic t Context -> m ()
-aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph" $ do
+aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph ui-font background" $ do
   dynText =<< translationList ctx [
     (English,"Estuary is a platform for collaboration and learning through live coding. It enables you to create sound, music, and visuals in a web browser. Key features include:"),
     (Español,"Estuary es una plataforma de colaboración y aprendizaje a través del la codificación en vivo (live coding). Estuary le permite crear sonidos, música y visuales en el explorador de internet. Algunas características importantes de esta plataforma son:")

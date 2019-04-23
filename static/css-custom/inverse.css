@@ -1,3 +1,10 @@
+/*
+--------------------------------------------------------------------
+Welcome to the 'inverse' theme template: For quick Estuary's interface customization, modify the colors below.
+More advanced customization is available through CSS classes within this document.
+--------------------------------------------------------------------
+*/
+
 :root {
 /* sets the background color */
   --background-color: rgb(98, 221, 115);
@@ -6,11 +13,17 @@
   --primary-color: black;
 
 /* sets the background color of buttons and other borders (like the sequencer's borders)*/
-  --secondary-color: #333333;
+  --secondary-color: hsl(0, 0%, 30%);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
 }
+
+/*
+--------------------------------------------------------------------
+				advanced customization
+--------------------------------------------------------------------
+*/
 
   /*styles the background */
 .background {

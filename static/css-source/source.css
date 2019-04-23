@@ -446,7 +446,6 @@ ______________________________
 
 .sequencerButton{
 	border-radius: 5px;
-	border: 1pt solid var( --secondary-color);
 	flex-grow: 1;
 	width:20px;
 }

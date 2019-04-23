@@ -1,3 +1,10 @@
+/*
+--------------------------------------------------------------------
+Welcome to the 'grayscale' theme template: For quick Estuary's interface customization, modify the colors below.
+More advanced customization is available through CSS classes within this document.
+--------------------------------------------------------------------
+*/
+
 :root {
 /* sets the background color */
   --background-color: lightgray;
@@ -6,12 +13,17 @@
   --primary-color: black;
 
 /* sets the background color of buttons and other borders */
-  --secondary-color: hsl(0,0%,0%);
+  --secondary-color: hsl(0,0%,50%);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
 }
 
+/*
+--------------------------------------------------------------------
+				advanced customization
+--------------------------------------------------------------------
+*/
 
   /*styles the background */
 .background {
@@ -45,5 +57,5 @@
 /*styles other borders (e.g. from ui buttons and sequencer buttons)  */
 .other-borders {
     border-radius: 5px;
-    border: 1px solid var(--secondary-color);
+    border: 1px solid var(--primary-color);
     }

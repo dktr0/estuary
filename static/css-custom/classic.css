@@ -1,3 +1,11 @@
+/*
+--------------------------------------------------------------------
+Welcome to the 'classic' theme template: For quick Estuary's interface customization, modify the colors below.
+More advanced customization is available through CSS classes within this document.
+--------------------------------------------------------------------
+*/
+
+
 :root {
 /* sets the background color */
   --background-color: black;
@@ -12,6 +20,12 @@
   --transient-color: orange;
 }
 
+/*
+--------------------------------------------------------------------
+				advanced customization
+--------------------------------------------------------------------
+*/
+
 /*styles the background */
 .background {
     background-color: var(--background-color);
@@ -23,7 +37,7 @@
 	  font-size: 1em;
 	  }
 
-/* styles the fonts for the header, menus and labels */
+/* styles other fonts (e.g. the header, menus and labels) */
 .ui-font {
 	font-family: 'Helvetica';
 	font-size: 1em;
