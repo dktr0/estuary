@@ -6,6 +6,8 @@ import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility
+
 
 -- import Estuary.Types.Language
 
@@ -42,7 +44,7 @@ referenceText "strokeStyle" = "sets the color of the stroke in RGBA values"
 -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button x
+   switchToReference <- buttonWithClass' x
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)

@@ -22,11 +22,9 @@ body {
 }
 
 
-/* styles the body, input, foreground color */
-body, input, .primary-color {
+/* styles the body, input, foreground text color */
+body, .primary-color {
 	 color: var( --primary-color);
-     border-radius: 5px;
-	 border:1pt solid var( --primary-color);
 }
 
 
@@ -72,17 +70,12 @@ body, input, .primary-color {
 	border: none;
 
 
+
   /* Force the browser to try it's best to float properly on overflow.
      When the window doesn't fit the entire header, this ensures that moving
      the controls to the next line doesn't leak out of it's parent container
      preventing interation with it. */
   overflow: hidden;
-}
-
-.big-font select{
-	margin-left: 0.5em;
-	vertical-align: middle;
-	cursor: pointer;
 }
 
 /* source  */
@@ -108,7 +101,6 @@ body, input, .primary-color {
 */
 
 .config-toolbar {
-	font-size: 0.75em;
 	float: right;
 	display: block;
 }
@@ -135,7 +127,6 @@ body, input, .primary-color {
 	padding-left: 15px;
 	padding-right: 15px;
 	margin-bottom:0.25em;
-
 }
 
 .footer {
@@ -487,19 +478,17 @@ ______________________________
 }
 
 .tutorial .panel{
-	background-color: rgba(40,40,40);
+	background-color:var(--secondary-color);
 	border-radius: 5px;
 	margin:1%;
 	padding:1%;
 }
 .tutorial .panel textarea{
-	background-color: black;
 	margin: 1%;
 	padding:1%;
 	display: block;
 	width: 96%;
 	border-radius: 5px;
-  color:white;
 }
 
 .title{
@@ -515,9 +504,9 @@ ______________________________
 */
 /* modifies structured editor */
 .atomPopup{
-	border: 1px solid black;
 	position: relative;
 	display: inline-block;
+
 }
 
 .atomPopupInput, .atomPopupInputMouseOver {
@@ -528,6 +517,12 @@ ______________________________
 .generalPattern-group-or-layer-or-atom{
 	display:inline-block;
 }
+
+.generalPattern-group-or-layer-or-atom input{
+	color: var(--primary-color);
+     background-color: var(--background-color);
+}
+
 
 /*
 ***************************************************************************************************

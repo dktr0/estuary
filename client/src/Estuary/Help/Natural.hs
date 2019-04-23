@@ -7,6 +7,8 @@ import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 import Data.Map
+import Estuary.Reflex.Utility
+
 
 --render multiple sub-help files
 naturalHelpFile :: MonadWidget t m => m ()
@@ -46,7 +48,7 @@ referenceText "ruge" =  "returns TidalCycles' slow"
 
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-  switchToReference <- divClass "" $ button x
+  switchToReference <- buttonWithClass' x
   exampleVisible <- toggle True switchToReference
   referenceVisible <- toggle False switchToReference
   hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)

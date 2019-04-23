@@ -55,7 +55,7 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
   let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs,streamIdMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
   mostRecent' <- mapDyn (fmap T.pack) mostRecent
-  simpleList mostRecent' $ \v -> divClass "chatMessage" $ dynText v
+  simpleList mostRecent' $ \v -> divClass "chatMessage code-font primary-color" $ dynText v
 
   startStreamingReflex ctx $ ffilter (== Terminal.StartStreaming) commands
   streamId <- peerProtocolIdReflex ctx $ ffilter (== Terminal.StreamId) commands

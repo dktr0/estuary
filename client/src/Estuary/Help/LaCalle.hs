@@ -6,6 +6,8 @@ import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility
+
 
 -- import Estuary.Types.Language
 
@@ -34,7 +36,7 @@ about = do
 -- help files for samples
 holaChoche :: MonadWidget t m => m ()
 holaChoche = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button "hola Choche:"
+   switchToReference <- divClass "code-font primary-color reference-button" $ button "hola Choche:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text "\"hola choche\"" --languageHelpWidget MiniTidal
@@ -45,7 +47,7 @@ holaChoche = divClass "helpWrapper" $ do
    -- help files for samples
 unasChelas :: MonadWidget t m => m ()
 unasChelas = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button "unas chelas:"
+   switchToReference <- divClass "code-font primary-color reference-button" $ button "unas chelas:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text "\"unas chelas\"" --languageHelpWidget MiniTidal
@@ -56,7 +58,7 @@ unasChelas = divClass "helpWrapper" $ do
    -- help files for samples
 miGerma :: MonadWidget t m => m ()
 miGerma = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button "mi germa:"
+   switchToReference <- divClass "code-font primary-color reference-button" $ button "mi germa:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text "\"mi germa\"" --languageHelpWidget MiniTidal
@@ -67,7 +69,7 @@ miGerma = divClass "helpWrapper" $ do
    -- help files for samples
 vamosA :: MonadWidget t m => m ()
 vamosA = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button "vamos a:"
+   switchToReference <- divClass "code-font primary-color reference-button" $ button "vamos a:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text "\"vamos a\"" --languageHelpWidget MiniTidal
@@ -78,7 +80,7 @@ vamosA = divClass "helpWrapper" $ do
 -- help files for functions
 tuManyas :: MonadWidget t m => m ()
 tuManyas = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button "tu manyas:"
+   switchToReference <- divClass "code-font primary-color reference-button" $ button "tu manyas:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text "\"hola choche\" tu manyas 2" --languageHelpWidget MiniTidal
@@ -89,7 +91,7 @@ tuManyas = divClass "helpWrapper" $ do
 -- help files for functions
 bienHelenas :: MonadWidget t m => m ()
 bienHelenas = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button "bien helenas:"
+   switchToReference <- divClass "code-font primary-color reference-button" $ button "bien helenas:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text "\"unas chelas\" bien helenas 0.5" --languageHelpWidget MiniTidal
@@ -100,7 +102,7 @@ bienHelenas = divClass "helpWrapper" $ do
 -- help files for functions
 paltaConEl :: MonadWidget t m => m ()
 paltaConEl = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button "palta con el:"
+   switchToReference <- divClass "code-font primary-color reference-button" $ button "palta con el:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text "\"mi germa\" palta con el 4" --languageHelpWidget MiniTidal
@@ -111,7 +113,7 @@ paltaConEl = divClass "helpWrapper" $ do
 -- help files for functions
 miCerro :: MonadWidget t m => m ()
 miCerro = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button "mi cerro:"
+   switchToReference <- divClass "code-font primary-color reference-button" $ button "mi cerro:"
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text "\"vamos a\" mi cerro" --languageHelpWidget MiniTidal

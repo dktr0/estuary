@@ -46,10 +46,16 @@ translationList c m = do
   l <- mapDyn language c
   mapDyn (\k -> findWithDefault d k m') l
 
+-- a temporary button with class for the reference files
+buttonWithClass' :: MonadWidget t m => Text -> m (Event t ())
+buttonWithClass' s = do
+  (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "ui-buttons code-font primary-color"), ("style", "background-color:transparent; border:none; cursor:help")]) $ text s
+  return $ domEvent Click e
+
 -- a button with class
 buttonWithClass :: MonadWidget t m => Text -> m (Event t ())
 buttonWithClass s = do
-  (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "ui-buttons code-font")]) $ text s
+  (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "ui-buttons other-borders code-font")]) $ text s
   return $ domEvent Click e
 
 --Button with dynamic label. A final version that uses >=> from Control.Monad to compose together two a -> m b functions

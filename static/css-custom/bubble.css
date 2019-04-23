@@ -20,11 +20,16 @@
   --transient-color: orange;
 }
 
+  /*styles the background */
+.background {
+    background-color: var(--background-color);
+	background-image: linear-gradient(to bottom right, rgb(179, 255, 238), rgb(182, 178, 247));
+	  }
 
 /*styles the code font*/
 .code-font {
 	  font-family: 'Montserrat';
-	  font-size:0.80em;
+	  font-size:1em;
 	  }
 
 /* styles the fonts for the header, menus and labels */
@@ -33,18 +38,21 @@
 	font-size: 1em;
 	}
 
-  /*styles the background */
-.background {
-    background-color: var(--background-color);
-	background-image: linear-gradient(to bottom right, rgb(179, 255, 238), rgb(182, 178, 247));
-	  }
-
 /* styles the user interface-buttons */
 .ui-buttons {
   color:white;
   background-color:var(--primary-color);
-  border-radius: 5px;
-  border: none;
 }
 
-/* classes for borders that have variable */
+
+/*styles the primary borders (e.g.  from dropdown menus) */
+.primary-borders {
+	border-radius: 5px;
+    border: 1px solid var(--primary-color);
+}
+
+/*styles other borders (e.g. from the ui-buttons and sequencer)  */
+.other-borders {
+    border-radius: 5px;
+    border: 1px solid var(--secondary-color);
+    }

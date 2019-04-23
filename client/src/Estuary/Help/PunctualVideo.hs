@@ -6,6 +6,7 @@ import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility
 
 
 --render multiple sub-help files
@@ -85,7 +86,7 @@ referenceText "height" = "sets the height of the pixel"
 -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-   switchToReference <- divClass "" $ button x
+   switchToReference <- buttonWithClass' x
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
    hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)

@@ -57,7 +57,7 @@ midLevelTransformedPatternWidget iTransPat = do
 popupSpecificPatternWidget :: (MonadWidget t m)=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal a),Event t Hint))
 popupSpecificPatternWidget iValue _ = elClass "div" "patternTransformerWidget-or-popupSpecificPatternWidget" $ mdo
   let popup = specificPatternPopup [DeleteMe, TransformMe]
-  openEv <- clickableSpanClass showSpecPat "noClass" ()
+  openEv <- clickableSpanClass showSpecPat "primary-color code-font background" ()
   dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ updated dynOpen
   dynOpen <- toggle False $ leftmost [openEv,(() <$ )dynPopup]
   let changeEvents = fmap ((\x->case x of ChangeValue a->a;otherwise->(S $ Blank Inert)) . fromJust) $ ffilter (\x->case x of Just (ChangeValue a) ->True;otherwise->False) dynPopup
@@ -102,12 +102,12 @@ specificPatternPopup actionList = elClass "div" "popupMenu" $ do
   let specMap = fromList $ zip [(0::Int)..] iValueList
   let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
   --let ddMap = constDyn $ fromList $ zip [(0::Int)..] ["bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"] -- Map (Map k func) String
-  dd <- dropdown (-1) ddMap (def & attributes .~ constDyn ("class" =: "code-font background primary-color"))
+  dd <- dropdown (-1) ddMap (def & attributes .~ constDyn ("class" =: "code-font background primary-color primary-borders"))
   let specPatKey = _dropdown_value dd
   specChange <- mapDyn (Just . ChangeValue . maybe (S $ Blank Inert) id . (flip Data.Map.lookup) specMap) specPatKey
-  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "primary-color code-font background" (Just x)) actionList -- [m (Maybe (EditSignal))]
   edits <- liftM id $ Control.Monad.sequence popupList
-  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
+  closeMenu <- clickableDivClass' "close" "primary-color code-font background" (Nothing)
   return $ (leftmost $ edits ++[closeMenu,updated specChange])
   where
     iValueList = [
@@ -420,7 +420,7 @@ paramWidget' x = paramWidget x
 patternTransformerWidget :: (MonadWidget t m)=> PatternTransformer -> Event t () -> m (Dynamic t (PatternTransformer, Event t (EditSignal a)))
 patternTransformerWidget iValue _ = elClass "div" "patternTransformerWidget-or-popupSpecificPatternWidget" $ mdo
   let popup = patternTransformerPopup [DeleteMe]
-  openEv <- clickableSpanClass showTransformer' "noClass" ()
+  openEv <- clickableSpanClass showTransformer' "primary-color code-font background" ()
   dynPopup <- liftM switchPromptlyDyn $ flippableWidget (return never) popup False $ updated dynOpen
   dynOpen <- toggle False $ leftmost [openEv,(() <$ )dynPopup]
   let changeEvents = fmap ((\x->case x of ChangeValue a->a;otherwise->NoTransformer) . fromJust) $ ffilter (\x->case x of Just (ChangeValue a) ->True;otherwise->False) dynPopup
@@ -459,7 +459,7 @@ patternTransformerPopup actionList = elClass "div" "popupMenu" $ do
   dd <- dropdown (-1) ddMap def
   let transformerKey = _dropdown_value dd
   transformerChange <- mapDyn (Just . ChangeValue . maybe NoTransformer id . (flip Data.Map.lookup) transMap) transformerKey
-  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "primary-color code-font background" (Just x)) actionList -- [m (Maybe (EditSignal))]
   edits <- liftM id $ Control.Monad.sequence popupList
-  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
+  closeMenu <- clickableDivClass' "close" "primary-color code-font background" (Nothing)
   return $ (leftmost $ edits ++[closeMenu,updated transformerChange])

@@ -6,6 +6,7 @@ import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility
 
 -- import Estuary.Types.Language
 
