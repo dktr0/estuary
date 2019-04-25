@@ -13,7 +13,6 @@ This document will outline how to customize Estuary's interface themes.
 - For quick Estuary's interface customization, modify the parameters of the variables 'background-color', 'primary-color', 'secondary-color', and 'transient-color'. These variables are located at the top of each theme.
 
 ```
-:root {
 /* sets the background color */
   --background-color: black;
 
@@ -25,7 +24,7 @@ This document will outline how to customize Estuary's interface themes.
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
-}
+
 
 ```
 
