@@ -13,4 +13,4 @@ You don't need to install or build anything to start using Estuary - you can jus
   questions take them either to the &num;estuary channel on talk.lurk.org
   or the "estuary" Google group): http://intramuros.mcmaster.ca:8002
 
-If you do want to build Estuary from source yourself, please refer to the instructions in [BUILDING.md]. Note that building Estuary depends on a rather complex tool-chain and can be time-consuming. Don't hesitate to reach out on the lurk or Google group channels mentioned above for assistance.
+If you do want to build Estuary from source yourself, please refer to the instructions in [BUILDING.md](BUILDING.md). Note that building Estuary depends on a rather complex tool-chain and can be time-consuming. Don't hesitate to reach out on the lurk or Google group channels mentioned above for assistance.
