@@ -1,8 +1,11 @@
 { 
   reflexPlatformVersion ? "7e002c573a3d7d3224eb2154ae55fc898e67d211",
   musl ? false,     # build with musl instead of glibc
-  staticExe ? false # build a statically linked executable
-}:
+  linkType ? null   # exectuable linking mode, null will build the closest to unconfigured for the current platform.
+                    # 'static' will completely statcially link everything.
+                    # 'static-libs' will statically link the haskell libs and dynamically link system. linux default.
+                    # 'dynamic' will dynamically link everything. darwin default.
+} @ args:
 
 let reflex-platform = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${reflexPlatformVersion}.tar.gz";
 in
@@ -13,6 +16,13 @@ in
       in if musl then origPkgs.pkgsMusl else origPkgs;
 }).project ({ pkgs, ghc8_4, ... }:
 with pkgs.haskell.lib;
+let linkType = if (args.linkType or null) != null 
+  then args.linkType 
+  else
+    if pkgs.stdenv.isDarwin then "dynamic" 
+    else if pkgs.stdenv.isLinux then "static-libs"
+    else args.linkType;
+in
 {
   name = "Estuary";
 
@@ -96,35 +106,37 @@ with pkgs.haskell.lib;
        estuary-server = 
           let configure-flags = map (opt: "--ghc-option=${opt}") (
               [] 
-              ++ (if !pkgs.stdenv.isLinux then [] else
-                if staticExe 
-                  then [ "-optl=-pthread" "-optl=-static" "-optl=-L${pkgs.gmp6.override { withStatic = true; }}/lib"
+              ++ (if !pkgs.stdenv.isLinux then [] else ({
+                  static = [ "-optl=-pthread" "-optl=-static" "-optl=-L${pkgs.gmp6.override { withStatic = true; }}/lib"
                       "-optl=-L${pkgs.zlib.static}/lib" "-optl=-L${pkgs.glibc.static}/lib"
-                    ]
-                  else [ "-dynamic" "-threaded" ]
-              ) ++ (if !pkgs.stdenv.isDarwin then [] else
-                if staticExe
-                  then [] # TODO: build partially static exe on macos
-                  else [ "-dynamic" "-threaded" ]
+                    ];
+                  dynamic = [ "-dynamic" "-threaded" ];
+                }.${linkType} or [])
+              ) ++ (if !pkgs.stdenv.isDarwin then [] else ({
+                  dynamic = [ "-dynamic" "-threaded" ];
+                }.${linkType} or [])
               )
           );
           in 
           overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv: 
-            (if !staticExe then {
-              # based on fix from https://github.com/NixOS/nixpkgs/issues/26140, on linux when building a dynamic exe
-              # we need to strip a bad reference to the temporary build folder from the rpath.
-              preFixup = (drv.preFixup or "") + (
-                if !pkgs.stdenv.isLinux
-                then ""
-                else ''
-                  NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
-                  patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
-                ''
-              );
-            } else {
-              enableSharedExecutables = false;
-              enableSharedLibraries = false;
-            }) // {
+            ({
+              dynamic = {
+                  # based on fix from https://github.com/NixOS/nixpkgs/issues/26140, on linux when building a dynamic exe
+                  # we need to strip a bad reference to the temporary build folder from the rpath.
+                  preFixup = (drv.preFixup or "") + (
+                    if !pkgs.stdenv.isLinux
+                    then ""
+                    else ''
+                      NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
+                      patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
+                    ''
+                  );
+                };
+              static = {
+                  enableSharedExecutables = false;
+                  enableSharedLibraries = false;
+                };
+            }.${linkType} or {}) // {
               preConfigure = ''
                 ${ghc8_4.hpack}/bin/hpack --force;
               '';
