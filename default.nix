@@ -21,7 +21,7 @@ let linkType = if (args.linkType or null) != null
   else
     if pkgs.stdenv.isDarwin then "dynamic" 
     else if pkgs.stdenv.isLinux then "static-libs"
-    else args.linkType;
+    else "static-libs"; # fallback to static-libs which is closest to no intervention
 in
 {
   name = "Estuary";
