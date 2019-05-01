@@ -1,9 +1,17 @@
-{ reflexPlatformVersion ? "7e002c573a3d7d3224eb2154ae55fc898e67d211" }:
+{ 
+  reflexPlatformVersion ? "7e002c573a3d7d3224eb2154ae55fc898e67d211",
+  musl ? false,     # build with musl instead of glibc
+  staticExe ? false # build a statically linked executable
+}:
 
 let reflex-platform = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${reflexPlatformVersion}.tar.gz";
 in
 
-(import reflex-platform {}).project ({ pkgs, ghc8_4, ... }:
+(import reflex-platform {
+  nixpkgsFunc = args: 
+      let origPkgs = import "${reflex-platform}/nixpkgs" args; 
+      in if musl then origPkgs.pkgsMusl else origPkgs;
+}).project ({ pkgs, ghc8_4, ... }:
 with pkgs.haskell.lib;
 {
   name = "Estuary";
@@ -18,9 +26,9 @@ with pkgs.haskell.lib;
         )
       );
     in {
-      estuary = pkgs.lib.cleanSourceWith {inherit filter; src = ./client; };
-      estuary-common = pkgs.lib.cleanSourceWith {inherit filter; src = ./common; };
-      estuary-server = pkgs.lib.cleanSourceWith {inherit filter; src = ./server; };
+      estuary = pkgs.lib.cleanSourceWith { inherit filter; src = ./client; };
+      estuary-common = pkgs.lib.cleanSourceWith { inherit filter; src = ./common; };
+      estuary-server = pkgs.lib.cleanSourceWith { inherit filter; src = ./server; };
     };
 
   shells = {
@@ -85,19 +93,38 @@ with pkgs.haskell.lib;
           '';
         });
 
-        estuary-server = overrideCabal super.estuary-server (drv: {
-          enableSharedExecutables = false;
-          enableSharedLibraries = false;
-          configureFlags = [
-            "--ghc-option=-optl=-pthread"
-            "--ghc-option=-optl=-static"
-            "--ghc-option=-optl=-L${pkgs.gmp6.override { withStatic = true; }}/lib"
-            "--ghc-option=-optl=-L${pkgs.zlib.static}/lib"
-            "--ghc-option=-optl=-L${pkgs.glibc.static}/lib"
-          ];
-          preConfigure = ''
-            ${ghc8_4.hpack}/bin/hpack --force;
-          '';
+       estuary-server = 
+          let configure-flags = map (opt: "--ghc-option=${opt}") (
+              [] 
+              ++ (if !pkgs.stdenv.isLinux then [] else
+                if staticExe 
+                  then [ "-optl=-pthread" "-optl=-static" "-optl=-L${pkgs.gmp6.override { withStatic = true; }}/lib"
+                      "-optl=-L${pkgs.zlib.static}/lib" "-optl=-L${pkgs.glibc.static}/lib"
+                    ]
+                  else [ "-dynamic" "-threaded" ]
+              ) ++ (if !pkgs.stdenv.isDarwin then [] else
+                if staticExe
+                  then [] # TODO: build partially static exe on macos
+                  else [ "-dynamic" "-threaded" ]
+              )
+          );
+          in 
+          overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv: {
+            enableSharedExecutables = !staticExe;
+            enableSharedLibraries = !staticExe;
+            preConfigure = ''
+              ${ghc8_4.hpack}/bin/hpack --force;
+            '';
+          # based on fix from https://github.com/NixOS/nixpkgs/issues/26140, on linux when building a dynamic exe
+          # we need to strip a bad reference to the temporary build folder from the rpath.
+          preFixup = (drv.preFixup or "") + (
+            if !staticExe || !pkgs.stdenv.isLinux
+            then ""
+            else ''
+              NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
+              patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
+            ''
+          );
         });
 
         webdirt = import ./deps/webdirt self;
