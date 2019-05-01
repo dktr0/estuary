@@ -109,23 +109,27 @@ with pkgs.haskell.lib;
               )
           );
           in 
-          overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv: {
-            enableSharedExecutables = !staticExe;
-            enableSharedLibraries = !staticExe;
-            preConfigure = ''
-              ${ghc8_4.hpack}/bin/hpack --force;
-            '';
-          # based on fix from https://github.com/NixOS/nixpkgs/issues/26140, on linux when building a dynamic exe
-          # we need to strip a bad reference to the temporary build folder from the rpath.
-          preFixup = (drv.preFixup or "") + (
-            if !staticExe || !pkgs.stdenv.isLinux
-            then ""
-            else ''
-              NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
-              patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
-            ''
-          );
-        });
+          overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv: 
+            (if !staticExe then {
+              # based on fix from https://github.com/NixOS/nixpkgs/issues/26140, on linux when building a dynamic exe
+              # we need to strip a bad reference to the temporary build folder from the rpath.
+              preFixup = (drv.preFixup or "") + (
+                if !pkgs.stdenv.isLinux
+                then ""
+                else ''
+                  NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
+                  patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
+                ''
+              );
+            } else {
+              enableSharedExecutables = false;
+              enableSharedLibraries = false;
+            }) // {
+              preConfigure = ''
+                ${ghc8_4.hpack}/bin/hpack --force;
+              '';
+            }
+        );
 
         webdirt = import ./deps/webdirt self;
 
