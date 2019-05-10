@@ -1,10 +1,28 @@
-{ reflexPlatformVersion ? "7e002c573a3d7d3224eb2154ae55fc898e67d211" }:
+{
+  reflexPlatformVersion ? "7e002c573a3d7d3224eb2154ae55fc898e67d211",
+  musl ? false,     # build with musl instead of glibc
+  linkType ? null   # exectuable linking mode, null will build the closest to unconfigured for the current platform.
+                    # 'static' will completely statcially link everything.
+                    # 'static-libs' will statically link the haskell libs and dynamically link system. linux default.
+                    # 'dynamic' will dynamically link everything. darwin default.
+} @ args:
 
 let reflex-platform = builtins.fetchTarball "https://github.com/reflex-frp/reflex-platform/archive/${reflexPlatformVersion}.tar.gz";
 in
 
-(import reflex-platform {}).project ({ pkgs, ghc8_4, hackGet, ... }:
+(import reflex-platform {
+  nixpkgsFunc = args:
+      let origPkgs = import "${reflex-platform}/nixpkgs" args;
+      in if musl then origPkgs.pkgsMusl else origPkgs;
+}).project ({ pkgs, ghc8_4, ... }:
 with pkgs.haskell.lib;
+let linkType = if (args.linkType or null) != null
+  then args.linkType
+  else
+    if pkgs.stdenv.isDarwin then "static" 
+    else if pkgs.stdenv.isLinux then "static-libs"
+    else "static-libs"; # fallback to static-libs which is closest to no intervention
+in
 {
   name = "Estuary";
 
@@ -18,9 +36,9 @@ with pkgs.haskell.lib;
         )
       );
     in {
-      estuary = pkgs.lib.cleanSourceWith {inherit filter; src = ./client; };
-      estuary-common = pkgs.lib.cleanSourceWith {inherit filter; src = ./common; };
-      estuary-server = pkgs.lib.cleanSourceWith {inherit filter; src = ./server; };
+      estuary = pkgs.lib.cleanSourceWith { inherit filter; src = ./client; };
+      estuary-common = pkgs.lib.cleanSourceWith { inherit filter; src = ./common; };
+      estuary-server = pkgs.lib.cleanSourceWith { inherit filter; src = ./server; };
     };
 
   shells = {
@@ -71,34 +89,59 @@ with pkgs.haskell.lib;
           '';
           postInstall = ''
             ${pkgs.closurecompiler}/bin/closure-compiler $out/bin/Estuary.jsexe/all.js \
-            --compilation_level=SIMPLE \
-            --js_output_file=$out/bin/all.min.js \
-            --externs=$out/bin/Estuary.jsexe/all.js.externs \
-            --jscomp_off=checkVars;
+              --compilation_level=SIMPLE \
+              --js_output_file=$out/bin/all.min.js \
+              --externs=$out/bin/Estuary.jsexe/all.js.externs \
+              --jscomp_off=checkVars;
             gzip -fk "$out/bin/all.min.js"
          '';
         });
 
-        estuary-common = overrideCabal (appendConfigureFlags super.estuary-common ["--ghc-options=-dynamic" "--ghc-options=-threaded"]) (drv: {
+        estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
             ${ghc8_4.hpack}/bin/hpack --force;
           '';
         });
 
-        estuary-server = overrideCabal (appendConfigureFlags super.estuary-server ["--ghc-options=-dynamic" "--ghc-options=-threaded"]) (drv: {
-          preConfigure = ''
-            ${ghc8_4.hpack}/bin/hpack --force;
-          '';
-          # based on fix from https://github.com/NixOS/nixpkgs/issues/26140
-          preFixup = (drv.preFixup or "") + (
-            if !pkgs.stdenv.isLinux
-            then ""
-            else ''
-              NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
-              patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
-            ''
+       estuary-server =
+          let configure-flags = map (opt: "--ghc-option=${opt}") (
+              []
+              ++ (if !pkgs.stdenv.isLinux then [] else ({
+                  static = [ "-optl=-pthread" "-optl=-static" "-optl=-L${pkgs.gmp6.override { withStatic = true; }}/lib"
+                      "-optl=-L${pkgs.zlib.static}/lib" "-optl=-L${pkgs.glibc.static}/lib"
+                    ];
+                  dynamic = [ "-dynamic" "-threaded" ];
+                }.${linkType} or [])
+              ) ++ (if !pkgs.stdenv.isDarwin then [] else ({
+                  dynamic = [ "-dynamic" "-threaded" ];
+                }.${linkType} or [])
+              )
           );
-        });
+          in
+          overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv:
+            ({
+              dynamic = {
+                  # based on fix from https://github.com/NixOS/nixpkgs/issues/26140, on linux when building a dynamic exe
+                  # we need to strip a bad reference to the temporary build folder from the rpath.
+                  preFixup = (drv.preFixup or "") + (
+                    if !pkgs.stdenv.isLinux
+                    then ""
+                    else ''
+                      NEW_RPATH=$(patchelf --print-rpath "$out/bin/EstuaryServer" | sed -re "s|/tmp/nix-build-estuary-server[^:]*:||g");
+                      patchelf --set-rpath "$NEW_PATH" "$out/bin/EstuaryServer";
+                    ''
+                  );
+                };
+              static = {
+                  enableSharedExecutables = false;
+                  enableSharedLibraries = false;
+                };
+            }.${linkType} or {}) // {
+              preConfigure = ''
+                ${ghc8_4.hpack}/bin/hpack --force;
+              '';
+            }
+        );
 
         webdirt = import ./deps/webdirt self;
 
