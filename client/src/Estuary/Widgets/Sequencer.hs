@@ -45,9 +45,9 @@ sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
   let buttonIVals = M.fromList $ attachIndex vals
   let strUpdate = fmap (T.pack . fst) edits
   let buttonUpdates = fmap (M.fromList . attachIndex . fmap Just . snd) edits
-  let textInputAttrs = singleton "class" "sequencer-textarea background code-font"
+  let textInputAttrs = singleton "class" "sequencer-textarea code-font"
   deleteMe <- elClass "td" "delete" $ dynButton "-" -- clickableTdClass (constDyn " - ") (constDyn "delete") ()
-  rowInput <- elClass "td"  "sequencer-textarea background code-font primary-color" $ textInput $ def & textInputConfig_initialValue .~ (T.pack iVal) & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn ("class" =: "sequencer-textarea background code-font primary-color"))
+  rowInput <- elClass "td"  "sequencer-textarea code-font primary-color" $ textInput $ def & textInputConfig_initialValue .~ (T.pack iVal) & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn ("class" =: "sequencer-textarea  code-font primary-color"))
   -- rowInput <- el "td" $ growingTextInput $ def & textInputConfig_initialValue .~ iVal & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn textInputAttrs)
   buttons <-  liftM joinDynThroughMap $ listWithKeyShallowDiff buttonIVals buttonUpdates sequencerButton  -- Dyn (Map Int Bool)
   val <- combineDyn (\s b -> (T.unpack s, elems b)) (_textInput_value rowInput) buttons

@@ -127,6 +127,7 @@ body, .primary-color {
 	padding-left: 15px;
 	padding-right: 15px;
 	margin-bottom:0.25em;
+	background-color: transparent;
 }
 
 .footer {
@@ -345,6 +346,7 @@ body, .primary-color {
 .name-tag-textarea {
 	flex:1;
 	border: none;
+	background-color: transparent;
 }
 
 /*contains the "eval" button (should change name)  */
@@ -376,6 +378,7 @@ body, .primary-color {
 	height: auto;
 	resize: none;
 	overflow: hidden;
+	background-color: transparent;
 }
 
 
@@ -442,6 +445,7 @@ ______________________________
 	top:5%;
     text-align: center;
     border: none;
+    background-color: transparent;
 }
 
 .sequencerButton{

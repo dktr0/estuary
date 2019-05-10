@@ -76,7 +76,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
 
     headerChanges <- header ctx renderInfo
 
-    (values, deltasUp, hints, tempoChanges) <- divClass "page background" $ do
+    (values, deltasUp, hints, tempoChanges) <- divClass "page " $ do
       navigation initialPage never ctx renderInfo commands deltasDown
 
     commands <- footer ctx renderInfo deltasUp deltasDown' hints
