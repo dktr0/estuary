@@ -7,13 +7,13 @@ More advanced customization is available through CSS classes within this documen
 
 :root {
 /* sets the background color */
-  --background-color: rgb(98, 221, 115);
+  --background-color: linear-gradient(to bottom right, rgba(98, 221, 115, 1), rgba(98, 221,115, 0.75));
 
 /* seta the color of all text (except the buttons') and typically some borders*/
   --primary-color: black;
 
 /* sets the background color of buttons and other borders (like the sequencer's borders)*/
-  --secondary-color: hsl(0, 0%, 30%);
+  --secondary-color: rgba(77, 77, 77, 0.5);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;

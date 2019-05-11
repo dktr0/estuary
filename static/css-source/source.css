@@ -18,7 +18,8 @@
 body {
  	height: 100%;
 	margin: 0;
-	background-color: var(--background-color);
+	background: var(--background-color);
+
 }
 
 
@@ -407,7 +408,7 @@ ______________________________
 .sequencerRow .delete button {
 	top:5%;
 	width: 100%;
-	color: red;
+	color: var(--primary-color);
 	position: relative;
 	height: 90%;
 }
@@ -432,7 +433,7 @@ ______________________________
 
 .sequencer-textarea {
     border-radius: 5px;
-    border:1pt solid var( --secondary-color);
+/*     border:1pt solid var( --secondary-color); */
     }
 
 .sequencer-textarea input {
@@ -480,7 +481,7 @@ ______________________________
 	padding:2%;
 }
 
-.tutorial .panel{
+.tutorial .panel {
 	background-color:var(--secondary-color);
 	border-radius: 5px;
 	margin:1%;
@@ -492,6 +493,7 @@ ______________________________
 	display: block;
 	width: 96%;
 	border-radius: 5px;
+	background: var(--background-color);
 }
 
 .title{
@@ -499,6 +501,9 @@ ______________________________
 	padding:1%;
 	text-align: center;
 }
+
+.panel button {
+	border-color: var(--primary-color)}
 
 /*
 --------------------------------------------------------------------
@@ -639,22 +644,27 @@ table, tr, td {border: none;}
 	display: flex;
 	flex-direction: row;
 	border:none;
+    background-color: transparent;
+
 }
 
 .terminalInput {
 	flex-grow: 1;
 	border:none;
 
+
 }
 
 .terminalInput input {
 	border:none;
+	background-color: transparent;
 }
 
 .ensembleHeader {
 	display: flex;
 	flex-direction: row;
     border:none
+
 }
 
 .ensembleName {

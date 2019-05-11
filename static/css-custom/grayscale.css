@@ -7,13 +7,14 @@ More advanced customization is available through CSS classes within this documen
 
 :root {
 /* sets the background color */
-  --background-color: lightgray;
+  --background-color: linear-gradient(to top right, black, rgb(182, 178, 247));
 
 /* set the color of all text and typically some borders*/
-  --primary-color: black;
+  --primary-color:   #e8e4e4;
+;
 
 /* sets the background color of buttons and other borders */
-  --secondary-color: hsl(0,0%,50%);
+  --secondary-color: hsl(0,0%,10%);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
@@ -44,18 +45,18 @@ More advanced customization is available through CSS classes within this documen
 
 /* styles the user-interface buttons */
 .ui-buttons {
-  color:white;
-  background-color:var(--secondary-color);
+  color: var(--primary-color);
+  background-color:rgba(0,0,0,0.12);
 }
 
 /* styles the primary borders (e.g. from dropdown menus)*/
 .primary-borders {
 	border-radius: 5px;
-    border: 1px solid var(--primary-color);
+    border: 1px solid black;
 }
 
 /*styles other borders (e.g. from ui buttons and sequencer buttons)  */
 .other-borders {
     border-radius: 5px;
-    border: 1px solid var(--primary-color);
+    border: 1px solid black;
     }

@@ -15,10 +15,11 @@ More advanced customization is available through CSS classes within this documen
 
 :root {
 /* sets the background color */
-  --background-color: rgb(179, 255, 238);
+  --background-color: linear-gradient(to bottom left, rgb(179, 255, 238), rgba(81, 76, 156, 0.5));
+;
 
 /* set the color of all text and typically some borders*/
-  --primary-color: rgb(81, 76, 156);
+  --primary-color: rgba(81, 76, 156);
 
 /* sets the background color of buttons and other borders */
   --secondary-color: hsl(0,0%,100%);
@@ -32,12 +33,6 @@ More advanced customization is available through CSS classes within this documen
 				advanced customization
 --------------------------------------------------------------------
 */
-
-  /*styles the background */
-.background {
-    background-color: var(--background-color);
-	background-image: linear-gradient(to bottom right, rgb(179, 255, 238), rgb(182, 178, 247));
-	  }
 
 /*styles the code font*/
 .code-font {
@@ -54,7 +49,8 @@ More advanced customization is available through CSS classes within this documen
 /* styles the user interface-buttons */
 .ui-buttons {
   color:white;
-  background-color:var(--primary-color);
+  background-color:rgba(81, 76, 156, 0.75);
+
 }
 
 

@@ -72,7 +72,7 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     let initialParser = fst $ forEditing i
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "code-font background primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
+    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "code-font primary-color primary-borders" <> "style" =: "background-color: transparent")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- dynButton =<< translateDyn Term.Eval ctx
       dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
