@@ -50,6 +50,9 @@ main = do
 
   pp <- newPeerProtocol
 
+  ac <- getGlobalAudioContext
+  audioWorkletAddModule ac "MusicW-audioWorklets.js"
+
   mainBusNodes@(mainBusIn,_,_,_) <- initializeMainBus
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
