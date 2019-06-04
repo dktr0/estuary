@@ -19,7 +19,9 @@ import qualified Network.WebSockets as WS
 import qualified Network.Wai as WS
 import qualified Network.Wai.Handler.WebSockets as WS
 import Network.Wai.Application.Static (staticApp, defaultWebAppSettings, ssIndices, ssMaxAge)
-import Network.Wai.Handler.Warp (run)
+import Network.Wai.Handler.Warp
+import Network.Wai.Handler.Warp.Internal
+import Network.Wai.Handler.WarpTLS
 import Network.Wai.Middleware.Gzip
 import WaiAppStatic.Types (unsafeToPiece,MaxAge(..))
 import Data.Time
@@ -52,7 +54,21 @@ runServerWithDatabase pswd port db = do
     ssIndices = [unsafeToPiece "index.html"],
     ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
     }
-  run port $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+  runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+
+ourTLSSettings :: TLSSettings
+ourTLSSettings = defaultTlsSettings {
+  certFile = "certificate.pem",
+  keyFile = "key.pem",
+  onInsecure = DenyInsecure "You must use HTTPS to connect to Estuary."
+  }
+
+ourSettings :: Port -> Settings
+ourSettings port = defaultSettings {
+  settingsPort = port,
+  settingsFdCacheDuration = 30,
+  settingsFileInfoCacheDuration = 30   
+  }
 
 gzipMiddleware :: WS.Middleware
 gzipMiddleware = gzip $ def {
