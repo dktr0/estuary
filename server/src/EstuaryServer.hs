@@ -58,8 +58,8 @@ runServerWithDatabase pswd port db = do
 
 ourTLSSettings :: TLSSettings
 ourTLSSettings = defaultTlsSettings {
-  certFile = "certificate.pem",
-  keyFile = "key.pem",
+  certFile = "cert.pem",
+  keyFile = "privkey.pem",
   onInsecure = DenyInsecure "You must use HTTPS to connect to Estuary."
   }
 
