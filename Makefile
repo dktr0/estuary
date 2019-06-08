@@ -151,13 +151,6 @@ stackStageServer: stackBuildServer prepStage
 bundleClient: cleanStage stageStaticAssets nixStageClient
 	(cd $(STAGING_ROOT) && zip -r - ./Estuary.jsexe/*) > estuary-client.zip
 
-curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
-	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/dktr0/estuary/releases/download/20190603/estuary-client-20190603.zip
-	unzip temp.zip
-	rm -rf temp.zip
-	cp -Rf static/samples Estuary.jsexe
-
 downloadDirtSamples:
 	@ echo "downloadDirtSamples:"
 	cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
@@ -192,3 +185,8 @@ runDevServer: stageStaticAssets cabalBuildServer cabalStageServer
 
 runServer: nixBuild stageStaticAssets stageSamples nixStageClient nixStageServer
 	cd ./$(STAGING_ROOT) && ./EstuaryServer
+
+selfCertificates:
+	openssl genrsa -out staging/privkey.pem 2048
+	openssl req -new -key staging/privkey.pem -out staging/cert.csr
+	openssl x509 -req -in staging/cert.csr -signkey staging/privkey.pem -out staging/cert.pem
