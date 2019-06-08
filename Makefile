@@ -8,6 +8,7 @@ RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
 CP=cp
 CP_RECURSIVE=cp -Rf
 #endif
+STACK_SERVER=cd server/ && stack
 
 assertInNixShell:
 ifndef IN_NIX_SHELL
@@ -134,6 +135,18 @@ nixStageServer: prepStage
 	chmod a+w $(STAGING_ROOT)/EstuaryServer
 nixDevStageServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 nixDevStageServer: nixStageServer
+
+stackBuildServer:
+	@ echo "stackBuildServer:"
+	$(STACK_SERVER) setup
+	$(STACK_SERVER) build
+
+STACK_SERVER_INSTALL_DIR=$$($(STACK_SERVER) path --local-install-root)/bin/EstuaryServer
+
+stackStageServer: stackBuildServer prepStage
+	@ echo "stackStageServer:"
+	$(CP) $(STACK_SERVER_INSTALL_DIR) $(STAGING_ROOT)
+	chmod a+w $(STAGING_ROOT)/EstuaryServer
 
 bundleClient: cleanStage stageStaticAssets nixStageClient
 	(cd $(STAGING_ROOT) && zip -r - ./Estuary.jsexe/*) > estuary-client.zip
