@@ -16,6 +16,7 @@ PeerProtocol.prototype.startStreaming = function() {
   this.peer = new Peer({
     debug: true,
     host: 'localhost',
+    secure: false,
     port: 9000,
     path: '/peers'
   });
