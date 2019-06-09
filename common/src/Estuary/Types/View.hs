@@ -28,9 +28,7 @@ standardView = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 3]),
   ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 3]),
   ViewDiv "divView-bottom-or-top-left" (Views [LabelView 9, TextView 10 3]),
-  ViewDiv "divView-bottom-or-top-right" (Views [LabelView 11, SequenceView 12]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  ViewDiv "divView-bottom-or-top-right" (Views [LabelView 11, SequenceView 12])
   ]
 
 emptyView :: View
@@ -39,9 +37,7 @@ emptyView = Views []
 presetView :: String -> View
 
 presetView "fulltexteditor" = Views [
-  ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 2]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  ViewDiv "fullRowTopOrBottom" (Views [LabelView 0,TextView 1 20])
   ]
 
 
@@ -63,9 +59,7 @@ presetView "iclc2017" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
   ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
   ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
   ]
 
 presetView "Bogota" = Views [
@@ -86,18 +80,14 @@ presetView "Bogota" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
   ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
   ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
-  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
   ]
 
 presetView "Manizales" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 10]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 10]),
   ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10])
   ]
 
 presetView "Medellin" = presetView "Manizales"
@@ -110,9 +100,7 @@ presetView "Lima" = Views [
     ViewDiv "eightMiddleL" (Views [LabelView 8,TextView 9 5]),
     ViewDiv "eightMiddleR" (Views [LabelView 10,TextView 11 5]),
     ViewDiv "eightMiddleL" (Views [LabelView 12,TextView 13 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 5]),
-    SvgDisplayView (-2),
-    CanvasDisplayView (-1)
+    ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 5])
     ]
 
 presetView "Uio" = Views [
@@ -133,36 +121,28 @@ presetView "Uio" = Views [
     ViewDiv "eightMiddleL" (Views [LabelView 28,TextView 29 2]),
     ViewDiv "eightMiddleR" (Views [LabelView 30,TextView 31 2]),
     ViewDiv "eightMiddleL" (Views [LabelView 32,TextView 33 2]),
-    ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2]),
-    SvgDisplayView (-2),
-    CanvasDisplayView (-1)
+    ViewDiv "eightMiddleR" (Views [LabelView 34,TextView 35 2])
     ]
 
 presetView "RGGTRN" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 10]),
   ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 10]),
   ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10])
   ]
 
 presetView "cybernetic" = Views [
   ViewDiv "fullRowTopOrBottom" (Views [LabelView 1, SequenceView 2]),
   ViewDiv "fullRowMiddle" (Views [LabelView 3, TextView 4 4]),
   ViewDiv "fullRowMiddle" (Views [LabelView 5, TextView 6 4]),
-  ViewDiv "fullRowMiddle" (Views [LabelView 7, TextView 8 4]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  ViewDiv "fullRowMiddle" (Views [LabelView 7, TextView 8 4])
   ]
 
 presetView "iclc2019" = Views [
   ViewDiv "eightMiddleL" (Views [LabelView 1, SequenceView 2]),
   ViewDiv "eightMiddleR" (Views [LabelView 3, TextView 4 10]),
   ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 10]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 10]),
-  SvgDisplayView (-2),
-  CanvasDisplayView (-1)
+  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 10])
   ]
 
 presetView "iclc2019noVisuals" = Views [

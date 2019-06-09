@@ -380,8 +380,9 @@ mainRenderThread ctxM riM rsM = do
 
 animationThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
 animationThread ctxM riM rsM = void $ inAnimationFrame ThrowWouldBlock $ \_ -> do
-  rs <- takeMVar rsM
   ctx <- readMVar ctxM
-  rs' <- execStateT (renderAnimation ctx) rs
-  putMVar rsM rs'
+  when (canvasOn ctx) $ do
+    rs <- takeMVar rsM
+    rs' <- execStateT (renderAnimation ctx) rs
+    putMVar rsM rs'
   animationThread ctxM riM rsM
