@@ -133,12 +133,13 @@ renderAnimation c = do
 renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
 renderZoneAnimation tNow c z (TextProgram x) = do
   s <- get
-  t1 <- liftIO $ getCurrentTime
+  -- t1 <- liftIO $ getCurrentTime
   renderZoneAnimationTextProgram tNow c z $ forRendering x
-  t2 <- liftIO $ getCurrentTime
-  let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
-  let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
-  modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
+  -- t2 <- liftIO $ getCurrentTime
+  -- let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
+  -- let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
+  -- modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
+  return ()
 renderZoneAnimation _ _ _ _ = return ()
 
 renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,String) -> Renderer
@@ -340,7 +341,7 @@ scheduleNextRender = do
   let diff = diffUTCTime next tNow
   -- if next logical time is more than 0.2 seconds in the past or future
   -- fast-forward or rewind by half of the difference
-  let adjustment = if diff >= (-0.2) && diff <= 0.2 then 0 else (diff*(-0.5))
+  let adjustment = if diff >= (-0.2) && diff <= 0.2 then 0 else (diff*(-1))
   when (diff < (-0.2)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
   when (diff > 0.2) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
   let diff' = diff + adjustment
@@ -371,9 +372,9 @@ forkRenderThreads ctxM riM = do
 mainRenderThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
 mainRenderThread ctxM riM rsM = do
   ctx <- readMVar ctxM
-  rs <- takeMVar rsM
+  rs <- readMVar rsM
   rs' <- execStateT (render ctx) rs
-  putMVar rsM rs'
+  swapMVar rsM rs'
   swapMVar riM (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
   execStateT sleepIfNecessary rs'
   mainRenderThread ctxM riM rsM
@@ -382,7 +383,8 @@ animationThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
 animationThread ctxM riM rsM = void $ inAnimationFrame ThrowWouldBlock $ \_ -> do
   ctx <- readMVar ctxM
   when (canvasOn ctx) $ do
-    rs <- takeMVar rsM
-    rs' <- execStateT (renderAnimation ctx) rs
-    putMVar rsM rs'
+    rs <- readMVar rsM
+    _ <- execStateT (renderAnimation ctx) rs
+    -- putMVar rsM rs'
+    return ()
   animationThread ctxM riM rsM
