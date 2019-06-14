@@ -152,4 +152,9 @@ presetView "iclc2019noVisuals" = Views [
   ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 10])
   ]
 
+presetView "blackBox" = Views [
+     ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 10]),
+     ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 10])
+     ]
+
 presetView _ = standardView
