@@ -37,7 +37,7 @@ existenceParser = choice [
     eof >> return Tidal.silence,
     do
       expr <- sepEmpty existencePattern
-      eof >
+      eof
       return $  Tidal.stack expr
       ]
 
