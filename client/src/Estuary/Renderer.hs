@@ -93,7 +93,7 @@ render c = do
   flushEvents c
   t2 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
-  calculateRenderTimes
+  -- calculateRenderTimes
   scheduleNextRender
 
 canvasChanged :: Context -> Int -> Definition -> Renderer
@@ -120,9 +120,10 @@ renderZone c z d = do
     modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
   renderZoneAlways c z d'
   t2 <- liftIO $ getCurrentTime
-  let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
-  let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
-  modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
+  return ()
+  -- let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
+  -- let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
+  -- modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
 
 renderAnimation :: Context -> Renderer
 renderAnimation c = do
@@ -344,8 +345,9 @@ scheduleNextRender = do
   let adjustment = if diff >= (-0.2) && diff <= 0.2 then 0 else (diff*(-1))
   when (diff < (-0.2)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
   when (diff > 0.2) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
-  let diff' = diff + adjustment
-  let next' = addUTCTime diff' tNow
+--  let diff' = diff + adjustment
+--  let next' = addUTCTime diff' tNow
+  let next' = addUTCTime adjustment next
   put $ s { logicalTime = next' }
 
 -- if the (potentially adjusted) next logical time is more than a half period from now
