@@ -6,6 +6,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict
 import Control.Concurrent
 import Control.Concurrent.MVar
+import Control.Exception (evaluate)
 import Control.Monad.Loops
 import Data.Functor (void)
 import Data.List (intercalate,zipWith4)
@@ -58,9 +59,13 @@ flushEvents c = do
   liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
   -- flush CanvasOps to an MVar queue (list)
   when (canvasOn c) $ do
+    -- *** note: there is currently no consumer of this queue by default
+    -- languages that use this queue should either be removed, or functionality
+    -- added such that this canvasOps can be performed on the main canvas/requestAnimationFrame thread
     oldCvsState <- liftIO $ takeMVar $ canvasState c
     newOps <- gets canvasOps
-    liftIO $ putMVar (canvasState c) $ pushCanvasOps newOps oldCvsState
+    newCvsState <- liftIO $ evaluate $ pushCanvasOps newOps oldCvsState
+    liftIO $ putMVar (canvasState c) newCvsState
   modify' $ \x -> x { dirtEvents = [], canvasOps = []}
   return ()
 
@@ -87,6 +92,7 @@ render c = do
   t1 <- liftIO $ getCurrentTime
   s <- get
   when (canvasElement c /= cachedCanvasElement s) $ do
+    liftIO $ putStrLn "render: canvasElement new/changed"
     traverseWithKey (canvasChanged c) (definitions c)
     modify' $ \x -> x { cachedCanvasElement = canvasElement c }
   traverseWithKey (renderZone c) (definitions c)
@@ -133,12 +139,12 @@ renderAnimation c = do
 renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
 renderZoneAnimation tNow c z (TextProgram x) = do
   s <- get
-  -- t1 <- liftIO $ getCurrentTime
+  t1 <- liftIO $ getCurrentTime
   renderZoneAnimationTextProgram tNow c z $ forRendering x
-  -- t2 <- liftIO $ getCurrentTime
-  -- let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
-  -- let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
-  -- modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
+  t2 <- liftIO $ getCurrentTime
+  let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
+  let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
+  modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
   return ()
 renderZoneAnimation _ _ _ _ = return ()
 
