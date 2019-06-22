@@ -14,4 +14,4 @@ getPeak (_,[]) = 0
 getPeak (_,xs) = maximum xs
 
 updateAverage :: MovingAverage -> Double -> MovingAverage
-updateAverage s x = (fst s, take (fst s) $ x:(snd s))
+updateAverage (n,xs) x = (n, take n $ x:xs)
