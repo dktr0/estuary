@@ -25,7 +25,7 @@ canvasOpHelpFile = divClass "languageHelp" $ do
 about :: MonadWidget t m => m ()
 about = do
   divClass "about primary-color code-font" $ text "CanvasOp"
-  divClass "about primary-color code-font" $ text "A mini language for building live-coding visual languages like PunctualVideo."
+  divClass "about primary-color code-font" $ text "A mini language for building live-coding visual languages like SuperContinent."
 
 exampleText :: Text -> Text
 

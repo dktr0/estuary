@@ -5,7 +5,6 @@ import Data.IntMap.Strict
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
-import qualified Sound.Punctual.Evaluation as Punctual
 import Sound.MusicW.AudioContext
 import GHCJS.DOM.Types
 
@@ -23,7 +22,6 @@ data RenderState = RenderState {
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
   punctuals :: !(IntMap (Punctual.PunctualW AudioContextIO)),
   punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
-  punctualVideo :: !(IntMap Punctual.PunctualState),
   superContinentProgram :: SuperContinent.Program,
   superContinentState :: SuperContinent.SuperContinentState,
   renderStartTime :: !UTCTime,
@@ -46,7 +44,6 @@ initialRenderState t = do
     dirtEvents = [],
     punctuals = empty,
     punctualWebGLs = empty,
-    punctualVideo = empty,
     superContinentProgram = [],
     superContinentState = scs,
     renderStartTime = t,
