@@ -200,7 +200,7 @@ renderTextProgramChanged c z (Punctual,x) = do
     t <- liftAudioIO $ audioUTCTime
     let eval = (exprs,t)
     let (mainBusIn,_,_,_) = mainBus c
-    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn t) z (punctuals s)
+    let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 t) z (punctuals s)
     let tempo' = tempo c
     let beat0 = beatZero tempo'
     let cps' = cps tempo'
