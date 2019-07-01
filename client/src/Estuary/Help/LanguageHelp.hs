@@ -30,7 +30,6 @@ import Estuary.Help.Togo
 import Estuary.Help.Vocesotrevez
 import Estuary.Help.SvgOp
 import Estuary.Help.PunctualAudio
-import Estuary.Help.PunctualVideo
 import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
 import Estuary.Types.TextNotation
@@ -62,7 +61,6 @@ parserToHelp (TidalTextNotation Togo) = togoHelpFile
 parserToHelp CanvasOp = canvasOpHelpFile
 parserToHelp SvgOp = svgOpHelpFile
 parserToHelp Punctual = punctualAudioHelpFile
-parserToHelp PunctualVideo = punctualVideoHelpFile
 parserToHelp SuperContinent = superContinentHelpFile
 parserToHelp _ = noHelpFile
 
