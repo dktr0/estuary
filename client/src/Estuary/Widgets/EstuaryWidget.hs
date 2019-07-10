@@ -8,153 +8,70 @@ import Estuary.Types.Context
 import Estuary.RenderInfo
 import Estuary.Types.Hint
 
-data EstuaryWidget t m a b = EstuaryWidget {
-  widget :: Dynamic t Context -> Dynamic t RenderInfo -> Dynamic t a -> m (b, Dynamic t a, Event t Hint)
-  } -- note: dynamic t a argument represents initial value + deltas, Dynamic t a result represents initial value + edits
 
-runEstuaryWidget :: MonadWidget t m => EstuaryWidget t m a b
-  -> Dynamic t Context -> Dynamic t RenderInfo -> Dynamic t a
-  -> m (Dynamic t a, Dynamic t a, Event t Hint) -- (current value [deltas+edits],edits only, hints)
-runEstuaryWidget e ctx ri d = do
-  (_,edits,hints) <- (widget e) ctx ri d
-  i <- (sample . current) d
-  v <- holdDyn i $ leftmost [updated edits,updated d]
-  return (v,edits,hints)
+data Editor t a = Editor {
+  editorDyn :: Dynamic t a,
+  editorEdit :: Event t a
+  }
 
-instance MonadWidget t m => Functor (EstuaryWidget t m a) where
-  fmap f x = EstuaryWidget $ \ctx ri d -> do
-    (a,edits,hints) <- (widget x) ctx ri d
-    return (f a,edits,hints)
+instance Functor (Editor t) where
+  fmap f (Editor d e) = Editor (fmap x d) (fmap d e)
 
-instance MonadWidget t m => Applicative (EstuaryWidget t m a) where
-  pure x = EstuaryWidget $ \_ _ d -> do
-    i <- (sample . current) d
-    return (x, constDyn i, never)
-  f <*> a = EstuaryWidget $ \ctx ri d -> do
-    (f',edit1,hint1) <- (widget f) ctx ri d
-    (a',edit2,hint2) <- (widget a) ctx ri d
-    i <- (sample . current) d
-    let combinedEdits = leftmost [updated edit2,updated edit1,updated d]
-    combinedEdits' <- holdDyn i combinedEdits
-    let combinedHints = leftmost [hint1,hint2]
-    return (f' a',combinedEdits',combinedHints)
+instance Applicative (Editor t) where
+  pure x = Editor (constDyn x) never
+  (Editor fDyn fEdit) <*> (Editor xDyn xEdit) = Editor d e
+    where
+     d = fDyn <*> xDyn
+     e = tagPromptlyDyn d $ leftmost [fEdit,xEdit]
 
-instance MonadWidget t m => Monad (EstuaryWidget t m a) where
-  x >>= f = EstuaryWidget $ \ctx ri d -> do
-    (a,edit1,hint1) <- (widget x) ctx ri d
-    (b,edit2,hint2) <- (widget $ f a) ctx ri d
-    i <- (sample . current) d
-    let combinedEdits = leftmost [updated edit2,updated edit1,updated d]
-    combinedEdits' <- holdDyn i combinedEdits
-    let combinedHints = leftmost [hint1,hint2]
-    return (b,combinedEdits',combinedHints)
-
-context :: MonadWidget t m => EstuaryWidget t m a (Dynamic t Context)
-context = EstuaryWidget $ \ctx _ d -> do
-  i <- (sample . current) d
-  return (ctx, constDyn i, never)
-
-renderInfo :: MonadWidget t m => EstuaryWidget t m a (Dynamic t RenderInfo)
-renderInfo = EstuaryWidget $ \_ ri d -> do
-  i <- (sample . current) d
-  return (ri, constDyn i, never)
-
-initialValue :: MonadWidget t m => EstuaryWidget t m a a
-initialValue = EstuaryWidget $ \_ _ d -> do
-  i <- (sample . current) d
-  return (i, constDyn i, never)
-
-delta :: MonadWidget t m => EstuaryWidget t m a (Dynamic t a)
-delta = EstuaryWidget $ \_ _ d -> do
-  i <- (sample . current) d
-  return (d, constDyn i, never)
-
-edit :: MonadWidget t m => Dynamic t a -> EstuaryWidget t m a ()
-edit x = EstuaryWidget $ \_ _ d -> do
-  i <- (sample . current) d
-  d' <- holdDyn i $ updated x
-  return ((),d',never)
-
-hint :: MonadWidget t m => Event t Hint -> EstuaryWidget t m a ()
-hint x = EstuaryWidget $ \_ _ d -> do
-  i <- (sample . current) d
-  return ((),constDyn i,x)
-
-reflex :: MonadWidget t m => m b -> EstuaryWidget t m a b
-reflex m = EstuaryWidget $ \_ _ d -> do
-  b <- m
-  i <- (sample . current) d
-  return (b,constDyn i,never)
-
-embed :: MonadWidget t m => (c -> a) -> EstuaryWidget t m a b -> EstuaryWidget t m c (Dynamic t a)
-embed f w = EstuaryWidget $ \ctx ri deltaC -> do
-  deltaA <- mapDyn f deltaC
-  (_,editsA,hints) <- (widget w) ctx ri deltaA
-  i <- (sample . current) deltaC
-  return (editsA,constDyn i,hints)
-
-embed' :: MonadWidget t m => (c -> a) -> EstuaryWidget t m a b -> EstuaryWidget t m c (b,Dynamic t a)
-embed' f w = EstuaryWidget $ \ctx ri deltaC -> do
-  deltaA <- mapDyn f deltaC
-  (b,editsA,hints) <- (widget w) ctx ri deltaA
-  i <- (sample . current) deltaC
-  return ((b,editsA),constDyn i,hints)
+-- not sure if we can define a monad instance for Editor
+-- that is probably okay for now? Even just Applicative is quite useful in the
+-- examples below.
 
 
--- | We provide four operators that are particularly useful for combining edits
--- from sub-widgets in the edit values produced a widget. <$$>, <$$$>, <**>, and
--- <***> are very much like <$> and <*> except specialized to EstuaryWidget
--- computations containing Dynamics. The versions with two symbols (<$$> and <**>)
--- take Dynamic values not wrapped in a monadic type, which makes them convenient
--- for use with values that have been bound in a do expression. The versions with
--- three symbols (<$$$> and <***>) take Dynamic values wrapped in an EstuaryWidget
--- structure, which makes them convenient for use in a more "Applicative" style.
--- Examples of both patterns are provided further below.
+type Widget t m = ReaderT (Dynamic t Context,Dynamic t RenderInfo) m
 
-(<**>) :: MonadWidget t m
-  => EstuaryWidget t m z (Dynamic t (a -> b))
-  -> Dynamic t a
-  -> EstuaryWidget t m z (Dynamic t b)
-f <**> a = do
-  f' <- f
-  reflex $ combineDyn ($) f' a
+getContext :: Widget t m (Dynamic t Context)
+getContext = fst <$> ask
 
-(<***>) :: MonadWidget t m
-  => EstuaryWidget t m z (Dynamic t (a -> b))
-  -> EstuaryWidget t m z (Dynamic t a)
-  -> EstuaryWidget t m z (Dynamic t b)
-f <***> a = do
-  f' <- f
-  a' <- a
-  reflex $ combineDyn ($) f' a'
+getRenderInfo :: Widget t m (Dynamic t RenderInfo)
+getRenderInfo = snd <$> ask
 
-(<$$>) :: MonadWidget t m
-  => (a -> b)
-  -> Dynamic t a
-  -> EstuaryWidget t m z (Dynamic t b)
-f <$$> a = reflex $ mapDyn f a
+runWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Widget t m a -> m a
+runWidget ctx ri w = runReaderT w (ctx,ri)
 
-(<$$$>) :: MonadWidget t m
-  => (a -> b)
-  -> EstuaryWidget t m z (Dynamic t a)
-  -> EstuaryWidget t m z (Dynamic t b)
-f <$$$> a = a >>= (reflex . mapDyn f)
+liftReflexEditor :: MonadWidget t m => Dynamic t a -> (a -> Event t a -> m (Event t a)) -> Widget t m (Editor t a)
+liftReflexEditor delta widget = do
+  iVal <- (sample . current) delta
+  editEvents <- widget iVal $ updated delta
+  holdDyn ival $ leftmost [editEvents,updated delta]
 
--- examples:
 
-placeholder :: MonadWidget t m => EstuaryWidget t m String ()
-placeholder = return ()
+{- examples:
 
-example1 :: MonadWidget t m => EstuaryWidget t m (String,String) ()
-example1 = do
-  reflex $ text "editor1"
-  x <- embed fst placeholder
-  reflex $ text "editor2"
-  y <- embed snd placeholder
-  edit =<< (\a b -> (a,b)) <$$> x <**> y -- 2-character operators because x and y are just Dynamic t String
+-- using liftReflexEditor to include "plain" Reflex widget code
+stringWidget :: MonadWidget t m => Dynamic t String -> Widget t m (Editor t String)
+stringWidget delta = do
+  ctx <- getContext -- eg. so that we could use ctx in the below if we wanted to...
+  rInfo <- getRenderInfo -- eg. so that we could use rInfo in the below if we wanted to...
+  liftReflexEditor delta $ \i d -> do -- nb: in Reflex' m now...
+    let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font")
+    x <- textInput $ def & textInputConfig_setValue .~ (fmap T.pack d) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
+    return $ fmap T.unpack $ _textInput_input x
 
-example2 :: MonadWidget t m => EstuaryWidget t m (String,String) ()
-example2 = do
-  let x = (reflex $ text "editor1") >> embed fst placeholder
-  let y = (reflex $ text "editor2") >> embed snd placeholder
-  edit =<< (\a b -> (a,b)) <$$$> x <***> y -- 3-character operators because x and y are m (Dynamic t String)
+-- taking advantage of Editor's Applicative instance to easily build widgets for more complex types
+compositeWidget :: MonadWidget t m => Dynamic t (String,String) -> Widget t m (Editor t (String,String))
+compositeWidget delta = do
+  x <- stringWidget $ fmap fst delta
+  y <- stringWidget $ fmap snd delta
+  return $ (\x y -> (x,y)) <$> x <*> y
+
+-- eg. temporarily integrating into old Estuary expectations with minimal disturbance...
+compositeWidget' :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Dynamic t (String,String) -> m (Dynamic t (String,String),Event t (String,String))
+compositeWidget' ctx ri delta = do
+  x <- runWidget ctx ri (compositeWidget delta) -- x :: Editor t (String,String)
+  return (editorDyn x,editorEdit x)
+
+-- *** next: need to add Hints to all of this
+
+-}
