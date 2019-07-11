@@ -10,6 +10,15 @@ CP_RECURSIVE=cp -Rf
 #endif
 STACK_SERVER=cd server/ && stack
 
+# the hack below is necessary because cabal on OS x seems to build in a
+# subdirectory name ...../x86_64-osx/... rather than the name in $system
+ifeq (${system},x86_64-darwin)
+	SYSTEM = x86_64-osx
+else
+	SYSTEM = ${system}
+endif
+
+
 assertInNixShell:
 ifndef IN_NIX_SHELL
 	$(error Must be run in a nix shell)
@@ -103,12 +112,12 @@ nixShellStageClient:
 	nix-shell -A shells.ghcjs --run "make cabalStageClient"
 
 GET_CABAL_SERVER_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('server/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
-GET_GHC_VERISON=ghc --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
-CABAL_SERVER_BIN=dist-newstyle/build/${system}/ghc-${GHC_VERSION}/${CABAL_SERVER_PACKAGE_NAME}/x/EstuaryServer/build/EstuaryServer/EstuaryServer
+GET_GHC_VERSION=ghc --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
+CABAL_SERVER_BIN=dist-newstyle/build/$(SYSTEM)/ghc-${GHC_VERSION}/${CABAL_SERVER_PACKAGE_NAME}/x/EstuaryServer/build/EstuaryServer/EstuaryServer
 cabalStageServer: assertInNixGhcShell
 	@ echo "cabalStageServer:"
 	$(eval export CABAL_SERVER_PACKAGE_NAME=$(shell $(GET_CABAL_SERVER_PACKAGE_NAME)))
-	$(eval export GHC_VERSION=$(shell $(GET_GHC_VERISON)))
+	$(eval export GHC_VERSION=$(shell $(GET_GHC_VERSION)))
 	# stage the server binary
 	$(CP) $(CABAL_SERVER_BIN) $(DEV_STAGING_ROOT)
 	chmod a+w $(DEV_STAGING_ROOT)/EstuaryServer
@@ -190,3 +199,6 @@ selfCertificates:
 	openssl genrsa -out staging/privkey.pem 2048
 	openssl req -new -key staging/privkey.pem -out staging/cert.csr
 	openssl x509 -req -in staging/cert.csr -signkey staging/privkey.pem -out staging/cert.pem
+	cp staging/privkey.pem dev-staging/privkey.pem
+	cp staging/cert.csr dev-staging/cert.csr
+	cp staging/cert.pem dev-staging/cert.pem
