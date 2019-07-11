@@ -3,61 +3,57 @@ module Estuary.Widgets.EstuaryWidget where
 
 import Reflex
 import Reflex.Dom
-import Control.Monad.Reader
 import Data.Text as T -- note: just for examples
 
 import Estuary.Types.Context
 import Estuary.RenderInfo
 import Estuary.Types.Hint
+import Estuary.Types.Variable
 
-data Editor t a = Editor {
-  editorDyn :: Dynamic t a,
-  editorEdit :: Event t a
-  }
-
-instance Reflex t => Functor (Editor t) where
-  fmap f (Editor d e) = Editor (fmap f d) (fmap f e)
-
-instance Reflex t => Applicative (Editor t) where
-  pure x = Editor (constDyn x) never
-  (Editor fDyn fEdit) <*> (Editor xDyn xEdit) = Editor d e
-    where
-     d = fDyn <*> xDyn
-     e = tagPromptlyDyn d $ leftmost [() <$ fEdit,() <$ xEdit]
-
--- not sure if we can define a monad instance for Editor
--- that is probably okay for now? Even just Applicative is quite useful in the
--- examples below.
-
+-- In this module, we define a type that represents the greater majority of widgets
+-- in the Estuary project. Such widgets have access to shared information about the
+-- "Context" (user prefs, etc) and render engine (eg. audio and load levels) and are
+-- able to propagate Hint-s upwards as necessary, alongside returning some value.
 
 data EstuaryWidget t m a = EstuaryWidget {
   runEstuaryWidget :: Dynamic t Context -> Dynamic t RenderInfo -> m (a, Event t [Hint])
   }
 
-getContext :: MonadWidget t m => EstuaryWidget t m (Dynamic t Context)
-getContext = EstuaryWidget (\ctx _ -> return (ctx,never))
+askContext :: MonadWidget t m => EstuaryWidget t m (Dynamic t Context)
+askContext = EstuaryWidget (\ctx _ -> return (ctx,never))
 
-getRenderInfo :: MonadWidget t m => EstuaryWidget t m (Dynamic t RenderInfo)
-getRenderInfo = EstuaryWidget (\_ ri -> return (ri,never))
+askRenderInfo :: MonadWidget t m => EstuaryWidget t m (Dynamic t RenderInfo)
+askRenderInfo = EstuaryWidget (\_ ri -> return (ri,never))
 
+-- Usually we just have a single Hint to issue...
 hint :: MonadWidget t m => Event t Hint -> EstuaryWidget t m ()
 hint x = EstuaryWidget (\_ _ -> return ((),fmap (:[]) x))
 
+-- But if we do have multiple simultaneous Hint-s that is no problem too
 hints :: MonadWidget t m => Event t [Hint] -> EstuaryWidget t m ()
 hints xs = EstuaryWidget (\_ _ -> return ((),xs))
 
+-- Generic Reflex widget code can be "lifted" into EstuaryWidget with 'reflex'...
 reflex :: MonadWidget t m => m a -> EstuaryWidget t m a
 reflex x = EstuaryWidget (\_ _ -> do
   a <- x
   return (a,never)
   )
 
-reflexEditor :: MonadWidget t m => Dynamic t a -> (a -> Event t a -> m (Event t a)) -> EstuaryWidget t m (Editor t a)
-reflexEditor delta widget = do -- in ReaderT
+-- However, an especially common pattern is needing to incorporate Reflex widget
+-- code for Variables (in the Estuary sense, ie. things that can be changed either
+-- by local editing or network actions). 'reflexVariable' provides a convenient way
+-- of lifting Reflex code (a -> Event t a -> m (Event t a)) into EstuaryWidget t m:
+
+reflexVariable :: MonadWidget t m => Dynamic t a -> (a -> Event t a -> m (Event t a)) -> EstuaryWidget t m (Variable t a)
+reflexVariable delta widget = do -- in ReaderT
   iVal <- reflex $ (sample . current) delta
   editEvents <- reflex $ widget iVal $ updated delta
   val <- reflex $ holdDyn iVal $ leftmost [editEvents,updated delta]
-  return $ Editor val editEvents
+  return $ Variable val editEvents
+
+-- Naturally we provide Functor, Applicative, and Monad instances
+-- *** should see if we also can provide MonadIO ***
 
 instance MonadWidget t m => Functor (EstuaryWidget t m) where
   fmap f x = EstuaryWidget (\ctx ri -> do
@@ -85,27 +81,27 @@ instance MonadWidget t m => Monad (EstuaryWidget t m) where
 
 {- examples:
 
--- using reflexEditor to include "plain" Reflex widget code
-stringEstuaryWidget :: MonadWidget t m => Dynamic t String -> EstuaryWidget t m (Editor t String)
+-- using reflexVariable to include "plain" Reflex widget code
+stringEstuaryWidget :: MonadWidget t m => Dynamic t String -> EstuaryWidget t m (Variable t String)
 stringEstuaryWidget delta = do
   ctx <- getContext -- eg. so that we could use ctx in the below if we wanted to...
   rInfo <- getRenderInfo -- eg. so that we could use rInfo in the below if we wanted to...
-  reflexEditor delta $ \i d -> do -- nb: in Reflex' m now...
+  reflexVariable delta $ \i d -> do -- nb: in Reflex' m now...
     let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font")
     x <- textInput $ def & textInputConfig_setValue .~ (fmap T.pack d) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
     return $ fmap T.unpack $ _textInput_input x
 
--- taking advantage of Editor's Applicative instance to easily build widgets for more complex types
-compositeEstuaryWidget :: MonadWidget t m => Dynamic t (String,String) -> EstuaryWidget t m (Editor t (String,String))
+-- taking advantage of Variable's Applicative instance to easily build widgets for more complex types
+compositeEstuaryWidget :: MonadWidget t m => Dynamic t (String,String) -> EstuaryWidget t m (Variable t (String,String))
 compositeEstuaryWidget delta = do
   x <- stringEstuaryWidget $ fmap fst delta
   y <- stringEstuaryWidget $ fmap snd delta
   return $ (\x y -> (x,y)) <$> x <*> y
 
--- eg. temporarily integrating into old Estuary expectations with minimal disturbance...
+-- eg. temporarily integrating into old Estuary expectations with minimal disturbance, using runEstuaryWidget
 compositeEstuaryWidget' :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Dynamic t (String,String) -> m (Dynamic t (String,String),Event t (String,String),Event t [Hint])
 compositeEstuaryWidget' ctx ri delta = do
-  (x,hs) <- runEstuaryWidget (compositeEstuaryWidget delta) ctx ri  -- x :: Editor t (String,String)
+  (x,hs) <- runEstuaryWidget (compositeEstuaryWidget delta) ctx ri  -- x :: Variable t (String,String)
   return (editorDyn x,editorEdit x,hs)
 
 -}
