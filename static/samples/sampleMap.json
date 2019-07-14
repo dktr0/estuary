@@ -95,6 +95,7 @@
 "world": ["world/gabbakick.wav","world/bd.wav","world/sn.wav"],
 "alphabet": ["alphabet/i.wav","alphabet/h.wav","alphabet/j.wav","alphabet/k.wav","alphabet/x.wav","alphabet/o.wav","alphabet/n.wav","alphabet/y.wav","alphabet/l.wav","alphabet/m.wav","alphabet/z.wav","alphabet/w.wav","alphabet/a.wav","alphabet/v.wav","alphabet/t.wav","alphabet/c.wav","alphabet/b.wav","alphabet/u.wav","alphabet/f.wav","alphabet/q.wav","alphabet/p.wav","alphabet/g.wav","alphabet/e.wav","alphabet/r.wav","alphabet/s.wav","alphabet/d.wav"],
 "mash2": ["mash2/output2.wav","mash2/output3.wav","mash2/output4.wav","mash2/output.wav"],
+"coins": ["coins/coins.wav"],
 "mouth": ["mouth/002_11.wav","mouth/013_8.wav","mouth/000_1.wav","mouth/007_2.wav","mouth/014_9.wav","mouth/004_13.wav","mouth/006_15.wav","mouth/001_10.wav","mouth/012_7.wav","mouth/010_5.wav","mouth/009_4.wav","mouth/003_12.wav","mouth/005_14.wav","mouth/011_6.wav","mouth/008_3.wav"],
 "bassfoo": ["bassfoo/000_0.wav","bassfoo/002_2.wav","bassfoo/001_1.wav"],
 "808mc": ["808mc/MC75.WAV","808mc/MC10.WAV","808mc/MC00.WAV","808mc/MC25.WAV","808mc/MC50.WAV"],
