@@ -14,6 +14,7 @@ import Data.Map (fromList)
 import qualified Data.Text as T
 
 import Estuary.Protocol.Foreign
+import Estuary.Protocol.Peer
 import Estuary.Types.Definition
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -32,11 +33,11 @@ terminalWidget :: MonadWidget t m => Dynamic t Context ->
   Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
   currentSpace <- mostRecentEnsemble deltasUp
-  (sendButton,inputWidget) <- divClass "terminalHeader" $ do
+  (sendButton,inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
     sendButton' <- divClass "webSocketButtons" $ dynButton =<< translateDyn Term.Send ctx
     divClass "webSocketButtons" $ dynText =<< translateDyn Term.TerminalChat ctx
     let resetText = fmap (const "") terminalInput
-    let attrs = constDyn $ fromList [("class","chat-textarea other-text"),("style","width: 100%")]
+    let attrs = constDyn $ fromList [("class","primary-color code-font"),("style","width: 100%")]
     inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
     return (sendButton',inputWidget')
   let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
@@ -50,10 +51,14 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
   let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) deltasDown'
-  let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs]
+  let streamIdMsgs = fmap (\x -> ["new Peer id: " ++ x]) streamId
+  let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs,streamIdMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
   mostRecent' <- mapDyn (fmap T.pack) mostRecent
-  simpleList mostRecent' $ \v -> divClass "chatMessage" $ dynText v
+  simpleList mostRecent' $ \v -> divClass "chatMessage code-font primary-color" $ dynText v
+
+  startStreamingReflex ctx $ ffilter (== Terminal.StartStreaming) commands
+  streamId <- peerProtocolIdReflex ctx $ ffilter (== Terminal.StreamId) commands
 
   return commands
 
@@ -69,3 +74,13 @@ mostRecentEnsemble requests = do
   where
     f (JoinEnsemble x) = Just x
     f _ = Nothing
+
+startStreamingReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m ()
+startStreamingReflex ctx e = do
+  pp <- fmap peerProtocol $ (sample . current) ctx
+  performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
+
+peerProtocolIdReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m (Event t String)
+peerProtocolIdReflex ctx e = do
+  pp <- fmap peerProtocol $ (sample . current) ctx
+  performEvent $ fmap (liftIO . const (peerProtocolId pp)) e

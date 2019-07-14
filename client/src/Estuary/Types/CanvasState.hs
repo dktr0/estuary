@@ -10,6 +10,7 @@ data CanvasState = CanvasState {
   }
 
 pushCanvasOps :: [(UTCTime,CanvasOp)] -> CanvasState -> CanvasState
+pushCanvasOps [] c = c
 pushCanvasOps xs c = c { queuedOps = queuedOps c ++ xs }
 
 emptyCanvasState :: IO CanvasState

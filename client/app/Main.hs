@@ -1,4 +1,4 @@
-{-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
+ {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
 module Main where
 
@@ -16,6 +16,7 @@ import Estuary.Render.AudioContext
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.Protocol.Foreign
+import Estuary.Protocol.Peer
 import Estuary.Types.Context
 import Estuary.Types.CanvasState
 import Estuary.Widgets.Estuary
@@ -47,6 +48,11 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
+  pp <- newPeerProtocol
+
+  ac <- getGlobalAudioContext
+  addWorklets ac
+
   mainBusNodes@(mainBusIn,_,_,_) <- initializeMainBus
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
@@ -54,7 +60,7 @@ main = do
   protocol <- estuaryProtocol
   mv <- emptyCanvasState >>= newMVar
   now <- liftAudioIO $ audioUTCTime
-  c <- newMVar $ initialContext now mainBusNodes wd sd mv
+  c <- newMVar $ initialContext now mainBusNodes wd sd mv pp
   ri <- newMVar $ emptyRenderInfo
   forkRenderThreads c ri
 

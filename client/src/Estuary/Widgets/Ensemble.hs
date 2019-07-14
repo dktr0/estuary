@@ -57,16 +57,16 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
 
   -- Ensemble name and password UI (created only if ensemble is not "")
-  (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader" $ do
-    divClass "ensembleName" $ text $ "Ensemble: " `T.append` T.pack ensemble
-    hdl' <- divClass "ensembleHandle" $ do
+  (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader primary-color ui-font" $ do
+    divClass "ensembleName ui-font primary-color" $ text $ "Ensemble: " `T.append` T.pack ensemble
+    hdl' <- divClass "ensembleHandle ui-font primary-color" $ do
       text "Name:"
-      let attrs = constDyn ("class" =: "ensembleHandle other-text")
+      let attrs = constDyn ("class" =: "ensembleHandle ui-font primary-color")
       handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
       return $ _textInput_input handleInput
-    pwdRequest' <- divClass "ensemblePassword" $ do
+    pwdRequest' <- divClass "ensemblePassword ui-font primary-color" $ do
       text "password:"
-      let attrs = constDyn ("class" =: "ensemblePassword other-text")
+      let attrs = constDyn ("class" =: "ensemblePassword ui-font primary-color")
       pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
       return $ fmap AuthenticateInEnsemble $ fmap T.unpack $ _textInput_input pwdInput
     return (hdl',pwdRequest')

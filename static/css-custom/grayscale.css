@@ -1,102 +1,62 @@
-body {
-	font-family: 'Helvetica';
-	background-color: lightgray;
-	color: black;
-	height: 100%;
-	margin: 0;
+/*
+--------------------------------------------------------------------
+Welcome to the 'grayscale' theme template: For quick Estuary's interface customization, modify the colors below.
+More advanced customization is available through CSS classes within this document.
+--------------------------------------------------------------------
+*/
+
+:root {
+/* sets the background color */
+  --background-color: linear-gradient(to top right, black, rgb(182, 178, 247));
+
+/* set the color of all text and typically some borders*/
+  --primary-color:   #e8e4e4;
+;
+
+/* sets the background color of buttons and other borders */
+  --secondary-color: hsl(0,0%,10%);
+
+/* sets the color of things that appear temporarily */
+  --transient-color: orange;
 }
 
-/*styles the header dropdown menus and checkboxes*/
-.header-dropdown-and-checkbox  {
-	cursor: pointer;
-	background-color: lightgray;
-	color: black;
-	border: 1px solid black;
-}
+/*
+--------------------------------------------------------------------
+				advanced customization
+--------------------------------------------------------------------
+*/
 
-/*styles all Estuary buttons */
-button {
-	background-color: hsl(0,0%,20%);
-	color: lightgray;
-	border: none;
-	border-radius: 4px;
-}
+  /*styles the background */
+.background {
+    background-color: var(--background-color);
+	  }
 
-
-.reference-button button {
-	background-color: transparent;
-	color: black;
-}
-
-/*styles the code text, including the one in the sequencer*/
-.code-text {
+/*styles the code font*/
+.code-font {
 	  font-family: 'Helvetica';
-		color: black;
-		font-size: 100%;
-}
+	  font-size:1em;
+	  }
 
-/*styles the chat/terminal and the coding-language dropdown menus*/
-.other-text {
+/* styles the fonts for the header, menus and labels */
+.ui-font {
 	font-family: 'Helvetica';
-	color: black;
-	font-size: 100%;
+	font-size: 1em;
+	}
+
+/* styles the user-interface buttons */
+.ui-buttons {
+  color: var(--primary-color);
+  background-color:rgba(0,0,0,0.12);
 }
 
-
-/* name-tag textarea */
-.name-tag-textarea {
-	background-color: transparent;
-	flex:1;
-	border: none;
-	color:black;
-}
-
-/*styles the coding language dropdown menu*/
-.coding-language-dropdown {
-	cursor: pointer;
-	background-color: lightgray;
-	color: black;
-	border: 1px solid black;
-}
-
-/* styles the coding textarea*/
-.coding-textarea {
-	background-color: transparent;
-	border: none;
-}
-
-/* styles the chat textarea*/
-.chat-textarea { /*modifies the terminal text area (source)*/
-	border: none;
-	background-color: transparent;
-}
-
-/* styles the sequencer textarea*/
-.sequencer-textarea input{
-	background-color: transparent;
-	border: 2pt solid black;
+/* styles the primary borders (e.g. from dropdown menus)*/
+.primary-borders {
 	border-radius: 5px;
+    border: 1px solid black;
 }
 
-/* styles the sequencer pads */
-.sequencer-pads {
-	border:1pt solid black;
-	border-radius: 5px;
-}
-
-/* sets the color for the pads when hovering on */
-.sequencer-pads:hover {
-	background-color: hsl(0,0%,20%);
-}
-
-/* sets the color for the pads when activated */
-.sequencer-pads-activated{
-	background-color: darkgray;
-	border:1pt solid black;
-	border-radius: 5px;
-}
-
-/* sets the color for the active pads when hovering on */
-.sequencer-pads-activated:hover{
-	background-color: #797878;
-}
+/*styles other borders (e.g. from ui buttons and sequencer buttons)  */
+.other-borders {
+    border-radius: 5px;
+    border: 1px solid black;
+    }

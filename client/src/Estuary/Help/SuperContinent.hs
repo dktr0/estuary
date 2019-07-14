@@ -6,6 +6,7 @@ import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility
 
 -- import Estuary.Types.Language
 
@@ -18,5 +19,5 @@ superContinentHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
- divClass "about" $ text "SuperContinent"
- divClass "about" $ text "A mini live coding esolang developed in Hamilton, Canada by David Ogborn and others."
+ divClass "about primary-color code-font" $ text "SuperContinent"
+ divClass "about primary-color code-font" $ text "A mini live coding esolang developed in Hamilton, Canada by David Ogborn and others."

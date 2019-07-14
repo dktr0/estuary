@@ -235,12 +235,12 @@ whitespace liveness iVal cssClass popupList _ event = elAttr "div" ("style"=:"po
 
 whitespacePopup::(MonadWidget t m,Show a)=> Dynamic t Liveness -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
 whitespacePopup liveness actionList = elClass "div" "popupMenu" $ do
-  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "primary-color code-font background" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
   events' <- liftM (id) events
-  layerSplit <- clickableDivClass' "[ , ]" "noClass" (LayerSplit)
+  layerSplit <- clickableDivClass' "[ , ]" "primary-color code-font background" (LayerSplit)
   liveWidget <- livenessCheckboxWidget (liveness)
-  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
+  closeMenu <- clickableDivClass' "close" "primary-color code-font background" (Nothing)
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget, fmap Just layerSplit]
 
 
@@ -262,11 +262,11 @@ livenessCheckboxWidget liveness = elClass "div" "livenessWidget" $ do
 
 basicPopup::(MonadWidget t m,Show a)=> Dynamic t Liveness -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
 basicPopup liveness actionList = elClass "div" "popupMenu" $ do
-  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "primary-color code-font background" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
   events' <- liftM (id) events
   liveWidget <- livenessCheckboxWidget (liveness)
-  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
+  closeMenu <- clickableDivClass' "close" "primary-color code-font background" (Nothing)
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget]
 
 samplePickerPopup::(MonadWidget t m)=>  Dynamic t Liveness -> Map Int (Text,Text) -> [EditSignal  Text] -> m (Event t (Maybe (EditSignal Text)),Event t Hint)
@@ -274,11 +274,11 @@ samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ d
   dd <- dropdownOpts (-1) sampleMap def  --defaults to -1 so that someone can select "~" (the first one) and have it register as a change
   let sampleKey = _dropdown_value dd
   sampleChange <- mapDyn (\x-> maybe ("~") (snd) $ Data.Map.lookup x sampleMap) sampleKey -- Dyn (editsignal Text)
-  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "noClass" (Just x)) actionList -- [m (Maybe (EditSignal))]
+  let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "primary-color code-font background" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
   events' <- liftM (id) events
   liveWidget <- livenessCheckboxWidget liveness
-  closeMenu <- clickableDivClass' "close" "noClass" (Nothing)
+  closeMenu <- clickableDivClass' "close" "primary-color code-font background" (Nothing)
   return $ (leftmost $ events' ++[closeMenu, fmap Just liveWidget,fmap (Just . ChangeValue) (updated sampleChange)], fmap SampleHint $ ffilter (\x->if x =="~" then False else True) $ fmap T.unpack $ updated sampleChange)
 
 repDivWidget'::MonadWidget t m => RepOrDiv -> Event t () -> m (Event t RepOrDiv)
@@ -317,10 +317,10 @@ repDivWidget'' iVal _ = elClass "span" "repOrDiv" $ mdo
 
 genericSignalMenu :: MonadWidget t m => m (Event t (Maybe (EditSignal a)))
 genericSignalMenu = elAttr "div" (singleton "style" "top: 0px; left: 0px; position: absolute; z-index: 1;") $ do
-  a <- clickableDivClass' "Close" "noClass" Nothing
-  b <- clickableDivClass' "-" "noClass" (Just DeleteMe)
-  c <- clickableDivClass' "[]" "noClass" (Just MakeGroup)
-  d <- clickableDivClass' "{}" "noClass" (Just MakeLayer)
+  a <- clickableDivClass' "Close" "primary-color code-font background" Nothing
+  b <- clickableDivClass' "-" "primary-color code-font background" (Just DeleteMe)
+  c <- clickableDivClass' "[]" "primary-color code-font background" (Just MakeGroup)
+  d <- clickableDivClass' "{}" "primary-color code-font background" (Just MakeLayer)
   return $ leftmost [a,b,c,d]
 
 popupSignalWidget :: MonadWidget t m => m (Event t (EditSignal a))

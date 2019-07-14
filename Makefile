@@ -1,13 +1,23 @@
 # If 'rsync' installed, use it to perform copies which only update if newer
 # otherwise falling back to a plain 'cp'.
 RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
-ifdef RSYNC_EXISTS
-CP=rsync  --perms --executability
-CP_RECURSIVE=rsync --recursive --perms --executability
-else
+#ifdef RSYNC_EXISTS
+#CP=rsync  --perms --executability
+#CP_RECURSIVE=rsync --recursive --perms --executability
+#else
 CP=cp
-CP_RECURSIVE=cp -rf
+CP_RECURSIVE=cp -Rf
+#endif
+STACK_SERVER=cd server/ && stack
+
+# the hack below is necessary because cabal on OS x seems to build in a
+# subdirectory name ...../x86_64-osx/... rather than the name in $system
+ifeq (${system},x86_64-darwin)
+	SYSTEM = x86_64-osx
+else
+	SYSTEM = ${system}
 endif
+
 
 assertInNixShell:
 ifndef IN_NIX_SHELL
@@ -25,45 +35,56 @@ ifndef NIX_GHC
 endif
 
 cabalBuildClient: assertInNixGhcjsShell
-	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all
+	@ echo "cabalBuildClient:"
+	cd client && hpack --force
+	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation
 
 nixShellBuildClient:
 	nix-shell -A shells.ghcjs --run "make cabalBuildClient"
 
 cabalBuildServer: assertInNixGhcShell
-	cabal new-build all
+	@ echo "cabalBuildServer:"
+	cd common && hpack --force
+	cd server && hpack --force
+	cabal new-build all --disable-library-profiling --disable-documentation
 
 nixShellBuildServer:
 	nix-shell -A shells.ghc --run "make cabalBuildServer"
 
-nixBuild: assertInNixShell
+nixBuild:
+	@ echo "nixBuild:"
 	nix-build
 
 PROD_STAGING_ROOT=staging/
 DEV_STAGING_ROOT=dev-staging/
 STAGING_ROOT=$(PROD_STAGING_ROOT)
 prepStage:
+	@ echo "prepStage:"
 	-mkdir $(STAGING_ROOT)
 	-mkdir $(STAGING_ROOT)/Estuary.jsexe/
 prepDevStage: STAGING_ROOT=$(DEV_STAGING_ROOT)
 prepDevStage: prepStage
 
 cleanStage:
+	@ echo "cleanStage:"
 	-rm -rf $(STAGING_ROOT)
 cleanDevStage: STAGING_ROOT=$(DEV_STAGING_ROOT)
 cleanDevStage: cleanStage
 
 stageStaticAssets: prepStage
+	@ echo "stageStaticAssets:"
 	$(CP_RECURSIVE) static/*.js $(STAGING_ROOT)/Estuary.jsexe/
-	$(CP_RECURSIVE) static/WebDirt/ $(STAGING_ROOT)/Estuary.jsexe/WebDirt/
-	$(CP_RECURSIVE) static/css-custom/ $(STAGING_ROOT)/Estuary.jsexe/css-custom/
-	$(CP_RECURSIVE) static/css-source/ $(STAGING_ROOT)/Estuary.jsexe/css-source/
-	$(CP_RECURSIVE) static/fonts/ $(STAGING_ROOT)/Estuary.jsexe/fonts/
-	$(CP_RECURSIVE) static/icons/ $(STAGING_ROOT)/Estuary.jsexe/icons/
+	$(CP_RECURSIVE) static/WebDirt $(STAGING_ROOT)/Estuary.jsexe/
+	$(CP_RECURSIVE) static/css-custom $(STAGING_ROOT)/Estuary.jsexe/
+	$(CP_RECURSIVE) static/css-source $(STAGING_ROOT)/Estuary.jsexe/
+	$(CP_RECURSIVE) static/fonts $(STAGING_ROOT)/Estuary.jsexe/
+	$(CP_RECURSIVE) static/icons $(STAGING_ROOT)/Estuary.jsexe/
+
 devStageStaticAssets: STAGING_ROOT=$(DEV_STAGING_ROOT)
 devStageStaticAssets: stageStaticAssets
 
 stageSamples: prepStage
+	@ echo "stageSamples:"
 	$(CP_RECURSIVE) static/samples/ $(STAGING_ROOT)/Estuary.jsexe/samples/
 devStageSamples: STAGING_ROOT=$(DEV_STAGING_ROOT)
 devStageSamples: stageSamples
@@ -72,28 +93,31 @@ GCC_PREPROCESSOR=gcc -E -x c -P -C -nostdinc
 TEMPLATE_SOURCE=static/index.html.template
 
 GET_CABAL_CLIENT_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('client/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
-GET_GHCJS_VERISON=ghcjs --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
-CABAL_CLIENT_BIN_DIR=dist-ghcjs/build/${system}/ghcjs-${GHCJS_VERSION}/${CABAL_CLIENT_PACKAGE_NAME}/x/Estuary/build/Estuary/Estuary.jsexe/
+GET_GHCJS_VERSION=ghcjs --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
+CABAL_CLIENT_BIN_DIR=dist-ghcjs/build/x86_64-linux/ghcjs-${GHCJS_VERSION}/${CABAL_CLIENT_PACKAGE_NAME}/x/Estuary/build/Estuary/Estuary.jsexe/
 cabalStageClient: assertInNixGhcjsShell
+	@ echo "cabalStageClient:"
 	$(eval export CABAL_CLIENT_PACKAGE_NAME=$(shell $(GET_CABAL_CLIENT_PACKAGE_NAME)))
-	$(eval export GHCJS_VERSION=$(shell $(GET_GHCJS_VERISON)))
+	$(eval export GHCJS_VERSION=$(shell $(GET_GHCJS_VERSION)))
 	# compile the index.html template in development mode and stage it
+	-mkdir $(DEV_STAGING_ROOT)Estuary.jsexe
 	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -o $(DEV_STAGING_ROOT)/Estuary.jsexe/index.html
 	# stage the client js
 	for part in lib out rts runmain ; do \
 		$(CP) $(CABAL_CLIENT_BIN_DIR)/$$part.js $(DEV_STAGING_ROOT)/Estuary.jsexe/ ; \
-		chmod a+w $(DEV_STAGING_ROOT)/Estuary.jsexe/$$part.js ; \
+		chmod a+w $(DEV_STAGING_ROOT)Estuary.jsexe/$$part.js ; \
 	done
 
 nixShellStageClient:
 	nix-shell -A shells.ghcjs --run "make cabalStageClient"
 
 GET_CABAL_SERVER_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('server/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
-GET_GHC_VERISON=ghc --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
-CABAL_SERVER_BIN=dist-newstyle/build/${system}/ghc-${GHC_VERSION}/${CABAL_SERVER_PACKAGE_NAME}/x/EstuaryServer/build/EstuaryServer/EstuaryServer
+GET_GHC_VERSION=ghc --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
+CABAL_SERVER_BIN=dist-newstyle/build/$(SYSTEM)/ghc-${GHC_VERSION}/${CABAL_SERVER_PACKAGE_NAME}/x/EstuaryServer/build/EstuaryServer/EstuaryServer
 cabalStageServer: assertInNixGhcShell
+	@ echo "cabalStageServer:"
 	$(eval export CABAL_SERVER_PACKAGE_NAME=$(shell $(GET_CABAL_SERVER_PACKAGE_NAME)))
-	$(eval export GHC_VERSION=$(shell $(GET_GHC_VERISON)))
+	$(eval export GHC_VERSION=$(shell $(GET_GHC_VERSION)))
 	# stage the server binary
 	$(CP) $(CABAL_SERVER_BIN) $(DEV_STAGING_ROOT)
 	chmod a+w $(DEV_STAGING_ROOT)/EstuaryServer
@@ -101,7 +125,8 @@ cabalStageServer: assertInNixGhcShell
 nixShellStageServer:
 	nix-shell -A shells.ghc --run "make cabalStageServer"
 
-nixStageClient:
+nixStageClient: prepStage
+	@ echo "nixStageClient:"
 	# compile the index.html template in production mode and stage it
 	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -DPRODUCTION -o $(STAGING_ROOT)/Estuary.jsexe/index.html
 	# stage the minified client
@@ -112,37 +137,51 @@ nixStageClient:
 nixDevStageClient: STAGING_ROOT=$(DEV_STAGING_ROOT)
 nixDevStageClient: nixStageClient
 
-nixStageServer:
+nixStageServer: prepStage
 	# stage the server binary
+	@ echo "nixStageServer:"
 	$(CP) result/ghc/estuary-server/bin/EstuaryServer $(STAGING_ROOT)
 	chmod a+w $(STAGING_ROOT)/EstuaryServer
 nixDevStageServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 nixDevStageServer: nixStageServer
 
+stackBuildServer:
+	@ echo "stackBuildServer:"
+	$(STACK_SERVER) setup
+	$(STACK_SERVER) build
+
+STACK_SERVER_INSTALL_DIR=$$($(STACK_SERVER) path --local-install-root)/bin/EstuaryServer
+
+stackStageServer: stackBuildServer prepStage
+	@ echo "stackStageServer:"
+	$(CP) $(STACK_SERVER_INSTALL_DIR) $(STAGING_ROOT)
+	chmod a+w $(STAGING_ROOT)/EstuaryServer
+
 bundleClient: cleanStage stageStaticAssets nixStageClient
 	(cd $(STAGING_ROOT) && zip -r - ./Estuary.jsexe/*) > estuary-client.zip
 
-curlReleaseClient: # this uses curl to download and unzip a recent pre-built client from a GitHub release
-	rm -rf Estuary.jsexe
-	curl -o temp.zip -L https://github.com/dktr0/estuary/releases/download/20190311/estuary-client-20190311.zip
-	unzip temp.zip
-	rm -rf temp.zip
-	cp -Rf static/samples Estuary.jsexe
-
 downloadDirtSamples:
-	echo "Downloading Dirt samples..."
-	-cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
+	@ echo "downloadDirtSamples:"
+	cd static && git clone https://github.com/TidalCycles/Dirt-Samples.git --depth 1
 	-mkdir static/samples
 	cd static/Dirt-Samples && cp -Rf * ../samples/
-	# find static/Dirt-Samples/* -type d -links 1 -exec $(CP_RECURSIVE) "{}" "static/samples/" \;
 	rm -rf static/Dirt-Samples/
-	@if [ -d static/samples/bd ]; then echo "Dirt samples downloaded."; else (echo "Error: Can't find static/samples/bd - make downloadDirtSamples did NOT work!" && exit 1); fi
+	@[ -d static/samples/bd ] || (echo "Error: make downloadDirtSamples did NOT work!" && exit 1)
+	@ echo "Dirt samples downloaded."
 
 makeSampleMap:
-	@if [ -d static/samples ]; then echo "Making sample map..."; else (echo Directory static/samples does not exist. Have you provided a sample library, for example, by running 'make downloadDirtSamples'? && exit 1); fi
-	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - you probably have forgotten to 'git submodule update --init --recursive'" && exit 1) 
+	@ echo "makeSampleMap:"
+	@[ -d static/samples ] || (echo Directory static/samples does not exist. Have you provided a sample library, for example, by running 'make downloadDirtSamples'? && exit 1)
+	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - you probably have forgotten to 'git submodule update --init --recursive'" && exit 1)
 	cd static/samples && bash ../WebDirt/makeSampleMap.sh . > sampleMap.json
-	@if [ -f static/samples/sampleMap.json ]; then echo "sampleMap.json created."; else (echo "Error: make makeSampleMap did NOT work!" && exit 1); fi
+	@[ -f static/samples/sampleMap.json ] || (echo "Error: make makeSampleMap did NOT work!" && exit 1)
+	@ echo "Sample map made."
+
+updateSubmodules:
+	@ echo "updateSubModules:"
+	git submodule update --init --recursive
+
+fullBuild: downloadDirtSamples updateSubmodules makeSampleMap nixBuild cleanStage nixStageClient nixStageServer stageStaticAssets stageSamples
 
 clean: cleanStage cleanDevStage
 	-rm -rf result/
@@ -150,9 +189,16 @@ clean: cleanStage cleanDevStage
 	-rm -rf dist-ghcjs/
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
-runDevServer: stageStaticAssets cabalBuildServer
+runDevServer: stageStaticAssets cabalBuildServer cabalStageServer
 	cd ./$(STAGING_ROOT) && ./EstuaryServer
 
 runServer: nixBuild stageStaticAssets stageSamples nixStageClient nixStageServer
 	cd ./$(STAGING_ROOT) && ./EstuaryServer
 
+selfCertificates:
+	openssl genrsa -out staging/privkey.pem 2048
+	openssl req -new -key staging/privkey.pem -out staging/cert.csr
+	openssl x509 -req -in staging/cert.csr -signkey staging/privkey.pem -out staging/cert.pem
+	cp staging/privkey.pem dev-staging/privkey.pem
+	cp staging/cert.csr dev-staging/cert.csr
+	cp staging/cert.pem dev-staging/cert.pem

@@ -97,8 +97,8 @@ page ctx _ _ wsDown Splash = do
   return (navEv, (constDyn Nothing, never, never, never))
 
 page ctx _ _ wsDown TutorialList = do
-  el "div" $ text "Click on a button to select a tutorial interface:"
-  bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ button $ (T.pack . show) $ T.tutorialId b) (tutorials::[T.Tutorial t m])
+  divClass "ui-font primary-color" $ text "Click on a button to select a tutorial interface:"
+  bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ buttonWithClass $ (T.pack . show) $ T.tutorialId b) (tutorials::[T.Tutorial t m])
   return (leftmost bs, (constDyn Nothing, never, never, never))
 
 page ctx _ _ wsDown (Tutorial tid) = do
@@ -135,15 +135,15 @@ page ctx _ _ _ CreateEnsemblePage = do
   el "div" $ dynText =<< translateDyn Term.CreateNewEnsembleNote ctx
   adminPwd <- el "div" $ do
     translateDyn Term.AdministratorPassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "chat-textarea other-text")
+    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   name <- el "div" $ do
     translateDyn Term.EnsembleName ctx >>= dynText
-    let attrs = constDyn ("class" =: "chat-textarea other-text")
+    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   password <- el "div" $ do
     translateDyn Term.EnsemblePassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "chat-textarea other-text")
+    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
   nameAndPassword <- combineDyn (,) name password
   confirm <- el "div" $ dynButton =<< translateDyn Term.Confirm ctx
@@ -162,11 +162,11 @@ page ctx renderInfo commands wsDown (Collaborate ensembleName) = do
 
 joinButton :: MonadWidget t m => Dynamic t T.Text -> m (Event t Navigation)
 joinButton x = do
-  b <- clickableDivClass'' x "placeholderClass" ()
+  b <- clickableDivClass'' x "ui-font primary-color" ()
   return $ (Collaborate . T.unpack) <$> tagDyn x b
 
 aboutEstuaryParagraph :: MonadWidget t m => Dynamic t Context -> m ()
-aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph" $ do
+aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph ui-font background" $ do
   dynText =<< translationList ctx [
     (English,"Estuary is a platform for collaboration and learning through live coding. It enables you to create sound, music, and visuals in a web browser. Key features include:"),
     (Español,"Estuary es una plataforma de colaboración y aprendizaje a través del la codificación en vivo (live coding). Estuary le permite crear sonidos, música y visuales en el explorador de internet. Algunas características importantes de esta plataforma son:")

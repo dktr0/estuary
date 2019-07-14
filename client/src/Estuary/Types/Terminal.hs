@@ -17,7 +17,9 @@ data Command =
   ListViews | -- request the list of all named views from the ensemble server
   DeleteView String | -- delete a named view from the ensemble server
   DumpView | -- dump whatever is currently displayed
-  Chat String  -- send a chat message
+  Chat String | -- send a chat message
+  StartStreaming | -- start RTP streaming of Estuary audio
+  StreamId -- query the id assigned to RTP streaming of Estuary audio
   deriving (Show,Eq)
 
 parseCommand :: String -> Either ParseError Command
@@ -38,7 +40,10 @@ terminalCommand = char '!' >> choice [
   try getViewP,
   try listViewsP,
   try deleteViewP,
-  try dumpViewP]
+  try dumpViewP,
+  try startStreamingP,
+  try streamIdP
+  ]
 
 setViewP = string "setview" >> spaces >> viewsParser >>= return . SetView
 standardViewP = string "standardview" >> return StandardView
@@ -52,3 +57,5 @@ listViewsP = string "listviews" >> return ListViews
 deleteViewP = string "deleteview" >> spaces >> many1 alphaNum >>= return . DeleteView
 chatP = many1 anyChar >>= return . Chat
 dumpViewP = string "dumpview" >> return DumpView
+startStreamingP = string "startstreaming" >> return StartStreaming
+streamIdP = string "streamid" >> return StreamId

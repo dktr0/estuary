@@ -27,12 +27,16 @@ import Estuary.Languages.TidalParsers
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 import Estuary.Help.LanguageHelp
+import Estuary.Reflex.Utility
+import qualified Estuary.Types.Term as Term
+import Estuary.Types.Language
+import Estuary.Widgets.EstuaryWidget
 
 import Estuary.Types.Context
 
 textWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
 textWidgetForPatternChain i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea code-text")
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font")
   x <- textInput $ def & textInputConfig_setValue .~ (fmap T.pack delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
   let edits = fmap T.unpack $ _textInput_input x
   let value = fmap T.unpack $ _textInput_value x
@@ -40,7 +44,7 @@ textWidgetForPatternChain i delta = do
 
 textAreaWidgetForPatternChain :: MonadWidget t m => Int -> String -> Event t String -> m (Dynamic t String, Event t String,Event t ())
 textAreaWidgetForPatternChain rows i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea code-text" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
+  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
   x <- textArea $ def & textAreaConfig_setValue .~ (fmap T.pack delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ (T.pack i)
   --let keys = _textArea_keypress x
   let e = _textArea_element x
@@ -55,7 +59,7 @@ textAreaWidgetForPatternChain rows i delta = do
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = [Punctual,PunctualVideo,SuperContinent,SvgOp,CanvasOp] ++ (fmap TidalTextNotation tidalParsers)
+textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp] ++ (fmap TidalTextNotation tidalParsers)
 
 textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
   Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
@@ -68,12 +72,12 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     let initialParser = fst $ forEditing i
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "coding-language-dropdown")) & dropdownConfig_setValue .~ parserFuture
+    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "code-font primary-color primary-borders" <> "style" =: "background-color: transparent")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
-      x <- button "eval"
+      x <- dynButton =<< translateDyn Term.Eval ctx
       dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
       return x
-    infoButton' <- divClass "referenceButton" $ button "?"
+    infoButton' <- divClass "referenceButton" $ dynButton "?"
     return (d',evalButton',infoButton')
 
   (edit,eval) <- divClass "labelAndTextPattern" $ do
@@ -104,6 +108,6 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
 labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t Definition)
 labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let delta' = fmap T.pack $ fmapMaybe lastOrNothing delta
-  let attrs = constDyn $ ("class" =: "name-tag-textarea")
+  let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
   y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
   return $ fmap (LabelText . T.unpack) $ _textInput_input y

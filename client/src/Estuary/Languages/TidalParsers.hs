@@ -3,6 +3,7 @@ module Estuary.Languages.TidalParsers where
 import Text.ParserCombinators.Parsec
 import qualified Sound.Tidal.Context as Tidal
 import Sound.Tidal.MiniTidal
+import Data.Bifunctor (first)
 
 import Estuary.Types.TidalParser
 import Estuary.Languages.CQenze
@@ -23,30 +24,34 @@ import Estuary.Languages.Vocesotrevez
 import Estuary.Languages.Imagina
 import Estuary.Languages.Alobestia
 import Estuary.Languages.Togo
+import Estuary.Languages.BlackBox
+
 
 tidalParsers :: [TidalParser]
 tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
   Saludos,ColombiaEsPasion,Si,Sentidos,Natural,Medellin,LaCalle,
-  Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia,Togo
+  Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia,Togo, BlackBox
   ]
 
-tidalParser :: TidalParser -> String -> Either ParseError Tidal.ControlPattern
+
+tidalParser :: TidalParser -> String -> Either String Tidal.ControlPattern
 tidalParser MiniTidal = miniTidal
-tidalParser CQenze = cqenzeControlPattern
-tidalParser Morelia = morelia
-tidalParser Saborts = saborts
-tidalParser Saludos = saludos
-tidalParser ColombiaEsPasion = colombiaEsPasion
-tidalParser Si = si
-tidalParser Sentidos = sentidos
-tidalParser Natural = natural
-tidalParser Medellin = medellin
-tidalParser LaCalle = laCalle
-tidalParser Maria = maria
-tidalParser Crudo = crudo
-tidalParser Puntoyya = puntoyya
-tidalParser Sucixxx = sucixxx
-tidalParser Vocesotrevez = vocesotrevez
-tidalParser Imagina = imagina
-tidalParser Alobestia = alobestia
-tidalParser Togo = togo
+tidalParser CQenze = first show . cqenzeControlPattern
+tidalParser Morelia = first show . morelia
+tidalParser Saborts = first show . saborts
+tidalParser Saludos = first show . saludos
+tidalParser ColombiaEsPasion = first show . colombiaEsPasion
+tidalParser Si = first show . si
+tidalParser Sentidos = first show . sentidos
+tidalParser Natural = first show . natural
+tidalParser Medellin = first show . medellin
+tidalParser LaCalle = first show . laCalle
+tidalParser Maria = first show . maria
+tidalParser Crudo = first show . crudo
+tidalParser Puntoyya = first show . puntoyya
+tidalParser Sucixxx = first show . sucixxx
+tidalParser Vocesotrevez = first show . vocesotrevez
+tidalParser Imagina = first show . imagina
+tidalParser Alobestia = first show . alobestia
+tidalParser Togo = first show . togo
+tidalParser BlackBox = first show . blackBox

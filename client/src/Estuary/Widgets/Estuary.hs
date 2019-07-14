@@ -76,7 +76,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
 
     headerChanges <- header ctx renderInfo
 
-    (values, deltasUp, hints, tempoChanges) <- divClass "page" $ do
+    (values, deltasUp, hints, tempoChanges) <- divClass "page " $ do
       navigation initialPage never ctx renderInfo commands deltasDown
 
     commands <- footer ctx renderInfo deltasUp deltasDown' hints
@@ -125,44 +125,44 @@ updateDynamicsModes ctx = do
   performEvent_ $ fmap (liftIO . changeDynamicsMode nodes) dynamicsModeChanged
 
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
-header ctx renderInfo = divClass "header" $ do
+header ctx renderInfo = divClass "header primary-color primary-borders" $ do
   clientConfigurationWidgets ctx
 
 clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
-  themeChangeEv <- divClass "config-entry display-inline-block" $ do
+  themeChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
     let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale"), ("../css-custom/bubble.css","Bubble")]
     translateDyn Term.Theme ctx >>= dynText
-    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "header-dropdown-and-checkbox  ")) -- Event t String
+    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: rgba(0,0,0,0) !important" )) -- Event t String
     return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
 
-  langChangeEv <- divClass "config-entry display-inline-block" $ do
+  langChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
     translateDyn Term.Language ctx >>= dynText
     let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
-    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "header-dropdown-and-checkbox  "))
+    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { language = x }) langChange
 
-  let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "header-dropdown-and-checkbox  ")
+  let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "primary-color")
 
-  canvasEnabledEv <- divClass "config-entry display-inline-block" $ do
+  canvasEnabledEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
     text "Canvas:"
     canvasInput <- checkbox True condigCheckboxAttrs
     return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
 
-  superDirtEnabledEv <- divClass "config-entry display-inline-block" $ do
+  superDirtEnabledEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
     text "SuperDirt:"
     sdInput <- checkbox False condigCheckboxAttrs
     return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
 
-  webDirtEnabledEv <- divClass "config-entry display-inline-block" $ do
+  webDirtEnabledEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
     text "WebDirt:"
     wdInput <- checkbox True condigCheckboxAttrs
     return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
 
-  dynamicsModeEv <- divClass "config-entry" $ do
+  dynamicsModeEv <- divClass "config-entry primary-color ui-font" $ do
     text "Dynamics:"
     let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
-    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "header-dropdown-and-checkbox  "))
+    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
 
   return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
@@ -170,7 +170,7 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
-  divClass "peak" $ do
+  divClass "peak primary-color code-font" $ do
     dynText . nubDyn =<< mapDyn (T.pack . f) ctx
     text " "
     dynText =<< translateDyn Term.Load ctx

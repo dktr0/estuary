@@ -14,16 +14,17 @@
   <meta name="theme-color" content="#62dd73">
 
   <title>Estuary</title>
-  
+
   <link href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
   <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <script defer type="text/javascript" src="EstuaryProtocol.js"></script>
-  <script defer type="text/javascript" src="SuperDirt.js"></script>
-  <script defer type="text/javascript" src="WebDirt/WebDirt.js"></script>
-  <script defer type="text/javascript" src="WebDirt/Graph.js"></script>
-  <script defer type="text/javascript" src="WebDirt/SampleBank.js"></script>
+  <script type="text/javascript" src="EstuaryProtocol.js"></script>
+  <script type="text/javascript" src="SuperDirt.js"></script>
+  <script type="text/javascript" src="PeerProtocol.js"></script>
+  <script type="text/javascript" src="WebDirt/WebDirt.js"></script>
+  <script type="text/javascript" src="WebDirt/Graph.js"></script>
+  <script type="text/javascript" src="WebDirt/SampleBank.js"></script>
 
 #ifdef PRODUCTION
   <script defer type="text/javascript" src="all.min.js"></script>

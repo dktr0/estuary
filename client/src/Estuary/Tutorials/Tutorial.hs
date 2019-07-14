@@ -70,7 +70,7 @@ miniTidalWidget :: MonadWidget t m => Dynamic t Context -> Int -> Int -> String 
 miniTidalWidget ctx rows index initialText = elClass "div" "panel" $ do
   let silent = (Live (TidalTextNotation MiniTidal,"") L3)
   pb <- liftM (silent <$) $ getPostBuild -- TODO PB used to block things from playing immediately.. should probably be less hacky about this
-  shh <- buttonDynAttrs "silence" silent (constDyn $ M.fromList [("style","float:right")])
+  shh <- buttonDynAttrs "silence" silent (constDyn $ M.fromList [("style","float:right"), ("class", "ui-buttons other-borders")])
   (v, _, hints) <- textNotationWidget ctx (constDyn Nothing) rows (Live (TidalTextNotation MiniTidal, initialText) L3) never
   v' <- holdDyn (Live (TidalTextNotation MiniTidal, initialText) L3) $  leftmost [pb, updated v, shh]
   defn <- mapDyn (\v-> (index,(TextProgram v))) v'

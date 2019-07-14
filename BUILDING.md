@@ -7,6 +7,8 @@ This document will outline how to build Estuary. It will walk you through:
 *   the relevant configuration files/project structure
 *   how to update dependencies
 
+**Important note**: In most cases you do *not* need to build Estuary. If you simply wish to try out Estuary and/or use it in many situations, it is simpler to use the Estuary server that is available 24/7 at https://intramuros.mcmaster.ca. Just fire up Chromium or Chrome and head to that address! Building Estuary is mostly something that is necessary only for the team working on developing Estuary itself.
+
 **A note for Windows users**: nix is not supported natively on Windows but can be installed in WSL (Windows Subsystem for Linux). Follow the instructions on https://docs.microsoft.com/en-us/windows/wsl/install-win10 to install it. Then use it with any linux instructions from here on out. On occasion there are special notes for WSL users outlined in this document.
 
 ## Installing Nix via reflex-platform
@@ -35,7 +37,7 @@ Answer `1` for `Yes` if it asks to add binary caches to the config.
 ./reflex-platform/try-reflex
 ```
 
-Unless `/nix` was already created on your system, running the above command would have installed Nix for you (it logs `performing a single-user installation of Nix...` during execution). 
+Unless `/nix` was already created on your system, running the above command would have installed Nix for you (it logs `performing a single-user installation of Nix...` during execution).
 
 ```
 Installation finished!  To ensure that the necessary environment
@@ -70,11 +72,11 @@ result
 └── ghcjs
     ├── estuary -> /nix/store/...-estuary-0.0.0.1
     └── estuary-common -> /nix/store/...-estuary-common-0.0.0.1
-``` 
+```
 
-The server binary is located at `result/ghc/estuary-server/bin/EstuaryServer`. 
+The server binary is located at `result/ghc/estuary-server/bin/EstuaryServer`.
 
-The client `jsexe` is located at `result/ghcjs/estuary/bin/Estuary.jsexe/`. 
+The client `jsexe` is located at `result/ghcjs/estuary/bin/Estuary.jsexe/`.
 
 ### Creating a release bundle
 
@@ -88,7 +90,7 @@ The `bundleClient` target will create an `estuary-client.zip` with the productio
 
 ```shell
 $ git submodule update --init --recursive
-$ make downloadDirtSamples 
+$ make downloadDirtSamples
 $ make makeSampleMap
 $ make nixBuild
 $ make cleanStage
@@ -104,7 +106,7 @@ The `cleanStage` will clean any old `staging/` after which the remaining command
 
 The `stage*` targets copy the required assets into the `staging/` folder.
 
-The `nix*` targets will build and stage the server binary and client with `nix`. 
+The `nix*` targets will build and stage the server binary and client with `nix`.
 
 ## Building for development
 
@@ -114,10 +116,14 @@ Run `nix-shell -A shells.ghcjs` in one terminal and `nix-shell -A shells.ghc` in
 
 In the **frontend** shell (`shells.ghcjs`) build the client and put it where the `runDevServer` expects it to be with:
 ```shell
-[nix-shell: ...]$ make cabalBuildClient cabalStageClient
+[nix-shell: ...]$ make cabalBuildClient
+[nix-shell: ...]$ make cabalStageClient
 ```
 
 In the **backend** shell (`shells.ghc`) build the server, put it in the staging area, and run it with:
 ```shell
+[nix-shell: ...]$ make cabalBuildServer
+[nix-shell: ...]$ make cabalStageServer
+[nix-shell: ...]$ make devStageSamples
 [nix-shell: ...]$ make runDevServer
 ```

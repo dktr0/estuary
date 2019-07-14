@@ -10,25 +10,31 @@ license: GPL-3
 homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
 
 dependencies:
-- base
-- estuary-common
-- containers
-- text
-- json
-- websockets
-- wai
-- warp
-- wai-websockets
-- wai-app-static
-- wai-extra
-- time
-- sqlite-simple
-- mtl
+  - base
+  - estuary-common
+  - containers
+  - text
+  - json
+  - websockets
+  - wai
+  - warp
+  - warp-tls
+  - wai-websockets
+  - wai-app-static
+  - wai-extra
+  - time
+  - sqlite-simple
+  - mtl
+
+library:
+  source-dirs: 
+    - ./src
 
 executables:
   EstuaryServer:
     main: Main.hs
     source-dirs:
       - ./app
-      - ./src
+    dependencies:
+      - estuary-server
     ghc-options: -threaded

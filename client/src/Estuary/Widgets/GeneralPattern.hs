@@ -1,4 +1,5 @@
 {-# LANGUAGE RecursiveDo, OverloadedStrings, TypeFamilies #-}
+
 module Estuary.Widgets.GeneralPattern where
 
 import Reflex
@@ -87,9 +88,9 @@ generalContainerLive b i _ = elClass "div" (getClass i) $ mdo
     initialVal (Group (Edited (iV,_) _) _) = initialVal $ iV!!0
     initialVal (Layers (Live (iV,_) _) _) = initialVal $ iV!!0
     initialVal (Layers (Edited (iV,_) _) _) = initialVal $ iV!!0
-    getClass (Layers _ _) = "generalPattern-group-or-layer-or-atom"
-    getClass (Group _ _) = "generalPattern-group-or-layer-or-atom"
-    getClass (Atom _ _ _) = "generalPattern-group-or-layer-or-atom"
+    getClass (Layers _ _) = "generalPattern-group-or-layer-or-atom code-font background primary-color"
+    getClass (Group _ _) = "generalPattern-group-or-layer-or-atom code-font background primary-color"
+    getClass (Atom _ _ _) = "generalPattern-group-or-layer-or-atom code-font background primary-color"
     initialMap (Layers (Live (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Layers (Edited (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
     initialMap (Group (Live (xs,_) _) _) = fromList $ zip [(0::Int)..] $ [Right ()] ++ (intersperse (Right ()) $ fmap Left xs) ++ [Right ()]
@@ -132,8 +133,8 @@ typedAtomWidget defaultVal  liveness iGenPat editEv = elClass "div" "atomPopup" 
   inputMouseOver <- liftM (True <$) $ wrapDomEvent (_textInput_element textField) (onEventName Mouseover) mouseXY
   inputMouseOut <- liftM (False <$) $ wrapDomEvent (_textInput_element textField) (onEventName Mouseout) mouseXY
   isMouseOverInput <- holdDyn False $ leftmost [inputMouseOut, inputMouseOver]
-  inputAttrs <- mapDyn (fromList . (\x-> [x]) . ((,) "class") . bool "atomPopupInput coding-textarea code-text" "atomPopupInputMouseOver") isMouseOverInput
-  textField <- growingTextInput $ def & textInputConfig_attributes .~  inputAttrs & textInputConfig_initialValue .~ (T.pack $ showNoQuotes iVal)
+  inputAttrs <- mapDyn (fromList . (\x-> [x]) . ((,) "class") . bool "atomPopupInput primary-color background code-font other-borders" "atomPopupInputMouseOver primary-color background code-font other-borders") isMouseOverInput
+  textField <- growingTextInput $ def & textInputConfig_attributes .~ inputAttrs & textInputConfig_initialValue .~ (T.pack $ showNoQuotes iVal)
 
   let textInputChange = updated $ _textInput_value textField
   onClickEv <- wrapDomEvent (_textInput_element textField) (onEventName Click) (mouseXY)
@@ -169,7 +170,7 @@ typedAtomWidget defaultVal  liveness iGenPat editEv = elClass "div" "atomPopup" 
 
 popupSampleWidget :: MonadWidget t m => Dynamic t Liveness -> GeneralPattern String -> Event t (EditSignal (GeneralPattern String)) -> m (Dynamic t (GeneralPattern String, Event t (EditSignal (GeneralPattern String)), Event t Hint))
 popupSampleWidget liveness iVal e = elClass "div" "atomPopup" $ mdo
-  sample <- clickableSpanClass inVal "noClass" ()
+  sample <- clickableSpanClass inVal "code-font primary-color background" ()
   repDivVal <- liftM joinDyn $ flippableWidget (return $ constDyn Once) (repDivWidget'' iRepDiv never) iRepDivViewable $ updated repDivToggle
   (dynPopup, dynHintEv) <- flippableWidget (return (never,never)) popup (case iPotential of Inert->False; otherwise->True) (updated popupToggle) >>= splitDyn
   let popupMenu =  switchPromptlyDyn dynPopup
@@ -236,7 +237,7 @@ popupIntWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "
   let upSig = fmap toEditSigGenPat $ leftmost [deleteEv, livenessEv,(RebuildMe <$) groupEv, (RebuildMe <$) layerEv]
   mapDyn (\x-> (x,upSig, never)) genPat
   where
-    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",T.pack $ show step, T.pack $ show minVal, T.pack $ show maxVal]
+    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput primary-color background",T.pack $ show step, T.pack $ show minVal, T.pack $ show maxVal]
     popupActions = [MakeRepOrDiv::EditSignal Int, MakeGroup, MakeLayer, DeleteMe]
     popup = basicPopup liveness popupActions
     getIVal gP = case gP of
@@ -248,7 +249,7 @@ popupIntWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "
 
 
 popupDoubleWidget :: MonadWidget t m => Double -> Double -> Double -> Double -> Dynamic t Liveness -> GeneralPattern Double -> Event t (EditSignal (GeneralPattern Double)) -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal (GeneralPattern Double)), Event t Hint))
-popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup" $ mdo
+popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClass "div" "atomPopup primary-color background code-font" $ mdo
   let (iVal,iRepDiv,iPotential) = getIVal iGenPat
   textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (T.pack $ show iVal) & textInputConfig_inputType .~"number" & textInputConfig_attributes .~ (constDyn ("style"=:"width:30px; border: none;"))
   let iRepDivViewable = (iRepDiv/=Once)
@@ -274,7 +275,7 @@ popupDoubleWidget defaultVal minVal maxVal step liveness iGenPat editEv = elClas
   let upSig = fmap toEditSigGenPat $ leftmost [deleteEv, livenessEv,(RebuildMe <$) groupEv, (RebuildMe <$) layerEv]
   mapDyn (\x-> (x,upSig, never)) genPat
   where
-    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput",T.pack $ show step, T.pack $ show minVal, T.pack $ show maxVal]
+    attrs = fromList $ zip ["class","step","min","max"] ["atomPopupInput primary-color background",T.pack $ show step, T.pack $ show minVal, T.pack $ show maxVal]
     popupActions = [MakeRepOrDiv::EditSignal Double, MakeGroup, MakeLayer, DeleteMe]
     popup = basicPopup liveness popupActions
     getIVal gP = case gP of
@@ -348,13 +349,13 @@ repDivWidget (Rep iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
       let val = _checkbox_value rep
       return val
     num <- el "td" $ do
-      let attrs = fromList $ zip ["style","step","min"] ["width:35px;","1", "0"]
+      let attrs = fromList $ zip ["class", "style","step","min"] ["primary-color background code-font other-borders", "width:35px;","1", "0"]
       textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (T.pack $ show iVal) & textInputConfig_inputType .~"number"
       let inVal = _textInput_value textField
       forDyn inVal (\x-> maybe 1 id $ ((readMaybe (T.unpack x))::Maybe Int))
     combineDyn (\rd val -> if rd then Rep val else Div val) repOrDiv num
   return val
-repDivWidget (Div iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
+repDivWidget (Div iVal) = elAttr "table" ("class"=:"repDivTable primary-color background code-font other-borders")$ mdo
   val <- el "tr" $ do
     repOrDiv <- el "td" $ mdo
       text "*"
@@ -367,7 +368,7 @@ repDivWidget (Div iVal) = elAttr "table" ("class"=:"repDivTable")$ mdo
       let val = _checkbox_value rep
       return val
     num <- el "td" $ do
-      let attrs = fromList $ zip ["style","step","min"] ["width:35px;","1", "0"]
+      let attrs = fromList $ zip ["class", "style","step","min"] ["primary-color background code-font other-borders", "width:35px;","1", "0"]
       textField <- textInput $ def & textInputConfig_attributes .~ constDyn attrs & textInputConfig_initialValue .~ (T.pack $ show iVal) & textInputConfig_inputType .~"number"
       let inVal = _textInput_value textField
       forDyn inVal (\x-> maybe 1 id $ ((readMaybe (T.unpack x))::Maybe Int))
@@ -384,10 +385,10 @@ repDivWidget _ = repDivWidget (Rep 1)
 --   ---------------
 countStepWidget::MonadWidget t m => Double -> GeneralPattern Double -> Event t () -> m (Dynamic t (GeneralPattern Double, Event t (EditSignal a)))
 --countStepWidget step (Atom iUpVal _) _ = elAttr "td" ("style"=:"text-align:center") $ elAttr "table" tableAttrs $ mdo
-countStepWidget step iGenPat _ = elAttr "table" ("class"=:"countWidgetTable") $ mdo
+countStepWidget step iGenPat _ = elAttr "table" ("class"=:"countWidgetTable primary-color background code-font other-borders") $ mdo
   let iUpVal = fst $ getIVal iGenPat
   upCount <- el "tr" $ do
-    elAttr "td" ("class"=:"countWidgetTable") $ dynText upValShow
+    elAttr "td" ("class"=:"countWidgetTable primary-color background code-font other-borders") $ dynText upValShow
     upButton <- tdButtonAttrs "▲" () ("style"=:"text-align:center;") >>= count
     return upButton
   (deleteEvent,downCount) <- el "tr" $ do

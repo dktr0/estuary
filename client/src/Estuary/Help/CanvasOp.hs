@@ -6,6 +6,8 @@ import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility
+
 
 -- import Estuary.Types.Language
 
@@ -22,8 +24,8 @@ canvasOpHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about" $ text "CanvasOp"
-  divClass "about" $ text "A mini language for building live-coding visual languages like PunctualVideo."
+  divClass "about primary-color code-font" $ text "CanvasOp"
+  divClass "about primary-color code-font" $ text "A mini language for building live-coding visual languages like SuperContinent."
 
 exampleText :: Text -> Text
 
@@ -42,9 +44,9 @@ referenceText "strokeStyle" = "sets the color of the stroke in RGBA values"
 -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-   switchToReference <- divClass "reference-button" $ button x
+   switchToReference <- buttonWithClass' x
    exampleVisible <- toggle True switchToReference
    referenceVisible <- toggle False switchToReference
-   hideableWidget exampleVisible "exampleText" $ text (exampleText x)
-   hideableWidget referenceVisible "referenceText" $ text (referenceText x)
+   hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)
+   hideableWidget referenceVisible "referenceText code-font" $ text (referenceText x)
    return ()
