@@ -9,18 +9,15 @@ import Estuary.Types.View
 import Estuary.Types.Definition
 import Estuary.Types.Tempo
 import Data.Time
+import Data.Text
 
 data EnsembleRequest =
-  AuthenticateInEnsemble String |
-  SendChat String String | -- name message
-  ZoneRequest Int Definition |
-  ListViews |
-  GetView String |
-  PublishView String View |
+  SendChat Text |
+  SendStatus Text |
+  PublishView Text View |
   PublishDefaultView View |
-  DeleteView String |
-  SetTempo Tempo |
-  GetEnsembleClientCount
+  DeleteView Text |
+  SetTempo Tempo
   deriving (Eq,Data,Typeable)
 
 instance JSON EnsembleRequest where

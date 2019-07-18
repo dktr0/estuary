@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Estuary.Types.Participant where
 
 -- A representation of a pseudonymous participant in an Ensemble
@@ -7,6 +9,8 @@ module Estuary.Types.Participant where
 
 import Data.Text
 import Data.Time
+import Text.JSON
+import Text.JSON.Generic
 
 data Participant = Participant {
   name :: Text,
@@ -15,6 +19,10 @@ data Participant = Participant {
   lastEdit :: UTCTime,
   mainLoad :: Double,
   animationLoad :: Double,
-  latency :: NominalDiffTime
+  latency :: NominalDiffTime,
   browser :: Text
-  }
+  } deriving (Eq,Data,Typeable)
+
+instance JSON Participant where
+  showJSON = toJSON
+  readJSON = fromJSON

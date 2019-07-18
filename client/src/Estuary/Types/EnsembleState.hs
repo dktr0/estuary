@@ -26,8 +26,8 @@ data EnsembleState = EnsembleState {
   publishedViews :: Map String View,
   defaultView :: View,
   customView :: View,
-  activeView :: Maybe String -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews,
-  participants :: Map Text Participant,
+  activeView :: Maybe String, -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews,
+  participants :: Map T.Text Participant,
   anonymousParticipants :: Int
 }
 
@@ -85,10 +85,10 @@ responsesToStateChanges (ZoneResponse n v) es = es { zones = newZones }
 responsesToStateChanges (View s v) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)
 responsesToStateChanges (DefaultView v) es = es { defaultView = v }
-responsesToStateChanges (ParticipantJoins n x) = es { participants = insert n x (participants es) }
-responsesToStateChanges (ParticipantUpdate n x) = es { participants = insert n x (participants es) }
-responsesToStateChanges (ParticipantLeaves n) = es { participants = delete n (participants es)}
-responsesToStateChanges (AnonymousParticipants n) = es { anonymousParticipants = n }
+responsesToStateChanges (ParticipantJoins n x) es = es { participants = insert n x (participants es) }
+responsesToStateChanges (ParticipantUpdate n x) es = es { participants = insert n x (participants es) }
+responsesToStateChanges (ParticipantLeaves n) es = es { participants = delete n (participants es)}
+responsesToStateChanges (AnonymousParticipants n) es = es { anonymousParticipants = n }
 responsesToStateChanges _ es = es
 
 commandsToRequests :: EnsembleState -> Terminal.Command -> Maybe EnsembleRequest
@@ -102,7 +102,7 @@ commandsToRequests _ _ = Nothing
 
 messageForEnsembleResponse :: EnsembleResponse -> Maybe String
 messageForEnsembleResponse (ParticipantJoins n _) = Just $ "new participant " ++ T.unpack n ++ " has joined"
-messageForEnsembleResponse (ParticipantLeaves n _) = Just $ T.unpack n ++ " has left"
+messageForEnsembleResponse (ParticipantLeaves n) = Just $ T.unpack n ++ " has left"
 messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
 messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
 messageForEnsembleResponse (View x _) = Just $ "received view " ++ x
