@@ -19,7 +19,10 @@ data EnsembleResponse =
   View String View |
   DefaultView View |
   NewTempo Tempo UTCTime | -- the tempo plus the time it was sent by the server
-  EnsembleClientCount Int
+  ParticipantJoins Text Participant |
+  ParticipantUpdate Text Participant |
+  ParticipantLeaves Text |
+  AnonymousParticipants Int
   deriving (Data,Typeable)
 
 instance JSON EnsembleResponse where

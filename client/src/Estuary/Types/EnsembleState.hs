@@ -5,6 +5,7 @@ import qualified Data.IntMap.Strict as IntMap
 import Data.Time
 import Data.Time.Clock.POSIX
 import Data.Maybe
+import qualified Data.Text as T
 
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
@@ -16,6 +17,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.ViewsParser
 import Estuary.Render.AudioContext
+import Estuary.Types.Participant
 
 data EnsembleState = EnsembleState {
   ensembleName :: String,
@@ -24,7 +26,9 @@ data EnsembleState = EnsembleState {
   publishedViews :: Map String View,
   defaultView :: View,
   customView :: View,
-  activeView :: Maybe String -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews
+  activeView :: Maybe String -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews,
+  participants :: Map Text Participant,
+  anonymousParticipants :: Int
 }
 
 soloEnsembleName :: String
@@ -48,7 +52,9 @@ newEnsembleState x = EnsembleState {
   publishedViews = empty,
   defaultView = emptyView,
   customView = emptyView,
-  activeView = Nothing
+  activeView = Nothing,
+  participants = empty,
+  anonymousParticipants = 0
 }
 
 getActiveView :: EnsembleState -> View
@@ -79,6 +85,10 @@ responsesToStateChanges (ZoneResponse n v) es = es { zones = newZones }
 responsesToStateChanges (View s v) es = es { publishedViews = newViews }
   where newViews = insert s v (publishedViews es)
 responsesToStateChanges (DefaultView v) es = es { defaultView = v }
+responsesToStateChanges (ParticipantJoins n x) = es { participants = insert n x (participants es) }
+responsesToStateChanges (ParticipantUpdate n x) = es { participants = insert n x (participants es) }
+responsesToStateChanges (ParticipantLeaves n) = es { participants = delete n (participants es)}
+responsesToStateChanges (AnonymousParticipants n) = es { anonymousParticipants = n }
 responsesToStateChanges _ es = es
 
 commandsToRequests :: EnsembleState -> Terminal.Command -> Maybe EnsembleRequest
@@ -91,6 +101,8 @@ commandsToRequests es (Terminal.Chat x) = Just (SendChat (userHandle es) x)
 commandsToRequests _ _ = Nothing
 
 messageForEnsembleResponse :: EnsembleResponse -> Maybe String
+messageForEnsembleResponse (ParticipantJoins n _) = Just $ "new participant " ++ T.unpack n ++ " has joined"
+messageForEnsembleResponse (ParticipantLeaves n _) = Just $ T.unpack n ++ " has left"
 messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
 messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
 messageForEnsembleResponse (View x _) = Just $ "received view " ++ x
