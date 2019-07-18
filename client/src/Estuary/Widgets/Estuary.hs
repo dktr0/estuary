@@ -99,6 +99,34 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
 
   performHint (webDirt ic) hints
 
+
+-- popup menu
+
+ourPopUp :: MonadWidget t m => Event t () -> m (Event t ContextChange)
+ourPopUp go = mdo
+  let x = fmap (const True) go -- Event t Bool
+  let y = fmap (const False) hide -- Event t Bool
+  let xy = leftmost [x,y] -- Event t Bool
+  visible <- holdDyn False xy -- Dynamic t Bool
+  let visibleStyle = fmap popupVisibilityStyle visible
+  let classStyle = constDyn $ singleton "class" "ourPopUp"
+  let attrs = zipDynWith (union) visibleStyle classStyle
+  (hide,canvasEnabledEv) <- elDynAttr "div" attrs $ do
+    text "test"
+    hide' <- button "hide"
+    let configCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
+    canvasEnabledEv <- divClass "config-entry" $ do
+      text "Canvas:"
+      canvasInput <- checkbox True configCheckboxAttrs
+      return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+    return (hide',canvasEnabledEv)
+  return canvasEnabledEv
+
+popupVisibilityStyle :: Bool -> Map T.Text T.Text
+popupVisibilityStyle False = singleton "style" "display: none"
+popupVisibilityStyle True = singleton "style" "display: block"
+
+
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 updateContext cMvar cDyn = performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn
 
@@ -164,6 +192,10 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
     let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
     dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
+
+  -- button for popup navigation panel
+  popupButton <- button "popup" -- popupButton :: Event t ()
+  popupContextChanges <- ourPopUp popupButton
 
   return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
 

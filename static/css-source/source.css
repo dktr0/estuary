@@ -131,6 +131,13 @@ body, .primary-color {
 	background-color: transparent;
 }
 
+.ourPopUp {
+	background-color: blue;
+	width: 50%;
+	height: 1000px
+	z-index: 0;
+	}
+
 .footer {
 	padding-top: 5px;
 	padding-bottom: 5px;
