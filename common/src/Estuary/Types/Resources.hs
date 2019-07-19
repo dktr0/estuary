@@ -2,6 +2,10 @@ module Estuary.Types.Resources where
 
 import Data.Text
 
+import Data.Map.Strict (Map)
+
+import Data.Sequence(Seq)
+
 import Estuary.Types.Scope
 
 -- {
@@ -21,18 +25,17 @@ data Resources = Resources {
   audioResources :: ResourceMap AudioMeta,
   videoResources :: ResourceMap VideoMeta,
   imageResources :: ResourceMap ImageMeta
-}
+} deriving (Show)
 
-newtype ResourceMap m = ResourceMap { unResourceMap :: Map Text (Seq (Resource m)) }
+newtype ResourceMap m = ResourceMap { unResourceMap :: Map Text (Seq (Resource m)) } deriving (Show)
 
 data Resource m = Resource {
   file :: Text,
-  mimetype :: Text,
-  fileSize :: Double,
+  fileSize :: Integer,
   meta :: m,
   tags :: Seq Text,
   scope :: Scope
-}
+} deriving (Show)
 
 data AspectRatio
   = FourOverThree
@@ -42,7 +45,7 @@ data AspectRatio
   | Square
   | Rational Int Int
   | Irrational Double
-
-data AudioMeta = AudioMeta { audioDuration :: Double }
-data VideoMeta = VideoMeta { videoDuration :: Double, videoResolution :: (Int, Int), videoAspectRatio :: AspectRatio }
-data ImageMeta = ImageMeta { imageResolution :: (Int, Int), imageAspectRatio :: AspectRatio }
+  deriving (Show)
+data AudioMeta = AudioMeta { audioDuration :: Double {- seconds -} } deriving (Show)
+data VideoMeta = VideoMeta { videoDuration :: Double, videoResolution :: (Int, Int), videoAspectRatio :: AspectRatio } deriving (Show)
+data ImageMeta = ImageMeta { imageResolution :: (Int, Int), imageAspectRatio :: AspectRatio } deriving (Show)

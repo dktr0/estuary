@@ -27,7 +27,8 @@ staging/
 dev-staging/
 
 ### nix
-result
+/result
+/*-result
 
 ### cabal
 **/*.cabal
