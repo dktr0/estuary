@@ -43,10 +43,10 @@ import Estuary.Types.Database
 import Estuary.Types.Tempo
 import Estuary.Types.Transaction
 
-runServerWithDatabase :: String -> Int -> SQLite.Connection -> IO ()
+runServerWithDatabase :: Text -> Int -> SQLite.Connection -> IO ()
 runServerWithDatabase pswd port db = do
   postLogToDatabase db $ "Estuary collaborative editing server, listening on port " ++ (show port)
-  postLogToDatabase db $ "administrative password: " ++ pswd
+  postLogToDatabase db $ "administrative password: " ++ T.unpack pswd
   es <- readEnsembles db
   postLogToDatabase db $ (show (size es)) ++ " ensembles restored from database"
   s <- newMVar $ newServer { password = pswd, ensembles = es }
@@ -60,14 +60,14 @@ ourTLSSettings :: TLSSettings
 ourTLSSettings = defaultTlsSettings {
   certFile = "cert.pem",
   keyFile = "privkey.pem",
-  onInsecure = DenyInsecure "You must use HTTPS to connect to Estuary."
+  onInsecure = DenyInsecure "You must use HTTPS to connect to Estuary. Try using the same URL in your browser but with https instead of http at the beginning."
   }
 
 ourSettings :: Port -> Settings
 ourSettings port = defaultSettings {
   settingsPort = port,
   settingsFdCacheDuration = 30,
-  settingsFileInfoCacheDuration = 30   
+  settingsFileInfoCacheDuration = 30
   }
 
 gzipMiddleware :: WS.Middleware
@@ -138,12 +138,15 @@ processResult (Error x) = throwError $ "Error (processResult): " ++ x
 
 processRequest :: Request -> Transaction ()
 
-processRequest GetServerClientCount = do
-  postLog "GetServerClientCount"
-  n <- gets (size . clients)
-  respond $ ServerClientCount n
+processRequest (BrowserInfo t) = do
+  postLog "BrowserInfo"
+  -- *** code here to update record of client's browser name/version
 
-processRequest (Ping t) = respond $ Pong t
+processRequest (ClientInfo pingTime load animationLoad latency)  = do
+  postLog "ClientInfo" -- maybe we don't really need to log such a trivial, repeated message?
+  -- *** code here to update record of load/animationLoad/latency ...
+  n <- gets (size . clients)
+  respond $ ServerInfo n pingTime
 
 processRequest GetEnsembleList = do
   postLog $ "GetEnsembleList"
@@ -169,8 +172,10 @@ processRequest (CreateEnsemble name pwd) = do
   respondAll $ EnsembleList es
   saveNewEnsembleToDatabase name
 
-processRequest (JoinEnsemble x) = do
-  postLog $ "joining ensemble " ++ x
+--   JoinEnsemble Text Text Text Text | -- ensemble username location password (all except ensemble can be empty)
+
+processRequest (JoinEnsemble eName uName loc pwd) = do
+  postLog $ "joining ensemble " ++ T.unpack eName
   s <- get
   e <- justOrError (Data.Map.lookup x $ ensembles s) "attempt to join non-existent ensemble"
   now <- liftIO getCurrentTime
