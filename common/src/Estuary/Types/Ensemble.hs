@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
 
 module Estuary.Types.Ensemble where
 
@@ -11,15 +11,16 @@ import Text.JSON
 import Text.JSON.Generic
 import Text.Read
 import Data.Ratio
+import Data.Text
 
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.Tempo
 
 data Ensemble = Ensemble {
-  password :: String,
+  password :: Text,
   defs :: Map.Map Int Definition,
-  views :: Map.Map String View,
+  views :: Map.Map Text View,
   defaultView :: View,
   tempo :: Tempo
   } deriving (Data,Typeable)
@@ -37,7 +38,7 @@ emptyEnsemble t = Ensemble {
   tempo = Tempo { at=t, beat=0.0, cps=0.5 }
   }
 
-setPassword :: String -> Ensemble -> Ensemble
+setPassword :: Text -> Ensemble -> Ensemble
 setPassword s e = e { password = s }
 
 editDef :: Int -> Definition -> Ensemble -> Ensemble
@@ -46,10 +47,10 @@ editDef z d s = s { defs = Map.insert z d (defs s) }
 editDefaultView :: View -> Ensemble -> Ensemble
 editDefaultView v s = s { defaultView = v }
 
-editView :: String -> View -> Ensemble -> Ensemble
+editView :: Text -> View -> Ensemble -> Ensemble
 editView w v s = s { views = Map.insert w v (views s) }
 
-deleteView :: String -> Ensemble -> Ensemble
+deleteView :: Text -> Ensemble -> Ensemble
 deleteView v e = e { views = Map.delete v (views e) }
 
 tempoChange :: Tempo -> Ensemble -> Ensemble

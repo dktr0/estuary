@@ -18,7 +18,7 @@ data Request =
   BrowserInfo Text | -- issued once at Estuary launch, identifies name/version of browser
   ClientInfo UTCTime Double Double NominalDiffTime | -- pingTime load animationLoad
   GetEnsembleList |
-  JoinEnsemble Text Text Text Text | -- ensemble username location password (all except ensemble can be empty)
+  JoinEnsemble Text Text Text (Maybe Text) | -- ensemble username location password (username and location can be "")
   EnsembleRequest EnsembleRequest | -- see Estuary.Types.EnsembleRequest, request "within" an ensemble
   LeaveEnsemble |
   Authenticate Text | -- ie. as administrator, for making ensembles

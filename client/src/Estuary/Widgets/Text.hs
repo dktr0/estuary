@@ -111,3 +111,12 @@ labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ 
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
   y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
   return $ fmap (LabelText . T.unpack) $ _textInput_input y
+
+
+labelWidget' :: MonadWidget t m => Dynamic t String -> EstuaryWidget t m String
+labelWidget' delta = do
+  let delta' = fmap T.pack $ fmapMaybe lastOrNothing delta
+  let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
+  y <- reflex $ divClass "textPatternChain" $ divClass "labelWidgetDiv" $
+    textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
+  return $ fmap (LabelText . T.unpack) $ _textInput_input y

@@ -1,5 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
+-- This type represents all messages that an Estuary server can send
+-- to an Estuary client via WebSockets.
+
 module Estuary.Types.Response where
 
 import Data.Maybe (mapMaybe)

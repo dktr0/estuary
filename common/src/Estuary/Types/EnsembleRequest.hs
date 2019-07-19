@@ -12,6 +12,7 @@ import Data.Time
 import Data.Text
 
 data EnsembleRequest =
+  ZoneRequest Int Definition |
   SendChat Text |
   SendStatus Text |
   PublishView Text View |
