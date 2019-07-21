@@ -1,3 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+-- The type EnsembleState represents the state of an Ensemble from the perspective
+-- of an Estuary client.
+
 module Estuary.Types.EnsembleState where
 
 import Data.Map
@@ -5,7 +10,9 @@ import qualified Data.IntMap.Strict as IntMap
 import Data.Time
 import Data.Time.Clock.POSIX
 import Data.Maybe
+import Data.Text (Text)
 import qualified Data.Text as T
+import TextShow
 
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
@@ -20,14 +27,14 @@ import Estuary.Render.AudioContext
 import Estuary.Types.Participant
 
 data EnsembleState = EnsembleState {
-  ensembleName :: String,
-  userHandle :: String,
+  ensembleName :: Text,
+  userHandle :: Text,
   zones :: IntMap.IntMap Definition,
-  publishedViews :: Map String View,
+  publishedViews :: Map Text View,
   defaultView :: View,
   customView :: View,
-  activeView :: Maybe String, -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews,
-  participants :: Map T.Text Participant,
+  activeView :: Maybe Text, -- Nothing = defaultView, Just "" = CustomView, Just x = from publishedViews,
+  participants :: Map Text Participant,
   anonymousParticipants :: Int
 }
 
@@ -44,7 +51,7 @@ currentView es | activeView es == Just "" = customView es
 currentView es | otherwise = findWithDefault (Views []) x (publishedViews es)
   where x = fromJust $ activeView es
 
-newEnsembleState :: String -> EnsembleState
+newEnsembleState :: Text -> EnsembleState
 newEnsembleState x = EnsembleState {
   ensembleName = x,
   userHandle = "",
@@ -100,11 +107,11 @@ commandsToRequests es (Terminal.DeleteView x) = Just (DeleteView x)
 commandsToRequests es (Terminal.Chat x) = Just (SendChat (userHandle es) x)
 commandsToRequests _ _ = Nothing
 
-messageForEnsembleResponse :: EnsembleResponse -> Maybe String
-messageForEnsembleResponse (ParticipantJoins n _) = Just $ "new participant " ++ T.unpack n ++ " has joined"
-messageForEnsembleResponse (ParticipantLeaves n) = Just $ T.unpack n ++ " has left"
-messageForEnsembleResponse (Chat name msg) = Just $ name ++ " chats: " ++ msg
-messageForEnsembleResponse (ViewList xs) = Just $ "Views: " ++ (show xs)
-messageForEnsembleResponse (View x _) = Just $ "received view " ++ x
-messageForEnsembleResponse (NewTempo t _) = Just $ "received new tempo " ++ (show (cps t))
+messageForEnsembleResponse :: EnsembleResponse -> Maybe Text
+messageForEnsembleResponse (ParticipantJoins n _) = Just $ "new participant " <> n <> " has joined"
+messageForEnsembleResponse (ParticipantLeaves n) = Just $ n <> " has left"
+messageForEnsembleResponse (Chat name msg) = Just $ name <> " chats: " <> msg
+messageForEnsembleResponse (ViewList xs) = Just $ "Views: " <> (showtList xs)
+messageForEnsembleResponse (View x _) = Just $ "received view " <> x
+messageForEnsembleResponse (NewTempo t _) = Just $ "received new tempo " <> (showt (cps t))
 messageForEnsembleResponse _ = Nothing

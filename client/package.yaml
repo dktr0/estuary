@@ -39,6 +39,7 @@ dependencies:
   - ghcjs-base
   - ghcjs-dom
   - text
+  - text-show
   - array
   - ghcjs-prim
   - data-default

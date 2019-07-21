@@ -1,5 +1,5 @@
 {
-  reflexPlatformVersion ? "7e002c573a3d7d3224eb2154ae55fc898e67d211",
+  reflexPlatformVersion ? "716879f16d53c93766e7ed9af17416fccb2edfe1",
   musl ? false,     # build with musl instead of glibc
   linkType ? null   # exectuable linking mode, null will build the closest to unconfigured for the current platform.
                     # 'static' will completely statcially link everything.
@@ -19,7 +19,7 @@ with pkgs.haskell.lib;
 let linkType = if (args.linkType or null) != null
   then args.linkType
   else
-    if pkgs.stdenv.isDarwin then "static" 
+    if pkgs.stdenv.isDarwin then "static"
     else if pkgs.stdenv.isLinux then "static-libs"
     else "static-libs"; # fallback to static-libs which is closest to no intervention
 in

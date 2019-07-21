@@ -24,8 +24,8 @@ import Estuary.Types.Term
 import Estuary.Types.Context
 import Estuary.Types.Language
 
-mapDyn' :: MonadWidget t m => (a -> b) -> m (Dynamic t a) -> m (Dynamic t b)
-mapDyn' f a = do
+mapDynM' :: MonadWidget t m => (a -> b) -> m (Dynamic t a) -> m (Dynamic t b)
+mapDynM' f a = do
   let f' = constDyn f
   a' <- a
   combineDyn ($) f' a'
@@ -37,14 +37,14 @@ apDyn f a = do
   combineDyn ($) f' a'
 
 translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t Text)
-translateDyn t ctx = nubDyn <$> mapDyn (translate t . language) ctx
+translateDyn t ctx = nubDyn <$> mapDynM (translate t . language) ctx
 
 translationList :: MonadWidget t m => Dynamic t Context -> [(Language,a)] -> m (Dynamic t a)
 translationList c m = do
   let m' = fromList m
   let d = snd (m!!0)
-  l <- mapDyn language c
-  mapDyn (\k -> findWithDefault d k m') l
+  l <- mapDynM language c
+  mapDynM (\k -> findWithDefault d k m') l
 
 -- a temporary button with class for the reference files
 buttonWithClass' :: MonadWidget t m => Text -> m (Event t ())
@@ -60,7 +60,7 @@ buttonWithClass s = do
 
 --Button with dynamic label. A final version that uses >=> from Control.Monad to compose together two a -> m b functions
 dynButton :: MonadWidget t m => Dynamic t Text -> m (Event t ())
-dynButton = (mapDyn buttonWithClass) >=> dynE
+dynButton = (mapDynM buttonWithClass) >=> dynE
 
 dynButtonWithChild :: MonadWidget t m => String -> m () -> m (Event t ())
 dynButtonWithChild cls child = do
@@ -122,5 +122,5 @@ dropdownOpts k0 setUpMap (DropdownConfig setK attrs) = do
         k <- mk
         guard $ Data.Map.member k options
         return k
-  dValue <- mapDyn readKey =<< holdDyn (Just k0) (leftmost [eChange, fmap Just setK])
+  dValue <- mapDynM readKey =<< holdDyn (Just k0) (leftmost [eChange, fmap Just setK])
   return $ Dropdown dValue (fmap readKey eChange) -- @clean this.

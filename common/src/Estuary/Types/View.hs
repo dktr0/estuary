@@ -1,14 +1,16 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
 
 module Estuary.Types.View where
 
 import Text.JSON
 import Text.JSON.Generic
+import Data.Text (Text)
+import qualified Data.Text as T
 import Estuary.Utility (firstKey)
 
 data View =
   Views [View] |
-  ViewDiv String View |
+  ViewDiv Text View |
   LabelView Int |
   StructureView Int |
   TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
@@ -34,7 +36,7 @@ standardView = Views [
 emptyView :: View
 emptyView = Views []
 
-presetView :: String -> View
+presetView :: Text -> View
 
 presetView "fulltexteditor" = Views [
   ViewDiv "fullRowTopOrBottom" (Views [LabelView 0,TextView 1 20])

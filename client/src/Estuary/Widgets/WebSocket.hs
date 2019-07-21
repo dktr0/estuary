@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings, JavaScriptFFI #-}
 
 module Estuary.Widgets.WebSocket where
 
@@ -10,6 +10,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Time
 import Data.Either
 import Data.Maybe
+import Data.Text
 
 import Estuary.Protocol.Foreign
 import Estuary.Types.Request
@@ -40,12 +41,12 @@ estuaryWebSocket addr pwd toSend = mdo
     isOk _ = Just (ProtocolError "unknown protocol error")
 -}
 
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Event t Request ->
+alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Dynamic t Context -> Event t Request ->
   m (Event t [Response], Event t (Context->Context))
-alternateWebSocket obj toSend = mdo
+alternateWebSocket obj ctx toSend = mdo
   now <- liftIO $ getCurrentTime
 
-  performEvent_ $ fmap (liftIO . (send obj) . encode) $ leftmost [toSend,pingRequest]
+  performEvent_ $ fmap (liftIO . (send obj) . encode) $ leftmost [sendBrowserInfo,clientInfoEvent,toSend]
   ticks <- tickLossy (0.1::NominalDiffTime) now
   responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   -- responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
@@ -54,18 +55,32 @@ alternateWebSocket obj toSend = mdo
   status' <- holdDyn "---" status
   let wsStatusChanges = fmap (\w x -> x { wsStatus = w }) $ (updated . nubDyn) status'
 
- -- issue Pings to track latency with server, but only when WebSocket connection is open
+  -- after widget is built, query and report browser info to server
+  sendBrowserInfo <- (liftIO . BrowserInfo . getUserAgent) <$ getPostBuild
+
+  -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
   socketIsOpen <- mapDyn (=="connection open") status'
-  pingTick <- tickLossy (5::NominalDiffTime) now
-  pingTick' <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
-  let pingTick'' = gate (current socketIsOpen) pingTick'
-  let pingRequest = fmap Ping pingTick''
+  pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
+  pingTimeTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
+  initialTime <- liftIO getCurrentTime
+  timeDyn <- holdDyn initialTime pingTickTime
+  loadDyn <- fmap load ctx
+  animationLoadDyn <- fmap animationLoad ctx
+  latencyDyn <- holdDyn 0 $ latency
+  clientInfoDyn <- ClientInfo <$> timeDyn <*> loadDyn <*> animationLoadDyn <*> latencyDyn
+  let clientInfoEvent = tagDyn clientInfo pingTick
 
-  -- when Pongs are received
-  let pongs = fmapMaybe justPongs responses'
-  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pongs
+  -- the server responds to ClientInfo (above) with ServerInfo, which we process below
+  -- by issuing events that update the context
+  let serverInfos = fmapMaybe justServerInfo responses'
+  let serverClientCounts = fmap fst serverInfos
+  let serverClientCountChanges = fmap (\x c -> c { serverClientCount = x }) serverClientCounts
+  let pingTimes = fmap snd serverInfos
+  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pingTimes
   let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
-
-  let contextChanges = mergeWith (.) [wsStatusChanges,latencyChanges]
+  let contextChanges = mergeWith (.) [wsStatusChanges,serverClientCountChanges,latencyChanges]
 
   return (responses',contextChanges)
+
+
+foreign import javascript unsafe "navigator.userAgent" getUserAgent :: IO Text

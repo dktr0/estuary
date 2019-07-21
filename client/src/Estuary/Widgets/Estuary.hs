@@ -65,7 +65,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
 
   (ctx, hints) <- mdo
     -- ctx's foldDyn creation must come before the structure widgets below incase
-    -- any inspect the `current` value. This will block indefinitly until it has a
+    -- any inspect the `current` value. This will block indefinitely until it has a
     -- chance to be created.
     let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
     let deltasDown' = ffilter (not . Prelude.null) deltasDown

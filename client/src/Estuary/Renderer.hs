@@ -192,7 +192,7 @@ renderTextProgramChanged c z (SuperContinent,x) = do
 renderTextProgramChanged c z (Punctual,x) = do
   s <- get
   ac <- liftAudioIO $ audioContext
-  let parseResult = Punctual.runPunctualParser x
+  let parseResult = Punctual.runPunctualParser (T.pack x)
   if isLeft parseResult then return () else do
     -- A. update PunctualW (audio state) in response to new, syntactically correct program
     let exprs = either (const []) id parseResult
