@@ -26,8 +26,8 @@ data Client = Client {
   statusInEnsemble :: Text,
   lastEditInEnsemble :: UTCTime,
   authenticatedInEnsemble :: Bool,
-  clientMainLoad :: Double,
-  clientAnimationLoad :: Double,
+  clientMainLoad :: Int,
+  clientAnimationLoad :: Int,
   clientLatency :: NominalDiffTime
 }
 

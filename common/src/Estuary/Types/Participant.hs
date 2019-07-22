@@ -17,8 +17,8 @@ data Participant = Participant {
   location :: Text,
   status :: Text,
   lastEdit :: UTCTime,
-  mainLoad :: Double,
-  animationLoad :: Double,
+  mainLoad :: Int,
+  animationLoad :: Int,
   latency :: NominalDiffTime,
   browser :: Text
   } deriving (Eq,Data,Typeable)

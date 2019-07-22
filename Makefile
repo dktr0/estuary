@@ -53,7 +53,10 @@ nixShellBuildServer:
 
 nixBuild:
 	@ echo "nixBuild:"
-	nix-build
+	-mkdir result/ghc/
+	-mkdir result/ghcjs/
+	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
+	nix-build -o result/ghcjs/estuary/ -A ghcjs.estuary
 
 PROD_STAGING_ROOT=staging/
 DEV_STAGING_ROOT=dev-staging/
