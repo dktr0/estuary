@@ -138,49 +138,6 @@ specificPatternPopup actionList = elClass "div" "popupMenu" $ do
       (Vowel $ Atom 'o' Inert Once)]
 
 
-dropdownPatternWidget::MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (),Event t Hint))
-dropdownPatternWidget iPattern _ = do
-  let paramShowList = ["accelerate", "bandf", "bandq", "begin", "coarse", "crush", "cut", "cutoff", "delay","delayfeedback","delaytime", "end", "gain", "hcutoff", "hresonance", "loop", "n", "pan", "resonance", "s", "shape", "speed", "unit","up", "vowel"]
-  let patternType = T.pack $ head $ words $ show iPattern
-  let initialIndex = maybe (0) id $ Data.List.findIndex (==patternType) paramShowList -- Int of initalFunc
-  let patMap = Data.Map.insert initialIndex (Sp.specificContainer iPattern never) $ fromList $ zip [0..] builderList
-  let initialFunc = maybe (builderList!!0) (id) $ Data.Map.lookup initialIndex patMap
-  let dropDownMap = constDyn $ fromList $ zip [0::Int,1..] paramShowList
-  patternDropDown <- dropdown initialIndex dropDownMap def
-  let ddVal = _dropdown_value patternDropDown
-  soundPat <- mapDyn (\k ->case Data.Map.lookup k patMap of Just a-> a; otherwise -> Sp.specificContainer (S $ Blank Inert) never) ddVal  --Dynamic (m(dynamic spec,event t))
-  let soundPatEv = updated soundPat -- Event(Dyn ,ev,ev)
-  soundPatEv' <- widgetHold (initialFunc) soundPatEv  -- m Dynamic t(m (Dynamic (spec,event gen)...))
-  let soundPattern = joinDyn soundPatEv' --Dyn (spec , event generic)
-  return $ soundPattern
-  where
-    builderList = Prelude.map (\x-> Sp.specificContainer x never) [(Accelerate $ Atom 0 Inert Once),
-      (Bandf $ Atom 440 Inert Once),
-      (Bandq $ Atom 10 Inert Once),
-      (Begin $ Atom 0 Inert Once),
-      (Coarse $ Atom 0 Inert Once),
-      (Crush $ Atom 16 Inert Once),
-      (Estuary.Tidal.Types.Cut $ Atom 1 Inert Once),
-      (Cutoff $ Atom 440 Inert Once),
-      (Delay $ Atom 0 Inert Once),
-      (Delayfeedback $ Atom 0 Inert Once),
-      (Delaytime $ Atom 0.5 Inert Once),
-      (End $ Atom 1 Inert Once),
-      (Gain $ Atom 1 Inert Once),
-      (Hcutoff $ Atom 440 Inert Once),
-      (Hresonance $ Atom 20 Inert Once),
-      (Loop $ Atom 0 Inert Once),
-      (N $ Atom 0 Inert Once),
-      (Pan $ Atom 0.5 Inert Once),
-      (Resonance $ Atom 0.5 Inert Once),
-      (S $ Atom "~" Inert Once),
-      (Shape $ Atom 0.5 Inert Once),
-      (Speed $ Atom 1 Inert Once),
-      (Unit $ Atom 'c' Inert Once),
-      (Up $ Atom 0 Inert Once),
-      (Vowel $ Atom 'o' Inert Once)] --, stringContainerWidget (Unit $ Atom "c" Once),stringContainerWidget (Vowel $ Atom "c" Once)]
-
-
 patternCombinatorDropDown :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
 patternCombinatorDropDown iValue _ = do
   let ddMapVals = fromList $ zip [(1::Int)..] [Merge,Add,Subtract,Multiply,Divide]
@@ -280,37 +237,6 @@ transformedPat (TransformedPattern iPatTrans iTransPat) _ = do
   newTransPat <- combineDyn (\x y-> TransformedPattern x y) patTrans transPat
   val <- liftM joinDyn $ holdDyn newTransPat $ fmap constDyn rebuildVal
   mapDyn (\x-> (x,leftmost [deleteEvent, (RebuildMe <$) rebuildVal],tHint)) val
-
-
-
-
-
---transformedPat (TransformedPattern (Combine iSpecPat iPatComb) iTransPat) _ = do
---  delete <- button "-"
---  transform <- button "transform"
---  sPatTuple <- dropdownPatternWidget iSpecPat never
---  sPat <- mapDyn (\(x,_,_)->x) sPatTuple
---  sHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) sPatTuple
---  --addAfter <- el "div" $ button "add"
---  (comb,tPatTuple) <- el "div" $ do
---      (c,_) <- patternCombinatorDropDown iPatComb never >>= splitDyn
---      t <- resettableTransformedPatternWidget iTransPat never  -- this one has to have the 'reset' wrapper around it
---      return (c,t)
---  tPat <- mapDyn (\(x,_,_)->x) tPatTuple
---  tEv <- liftM switchPromptlyDyn $ mapDyn (\(_,ev,_)->ev) tPatTuple
---  tHint <- liftM switchPromptlyDyn $ mapDyn (\(_,_,h)->h) tPatTuple
---  val <- combineDyn (\x y -> TransformedPattern (Combine x y)) sPat comb >>= combineDyn (\t cons -> cons t) tPat
---  let childDeleteMe = ffilter (\x ->case x of DeleteMe ->True; otherwise-> False) tEv
---  let childIsEmpty = ffilter id $ attachDynWith (\x _->case x of EmptyTransformedPattern->True;otherwise->False) tPat childDeleteMe
---  transVal <- mapDyn (TransformedPattern NoTransformer) val
---  untransPat <- mapDyn UntransformedPattern sPat
---  val' <- liftM joinDyn $ holdDyn val $ fmap (const tPat) delete
---  val'' <- liftM joinDyn $ holdDyn val' $ (transVal <$) transform
---  val'''<- liftM joinDyn $ holdDyn val'' $ (untransPat <$) childIsEmpty
---  mapDyn (\x->(x, leftmost [(DeleteMe <$) delete, (RebuildMe <$) transform,(RebuildMe <$) childDeleteMe],leftmost [tHint,sHint])) val'''
-
-
-
 
 
 paramWidget::MonadWidget t m=>PatternTransformer -> m (Dynamic t PatternTransformer)

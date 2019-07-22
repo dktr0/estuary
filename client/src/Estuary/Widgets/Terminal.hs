@@ -50,7 +50,7 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
 
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
-  let responseMsgs = fmap (mapMaybe messageForEnsembleResponse) deltasDown'
+  let responseMsgs = fmap (Data.Maybe.mapMaybe messageForEnsembleResponse) deltasDown'
   let streamIdMsgs = fmap (\x -> ["new Peer id: " ++ x]) streamId
   let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs,streamIdMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages

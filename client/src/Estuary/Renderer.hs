@@ -16,6 +16,8 @@ import Data.Either
 import qualified Data.Map as Map
 import JavaScript.Web.AnimationFrame
 import GHCJS.Concurrent
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Sound.MusicW.AudioContext
 

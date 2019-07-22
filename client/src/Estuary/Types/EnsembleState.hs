@@ -101,10 +101,8 @@ responsesToStateChanges _ es = es
 commandsToRequests :: EnsembleState -> Terminal.Command -> Maybe EnsembleRequest
 commandsToRequests es (Terminal.PublishView x) = Just (PublishView x (getActiveView es))
 commandsToRequests es (Terminal.PublishDefaultView) = Just (PublishDefaultView (getActiveView es))
-commandsToRequests es (Terminal.GetView x) = Just (GetView x)
-commandsToRequests es Terminal.ListViews = Just ListViews
 commandsToRequests es (Terminal.DeleteView x) = Just (DeleteView x)
-commandsToRequests es (Terminal.Chat x) = Just (SendChat (userHandle es) x)
+commandsToRequests es (Terminal.Chat x) = Just (SendChat x)
 commandsToRequests _ _ = Nothing
 
 messageForEnsembleResponse :: EnsembleResponse -> Maybe Text
