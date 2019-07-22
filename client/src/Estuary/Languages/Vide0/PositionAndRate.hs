@@ -6,6 +6,7 @@ import Data.Time
 
 import Estuary.Types.Tempo
 
+
 type VideoLength = NominalDiffTime
 type Now = UTCTime
 type Rate = NominalDiffTime

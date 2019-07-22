@@ -3,6 +3,7 @@ module Estuary.Languages.Vide0.VideoSpec where
 import Language.Haskell.Exts
 import Control.Applicative
 import Data.Time
+
 import qualified Estuary.Languages.Vide0.PositionAndRate as VT
 
 import Estuary.Types.Tempo
