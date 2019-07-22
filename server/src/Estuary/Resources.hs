@@ -106,11 +106,11 @@ loadResourceGroup loadResourceMeta scope groupPath = do
         meta <- loadResourceMeta (groupPath </> resourceFileName)
 
         return $ Resource {
-            file = pack resourceFileName,
-            fileSize = fileSize,
-            meta = meta,
-            tags = resourceMetaTags explicitMeta,
-            scope = scope
+            resourceFileName = pack resourceFileName,
+            resourceFileSize = fileSize,
+            resourceMeta = meta,
+            resourceTags = resourceMetaTags explicitMeta,
+            resourceScope = scope
           }
     
     return $ Seq.fromList resources

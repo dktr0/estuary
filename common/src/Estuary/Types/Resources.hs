@@ -3,8 +3,10 @@ module Estuary.Types.Resources where
 import Data.Text
 
 import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 
-import Data.Sequence(Seq)
+import Data.Sequence(Seq, (|>))
+import qualified Data.Sequence as Seq
 
 import Estuary.Types.Scope
 
@@ -27,14 +29,29 @@ data Resources = Resources {
   imageResources :: ResourceMap ImageMeta
 } deriving (Show)
 
+emptyResources :: Resources
+emptyResources = Resources {
+  audioResources = emptyResourceMap,
+  videoResources = emptyResourceMap,
+  imageResources = emptyResourceMap
+}
+
 newtype ResourceMap m = ResourceMap { unResourceMap :: Map Text (Seq (Resource m)) } deriving (Show)
 
+emptyResourceMap :: ResourceMap m
+emptyResourceMap = ResourceMap Map.empty
+
+insertResource :: Text -> Resource m -> ResourceMap m -> ResourceMap m
+insertResource groupName resource (ResourceMap resources) = 
+  let group = (Map.findWithDefault Seq.empty groupName resources) |> resource
+  in ResourceMap $ Map.insert groupName (Seq.sortOn resourceFileName group) resources
+
 data Resource m = Resource {
-  file :: Text,
-  fileSize :: Integer,
-  meta :: m,
-  tags :: Seq Text,
-  scope :: Scope
+  resourceFileName :: Text,
+  resourceFileSize :: Integer,
+  resourceMeta :: m,
+  resourceTags :: Seq Text,
+  resourceScope :: Scope
 } deriving (Show)
 
 data AspectRatio

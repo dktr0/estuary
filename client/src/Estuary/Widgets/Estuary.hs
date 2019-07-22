@@ -42,6 +42,7 @@ import qualified Estuary.Types.Term as Term
 import Estuary.RenderInfo
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Terminal as Terminal
+import Estuary.Widgets.ResourceUpload
 
 estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
 estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
@@ -165,7 +166,9 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
     dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
 
-  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
+  privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader
+
+  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, privateSamplesChangeEv]
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
