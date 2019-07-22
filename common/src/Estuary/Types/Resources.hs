@@ -1,6 +1,10 @@
 module Estuary.Types.Resources where
 
 import Data.Text
+import Data.Map.Strict (Map)
+
+import Data.Sequence(Seq)
+
 
 import Estuary.Types.Scope
 
@@ -23,16 +27,20 @@ data Resources = Resources {
   imageResources :: ResourceMap ImageMeta
 }
 
-newtype ResourceMap m = ResourceMap { unResourceMap :: Map Text (Seq (Resource m)) }
+-- newtype ResourceMap m = ResourceMap { unResourceMap :: Map Text (Seq (Resource m)) }
+
+newtype ResourceMap m = ResourceMap {unResourceMap :: Map Text (Seq (Resource m))}
 
 data Resource m = Resource {
   file :: Text,
-  mimetype :: Text,
-  fileSize :: Double,
-  meta :: m,
-  tags :: Seq Text,
-  scope :: Scope
+  -- mimetype :: Text,
+  -- fileSize :: Double,
+  meta :: m
+  -- tags :: Seq Text,
+  -- scope :: Scope
 }
+
+
 
 data AspectRatio
   = FourOverThree

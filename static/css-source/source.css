@@ -132,11 +132,15 @@ body, .primary-color {
 }
 
 .ourPopUp {
-	background-color: blue;
+	background-color: gray;
 	width: 50%;
 	height: 1000px
 	z-index: 0;
+	position: relative;
+	right: 10%;
+	top: 50em;
 	}
+
 
 .footer {
 	padding-top: 5px;

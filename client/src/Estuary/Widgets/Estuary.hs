@@ -9,6 +9,8 @@ import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import Data.Time
 import Data.Map
+
+import qualified Data.Sequence as S
 import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
@@ -36,6 +38,7 @@ import Estuary.Types.Tempo
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
+import Estuary.Types.Resources
 import Estuary.Help.LanguageHelp
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
@@ -112,7 +115,7 @@ ourPopUp go = mdo
   let classStyle = constDyn $ singleton "class" "ourPopUp"
   let attrs = zipDynWith (union) visibleStyle classStyle
   (hide,canvasEnabledEv) <- elDynAttr "div" attrs $ do
-    text "test"
+    text mediaInfo
     hide' <- button "hide"
     let configCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
     canvasEnabledEv <- divClass "config-entry" $ do
@@ -122,10 +125,17 @@ ourPopUp go = mdo
     return (hide',canvasEnabledEv)
   return canvasEnabledEv
 
+
+mediaInfo :: ResourceMap VideoMeta
+mediaInfo = ResourceMap {unResourceMap = (fromList [("audio", (S.fromList [mediaInfo]))])}
+
+videoMedia :: Resource VideoMeta
+videoMedia = Resource {file = "test", meta = AudioMeta {audioDuration = 3.25}}
+
+
 popupVisibilityStyle :: Bool -> Map T.Text T.Text
 popupVisibilityStyle False = singleton "style" "display: none"
 popupVisibilityStyle True = singleton "style" "display: block"
-
 
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 updateContext cMvar cDyn = performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn
