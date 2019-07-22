@@ -7,6 +7,8 @@ This document will outline how to build Estuary. It will walk you through:
 *   the relevant configuration files/project structure
 *   how to update dependencies
 
+**Important note**: In most cases you do *not* need to build Estuary. If you simply wish to try out Estuary and/or use it in many situations, it is simpler to use the Estuary server that is available 24/7 at https://intramuros.mcmaster.ca. Just fire up Chromium or Chrome and head to that address! Building Estuary is mostly something that is necessary only for the team working on developing Estuary itself.
+
 **A note for Windows users**: nix is not supported natively on Windows but can be installed in WSL (Windows Subsystem for Linux). Follow the instructions on https://docs.microsoft.com/en-us/windows/wsl/install-win10 to install it. Then use it with any linux instructions from here on out. On occasion there are special notes for WSL users outlined in this document.
 
 ## Installing Nix via reflex-platform

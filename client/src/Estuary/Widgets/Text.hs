@@ -30,7 +30,7 @@ import Estuary.Help.LanguageHelp
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
-
+import Estuary.Widgets.EstuaryWidget
 
 import Estuary.Types.Context
 
