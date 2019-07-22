@@ -132,13 +132,14 @@ body, .primary-color {
 }
 
 .ourPopUp {
-	background-color: gray;
+	display:inline-block;
+	background-color: rgb(98, 221, 115);
+	color: black;
 	width: 50%;
 	height: 1000px
 	z-index: 0;
-	position: relative;
-	right: 10%;
-	top: 50em;
+	position: fixed;
+	top: 10em;
 	}
 
 

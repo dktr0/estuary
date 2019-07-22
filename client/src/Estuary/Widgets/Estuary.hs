@@ -19,6 +19,8 @@ import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..))
 import GHCJS.Marshal.Pure
 import Data.Functor (void)
 import qualified Data.Text as T
+import qualified Data.Foldable as F
+
 
 import Estuary.Tidal.Types
 import Estuary.Protocol.Foreign
@@ -39,6 +41,7 @@ import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
 import Estuary.Types.Resources
+import Estuary.Types.Scope
 import Estuary.Help.LanguageHelp
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
@@ -115,7 +118,7 @@ ourPopUp go = mdo
   let classStyle = constDyn $ singleton "class" "ourPopUp"
   let attrs = zipDynWith (union) visibleStyle classStyle
   (hide,canvasEnabledEv) <- elDynAttr "div" attrs $ do
-    text mediaInfo
+    videoResourceWidget samplevideoMedia
     hide' <- button "hide"
     let configCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
     canvasEnabledEv <- divClass "config-entry" $ do
@@ -125,13 +128,35 @@ ourPopUp go = mdo
     return (hide',canvasEnabledEv)
   return canvasEnabledEv
 
+mediaInfo :: ResourceMap VideoMeta --resourcesWidget
+mediaInfo = ResourceMap {unResourceMap = (Data.Map.fromList [("butterflies", (S.fromList [sampleVideoMedia]))])}
 
-mediaInfo :: ResourceMap VideoMeta
-mediaInfo = ResourceMap {unResourceMap = (fromList [("audio", (S.fromList [mediaInfo]))])}
+displayMediaInfo :: T.Text
+displayMediaInfo = T.pack $ show mediaInfo
 
-videoMedia :: Resource VideoMeta
-videoMedia = Resource {file = "test", meta = AudioMeta {audioDuration = 3.25}}
+sampleVideoMedia :: Resource VideoMeta
+sampleVideoMedia = Resource {file = "test", fileSize = 100, meta = VideoMeta {videoDuration = 3.25, videoResolution = (400,600), videoAspectRatio = (Rational 1 1)}, tags = S.fromList ["video", "butterflies"], scope = Public}
 
+showVideoDuration :: Resource VideoMeta -> T.Text -- this will have to be a expandable widget with all the meta info
+showVideoDuration a = T.pack $ show $ videoDuration (meta a)
+
+--tags = S.fromList ["video", "butterflies"]
+showTags :: Resource VideoMeta -> T.Text
+showTags a = concatTags $ F.toList (tags a) --List
+
+concatTags :: [T.Text] -> T.Text
+concatTags [] = ""
+concatTags [x] =  x
+concatTags (x:xs) = T.concat ["<", x, ", ", concatTags xs, ">"]
+
+videoResourceWidget :: MonadWidget t m => Resource VideoMeta -> m ()
+videoResourceWidget a = do
+  let file' =  file a
+  let fileSize' =  T.pack $ show (fileSize a)
+  let meta' =  showVideoDuration a
+  let tags' =  showTags a
+  let scope' =  T.pack $ show (scope a)
+  text $ T.concat [file', " ", fileSize', " ", meta', " ", tags', " ", scope', " "]
 
 popupVisibilityStyle :: Bool -> Map T.Text T.Text
 popupVisibilityStyle False = singleton "style" "display: none"

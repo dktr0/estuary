@@ -13,6 +13,9 @@ dependencies:
   - base
   - estuary-common
   - containers
+  - directory
+  - filepath
+  - htaglib
   - text
   - json
   - websockets
