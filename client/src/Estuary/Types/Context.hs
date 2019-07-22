@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Types.Context where
 
 import Data.Time
@@ -5,6 +7,8 @@ import Data.IntMap.Strict
 import Control.Concurrent.MVar
 import GHCJS.Types
 import GHCJS.DOM.Types (HTMLCanvasElement)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Tidal.Types
 import Estuary.Types.Language
@@ -26,15 +30,15 @@ data Context = Context {
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
   language :: Language,
-  theme :: String,
+  theme :: Text,
   tempo :: Tempo,
-  activeDefsEnsemble :: String, -- ^ The name of the ensemble that the current definitions in the context belong to.
+  activeDefsEnsemble :: Text, -- ^ The name of the ensemble that the current definitions in the context belong to.
   definitions :: DefinitionMap,
   samples :: SampleMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   canvasOn :: Bool,
-  wsStatus :: String,
+  wsStatus :: Text,
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
   canvasState :: MVar CanvasState,
@@ -67,7 +71,7 @@ initialContext now mBus wd sd mv pp = Context {
 
 type ContextChange = Context -> Context
 
-setTheme :: String -> ContextChange
+setTheme :: Text -> ContextChange
 setTheme x c = c {theme = x}
 
 setLanguage :: Language -> ContextChange
@@ -76,7 +80,7 @@ setLanguage x c = c { language = x }
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
-setDefinitions :: (String, DefinitionMap) -> ContextChange
+setDefinitions :: (Text, DefinitionMap) -> ContextChange
 setDefinitions (x, y) c = c {
   activeDefsEnsemble = x,
   definitions = y

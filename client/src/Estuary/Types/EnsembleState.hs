@@ -38,7 +38,7 @@ data EnsembleState = EnsembleState {
   anonymousParticipants :: Int
 }
 
-soloEnsembleName :: String
+soloEnsembleName :: Text
 soloEnsembleName = ""
 
 commandToHint :: EnsembleState -> Terminal.Command -> Maybe Hint

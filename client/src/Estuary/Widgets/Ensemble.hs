@@ -31,7 +31,7 @@ import Estuary.Types.Sited
 import Estuary.Types.View
 import Estuary.Render.AudioContext
 
-extractInitialDefs :: (MonadWidget t m) => String -> Dynamic t Context -> m (DefinitionMap)
+extractInitialDefs :: (MonadWidget t m) => Text -> Dynamic t Context -> m (DefinitionMap)
 extractInitialDefs ensemble dynCtx = do
   ctx <- sample $ current dynCtx
   if ensemble == activeDefsEnsemble ctx then
@@ -40,7 +40,7 @@ extractInitialDefs ensemble dynCtx = do
     return $ emptyDefinitionMap
 
 ensembleView :: MonadWidget t m
-  => Dynamic t Context -> Dynamic t RenderInfo -> String -> Event t Command -> Event t [Response] ->
+  => Dynamic t Context -> Dynamic t RenderInfo -> Text -> Event t Command -> Event t [Response] ->
   m (Dynamic t DefinitionMap, Event t Request, Event t Hint,Event t Tempo)
 ensembleView ctx renderInfo ensemble commands deltasDown = mdo
 
@@ -52,24 +52,18 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
   let commandChanges = fmap commandsToStateChanges commands
   let ensembleResponses = fmap justEnsembleResponses deltasDown
   let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
-  let handleChanges = fmap (\x es -> es { userHandle = T.unpack x}) hdl
+  let handleChanges = fmap (\x es -> es { userHandle = x}) hdl -- *** this is obsolete UI ***
   let requestChanges = fmap requestsToStateChanges edits
   ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
 
   -- Ensemble name and password UI (created only if ensemble is not "")
-  (hdl,pwdRequest) <- if ensemble == soloEnsembleName then return (never,never) else divClass "ensembleHeader primary-color ui-font" $ do
-    divClass "ensembleName ui-font primary-color" $ text $ "Ensemble: " `T.append` T.pack ensemble
-    hdl' <- divClass "ensembleHandle ui-font primary-color" $ do
+  hdl <- if ensemble == soloEnsembleName then return never else divClass "ensembleHeader primary-color ui-font" $ do
+    divClass "ensembleName ui-font primary-color" $ text $ "Ensemble: " `T.append` ensemble
+    divClass "ensembleHandle ui-font primary-color" $ do
       text "Name:"
       let attrs = constDyn ("class" =: "ensembleHandle ui-font primary-color")
       handleInput <- textInput $ def & textInputConfig_attributes .~ attrs
       return $ _textInput_input handleInput
-    pwdRequest' <- divClass "ensemblePassword ui-font primary-color" $ do
-      text "password:"
-      let attrs = constDyn ("class" =: "ensemblePassword ui-font primary-color")
-      pwdInput <- textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-      return $ fmap AuthenticateInEnsemble $ fmap T.unpack $ _textInput_input pwdInput
-    return (hdl',pwdRequest')
 
   -- management of tempo including tempoWidget
   (tempoChanges,tempoEdits) <- tempoWidget ctx ensembleResponses
@@ -85,24 +79,22 @@ ensembleView ctx renderInfo ensemble commands deltasDown = mdo
         replaceDefsEv <- tailE $ updated newInitialDefs
         newDefs <- holdDyn initialDefs $ replaceDefsEv
         return (newDefs, y, z)
-  currentView <- liftM nubDyn $ mapDyn getActiveView ensembleState
+  currentView <- holdUniqDyn $ fmap getActiveView ensembleState
   let newView = updated currentView
-  currentDefs <- mapDyn zones ensembleState
-  let newDefsAndView = attachDyn currentDefs newView
+  let currentDefs = fmap zones ensembleState
+  let newDefsAndView = attachPromptlyDyn currentDefs newView
   let rebuildWidget = fmap (\(ds,v) -> viewWidget ctx renderInfo v ds ensembleResponses) newDefsAndView
   ui <- widgetHold initialWidget rebuildWidget
-  defMap <- liftM joinDyn $ mapDyn (\(y,_,_) -> y) ui
-  edits <- liftM switchPromptlyDyn $ mapDyn (\(_,y,_) -> y) ui
-  hintsUi <- liftM switchPromptlyDyn $ mapDyn (\(_,_,y) -> y) ui
-  let commandHints = attachDynWithMaybe commandToHint ensembleState commands
+  let defMap = join $ fmap (\(y,_,_) -> y) ui
+  let edits = switchPromptlyDyn $ fmap (\(_,y,_) -> y) ui
+  let hintsUi = switchPromptlyDyn $ fmap (\(_,_,y) -> y) ui
+  let commandHints = attachPromptlyDynWithMaybe commandToHint ensembleState commands
   let hints = leftmost [commandHints,tempoHints,hintsUi] -- *** note: might this occasionally lose a hint?
 
   -- form requests to send to server (but only if we are in a collaborative ensemble, ie. ensemble is not "")
   requests <- if ensemble == soloEnsembleName then return never else do
-    joinRequest <- liftM (JoinEnsemble ensemble <$) $ getPostBuild
-    let commandRequests = attachDynWithMaybe commandsToRequests ensembleState commands
-    let ensembleRequests = fmap EnsembleRequest $ leftmost [edits,pwdRequest,tempoRequest,commandRequests]
-    return $ leftmost [joinRequest,ensembleRequests]
+    let commandRequests = attachPromptlyDynWithMaybe commandsToRequests ensembleState commands
+    return $ fmap EnsembleRequest $ leftmost [edits,tempoRequest,commandRequests]
 
   return (defMap,requests,hints,tempoChanges)
 

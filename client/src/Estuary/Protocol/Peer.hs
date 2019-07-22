@@ -11,6 +11,7 @@ import JavaScript.Object.Internal as O
 import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
 import Text.JSON
+import Data.Text (Text)
 
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -25,9 +26,9 @@ foreign import javascript safe
 
 foreign import javascript safe
   "$1.id"
-  peerProtocolId_ :: T.JSVal -> IO T.JSVal
+  peerProtocolId :: T.JSVal -> IO Text
 
-peerProtocolId :: T.JSVal -> IO String
+{- peerProtocolId :: T.JSVal -> IO String
 peerProtocolId x = do
   y <- peerProtocolId_ x
-  return $ Prim.fromJSString y
+  return $ Prim.fromJSString y -}

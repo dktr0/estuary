@@ -6,12 +6,12 @@ module Estuary.Widgets.Navigation (
   page,
 ) where
 
-import Control.Monad (liftM)
-
+import Control.Monad
 import Data.IntMap.Strict
 import Data.Maybe
 import qualified Data.Map as Map
 import Data.Time.Clock
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Estuary.Reflex.Router
@@ -57,18 +57,18 @@ data Navigation =
   Solo |
   Lobby |
   CreateEnsemblePage |
-  Collaborate String
+  Collaborate Text
   deriving (Generic, FromJSVal, ToJSVal)
 
-navigation :: MonadWidget t m => Navigation -> Event t Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t (Maybe (String, DefinitionMap)), Event t Request, Event t Hint, Event t Tempo)
+navigation :: MonadWidget t m => Navigation -> Event t Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t (Maybe (Text, DefinitionMap)), Event t Request, Event t Hint, Event t Tempo)
 navigation initialPage stateChangeEv ctx renderInfo commands wsDown = do
   dynPage <- router initialPage stateChangeEv $ page ctx renderInfo commands wsDown
 
-  dynPageData <- mapDyn snd dynPage
-  dynValues <- liftM joinDyn           $ mapDyn (\(x, _, _, _) -> x) dynPageData
-  wsUpEv    <- liftM switchPromptlyDyn $ mapDyn (\(_, x, _, _) -> x) dynPageData
-  hintEv    <- liftM switchPromptlyDyn $ mapDyn (\(_, _, x, _) -> x) dynPageData
-  tempoEv   <- liftM switchPromptlyDyn $ mapDyn (\(_, _, _, x) -> x) dynPageData
+  let dynPageData = fmap snd dynPage
+  let dynValues = join $ fmap (\(x, _, _, _) -> x) dynPageData
+  let wsUpEv = switchPromptlyDyn $ fmap (\(_, x, _, _) -> x) dynPageData
+  let hintEv = switchPromptlyDyn $ fmap (\(_, _, x, _) -> x) dynPageData
+  let tempoEv = switchPromptlyDyn $ fmap (\(_, _, _, x) -> x) dynPageData
 
   return (dynValues, wsUpEv, hintEv, tempoEv)
 
@@ -84,7 +84,7 @@ panel ctx targetPage title icon = do
 
 page :: forall t m. (MonadWidget t m)
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> Navigation
-  -> m (Event t Navigation, (Dynamic t (Maybe (String, DefinitionMap)), Event t Request, Event t Hint, Event t Tempo))
+  -> m (Event t Navigation, (Dynamic t (Maybe (Text, DefinitionMap)), Event t Request, Event t Hint, Event t Tempo))
 page ctx _ _ wsDown Splash = do
   navEv <- divClass "splash-container" $ do
     gotoAboutEv <- panel ctx About Term.About estuaryIcon
@@ -104,7 +104,7 @@ page ctx _ _ wsDown TutorialList = do
 page ctx _ _ wsDown (Tutorial tid) = do
   let widget = (Map.lookup tid tutorialMap)::Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
   (dm, hint) <- maybe errMsg id (fmap (\x-> x ctx) widget)
-  dm' <- mapDyn (\x-> Just ("",x)) dm
+  let dm' = fmap (\x-> Just ("",x)) dm
   return (never, (dm', never, hint, never))
   where
     errMsg = do
@@ -117,15 +117,14 @@ page ctx _ _ wsDown About = do
 
 page ctx renderInfo commands wsDown Solo = do
   (values,hints,tempoEvents) <- soloView ctx renderInfo commands
-  values' <- mapDyn (\x -> Just (soloEnsembleName, x)) values
+  let values' = fmap (\x -> Just (soloEnsembleName, x)) values
   return (never, (values', never, hints, tempoEvents))
 
 page ctx _ _ wsDown Lobby = do
   requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
   spaceList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
-  spaceList' <- mapDyn (fmap T.pack) spaceList
-  join <- simpleList spaceList' joinButton -- m (Dynamic t [Event t Navigation])
-  join' <- mapDyn leftmost join -- m (Dynamic t (Event t Navigation))
+  join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
+  let join' = fmap leftmost join -- m (Dynamic t (Event t Navigation))
   let join'' = switchPromptlyDyn join' -- Event t Navigation
   create <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
   return (leftmost [join'', create], (constDyn Nothing, requestEnsembleList, never, never))
@@ -145,10 +144,10 @@ page ctx _ _ _ CreateEnsemblePage = do
     translateDyn Term.EnsemblePassword ctx >>= dynText
     let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-  nameAndPassword <- combineDyn (,) name password
+  let nameAndPassword = (,) <$> name <*> password
   confirm <- el "div" $ dynButton =<< translateDyn Term.Confirm ctx
-  let createEnsemble = fmap (\(a,b) -> CreateEnsemble (T.unpack a) (T.unpack b)) $ tagDyn nameAndPassword confirm
-  let authenticateAdmin = fmap (Authenticate . T.unpack) $ updated adminPwd
+  let createEnsemble = fmap (\(a,b) -> CreateEnsemble a b) $ tagPromptlyDyn nameAndPassword confirm
+  let authenticateAdmin = fmap Authenticate $ updated adminPwd
   cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
   let serverRequests = leftmost [createEnsemble,authenticateAdmin]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
@@ -156,14 +155,14 @@ page ctx _ _ _ CreateEnsemblePage = do
 
 page ctx renderInfo commands wsDown (Collaborate ensembleName) = do
   (values,wsUp,hints,tempoEvents) <- ensembleView ctx renderInfo ensembleName commands wsDown
-  values' <- mapDyn (\x -> Just (ensembleName, x)) values
+  let values' = fmap (\x -> Just (ensembleName, x)) values
   return (never, (values', wsUp, hints, tempoEvents))
 
 
 joinButton :: MonadWidget t m => Dynamic t T.Text -> m (Event t Navigation)
 joinButton x = do
   b <- clickableDivClass'' x "ui-font primary-color" ()
-  return $ (Collaborate . T.unpack) <$> tagDyn x b
+  return $ Collaborate <$> tagPromptlyDyn x b
 
 aboutEstuaryParagraph :: MonadWidget t m => Dynamic t Context -> m ()
 aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph ui-font background" $ do

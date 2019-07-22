@@ -44,18 +44,18 @@ viewWidget ctx renderInfo (Views xs) initialDefs deltasDown = foldM f i xs
     f b a = do
       let (prevZoneMap,prevEdits,prevHints) = b
       (zoneMap,edits,hints) <- viewWidget ctx renderInfo a initialDefs deltasDown
-      newZoneMap <- combineDyn Map.union prevZoneMap zoneMap
+      let newZoneMap = Map.union <$> prevZoneMap <*> zoneMap
       let newEdits = leftmost [prevEdits,edits]
       let newHints = leftmost [prevHints,hints]
       return (newZoneMap,newEdits,newHints)
 
-viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass (T.pack c) $ viewWidget ctx renderInfo v i deltasDown
+viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass c $ viewWidget ctx renderInfo v i deltasDown
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
   (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
-  value' <- mapDyn (Map.singleton n . Structure) value
+  let value' = fmap (Map.singleton n . Structure) value
   let edits' = fmap (ZoneRequest n . Structure) edits
   return (value',edits',hints)
   where f (Structure x) = x
@@ -64,9 +64,9 @@ viewWidget ctx renderInfo (StructureView n) i deltasDown = do
 viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
   let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
-  e <- mapDyn (Map.lookup n . errors) renderInfo
+  let e = fmap (fmap T.pack . Map.lookup n . errors) renderInfo
   (value,edits,hints) <- textNotationWidget ctx e rows i' deltasDown'
-  value' <- mapDyn (Map.singleton n . TextProgram) value
+  let value' = fmap (Map.singleton n . TextProgram) value
   let edits' = fmap (ZoneRequest n . TextProgram) edits
   return (value',edits',hints)
   where f (TextProgram x) = x
@@ -77,11 +77,8 @@ viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
 viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Sequence defaultValue) n i
   let deltasDown' = fmapMaybe (lastOrNothing . justSequences . justEditsInZone n) deltasDown
-  v <- sequencer i' deltasDown'
-  value <- mapDyn (\(a,_,_) -> a) v
-  edits <- liftM switchPromptlyDyn $ mapDyn (\(_,a,_)-> a) v
-  hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)-> a) v
-  value' <- mapDyn (Map.singleton n . Sequence) value
+  (value,edits,hints) <- sequencer i' deltasDown'
+  let value' = fmap (Map.singleton n . Sequence) value
   let edits' = fmap (ZoneRequest n . Sequence) edits
   return (value',edits',hints)
   where f (Sequence x) = x
@@ -108,7 +105,7 @@ viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
   (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
-  value' <- mapDyn (Map.singleton n . Structure) value
+  let value' = fmap (Map.singleton n . Structure) value
   let edits' = fmap (ZoneRequest n . Structure) edits
   return (value',edits',hints)
   where f (Structure x) = x

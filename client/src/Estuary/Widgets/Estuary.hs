@@ -16,6 +16,7 @@ import GHCJS.Types
 import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..))
 import GHCJS.Marshal.Pure
 import Data.Functor (void)
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Estuary.Tidal.Types
@@ -69,7 +70,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
     -- chance to be created.
     let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
     let deltasDown' = ffilter (not . Prelude.null) deltasDown
-    let ccChange = fmap setClientCount $ fmapMaybe justServerClientCount deltasDown'
+    let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
     let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
     let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
     ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
@@ -81,16 +82,16 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
 
     commands <- footer ctx renderInfo deltasUp deltasDown' hints
 
-    (deltasDown,wsCtxChanges) <- alternateWebSocket protocol deltasUp
+    (deltasDown,wsCtxChanges) <- alternateWebSocket protocol ctx renderInfo deltasUp
 
     return (ctx, hints)
 
-  t <- nubDyn <$> mapDyn theme ctx -- Dynamic t String
+  t <- holdUniqDyn $ fmap theme ctx -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
 
   let sd = superDirt ic
-  sdOn <- nubDyn <$> mapDyn superDirtOn ctx
+  sdOn <- holdUniqDyn $ fmap superDirtOn ctx
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
   updateDynamicsModes ctx
@@ -110,18 +111,18 @@ pollRenderInfoChanges riM = do
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 
-changeTheme :: MonadWidget t m => Event t String -> m ()
-changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref . pToJSVal) newStyle
+changeTheme :: MonadWidget t m => Event t Text -> m ()
+changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref) newStyle
 
 foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
-  js_setThemeHref :: JSVal -> IO ()
+  js_setThemeHref :: Text -> IO ()
 
 updateDynamicsModes :: MonadWidget t m => Dynamic t Context -> m ()
 updateDynamicsModes ctx = do
   iCtx <- (sample . current) ctx
   let nodes = mainBus iCtx
-  dynamicsModeChanged <- liftM (updated . nubDyn) $ mapDyn dynamicsMode ctx
+  dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap dynamicsMode ctx
   performEvent_ $ fmap (liftIO . changeDynamicsMode nodes) dynamicsModeChanged
 
 header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
@@ -171,17 +172,17 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
   divClass "peak primary-color code-font" $ do
-    dynText . nubDyn =<< mapDyn (T.pack . f) ctx
+    dynText =<< holdUniqDyn (fmap f ctx)
     text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
-    dynText . nubDyn =<< mapDyn (T.pack . show . avgRenderLoad) renderInfo
+    dynText =<< holdUniqDyn (fmap (T.pack . show . avgRenderLoad) renderInfo)
     text "% ("
-    dynText . nubDyn =<< mapDyn (T.pack . show . peakRenderLoad) renderInfo
+    dynText =<< holdUniqDyn (fmap (T.pack . show . peakRenderLoad) renderInfo)
     text "% "
     dynText =<< translateDyn Term.Peak ctx
     text ") "
   terminalWidget ctx deltasDown deltasUp hints
   where
-    f c | wsStatus c == "connection open" = "(" ++ show (clientCount c) ++ " connections, latency " ++ show (serverLatency c) ++ ")"
-    f c | otherwise = "(" ++ wsStatus c ++ ")"
+    f c | wsStatus c == "connection open" = "(" <> (T.pack $ show $ clientCount c) <> " connections, latency " <> (T.pack $ show $ serverLatency c) <> ")"
+    f c | otherwise= "(" <> wsStatus c <> ")"

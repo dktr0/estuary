@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Renderer where
 
 import Data.Time.Clock
@@ -18,6 +20,7 @@ import JavaScript.Web.AnimationFrame
 import GHCJS.Concurrent
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 import Sound.MusicW.AudioContext
 
@@ -83,10 +86,10 @@ renderTidalPattern start range t p = events''
         utcTime = addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t)
         w1 = Tidal.start $ Tidal.whole e
 
-sequenceToControlPattern :: (String,[Bool]) -> Tidal.ControlPattern
+sequenceToControlPattern :: (Text,[Bool]) -> Tidal.ControlPattern
 sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " " $ fmap f pat
   where f False = "~"
-        f True = sampleName
+        f True = T.unpack sampleName
 
 render :: Context -> Renderer
 render c = do
@@ -107,11 +110,11 @@ canvasChanged :: Context -> Int -> Definition -> Renderer
 canvasChanged c z (TextProgram x) = canvasChangedTextProgram c z $ forRendering x
 canvasChanged _ _ _ = return ()
 
-canvasChangedTextProgram :: Context -> Int -> (TextNotation,String) -> Renderer
+canvasChangedTextProgram :: Context -> Int -> (TextNotation,Text) -> Renderer
 canvasChangedTextProgram c z (Punctual,x) = do
   webGLs <- gets punctualWebGLs
   let prevWebGL = IntMap.findWithDefault Punctual.emptyPunctualWebGL z webGLs
-  liftIO $ putStrLn "about to Punctual.updateRenderingContext"
+  liftIO $ T.putStrLn "about to Punctual.updateRenderingContext"
   newWebGL <- liftIO $ Punctual.updateRenderingContext prevWebGL (canvasElement c)
   modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
 canvasChangedTextProgram _ _ _ = return ()
@@ -149,7 +152,7 @@ renderZoneAnimation tNow c z (TextProgram x) = do
   return ()
 renderZoneAnimation _ _ _ _ = return ()
 
-renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,String) -> Renderer
+renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,Text) -> Renderer
 renderZoneAnimationTextProgram tNow c z (Punctual,x) = do
   webGLs <- gets punctualWebGLs
   let webGL = findWithDefault Punctual.emptyPunctualWebGL z webGLs
@@ -175,7 +178,7 @@ renderZoneAlways c z (Sequence _) = renderControlPattern c z
 renderZoneAlways _ _ _ = return ()
 
 
-renderTextProgramChanged :: Context -> Int -> (TextNotation,String) -> Renderer
+renderTextProgramChanged :: Context -> Int -> (TextNotation,Text) -> Renderer
 renderTextProgramChanged c z (TidalTextNotation x,y) = do
   s <- get
   let parseResult = tidalParser x y -- :: Either ParseError ControlPattern
@@ -194,7 +197,7 @@ renderTextProgramChanged c z (SuperContinent,x) = do
 renderTextProgramChanged c z (Punctual,x) = do
   s <- get
   ac <- liftAudioIO $ audioContext
-  let parseResult = Punctual.runPunctualParser (T.pack x)
+  let parseResult = Punctual.runPunctualParser x
   if isLeft parseResult then return () else do
     -- A. update PunctualW (audio state) in response to new, syntactically correct program
     let exprs = either (const []) id parseResult
@@ -233,7 +236,7 @@ renderTextProgramChanged c z (CanvasOp,x) = do
 
 renderTextProgramChanged _ _ _ = return ()
 
-renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
+renderTextProgramAlways :: Context -> Int -> (TextNotation,Text) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
 renderTextProgramAlways c z (SuperContinent,_) = renderSuperContinent c z
 renderTextProgramAlways _ _ _ = return ()

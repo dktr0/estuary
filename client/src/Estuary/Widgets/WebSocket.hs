@@ -10,7 +10,8 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Time
 import Data.Either
 import Data.Maybe
-import Data.Text
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Protocol.Foreign
 import Estuary.Types.Request
@@ -19,6 +20,7 @@ import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Context
+import Estuary.RenderInfo
 
 -- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
 -- for collaborative editing. While the password is dynamic, like the Reflex WebSocket the socket address
@@ -41,40 +43,43 @@ estuaryWebSocket addr pwd toSend = mdo
     isOk _ = Just (ProtocolError "unknown protocol error")
 -}
 
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Dynamic t Context -> Event t Request ->
+alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Request ->
   m (Event t [Response], Event t (Context->Context))
-alternateWebSocket obj ctx toSend = mdo
+alternateWebSocket obj ctx rInfo toSend = mdo
   now <- liftIO $ getCurrentTime
 
-  performEvent_ $ fmap (liftIO . (send obj) . encode) $ leftmost [sendBrowserInfo,clientInfoEvent,toSend]
+  performEvent_ $ fmap (liftIO . (send obj) . T.pack . encode) $ leftmost [sendBrowserInfo,clientInfoEvent,toSend] -- *** should remove that conversion to String later and encode directly to JSON text!!!
   ticks <- tickLossy (0.1::NominalDiffTime) now
   responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   -- responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
   let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status
-  let wsStatusChanges = fmap (\w x -> x { wsStatus = w }) $ (updated . nubDyn) status'
+  status'' <- holdUniqDyn status'
+  let wsStatusChanges = fmap (\w x -> x { wsStatus = w }) $ updated status''
 
   -- after widget is built, query and report browser info to server
-  sendBrowserInfo <- (liftIO . BrowserInfo . getUserAgent) <$ getPostBuild
+  postBuild <- getPostBuild
+  userAgent <- performEvent $ fmap (liftIO . const getUserAgent) postBuild
+  let sendBrowserInfo = fmap BrowserInfo userAgent
 
   -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
-  socketIsOpen <- mapDyn (=="connection open") status'
+  let socketIsOpen = fmap (=="connection open") status'
   pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
-  pingTimeTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
+  pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
   initialTime <- liftIO getCurrentTime
   timeDyn <- holdDyn initialTime pingTickTime
-  loadDyn <- fmap load ctx
-  animationLoadDyn <- fmap animationLoad ctx
+  let loadDyn = fmap avgRenderLoad rInfo
+  let animationLoadDyn = fmap avgAnimationLoad rInfo
   latencyDyn <- holdDyn 0 $ latency
-  clientInfoDyn <- ClientInfo <$> timeDyn <*> loadDyn <*> animationLoadDyn <*> latencyDyn
-  let clientInfoEvent = tagDyn clientInfo pingTick
+  let clientInfoDyn = ClientInfo <$> timeDyn <*> loadDyn <*> animationLoadDyn <*> latencyDyn
+  let clientInfoEvent = tagPromptlyDyn clientInfoDyn pingTick
 
   -- the server responds to ClientInfo (above) with ServerInfo, which we process below
   -- by issuing events that update the context
   let serverInfos = fmapMaybe justServerInfo responses'
   let serverClientCounts = fmap fst serverInfos
-  let serverClientCountChanges = fmap (\x c -> c { serverClientCount = x }) serverClientCounts
+  let serverClientCountChanges = fmap (\x c -> c { clientCount = x }) serverClientCounts
   let pingTimes = fmap snd serverInfos
   latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pingTimes
   let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency

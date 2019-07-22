@@ -16,8 +16,8 @@ import Estuary.RenderInfo
 
 svgDisplay :: MonadWidget t m => Int -> Dynamic t RenderInfo -> m ()
 svgDisplay z rInfo = do
-  let instructions = fmap svgOps rInfo
-  instructions' <- holdDyn [] $ fmapMaybe id $ updated $ unqDyn instructions
+  instructions <- holdUniqDyn $ fmap svgOps rInfo
+  instructions' <- holdDyn [] $ fmapMaybe id $ updated instructions
   let attrs = fromList [("class","canvas-or-svg-display"),("style",T.pack $ "z-index:" ++ show z), ("viewBox", "0 0 100 100"), ("xmlns", "http://www.w3.org/2000/svg")]
   let x = fmap instructionsToWidgets instructions' -- Dynamic t (m ())
   svgAttr "svg" attrs $ dyn x

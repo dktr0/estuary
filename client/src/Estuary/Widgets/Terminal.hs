@@ -11,6 +11,7 @@ import Data.Time
 import Data.Either
 import Data.Maybe
 import Data.Map (fromList)
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Estuary.Protocol.Foreign
@@ -32,7 +33,7 @@ import Estuary.Types.Hint
 terminalWidget :: MonadWidget t m => Dynamic t Context ->
   Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
 terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
-  currentSpace <- mostRecentEnsemble deltasUp
+  currentSpace <- mostRecentEnsemble deltasUp deltasDown
   (sendButton,inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
     sendButton' <- divClass "webSocketButtons" $ dynButton =<< translateDyn Term.Send ctx
     divClass "webSocketButtons" $ dynText =<< translateDyn Term.TerminalChat ctx
@@ -42,37 +43,37 @@ terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
     return (sendButton',inputWidget')
   let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
   let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [sendButton,enterPressed]
-  let parsedInput = fmap (Terminal.parseCommand . T.unpack) terminalInput
+  let parsedInput = fmap Terminal.parseCommand terminalInput
   let commands = fmapMaybe (either (const Nothing) Just) parsedInput
-  let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " ++) . show) (const Nothing)) parsedInput
+  let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) parsedInput
 
   let hintMsgs = fmap (\x -> [x]) $ fmapMaybe hintsToMessages hints
 
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
   let responseMsgs = fmap (Data.Maybe.mapMaybe messageForEnsembleResponse) deltasDown'
-  let streamIdMsgs = fmap (\x -> ["new Peer id: " ++ x]) streamId
+  let streamIdMsgs = fmap (\x -> ["new Peer id: " <> x]) streamId
   let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs,streamIdMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
-  mostRecent' <- mapDyn (fmap T.pack) mostRecent
-  simpleList mostRecent' $ \v -> divClass "chatMessage code-font primary-color" $ dynText v
+  simpleList mostRecent $ \v -> divClass "chatMessage code-font primary-color" $ dynText v
 
   startStreamingReflex ctx $ ffilter (== Terminal.StartStreaming) commands
   streamId <- peerProtocolIdReflex ctx $ ffilter (== Terminal.StreamId) commands
 
   return commands
 
-hintsToMessages :: Hint -> Maybe String
+hintsToMessages :: Hint -> Maybe Text
 hintsToMessages (LogMessage x) = Just x
 hintsToMessages _ = Nothing
 
-mostRecentEnsemble :: (MonadWidget t m) => Event t Request -> m (Dynamic t String)
-mostRecentEnsemble requests = do
-  let ensembleJoins = fmapMaybe f requests
-  let ensembleLeaves = fmap (const "") $ ffilter (==LeaveEnsemble) requests
-  holdDyn "" $ leftmost [ensembleJoins,ensembleLeaves]
+mostRecentEnsemble :: (MonadWidget t m) => Event t Request -> Event t [Response] -> m (Dynamic t Text)
+mostRecentEnsemble requests responses = do
+  let ensembleJoinsOrLeaves = fmap (const "") $ fmapMaybe f requests
+  let ensembleJoined = fmap fst $ fmapMaybe justJoinedEnsemble responses
+  holdDyn "" $ leftmost [ensembleJoinsOrLeaves,ensembleJoined]
   where
-    f (JoinEnsemble x) = Just x
+    f (JoinEnsemble _ _ _ _) = Just ()
+    f (LeaveEnsemble) = Just ()
     f _ = Nothing
 
 startStreamingReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m ()
@@ -80,7 +81,7 @@ startStreamingReflex ctx e = do
   pp <- fmap peerProtocol $ (sample . current) ctx
   performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
 
-peerProtocolIdReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m (Event t String)
+peerProtocolIdReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m (Event t Text)
 peerProtocolIdReflex ctx e = do
   pp <- fmap peerProtocol $ (sample . current) ctx
   performEvent $ fmap (liftIO . const (peerProtocolId pp)) e

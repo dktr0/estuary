@@ -3,14 +3,16 @@ module Estuary.Languages.SvgOp (svgOp) where
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Types.Color
 import Estuary.Types.Stroke
 import Estuary.Types.Transform
 import Estuary.Types.SvgOp
 
-svgOp :: String -> Either ParseError [SvgOp]
-svgOp = parse svgOpParser "SvgOp"
+svgOp :: Text -> Either ParseError [SvgOp]
+svgOp x = parse svgOpParser "SvgOp" $ T.unpack x
 
 svgOpParser :: Parser [SvgOp]
 svgOpParser = do

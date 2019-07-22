@@ -16,7 +16,7 @@ import Estuary.Types.Definition
 
 data Request =
   BrowserInfo Text | -- issued once at Estuary launch, identifies name/version of browser
-  ClientInfo UTCTime Double Double NominalDiffTime | -- pingTime load animationLoad
+  ClientInfo UTCTime Int Int NominalDiffTime | -- pingTime load animationLoad serverLatency
   GetEnsembleList |
   JoinEnsemble Text Text Text (Maybe Text) | -- ensemble username location password (username and location can be "")
   EnsembleRequest EnsembleRequest | -- see Estuary.Types.EnsembleRequest, request "within" an ensemble

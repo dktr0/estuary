@@ -22,18 +22,18 @@ attachIndex :: [a] -> [(Int,a)]
 attachIndex = zip [0..]
 
 
-sequencer :: MonadWidget t m => Map Int (String, [Bool]) -> Event t (Map Int (String,[Bool])) -> m (Dynamic t (Map Int (String,[Bool])), Event t (Map Int (String,[Bool])), Event t Hint)
+sequencer :: MonadWidget t m => Map Int (Text, [Bool]) -> Event t (Map Int (Text,[Bool])) -> m (Dynamic t (Map Int (Text,[Bool])), Event t (Map Int (Text,[Bool])), Event t Hint)
 sequencer iMap update = elClass "table" "sequencer" $ mdo
   let seqLen = maximum $ fmap (length . snd) $ elems iMap
   let serverDeletes = fmap (Nothing <$) $ attachWith M.difference (current values) update -- for deleted rows
   let updateEvs = mergeWith union [fmap (fmap Just) update, serverDeletes]
-  let downstreamEvs = leftmost [updateEvs, newRow, deleteEvents] -- Event t (Map Int (Maybe (String,[Bool])))
+  let downstreamEvs = leftmost [updateEvs, newRow, deleteEvents] -- Event t (Map Int (Maybe (Text,[Bool])))
   ourList <- listWithKeyShallowDiff iMap downstreamEvs (const sequencerRow)
-    -- Dynamic t (Map Int (Dynamic t ((String,[Bool]),Event t ())))
-  let widgets = joinDynThroughMap ourList -- Dyn t (Map Int ((String,[Bool]), Event t ()))
-    -- Dynamic t (Map Int ((String,[Bool]),Event t ()))
+    -- Dynamic t (Map Int (Dynamic t ((Text,[Bool]),Event t ())))
+  let widgets = joinDynThroughMap ourList -- Dyn t (Map Int ((Text,[Bool]), Event t ()))
+    -- Dynamic t (Map Int ((Text,[Bool]),Event t ()))
   let values = fmap (fmap fst) widgets
-    -- Dynamic t (Map Int ((String,[Bool])))
+    -- Dynamic t (Map Int ((Text,[Bool])))
   let dynEvs = fmap (mergeMap . fmap (snd)) widgets -- Event t (Map Int ())
   let deleteEvents = fmap (Nothing <$) $ switch $ current $ dynEvs
   newValues <- holdUniqDyn values
@@ -52,17 +52,16 @@ sequencer iMap update = elClass "table" "sequencer" $ mdo
 -- joinDynThroughMap :: forall t k a. (Reflex t, Ord k) => Dynamic t (Map k (Dynamic t a)) -> Dynamic t (Map k a)
 
 -- Event returned is a message to delete that row
-sequencerRow ::(MonadWidget t m) => (String,[Bool]) -> Event t (String,[Bool]) -> m (Dynamic t ((String,[Bool]), Event t ()))
+sequencerRow ::(MonadWidget t m) => (Text,[Bool]) -> Event t (Text,[Bool]) -> m (Dynamic t ((Text,[Bool]), Event t ()))
 sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
   let buttonIVals = M.fromList $ attachIndex vals
-  let strUpdate = fmap (T.pack . fst) edits
+  let strUpdate = fmap fst edits
   let buttonUpdates = fmap (M.fromList . attachIndex . fmap Just . snd) edits
   let textInputAttrs = singleton "class" "sequencer-textarea code-font other-borders"
   deleteMe <- elClass "td" "delete" $ dynButton "-" -- clickableTdClass (constDyn " - ") (constDyn "delete") ()
-  rowInput <- elClass "td"  "sequencer-textarea code-font primary-color other-borders" $ textInput $ def & textInputConfig_initialValue .~ (T.pack iVal) & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn ("class" =: "sequencer-textarea  code-font primary-color"))
-  -- rowInput <- el "td" $ growingTextInput $ def & textInputConfig_initialValue .~ iVal & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn textInputAttrs)
+  rowInput <- elClass "td"  "sequencer-textarea code-font primary-color other-borders" $ textInput $ def & textInputConfig_initialValue .~ iVal & textInputConfig_setValue .~ strUpdate & textInputConfig_attributes .~ (constDyn ("class" =: "sequencer-textarea  code-font primary-color"))
   buttons <-  liftM joinDynThroughMap $ listWithKeyShallowDiff buttonIVals buttonUpdates sequencerButton  -- Dyn (Map Int Bool)
-  let val = (\s b -> (T.unpack s, elems b)) <$> (_textInput_value rowInput) <*> buttons
+  let val = (\s b -> (s, elems b)) <$> (_textInput_value rowInput) <*> buttons
   return $ fmap (\x->(x,deleteMe)) val
 
 sequencerButton::(MonadWidget t m) => Int -> Bool -> Event t Bool -> m (Dynamic t Bool)
