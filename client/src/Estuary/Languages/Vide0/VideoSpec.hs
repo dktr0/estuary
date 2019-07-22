@@ -3,7 +3,7 @@ module Estuary.Languages.Vide0.VideoSpec where
 import Language.Haskell.Exts
 import Control.Applicative
 import Data.Time
-import qualified Estuary.Languages.Vide0.PositionAndRate as T
+import qualified Estuary.Languages.Vide0.PositionAndRate as VT
 
 import Estuary.Types.Tempo
 
@@ -14,16 +14,19 @@ data VideoSpec = VideoSpec {
   timeRate :: Tempo -> NominalDiffTime -> UTCTime -> NominalDiffTime
   }
 
---instance Show VideoSpec where
---  show vs s p r =
+instance Show VideoSpec where
+  show (VideoSpec vs n _ _) = show vs ++ show n
+
+--instance Show InputsToNetworks where
+-- show (InputsToNetworks rs ps es) = "rolesInputs " ++ (show rs) ++ --"pitchRecognitionInputs " ++ (show ps) ++ "energyInputs " ++ (show es)
 
 
 stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = VideoSpec {
   sampleVideo = x,
   sourceNumber = 0,
-  timePosition = T.playNatural_Pos,
-  timeRate = T.playNatural_Rate
+  timePosition = VT.playNatural_Pos,
+  timeRate = VT.playNatural_Rate
 }
 
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
@@ -34,12 +37,12 @@ setSourceNumber vs n = vs { sourceNumber = n }
 
 playEvery :: Int -> VideoSpec -> VideoSpec
 playEvery n vs = vs {
-  timePosition = T.playEvery_Pos n,
-  timeRate = T.playEvery_Rate n
+  timePosition = VT.playEvery_Pos n,
+  timeRate = VT.playEvery_Rate n
   }
 
 playRound :: VideoSpec -> VideoSpec
 playRound vs = vs {
-  timePosition = T.playRound_Pos,
-  timeRate = T.playRound_Rate
+  timePosition = VT.playRound_Pos,
+  timeRate = VT.playRound_Rate
   }
