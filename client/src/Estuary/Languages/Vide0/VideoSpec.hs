@@ -30,8 +30,16 @@ setSourceNumber :: VideoSpec -> Int -> VideoSpec
 setSourceNumber vs n = vs { sourceNumber = n }
 
 
+-- Time Functions --
+
 playEvery :: Int -> VideoSpec -> VideoSpec
 playEvery n vs = vs {
   timePosition = T.playEvery_Pos n,
   timeRate = T.playEvery_Rate n
+  }
+
+playRound :: VideoSpec -> VideoSpec
+playRound vs = vs {
+  timePosition = T.playRound_Pos,
+  timeRate = T.playRound_Rate
   }

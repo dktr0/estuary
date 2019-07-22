@@ -36,13 +36,16 @@ videoSpec_int_videoSpec :: ExpParser (VideoSpec -> Int -> VideoSpec)
 videoSpec_int_videoSpec = setSourceNumber <$ reserved ":"
 
 int_VideoSpec :: ExpParser (Int -> VideoSpec)
-int_VideoSpec = videoSpec_int_videoSpec <*> videoSpec
+int_VideoSpec =
+  videoSpec_int_videoSpec <*> videoSpec
 
 --
--- Third option = change time to the video:#
+-- Third option = change time to the video --
 
 int_videoSpec_videoSpec :: ExpParser (Int -> VideoSpec -> VideoSpec)
 int_videoSpec_videoSpec = playEvery <$ reserved "playEvery"
 
 videoSpec_videoSpec :: ExpParser (VideoSpec -> VideoSpec)
-videoSpec_videoSpec = int_videoSpec_videoSpec <*> int
+videoSpec_videoSpec =
+  playRound <$ reserved "playRound" <|>
+  int_videoSpec_videoSpec <*> int

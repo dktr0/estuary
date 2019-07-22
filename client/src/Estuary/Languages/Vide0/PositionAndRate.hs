@@ -28,7 +28,7 @@ playNatural_Rate t vl n = 1
 
 --
 
------- Play at Natural Rate and without alteration ------
+------ Makes a video shorter or longer acording to given # of cycles ------
 
 -- gets the onset time of the video in playEvery
 playEvery_Pos:: Int -> Tempo -> VideoLength -> Now -> Position
@@ -49,11 +49,9 @@ playEvery_Rate c t vl now =
         rate = vLen/(n/cps')
     in realToFrac rate
 
--- maybe is not working:
---Couldn't match expected type ‘Maybe Rate’
---                  with actual type ‘Either a0 Double’
+--
 
----------
+------ Rounds the duration of video to the nearest cycle ------
 
 playRound_Pos :: Tempo -> VideoLength -> Now -> Position
 playRound_Pos t vlen now =
@@ -68,8 +66,6 @@ playRound_Pos t vlen now =
         result = reglaDeTres 1 ecNow newLVinCPS
     in realToFrac (result/cp) -- /cp transforms this into seconds
 
-
-
 playRound_Rate:: Tempo -> VideoLength -> Now -> Rate
 playRound_Rate t vlen now =
     let vl = realToFrac vlen :: Double
@@ -81,8 +77,8 @@ playRound_Rate t vlen now =
         rate = vl / newVl
     in realToFrac rate
 
-
-
+--
+--
 
 
 --------- Helper Functions ------------
