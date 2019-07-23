@@ -57,7 +57,8 @@ data Navigation =
   Solo |
   Lobby |
   CreateEnsemblePage |
-  Collaborate Text
+  JoinEnsemblePage Text |
+  EnsemblePage Text
   deriving (Generic, FromJSVal, ToJSVal)
 
 navigation :: MonadWidget t m => Navigation -> Event t Navigation -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] -> m (Dynamic t (Maybe (Text, DefinitionMap)), Event t Request, Event t Hint, Event t Tempo)
@@ -122,12 +123,11 @@ page ctx renderInfo commands wsDown Solo = do
 
 page ctx _ _ wsDown Lobby = do
   requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
-  spaceList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
-  join <- simpleList spaceList joinButton -- m (Dynamic t [Event t Navigation])
-  let join' = fmap leftmost join -- m (Dynamic t (Event t Navigation))
-  let join'' = switchPromptlyDyn join' -- Event t Navigation
-  create <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
-  return (leftmost [join'', create], (constDyn Nothing, requestEnsembleList, never, never))
+  ensembleList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
+  ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton -- Event t Text
+  let navToJoinEnsemble = fmap JoinEnsemblePage ensembleClicked
+  navToCreateEnsemble <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
+  return (leftmost [navToJoinEnsemble, navToCreateEnsemble], (constDyn Nothing, requestEnsembleList, never, never))
 
 page ctx _ _ _ CreateEnsemblePage = do
   el "div" $ dynText =<< translateDyn Term.CreateNewEnsemble ctx
@@ -153,16 +153,44 @@ page ctx _ _ _ CreateEnsemblePage = do
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
   return (navEvents, (constDyn $ Just (soloEnsembleName, empty), serverRequests, never, never))
 
-page ctx renderInfo commands wsDown (Collaborate ensembleName) = do
+page ctx _ _ wsDown (JoinEnsemblePage ensembleName) = do
+  el "div" $ do
+    prefix <- translateDyn Term.JoiningEnsemble ctx
+    dynText $ fmap (<> (" " <> ensembleName)) prefix
+  h <- el "div" $ do
+    translateDyn Term.EnsembleUserName ctx >>= dynText
+    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
+    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
+  l <- el "div" $ do
+    translateDyn Term.EnsembleLocation ctx >>= dynText
+    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
+    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
+  p <- el "div" $ do
+    translateDyn Term.EnsemblePassword ctx >>= dynText
+    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
+    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
+  go <- el "div" $ dynButton =<< translateDyn Term.EnsembleLogin ctx
+  let joinRequest = tagPromptlyDyn (JoinEnsemble <$> constDyn ensembleName <*> h <*> l <*> p) go
+  let joinedEnsembleResponses = fmapMaybe justJoinedEnsemble wsDown
+  let joinedEnsembleNav = fmap (EnsemblePage . fst) joinedEnsembleResponses
+  let responseError = fmapMaybe justResponseError wsDown
+  p <- el "div" $ do
+    errorDisplay <- holdDyn "" responseError
+    dynText errorDisplay
+  cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
+  let cancelNav = Lobby <$ cancel
+  let navEvents = leftmost [joinedEnsembleNav,cancelNav]
+  return (navEvents, (constDyn $ Just (soloEnsembleName, empty), joinRequest, never, never))
+
+page ctx renderInfo commands wsDown (EnsemblePage ensembleName) = do
   (values,wsUp,hints,tempoEvents) <- ensembleView ctx renderInfo ensembleName commands wsDown
   let values' = fmap (\x -> Just (ensembleName, x)) values
   return (never, (values', wsUp, hints, tempoEvents))
 
-
-joinButton :: MonadWidget t m => Dynamic t T.Text -> m (Event t Navigation)
+joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
 joinButton x = do
   b <- clickableDivClass'' x "ui-font primary-color" ()
-  return $ Collaborate <$> tagPromptlyDyn x b
+  return $ tagPromptlyDyn x b
 
 aboutEstuaryParagraph :: MonadWidget t m => Dynamic t Context -> m ()
 aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph ui-font background" $ do

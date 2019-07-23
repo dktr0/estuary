@@ -15,10 +15,10 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.Definition
 
 data Request =
-  BrowserInfo Text | -- issued once at Estuary launch, identifies name/version of browser
-  ClientInfo UTCTime Int Int NominalDiffTime | -- pingTime load animationLoad serverLatency
-  GetEnsembleList |
-  JoinEnsemble Text Text Text (Maybe Text) | -- ensemble username location password (username and location can be "")
+  BrowserInfo Text | -- text is browser userAgent field, issued at client launch (by alternateWebSocket)
+  ClientInfo UTCTime Int Int NominalDiffTime | -- pingTime load animationLoad serverLatency, issued every 5s (by alternateWebSocket)
+  GetEnsembleList | -- issued when client enters Lobby page
+  JoinEnsemble Text Text Text Text | -- ensemble username location password (username, location, and password can be "")
   EnsembleRequest EnsembleRequest | -- see Estuary.Types.EnsembleRequest, request "within" an ensemble
   LeaveEnsemble |
   Authenticate Text | -- ie. as administrator, for making ensembles

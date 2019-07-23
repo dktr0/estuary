@@ -145,7 +145,7 @@ processRequest (BrowserInfo t) = do
   modifyClient $ \c -> c { browserInfo = t }
 
 processRequest (ClientInfo pingTime load animationLoad latency)  = do
-  postLog "ClientInfo" -- note: maybe we don't really need to log such a trivial, repeated message?
+  postLog "ClientInfo" -- note: should disable or throttle logging of this for high user count situations
   modifyClient $ \c -> c {
     clientMainLoad = load,
     clientAnimationLoad = animationLoad,
@@ -179,7 +179,7 @@ processRequest (CreateEnsemble name pwd) = do
   respondAll $ EnsembleList es
   saveNewEnsembleToDatabase name
 
-processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Text Text (Maybe Text)
+processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Text Text Text
   postLog $ "joining ensemble " <> eName
   s <- get
   e <- justOrError (Data.Map.lookup eName $ ensembles s) "attempt to join non-existent ensemble"
@@ -190,13 +190,17 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
       let m = "user handle already used by someone else in this ensemble"
       respond $ ResponseError m
       throwError m
-  when (E.password e /= "" && isJust pwd && Just (E.password e) /= pwd) $ do
+  when (E.password e /= "" && pwd /= "" && E.password e /= pwd) $ do
     -- the ensemble requires password for authentication, they provided one, but it doesn't match
     let m = "incorrect ensemble password"
     respond $ ResponseError m
     throwError m
-  -- if we get this far, either no password is required, or they provided one and it matched
-  let authed = (E.password e == "" || isJust pwd)
+  -- if we get this far, the client's join attempt will succeed
+  -- we need to record whether they are authorized in the ensemble
+  -- which will be true if either:
+  -- (a) no password is required, or
+  -- (b) they entered the required password
+  let authed = (E.password e == "" || E.password e == pwd)
   -- update the server's record for this client to register successful ensemble join
   modifyClient $ \c -> c {
     ensemble = Just eName,

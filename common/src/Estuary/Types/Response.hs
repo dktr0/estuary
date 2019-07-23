@@ -43,6 +43,11 @@ justJoinedEnsemble = lastOrNothing . mapMaybe f
   where f (JoinedEnsemble x y) = Just (x,y)
         f _ = Nothing
 
+justResponseError :: [Response] -> Maybe Text
+justResponseError = lastOrNothing . mapMaybe f
+  where f (ResponseError x) = Just x
+        f _ = Nothing
+
 justServerInfo :: [Response] -> Maybe (Int,UTCTime)
 justServerInfo = lastOrNothing . mapMaybe f
   where f (ServerInfo x y) = Just (x,y)
