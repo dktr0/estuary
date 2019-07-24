@@ -2,10 +2,16 @@
 
 module Estuary.Types.Context where
 
-import Data.Time
-import Data.IntMap.Strict
 import Control.Concurrent.MVar
+
+import Data.IntMap.Strict as Map
+
+import Data.Text
+import Data.Time
+
 import GHCJS.Types
+
+import GHCJS.DOM.Blob
 import GHCJS.DOM.Types (HTMLCanvasElement)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -13,6 +19,7 @@ import qualified Data.Text as T
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
+import Estuary.Types.Resources
 import Estuary.Types.Samples
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
@@ -22,6 +29,7 @@ import Estuary.Types.CanvasState
 import Estuary.Types.EnsembleState
 import Estuary.Render.AudioContext
 import Estuary.Render.DynamicsMode
+import Estuary.Render.LocalResources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 
@@ -33,10 +41,10 @@ data Context = Context {
   language :: Language,
   theme :: Text,
   ensembleState :: EnsembleState,
---  tempo :: Tempo, -- factoring these three out since they are part of ensembleState
---  activeDefsEnsemble :: Text, -- ^ The name of the ensemble that the current definitions in the context belong to.
---  definitions :: DefinitionMap,
   samples :: SampleMap,
+  localResourceServers :: LocalResourceServers,
+  privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
+  resources :: Resources, -- ^ The effective resource set.
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   canvasOn :: Bool,
@@ -57,8 +65,9 @@ initialContext now mBus wd sd mv pp = Context {
   language = English,
   theme = "../css-custom/classic.css",
   ensembleState = newEnsembleState $ Tempo { cps = 0.5, at = now, beat = 0.0 },
---  activeDefsEnsemble = "",
---  definitions = empty,
+  localResourceServers = emptyLocalResourceServers,
+  privateResources = emptyResources,
+  resources = emptyResources,
   samples = emptySampleMap,
   webDirtOn = True,
   superDirtOn = False,
@@ -93,3 +102,19 @@ setDefinitions (x, y) c = c {
 
 setSampleMap :: SampleMap -> ContextChange
 setSampleMap x c = c { samples = x}
+
+-- TODO the resource sets should be lenses so they can be more properly passed around
+addPrivateResource :: (LocalResourceServers -> LocalResourceServer m)
+    -> (LocalResourceServers -> LocalResourceServer m -> LocalResourceServers)
+    -> (Resources -> ResourceMap m)
+    -> (Resources -> ResourceMap m -> Resources)
+    -> Text
+    -> Blob
+    -> Resource m
+    -> ContextChange
+addPrivateResource getServer setServer getResourceMap setResourceMap group blob resource c = c {
+  localResourceServers = setServer (localResourceServers c) $
+    uploadLocal group (resourceFileName resource) blob (getServer $ localResourceServers c),
+  privateResources = setResourceMap (privateResources c) $
+    insertResource group resource (getResourceMap $ privateResources c)
+}

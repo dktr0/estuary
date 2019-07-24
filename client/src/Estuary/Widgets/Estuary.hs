@@ -35,7 +35,6 @@ import Estuary.Types.Tempo
 import Estuary.Reflex.Utility
 import Estuary.RenderInfo
 import Estuary.Render.DynamicsMode
-
 import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
 
@@ -62,7 +61,7 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
   let ensembleChanges = ???????
   let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
-  
+
   ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
 
   -- GUI widgets: header, main (navigation), footer
@@ -139,3 +138,68 @@ changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref) newStyle
 foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: Text -> IO ()
+=======
+header :: (MonadWidget t m) => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ContextChange)
+header ctx renderInfo = divClass "header primary-color primary-borders" $ do
+  clientConfigurationWidgets ctx
+
+clientConfigurationWidgets :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
+clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
+  themeChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
+    let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale"), ("../css-custom/bubble.css","Bubble")]
+    translateDyn Term.Theme ctx >>= dynText
+    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: rgba(0,0,0,0) !important" )) -- Event t String
+    return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
+
+  langChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
+    translateDyn Term.Language ctx >>= dynText
+    let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
+    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
+    return $ fmap (\x c -> c { language = x }) langChange
+
+  let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "primary-color")
+
+  canvasEnabledEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
+    text "Canvas:"
+    canvasInput <- checkbox True condigCheckboxAttrs
+    return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+
+  superDirtEnabledEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
+    text "SuperDirt:"
+    sdInput <- checkbox False condigCheckboxAttrs
+    return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
+
+  webDirtEnabledEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
+    text "WebDirt:"
+    wdInput <- checkbox True condigCheckboxAttrs
+    return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
+
+  dynamicsModeEv <- divClass "config-entry primary-color ui-font" $ do
+    text "Dynamics:"
+    let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
+    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
+    return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
+
+  privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader
+
+  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, privateSamplesChangeEv]
+
+footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
+  -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
+footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
+  divClass "peak primary-color code-font" $ do
+    dynText . nubDyn =<< mapDyn (T.pack . f) ctx
+    text " "
+    dynText =<< translateDyn Term.Load ctx
+    text ": "
+    dynText . nubDyn =<< mapDyn (T.pack . show . avgRenderLoad) renderInfo
+    text "% ("
+    dynText . nubDyn =<< mapDyn (T.pack . show . peakRenderLoad) renderInfo
+    text "% "
+    dynText =<< translateDyn Term.Peak ctx
+    text ") "
+  terminalWidget ctx deltasDown deltasUp hints
+  where
+    f c | wsStatus c == "connection open" = "(" ++ show (clientCount c) ++ " connections, latency " ++ show (serverLatency c) ++ ")"
+    f c | otherwise = "(" ++ wsStatus c ++ ")"
+>>>>>>> 0156e0461e07a797e56d46f8ec4f241f4bd1f372

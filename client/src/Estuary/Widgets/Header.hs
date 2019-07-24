@@ -14,6 +14,7 @@ import Estuary.Types.Language
 import qualified Estuary.Types.Term as Term
 import Estuary.Render.DynamicsMode
 import Estuary.Reflex.Utility (translateDyn)
+import Estuary.Widgets.ResourceUpload
 
 
 header :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
@@ -54,4 +55,6 @@ header ctx = divClass "header primary-color primary-borders" $ divClass "config-
     dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
 
-  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
+  privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader
+
+  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, privateSamplesChangeEv]
