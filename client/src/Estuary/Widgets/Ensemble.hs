@@ -31,18 +31,19 @@ import Estuary.Types.View
 
 
 ensembleView :: MonadWidget t m
-  => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command -> Event t [Response] ->
+  => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] ->
   m (Dynamic t DefinitionMap, Event t Request, Event t Hint,Event t Tempo)
-ensembleView ctx renderInfo commands deltasDown = mdo
+ensembleView ctx renderInfo deltasDown = mdo
 
   iCtx <- sample $ current ctx
   let initialState = ensembleState iCtx
   let initialDefs = zones initialState
+  let initialView = getActiveView initialState
   let eName = ensembleName initialState
   let uName = userHandle initialState
 
   -- Ensemble name and username UI (created only if ensemble is not "", ie. not in solo mode)
-  when (ensemble /= "") $ divClass "ensembleHeader primary-color ui-font" $ do
+  when (eName /= "") $ divClass "ensembleHeader primary-color ui-font" $ do
     divClass "ensembleName ui-font primary-color" $ text $ "Ensemble: " <> eName
     divClass "ensembleHandle ui-font primary-color" $ text $ "UserName: " <> uName
 
@@ -52,31 +53,26 @@ ensembleView ctx renderInfo commands deltasDown = mdo
   let tempoHints = fmap TempoHint tempoChanges
   let tempoRequest = fmap SetTempo tempoEdits
 
-  -- dynamic View UI
+  -- construction of dynamic View UI
   let initialWidget = do
-        -- *** WORKING HERE (below): viewWidget shouldn't need initalDefs because they are in ctx
-        (newInitialDefs, y, z) <- viewWidget ctx renderInfo initialView initialDefs ensembleResponses
+        (newInitialDefs, y, z) <- viewWidget ctx renderInfo initialView ensembleResponses
         -- Skip the first rendered def and use the initialDefs to prevent audio pause when
         -- first rejoining an ensemble as the newInitialDefs are temporarily empty.
         replaceDefsEv <- tailE $ updated newInitialDefs
         newDefs <- holdDyn initialDefs $ replaceDefsEv
         return (newDefs, y, z)
-  currentView <- holdUniqDyn $ fmap getActiveView ensembleState
-  let newView = updated currentView
-  let currentDefs = fmap zones ensembleState
-  let newDefsAndView = attachPromptlyDyn currentDefs newView
-  let rebuildWidget = fmap (\(ds,v) -> viewWidget ctx renderInfo v ds ensembleResponses) newDefsAndView
+  currentView <- holdUniqDyn $ fmap (getActiveView . ensembleState) ctx
+  let rebuildWidget = fmap (\v -> viewWidget ctx renderInfo v ensembleResponses) $ updated currentView
   ui <- widgetHold initialWidget rebuildWidget
+
+  -- extraction/flattening of return values from dynamic View UI
   let defMap = join $ fmap (\(y,_,_) -> y) ui
   let edits = switchPromptlyDyn $ fmap (\(_,y,_) -> y) ui
   let hintsUi = switchPromptlyDyn $ fmap (\(_,_,y) -> y) ui
-  let commandHints = attachPromptlyDynWithMaybe commandToHint ensembleState commands
-  let hints = leftmost [commandHints,tempoHints,hintsUi] -- *** note: might this occasionally lose a hint?
+  let hints = leftmost [tempoHints,hintsUi] -- *** note: this might occasionally lose a hint, should refactor as [Hint]
 
-  -- form requests to send to server (but only if we are in a collaborative ensemble, ie. ensemble is not "")
-  requests <- if ensemble == soloEnsembleName then return never else do
-    let commandRequests = attachPromptlyDynWithMaybe commandsToRequests ensembleState commands
-    return $ fmap EnsembleRequest $ leftmost [edits,tempoRequest,commandRequests]
+  -- form requests to server (but only in a collaborative ensemble, ie. ensemble is not "")
+  let requests = if eName == soloEnsembleName then never else fmap EnsembleRequest $ leftmost [edits,tempoRequest]
 
   return (defMap,requests,hints,tempoChanges)
 
@@ -85,8 +81,8 @@ ensembleView ctx renderInfo commands deltasDown = mdo
 -- messages to/from the server.
 
 soloView :: MonadWidget t m
-  => Dynamic t Context -> Dynamic t RenderInfo -> Event t Command
+  => Dynamic t Context -> Dynamic t RenderInfo
   -> m (Dynamic t DefinitionMap, Event t Hint,Event t Tempo)
-soloView ctx renderInfo commands = do
-  (defMap,_,hints,tempoEvents) <- ensembleView ctx renderInfo commands never
+soloView ctx renderInfo = do
+  (defMap,_,hints,tempoEvents) <- ensembleView ctx renderInfo never
   return (defMap,hints,tempoEvents)

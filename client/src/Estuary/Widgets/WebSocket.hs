@@ -43,16 +43,16 @@ estuaryWebSocket addr pwd toSend = mdo
     isOk _ = Just (ProtocolError "unknown protocol error")
 -}
 
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Dynamic t Context -> Dynamic t RenderInfo -> Event t Request ->
-  m (Event t [Response], Event t (Context->Context))
-alternateWebSocket obj ctx rInfo toSend = mdo
+alternateWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t Request ->
+  m (Event t [Response], Event t ContextChange)
+alternateWebSocket ctx rInfo toSend = mdo
+  obj <- liftIO estuaryProtocol
   now <- liftIO $ getCurrentTime
-
   performEvent_ $ fmap (liftIO . (send obj) . T.pack . encode) $ leftmost [sendBrowserInfo,clientInfoEvent,toSend] -- *** should remove that conversion to String later and encode directly to JSON text!!!
   ticks <- tickLossy (0.1::NominalDiffTime) now
   responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   -- responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
-  let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
+  let responses' = ffilter (not . Prelude.null) $ fmapMaybe (either (const Nothing) (Just)) responses
   status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
   status' <- holdDyn "---" status
   status'' <- holdUniqDyn status'
