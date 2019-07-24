@@ -7,23 +7,23 @@ import Text.JSON.Generic
 import Data.Time.Clock
 
 data Tempo = Tempo {
-  cps :: Double,
+  cps :: Rational,
   at :: UTCTime,
-  beat :: Double
+  beat :: Rational
   } deriving (Eq,Data,Typeable,Show)
 
 instance JSON Tempo where
   showJSON = toJSON
   readJSON = fromJSON
 
-elapsedCycles :: Tempo -> UTCTime -> Double
+elapsedCycles :: Tempo -> UTCTime -> Rational
 elapsedCycles t now = elapsedT * cps t + beat t
   where elapsedT = realToFrac $ diffUTCTime now (at t)
 
-adjustCps :: Double -> Tempo -> UTCTime -> Tempo
+adjustCps :: Rational -> Tempo -> UTCTime -> Tempo
 adjustCps newCps prevTempo now = Tempo { cps = newCps, at = now, beat = elapsedCycles prevTempo now }
 
-adjustCpsNow :: Double -> Tempo -> IO Tempo
+adjustCpsNow :: Rational -> Tempo -> IO Tempo
 adjustCpsNow newCps prevTempo = getCurrentTime >>= return . adjustCps newCps prevTempo
 
 beatZero :: Tempo -> UTCTime
