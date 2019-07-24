@@ -6,6 +6,7 @@ import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
+import qualified Reflex.Dom.Widget.Basic as B
 import Text.JSON
 import Data.Time
 import Data.Map
@@ -118,7 +119,8 @@ ourPopUp go = mdo
   let classStyle = constDyn $ singleton "class" "ourPopUp"
   let attrs = zipDynWith (union) visibleStyle classStyle
   (hide,canvasEnabledEv) <- elDynAttr "div" attrs $ do
-    videoResourceWidget samplevideoMedia
+    -- videoResourceWidget samplevideoMedia
+    videoResources' (constDyn aListOfVideoFiles)
     hide' <- button "hide"
     let configCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
     canvasEnabledEv <- divClass "config-entry" $ do
@@ -128,14 +130,17 @@ ourPopUp go = mdo
     return (hide',canvasEnabledEv)
   return canvasEnabledEv
 
-mediaInfo :: ResourceMap VideoMeta --resourcesWidget
-mediaInfo = ResourceMap {unResourceMap = (Data.Map.fromList [("butterflies", (S.fromList [sampleVideoMedia]))])}
+aListOfVideoFiles :: ResourceMap VideoMeta --resourcesWidget
+aListOfVideoFiles = ResourceMap {unResourceMap = (Data.Map.fromList [("butterflies", (S.fromList [sampleVideoMedia, sampleVideoMedia']))])}
 
 displayMediaInfo :: T.Text
-displayMediaInfo = T.pack $ show mediaInfo
+displayMediaInfo = T.pack $ show aListOfVideoFiles
 
 sampleVideoMedia :: Resource VideoMeta
 sampleVideoMedia = Resource {file = "test", fileSize = 100, meta = VideoMeta {videoDuration = 3.25, videoResolution = (400,600), videoAspectRatio = (Rational 1 1)}, tags = S.fromList ["video", "butterflies"], scope = Public}
+
+sampleVideoMedia' :: Resource VideoMeta
+sampleVideoMedia' = Resource {file = "test2", fileSize = 300, meta = VideoMeta {videoDuration = 3.25, videoResolution = (800,1900), videoAspectRatio = (Rational 1 1)}, tags = S.fromList ["video", "cats"], scope = Ensemble}
 
 showVideoDuration :: Resource VideoMeta -> T.Text -- this will have to be a expandable widget with all the meta info
 showVideoDuration a = T.pack $ show $ videoDuration (meta a)
@@ -157,6 +162,29 @@ videoResourceWidget a = do
   let tags' =  showTags a
   let scope' =  T.pack $ show (scope a)
   text $ T.concat [file', " ", fileSize', " ", meta', " ", tags', " ", scope', " "]
+
+-- f :: Dyamic t (ResourceMap m) -> Dynamic t [(Resource m)]
+
+videoResources' :: MonadWidget t m => Dynamic t (ResourceMap VideoMeta) -> m (Dynamic t [()])
+videoResources' vs = do
+  vs' <- mapDyn resourceList vs
+  B.simpleList vs' $ \v -> videoResourceWidgetDyn v --m ()
+
+videoResourceWidgetDyn :: MonadWidget t m => Dynamic t (Resource VideoMeta) -> m ()
+videoResourceWidgetDyn a = divClass "resourceWidget" $ do
+    file' <- mapDyn file a
+    fileSize' <- mapDyn (T.pack . show . fileSize) a
+    meta' <- mapDyn showVideoDuration a
+    tags' <- mapDyn showTags a
+    scope' <-  mapDyn (T.pack . show . scope) a
+    let sourceInfo = file' <> " " <> fileSize' <> " " <>  meta' <> " " <> tags' <> " " <> scope' <> "\n"
+    dynText sourceInfo
+
+
+--T.show
+--search for the list in the unResourceMap
+-- text -> seq
+-- seq
 
 popupVisibilityStyle :: Bool -> Map T.Text T.Text
 popupVisibilityStyle False = singleton "style" "display: none"

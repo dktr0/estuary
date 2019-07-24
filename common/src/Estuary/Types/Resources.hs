@@ -1,14 +1,12 @@
-module Estuary.Types.Resources where
+module Estuary.Types.Resources  where
 
 import Data.Text
 import Data.Map.Strict (Map)
 
 import Data.Sequence(Seq)
-
-
 import Data.Map.Strict (Map)
-
 import Data.Sequence(Seq)
+import qualified Data.Foldable as F
 
 import Estuary.Types.Scope
 
@@ -32,6 +30,9 @@ data Resources = Resources {
 } deriving (Show)
 
 newtype ResourceMap m = ResourceMap { unResourceMap :: Map Text (Seq (Resource m)) } deriving (Show)
+
+resourceList :: ResourceMap m -> [(Resource m)]
+resourceList m = F.concatMap F.toList (unResourceMap m)
 
 data Resource m = Resource {
   file :: Text ,
