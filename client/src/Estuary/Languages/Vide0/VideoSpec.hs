@@ -12,13 +12,15 @@ data VideoSpec = VideoSpec {
   sampleVideo :: String,
   sourceNumber :: Int,
   playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> NominalDiffTime,
-  playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
+  playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Just Rational,
   posX :: Rational,
-  posY :: Rational
+  posY :: Rational,
+  width :: Rational,
+  height :: Rational
   }
 
 instance Show VideoSpec where
-  show (VideoSpec vs n _ _ px py) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py
+  show (VideoSpec vs n _ _ px py w h) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h
 
 
 stringToVideoSpec :: String -> VideoSpec
@@ -27,8 +29,10 @@ stringToVideoSpec x = VideoSpec {
   sourceNumber = 0,
   playbackPosition = VT.playNatural_Pos,
   playbackRate = VT.playNatural_Rate,
-  posX = 0,
-  posY = 0
+  posX = 0.0,
+  posY = 0.0,
+  width = 1,
+  height = 1
 }
 
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
