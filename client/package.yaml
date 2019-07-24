@@ -54,6 +54,7 @@ dependencies:
   - reflex-dom-contrib
   - mtl
   - mwc-random
+  - haskell-src-exts
 
 library:
   source-dirs:

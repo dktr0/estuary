@@ -7,11 +7,11 @@ import qualified Data.Text as T
 import GHCJS.Types
 import GHCJS.Marshal.Pure
 import Data.IntMap.Strict
+import Data.Time
 
--- Text (String) -> VideoSpec -- we already have this
--- but we really need is something like this...
--- type CineCer0Spec = IntMap VideoSpec
--- String -> Either String CineCer0Spec
+import Estuary.Types.Tempo
+import Estuary.Languages.CineCer0.Parser
+import Estuary.Languages.CineCer0.VideoSpec
 
 {- data VideoSpec = VideoSpec {
   sampleVideo :: String,
@@ -42,8 +42,9 @@ foreign import javascript safe
   "$1.removeChild($2)"
   removeVideo :: JSVal -> CineCer0Video -> IO ()
 
-addVideo :: JSVal -> Text -> IO CineCer0Video
-addVideo j url = do
+addVideo :: JSVal -> VideoSpec -> IO CineCer0Video
+addVideo j spec = do
+  let url = T.pack $ sampleVideo spec
   x <- makeVideo url
   appendVideo x j
   return x

@@ -209,14 +209,14 @@ renderTextProgramChanged c z (Punctual,x) = do
     let tempo' = tempo $ ensembleState c
     let beat0 = beatZero tempo'
     let cps' = cps tempo'
-    newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,cps') eval
+    newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') eval
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
     -- B. update Punctual WebGL state in response to new, syntactically correct program
     webGLs <- gets punctualWebGLs
     let prevWebGL = IntMap.lookup z webGLs
     prevWebGL' <- if isJust prevWebGL then return (fromJust prevWebGL) else
       liftIO $ Punctual.updateRenderingContext Punctual.emptyPunctualWebGL (canvasElement c)
-    newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL' (beat0,cps') eval
+    newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL' (beat0,realToFrac cps') eval
     modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
   let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
@@ -249,7 +249,7 @@ renderSuperContinent c z = when (canvasOn c) $ do
   let audio = 0.5 -- placeholder
   let program = superContinentProgram s
   let scState = superContinentState s
-  scState' <- liftIO $ SuperContinent.runProgram (cycleTime,audio) program scState
+  scState' <- liftIO $ SuperContinent.runProgram (realToFrac cycleTime,audio) program scState
   let newOps = SuperContinent.stateToCanvasOps scState'
   let newOps' = fmap (\o -> (addUTCTime 0.2 (logicalTime s),o)) newOps
   modify' $ \x -> x { superContinentState = scState', canvasOps = canvasOps s ++ newOps' }

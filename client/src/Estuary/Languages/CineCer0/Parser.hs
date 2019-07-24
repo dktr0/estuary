@@ -1,18 +1,22 @@
-module Estuary.Languages.CineCer0.Parser (cineCer0) where
+module Estuary.Languages.CineCer0.Parser (cineCer0,CineCer0Spec) where
 
 import Language.Haskell.Exts
 import Control.Applicative
+import Data.IntMap.Strict
 
 import Estuary.Languages.ExpParser
 import Estuary.Languages.CineCer0.VideoSpec
 
+type CineCer0Spec = IntMap VideoSpec
 
-cineCer0 :: String -> Either String VideoSpec
+cineCer0 :: String -> Either String CineCer0Spec
 cineCer0 = f . parseExp
   where
-    f (ParseOk x) = runExpParser videoSpec x
+    f (ParseOk x) = runExpParser cineCer0Spec x
     f (ParseFailed l s) = Left s
 
+cineCer0Spec :: ExpParser CineCer0Spec
+cineCer0Spec = fmap (singleton 1) videoSpec
 
 videoSpec :: ExpParser VideoSpec
 videoSpec =
