@@ -1,14 +1,14 @@
-module Estuary.Languages.Vide0.Parser (vide0) where
+module Estuary.Languages.CineCer0.Parser (cineCer0) where
 
 import Language.Haskell.Exts
 import Control.Applicative
 
 import Estuary.Languages.ExpParser
-import Estuary.Languages.Vide0.VideoSpec
+import Estuary.Languages.CineCer0.VideoSpec
 
 
-vide0 :: String -> Either String VideoSpec
-vide0 = f . parseExp
+cineCer0 :: String -> Either String VideoSpec
+cineCer0 = f . parseExp
   where
     f (ParseOk x) = runExpParser videoSpec x
     f (ParseFailed l s) = Left s

@@ -1,10 +1,10 @@
-module Estuary.Languages.Vide0.VideoSpec where
+module Estuary.Languages.CineCer0.VideoSpec where
 
 import Language.Haskell.Exts
 import Control.Applicative
 import Data.Time
 
-import qualified Estuary.Languages.Vide0.PositionAndRate as VT
+import qualified Estuary.Languages.CineCer0.PositionAndRate as VT
 
 import Estuary.Types.Tempo
 

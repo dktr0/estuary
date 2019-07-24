@@ -1,4 +1,4 @@
-module Estuary.Languages.Vide0.PositionAndRate where
+module Estuary.Languages.CineCer0.PositionAndRate where
 
 {-# LANGUAGE DeriveDataTypeable #-}
 
@@ -146,7 +146,7 @@ playChop_Rate startPos endPos cycles t vlen now
     in  Just (realToFrac addNeg)
 
 ------------- Gives a chop start and end position and adjust the rate to any given cycles ------
--------- the UBER chop with start and end position in seconds instead of 0 to 1 --------- 
+-------- the UBER chop with start and end position in seconds instead of 0 to 1 ---------
          --    startPos -> endPos   -> Cycles   -> Tempo -> VideoLength     -> Now     -> Position
 -- playChop_Pos:: Rational -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
 -- playChop_Pos startPos endPos cycles t vlen now =
@@ -163,14 +163,14 @@ playChop_Rate startPos endPos cycles t vlen now
 --         ecFloored = fromIntegral (floor ec) :: Rational
 --         ecNow = ec - ecFloored
 --         pos = reglaDeTres 1 ecNow interval
---         pos' = start + pos 
+--         pos' = start + pos
 --     in Just (realToFrac pos')
 
 
 -- playChop_Rate:: Rational -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
--- playChop_Rate startPos endPos cycles t vlen now 
+-- playChop_Rate startPos endPos cycles t vlen now
 --     | startPos == endPos = Just 0
---     | otherwise = 
+--     | otherwise =
 --     let cp = (cps t)
 --         cpsDur = 1/cp
 --         vl = realToFrac vlen :: Rational
@@ -180,7 +180,7 @@ playChop_Rate startPos endPos cycles t vlen now
 --         cPerLen = interval/cpsDur
 --         rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
 --         newVl = rounded / cp -- new length in seconds
---         rate = interval / newVl 
+--         rate = interval / newVl
 --         addNeg = if start > end then rate * (-1) else rate
 --     in  Just (realToFrac addNeg)
 
@@ -190,11 +190,11 @@ playChop_Rate startPos endPos cycles t vlen now
 reglaDeTres:: Rational -> Rational -> Rational -> Rational
 reglaDeTres normScale normPos realScale = (normPos*realScale) / normScale
 
-    --   startorendPos           vidLength         
+    --   startorendPos           vidLength
 cycleSecs:: NominalDiffTime -> NominalDiffTime -> Rational
-cycleSecs startPos vlen 
+cycleSecs startPos vlen
     | startPos < vlen = (realToFrac vlen :: Rational) - (realToFrac startPos :: Rational)
-    | otherwise = 
+    | otherwise =
     let sp = realToFrac startPos :: Rational
         vl = realToFrac vlen :: Rational
         x = sp / vl
