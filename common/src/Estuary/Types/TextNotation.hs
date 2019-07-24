@@ -12,7 +12,8 @@ data TextNotation =
   Punctual |
   SuperContinent |
   SvgOp |
-  CanvasOp
+  CanvasOp |
+  CineCer0
   deriving (Read,Eq,Ord,Data,Typeable,Show)
 
 textNotationDropDownLabel :: TextNotation -> String
