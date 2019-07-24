@@ -31,9 +31,8 @@ import Estuary.Types.Hint
 
 
 terminalWidget :: MonadWidget t m => Dynamic t Context ->
-  Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
-terminalWidget ctx deltasUp deltasDown hints = divClass "terminal" $ mdo
-  currentSpace <- mostRecentEnsemble deltasUp deltasDown
+  Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
+terminalWidget ctx deltasDown hints = divClass "terminal" $ mdo
   (sendButton,inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
     sendButton' <- divClass "webSocketButtons" $ dynButton =<< translateDyn Term.Send ctx
     divClass "webSocketButtons" $ dynText =<< translateDyn Term.TerminalChat ctx

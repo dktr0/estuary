@@ -18,8 +18,8 @@ import Estuary.Reflex.Utility (translateDyn)
 
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
-  -> Event t Request -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
-footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
+  -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
+footer ctx renderInfo deltasDown hints = divClass "footer" $ do
   divClass "peak primary-color code-font" $ do
     dynText =<< holdUniqDyn (fmap f ctx)
     text " "
@@ -31,7 +31,7 @@ footer ctx renderInfo deltasDown deltasUp hints = divClass "footer" $ do
     text "% "
     dynText =<< translateDyn Term.Peak ctx
     text ") "
-  terminalWidget ctx deltasDown deltasUp hints
+  terminalWidget ctx deltasDown hints
   where
     f c | wsStatus c == "connection open" = "(" <> (T.pack $ show $ clientCount c) <> " connections, latency " <> (T.pack $ show $ serverLatency c) <> ")"
     f c | otherwise= "(" <> wsStatus c <> ")"
