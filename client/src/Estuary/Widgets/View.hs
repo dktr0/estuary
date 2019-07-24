@@ -36,36 +36,43 @@ import Estuary.RenderInfo
 import Estuary.Widgets.Sequencer
 
 
-viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse] -> m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint)
+viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> Event t [EnsembleResponse] -> m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint)
 
-viewWidget ctx renderInfo (Views xs) initialDefs deltasDown = foldM f i xs
+viewWidget ctx renderInfo (Views xs) deltasDown = do
+  iCtx <- sample $ current ctx
+  let iMap = constDyn $ zones $ ensembleState iCtx
+  foldM f (iMap,never,never) xs
   where
-    i = (constDyn (Map.empty :: DefinitionMap), never, never)
     f b a = do
       let (prevZoneMap,prevEdits,prevHints) = b
-      (zoneMap,edits,hints) <- viewWidget ctx renderInfo a initialDefs deltasDown
+      (zoneMap,edits,hints) <- viewWidget ctx renderInfo a deltasDown
       let newZoneMap = Map.union <$> prevZoneMap <*> zoneMap
       let newEdits = leftmost [prevEdits,edits]
       let newHints = leftmost [prevHints,hints]
       return (newZoneMap,newEdits,newHints)
 
-viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass c $ viewWidget ctx renderInfo v i deltasDown
+viewWidget ctx renderInfo (ViewDiv c v) deltasDown = divClass c $ viewWidget ctx renderInfo v deltasDown
 
-viewWidget ctx renderInfo (StructureView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
+viewWidget ctx renderInfo (StructureView n) deltasDown = do
+  iCtx <- sample $ current ctx
+  let iMap = zones $ ensembleState iCtx
+  let i = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n iMap
   let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
-  (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
+  (value,edits,hints) <- topLevelTransformedPatternWidget i deltasDown'
   let value' = fmap (Map.singleton n . Structure) value
   let edits' = fmap (ZoneRequest n . Structure) edits
   return (value',edits',hints)
   where f (Structure x) = x
         f _ = EmptyTransformedPattern
 
-viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
-  let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
+
+viewWidget ctx renderInfo (TextView n rows) deltasDown = do
+  iCtx <- sample $ current ctx
+  let iMap = zones $ ensembleState iCtx
+  let i = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n iMap
   let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
   let e = fmap (fmap T.pack . Map.lookup n . errors) renderInfo
-  (value,edits,hints) <- textNotationWidget ctx e rows i' deltasDown'
+  (value,edits,hints) <- textNotationWidget ctx e rows i deltasDown'
   let value' = fmap (Map.singleton n . TextProgram) value
   let edits' = fmap (ZoneRequest n . TextProgram) edits
   return (value',edits',hints)
@@ -73,11 +80,12 @@ viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
         f _ = Live (TidalTextNotation MiniTidal,"") L3
 
 
-
-viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Sequence defaultValue) n i
+viewWidget ctx renderInfo (SequenceView n) deltasDown = do
+  iCtx <- sample $ current ctx
+  let iMap = zones $ ensembleState iCtx
+  let i = f $ Map.findWithDefault (Sequence defaultValue) n iMap
   let deltasDown' = fmapMaybe (lastOrNothing . justSequences . justEditsInZone n) deltasDown
-  (value,edits,hints) <- sequencer i' deltasDown'
+  (value,edits,hints) <- sequencer i deltasDown'
   let value' = fmap (Map.singleton n . Sequence) value
   let edits' = fmap (ZoneRequest n . Sequence) edits
   return (value',edits',hints)
@@ -85,28 +93,23 @@ viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
         f _ = defaultValue
         defaultValue = M.fromList [(0,("",replicate 8 False))]
 
-viewWidget _ _ (LabelView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (LabelText "") n i
+
+viewWidget ctx _ (LabelView n) deltasDown = do
+  iCtx <- sample $ current ctx
+  let iMap = zones $ ensembleState iCtx
+  let i = f $ Map.findWithDefault (LabelText "") n iMap
   let deltasDown' = fmap (justLabelTexts . justEditsInZone n) deltasDown
-  edits <- labelWidget i' deltasDown'
+  edits <- labelWidget i deltasDown'
   let edits' = fmap (ZoneRequest n) edits
   return (constDyn Map.empty,edits',never)
   where f (LabelText x) = x
         f _ = ""
 
-viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
 
-viewWidget ctx _ (CanvasDisplayView z) _ _ = do
+viewWidget _ rInfo (SvgDisplayView z) _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
+
+
+viewWidget ctx _ (CanvasDisplayView z) _ = do
   mv <- fmap canvasState $ sample $ current ctx
   canvasDisplay z mv
   return (constDyn Map.empty, never, never)
-
-viewWidget ctx renderInfo (StructureView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
-  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
-  (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
-  let value' = fmap (Map.singleton n . Structure) value
-  let edits' = fmap (ZoneRequest n . Structure) edits
-  return (value',edits',hints)
-  where f (Structure x) = x
-        f _ = EmptyTransformedPattern

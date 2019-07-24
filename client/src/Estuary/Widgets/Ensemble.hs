@@ -47,6 +47,7 @@ ensembleView ctx renderInfo commands deltasDown = mdo
     divClass "ensembleHandle ui-font primary-color" $ text $ "UserName: " <> uName
 
   -- management of tempo including tempoWidget
+  let ensembleResponses = fmap justEnsembleResponses deltasDown
   (tempoChanges,tempoEdits) <- tempoWidget ctx ensembleResponses
   let tempoHints = fmap TempoHint tempoChanges
   let tempoRequest = fmap SetTempo tempoEdits
