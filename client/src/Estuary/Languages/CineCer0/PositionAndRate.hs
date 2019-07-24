@@ -147,7 +147,7 @@ playChop_Rate startPos endPos cycles t vlen now
 
 -------- the UBER chop with start and end position in seconds instead of 0 to 1 --------- 
 
-            --    startPos        -> endPos           -> Cycles   -> Tempo -> VideoLength     -> Now     -> Position
+         --    startPos        -> endPos          -> Cycles   -> Tempo -> VideoLength     -> Now     -> Position
 playChopSecs_Pos:: NominalDiffTime -> NominalDiffTime -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
 playChopSecs_Pos startPos endPos cycles t vlen now =
     let cp = (cps t)
@@ -174,8 +174,8 @@ playChopSecs_Rate startPos endPos cycles t vlen now
     let cp = (cps t)
         cpsDur = 1/cp
         vl = realToFrac vlen :: Rational
-        start = reglaDeTres 1 startPos vl
-        end = reglaDeTres 1 endPos vl
+        start = cycleSecs startPos vlen
+        end = cycleSecs startPos vlen
         interval = end - start
         cPerLen = interval/cpsDur
         rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
@@ -183,7 +183,6 @@ playChopSecs_Rate startPos endPos cycles t vlen now
         rate = interval / newVl 
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
-
 
 --------- Helper Functions ------------
 
