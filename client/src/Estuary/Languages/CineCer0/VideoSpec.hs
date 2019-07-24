@@ -16,11 +16,15 @@ data VideoSpec = VideoSpec {
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
-  height :: Rational
+  height :: Rational,
+  red :: Rational,
+  green :: Rational,
+  blue :: Rational,
+  alpha :: Rational
   }
 
 instance Show VideoSpec where
-  show (VideoSpec vs n _ _ px py w h) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h
+  show (VideoSpec vs n _ _ px py w h _ _ _ _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h
 
 
 stringToVideoSpec :: String -> VideoSpec
@@ -32,7 +36,11 @@ stringToVideoSpec x = VideoSpec {
   posX = 0.0,
   posY = 0.0,
   width = 1,
-  height = 1
+  height = 1,
+  red = 1,
+  green = 1,
+  blue = 1,
+  alpha = 1
 }
 
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
@@ -59,6 +67,16 @@ setHeight n vs = vs { height = n }
 
 setSize :: Rational -> Rational -> VideoSpec -> VideoSpec
 setSize m n vs = vs { width = m, height = n }
+
+-- Set rgb --
+
+setRGB :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
+setRGB m n l vs = vs { red = m, green = n, blue = l }
+
+-- Set alpha --
+
+setAlpha :: Rational -> VideoSpec -> VideoSpec
+setAlpha n vs = vs { alpha = n }
 
 -- Time Functions --
 
