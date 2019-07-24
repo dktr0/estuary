@@ -15,7 +15,6 @@ import Sound.MusicW
 import Estuary.Render.AudioContext
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
-import Estuary.Protocol.Foreign
 import Estuary.Protocol.Peer
 import Estuary.Types.Context
 import Estuary.Types.CanvasState
@@ -57,7 +56,6 @@ main = do
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
   sd <- newSuperDirt
-  protocol <- estuaryProtocol
   mv <- emptyCanvasState >>= newMVar
   now <- liftAudioIO $ audioUTCTime
   c <- newMVar $ initialContext now mainBusNodes wd sd mv pp
@@ -74,7 +72,7 @@ main = do
     return $ pToJSVal node
   js_registerSetEstuaryAudioDestination cb
 
-  mainWidgetInElementById "estuary-root" $ estuaryWidget Splash c ri protocol
+  mainWidgetInElementById "estuary-root" $ estuaryWidget c ri
 
   -- Signal the splash page that estuary is loaded.
   js_setIconStateLoaded

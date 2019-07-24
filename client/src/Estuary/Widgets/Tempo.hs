@@ -34,7 +34,7 @@ tempoWidget ctx deltas = divClass "ensembleTempo ui-font primary-color" $ mdo
   let initialText = showt (cps iTempo)
   (tValue,_,tEval) <- textWidget 1 initialText $ fmap (showt . cps) tempoDelta
   b <- dynButton =<< translateDyn Term.NewTempo ctx
-  let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Double) . T.unpack) $ tagPromptlyDyn tValue $ leftmost [b,tEval]
+  let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Rational) . T.unpack) $ tagPromptlyDyn tValue $ leftmost [b,tEval]
   tempoEdit <- performEvent $ fmap liftIO $ attachPromptlyDynWith adjustTempoEdit currentTempo cpsEvent
   currentTempo <- holdDyn iTempo $ leftmost [tempoDelta,tempoEdit]
   return (updated currentTempo,tempoEdit)
@@ -52,7 +52,7 @@ adjustTempoDelta (newTempo,timeStamp) = do
     beat = elapsedCycles newTempo timeStamp
     }
 
-adjustTempoEdit :: Tempo -> Double -> IO Tempo
+adjustTempoEdit :: Tempo -> Rational -> IO Tempo
 adjustTempoEdit oldTempo newCps = do
   now <- liftAudioIO $ audioUTCTime
   return $ adjustCps newCps oldTempo now

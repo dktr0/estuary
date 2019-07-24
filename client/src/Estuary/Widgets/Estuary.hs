@@ -38,44 +38,46 @@ import Estuary.Render.DynamicsMode
 import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
 
-estuaryWidget :: MonadWidget t m => Navigation -> MVar Context -> MVar RenderInfo -> EstuaryProtocolObject -> m ()
-estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
+estuaryWidget initialPage ctxM riM = divClass "estuary" $ mdo
 
-  -- create shared canvas, create and poll shared RenderInfo, load sampleMap
-  canvasWidget ctxM
-  renderInfo <- pollRenderInfo riM
+  --
+  iCtx <- liftIO $ readMVar ctxM
+  ctx <- foldDyn ($) iCtx contextChanges -- dynamic context; is first here so available for everything else
+  let ensembleStateDyn = fmap ensembleState ctx
+  canvasWidget ctxM -- global canvas shared with render threads through MVar
+  performContext ctxM ctx -- perform all IO actions consequent to Context changing
+  renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   samplesLoadedEv <- loadSampleMap
-
-  -- ctx's foldDyn creation must come before the structure widgets below in case any inspect the `current` value.
-  -- This will block indefinitely until it has a chance to be created.
-  let commandChanges = fmap commandsToStateChanges commands
-  let ensembleResponses = fmap justEnsembleResponses deltasDown
-  let responseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
-  let handleChanges = fmap (\x es -> es { userHandle = x}) hdl -- *** this is obsolete UI ***
-  let requestChanges = fmap requestsToStateChanges edits
-  ensembleState <- foldDyn ($) initialState $ mergeWith (.) [commandChanges,responseChanges,handleChanges,requestChanges]
-
-  let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
-  let deltasDown' = ffilter (not . Prelude.null) deltasDown
-  let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let ensembleChanges = ???????
-  let contextChanges = mergeWith (.) [definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
-
-  ctx <- foldDyn ($) ic contextChanges -- Dynamic t Context
-
-  -- GUI widgets: header, main (navigation), footer
-  headerChanges <- header ctx
-  (values, deltasUp, hints, tempoChanges) <- divClass "page " $ navigation initialPage never ctx renderInfo commands deltasDown
-  commands <- footer ctx renderInfo deltasUp deltasDown' hints
-
-  -- websocket communication with server
   (deltasDown,wsCtxChanges) <- alternateWebSocket protocol ctx renderInfo deltasUp
 
-  updateContext ctxM ctx
-  performHints (webDirt ic) hints
-  -- END estuaryWidget
+  -- responses down from server
+  let ensembleResponses = fmap justEnsembleResponses deltasDown
+  let ensembleResponseChanges = fmap ((foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
+  let ccChanges = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown
 
+  -- three GUI components: header, main (navigation), footer
+  headerChanges <- header ctx
+  (values, requestsFromMain, hintsFromMain, tempoChanges) <- divClass "page " $ do
+    navigation ctx renderInfo deltasDown
+  commands <- footer ctx renderInfo deltasUp deltasDown' hints
+
+  -- hints
+  let commandHints = attachPromptlyDynWithMaybe commandToHint ensembleStateDyn commands
+  let hints = leftmost [hints, commandHints]
+  performHints (webDirt ic) hints
+
+  -- changes to EnsembleState within Context, and to Context
+  let commandChanges = fmap commandsToStateChanges commands -- commands to change of EnsembleState
+  let requestChanges = fmap requestsToStateChanges edits
+  let ensembleChanges = fmap modifyEnsemble $ mergeWith (.) [commandChanges,ensembleResponseChanges,ensembleRequestChanges]
+  let definitionChanges = fmapMaybe (fmap setDefinitions) $ updated values
+  let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
+  let contextChanges = mergeWith (.) [ensembleChanges, definitionChanges, headerChanges, ccChange, tempoChanges', samplesLoadedEv, wsCtxChanges]
+
+  -- requests up to server
+  let commandRequests = attachPromptlyDynWithMaybe commandsToRequests ensembleStateDyn commands
+  return ()
 
 -- a standard canvas that, in addition to being part of reflex-dom's DOM representation, is shared with other threads through the Context
 canvasWidget :: MonadWidget t m => MVar Context -> m ()
@@ -100,6 +102,7 @@ pollRenderInfo riM = do
 -- load the sample map and issue an appropriate ContextChange event when finished
 -- (if there is a better way to trigger an event from an async callback then this should be updated to reflect that)
 loadSampleMap :: MonadWidget t m => m (Event t ContextChange)
+loadSampleMap = do
   postBuild <- getPostBuild
   samplesLoadedEv <- performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
     loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
