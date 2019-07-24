@@ -34,6 +34,7 @@ import qualified Estuary.Languages.SvgOp as SvgOp
 import qualified Estuary.Languages.CanvasOp as CanvasOp
 import qualified Estuary.Types.CanvasOp as CanvasOp
 import Estuary.Types.CanvasState
+import Estuary.Types.EnsembleState
 import Estuary.Types.Color
 
 import Estuary.Types.Context
@@ -97,9 +98,9 @@ render c = do
   s <- get
   when (canvasElement c /= cachedCanvasElement s) $ do
     liftIO $ putStrLn "render: canvasElement new/changed"
-    traverseWithKey (canvasChanged c) (definitions c)
+    traverseWithKey (canvasChanged c) (zones $ ensembleState c)
     modify' $ \x -> x { cachedCanvasElement = canvasElement c }
-  traverseWithKey (renderZone c) (definitions c)
+  traverseWithKey (renderZone c) (zones $ ensembleState c)
   flushEvents c
   t2 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
@@ -137,7 +138,7 @@ renderZone c z d = do
 renderAnimation :: Context -> Renderer
 renderAnimation c = do
   tNow <- liftAudioIO $ audioTime
-  traverseWithKey (renderZoneAnimation tNow c) (definitions c)
+  traverseWithKey (renderZoneAnimation tNow c) (zones $ ensembleState c)
   return ()
 
 renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
@@ -205,7 +206,7 @@ renderTextProgramChanged c z (Punctual,x) = do
     let eval = (exprs,t)
     let (mainBusIn,_,_,_) = mainBus c
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 t) z (punctuals s)
-    let tempo' = tempo c
+    let tempo' = tempo $ ensembleState c
     let beat0 = beatZero tempo'
     let cps' = cps tempo'
     newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,cps') eval
@@ -244,7 +245,7 @@ renderTextProgramAlways _ _ _ = return ()
 renderSuperContinent :: Context -> Int -> Renderer
 renderSuperContinent c z = when (canvasOn c) $ do
   s <- get
-  let cycleTime = elapsedCycles (tempo c) (logicalTime s)
+  let cycleTime = elapsedCycles (tempo $ ensembleState c) (logicalTime s)
   let audio = 0.5 -- placeholder
   let program = superContinentProgram s
   let scState = superContinentState s
@@ -258,7 +259,7 @@ renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s
-  let tempo' = tempo c
+  let tempo' = tempo $ ensembleState c
   let events = maybe [] id $ fmap (renderTidalPattern lt renderPeriod tempo') controlPattern
   modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
 

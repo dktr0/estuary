@@ -19,6 +19,7 @@ import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.CanvasState
+import Estuary.Types.EnsembleState
 import Estuary.Render.AudioContext
 import Estuary.Render.DynamicsMode
 import Estuary.Protocol.Peer
@@ -31,9 +32,10 @@ data Context = Context {
   superDirt :: SuperDirt,
   language :: Language,
   theme :: Text,
-  tempo :: Tempo,
-  activeDefsEnsemble :: Text, -- ^ The name of the ensemble that the current definitions in the context belong to.
-  definitions :: DefinitionMap,
+  ensembleState :: EnsembleState,
+--  tempo :: Tempo, -- factoring these three out since they are part of ensembleState
+--  activeDefsEnsemble :: Text, -- ^ The name of the ensemble that the current definitions in the context belong to.
+--  definitions :: DefinitionMap,
   samples :: SampleMap,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
@@ -54,9 +56,9 @@ initialContext now mBus wd sd mv pp = Context {
   superDirt = sd,
   language = English,
   theme = "../css-custom/classic.css",
-  tempo = Tempo { cps = 0.5, at = now, beat = 0.0 },
-  activeDefsEnsemble = "",
-  definitions = empty,
+  ensembleState = newEnsembleState $ Tempo { cps = 0.5, at = now, beat = 0.0 },
+--  activeDefsEnsemble = "",
+--  definitions = empty,
   samples = emptySampleMap,
   webDirtOn = True,
   superDirtOn = False,
@@ -80,11 +82,14 @@ setLanguage x c = c { language = x }
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
-setDefinitions :: (Text, DefinitionMap) -> ContextChange
+modifyEnsemble :: (EnsembleState -> EnsembleState) -> ContextChange
+modifyEnsemble f c = c { ensembleState = f (ensembleState c) }
+
+{- setDefinitions :: (Text, DefinitionMap) -> ContextChange
 setDefinitions (x, y) c = c {
   activeDefsEnsemble = x,
   definitions = y
-}
+} -}
 
 setSampleMap :: SampleMap -> ContextChange
 setSampleMap x c = c { samples = x}

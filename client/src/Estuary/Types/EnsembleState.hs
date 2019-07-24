@@ -25,9 +25,11 @@ import Estuary.Types.Hint
 import Estuary.Types.ViewsParser
 import Estuary.Render.AudioContext
 import Estuary.Types.Participant
+import Estuary.Types.Tempo
 
 data EnsembleState = EnsembleState {
   ensembleName :: Text,
+  tempo :: Tempo,
   userHandle :: Text,
   zones :: IntMap.IntMap Definition,
   publishedViews :: Map Text View,
@@ -51,9 +53,10 @@ currentView es | activeView es == Just "" = customView es
 currentView es | otherwise = findWithDefault (Views []) x (publishedViews es)
   where x = fromJust $ activeView es
 
-newEnsembleState :: Text -> EnsembleState
-newEnsembleState x = EnsembleState {
-  ensembleName = x,
+newEnsembleState :: Tempo -> EnsembleState
+newEnsembleState t = EnsembleState {
+  ensembleName = soloEnsembleName,
+  tempo = t,
   userHandle = "",
   zones = IntMap.empty,
   publishedViews = empty,
@@ -63,6 +66,20 @@ newEnsembleState x = EnsembleState {
   participants = empty,
   anonymousParticipants = 0
 }
+
+-- for when people leave an ensemble; note that tempo is not reset
+ensembleStateToSolo :: EnsembleState -> EnsembleState
+ensembleStateToSolo x = x {
+  ensembleName = soloEnsembleName,
+  userHandle = "",
+  zones = IntMap.empty,
+  publishedViews = empty,
+  defaultView = emptyView,
+  customView = emptyView,
+  activeView = Nothing,
+  participants = empty,
+  anonymousParticipants = 0
+  }
 
 getActiveView :: EnsembleState -> View
 getActiveView e = f (activeView e)

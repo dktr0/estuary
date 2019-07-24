@@ -23,11 +23,12 @@ import Estuary.Utility (lastOrNothing)
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
+import Estuary.Types.EnsembleState
 
 tempoWidget :: MonadWidget t m => Dynamic t Context -> Event t [EnsembleResponse]
   -> m (Event t Tempo,Event t Tempo) -- (all tempo changes, just tempo edits)
 tempoWidget ctx deltas = divClass "ensembleTempo ui-font primary-color" $ mdo
-  iTempo <- tempo <$> (sample . current) ctx
+  iTempo <- (tempo . ensembleState) <$> (sample . current) ctx
   let deltas' = fmapMaybe (lastOrNothing . fmapMaybe justTempoChanges) deltas -- Event t (Tempo,UTCTime)
   tempoDelta <- performEvent $ fmap (liftIO . adjustTempoDelta) deltas'
   let initialText = showt (cps iTempo)
