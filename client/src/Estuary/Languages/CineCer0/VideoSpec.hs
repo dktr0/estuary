@@ -71,7 +71,7 @@ setSize m n vs = vs { width = m, height = n }
 -- Set rgb --
 
 setRGB :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
-setRGB m n l vs = vs { red = m, green = n, blue = l }
+setRGB l m n vs = vs { red = l, green = m, blue = n }
 
 -- Set alpha --
 
@@ -103,3 +103,9 @@ playChop l m n vs = vs {
   playbackPosition = VT.playChop_Pos l m n,
   playbackRate = VT.playChop_Rate l m n
 }
+
+playChopSecs :: NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
+playChopSecs l m n vs = vs {
+  playbackPosition = VT.playChopSecs_Pos l m n,
+  playbackRate = VT.playChopSecs_Rate l m n
+  }

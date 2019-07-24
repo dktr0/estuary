@@ -53,7 +53,8 @@ rat_videoSpec_videoSpec =
   setWidth <$ reserved "w" <|>
   setHeight <$ reserved "h" <|>
   setPosX <$ reserved "posX" <|>
-  setPosY <$ reserved "posY"
+  setPosY <$ reserved "posY" <|>
+  setAlpha <$ reserved "alpha"
 
 --
 -- ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec) --
@@ -68,7 +69,9 @@ rat_rat_videoSpec_videoSpec =
   -- ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec) --
 
 rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
-rat_rat_rat_videoSpec_videoSpec = playChop <$ reserved "playChop" -- time function
+rat_rat_rat_videoSpec_videoSpec =
+  playChop <$ reserved "playChop" <|> -- time function
+  setRGB <$ reserved "color"
 
 --
 -- ExpParser (VideoSpec -> VideoSpec) --
