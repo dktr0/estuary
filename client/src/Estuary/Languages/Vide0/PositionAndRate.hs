@@ -25,8 +25,8 @@ playNatural_Pos t vl now =
         result = reglaDeTres 1 posNorm vLen
     in Just (realToFrac result)
 
-playNatural_Rate :: Tempo -> NominalDiffTime -> UTCTime -> Rational
-playNatural_Rate t vl now = 1
+playNatural_Rate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+playNatural_Rate t vl now = Just 1
 
 ------ Makes a video shorter or longer acording to given # of cycles ------
 

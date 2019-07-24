@@ -11,8 +11,8 @@ import Estuary.Types.Tempo
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
   sourceNumber :: Int,
-  playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> NominalDiffTime,
-  playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Just Rational,
+  playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
+  playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
@@ -38,9 +38,27 @@ stringToVideoSpec x = VideoSpec {
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
 setSourceNumber vs n = vs { sourceNumber = n }
 
+-- Video posX, posY, and posCoord (x y)
+
+setPosX :: Rational -> VideoSpec -> VideoSpec
+setPosX n vs = vs { posX = n }
+
+setPosY :: Rational -> VideoSpec -> VideoSpec
+setPosY n vs = vs { posY = n }
+
 setPosCoord :: Rational -> Rational -> VideoSpec -> VideoSpec
 setPosCoord m n vs = vs { posX = m, posY = n }
 
+-- Video width, height, and size (width height) --
+
+setWidth :: Rational -> VideoSpec -> VideoSpec
+setWidth n vs = vs { width = n }
+
+setHeight :: Rational -> VideoSpec -> VideoSpec
+setHeight n vs = vs { height = n }
+
+setSize :: Rational -> Rational -> VideoSpec -> VideoSpec
+setSize m n vs = vs { width = m, height = n }
 
 -- Time Functions --
 
