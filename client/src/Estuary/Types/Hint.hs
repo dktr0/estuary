@@ -1,10 +1,12 @@
 module Estuary.Types.Hint where
 
+import Data.Text (Text)
+
 import Estuary.Types.Tempo
 
 data Hint =
-  SampleHint String |
-  LogMessage String |
+  SampleHint Text |
+  LogMessage Text |
   TempoHint Tempo -- ??? what is this for ???
   deriving (Eq,Show)
 

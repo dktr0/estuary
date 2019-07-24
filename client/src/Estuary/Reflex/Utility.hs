@@ -4,7 +4,6 @@ module Estuary.Reflex.Utility where
 
 import Reflex
 import Reflex.Dom
-import Control.Monad (liftM)
 import Data.Map
 import Data.Text as T
 import GHCJS.DOM.EventM
@@ -14,7 +13,6 @@ import Data.Maybe
 import Data.Monoid
 import Control.Monad
 import GHCJS.DOM.HTMLSelectElement as Select
-import Control.Monad hiding (forM_) -- for 'guard'
 import Safe -- for readMay
 -- import GHCJS.DOM.Element hiding (error) --for 'change'
 import GHCJS.DOM.GlobalEventHandlers (change)
@@ -24,27 +22,15 @@ import Estuary.Types.Term
 import Estuary.Types.Context
 import Estuary.Types.Language
 
-mapDyn' :: MonadWidget t m => (a -> b) -> m (Dynamic t a) -> m (Dynamic t b)
-mapDyn' f a = do
-  let f' = constDyn f
-  a' <- a
-  combineDyn ($) f' a'
-
-apDyn :: MonadWidget t m => m (Dynamic t (a -> b)) -> m (Dynamic t a) -> m (Dynamic t b)
-apDyn f a = do
-  f' <- f
-  a' <- a
-  combineDyn ($) f' a'
-
 translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t Text)
-translateDyn t ctx = nubDyn <$> mapDyn (translate t . language) ctx
+translateDyn t ctx = holdUniqDyn $ fmap (translate t . language) ctx
 
 translationList :: MonadWidget t m => Dynamic t Context -> [(Language,a)] -> m (Dynamic t a)
 translationList c m = do
   let m' = fromList m
   let d = snd (m!!0)
-  l <- mapDyn language c
-  mapDyn (\k -> findWithDefault d k m') l
+  let l = fmap language c
+  return $ fmap (\k -> findWithDefault d k m') l
 
 -- a temporary button with class for the reference files
 buttonWithClass' :: MonadWidget t m => Text -> m (Event t ())
@@ -58,9 +44,9 @@ buttonWithClass s = do
   (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "ui-buttons other-borders code-font")]) $ text s
   return $ domEvent Click e
 
---Button with dynamic label. A final version that uses >=> from Control.Monad to compose together two a -> m b functions
+--Button with dynamic label.
 dynButton :: MonadWidget t m => Dynamic t Text -> m (Event t ())
-dynButton = (mapDyn buttonWithClass) >=> dynE
+dynButton = dynE . fmap buttonWithClass
 
 dynButtonWithChild :: MonadWidget t m => String -> m () -> m (Event t ())
 dynButtonWithChild cls child = do
@@ -73,28 +59,19 @@ dynButtonWithChild cls child = do
 dynE :: MonadWidget t m => Dynamic t (m (Event t a)) -> m (Event t a)
 dynE x = dyn x >>= switchPromptly never
 
--- Anytime an event is received issue another event of a given constant value.
-constEvent :: Reflex t => a -> Event t b -> Event t a
-constEvent a b = fmap (const a) b
-
--- Whenever a received event matches a value, issue another event of a given
--- constant value.
-matchEvent :: (Reflex t, Eq a) => a -> b -> Event t a -> Event t b
-matchEvent a b = fmap (const  b) . ffilter (==a)
-
 -- a button that, instead of producing Event t (), produces an event of
 -- some constant value
 button' :: (MonadWidget t m) => Text -> a -> m (Event t a)
 button' t r = do
   x <- button t
-  return $ fmap (const r) x
+  return (r <$ x)
 
 -- Button With Dynamic attributes
 buttonDynAttrs :: MonadWidget t m => Text -> a -> Dynamic t (Map Text Text)-> m (Event t a)
 buttonDynAttrs s val attrs = do
   (e, _) <- elDynAttr' "button" attrs $ text s
   let event = domEvent Click e
-  return $ fmap (const val) event
+  return (val <$ event)
 
 -- Creates dropdown Menu with Subheaders
 -- takes a Map of integers (the order everything should be displayed in)
@@ -122,5 +99,5 @@ dropdownOpts k0 setUpMap (DropdownConfig setK attrs) = do
         k <- mk
         guard $ Data.Map.member k options
         return k
-  dValue <- mapDyn readKey =<< holdDyn (Just k0) (leftmost [eChange, fmap Just setK])
+  dValue <- (return . fmap readKey) =<< holdDyn (Just k0) (leftmost [eChange, fmap Just setK])
   return $ Dropdown dValue (fmap readKey eChange) -- @clean this.

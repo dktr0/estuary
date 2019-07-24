@@ -1,19 +1,20 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Control.Exception
-
+import qualified Data.Text as T
 import qualified Database.SQLite.Simple as SQLite
+import System.Environment (getArgs)
 
 import EstuaryServer(runServerWithDatabase)
 import Estuary.Types.Database(openDatabase, closeDatabase,postLogToDatabase)
-
-import System.Environment (getArgs)
 
 main :: IO ()
 main = do
   db <- openDatabase
   (pswd, port) <- getArgs >>= return . processArgs
-  runServerWithDatabase pswd port db 
+  runServerWithDatabase (T.pack pswd) port db
     `catch` (closeDatabaseOnException db)
 
 processArgs :: [String] -> (String,Int) -- (password,port)
@@ -24,6 +25,6 @@ processArgs xs = case length xs of
 
 closeDatabaseOnException :: SQLite.Connection -> SomeException -> IO ()
 closeDatabaseOnException db e = do
-  postLogToDatabase db $ "quitting due to unhandled exception (" ++ (show e) ++ ")..."
+  postLogToDatabase db $ "quitting due to unhandled exception (" <> (T.pack $ show e) <> ")..."
   closeDatabase db
   putStrLn "database connection closed."

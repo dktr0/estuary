@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Renderer where
 
 import Data.Time.Clock
@@ -16,6 +18,9 @@ import Data.Either
 import qualified Data.Map as Map
 import JavaScript.Web.AnimationFrame
 import GHCJS.Concurrent
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 import Sound.MusicW.AudioContext
 
@@ -29,6 +34,7 @@ import qualified Estuary.Languages.SvgOp as SvgOp
 import qualified Estuary.Languages.CanvasOp as CanvasOp
 import qualified Estuary.Types.CanvasOp as CanvasOp
 import Estuary.Types.CanvasState
+import Estuary.Types.EnsembleState
 import Estuary.Types.Color
 
 import Estuary.Types.Context
@@ -81,10 +87,10 @@ renderTidalPattern start range t p = events''
         utcTime = addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t)
         w1 = Tidal.start $ Tidal.whole e
 
-sequenceToControlPattern :: (String,[Bool]) -> Tidal.ControlPattern
+sequenceToControlPattern :: (Text,[Bool]) -> Tidal.ControlPattern
 sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " " $ fmap f pat
   where f False = "~"
-        f True = sampleName
+        f True = T.unpack sampleName
 
 render :: Context -> Renderer
 render c = do
@@ -92,9 +98,9 @@ render c = do
   s <- get
   when (canvasElement c /= cachedCanvasElement s) $ do
     liftIO $ putStrLn "render: canvasElement new/changed"
-    traverseWithKey (canvasChanged c) (definitions c)
+    traverseWithKey (canvasChanged c) (zones $ ensembleState c)
     modify' $ \x -> x { cachedCanvasElement = canvasElement c }
-  traverseWithKey (renderZone c) (definitions c)
+  traverseWithKey (renderZone c) (zones $ ensembleState c)
   flushEvents c
   t2 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
@@ -105,11 +111,11 @@ canvasChanged :: Context -> Int -> Definition -> Renderer
 canvasChanged c z (TextProgram x) = canvasChangedTextProgram c z $ forRendering x
 canvasChanged _ _ _ = return ()
 
-canvasChangedTextProgram :: Context -> Int -> (TextNotation,String) -> Renderer
+canvasChangedTextProgram :: Context -> Int -> (TextNotation,Text) -> Renderer
 canvasChangedTextProgram c z (Punctual,x) = do
   webGLs <- gets punctualWebGLs
   let prevWebGL = IntMap.findWithDefault Punctual.emptyPunctualWebGL z webGLs
-  liftIO $ putStrLn "about to Punctual.updateRenderingContext"
+  liftIO $ T.putStrLn "about to Punctual.updateRenderingContext"
   newWebGL <- liftIO $ Punctual.updateRenderingContext prevWebGL (canvasElement c)
   modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
 canvasChangedTextProgram _ _ _ = return ()
@@ -132,7 +138,7 @@ renderZone c z d = do
 renderAnimation :: Context -> Renderer
 renderAnimation c = do
   tNow <- liftAudioIO $ audioTime
-  traverseWithKey (renderZoneAnimation tNow c) (definitions c)
+  traverseWithKey (renderZoneAnimation tNow c) (zones $ ensembleState c)
   return ()
 
 renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
@@ -147,7 +153,7 @@ renderZoneAnimation tNow c z (TextProgram x) = do
   return ()
 renderZoneAnimation _ _ _ _ = return ()
 
-renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,String) -> Renderer
+renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,Text) -> Renderer
 renderZoneAnimationTextProgram tNow c z (Punctual,x) = do
   webGLs <- gets punctualWebGLs
   let webGL = findWithDefault Punctual.emptyPunctualWebGL z webGLs
@@ -173,7 +179,7 @@ renderZoneAlways c z (Sequence _) = renderControlPattern c z
 renderZoneAlways _ _ _ = return ()
 
 
-renderTextProgramChanged :: Context -> Int -> (TextNotation,String) -> Renderer
+renderTextProgramChanged :: Context -> Int -> (TextNotation,Text) -> Renderer
 renderTextProgramChanged c z (TidalTextNotation x,y) = do
   s <- get
   let parseResult = tidalParser x y -- :: Either ParseError ControlPattern
@@ -200,7 +206,7 @@ renderTextProgramChanged c z (Punctual,x) = do
     let eval = (exprs,t)
     let (mainBusIn,_,_,_) = mainBus c
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 t) z (punctuals s)
-    let tempo' = tempo c
+    let tempo' = tempo $ ensembleState c
     let beat0 = beatZero tempo'
     let cps' = cps tempo'
     newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,cps') eval
@@ -231,7 +237,7 @@ renderTextProgramChanged c z (CanvasOp,x) = do
 
 renderTextProgramChanged _ _ _ = return ()
 
-renderTextProgramAlways :: Context -> Int -> (TextNotation,String) -> Renderer
+renderTextProgramAlways :: Context -> Int -> (TextNotation,Text) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
 renderTextProgramAlways c z (SuperContinent,_) = renderSuperContinent c z
 renderTextProgramAlways _ _ _ = return ()
@@ -239,7 +245,7 @@ renderTextProgramAlways _ _ _ = return ()
 renderSuperContinent :: Context -> Int -> Renderer
 renderSuperContinent c z = when (canvasOn c) $ do
   s <- get
-  let cycleTime = elapsedCycles (tempo c) (logicalTime s)
+  let cycleTime = elapsedCycles (tempo $ ensembleState c) (logicalTime s)
   let audio = 0.5 -- placeholder
   let program = superContinentProgram s
   let scState = superContinentState s
@@ -253,7 +259,7 @@ renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s
-  let tempo' = tempo c
+  let tempo' = tempo $ ensembleState c
   let events = maybe [] id $ fmap (renderTidalPattern lt renderPeriod tempo') controlPattern
   modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
 

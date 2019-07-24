@@ -7,6 +7,8 @@ import Data.IntMap.Strict
 import qualified Data.Map.Strict as Map
 import Control.Monad.State
 import System.Random.MWC
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import qualified Estuary.Types.SvgOp as SvgOp
 import qualified Estuary.Types.CanvasOp as CanvasOp
@@ -14,8 +16,8 @@ import Estuary.Types.Color
 import Estuary.Types.Transform
 import Estuary.Types.Stroke
 
-parseSuperContinent :: String -> Either ParseError Program
-parseSuperContinent = parse programParser "SuperContinent"
+parseSuperContinent :: Text -> Either ParseError Program
+parseSuperContinent x = parse programParser "SuperContinent" $ T.unpack x
 
 
 type Program = [Statement]
