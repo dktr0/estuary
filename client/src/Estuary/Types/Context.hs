@@ -53,7 +53,8 @@ data Context = Context {
   clientCount :: Int,
   canvasState :: MVar CanvasState,
   canvasElement :: Maybe HTMLCanvasElement,
-  peerProtocol :: JSVal
+  peerProtocol :: JSVal,
+  theVideoDiv :: Maybe JSVal
   }
 
 initialContext :: UTCTime -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> MVar CanvasState -> JSVal -> Context
@@ -77,7 +78,8 @@ initialContext now mBus wd sd mv pp = Context {
   clientCount = 0,
   canvasState = mv,
   canvasElement = Nothing,
-  peerProtocol = pp
+  peerProtocol = pp,
+  theVideoDiv = Nothing
 }
 
 type ContextChange = Context -> Context

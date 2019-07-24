@@ -24,7 +24,6 @@ import Estuary.Widgets.View
 import Estuary.Widgets.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.EnsembleState
-import Estuary.Types.Request
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Sited
 import Estuary.Types.View
@@ -32,7 +31,7 @@ import Estuary.Types.View
 
 ensembleView :: MonadWidget t m
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] ->
-  m (Dynamic t DefinitionMap, Event t Request, Event t Hint,Event t Tempo)
+  m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint,Event t Tempo)
 ensembleView ctx renderInfo deltasDown = mdo
 
   iCtx <- sample $ current ctx
@@ -70,10 +69,7 @@ ensembleView ctx renderInfo deltasDown = mdo
   let edits = switchPromptlyDyn $ fmap (\(_,y,_) -> y) ui
   let hintsUi = switchPromptlyDyn $ fmap (\(_,_,y) -> y) ui
   let hints = leftmost [tempoHints,hintsUi] -- *** note: this might occasionally lose a hint, should refactor as [Hint]
-
-  -- form requests to server (but only in a collaborative ensemble, ie. ensemble is not "")
-  let requests = if eName == soloEnsembleName then never else fmap EnsembleRequest $ leftmost [edits,tempoRequest]
-
+  let requests = leftmost [edits,tempoRequest]
   return (defMap,requests,hints,tempoChanges)
 
 

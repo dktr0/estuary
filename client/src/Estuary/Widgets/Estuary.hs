@@ -59,7 +59,7 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
 
   -- three GUI components: header, main (navigation), footer
   headerChanges <- header ctx
-  (values, requestsFromMain, hintsFromMain, tempoChanges) <- divClass "page " $ do
+  (values, requestsFromMain, ensembleRequests, hintsFromMain, tempoChanges) <- divClass "page " $ do
     navigation ctx renderInfo deltasDown
   commands <- footer ctx renderInfo deltasDown hints
 
@@ -70,7 +70,6 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
 
   -- changes to EnsembleState within Context, and to Context
   let commandChanges = fmap commandsToStateChanges commands -- commands to change of EnsembleState
-  let ensembleRequests = never -- *** WARNING: BROKEN
   let requestChanges = fmap requestsToStateChanges ensembleRequests
   let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
   let ensembleChanges = fmap modifyEnsemble $ mergeWith (.) [commandChanges,ensembleResponseChanges,requestChanges,tempoChanges']
