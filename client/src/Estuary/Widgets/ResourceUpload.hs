@@ -18,8 +18,9 @@ import Data.Word
 
 import Estuary.Reflex.Utility
 
+import Estuary.Render.LocalResources
+
 import Estuary.Types.Context
-import Estuary.Types.LocalResources
 import Estuary.Types.Resources
 import Estuary.Types.Scope
 

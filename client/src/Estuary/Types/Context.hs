@@ -15,7 +15,6 @@ import GHCJS.DOM.Types (HTMLCanvasElement)
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
-import Estuary.Types.LocalResources
 import Estuary.Types.Resources
 import Estuary.Types.Samples
 import Estuary.WebDirt.WebDirt
@@ -25,6 +24,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.CanvasState
 import Estuary.Render.AudioContext
 import Estuary.Render.DynamicsMode
+import Estuary.Render.LocalResources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 
