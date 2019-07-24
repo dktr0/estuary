@@ -18,9 +18,9 @@ videoSpec :: ExpParser VideoSpec
 videoSpec =
   literalVideoSpec <|>
   int_VideoSpec <*> int <|>
-  videoSpec_videoSpec <*> videoSpec -- <|>
-  --rational_rational_videoSpec <*> rational <*> rational
+  videoSpec_videoSpec <*> videoSpec
 
+--
 -- Set Video with default options --
 
 literalVideoSpec :: ExpParser VideoSpec
@@ -41,32 +41,37 @@ int_VideoSpec :: ExpParser (Int -> VideoSpec)
 int_VideoSpec = videoSpec_int_videoSpec <*> videoSpec
 
 --
--- Set Position Cordinates --
+-- ExpParser (Rational -> VideoSpec -> VideoSpec) --
 
-rational_rational_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec)
-rational_rational_videoSpec_videoSpec = setPosCoord <$ reserved "pos"
+rat_videoSpec_videoSpec :: ExpParser (Rational -> VideoSpec -> VideoSpec)
+rat_videoSpec_videoSpec =
+  playEvery <$ reserved "playEvery" <|> --time function
+  setWidth <$ reserved "w" <|>
+  setHeight <$ reserved "h" <|>
+  setPosX <$ reserved "posX" <|>
+  setPosY <$ reserved "posY"
 
 --
--- Time Functions --
+-- ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec) --
 
---int_videoSpec_videoSpec :: ExpParser (Rational -> VideoSpec -> VideoSpec) --bueno
-int_videoSpec_videoSpec :: ExpParser (Int -> VideoSpec -> VideoSpec) --borrar
-int_videoSpec_videoSpec = playEvery <$ reserved "playEvery"
+rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_videoSpec_videoSpec =
+  setPosCoord <$ reserved "pos" <|> -- position video coordinates
+  playChop' <$ reserved "playChop'" <|> -- time function
+  setSize <$ reserved "size" --size (w h) amounts
 
---int_int_videoSpec_videoSpec :: ExParser (Int -> Int -> VideoSpec -> VideoSpec)
---int_int_videoSpec_videoSpec = playchop' <$ reserved "playChop'"
+  --
+  -- ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec) --
 
---int_int_int_videoSpec_videoSpec :: ExParser (Int -> Int -> Int -> VideoSpec -> VideoSpec)
---int_int_int_videoSpec_videoSpec = playchop <$ reserved "playChop"
-
+rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_rat_videoSpec_videoSpec = playChop <$ reserved "playChop" -- time function
 
 --
 -- ExpParser (VideoSpec -> VideoSpec) --
 
 videoSpec_videoSpec :: ExpParser (VideoSpec -> VideoSpec)
 videoSpec_videoSpec =
-  playRound <$ reserved "playRound" <|>
-  int_videoSpec_videoSpec <*> int <|>
-  rational_rational_videoSpec_videoSpec <*> rational <*> rational
-  --int_int_videoSpec_videoSpec <*> int <*> int <|>
-  --int_int_int_videoSpec_videoSpec <*> int <*> int <*> int
+  playRound <$ reserved "playRound" <|> -- time function
+  rat_videoSpec_videoSpec <*> rational <|> -- time function
+  rat_rat_videoSpec_videoSpec <*> rational <*> rational <|> -- pos function
+  rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational -- time function

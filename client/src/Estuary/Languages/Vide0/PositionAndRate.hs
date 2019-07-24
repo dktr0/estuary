@@ -19,18 +19,21 @@ import Estuary.Types.Tempo
 playNatural_Pos:: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
 playNatural_Pos t vl now =
     let vLen = realToFrac vl :: Rational
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         lengths = difb0 / vLen
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
         result = reglaDeTres 1 posNorm vLen
     in Just (realToFrac result)
+
+playNatural_Rate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+playNatural_Rate t vl now = Just 1
 
 ------ Makes a video shorter or longer acording to given # of cycles ------
 
 -- gets the onset time of the video in playEvery
              -- Rational -> Tempo ->     VideoLength -> Now     -> Position
 playEvery_Pos:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
-playEvery_Pos c t vl now = 
+playEvery_Pos c t vl now =
     let n = c
         ec = (elapsedCycles t now)
         floored = floor (ec/n)
@@ -41,7 +44,7 @@ playEvery_Pos c t vl now =
 -- gets the rate time for the video in playEvery
               -- Rational -> Tempo ->     VideoLength ->     Now -> Rate
 playEvery_Rate:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playEvery_Rate c t vl now = 
+playEvery_Rate c t vl now =
     let vLen = realToFrac vl :: Rational
         n = c
         cps' = cps t
@@ -53,34 +56,34 @@ playEvery_Rate c t vl now =
              -- Tempo -> VideoLength -> Now -> Position
 playRound_Pos:: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
 playRound_Pos t vlen now =
-    let vl = realToFrac vlen :: Rational 
+    let vl = realToFrac vlen :: Rational
         cp = (cps t)
         cpDur = 1/cp -- reciprocal of cps is duration in secs
         cPerLen = vl/cpDur -- how many cycles for 1 whole video
-        newLVinCPS = fromIntegral (round cPerLen) :: Rational -- this is new length 
+        newLVinCPS = fromIntegral (round cPerLen) :: Rational -- this is new length
         inSecs = newLVinCPS *cpDur -- THIS IS THE ONE YOU DIVIDE with the difb0
--- I need to provide the seconds from beatZero, after rounding and 
+-- I need to provide the seconds from beatZero, after rounding and
 -- trasnforming to seconds it is not necessary to think in cycles.
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         lengths = difb0 / inSecs
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
         result = reglaDeTres 1 posNorm inSecs
     in Just (realToFrac  result) --transforms this into seconds
 
 playRound_Rate:: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playRound_Rate t vlen now = 
+playRound_Rate t vlen now =
     let vl = realToFrac vlen :: Rational
-        cp = (cps t) 
+        cp = (cps t)
         cpDur = 1/cp
         cPerLen = vl/cpDur
         floored = fromIntegral (floor cPerLen) :: Rational -- new length in cycles
         newVl = floored / cp -- new length in seconds
-        rate = vl / newVl 
+        rate = vl / newVl
     in Just (realToFrac rate)
 
 ------ Chop the video for any given cycles with normal rate ------
 
--- gets the interval of the video reproduced with an offset time and 
+-- gets the interval of the video reproduced with an offset time and
 -- a length in cycles, OJO the startPos is normalised from 0 to 1.
              -- OnsetPos ->   Cycles -> Tempo ->     VideoLength ->     Now -> Position
 playChop_Pos':: Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
@@ -91,7 +94,7 @@ playChop_Pos' onsetPos cycles t vlen now =
         cp = (cps t)
         cpDur = 1/cp
         cInSecs= cd * cpDur
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         lengths = difb0 / cInSecs
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
         pos = reglaDeTres 1 posNorm cInSecs
@@ -121,14 +124,14 @@ playChop_Pos startPos endPos cycles t vlen now =
         ecFloored = fromIntegral (floor ec) :: Rational
         ecNow = ec - ecFloored
         pos = reglaDeTres 1 ecNow interval
-        pos' = start + pos 
+        pos' = start + pos
     in Just (realToFrac pos')
 
 
 playChop_Rate:: Rational -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playChop_Rate startPos endPos cycles t vlen now 
+playChop_Rate startPos endPos cycles t vlen now
     | startPos == endPos = Just 0
-    | otherwise = 
+    | otherwise =
     let cp = (cps t)
         cpsDur = 1/cp
         vl = realToFrac vlen :: Rational
@@ -138,7 +141,7 @@ playChop_Rate startPos endPos cycles t vlen now
         cPerLen = interval/cpsDur
         rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
         newVl = rounded / cp -- new length in seconds
-        rate = interval / newVl 
+        rate = interval / newVl
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
 
@@ -209,24 +212,3 @@ myUTCTest = UTCTime today 30
 myUTCTest2 = UTCTime today 60
 
 myTempo = Tempo { cps= 0.5, at= myUTCTest, beat= 10.3}
-
-
------------------------------------
--- From Estuary Tempo, this needs to be erased when implemented un Estuario
-
--- from Estuary Tempo
--- data Tempo = Tempo {
---   cps :: Double,
---   at :: UTCTime, -- anchor for the tempo grid.
---   beat :: Double
---   } deriving (Eq,{- Data,Typeable, -}Show)
---
---
---
---
--- elapsedCycles :: Tempo -> UTCTime -> Double
--- elapsedCycles t now = elapsedT * cps t + beat t
---   where elapsedT = realToFrac $ diffUTCTime now (at t)
---
--- beatZero :: Tempo -> UTCTime
--- beatZero x = addUTCTime (realToFrac $ beat x * (-1) / cps x) (at x)
