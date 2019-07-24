@@ -12,17 +12,13 @@ data VideoSpec = VideoSpec {
   sampleVideo :: String,
   sourceNumber :: Int,
   playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> NominalDiffTime,
-  --playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Rational, --bueno
-  playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> NominalDiffTime, --borrar
+  playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
   posX :: Rational,
   posY :: Rational
   }
 
 instance Show VideoSpec where
   show (VideoSpec vs n _ _ px py) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py
-
---instance Show InputsToNetworks where
--- show (InputsToNetworks rs ps es) = "rolesInputs " ++ (show rs) ++ --"pitchRecognitionInputs " ++ (show ps) ++ "energyInputs " ++ (show es)
 
 
 stringToVideoSpec :: String -> VideoSpec
@@ -39,15 +35,12 @@ setSourceNumber :: VideoSpec -> Int -> VideoSpec
 setSourceNumber vs n = vs { sourceNumber = n }
 
 setPosCoord :: Rational -> Rational -> VideoSpec -> VideoSpec
-setPosCoord n m vs = vs { posX = n, posY = m }
+setPosCoord m n vs = vs { posX = m, posY = n }
 
---setPosCoord' :: VideoSpec -> Rational -> VideoSpec
---setPosCoord' vs n = vs { posCoordinates = n }
 
 -- Time Functions --
 
---playEvery :: Rational -> VideoSpec -> VideoSpec --bueno
-playEvery :: Int -> VideoSpec -> VideoSpec --borrar
+playEvery :: Rational -> VideoSpec -> VideoSpec
 playEvery n vs = vs {
   playbackPosition = VT.playEvery_Pos n,
   playbackRate = VT.playEvery_Rate n
@@ -59,14 +52,14 @@ playRound vs = vs {
   playbackRate = VT.playRound_Rate
   }
 
---playChop' :: Int -> Int -> VideoSpec -> VideoSpec
---playChop' n n vs = vs {
---  timePosition = VT.something n
---  timeRate = VT.something n
---  }
+playChop' :: Rational -> Rational -> VideoSpec -> VideoSpec
+playChop' m n vs = vs {
+  playbackPosition = VT.playChop_Pos' m n,
+  playbackRate = VT.playChop_Rate' m n
+  }
 
---playChop :: Int -> Int -> Int -> VideoSpec -> VideoSpec
---playChop n n n vs = vs {
---  timePosition = VT.something n
---  timeRate = VT.something n
---  }
+playChop :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
+playChop l m n vs = vs {
+  playbackPosition = VT.playChop_Pos l m n,
+  playbackRate = VT.playChop_Rate l m n
+}
