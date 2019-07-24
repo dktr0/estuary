@@ -3,12 +3,14 @@ module Estuary.Languages.CanvasOp (canvasOp) where
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Types.CanvasOp
 import Estuary.Types.Color
 
-canvasOp :: String -> Either ParseError [CanvasOp]
-canvasOp = parse canvasOpParser "CanvasOp"
+canvasOp :: Text -> Either ParseError [CanvasOp]
+canvasOp x = parse canvasOpParser "CanvasOp" $ T.unpack x
 
 canvasOpParser :: Parser [CanvasOp]
 canvasOpParser = do

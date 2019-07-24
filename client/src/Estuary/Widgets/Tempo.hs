@@ -10,6 +10,9 @@ import Data.Text
 import Data.Time
 
 import Sound.MusicW.AudioContext
+import Data.Text (Text)
+import qualified Data.Text as T
+import TextShow
 
 import Estuary.Types.Tempo
 import Estuary.Types.Context
@@ -20,18 +23,19 @@ import Estuary.Utility (lastOrNothing)
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
+import Estuary.Types.EnsembleState
 
 tempoWidget :: MonadWidget t m => Dynamic t Context -> Event t [EnsembleResponse]
   -> m (Event t Tempo,Event t Tempo) -- (all tempo changes, just tempo edits)
 tempoWidget ctx deltas = divClass "ensembleTempo ui-font primary-color" $ mdo
-  iTempo <- tempo <$> (sample . current) ctx
+  iTempo <- (tempo . ensembleState) <$> (sample . current) ctx
   let deltas' = fmapMaybe (lastOrNothing . fmapMaybe justTempoChanges) deltas -- Event t (Tempo,UTCTime)
   tempoDelta <- performEvent $ fmap (liftIO . adjustTempoDelta) deltas'
-  let initialText = show (cps iTempo)
-  (tValue,_,tEval) <- textAreaWidgetForPatternChain 1 initialText $ fmap (show . cps) tempoDelta
-  b <-dynButton =<< translateDyn Term.NewTempo ctx
-  let cpsEvent = fmapMaybe (readMaybe :: String -> Maybe Double) $ tagDyn tValue $ leftmost [b,tEval]
-  tempoEdit <- performEvent $ fmap liftIO $ attachDynWith adjustTempoEdit currentTempo cpsEvent
+  let initialText = showt (cps iTempo)
+  (tValue,_,tEval) <- textWidget 1 initialText $ fmap (showt . cps) tempoDelta
+  b <- dynButton =<< translateDyn Term.NewTempo ctx
+  let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Double) . T.unpack) $ tagPromptlyDyn tValue $ leftmost [b,tEval]
+  tempoEdit <- performEvent $ fmap liftIO $ attachPromptlyDynWith adjustTempoEdit currentTempo cpsEvent
   currentTempo <- holdDyn iTempo $ leftmost [tempoDelta,tempoEdit]
   return (updated currentTempo,tempoEdit)
 

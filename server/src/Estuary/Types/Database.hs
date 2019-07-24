@@ -12,7 +12,8 @@ import Database.SQLite.Simple.Ok
 import Data.Map
 import Data.Time.Clock
 import Text.JSON
-import Data.Text
+import Data.Text as T
+import Data.Text.IO as T
 
 import Estuary.Types.View
 import Estuary.Types.Ensemble
@@ -31,18 +32,18 @@ createEnsembleTable c = execute_ c "CREATE TABLE IF NOT EXISTS ensembles (name T
 createLogTable :: Connection -> IO ()
 createLogTable c = execute_ c "CREATE TABLE IF NOT EXISTS log (time TEXT,msg TEXT)"
 
-postLogToDatabase :: Connection -> String -> IO ()
+postLogToDatabase :: Connection -> Text -> IO ()
 postLogToDatabase c l = do
   now <- getCurrentTime
-  putStrLn $ show now ++ ": " ++ l
+  T.putStrLn $ (T.pack $ show now) <> ": " <> l
   execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,l)
 
-writeNewEnsemble :: Connection -> String -> Ensemble -> IO ()
+writeNewEnsemble :: Connection -> Text -> Ensemble -> IO ()
 writeNewEnsemble c eName e = do
   now <- getCurrentTime
   execute c "INSERT INTO ensembles (name,json,lastUpdate) VALUES (?,?,?)" (eName,e,now)
 
-writeEnsemble :: Connection -> String -> Ensemble -> IO ()
+writeEnsemble :: Connection -> Text -> Ensemble -> IO ()
 writeEnsemble c eName e = do
   now <- getCurrentTime
   execute c "UPDATE ensembles SET json=?, lastUpdate=? WHERE name=?" (e,now,eName)
@@ -57,7 +58,7 @@ instance FromField Ensemble where
           f (Text.JSON.Ok x) = Database.SQLite.Simple.Ok.Ok x
           f (Text.JSON.Error x) = error x
 
-readEnsembles :: Connection -> IO (Map String Ensemble)
+readEnsembles :: Connection -> IO (Map Text Ensemble)
 readEnsembles c = do
   r <- query_ c "SELECT name,json FROM ensembles" -- [(n,j)]
   return $ fromList r

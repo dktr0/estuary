@@ -25,7 +25,7 @@ widgetMap iMap rebuild = do
   let rebuild' = fmap (sequence . elems) rebuild -- :: Event t (m [a])
   widgets <- widgetHold iWidget rebuild' -- :: m (Dynamic t [a])
   keys <- holdDyn (keys iMap) (fmap keys rebuild) -- :: m (Dynamic t [k])
-  combineDyn (\a b -> fromList $ zip a b) keys widgets
+  return $ (\a b -> fromList $ zip a b) <$> keys <*> widgets
 
 container' :: (Ord k, Num k, MonadWidget t m)
   => (v -> m a) -- a builder function from
@@ -78,12 +78,12 @@ container :: (Ord k, Num k, Show k, Eq v, Show v, MonadWidget t m)
 container initialValue cEvents rEvents mkChild = mdo
   let cEventsIn = cEvents
   let existingMap' = values
-  let cEvents' = attachDynWith (constructionDiff) existingMap' cEventsIn
+  let cEvents' = attachPromptlyDynWith (constructionDiff) existingMap' cEventsIn
   let selector = fanMap rEvents
   let mkChild' k v = mkChild v $ select selector $ (Const2 k)
   widgets <- liftM (joinDynThroughMap) $ listHoldWithKey initialValue cEvents' mkChild' -- Dynamic t (Map k (v,Event t x))
-  values <- mapDyn (fmap (fst)) widgets
-  events <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap (snd)) widgets
+  let values = fmap (fmap (fst)) widgets
+  let events = switchPromptlyDyn $ fmap (mergeMap . fmap (snd)) widgets
   return (values,events)
 
 
@@ -97,14 +97,14 @@ eitherContainer :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    -> m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e) )
 
 eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = mdo
-  let cEvents' = attachDynWith (constructionDiff) values cEvents
+  let cEvents' = attachPromptlyDynWith (constructionDiff) values cEvents
   widgets <- liftM (joinDynThroughMap) $ listHoldWithKey initialValues cEvents' mkChild
-  values <- mapDyn (fmap (fst)) widgets
-  events <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap (snd)) widgets
+  let values = fmap (fmap (fst)) widgets
+  let events = switchPromptlyDyn $ fmap (mergeMap . fmap (snd)) widgets
   return (values,events)
   where
-    mkChild k (Left x) = buildLeft x (select (fanMap eventsToLeft) (Const2 k)) >>= mapDyn (\(v,e)->(Left v,e))
-    mkChild k (Right x) = buildRight x (select (fanMap eventsToRight) (Const2 k)) >>= mapDyn (\(a,e)->(Right a,e))
+    mkChild k (Left x) = buildLeft x (select (fanMap eventsToLeft) (Const2 k)) >>= return . fmap (\(v,e)->(Left v,e))
+    mkChild k (Right x) = buildRight x (select (fanMap eventsToRight) (Const2 k)) >>= return . fmap (\(a,e)->(Right a,e))
 
 
 -- for widgets returning a 3rd event channel (for hints)
@@ -118,15 +118,15 @@ eitherContainer4 :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    -> m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e) , Event t e1 )
 
 eitherContainer4 initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = mdo
-  let cEvents' = attachDynWith (constructionDiff) values cEvents
+  let cEvents' = attachPromptlyDynWith (constructionDiff) values cEvents
   widgets <- liftM (joinDynThroughMap) $ listHoldWithKey initialValues cEvents' mkChild -- m (Dynamic t (Map k a))
-  values <- mapDyn (fmap (\(a,_,_)->a)) widgets
-  events <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap ((\(_,b,_)->b))) widgets
-  events2 <- liftM (switchPromptlyDyn) $ mapDyn (leftmost . elems . fmap ((\(_,_,c)->c))) widgets -- @ may drop some messages if multiple hints coincide...
+  let values = fmap (fmap (\(a,_,_)->a)) widgets
+  let events = switchPromptlyDyn $ fmap (mergeMap . fmap ((\(_,b,_)->b))) widgets
+  let events2 = switchPromptlyDyn $ fmap (leftmost . elems . fmap ((\(_,_,c)->c))) widgets -- @ may drop some messages if multiple hints coincide...
   return (values,events,events2)
   where
-    mkChild k (Left x) = buildLeft x (select (fanMap eventsToLeft) (Const2 k)) >>= mapDyn (\(v,e,e2)->(Left v,e,e2))
-    mkChild k (Right x) = buildRight x (select (fanMap eventsToRight) (Const2 k)) >>= mapDyn (\(a,e,e2)->(Right a,e,e2))
+    mkChild k (Left x) = buildLeft x (select (fanMap eventsToLeft) (Const2 k)) >>= return . fmap (\(v,e,e2)->(Left v,e,e2))
+    mkChild k (Right x) = buildRight x (select (fanMap eventsToRight) (Const2 k)) >>= return . fmap (\(a,e,e2)->(Right a,e,e2))
 
 
 
@@ -181,7 +181,7 @@ eitherContainer' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    -> m ( (Dynamic t (Map k v)) , Event t (Map k e) )
 eitherContainer' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = do
   (d,e) <- eitherContainer initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight
-  d' <- mapDyn (Data.Map.mapMaybe (either (Just) (const Nothing))) d
+  let d' = fmap (Data.Map.mapMaybe (either (Just) (const Nothing))) d
   return (d',e)
 
 
@@ -195,15 +195,15 @@ eitherContainer'' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    -> m ( (Dynamic t (Map k (Either v a))) , Event t (Map k e), Event t h)
 
 eitherContainer'' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = mdo
-  let cEvents' = attachDynWith (constructionDiff) values cEvents
+  let cEvents' = attachPromptlyDynWith (constructionDiff) values cEvents
   widgets <- liftM (joinDynThroughMap) $ listHoldWithKey initialValues cEvents' mkChild
-  values <- mapDyn (fmap (\(x,_,_) -> x)) widgets
-  eEvents <- liftM (switchPromptlyDyn) $ mapDyn (mergeMap . fmap (\(_,x,_) -> x)) widgets
-  hEvents <- liftM (switchPromptlyDyn) $ mapDyn (leftmost . elems . fmap (\(_,_,x) -> x)) widgets
+  let values = fmap (fmap (\(x,_,_) -> x)) widgets
+  let eEvents = switchPromptlyDyn $ fmap (mergeMap . fmap (\(_,x,_) -> x)) widgets
+  let hEvents = switchPromptlyDyn $ fmap (leftmost . elems . fmap (\(_,_,x) -> x)) widgets
   return (values,eEvents,hEvents)
   where
-    mkChild k (Left x) = buildLeft x (select (fanMap eventsToLeft) (Const2 k)) >>= mapDyn (\(v,e,f)->(Left v,e,f))
-    mkChild k (Right x) = buildRight x (select (fanMap eventsToRight) (Const2 k)) >>= mapDyn (\(a,e,f)->(Right a,e,f))
+    mkChild k (Left x) = buildLeft x (select (fanMap eventsToLeft) (Const2 k)) >>= return . fmap (\(v,e,f)->(Left v,e,f))
+    mkChild k (Right x) = buildRight x (select (fanMap eventsToRight) (Const2 k)) >>= return . fmap (\(a,e,f)->(Right a,e,f))
 
 eitherContainer''' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    => Map k (Either v a)                               -- a map of initial values
@@ -215,7 +215,7 @@ eitherContainer''' :: (Ord k, Num k, Show k, Eq v, Eq a, MonadWidget t m)
    -> m ( Dynamic t (Map k v) , Event t (Map k e), Event t h)
 eitherContainer''' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight = do
   (d,e,h) <- eitherContainer'' initialValues cEvents eventsToLeft eventsToRight buildLeft buildRight
-  d' <- mapDyn (Data.Map.mapMaybe (either (Just) (const Nothing))) d
+  let d' = fmap (Data.Map.mapMaybe (either (Just) (const Nothing))) d
   return (d',e,h)
 
 
@@ -249,13 +249,13 @@ eitherWidget :: (MonadWidget t m)
 
 eitherWidget buildA buildB iValue c = either buildA' buildB' iValue
   where
-    buildA' a = buildA a c >>= mapDyn (\(x,d) -> (Left x,d))
-    buildB' b = buildB b c >>= mapDyn (\(x,d) -> (Right x,d))
+    buildA' a = buildA a c >>= return . fmap (\(x,d) -> (Left x,d))
+    buildB' b = buildB b c >>= return . fmap (\(x,d) -> (Right x,d))
 
 wfor :: (MonadWidget t m) => [a] -> (a -> m (Dynamic t b)) -> m (Dynamic t [b])
 wfor iVals mkChild = do
   widgets <- liftM (joinDynThroughMap) $ listHoldWithKey iMap never mkChild' -- m (Dynamic t [b]))
-  mapDyn elems widgets
+  return $ fmap elems widgets
   where
     iMap = fromList $ zip [(0::Int)..] iVals
     mkChild' _ a = mkChild a
@@ -265,7 +265,7 @@ wmap = flip wfor
 
 
 resettableWidget :: MonadWidget t m => (a -> Event t b -> m (Dynamic t c)) -> a -> Event t b -> Event t a -> m (Dynamic t c)
-resettableWidget f i e reset = liftM (joinDyn) $ widgetHold (f i e) $ fmap (\x -> f x e) reset
+resettableWidget f i e reset = liftM (join) $ widgetHold (f i e) $ fmap (\x -> f x e) reset
 
 
 popup :: MonadWidget t m => Event t (Maybe (m (Event t a))) -> m (Event t a)

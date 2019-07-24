@@ -4,6 +4,8 @@ import Text.ParserCombinators.Parsec
 import qualified Sound.Tidal.Context as Tidal
 import Sound.Tidal.MiniTidal
 import Data.Bifunctor (first)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Types.TidalParser
 import Estuary.Languages.CQenze
@@ -34,24 +36,24 @@ tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
   ]
 
 
-tidalParser :: TidalParser -> String -> Either String Tidal.ControlPattern
-tidalParser MiniTidal = miniTidal
-tidalParser CQenze = first show . cqenzeControlPattern
-tidalParser Morelia = first show . morelia
-tidalParser Saborts = first show . saborts
-tidalParser Saludos = first show . saludos
-tidalParser ColombiaEsPasion = first show . colombiaEsPasion
-tidalParser Si = first show . si
-tidalParser Sentidos = first show . sentidos
-tidalParser Natural = first show . natural
-tidalParser Medellin = first show . medellin
-tidalParser LaCalle = first show . laCalle
-tidalParser Maria = first show . maria
-tidalParser Crudo = first show . crudo
-tidalParser Puntoyya = first show . puntoyya
-tidalParser Sucixxx = first show . sucixxx
-tidalParser Vocesotrevez = first show . vocesotrevez
-tidalParser Imagina = first show . imagina
-tidalParser Alobestia = first show . alobestia
-tidalParser Togo = first show . togo
-tidalParser BlackBox = first show . blackBox
+tidalParser :: TidalParser -> Text -> Either String Tidal.ControlPattern
+tidalParser MiniTidal = miniTidal . T.unpack
+tidalParser CQenze = first show . cqenzeControlPattern . T.unpack
+tidalParser Morelia = first show . morelia . T.unpack
+tidalParser Saborts = first show . saborts . T.unpack
+tidalParser Saludos = first show . saludos . T.unpack
+tidalParser ColombiaEsPasion = first show . colombiaEsPasion . T.unpack
+tidalParser Si = first show . si . T.unpack
+tidalParser Sentidos = first show . sentidos . T.unpack
+tidalParser Natural = first show . natural . T.unpack
+tidalParser Medellin = first show . medellin . T.unpack
+tidalParser LaCalle = first show . laCalle . T.unpack
+tidalParser Maria = first show . maria . T.unpack
+tidalParser Crudo = first show . crudo . T.unpack
+tidalParser Puntoyya = first show . puntoyya . T.unpack
+tidalParser Sucixxx = first show . sucixxx . T.unpack
+tidalParser Vocesotrevez = first show . vocesotrevez . T.unpack
+tidalParser Imagina = first show . imagina . T.unpack
+tidalParser Alobestia = first show . alobestia . T.unpack
+tidalParser Togo = first show . togo . T.unpack
+tidalParser BlackBox = first show . blackBox . T.unpack

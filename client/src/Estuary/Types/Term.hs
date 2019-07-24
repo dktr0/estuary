@@ -24,7 +24,11 @@ data Term =
   Peak |
   About|
   NewTempo|
-  Eval
+  Eval |
+  JoiningEnsemble |
+  EnsembleUserName |
+  EnsembleLocation |
+  EnsembleLogin
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -91,5 +95,12 @@ translate NewTempo Español = "Establecer Nuevo tempo"
 translate Eval English = "Eval"
 translate Eval Español = "Eval"
 
+translate JoiningEnsemble English = "Joining ensemble"
+
+translate EnsembleUserName English = "Enter username (optional) within ensemble:"
+
+translate EnsembleLocation English = "Describe your location (optional):"
+
+translate EnsembleLogin English = "Login"
 
 translate x _ = pack $ "?" ++ show x

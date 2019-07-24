@@ -1,26 +1,32 @@
-module Estuary.Types.ViewsParser where
+{-# LANGUAGE OverloadedStrings #-}
 
-import Text.ParserCombinators.Parsec
+module Estuary.Types.ViewsParser (viewsParser,dumpView) where
+
+import Text.Parsec
+import Text.Parsec.Text
+-- import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
-
 import Data.List (intercalate)
+import Data.Text (Text)
+import qualified Data.Text as T
+import TextShow
+import Control.Monad.Identity (Identity)
 
 import Estuary.Types.View
 
-dumpView :: View -> String
-dumpView (Views xs) = intercalate " " $ fmap dumpView xs
-dumpView (ViewDiv css v) = "{ " ++ css ++ " " ++ dumpView v ++ " }"
-dumpView (StructureView x) = "structure:" ++ showInt x
-dumpView (LabelView x) = "label:" ++ showInt x
-dumpView (TextView x y) = "textView:" ++ showInt x ++ " " ++ showInt y
-dumpView (SvgDisplayView z) = "svgDisplayView:" ++ showInt z
-dumpView (CanvasDisplayView z) = "canvasDisplayView:" ++ showInt z
-dumpView (SequenceView z) = "sequenceView:" ++ showInt z
+dumpView :: View -> Text
+dumpView (Views xs) = T.intercalate " " $ fmap dumpView xs
+dumpView (ViewDiv css v) = "{ " <> css <> " " <> dumpView v <> " }"
+dumpView (StructureView x) = "structure:" <> showInt x
+dumpView (LabelView x) = "label:" <> showInt x
+dumpView (TextView x y) = "textView:" <> showInt x <> " " <> showInt y
+dumpView (SvgDisplayView z) = "svgDisplayView:" <> showInt z
+dumpView (CanvasDisplayView z) = "canvasDisplayView:" <> showInt z
+dumpView (SequenceView z) = "sequenceView:" <> showInt z
 
-showInt :: Int -> String
-showInt x | x >= 0 = show x
-showInt x | otherwise = "(" ++ show x ++ ")"
+showInt :: Int -> Text
+showInt x = showtParen (x < 0) (showt x)
 
 topLevelViewsParser :: Parser View
 topLevelViewsParser = do
@@ -45,7 +51,7 @@ viewParser = do
     ]
   return v
 
-viewDiv = braces $ (ViewDiv <$> identifier <*> viewsParser)
+viewDiv = braces $ (ViewDiv <$> (T.pack <$> identifier) <*> viewsParser)
 labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
 structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
 sequenceView = reserved "sequenceView" >> reservedOp ":" >> (SequenceView <$> int)
@@ -59,13 +65,22 @@ int = choice [
   fromIntegral <$> integer
   ]
 
-tokenParser :: P.TokenParser a
-tokenParser = P.makeTokenParser $ haskellDef {
+tokenParser :: P.GenTokenParser Text () Identity
+tokenParser = P.makeTokenParser $ P.LanguageDef {
+  P.commentStart = "{-",
+  P.commentEnd = "-}",
+  P.commentLine = "--",
+  P.nestedComments = False,
+  P.identStart = letter <|> char '_',
+  P.identLetter = alphaNum <|> char '_',
+  P.opStart = oneOf "+*:@<>~=%",
+  P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
     "label","structure","sequenceView","textView","svgDisplayView",
     "canvasDisplayView"
     ],
-  P.reservedOpNames = [":"]
+  P.reservedOpNames = [":"],
+  P.caseSensitive = True
   }
 
 identifier = P.identifier tokenParser

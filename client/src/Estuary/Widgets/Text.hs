@@ -11,6 +11,7 @@ import GHCJS.DOM.EventM
 import Data.Maybe
 import Data.Map (fromList)
 import Data.Monoid
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Estuary.Tidal.Types
@@ -31,39 +32,31 @@ import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Widgets.EstuaryWidget
-
 import Estuary.Types.Context
+import Estuary.Types.Variable
 
-textWidgetForPatternChain :: MonadWidget t m => String -> Event t String -> m (Dynamic t String, Event t String)
-textWidgetForPatternChain i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font")
-  x <- textInput $ def & textInputConfig_setValue .~ (fmap T.pack delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
-  let edits = fmap T.unpack $ _textInput_input x
-  let value = fmap T.unpack $ _textInput_value x
-  return (value,edits)
-
-textAreaWidgetForPatternChain :: MonadWidget t m => Int -> String -> Event t String -> m (Dynamic t String, Event t String,Event t ())
-textAreaWidgetForPatternChain rows i delta = do
+textWidget :: MonadWidget t m => Int -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+textWidget rows i delta = do
   let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
-  x <- textArea $ def & textAreaConfig_setValue .~ (fmap T.pack delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ (T.pack i)
-  --let keys = _textArea_keypress x
+  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let e = _textArea_element x
   e' <- wrapDomEvent (e) (onEventName Keypress) $ do
     y <- getKeyEvent
     if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
-  -- let evalEvent = fmap (const ()) $ ffilter (==True) $ fmap keyPressWasShiftEnter e'
   let evalEvent = fmap (const ()) $ ffilter (==True) e'
-  let edits = fmap T.unpack $ _textArea_input x
-  let value = fmap T.unpack $ _textArea_value x
+  let edits = _textArea_input x
+  let value = _textArea_value x
   return (value,edits,evalEvent)
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
+
 
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp] ++ (fmap TidalTextNotation tidalParsers)
 
-textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe String) ->
-  Int -> Live (TextNotation,String) -> Event t (Live (TextNotation,String)) ->
-  m (Dynamic t (Live (TextNotation,String)),Event t (Live (TextNotation,String)),Event t Hint)
+
+textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) ->
+  Int -> Live (TextNotation,Text) -> Event t (Live (TextNotation,Text)) ->
+  m (Dynamic t (Live (TextNotation,Text)),Event t (Live (TextNotation,Text)),Event t Hint)
 textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
   let deltaFuture = fmap forEditing delta
   let parserFuture = fmap fst deltaFuture
@@ -75,7 +68,8 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
     d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "code-font primary-color primary-borders" <> "style" =: "background-color: transparent")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- dynButton =<< translateDyn Term.Eval ctx
-      dynText =<< mapDyn (maybe "" (const "!")) (nubDyn e)
+      e' <- holdUniqDyn e
+      dynText =<< (return $ fmap (maybe "" (const "!")) e')
       return x
     infoButton' <- divClass "referenceButton" $ dynButton "?"
     return (d',evalButton',infoButton')
@@ -86,28 +80,38 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
     let initialText = snd $ forEditing i
     textVisible <- toggle True infoButton
     helpVisible <- toggle False infoButton
-    (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "width-100-percent" $ textAreaWidgetForPatternChain rows initialText textFuture
+    (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "width-100-percent" $ textWidget rows initialText textFuture
     let languageToDisplayHelp = ( _dropdown_value d)
     hideableWidget helpVisible "width-100-percent" $ languageHelpWidget languageToDisplayHelp
-    v' <- combineDyn (,) parserValue textValue
-    let editEvent = tagDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent = tagDyn v' $ leftmost [evalButton,shiftEnter]
+    let v' = (,) <$> parserValue <*> textValue
+    let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
+    let evalEvent = tagPromptlyDyn v' $ leftmost [evalButton,shiftEnter]
     return (editEvent,evalEvent)
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]
-  value <- combineDyn f pastValue futureValue
-  let deltaUpEdit = tagDyn value edit
-  let deltaUpEval = tagDyn value eval
+  let value = f <$> pastValue <*> futureValue
+  let deltaUpEdit = tagPromptlyDyn value edit
+  let deltaUpEval = tagPromptlyDyn value eval
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
   return (value,deltaUp,never)
   where
     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
           | otherwise = Edited p x
 
-labelWidget :: MonadWidget t m => String -> Event t [String] -> m (Event t Definition)
+labelWidget :: MonadWidget t m => Text -> Event t [Text] -> m (Event t Definition)
 labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
-  let delta' = fmap T.pack $ fmapMaybe lastOrNothing delta
+  let delta' = fmapMaybe lastOrNothing delta
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
-  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ (T.pack i)
-  return $ fmap (LabelText . T.unpack) $ _textInput_input y
+  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
+  return $ fmap LabelText $ _textInput_input y
+
+-- the code below is an example of how the code just above might be rewritten
+-- in the EstuaryWidget t m monad (see Estuary.Widgets.EstuaryWidget)
+labelWidget' :: MonadWidget t m => Dynamic t Text -> EstuaryWidget t m (Variable t Text)
+labelWidget' delta = do
+  let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
+  y <- reflex $ divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+    i <- (sample . current) delta
+    textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
+  return $ Variable (_textInput_value y) (_textInput_input y)

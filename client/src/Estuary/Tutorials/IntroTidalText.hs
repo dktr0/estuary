@@ -1,17 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Tutorials.IntroTidalText where
 
 import Reflex
 import Reflex.Dom
-
 import qualified Data.IntMap.Strict as IM
 import Data.Map as M
+import Data.Text (Text)
+import qualified Data.Text as T
+
 import Estuary.Tutorials.Tutorial
 import Estuary.Types.Language
-
 import Estuary.Types.Definition
-
--- miniTidalWidget
 import Estuary.Types.Context
 import Estuary.Types.Hint
 
@@ -49,6 +49,9 @@ introTidalTextWidget ctx = elClass "div" "tutorial code-font primary-color backg
 
   el "div" $ labelWidget ctx $ fromList [(English,"")]
 
-  v <- dynList [v1, v2, v3, v4,v5,v6] >>= mapDyn IM.fromList
+  v <- do
+    x <- dynList [v1, v2, v3, v4,v5,v6]
+    return $ fmap IM.fromList x
+    
   let hints = leftmost [h1,h2,h3,h4,h5,h6]
   return (v, hints)
