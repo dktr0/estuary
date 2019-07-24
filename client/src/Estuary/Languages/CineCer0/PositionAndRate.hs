@@ -167,7 +167,7 @@ playChopSecs_Pos startPos endPos cycles t vlen now =
     in Just (realToFrac pos')
 
 
-playChopSecs_Rate:: Rational -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+playChopSecs_Rate:: NominalDiffTime -> NominalDiffTime -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
 playChopSecs_Rate startPos endPos cycles t vlen now 
     | startPos == endPos = Just 0
     | otherwise = 
