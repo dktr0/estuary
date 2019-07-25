@@ -96,12 +96,6 @@ setClientCount x c = c { clientCount = x }
 modifyEnsemble :: (EnsembleState -> EnsembleState) -> ContextChange
 modifyEnsemble f c = c { ensembleState = f (ensembleState c) }
 
-{- setDefinitions :: (Text, DefinitionMap) -> ContextChange
-setDefinitions (x, y) c = c {
-  activeDefsEnsemble = x,
-  definitions = y
-} -}
-
 setSampleMap :: SampleMap -> ContextChange
 setSampleMap x c = c { samples = x}
 

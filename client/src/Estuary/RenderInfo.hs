@@ -2,11 +2,12 @@ module Estuary.RenderInfo where
 
 import Data.IntMap.Strict
 import Data.Time.Clock
+import Data.Text (Text)
 
 import Estuary.Types.SvgOp
 
 data RenderInfo = RenderInfo {
-  errors :: !(IntMap String),
+  errors :: !(IntMap Text),
   avgRenderLoad :: !Int,
   peakRenderLoad :: !Int,
   avgAnimationLoad :: !Int,

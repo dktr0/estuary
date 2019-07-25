@@ -53,6 +53,15 @@ textWidget rows i delta = do
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp,CineCer0] ++ (fmap TidalTextNotation tidalParsers)
 
+textEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t (Live (TextNotation,Text))
+  -> EstuaryWidget t m (Variable t (Live (TextNotation, Text)))
+textEditor nRows errorDyn updates = do
+  ctx <- askContext
+  (d,e,h) <- reflex $ do
+    i <- sample $ current updates
+    textNotationWidget ctx errorDyn nRows i (updated updates)
+  hint h
+  return $ Variable d e
 
 textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) ->
   Int -> Live (TextNotation,Text) -> Event t (Live (TextNotation,Text)) ->
@@ -99,17 +108,17 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
           | otherwise = Edited p x
 
-labelWidget :: MonadWidget t m => Text -> Event t [Text] -> m (Event t Definition)
+{- labelWidget :: MonadWidget t m => Text -> Event t [Text] -> m (Event t Definition)
 labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
   let delta' = fmapMaybe lastOrNothing delta
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
   y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
-  return $ fmap LabelText $ _textInput_input y
+  return $ fmap LabelText $ _textInput_input y -}
 
 -- the code below is an example of how the code just above might be rewritten
 -- in the EstuaryWidget t m monad (see Estuary.Widgets.EstuaryWidget)
-labelWidget' :: MonadWidget t m => Dynamic t Text -> EstuaryWidget t m (Variable t Text)
-labelWidget' delta = do
+labelEditor :: MonadWidget t m => Dynamic t Text -> EstuaryWidget t m (Variable t Text)
+labelEditor delta = do
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
   y <- reflex $ divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
     i <- (sample . current) delta

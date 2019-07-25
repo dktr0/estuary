@@ -40,6 +40,10 @@ reflex x = EstuaryWidget (\_ _ -> do
   return (a,never)
   )
 
+liftR2 :: MonadWidget t m => (m (a,Event t [Hint]) -> m (a,Event t [Hint])) -> EstuaryWidget t m a -> EstuaryWidget t m a
+liftR2 r x = EstuaryWidget (\ctx ri -> r $ runEstuaryWidget x ctx ri)
+
+
 -- However, an especially common pattern is needing to incorporate Reflex widget
 -- code for Variables (in the Estuary sense, ie. things that can be changed either
 -- by local editing or network actions). 'reflexVariable' provides a convenient way
