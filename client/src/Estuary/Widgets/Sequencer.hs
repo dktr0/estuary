@@ -6,7 +6,7 @@ import Reflex
 import Reflex.Dom
 import GHCJS.DOM.EventM
 import Control.Monad
-import Data.Map as M
+import Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Safe.Foldable (maximumMay)
@@ -14,16 +14,21 @@ import Text.Read (readMaybe)
 import Estuary.Types.Hint
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility
+import Estuary.Types.Variable
+import Estuary.Widgets.EstuaryWidget
 
 
-type Sequence a = Map Int (Maybe a,[Bool])
+type Sequence = Map Int (Text, [Bool])
 
 attachIndex :: [a] -> [(Int,a)]
 attachIndex = zip [0..]
 
+sequencer :: MonadWidget t m => Dynamic t Sequence -> EstuaryWidget t m (Variable t Sequence)
+sequencer x = reflexVariable x sequencer'
 
-sequencer :: MonadWidget t m => Map Int (Text, [Bool]) -> Event t (Map Int (Text,[Bool])) -> m (Dynamic t (Map Int (Text,[Bool])), Event t (Map Int (Text,[Bool])), Event t Hint)
-sequencer iMap update = elClass "table" "sequencer" $ mdo
+sequencer' :: MonadWidget t m
+  => Sequence -> Event t Sequence -> m (Event t Sequence)
+sequencer' iMap update = elClass "table" "sequencer" $ mdo
   let seqLen = maximum $ fmap (length . snd) $ elems iMap
   let serverDeletes = fmap (Nothing <$) $ attachWith M.difference (current values) update -- for deleted rows
   let updateEvs = mergeWith union [fmap (fmap Just) update, serverDeletes]
@@ -41,7 +46,8 @@ sequencer iMap update = elClass "table" "sequencer" $ mdo
   let maxKey = fmap (maybe 0 id . maximumMay . keys) newValues
   plusButton <- el "tr" $ clickableTdClass (constDyn " + ") (constDyn "") ()
   let newRow = attachWith (\k _-> singleton (k+1) (Just ("",Prelude.take seqLen $ repeat False))) (current maxKey) plusButton
-  return (values,updateVal,never)
+  return updateVal
+  -- *** TODO should rework the above since some of the above management is unnecessary with EstuaryWidget approach
 
 -- listWithKeyShallowDiff
 --  :: (Ord k, Adjustable t m, MonadFix m, MonadHold t m)

@@ -2,6 +2,7 @@
 module Estuary.Types.Variable where
 
 import Reflex
+import Control.Monad
 
 -- In this module we define the Variable type, which abstracts around a situation
 -- that is very common across the Estuary project - wanting to represent values
@@ -34,3 +35,9 @@ instance (Reflex t, Semigroup a) => Semigroup (Variable t a) where
 
 instance (Reflex t, Monoid a) => Monoid (Variable t a) where
   mempty = Variable (constDyn mempty) never
+
+flattenDynamicVariable :: Reflex t => Dynamic t (Variable t a) -> Variable t a
+flattenDynamicVariable x = Variable d e
+  where
+    d = join $ fmap currentValue x -- Dynamic (Dynamic t a)
+    e = switchPromptlyDyn $ fmap localEdits x -- Dynamic (Event t a)

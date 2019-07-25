@@ -26,7 +26,7 @@ import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.CanvasState
-import Estuary.Types.EnsembleState
+import Estuary.Types.EnsembleC
 import Estuary.Render.AudioContext
 import Estuary.Render.DynamicsMode
 import Estuary.Render.LocalResources
@@ -40,7 +40,7 @@ data Context = Context {
   superDirt :: SuperDirt,
   language :: Language,
   theme :: Text,
-  ensembleState :: EnsembleState,
+  ensembleC :: EnsembleC,
   samples :: SampleMap,
   localResourceServers :: LocalResourceServers,
   privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
@@ -65,7 +65,7 @@ initialContext now mBus wd sd mv pp = Context {
   superDirt = sd,
   language = English,
   theme = "../css-custom/classic.css",
-  ensembleState = newEnsembleState $ Tempo { cps = 0.5, at = now, beat = 0.0 },
+  ensembleC = emptyEnsembleC now,
   localResourceServers = emptyLocalResourceServers,
   privateResources = emptyResources,
   resources = emptyResources,
@@ -93,8 +93,8 @@ setLanguage x c = c { language = x }
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
-modifyEnsemble :: (EnsembleState -> EnsembleState) -> ContextChange
-modifyEnsemble f c = c { ensembleState = f (ensembleState c) }
+modifyEnsembleC :: (EnsembleC -> EnsembleC) -> ContextChange
+modifyEnsembleC f c = c { ensembleC = f (ensembleC c) }
 
 setSampleMap :: SampleMap -> ContextChange
 setSampleMap x c = c { samples = x}

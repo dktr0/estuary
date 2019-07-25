@@ -22,7 +22,7 @@ import Estuary.Types.Response
 import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
-import Estuary.Types.EnsembleState
+import Estuary.Types.EnsembleC
 import Estuary.Types.Context
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
@@ -64,16 +64,6 @@ terminalWidget ctx deltasDown hints = divClass "terminal" $ mdo
 hintsToMessages :: Hint -> Maybe Text
 hintsToMessages (LogMessage x) = Just x
 hintsToMessages _ = Nothing
-
-mostRecentEnsemble :: (MonadWidget t m) => Event t Request -> Event t [Response] -> m (Dynamic t Text)
-mostRecentEnsemble requests responses = do
-  let ensembleJoinsOrLeaves = fmap (const "") $ fmapMaybe f requests
-  let ensembleJoined = fmap fst $ fmapMaybe justJoinedEnsemble responses
-  holdDyn "" $ leftmost [ensembleJoinsOrLeaves,ensembleJoined]
-  where
-    f (JoinEnsemble _ _ _ _) = Just ()
-    f (LeaveEnsemble) = Just ()
-    f _ = Nothing
 
 startStreamingReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m ()
 startStreamingReflex ctx e = do

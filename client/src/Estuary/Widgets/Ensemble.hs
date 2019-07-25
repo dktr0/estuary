@@ -1,8 +1,7 @@
 {-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.Ensemble (
-  ensembleView,
-  soloView
+  ensembleView
 ) where
 
 import Reflex hiding (Request,Response)
@@ -23,62 +22,33 @@ import Estuary.Types.Tempo
 import Estuary.Widgets.View
 import Estuary.Widgets.Tempo
 import Estuary.Types.Hint
-import Estuary.Types.EnsembleState
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.Sited
+import Estuary.Types.EnsembleC
+import Estuary.Types.Ensemble
 import Estuary.Types.View
+import Estuary.Types.Variable
+import Estuary.Widgets.EstuaryWidget
 
 
 ensembleView :: MonadWidget t m
-  => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] ->
-  m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint,Event t Tempo)
-ensembleView ctx renderInfo deltasDown = mdo
+  => EstuaryWidget t m (Variable t DefinitionMap) -- *** not sure about this, edits get globalized...
+ensembleView = do
 
-  iCtx <- sample $ current ctx
-  let initialState = ensembleState iCtx
-  let initialDefs = zones initialState
-  let initialView = getActiveView initialState
-  let eName = ensembleName initialState
-  let uName = userHandle initialState
+  ctx <- askContext
 
   -- Ensemble name and username UI (created only if ensemble is not "", ie. not in solo mode)
-  when (eName /= "") $ divClass "ensembleHeader primary-color ui-font" $ do
+  iCtx <- reflex $ sample $ current ctx
+  let eName = ensembleName $ ensemble $ ensembleC iCtx
+  reflex $ when (eName /= "") $ divClass "ensembleHeader primary-color ui-font" $ do
+    let uName = userHandle $ ensembleC iCtx
     divClass "ensembleName ui-font primary-color" $ text $ "Ensemble: " <> eName
     divClass "ensembleHandle ui-font primary-color" $ text $ "UserName: " <> uName
 
-  -- management of tempo including tempoWidget
-  let ensembleResponses = fmap justEnsembleResponses deltasDown
-  (tempoChanges,tempoEdits) <- tempoWidget ctx ensembleResponses
-  let tempoHints = fmap TempoHint tempoChanges
-  let tempoRequest = fmap SetTempo tempoEdits
+  -- Tempo UI
+  tempoV <- tempoWidget
 
-  -- construction of dynamic View UI
-  let initialWidget = do
-        (newInitialDefs, y, z) <- viewWidget ctx renderInfo initialView ensembleResponses
-        -- Skip the first rendered def and use the initialDefs to prevent audio pause when
-        -- first rejoining an ensemble as the newInitialDefs are temporarily empty.
-        replaceDefsEv <- tailE $ updated newInitialDefs
-        newDefs <- holdDyn initialDefs $ replaceDefsEv
-        return (newDefs, y, z)
-  currentView <- holdUniqDyn $ fmap (getActiveView . ensembleState) ctx
-  let rebuildWidget = fmap (\v -> viewWidget ctx renderInfo v ensembleResponses) $ updated currentView
-  ui <- widgetHold initialWidget rebuildWidget
-
-  -- extraction/flattening of return values from dynamic View UI
-  let defMap = join $ fmap (\(y,_,_) -> y) ui
-  let edits = switchPromptlyDyn $ fmap (\(_,y,_) -> y) ui
-  let hintsUi = switchPromptlyDyn $ fmap (\(_,_,y) -> y) ui
-  let hints = leftmost [tempoHints,hintsUi] -- *** note: this might occasionally lose a hint, should refactor as [Hint]
-  let requests = leftmost [edits,tempoRequest]
-  return (defMap,requests,hints,tempoChanges)
-
-
--- | A solo view is just an ensemble view that doesn't send or respond to
--- messages to/from the server.
-
-soloView :: MonadWidget t m
-  => Dynamic t Context -> Dynamic t RenderInfo
-  -> m (Dynamic t DefinitionMap, Event t Hint,Event t Tempo)
-soloView ctx renderInfo = do
-  (defMap,_,hints,tempoEvents) <- ensembleView ctx renderInfo never
-  return (defMap,hints,tempoEvents)
+  -- Dynamic core View UI
+  currentView <- reflex $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
+  let dynamicViews = fmap viewWidget currentView -- Dynamic t (EstuaryWidget t m (Variable t DefinitionMap))
+  x <- dynEstuaryWidget dynamicViews -- Dynamic t (Variable t DefinitionMap)
+  let x' = flattenDynamicVariable x -- Variable t DefinitionMap
+  return x'

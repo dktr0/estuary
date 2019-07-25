@@ -82,6 +82,18 @@ instance MonadWidget t m => Monad (EstuaryWidget t m) where
     return (aY, hs)
     )
 
+dynEstuaryWidget :: MonadWidget t m => Dynamic t (EstuaryWidget t m a) -> EstuaryWidget t m (Dynamic t a)
+dynEstuaryWidget dynWidgets = EstuaryWidget (\ctx ri -> do
+  initialWidget <- sample $ current dynWidgets
+  let widgetUpdates = updated dynWidgets
+  let initialWidget' = runEstuaryWidget initialWidget ctx ri
+  let widgetUpdates' = fmap (\x -> runEstuaryWidget x ctx ri) widgetUpdates
+  theWidget <- widgetHold initialWidget' widgetUpdates' -- Dynamic t (a, Event t [Hint])
+  let a = fmap fst theWidget
+  let hs = switchPromptlyDyn $ fmap snd theWidget
+  return (a, hs)
+  )
+
 
 {- examples:
 

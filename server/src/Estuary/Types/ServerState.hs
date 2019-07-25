@@ -19,18 +19,18 @@ import Estuary.Types.Definition
 import Estuary.Types.Sited
 import Estuary.Types.Response
 import Estuary.Types.View
-import qualified Estuary.Types.Ensemble as E
+import qualified Estuary.Types.EnsembleS as E
 
 data ServerState = ServerState {
-  password :: Text,
+  administrativePassword :: Text,
   clients :: Map.Map ClientHandle Client,
-  ensembles :: Map.Map Text E.Ensemble,
+  ensembles :: Map.Map Text E.EnsembleS,
   connectionCount :: Int
 }
 
 newServerState :: ServerState
 newServerState = ServerState {
-  password = "",
+  administrativePassword = "",
   clients = Map.empty,
   ensembles = Map.empty,
   connectionCount = 0

@@ -23,34 +23,23 @@ import Estuary.Utility (lastOrNothing)
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
-import Estuary.Types.EnsembleState
+import Estuary.Types.EnsembleC
+import Estuary.Types.Ensemble
+import Estuary.Widgets.EstuaryWidget
+import Estuary.Types.Variable
 
-tempoWidget :: MonadWidget t m => Dynamic t Context -> Event t [EnsembleResponse]
-  -> m (Event t Tempo,Event t Tempo) -- (all tempo changes, just tempo edits)
-tempoWidget ctx deltas = divClass "ensembleTempo ui-font primary-color" $ mdo
-  iTempo <- (tempo . ensembleState) <$> (sample . current) ctx
-  let deltas' = fmapMaybe (lastOrNothing . fmapMaybe justTempoChanges) deltas -- Event t (Tempo,UTCTime)
-  tempoDelta <- performEvent $ fmap (liftIO . adjustTempoDelta) deltas'
-  let initialText = showt (cps iTempo)
-  (tValue,_,tEval) <- textWidget 1 initialText $ fmap (showt . cps) tempoDelta
-  b <- dynButton =<< translateDyn Term.NewTempo ctx
-  let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Rational) . T.unpack) $ tagPromptlyDyn tValue $ leftmost [b,tEval]
-  tempoEdit <- performEvent $ fmap liftIO $ attachPromptlyDynWith adjustTempoEdit currentTempo cpsEvent
-  currentTempo <- holdDyn iTempo $ leftmost [tempoDelta,tempoEdit]
-  return (updated currentTempo,tempoEdit)
-
-justTempoChanges :: EnsembleResponse -> Maybe (Tempo,UTCTime)
-justTempoChanges (NewTempo theTempo theTime) = Just (theTempo,theTime)
-justTempoChanges _ = Nothing
-
-adjustTempoDelta :: (Tempo,UTCTime) -> IO Tempo
-adjustTempoDelta (newTempo,timeStamp) = do
-  now <- liftAudioIO $ audioUTCTime
-  return $ Tempo {
-    cps = cps newTempo,
-    at = addUTCTime (-0.075) now, -- TODO: later use Cristian's algorithm, for now assume server sent 75 msec ago
-    beat = elapsedCycles newTempo timeStamp
-    }
+tempoWidget :: MonadWidget t m => EstuaryWidget t m (Variable t Tempo)
+tempoWidget = do
+  ctx <- askContext
+  let tempoDyn = fmap (tempo . ensemble . ensembleC) ctx
+  reflexVariable tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
+    let initialText = showt (cps a)
+    let updatedText = fmap (showt . cps) eventA
+    (tValue,_,tEval) <- textWidget 1 initialText updatedText
+    b <- dynButton =<< translateDyn Term.NewTempo ctx
+    let evalEvent = tagPromptlyDyn tValue $ leftmost [b,tEval]
+    let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Rational) . T.unpack) evalEvent
+    performEvent $ fmap liftIO $ attachPromptlyDynWith adjustTempoEdit tempoDyn cpsEvent -- *** attachPromptlyDynWith here might not be right!!!
 
 adjustTempoEdit :: Tempo -> Rational -> IO Tempo
 adjustTempoEdit oldTempo newCps = do
