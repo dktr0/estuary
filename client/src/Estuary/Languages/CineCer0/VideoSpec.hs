@@ -24,7 +24,7 @@ data VideoSpec = VideoSpec {
   }
 
 instance Show VideoSpec where
-  show (VideoSpec vs n _ _ px py w h _ _ _ _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h
+  show (VideoSpec vs n _ _ px py w h r g b a) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Alpha " ++ show a
 
 
 stringToVideoSpec :: String -> VideoSpec
