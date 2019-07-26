@@ -59,7 +59,7 @@ textEditor nRows errorDyn updates = do
   ctx <- askContext
   (d,e,h) <- reflex $ do
     i <- sample $ current updates
-    textNotationWidget ctx errorDyn nRows i (updated updates)
+    textNotationWidget ctx errorDyn nRows i never -- *** never here is TEMP/BROKEN, was (updated updates) but that wasn't working
   hint h
   return $ Variable d e
 
@@ -93,30 +93,22 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
     let languageToDisplayHelp = ( _dropdown_value d)
     hideableWidget helpVisible "width-100-percent" $ languageHelpWidget languageToDisplayHelp
     let v' = (,) <$> parserValue <*> textValue
-    let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent = tagPromptlyDyn v' $ leftmost [evalButton,shiftEnter]
+    let editEvent = tag (current v') $ leftmost [() <$ parserEvent,() <$ textEvent]
+    let evalEvent = tag (current v') $ leftmost [evalButton,shiftEnter]
     return (editEvent,evalEvent)
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]
   let value = f <$> pastValue <*> futureValue
-  let deltaUpEdit = tagPromptlyDyn value edit
-  let deltaUpEval = tagPromptlyDyn value eval
+  let deltaUpEdit = tag (current value) edit
+  let deltaUpEval = tag (current value) eval
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
   return (value,deltaUp,never)
   where
     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
           | otherwise = Edited p x
 
-{- labelWidget :: MonadWidget t m => Text -> Event t [Text] -> m (Event t Definition)
-labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
-  let delta' = fmapMaybe lastOrNothing delta
-  let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
-  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
-  return $ fmap LabelText $ _textInput_input y -}
 
--- the code below is an example of how the code just above might be rewritten
--- in the EstuaryWidget t m monad (see Estuary.Widgets.EstuaryWidget)
 labelEditor :: MonadWidget t m => Dynamic t Text -> EstuaryWidget t m (Variable t Text)
 labelEditor delta = do
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")

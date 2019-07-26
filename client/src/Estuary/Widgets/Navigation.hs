@@ -60,9 +60,9 @@ navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Ev
 navigation ctx renderInfo wsDown = do
   dynPage <- router Splash never $ page ctx renderInfo wsDown
   let dynPageData = fmap snd dynPage
-  let requestsUp = switchPromptlyDyn $ fmap (\(x,_,_) -> x) dynPageData
-  let ensembleRequestsUp = switchPromptlyDyn $ fmap (\(_,x,_) -> x) dynPageData
-  let hintsUp = switchPromptlyDyn $ fmap (\(_,_,x) -> x) dynPageData
+  let requestsUp = switchDyn $ fmap (\(x,_,_) -> x) dynPageData
+  let ensembleRequestsUp = switchDyn $ fmap (\(_,x,_) -> x) dynPageData
+  let hintsUp = switchDyn $ fmap (\(_,_,x) -> x) dynPageData
   return (requestsUp,ensembleRequestsUp,hintsUp)
 
 
@@ -171,7 +171,7 @@ page ctx renderInfo _ Solo = do
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
 joinButton x = do
   b <- clickableDivClass'' x "ui-font primary-color" ()
-  return $ tagPromptlyDyn x b
+  return $ tag (current x) b
 
 
 panel :: MonadWidget t m => Dynamic t Context -> Navigation -> Term.Term -> m () -> m (Event t Navigation)

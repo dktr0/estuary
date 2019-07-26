@@ -49,9 +49,14 @@ ensembleView = do
   let tempoRequests = fmap ( (:[]) . WriteTempo) tempoE
 
   -- Dynamic core View UI
-  currentView <- reflex $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
+
+  -- these two lines just during a temporary test we are doing...
+  let initialView = activeView $ ensembleC iCtx
+  widgetRequests <- viewWidget initialView
+
+{-  currentView <- reflex $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
   let dynamicViews = fmap viewWidget currentView -- Dynamic t (EstuaryWidget t m (Event t [EnsembleRequest]))
   x <- dynEstuaryWidget dynamicViews -- Dynamic t (Event t [EnsembleRequest])
-  let widgetRequests = switchPromptlyDyn x -- Event t [EnsembleRequest]
+  let widgetRequests = switchDyn x -- Event t [EnsembleRequest] -}
 
   return $ mergeWith (++) [tempoRequests,widgetRequests]

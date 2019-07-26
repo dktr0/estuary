@@ -5,7 +5,7 @@
 
 module Estuary.Types.EnsembleC where
 
-import Data.Map
+import Data.Map.Strict as Map
 import qualified Data.IntMap.Strict as IntMap
 import Data.Time
 import Data.Time.Clock.POSIX
@@ -13,6 +13,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
+import Control.Applicative
 
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
@@ -29,6 +30,7 @@ import Estuary.Types.Tempo
 
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
+import Estuary.ViewPresets
 
 data EnsembleC = EnsembleC {
   ensemble :: Ensemble,
@@ -48,6 +50,17 @@ leaveEnsembleC x = x {
   ensemble = leaveEnsemble (ensemble x),
   userHandle = ""
   }
+
+-- if a specific named view is in the ensemble's map of views we get that
+-- or if not but a view with that names is in Estuary's presets we get that
+-- so ensembles can have a different default view than solo mode simply by
+-- defining a view at the key "default"
+
+lookupView :: Text -> Ensemble -> Maybe View
+lookupView t e = Map.lookup t (views e) <|> Map.lookup t presetViews
+
+listViews :: Ensemble -> [Text]
+listViews e = Map.keys $ Map.union (views e) presetViews
 
 modifyEnsemble :: (Ensemble -> Ensemble) -> EnsembleC -> EnsembleC
 modifyEnsemble f e = e { ensemble = f (ensemble e) }

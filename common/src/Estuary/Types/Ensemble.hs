@@ -55,17 +55,6 @@ leaveEnsemble x = x {
   zones = IntMap.empty
   }
 
--- if a specific named view is in the ensemble's map of views we get that
--- or if not but a view with that names is in Estuary's presets we get that
--- so ensembles can have a different default view than solo mode simply by
--- defining a view at the key "default"
-
-lookupView :: Text -> Ensemble -> Maybe View
-lookupView t e = Map.lookup t (views e) <|> Map.lookup t presetViews
-
-listViews :: Ensemble -> [Text]
-listViews e = Map.keys $ Map.union (views e) presetViews
-
 writeEnsembleName :: Text -> Ensemble -> Ensemble
 writeEnsembleName t e = e { ensembleName = t }
 

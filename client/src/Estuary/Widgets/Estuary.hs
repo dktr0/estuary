@@ -43,11 +43,12 @@ import Estuary.Types.Ensemble
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
 estuaryWidget ctxM riM = divClass "estuary" $ mdo
 
+  canvasWidget ctxM -- global canvas shared with render threads through MVar
+
   --
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; is near the top here so it is available for everything else
   let ensembleCDyn = fmap ensembleC ctx
-  canvasWidget ctxM -- global canvas shared with render threads through MVar
   performContext ctxM ctx -- perform all IO actions consequent to Context changing
   renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   samplesLoadedEv <- loadSampleMap
@@ -57,7 +58,6 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   headerChange <- header ctx
   (requests, ensembleRequestsFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
   command <- footer ctx renderInfo deltasDown hints
-  -- let commandRequests = fmap (:[]) $ attachPromptlyDynWithMaybe commandToRequest ensembleCDyn command
   let commandRequests = fmap (:[]) $ attachWithMaybe commandToRequest (current ensembleCDyn) command
   let ensembleRequests = mergeWith (++) [commandRequests, ensembleRequestsFromPage]
 
@@ -71,7 +71,7 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange]
 
   -- hints
-  let commandHint = attachPromptlyDynWithMaybe commandToHint ensembleCDyn command
+  let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
   let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint] -- Event t [Hint]
   performHints (webDirt iCtx) hints
 

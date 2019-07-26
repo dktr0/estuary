@@ -47,7 +47,7 @@ viewWidget (Views xs) = liftM mconcat $ mapM viewWidget xs
 viewWidget _ = return mempty
 
 
-zoneWidget :: MonadWidget t m
+zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition)
   -> (Dynamic t a -> EstuaryWidget t m (Variable t a)) -- note: probably should just be Event t a
   -> EstuaryWidget t m (Event t [EnsembleRequest])
@@ -56,5 +56,6 @@ zoneWidget z a f g b = do
   let a' = fmap (IntMap.lookup z . zones . ensemble . ensembleC) ctx -- :: Dynamic t (Maybe Definition)
   let a'' = fmap (maybe Nothing f) a' -- :: Dynamic t (Maybe a)
   let a''' = fmap (maybe a id) a'' -- :: Dynamic t a
-  v <- b a'''
+  a'''' <- reflex $ holdUniqDyn a''' -- not sure if this is really necessary, but probably does little harm?
+  v <- b a''''
   return $ ((:[]) . WriteZone z . g) <$> localEdits v
