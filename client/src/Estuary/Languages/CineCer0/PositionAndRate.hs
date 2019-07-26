@@ -21,7 +21,7 @@ playNatural_Pos sh t vl now =
     let vLen = realToFrac vl :: Rational
         cpDur = 1/(cps t)
         off = sh*cpDur
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         difb0' = difb0 - off
         lengths = difb0' / vLen
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
@@ -69,7 +69,7 @@ playRound_Pos sh t vlen now =
         inSecs = newLVinCPS *cpDur -- THIS IS THE ONE YOU DIVIDE with the difb0
 -- I need to provide the seconds from beatZero, after rounding and
 -- trasnforming to seconds it is not necessary to think in cycles.
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         difb0' = difb0 - off
         lengths = difb0' / inSecs
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
@@ -101,7 +101,7 @@ playChop_Pos' onsetPos cycles sh t vlen now =
         cpDur = 1/cp
         off = sh*cpDur
         cInSecs= cd * cpDur
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         difb0' = difb0 - off
         lengths = difb0' / cInSecs
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
@@ -133,7 +133,7 @@ playChop_Pos startPos endPos cycles sh t vlen now =
         ecFloored = fromIntegral (floor ecOff) :: Rational
         ecNow = ecOff - ecFloored
         pos = reglaDeTres 1 ecNow interval
-        pos' = start + pos 
+        pos' = start + pos
     in Just (realToFrac pos')
 
 
@@ -177,13 +177,8 @@ playChopSecs_Pos startPos endPos cycles sh t vlen now =
     in Just (realToFrac pos')
 
 
-<<<<<<< HEAD
-playChopSecs_Rate:: NominalDiffTime -> NominalDiffTime -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playChopSecs_Rate startPos endPos cycles t vlen now
-=======
 playChopSecs_Rate:: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playChopSecs_Rate startPos endPos cycles sh t vlen now 
->>>>>>> 181d7e0078e63afda185416b87573bfca6fcd625
+playChopSecs_Rate startPos endPos cycles sh t vlen now
     | startPos == endPos = Just 0
     | otherwise =
     let cp = (cps t)

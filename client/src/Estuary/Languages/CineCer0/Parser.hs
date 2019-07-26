@@ -85,7 +85,7 @@ rat_rat_rat_videoSpec_videoSpec =
 
 rat_rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_rat_videoSpec_videoSpec =
-  playChop <$ reserved "playChop" <|> -- time function
+  playChop <$ reserved "playChop" -- time function
 
 --
 -- ExpParser (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec) --
@@ -96,8 +96,8 @@ nd_rat_videoSpec_videoSpec = playNow <$ reserved "playNow" -- time function
 --
 -- ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec) --
 
-rat_nd_nd_rat_videoSpec_videoSpec :: ExpParser (Rational -> NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
-rat_nd_nd_rat_videoSpec_videoSpec = playChopSecs <$ reserved "playChopSecs" -- time function
+nd_nd_rat_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
+nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "playChopSecs" -- time function
 
 --
 -- ExpParser (VideoSpec -> VideoSpec) --
@@ -107,6 +107,6 @@ videoSpec_videoSpec =
   rat_videoSpec_videoSpec <*> rational <|> -- time function
   rat_rat_videoSpec_videoSpec <*> rational <*> rational <|> -- pos function
   rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <|> -- time function
-  rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <*> rational <|> -- time function
+  rat_rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <*> rational <|> -- time function
   nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> rational <|> -- time function
-  rat_nd_nd_rat_videoSpec_videoSpec <*> rational <*> nominalDiffTime <*> nominalDiffTime <*> rational -- time function
+  nd_nd_rat_rat_videoSpec_videoSpec <*> nominalDiffTime <*> nominalDiffTime <*> rational <*> rational -- time function

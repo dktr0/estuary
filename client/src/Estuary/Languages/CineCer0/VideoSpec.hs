@@ -111,7 +111,7 @@ playChop k l m n vs = vs {
   playbackRate = VT.playChop_Rate k l m n
 }
 
-playChopSecs :: Rational -> NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
+playChopSecs :: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChopSecs k l m n vs = vs {
   playbackPosition = VT.playChopSecs_Pos k l m n,
   playbackRate = VT.playChopSecs_Rate k l m n
