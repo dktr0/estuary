@@ -13,6 +13,7 @@ data VideoSpec = VideoSpec {
   sourceNumber :: Int,
   playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
   playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
+  mask :: String,
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
@@ -24,7 +25,7 @@ data VideoSpec = VideoSpec {
   }
 
 instance Show VideoSpec where
-  show (VideoSpec vs n _ _ px py w h r g b a) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Alpha " ++ show a
+  show (VideoSpec vs n _ _ _ px py w h r g b a) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Alpha " ++ show a
 
 
 stringToVideoSpec :: String -> VideoSpec
@@ -33,6 +34,7 @@ stringToVideoSpec x = VideoSpec {
   sourceNumber = 0,
   playbackPosition = VT.playNatural_Pos 0.0,
   playbackRate = VT.playNatural_Rate 0.0,
+  --mask = "none"
   posX = 0.0,
   posY = 0.0,
   width = 1.0,
@@ -45,6 +47,10 @@ stringToVideoSpec x = VideoSpec {
 
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
 setSourceNumber vs n = vs { sourceNumber = n }
+
+--maskVideo :: String -> VideoSpec -> VideoSpec
+--maskVideo s vs = vs { mask = s }
+
 
 -- Video posX, posY, and posCoord (x y)
 

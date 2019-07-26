@@ -51,6 +51,12 @@ int_VideoSpec :: ExpParser (Int -> VideoSpec)
 int_VideoSpec = videoSpec_int_videoSpec <*> videoSpec
 
 --
+-- Mask a Video --
+
+--string_VideoSpec_VideoSpec :: ExpParser (String -> VideoSpec -> VideoSpec)
+--string_VideoSpec_VideoSpec = maskVideo <$ reserved "mask"
+
+--
 -- ExpParser (Rational -> VideoSpec -> VideoSpec) --
 
 rat_videoSpec_videoSpec :: ExpParser (Rational -> VideoSpec -> VideoSpec)
@@ -94,7 +100,7 @@ nd_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> Rational -> VideoSpe
 nd_rat_videoSpec_videoSpec = playNow <$ reserved "playNow" -- time function
 
 --
--- ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec) --
+-- ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec) --
 
 nd_nd_rat_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
 nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "playChopSecs" -- time function
@@ -104,6 +110,7 @@ nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "playChopSecs" -- t
 
 videoSpec_videoSpec :: ExpParser (VideoSpec -> VideoSpec)
 videoSpec_videoSpec =
+  --string_VideoSpec_VideoSpec <*> string <|> --mask function
   rat_videoSpec_videoSpec <*> rational <|> -- time function
   rat_rat_videoSpec_videoSpec <*> rational <*> rational <|> -- pos function
   rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <|> -- time function
