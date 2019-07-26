@@ -184,6 +184,17 @@ playChopSecs_Rate startPos endPos cycles t vlen now
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
 
+------- playNow  -- Starts the video with the evaluation time
+
+-- giving a start position in seconds 
+
+           --  startPos        -- rate
+playNow_Pos:: NominalDiffTime -> Rational -> Tempo -> VideoLength -> Now -> Maybe NominalDiffTime
+playNow_Pos startPos rate t vlen now = Just $ (realToFrac (cycleSecs startPos vlen))
+
+playNow_Rate:: NominalDiffTime -> Rational -> Tempo -> VideoLength -> Now -> Maybe Rational
+playNow_Rate startPos rate t vlen now = Just rate
+
 --------- Helper Functions ------------
 
 reglaDeTres:: Rational -> Rational -> Rational -> Rational
