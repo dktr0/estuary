@@ -16,35 +16,39 @@ import Estuary.Types.Tempo
 ------ Play at Natural Rate and without alteration ------
 
                -- Tempo -> VideoLength -> Now -> Position
-playNatural_Pos:: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
-playNatural_Pos t vl now =
+playNatural_Pos:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
+playNatural_Pos sh t vl now =
     let vLen = realToFrac vl :: Rational
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
-        lengths = difb0 / vLen
+        cpDur = 1/(cps t)
+        off = sh*cpDur
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0' = difb0 - off
+        lengths = difb0' / vLen
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
         result = reglaDeTres 1 posNorm vLen
     in Just (realToFrac result)
 
-playNatural_Rate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playNatural_Rate t vl now = Just 1
+playNatural_Rate :: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+playNatural_Rate sh t vl now = Just 1
 
 ------ Makes a video shorter or longer acording to given # of cycles ------
 
 -- gets the onset time of the video in playEvery
              -- Rational -> Tempo ->     VideoLength -> Now     -> Position
-playEvery_Pos:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
-playEvery_Pos c t vl now =
+playEvery_Pos:: Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
+playEvery_Pos c sh t vl now =
     let n = c
         ec = (elapsedCycles t now)
-        floored = floor (ec/n)
+        ecOf = ec - sh
+        floored = floor (ecOf/n)
         nlb = (fromIntegral floored :: Rational)*n
-        pos= (realToFrac vl) * ((ec-nlb)/n)
+        pos= (realToFrac vl) * ((ecOf-nlb)/n)
     in Just (realToFrac pos)
 
 -- gets the rate time for the video in playEvery
               -- Rational -> Tempo ->     VideoLength ->     Now -> Rate
-playEvery_Rate:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playEvery_Rate c t vl now =
+playEvery_Rate:: Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+playEvery_Rate c sh t vl now =
     let vLen = realToFrac vl :: Rational
         n = c
         cps' = cps t
