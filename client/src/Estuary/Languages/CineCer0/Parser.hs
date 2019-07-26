@@ -80,6 +80,12 @@ rat_rat_rat_videoSpec_videoSpec =
   setRGB <$ reserved "color"
 
 --
+-- ExpParser (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec) --
+
+nd_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
+nd_rat_videoSpec_videoSpec = playNow <$ reserved "playNow" -- time function
+
+--
 -- ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec) --
 
 nd_nd_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
@@ -94,4 +100,5 @@ videoSpec_videoSpec =
   rat_videoSpec_videoSpec <*> rational <|> -- time function
   rat_rat_videoSpec_videoSpec <*> rational <*> rational <|> -- pos function
   rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <|> -- time function
-  nd_nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> nominalDiffTime <*> rational
+  nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> rational <|> -- time function
+  nd_nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> nominalDiffTime <*> rational -- time function

@@ -112,7 +112,7 @@ playChopSecs l m n vs = vs {
   }
 
 playNow :: NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
-playNow m n vs {
+playNow m n vs = vs {
   playbackPosition = VT.playNow_Pos m n,
   playbackRate = VT.playNow_Rate m n
   }
