@@ -13,7 +13,7 @@ data VideoSpec = VideoSpec {
   sourceNumber :: Int,
   playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
   playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
-  mask :: String,
+  --mask :: String,
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
@@ -21,11 +21,14 @@ data VideoSpec = VideoSpec {
   red :: Rational,
   green :: Rational,
   blue :: Rational,
-  alpha :: Rational
+  alpha :: Rational,
+  hue :: Rational,
+  saturation :: Rational
+
   }
 
 instance Show VideoSpec where
-  show (VideoSpec vs n _ _ _ px py w h r g b a) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Alpha " ++ show a
+  show (VideoSpec vs n _ _ px py w h r g b a _ _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Alpha " ++ show a
 
 
 stringToVideoSpec :: String -> VideoSpec
@@ -42,7 +45,9 @@ stringToVideoSpec x = VideoSpec {
   red = 1.0,
   green = 1.0,
   blue = 1.0,
-  alpha = 1.0
+  alpha = 1.0,
+  hue = 0.0,
+  saturation = 0.0
 }
 
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
@@ -74,10 +79,17 @@ setHeight n vs = vs { height = n }
 setSize :: Rational -> Rational -> VideoSpec -> VideoSpec
 setSize m n vs = vs { width = m, height = n }
 
--- Set rgb --
+-- colors --
 
 setRGB :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
 setRGB l m n vs = vs { red = l, green = m, blue = n }
+
+setHue :: Rational -> VideoSpec -> VideoSpec
+setHue n vs = vs { hue = n }
+
+setSaturation :: Rational -> VideoSpec -> VideoSpec
+setSaturation n vs = vs { saturation = n }
+
 
 -- Set alpha --
 

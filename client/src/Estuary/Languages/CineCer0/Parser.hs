@@ -67,7 +67,9 @@ rat_videoSpec_videoSpec =
   setHeight <$ reserved "h" <|>
   setPosX <$ reserved "posX" <|>
   setPosY <$ reserved "posY" <|>
-  setAlpha <$ reserved "alpha"
+  setAlpha <$ reserved "alpha" <|>
+  setHue <$ reserved "hue" <|>
+  setSaturation <$ reserved "saturation"
 
 --
 -- ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec) --
