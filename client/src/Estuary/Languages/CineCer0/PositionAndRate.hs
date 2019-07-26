@@ -145,7 +145,7 @@ playChop_Rate startPos endPos cycles t vlen now
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
 
--------- the UBER chop with start and end position in seconds instead of 0 to 1 --------- 
+-------- the UBER chop with start and end position in seconds instead of 0 to 1 ---------
 
          --    startPos        -> endPos          -> Cycles   -> Tempo -> VideoLength     -> Now     -> Position
 playChopSecs_Pos:: NominalDiffTime -> NominalDiffTime -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
@@ -163,14 +163,14 @@ playChopSecs_Pos startPos endPos cycles t vlen now =
         ecFloored = fromIntegral (floor ec) :: Rational
         ecNow = ec - ecFloored
         pos = reglaDeTres 1 ecNow interval
-        pos' = start + pos 
+        pos' = start + pos
     in Just (realToFrac pos')
 
 
 playChopSecs_Rate:: NominalDiffTime -> NominalDiffTime -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playChopSecs_Rate startPos endPos cycles t vlen now 
+playChopSecs_Rate startPos endPos cycles t vlen now
     | startPos == endPos = Just 0
-    | otherwise = 
+    | otherwise =
     let cp = (cps t)
         cpsDur = 1/cp
         vl = realToFrac vlen :: Rational
@@ -180,13 +180,13 @@ playChopSecs_Rate startPos endPos cycles t vlen now
         cPerLen = interval/cpsDur
         rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
         newVl = rounded / cp -- new length in seconds
-        rate = interval / newVl 
+        rate = interval / newVl
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
 
 ------- playNow  -- Starts the video with the evaluation time
 
--- giving a start position in seconds 
+-- giving a start position in seconds
 
            --  startPos        -- rate
 playNow_Pos:: NominalDiffTime -> Rational -> Tempo -> VideoLength -> Now -> Maybe NominalDiffTime

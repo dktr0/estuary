@@ -78,6 +78,7 @@ setRGB l m n vs = vs { red = l, green = m, blue = n }
 setAlpha :: Rational -> VideoSpec -> VideoSpec
 setAlpha n vs = vs { alpha = n }
 
+--
 -- Time Functions --
 
 playEvery :: Rational -> VideoSpec -> VideoSpec
@@ -108,4 +109,10 @@ playChopSecs :: NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> V
 playChopSecs l m n vs = vs {
   playbackPosition = VT.playChopSecs_Pos l m n,
   playbackRate = VT.playChopSecs_Rate l m n
+  }
+
+playNow :: NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
+playNow m n vs {
+  playbackPosition = VT.playNow_Pos m n,
+  playbackRate = VT.playNow_Rate m n
   }
