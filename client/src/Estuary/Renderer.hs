@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 module Estuary.Renderer where
 
@@ -24,6 +24,8 @@ import qualified Data.Text.IO as T
 
 import Sound.MusicW.AudioContext
 
+import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
+import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
@@ -166,7 +168,9 @@ renderZoneChanged c z (Structure x) = do
   let newParamPattern = toParamPattern x
   s <- get
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged c z (TextProgram x) = renderTextProgramChanged c z $ forRendering x
+renderZoneChanged c z (TextProgram x) = do
+  liftIO $ putStrLn $ "zone " ++ show z ++ " TextProgram changed, type = " ++ show x
+  renderTextProgramChanged c z $ forRendering x
 renderZoneChanged c z (Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   s <- get
@@ -221,6 +225,24 @@ renderTextProgramChanged c z (Punctual,x) = do
     modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
   let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
+
+renderTextProgramChanged c z (CineCer0,x) = do
+  s <- get
+  let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.cineCer0 $ T.unpack x -- Either String CineCer0Spec
+  let maybeTheDiv = videoDivElement c
+  when (isJust maybeTheDiv && isRight parseResult) $ do
+    let spec :: CineCer0.CineCer0Spec = fromRight (IntMap.empty) parseResult
+    let theDiv = fromJust maybeTheDiv
+    let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
+    liftIO $ putStrLn $ show parseResult
+    let t = tempo $ ensemble $ ensembleC c
+    now <- liftAudioIO $ audioUTCTime
+    newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
+    modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
+  when (isLeft parseResult) $ do
+    let errs = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+    modify' $ \x -> x { info = (info s) { errors = errs }}
+
 
 renderTextProgramChanged c z (SvgOp,x) = do
   s <- get

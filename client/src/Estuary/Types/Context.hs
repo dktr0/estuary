@@ -12,7 +12,7 @@ import Data.Time
 import GHCJS.Types
 
 import GHCJS.DOM.Blob
-import GHCJS.DOM.Types (HTMLCanvasElement)
+import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -53,6 +53,7 @@ data Context = Context {
   clientCount :: Int,
   canvasState :: MVar CanvasState,
   canvasElement :: Maybe HTMLCanvasElement,
+  videoDivElement :: Maybe HTMLDivElement,
   peerProtocol :: JSVal,
   theVideoDiv :: Maybe JSVal
   }
@@ -78,6 +79,7 @@ initialContext now mBus wd sd mv pp = Context {
   clientCount = 0,
   canvasState = mv,
   canvasElement = Nothing,
+  videoDivElement = Nothing,
   peerProtocol = pp,
   theVideoDiv = Nothing
 }

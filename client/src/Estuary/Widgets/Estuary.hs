@@ -13,7 +13,7 @@ import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
-import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..))
+import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..),HTMLDivElement(..))
 import GHCJS.Marshal.Pure
 import Data.Functor (void)
 import Data.Text (Text)
@@ -85,9 +85,11 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
 canvasWidget :: MonadWidget t m => MVar Context -> m ()
 canvasWidget ctxM = do
   ic0 <- liftIO $ takeMVar ctxM
+  let divAttrs = fromList [("class","canvas-or-svg-display"),("style",T.pack $ "z-index: -2;"), ("width","1920"), ("height","1080")]
+  videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elAttr' "div" divAttrs $ return ()
   let canvasAttrs = fromList [("class","canvas-or-svg-display"),("style",T.pack $ "z-index: -1;"), ("width","1920"), ("height","1080")]
   canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elAttr' "canvas" canvasAttrs $ return ()
-  let ic = ic0 { canvasElement = Just canvas }
+  let ic = ic0 { canvasElement = Just canvas, videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
 
