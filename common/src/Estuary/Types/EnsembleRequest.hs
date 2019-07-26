@@ -12,13 +12,11 @@ import Data.Time
 import Data.Text
 
 data EnsembleRequest =
-  ZoneRequest Int Definition |
-  SendChat Text |
-  SendStatus Text |
-  PublishView Text View |
-  PublishDefaultView View |
-  DeleteView Text |
-  SetTempo Tempo
+  WriteTempo Tempo |
+  WriteZone Int Definition |
+  WriteView Text View |
+  WriteChat Text |
+  WriteStatus Text
   deriving (Eq,Data,Typeable)
 
 instance JSON EnsembleRequest where

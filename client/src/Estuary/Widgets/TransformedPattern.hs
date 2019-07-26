@@ -4,23 +4,35 @@ module Estuary.Widgets.TransformedPattern where
 
 import Reflex
 import Reflex.Dom hiding (Subtract,End)
-import Estuary.Tidal.Types
-import Estuary.WebDirt.Foreign
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Container
 import Control.Monad
 import Data.Map
 import Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Estuary.Widgets.SpecificPattern as Sp
 import GHC.Real
 import Data.Maybe (fromJust)
 import Text.Read
 
+import Estuary.Tidal.Types
+import Estuary.WebDirt.Foreign
+import Estuary.Reflex.Utility
+import Estuary.Widgets.Generic
+import Estuary.Reflex.Container
+import qualified Estuary.Widgets.SpecificPattern as Sp
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Hint
+import Estuary.Types.Variable
+import Estuary.Widgets.EstuaryWidget
+
+structureEditor :: MonadWidget t m =>
+  Dynamic t TransformedPattern -> EstuaryWidget t m (Variable t TransformedPattern)
+structureEditor x = do
+  (d,e,h) <- reflex $ do
+    i <- sample $ current x
+    let e = fmap (:[]) $ updated x
+    topLevelTransformedPatternWidget i e
+  hint h
+  return $ Variable d e
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
   TransformedPattern -> -- initial value

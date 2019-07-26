@@ -12,6 +12,7 @@ import Estuary.Types.Definition
 import Estuary.RenderInfo
 import Estuary.Types.CanvasOp
 import qualified Estuary.Languages.SuperContinent as SuperContinent
+import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import Estuary.Types.MovingAverage
 
 data RenderState = RenderState {
@@ -22,6 +23,7 @@ data RenderState = RenderState {
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
   punctuals :: !(IntMap (Punctual.PunctualW AudioContextIO)),
   punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
+  cineCer0States :: !(IntMap CineCer0.CineCer0State),
   superContinentProgram :: SuperContinent.Program,
   superContinentState :: SuperContinent.SuperContinentState,
   renderStartTime :: !UTCTime,
@@ -44,6 +46,7 @@ initialRenderState t = do
     dirtEvents = [],
     punctuals = empty,
     punctualWebGLs = empty,
+    cineCer0States = empty,
     superContinentProgram = [],
     superContinentState = scs,
     renderStartTime = t,

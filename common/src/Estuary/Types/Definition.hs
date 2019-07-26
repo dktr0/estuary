@@ -35,22 +35,30 @@ definitionForRendering (TextProgram x) = TextProgram (Live (forRendering x) L4)
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Sequence x) = Sequence x
 
+maybeStructure :: Definition -> Maybe TransformedPattern
+maybeStructure (Structure x) = Just x
+maybeStructure _ = Nothing
+
 justStructures :: [Definition] -> [TransformedPattern]
-justStructures = mapMaybe f
-  where f (Structure x) = Just x
-        f _ = Nothing
+justStructures = mapMaybe maybeStructure
+
+maybeTextProgram :: Definition -> Maybe (Live (TextNotation,Text))
+maybeTextProgram (TextProgram x) = Just x
+maybeTextProgram _ = Nothing
 
 justTextPrograms :: [Definition] -> [Live (TextNotation,Text)]
-justTextPrograms = mapMaybe f
-  where f (TextProgram x) = Just x
-        f _ = Nothing
+justTextPrograms = mapMaybe maybeTextProgram
+
+maybeSequence :: Definition -> Maybe (M.Map Int (Text,[Bool]))
+maybeSequence (Sequence x) = Just x
+maybeSequence _ = Nothing
 
 justSequences :: [Definition] -> [M.Map Int (Text,[Bool])]
-justSequences = mapMaybe f
-  where f (Sequence x) = Just x
-        f _ = Nothing
+justSequences = mapMaybe maybeSequence
+
+maybeLabelText :: Definition -> Maybe Text
+maybeLabelText (LabelText x) = Just x
+maybeLabelText _ = Nothing
 
 justLabelTexts :: [Definition] -> [Text]
-justLabelTexts = mapMaybe f
-  where f (LabelText x) = Just x
-        f _ = Nothing
+justLabelTexts = mapMaybe maybeLabelText

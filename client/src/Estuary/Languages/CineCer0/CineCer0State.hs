@@ -1,13 +1,15 @@
-{-# LANGUAGE JavaScriptFFI #-}
+{-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Languages.CineCer0.CineCer0State where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHCJS.Types
+import GHCJS.DOM.Types (HTMLDivElement)
 import GHCJS.Marshal.Pure
 import Data.IntMap.Strict
 import Data.Time
+import TextShow
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
@@ -35,14 +37,22 @@ foreign import javascript safe
   makeVideo :: Text -> IO CineCer0Video
 
 foreign import javascript safe
-  "$2.appendChild($1)"
-  appendVideo :: CineCer0Video -> JSVal -> IO ()
+  "$2.appendChild($1); $1.play();"
+  appendVideo :: CineCer0Video -> HTMLDivElement -> IO ()
 
 foreign import javascript safe
   "$1.removeChild($2)"
-  removeVideo :: JSVal -> CineCer0Video -> IO ()
+  removeVideo :: HTMLDivElement -> CineCer0Video -> IO ()
 
-addVideo :: JSVal -> VideoSpec -> IO CineCer0Video
+foreign import javascript safe
+  "$1.style = $2;"
+  videoGeometry_ :: CineCer0Video -> Text -> IO ()
+
+videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
+videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "%; height:" <> "%;"
+
+
+addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
@@ -51,21 +61,27 @@ addVideo j spec = do
 
 updateCineCer0State :: Tempo -> UTCTime -> CineCer0Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
+  -- add or delete videos
   let toAdd = difference spec (videos st) -- :: IntMap VideoSpec
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
   let toDelete = difference (videos st) spec -- :: IntMap CineCer0Video
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
+  sequence $ intersectionWith updateContinuingVideo spec continuingVideos
   return $ st { videos = continuingVideos }
 
-emptyCineCer0State :: JSVal -> CineCer0State
+updateContinuingVideo :: VideoSpec -> CineCer0Video -> IO ()
+updateContinuingVideo s v = do
+  videoGeometry v (floor $ posX s) (floor $ posY s) (floor $ width s) (floor $ height s)
+
+emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
   videoDiv = j,
   videos = empty
   }
 
 data CineCer0State = CineCer0State {
-  videoDiv :: JSVal,
+  videoDiv :: HTMLDivElement,
   videos :: IntMap CineCer0Video
   }

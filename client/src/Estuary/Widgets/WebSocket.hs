@@ -43,12 +43,18 @@ estuaryWebSocket addr pwd toSend = mdo
     isOk _ = Just (ProtocolError "unknown protocol error")
 -}
 
-alternateWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t Request ->
+sendRequests :: EstuaryProtocolObject -> [Request] -> IO ()
+sendRequests obj rs = mapM_ (sendRequest obj) rs
+
+sendRequest :: EstuaryProtocolObject -> Request -> IO ()
+sendRequest obj r = send obj $ T.pack $ encode r -- *** should remove that conversion to String later and encode directly to JSON text!!!
+
+alternateWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
   m (Event t [Response], Event t ContextChange)
 alternateWebSocket ctx rInfo toSend = mdo
   obj <- liftIO estuaryProtocol
   now <- liftIO $ getCurrentTime
-  performEvent_ $ fmap (liftIO . (send obj) . T.pack . encode) $ leftmost [sendBrowserInfo,clientInfoEvent,toSend] -- *** should remove that conversion to String later and encode directly to JSON text!!!
+  performEvent_ $ fmap (liftIO . sendRequests obj) $ leftmost [sendBrowserInfo,clientInfoEvent,toSend]
   ticks <- tickLossy (0.1::NominalDiffTime) now
   responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   -- responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
@@ -61,7 +67,7 @@ alternateWebSocket ctx rInfo toSend = mdo
   -- after widget is built, query and report browser info to server
   postBuild <- getPostBuild
   userAgent <- performEvent $ fmap (liftIO . const getUserAgent) postBuild
-  let sendBrowserInfo = fmap BrowserInfo userAgent
+  let sendBrowserInfo = fmap ((:[]) . BrowserInfo) userAgent
 
   -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
   let socketIsOpen = fmap (=="connection open") status'
@@ -73,7 +79,7 @@ alternateWebSocket ctx rInfo toSend = mdo
   let animationLoadDyn = fmap avgAnimationLoad rInfo
   latencyDyn <- holdDyn 0 $ latency
   let clientInfoDyn = ClientInfo <$> timeDyn <*> loadDyn <*> animationLoadDyn <*> latencyDyn
-  let clientInfoEvent = tagPromptlyDyn clientInfoDyn pingTick
+  let clientInfoEvent = fmap (:[]) $ tagPromptlyDyn clientInfoDyn pingTick
 
   -- the server responds to ClientInfo (above) with ServerInfo, which we process below
   -- by issuing events that update the context

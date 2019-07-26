@@ -12,7 +12,7 @@ import Data.Time
 import GHCJS.Types
 
 import GHCJS.DOM.Blob
-import GHCJS.DOM.Types (HTMLCanvasElement)
+import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -26,7 +26,7 @@ import Estuary.WebDirt.SuperDirt
 import Estuary.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.CanvasState
-import Estuary.Types.EnsembleState
+import Estuary.Types.EnsembleC
 import Estuary.Render.AudioContext
 import Estuary.Render.DynamicsMode
 import Estuary.Render.LocalResources
@@ -40,7 +40,7 @@ data Context = Context {
   superDirt :: SuperDirt,
   language :: Language,
   theme :: Text,
-  ensembleState :: EnsembleState,
+  ensembleC :: EnsembleC,
   samples :: SampleMap,
   localResourceServers :: LocalResourceServers,
   privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
@@ -53,7 +53,9 @@ data Context = Context {
   clientCount :: Int,
   canvasState :: MVar CanvasState,
   canvasElement :: Maybe HTMLCanvasElement,
-  peerProtocol :: JSVal
+  videoDivElement :: Maybe HTMLDivElement,
+  peerProtocol :: JSVal,
+  theVideoDiv :: Maybe JSVal
   }
 
 initialContext :: UTCTime -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> MVar CanvasState -> JSVal -> Context
@@ -64,7 +66,7 @@ initialContext now mBus wd sd mv pp = Context {
   superDirt = sd,
   language = English,
   theme = "../css-custom/classic.css",
-  ensembleState = newEnsembleState $ Tempo { cps = 0.5, at = now, beat = 0.0 },
+  ensembleC = emptyEnsembleC now,
   localResourceServers = emptyLocalResourceServers,
   privateResources = emptyResources,
   resources = emptyResources,
@@ -77,7 +79,9 @@ initialContext now mBus wd sd mv pp = Context {
   clientCount = 0,
   canvasState = mv,
   canvasElement = Nothing,
-  peerProtocol = pp
+  videoDivElement = Nothing,
+  peerProtocol = pp,
+  theVideoDiv = Nothing
 }
 
 type ContextChange = Context -> Context
@@ -91,14 +95,8 @@ setLanguage x c = c { language = x }
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
-modifyEnsemble :: (EnsembleState -> EnsembleState) -> ContextChange
-modifyEnsemble f c = c { ensembleState = f (ensembleState c) }
-
-{- setDefinitions :: (Text, DefinitionMap) -> ContextChange
-setDefinitions (x, y) c = c {
-  activeDefsEnsemble = x,
-  definitions = y
-} -}
+modifyEnsembleC :: (EnsembleC -> EnsembleC) -> ContextChange
+modifyEnsembleC f c = c { ensembleC = f (ensembleC c) }
 
 setSampleMap :: SampleMap -> ContextChange
 setSampleMap x c = c { samples = x}

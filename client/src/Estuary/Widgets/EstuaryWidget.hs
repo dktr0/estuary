@@ -40,6 +40,10 @@ reflex x = EstuaryWidget (\_ _ -> do
   return (a,never)
   )
 
+liftR2 :: MonadWidget t m => (m (a,Event t [Hint]) -> m (a,Event t [Hint])) -> EstuaryWidget t m a -> EstuaryWidget t m a
+liftR2 r x = EstuaryWidget (\ctx ri -> r $ runEstuaryWidget x ctx ri)
+
+
 -- However, an especially common pattern is needing to incorporate Reflex widget
 -- code for Variables (in the Estuary sense, ie. things that can be changed either
 -- by local editing or network actions). 'reflexVariable' provides a convenient way
@@ -77,6 +81,18 @@ instance MonadWidget t m => Monad (EstuaryWidget t m) where
     let hs = mergeWith (++) [hsX,hsY]
     return (aY, hs)
     )
+
+dynEstuaryWidget :: MonadWidget t m => Dynamic t (EstuaryWidget t m a) -> EstuaryWidget t m (Dynamic t a)
+dynEstuaryWidget dynWidgets = EstuaryWidget (\ctx ri -> do
+  initialWidget <- sample $ current dynWidgets
+  let widgetUpdates = updated dynWidgets
+  let initialWidget' = runEstuaryWidget initialWidget ctx ri
+  let widgetUpdates' = fmap (\x -> runEstuaryWidget x ctx ri) widgetUpdates
+  theWidget <- widgetHold initialWidget' widgetUpdates' -- Dynamic t (a, Event t [Hint])
+  let a = fmap fst theWidget
+  let hs = switchPromptlyDyn $ fmap snd theWidget
+  return (a, hs)
+  )
 
 
 {- examples:

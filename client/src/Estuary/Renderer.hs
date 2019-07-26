@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 module Estuary.Renderer where
 
@@ -24,6 +24,8 @@ import qualified Data.Text.IO as T
 
 import Sound.MusicW.AudioContext
 
+import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
+import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
@@ -34,7 +36,8 @@ import qualified Estuary.Languages.SvgOp as SvgOp
 import qualified Estuary.Languages.CanvasOp as CanvasOp
 import qualified Estuary.Types.CanvasOp as CanvasOp
 import Estuary.Types.CanvasState
-import Estuary.Types.EnsembleState
+import Estuary.Types.Ensemble
+import Estuary.Types.EnsembleC
 import Estuary.Types.Color
 
 import Estuary.Types.Context
@@ -98,9 +101,9 @@ render c = do
   s <- get
   when (canvasElement c /= cachedCanvasElement s) $ do
     liftIO $ putStrLn "render: canvasElement new/changed"
-    traverseWithKey (canvasChanged c) (zones $ ensembleState c)
+    traverseWithKey (canvasChanged c) (zones $ ensemble $ ensembleC c)
     modify' $ \x -> x { cachedCanvasElement = canvasElement c }
-  traverseWithKey (renderZone c) (zones $ ensembleState c)
+  traverseWithKey (renderZone c) (zones $ ensemble $ ensembleC c)
   flushEvents c
   t2 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
@@ -138,7 +141,7 @@ renderZone c z d = do
 renderAnimation :: Context -> Renderer
 renderAnimation c = do
   tNow <- liftAudioIO $ audioTime
-  traverseWithKey (renderZoneAnimation tNow c) (zones $ ensembleState c)
+  traverseWithKey (renderZoneAnimation tNow c) (zones $ ensemble $ ensembleC c)
   return ()
 
 renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
@@ -165,7 +168,9 @@ renderZoneChanged c z (Structure x) = do
   let newParamPattern = toParamPattern x
   s <- get
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged c z (TextProgram x) = renderTextProgramChanged c z $ forRendering x
+renderZoneChanged c z (TextProgram x) = do
+  liftIO $ putStrLn $ "zone " ++ show z ++ " TextProgram changed, type = " ++ show x
+  renderTextProgramChanged c z $ forRendering x
 renderZoneChanged c z (Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   s <- get
@@ -185,14 +190,14 @@ renderTextProgramChanged c z (TidalTextNotation x,y) = do
   let parseResult = tidalParser x y -- :: Either ParseError ControlPattern
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
-  let newErrors = either (\e -> insert z (e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
 renderTextProgramChanged c z (SuperContinent,x) = do
   s <- get
   let parseResult = SuperContinent.parseSuperContinent x
   let newProgram = either (const $ superContinentProgram s) id parseResult
-  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { superContinentProgram = newProgram, info = (info s) { errors = newErrors } }
 
 renderTextProgramChanged c z (Punctual,x) = do
@@ -206,7 +211,7 @@ renderTextProgramChanged c z (Punctual,x) = do
     let eval = (exprs,t)
     let (mainBusIn,_,_,_) = mainBus c
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 t) z (punctuals s)
-    let tempo' = tempo $ ensembleState c
+    let tempo' = tempo $ ensemble $ ensembleC c
     let beat0 = beatZero tempo'
     let cps' = cps tempo'
     newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') eval
@@ -218,21 +223,39 @@ renderTextProgramChanged c z (Punctual,x) = do
       liftIO $ Punctual.updateRenderingContext Punctual.emptyPunctualWebGL (canvasElement c)
     newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL' (beat0,realToFrac cps') eval
     modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
-  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
+
+renderTextProgramChanged c z (CineCer0,x) = do
+  s <- get
+  let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.cineCer0 $ T.unpack x -- Either String CineCer0Spec
+  let maybeTheDiv = videoDivElement c
+  when (isJust maybeTheDiv && isRight parseResult) $ do
+    let spec :: CineCer0.CineCer0Spec = fromRight (IntMap.empty) parseResult
+    let theDiv = fromJust maybeTheDiv
+    let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
+    liftIO $ putStrLn $ show parseResult
+    let t = tempo $ ensemble $ ensembleC c
+    now <- liftAudioIO $ audioUTCTime
+    newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
+    modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
+  when (isLeft parseResult) $ do
+    let errs = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+    modify' $ \x -> x { info = (info s) { errors = errs }}
+
 
 renderTextProgramChanged c z (SvgOp,x) = do
   s <- get
   let parseResult = SvgOp.svgOp x
   let ops = either (const Nothing) Just parseResult
-  let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  let errs = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = errs, svgOps = ops }}
 
 renderTextProgramChanged c z (CanvasOp,x) = do
   s <- get
   let parseResult = CanvasOp.canvasOp x
   let ops = either (const []) (fmap (\op -> (logicalTime s, op))) parseResult
-  let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  let errs = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = errs }, canvasOps = canvasOps s ++ ops }
 
 renderTextProgramChanged _ _ _ = return ()
@@ -245,7 +268,7 @@ renderTextProgramAlways _ _ _ = return ()
 renderSuperContinent :: Context -> Int -> Renderer
 renderSuperContinent c z = when (canvasOn c) $ do
   s <- get
-  let cycleTime = elapsedCycles (tempo $ ensembleState c) (logicalTime s)
+  let cycleTime = elapsedCycles (tempo $ ensemble $ ensembleC c) (logicalTime s)
   let audio = 0.5 -- placeholder
   let program = superContinentProgram s
   let scState = superContinentState s
@@ -259,7 +282,7 @@ renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s
-  let tempo' = tempo $ ensembleState c
+  let tempo' = tempo $ ensemble $ ensembleC c
   let events = maybe [] id $ fmap (renderTidalPattern lt renderPeriod tempo') controlPattern
   modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
 
