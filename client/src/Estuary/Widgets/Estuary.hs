@@ -57,8 +57,9 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   headerChange <- header ctx
   (requests, ensembleRequestsFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
   command <- footer ctx renderInfo deltasDown hints
-  let commandRequests = fmap (:[]) $ attachPromptlyDynWithMaybe commandToRequest ensembleCDyn command
-  let ensembleRequests = mergeWith (++) [commandRequests,ensembleRequestsFromPage]
+  -- let commandRequests = fmap (:[]) $ attachPromptlyDynWithMaybe commandToRequest ensembleCDyn command
+  let commandRequests = fmap (:[]) $ attachWithMaybe commandToRequest (current ensembleCDyn) command
+  let ensembleRequests = mergeWith (++) [commandRequests, ensembleRequestsFromPage]
 
   -- changes to EnsembleC within Context, and to Context
   let commandChange = fmap commandToStateChange command
