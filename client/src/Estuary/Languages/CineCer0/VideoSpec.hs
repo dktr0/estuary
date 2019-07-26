@@ -31,16 +31,16 @@ stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = VideoSpec {
   sampleVideo = x,
   sourceNumber = 0,
-  playbackPosition = VT.playNatural_Pos,
-  playbackRate = VT.playNatural_Rate,
+  playbackPosition = VT.playNatural_Pos 0.0,
+  playbackRate = VT.playNatural_Rate 0.0,
   posX = 0.0,
   posY = 0.0,
-  width = 1,
-  height = 1,
-  red = 1,
-  green = 1,
-  blue = 1,
-  alpha = 1
+  width = 1.0,
+  height = 1.0,
+  red = 1.0,
+  green = 1.0,
+  blue = 1.0,
+  alpha = 1.0
 }
 
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
@@ -81,37 +81,43 @@ setAlpha n vs = vs { alpha = n }
 --
 -- Time Functions --
 
-playEvery :: Rational -> VideoSpec -> VideoSpec
-playEvery n vs = vs {
-  playbackPosition = VT.playEvery_Pos n,
-  playbackRate = VT.playEvery_Rate n
-  }
-
-playRound :: VideoSpec -> VideoSpec
-playRound vs = vs {
-  playbackPosition = VT.playRound_Pos,
-  playbackRate = VT.playRound_Rate
-  }
-
-playChop' :: Rational -> Rational -> VideoSpec -> VideoSpec
-playChop' m n vs = vs {
-  playbackPosition = VT.playChop_Pos' m n,
-  playbackRate = VT.playChop_Rate' m n
-  }
-
-playChop :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
-playChop l m n vs = vs {
-  playbackPosition = VT.playChop_Pos l m n,
-  playbackRate = VT.playChop_Rate l m n
+playNatural :: Rational -> VideoSpec -> VideoSpec
+playNatural n vs = vs {
+  playbackPosition = VT.playNatural_Pos n,
+  playbackRate = VT.playNatural_Rate n
 }
 
-playChopSecs :: NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
-playChopSecs l m n vs = vs {
-  playbackPosition = VT.playChopSecs_Pos l m n,
-  playbackRate = VT.playChopSecs_Rate l m n
+playEvery :: Rational -> Rational -> VideoSpec -> VideoSpec
+playEvery m n vs = vs {
+  playbackPosition = VT.playEvery_Pos m n,
+  playbackRate = VT.playEvery_Rate m n
   }
 
-playNow :: NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
+playRound :: Rational -> VideoSpec -> VideoSpec
+playRound n vs = vs {
+  playbackPosition = VT.playRound_Pos n,
+  playbackRate = VT.playRound_Rate n
+  }
+
+playChop' :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
+playChop' l m n vs = vs {
+  playbackPosition = VT.playChop_Pos' l m n,
+  playbackRate = VT.playChop_Rate' l m n
+  }
+
+playChop :: Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
+playChop k l m n vs = vs {
+  playbackPosition = VT.playChop_Pos k l m n,
+  playbackRate = VT.playChop_Rate k l m n
+}
+
+playChopSecs :: Rational -> NominalDiffTime -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
+playChopSecs k l m n vs = vs {
+  playbackPosition = VT.playChopSecs_Pos k l m n,
+  playbackRate = VT.playChopSecs_Rate k l m n
+  }
+
+playNow :: Rational -> NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
 playNow m n vs = vs {
   playbackPosition = VT.playNow_Pos m n,
   playbackRate = VT.playNow_Rate m n
