@@ -28,11 +28,11 @@ import Estuary.Types.Ensemble
 import Estuary.Widgets.EstuaryWidget
 import Estuary.Types.Variable
 
-tempoWidget :: MonadWidget t m => EstuaryWidget t m (Variable t Tempo)
+tempoWidget :: MonadWidget t m => EstuaryWidget t m (Event t Tempo)
 tempoWidget = do
   ctx <- askContext
   let tempoDyn = fmap (tempo . ensemble . ensembleC) ctx
-  reflexVariable tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
+  v <- reflexVariable tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
     let initialText = showt (cps a)
     let updatedText = fmap (showt . cps) eventA
     (tValue,_,tEval) <- textWidget 1 initialText updatedText
@@ -40,6 +40,7 @@ tempoWidget = do
     let evalEvent = tagPromptlyDyn tValue $ leftmost [b,tEval]
     let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Rational) . T.unpack) evalEvent
     performEvent $ fmap liftIO $ attachPromptlyDynWith adjustTempoEdit tempoDyn cpsEvent -- *** attachPromptlyDynWith here might not be right!!!
+  return $ localEdits v
 
 adjustTempoEdit :: Tempo -> Rational -> IO Tempo
 adjustTempoEdit oldTempo newCps = do

@@ -83,30 +83,39 @@ commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ 
 commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
 commandToHint _ _ = Nothing
 
-commandsToStateChanges :: Terminal.Command -> EnsembleC -> EnsembleC
-commandsToStateChanges (Terminal.LocalView v) es = selectLocalView v es
-commandsToStateChanges (Terminal.PresetView t) es = selectPresetView t es
-commandsToStateChanges (Terminal.PublishView t) es = replaceStandardView t (activeView es) es
-commandsToStateChanges _ es = es
+commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
+commandToStateChange (Terminal.LocalView v) es = selectLocalView v es
+commandToStateChange (Terminal.PresetView t) es = selectPresetView t es
+commandToStateChange (Terminal.PublishView t) es = replaceStandardView t (activeView es) es
+commandToStateChange _ es = es
 
-responsesToStateChanges :: EnsembleResponse -> EnsembleC -> EnsembleC
-responsesToStateChanges (TempoRcvd t) es = modifyEnsemble (writeTempo t) es
-responsesToStateChanges (ZoneRcvd n v) es = modifyEnsemble (writeZone n v) es
-responsesToStateChanges (ViewRcvd t v) es = modifyEnsemble (writeView t v) es
-responsesToStateChanges (ChatRcvd c) es = modifyEnsemble (appendChat c) es
-responsesToStateChanges (ParticipantJoins n x) es = modifyEnsemble (writeParticipant n x) es
-responsesToStateChanges (ParticipantUpdate n x) es = modifyEnsemble (writeParticipant n x) es
-responsesToStateChanges (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
-responsesToStateChanges (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
-responsesToStateChanges _ es = es
+requestToStateChange :: EnsembleRequest -> EnsembleC -> EnsembleC
+requestToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es
+requestToStateChange (WriteZone n v) es = modifyEnsemble (writeZone n v) es
+requestToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
+requestToStateChange _ es = es
+-- note: WriteChat and WriteStatus don't directly affect the EnsembleC and are thus
+-- not matched here. Instead, the server responds to these requests to all participants
+-- and in this way the information "comes back down" from the server.
 
-commandsToRequests :: EnsembleC -> Terminal.Command -> Maybe EnsembleRequest
-commandsToRequests es (Terminal.PublishView x) = Just (WriteView x (activeView es))
-commandsToRequests es (Terminal.Chat x) = Just (WriteChat x)
-commandsToRequests _ _ = Nothing
+responseToStateChange :: EnsembleResponse -> EnsembleC -> EnsembleC
+responseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) es
+responseToStateChange (ZoneRcvd n v) es = modifyEnsemble (writeZone n v) es
+responseToStateChange (ViewRcvd t v) es = modifyEnsemble (writeView t v) es
+responseToStateChange (ChatRcvd c) es = modifyEnsemble (appendChat c) es
+responseToStateChange (ParticipantJoins n x) es = modifyEnsemble (writeParticipant n x) es
+responseToStateChange (ParticipantUpdate n x) es = modifyEnsemble (writeParticipant n x) es
+responseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
+responseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
+responseToStateChange _ es = es
 
-messageForEnsembleResponse :: EnsembleResponse -> Maybe Text
-messageForEnsembleResponse (ChatRcvd c) = Just $ showChatMessage c
-messageForEnsembleResponse (ParticipantJoins n _) = Just $ n <> " has joined the ensemble"
-messageForEnsembleResponse (ParticipantLeaves n) = Just $ n <> " has left the ensemble"
-messageForEnsembleResponse _ = Nothing
+commandToRequest :: EnsembleC -> Terminal.Command -> Maybe EnsembleRequest
+commandToRequest es (Terminal.PublishView x) = Just (WriteView x (activeView es))
+commandToRequest es (Terminal.Chat x) = Just (WriteChat x)
+commandToRequest _ _ = Nothing
+
+responseToMessage :: EnsembleResponse -> Maybe Text
+responseToMessage (ChatRcvd c) = Just $ showChatMessage c
+responseToMessage (ParticipantJoins n _) = Just $ n <> " has joined the ensemble"
+responseToMessage (ParticipantLeaves n) = Just $ n <> " has left the ensemble"
+responseToMessage _ = Nothing

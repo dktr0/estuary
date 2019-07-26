@@ -1,6 +1,6 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
-module Estuary.WebDirt.WebDirt (WebDirt, newWebDirt, initializeWebAudio,performHint) where
+module Estuary.WebDirt.WebDirt (WebDirt, newWebDirt, initializeWebAudio,performHints) where
 
 import GHCJS.Types
 import GHCJS.Marshal.Pure
@@ -54,9 +54,15 @@ foreign import javascript unsafe
 performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
 
+performHints :: MonadWidget t m => WebDirt -> Event t [Hint] -> m ()
+performHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
+
 doHint :: WebDirt -> Hint -> IO ()
 doHint wd (SampleHint x) = sampleHint wd (pToJSVal x)
 doHint _ _ = return ()
+
+doHints :: WebDirt -> [Hint] -> IO ()
+doHints wd = mapM_ (doHint wd)
 
 foreign import javascript unsafe
   "$1.sampleHint($2)"

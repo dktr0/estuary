@@ -31,7 +31,7 @@ import Estuary.Types.Hint
 
 
 terminalWidget :: MonadWidget t m => Dynamic t Context ->
-  Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
+  Event t [Response] -> Event t [Hint] -> m (Event t Terminal.Command)
 terminalWidget ctx deltasDown hints = divClass "terminal" $ mdo
   (sendButton,inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
     sendButton' <- divClass "webSocketButtons" $ dynButton =<< translateDyn Term.Send ctx
@@ -46,11 +46,11 @@ terminalWidget ctx deltasDown hints = divClass "terminal" $ mdo
   let commands = fmapMaybe (either (const Nothing) Just) parsedInput
   let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) parsedInput
 
-  let hintMsgs = fmap (\x -> [x]) $ fmapMaybe hintsToMessages hints
+  let hintMsgs = ffilter (/= []) $ fmap hintsToMessages hints
 
   -- parse responses from server in order to display log/chat messages
   let deltasDown' = fmap justEnsembleResponses deltasDown
-  let responseMsgs = fmap (Data.Maybe.mapMaybe messageForEnsembleResponse) deltasDown'
+  let responseMsgs = fmap (Data.Maybe.mapMaybe responseToMessage) deltasDown'
   let streamIdMsgs = fmap (\x -> ["new Peer id: " <> x]) streamId
   let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs,streamIdMsgs]
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
@@ -61,9 +61,12 @@ terminalWidget ctx deltasDown hints = divClass "terminal" $ mdo
 
   return commands
 
-hintsToMessages :: Hint -> Maybe Text
-hintsToMessages (LogMessage x) = Just x
-hintsToMessages _ = Nothing
+hintsToMessages :: [Hint] -> [Text]
+hintsToMessages hs = fmapMaybe hintToMessage hs
+
+hintToMessage :: Hint -> Maybe Text
+hintToMessage (LogMessage x) = Just x
+hintToMessage _ = Nothing
 
 startStreamingReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m ()
 startStreamingReflex ctx e = do

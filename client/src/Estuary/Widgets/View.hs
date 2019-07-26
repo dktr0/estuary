@@ -23,9 +23,10 @@ import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
+import Estuary.Types.EnsembleRequest
 
 
-viewWidget :: MonadWidget t m => View -> EstuaryWidget t m (Variable t DefinitionMap)
+viewWidget :: MonadWidget t m => View -> EstuaryWidget t m (Event t [EnsembleRequest])
 
 viewWidget (LabelView z) = zoneWidget z "" maybeLabelText LabelText labelEditor
 
@@ -48,12 +49,12 @@ viewWidget _ = return mempty
 
 zoneWidget :: MonadWidget t m
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition)
-  -> (Dynamic t a -> EstuaryWidget t m (Variable t a))
-  -> EstuaryWidget t m (Variable t DefinitionMap)
+  -> (Dynamic t a -> EstuaryWidget t m (Variable t a)) -- note: probably should just be Event t a
+  -> EstuaryWidget t m (Event t [EnsembleRequest])
 zoneWidget z a f g b = do
   ctx <- askContext
   let a' = fmap (IntMap.lookup z . zones . ensemble . ensembleC) ctx -- :: Dynamic t (Maybe Definition)
   let a'' = fmap (maybe Nothing f) a' -- :: Dynamic t (Maybe a)
   let a''' = fmap (maybe a id) a'' -- :: Dynamic t a
   v <- b a'''
-  return $ fmap (IntMap.singleton z . g) v
+  return $ ((:[]) . WriteZone z . g) <$> localEdits v

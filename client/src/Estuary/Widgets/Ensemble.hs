@@ -27,10 +27,11 @@ import Estuary.Types.Ensemble
 import Estuary.Types.View
 import Estuary.Types.Variable
 import Estuary.Widgets.EstuaryWidget
+import Estuary.Types.EnsembleRequest
 
 
 ensembleView :: MonadWidget t m
-  => EstuaryWidget t m (Variable t DefinitionMap) -- *** not sure about this, edits get globalized...
+  => EstuaryWidget t m (Event t [EnsembleRequest])
 ensembleView = do
 
   ctx <- askContext
@@ -44,11 +45,13 @@ ensembleView = do
     divClass "ensembleHandle ui-font primary-color" $ text $ "UserName: " <> uName
 
   -- Tempo UI
-  tempoV <- tempoWidget
+  tempoE <- tempoWidget
+  let tempoRequests = fmap ( (:[]) . WriteTempo) tempoE
 
   -- Dynamic core View UI
   currentView <- reflex $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
-  let dynamicViews = fmap viewWidget currentView -- Dynamic t (EstuaryWidget t m (Variable t DefinitionMap))
-  x <- dynEstuaryWidget dynamicViews -- Dynamic t (Variable t DefinitionMap)
-  let x' = flattenDynamicVariable x -- Variable t DefinitionMap
-  return x'
+  let dynamicViews = fmap viewWidget currentView -- Dynamic t (EstuaryWidget t m (Event t [EnsembleRequest]))
+  x <- dynEstuaryWidget dynamicViews -- Dynamic t (Event t [EnsembleRequest])
+  let widgetRequests = switchPromptlyDyn x -- Event t [EnsembleRequest]
+
+  return $ mergeWith (++) [tempoRequests,widgetRequests]

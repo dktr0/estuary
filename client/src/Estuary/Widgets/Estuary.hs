@@ -37,47 +37,47 @@ import Estuary.RenderInfo
 import Estuary.Render.DynamicsMode
 import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
-import Estuary.Types.EnsembleState
+import Estuary.Types.EnsembleC
+import Estuary.Types.Ensemble
 
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
 estuaryWidget ctxM riM = divClass "estuary" $ mdo
 
   --
   iCtx <- liftIO $ readMVar ctxM
-  ctx <- foldDyn ($) iCtx contextChanges -- dynamic context; is first here so available for everything else
-  let ensembleStateDyn = fmap ensembleState ctx
+  ctx <- foldDyn ($) iCtx contextChange -- dynamic context; is near the top here so it is available for everything else
+  let ensembleCDyn = fmap ensembleC ctx
   canvasWidget ctxM -- global canvas shared with render threads through MVar
   performContext ctxM ctx -- perform all IO actions consequent to Context changing
   renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   samplesLoadedEv <- loadSampleMap
-  (deltasDown,wsCtxChanges) <- alternateWebSocket ctx renderInfo requestsUp
-
-  -- responses down from server
-  let ensembleResponses = fmap justEnsembleResponses deltasDown
-  let ensembleResponseChanges = fmap ((Prelude.foldl (.) id) . fmap responsesToStateChanges) ensembleResponses
-  let ccChanges = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown
+  (deltasDown,wsCtxChange) <- alternateWebSocket ctx renderInfo requestsUp
 
   -- three GUI components: header, main (navigation), footer
-  headerChanges <- header ctx
-  (values, requestsFromMain, ensembleRequests, hintsFromMain, tempoChanges) <- divClass "page " $ do
-    navigation ctx renderInfo deltasDown
-  commands <- footer ctx renderInfo deltasDown hints
+  headerChange <- header ctx
+  (requests, ensembleRequestsFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
+  command <- footer ctx renderInfo deltasDown hints
+  let commandRequests = fmap (:[]) $ attachPromptlyDynWithMaybe commandToRequest ensembleCDyn command
+  let ensembleRequests = mergeWith (++) [commandRequests,ensembleRequestsFromPage]
+
+  -- changes to EnsembleC within Context, and to Context
+  let commandChange = fmap commandToStateChange command
+  let ensembleRequestChange = fmap ((Prelude.foldl (.) id) . fmap requestToStateChange) ensembleRequests
+  let ensembleResponses = fmap justEnsembleResponses deltasDown
+  let ensembleResponseChange = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) ensembleResponses
+  let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange]
+  let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange]
 
   -- hints
-  let commandHints = attachPromptlyDynWithMaybe commandToHint ensembleStateDyn commands
-  let hints = leftmost [hintsFromMain, commandHints]
-  performHint (webDirt iCtx) hints
-
-  -- changes to EnsembleState within Context, and to Context
-  let commandChanges = fmap commandsToStateChanges commands -- commands to change of EnsembleState
-  let requestChanges = fmap requestsToStateChanges ensembleRequests
-  let tempoChanges' = fmap (\t x -> x { tempo = t }) tempoChanges
-  let ensembleChanges = fmap modifyEnsemble $ mergeWith (.) [commandChanges,ensembleResponseChanges,requestChanges,tempoChanges']
-  let contextChanges = mergeWith (.) [ensembleChanges, headerChanges, ccChanges, samplesLoadedEv, wsCtxChanges]
+  let commandHint = attachPromptlyDynWithMaybe commandToHint ensembleCDyn command
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint] -- Event t [Hint]
+  performHints (webDirt iCtx) hints
 
   -- requests up to server
-  let commandRequests = attachPromptlyDynWithMaybe commandsToRequests ensembleStateDyn commands
-  let requestsUp = fmap EnsembleRequest $ leftmost [commandRequests, ensembleRequests]
+  let ensembleRequests' = fmap (fmap EnsembleRequest) $ ensembleRequests
+  let requests' = fmap (:[]) $ requests
+  let requestsUp = mergeWith (++) [ensembleRequests',requests']
   return ()
 
 -- a standard canvas that, in addition to being part of reflex-dom's DOM representation, is shared with other threads through the Context

@@ -18,7 +18,7 @@ import Estuary.Reflex.Utility (translateDyn)
 
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
-  -> Event t [Response] -> Event t Hint -> m (Event t Terminal.Command)
+  -> Event t [Response] -> Event t [Hint] -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown hints = divClass "footer" $ do
   divClass "peak primary-color code-font" $ do
     dynText =<< holdUniqDyn (fmap f ctx)
