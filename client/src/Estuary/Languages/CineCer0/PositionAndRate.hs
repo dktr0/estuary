@@ -189,10 +189,10 @@ playChopSecs_Rate startPos endPos cycles t vlen now
 -- giving a start position in seconds 
 
            --  startPos        -- rate
-playNow_Pos:: NominalDiffTime -> Rational -> Tempo -> VideoLength -> Now -> Maybe NominalDiffTime
+playNow_Pos:: NominalDiffTime -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
 playNow_Pos startPos rate t vlen now = Just $ (realToFrac (cycleSecs startPos vlen))
 
-playNow_Rate:: NominalDiffTime -> Rational -> Tempo -> VideoLength -> Now -> Maybe Rational
+playNow_Rate:: NominalDiffTime -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
 playNow_Rate startPos rate t vlen now = Just rate
 
 --------- Helper Functions ------------
