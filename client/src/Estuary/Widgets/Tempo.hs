@@ -25,14 +25,14 @@ import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
-import Estuary.Widgets.EstuaryWidget
+import Estuary.Widgets.Editor
 import Estuary.Types.Variable
 
-tempoWidget :: MonadWidget t m => EstuaryWidget t m (Event t Tempo)
+tempoWidget :: MonadWidget t m => Editor t m (Event t Tempo)
 tempoWidget = do
   ctx <- askContext
   let tempoDyn = fmap (tempo . ensemble . ensembleC) ctx
-  v <- reflexVariable tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
+  v <- reflexWidgetToEditor tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
     let initialText = showt (cps a)
     let updatedText = fmap (showt . cps) eventA
     (tValue,_,tEval) <- textWidget 1 initialText updatedText

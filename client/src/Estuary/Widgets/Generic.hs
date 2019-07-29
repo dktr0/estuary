@@ -81,6 +81,10 @@ isChangeValue (ChangeValue _) = True
 isChangeValue _ = False
 --data EditSignal = DeleteMe | MakeGroup |
 
+justChangeValues :: EditSignal a -> Maybe a
+justChangeValues (ChangeValue x) = Just x
+justChangeValues _ = Nothing
+
 debug::(MonadWidget t m, Show a) => Event t a -> m ()
 debug e = performEvent_ $ fmap (liftIO . putStrLn . show) e
 

@@ -41,7 +41,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.View
-import Estuary.Widgets.EstuaryWidget
+import Estuary.Widgets.Editor
 
 data Navigation =
   Splash |
@@ -159,11 +159,11 @@ page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
   return (navEvents, (joinRequest, never, never))
 
 page ctx renderInfo _ (EnsemblePage ensembleName) = do
-  (ensReqs,hs) <- runEstuaryWidget ensembleView ctx renderInfo
+  (ensReqs,hs) <- runEditor ensembleView ctx renderInfo
   return (never,(never,ensReqs,hs))
 
 page ctx renderInfo _ Solo = do
-  (ensReqs,hs) <- runEstuaryWidget ensembleView ctx renderInfo
+  (ensReqs,hs) <- runEditor ensembleView ctx renderInfo
   return (never,(never,ensReqs,hs))
 
 

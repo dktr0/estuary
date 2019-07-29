@@ -26,20 +26,20 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.View
 import Estuary.Types.Variable
-import Estuary.Widgets.EstuaryWidget
+import Estuary.Widgets.Editor
 import Estuary.Types.EnsembleRequest
 
 
 ensembleView :: MonadWidget t m
-  => EstuaryWidget t m (Event t [EnsembleRequest])
+  => Editor t m (Event t [EnsembleRequest])
 ensembleView = do
 
   ctx <- askContext
 
   -- Ensemble name and username UI (created only if ensemble is not "", ie. not in solo mode)
-  iCtx <- reflex $ sample $ current ctx
+  iCtx <- initialValueOfDyn ctx
   let eName = ensembleName $ ensemble $ ensembleC iCtx
-  reflex $ when (eName /= "") $ divClass "ensembleHeader primary-color ui-font" $ do
+  liftR $ when (eName /= "") $ divClass "ensembleHeader primary-color ui-font" $ do
     let uName = userHandle $ ensembleC iCtx
     divClass "ensembleName ui-font primary-color" $ text $ "Ensemble: " <> eName
     divClass "ensembleHandle ui-font primary-color" $ text $ "UserName: " <> uName
@@ -55,8 +55,8 @@ ensembleView = do
   widgetRequests <- viewWidget initialView
 
 {-  currentView <- reflex $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
-  let dynamicViews = fmap viewWidget currentView -- Dynamic t (EstuaryWidget t m (Event t [EnsembleRequest]))
-  x <- dynEstuaryWidget dynamicViews -- Dynamic t (Event t [EnsembleRequest])
+  let dynamicViews = fmap viewWidget currentView -- Dynamic t (Editor t m (Event t [EnsembleRequest]))
+  x <- dynEditor dynamicViews -- Dynamic t (Event t [EnsembleRequest])
   let widgetRequests = switchDyn x -- Event t [EnsembleRequest] -}
 
   return $ mergeWith (++) [tempoRequests,widgetRequests]

@@ -31,7 +31,7 @@ import Estuary.Help.LanguageHelp
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
-import Estuary.Widgets.EstuaryWidget
+import Estuary.Widgets.Editor
 import Estuary.Types.Context
 import Estuary.Types.Variable
 
@@ -55,10 +55,10 @@ textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp,CineCer0] ++ (fmap
 
 
 textProgramEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t TextProgram
-  -> EstuaryWidget t m (Variable t TextProgram)
+  -> Editor t m (Variable t TextProgram)
 textProgramEditor nRows errorDyn updates = do
   ctx <- askContext
-  reflexVariable updates $ textProgramWidget ctx errorDyn nRows
+  reflexWidgetToEditor updates $ textProgramWidget ctx errorDyn nRows
 
 
 textProgramWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) -> Int
@@ -106,10 +106,10 @@ textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** T
           | otherwise = Edited p x
 
 
-labelEditor :: MonadWidget t m => Dynamic t Text -> EstuaryWidget t m (Variable t Text)
+labelEditor :: MonadWidget t m => Dynamic t Text -> Editor t m (Variable t Text)
 labelEditor delta = do
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
-  y <- reflex $ divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+  y <- liftR $ divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
     i <- (sample . current) delta
     textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   return $ Variable (_textInput_value y) (_textInput_input y)
