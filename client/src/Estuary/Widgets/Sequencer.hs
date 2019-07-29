@@ -27,7 +27,7 @@ sequencer :: MonadWidget t m => Dynamic t Sequence -> EstuaryWidget t m (Variabl
 sequencer x = reflexVariable x sequencer'
 
 sequencer' :: MonadWidget t m
-  => Sequence -> Event t Sequence -> m (Event t Sequence)
+  => Sequence -> Event t Sequence -> m (Event t Sequence, Event t [Hint])
 sequencer' iMap update = elClass "table" "sequencer" $ mdo
   let seqLen = maximum $ fmap (length . snd) $ elems iMap
   let serverDeletes = fmap (Nothing <$) $ attachWith M.difference (current values) update -- for deleted rows
@@ -46,7 +46,7 @@ sequencer' iMap update = elClass "table" "sequencer" $ mdo
   let maxKey = fmap (maybe 0 id . maximumMay . keys) newValues
   plusButton <- el "tr" $ clickableTdClass (constDyn " + ") (constDyn "") ()
   let newRow = attachWith (\k _-> singleton (k+1) (Just ("",Prelude.take seqLen $ repeat False))) (current maxKey) plusButton
-  return updateVal
+  return (updateVal,never)
   -- *** TODO should rework the above since some of the above management is unnecessary with EstuaryWidget approach
 
 -- listWithKeyShallowDiff

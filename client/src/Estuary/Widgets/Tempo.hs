@@ -39,7 +39,8 @@ tempoWidget = do
     b <- dynButton =<< translateDyn Term.NewTempo ctx
     let evalEvent = tagPromptlyDyn tValue $ leftmost [b,tEval]
     let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Rational) . T.unpack) evalEvent
-    performEvent $ fmap liftIO $ attachPromptlyDynWith adjustTempoEdit tempoDyn cpsEvent -- *** attachPromptlyDynWith here might not be right!!!
+    edits <- performEvent $ fmap liftIO $ attachPromptlyDynWith adjustTempoEdit tempoDyn cpsEvent -- *** attachPromptlyDynWith here might not be right!!!
+    return (edits,never)
   return $ localEdits v
 
 adjustTempoEdit :: Tempo -> Rational -> IO Tempo

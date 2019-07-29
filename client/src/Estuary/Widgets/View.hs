@@ -35,7 +35,7 @@ viewWidget (StructureView z) = zoneWidget z EmptyTransformedPattern maybeStructu
 viewWidget (TextView z rows) = do
   ri <- askRenderInfo
   let errorDyn = fmap (IntMap.lookup z . errors) ri
-  zoneWidget z (Live (TidalTextNotation MiniTidal,"") L3) maybeTextProgram TextProgram (textEditor rows errorDyn)
+  zoneWidget z (Live (TidalTextNotation MiniTidal,"") L3) maybeTextProgram TextProgram (textProgramEditor rows errorDyn)
 
 viewWidget (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)

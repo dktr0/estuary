@@ -49,11 +49,12 @@ liftR2 r x = EstuaryWidget (\ctx ri -> r $ runEstuaryWidget x ctx ri)
 -- by local editing or network actions). 'reflexVariable' provides a convenient way
 -- of lifting Reflex code (a -> Event t a -> m (Event t a)) into EstuaryWidget t m:
 
-reflexVariable :: MonadWidget t m => Dynamic t a -> (a -> Event t a -> m (Event t a)) -> EstuaryWidget t m (Variable t a)
+reflexVariable :: MonadWidget t m => Dynamic t a -> (a -> Event t a -> m (Event t a, Event t [Hint])) -> EstuaryWidget t m (Variable t a)
 reflexVariable delta widget = do -- in ReaderT
   iVal <- reflex $ (sample . current) delta
-  editEvents <- reflex $ widget iVal $ updated delta
+  (editEvents,hs) <- reflex $ widget iVal $ updated delta
   val <- reflex $ holdDyn iVal $ leftmost [editEvents,updated delta]
+  hints hs
   return $ Variable val editEvents
 
 -- Naturally we provide Functor, Applicative, and Monad instances

@@ -19,7 +19,7 @@ import Estuary.Types.Hint
 introTidalText ::MonadWidget t m => Tutorial t m
 introTidalText = Tutorial IntroTidalText introTidalTextWidget
 
-introTidalTextWidget::MonadWidget t m => Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)
+introTidalTextWidget::MonadWidget t m => Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint])
 introTidalTextWidget ctx = elClass "div" "tutorial code-font primary-color background-color" $ do
   title $ labelWidget ctx $ M.fromList [(English, "Welcome to the introductory tutorial to TidalCycles (or MiniTidal)!")]
   labelWidget ctx $ M.fromList [(English,"This tutorial will cover some of the basics of making music with TidalCycles. MiniTidal is a subset of TidalCycles that supports most typical Tidal operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles.")]
@@ -52,6 +52,6 @@ introTidalTextWidget ctx = elClass "div" "tutorial code-font primary-color backg
   v <- do
     x <- dynList [v1, v2, v3, v4,v5,v6]
     return $ fmap IM.fromList x
-    
-  let hints = leftmost [h1,h2,h3,h4,h5,h6]
+
+  let hints = mergeWith (++) [h1,h2,h3,h4,h5,h6]
   return (v, hints)

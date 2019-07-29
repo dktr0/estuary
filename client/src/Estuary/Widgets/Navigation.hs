@@ -85,10 +85,9 @@ page ctx _ wsDown TutorialList = do
   return (leftmost bs, (never, never, never))
 
 page ctx _ wsDown (Tutorial tid) = do
-  let widget = (Map.lookup tid tutorialMap) :: Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
-  (dm, hint) <- maybe errMsg id (fmap (\x-> x ctx) widget)
-  let hint' = fmap (:[]) hint
-  return (never, (never, never, hint')) -- *** RENDERING IS THUS BROKEN IN TUTORIALS, need to make sure tutorials return edits ***
+  let widget = (Map.lookup tid tutorialMap) :: Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint]))
+  (dm, hs) <- maybe errMsg id (fmap (\x-> x ctx) widget)
+  return (never, (never, never, hs)) -- *** RENDERING IS THUS BROKEN IN TUTORIALS, need to make sure tutorials return edits ***
   where
     errMsg = do
       text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"

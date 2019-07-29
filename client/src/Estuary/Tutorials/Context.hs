@@ -14,5 +14,5 @@ import Estuary.Tutorials.IntroTidalText (introTidalText)
 tutorials::MonadWidget t m => [Tutorial t m]
 tutorials = [introTidalText]
 
-tutorialMap::MonadWidget t m => Map TutorialId ((Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint)))
+tutorialMap::MonadWidget t m => Map TutorialId ((Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint])))
 tutorialMap = fromList $ fmap (\x -> (tutorialId x, widget x)) tutorials

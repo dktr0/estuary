@@ -53,20 +53,17 @@ textWidget rows i delta = do
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp,CineCer0] ++ (fmap TidalTextNotation tidalParsers)
 
+
 textProgramEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t TextProgram
   -> EstuaryWidget t m (Variable t TextProgram)
 textProgramEditor nRows errorDyn updates = do
   ctx <- askContext
-  (d,e,h) <- reflex $ do
-    i <- sample $ current updates
-    textNotationWidget ctx errorDyn nRows i never -- *** never here is TEMP/BROKEN, was (updated updates) but that wasn't working
-  hint h
-  return $ Variable d e
+  reflexVariable updates $ textProgramWidget ctx errorDyn nRows
 
-textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) ->
-  Int -> Live (TextNotation,Text) -> Event t (Live (TextNotation,Text)) ->
-  m (Dynamic t (Live (TextNotation,Text)),Event t (Live (TextNotation,Text)),Event t Hint)
-textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
+
+textProgramWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) -> Int
+  -> TextProgram -> Event t TextProgram -> m (Event t TextProgram,Event t [Hint])
+textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
   let deltaFuture = fmap forEditing delta
   let parserFuture = fmap fst deltaFuture
   let textFuture = fmap snd deltaFuture
@@ -103,7 +100,7 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
   let deltaUpEdit = tag (current value) edit
   let deltaUpEval = tag (current value) eval
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
-  return (value,deltaUp,never)
+  return (deltaUp,never)
   where
     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
           | otherwise = Edited p x
