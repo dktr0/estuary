@@ -53,9 +53,9 @@ textWidget rows i delta = do
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp,CineCer0] ++ (fmap TidalTextNotation tidalParsers)
 
-textEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t (Live (TextNotation,Text))
-  -> EstuaryWidget t m (Variable t (Live (TextNotation, Text)))
-textEditor nRows errorDyn updates = do
+textProgramEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t TextProgram
+  -> EstuaryWidget t m (Variable t TextProgram)
+textProgramEditor nRows errorDyn updates = do
   ctx <- askContext
   (d,e,h) <- reflex $ do
     i <- sample $ current updates
