@@ -97,8 +97,8 @@ textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** T
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]
   let value = f <$> pastValue <*> futureValue
-  let deltaUpEdit = tag (current value) edit
-  let deltaUpEval = tag (current value) eval
+  let deltaUpEdit = tagPromptlyDyn value edit
+  let deltaUpEval = tagPromptlyDyn value eval
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
   return (deltaUp,never)
   where

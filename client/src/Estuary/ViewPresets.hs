@@ -14,7 +14,9 @@ presetViews :: Map Text View
 presetViews = fromList [
   ("default", Views [
   ViewDiv "fullRowTopOrBottom" (LabelView 1),
-  ViewDiv "fullRowTopOrBottom" (TextView 2 10)
+  ViewDiv "fullRowTopOrBottom" (TextView 2 10),
+  ViewDiv "fullRowTopOrBottom" (StructureView 3),
+  ViewDiv "fullRowTopOrBottom" (SequenceView 4)
   ]),
 
   ("default-renamed-temporarily",Views [
