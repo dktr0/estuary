@@ -48,7 +48,11 @@ midLevelTransformedPatternWidget:: MonadWidget t m =>
   TransformedPattern -> m (Event t TransformedPattern, Event t [Hint])
 midLevelTransformedPatternWidget iTransPat = do
   tuple <- resettableTransformedPatternWidget iTransPat never
-  let editEv = fmapMaybe justChangeValues $ switchPromptlyDyn $ fmap (\(_,x,_)->x) tuple -- :: EditSignal a
+  let dynVal = fmap (\(x,_,_)->x) tuple
+  -- let editEv = tagPromptlyDyn dynVal $ switchPromptlyDyn $ fmap (\(_,x,_)->x) tuple -- :: EditSignal a
+  let editEv = updated dynVal -- ** BROKEN: in ensemble mode this will lead to infinite request-response cycles in ensembles where nClients > 1
+  -- structure editor needs to be reworked around Editor monad
+  -- until then, we will just remove it from default views
   let hs = fmap (:[]) $ switchPromptlyDyn $ fmap (\(_,_,x)->x) tuple
   return (editEv,hs)
 

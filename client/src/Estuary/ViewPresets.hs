@@ -12,20 +12,14 @@ presetViews :: Map Text View
 -- note: if an ensemble publishes a view called 'default', that view rather than this one,
 -- will effectively be the default view in that ensemble.
 presetViews = fromList [
-  ("default", Views [
-  ViewDiv "fullRowTopOrBottom" (LabelView 1),
-  ViewDiv "fullRowTopOrBottom" (TextView 2 10),
-  ViewDiv "fullRowTopOrBottom" (StructureView 3),
-  ViewDiv "fullRowTopOrBottom" (SequenceView 4)
-  ]),
 
-  ("default-renamed-temporarily",Views [
-  ViewDiv "divView-bottom-or-top-left" (Views [LabelView 1, StructureView 2]),
-  ViewDiv "divView-bottom-or-top-right" (Views [LabelView 3, StructureView 4]),
-  ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 3]),
-  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 3]),
-  ViewDiv "divView-bottom-or-top-left" (Views [LabelView 9, TextView 10 3]),
-  ViewDiv "divView-bottom-or-top-right" (Views [LabelView 11, SequenceView 12])
+  ("default",Views [
+  ViewDiv "divView-bottom-or-top-left" (Views [LabelView 1, SequenceView 2]),
+  ViewDiv "divView-bottom-or-top-right" (Views [LabelView 3, SequenceView 4]),
+  ViewDiv "eightMiddleL" (Views [LabelView 5, TextView 6 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 7, TextView 8 5]),
+  ViewDiv "divView-bottom-or-top-left" (Views [LabelView 9, TextView 10 5]),
+  ViewDiv "divView-bottom-or-top-right" (Views [LabelView 11, TextView 12 5])
   ]),
 
   ("fulltexteditor",Views [
