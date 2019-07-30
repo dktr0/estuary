@@ -296,7 +296,6 @@ calculateRenderTimes = do
   let newPeakRenderLoad = ceiling (getPeak newRenderTime * 100 / realToFrac renderPeriod)
   modify' $ \x -> x { renderTime = newRenderTime }
   modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
-  modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
   traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s
   traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s
   return ()
@@ -305,15 +304,13 @@ calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
 calculateZoneRenderTimes z zrt = do
   s <- get
   let newAvgMap = insert z (getAverage zrt) (avgZoneRenderTime $ info s)
-  let newPeakMap = insert z (getPeak zrt) (peakZoneRenderTime $ info s)
-  modify' $ \x -> x { info = (info x) { avgZoneRenderTime = newAvgMap, peakZoneRenderTime = newPeakMap }}
+  modify' $ \x -> x { info = (info x) { avgZoneRenderTime = newAvgMap }}
 
 calculateZoneAnimationTimes :: Int -> MovingAverage -> Renderer
 calculateZoneAnimationTimes z zat = do
   s <- get
   let newAvgMap = insert z (getAverage zat) (avgZoneAnimationTime $ info s)
-  let newPeakMap = insert z (getPeak zat) (peakZoneAnimationTime $ info s)
-  modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap, peakZoneAnimationTime = newPeakMap }}
+  modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap }}
 
 scheduleNextRender :: Renderer
 scheduleNextRender = do
