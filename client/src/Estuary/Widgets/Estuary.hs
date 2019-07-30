@@ -77,9 +77,10 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   performHints (webDirt iCtx) hints
 
   -- requests up to server
-  let ensembleRequests' = fmap ((:[]) . EnsembleRequest) ensembleRequests
+  let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
+  let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
   let requests' = fmap (:[]) $ requests
-  let requestsUp = mergeWith (++) [ensembleRequests',requests']
+  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests']
   return ()
 
 -- a standard canvas that, in addition to being part of reflex-dom's DOM representation, is shared with other threads through the Context

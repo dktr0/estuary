@@ -56,6 +56,9 @@ leaveEnsembleC x = x {
 -- so ensembles can have a different default view than solo mode simply by
 -- defining a view at the key "default"
 
+inAnEnsemble :: EnsembleC -> Bool
+inAnEnsemble e = ensembleName (ensemble e) /= ""
+
 lookupView :: Text -> Ensemble -> Maybe View
 lookupView t e = Map.lookup t (views e) <|> Map.lookup t presetViews
 
