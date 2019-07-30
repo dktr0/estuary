@@ -56,14 +56,14 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
 
   -- three GUI components: header, main (navigation), footer
   headerChange <- header ctx
-  (requests, ensembleRequestsFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
+  (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
   command <- footer ctx renderInfo deltasDown hints
-  let commandRequests = fmap (:[]) $ attachWithMaybe commandToRequest (current ensembleCDyn) command
-  let ensembleRequests = mergeWith (++) [commandRequests, ensembleRequestsFromPage]
+  let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
+  let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage]
 
   -- changes to EnsembleC within Context, and to Context
   let commandChange = fmap commandToStateChange command
-  let ensembleRequestChange = fmap ((Prelude.foldl (.) id) . fmap requestToStateChange) ensembleRequests
+  let ensembleRequestChange = fmap requestToStateChange ensembleRequests
   let ensembleResponses = fmap justEnsembleResponses deltasDown
   let ensembleResponseChange = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange]
@@ -76,7 +76,7 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   performHints (webDirt iCtx) hints
 
   -- requests up to server
-  let ensembleRequests' = fmap (fmap EnsembleRequest) $ ensembleRequests
+  let ensembleRequests' = fmap ((:[]) . EnsembleRequest) ensembleRequests
   let requests' = fmap (:[]) $ requests
   let requestsUp = mergeWith (++) [ensembleRequests',requests']
   return ()

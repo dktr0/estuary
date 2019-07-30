@@ -31,7 +31,7 @@ import Estuary.Types.EnsembleRequest
 
 
 ensembleView :: MonadWidget t m
-  => Editor t m (Event t [EnsembleRequest])
+  => Editor t m (Event t EnsembleRequest)
 ensembleView = do
 
   ctx <- askContext
@@ -46,7 +46,7 @@ ensembleView = do
 
   -- Tempo UI
   tempoE <- tempoWidget
-  let tempoRequests = fmap ( (:[]) . WriteTempo) tempoE
+  let tempoRequests = fmap WriteTempo tempoE
 
   -- Dynamic core View UI
 
@@ -59,4 +59,4 @@ ensembleView = do
   x <- dynEditor dynamicViews -- Dynamic t (Event t [EnsembleRequest])
   let widgetRequests = switchDyn x -- Event t [EnsembleRequest] -}
 
-  return $ mergeWith (++) [tempoRequests,widgetRequests]
+  return $ leftmost [tempoRequests,widgetRequests]

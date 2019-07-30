@@ -26,7 +26,7 @@ import Estuary.Widgets.Sequencer
 import Estuary.Types.EnsembleRequest
 
 
-viewWidget :: MonadWidget t m => View -> Editor t m (Event t [EnsembleRequest])
+viewWidget :: MonadWidget t m => View -> Editor t m (Event t EnsembleRequest)
 
 viewWidget (LabelView z) = zoneWidget z "" maybeLabelText LabelText labelEditor
 
@@ -42,15 +42,15 @@ viewWidget (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence s
 
 viewWidget (ViewDiv c v) = liftR2 (divClass c) $ viewWidget v
 
-viewWidget (Views xs) = liftM mconcat $ mapM viewWidget xs
+viewWidget (Views xs) = liftM leftmost $ mapM viewWidget xs
 
-viewWidget _ = return mempty
+viewWidget _ = return never
 
 
 zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition)
   -> (Dynamic t a -> Editor t m (Variable t a)) -- note: probably should just be Event t a
-  -> Editor t m (Event t [EnsembleRequest])
+  -> Editor t m (Event t EnsembleRequest)
 zoneWidget z a f g b = do
   ctx <- askContext
   let a' = fmap (IntMap.lookup z . zones . ensemble . ensembleC) ctx -- :: Dynamic t (Maybe Definition)
@@ -58,4 +58,4 @@ zoneWidget z a f g b = do
   let a''' = fmap (maybe a id) a'' -- :: Dynamic t a
   a'''' <- liftR $ holdUniqDyn a''' -- not sure if this is really necessary, but probably does little harm?
   v <- b a''''
-  return $ ((:[]) . WriteZone z . g) <$> localEdits v
+  return $ (WriteZone z . g) <$> localEdits v

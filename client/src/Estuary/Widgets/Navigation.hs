@@ -56,7 +56,7 @@ data Navigation =
   deriving (Generic, FromJSVal, ToJSVal)
 
 
-navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] -> m (Event t Request, Event t [EnsembleRequest], Event t [Hint])
+navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] -> m (Event t Request, Event t EnsembleRequest, Event t [Hint])
 navigation ctx renderInfo wsDown = do
   dynPage <- router Splash never $ page ctx renderInfo wsDown
   let dynPageData = fmap snd dynPage
@@ -68,7 +68,7 @@ navigation ctx renderInfo wsDown = do
 
 page :: forall t m. (MonadWidget t m)
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] -> Navigation
-  -> m (Event t Navigation, (Event t Request, Event t [EnsembleRequest], Event t [Hint]))
+  -> m (Event t Navigation, (Event t Request, Event t EnsembleRequest, Event t [Hint]))
 
 page ctx _ wsDown Splash = do
   navEv <- divClass "splash-container" $ do
@@ -159,12 +159,12 @@ page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
   return (navEvents, (joinRequest, never, never))
 
 page ctx renderInfo _ (EnsemblePage ensembleName) = do
-  (ensReqs,hs) <- runEditor ensembleView ctx renderInfo
-  return (never,(never,ensReqs,hs))
+  (ensReq,hs) <- runEditor ensembleView ctx renderInfo
+  return (never,(never,ensReq,hs))
 
 page ctx renderInfo _ Solo = do
-  (ensReqs,hs) <- runEditor ensembleView ctx renderInfo
-  return (never,(never,ensReqs,hs))
+  (ensReq,hs) <- runEditor ensembleView ctx renderInfo
+  return (never,(never,ensReq,hs))
 
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
