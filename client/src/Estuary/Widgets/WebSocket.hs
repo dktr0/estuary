@@ -73,13 +73,12 @@ alternateWebSocket ctx rInfo toSend = mdo
   let socketIsOpen = fmap (=="connection open") status'
   pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
   pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
-  initialTime <- liftIO getCurrentTime
-  timeDyn <- holdDyn initialTime pingTickTime
+  let clientInfoWithPingTime = fmap ClientInfo pingTickTime
   let loadDyn = fmap avgRenderLoad rInfo
   let animationLoadDyn = fmap avgAnimationLoad rInfo
   latencyDyn <- holdDyn 0 $ latency
-  let clientInfoDyn = ClientInfo <$> timeDyn <*> loadDyn <*> animationLoadDyn <*> latencyDyn
-  let clientInfoEvent = fmap (:[]) $ tagPromptlyDyn clientInfoDyn pingTick
+  let loadAnimationAndLatency = (\x y z -> (x,y,z)) <$> loadDyn <*> animationLoadDyn <*> latencyDyn
+  let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith (\(x,y,z) w -> w x y z) loadAnimationAndLatency clientInfoWithPingTime
 
   -- the server responds to ClientInfo (above) with ServerInfo, which we process below
   -- by issuing events that update the context
