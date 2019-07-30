@@ -158,12 +158,13 @@ page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
   let navEvents = leftmost [joinedEnsembleNav,cancelNav]
   return (navEvents, (joinRequest, never, never))
 
-page ctx renderInfo _ (EnsemblePage ensembleName) = do
-  (ensReq,hs) <- runEditor ensembleView ctx renderInfo
+page ctx renderInfo rs (EnsemblePage ensembleName) = do
+  let ensResponses = fmap justEnsembleResponses rs
+  (ensReq,hs) <- runEditor (ensembleView ensResponses) ctx renderInfo
   return (never,(never,ensReq,hs))
 
 page ctx renderInfo _ Solo = do
-  (ensReq,hs) <- runEditor ensembleView ctx renderInfo
+  (ensReq,hs) <- runEditor (ensembleView never) ctx renderInfo
   return (never,(never,ensReq,hs))
 
 

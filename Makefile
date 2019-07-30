@@ -195,7 +195,7 @@ clean: cleanStage cleanDevStage
 	-rm -rf dist-ghcjs/
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
-runDevServer: stageStaticAssets cabalBuildServer cabalStageServer
+runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
 	cd ./$(STAGING_ROOT) && ./EstuaryServer
 
 runServer: nixBuild stageStaticAssets stageSamples nixStageClient nixStageServer

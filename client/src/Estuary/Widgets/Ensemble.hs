@@ -28,11 +28,12 @@ import Estuary.Types.View
 import Estuary.Types.Variable
 import Estuary.Widgets.Editor
 import Estuary.Types.EnsembleRequest
+import Estuary.Types.EnsembleResponse
 
 
 ensembleView :: MonadWidget t m
-  => Editor t m (Event t EnsembleRequest)
-ensembleView = do
+  => Event t [EnsembleResponse] -> Editor t m (Event t EnsembleRequest)
+ensembleView ensResponses = do
 
   ctx <- askContext
 
@@ -52,11 +53,11 @@ ensembleView = do
 
   -- these two lines just during a temporary test we are doing...
   let initialView = activeView $ ensembleC iCtx
-  widgetRequests <- viewWidget initialView
+  widgetRequests <- viewWidget ensResponses initialView
 
 {-  currentView <- reflex $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
-  let dynamicViews = fmap viewWidget currentView -- Dynamic t (Editor t m (Event t [EnsembleRequest]))
-  x <- dynEditor dynamicViews -- Dynamic t (Event t [EnsembleRequest])
-  let widgetRequests = switchDyn x -- Event t [EnsembleRequest] -}
+  let dynamicViews = fmap (viewWidget ensResponses) currentView -- Dynamic t (Editor t m (Event t EnsembleRequest))
+  x <- dynEditor dynamicViews -- Dynamic t (Event t EnsembleRequest)
+  let widgetRequests = switchDyn x -- Event t EnsembleRequest -}
 
   return $ leftmost [tempoRequests,widgetRequests]

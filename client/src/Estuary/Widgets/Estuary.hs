@@ -43,16 +43,14 @@ import Estuary.Types.Ensemble
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
 estuaryWidget ctxM riM = divClass "estuary" $ mdo
 
-  canvasWidget ctxM -- global canvas shared with render threads through MVar
-
-  --
+  canvasWidget ctxM -- global canvas shared with render threads through Context MVar, this needs to be first in this action
   iCtx <- liftIO $ readMVar ctxM
-  ctx <- foldDyn ($) iCtx contextChange -- dynamic context; is near the top here so it is available for everything else
-  let ensembleCDyn = fmap ensembleC ctx
+  ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext ctxM ctx -- perform all IO actions consequent to Context changing
   renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  samplesLoadedEv <- loadSampleMap
   (deltasDown,wsCtxChange) <- alternateWebSocket ctx renderInfo requestsUp
+
+  let ensembleCDyn = fmap ensembleC ctx
 
   -- three GUI components: header, main (navigation), footer
   headerChange <- header ctx
@@ -61,6 +59,8 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage]
 
+  -- map from EnsembleRequests (eg. edits) and Commands (ie. from the terminal) to
+
   -- changes to EnsembleC within Context, and to Context
   let commandChange = fmap commandToStateChange command
   let ensembleRequestChange = fmap requestToStateChange ensembleRequests
@@ -68,6 +68,7 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   let ensembleResponseChange = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown
+  samplesLoadedEv <- loadSampleMap
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange]
 
   -- hints
