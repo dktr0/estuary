@@ -196,10 +196,10 @@ clean: cleanStage cleanDevStage
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer
+	cd ./$(STAGING_ROOT) && ./EstuaryServer test
 
 runServer: nixBuild stageStaticAssets stageSamples nixStageClient nixStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer
+	cd ./$(STAGING_ROOT) && ./EstuaryServer test
 
 selfCertificates:
 	openssl genrsa -out staging/privkey.pem 2048

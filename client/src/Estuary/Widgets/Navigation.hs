@@ -15,6 +15,7 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import Text.Read
+import Control.Monad.IO.Class
 
 import Estuary.Reflex.Router
 import Estuary.Reflex.Utility
@@ -60,9 +61,9 @@ navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Ev
 navigation ctx renderInfo wsDown = do
   dynPage <- router Splash never $ page ctx renderInfo wsDown
   let dynPageData = fmap snd dynPage
-  let requestsUp = switchDyn $ fmap (\(x,_,_) -> x) dynPageData
-  let ensembleRequestsUp = switchDyn $ fmap (\(_,x,_) -> x) dynPageData
-  let hintsUp = switchDyn $ fmap (\(_,_,x) -> x) dynPageData
+  let requestsUp = switchPromptlyDyn $ fmap (\(x,_,_) -> x) dynPageData
+  let ensembleRequestsUp = switchPromptlyDyn $ fmap (\(_,x,_) -> x) dynPageData
+  let hintsUp = switchPromptlyDyn $ fmap (\(_,_,x) -> x) dynPageData
   return (requestsUp,ensembleRequestsUp,hintsUp)
 
 
@@ -98,7 +99,12 @@ page ctx _ wsDown About = do
   return (never, (never, never, never))
 
 page ctx _ wsDown Lobby = do
-  requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
+  -- at widget build and every 3 seconds thereafter, request the list of available ensembles
+  requestEnsembleList0 <- liftM (GetEnsembleList <$) getPostBuild
+  now <- liftIO $ getCurrentTime
+  requestEnsembleList1 <- liftM (GetEnsembleList <$) $ tickLossy (3::NominalDiffTime) now
+  let requestEnsembleList = leftmost [requestEnsembleList0,requestEnsembleList1]
+  -- process received ensemble lists into widgets that display info about, and let us join, ensembles
   ensembleList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
   ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton -- Event t Text
   let navToJoinEnsemble = fmap JoinEnsemblePage ensembleClicked
