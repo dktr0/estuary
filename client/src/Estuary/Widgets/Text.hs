@@ -90,8 +90,8 @@ textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** T
     let languageToDisplayHelp = ( _dropdown_value d)
     hideableWidget helpVisible "width-100-percent" $ languageHelpWidget languageToDisplayHelp
     let v' = (,) <$> parserValue <*> textValue
-    let editEvent = tag (current v') $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent = tag (current v') $ leftmost [evalButton,shiftEnter]
+    let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
+    let evalEvent = tagPromptlyDyn v' $ leftmost [evalButton,shiftEnter]
     return (editEvent,evalEvent)
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]

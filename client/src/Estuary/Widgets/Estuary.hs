@@ -65,8 +65,9 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   let commandChange = fmap commandToStateChange command
   let ensembleRequestChange = fmap requestToStateChange ensembleRequests
   let ensembleResponses = fmap justEnsembleResponses deltasDown
-  let ensembleResponseChange = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) ensembleResponses
-  let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange]
+  let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
+  let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
+  let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown
   samplesLoadedEv <- loadSampleMap
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange]

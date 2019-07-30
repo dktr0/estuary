@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import TextShow
 import Control.Applicative
 
+import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Definition
@@ -44,6 +45,9 @@ emptyEnsembleC t = EnsembleC {
   userHandle = "",
   view = Right "default"
   }
+
+joinEnsembleC :: Text -> Text -> EnsembleC -> EnsembleC
+joinEnsembleC eName uName es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, view = Right "default" }
 
 leaveEnsembleC :: EnsembleC -> EnsembleC
 leaveEnsembleC x = x {
@@ -114,15 +118,19 @@ requestToStateChange _ es = es
 -- not matched here. Instead, the server responds to these requests to all participants
 -- and in this way the information "comes back down" from the server.
 
-responseToStateChange :: EnsembleResponse -> EnsembleC -> EnsembleC
-responseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) es
-responseToStateChange (ZoneRcvd n v) es = modifyEnsemble (writeZone n v) es
-responseToStateChange (ViewRcvd t v) es = modifyEnsemble (writeView t v) es
-responseToStateChange (ChatRcvd c) es = modifyEnsemble (appendChat c) es
-responseToStateChange (ParticipantJoins n x) es = modifyEnsemble (writeParticipant n x) es
-responseToStateChange (ParticipantUpdate n x) es = modifyEnsemble (writeParticipant n x) es
-responseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
-responseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
+ensembleResponseToStateChange :: EnsembleResponse -> EnsembleC -> EnsembleC
+ensembleResponseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) es
+ensembleResponseToStateChange (ZoneRcvd n v) es = modifyEnsemble (writeZone n v) es
+ensembleResponseToStateChange (ViewRcvd t v) es = modifyEnsemble (writeView t v) es
+ensembleResponseToStateChange (ChatRcvd c) es = modifyEnsemble (appendChat c) es
+ensembleResponseToStateChange (ParticipantJoins n x) es = modifyEnsemble (writeParticipant n x) es
+ensembleResponseToStateChange (ParticipantUpdate n x) es = modifyEnsemble (writeParticipant n x) es
+ensembleResponseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
+ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
+ensembleResponseToStateChange _ es = es
+
+responseToStateChange :: Response -> EnsembleC -> EnsembleC
+responseToStateChange (JoinedEnsemble eName uName) es = joinEnsembleC eName uName es
 responseToStateChange _ es = es
 
 commandToRequest :: EnsembleC -> Terminal.Command -> Maybe EnsembleRequest
@@ -134,4 +142,11 @@ responseToMessage :: EnsembleResponse -> Maybe Text
 responseToMessage (ChatRcvd c) = Just $ showChatMessage c
 responseToMessage (ParticipantJoins n _) = Just $ n <> " has joined the ensemble"
 responseToMessage (ParticipantLeaves n) = Just $ n <> " has left the ensemble"
+-- the cases below are for debugging only and can be commented out when not debugging:
+responseToMessage (TempoRcvd _) = Just $ "received new tempo"
+responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showt n
+responseToMessage (ViewRcvd n _) = Just $ "received view " <> n
+responseToMessage (ParticipantUpdate n _) = Just $ "received ParticipantUpdate about " <> n
+responseToMessage (AnonymousParticipants n) = Just $ "now there are " <> showt n <> " anonymous participants"
+-- don't comment out the case below, of course!
 responseToMessage _ = Nothing
