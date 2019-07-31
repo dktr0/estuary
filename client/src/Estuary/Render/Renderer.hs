@@ -53,14 +53,19 @@ type Renderer = StateT RenderState IO ()
 renderPeriod :: NominalDiffTime
 renderPeriod = 0.032
 
+getRenderTime :: Context -> StateT RenderState IO UTCTime
+getRenderTime c = do
+  tAudio <- liftAudioIO $ audioTime
+  return $ audioSecondsToUTC (clockDiff c) tAudio
+
 -- flush events for SuperDirt and WebDirt
 flushEvents :: Context -> Renderer
 flushEvents c = do
   events <- gets dirtEvents
   when (webDirtOn c) $ do
-    let events' = fmap (first (utcTimeToAudioSeconds $ t0 c)) events
+    let events' = fmap (first (utcTimeToAudioSeconds $ clockDiff c)) events
     liftIO $ sendSoundsAudio (webDirt c) events'
-  when (superDirtOn c) $ liftIO $ sendSoundsUtc (superDirt c) events
+  when (superDirtOn c) $ liftIO $ sendSoundsPOSIX (superDirt c) events
   modify' $ \x -> x { dirtEvents = [] }
   return ()
 
@@ -84,7 +89,7 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: Context -> Renderer
 render c = do
-  t1 <- liftIO $ getCurrentTime
+  t1 <- getRenderTime c
   s <- get
   when (canvasElement c /= cachedCanvasElement s) $ do
     liftIO $ putStrLn "render: canvasElement new/changed"
@@ -92,10 +97,10 @@ render c = do
     modify' $ \x -> x { cachedCanvasElement = canvasElement c }
   traverseWithKey (renderZone c) (zones $ ensemble $ ensembleC c)
   flushEvents c
-  t2 <- liftIO $ getCurrentTime
+  t2 <- getRenderTime c
   modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
   calculateRenderTimes
-  scheduleNextRender
+  scheduleNextRender c
 
 canvasChanged :: Context -> Int -> Definition -> Renderer
 canvasChanged c z (TextProgram x) = canvasChangedTextProgram c z $ forRendering x
@@ -112,7 +117,7 @@ canvasChangedTextProgram _ _ _ = return ()
 
 renderZone :: Context -> Int -> Definition -> Renderer
 renderZone c z d = do
-  t1 <- liftIO $ getCurrentTime
+  t1 <- getRenderTime c
   s <- get
   let prevDef = IntMap.lookup z $ cachedDefs s
   let d' = definitionForRendering d
@@ -120,34 +125,35 @@ renderZone c z d = do
     renderZoneChanged c z d'
     modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
   renderZoneAlways c z d'
-  t2 <- liftIO $ getCurrentTime
+  t2 <- getRenderTime c
   let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
   let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
   modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
 
 renderAnimation :: Context -> Renderer
 renderAnimation c = do
-  tNow <- liftAudioIO $ audioTime
+  tNow <- getRenderTime c
   traverseWithKey (renderZoneAnimation tNow c) (zones $ ensemble $ ensembleC c)
   return ()
 
-renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
+renderZoneAnimation :: UTCTime -> Context -> Int -> Definition -> Renderer
 renderZoneAnimation tNow c z (TextProgram x) = do
   s <- get
-  t1 <- liftIO $ getCurrentTime
+  t1 <- getRenderTime c
   renderZoneAnimationTextProgram tNow c z $ forRendering x
-  t2 <- liftIO $ getCurrentTime
+  t2 <- getRenderTime c
   let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
   let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
   modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
   return ()
 renderZoneAnimation _ _ _ _ = return ()
 
-renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,Text) -> Renderer
+renderZoneAnimationTextProgram :: UTCTime -> Context -> Int -> (TextNotation,Text) -> Renderer
 renderZoneAnimationTextProgram tNow c z (Punctual,x) = do
   webGLs <- gets punctualWebGLs
   let webGL = findWithDefault Punctual.emptyPunctualWebGL z webGLs
-  liftIO $ Punctual.drawFrame tNow webGL
+  let tNow' = utcTimeToAudioSeconds (clockDiff c) tNow
+  liftIO $ Punctual.drawFrame tNow' webGL
 renderZoneAnimationTextProgram _ _ _ _ = return ()
 
 renderZoneChanged :: Context -> Int -> Definition -> Renderer
@@ -156,7 +162,7 @@ renderZoneChanged c z (Structure x) = do
   s <- get
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
 renderZoneChanged c z (TextProgram x) = do
-  liftIO $ putStrLn $ "zone " ++ show z ++ " TextProgram changed, type = " ++ show x
+  -- liftIO $ putStrLn $ "zone " ++ show z ++ " TextProgram changed, type = " ++ show x
   renderTextProgramChanged c z $ forRendering x
 renderZoneChanged c z (Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
@@ -265,11 +271,11 @@ calculateZoneAnimationTimes z zat = do
   let newAvgMap = insert z (getAverage zat) (avgZoneAnimationTime $ info s)
   modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap }}
 
-scheduleNextRender :: Renderer
-scheduleNextRender = do
+scheduleNextRender :: Context -> Renderer
+scheduleNextRender c = do
   s <- get
   let next = addUTCTime renderPeriod (logicalTime s)
-  tNow <- liftIO $ getCurrentTime
+  tNow <- getRenderTime c
   let diff = diffUTCTime next tNow
   -- if next logical time is more than 0.2 seconds in the past or future
   -- fast-forward or rewind by half of the difference
@@ -281,10 +287,10 @@ scheduleNextRender = do
 
 -- if the (potentially adjusted) next logical time is more than a half period from now
 -- sleep (threadDelay) so that next logical time is approximately a half period from then
-sleepIfNecessary :: Renderer
-sleepIfNecessary = do
+sleepIfNecessary :: Context -> Renderer
+sleepIfNecessary c = do
   next <- gets logicalTime
-  tNow <- liftIO $ getCurrentTime
+  tNow <- getRenderTime c
   let halfPeriod = renderPeriod / 2
   let diff = diffUTCTime next tNow
   when (diff > halfPeriod) $ do
@@ -294,7 +300,8 @@ sleepIfNecessary = do
 
 forkRenderThreads :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThreads ctxM riM = do
-  renderStart <- getCurrentTime
+  ctx <- readMVar ctxM
+  renderStart <- liftAudioIO $ audioSecondsToUTC (clockDiff ctx) <$> audioTime
   irs <- initialRenderState renderStart
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread ctxM riM rsM
@@ -307,7 +314,7 @@ mainRenderThread ctxM riM rsM = do
   rs' <- execStateT (render ctx) rs
   swapMVar rsM rs'
   swapMVar riM (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
-  execStateT sleepIfNecessary rs'
+  execStateT (sleepIfNecessary ctx) rs'
   mainRenderThread ctxM riM rsM
 
 animationThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()

@@ -106,6 +106,7 @@ pollRenderInfo riM = do
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 
+-- every 10.02 seconds, resample the difference between system clock and audio clock
 pollClockDiff :: MonadWidget t m => m (Event t ContextChange)
 pollClockDiff = do
   now <- liftIO $ getCurrentTime
