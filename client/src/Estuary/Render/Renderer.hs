@@ -68,7 +68,7 @@ datumToValue (Int32 x) = Just $ Tidal.VI $ fromIntegral x
 datumToValue (Int64 x) = Just $ Tidal.VI $ fromIntegral x
 datumToValue (Float x) = Just $ Tidal.VF $ realToFrac x
 datumToValue (Double x) = Just $ Tidal.VF $ x
-datumToValue (ASCII_String x) = Just $ Tidal.VS $ show x
+datumToValue (ASCII_String x) = Just $ Tidal.VS $ ascii_to_string x
 datumToValue _ = Nothing
 
 -- flush events for SuperDirt and WebDirt

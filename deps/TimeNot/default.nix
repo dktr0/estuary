@@ -1,5 +1,5 @@
 { callCabal2nix, ... }: 
-callCabal2nix "punctual" (
+callCabal2nix "TimeNot" (
   import ../github-dep.nix {
     spec = ./github.json;
   }

@@ -146,8 +146,8 @@ in
         webdirt = import ./deps/webdirt self;
 
         # timeNot = import ./deps/timeNot self;
-        timeNot = if !(self.ghc.isGhcjs or false) then null
-          else dontHaddock (import ./deps/timeNot self);
+        TimeNot = if !(self.ghc.isGhcjs or false) then null
+          else dontHaddock (import ./deps/TimeNot self);
 
         musicw = if !(self.ghc.isGhcjs or false) then null
           else dontHaddock (import ./deps/musicw self);
