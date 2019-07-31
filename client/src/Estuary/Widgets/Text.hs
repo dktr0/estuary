@@ -51,7 +51,7 @@ textWidget rows i delta = do
 
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp,CineCer0] ++ (fmap TidalTextNotation tidalParsers)
+textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp,CineCer0,TimeNot] ++ (fmap TidalTextNotation tidalParsers)
 
 
 textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) ->

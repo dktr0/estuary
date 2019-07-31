@@ -13,7 +13,8 @@ data TextNotation =
   SuperContinent |
   SvgOp |
   CanvasOp |
-  CineCer0
+  CineCer0 |
+  TimeNot
   deriving (Read,Eq,Ord,Data,Typeable,Show)
 
 textNotationDropDownLabel :: TextNotation -> String
