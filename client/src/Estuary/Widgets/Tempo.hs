@@ -18,8 +18,6 @@ import Estuary.Types.Tempo
 import Estuary.Types.Context
 import Estuary.Types.EnsembleResponse
 import Estuary.Widgets.Text
-import Estuary.Render.AudioContext
-import Estuary.Utility (lastOrNothing)
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language

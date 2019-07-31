@@ -25,7 +25,6 @@ import Estuary.Types.View.Presets
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Tempo
 import Estuary.Types.Hint
-import Estuary.Render.AudioContext
 import Estuary.Types.Participant
 import Estuary.Types.Tempo
 

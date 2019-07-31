@@ -22,6 +22,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Bifunctor
+import TextShow
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Punctual.PunctualW as Punctual
@@ -46,7 +47,6 @@ import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
-import Estuary.Render.AudioContext
 
 type Renderer = StateT RenderState IO ()
 
@@ -191,24 +191,25 @@ renderTextProgramChanged c z (Punctual,x) = do
   s <- get
   ac <- liftAudioIO $ audioContext
   let parseResult = Punctual.runPunctualParser x
-  if isLeft parseResult then return () else do
+  when (isRight parseResult) $ do
     -- A. update PunctualW (audio state) in response to new, syntactically correct program
-    let exprs = either (const []) id parseResult
-    let t = logicalTime s
-    let eval = (exprs,t)
+    let exprs = fromRight [] parseResult
+    let t = utcTimeToAudioSeconds (clockDiff c) $ logicalTime s
+    let evaluation = (exprs,t)
     let (mainBusIn,_,_,_) = mainBus c
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 t) z (punctuals s)
     let tempo' = tempo $ ensemble $ ensembleC c
-    let beat0 = beatZero tempo'
+    let beat0 = utcTimeToAudioSeconds (clockDiff c) $ beatZero tempo'
+    -- liftIO $ T.putStrLn $ "beat0 at " <> showt beat0
     let cps' = cps tempo'
-    newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') eval
+    newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') evaluation
     modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
     -- B. update Punctual WebGL state in response to new, syntactically correct program
     webGLs <- gets punctualWebGLs
     let prevWebGL = IntMap.lookup z webGLs
     prevWebGL' <- if isJust prevWebGL then return (fromJust prevWebGL) else
       liftIO $ Punctual.updateRenderingContext Punctual.emptyPunctualWebGL (canvasElement c)
-    newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL' (beat0,realToFrac cps') eval
+    newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL' (beat0,realToFrac cps') evaluation
     modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
   let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}

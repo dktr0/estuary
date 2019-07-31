@@ -4,7 +4,6 @@ import Data.Time.Clock
 import Data.Time.Clock.POSIX
 import qualified Sound.Tidal.Context as Tidal
 import Control.Exception
-import Sound.MusicW.AudioContext (utcTimeToDouble)
 import Data.Bifunctor
 
 class SampleEngine e where

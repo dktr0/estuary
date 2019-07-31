@@ -26,7 +26,6 @@ import Estuary.WebDirt.SuperDirt
 import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.EnsembleC
-import Estuary.Render.AudioContext
 import Estuary.Render.DynamicsMode
 import Estuary.Render.LocalResources
 import Estuary.Protocol.Peer

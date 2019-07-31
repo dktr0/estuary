@@ -12,7 +12,6 @@ import Control.Monad.IO.Class(liftIO)
 
 import Sound.MusicW
 
-import Estuary.Render.AudioContext
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.Protocol.Peer
