@@ -16,11 +16,10 @@ import qualified Data.Text as T
 import Estuary.Protocol.Foreign
 import Estuary.Types.Request
 import Estuary.Types.Response
-import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Context
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 
 -- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
 -- for collaborative editing. While the password is dynamic, like the Reflex WebSocket the socket address
@@ -43,12 +42,18 @@ estuaryWebSocket addr pwd toSend = mdo
     isOk _ = Just (ProtocolError "unknown protocol error")
 -}
 
-alternateWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t Request ->
+sendRequests :: EstuaryProtocolObject -> [Request] -> IO ()
+sendRequests obj rs = mapM_ (sendRequest obj) rs
+
+sendRequest :: EstuaryProtocolObject -> Request -> IO ()
+sendRequest obj r = send obj $ T.pack $ encode r -- *** should remove that conversion to String later and encode directly to JSON text!!!
+
+alternateWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
   m (Event t [Response], Event t ContextChange)
 alternateWebSocket ctx rInfo toSend = mdo
   obj <- liftIO estuaryProtocol
   now <- liftIO $ getCurrentTime
-  performEvent_ $ fmap (liftIO . (send obj) . T.pack . encode) $ leftmost [sendBrowserInfo,clientInfoEvent,toSend] -- *** should remove that conversion to String later and encode directly to JSON text!!!
+  performEvent_ $ fmap (liftIO . sendRequests obj) $ leftmost [sendBrowserInfo,clientInfoEvent,toSend]
   ticks <- tickLossy (0.1::NominalDiffTime) now
   responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
   -- responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
@@ -61,19 +66,18 @@ alternateWebSocket ctx rInfo toSend = mdo
   -- after widget is built, query and report browser info to server
   postBuild <- getPostBuild
   userAgent <- performEvent $ fmap (liftIO . const getUserAgent) postBuild
-  let sendBrowserInfo = fmap BrowserInfo userAgent
+  let sendBrowserInfo = fmap ((:[]) . BrowserInfo) userAgent
 
   -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
   let socketIsOpen = fmap (=="connection open") status'
   pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
   pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
-  initialTime <- liftIO getCurrentTime
-  timeDyn <- holdDyn initialTime pingTickTime
+  let clientInfoWithPingTime = fmap ClientInfo pingTickTime
   let loadDyn = fmap avgRenderLoad rInfo
   let animationLoadDyn = fmap avgAnimationLoad rInfo
   latencyDyn <- holdDyn 0 $ latency
-  let clientInfoDyn = ClientInfo <$> timeDyn <*> loadDyn <*> animationLoadDyn <*> latencyDyn
-  let clientInfoEvent = tagPromptlyDyn clientInfoDyn pingTick
+  let loadAnimationAndLatency = (\x y z -> (x,y,z)) <$> loadDyn <*> animationLoadDyn <*> latencyDyn
+  let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith (\(x,y,z) w -> w x y z) loadAnimationAndLatency clientInfoWithPingTime
 
   -- the server responds to ClientInfo (above) with ServerInfo, which we process below
   -- by issuing events that update the context

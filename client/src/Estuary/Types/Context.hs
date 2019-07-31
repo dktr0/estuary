@@ -12,7 +12,7 @@ import Data.Time
 import GHCJS.Types
 
 import GHCJS.DOM.Blob
-import GHCJS.DOM.Types (HTMLCanvasElement)
+import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -23,10 +23,9 @@ import Estuary.Types.Resources
 import Estuary.Types.Samples
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
-import Estuary.RenderState
+import Estuary.Types.RenderState
 import Estuary.Types.Tempo
-import Estuary.Types.CanvasState
-import Estuary.Types.EnsembleState
+import Estuary.Types.EnsembleC
 import Estuary.Render.AudioContext
 import Estuary.Render.DynamicsMode
 import Estuary.Render.LocalResources
@@ -35,12 +34,13 @@ import Sound.MusicW (Node)
 
 data Context = Context {
   mainBus :: (Node,Node,Node,Node), -- ^ main bus input, pregain, compressor, postgain
+  clockDiff :: (UTCTime,Double), -- ^ a sampled value of equivalent times in UTC and on the audio clock
   dynamicsMode :: DynamicsMode,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
   language :: Language,
   theme :: Text,
-  ensembleState :: EnsembleState,
+  ensembleC :: EnsembleC,
   samples :: SampleMap,
   localResourceServers :: LocalResourceServers,
   privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
@@ -51,20 +51,22 @@ data Context = Context {
   wsStatus :: Text,
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
-  canvasState :: MVar CanvasState,
   canvasElement :: Maybe HTMLCanvasElement,
-  peerProtocol :: JSVal
+  videoDivElement :: Maybe HTMLDivElement,
+  peerProtocol :: JSVal,
+  theVideoDiv :: Maybe JSVal
   }
 
-initialContext :: UTCTime -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> MVar CanvasState -> JSVal -> Context
-initialContext now mBus wd sd mv pp = Context {
+initialContext :: UTCTime -> Double -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> JSVal -> Context
+initialContext nowUtc nowAudio mBus wd sd pp = Context {
   mainBus = mBus,
+  clockDiff = (nowUtc,nowAudio),
   dynamicsMode = DefaultDynamics,
   webDirt = wd,
   superDirt = sd,
   language = English,
   theme = "../css-custom/classic.css",
-  ensembleState = newEnsembleState $ Tempo { cps = 0.5, at = now, beat = 0.0 },
+  ensembleC = emptyEnsembleC nowUtc,
   localResourceServers = emptyLocalResourceServers,
   privateResources = emptyResources,
   resources = emptyResources,
@@ -75,15 +77,19 @@ initialContext now mBus wd sd mv pp = Context {
   wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
-  canvasState = mv,
   canvasElement = Nothing,
-  peerProtocol = pp
+  videoDivElement = Nothing,
+  peerProtocol = pp,
+  theVideoDiv = Nothing
 }
 
 type ContextChange = Context -> Context
 
 setTheme :: Text -> ContextChange
-setTheme x c = c {theme = x}
+setTheme x c = c { theme = x }
+
+setClockDiff :: (UTCTime,Double) -> ContextChange
+setClockDiff x c = c { clockDiff = x }
 
 setLanguage :: Language -> ContextChange
 setLanguage x c = c { language = x }
@@ -91,14 +97,8 @@ setLanguage x c = c { language = x }
 setClientCount :: Int -> ContextChange
 setClientCount x c = c { clientCount = x }
 
-modifyEnsemble :: (EnsembleState -> EnsembleState) -> ContextChange
-modifyEnsemble f c = c { ensembleState = f (ensembleState c) }
-
-{- setDefinitions :: (Text, DefinitionMap) -> ContextChange
-setDefinitions (x, y) c = c {
-  activeDefsEnsemble = x,
-  definitions = y
-} -}
+modifyEnsembleC :: (EnsembleC -> EnsembleC) -> ContextChange
+modifyEnsembleC f c = c { ensembleC = f (ensembleC c) }
 
 setSampleMap :: SampleMap -> ContextChange
 setSampleMap x c = c { samples = x}

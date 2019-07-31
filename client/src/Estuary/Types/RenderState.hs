@@ -1,4 +1,4 @@
-module Estuary.RenderState where
+module Estuary.Types.RenderState where
 
 import Data.Time.Clock
 import Data.IntMap.Strict
@@ -9,9 +9,8 @@ import Sound.MusicW.AudioContext
 import GHCJS.DOM.Types
 
 import Estuary.Types.Definition
-import Estuary.RenderInfo
-import Estuary.Types.CanvasOp
-import qualified Estuary.Languages.SuperContinent as SuperContinent
+import Estuary.Types.RenderInfo
+import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import Estuary.Types.MovingAverage
 
 data RenderState = RenderState {
@@ -22,20 +21,17 @@ data RenderState = RenderState {
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
   punctuals :: !(IntMap (Punctual.PunctualW AudioContextIO)),
   punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
-  superContinentProgram :: SuperContinent.Program,
-  superContinentState :: SuperContinent.SuperContinentState,
+  cineCer0States :: !(IntMap CineCer0.CineCer0State),
   renderStartTime :: !UTCTime,
   renderEndTime :: !UTCTime,
   renderTime :: !MovingAverage,
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
-  info :: !RenderInfo,
-  canvasOps :: [(UTCTime,CanvasOp)]
+  info :: !RenderInfo
   }
 
 initialRenderState :: UTCTime -> IO RenderState
 initialRenderState t = do
-  scs <- SuperContinent.emptyState
   return $ RenderState {
     logicalTime = t,
     cachedDefs = empty,
@@ -44,13 +40,11 @@ initialRenderState t = do
     dirtEvents = [],
     punctuals = empty,
     punctualWebGLs = empty,
-    superContinentProgram = [],
-    superContinentState = scs,
+    cineCer0States = empty,
     renderStartTime = t,
     renderEndTime = t,
     renderTime = newAverage 20,
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
-    info = emptyRenderInfo,
-    canvasOps = []
+    info = emptyRenderInfo
   }

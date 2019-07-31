@@ -86,9 +86,6 @@ translate Theme Español = "Tema"
 translate Load English = "load"
 translate Load Español = "carga"
 
-translate Peak English = "peak"
-translate Peak Español = "tope"
-
 translate NewTempo English = "Set new tempo"
 translate NewTempo Español = "Establecer Nuevo tempo"
 

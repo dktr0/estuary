@@ -2,6 +2,8 @@
 module Estuary.Types.Variable where
 
 import Reflex
+import Control.Applicative
+import Control.Monad
 
 -- In this module we define the Variable type, which abstracts around a situation
 -- that is very common across the Estuary project - wanting to represent values
@@ -23,5 +25,25 @@ instance Reflex t => Applicative (Variable t) where
      d = fDyn <*> xDyn
      e = tagPromptlyDyn d $ leftmost [() <$ fEdit,() <$ xEdit]
 
--- not sure if we can define a monad instance for Variable but this is probably okay
--- (in many cases our values of this type are wrapped in another monadic context anyway)
+instance Reflex t => Monad (Variable t) where
+  (Variable aDyn aEvent) >>= f = Variable dynResult evResult
+    where
+      dynVar = fmap f aDyn -- :: Dynamic t (Variable t b)
+      dynResult = join $ fmap currentValue dynVar -- :: Dynamic t b
+      fEvent = switchPromptlyDyn $ fmap localEdits dynVar -- Event t b
+      evResult = tagPromptlyDyn dynResult $ leftmost [() <$ aEvent, () <$ fEvent]
+
+instance (Reflex t, Semigroup a) => Semigroup (Variable t a) where
+  (Variable d1 e1) <> (Variable d2 e2) = Variable d e
+    where
+      d = d1 <> d2
+      e = mergeWith (<>) [attachPromptlyDynWith (<>) d1 e2,attachPromptlyDynWith (flip (<>)) d2 e1]
+
+instance (Reflex t, Monoid a) => Monoid (Variable t a) where
+  mempty = Variable (constDyn mempty) never
+
+flattenDynamicVariable :: Reflex t => Dynamic t (Variable t a) -> Variable t a
+flattenDynamicVariable x = Variable d e
+  where
+    d = join $ fmap currentValue x -- Dynamic (Dynamic t a)
+    e = switchPromptlyDyn $ fmap localEdits x -- Dynamic (Event t a)

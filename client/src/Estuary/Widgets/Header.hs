@@ -9,7 +9,7 @@ import qualified Data.Text as T
 import Data.Map.Strict
 
 import Estuary.Types.Context
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Language
 import qualified Estuary.Types.Term as Term
 import Estuary.Render.DynamicsMode
@@ -55,6 +55,6 @@ header ctx = divClass "header primary-color primary-borders" $ divClass "config-
     dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
 
-  privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader
+  -- privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader
 
-  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, privateSamplesChangeEv]
+  return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv {-, privateSamplesChangeEv -}]

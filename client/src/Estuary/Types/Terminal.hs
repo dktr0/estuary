@@ -10,23 +10,18 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Control.Monad.Identity (Identity)
 
 import Estuary.Types.View
-import Estuary.Types.ViewsParser
+import Estuary.Types.View.Parser
 
 data Command =
-  SetView View | -- change the current active view to a specific literal view
-  StandardView | -- make the current active view the "standard" view of this Estuary build
-  PresetView Text | -- make the current active view a preset of this Estuary build (or Standard if not found)
-  DefaultView | -- make the current active view whatever has been stored as the local/ensemble default
-  ActiveView Text | -- make the current active view be the named, published view
-  PublishView Text | -- take the current local view and publish it with a specific name
-  PublishDefaultView | -- take the current local view and publish it as the default local/ensemble view
-  GetView Text | -- request a specific named view from the ensemble server
-  ListViews | -- request the list of all named views from the ensemble server
-  DeleteView Text | -- delete a named view from the ensemble server
-  DumpView | -- dump whatever is currently displayed
+  LocalView View | -- change the active view to a local view that is not shared/stored anywhere
+  PresetView Text | -- make the current active view a named preset of current ensemble or Estuary itself
+  PublishView Text | -- take the current local view and publish it with the specified name
+  ActiveView | -- display name of active view if it is standard/published, otherwise report that it is a local view
+  ListViews | -- display the names of all available standard/published views
+  DumpView | -- display the definition of the current view, regardless of whether standard/published or local
   Chat Text | -- send a chat message
   StartStreaming | -- start RTP streaming of Estuary audio
-  StreamId -- query the id assigned to RTP streaming of Estuary audio
+  StreamId -- display the id assigned to RTP streaming of Estuary audio
   deriving (Show,Eq)
 
 parseCommand :: Text -> Either ParseError Command
@@ -37,16 +32,11 @@ terminal = whiteSpace >> (terminalCommand <|> chatP)
 
 terminalCommand :: Parser Command
 terminalCommand = symbol "!" >> choice [
-  reserved "setview" >> viewsParser >>= return . SetView,
-  reserved "standardview" >> return StandardView,
+  reserved "localview" >> viewsParser >>= return . LocalView,
   reserved "presetview" >> identifierText >>= return . PresetView,
-  reserved "defaultview" >> return DefaultView,
-  reserved "activeview" >> identifierText >>= return . ActiveView,
   reserved "publishview" >> identifierText >>= return . PublishView,
-  reserved "publishdefaultview" >> return PublishDefaultView,
-  reserved "getview" >> identifierText >>= return . GetView,
+  reserved "activeview" >> return ActiveView,
   reserved "listviews" >> return ListViews,
-  reserved "deleteview" >> identifierText >>= return . DeleteView,
   reserved "dumpview" >> return DumpView,
   reserved "startstreaming" >> return StartStreaming,
   reserved "streamid" >> return StreamId
@@ -68,12 +58,11 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opStart = oneOf "+*:@<>~=%",
   P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
-    "setview","standardview","presetview","defaultview","activeview","publishview",
-    "publishdefaultview","getview","listviews","deleteview","dumpview",
-    "startstreaming","streamid"
+    "localview","presetview","publishview","activeview","listviews",
+    "dumpview","startstreaming","streamid"
     ],
   P.reservedOpNames = [],
-  P.caseSensitive = True
+  P.caseSensitive = False
   }
 
 identifier = P.identifier tokenParser

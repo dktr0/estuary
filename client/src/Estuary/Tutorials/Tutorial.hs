@@ -10,7 +10,7 @@ import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.Hint
@@ -19,7 +19,7 @@ import Estuary.Types.Request
 import Estuary.Types.View
 import Estuary.Widgets.Generic
 import Estuary.Widgets.View
-import Estuary.Widgets.Text (textNotationWidget)
+import Estuary.Widgets.Text (textProgramWidget)
 import Estuary.Types.TidalParser
 import Estuary.Types.TextNotation
 import GHC.Generics
@@ -44,7 +44,7 @@ instance Show TutorialId where
 
 data Tutorial t m = Tutorial {
   tutorialId::TutorialId,
-  widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
+  widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint]))
 }
 
 
@@ -66,12 +66,12 @@ labelWidget ctx txt = do
     safeHead a [] = a
     safeHead _ (x:xs) = x
 
-miniTidalWidget :: MonadWidget t m => Dynamic t Context -> Int -> Int -> Text -> m (Dynamic t (Int, Definition), Event t Hint)
+miniTidalWidget :: MonadWidget t m => Dynamic t Context -> Int -> Int -> Text -> m (Dynamic t (Int, Definition), Event t [Hint])
 miniTidalWidget ctx rows index initialText = elClass "div" "panel" $ do
   let silent = (Live (TidalTextNotation MiniTidal,"") L3)
   pb <- liftM (silent <$) $ getPostBuild -- TODO PB used to block things from playing immediately.. should probably be less hacky about this
   shh <- buttonDynAttrs "silence" silent (constDyn $ M.fromList [("style","float:right"), ("class", "ui-buttons other-borders")])
-  (v, _, hints) <- textNotationWidget ctx (constDyn Nothing) rows (Live (TidalTextNotation MiniTidal, initialText) L3) never
-  v' <- holdDyn (Live (TidalTextNotation MiniTidal, initialText) L3) $  leftmost [pb, updated v, shh]
+  (e, hints) <- textProgramWidget ctx (constDyn Nothing) rows (Live (TidalTextNotation MiniTidal, initialText) L3) never
+  v' <- holdDyn (Live (TidalTextNotation MiniTidal, initialText) L3) $  leftmost [pb, e, shh]
   let defn = fmap (\v-> (index,(TextProgram v))) v'
   return (defn, hints)

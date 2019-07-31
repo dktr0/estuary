@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
-module Estuary.Renderer where
+module Estuary.Render.Renderer where
 
 import Data.Time.Clock
 import qualified Sound.Tidal.Context as Tidal
@@ -21,22 +21,19 @@ import GHCJS.Concurrent
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Data.Bifunctor
 
 import Sound.MusicW.AudioContext
-
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Types as Punctual
 import qualified Sound.Punctual.Parser as Punctual
-import qualified Estuary.Languages.SuperContinent as SuperContinent
-import qualified Estuary.Languages.SvgOp as SvgOp
-import qualified Estuary.Languages.CanvasOp as CanvasOp
-import qualified Estuary.Types.CanvasOp as CanvasOp
-import Estuary.Types.CanvasState
-import Estuary.Types.EnsembleState
-import Estuary.Types.Color
 
+import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
+import qualified Estuary.Languages.CineCer0.Parser as CineCer0
+import Estuary.Types.Ensemble
+import Estuary.Types.EnsembleC
 import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
@@ -45,8 +42,8 @@ import Estuary.Tidal.ParamPatternable
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
 import Estuary.WebDirt.SampleEngine
-import Estuary.RenderInfo
-import Estuary.RenderState
+import Estuary.Types.RenderInfo
+import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.AudioContext
@@ -56,22 +53,20 @@ type Renderer = StateT RenderState IO ()
 renderPeriod :: NominalDiffTime
 renderPeriod = 0.032
 
+getRenderTime :: Context -> StateT RenderState IO UTCTime
+getRenderTime c = do
+  tAudio <- liftAudioIO $ audioTime
+  return $ audioSecondsToUTC (clockDiff c) tAudio
+
+-- flush events for SuperDirt and WebDirt
 flushEvents :: Context -> Renderer
 flushEvents c = do
-  -- flush events for SuperDirt and WebDirt
   events <- gets dirtEvents
-  liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
-  liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
-  -- flush CanvasOps to an MVar queue (list)
-  when (canvasOn c) $ do
-    -- *** note: there is currently no consumer of this queue by default
-    -- languages that use this queue should either be removed, or functionality
-    -- added such that this canvasOps can be performed on the main canvas/requestAnimationFrame thread
-    oldCvsState <- liftIO $ takeMVar $ canvasState c
-    newOps <- gets canvasOps
-    newCvsState <- liftIO $ evaluate $ pushCanvasOps newOps oldCvsState
-    liftIO $ putMVar (canvasState c) newCvsState
-  modify' $ \x -> x { dirtEvents = [], canvasOps = []}
+  when (webDirtOn c) $ do
+    let events' = fmap (first (utcTimeToAudioSeconds $ clockDiff c)) events
+    liftIO $ sendSoundsAudio (webDirt c) events'
+  when (superDirtOn c) $ liftIO $ sendSoundsPOSIX (superDirt c) events
+  modify' $ \x -> x { dirtEvents = [] }
   return ()
 
 renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
@@ -94,18 +89,18 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: Context -> Renderer
 render c = do
-  t1 <- liftIO $ getCurrentTime
+  t1 <- getRenderTime c
   s <- get
   when (canvasElement c /= cachedCanvasElement s) $ do
     liftIO $ putStrLn "render: canvasElement new/changed"
-    traverseWithKey (canvasChanged c) (zones $ ensembleState c)
+    traverseWithKey (canvasChanged c) (zones $ ensemble $ ensembleC c)
     modify' $ \x -> x { cachedCanvasElement = canvasElement c }
-  traverseWithKey (renderZone c) (zones $ ensembleState c)
+  traverseWithKey (renderZone c) (zones $ ensemble $ ensembleC c)
   flushEvents c
-  t2 <- liftIO $ getCurrentTime
+  t2 <- getRenderTime c
   modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
   calculateRenderTimes
-  scheduleNextRender
+  scheduleNextRender c
 
 canvasChanged :: Context -> Int -> Definition -> Renderer
 canvasChanged c z (TextProgram x) = canvasChangedTextProgram c z $ forRendering x
@@ -122,7 +117,7 @@ canvasChangedTextProgram _ _ _ = return ()
 
 renderZone :: Context -> Int -> Definition -> Renderer
 renderZone c z d = do
-  t1 <- liftIO $ getCurrentTime
+  t1 <- getRenderTime c
   s <- get
   let prevDef = IntMap.lookup z $ cachedDefs s
   let d' = definitionForRendering d
@@ -130,34 +125,35 @@ renderZone c z d = do
     renderZoneChanged c z d'
     modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
   renderZoneAlways c z d'
-  t2 <- liftIO $ getCurrentTime
+  t2 <- getRenderTime c
   let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
   let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
   modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
 
 renderAnimation :: Context -> Renderer
 renderAnimation c = do
-  tNow <- liftAudioIO $ audioTime
-  traverseWithKey (renderZoneAnimation tNow c) (zones $ ensembleState c)
+  tNow <- getRenderTime c
+  traverseWithKey (renderZoneAnimation tNow c) (zones $ ensemble $ ensembleC c)
   return ()
 
-renderZoneAnimation :: Double -> Context -> Int -> Definition -> Renderer
+renderZoneAnimation :: UTCTime -> Context -> Int -> Definition -> Renderer
 renderZoneAnimation tNow c z (TextProgram x) = do
   s <- get
-  t1 <- liftIO $ getCurrentTime
+  t1 <- getRenderTime c
   renderZoneAnimationTextProgram tNow c z $ forRendering x
-  t2 <- liftIO $ getCurrentTime
+  t2 <- getRenderTime c
   let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
   let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
   modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
   return ()
 renderZoneAnimation _ _ _ _ = return ()
 
-renderZoneAnimationTextProgram :: Double -> Context -> Int -> (TextNotation,Text) -> Renderer
+renderZoneAnimationTextProgram :: UTCTime -> Context -> Int -> (TextNotation,Text) -> Renderer
 renderZoneAnimationTextProgram tNow c z (Punctual,x) = do
   webGLs <- gets punctualWebGLs
   let webGL = findWithDefault Punctual.emptyPunctualWebGL z webGLs
-  liftIO $ Punctual.drawFrame tNow webGL
+  let tNow' = utcTimeToAudioSeconds (clockDiff c) tNow
+  liftIO $ Punctual.drawFrame tNow' webGL
 renderZoneAnimationTextProgram _ _ _ _ = return ()
 
 renderZoneChanged :: Context -> Int -> Definition -> Renderer
@@ -165,7 +161,9 @@ renderZoneChanged c z (Structure x) = do
   let newParamPattern = toParamPattern x
   s <- get
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged c z (TextProgram x) = renderTextProgramChanged c z $ forRendering x
+renderZoneChanged c z (TextProgram x) = do
+  -- liftIO $ putStrLn $ "zone " ++ show z ++ " TextProgram changed, type = " ++ show x
+  renderTextProgramChanged c z $ forRendering x
 renderZoneChanged c z (Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   s <- get
@@ -180,20 +178,14 @@ renderZoneAlways _ _ _ = return ()
 
 
 renderTextProgramChanged :: Context -> Int -> (TextNotation,Text) -> Renderer
+
 renderTextProgramChanged c z (TidalTextNotation x,y) = do
   s <- get
   let parseResult = tidalParser x y -- :: Either ParseError ControlPattern
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
-  let newErrors = either (\e -> insert z (e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
-
-renderTextProgramChanged c z (SuperContinent,x) = do
-  s <- get
-  let parseResult = SuperContinent.parseSuperContinent x
-  let newProgram = either (const $ superContinentProgram s) id parseResult
-  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
-  modify' $ \x -> x { superContinentProgram = newProgram, info = (info s) { errors = newErrors } }
 
 renderTextProgramChanged c z (Punctual,x) = do
   s <- get
@@ -202,11 +194,11 @@ renderTextProgramChanged c z (Punctual,x) = do
   if isLeft parseResult then return () else do
     -- A. update PunctualW (audio state) in response to new, syntactically correct program
     let exprs = either (const []) id parseResult
-    t <- liftAudioIO $ audioUTCTime
+    let t = logicalTime s
     let eval = (exprs,t)
     let (mainBusIn,_,_,_) = mainBus c
     let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 t) z (punctuals s)
-    let tempo' = tempo $ ensembleState c
+    let tempo' = tempo $ ensemble $ ensembleC c
     let beat0 = beatZero tempo'
     let cps' = cps tempo'
     newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') eval
@@ -218,48 +210,38 @@ renderTextProgramChanged c z (Punctual,x) = do
       liftIO $ Punctual.updateRenderingContext Punctual.emptyPunctualWebGL (canvasElement c)
     newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL' (beat0,realToFrac cps') eval
     modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
-  let newErrors = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
 
-renderTextProgramChanged c z (SvgOp,x) = do
+renderTextProgramChanged c z (CineCer0,x) = do
   s <- get
-  let parseResult = SvgOp.svgOp x
-  let ops = either (const Nothing) Just parseResult
-  let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
-  modify' $ \x -> x { info = (info s) { errors = errs, svgOps = ops }}
-
-renderTextProgramChanged c z (CanvasOp,x) = do
-  s <- get
-  let parseResult = CanvasOp.canvasOp x
-  let ops = either (const []) (fmap (\op -> (logicalTime s, op))) parseResult
-  let errs = either (\e -> insert z (show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
-  modify' $ \x -> x { info = (info s) { errors = errs }, canvasOps = canvasOps s ++ ops }
+  let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.cineCer0 $ T.unpack x -- Either String CineCer0Spec
+  let maybeTheDiv = videoDivElement c
+  when (isJust maybeTheDiv && isRight parseResult) $ do
+    let spec :: CineCer0.CineCer0Spec = fromRight (IntMap.empty) parseResult
+    let theDiv = fromJust maybeTheDiv
+    let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
+    liftIO $ putStrLn $ show parseResult
+    let t = tempo $ ensemble $ ensembleC c
+    let now = logicalTime s
+    newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
+    modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
+  when (isLeft parseResult) $ do
+    let errs = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+    modify' $ \x -> x { info = (info s) { errors = errs }}
 
 renderTextProgramChanged _ _ _ = return ()
 
 renderTextProgramAlways :: Context -> Int -> (TextNotation,Text) -> Renderer
 renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
-renderTextProgramAlways c z (SuperContinent,_) = renderSuperContinent c z
 renderTextProgramAlways _ _ _ = return ()
-
-renderSuperContinent :: Context -> Int -> Renderer
-renderSuperContinent c z = when (canvasOn c) $ do
-  s <- get
-  let cycleTime = elapsedCycles (tempo $ ensembleState c) (logicalTime s)
-  let audio = 0.5 -- placeholder
-  let program = superContinentProgram s
-  let scState = superContinentState s
-  scState' <- liftIO $ SuperContinent.runProgram (realToFrac cycleTime,audio) program scState
-  let newOps = SuperContinent.stateToCanvasOps scState'
-  let newOps' = fmap (\o -> (addUTCTime 0.2 (logicalTime s),o)) newOps
-  modify' $ \x -> x { superContinentState = scState', canvasOps = canvasOps s ++ newOps' }
 
 renderControlPattern :: Context -> Int -> Renderer
 renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   let lt = logicalTime s
-  let tempo' = tempo $ ensembleState c
+  let tempo' = tempo $ ensemble $ ensembleC c
   let events = maybe [] id $ fmap (renderTidalPattern lt renderPeriod tempo') controlPattern
   modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
 
@@ -273,7 +255,6 @@ calculateRenderTimes = do
   let newPeakRenderLoad = ceiling (getPeak newRenderTime * 100 / realToFrac renderPeriod)
   modify' $ \x -> x { renderTime = newRenderTime }
   modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
-  modify' $ \x -> x { info = (info x) { peakRenderLoad = newPeakRenderLoad }}
   traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s
   traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s
   return ()
@@ -282,21 +263,19 @@ calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
 calculateZoneRenderTimes z zrt = do
   s <- get
   let newAvgMap = insert z (getAverage zrt) (avgZoneRenderTime $ info s)
-  let newPeakMap = insert z (getPeak zrt) (peakZoneRenderTime $ info s)
-  modify' $ \x -> x { info = (info x) { avgZoneRenderTime = newAvgMap, peakZoneRenderTime = newPeakMap }}
+  modify' $ \x -> x { info = (info x) { avgZoneRenderTime = newAvgMap }}
 
 calculateZoneAnimationTimes :: Int -> MovingAverage -> Renderer
 calculateZoneAnimationTimes z zat = do
   s <- get
   let newAvgMap = insert z (getAverage zat) (avgZoneAnimationTime $ info s)
-  let newPeakMap = insert z (getPeak zat) (peakZoneAnimationTime $ info s)
-  modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap, peakZoneAnimationTime = newPeakMap }}
+  modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap }}
 
-scheduleNextRender :: Renderer
-scheduleNextRender = do
+scheduleNextRender :: Context -> Renderer
+scheduleNextRender c = do
   s <- get
   let next = addUTCTime renderPeriod (logicalTime s)
-  tNow <- liftAudioIO $ audioUTCTime
+  tNow <- getRenderTime c
   let diff = diffUTCTime next tNow
   -- if next logical time is more than 0.2 seconds in the past or future
   -- fast-forward or rewind by half of the difference
@@ -308,10 +287,10 @@ scheduleNextRender = do
 
 -- if the (potentially adjusted) next logical time is more than a half period from now
 -- sleep (threadDelay) so that next logical time is approximately a half period from then
-sleepIfNecessary :: Renderer
-sleepIfNecessary = do
+sleepIfNecessary :: Context -> Renderer
+sleepIfNecessary c = do
   next <- gets logicalTime
-  tNow <- liftAudioIO $ audioUTCTime
+  tNow <- getRenderTime c
   let halfPeriod = renderPeriod / 2
   let diff = diffUTCTime next tNow
   when (diff > halfPeriod) $ do
@@ -321,7 +300,8 @@ sleepIfNecessary = do
 
 forkRenderThreads :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThreads ctxM riM = do
-  renderStart <- liftAudioIO $ audioUTCTime
+  ctx <- readMVar ctxM
+  renderStart <- liftAudioIO $ audioSecondsToUTC (clockDiff ctx) <$> audioTime
   irs <- initialRenderState renderStart
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread ctxM riM rsM
@@ -334,7 +314,7 @@ mainRenderThread ctxM riM rsM = do
   rs' <- execStateT (render ctx) rs
   swapMVar rsM rs'
   swapMVar riM (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
-  execStateT sleepIfNecessary rs'
+  execStateT (sleepIfNecessary ctx) rs'
   mainRenderThread ctxM riM rsM
 
 animationThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()

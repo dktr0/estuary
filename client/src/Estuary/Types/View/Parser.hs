@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Types.ViewsParser (viewsParser,dumpView) where
+module Estuary.Types.View.Parser (viewsParser,dumpView) where
 
 import Text.Parsec
 import Text.Parsec.Text
--- import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
 import Data.List (intercalate)
@@ -20,10 +19,8 @@ dumpView (Views xs) = T.intercalate " " $ fmap dumpView xs
 dumpView (ViewDiv css v) = "{ " <> css <> " " <> dumpView v <> " }"
 dumpView (StructureView x) = "structure:" <> showInt x
 dumpView (LabelView x) = "label:" <> showInt x
-dumpView (TextView x y) = "textView:" <> showInt x <> " " <> showInt y
-dumpView (SvgDisplayView z) = "svgDisplayView:" <> showInt z
-dumpView (CanvasDisplayView z) = "canvasDisplayView:" <> showInt z
-dumpView (SequenceView z) = "sequenceView:" <> showInt z
+dumpView (TextView x y) = "text:" <> showInt x <> " " <> showInt y
+dumpView (SequenceView z) = "sequence:" <> showInt z
 
 showInt :: Int -> Text
 showInt x = showtParen (x < 0) (showt x)
@@ -45,19 +42,15 @@ viewParser = do
     try labelView,
     try structureView,
     try sequenceView,
-    try tidalTextView,
-    try svgDisplayView,
-    canvasDisplayView
+    textView
     ]
   return v
 
 viewDiv = braces $ (ViewDiv <$> (T.pack <$> identifier) <*> viewsParser)
 labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
 structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
-sequenceView = reserved "sequenceView" >> reservedOp ":" >> (SequenceView <$> int)
-tidalTextView = reserved "textView" >> reservedOp ":" >> (TextView <$> int <*> int)
-svgDisplayView = reserved "svgDisplayView" >> reservedOp ":" >> (SvgDisplayView <$> int)
-canvasDisplayView = reserved "canvasDisplayView" >> reservedOp ":" >> (CanvasDisplayView <$> int)
+sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
+textView = reserved "text" >> reservedOp ":" >> (TextView <$> int <*> int)
 
 int :: Parser Int
 int = choice [

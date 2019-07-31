@@ -21,7 +21,7 @@ playNatural_Pos sh t vl now =
     let vLen = realToFrac vl :: Rational
         cpDur = 1/(cps t)
         off = sh*cpDur
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         difb0' = difb0 - off
         lengths = difb0' / vLen
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
@@ -69,7 +69,7 @@ playRound_Pos sh t vlen now =
         inSecs = newLVinCPS *cpDur -- THIS IS THE ONE YOU DIVIDE with the difb0
 -- I need to provide the seconds from beatZero, after rounding and
 -- trasnforming to seconds it is not necessary to think in cycles.
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         difb0' = difb0 - off
         lengths = difb0' / inSecs
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
@@ -114,7 +114,7 @@ playChop_Pos' onsetPos cycles sh t vlen now =
         cpDur = 1/cp
         off = sh*cpDur
         cInSecs= cd * cpDur
-        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
         difb0' = difb0 - off
         lengths = difb0' / cInSecs
         posNorm = lengths - fromIntegral (floor lengths) :: Rational
@@ -146,7 +146,7 @@ playChop_Pos startPos endPos cycles sh t vlen now =
         ecFloored = fromIntegral (floor ecOff) :: Rational
         ecNow = ecOff - ecFloored
         pos = reglaDeTres 1 ecNow interval
-        pos' = start + pos 
+        pos' = start + pos
     in Just (realToFrac pos')
 
 
@@ -167,7 +167,7 @@ playChop_Rate startPos endPos cycles sh t vlen now
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
 
--------- the UBER chop with start and end position in seconds instead of 0 to 1 --------- 
+-------- the UBER chop with start and end position in seconds instead of 0 to 1 ---------
 
          --           startPos     -> endPos          -> Cycles   ->   Shift  -> Tempo -> VideoLength     -> Now     -> Position
 playChopSecs_Pos:: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
@@ -186,14 +186,14 @@ playChopSecs_Pos startPos endPos cycles sh t vlen now =
         ecFloored = fromIntegral (floor ecOff) :: Rational
         ecNow = ecOff - ecFloored
         pos = reglaDeTres 1 ecNow interval
-        pos' = start + pos 
+        pos' = start + pos
     in Just (realToFrac pos')
 
 
 playChopSecs_Rate:: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playChopSecs_Rate startPos endPos cycles sh t vlen now 
+playChopSecs_Rate startPos endPos cycles sh t vlen now
     | startPos == endPos = Just 0
-    | otherwise = 
+    | otherwise =
     let cp = (cps t)
         cpsDur = 1/cp
         vl = realToFrac vlen :: Rational
@@ -203,14 +203,13 @@ playChopSecs_Rate startPos endPos cycles sh t vlen now
         cPerLen = interval/cpsDur
         rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
         newVl = rounded / cp -- new length in seconds
-        rate = interval / newVl 
+        rate = interval / newVl
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
 
 ------- playNow  -- Starts the video with the evaluation time
 
--- giving a start position in seconds and a rate. 
--- This function needs a shift value? 
+-- giving a start position in seconds
 
            --  startPos        -- rate
 playNow_Pos:: NominalDiffTime -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime

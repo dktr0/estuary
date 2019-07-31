@@ -4,52 +4,57 @@ module Estuary.Widgets.TransformedPattern where
 
 import Reflex
 import Reflex.Dom hiding (Subtract,End)
-import Estuary.Tidal.Types
-import Estuary.WebDirt.Foreign
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Container
 import Control.Monad
 import Data.Map
 import Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Estuary.Widgets.SpecificPattern as Sp
 import GHC.Real
 import Data.Maybe (fromJust)
 import Text.Read
 
+import Estuary.Tidal.Types
+import Estuary.WebDirt.Foreign
+import Estuary.Reflex.Utility
+import Estuary.Widgets.Generic
+import Estuary.Reflex.Container
+import qualified Estuary.Widgets.SpecificPattern as Sp
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Hint
+import Estuary.Types.Variable
+import Estuary.Widgets.Editor
+
+structureEditor :: MonadWidget t m =>
+  Dynamic t TransformedPattern -> Editor t m (Variable t TransformedPattern)
+structureEditor x = reflexWidgetToEditor x topLevelTransformedPatternWidget
+
 
 topLevelTransformedPatternWidget :: MonadWidget t m =>
   TransformedPattern -> -- initial value
-  Event t [TransformedPattern] -> -- deltas from network (must not re-propagate as edit events!)
+  Event t TransformedPattern -> -- deltas down from elsehwere (must not re-propagate as local user edits!)
   m (
-    Dynamic t TransformedPattern, -- value for local WebDirt playback
-    Event t TransformedPattern, -- deltas to network (not based on events received from network!)
-    Event t Hint -- hints (currently for WebDirt sample loading only)
+    Event t TransformedPattern, -- local user edits up (must not be based on deltas down!)
+    Event t [Hint] -- hints to rendering engine (eg. about imminent need for a specific sample, allowing pre-loading)
   )
 topLevelTransformedPatternWidget i delta = do
-  let updates = fmap (midLevelTransformedPatternWidget) $ fmapMaybe lastOrNothing delta
+  let updates = fmap midLevelTransformedPatternWidget delta -- *** structure widget is entirely rebuilt with every delta received... no wonder it is slow!
   w <- widgetHold (midLevelTransformedPatternWidget i) updates
-  let x = fmap (\(a,_,_) -> a) w
-  let y = fmap (\(_,a,_) -> a) w
-  let z = fmap (\(_,_,a) -> a) w
-  let x' = join x
-  let y' = switchPromptlyDyn y
-  let z' = switchPromptlyDyn z
-  return (x',y',z')
+  let edits = switchPromptlyDyn $ fmap fst w
+  let hs = switchPromptlyDyn $ fmap snd w
+  return (edits,hs)
 
 
 midLevelTransformedPatternWidget:: MonadWidget t m =>
-  TransformedPattern -> m (Dynamic t TransformedPattern, Event t TransformedPattern, Event t Hint)
+  TransformedPattern -> m (Event t TransformedPattern, Event t [Hint])
 midLevelTransformedPatternWidget iTransPat = do
   tuple <- resettableTransformedPatternWidget iTransPat never
-  let pat = fmap (\(x,_,_)->x) tuple
-  let ev = updated pat
-  let hint = switchPromptlyDyn $ fmap (\(_,_,x)->x) tuple
-  return (pat,ev,hint)
+  let dynVal = fmap (\(x,_,_)->x) tuple
+  -- let editEv = tagPromptlyDyn dynVal $ switchPromptlyDyn $ fmap (\(_,x,_)->x) tuple -- :: EditSignal a
+  let editEv = updated dynVal -- ** BROKEN: in ensemble mode this will lead to infinite request-response cycles in ensembles where nClients > 1
+  -- structure editor needs to be reworked around Editor monad
+  -- until then, we will just remove it from default views
+  let hs = fmap (:[]) $ switchPromptlyDyn $ fmap (\(_,_,x)->x) tuple
+  return (editEv,hs)
 
 
 popupSpecificPatternWidget :: (MonadWidget t m)=> SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (EditSignal a),Event t Hint))

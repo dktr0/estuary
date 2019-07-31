@@ -31,7 +31,7 @@ import Estuary.Help.LanguageHelp
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
-import Estuary.Widgets.EstuaryWidget
+import Estuary.Widgets.Editor
 import Estuary.Types.Context
 import Estuary.Types.Variable
 
@@ -51,13 +51,19 @@ textWidget rows i delta = do
 
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = [Punctual,SuperContinent,SvgOp,CanvasOp,CineCer0,TimeNot] ++ (fmap TidalTextNotation tidalParsers)
+textNotationParsers = [Punctual,CineCer0] ++ (fmap TidalTextNotation tidalParsers)
 
 
-textNotationWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) ->
-  Int -> Live (TextNotation,Text) -> Event t (Live (TextNotation,Text)) ->
-  m (Dynamic t (Live (TextNotation,Text)),Event t (Live (TextNotation,Text)),Event t Hint)
-textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
+textProgramEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t TextProgram
+  -> Editor t m (Variable t TextProgram)
+textProgramEditor nRows errorDyn updates = do
+  ctx <- askContext
+  reflexWidgetToEditor updates $ textProgramWidget ctx errorDyn nRows
+
+
+textProgramWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) -> Int
+  -> TextProgram -> Event t TextProgram -> m (Event t TextProgram,Event t [Hint])
+textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
   let deltaFuture = fmap forEditing delta
   let parserFuture = fmap fst deltaFuture
   let textFuture = fmap snd deltaFuture
@@ -94,24 +100,16 @@ textNotationWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** 
   let deltaUpEdit = tagPromptlyDyn value edit
   let deltaUpEval = tagPromptlyDyn value eval
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
-  return (value,deltaUp,never)
+  return (deltaUp,never)
   where
     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
           | otherwise = Edited p x
 
-labelWidget :: MonadWidget t m => Text -> Event t [Text] -> m (Event t Definition)
-labelWidget i delta = divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
-  let delta' = fmapMaybe lastOrNothing delta
-  let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
-  y <- textInput $ def & textInputConfig_setValue .~ delta' & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
-  return $ fmap LabelText $ _textInput_input y
 
--- the code below is an example of how the code just above might be rewritten
--- in the EstuaryWidget t m monad (see Estuary.Widgets.EstuaryWidget)
-labelWidget' :: MonadWidget t m => Dynamic t Text -> EstuaryWidget t m (Variable t Text)
-labelWidget' delta = do
+labelEditor :: MonadWidget t m => Dynamic t Text -> Editor t m (Variable t Text)
+labelEditor delta = do
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
-  y <- reflex $ divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+  y <- liftR $ divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
     i <- (sample . current) delta
     textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   return $ Variable (_textInput_value y) (_textInput_input y)

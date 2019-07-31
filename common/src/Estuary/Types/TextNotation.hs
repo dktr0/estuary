@@ -10,11 +10,7 @@ import Estuary.Types.TidalParser
 data TextNotation =
   TidalTextNotation TidalParser |
   Punctual |
-  SuperContinent |
-  SvgOp |
-  CanvasOp |
-  CineCer0 |
-  TimeNot
+  CineCer0
   deriving (Read,Eq,Ord,Data,Typeable,Show)
 
 textNotationDropDownLabel :: TextNotation -> String

@@ -7,6 +7,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Map.Strict as Map
+import qualified Data.IntMap.Strict as IntMap
 import Control.Monad
 import Control.Concurrent.MVar
 import Control.Exception
@@ -30,10 +31,10 @@ import Data.Map
 
 import Estuary.Utility
 import Estuary.Types.Definition
-import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import qualified Estuary.Types.Ensemble as E
+import qualified Estuary.Types.EnsembleS as E
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.View
@@ -43,6 +44,7 @@ import Estuary.Types.ServerState
 import Estuary.Types.Database
 import Estuary.Types.Tempo
 import Estuary.Types.Transaction
+import Estuary.Types.Chat
 
 runServerWithDatabase :: Text -> Int -> SQLite.Connection -> IO ()
 runServerWithDatabase pswd port db = do
@@ -50,7 +52,7 @@ runServerWithDatabase pswd port db = do
   postLogToDatabase db $ "administrative password: " <> pswd
   es <- readEnsembles db
   postLogToDatabase db $ (T.pack $ show (size es)) <> " ensembles restored from database"
-  s <- newMVar $ newServerState { password = pswd, ensembles = es }
+  s <- newMVar $ newServerState { administrativePassword = pswd, ensembles = es }
   let settings = (defaultWebAppSettings "Estuary.jsexe") {
     ssIndices = [unsafeToPiece "index.html"],
     ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
@@ -98,11 +100,10 @@ webSocketsApp db sMVar ws = do
 processLoop :: SQLite.Connection -> WS.Connection -> MVar ServerState -> ClientHandle -> IO ()
 processLoop db ws sMVar cHandle = do
   m <- try $ WS.receiveData ws
-
   case m of
     Right m' -> do
       s <- takeMVar sMVar
-      s' <- if (isJust $ Data.Map.lookup cHandle (clients s))
+      s' <- if (isJust $ IntMap.lookup cHandle (clients s))
         then runTransaction (processMessage m') db cHandle s
         else do
           postLogToDatabase db $ "*** warning - failed sanity check: WS.receiveData succeeded for client already deleted from server"
@@ -128,7 +129,7 @@ processLoop db ws sMVar cHandle = do
 
 processMessage :: Text -> Transaction ()
 processMessage msg = do
-  let msg' = decode (T.unpack msg) :: Result JSString
+  let msg' = decode (T.unpack msg) :: Result JSString -- *** is there a way of avoiding the conversion to string here???
   case msg' of
     Ok x -> processResult $ decode (fromJSString x)
     Error x -> throwError (T.pack x)
@@ -161,7 +162,7 @@ processRequest GetEnsembleList = do
   respond $ EnsembleList es
 
 processRequest (Authenticate x) = do
-  pwd <- gets password
+  pwd <- gets administrativePassword
   if x == pwd
     then do
       postLog $ "Authenticate with correct password"
@@ -203,7 +204,7 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
   let authed = (E.password e == "" || E.password e == pwd)
   -- update the server's record for this client to register successful ensemble join
   modifyClient $ \c -> c {
-    ensemble = Just eName,
+    memberOfEnsemble = Just eName,
     handleInEnsemble = uName,
     locationInEnsemble = loc,
     statusInEnsemble = "",
@@ -211,11 +212,10 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
     }
   -- send responses to this client indicating successful join, and ensemble tempo, defs and views
   respond $ JoinedEnsemble eName uName
-  now <- liftIO getCurrentTime
-  respond $ EnsembleResponse $ NewTempo (E.tempo e) now
-  mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ZoneResponse $ E.defs e
-  respond $ EnsembleResponse $ DefaultView $ E.defaultView e
-  mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey View $ E.views e
+  respond $ EnsembleResponse $ TempoRcvd (E.tempo $ E.ensemble e)
+  mapM_ respond $ fmap EnsembleResponse $ IntMap.mapWithKey ZoneRcvd $ E.zones $ E.ensemble e
+  mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd $ E.views $ E.ensemble e
+  -- TODO: send new participant information about existing participants (they'll get *some* info on updates, anyway)
   -- send information about new participant to all clients in this ensemble
   let anonymous = uName == ""
   when (not anonymous) $ do
@@ -237,7 +237,7 @@ processRequest LeaveEnsemble = do
     respondEnsembleNoOrigin $ EnsembleResponse $ AnonymousParticipants (n-1)
   -- modify servers record of this client so that they are ensemble-less
   modifyClient $ \c -> c {
-    ensemble = Nothing,
+    memberOfEnsemble = Nothing,
     handleInEnsemble = "",
     locationInEnsemble = "",
     statusInEnsemble = "",
@@ -249,88 +249,51 @@ processRequest (EnsembleRequest x) = processEnsembleRequest x
 
 processEnsembleRequest :: EnsembleRequest -> Transaction ()
 
-processEnsembleRequest (ZoneRequest zone value) = do
+processEnsembleRequest (WriteZone zone value) = do
   whenNotAuthenticatedInEnsemble $ throwError "ignoring ZoneRequest from client not authenticated in ensemble"
   eName <- getEnsembleName
   postLog $ "Edit in (" <> eName <> "," <> (T.pack $ show zone) <> "): " <> (T.pack $ show value)
-  modify' $ edit eName zone value
-  respondEnsembleNoOrigin $ EnsembleResponse $ ZoneResponse zone value
+  modify' $ writeZone eName zone value
+  respondEnsembleNoOrigin $ EnsembleResponse $ ZoneRcvd zone value
   saveEnsembleToDatabase
   updateLastEdit
 
-processEnsembleRequest (SendChat msg) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring SendChat from client not authenticated in ensemble"
-  name <- handleInEnsemble <$> getClient
-  when (name == "") $ throwError "ignoring SendChat from anonymous (yet authenticated) client in ensemble"
+processEnsembleRequest (WriteChat msg) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteChat from client not authenticated in ensemble"
+  sender <- handleInEnsemble <$> getClient
+  when (sender == "") $ throwError "ignoring WriteChat from anonymous (yet authenticated) client in ensemble"
   eName <- getEnsembleName
-  postLog $ "SendChat in " <> eName <> " from " <> name <> ": " <> msg
-  respondEnsemble $ EnsembleResponse (Chat name msg)
+  postLog $ "WriteChat in " <> eName <> " from " <> sender <> ": " <> msg
+  now <- liftIO $ getCurrentTime
+  respondEnsemble $ EnsembleResponse (ChatRcvd (Chat now sender msg))
   updateLastEdit
 
-processEnsembleRequest (SendStatus msg) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring SendStatus from client not authenticated in ensemble"
+processEnsembleRequest (WriteStatus msg) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteStatus from client not authenticated in ensemble"
   name <- handleInEnsemble <$> getClient
-  when (name == "") $ throwError "ignoring SendStatus from anonymous (yet authenticated) client in ensemble"
+  when (name == "") $ throwError "ignoring WriteStatus from anonymous (yet authenticated) client in ensemble"
   eName <- getEnsembleName
-  postLog $ "SendStatus in " <> eName <> " from " <> name <> ": " <> msg
+  postLog $ "WriteStatus in " <> eName <> " from " <> name <> ": " <> msg
   modifyClient $ \c -> c { statusInEnsemble = msg }
   p <- clientToParticipant <$> getClient
   respondEnsembleNoOrigin $ EnsembleResponse $ ParticipantUpdate name p
   updateLastEdit
 
-{- these are obsolete but still need to replace properly...
-  list of views should be sent at ensemble join time, and when it changes,
-  specific views should all be sent at ensemble join time, and when they change
-processEnsembleRequest ListViews = do
+processEnsembleRequest (WriteView preset view) = do
+  whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteView from client not authenticated in ensemble"
   eName <- getEnsembleName
-  postLog $ "ListViews in " ++ eName
-  vs <- (Map.keys . E.views) <$> getEnsemble
-  respond $ EnsembleResponse $ ViewList vs
-  updateLastEdit
-processEnsembleRequest (GetView v) = do
-  eName <- getEnsembleName
-  postLog $ "GetView " ++ v ++ " in ensemble " ++ eName
-  e <- getEnsemble
-  v' <- justOrError (Data.Map.lookup v $ E.views e) $ "attempt to get unknown view in " ++ eName
-  respond $ EnsembleResponse $ View v v'
-  updateLastEdit -}
-
-processEnsembleRequest (PublishView key value) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring PublishView from client not authenticated in ensemble"
-  eName <- getEnsembleName
-  postLog $ "PublishView in (" <> eName <> "," <> key <> "): " <> (T.pack $ show value)
-  modify' $ setView eName key value
+  postLog $ "WriteView in (" <> eName <> "," <> preset <> "): " <> (T.pack $ show view) -- TODO: View should work with TextShow to avoid string
+  modify' $ writeView eName preset view
   saveEnsembleToDatabase
+  respondEnsembleNoOrigin $ EnsembleResponse $ ViewRcvd preset view
   updateLastEdit
 
-processEnsembleRequest (PublishDefaultView v) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring PublishDefaultView from client not authenticated in ensemble"
-  eName <- getEnsembleName
-  postLog $ "PublishDefaultView in " <> eName
-  modify' $ setDefaultView eName v
-  saveEnsembleToDatabase
-  updateLastEdit
-
-processEnsembleRequest (DeleteView x) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring DeleteView from client not authenticated in ensemble"
-  eName <- getEnsembleName
-  postLog $ "DeleteView " <> x <> " in ensemble " <> eName
-  modify' $ deleteView eName x
-  saveEnsembleToDatabase
-  updateLastEdit
-
-processEnsembleRequest (SetTempo t) = do
+processEnsembleRequest (WriteTempo t) = do
   whenNotAuthenticatedInEnsemble $ throwError "ignoring SetTempo from client not authenticated in ensemble"
   eName <- getEnsembleName
-  postLog $ "TempoChange in " <> eName
-  now <- liftIO $ getCurrentTime
-  let t' = Tempo {
-    cps = cps t,
-    at = addUTCTime (-0.075) now, -- TODO: should use Cristian's algorithm, but for now assume set 75 msec ago
-    beat = beat t
-  }
-  modify' $ tempoChangeInEnsemble eName t'
-  respondEnsembleNoOrigin $ EnsembleResponse $ NewTempo t' now
+  postLog $ "WriteTempo in " <> eName
+  modify' $ writeTempo eName t
+  respondEnsembleNoOrigin $ EnsembleResponse $ TempoRcvd t
   saveEnsembleToDatabase
   updateLastEdit
 

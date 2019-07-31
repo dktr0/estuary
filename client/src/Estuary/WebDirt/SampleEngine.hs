@@ -5,20 +5,27 @@ import Data.Time.Clock.POSIX
 import qualified Sound.Tidal.Context as Tidal
 import Control.Exception
 import Sound.MusicW.AudioContext (utcTimeToDouble)
+import Data.Bifunctor
 
 class SampleEngine e where
-  getClockDiff :: e -> IO Double -- diff btw clock used to play sample events and POSIX
   playSample :: e -> (Double,Tidal.ControlMap) -> IO ()
   getPeakLevels :: e -> IO [Double]
   getRmsLevels :: e -> IO [Double]
 
-sendSounds :: SampleEngine e => e -> [(UTCTime,Tidal.ControlMap)] -> IO ()
-sendSounds e sounds = do
-  clockDiff <- getClockDiff e
-  let latency = 0.2 -- hardwired latency for now???
-  -- putStrLn $ show sounds
---  let sounds' = fmap (\(x,y) -> (realToFrac (utcTimeToPOSIXSeconds x) - clockDiff + latency,y)) sounds
-  let sounds' = fmap (\(x,y) -> (utcTimeToDouble x - clockDiff + latency,y)) sounds
-  -- putStrLn $ show sounds'
+-- sendSoundsPOSIX expects timestamps that are UTCTime (ie. relative to "global" time)
+-- and sends them as doubles in POSIX time (seconds since beginning of Jan 1 1970), plus a small latency
+sendSoundsPOSIX :: SampleEngine e => e -> [(UTCTime,Tidal.ControlMap)] -> IO ()
+sendSoundsPOSIX e sounds = do
+  let latency = 0.2
+  let sounds' = fmap (first (\x -> realToFrac $ utcTimeToPOSIXSeconds x + latency)) sounds
   catch (mapM_ (playSample e) sounds')
-    (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))
+    (\msg -> putStrLn $ "exception (sendSoundsPOSIX): " ++ show (msg :: SomeException))
+
+-- sendSoundsAudio expects timestamps that are doubles (ie. relative to audio clock)
+-- and sends them "as is", with the addition of a small hardwired latency
+sendSoundsAudio :: SampleEngine e => e -> [(Double,Tidal.ControlMap)] -> IO ()
+sendSoundsAudio e sounds = do
+  let latency = 0.2
+  let sounds' = fmap (\(x,y) -> (x + latency,y)) sounds
+  catch (mapM_ (playSample e) sounds')
+    (\msg -> putStrLn $ "exception (sendSoundsAudio): " ++ show (msg :: SomeException))
