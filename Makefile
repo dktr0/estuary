@@ -91,7 +91,7 @@ devStageStaticAssets: stageStaticAssets
 
 stageSamples: prepStage
 	@ echo "stageSamples:"
-	$(CP_RECURSIVE) static/samples/ $(STAGING_ROOT)/Estuary.jsexe/samples/
+	$(CP_RECURSIVE) static/samples $(STAGING_ROOT)/Estuary.jsexe/
 devStageSamples: STAGING_ROOT=$(DEV_STAGING_ROOT)
 devStageSamples: stageSamples
 
