@@ -21,6 +21,7 @@ import GHCJS.Concurrent
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Data.Bifunctor
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Punctual.PunctualW as Punctual
@@ -52,12 +53,14 @@ type Renderer = StateT RenderState IO ()
 renderPeriod :: NominalDiffTime
 renderPeriod = 0.032
 
+-- flush events for SuperDirt and WebDirt
 flushEvents :: Context -> Renderer
 flushEvents c = do
-  -- flush events for SuperDirt and WebDirt
   events <- gets dirtEvents
-  liftIO $ if webDirtOn c then sendSounds (webDirt c) events else return ()
-  liftIO $ if superDirtOn c then sendSounds (superDirt c) events else return ()
+  when (webDirtOn c) $ do
+    let events' = fmap (first (utcTimeToAudioSeconds $ t0 c)) events
+    liftIO $ sendSoundsAudio (webDirt c) events'
+  when (superDirtOn c) $ liftIO $ sendSoundsUtc (superDirt c) events
   modify' $ \x -> x { dirtEvents = [] }
   return ()
 

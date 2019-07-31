@@ -12,13 +12,18 @@ class SampleEngine e where
   getPeakLevels :: e -> IO [Double]
   getRmsLevels :: e -> IO [Double]
 
-sendSounds :: SampleEngine e => e -> [(UTCTime,Tidal.ControlMap)] -> IO ()
-sendSounds e sounds = do
+sendSoundsUtc :: SampleEngine e => e -> [(UTCTime,Tidal.ControlMap)] -> IO ()
+sendSoundsUtc e sounds = do
   clockDiff <- getClockDiff e
   let latency = 0.2 -- hardwired latency for now???
-  -- putStrLn $ show sounds
---  let sounds' = fmap (\(x,y) -> (realToFrac (utcTimeToPOSIXSeconds x) - clockDiff + latency,y)) sounds
   let sounds' = fmap (\(x,y) -> (utcTimeToDouble x - clockDiff + latency,y)) sounds
-  -- putStrLn $ show sounds'
+  catch (mapM_ (playSample e) sounds')
+    (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))
+
+sendSoundsAudio :: SampleEngine e => e -> [(Double,Tidal.ControlMap)] -> IO ()
+sendSoundsAudio e sounds = do
+  clockDiff <- getClockDiff e
+  let latency = 0.2 -- hardwired latency for now???
+  let sounds' = fmap (\(x,y) -> (x - clockDiff + latency,y)) sounds
   catch (mapM_ (playSample e) sounds')
     (\msg -> putStrLn $ "exception: " ++ show (msg :: SomeException))

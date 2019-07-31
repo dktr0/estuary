@@ -17,9 +17,13 @@ instance JSON Tempo where
   showJSON = toJSON
   readJSON = fromJSON
 
-utcTimeFromAudioClock :: UTCTime -> Double -> Double -> UTCTime
-utcTimeFromAudioClock t0utc t0audio t1audio = posixSecondsToUTCTime $ clockDiff + (realToFrac t1audio)
+audioSecondsToUTC :: (UTCTime,Double) -> Double -> UTCTime
+audioSecondsToUTC (t0utc,t0audio) t1audio = posixSecondsToUTCTime $ clockDiff + (realToFrac t1audio)
   where clockDiff = utcTimeToPOSIXSeconds t0utc - (realToFrac t0audio)
+
+utcTimeToAudioSeconds :: (UTCTime,Double) -> UTCTime -> Double
+utcTimeToAudioSeconds (t0utc,t0audio) t1utc = realToFrac $ utcTimeToPOSIXSeconds $ addUTCTime clockDiff t1utc
+  where clockDiff = realToFrac t0audio - utcTimeToPOSIXSeconds t0utc
 
 elapsedCycles :: Tempo -> UTCTime -> Rational
 elapsedCycles t now = elapsedT * cps t + beat t
