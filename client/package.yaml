@@ -55,6 +55,7 @@ dependencies:
   - mtl
   - mwc-random
   - haskell-src-exts
+  - TimeNot
 
 library:
   source-dirs:

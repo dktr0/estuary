@@ -15,7 +15,7 @@ import Data.List (intercalate,zipWith4)
 import Data.IntMap.Strict as IntMap
 import Data.Maybe
 import Data.Either
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import JavaScript.Web.AnimationFrame
 import GHCJS.Concurrent
 import Data.Text (Text)
@@ -23,6 +23,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Bifunctor
 import TextShow
+import Sound.OSC.Datum
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Punctual.PunctualW as Punctual
@@ -30,6 +31,7 @@ import qualified Sound.Punctual.Evaluation as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Types as Punctual
 import qualified Sound.Punctual.Parser as Punctual
+import qualified Sound.TimeNot.MapEstuary as TimeNot
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
@@ -57,6 +59,17 @@ getRenderTime :: Context -> StateT RenderState IO UTCTime
 getRenderTime c = do
   tAudio <- liftAudioIO $ audioTime
   return $ audioSecondsToUTC (clockDiff c) tAudio
+
+mapTextDatumToControlMap :: Map.Map Text Datum -> Tidal.ControlMap
+mapTextDatumToControlMap m = Map.mapKeys T.unpack $ Map.mapMaybe datumToValue m
+
+datumToValue :: Datum -> Maybe Tidal.Value
+datumToValue (Int32 x) = Just $ Tidal.VI $ fromIntegral x
+datumToValue (Int64 x) = Just $ Tidal.VI $ fromIntegral x
+datumToValue (Float x) = Just $ Tidal.VF $ realToFrac x
+datumToValue (Double x) = Just $ Tidal.VF $ x
+datumToValue (ASCII_String x) = Just $ Tidal.VS $ show x
+datumToValue _ = Nothing
 
 -- flush events for SuperDirt and WebDirt
 flushEvents :: Context -> Renderer
@@ -230,6 +243,19 @@ renderTextProgramChanged c z (CineCer0,x) = do
   when (isLeft parseResult) $ do
     let errs = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
     modify' $ \x -> x { info = (info s) { errors = errs }}
+
+renderTextProgramChanged c z (TimeNot,x) = do
+  s <- get
+  let parseResult = TimeNot.timeNot (logicalTime s) x -- :: Either Text [(UTCTime, Map Text Datum)]
+  when (isRight parseResult) $ do
+    let evs = fromRight [] parseResult -- :: [(UTCTime, Map Text Datum)]
+    let evs' = fmap (second (mapTextDatumToControlMap)) evs -- :: [(UTCTime,Tidal.ControlMap)]
+    modify' $ \x -> x { dirtEvents = dirtEvents x ++ evs' }
+    -- liftIO $ T.putStrLn $ T.pack $ show evs
+  when (isLeft parseResult) $ do
+    let errs = either (\e -> insert z e (errors (info s))) (const $ delete z (errors (info s))) parseResult
+    modify' $ \x -> x { info = (info s) { errors = errs }}
+
 
 renderTextProgramChanged _ _ _ = return ()
 
