@@ -88,6 +88,19 @@ playRound_Rate sh t vlen now =
     in Just rate
 
 
+------------ playRoundMetre ------------
+---- round the duration of the video to a power of N so it can align with the notion of metre
+                  
+-- playRoundMetre:: Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Double
+-- playRoundMetre metrVal sh t vlen now =
+--     let vl = realToFrac vlen :: Rational
+--         cpDur = 1/(cps t)
+--         off = sh*cpDur
+--         cPerLen = vl/cpDur -- how many cycles for 1 whole video
+--     in cPerLen
+
+
+
 ------ Chop the video for any given cycles with normal rate ------
 -- gets the interval of the video reproduced with an offset time and
 -- a length in cycles, OJO the startPos is normalised from 0 to 1.
