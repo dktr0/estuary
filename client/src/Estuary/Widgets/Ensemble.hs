@@ -52,12 +52,12 @@ ensembleView ensResponses = do
   -- Dynamic core View UI
 
   -- these two lines just during a temporary test we are doing...
-  let initialView = activeView $ ensembleC iCtx
-  widgetRequests <- viewWidget ensResponses initialView
+  -- let initialView = activeView $ ensembleC iCtx
+  -- widgetRequests <- viewWidget ensResponses initialView
 
-{-  currentView <- reflex $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
+  currentView <- liftR $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
   let dynamicViews = fmap (viewWidget ensResponses) currentView -- Dynamic t (Editor t m (Event t EnsembleRequest))
   x <- dynEditor dynamicViews -- Dynamic t (Event t EnsembleRequest)
-  let widgetRequests = switchDyn x -- Event t EnsembleRequest -}
+  let widgetRequests = switchDyn x -- Event t EnsembleRequest
 
   return $ leftmost [tempoRequests,widgetRequests]
