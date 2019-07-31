@@ -10,7 +10,6 @@ import Text.JSON.Generic
 import Data.Time.Clock
 import Data.Text
 
-import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Definition
 

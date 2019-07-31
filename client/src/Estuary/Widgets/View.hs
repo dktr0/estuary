@@ -18,7 +18,7 @@ import Estuary.Types.Context
 import Estuary.Tidal.Types
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Widgets.Editor
 import Estuary.Types.Variable
 import Estuary.Widgets.Text

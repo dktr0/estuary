@@ -13,7 +13,6 @@ import GHCJS.DOM.EventM -- just used for our test, maybe delete-able later
 import Estuary.Help.MiniTidal
 import Estuary.Help.LaCalle
 import Estuary.Help.Alobestia
-import Estuary.Help.CanvasOp
 import Estuary.Help.ColombiaEsPasion
 import Estuary.Help.CQenze
 import Estuary.Help.Crudo
@@ -29,10 +28,8 @@ import Estuary.Help.Saludos
 import Estuary.Help.Sentidos
 import Estuary.Help.Si
 import Estuary.Help.Sucixxx
-import Estuary.Help.SuperContinent
 import Estuary.Help.Togo
 import Estuary.Help.Vocesotrevez
-import Estuary.Help.SvgOp
 import Estuary.Help.PunctualAudio
 import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
@@ -58,11 +55,7 @@ parserToHelp (TidalTextNotation MiniTidal) = miniTidalHelpFile
 parserToHelp (TidalTextNotation LaCalle) = laCalleHelpFile
 parserToHelp (TidalTextNotation Vocesotrevez) = vocesotrevezHelpFile
 parserToHelp (TidalTextNotation Togo) = togoHelpFile
-
-parserToHelp CanvasOp = canvasOpHelpFile
-parserToHelp SvgOp = svgOpHelpFile
 parserToHelp Punctual = punctualAudioHelpFile
-parserToHelp SuperContinent = superContinentHelpFile
 parserToHelp _ = noHelpFile
 
 -- a widget  that renders a TidalTextNotation

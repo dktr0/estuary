@@ -17,7 +17,7 @@ import Estuary.Types.Context
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Definition
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Tempo
 import Estuary.Widgets.View
 import Estuary.Widgets.Tempo

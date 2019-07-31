@@ -20,18 +20,17 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Definition
 import Estuary.Types.View
-import Estuary.Types.Sited
+import Estuary.Types.View.Parser
+import Estuary.Types.View.Presets
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Tempo
 import Estuary.Types.Hint
-import Estuary.Types.ViewsParser
 import Estuary.Render.AudioContext
 import Estuary.Types.Participant
 import Estuary.Types.Tempo
 
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
-import Estuary.ViewPresets
 
 data EnsembleC = EnsembleC {
   ensemble :: Ensemble,

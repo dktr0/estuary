@@ -7,7 +7,7 @@ import Data.Text as T
 import Control.Monad.IO.Class
 
 import Estuary.Types.Context
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Hint
 import Estuary.Types.Variable
 

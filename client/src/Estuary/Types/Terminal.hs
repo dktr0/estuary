@@ -10,7 +10,7 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Control.Monad.Identity (Identity)
 
 import Estuary.Types.View
-import Estuary.Types.ViewsParser
+import Estuary.Types.View.Parser
 
 data Command =
   LocalView View | -- change the active view to a local view that is not shared/stored anywhere

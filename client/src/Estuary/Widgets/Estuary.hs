@@ -18,6 +18,7 @@ import GHCJS.Marshal.Pure
 import Data.Functor (void)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Sound.MusicW.AudioContext
 
 import Estuary.Protocol.Foreign
 import Estuary.Widgets.Navigation
@@ -33,7 +34,7 @@ import Estuary.Types.Hint
 import Estuary.Types.Samples
 import Estuary.Types.Tempo
 import Estuary.Reflex.Utility
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Render.DynamicsMode
 import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
@@ -104,6 +105,19 @@ pollRenderInfo riM = do
   ticks <- tickLossy (0.204::NominalDiffTime) now
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
+
+pollClockDiff :: MonadWidget t m => m (Event t ContextChange)
+pollClockDiff = do
+  now <- liftIO $ getCurrentTime
+  ticks <- tickLossy (10.02::NominalDiffTime) now
+  clockDiff <- performEvent $ fmap (liftIO . const Estuary.Widgets.Estuary.getClockDiff) ticks
+  return $ fmap setClockDiff clockDiff
+
+getClockDiff :: IO (UTCTime,Double)
+getClockDiff = do
+  x <- getCurrentTime
+  y <- liftAudioIO $ audioTime
+  return (x,y)
 
 
 -- load the sample map and issue an appropriate ContextChange event when finished

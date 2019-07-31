@@ -10,7 +10,7 @@ import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.Hint

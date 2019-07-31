@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Types.ViewsParser (viewsParser,dumpView) where
+module Estuary.Types.View.Parser (viewsParser,dumpView) where
 
 import Text.Parsec
 import Text.Parsec.Text

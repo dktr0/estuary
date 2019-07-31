@@ -45,5 +45,5 @@ tempoWidget = do
 
 adjustTempoEdit :: Tempo -> Rational -> IO Tempo
 adjustTempoEdit oldTempo newCps = do
-  now <- liftAudioIO $ audioUTCTime
+  now <- getCurrentTime
   return $ adjustCps newCps oldTempo now

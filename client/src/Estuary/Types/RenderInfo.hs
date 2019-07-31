@@ -1,18 +1,15 @@
-module Estuary.RenderInfo where
+module Estuary.Types.RenderInfo where
 
 import Data.IntMap.Strict
 import Data.Time.Clock
 import Data.Text (Text)
-
-import Estuary.Types.SvgOp
 
 data RenderInfo = RenderInfo {
   errors :: !(IntMap Text),
   avgRenderLoad :: !Int,
   avgAnimationLoad :: !Int,
   avgZoneRenderTime :: !(IntMap Double),
-  avgZoneAnimationTime :: !(IntMap Double),
-  svgOps :: Maybe [SvgOp]
+  avgZoneAnimationTime :: !(IntMap Double)
   } deriving (Show)
 
 emptyRenderInfo :: RenderInfo
@@ -21,6 +18,5 @@ emptyRenderInfo = RenderInfo {
   avgRenderLoad = 0,
   avgAnimationLoad = 0,
   avgZoneRenderTime = empty,
-  avgZoneAnimationTime = empty,
-  svgOps = Nothing
+  avgZoneAnimationTime = empty
   }

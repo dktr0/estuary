@@ -19,7 +19,7 @@ import Control.Monad.IO.Class
 
 import Estuary.Reflex.Router
 import Estuary.Reflex.Utility
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Tidal.Types
 import Estuary.Tutorials.Context
 import qualified Estuary.Tutorials.Tutorial as T

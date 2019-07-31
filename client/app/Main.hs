@@ -17,13 +17,12 @@ import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
 import Estuary.Protocol.Peer
 import Estuary.Types.Context
-import Estuary.Types.CanvasState
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
 import Estuary.WebDirt.SampleEngine
-import Estuary.RenderInfo
-import Estuary.RenderState
-import Estuary.Renderer
+import Estuary.Types.RenderInfo
+import Estuary.Types.RenderState
+import Estuary.Render.Renderer
 import Estuary.Render.DynamicsMode
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
@@ -56,9 +55,9 @@ main = do
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
   sd <- newSuperDirt
-  mv <- emptyCanvasState >>= newMVar
-  now <- liftAudioIO $ audioUTCTime
-  c <- newMVar $ initialContext now mainBusNodes wd sd mv pp
+  nowUtc <- getCurrentTime
+  nowAudio <- liftAudioIO $ audioTime
+  c <- newMVar $ initialContext nowUtc nowAudio mainBusNodes wd sd pp
   ri <- newMVar $ emptyRenderInfo
   forkRenderThreads c ri
 

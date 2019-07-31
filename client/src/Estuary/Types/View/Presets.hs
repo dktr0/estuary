@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.ViewPresets where
+module Estuary.Types.View.Presets where
 
 import Data.Map.Strict
 import Data.Text

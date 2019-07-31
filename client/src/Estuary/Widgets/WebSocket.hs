@@ -16,11 +16,10 @@ import qualified Data.Text as T
 import Estuary.Protocol.Foreign
 import Estuary.Types.Request
 import Estuary.Types.Response
-import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Context
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 
 -- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
 -- for collaborative editing. While the password is dynamic, like the Reflex WebSocket the socket address

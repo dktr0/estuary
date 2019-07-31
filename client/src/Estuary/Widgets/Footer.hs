@@ -7,7 +7,7 @@ import Reflex.Dom hiding (Request,Response)
 import qualified Data.Text as T
 
 import Estuary.Types.Context
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Hint

@@ -9,7 +9,7 @@ import qualified Data.Text as T
 import Data.Map.Strict
 
 import Estuary.Types.Context
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Language
 import qualified Estuary.Types.Term as Term
 import Estuary.Render.DynamicsMode
