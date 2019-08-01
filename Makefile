@@ -61,6 +61,14 @@ nixBuild:
 	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
 	nix-build -o result/ghcjs/estuary/ -A ghcjs.estuary
 
+nixBuildServer:
+	@ echo "nixBuildServer:"
+	rm -rf result
+	-mkdir result
+	-mkdir result/ghc
+	-mkdir result/ghcjs
+	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
+
 PROD_STAGING_ROOT=staging/
 DEV_STAGING_ROOT=dev-staging/
 STAGING_ROOT=$(PROD_STAGING_ROOT)
