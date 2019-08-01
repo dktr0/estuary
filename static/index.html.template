@@ -27,12 +27,12 @@
   <script type="text/javascript" src="WebDirt/SampleBank.js"></script>
 
 #ifdef PRODUCTION
-  <script defer type="text/javascript" src="all.min.js"></script>
+  <script type="text/javascript" src="all.min.js"></script>
 #else
-  <script defer type="text/javascript" src="rts.js"></script>
-  <script defer type="text/javascript" src="lib.js"></script>
-  <script defer type="text/javascript" src="out.js"></script>
-  <script defer type="text/javascript" src="runmain.js"></script>
+  <script type="text/javascript" src="rts.js"></script>
+  <script type="text/javascript" src="lib.js"></script>
+  <script type="text/javascript" src="out.js"></script>
+  <script type="text/javascript" src="runmain.js"></script>
 #endif
 
 #ifndef TEST
@@ -102,75 +102,9 @@
       display: none;
     }
   </style>
-  <script type="text/javascript" src="estuary-icon.js"></script>
 #endif
 </head>
 <body>
   <div id="estuary-root"></div>
-#ifndef TEST
-  <div id="estuary-splash" class="estuary-logo full-screen">
-    <div class="info">
-      <h1 class="title">Estuary</h1>
-      <h5 class="status">Loading...</h5>
-    </div>
-  </div>
-  <script type="text/javascript">
-    var EstuaryIcon = (function() {
-      var container = document.querySelector('#estuary-splash');
-      var statusDisplay = container.querySelector('.status');
-
-      var icons = new EstuaryIcons(800, 800, {
-        linesPerSec: 15,
-        secUntilFullRadius: 10
-      });
-      var display = icons.addDisplay();
-      container.appendChild(display.canvas);
-
-      icons.startRendering();
-
-      var splash = {
-        claim: container,
-        display: display,
-        renderer: icons
-      };
-
-      var state = '';
-      Object.defineProperty(splash, 'state', {
-        enumerable: true,
-        configurable: true,
-        get: function get() { return state; },
-        set: function set(nextState) {
-          switch (nextState) {
-            case 'loading':
-              // The app is loading and no interaction is available yet.
-              container.classList = 'estuary-logo full-screen';
-              display.canvas.classList.add('center-screen');
-              statusDisplay.innerText = 'Loading...';
-              container.appendChild(display.canvas);
-              break;
-            case 'loaded':
-              // The app has loaded and the splash is ready to click.
-              container.classList = 'estuary-logo full-screen loaded';
-              statusDisplay.innerText = 'Click to start';
-              container.addEventListener('click', function() {
-                splash.state = 'started';
-              }, {once: true});
-              break;
-            case 'started':
-              // The app has loaded and the splash was clicked.
-              container.classList = 'estuary-logo full-screen started';
-              display.canvas.classList.remove('center-screen');
-              break;
-          }
-
-          state = nextState;
-        }
-      });
-      splash.state = 'loading';
-
-      return splash;
-    })();
-  </script>
-#endif
 </body>
 </html>

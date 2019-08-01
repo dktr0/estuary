@@ -20,15 +20,14 @@ import Reflex.Dom
 -- m satisfies `DomBuilderSpace m ~ GhcjsDomSpace`, this means that we also
 -- have the constraint `DomSpace m` with `type RawElement GhcjsDomSpace = DOM.Element`
 
--- likewise m satisfies `DomBuilder t m` with `placeRawElement` defaulting to 
+-- likewise m satisfies `DomBuilder t m` with `placeRawElement` defaulting to
 -- `placeRawElement` in `GhcjsDomSpace` (`append . toNode`).
 
 estuaryIcon :: (MonadWidget t m) => m ()
-estuaryIcon = do
+estuaryIcon = return () {- do
   jsIconInstance <- liftIO $ js_splashIconInstance
   jsCanvas <- liftIO $ (fmap pFromJSVal (js_getCanvas jsIconInstance) :: IO (Dom.Element))
-  
-  placeRawElement jsCanvas
+  placeRawElement jsCanvas -}
 
 newtype IconDisplay = IconDisplay JSVal
 

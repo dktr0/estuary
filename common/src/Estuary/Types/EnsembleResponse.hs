@@ -6,7 +6,7 @@ import Text.JSON
 import Text.JSON.Generic
 import Data.Time
 import Data.Text (Text)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe,listToMaybe)
 
 import Estuary.Types.View
 import Estuary.Types.Tempo
@@ -45,6 +45,7 @@ justViews = mapMaybe f
   where f (ViewRcvd x y) = Just (x,y)
         f _ = Nothing
 
-justTempoChanges :: EnsembleResponse -> Maybe Tempo
-justTempoChanges (TempoRcvd theTempo) = Just theTempo
-justTempoChanges _ = Nothing
+lastTempoChange :: [EnsembleResponse] -> Maybe Tempo
+lastTempoChange = listToMaybe . reverse . mapMaybe f
+  where f (TempoRcvd theTempo) = Just theTempo
+        f _ = Nothing
