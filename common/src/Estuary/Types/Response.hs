@@ -12,7 +12,6 @@ import Data.Time.Clock
 import Data.Text
 
 import Estuary.Utility
-import Estuary.Types.Sited
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Definition
 

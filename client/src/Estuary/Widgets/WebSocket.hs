@@ -16,11 +16,10 @@ import qualified Data.Text as T
 import Estuary.Protocol.Foreign
 import Estuary.Types.Request
 import Estuary.Types.Response
-import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Context
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 
 -- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
 -- for collaborative editing. While the password is dynamic, like the Reflex WebSocket the socket address
@@ -73,13 +72,12 @@ alternateWebSocket ctx rInfo toSend = mdo
   let socketIsOpen = fmap (=="connection open") status'
   pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
   pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
-  initialTime <- liftIO getCurrentTime
-  timeDyn <- holdDyn initialTime pingTickTime
+  let clientInfoWithPingTime = fmap ClientInfo pingTickTime
   let loadDyn = fmap avgRenderLoad rInfo
   let animationLoadDyn = fmap avgAnimationLoad rInfo
   latencyDyn <- holdDyn 0 $ latency
-  let clientInfoDyn = ClientInfo <$> timeDyn <*> loadDyn <*> animationLoadDyn <*> latencyDyn
-  let clientInfoEvent = fmap (:[]) $ tagPromptlyDyn clientInfoDyn pingTick
+  let loadAnimationAndLatency = (\x y z -> (x,y,z)) <$> loadDyn <*> animationLoadDyn <*> latencyDyn
+  let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith (\(x,y,z) w -> w x y z) loadAnimationAndLatency clientInfoWithPingTime
 
   -- the server responds to ClientInfo (above) with ServerInfo, which we process below
   -- by issuing events that update the context

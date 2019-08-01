@@ -36,7 +36,6 @@ foreign import javascript unsafe
   initializeWebAudio :: WebDirt -> IO ()
 
 instance S.SampleEngine WebDirt where
-  getClockDiff wd = return 0
   playSample wd x = playSample wd x
   getPeakLevels wd = peakLevels wd
   getRmsLevels wd = rmsLevels wd

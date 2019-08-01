@@ -19,7 +19,6 @@ import Estuary.Protocol.Peer
 import Estuary.Types.Definition
 import Estuary.Types.Request
 import Estuary.Types.Response
-import Estuary.Types.Sited
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.EnsembleC

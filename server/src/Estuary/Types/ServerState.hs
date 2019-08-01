@@ -17,7 +17,6 @@ import Data.Text
 import Estuary.Types.Tempo
 import Estuary.Types.Client
 import Estuary.Types.Definition
-import Estuary.Types.Sited
 import Estuary.Types.Response
 import Estuary.Types.View
 import qualified Estuary.Types.EnsembleS as E

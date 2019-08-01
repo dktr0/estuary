@@ -18,6 +18,7 @@ import GHCJS.Marshal.Pure
 import Data.Functor (void)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Sound.MusicW.AudioContext
 
 import Estuary.Protocol.Foreign
 import Estuary.Widgets.Navigation
@@ -33,7 +34,7 @@ import Estuary.Types.Hint
 import Estuary.Types.Samples
 import Estuary.Types.Tempo
 import Estuary.Reflex.Utility
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Render.DynamicsMode
 import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
@@ -43,31 +44,33 @@ import Estuary.Types.Ensemble
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
 estuaryWidget ctxM riM = divClass "estuary" $ mdo
 
-  canvasWidget ctxM -- global canvas shared with render threads through MVar
-
-  --
+  canvasWidget ctxM -- global canvas shared with render threads through Context MVar, this needs to be first in this action
   iCtx <- liftIO $ readMVar ctxM
-  ctx <- foldDyn ($) iCtx contextChange -- dynamic context; is near the top here so it is available for everything else
-  let ensembleCDyn = fmap ensembleC ctx
+  ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext ctxM ctx -- perform all IO actions consequent to Context changing
   renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  samplesLoadedEv <- loadSampleMap
   (deltasDown,wsCtxChange) <- alternateWebSocket ctx renderInfo requestsUp
+
+  let ensembleCDyn = fmap ensembleC ctx
 
   -- three GUI components: header, main (navigation), footer
   headerChange <- header ctx
-  (requests, ensembleRequestsFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
+  (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
   command <- footer ctx renderInfo deltasDown hints
-  let commandRequests = fmap (:[]) $ attachWithMaybe commandToRequest (current ensembleCDyn) command
-  let ensembleRequests = mergeWith (++) [commandRequests, ensembleRequestsFromPage]
+  let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
+  let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage]
+
+  -- map from EnsembleRequests (eg. edits) and Commands (ie. from the terminal) to
 
   -- changes to EnsembleC within Context, and to Context
   let commandChange = fmap commandToStateChange command
-  let ensembleRequestChange = fmap ((Prelude.foldl (.) id) . fmap requestToStateChange) ensembleRequests
+  let ensembleRequestChange = fmap requestToStateChange ensembleRequests
   let ensembleResponses = fmap justEnsembleResponses deltasDown
-  let ensembleResponseChange = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) ensembleResponses
-  let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange]
+  let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
+  let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
+  let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown
+  samplesLoadedEv <- loadSampleMap
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange]
 
   -- hints
@@ -76,9 +79,10 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   performHints (webDirt iCtx) hints
 
   -- requests up to server
-  let ensembleRequests' = fmap (fmap EnsembleRequest) $ ensembleRequests
+  let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
+  let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
   let requests' = fmap (:[]) $ requests
-  let requestsUp = mergeWith (++) [ensembleRequests',requests']
+  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests']
   return ()
 
 -- a standard canvas that, in addition to being part of reflex-dom's DOM representation, is shared with other threads through the Context
@@ -101,6 +105,20 @@ pollRenderInfo riM = do
   ticks <- tickLossy (0.204::NominalDiffTime) now
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
+
+-- every 10.02 seconds, resample the difference between system clock and audio clock
+pollClockDiff :: MonadWidget t m => m (Event t ContextChange)
+pollClockDiff = do
+  now <- liftIO $ getCurrentTime
+  ticks <- tickLossy (10.02::NominalDiffTime) now
+  clockDiff <- performEvent $ fmap (liftIO . const Estuary.Widgets.Estuary.getClockDiff) ticks
+  return $ fmap setClockDiff clockDiff
+
+getClockDiff :: IO (UTCTime,Double)
+getClockDiff = do
+  x <- getCurrentTime
+  y <- liftAudioIO $ audioTime
+  return (x,y)
 
 
 -- load the sample map and issue an appropriate ContextChange event when finished

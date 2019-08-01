@@ -15,7 +15,7 @@ import Estuary.Types.Hint
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility
 import Estuary.Types.Variable
-import Estuary.Widgets.EstuaryWidget
+import Estuary.Widgets.Editor
 
 
 type Sequence = Map Int (Text, [Bool])
@@ -23,11 +23,11 @@ type Sequence = Map Int (Text, [Bool])
 attachIndex :: [a] -> [(Int,a)]
 attachIndex = zip [0..]
 
-sequencer :: MonadWidget t m => Dynamic t Sequence -> EstuaryWidget t m (Variable t Sequence)
-sequencer x = reflexVariable x sequencer'
+sequencer :: MonadWidget t m => Dynamic t Sequence -> Editor t m (Variable t Sequence)
+sequencer x = reflexWidgetToEditor x sequencer'
 
 sequencer' :: MonadWidget t m
-  => Sequence -> Event t Sequence -> m (Event t Sequence)
+  => Sequence -> Event t Sequence -> m (Event t Sequence, Event t [Hint])
 sequencer' iMap update = elClass "table" "sequencer" $ mdo
   let seqLen = maximum $ fmap (length . snd) $ elems iMap
   let serverDeletes = fmap (Nothing <$) $ attachWith M.difference (current values) update -- for deleted rows
@@ -46,8 +46,8 @@ sequencer' iMap update = elClass "table" "sequencer" $ mdo
   let maxKey = fmap (maybe 0 id . maximumMay . keys) newValues
   plusButton <- el "tr" $ clickableTdClass (constDyn " + ") (constDyn "") ()
   let newRow = attachWith (\k _-> singleton (k+1) (Just ("",Prelude.take seqLen $ repeat False))) (current maxKey) plusButton
-  return updateVal
-  -- *** TODO should rework the above since some of the above management is unnecessary with EstuaryWidget approach
+  return (updateVal,never)
+  -- *** TODO should rework the above since some of the above management is unnecessary with Editor approach
 
 -- listWithKeyShallowDiff
 --  :: (Ord k, Adjustable t m, MonadFix m, MonadHold t m)

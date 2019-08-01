@@ -13,10 +13,14 @@ import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 
+type TextProgram = Live (TextNotation,Text)
+
+type Sequence = M.Map Int (Text,[Bool])
+
 data Definition =
   Structure TransformedPattern | -- *** this should be renamed to TidalStructure
-  TextProgram (Live (TextNotation,Text)) |
-  Sequence (M.Map Int (Text,[Bool])) |
+  TextProgram TextProgram |
+  Sequence Sequence |
   LabelText Text
   deriving (Eq,Show,Data,Typeable)
 
@@ -42,18 +46,18 @@ maybeStructure _ = Nothing
 justStructures :: [Definition] -> [TransformedPattern]
 justStructures = mapMaybe maybeStructure
 
-maybeTextProgram :: Definition -> Maybe (Live (TextNotation,Text))
+maybeTextProgram :: Definition -> Maybe TextProgram
 maybeTextProgram (TextProgram x) = Just x
 maybeTextProgram _ = Nothing
 
-justTextPrograms :: [Definition] -> [Live (TextNotation,Text)]
+justTextPrograms :: [Definition] -> [TextProgram]
 justTextPrograms = mapMaybe maybeTextProgram
 
-maybeSequence :: Definition -> Maybe (M.Map Int (Text,[Bool]))
+maybeSequence :: Definition -> Maybe Sequence
 maybeSequence (Sequence x) = Just x
 maybeSequence _ = Nothing
 
-justSequences :: [Definition] -> [M.Map Int (Text,[Bool])]
+justSequences :: [Definition] -> [Sequence]
 justSequences = mapMaybe maybeSequence
 
 maybeLabelText :: Definition -> Maybe Text

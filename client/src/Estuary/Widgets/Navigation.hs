@@ -15,10 +15,11 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import Text.Read
+import Control.Monad.IO.Class
 
 import Estuary.Reflex.Router
 import Estuary.Reflex.Utility
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Tidal.Types
 import Estuary.Tutorials.Context
 import qualified Estuary.Tutorials.Tutorial as T
@@ -41,7 +42,7 @@ import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.View
-import Estuary.Widgets.EstuaryWidget
+import Estuary.Widgets.Editor
 
 data Navigation =
   Splash |
@@ -56,19 +57,19 @@ data Navigation =
   deriving (Generic, FromJSVal, ToJSVal)
 
 
-navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] -> m (Event t Request, Event t [EnsembleRequest], Event t [Hint])
+navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] -> m (Event t Request, Event t EnsembleRequest, Event t [Hint])
 navigation ctx renderInfo wsDown = do
   dynPage <- router Splash never $ page ctx renderInfo wsDown
   let dynPageData = fmap snd dynPage
-  let requestsUp = switchDyn $ fmap (\(x,_,_) -> x) dynPageData
-  let ensembleRequestsUp = switchDyn $ fmap (\(_,x,_) -> x) dynPageData
-  let hintsUp = switchDyn $ fmap (\(_,_,x) -> x) dynPageData
+  let requestsUp = switchPromptlyDyn $ fmap (\(x,_,_) -> x) dynPageData
+  let ensembleRequestsUp = switchPromptlyDyn $ fmap (\(_,x,_) -> x) dynPageData
+  let hintsUp = switchPromptlyDyn $ fmap (\(_,_,x) -> x) dynPageData
   return (requestsUp,ensembleRequestsUp,hintsUp)
 
 
 page :: forall t m. (MonadWidget t m)
   => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] -> Navigation
-  -> m (Event t Navigation, (Event t Request, Event t [EnsembleRequest], Event t [Hint]))
+  -> m (Event t Navigation, (Event t Request, Event t EnsembleRequest, Event t [Hint]))
 
 page ctx _ wsDown Splash = do
   navEv <- divClass "splash-container" $ do
@@ -85,10 +86,9 @@ page ctx _ wsDown TutorialList = do
   return (leftmost bs, (never, never, never))
 
 page ctx _ wsDown (Tutorial tid) = do
-  let widget = (Map.lookup tid tutorialMap) :: Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
-  (dm, hint) <- maybe errMsg id (fmap (\x-> x ctx) widget)
-  let hint' = fmap (:[]) hint
-  return (never, (never, never, hint')) -- *** RENDERING IS THUS BROKEN IN TUTORIALS, need to make sure tutorials return edits ***
+  let widget = (Map.lookup tid tutorialMap) :: Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint]))
+  (dm, hs) <- maybe errMsg id (fmap (\x-> x ctx) widget)
+  return (never, (never, never, hs)) -- *** RENDERING IS THUS BROKEN IN TUTORIALS, need to make sure tutorials return edits ***
   where
     errMsg = do
       text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
@@ -99,7 +99,12 @@ page ctx _ wsDown About = do
   return (never, (never, never, never))
 
 page ctx _ wsDown Lobby = do
-  requestEnsembleList <- liftM (GetEnsembleList <$) getPostBuild
+  -- at widget build and every 3 seconds thereafter, request the list of available ensembles
+  requestEnsembleList0 <- liftM (GetEnsembleList <$) getPostBuild
+  now <- liftIO $ getCurrentTime
+  requestEnsembleList1 <- liftM (GetEnsembleList <$) $ tickLossy (3::NominalDiffTime) now
+  let requestEnsembleList = leftmost [requestEnsembleList0,requestEnsembleList1]
+  -- process received ensemble lists into widgets that display info about, and let us join, ensembles
   ensembleList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
   ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton -- Event t Text
   let navToJoinEnsemble = fmap JoinEnsemblePage ensembleClicked
@@ -159,13 +164,14 @@ page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
   let navEvents = leftmost [joinedEnsembleNav,cancelNav]
   return (navEvents, (joinRequest, never, never))
 
-page ctx renderInfo _ (EnsemblePage ensembleName) = do
-  (ensReqs,hs) <- runEstuaryWidget ensembleView ctx renderInfo
-  return (never,(never,ensReqs,hs))
+page ctx renderInfo rs (EnsemblePage ensembleName) = do
+  let ensResponses = fmap justEnsembleResponses rs
+  (ensReq,hs) <- runEditor (ensembleView ensResponses) ctx renderInfo
+  return (never,(never,ensReq,hs))
 
 page ctx renderInfo _ Solo = do
-  (ensReqs,hs) <- runEstuaryWidget ensembleView ctx renderInfo
-  return (never,(never,ensReqs,hs))
+  (ensReq,hs) <- runEditor (ensembleView never) ctx renderInfo
+  return (never,(never,ensReq,hs))
 
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)

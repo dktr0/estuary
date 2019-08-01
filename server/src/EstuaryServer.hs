@@ -215,7 +215,7 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
   respond $ EnsembleResponse $ TempoRcvd (E.tempo $ E.ensemble e)
   mapM_ respond $ fmap EnsembleResponse $ IntMap.mapWithKey ZoneRcvd $ E.zones $ E.ensemble e
   mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd $ E.views $ E.ensemble e
-  -- *** TODO: need to send new member information about existing participants ***
+  -- TODO: send new participant information about existing participants (they'll get *some* info on updates, anyway)
   -- send information about new participant to all clients in this ensemble
   let anonymous = uName == ""
   when (not anonymous) $ do

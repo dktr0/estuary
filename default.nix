@@ -69,7 +69,7 @@ in
         # if using ghcjs.
         pkgs.lib.genAttrs [
             "Glob" "mockery" "silently" "unliftio" "conduit"
-            "yaml" "hpack" "base-compat-batteries" "text-show"
+            "yaml" "hpack" "base-compat-batteries" "text-show" "modular-arithmetic"
           ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else dontCheck) super.${name});
       # a hacky way of avoiding building unnecessary dependencies with GHCJS
       # (our system is currently building GHC dependencies even for the front-end...
@@ -144,6 +144,10 @@ in
         );
 
         webdirt = import ./deps/webdirt self;
+
+        # timeNot = import ./deps/timeNot self;
+        TimeNot = if !(self.ghc.isGhcjs or false) then null
+          else dontHaddock (import ./deps/TimeNot self);
 
         musicw = if !(self.ghc.isGhcjs or false) then null
           else dontHaddock (import ./deps/musicw self);

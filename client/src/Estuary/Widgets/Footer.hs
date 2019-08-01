@@ -7,7 +7,7 @@ import Reflex.Dom hiding (Request,Response)
 import qualified Data.Text as T
 
 import Estuary.Types.Context
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Hint
@@ -26,11 +26,7 @@ footer ctx renderInfo deltasDown hints = divClass "footer" $ do
     dynText =<< translateDyn Term.Load ctx
     text ": "
     dynText =<< holdUniqDyn (fmap (T.pack . show . avgRenderLoad) renderInfo)
-    text "% ("
-    dynText =<< holdUniqDyn (fmap (T.pack . show . peakRenderLoad) renderInfo)
-    text "% "
-    dynText =<< translateDyn Term.Peak ctx
-    text ") "
+    text "%"
   terminalWidget ctx deltasDown hints
   where
     f c | wsStatus c == "connection open" = "(" <> (T.pack $ show $ clientCount c) <> " connections, latency " <> (T.pack $ show $ serverLatency c) <> ")"

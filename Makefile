@@ -91,7 +91,7 @@ devStageStaticAssets: stageStaticAssets
 
 stageSamples: prepStage
 	@ echo "stageSamples:"
-	$(CP_RECURSIVE) static/samples/ $(STAGING_ROOT)/Estuary.jsexe/samples/
+	$(CP_RECURSIVE) static/samples $(STAGING_ROOT)/Estuary.jsexe/
 devStageSamples: STAGING_ROOT=$(DEV_STAGING_ROOT)
 devStageSamples: stageSamples
 
@@ -195,11 +195,11 @@ clean: cleanStage cleanDevStage
 	-rm -rf dist-ghcjs/
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
-runDevServer: stageStaticAssets cabalBuildServer cabalStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer
+runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
+	cd ./$(STAGING_ROOT) && ./EstuaryServer test
 
 runServer: nixBuild stageStaticAssets stageSamples nixStageClient nixStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer
+	cd ./$(STAGING_ROOT) && ./EstuaryServer test
 
 selfCertificates:
 	openssl genrsa -out staging/privkey.pem 2048
