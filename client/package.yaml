@@ -30,6 +30,8 @@ dependencies:
   - estuary-common
   - reflex
   - reflex-dom
+  - reflex-dom-core
+  - lens
   - tidal
   - punctual
   - musicw
@@ -47,7 +49,7 @@ dependencies:
   - file-embed
   - time
   - monad-loops
-  - json
+  - aeson
   - bytestring
   - parsec
   - parsec-numbers

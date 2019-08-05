@@ -13,7 +13,6 @@ import GHC.Generics
 import GHCJS.Marshal
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
-import Text.JSON
 import Text.Read
 import Control.Monad.IO.Class
 

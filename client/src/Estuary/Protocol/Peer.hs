@@ -2,33 +2,24 @@
 
 module Estuary.Protocol.Peer where
 
-import GHC.IORef
-import qualified GHCJS.Prim as Prim
-import qualified GHCJS.Types as T
-import qualified GHCJS.Foreign as F
-import qualified GHCJS.Marshal.Pure as P
-import JavaScript.Object.Internal as O
-import GHCJS.Foreign.Internal
 import GHCJS.Marshal.Pure
-import Text.JSON
+import GHCJS.Types
 import Data.Text (Text)
 
-import Estuary.Types.Request
-import Estuary.Types.Response
+newtype PeerProtocol = PeerProtocol JSVal
+
+instance PToJSVal PeerProtocol where pToJSVal (PeerProtocol x) = x
+
+instance PFromJSVal PeerProtocol where pFromJSVal = PeerProtocol
 
 foreign import javascript safe
   "new PeerProtocol()"
-  newPeerProtocol :: IO T.JSVal
+  newPeerProtocol :: IO PeerProtocol
 
 foreign import javascript safe
   "$1.startStreaming();"
-  startStreaming :: T.JSVal -> IO ()
+  startStreaming :: PeerProtocol -> IO ()
 
 foreign import javascript safe
   "$1.id"
-  peerProtocolId :: T.JSVal -> IO Text
-
-{- peerProtocolId :: T.JSVal -> IO String
-peerProtocolId x = do
-  y <- peerProtocolId_ x
-  return $ Prim.fromJSString y -}
+  peerProtocolId :: PeerProtocol -> IO Text

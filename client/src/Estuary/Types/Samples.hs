@@ -1,7 +1,6 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings, RecursiveDo #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings, RecursiveDo, DeriveGeneric #-}
 module Estuary.Types.Samples (
   SampleMap(..),
-  SampleList,
   emptySampleMap,
   loadSampleMapAsync,
   defaultSampleMapURL
@@ -12,54 +11,52 @@ import GHCJS.Foreign.Callback
 import GHCJS.Marshal
 import GHCJS.Marshal.Pure
 import GHCJS.Types
-
-import Text.JSON(JSON, JSKey)
-import qualified Text.JSON as JSON
+import Data.Text (Text)
+import qualified Data.Text.IO as T
+import GHC.Generics
+import Data.Aeson
+import Foreign.JavaScript.Utils (jsonDecode)
 
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
-import Data.Sequence(Seq)
+import Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as Seq(toList)
 
--- TODO this would be a nice place to use text
+type SampleList = Seq Text
 
-newtype SampleMap = SampleMap { unSampleMap :: Map String SampleList }
-  deriving (Show)
+newtype SampleMap = SampleMap { unSampleMap :: Map Text SampleList }
+  deriving (Show,Generic)
 
-type SampleList = Seq String
+instance ToJSON SampleMap
+instance FromJSON SampleMap
 
 emptySampleMap :: SampleMap
 emptySampleMap = SampleMap Map.empty
 
-instance (JSON a) => JSON (Seq a) where
-  readJSON jsonVal = do
-    names <- JSON.readJSONs jsonVal
-    return $ Seq.fromList names
-  showJSON seq = JSON.showJSONs $ Seq.toList seq
-
--- Need newtype so we can override default instance
-instance JSON SampleMap where
-  readJSON jsonVal = do
-    pairs <- JSON.decJSDict "SampleMap" jsonVal
-    return $ SampleMap $ Map.fromList pairs
-  showJSON map = JSON.encJSDict $ Map.toList $ unSampleMap $ map
-
-defaultSampleMapURL :: JSString
+defaultSampleMapURL :: Text
 defaultSampleMapURL = "samples/sampleMap.json"
 
-loadSampleMapAsync :: (ToJSString url) => url -> (Maybe SampleMap -> IO ()) -> IO ()
+loadSampleMapAsync :: Text -> (Maybe SampleMap -> IO ()) -> IO ()
 loadSampleMapAsync url onLoad = do
-  rec cb <- asyncCallback1 $ \mapJs -> do
-        if isNull mapJs || isUndefined mapJs
-          then onLoad Nothing
-          else
-            case JSON.decode $ fromJSString $ pFromJSVal $ mapJs of
-              JSON.Error err -> onLoad Nothing
-              JSON.Ok map -> onLoad $ Just map
+  rec cb <- asyncCallback1 $ \j -> do
+        if isNull j || isUndefined j then do
+            T.putStrLn "*ERROR* null/undefined sample map in loadSampleMapAsync"
+            onLoad Nothing
+          else do
+            v <- fromJSValUnchecked j
+            case fromJSON (v :: Value) of
+              Error e -> do
+                putStrLn $ "*ERROR* can't decode sample map in loadSampleMapAsync: " ++ e
+                onLoad Nothing
+              Success map -> do
+                T.putStrLn "loadSampleMapAsync (sample map decode okay)"
+                onLoad $ Just map
         releaseCallback cb
-  js_loadSamplesAsync (toJSString url) cb
+  js_loadSamplesAsync url cb
+
+
 
 ------------------------------------------
 -- JS FFI
@@ -74,4 +71,4 @@ foreign import javascript safe
   \xhr.onabort = function() { $2(null); };         \n\
   \xhr.onerror = function() { $2(null); };         \n\
   \xhr.send();                                      "
-  js_loadSamplesAsync :: JSString -> Callback (JSVal -> IO ()) -> IO ()
+  js_loadSamplesAsync :: Text -> Callback (JSVal -> IO ()) -> IO ()

@@ -8,12 +8,15 @@ import Database.SQLite.Simple.ToRow
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.ToField
 import Database.SQLite.Simple.Ok
-
 import Data.Map.Strict
 import Data.Time.Clock
-import Text.JSON
-import Data.Text as T
-import Data.Text.IO as T
+import Data.Aeson
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.IO as T
+import qualified Data.Text.Lazy as Lazy
+import qualified Data.Text.Lazy.Encoding as Lazy
 
 import Estuary.Types.View
 import Estuary.Types.EnsembleS
@@ -50,14 +53,14 @@ writeEnsembleS c eName e = do
   execute c "UPDATE ensembles SET json=?, lastUpdate=? WHERE name=?" (e,now,eName)
 
 instance ToField EnsembleS where
-  toField = SQLText . pack . encode
+  toField = SQLText . Lazy.toStrict . Lazy.decodeUtf8 . encode
 
 instance FromField EnsembleS where
-  fromField = f . decode . g . fieldData
-    where g (SQLText t) = unpack t
-          g _ = ""
-          f (Text.JSON.Ok x) = Database.SQLite.Simple.Ok.Ok x
-          f (Text.JSON.Error x) = error x
+  fromField = f . eitherDecode . g . fieldData
+    where g (SQLText t) = Lazy.encodeUtf8 $ Lazy.fromStrict t
+          g _ = Lazy.encodeUtf8 ""
+          f (Right x) = Database.SQLite.Simple.Ok.Ok x
+          f (Left x) = error x
 
 readEnsembles :: Connection -> IO (Map Text EnsembleS)
 readEnsembles c = do

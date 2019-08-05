@@ -13,11 +13,12 @@ import Control.Monad.State
 import Control.Exception
 import qualified Data.Map.Strict as Map
 import qualified Data.IntMap.Strict as IntMap
-import Text.JSON
 import qualified Database.SQLite.Simple as SQLite
 import qualified Network.WebSockets as WS
-import qualified Data.Text as T
 import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import Data.Aeson
 
 import Estuary.Types.ServerState
 import qualified Estuary.Types.Ensemble as E
@@ -151,7 +152,7 @@ whenNotAuthenticatedInEnsemble t = do
 
 send :: Response -> [Client] -> Transaction ()
 send x cs = forM_ cs $ \c -> do
-  y <- liftIO $ try (WS.sendTextData (connection c) $ (T.pack . encodeStrict) x)
+  y <- liftIO $ try (WS.sendTextData (connection c) $ encode x)
   case y of
     Right x -> return ()
     Left (SomeException e) -> do
