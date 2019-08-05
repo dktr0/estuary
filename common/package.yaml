@@ -11,11 +11,11 @@ homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
 
 dependencies:
   - base
-  - json
   - text
   - time
   - containers
   - text
+  - aeson
 
 extra-source-files:
   - package.yaml

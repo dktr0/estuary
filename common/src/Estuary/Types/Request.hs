@@ -1,14 +1,14 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 -- This type represents all messages that an Estuary client can send
 -- to an Estuary server via WebSockets.
 
 module Estuary.Types.Request where
 
-import Text.JSON
-import Text.JSON.Generic
 import Data.Time.Clock
 import Data.Text
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Definition
@@ -22,8 +22,7 @@ data Request =
   LeaveEnsemble |
   Authenticate Text | -- ie. as administrator, for making ensembles
   CreateEnsemble Text Text -- ensemble password (empty for no password)
-  deriving (Eq,Data,Typeable)
+  deriving (Eq,Generic)
 
-instance JSON Request where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Request
+instance FromJSON Request

@@ -1,12 +1,12 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.EnsembleResponse where
 
-import Text.JSON
-import Text.JSON.Generic
 import Data.Time
 import Data.Text (Text)
 import Data.Maybe (mapMaybe)
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Types.View
 import Estuary.Types.Tempo
@@ -23,11 +23,10 @@ data EnsembleResponse =
   ParticipantUpdate Text Participant |
   ParticipantLeaves Text |
   AnonymousParticipants Int
-  deriving (Data,Typeable)
+  deriving (Generic)
 
-instance JSON EnsembleResponse where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance FromJSON EnsembleResponse
+instance ToJSON EnsembleResponse
 
 justEditsInZone :: Int -> [EnsembleResponse] -> [Definition]
 justEditsInZone z1 = mapMaybe f

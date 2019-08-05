@@ -1,21 +1,19 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Tidal.Types where
 
-import Text.JSON
-import Text.JSON.Generic
 import Data.List as List (intercalate, zip)
-import Data.Map as Map
+import Data.Map.Strict as Map
 import Data.Ratio
+import GHC.Generics
+import Data.Aeson
 
--- import Estuary.Utility
 import Estuary.Types.Live
 
-data RepOrDiv = Once | Rep Int | Div Int deriving (Eq,Data,Typeable)
+data RepOrDiv = Once | Rep Int | Div Int deriving (Eq,Generic)
 
-instance JSON RepOrDiv where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON RepOrDiv
+instance FromJSON RepOrDiv
 
 instance Show RepOrDiv where
   show Once = ""
@@ -25,11 +23,10 @@ instance Show RepOrDiv where
 
 data Potential a = Potential a | PotentialDelete
     | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness
-    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq,Show,Data,Typeable) --show just for testing
+    | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq,Show,Generic)
 
-instance Data a => JSON (Potential a) where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON a => ToJSON (Potential a)
+instance FromJSON a => FromJSON (Potential a)
 
 
 data GeneralPattern a =
@@ -38,18 +35,24 @@ data GeneralPattern a =
   Group (Live  ([GeneralPattern a],RepOrDiv)) (Potential a) |
   Layers (Live ([GeneralPattern a],RepOrDiv)) (Potential a) |
   TextPattern String
-  deriving (Eq,Data,Typeable)
+  deriving (Eq,Generic)
 
-instance Data a => JSON (GeneralPattern a) where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON a => ToJSON (GeneralPattern a)
+instance FromJSON a => FromJSON (GeneralPattern a)
 
+isGroup :: GeneralPattern a -> Bool
 isGroup (Group _ _)= True
 isGroup _ = False
+
+isLayers :: GeneralPattern a -> Bool
 isLayers (Layers _ _) = True
 isLayers _ = False
+
+isAtom :: GeneralPattern a -> Bool
 isAtom (Atom _ _ _) = True
 isAtom _ = False
+
+isBlank :: GeneralPattern a -> Bool
 isBlank (Blank _) = True
 isBlank _ = False
 
@@ -92,11 +95,10 @@ instance Show a => Show (GeneralPattern a) where
 
 type SampleName = String
 
-newtype Sample = Sample (SampleName,Int) deriving (Eq,Data,Typeable)
+newtype Sample = Sample (SampleName,Int) deriving (Eq,Generic)
 
-instance JSON Sample where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Sample
+instance FromJSON Sample
 
 instance Show Sample where
   show (Sample (x,0)) = showNoQuotes x
@@ -112,7 +114,7 @@ data SpecificPattern =  Accelerate (GeneralPattern Double) | Bandf (GeneralPatte
   | Pan (GeneralPattern Double)
   | Resonance (GeneralPattern Double) | S (GeneralPattern SampleName) | Shape (GeneralPattern Double)
   | Sound (GeneralPattern Sample) | Speed (GeneralPattern Double) | Unit (GeneralPattern Char)
-  | Up (GeneralPattern Double) | Vowel (GeneralPattern Char) deriving (Eq,Data,Typeable)
+  | Up (GeneralPattern Double) | Vowel (GeneralPattern Char) deriving (Eq,Generic)
 
 
 instance Show SpecificPattern where
@@ -143,22 +145,17 @@ instance Show SpecificPattern where
   show (Up x) = "up \"" ++ (show x) ++ "\""
   show (Vowel x) = "vowel \"" ++ (show x) ++ "\""
 
--- ??? should all of the definitions below test for emptiness ???
-
-
-instance JSON SpecificPattern where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON SpecificPattern
+instance FromJSON SpecificPattern
 
 emptySPattern :: SpecificPattern
 emptySPattern = S (Blank Inert)
 
 
-data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read,Data,Typeable)
+data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read,Generic)
 
-instance JSON PatternCombinator where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON PatternCombinator
+instance FromJSON PatternCombinator
 
 instance Show PatternCombinator where
   show (Merge) = "|=|"
@@ -179,7 +176,7 @@ data PatternTransformer =
   Jux PatternTransformer |
   Chop Int |
   Combine SpecificPattern PatternCombinator
-  deriving (Eq,Data,Typeable)
+  deriving (Eq,Generic)
 
 instance Show PatternTransformer where
   show NoTransformer = ""
@@ -194,32 +191,29 @@ instance Show PatternTransformer where
   show (Chop i) = "chop (" ++ (show i) ++ ")"
   show (Combine p c) = (show p) ++ " " ++ (show c) ++ " "
 
-instance JSON PatternTransformer where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON PatternTransformer
+instance FromJSON PatternTransformer
 
 
 data TransformedPattern =
   TransformedPattern PatternTransformer TransformedPattern |
   UntransformedPattern SpecificPattern |
   EmptyTransformedPattern
-  deriving (Eq,Data,Typeable)
+  deriving (Eq,Generic)
 
 instance Show TransformedPattern where
   show (TransformedPattern t p) = (show t) ++ " " ++ (show p)
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
 
-instance JSON TransformedPattern where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON TransformedPattern
+instance FromJSON TransformedPattern
 
 
-data StackedPatterns = StackedPatterns [TransformedPattern] deriving (Eq,Data,Typeable)
+data StackedPatterns = StackedPatterns [TransformedPattern] deriving (Eq,Generic)
 
-instance JSON StackedPatterns where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON StackedPatterns
+instance FromJSON StackedPatterns
 
 instance Show StackedPatterns where
   show (StackedPatterns xs) = "stack [" ++ (intercalate ", " (Prelude.map show xs)) ++ "]"

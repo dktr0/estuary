@@ -1,15 +1,14 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.TidalParser where
 
-import Text.JSON
-import Text.JSON.Generic
+import GHC.Generics
+import Data.Aeson
 
 data TidalParser = MiniTidal | CQenze | Morelia | Saborts |
   Saludos | ColombiaEsPasion | Si | Sentidos | Natural | Medellin | LaCalle |
   Maria | Crudo | Puntoyya | Sucixxx | Vocesotrevez | Imagina | Alobestia | Togo | BlackBox
-  deriving (Show,Read,Eq,Ord,Data,Typeable)
+  deriving (Show,Read,Eq,Ord,Generic)
 
-instance JSON TidalParser where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON TidalParser
+instance FromJSON TidalParser

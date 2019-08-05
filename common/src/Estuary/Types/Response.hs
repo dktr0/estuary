@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 -- This type represents all messages that an Estuary server can send
 -- to an Estuary client via WebSockets.
@@ -6,10 +6,10 @@
 module Estuary.Types.Response where
 
 import Data.Maybe (mapMaybe)
-import Text.JSON
-import Text.JSON.Generic
 import Data.Time.Clock
 import Data.Text
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Utility
 import Estuary.Types.EnsembleResponse
@@ -21,11 +21,10 @@ data Response =
   JoinedEnsemble Text Text | -- ensemble username
   EnsembleResponse EnsembleResponse |
   ServerInfo Int UTCTime -- response to ClientInfo: serverClientCount pingTime (from triggering ClientInfo)
-  deriving (Data,Typeable)
+  deriving (Generic)
 
-instance JSON Response where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Response
+instance FromJSON Response
 
 justEnsembleResponses :: [Response] -> [EnsembleResponse]
 justEnsembleResponses = mapMaybe f

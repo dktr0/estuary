@@ -1,9 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.TextNotation where
 
-import Text.JSON
-import Text.JSON.Generic
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Types.TidalParser
 
@@ -12,12 +12,11 @@ data TextNotation =
   Punctual |
   CineCer0 |
   TimeNot
-  deriving (Read,Eq,Ord,Data,Typeable,Show)
+  deriving (Read,Eq,Ord,Show,Generic)
+
+instance ToJSON TextNotation
+instance FromJSON TextNotation
 
 textNotationDropDownLabel :: TextNotation -> String
 textNotationDropDownLabel (TidalTextNotation x) = show x
 textNotationDropDownLabel x = show x
-
-instance JSON TextNotation where
-  showJSON = toJSON
-  readJSON = fromJSON

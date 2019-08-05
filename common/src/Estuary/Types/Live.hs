@@ -1,21 +1,19 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.Live where
 
-import Text.JSON
-import Text.JSON.Generic
+import GHC.Generics
+import Data.Aeson
 
-data Liveness = L3 | L4 deriving (Eq,Show,Data,Typeable)
+data Liveness = L3 | L4 deriving (Eq,Show,Generic)
 
-instance JSON Liveness where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Liveness
+instance FromJSON Liveness
 
-data Live a = Live a Liveness | Edited a a deriving(Eq,Data,Typeable)
+data Live a = Live a Liveness | Edited a a deriving (Eq,Generic)
 
-instance Data a => JSON (Live a) where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON a => ToJSON (Live a)
+instance FromJSON a => FromJSON (Live a)
 
 forRendering :: Live a -> a
 forRendering (Live a _) = a
