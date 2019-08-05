@@ -5,6 +5,7 @@ module Estuary.Widgets.Footer where
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import qualified Data.Text as T
+import TextShow
 
 import Estuary.Types.Context
 import Estuary.Types.RenderInfo
@@ -21,7 +22,8 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t [Response] -> Event t [Hint] -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown hints = divClass "footer" $ do
   divClass "peak primary-color code-font" $ do
-    dynText =<< holdUniqDyn (fmap f ctx)
+    serverInfo <- holdUniqDyn $ fmap (\c -> (clientCount c,serverLatency c)) ctx
+    dynText $ fmap f serverInfo
     text " "
     dynText =<< translateDyn Term.Load ctx
     text ": "
@@ -29,5 +31,4 @@ footer ctx renderInfo deltasDown hints = divClass "footer" $ do
     text "%"
   terminalWidget ctx deltasDown hints
   where
-    f c | wsStatus c == "connection open" = "(" <> (T.pack $ show $ clientCount c) <> " connections, latency " <> (T.pack $ show $ serverLatency c) <> ")"
-    f c | otherwise= "(" <> wsStatus c <> ")"
+    f (cc,lat) = "(" <> (showt cc) <> " connections, latency " <> (showt $ (realToFrac lat :: Double)) <> ")"

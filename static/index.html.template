@@ -19,7 +19,6 @@
   <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <script type="text/javascript" src="EstuaryProtocol.js"></script>
   <script type="text/javascript" src="SuperDirt.js"></script>
   <script type="text/javascript" src="PeerProtocol.js"></script>
   <script type="text/javascript" src="WebDirt/WebDirt.js"></script>
