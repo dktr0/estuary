@@ -35,9 +35,8 @@ ensembleView :: MonadWidget t m
   => Event t [EnsembleResponse] -> Editor t m (Event t EnsembleRequest)
 ensembleView ensResponses = do
 
-  ctx <- askContext
-
   -- Ensemble name and username UI (created only if ensemble is not "", ie. not in solo mode)
+  ctx <- askContext
   iCtx <- initialValueOfDyn ctx
   let eName = ensembleName $ ensemble $ ensembleC iCtx
   liftR $ when (eName /= "") $ divClass "ensembleHeader primary-color ui-font" $ do
@@ -46,15 +45,12 @@ ensembleView ensResponses = do
     divClass "ensembleHandle ui-font primary-color" $ text $ "UserName: " <> uName
 
   -- Tempo UI
-  tempoE <- tempoWidget
+  let initialTempo = (tempo . ensemble . ensembleC) iCtx
+  tempoDelta <- liftR $ holdDyn initialTempo $ fmapMaybe lastTempoChange ensResponses
+  tempoE <- tempoWidget tempoDelta
   let tempoRequests = fmap WriteTempo tempoE
 
   -- Dynamic core View UI
-
-  -- these two lines just during a temporary test we are doing...
-  -- let initialView = activeView $ ensembleC iCtx
-  -- widgetRequests <- viewWidget ensResponses initialView
-
   currentView <- liftR $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
   let dynamicViews = fmap (viewWidget ensResponses) currentView -- Dynamic t (Editor t m (Event t EnsembleRequest))
   x <- dynEditor dynamicViews -- Dynamic t (Event t EnsembleRequest)

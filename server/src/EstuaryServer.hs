@@ -220,7 +220,7 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
   let anonymous = uName == ""
   when (not anonymous) $ do
     p <- clientToParticipant <$> getClient
-    respondEnsemble $ EnsembleResponse $ ParticipantJoins eName p
+    respondEnsemble $ EnsembleResponse $ ParticipantJoins uName p
   when anonymous $ do
     n <- countAnonymousParticipants
     respondEnsemble $ EnsembleResponse $ AnonymousParticipants n

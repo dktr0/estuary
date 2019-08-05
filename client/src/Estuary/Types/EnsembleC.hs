@@ -141,10 +141,10 @@ responseToMessage (ChatRcvd c) = Just $ showChatMessage c
 responseToMessage (ParticipantJoins n _) = Just $ n <> " has joined the ensemble"
 responseToMessage (ParticipantLeaves n) = Just $ n <> " has left the ensemble"
 -- the cases below are for debugging only and can be commented out when not debugging:
-responseToMessage (TempoRcvd _) = Just $ "received new tempo"
-responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showt n
-responseToMessage (ViewRcvd n _) = Just $ "received view " <> n
-responseToMessage (ParticipantUpdate n _) = Just $ "received ParticipantUpdate about " <> n
-responseToMessage (AnonymousParticipants n) = Just $ "now there are " <> showt n <> " anonymous participants"
+-- responseToMessage (TempoRcvd _) = Just $ "received new tempo"
+-- responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showt n
+-- responseToMessage (ViewRcvd n _) = Just $ "received view " <> n
+-- responseToMessage (ParticipantUpdate n _) = Just $ "received ParticipantUpdate about " <> n
+-- responseToMessage (AnonymousParticipants n) = Just $ "now there are " <> showt n <> " anonymous participants"
 -- don't comment out the case below, of course!
 responseToMessage _ = Nothing

@@ -73,7 +73,7 @@ main = do
   mainWidgetInElementById "estuary-root" $ estuaryWidget c ri
 
   -- Signal the splash page that estuary is loaded.
-  js_setIconStateLoaded
+  -- js_setIconStateLoaded
 
   -- Resume the audio context after interaction.
   js_waitForClickBody
