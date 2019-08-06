@@ -7,12 +7,14 @@ import Data.Aeson
 
 data Liveness = L3 | L4 deriving (Eq,Show,Generic)
 
-instance ToJSON Liveness
+instance ToJSON Liveness where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Liveness
 
 data Live a = Live a Liveness | Edited a a deriving (Eq,Generic)
 
-instance ToJSON a => ToJSON (Live a)
+instance ToJSON a => ToJSON (Live a) where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON a => FromJSON (Live a)
 
 forRendering :: Live a -> a

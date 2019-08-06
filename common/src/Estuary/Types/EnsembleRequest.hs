@@ -19,5 +19,6 @@ data EnsembleRequest =
   WriteStatus Text
   deriving (Eq,Generic)
 
-instance ToJSON EnsembleRequest
+instance ToJSON EnsembleRequest where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON EnsembleRequest

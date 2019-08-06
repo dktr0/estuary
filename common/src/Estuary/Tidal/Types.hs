@@ -12,7 +12,8 @@ import Estuary.Types.Live
 
 data RepOrDiv = Once | Rep Int | Div Int deriving (Eq,Generic)
 
-instance ToJSON RepOrDiv
+instance ToJSON RepOrDiv where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON RepOrDiv
 
 instance Show RepOrDiv where
@@ -25,7 +26,8 @@ data Potential a = Potential a | PotentialDelete
     | PotentialMakeGroup | PotentialMakeLayer | PotentialLiveness Liveness
     | Inert | PotentialRepOrDiv| Potentials [Potential a] deriving (Eq,Show,Generic)
 
-instance ToJSON a => ToJSON (Potential a)
+instance ToJSON a => ToJSON (Potential a) where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON a => FromJSON (Potential a)
 
 
@@ -37,7 +39,8 @@ data GeneralPattern a =
   TextPattern String
   deriving (Eq,Generic)
 
-instance ToJSON a => ToJSON (GeneralPattern a)
+instance ToJSON a => ToJSON (GeneralPattern a) where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON a => FromJSON (GeneralPattern a)
 
 isGroup :: GeneralPattern a -> Bool
@@ -97,7 +100,8 @@ type SampleName = String
 
 newtype Sample = Sample (SampleName,Int) deriving (Eq,Generic)
 
-instance ToJSON Sample
+instance ToJSON Sample where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Sample
 
 instance Show Sample where
@@ -145,7 +149,8 @@ instance Show SpecificPattern where
   show (Up x) = "up \"" ++ (show x) ++ "\""
   show (Vowel x) = "vowel \"" ++ (show x) ++ "\""
 
-instance ToJSON SpecificPattern
+instance ToJSON SpecificPattern where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON SpecificPattern
 
 emptySPattern :: SpecificPattern
@@ -154,7 +159,8 @@ emptySPattern = S (Blank Inert)
 
 data PatternCombinator = Merge | Add | Subtract | Multiply | Divide deriving (Eq,Read,Generic)
 
-instance ToJSON PatternCombinator
+instance ToJSON PatternCombinator where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON PatternCombinator
 
 instance Show PatternCombinator where
@@ -191,7 +197,8 @@ instance Show PatternTransformer where
   show (Chop i) = "chop (" ++ (show i) ++ ")"
   show (Combine p c) = (show p) ++ " " ++ (show c) ++ " "
 
-instance ToJSON PatternTransformer
+instance ToJSON PatternTransformer where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON PatternTransformer
 
 
@@ -206,13 +213,15 @@ instance Show TransformedPattern where
   show (UntransformedPattern u) = (show u)
   show (EmptyTransformedPattern) = ""
 
-instance ToJSON TransformedPattern
+instance ToJSON TransformedPattern where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON TransformedPattern
 
 
 data StackedPatterns = StackedPatterns [TransformedPattern] deriving (Eq,Generic)
 
-instance ToJSON StackedPatterns
+instance ToJSON StackedPatterns where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON StackedPatterns
 
 instance Show StackedPatterns where

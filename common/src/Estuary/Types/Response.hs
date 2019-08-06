@@ -23,7 +23,8 @@ data Response =
   ServerInfo Int UTCTime -- response to ClientInfo: serverClientCount pingTime (from triggering ClientInfo)
   deriving (Generic)
 
-instance ToJSON Response
+instance ToJSON Response where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Response
 
 justEnsembleResponses :: [Response] -> [EnsembleResponse]

@@ -24,5 +24,6 @@ data Request =
   CreateEnsemble Text Text -- ensemble password (empty for no password)
   deriving (Eq,Generic)
 
-instance ToJSON Request
+instance ToJSON Request where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Request

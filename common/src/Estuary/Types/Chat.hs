@@ -16,7 +16,8 @@ data Chat = Chat {
 instance Ord Chat where
   compare x y = compare (chatTime x) (chatTime y)
 
-instance ToJSON Chat
+instance ToJSON Chat where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Chat
 
 showChatMessage :: Chat -> Text

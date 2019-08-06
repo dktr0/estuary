@@ -14,7 +14,8 @@ data TextNotation =
   TimeNot
   deriving (Read,Eq,Ord,Show,Generic)
 
-instance ToJSON TextNotation
+instance ToJSON TextNotation where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON TextNotation
 
 textNotationDropDownLabel :: TextNotation -> String

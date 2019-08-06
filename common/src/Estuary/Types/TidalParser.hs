@@ -10,5 +10,6 @@ data TidalParser = MiniTidal | CQenze | Morelia | Saborts |
   Maria | Crudo | Puntoyya | Sucixxx | Vocesotrevez | Imagina | Alobestia | Togo | BlackBox
   deriving (Show,Read,Eq,Ord,Generic)
 
-instance ToJSON TidalParser
+instance ToJSON TidalParser where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON TidalParser

@@ -24,7 +24,8 @@ data Definition =
   LabelText Text
   deriving (Eq,Show,Generic)
 
-instance ToJSON Definition
+instance ToJSON Definition where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Definition
 
 type DefinitionMap = IntMap.IntMap Definition

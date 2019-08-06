@@ -23,5 +23,6 @@ data Participant = Participant {
   browser :: Text
   } deriving (Eq,Generic)
 
-instance ToJSON Participant
+instance ToJSON Participant where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Participant

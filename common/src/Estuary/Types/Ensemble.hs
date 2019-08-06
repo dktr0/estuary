@@ -34,7 +34,8 @@ data Ensemble = Ensemble {
   anonymousParticipants :: Int
   } deriving (Generic)
 
-instance ToJSON Ensemble
+instance ToJSON Ensemble where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Ensemble
 
 emptyEnsemble :: UTCTime -> Ensemble

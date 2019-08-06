@@ -13,7 +13,8 @@ data Tempo = Tempo {
   beat :: Rational
   } deriving (Eq,Generic,Show)
 
-instance ToJSON Tempo
+instance ToJSON Tempo where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON Tempo
 
 audioSecondsToUTC :: (UTCTime,Double) -> Double -> UTCTime

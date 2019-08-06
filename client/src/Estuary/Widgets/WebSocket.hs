@@ -1,6 +1,6 @@
 {-# LANGUAGE RecursiveDo, OverloadedStrings, JavaScriptFFI #-}
 
-module Estuary.Widgets.WebSocket where
+module Estuary.Widgets.WebSocket (estuaryWebSocket) where
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
@@ -23,10 +23,12 @@ import Estuary.Types.Response
 estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
   m (Event t Response, Event t ContextChange)
 estuaryWebSocket ctx rInfo toSend = mdo
-
+  hostName <- liftIO $ getHostName
+  port <- liftIO $ getPort
+  let url = "wss://" <> hostName <> ":" <> port
   let requestsToSend = mergeWith (++) [sendBrowserInfo,toSend,clientInfoEvent]
   let config = def & webSocketConfig_send .~ requestsToSend & webSocketConfig_reconnect .~ True
-  ws <- jsonWebSocket "wss://127.0.0.1:8002" config -- hard-coded URL for now...
+  ws <- jsonWebSocket url config
   let response = fmapMaybe id $ ws^.webSocket_recv
 
 --  status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
@@ -65,4 +67,14 @@ estuaryWebSocket ctx rInfo toSend = mdo
   return (response,contextChanges)
 
 
-foreign import javascript unsafe "navigator.userAgent" getUserAgent :: IO Text
+foreign import javascript unsafe
+  "$r = location.hostname"
+  getHostName :: IO Text
+
+foreign import javascript unsafe
+  "$r = location.port"
+  getPort :: IO Text
+
+foreign import javascript unsafe
+  "navigator.userAgent"
+  getUserAgent :: IO Text

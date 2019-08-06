@@ -25,8 +25,9 @@ data EnsembleResponse =
   AnonymousParticipants Int
   deriving (Generic)
 
+instance ToJSON EnsembleResponse where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON EnsembleResponse
-instance ToJSON EnsembleResponse
 
 justEditsInZone :: Int -> [EnsembleResponse] -> [Definition]
 justEditsInZone z1 = mapMaybe f

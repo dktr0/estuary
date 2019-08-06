@@ -15,7 +15,8 @@ data View =
   SequenceView Int
   deriving (Show,Eq,Generic)
 
-instance ToJSON View
+instance ToJSON View where
+  toEncoding = genericToEncoding defaultOptions
 instance FromJSON View
 
 emptyView :: View
