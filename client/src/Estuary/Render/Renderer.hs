@@ -53,7 +53,7 @@ import Estuary.Types.MovingAverage
 type Renderer = StateT RenderState IO ()
 
 renderPeriod :: NominalDiffTime
-renderPeriod = 0.032
+renderPeriod = 0.200
 
 getRenderTime :: Context -> StateT RenderState IO UTCTime
 getRenderTime c = do
