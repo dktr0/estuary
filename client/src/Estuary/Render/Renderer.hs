@@ -45,6 +45,7 @@ import Estuary.Tidal.Types
 import Estuary.Tidal.ParamPatternable
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
+import Estuary.Languages.TextReplacement
 import Estuary.WebDirt.SampleEngine
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
@@ -129,6 +130,20 @@ canvasChangedTextProgram c z (Punctual,x) = do
   modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
 canvasChangedTextProgram _ _ _ = return ()
 
+setZoneError :: Int -> Text -> Renderer
+setZoneError z t = do
+  s <- get
+  let oldErrors = errors $ info s
+  let newErrors = insert z t oldErrors
+  modify' $ \x -> x { info = (info s) { errors = newErrors } }
+
+clearZoneError :: Int -> Renderer
+clearZoneError z = do
+  s <- get
+  let oldErrors = errors $ info s
+  let newErrors = delete z oldErrors
+  modify' $ \x -> x { info = (info s) { errors = newErrors } }
+
 renderZone :: Context -> Int -> Definition -> Renderer
 renderZone c z d = do
   t1 <- getRenderTime c
@@ -186,14 +201,24 @@ renderZoneChanged _ _ _ = return ()
 
 renderZoneAlways :: Context -> Int -> Definition -> Renderer
 renderZoneAlways c z (Structure _) = renderControlPattern c z
-renderZoneAlways c z (TextProgram x) = renderTextProgramAlways c z $ forRendering x
+renderZoneAlways c z (TextProgram x) = renderTextProgramAlways c z
 renderZoneAlways c z (Sequence _) = renderControlPattern c z
 renderZoneAlways _ _ _ = return ()
 
-
 renderTextProgramChanged :: Context -> Int -> (TextNotation,Text) -> Renderer
+renderTextProgramChanged c z prog = do
+  let x = applyTextReplacement prog
+  renderBaseProgramChanged c z x
+  when (isRight x) $ do
+    let (n,t) = fromRight (Punctual,"") x
+    oldBaseNotations <- gets baseNotations
+    modify' $ \y -> y { baseNotations = insert z n oldBaseNotations }
 
-renderTextProgramChanged c z (TidalTextNotation x,y) = do
+renderBaseProgramChanged :: Context -> Int -> Either ParseError (TextNotation,Text) -> Renderer
+
+renderBaseProgramChanged c z (Left e) = setZoneError z (T.pack $ show e)
+
+renderBaseProgramChanged c z (Right (TidalTextNotation x,y)) = do
   s <- get
   let parseResult = tidalParser x y -- :: Either ParseError ControlPattern
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
@@ -201,10 +226,12 @@ renderTextProgramChanged c z (TidalTextNotation x,y) = do
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
-renderTextProgramChanged c z (Punctual,x) = parsePunctualNotation c z Punctual.runPunctualParser x
-renderTextProgramChanged c z (Experiment,x) = parsePunctualNotation c z Punctual.runPunctualParser x
+renderBaseProgramChanged c z (Right (Punctual,x)) = parsePunctualNotation c z Punctual.runPunctualParser x
 
-renderTextProgramChanged c z (CineCer0,x) = do
+-- note: but really the line below is probably obsolete because of new text replacement approach?
+renderBaseProgramChanged c z (Right (Experiment,x)) = parsePunctualNotation c z Punctual.runPunctualParser x
+
+renderBaseProgramChanged c z (Right (CineCer0,x)) = do
   s <- get
   let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.cineCer0 $ T.unpack x -- Either String CineCer0Spec
   let maybeTheDiv = videoDivElement c
@@ -221,7 +248,7 @@ renderTextProgramChanged c z (CineCer0,x) = do
     let errs = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
     modify' $ \x -> x { info = (info s) { errors = errs }}
 
-renderTextProgramChanged c z (TimeNot,x) = do
+renderBaseProgramChanged c z (Right (TimeNot,x)) = do
   s <- get
   let parseResult = TimeNot.timeNot (logicalTime s) x -- :: Either Text [(UTCTime, Map Text Datum)]
   when (isRight parseResult) $ do
@@ -233,8 +260,8 @@ renderTextProgramChanged c z (TimeNot,x) = do
     let errs = either (\e -> insert z e (errors (info s))) (const $ delete z (errors (info s))) parseResult
     modify' $ \x -> x { info = (info s) { errors = errs }}
 
+renderBaseProgramChanged c z _ = setZoneError z "renderBaseProgramChanged: no match for base language"
 
-renderTextProgramChanged _ _ _ = return ()
 
 parsePunctualNotation :: Context -> Int -> (Text -> Either ParseError [Punctual.Expression]) -> Text -> Renderer
 parsePunctualNotation c z p t = do
@@ -270,9 +297,15 @@ punctualProgramChanged c z e = do
   modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
 
 
-renderTextProgramAlways :: Context -> Int -> (TextNotation,Text) -> Renderer
-renderTextProgramAlways c z (TidalTextNotation _,_) = renderControlPattern c z
-renderTextProgramAlways _ _ _ = return ()
+renderTextProgramAlways :: Context -> Int -> Renderer
+renderTextProgramAlways c z = do
+  s <- get
+  let baseNotation = IntMap.lookup z $ baseNotations s
+  renderBaseProgramAlways c z $ baseNotation
+
+renderBaseProgramAlways :: Context -> Int -> Maybe TextNotation -> Renderer
+renderBaseProgramAlways c z (Just (TidalTextNotation _)) = renderControlPattern c z
+renderBaseProgramAlways _ _ _ = return ()
 
 renderControlPattern :: Context -> Int -> Renderer
 renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
