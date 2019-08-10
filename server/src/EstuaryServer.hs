@@ -15,7 +15,8 @@ import Control.Monad.State
 import Control.Monad.Except
 
 import qualified Database.SQLite.Simple as SQLite
-import Text.JSON
+import Data.Aeson
+import Data.ByteString.Lazy
 import qualified Network.WebSockets as WS
 import qualified Network.Wai as WS
 import qualified Network.Wai.Handler.WebSockets as WS
@@ -127,17 +128,11 @@ processLoop db ws sMVar cHandle = do
     --  processLoop db ws s h
 
 
-processMessage :: Text -> Transaction ()
-processMessage msg = do
-  let msg' = decode (T.unpack msg) :: Result JSString -- *** is there a way of avoiding the conversion to string here???
-  case msg' of
-    Ok x -> processResult $ decode (fromJSString x)
-    Error x -> throwError (T.pack x)
-
-processResult :: Result Request -> Transaction ()
-processResult (Ok x) = processRequest x
-processResult (Error x) = throwError $ "Error (processResult): " <> (T.pack x)
-
+processMessage :: ByteString -> Transaction ()
+processMessage msg =
+  case eitherDecode msg of
+    Right x -> processRequest x
+    Left x -> throwError (T.pack x)
 
 processRequest :: Request -> Transaction ()
 
@@ -220,7 +215,7 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
   let anonymous = uName == ""
   when (not anonymous) $ do
     p <- clientToParticipant <$> getClient
-    respondEnsemble $ EnsembleResponse $ ParticipantJoins eName p
+    respondEnsemble $ EnsembleResponse $ ParticipantJoins uName p
   when anonymous $ do
     n <- countAnonymousParticipants
     respondEnsemble $ EnsembleResponse $ AnonymousParticipants n

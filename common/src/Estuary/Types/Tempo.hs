@@ -1,21 +1,21 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.Tempo where
 
-import Text.JSON
-import Text.JSON.Generic
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
+import GHC.Generics
+import Data.Aeson
 
 data Tempo = Tempo {
   cps :: Rational,
   at :: UTCTime,
   beat :: Rational
-  } deriving (Eq,Data,Typeable,Show)
+  } deriving (Eq,Generic,Show)
 
-instance JSON Tempo where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Tempo where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Tempo
 
 audioSecondsToUTC :: (UTCTime,Double) -> Double -> UTCTime
 audioSecondsToUTC (t0utc,t0audio) t1audio = posixSecondsToUTCTime $ clockDiff + (realToFrac t1audio)

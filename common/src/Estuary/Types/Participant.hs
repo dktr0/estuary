@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.Participant where
 
@@ -9,8 +9,8 @@ module Estuary.Types.Participant where
 
 import Data.Text
 import Data.Time
-import Text.JSON
-import Text.JSON.Generic
+import GHC.Generics
+import Data.Aeson
 
 data Participant = Participant {
   name :: Text,
@@ -21,8 +21,8 @@ data Participant = Participant {
   animationLoad :: Int,
   latency :: NominalDiffTime,
   browser :: Text
-  } deriving (Eq,Data,Typeable)
+  } deriving (Eq,Generic)
 
-instance JSON Participant where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Participant where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Participant

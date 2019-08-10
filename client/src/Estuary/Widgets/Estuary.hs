@@ -6,7 +6,6 @@ import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
-import Text.JSON
 import Data.Time
 import Data.Map
 import Text.Read
@@ -20,7 +19,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Sound.MusicW.AudioContext
 
-import Estuary.Protocol.Foreign
 import Estuary.Widgets.Navigation
 import Estuary.WebDirt.SampleEngine
 import Estuary.WebDirt.WebDirt
@@ -49,7 +47,8 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext ctxM ctx -- perform all IO actions consequent to Context changing
   renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  (deltasDown,wsCtxChange) <- alternateWebSocket ctx renderInfo requestsUp
+  (deltasDown',wsCtxChange) <- estuaryWebSocket ctx renderInfo requestsUp
+  let deltasDown = fmap (:[]) deltasDown' -- temporary hack
 
   let ensembleCDyn = fmap ensembleC ctx
 
@@ -69,7 +68,7 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
-  let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown
+  let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   samplesLoadedEv <- loadSampleMap
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange]
 

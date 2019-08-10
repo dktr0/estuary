@@ -1,13 +1,13 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.Definition where
 
-import Text.JSON
-import Text.JSON.Generic
 import Data.Maybe (mapMaybe)
 import qualified Data.Map as M
 import qualified Data.IntMap.Strict as IntMap
 import Data.Text (Text)
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
@@ -22,16 +22,16 @@ data Definition =
   TextProgram TextProgram |
   Sequence Sequence |
   LabelText Text
-  deriving (Eq,Show,Data,Typeable)
+  deriving (Eq,Show,Generic)
+
+instance ToJSON Definition where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Definition
 
 type DefinitionMap = IntMap.IntMap Definition
 
 emptyDefinitionMap :: DefinitionMap
 emptyDefinitionMap = IntMap.empty
-
-instance JSON Definition where
-  showJSON = toJSON
-  readJSON = fromJSON
 
 definitionForRendering :: Definition -> Definition
 definitionForRendering (Structure x) = Structure x

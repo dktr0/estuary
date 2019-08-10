@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 
 -- The type EnsembleS represents an Ensemble from the standpoint of the server.
 -- It wraps the type Ensemble with additional information that is only held by
@@ -8,19 +8,18 @@ module Estuary.Types.EnsembleS where
 
 import Data.Text (Text)
 import Data.Time
-import Text.JSON
-import Text.JSON.Generic
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Types.Ensemble
 
 data EnsembleS = EnsembleS {
   ensemble :: Ensemble,
   password :: Text
-  } deriving (Data, Typeable)
+  } deriving (Generic)
 
-instance JSON EnsembleS where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON EnsembleS
+instance FromJSON EnsembleS
 
 emptyEnsembleS :: UTCTime -> EnsembleS
 emptyEnsembleS t = EnsembleS {

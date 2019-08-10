@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Estuary.Types.View where
 
-import Text.JSON
-import Text.JSON.Generic
 import Data.Text (Text)
+import GHC.Generics
+import Data.Aeson
 
 data View =
   Views [View] |
@@ -13,11 +13,11 @@ data View =
   StructureView Int |
   TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   SequenceView Int
-  deriving (Show,Eq,Data,Typeable)
+  deriving (Show,Eq,Generic)
 
-instance JSON View where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON View where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON View
 
 emptyView :: View
 emptyView = Views []

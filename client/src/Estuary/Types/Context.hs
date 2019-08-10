@@ -52,11 +52,11 @@ data Context = Context {
   clientCount :: Int,
   canvasElement :: Maybe HTMLCanvasElement,
   videoDivElement :: Maybe HTMLDivElement,
-  peerProtocol :: JSVal,
+  peerProtocol :: PeerProtocol,
   theVideoDiv :: Maybe JSVal
   }
 
-initialContext :: UTCTime -> Double -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> JSVal -> Context
+initialContext :: UTCTime -> Double -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> PeerProtocol -> Context
 initialContext nowUtc nowAudio mBus wd sd pp = Context {
   mainBus = mBus,
   clockDiff = (nowUtc,nowAudio),

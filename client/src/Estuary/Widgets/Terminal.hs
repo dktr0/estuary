@@ -4,17 +4,13 @@ module Estuary.Widgets.Terminal (terminalWidget) where
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
-import Text.JSON
-import qualified Data.ByteString.Char8 as C
 import Control.Monad.IO.Class (liftIO)
-import Data.Time
 import Data.Either
 import Data.Maybe
-import Data.Map (fromList)
+import Data.Map.Strict (fromList)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Estuary.Protocol.Foreign
 import Estuary.Protocol.Peer
 import Estuary.Types.Definition
 import Estuary.Types.Request

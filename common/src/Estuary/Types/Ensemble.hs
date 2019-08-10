@@ -1,11 +1,11 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 -- The type Ensemble represents all information about an ensemble that is shared
 -- between a given client and a server, including but not limited to all of the
 -- live coding "programs" to be rendered by the client.
 --
 -- (See also EnsembleS which wraps this type with further information held only by the
--- server and EnsembleB which wraps this type with info known only to the client.)
+-- server and EnsembleC which wraps this type with info known only to the client.)
 
 module Estuary.Types.Ensemble where
 
@@ -13,10 +13,10 @@ import qualified Data.Map.Strict as Map
 import qualified Data.IntMap as IntMap
 
 import Data.Time
-import Text.JSON
-import Text.JSON.Generic
 import Data.Text (Text)
 import Control.Applicative
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
@@ -32,11 +32,11 @@ data Ensemble = Ensemble {
   chats :: [Chat],
   participants :: Map.Map Text Participant,
   anonymousParticipants :: Int
-  } deriving (Data,Typeable)
+  } deriving (Generic)
 
-instance JSON Ensemble where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Ensemble where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Ensemble
 
 emptyEnsemble :: UTCTime -> Ensemble
 emptyEnsemble t = Ensemble {

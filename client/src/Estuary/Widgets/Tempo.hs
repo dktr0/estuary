@@ -26,10 +26,9 @@ import Estuary.Types.Ensemble
 import Estuary.Widgets.Editor
 import Estuary.Types.Variable
 
-tempoWidget :: MonadWidget t m => Editor t m (Event t Tempo)
-tempoWidget = do
+tempoWidget :: MonadWidget t m => Dynamic t Tempo -> Editor t m (Event t Tempo)
+tempoWidget tempoDyn = do
   ctx <- askContext
-  let tempoDyn = fmap (tempo . ensemble . ensembleC) ctx
   v <- reflexWidgetToEditor tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
     let initialText = showt (cps a)
     let updatedText = fmap (showt . cps) eventA

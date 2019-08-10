@@ -40,17 +40,11 @@ cabalBuildClient: assertInNixGhcjsShell
 	cd client && hpack --force
 	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation
 
-nixShellBuildClient:
-	nix-shell -A shells.ghcjs --run "make cabalBuildClient"
-
 cabalBuildServer: assertInNixGhcShell
 	@ echo "cabalBuildServer:"
 	cd common && hpack --force
 	cd server && hpack --force
 	cabal new-build all --disable-library-profiling --disable-documentation
-
-nixShellBuildServer:
-	nix-shell -A shells.ghc --run "make cabalBuildServer"
 
 nixBuild:
 	@ echo "nixBuild:"
@@ -60,6 +54,14 @@ nixBuild:
 	-mkdir result/ghcjs
 	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
 	nix-build -o result/ghcjs/estuary/ -A ghcjs.estuary
+
+nixBuildServer:
+	@ echo "nixBuildServer:"
+	rm -rf result
+	-mkdir result
+	-mkdir result/ghc
+	-mkdir result/ghcjs
+	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
 
 PROD_STAGING_ROOT=staging/
 DEV_STAGING_ROOT=dev-staging/
@@ -114,9 +116,6 @@ cabalStageClient: assertInNixGhcjsShell
 		chmod a+w $(DEV_STAGING_ROOT)Estuary.jsexe/$$part.js ; \
 	done
 
-nixShellStageClient:
-	nix-shell -A shells.ghcjs --run "make cabalStageClient"
-
 GET_CABAL_SERVER_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('server/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
 GET_GHC_VERSION=ghc --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
 CABAL_SERVER_BIN=dist-newstyle/build/$(SYSTEM)/ghc-${GHC_VERSION}/${CABAL_SERVER_PACKAGE_NAME}/x/EstuaryServer/build/EstuaryServer/EstuaryServer
@@ -127,9 +126,6 @@ cabalStageServer: assertInNixGhcShell
 	# stage the server binary
 	$(CP) $(CABAL_SERVER_BIN) $(DEV_STAGING_ROOT)
 	chmod a+w $(DEV_STAGING_ROOT)/EstuaryServer
-
-nixShellStageServer:
-	nix-shell -A shells.ghc --run "make cabalStageServer"
 
 nixStageClient: prepStage
 	@ echo "nixStageClient:"
@@ -150,18 +146,6 @@ nixStageServer: prepStage
 	chmod a+w $(STAGING_ROOT)/EstuaryServer
 nixDevStageServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 nixDevStageServer: nixStageServer
-
-stackBuildServer:
-	@ echo "stackBuildServer:"
-	$(STACK_SERVER) setup
-	$(STACK_SERVER) build
-
-STACK_SERVER_INSTALL_DIR=$$($(STACK_SERVER) path --local-install-root)/bin/EstuaryServer
-
-stackStageServer: stackBuildServer prepStage
-	@ echo "stackStageServer:"
-	$(CP) $(STACK_SERVER_INSTALL_DIR) $(STAGING_ROOT)
-	chmod a+w $(STAGING_ROOT)/EstuaryServer
 
 bundleClient: cleanStage stageStaticAssets nixStageClient
 	(cd $(STAGING_ROOT) && zip -r - ./Estuary.jsexe/*) > estuary-client.zip
@@ -198,7 +182,7 @@ runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
 	cd ./$(STAGING_ROOT) && ./EstuaryServer test
 
-runServer: nixBuild stageStaticAssets stageSamples nixStageClient nixStageServer
+runServer: nixBuild stageStaticAssets makeSampleMap stageSamples nixStageClient nixStageServer
 	cd ./$(STAGING_ROOT) && ./EstuaryServer test
 
 selfCertificates:

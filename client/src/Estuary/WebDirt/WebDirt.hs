@@ -7,6 +7,7 @@ import GHCJS.Marshal.Pure
 import Control.Monad.IO.Class (liftIO)
 import Reflex.Dom
 import qualified Sound.Tidal.Context as Tidal
+import qualified Data.Text as T
 
 import qualified Estuary.WebDirt.SampleEngine as S
 import Estuary.WebDirt.Foreign (createObjFromMap)

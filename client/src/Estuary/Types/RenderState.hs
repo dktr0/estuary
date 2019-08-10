@@ -12,6 +12,7 @@ import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import Estuary.Types.MovingAverage
+import Estuary.Types.TextNotation
 
 data RenderState = RenderState {
   logicalTime :: !UTCTime,
@@ -19,6 +20,7 @@ data RenderState = RenderState {
   cachedCanvasElement :: !(Maybe HTMLCanvasElement),
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
+  baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap (Punctual.PunctualW AudioContextIO)),
   punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
@@ -38,6 +40,7 @@ initialRenderState t = do
     cachedCanvasElement = Nothing,
     paramPatterns = empty,
     dirtEvents = [],
+    baseNotations = empty,
     punctuals = empty,
     punctualWebGLs = empty,
     cineCer0States = empty,
