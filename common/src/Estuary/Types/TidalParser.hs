@@ -7,7 +7,7 @@ import Text.JSON.Generic
 
 data TidalParser = MiniTidal | CQenze | Morelia | Saborts |
   Saludos | ColombiaEsPasion | Si | Sentidos | Natural | Medellin | LaCalle |
-  Maria | Crudo | Puntoyya | Sucixxx | Vocesotrevez | Imagina | Alobestia | Togo | BlackBox
+  Maria | Crudo | Puntoyya | Sucixxx | Vocesotrevez | Imagina | Alobestia | Togo | BlackBox | Escribir
   deriving (Show,Read,Eq,Ord,Data,Typeable)
 
 instance JSON TidalParser where
