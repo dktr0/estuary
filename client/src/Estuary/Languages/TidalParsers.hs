@@ -27,13 +27,15 @@ import Estuary.Languages.Imagina
 import Estuary.Languages.Alobestia
 import Estuary.Languages.Togo
 import Estuary.Languages.BlackBox
-import Estuary.Languages.EspacioTiempo.Escribir
+import Estuary.Languages.TiempoEspacio.Escribir
+import Estuary.Languages.TiempoEspacio.Observar
+import Estuary.Languages.TiempoEspacio.Leer
 
 
 tidalParsers :: [TidalParser]
 tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
   Saludos,ColombiaEsPasion,Si,Sentidos,Natural,Medellin,LaCalle,
-  Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia,Togo, BlackBox, Escribir2
+  Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia,Togo, BlackBox, Escribir, Observar, Leer
   ]
 
 
@@ -59,3 +61,5 @@ tidalParser Alobestia = first show . alobestia . T.unpack
 tidalParser Togo = first show . togo . T.unpack
 tidalParser BlackBox = first show . blackBox . T.unpack
 tidalParser Escribir = first show . escribir . T.unpack
+tidalParser Observar = first show . observar . T.unpack
+tidalParser Leer = first show . leer . T.unpack
