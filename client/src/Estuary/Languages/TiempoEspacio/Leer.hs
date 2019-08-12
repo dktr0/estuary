@@ -257,6 +257,7 @@ int' = do
 silencio :: Parser (Pattern a)
 silencio = reserved "silence" >> return Tidal.silence
 
+
 --Funciones de la librería TokenParser
 
 tokenParser :: P.TokenParser a

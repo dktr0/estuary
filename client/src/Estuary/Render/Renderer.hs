@@ -34,6 +34,8 @@ import qualified Sound.Punctual.Types as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.TimeNot.MapEstuary as TimeNot
 
+import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
+
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import Estuary.Types.Ensemble
@@ -229,7 +231,7 @@ renderBaseProgramChanged c z (Right (TidalTextNotation x,y)) = do
 renderBaseProgramChanged c z (Right (Punctual,x)) = parsePunctualNotation c z Punctual.runPunctualParser x
 
 -- note: but really the line below is probably obsolete because of new text replacement approach?
-renderBaseProgramChanged c z (Right (Experiment,x)) = parsePunctualNotation c z Punctual.runPunctualParser x
+renderBaseProgramChanged c z (Right (Ver,x)) = parsePunctualNotation c z Ver.ver x
 
 renderBaseProgramChanged c z (Right (CineCer0,x)) = do
   s <- get
