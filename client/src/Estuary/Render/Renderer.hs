@@ -104,7 +104,7 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: Context -> Renderer
 render c = do
-  t1 <- getRenderTime c
+  t1 <- liftIO $ getCurrentTime
   s <- get
   when (canvasElement c /= cachedCanvasElement s) $ do
     liftIO $ putStrLn "render: canvasElement new/changed"
@@ -112,7 +112,7 @@ render c = do
     modify' $ \x -> x { cachedCanvasElement = canvasElement c }
   traverseWithKey (renderZone c) (zones $ ensemble $ ensembleC c)
   flushEvents c
-  t2 <- getRenderTime c
+  t2 <- liftIO $ getCurrentTime
   modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
   calculateRenderTimes
   scheduleNextRender c
@@ -146,7 +146,7 @@ clearZoneError z = do
 
 renderZone :: Context -> Int -> Definition -> Renderer
 renderZone c z d = do
-  t1 <- getRenderTime c
+  t1 <- liftIO $ getCurrentTime
   s <- get
   let prevDef = IntMap.lookup z $ cachedDefs s
   let d' = definitionForRendering d
@@ -154,7 +154,7 @@ renderZone c z d = do
     renderZoneChanged c z d'
     modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
   renderZoneAlways c z d'
-  t2 <- getRenderTime c
+  t2 <- liftIO $ getCurrentTime
   let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
   let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
   modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
@@ -348,11 +348,11 @@ scheduleNextRender c = do
   let next = addUTCTime renderPeriod (logicalTime s)
   tNow <- getRenderTime c
   let diff = diffUTCTime next tNow
-  -- if next logical time is more than 0.2 seconds in the past or future
-  -- fast-forward or rewind by half of the difference
-  let adjustment = if diff >= (-0.2) && diff <= 0.2 then 0 else (diff*(-1))
-  when (diff < (-0.2)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
-  when (diff > 0.2) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
+  -- if next logical time is more than 1 second in the past or future
+  -- fast-forward or rewind
+  let adjustment = if diff >= (-1) && diff <= 1 then 0 else (diff*(-1))
+  when (diff < (-1)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
+  when (diff > 1) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
   let next' = addUTCTime adjustment next
   put $ s { logicalTime = next' }
 
