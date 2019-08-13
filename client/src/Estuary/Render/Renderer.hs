@@ -55,7 +55,7 @@ import Estuary.Types.MovingAverage
 type Renderer = StateT RenderState IO ()
 
 clockRatioThreshold :: Double
-clockRatioThreshold = 0.6
+clockRatioThreshold = 0.8
 
 maxRenderLatency :: NominalDiffTime
 maxRenderLatency = 0.240
@@ -140,7 +140,7 @@ render c = do
     wakeTimeAudio = t1Audio,
     info = (info x) { clockRatio = cr, clockRatioProblem = crProblem }
   }
-  when crProblem $ liftIO $ T.putStrLn $ "audio clock SLOW, ratio=" <> showt cr
+  when crProblem $ liftIO $ T.putStrLn $ "audio clock slower, ratio=" <> showt cr
 
   -- four possible timing scenarios to account for...
   let diff = diffUTCTime (renderEnd s) t1System
@@ -181,7 +181,7 @@ render c = do
 
   -- if there is no reason not to traverse/render zones, then do so
   -- using renderStart and renderEnd from the state as the window to render
-  when (not crProblem && not wait && not rewind) $ do
+  when (not wait && not rewind) $ do
     when (canvasElement c /= cachedCanvasElement s) $ do
       liftIO $ putStrLn "render: canvasElement new/changed"
       traverseWithKey (canvasChanged c) (zones $ ensemble $ ensembleC c)
