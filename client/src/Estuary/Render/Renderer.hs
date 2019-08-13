@@ -55,7 +55,7 @@ import Estuary.Types.MovingAverage
 type Renderer = StateT RenderState IO ()
 
 clockRatioThreshold :: Double
-clockRatioThreshold = 0.98
+clockRatioThreshold = 0.6
 
 maxRenderLatency :: NominalDiffTime
 maxRenderLatency = 0.240
@@ -134,12 +134,13 @@ render c = do
   let elapsedSystem = (realToFrac $ diffUTCTime t1System $ wakeTimeSystem s) :: Double
   let elapsedAudio = t1Audio - wakeTimeAudio s
   let cr = elapsedAudio / elapsedSystem
-  let crProblem = cr < clockRatioThreshold
+  let crProblem = cr < clockRatioThreshold && cr > 0
   modify' $ \x -> x {
     wakeTimeSystem = t1System,
     wakeTimeAudio = t1Audio,
     info = (info x) { clockRatio = cr, clockRatioProblem = crProblem }
   }
+  when crProblem $ liftIO $ T.putStrLn $ "audio clock SLOW, ratio=" <> showt cr
 
   -- four possible timing scenarios to account for...
   let diff = diffUTCTime (renderEnd s) t1System
@@ -157,7 +158,7 @@ render c = do
     let ratio0 = (diff - minRenderLatency) / (maxRenderLatency - minRenderLatency)
     let ratio = min 1 ratio0
     let adaptivePeriod = ratio * (maxRenderPeriod - minRenderPeriod) + minRenderPeriod
-    liftIO $ T.putStrLn $ "NORMAL " <> showt (realToFrac ratio :: Double) <> " " <> showt (realToFrac adaptivePeriod :: Double)
+    -- liftIO $ T.putStrLn $ "NORMAL " <> showt (realToFrac ratio :: Double) <> " " <> showt (realToFrac adaptivePeriod :: Double)
     modify' $ \x -> x {
       renderStart = renderEnd s,
       renderPeriod = adaptivePeriod,
@@ -420,9 +421,9 @@ sleepIfNecessary = do
   tNow <- liftIO $ getCurrentTime
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ do
-    liftIO $ T.putStrLn $ "sleeping " <> showt (realToFrac diff :: Double)
+    -- liftIO $ T.putStrLn $ "sleeping " <> showt (realToFrac diff :: Double)
     liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
-  when (diff <= 0) $ liftIO $ T.putStrLn "not sleeping"
+  -- when (diff <= 0) $ liftIO $ T.putStrLn "not sleeping"
 
 forkRenderThreads :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThreads ctxM riM = do
