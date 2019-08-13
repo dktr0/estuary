@@ -2,7 +2,7 @@
 
 data Language =
   English |
-  Español
+  Español |
   Français
   deriving (Read,Show,Eq,Ord)
 
