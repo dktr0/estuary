@@ -54,8 +54,31 @@ import Estuary.Types.MovingAverage
 
 type Renderer = StateT RenderState IO ()
 
-renderPeriod :: NominalDiffTime
-renderPeriod = 0.200
+clockRatioThreshold :: Double
+clockRatioThreshold = 0.98
+
+maxRenderLatency :: NominalDiffTime
+maxRenderLatency = 0.240
+
+maxRenderPeriod :: NominalDiffTime
+maxRenderPeriod = 0.240
+
+minRenderLatency :: NominalDiffTime
+minRenderLatency = 0.120
+
+minRenderPeriod :: NominalDiffTime
+minRenderPeriod = 0.120
+
+-- should be somewhat larger than maxRenderLatency
+waitThreshold :: NominalDiffTime
+waitThreshold = 0.260
+
+rewindThreshold :: NominalDiffTime
+rewindThreshold = 1.0
+
+earlyWakeUp :: NominalDiffTime
+earlyWakeUp = 0.002
+
 
 getRenderTime :: Context -> StateT RenderState IO UTCTime
 getRenderTime c = do
@@ -104,18 +127,79 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: Context -> Renderer
 render c = do
-  t1 <- liftIO $ getCurrentTime
   s <- get
-  when (canvasElement c /= cachedCanvasElement s) $ do
-    liftIO $ putStrLn "render: canvasElement new/changed"
-    traverseWithKey (canvasChanged c) (zones $ ensemble $ ensembleC c)
-    modify' $ \x -> x { cachedCanvasElement = canvasElement c }
-  traverseWithKey (renderZone c) (zones $ ensemble $ ensembleC c)
-  flushEvents c
-  t2 <- liftIO $ getCurrentTime
-  modify' $ \x -> x { renderStartTime = t1, renderEndTime = t2 }
-  calculateRenderTimes
-  scheduleNextRender c
+  -- check if audio clock has advanced same amount as system clock
+  t1System <- liftIO $ getCurrentTime
+  t1Audio <- liftAudioIO $ audioTime
+  let elapsedSystem = (realToFrac $ diffUTCTime t1System $ wakeTimeSystem s) :: Double
+  let elapsedAudio = t1Audio - wakeTimeAudio s
+  let cr = elapsedAudio / elapsedSystem
+  let crProblem = cr < clockRatioThreshold
+  modify' $ \x -> x {
+    wakeTimeSystem = t1System,
+    wakeTimeAudio = t1Audio,
+    info = (info x) { clockRatio = cr, clockRatioProblem = crProblem }
+  }
+
+  -- four possible timing scenarios to account for...
+  let diff = diffUTCTime (renderEnd s) t1System
+  -- 1. Fast Forward
+  when (diff < minRenderLatency) $ do
+    liftIO $ T.putStrLn "FAST-FORWARD"
+    modify' $ \x -> x {
+      renderStart = addUTCTime minRenderLatency t1System,
+      renderPeriod = minRenderPeriod,
+      renderEnd = addUTCTime (minRenderPeriod+minRenderLatency) t1System
+    }
+
+  -- 2. Normal Advance
+  when (diff >= minRenderLatency && diff <= waitThreshold) $ do
+    let ratio0 = (diff - minRenderLatency) / (maxRenderLatency - minRenderLatency)
+    let ratio = min 1 ratio0
+    let adaptivePeriod = ratio * (maxRenderPeriod - minRenderPeriod) + minRenderPeriod
+    liftIO $ T.putStrLn $ "NORMAL " <> showt (realToFrac ratio :: Double) <> " " <> showt (realToFrac adaptivePeriod :: Double)
+    modify' $ \x -> x {
+      renderStart = renderEnd s,
+      renderPeriod = adaptivePeriod,
+      renderEnd = addUTCTime adaptivePeriod (renderEnd s)
+    }
+
+  -- 3. Wait
+  let wait = (diff > waitThreshold && diff < rewindThreshold)
+  when wait $ liftIO $ T.putStrLn $ "WAIT " <> showt (realToFrac diff :: Double)
+
+  -- 4. Rewind
+  let rewind = (diff >= rewindThreshold)
+  when rewind $ do
+    liftIO $ T.putStrLn $ "REWIND"
+    modify' $ \x -> x {
+      renderStart = addUTCTime minRenderLatency t1System,
+      renderPeriod = minRenderPeriod,
+      renderEnd = addUTCTime (minRenderPeriod+minRenderLatency) t1System
+    }
+
+  -- if there is no reason not to traverse/render zones, then do so
+  -- using renderStart and renderEnd from the state as the window to render
+  when (not crProblem && not wait && not rewind) $ do
+    when (canvasElement c /= cachedCanvasElement s) $ do
+      liftIO $ putStrLn "render: canvasElement new/changed"
+      traverseWithKey (canvasChanged c) (zones $ ensemble $ ensembleC c)
+      modify' $ \x -> x { cachedCanvasElement = canvasElement c }
+    traverseWithKey (renderZone c) (zones $ ensemble $ ensembleC c)
+    flushEvents c
+    -- calculate how much time this render cycle took and update load measurements
+    t2System <- liftIO $ getCurrentTime
+    t2Audio <- liftAudioIO $ audioTime
+    let mostRecentRenderTime = diffUTCTime t2System t1System
+    let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
+    let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac maxRenderPeriod)
+    modify' $ \x -> x { renderTime = newRenderTime }
+    modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
+    traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s -- *** SHOULDN'T BE HERE
+    traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s -- *** SHOULDN'T BE HERE
+    return ()
+  sleepIfNecessary
+
 
 canvasChanged :: Context -> Int -> Definition -> Renderer
 canvasChanged c z (TextProgram x) = canvasChangedTextProgram c z $ forRendering x
@@ -241,7 +325,7 @@ renderBaseProgramChanged c z (Right (CineCer0,x)) = do
     let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
     liftIO $ putStrLn $ show parseResult
     let t = tempo $ ensemble $ ensembleC c
-    let now = logicalTime s
+    let now = renderStart s
     newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
     modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
   when (isLeft parseResult) $ do
@@ -250,7 +334,7 @@ renderBaseProgramChanged c z (Right (CineCer0,x)) = do
 
 renderBaseProgramChanged c z (Right (TimeNot,x)) = do
   s <- get
-  let parseResult = TimeNot.timeNot (logicalTime s) x -- :: Either Text [(UTCTime, Map Text Datum)]
+  let parseResult = TimeNot.timeNot (renderStart s) x -- :: Either Text [(UTCTime, Map Text Datum)]
   when (isRight parseResult) $ do
     let evs = fromRight [] parseResult -- :: [(UTCTime, Map Text Datum)]
     let evs' = fmap (second (mapTextDatumToControlMap)) evs -- :: [(UTCTime,Tidal.ControlMap)]
@@ -269,7 +353,7 @@ parsePunctualNotation c z p t = do
   let parseResult = p t
   when (isRight parseResult) $ do
     let exprs = fromRight [] parseResult -- :: [Expression]
-    let evalTime = utcTimeToAudioSeconds (clockDiff c) $ logicalTime s -- :: AudioTime/Double
+    let evalTime = utcTimeToAudioSeconds (clockDiff c) $ renderStart s -- :: AudioTime/Double
     let eval = (exprs,evalTime) -- :: Punctual.Evaluation
     punctualProgramChanged c z eval
   let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
@@ -311,24 +395,11 @@ renderControlPattern :: Context -> Int -> Renderer
 renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
-  let lt = logicalTime s
+  let lt = renderStart s
+  let rp = renderPeriod s
   let tempo' = tempo $ ensemble $ ensembleC c
-  let events = maybe [] id $ fmap (renderTidalPattern lt renderPeriod tempo') controlPattern
+  let events = maybe [] id $ fmap (renderTidalPattern lt rp tempo') controlPattern
   modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
-
-calculateRenderTimes :: Renderer
-calculateRenderTimes = do
-  s <- get
-  --
-  let mostRecentRenderTime = diffUTCTime (renderEndTime s) (renderStartTime s)
-  let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
-  let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac renderPeriod)
-  let newPeakRenderLoad = ceiling (getPeak newRenderTime * 100 / realToFrac renderPeriod)
-  modify' $ \x -> x { renderTime = newRenderTime }
-  modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
-  traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s
-  traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s
-  return ()
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
 calculateZoneRenderTimes z zrt = do
@@ -342,38 +413,23 @@ calculateZoneAnimationTimes z zat = do
   let newAvgMap = insert z (getAverage zat) (avgZoneAnimationTime $ info s)
   modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap }}
 
-scheduleNextRender :: Context -> Renderer
-scheduleNextRender c = do
+sleepIfNecessary :: Renderer
+sleepIfNecessary = do
   s <- get
-  let next = addUTCTime renderPeriod (logicalTime s)
-  tNow <- getRenderTime c
-  let diff = diffUTCTime next tNow
-  -- if next logical time is more than 1 second in the past or future
-  -- fast-forward or rewind
-  let adjustment = if diff >= (-1) && diff <= 1 then 0 else (diff*(-1))
-  when (diff < (-1)) $ liftIO $ putStrLn $ "fast forwarding by " ++ show adjustment
-  when (diff > 1) $ liftIO $ putStrLn $ "rewinding by " ++ show adjustment
-  let next' = addUTCTime adjustment next
-  put $ s { logicalTime = next' }
-
--- if the (potentially adjusted) next logical time is more than a half period from now
--- sleep (threadDelay) so that next logical time is approximately a half period from then
-sleepIfNecessary :: Context -> Renderer
-sleepIfNecessary c = do
-  next <- gets logicalTime
-  tNow <- getRenderTime c
-  let halfPeriod = renderPeriod / 2
-  let diff = diffUTCTime next tNow
-  when (diff > halfPeriod) $ do
-    let wakeTime = addUTCTime (0-halfPeriod) next
-    let delay = diffUTCTime wakeTime tNow
-    liftIO $ threadDelay $ floor $ realToFrac $ delay * 1000000
+  let targetTime = addUTCTime (maxRenderLatency * (-1) - earlyWakeUp) (renderEnd s)
+  tNow <- liftIO $ getCurrentTime
+  let diff = diffUTCTime targetTime tNow
+  when (diff > 0) $ do
+    liftIO $ T.putStrLn $ "sleeping " <> showt (realToFrac diff :: Double)
+    liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
+  when (diff <= 0) $ liftIO $ T.putStrLn "not sleeping"
 
 forkRenderThreads :: MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThreads ctxM riM = do
   ctx <- readMVar ctxM
-  renderStart <- liftAudioIO $ audioSecondsToUTC (clockDiff ctx) <$> audioTime
-  irs <- initialRenderState renderStart
+  t0Audio <- liftAudioIO $ audioTime
+  let t0System = audioSecondsToUTC (clockDiff ctx) t0Audio
+  irs <- initialRenderState t0System t0Audio
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread ctxM riM rsM
   void $ forkIO $ animationThread ctxM riM rsM
@@ -385,7 +441,6 @@ mainRenderThread ctxM riM rsM = do
   rs' <- execStateT (render ctx) rs
   swapMVar rsM rs'
   swapMVar riM (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
-  execStateT (sleepIfNecessary ctx) rs'
   mainRenderThread ctxM riM rsM
 
 animationThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()

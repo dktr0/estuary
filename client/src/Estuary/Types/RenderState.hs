@@ -15,7 +15,11 @@ import Estuary.Types.MovingAverage
 import Estuary.Types.TextNotation
 
 data RenderState = RenderState {
-  logicalTime :: !UTCTime,
+  wakeTimeAudio :: !Double,
+  wakeTimeSystem :: !UTCTime,
+  renderStart :: !UTCTime,
+  renderPeriod :: !NominalDiffTime,
+  renderEnd :: !UTCTime,
   cachedDefs :: !DefinitionMap,
   cachedCanvasElement :: !(Maybe HTMLCanvasElement),
   paramPatterns :: !(IntMap Tidal.ControlPattern),
@@ -24,18 +28,20 @@ data RenderState = RenderState {
   punctuals :: !(IntMap (Punctual.PunctualW AudioContextIO)),
   punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
-  renderStartTime :: !UTCTime,
-  renderEndTime :: !UTCTime,
   renderTime :: !MovingAverage,
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo
   }
 
-initialRenderState :: UTCTime -> IO RenderState
-initialRenderState t = do
+initialRenderState :: UTCTime -> AudioTime -> IO RenderState
+initialRenderState t0System t0Audio = do
   return $ RenderState {
-    logicalTime = t,
+    wakeTimeSystem = t0System,
+    wakeTimeAudio = t0Audio,
+    renderStart = t0System,
+    renderPeriod = 0,
+    renderEnd = t0System,
     cachedDefs = empty,
     cachedCanvasElement = Nothing,
     paramPatterns = empty,
@@ -44,8 +50,6 @@ initialRenderState t = do
     punctuals = empty,
     punctualWebGLs = empty,
     cineCer0States = empty,
-    renderStartTime = t,
-    renderEndTime = t,
     renderTime = newAverage 20,
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,

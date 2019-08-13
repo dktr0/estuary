@@ -9,8 +9,8 @@ import Data.Aeson
 data View =
   Views [View] |
   ViewDiv Text View | -- deprecated in favour of next two...
-  Row Rational View | -- a full row in the layout, number is percent of vertical space
-  Cell Rational View | -- a cell (ie. column fragment) in the layout, number is percent of horizontal space
+  RowView Rational View | -- a full row in the layout, number is percent of vertical space
+  CellView Rational View | -- a cell (ie. column fragment) in the layout, number is percent of horizontal space
   LabelView Int |
   StructureView Int |
   TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
