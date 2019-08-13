@@ -1,12 +1,13 @@
-module Estuary.Types.Language where
+﻿module Estuary.Types.Language where
 
 data Language =
   English |
   Español
+  Français
   deriving (Read,Show,Eq,Ord)
 
 languages :: [Language]
-languages = [English,Español]
+languages = [English,Español,Français]
 
 -- Translation does not exist
 -- String to be displayed when no translation yet exists
