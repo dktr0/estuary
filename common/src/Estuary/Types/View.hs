@@ -14,7 +14,10 @@ data View =
   TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
   SequenceView Int |
   SvgDisplayView Int | -- Int is z-index
-  CanvasDisplayView Int -- Int is z-index
+  CanvasDisplayView Int | -- Int is z-index
+  VideoResourcesView Int |
+  AudioResourcesView Int |
+  ImageResourcesView Int
   deriving (Show,Eq,Data,Typeable)
 
 instance JSON View where
@@ -35,6 +38,15 @@ emptyView :: View
 emptyView = Views []
 
 presetView :: String -> View
+
+presetView  "testing" = Views [
+   ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 2]),
+   ViewDiv "eightMiddleR" (Views [LabelView 2,AudioResourcesView 3]),
+   ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 2]),
+   ViewDiv "eightMiddleR" (Views [LabelView 6, VideoResourcesView 7]),
+   ViewDiv "eightMiddleR" (Views [LabelView 8, ImageResourcesView 9])
+
+   ]
 
 presetView "fulltexteditor" = Views [
   ViewDiv "fullRowTopOrBottom" (Views [LabelView 0,TextView 1 20])

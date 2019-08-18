@@ -34,7 +34,7 @@ import Estuary.Types.TextNotation
 import Estuary.Types.Context
 import Estuary.RenderInfo
 import Estuary.Widgets.Sequencer
-
+import Estuary.Widgets.ResourceWidget
 
 viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse] -> m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint)
 
@@ -50,6 +50,13 @@ viewWidget ctx renderInfo (Views xs) initialDefs deltasDown = foldM f i xs
       return (newZoneMap,newEdits,newHints)
 
 viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass (T.pack c) $ viewWidget ctx renderInfo v i deltasDown
+
+viewWidget _ _ (VideoResourcesView n) _ _ =  videoResources (constDyn aListOfVideoFiles) >> return (constDyn Map.empty, never, never)
+
+viewWidget _ _ (AudioResourcesView n) _ _ =  audioResources (constDyn aListOfAudioFiles) >> return (constDyn Map.empty, never, never)
+
+viewWidget _ _ (ImageResourcesView n) _ _ =  imageResources (constDyn aListOfImageFiles) >> return (constDyn Map.empty, never, never)
+
 
 viewWidget ctx renderInfo (StructureView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
@@ -71,8 +78,6 @@ viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
   return (value',edits',hints)
   where f (TextProgram x) = x
         f _ = Live (TidalTextNotation MiniTidal,"") L3
-
-
 
 viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
   let i' = f $ Map.findWithDefault (Sequence defaultValue) n i

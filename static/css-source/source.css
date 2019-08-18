@@ -45,15 +45,28 @@ body, .primary-color {
   overflow:scroll;
   padding-right: 1.8em;
   height:100%;
-  max-height: 55px
+  max-height: 48px
 }
 
 .languageHelp::-webkit-scrollbar  {
-    width: 0px;  /* remove scrollbar space */
+    width: 10px;
     height: 0px;
-    background: transparent;  /* optional: just make scrollbar invisible */
 }
 
+.languageHelp::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.languageHelp::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 10px;
+
+}
+
+.languageHelp::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
 
@@ -730,3 +743,75 @@ table, tr, td {border: none;}
 .listenButton button {
 	margin-left: 20%;
 }
+
+/* resource widgets */
+
+.resourceWidget{
+display: inline-flex;
+}
+
+.resourceWidgetContainer {
+
+     overflow:scroll;
+     padding-right: 1.8em;
+     height:100%;
+     min-height: 70px;
+     max-height: 55px
+}
+
+.resourceWidgetContainer::-webkit-scrollbar  {
+    width: 10px;
+    height: 10px;
+}
+
+.resourceWidgetContainer::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.resourceWidgetContainer::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.resourceWidgetContainer::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
+
+
+.resourceGroup {
+
+	text-align: center;
+
+	}
+
+.resourceLabels {
+
+	text-align: center;
+	display: inline-flex;
+	box-shadow: inset 0 0 5px var(--primary-color);
+    border-radius: 5px;
+    width: 100%;
+}
+
+.resourceName{
+
+text-align: center;
+width: 8em;
+}
+
+.resourceDur{
+
+	text-align: center;
+	width: 7em;}
+
+.resourceTags{
+
+	text-align: center;
+	 width: 12em;
+	 margin-right: 2em}
+
+.resourceShape{
+	text-align: center;
+	width: 5em;}

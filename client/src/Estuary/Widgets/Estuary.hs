@@ -6,12 +6,9 @@ import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
-import qualified Reflex.Dom.Widget.Basic as B
 import Text.JSON
 import Data.Time
 import Data.Map
-
-import qualified Data.Sequence as S
 import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
@@ -20,8 +17,6 @@ import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..))
 import GHCJS.Marshal.Pure
 import Data.Functor (void)
 import qualified Data.Text as T
-import qualified Data.Foldable as F
-
 
 import Estuary.Tidal.Types
 import Estuary.Protocol.Foreign
@@ -41,8 +36,6 @@ import Estuary.Types.Tempo
 import Estuary.Widgets.Terminal
 import Estuary.Reflex.Utility
 import Estuary.Types.Language
-import Estuary.Types.Resources
-import Estuary.Types.Scope
 import Estuary.Help.LanguageHelp
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Types.Term as Term
@@ -105,90 +98,6 @@ estuaryWidget initialPage ctxM riM protocol = divClass "estuary" $ do
   updateContext ctxM ctx
 
   performHint (webDirt ic) hints
-
-
--- popup menu
-
-ourPopUp :: MonadWidget t m => Event t () -> m (Event t ContextChange)
-ourPopUp go = mdo
-  let x = fmap (const True) go -- Event t Bool
-  let y = fmap (const False) hide -- Event t Bool
-  let xy = leftmost [x,y] -- Event t Bool
-  visible <- holdDyn False xy -- Dynamic t Bool
-  let visibleStyle = fmap popupVisibilityStyle visible
-  let classStyle = constDyn $ singleton "class" "ourPopUp"
-  let attrs = zipDynWith (union) visibleStyle classStyle
-  (hide,canvasEnabledEv) <- elDynAttr "div" attrs $ do
-    -- videoResourceWidget samplevideoMedia
-    videoResources' (constDyn aListOfVideoFiles)
-    hide' <- button "hide"
-    let configCheckboxAttrs = def & attributes .~ constDyn ("class" =: "config-checkbox")
-    canvasEnabledEv <- divClass "config-entry" $ do
-      text "Canvas:"
-      canvasInput <- checkbox True configCheckboxAttrs
-      return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
-    return (hide',canvasEnabledEv)
-  return canvasEnabledEv
-
-aListOfVideoFiles :: ResourceMap VideoMeta --resourcesWidget
-aListOfVideoFiles = ResourceMap {unResourceMap = (Data.Map.fromList [("butterflies", (S.fromList [sampleVideoMedia, sampleVideoMedia']))])}
-
-displayMediaInfo :: T.Text
-displayMediaInfo = T.pack $ show aListOfVideoFiles
-
-sampleVideoMedia :: Resource VideoMeta
-sampleVideoMedia = Resource {file = "test", fileSize = 100, meta = VideoMeta {videoDuration = 3.25, videoResolution = (400,600), videoAspectRatio = (Rational 1 1)}, tags = S.fromList ["video", "butterflies"], scope = Public}
-
-sampleVideoMedia' :: Resource VideoMeta
-sampleVideoMedia' = Resource {file = "test2", fileSize = 300, meta = VideoMeta {videoDuration = 3.25, videoResolution = (800,1900), videoAspectRatio = (Rational 1 1)}, tags = S.fromList ["video", "cats"], scope = Ensemble}
-
-showVideoDuration :: Resource VideoMeta -> T.Text -- this will have to be a expandable widget with all the meta info
-showVideoDuration a = T.pack $ show $ videoDuration (meta a)
-
---tags = S.fromList ["video", "butterflies"]
-showTags :: Resource VideoMeta -> T.Text
-showTags a = concatTags $ F.toList (tags a) --List
-
-concatTags :: [T.Text] -> T.Text
-concatTags [] = ""
-concatTags [x] =  x
-concatTags (x:xs) = T.concat ["<", x, ", ", concatTags xs, ">"]
-
-videoResourceWidget :: MonadWidget t m => Resource VideoMeta -> m ()
-videoResourceWidget a = do
-  let file' =  file a
-  let fileSize' =  T.pack $ show (fileSize a)
-  let meta' =  showVideoDuration a
-  let tags' =  showTags a
-  let scope' =  T.pack $ show (scope a)
-  text $ T.concat [file', " ", fileSize', " ", meta', " ", tags', " ", scope', " "]
-
--- f :: Dyamic t (ResourceMap m) -> Dynamic t [(Resource m)]
-
-videoResources' :: MonadWidget t m => Dynamic t (ResourceMap VideoMeta) -> m (Dynamic t [()])
-videoResources' vs = do
-  vs' <- mapDyn resourceList vs
-  B.simpleList vs' $ \v -> videoResourceWidgetDyn v --m ()
-
-videoResourceWidgetDyn :: MonadWidget t m => Dynamic t (Resource VideoMeta) -> m ()
-videoResourceWidgetDyn a = divClass "resourceWidget" $ do
-    file' <- mapDyn file a
-    fileSize' <- mapDyn (T.pack . show . fileSize) a
-    meta' <- mapDyn showVideoDuration a
-    tags' <- mapDyn showTags a
-    scope' <-  mapDyn (T.pack . show . scope) a
-    let sourceInfo = file' <> " " <> fileSize' <> " " <>  meta' <> " " <> tags' <> " " <> scope' <> "\n"
-    dynText sourceInfo
-
-
---T.show
---search for the list in the unResourceMap
--- text -> seq
--- seq
-
-popupVisibilityStyle :: Bool -> Map T.Text T.Text
-popupVisibilityStyle False = singleton "style" "display: none"
-popupVisibilityStyle True = singleton "style" "display: block"
 
 updateContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 updateContext cMvar cDyn = performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn
@@ -255,10 +164,6 @@ clientConfigurationWidgets ctx = divClass "config-toolbar" $ do
     let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
     dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
-
-  -- button for popup navigation panel
-  popupButton <- button "popup" -- popupButton :: Event t ()
-  popupContextChanges <- ourPopUp popupButton
 
   return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv]
 

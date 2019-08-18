@@ -92,12 +92,12 @@ loadResourceMap loadResourceMeta scope mapRootPath = do
     listDirectory mapRootPath >>= print
     groupDirectory <- listDirectory mapRootPath >>= filterM (doesDirectoryExist . (mapRootPath </>))
     groups <- forM groupDirectory $ \groupName -> do
-        group <- loadResourceGroup loadResourceMeta scope (mapRootPath </> groupName)
+        group <- loadResourceGroup loadResourceMeta scope (pack $ groupName) (mapRootPath </> groupName)
         return (pack $ groupName, group)
     return $ ResourceMap $ Map.fromList groups
 
-loadResourceGroup :: (FilePath -> IO m) -> Scope -> FilePath -> IO (Seq (Resource m))
-loadResourceGroup loadResourceMeta scope groupPath = do
+loadResourceGroup :: (FilePath -> IO m) -> Scope -> Text -> FilePath -> IO (Seq (Resource m))
+loadResourceGroup loadResourceMeta scope groupName groupPath = do
     (MetaMap explicitMetaMap) <- loadMetaMap groupPath
     resourceFiles <- (listDirectory groupPath <&> Prelude.filter (/= "meta.json")) >>= filterM (doesFileExist . (groupPath </>))
     resources <- forM resourceFiles $ \resourceFileName -> do
@@ -106,11 +106,12 @@ loadResourceGroup loadResourceMeta scope groupPath = do
         meta <- loadResourceMeta (groupPath </> resourceFileName)
 
         return $ Resource {
-            file = pack resourceFileName,
-            fileSize = fileSize,
-            meta = meta,
-            tags = resourceMetaTags explicitMeta,
-            scope = scope
+            resourceGroup = groupName,
+            resourceFileName = pack resourceFileName,
+            resourceFileSize = fileSize,
+            resourceMeta = meta,
+            resourceTags = resourceMetaTags explicitMeta,
+            resourceScope = scope
           }
     
     return $ Seq.fromList resources
