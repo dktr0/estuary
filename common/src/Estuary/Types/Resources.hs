@@ -7,6 +7,7 @@ import qualified Data.Map.Strict as Map
 
 import Data.Sequence (Seq, (|>))
 import qualified Data.Sequence as Seq
+import qualified Data.Foldable as F
 
 import Estuary.Types.Scope
 
@@ -42,7 +43,7 @@ emptyResourceMap :: ResourceMap m
 emptyResourceMap = ResourceMap Map.empty
 
 insertResource :: Text -> Resource m -> ResourceMap m -> ResourceMap m
-insertResource groupName resource (ResourceMap resources) = 
+insertResource groupName resource (ResourceMap resources) =
   let group = (Map.findWithDefault Seq.empty groupName resources) |> resource
   in ResourceMap $ Map.insert groupName (Seq.sortOn resourceFileName group) resources
 
@@ -51,6 +52,9 @@ resolveResource (ResourceMap resources) groupName number = do
   group <- Map.lookup groupName resources
   let idx = mod number (Seq.length group) in
     Seq.lookup idx group
+
+resourceList :: ResourceMap m -> [(Resource m)]
+resourceList m = F.concatMap F.toList (unResourceMap m)
 
 data Resource m = Resource {
   resourceGroup :: Text,

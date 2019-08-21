@@ -111,12 +111,18 @@ translate Eval English = "Eval"
 translate Eval Español = "Eval"
 
 translate JoiningEnsemble English = "Joining ensemble"
+translate JoiningEnsemble Español = "Unirse al ensamble"
+
 
 translate EnsembleUserName English = "Enter username (optional) within ensemble:"
+translate EnsembleUserName Español = "Ingresar nombre de usuario dentro del ensamble (opcional):"
+
 
 translate EnsembleLocation English = "Describe your location (optional):"
+translate EnsembleLocation Español = "Coloca tu localización (opcional):"
 
 translate EnsembleLogin English = "Login"
+translate EnsembleLogin Español = "Ingresar"
 
 translate Peak Français = "pic"
 translate Peak English = "peak"
