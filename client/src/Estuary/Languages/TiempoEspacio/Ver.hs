@@ -236,7 +236,7 @@ miscelanea = choice [
   reserved "Nothing" >> return ()
   ]
 
--- // entradas
+-- // Fade in/out
 
 fade :: Parser Transition
 fade = choice [
@@ -318,14 +318,13 @@ noun = choice [
   (reserved "feeling" <|> reserved "feelings") >> return (Saw (Constant 0.8))
   ]
 
--- // salidas
 
+-- // Salidas
 
 level :: Parser Extent
 level = do
   x <- double
   return $ dbamp x
-
 
 out :: Parser Output
 out = choice [
@@ -336,13 +335,6 @@ out = choice [
 
 -- //
 
-
-
--- functions :: Parser Graph
--- functions = choice [
---   (reserved "bipolar" >> return bipolar) <*> graphArgument,
---   (reserved "unipolar" >> return unipolar) <*> graphArgument
---   ]
 
 average :: Graph -> Graph -> Graph
 average x y = Product (Sum x y) (Constant 0.5)

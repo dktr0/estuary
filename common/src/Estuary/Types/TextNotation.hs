@@ -12,7 +12,8 @@ data TextNotation =
   Punctual |
   CineCer0 |
   TimeNot |
-  Ver
+  Ver |
+  Oir
   deriving (Read,Eq,Ord,Show,Generic)
 
 instance ToJSON TextNotation where

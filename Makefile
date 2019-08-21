@@ -108,7 +108,7 @@ cabalStageClient: assertInNixGhcjsShell
 	$(eval export CABAL_CLIENT_PACKAGE_NAME=$(shell $(GET_CABAL_CLIENT_PACKAGE_NAME)))
 	$(eval export GHCJS_VERSION=$(shell $(GET_GHCJS_VERSION)))
 	# compile the index.html template in development mode and stage it
-	-mkdir $(DEV_STAGING_ROOT)Estuary.jsexe
+	mkdir $(DEV_STAGING_ROOT)Estuary.jsexe
 	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -o $(DEV_STAGING_ROOT)/Estuary.jsexe/index.html
 	# stage the client js
 	for part in lib out rts runmain ; do \

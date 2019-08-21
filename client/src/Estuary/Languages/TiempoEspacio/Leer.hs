@@ -98,9 +98,6 @@ verb' = do
 --   e <- option "" espacio
 --   return $ e' ++ v ++ e
 
---s "arpy:3 * 2"
-
-
 
 miscelanea :: Parser ()
 miscelanea = choice [
@@ -137,12 +134,15 @@ verb = choice [
   (reserved "read" <|> reserved "reading" <|> reserved "reads") >> return "leer",
   (reserved "see" <|> reserved "seeing" <|> reserved "sees" <|> reserved "saw" <|> reserved "seen") >> return "ver",
   (reserved "listen" <|> reserved "listening" <|> reserved "listens" <|> reserved "listened") >> return "escuchar",
-  espacio
+  espacio,
+  silencio
   ]
 
 espacio :: Parser String
 espacio = (reserved "do" <|> reserved "does" <|> reserved "am" <|> reserved "are" <|> reserved "is" <|> reserved "was" <|> reserved "were" <|> reserved "did" <|> reserved "not")  >> return "~"
 
+silencio :: Parser String
+silencio = reserved "silence" >> return "~"
 
 noun :: Parser Tidal.ControlPattern
 noun = choice [
@@ -253,9 +253,6 @@ int = fromIntegral <$> integer
 int' = do
   a <- parens $ int
   return a
-
-silencio :: Parser (Pattern a)
-silencio = reserved "silence" >> return Tidal.silence
 
 
 --Funciones de la librería TokenParser

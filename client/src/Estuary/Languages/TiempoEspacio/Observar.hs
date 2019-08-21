@@ -142,12 +142,15 @@ verb = choice [
   (reserved "mirar" <|> reserved "miro" <|> reserved "mira" <|> reserved "miran" <|> reserved "mirado" <|> reserved "mirando") >> return "mirar",
   (reserved "caminar" <|> reserved "camino" <|> reserved "camina" <|> reserved "caminan" <|> reserved "caminado" <|> reserved "caminando") >> return "caminar",
   (reserved "reir" <|> reserved "río" <|> reserved "ríe" <|> reserved "ríen" <|> reserved "reído" <|> reserved "riendo") >> return "reir",
-  espacio
+  espacio,
+  silencio
   ]
 
 espacio :: Parser String
 espacio = (reserved "no" <|> reserved "si" <|> reserved "que" <|> reserved "sin" <|> reserved "y" <|> reserved "ni")  >> return "~"
 
+silencio :: Parser String
+silencio = reserved "silencio" >> return "~"
 
 noun :: Parser Tidal.ControlPattern
 noun = choice [
@@ -216,9 +219,6 @@ haber'' = choice [
 
 fakeAdjective :: Parser (Pattern Double)
 fakeAdjective = (reserved "negro" <|> reserved "negros" <|> reserved "obscuro" <|> reserved "obscuros") >> option (Tidal.irand 0) (intOrNegativeInt >>= return . Tidal.irand)
-
-silencio :: Parser (Pattern a)
-silencio = reserved "silencio" >> return Tidal.silence
 
 
 -- ////////////////
