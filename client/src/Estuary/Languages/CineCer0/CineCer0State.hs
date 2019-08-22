@@ -15,17 +15,6 @@ import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec
 
-{- data VideoSpec = VideoSpec {
-  sampleVideo :: String,
-  sourceNumber :: Int,
-  playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
-  playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
-  posX :: Rational,
-  posY :: Rational,
-  width :: Rational,
-  height :: Rational
-  } -}
-
 newtype CineCer0Video = CineCer0Video { videoJSVal :: JSVal }
 
 instance PToJSVal CineCer0Video where pToJSVal (CineCer0Video val) = val
@@ -63,17 +52,27 @@ updateCineCer0State :: Tempo -> UTCTime -> CineCer0Spec -> CineCer0State -> IO C
 updateCineCer0State t now spec st = do
   -- add or delete videos
   let toAdd = difference spec (videos st) -- :: IntMap VideoSpec
+  -- shouldn't add video when sampleVideo field is ""
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+  -- yes, we want to delete videos when there is no spec at that position...
   let toDelete = difference (videos st) spec -- :: IntMap CineCer0Video
+  -- *** but we also need to delete videos when sampleVideo field changes to ""
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-  sequence $ intersectionWith updateContinuingVideo spec continuingVideos
+  sequence $ intersectionWith (updateContinuingVideo t now) spec continuingVideos
   return $ st { videos = continuingVideos }
 
-updateContinuingVideo :: VideoSpec -> CineCer0Video -> IO ()
-updateContinuingVideo s v = do
+updateContinuingVideo :: Tempo -> UTCTime -> VideoSpec -> CineCer0Video -> IO ()
+updateContinuingVideo t now s v = do
   videoGeometry v (floor $ posX s) (floor $ posY s) (floor $ width s) (floor $ height s)
+  -- *** also needs to query position in time of the video
+  -- and set position in time of the video if necessary
+  -- or maybe do other things, like...
+  -- let lengthOfVideo = ?
+  -- let newPos = playbackPosition s t lengthOfVideo now -- :: Maybe NominalDiffTime
+  -- let newRate = playbackRate s t lengthOfVideo now -- :: Maybe Rational
+  -- then... maybe set newPos and newRate if necessary?
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {

@@ -319,19 +319,13 @@ renderBaseProgramChanged c z (Right (Experiment,x)) = parsePunctualNotation c z 
 renderBaseProgramChanged c z (Right (CineCer0,x)) = do
   s <- get
   let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.cineCer0 $ T.unpack x -- Either String CineCer0Spec
-  let maybeTheDiv = videoDivElement c
-  when (isJust maybeTheDiv && isRight parseResult) $ do
+  when (isRight parseResult) $ do
     let spec :: CineCer0.CineCer0Spec = fromRight (IntMap.empty) parseResult
-    let theDiv = fromJust maybeTheDiv
-    let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
-    liftIO $ putStrLn $ show parseResult
-    let t = tempo $ ensemble $ ensembleC c
-    let now = renderStart s
-    newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
-    modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
+    modify' $ \x -> x { cineCer0Specs = insert z spec (cineCer0Specs s) }
+    clearZoneError z
   when (isLeft parseResult) $ do
-    let errs = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
-    modify' $ \x -> x { info = (info s) { errors = errs }}
+    let err = fromLeft "" parseResult
+    setZoneError z (T.pack err)
 
 renderBaseProgramChanged c z (Right (TimeNot,x)) = do
   s <- get
@@ -390,6 +384,17 @@ renderTextProgramAlways c z = do
 
 renderBaseProgramAlways :: Context -> Int -> Maybe TextNotation -> Renderer
 renderBaseProgramAlways c z (Just (TidalTextNotation _)) = renderControlPattern c z
+renderBaseProgramAlways c z (Just CineCer0) = do
+  s <- get
+  let maybeTheDiv = videoDivElement c
+  when (isJust maybeTheDiv) $ do
+    let spec = IntMap.findWithDefault (IntMap.empty) z (cineCer0Specs s)
+    let theDiv = fromJust maybeTheDiv
+    let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
+    let t = tempo $ ensemble $ ensembleC c
+    let now = renderStart s
+    newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
+    modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
 renderBaseProgramAlways _ _ _ = return ()
 
 renderControlPattern :: Context -> Int -> Renderer

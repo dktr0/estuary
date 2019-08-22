@@ -11,6 +11,7 @@ import GHCJS.DOM.Types
 import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
+import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import Estuary.Types.MovingAverage
 import Estuary.Types.TextNotation
 
@@ -27,6 +28,7 @@ data RenderState = RenderState {
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap (Punctual.PunctualW AudioContextIO)),
   punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
+  cineCer0Specs :: !(IntMap CineCer0.CineCer0Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
   renderTime :: !MovingAverage,
   zoneRenderTimes :: !(IntMap MovingAverage),
@@ -49,6 +51,7 @@ initialRenderState t0System t0Audio = do
     baseNotations = empty,
     punctuals = empty,
     punctualWebGLs = empty,
+    cineCer0Specs = empty,
     cineCer0States = empty,
     renderTime = newAverage 20,
     zoneRenderTimes = empty,

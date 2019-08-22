@@ -20,6 +20,12 @@ applyTextReplacement (TimeNot,x) = Right (TimeNot,x)
 --   and myExperimentParser :: Text -> Either ParseError Text
 --   where the returned Text is the program translated into Punctual (as Text), then...
 -- applyTextReplacement (Experiment,t) = myExperimentParser t >>= prependNotation Punctual >>= applyTextReplacement
+--  or what about this?
+--   assume we have (OnTheFlyLanguage x) -- where data TextNotation = ... OnTheFlyLanguage Text
+--   also, access to getTextReplacementParser :: Text -> (Text -> Either ParseError Text)
+--   also, access to getTextReplacementBaseNotation :: Text -> TextNotation
+--   then:
+-- applyTextReplacement (OnTheFlyLanguage x) = getTextReplacementParser x >>= prependNotation (getTextReplacementBaseNotation x) >>= applyTextReplacement 
 
 -- 3. finally, for all unmatched cases (eg. minilanguages that haven't been reimplemented as text replacement languages)
 -- we just (again) return the unmodified input
