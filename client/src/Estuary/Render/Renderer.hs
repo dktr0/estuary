@@ -358,7 +358,7 @@ punctualProgramChanged :: Context -> Int -> Punctual.Evaluation -> Renderer
 punctualProgramChanged c z e = do
   s <- get
   -- A. update PunctualW (audio state) in response to new, syntactically correct program
-  let (mainBusIn,_,_,_) = mainBus c
+  let (mainBusIn,_,_,_,_) = mainBus c
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
   let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 t) z (punctuals s)
