@@ -70,7 +70,11 @@ updateCineCer0State t now spec st = do
 
 updateContinuingVideo :: Tempo -> UTCTime -> VideoSpec -> CineCer0Video -> IO ()
 updateContinuingVideo t now s v = do
-  videoGeometry v (floor $ posX s) (floor $ posY s) (floor $ width s) (floor $ height s)
+  let fitWidth = 100
+  let fitHeight = 100
+  let actualWidth = floor $ width s * fitWidth
+  let actualHeight = floor $ height s * fitHeight
+  videoGeometry v (floor $ posX s) (floor $ posY s) actualWidth actualHeight
   -- *** also needs to query position in time of the video
   -- and set position in time of the video if necessary
   -- or maybe do other things, like...
