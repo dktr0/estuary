@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import GHCJS.Types
 import GHCJS.DOM.Types (HTMLDivElement)
 import GHCJS.Marshal.Pure
-import Data.IntMap.Strict
+import Data.IntMap.Strict as IntMap
 import Data.Time
 import TextShow
 
@@ -56,12 +56,12 @@ addVideo j spec = do
 updateCineCer0State :: Tempo -> UTCTime -> CineCer0Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
   -- add or delete videos
-  let toAdd = difference spec (videos st) -- :: IntMap VideoSpec
-  -- shouldn't add video when sampleVideo field is ""
+  let newVideoSpecs = difference spec (videos st) -- :: IntMap VideoSpec
+  let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
-  -- yes, we want to delete videos when there is no spec at that position...
-  let toDelete = difference (videos st) spec -- :: IntMap CineCer0Video
-  -- *** but we also need to delete videos when sampleVideo field changes to ""
+  let videosWithRemovedSpecs = difference (videos st) spec -- :: IntMap CineCer0Video
+  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") spec -- :: IntMap CineCer0Video
+  let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
