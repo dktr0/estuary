@@ -37,6 +37,10 @@ foreign import javascript safe
   "$1.style = $2;"
   videoGeometry_ :: CineCer0Video -> Text -> IO ()
 
+foreign import javascript unsafe
+  "$1.muted = true;"
+  muteVideo :: CineCer0Video -> IO ()
+
 videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
 videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "%; height:" <> "%;"
 
@@ -45,6 +49,7 @@ addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
+  muteVideo x
   appendVideo x j
   return x
 
