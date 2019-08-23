@@ -3,6 +3,7 @@ module Estuary.Languages.ExpParser where
 import           Language.Haskell.Exts
 import           Control.Applicative
 import           Data.Either (isRight)
+import           Data.Maybe (catMaybes)
 
 
 data ExpParser a = ExpParser { runExpParser :: Exp SrcSpanInfo -> Either String a }
@@ -118,3 +119,13 @@ asRightSection opP bP = ExpParser (\e -> do
     f (RightSection _ (QVarOp l (UnQual _ (Symbol _ x))) e1) = Right (g l x,e1)
     f _ = Left ""
     g l x = (Var l (UnQual l (Ident l x)))
+
+
+collectDoStatements :: Exp SrcSpanInfo -> [Exp SrcSpanInfo]
+collectDoStatements (Do _ xs) = catMaybes $ fmap f xs
+  where
+    f (Qualifier _ e) = Just e
+    f _ = Nothing
+
+listOfDoStatements :: ExpParser a -> ExpParser [a]
+listOfDoStatements p = ExpParser (\e -> mapM (runExpParser p) $ collectDoStatements e)

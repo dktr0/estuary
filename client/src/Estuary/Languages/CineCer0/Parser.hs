@@ -11,13 +11,13 @@ import Estuary.Languages.CineCer0.VideoSpec
 type CineCer0Spec = IntMap VideoSpec
 
 cineCer0 :: String -> Either String CineCer0Spec
-cineCer0 = f . parseExp
+cineCer0 s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
   where
     f (ParseOk x) = runExpParser cineCer0Spec x
     f (ParseFailed l s) = Left s
 
 cineCer0Spec :: ExpParser CineCer0Spec
-cineCer0Spec = fmap (singleton 1) videoSpec
+cineCer0Spec = fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
 
 videoSpec :: ExpParser VideoSpec
 videoSpec =
