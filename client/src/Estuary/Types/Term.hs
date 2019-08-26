@@ -104,18 +104,24 @@ translate Load Français = "charge"
 translate Load English = "load"
 translate Load Español = "carga"
 
+translate NewTempo Français = "Établir un nouveau tempo"
 translate NewTempo English = "Set new tempo"
 translate NewTempo Español = "Establecer Nuevo tempo"
 
+translate Eval Français = "Eval"
 translate Eval English = "Eval"
 translate Eval Español = "Eval"
 
+translate JoiningEnsemble Français = "Joindre l'ensemble"
 translate JoiningEnsemble English = "Joining ensemble"
 
+translate EnsembleUserName Français = "Entrer le nom d'utilisateur (optionel) comme membre de l'ensemble:"
 translate EnsembleUserName English = "Enter username (optional) within ensemble:"
 
+translate EnsembleLocation Français = "Décrivez votre situation géographique (optionel):"
 translate EnsembleLocation English = "Describe your location (optional):"
 
+translate EnsembleLogin Français = "S'identifier"
 translate EnsembleLogin English = "Login"
 
 translate Peak Français = "pic"
