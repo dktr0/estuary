@@ -266,12 +266,16 @@ renderZoneAnimation tNow c z (TextProgram x) = do
 renderZoneAnimation _ _ _ _ = return ()
 
 renderZoneAnimationTextProgram :: UTCTime -> Context -> Int -> (TextNotation,Text) -> Renderer
-renderZoneAnimationTextProgram tNow c z (Punctual,x) = do
+renderZoneAnimationTextProgram tNow c z (Punctual,x) = renderPunctualWebGL tNow c z
+renderZoneAnimationTextProgram tNow c z (Oir,x) = renderPunctualWebGL tNow c z
+renderZoneAnimationTextProgram _ _ _ _ = return ()
+
+renderPunctualWebGL :: UTCTime -> Context -> Int -> Renderer
+renderPunctualWebGL tNow c z = do
   webGLs <- gets punctualWebGLs
   let webGL = findWithDefault Punctual.emptyPunctualWebGL z webGLs
   let tNow' = utcTimeToAudioSeconds (clockDiff c) tNow
   liftIO $ Punctual.drawFrame tNow' webGL
-renderZoneAnimationTextProgram _ _ _ _ = return ()
 
 renderZoneChanged :: Context -> Int -> Definition -> Renderer
 renderZoneChanged c z (Structure x) = do
@@ -354,7 +358,7 @@ parsePunctualNotation c z p t = do
   when (isRight parseResult) $ do
     let exprs = fromRight [] parseResult -- :: [Expression]
     liftIO $ putStrLn $ show exprs
-    let evalTime = utcTimeToAudioSeconds (clockDiff c) $ logicalTime s -- :: AudioTime/Double
+    let evalTime = utcTimeToAudioSeconds (clockDiff c) $ renderStart s -- :: AudioTime/Double
     let eval = (exprs,evalTime) -- :: Punctual.Evaluation
     punctualProgramChanged c z eval
   let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
