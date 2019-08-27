@@ -19,6 +19,10 @@ cineCer0 s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
 cineCer0Spec :: ExpParser CineCer0Spec
 cineCer0Spec = fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
 
+-- have different videos separated with: ;--
+-- add empty action -- get rid of te video --
+-- change the rational to integer --
+
 videoSpec :: ExpParser VideoSpec
 videoSpec =
   literalVideoSpec <|>

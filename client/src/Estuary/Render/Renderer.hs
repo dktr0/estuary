@@ -34,6 +34,9 @@ import qualified Sound.Punctual.Types as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.TimeNot.MapEstuary as TimeNot
 
+import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
+import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
+
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import Estuary.Types.Ensemble
@@ -314,7 +317,9 @@ renderBaseProgramChanged c z (Right (TidalTextNotation x,y)) = do
 renderBaseProgramChanged c z (Right (Punctual,x)) = parsePunctualNotation c z Punctual.runPunctualParser x
 
 -- note: but really the line below is probably obsolete because of new text replacement approach?
-renderBaseProgramChanged c z (Right (Experiment,x)) = parsePunctualNotation c z Punctual.runPunctualParser x
+renderBaseProgramChanged c z (Right (Ver,x)) = parsePunctualNotation c z Ver.ver x
+
+renderBaseProgramChanged c z (Right (Oir,x)) = parsePunctualNotation c z Oir.oir x
 
 renderBaseProgramChanged c z (Right (CineCer0,x)) = do
   s <- get
@@ -348,7 +353,8 @@ parsePunctualNotation c z p t = do
   let parseResult = p t
   when (isRight parseResult) $ do
     let exprs = fromRight [] parseResult -- :: [Expression]
-    let evalTime = utcTimeToAudioSeconds (clockDiff c) $ renderStart s -- :: AudioTime/Double
+    liftIO $ putStrLn $ show exprs
+    let evalTime = utcTimeToAudioSeconds (clockDiff c) $ logicalTime s -- :: AudioTime/Double
     let eval = (exprs,evalTime) -- :: Punctual.Evaluation
     punctualProgramChanged c z eval
   let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
