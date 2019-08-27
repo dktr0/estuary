@@ -23,10 +23,11 @@ oirParser = do
 
 sentence :: Parser Expression
 sentence = choice [
-  try $ silence
+  try $ silence,
+  try $ graphic
   ]
 
--- // Opciones de gramática
+-- // Opciones de gramática .
 
 silence :: Parser Expression
 silence = do
@@ -34,7 +35,16 @@ silence = do
   o <- out
   return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f EmptyGraph) o
 
+graphic :: Parser Expression
+graphic = do
+  f <- option DefaultCrossFade fade
+  v <- verb
+  l <- parens $ level
+  o <- out
+  let g = Product v (Constant l)
+  return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
 
+-- [Expression {definition = Definition {target = Anonymous, defTime = Quant 1.0 (Seconds 0.0), transition = DefaultCrossFade, graph = Product (Sine (Constant 0.5)) (Constant 10.0)}, output = NamedOutput "rgb"}]
 
 -- // Fade in/out
 
@@ -46,23 +56,36 @@ fade = choice [
   reserved "veinte_" >> return (CrossFade (Seconds 20))
   ]
 
+-- // Funciones
+
+verb :: Parser Graph
+verb = reserved "yo" >> return (Sine (Constant 0.5))
 
 -- // Salidas
 
+level :: Parser Extent
+level = do
+  x <- double
+  return $ dbamp x
+
 out :: Parser Output
 out = choice [
-  try $ reservedOp "<<>>" >> return (NamedOutput (T.pack "rgb")),
-  try $ reservedOp "<<" >> return (NamedOutput (T.pack "red")),
-  try $ reservedOp ">>" >> return (NamedOutput (T.pack "green")),
-  try $ reservedOp "<>" >> return (NamedOutput (T.pack "blue")),
-  try $ reservedOp "<<_>>" >> return (NamedOutput (T.pack "alpha"))
+  try $ reserved "<<>>" >> return (NamedOutput (T.pack "rgb")),
+  try $ reserved "<<" >> return (NamedOutput (T.pack "red")),
+  try $ reserved ">>" >> return (NamedOutput (T.pack "green")),
+  try $ reserved "<>" >> return (NamedOutput (T.pack "blue")),
+  try $ reserved "<<_>>" >> return (NamedOutput (T.pack "alpha"))
   ]
 
 
 
-
-
 -- //////////////////////////////////
+
+bipolar :: Graph -> Graph
+bipolar x = Sum (Product x (Constant 2)) (Constant (-1))
+
+unipolar :: Graph -> Graph
+unipolar x = Sum (Product x (Constant 0.5)) (Constant 0.5)
 
 average :: Graph -> Graph -> Graph
 average x y = Product (Sum x y) (Constant 0.5)

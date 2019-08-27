@@ -274,6 +274,7 @@ parsePunctualNotation c z p t = do
   let parseResult = p t
   when (isRight parseResult) $ do
     let exprs = fromRight [] parseResult -- :: [Expression]
+    liftIO $ putStrLn $ show exprs
     let evalTime = utcTimeToAudioSeconds (clockDiff c) $ logicalTime s -- :: AudioTime/Double
     let eval = (exprs,evalTime) -- :: Punctual.Evaluation
     punctualProgramChanged c z eval
