@@ -52,7 +52,7 @@ foreign import javascript unsafe
   videoHeight :: CineCer0Video -> IO Double
 
 videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
-videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
+videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
 
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
@@ -92,10 +92,14 @@ updateContinuingVideo t now (sw,sh) s v = do
     let fitByWidth = heightIfFitsWidth <= sh
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
-    let actualWidth = floor $ (realToFrac $ width s) * fitWidth
-    let actualHeight = floor $ (realToFrac $ height s) * fitHeight
-    T.putStrLn $ "file=" <> showt vw <> "x" <> showt vh <> " fit=" <> showt fitWidth <> "x" <> showt fitHeight <> " actual=" <> showt actualWidth <> "x" <> showt actualHeight
-    videoGeometry v (floor $ posX s) (floor $ posY s) actualWidth actualHeight
+    let actualWidth = (realToFrac $ width s) * fitWidth
+    let actualHeight = (realToFrac $ height s) * fitHeight
+    -- T.putStrLn $ "file=" <> showt vw <> "x" <> showt vh <> " fit=" <> showt fitWidth <> "x" <> showt fitHeight <> " actual=" <> showt actualWidth <> "x" <> showt actualHeight
+    let centreX = (realToFrac $ posX s * 0.5 + 0.5) * sw
+    let centreY = (realToFrac $ posY s * 0.5 + 0.5) * sh
+    let leftX = centreX - (actualWidth * 0.5)
+    let topY = sh - (centreY + (actualHeight * 0.5))
+    videoGeometry v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight)
   when (vw == 0 || vh == 0) $
     -- video not ready, don't display
     videoGeometry v 0 0 0 0
