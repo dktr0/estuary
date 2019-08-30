@@ -4,12 +4,14 @@ module Estuary.Languages.CineCer0.CineCer0State where
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import GHCJS.Types
 import GHCJS.DOM.Types (HTMLDivElement)
 import GHCJS.Marshal.Pure
 import Data.IntMap.Strict as IntMap
 import Data.Time
 import TextShow
+import Control.Monad
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
@@ -41,8 +43,16 @@ foreign import javascript unsafe
   "$1.muted = true;"
   muteVideo :: CineCer0Video -> IO ()
 
+foreign import javascript unsafe
+  "$1.videoWidth"
+  videoWidth :: CineCer0Video -> IO Double
+
+foreign import javascript unsafe
+  "$1.videoHeight"
+  videoHeight :: CineCer0Video -> IO Double
+
 videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
-videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "%; height:" <> "%;"
+videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "px; height:" <> "px;"
 
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
@@ -55,6 +65,8 @@ addVideo j spec = do
 
 updateCineCer0State :: Tempo -> UTCTime -> CineCer0Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
+  divWidth <- offsetWidth $ videoDiv st
+  divHeight <- offsetHeight $ videoDiv st
   -- add or delete videos
   let newVideoSpecs = difference spec (videos st) -- :: IntMap VideoSpec
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
@@ -65,16 +77,29 @@ updateCineCer0State t now spec st = do
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-  sequence $ intersectionWith (updateContinuingVideo t now) spec continuingVideos
+  sequence $ intersectionWith (updateContinuingVideo t now (divWidth,divHeight)) spec continuingVideos
   return $ st { videos = continuingVideos }
 
-updateContinuingVideo :: Tempo -> UTCTime -> VideoSpec -> CineCer0Video -> IO ()
-updateContinuingVideo t now s v = do
-  let fitWidth = 100
-  let fitHeight = 100
-  let actualWidth = floor $ width s * fitWidth
-  let actualHeight = floor $ height s * fitHeight
-  videoGeometry v (floor $ posX s) (floor $ posY s) actualWidth actualHeight
+updateContinuingVideo :: Tempo -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
+updateContinuingVideo t now (sw,sh) s v = do
+  -- need fitWidth and fitHeight to be some representation of "maximal fit"
+  vw <- videoWidth v
+  vh <- videoHeight v
+  when (vw /= 0 && vh /= 0) $ do
+    let aspectRatio = vw/vh
+    let heightIfFitsWidth = sw / aspectRatio
+    let widthIfFitsHeight = sh * aspectRatio
+    let fitByWidth = heightIfFitsWidth <= sh
+    let fitWidth = if fitByWidth then sw else widthIfFitsHeight
+    let fitHeight = if fitByWidth then heightIfFitsWidth else sh
+    T.putStrLn $ "file=" <> showt vw <> "x" <> showt vh <> " fit=" <> showt fitWidth <> "x" <> showt fitHeight
+    let actualWidth = floor $ (realToFrac $ width s) * fitWidth
+    let actualHeight = floor $ (realToFrac $ height s) * fitHeight
+    videoGeometry v (floor $ posX s) (floor $ posY s) actualWidth actualHeight
+  when (vw == 0 || vh == 0) $
+    -- video not ready, don't display
+    videoGeometry v 0 0 0 0
+
   -- *** also needs to query position in time of the video
   -- and set position in time of the video if necessary
   -- or maybe do other things, like...
@@ -93,3 +118,11 @@ data CineCer0State = CineCer0State {
   videoDiv :: HTMLDivElement,
   videos :: IntMap CineCer0Video
   }
+
+foreign import javascript unsafe
+  "$1.offsetWidth"
+  offsetWidth :: HTMLDivElement -> IO Double
+
+foreign import javascript unsafe
+  "$1.offsetHeight"
+  offsetHeight :: HTMLDivElement -> IO Double
