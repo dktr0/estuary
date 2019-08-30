@@ -52,7 +52,7 @@ foreign import javascript unsafe
   videoHeight :: CineCer0Video -> IO Double
 
 videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
-videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "px; height:" <> "px;"
+videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
 
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
@@ -92,9 +92,9 @@ updateContinuingVideo t now (sw,sh) s v = do
     let fitByWidth = heightIfFitsWidth <= sh
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
-    T.putStrLn $ "file=" <> showt vw <> "x" <> showt vh <> " fit=" <> showt fitWidth <> "x" <> showt fitHeight
     let actualWidth = floor $ (realToFrac $ width s) * fitWidth
     let actualHeight = floor $ (realToFrac $ height s) * fitHeight
+    T.putStrLn $ "file=" <> showt vw <> "x" <> showt vh <> " fit=" <> showt fitWidth <> "x" <> showt fitHeight <> " actual=" <> showt actualWidth <> "x" <> showt actualHeight
     videoGeometry v (floor $ posX s) (floor $ posY s) actualWidth actualHeight
   when (vw == 0 || vh == 0) $
     -- video not ready, don't display
