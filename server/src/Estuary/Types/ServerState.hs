@@ -39,8 +39,11 @@ newServerState = ServerState {
 
 addClient :: UTCTime -> ServerState -> WS.Connection -> (ClientHandle,ServerState)
 addClient t s x = (i,s { clients=newMap} )
-  where i = IntMap.size $ clients s -- *** note: this will eventually wrap around and create problems for long-running servers ***
+  where i = lowestAvailableKey $ clients s
         newMap = IntMap.insert i (newClient t i x) (clients s)
+
+lowestAvailableKey :: IntMap.IntMap a -> IntMap.Key
+lowestAvailableKey m = Prelude.head ([0..] \\ (IntMap.keys m))
 
 deleteClient :: ClientHandle -> ServerState -> ServerState
 deleteClient h s = s { clients = IntMap.delete h (clients s) }
