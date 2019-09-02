@@ -21,7 +21,8 @@ data Command =
   DumpView | -- display the definition of the current view, regardless of whether standard/published or local
   Chat Text | -- send a chat message
   StartStreaming | -- start RTP streaming of Estuary audio
-  StreamId -- display the id assigned to RTP streaming of Estuary audio
+  StreamId | -- display the id assigned to RTP streaming of Estuary audio
+  Delay Double -- delay estuary's audio output by the specified time in seconds
   deriving (Show,Eq)
 
 parseCommand :: Text -> Either ParseError Command
@@ -39,13 +40,21 @@ terminalCommand = symbol "!" >> choice [
   reserved "listviews" >> return ListViews,
   reserved "dumpview" >> return DumpView,
   reserved "startstreaming" >> return StartStreaming,
-  reserved "streamid" >> return StreamId
+  reserved "streamid" >> return StreamId,
+  (reserved "delay" >> return Delay) <*> double
   ]
 
 identifierText :: Parser Text
 identifierText = T.pack <$> identifier
 
 chatP = many1 anyChar >>= return . Chat . T.pack
+
+double :: Parser Double
+double = choice [
+  symbol "-" >> double >>= return . (* (-1)),
+  try float,
+  try $ fromIntegral <$> integer
+  ]
 
 tokenParser :: P.GenTokenParser Text () Identity
 tokenParser = P.makeTokenParser $ P.LanguageDef {

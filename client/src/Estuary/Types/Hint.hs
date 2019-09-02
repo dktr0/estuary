@@ -1,15 +1,18 @@
 module Estuary.Types.Hint where
 
 import Data.Text (Text)
+import Data.Maybe (mapMaybe)
 
 import Estuary.Types.Tempo
+import Estuary.Utility
 
 data Hint =
   SampleHint Text |
   LogMessage Text |
-  TempoHint Tempo -- ??? what is this for ???
+  SetGlobalDelayTime Double
   deriving (Eq,Show)
 
-maybeTempoHint :: Hint -> Maybe Tempo
-maybeTempoHint (TempoHint x) = Just x
-maybeTempoHint _ = Nothing
+justGlobalDelayTime :: [Hint] -> Maybe Double
+justGlobalDelayTime = lastOrNothing . mapMaybe f
+  where f (SetGlobalDelayTime x) = Just x
+        f _ = Nothing

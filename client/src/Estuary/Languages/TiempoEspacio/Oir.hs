@@ -24,7 +24,8 @@ oirParser = do
 sentence :: Parser Expression
 sentence = choice [
   try $ silence,
-  try $ graphic
+  try $ graphic,
+  try $ transformationPlusGraphic
   ]
 
 -- // Opciones de gramática .
@@ -44,6 +45,15 @@ graphic = do
   let g = Product v (Constant l)
   return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
 
+transformationPlusGraphic :: Parser Expression
+transformationPlusGraphic = do
+  f <- option DefaultCrossFade fade
+  tv <- tiempo
+  l <- parens $ level
+  o <- out
+  let g = Product tv (Constant l)
+  return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
+
 -- [Expression {definition = Definition {target = Anonymous, defTime = Quant 1.0 (Seconds 0.0), transition = DefaultCrossFade, graph = Product (Sine (Constant 0.5)) (Constant 10.0)}, output = NamedOutput "rgb"}]
 
 -- // Fade in/out
@@ -56,10 +66,25 @@ fade = choice [
   reserved "veinte_" >> return (CrossFade (Seconds 20))
   ]
 
+-- // bipolar / unipolar
+
+tiempo :: Parser Graph
+tiempo = choice [
+  reserved "ayer" >> return bipolar <*> verb,
+  reserved "hoy" >> return unipolar <*> verb
+  ]
+
+
 -- // Funciones
 
 verb :: Parser Graph
-verb = reserved "yo" >> return (Sine (Constant 0.5))
+verb = choice [
+  reserved "yo" >> return (Sine Fx),
+  reserved "tu" >> return (Sine Fy),
+  reserved "el" >> return (Sine (Product Fx Fy)),
+  reserved "ella" >> return (Sine (Product Fx (Constant 231.626))),
+  reserved "eso" >> return (Sine (Product Fy (Multi [Constant 261.626,Constant 262.079])))
+  ]
 
 -- // Salidas
 
@@ -81,20 +106,8 @@ out = choice [
 
 -- //////////////////////////////////
 
-bipolar :: Graph -> Graph
-bipolar x = Sum (Product x (Constant 2)) (Constant (-1))
-
-unipolar :: Graph -> Graph
-unipolar x = Sum (Product x (Constant 0.5)) (Constant 0.5)
-
-average :: Graph -> Graph -> Graph
-average x y = Product (Sum x y) (Constant 0.5)
-
 difference :: Graph -> Graph -> Graph
 difference x y = Sum x (Product y (Constant (-1)))
-
-modulatedRangeGraph :: Graph -> Graph -> Graph -> Graph
-modulatedRangeGraph low high mod = Sum (average low high) (Product (Product (difference high low) (Constant 0.5)) mod)
 
 seconds :: Parser Duration
 seconds = do

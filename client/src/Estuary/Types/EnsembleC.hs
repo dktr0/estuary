@@ -99,6 +99,7 @@ commandToHint _ (Terminal.PublishView x) = Just $ LogMessage $ "active view publ
 commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ nameOfActiveView es
 commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ ensemble es
 commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
+commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
 commandToHint _ _ = Nothing
 
 commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC

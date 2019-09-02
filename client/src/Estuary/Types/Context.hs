@@ -32,7 +32,7 @@ import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 
 data Context = Context {
-  mainBus :: (Node,Node,Node,Node), -- ^ main bus input, pregain, compressor, postgain
+  mainBus :: (Node,Node,Node,Node,Node), -- ^ main bus input, delay, pregain, compressor, postgain
   clockDiff :: (UTCTime,Double), -- ^ a sampled value of equivalent times in UTC and on the audio clock
   dynamicsMode :: DynamicsMode,
   webDirt :: WebDirt,
@@ -56,7 +56,7 @@ data Context = Context {
   theVideoDiv :: Maybe JSVal
   }
 
-initialContext :: UTCTime -> Double -> (Node,Node,Node,Node) -> WebDirt -> SuperDirt -> PeerProtocol -> Context
+initialContext :: UTCTime -> Double -> (Node,Node,Node,Node,Node) -> WebDirt -> SuperDirt -> PeerProtocol -> Context
 initialContext nowUtc nowAudio mBus wd sd pp = Context {
   mainBus = mBus,
   clockDiff = (nowUtc,nowAudio),

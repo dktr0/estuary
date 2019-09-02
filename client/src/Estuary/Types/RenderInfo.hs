@@ -9,7 +9,9 @@ data RenderInfo = RenderInfo {
   avgRenderLoad :: !Int,
   avgAnimationLoad :: !Int,
   avgZoneRenderTime :: !(IntMap Double),
-  avgZoneAnimationTime :: !(IntMap Double)
+  avgZoneAnimationTime :: !(IntMap Double),
+  clockRatio :: !Double,
+  clockRatioProblem :: !Bool
   } deriving (Show)
 
 emptyRenderInfo :: RenderInfo
@@ -18,5 +20,7 @@ emptyRenderInfo = RenderInfo {
   avgRenderLoad = 0,
   avgAnimationLoad = 0,
   avgZoneRenderTime = empty,
-  avgZoneAnimationTime = empty
+  avgZoneAnimationTime = empty,
+  clockRatio = 1,
+  clockRatioProblem = False
   }

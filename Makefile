@@ -103,12 +103,11 @@ TEMPLATE_SOURCE=static/index.html.template
 GET_CABAL_CLIENT_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('client/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
 GET_GHCJS_VERSION=ghcjs --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
 CABAL_CLIENT_BIN_DIR=dist-ghcjs/build/x86_64-linux/ghcjs-${GHCJS_VERSION}/${CABAL_CLIENT_PACKAGE_NAME}/x/Estuary/build/Estuary/Estuary.jsexe/
-cabalStageClient: assertInNixGhcjsShell
+cabalStageClient: assertInNixGhcjsShell prepDevStage
 	@ echo "cabalStageClient:"
 	$(eval export CABAL_CLIENT_PACKAGE_NAME=$(shell $(GET_CABAL_CLIENT_PACKAGE_NAME)))
 	$(eval export GHCJS_VERSION=$(shell $(GET_GHCJS_VERSION)))
 	# compile the index.html template in development mode and stage it
-	mkdir $(DEV_STAGING_ROOT)Estuary.jsexe
 	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -o $(DEV_STAGING_ROOT)/Estuary.jsexe/index.html
 	# stage the client js
 	for part in lib out rts runmain ; do \

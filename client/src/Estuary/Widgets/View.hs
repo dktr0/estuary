@@ -30,6 +30,17 @@ import Estuary.Types.EnsembleResponse
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
+-- viewWidget er (RowView p v) = do
+---  let nRows = viewToRows v
+--   some kind of div where the default font-size is set from the number of rows and percentage (p)
+--   and has to contain the embedded view... so...
+--   let style = ... -- dynamic style
+--   let attrs = ... -- dynamic map of div attributes
+--   elDynAttrs "div" attrs $ viewWidget er v
+
+-- viewWidget er (CellView p v) = do
+--   similar to RowView where the horizontal width comes from the from percentage (p)
+
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeStructure Structure er structureEditor

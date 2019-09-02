@@ -337,14 +337,10 @@ out = choice [
 
 
 average :: Graph -> Graph -> Graph
-average x y = Product (Sum x y) (Constant 0.5)
+average = mean
 
 difference :: Graph -> Graph -> Graph
-difference x y = Sum x (Product y (Constant (-1)))
-
-modulatedRangeGraph :: Graph -> Graph -> Graph -> Graph
-modulatedRangeGraph low high mod = Sum (average low high) (Product (Product (difference high low) (Constant 0.5)) mod)
-
+difference x y = x - y
 
 seconds :: Parser Duration
 seconds = do

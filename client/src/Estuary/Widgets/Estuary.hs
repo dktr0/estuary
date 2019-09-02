@@ -76,6 +76,7 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
   let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint] -- Event t [Hint]
   performHints (webDirt iCtx) hints
+  performDelayHints ctx hints
 
   -- requests up to server
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
@@ -155,6 +156,17 @@ updateDynamicsModes ctx = do
   let nodes = mainBus iCtx
   dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap dynamicsMode ctx
   performEvent_ $ fmap (liftIO . changeDynamicsMode nodes) dynamicsModeChanged
+
+
+performDelayHints :: MonadWidget t m => Dynamic t Context -> Event t [Hint] -> m ()
+performDelayHints ctx hs = do
+  iCtx <- (sample . current) ctx
+  let nodes = mainBus iCtx
+  let newDelayTime = fmapMaybe justGlobalDelayTime hs
+  performEvent_ $ fmap (liftIO . changeDelay nodes) newDelayTime
+  where
+    f (SetGlobalDelayTime x) = Just x
+    f _ = Nothing
 
 
 changeTheme :: MonadWidget t m => Event t Text -> m ()
