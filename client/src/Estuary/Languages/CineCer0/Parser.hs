@@ -11,13 +11,14 @@ import Estuary.Languages.CineCer0.VideoSpec
 type CineCer0Spec = IntMap VideoSpec
 
 cineCer0 :: String -> Either String CineCer0Spec
-cineCer0 = f . parseExp
+cineCer0 s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
   where
     f (ParseOk x) = runExpParser cineCer0Spec x
     f (ParseFailed l s) = Left s
 
 cineCer0Spec :: ExpParser CineCer0Spec
-cineCer0Spec = fmap (singleton 1) videoSpec
+cineCer0Spec = fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
+
 
 videoSpec :: ExpParser VideoSpec
 videoSpec =
@@ -25,13 +26,12 @@ videoSpec =
   int_VideoSpec <*> int <|>
   videoSpec_videoSpec <*> videoSpec
 
---
 
 int :: ExpParser Int
 int = fromIntegral <$> integer
 
 nominalDiffTime :: ExpParser NominalDiffTime
-nominalDiffTime = fromRational <$> rational
+nominalDiffTime = fromRational <$> rationalOrInteger
 
 --
 -- Set Video with default options --
@@ -56,8 +56,6 @@ int_VideoSpec = videoSpec_int_videoSpec <*> videoSpec
 --string_VideoSpec_VideoSpec :: ExpParser (String -> VideoSpec -> VideoSpec)
 --string_VideoSpec_VideoSpec = maskVideo <$ reserved "mask"
 
---
--- ExpParser (Rational -> VideoSpec -> VideoSpec) --
 
 rat_videoSpec_videoSpec :: ExpParser (Rational -> VideoSpec -> VideoSpec)
 rat_videoSpec_videoSpec =
@@ -71,8 +69,6 @@ rat_videoSpec_videoSpec =
   setHue <$ reserved "hue" <|>
   setSaturation <$ reserved "saturation"
 
---
--- ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec) --
 
 rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_videoSpec_videoSpec =
@@ -80,42 +76,32 @@ rat_rat_videoSpec_videoSpec =
   setPosCoord <$ reserved "pos" <|> -- position video coordinates
   setSize <$ reserved "size" --size (w h) amounts
 
---
--- ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec) --
 
 rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_videoSpec_videoSpec =
   playChop' <$ reserved "playChop'" <|> -- time function
   setRGB <$ reserved "color"
 
---
--- ExpParser (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec) --
 
 rat_rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_rat_videoSpec_videoSpec =
   playChop <$ reserved "playChop" -- time function
 
---
--- ExpParser (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec) --
 
 nd_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
 nd_rat_videoSpec_videoSpec = playNow <$ reserved "playNow" -- time function
 
---
--- ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec) --
 
 nd_nd_rat_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
 nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "playChopSecs" -- time function
 
---
--- ExpParser (VideoSpec -> VideoSpec) --
 
 videoSpec_videoSpec :: ExpParser (VideoSpec -> VideoSpec)
 videoSpec_videoSpec =
   --string_VideoSpec_VideoSpec <*> string <|> --mask function
-  rat_videoSpec_videoSpec <*> rational <|> -- time function
-  rat_rat_videoSpec_videoSpec <*> rational <*> rational <|> -- pos function
-  rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <|> -- time function
-  rat_rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <*> rational <|> -- time function
-  nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> rational <|> -- time function
-  nd_nd_rat_rat_videoSpec_videoSpec <*> nominalDiffTime <*> nominalDiffTime <*> rational <*> rational -- time function
+  rat_videoSpec_videoSpec <*> rationalOrInteger <|> -- time function
+  rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <|> -- pos function
+  rat_rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <|> -- time function
+  rat_rat_rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <|> -- time function
+  nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> rationalOrInteger <|> -- time function
+  nd_nd_rat_rat_videoSpec_videoSpec <*> nominalDiffTime <*> nominalDiffTime <*> rationalOrInteger <*> rationalOrInteger -- time function
