@@ -31,6 +31,25 @@ instance Show VideoSpec where
   show (VideoSpec vs n _ _ px py w h r g b a _ _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Alpha " ++ show a
 
 
+emptyVideoSpec :: String -> VideoSpec
+emptyVideoSpec x = VideoSpec {
+  sampleVideo = "",
+  sourceNumber = 0,
+  playbackPosition = VT.playNatural_Pos 0.0,
+  playbackRate = VT.playNatural_Rate 0.0,
+  --mask = "none"
+  posX = 0.0,
+  posY = 0.0,
+  width = 0.0,
+  height = 0.0,
+  red = 0.0,
+  green = 0.0,
+  blue = 0.0,
+  alpha = 0.0,
+  hue = 0.0,
+  saturation = 0.0
+}
+
 stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = VideoSpec {
   sampleVideo = x,
