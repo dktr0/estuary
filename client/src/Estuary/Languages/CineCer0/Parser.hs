@@ -25,13 +25,12 @@ videoSpec =
   int_VideoSpec <*> int <|>
   videoSpec_videoSpec <*> videoSpec
 
---
 
 int :: ExpParser Int
 int = fromIntegral <$> integer
 
 nominalDiffTime :: ExpParser NominalDiffTime
-nominalDiffTime = fromRational <$> rational
+nominalDiffTime = fromRational <$> rationalOrInteger
 
 literalVideoSpec :: ExpParser VideoSpec
 literalVideoSpec =
@@ -80,9 +79,9 @@ nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "playChopSecs" -- t
 videoSpec_videoSpec :: ExpParser (VideoSpec -> VideoSpec)
 videoSpec_videoSpec =
   --string_VideoSpec_VideoSpec <*> string <|> --mask function
-  rat_videoSpec_videoSpec <*> rational <|> -- time function
-  rat_rat_videoSpec_videoSpec <*> rational <*> rational <|> -- pos function
-  rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <|> -- time function
-  rat_rat_rat_rat_videoSpec_videoSpec <*> rational <*> rational <*> rational <*> rational <|> -- time function
-  nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> rational <|> -- time function
-  nd_nd_rat_rat_videoSpec_videoSpec <*> nominalDiffTime <*> nominalDiffTime <*> rational <*> rational -- time function
+  rat_videoSpec_videoSpec <*> rationalOrInteger <|> -- time function
+  rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <|> -- pos function
+  rat_rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <|> -- time function
+  rat_rat_rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <|> -- time function
+  nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> rationalOrInteger <|> -- time function
+  nd_nd_rat_rat_videoSpec_videoSpec <*> nominalDiffTime <*> nominalDiffTime <*> rationalOrInteger <*> rationalOrInteger -- time function

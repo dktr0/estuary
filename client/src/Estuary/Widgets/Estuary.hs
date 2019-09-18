@@ -17,6 +17,8 @@ import GHCJS.Marshal.Pure
 import Data.Functor (void)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import TextShow
 import Sound.MusicW.AudioContext
 
 import Estuary.Widgets.Navigation
@@ -70,7 +72,8 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   samplesLoadedEv <- loadSampleMap
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange]
+  clockDiffEv <- pollClockDiff (clockDiff iCtx)
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange, clockDiffEv]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -107,12 +110,21 @@ pollRenderInfo riM = do
   holdDyn riInitial newInfo
 
 -- every 10.02 seconds, resample the difference between system clock and audio clock
-pollClockDiff :: MonadWidget t m => m (Event t ContextChange)
-pollClockDiff = do
+pollClockDiff :: MonadWidget t m => (UTCTime,AudioTime) -> m (Event t ContextChange)
+pollClockDiff i = mdo
   now <- liftIO $ getCurrentTime
   ticks <- tickLossy (10.02::NominalDiffTime) now
-  clockDiff <- performEvent $ fmap (liftIO . const Estuary.Widgets.Estuary.getClockDiff) ticks
-  return $ fmap setClockDiff clockDiff
+  oldClockDiff <- holdDyn i newClockDiff
+  newClockDiff <- performEvent $ fmap (liftIO . const Estuary.Widgets.Estuary.getClockDiff) ticks
+  performEvent_ $ fmap (liftIO . T.putStrLn) $ attachWith clockDiffLogMessage (current oldClockDiff) newClockDiff
+  return $ fmap setClockDiff newClockDiff
+
+clockDiffLogMessage :: (UTCTime,AudioTime) -> (UTCTime,AudioTime) -> Text
+clockDiffLogMessage (oldUtc,oldAudio) (newUtc,newAudio) = "pollClockDiff: audio time advanced " <> x <> " relative to system time"
+  where
+    utcDiff = (realToFrac $ diffUTCTime newUtc oldUtc) :: Double
+    audioDiff = newAudio - oldAudio
+    x = showt $ audioDiff - utcDiff
 
 getClockDiff :: IO (UTCTime,Double)
 getClockDiff = do

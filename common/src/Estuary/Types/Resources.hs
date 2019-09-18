@@ -1,12 +1,14 @@
-module Estuary.Types.Resources where
+module Estuary.Types.Resources  where
 
 import Data.Text
-
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
+import Data.Map.Strict (Map)
 import Data.Sequence (Seq, (|>))
+import qualified Data.Foldable as F
 import qualified Data.Sequence as Seq
+import qualified Data.Foldable as F
 
 import Estuary.Types.Scope
 
@@ -37,12 +39,13 @@ emptyResources = Resources {
 }
 
 newtype ResourceMap m = ResourceMap { unResourceMap :: Map Text (Seq (Resource m)) } deriving (Show)
+--Text is still resourceGroup (E.G. BUTTERFLIES.)
 
 emptyResourceMap :: ResourceMap m
 emptyResourceMap = ResourceMap Map.empty
 
 insertResource :: Text -> Resource m -> ResourceMap m -> ResourceMap m
-insertResource groupName resource (ResourceMap resources) = 
+insertResource groupName resource (ResourceMap resources) =
   let group = (Map.findWithDefault Seq.empty groupName resources) |> resource
   in ResourceMap $ Map.insert groupName (Seq.sortOn resourceFileName group) resources
 
@@ -51,6 +54,9 @@ resolveResource (ResourceMap resources) groupName number = do
   group <- Map.lookup groupName resources
   let idx = mod number (Seq.length group) in
     Seq.lookup idx group
+
+resourceList :: ResourceMap m -> [(Resource m)]
+resourceList m = F.concatMap F.toList (unResourceMap m)
 
 data Resource m = Resource {
   resourceGroup :: Text,
@@ -67,9 +73,17 @@ data AspectRatio
   | SixteenOverNine
   | NineOverSixteen
   | Square
-  | Rational Int Int
-  | Irrational Double
-  deriving (Show)
+  | Custom Rational -- Int Int
+--  deriving (Show)
+
+instance Show AspectRatio where
+  show FourOverThree = "4:3"
+  show ThreeOverFour = "3:4"
+  show SixteenOverNine = "16:9"
+  show NineOverSixteen = "9:16"
+  show Square = "1:1"
+  show (Custom x) = show x
+
 data AudioMeta = AudioMeta { audioDuration :: Double {- seconds -} } deriving (Show)
 data VideoMeta = VideoMeta { videoDuration :: Double, videoResolution :: (Int, Int), videoAspectRatio :: AspectRatio } deriving (Show)
 data ImageMeta = ImageMeta { imageResolution :: (Int, Int), imageAspectRatio :: AspectRatio } deriving (Show)

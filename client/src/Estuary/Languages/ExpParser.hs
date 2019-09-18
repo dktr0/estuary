@@ -86,6 +86,15 @@ rational = ExpParser f
         f (Lit _ (Frac _ x _)) = Right x
         f _ = Left ""
 
+rationalOrInteger :: ExpParser Rational
+rationalOrInteger = ExpParser f
+  where f (Paren _ x) = f x
+        f (NegApp _ (Lit _ (Frac _ x _))) = Right (x * (-1))
+        f (Lit _ (Frac _ x _)) = Right x
+        f (NegApp _ (Lit _ (Int _ x _))) = Right (fromIntegral $ x * (-1))
+        f (Lit _ (Int _ x _)) = Right $ fromIntegral x
+        f _ = Left ""
+
 listOf :: ExpParser a -> ExpParser [a]
 listOf p = ExpParser (\e -> f e >>= mapM (runExpParser p))
   where
