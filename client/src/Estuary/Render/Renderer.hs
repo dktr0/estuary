@@ -36,8 +36,6 @@ import qualified Sound.TimeNot.MapEstuary as TimeNot
 
 import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
 import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
-import qualified Estuary.Languages.TiempoEspacio.EscucharState as Escuchar
-import qualified Estuary.Languages.TiempoEspacio.Escuchar as Escuchar
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
@@ -327,23 +325,12 @@ renderBaseProgramChanged c z (Right (Ver,x)) = parsePunctualNotation c z Ver.ver
 
 renderBaseProgramChanged c z (Right (Oir,x)) = parsePunctualNotation c z Oir.oir x
 
-renderBaseProgramChanged c z (Right (CineCer0,x)) = do
+renderBaseProgramChanged c z (Right (Escuchar,x)) = do
   s <- get
-  let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.cineCer0 $ T.unpack x -- Either String CineCer0Spec
+  let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.escuchar $ T.unpack x -- Either String CineCer0Spec
   when (isRight parseResult) $ do
     let spec :: CineCer0.CineCer0Spec = fromRight (IntMap.empty) parseResult
     modify' $ \x -> x { cineCer0Specs = insert z spec (cineCer0Specs s) }
-    clearZoneError z
-  when (isLeft parseResult) $ do
-    let err = fromLeft "" parseResult
-    setZoneError z (T.pack err)
-
-renderBaseProgramChanged c z (Right (Escuchar,x)) = do
-  s <- get
-  let parseResult :: Either String Escuchar.EscucharSpec = Escuchar.escuchar $ T.unpack x -- Either String CineCer0Spec
-  when (isRight parseResult) $ do
-    let spec :: Escuchar.EscucharSpec = fromRight (IntMap.empty) parseResult
-    modify' $ \x -> x { escucharSpecs = insert z spec (escucharSpecs s) }
     clearZoneError z
   when (isLeft parseResult) $ do
     let err = fromLeft "" parseResult
@@ -407,7 +394,7 @@ renderTextProgramAlways c z = do
 
 renderBaseProgramAlways :: Context -> Int -> Maybe TextNotation -> Renderer
 renderBaseProgramAlways c z (Just (TidalTextNotation _)) = renderControlPattern c z
-renderBaseProgramAlways c z (Just CineCer0) = do
+renderBaseProgramAlways c z (Just Escuchar) = do
   s <- get
   let maybeTheDiv = videoDivElement c
   when (isJust maybeTheDiv) $ do
@@ -418,19 +405,6 @@ renderBaseProgramAlways c z (Just CineCer0) = do
     let now = renderStart s
     newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
     modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
-renderBaseProgramAlways _ _ _ = return ()
-
-renderBaseProgramAlways c z (Just Escuchar) = do
-  s <- get
-  let maybeTheDiv = videoDivElement c
-  when (isJust maybeTheDiv) $ do
-    let spec = IntMap.findWithDefault (IntMap.empty) z (escucharSpecs s)
-    let theDiv = fromJust maybeTheDiv
-    let prevState = IntMap.findWithDefault (Escuchar.emptyEscucharState theDiv) z $ escucharStates s
-    let t = tempo $ ensemble $ ensembleC c
-    let now = renderStart s
-    newState <- liftIO $ Escuchar.updateEscucharState t now spec prevState
-    modify' $ \x -> x { escucharStates = insert z newState (escucharStates s) }
 renderBaseProgramAlways _ _ _ = return ()
 
 renderControlPattern :: Context -> Int -> Renderer

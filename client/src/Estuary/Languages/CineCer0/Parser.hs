@@ -1,4 +1,4 @@
-module Estuary.Languages.CineCer0.Parser (cineCer0,CineCer0Spec) where
+module Estuary.Languages.CineCer0.Parser (escuchar,CineCer0Spec) where
 
 import Language.Haskell.Exts
 import Control.Applicative
@@ -10,8 +10,8 @@ import Estuary.Languages.CineCer0.VideoSpec
 
 type CineCer0Spec = IntMap VideoSpec
 
-cineCer0 :: String -> Either String CineCer0Spec
-cineCer0 s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
+escuchar :: String -> Either String CineCer0Spec
+escuchar s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
   where
     f (ParseOk x) = runExpParser cineCer0Spec x
     f (ParseFailed l s) = Left s
@@ -58,8 +58,10 @@ rat_videoSpec_videoSpec =
 rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_videoSpec_videoSpec =
   playEvery <$ reserved "playEvery" <|> --time function
-  setPosCoord <$ reserved "pos" <|> -- position video coordinates
-  setSize <$ reserved "size" --size (w h) amounts
+
+  setPosCoord <$ (reserved "sentada" <|> reserved "escuchar" <|> reserved "escucho" <|> reserved "escuchando" <|> reserved "suena" <|> reserved "gustan" <|> reserved "recuerdo" <|> reserved "recordando" <|> reserved "atraviesan" <|> reserved "atravesando" <|> reserved "hago" <|> reserved "hacen") <|>
+
+  setSize <$ (reserved "consciente" <|> reserved "conscientes" <|> reserved "extraño" <|> reserved "extraña" <|> reserved "extraños" <|> reserved "extrañas" <|> reserved "diferente" <|> reserved "diferentes" <|> reserved "fuerte" <|> reserved "fuertes" <|> reserved "tempestuoso" <|> reserved "tempestuosa" <|> reserved "tempestuosos" <|> reserved "tempestuosas" <|> reserved "transformado" <|> reserved "transformada" <|> reserved "transformados" <|> reserved "transformadas")
 
 rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_videoSpec_videoSpec =

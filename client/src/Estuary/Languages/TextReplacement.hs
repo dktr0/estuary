@@ -11,7 +11,6 @@ applyTextReplacement :: (TextNotation,Text) -> Either ParseError (TextNotation,T
 -- 1. for base languages, we simply return the unmodified input...
 applyTextReplacement (TidalTextNotation MiniTidal,x) = Right (TidalTextNotation MiniTidal,x)
 applyTextReplacement (Punctual,x) = Right (Punctual,x)
-applyTextReplacement (CineCer0,x) = Right (CineCer0,x)
 applyTextReplacement (Escuchar,x) = Right (Escuchar,x)
 applyTextReplacement (TimeNot,x) = Right (TimeNot,x)
 

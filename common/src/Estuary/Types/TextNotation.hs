@@ -10,9 +10,8 @@ import Estuary.Types.TidalParser
 data TextNotation =
   TidalTextNotation TidalParser |
   Punctual |
-  CineCer0 |
-  TimeNot |
   Escuchar |
+  TimeNot |
   Ver |
   Oir
   deriving (Read,Eq,Ord,Show,Generic)

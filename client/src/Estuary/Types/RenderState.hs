@@ -15,8 +15,6 @@ import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import Estuary.Types.MovingAverage
 import Estuary.Types.TextNotation
 
-import qualified Estuary.Languages.TiempoEspacio.EscucharState as Escuchar
-import qualified Estuary.Languages.TiempoEspacio.Escuchar as Escuchar
 
 
 data RenderState = RenderState {
@@ -34,8 +32,6 @@ data RenderState = RenderState {
   punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
   cineCer0Specs :: !(IntMap CineCer0.CineCer0Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
-  escucharSpecs :: !(IntMap Escuchar.EscucharSpec),
-  escucharStates :: !(IntMap Escuchar.EscucharState),
   renderTime :: !MovingAverage,
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
@@ -59,8 +55,6 @@ initialRenderState t0System t0Audio = do
     punctualWebGLs = empty,
     cineCer0Specs = empty,
     cineCer0States = empty,
-    escucharSpecs = empty,
-    escucharStates = empty,
     renderTime = newAverage 20,
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
