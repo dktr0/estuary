@@ -340,7 +340,7 @@ renderBaseProgramChanged c z (Right (CineCer0,x)) = do
 
 renderBaseProgramChanged c z (Right (Escuchar,x)) = do
   s <- get
-  let parseResult :: Either String Escuchar.EscucharSpec = Escuchar.escuchar $ T.unpack x
+  let parseResult :: Either String Escuchar.EscucharSpec = Escuchar.escuchar $ T.unpack x -- Either String CineCer0Spec
   when (isRight parseResult) $ do
     let spec :: Escuchar.EscucharSpec = fromRight (IntMap.empty) parseResult
     modify' $ \x -> x { escucharSpecs = insert z spec (escucharSpecs s) }

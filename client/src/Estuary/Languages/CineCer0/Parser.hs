@@ -51,7 +51,7 @@ rat_videoSpec_videoSpec =
   setHeight <$ reserved "h" <|>
   setPosX <$ reserved "posX" <|>
   setPosY <$ reserved "posY" <|>
-  setAlpha <$ reserved "alpha" <|>
+  setOpacity <$ reserved "opacity" <|>
   setHue <$ reserved "hue" <|>
   setSaturation <$ reserved "saturation"
 

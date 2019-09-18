@@ -18,6 +18,7 @@ import Estuary.Types.TextNotation
 import qualified Estuary.Languages.TiempoEspacio.EscucharState as Escuchar
 import qualified Estuary.Languages.TiempoEspacio.Escuchar as Escuchar
 
+
 data RenderState = RenderState {
   wakeTimeAudio :: !Double,
   wakeTimeSystem :: !UTCTime,

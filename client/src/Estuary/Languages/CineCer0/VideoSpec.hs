@@ -21,14 +21,14 @@ data VideoSpec = VideoSpec {
   red :: Rational,
   green :: Rational,
   blue :: Rational,
-  alpha :: Rational,
+  opacity :: Rational,
   hue :: Rational,
   saturation :: Rational
 
   }
 
 instance Show VideoSpec where
-  show (VideoSpec vs n _ _ px py w h r g b a _ _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Alpha " ++ show a
+  show (VideoSpec vs n _ _ px py w h r g b a _ _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Opacity " ++ show a
 
 
 emptyVideoSpec :: String -> VideoSpec
@@ -45,7 +45,7 @@ emptyVideoSpec x = VideoSpec {
   red = 0.0,
   green = 0.0,
   blue = 0.0,
-  alpha = 0.0,
+  opacity = 0.0,
   hue = 0.0,
   saturation = 0.0
 }
@@ -64,7 +64,7 @@ stringToVideoSpec x = VideoSpec {
   red = 1.0,
   green = 1.0,
   blue = 1.0,
-  alpha = 1.0,
+  opacity = 1.0,
   hue = 0.0,
   saturation = 0.0
 }
@@ -112,8 +112,8 @@ setSaturation n vs = vs { saturation = n }
 
 -- Set alpha --
 
-setAlpha :: Rational -> VideoSpec -> VideoSpec
-setAlpha n vs = vs { alpha = n }
+setOpacity :: Rational -> VideoSpec -> VideoSpec
+setOpacity n vs = vs { opacity = n }
 
 --
 -- Time Functions --

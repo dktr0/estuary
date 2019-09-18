@@ -4,12 +4,14 @@ module Estuary.Languages.TiempoEspacio.EscucharState where
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import GHCJS.Types
 import GHCJS.DOM.Types (HTMLDivElement)
 import GHCJS.Marshal.Pure
 import Data.IntMap.Strict as IntMap
 import Data.Time
 import TextShow
+import Control.Monad
 
 import Estuary.Types.Tempo
 import Estuary.Languages.TiempoEspacio.Escuchar
@@ -41,8 +43,17 @@ foreign import javascript unsafe
   "$1.muted = true;"
   muteVideo :: EscucharVideo -> IO ()
 
+foreign import javascript unsafe
+  "$1.videoWidth"
+  videoWidth :: EscucharVideo -> IO Double
+
+foreign import javascript unsafe
+  "$1.videoHeight"
+  videoHeight :: EscucharVideo -> IO Double
+
 videoGeometry :: EscucharVideo -> Int -> Int -> Int -> Int -> IO ()
-videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "%; height:" <> "%;"
+videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
+
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO EscucharVideo
 addVideo j spec = do
@@ -54,26 +65,52 @@ addVideo j spec = do
 
 updateEscucharState :: Tempo -> UTCTime -> EscucharSpec -> EscucharState -> IO EscucharState
 updateEscucharState t now spec st = do
+  divWidth <- offsetWidth $ videoDiv st
+  divHeight <- offsetHeight $ videoDiv st
   -- add or delete videos
   let newVideoSpecs = difference spec (videos st) -- :: IntMap VideoSpec
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
-  addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap EscucharVideo
-  let videosWithRemovedSpecs = difference (videos st) spec -- :: IntMap EscucharVideo
-  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") spec -- :: IntMap EscucharVideo
+  addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+  let videosWithRemovedSpecs = difference (videos st) spec -- :: IntMap CineCer0Video
+  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") spec -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
-  let videosThereBefore = difference (videos st) toDelete -- :: IntMap EscucharVideo
-  let continuingVideos = union videosThereBefore addedVideos -- :: IntMap EscucharVideo
-  sequence $ intersectionWith (updateContinuingVideo t now) spec continuingVideos
+  let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
+  let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
+  sequence $ intersectionWith (updateContinuingVideo t now (divWidth,divHeight)) spec continuingVideos
   return $ st { videos = continuingVideos }
 
-updateContinuingVideo :: Tempo -> UTCTime -> VideoSpec -> EscucharVideo -> IO ()
-updateContinuingVideo t now s v = do
-  let fitWidth = 100
-  let fitHeight = 100
-  let actualWidth = floor $ width s * fitWidth
-  let actualHeight = floor $ height s * fitHeight
-  videoGeometry v (floor $ posX s) (floor $ posY s) actualWidth actualHeight
+updateContinuingVideo :: Tempo -> UTCTime -> (Double,Double) -> VideoSpec -> EscucharVideo -> IO ()
+updateContinuingVideo t now (sw,sh) s v = do
+  -- need fitWidth and fitHeight to be some representation of "maximal fit"
+  vw <- videoWidth v
+  vh <- videoHeight v
+  when (vw /= 0 && vh /= 0) $ do
+    let aspectRatio = vw/vh
+    let heightIfFitsWidth = sw / aspectRatio
+    let widthIfFitsHeight = sh * aspectRatio
+    let fitByWidth = heightIfFitsWidth <= sh
+    let fitWidth = if fitByWidth then sw else widthIfFitsHeight
+    let fitHeight = if fitByWidth then heightIfFitsWidth else sh
+    let actualWidth = (realToFrac $ width s) * fitWidth
+    let actualHeight = (realToFrac $ height s) * fitHeight
+    -- T.putStrLn $ "file=" <> showt vw <> "x" <> showt vh <> " fit=" <> showt fitWidth <> "x" <> showt fitHeight <> " actual=" <> showt actualWidth <> "x" <> showt actualHeight
+    let centreX = (realToFrac $ posX s * 0.5 + 0.5) * sw
+    let centreY = (realToFrac $ posY s * 0.5 + 0.5) * sh
+    let leftX = centreX - (actualWidth * 0.5)
+    let topY = sh - (centreY + (actualHeight * 0.5))
+    videoGeometry v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight)
+  when (vw == 0 || vh == 0) $
+    -- video not ready, don't display
+    videoGeometry v 0 0 0 0
+
+  -- *** also needs to query position in time of the video
+  -- and set position in time of the video if necessary
+  -- or maybe do other things, like...
+  -- let lengthOfVideo = ?
+  -- let newPos = playbackPosition s t lengthOfVideo now -- :: Maybe NominalDiffTime
+  -- let newRate = playbackRate s t lengthOfVideo now -- :: Maybe Rational
+  -- then... maybe set newPos and newRate if necessary?
 
 emptyEscucharState :: HTMLDivElement -> EscucharState
 emptyEscucharState j = EscucharState {
@@ -85,3 +122,11 @@ data EscucharState = EscucharState {
   videoDiv :: HTMLDivElement,
   videos :: IntMap EscucharVideo
   }
+
+foreign import javascript unsafe
+  "$1.offsetWidth"
+  offsetWidth :: HTMLDivElement -> IO Double
+
+foreign import javascript unsafe
+  "$1.offsetHeight"
+  offsetHeight :: HTMLDivElement -> IO Double
