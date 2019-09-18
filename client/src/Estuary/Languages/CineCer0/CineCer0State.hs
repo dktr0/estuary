@@ -24,7 +24,7 @@ instance PToJSVal CineCer0Video where pToJSVal (CineCer0Video val) = val
 instance PFromJSVal CineCer0Video where pFromJSVal = CineCer0Video
 
 foreign import javascript safe
-  "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video"
+  "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO CineCer0Video
 
 foreign import javascript safe

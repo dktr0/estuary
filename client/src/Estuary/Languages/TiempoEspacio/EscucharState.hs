@@ -22,7 +22,7 @@ instance PToJSVal EscucharVideo where pToJSVal (EscucharVideo val) = val
 instance PFromJSVal EscucharVideo where pFromJSVal = EscucharVideo
 
 foreign import javascript safe
-  "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video"
+  "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO EscucharVideo
 
 foreign import javascript safe
@@ -43,7 +43,6 @@ foreign import javascript unsafe
 
 videoGeometry :: EscucharVideo -> Int -> Int -> Int -> Int -> IO ()
 videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "%; top: " <> showt y <> "%; position: absolute; width:" <> showt w <> "%; height:" <> "%;"
-
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO EscucharVideo
 addVideo j spec = do
@@ -75,13 +74,6 @@ updateContinuingVideo t now s v = do
   let actualWidth = floor $ width s * fitWidth
   let actualHeight = floor $ height s * fitHeight
   videoGeometry v (floor $ posX s) (floor $ posY s) actualWidth actualHeight
-  -- *** also needs to query position in time of the video
-  -- and set position in time of the video if necessary
-  -- or maybe do other things, like...
-  -- let lengthOfVideo = ?
-  -- let newPos = playbackPosition s t lengthOfVideo now -- :: Maybe NominalDiffTime
-  -- let newRate = playbackRate s t lengthOfVideo now -- :: Maybe Rational
-  -- then... maybe set newPos and newRate if necessary?
 
 emptyEscucharState :: HTMLDivElement -> EscucharState
 emptyEscucharState j = EscucharState {

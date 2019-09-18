@@ -12,6 +12,7 @@ applyTextReplacement :: (TextNotation,Text) -> Either ParseError (TextNotation,T
 applyTextReplacement (TidalTextNotation MiniTidal,x) = Right (TidalTextNotation MiniTidal,x)
 applyTextReplacement (Punctual,x) = Right (Punctual,x)
 applyTextReplacement (CineCer0,x) = Right (CineCer0,x)
+applyTextReplacement (Escuchar,x) = Right (Escuchar,x)
 applyTextReplacement (TimeNot,x) = Right (TimeNot,x)
 
 -- 2. for text replacement languages, we recursively apply this function to the output
@@ -25,7 +26,7 @@ applyTextReplacement (TimeNot,x) = Right (TimeNot,x)
 --   also, access to getTextReplacementParser :: Text -> (Text -> Either ParseError Text)
 --   also, access to getTextReplacementBaseNotation :: Text -> TextNotation
 --   then:
--- applyTextReplacement (OnTheFlyLanguage x) = getTextReplacementParser x >>= prependNotation (getTextReplacementBaseNotation x) >>= applyTextReplacement 
+-- applyTextReplacement (OnTheFlyLanguage x) = getTextReplacementParser x >>= prependNotation (getTextReplacementBaseNotation x) >>= applyTextReplacement
 
 -- 3. finally, for all unmatched cases (eg. minilanguages that haven't been reimplemented as text replacement languages)
 -- we just (again) return the unmodified input
