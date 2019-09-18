@@ -61,20 +61,20 @@ clockRatioThreshold :: Double
 clockRatioThreshold = 0.8
 
 maxRenderLatency :: NominalDiffTime
-maxRenderLatency = 0.240
+maxRenderLatency = 0.360
 
 maxRenderPeriod :: NominalDiffTime
-maxRenderPeriod = 0.240
+maxRenderPeriod = 0.360
 
 minRenderLatency :: NominalDiffTime
-minRenderLatency = 0.120
+minRenderLatency = 0.070
 
 minRenderPeriod :: NominalDiffTime
-minRenderPeriod = 0.120
+minRenderPeriod = 0.100
 
 -- should be somewhat larger than maxRenderLatency
 waitThreshold :: NominalDiffTime
-waitThreshold = 0.260
+waitThreshold = 0.380
 
 rewindThreshold :: NominalDiffTime
 rewindThreshold = 1.0
@@ -149,7 +149,7 @@ render c = do
   let diff = diffUTCTime (renderEnd s) t1System
   -- 1. Fast Forward
   when (diff < minRenderLatency) $ do
-    liftIO $ T.putStrLn "FAST-FORWARD"
+    liftIO $ T.putStrLn $ "FAST-FORWARD: diff=" <> showt (realToFrac diff :: Double)
     modify' $ \x -> x {
       renderStart = addUTCTime minRenderLatency t1System,
       renderPeriod = minRenderPeriod,
@@ -170,7 +170,7 @@ render c = do
 
   -- 3. Wait
   let wait = (diff > waitThreshold && diff < rewindThreshold)
-  when wait $ liftIO $ T.putStrLn $ "WAIT " <> showt (realToFrac diff :: Double)
+  when wait $ liftIO $ T.putStrLn $ "WAIT: diff=" <> showt (realToFrac diff :: Double)
 
   -- 4. Rewind
   let rewind = (diff >= rewindThreshold)
@@ -357,7 +357,7 @@ parsePunctualNotation c z p t = do
   let parseResult = p t
   when (isRight parseResult) $ do
     let exprs = fromRight [] parseResult -- :: [Expression]
-    liftIO $ putStrLn $ show exprs
+    -- liftIO $ putStrLn $ show exprs
     let evalTime = utcTimeToAudioSeconds (clockDiff c) $ renderStart s -- :: AudioTime/Double
     let eval = (exprs,evalTime) -- :: Punctual.Evaluation
     punctualProgramChanged c z eval
