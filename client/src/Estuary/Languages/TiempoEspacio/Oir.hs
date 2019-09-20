@@ -25,8 +25,8 @@ sentence :: Parser Expression
 sentence = choice [
   try $ silence,
   try $ graphic,
-  try $ graphicPlusConstrain,
-  try $ transformationPlusGraphic
+  try $ graphicPlusConstrain
+  --try $ transformationPlusGraphic
   --try $ transformationPlusGraphicTransformation
   ]
 
@@ -70,19 +70,15 @@ graphicPlusConstrain = do
   let g = Product (Product v n) (Constant l)
   return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
 
-transformationPlusGraphic :: Parser Expression
-transformationPlusGraphic = do
-  f <- option DefaultCrossFade fade
-  option () miscelanea
-  option () miscelanea
-  av <- auxiliarPlusVerb
-  option () miscelanea
-  option () miscelanea
-  option () miscelanea
-  l <- parens $ level
-  o <- out
-  let g = Product av (Constant l)
-  return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
+-- polarPlusGraphic :: Parser Expression
+-- polarPlusGraphic = do
+--   f <- option DefaultCrossFade fade
+--   a <- auxiliar
+--   v <- verb
+--   l <- parens $ level
+--   o <- out
+--   let g = Product (a v) (Constant l)
+--   return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
 
 -- transformationPlusGraphicTransformation :: Parser Expression
 -- transformationPlusGraphicTransformation = do
@@ -153,11 +149,11 @@ fade = choice [
 
 -- // bipolar / unipolar
 
-auxiliarPlusVerb :: Parser Graph
-auxiliarPlusVerb = choice [
-  (reserved "do" <|> reserved "dont" <|> reserved "does" <|> reserved "doesnt") >> return bipolar <*> verb,
-  (reserved "do" <|> reserved "dont") >> return unipolar <*> verb
-  ]
+-- auxiliar :: Graph
+-- auxiliar = choice [
+--   (reserved "do" <|> reserved "dont" <|> reserved "does" <|> reserved "doesnt") >> return unipolar <*> verb,
+--   (reserved "did" <|> reserved "didnt") >> return bipolar <*> verb
+--   ]
 
 -- // sound waves y fx / fy
 
