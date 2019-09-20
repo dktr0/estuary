@@ -39,7 +39,7 @@ More advanced customization is available through CSS classes within this documen
 /*styles the code font*/
 .code-font {
 	  font-family: Dosis;
-	  font-size:1em;
+	  font-size:1.7em;
 	  }
 
 /* styles the fonts for the header, menus and labels */
@@ -52,9 +52,13 @@ More advanced customization is available through CSS classes within this documen
 .ui-buttons {
   color:white;
   background-color:transparent;
+  font-size: 1em;
 
 }
 
+.ui-dropdownMenus {
+  background-color: var(--background-color) !important;
+}
 
 /*styles the primary borders (e.g.  from dropdown menus) */
 .primary-borders {
@@ -87,6 +91,11 @@ More advanced customization is available through CSS classes within this documen
 	display: none !important;
 
     }
+
+.config-entry {
+	border-right: 0px solid !important;
+}
+
 .ensembleTempo {
 	display: none !important;
 	border: none;
@@ -96,4 +105,16 @@ More advanced customization is available through CSS classes within this documen
 
 .eightMiddleR {/*modifies the middle right view*/
 	text-align: right !important;
+	border-bottom: 1px solid transparent !important;
+	border-right: 1px solid transparent !important;
+}
+
+
+.eightMiddleL {/*modifies the middle left view*/
+	border-bottom: 1px solid transparent !important;
+	border-right: 1px solid transparent !important;
+}
+
+.referenceButton {
+	font-size: 0em;
 }

@@ -23,13 +23,13 @@ header ctx = divClass "header primary-color primary-borders" $ divClass "config-
   themeChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
     let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale"), ("../css-custom/bubble.css","Bubble"), ("../css-custom/memorias.css","Memorias")]
     translateDyn Term.Theme ctx >>= dynText
-    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: rgba(0,0,0,0) !important" )) -- Event t String
+    styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" )) -- Event t String
     return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
 
   langChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
     translateDyn Term.Language ctx >>= dynText
     let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
-    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
+    langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
     return $ fmap (\x c -> c { language = x }) langChange
 
   let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "primary-color")

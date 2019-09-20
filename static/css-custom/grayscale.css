@@ -49,6 +49,10 @@ More advanced customization is available through CSS classes within this documen
   background-color:rgba(0,0,0,0.12);
 }
 
+/* styles the dropdown */
+.ui-dropdownMenus {
+  background-color: var(--background-color) !important;
+}
 /* styles the primary borders (e.g. from dropdown menus)*/
 .primary-borders {
 	border-radius: 5px;
