@@ -26,7 +26,8 @@ sentence = choice [
   try $ silence,
   try $ graphic,
   try $ graphicPlusConstrain,
-  try $ polarPlusGraphic
+  try $ polarPlusGraphic,
+  try $ polarPlusGraphicPlusConstrain
   ]
 
 -- // Opciones de gramática .
@@ -72,30 +73,40 @@ graphicPlusConstrain = do
 polarPlusGraphic :: Parser Expression
 polarPlusGraphic = do
   f <- option DefaultCrossFade fade
+  option () miscelanea
+  option () miscelanea
   a <- auxiliar
   v <- verb
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
   l <- parens $ level
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
   o <- out
   let g = Product (a v) (Constant l)
   return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
 
--- transformationPlusGraphicTransformation :: Parser Expression
--- transformationPlusGraphicTransformation = do
---   f <- option DefaultCrossFade fade
---   option () miscelanea
---   option () miscelanea
---   av <- auxiliarPlusVerb
---   option () miscelanea
---   option () miscelanea
---   option () miscelanea
---   n <- noun
---   option () miscelanea
---   option () miscelanea
---   option () miscelanea
---   l <- parens $ level
---   o <- out
---   let g = Product (Product av n) (Constant l)
---   return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f h) o
+polarPlusGraphicPlusConstrain :: Parser Expression
+polarPlusGraphicPlusConstrain = do
+  f <- option DefaultCrossFade fade
+  option () miscelanea
+  option () miscelanea
+  a <- auxiliar
+  v <- verb
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
+  n <- noun
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
+  l <- parens $ level
+  o <- out
+  let g = Product (Product (a v) n) (Constant l)
+  return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
+
 
 -- [Expression {definition = Definition {target = Anonymous, defTime = Quant 1.0 (Seconds 0.0), transition = DefaultCrossFade, graph = Product (Sine (Constant 0.5)) (Constant 10.0)}, output = NamedOutput "rgb"}]
 
