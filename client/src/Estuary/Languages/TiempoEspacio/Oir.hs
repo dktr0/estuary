@@ -150,7 +150,7 @@ fade = choice [
 
 auxiliar :: Parser (Graph -> Graph)
 auxiliar = choice [
-  (reserved "do" <|> reserved "dont" <|> reserved "does" <|> reserved "doesnt" reserved "am" <|> reserved "is" <|> reserved "are" <|> reserved "isnt" <|> reserved "arent") >> return unipolar,
+  (reserved "do" <|> reserved "dont" <|> reserved "does" <|> reserved "doesnt" <|> reserved "am" <|> reserved "is" <|> reserved "are" <|> reserved "isnt" <|> reserved "arent") >> return unipolar,
   (reserved "did" <|> reserved "didnt" <|> reserved "was" <|> reserved "wasnt" <|> reserved "were" <|> reserved "werent") >> return bipolar
   ]
 
