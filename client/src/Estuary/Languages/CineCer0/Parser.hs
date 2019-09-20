@@ -21,10 +21,19 @@ cineCer0Spec = fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
 
 videoSpec :: ExpParser VideoSpec
 videoSpec =
+  --videoMiscelanea <|>
   literalVideoSpec <|>
   int_VideoSpec <*> int <|>
   videoSpec_videoSpec <*> videoSpec
 
+-- videoMiscelanea :: ExpParser VideoSpec
+-- videoMiscelanea = do
+--   miscelanea
+--   v <- literalVideoSpec
+--   return v
+--
+-- miscelanea :: ExpParser ()
+-- miscelanea = () <$ reserved "me"
 
 int :: ExpParser Int
 int = fromIntegral <$> integer
