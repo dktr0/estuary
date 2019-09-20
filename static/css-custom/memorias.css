@@ -39,7 +39,7 @@ More advanced customization is available through CSS classes within this documen
 /*styles the code font*/
 .code-font {
 	  font-family: Dosis;
-	  font-size:1.7em;
+	  font-size:1.7vw;
 	  }
 
 /* styles the fonts for the header, menus and labels */
