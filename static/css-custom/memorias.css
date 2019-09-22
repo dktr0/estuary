@@ -104,7 +104,6 @@ More advanced customization is available through CSS classes within this documen
 
 
 .eightMiddleR {/*modifies the middle right view*/
-	text-align: right !important;
 	border-bottom: 1px solid transparent !important;
 	border-right: 1px solid transparent !important;
 }
