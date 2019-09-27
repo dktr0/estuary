@@ -1,32 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Tutorials.IntroTidalText where
+module Estuary.Tutorials.TidalCyclesBasics (tidalCyclesBasics) where
 
-import Reflex
-import Reflex.Dom
-import qualified Data.IntMap.Strict as IM
-import Data.Map as M
 import Data.Text (Text)
-import qualified Data.Text as T
+import qualified Data.Map.Strict as Map
+import qualified Data.IntMap.Strict as IntMap
 
-import Estuary.Tutorials.Tutorial
+import Estuary.Types.Tutorial
+import Estuary.Types.TutorialPage
+import Estuary.Types.View
+import Estuary.Types.TranslatedText
 import Estuary.Types.Language
 import Estuary.Types.Definition
-import Estuary.Types.Context
-import Estuary.Types.Hint
 
+tidalCyclesBasics :: Tutorials
+tidalCyclesBasics = Tutorial {
+  tutorialTitle = Map.fromList [
+    (English,"TidalCycles basics")
+  ],
+  tutorialPages = IntMap.fromList [
+    (0,TutorialPage {
+      tutorialPageTitle = Map.fromList [
+        (English,"Welcome!")
+      ]
+      tutorialPageView = Views [
+        Paragraph $ Map.fromList [(English,"This tutorial will cover some of the basics of making music with MiniTidal. MiniTidal is a subset of TidalCycles that supports most typical TidalCycles operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles. Lets make some sound!")],
+        Paragraph $ Map.fromList [(English,"Copy the code below to the text editing area below and then click Eval to \"evaluate" it, or, if you prefer, click on the code example to automatically copy and evaluate it.")],
+        Example (TidalTextNotation MiniTidal) "s \"bd cp\"",
+        TextView 1 5
+      ]
+    })
+  ]
+}
 
-introTidalText ::MonadWidget t m => Tutorial t m
-introTidalText = Tutorial IntroTidalText introTidalTextWidget
-
-introTidalTextWidget::MonadWidget t m => Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint])
-introTidalTextWidget ctx = elClass "div" "tutorial code-font primary-color background-color" $ do
-  title $ labelWidget ctx $ M.fromList [(English, "Welcome to the introductory tutorial to TidalCycles (or MiniTidal)!")]
-  labelWidget ctx $ M.fromList [(English,"This tutorial will cover some of the basics of making music with TidalCycles. MiniTidal is a subset of TidalCycles that supports most typical Tidal operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles.")]
-
-  el "div" $ labelWidget ctx $ fromList [(English, "Lets make some sound! Click 'eval' below. You should here a simple \"bassdrum clap\" drum pattern. (hit 'silence' on the right to stop it)")]
-  (v1,h1) <- miniTidalWidget ctx 1 1 "s \"bd cp\""
-
+{-
   el "div" $ labelWidget ctx $ fromList [(English, "In the text field above, we've specified a pattern of samples (specifically 'bd' and 'cp') that fill up a 'cycle' (which can be thought of sort of like musical bars if you like). Everything that appears within the quotes (\"\") divides a cycle into equal parts: the \"bd\" sample gets the first half of the cycle, and the \"cp\" gets the second half. ")]
 
   el "div" $ labelWidget ctx $ fromList [(English,"If we put a third element into our pattern we get a different rhythm:")]
@@ -48,10 +55,4 @@ introTidalTextWidget ctx = elClass "div" "tutorial code-font primary-color backg
   (v6, h6) <- miniTidalWidget ctx 1 5 "s \"bd [cp,hh casio]\""
 
   el "div" $ labelWidget ctx $ fromList [(English,"")]
-
-  v <- do
-    x <- dynList [v1, v2, v3, v4,v5,v6]
-    return $ fmap IM.fromList x
-
-  let hints = mergeWith (++) [h1,h2,h3,h4,h5,h6]
-  return (v, hints)
+-}

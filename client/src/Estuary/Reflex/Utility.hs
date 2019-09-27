@@ -21,10 +21,12 @@ import Data.List (nub, elemIndex)
 import Estuary.Types.Term
 import Estuary.Types.Context
 import Estuary.Types.Language
+import Estuary.Types.TranslatedText
 
 translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t Text)
 translateDyn t ctx = holdUniqDyn $ fmap (translate t . language) ctx
 
+-- translationList should be considered deprecated in favour of TranslationText etc
 translationList :: MonadWidget t m => Dynamic t Context -> [(Language,a)] -> m (Dynamic t a)
 translationList c m = do
   let m' = fromList m

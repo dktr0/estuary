@@ -9,7 +9,8 @@ import Estuary.Utility
 data Hint =
   SampleHint Text |
   LogMessage Text |
-  SetGlobalDelayTime Double
+  SetGlobalDelayTime Double |
+  SilenceHint
   deriving (Eq,Show)
 
 justGlobalDelayTime :: [Hint] -> Maybe Double

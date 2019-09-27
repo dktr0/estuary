@@ -105,6 +105,18 @@ dynEditor dynWidgets = Editor (\ctx ri -> do
   return (a, hs)
   )
 
+translatedTerm :: MonadWidget t m => Term -> Editor t m ()
+translatedTerm t = do
+  c <- getContext
+  l <- holdUniqDyn $ fmap language c
+  let t' = fmap (translate t) l
+  liftR $ text t'
+
+translatedText :: MonadWidget t m => TranslatableText -> Editor t m ()
+translatedText t = do
+  c <- getContext
+  let t' = fmap (translateText t . language) c
+  liftR $ text t'
 
 {- examples:
 
