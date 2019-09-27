@@ -33,7 +33,6 @@ import Sound.MusicW (Node)
 
 data Context = Context {
   mainBus :: (Node,Node,Node,Node,Node), -- ^ main bus input, delay, pregain, compressor, postgain
-  clockDiff :: (UTCTime,Double), -- ^ a sampled value of equivalent times in UTC and on the audio clock
   dynamicsMode :: DynamicsMode,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
@@ -59,7 +58,6 @@ data Context = Context {
 initialContext :: UTCTime -> Double -> (Node,Node,Node,Node,Node) -> WebDirt -> SuperDirt -> PeerProtocol -> Context
 initialContext nowUtc nowAudio mBus wd sd pp = Context {
   mainBus = mBus,
-  clockDiff = (nowUtc,nowAudio),
   dynamicsMode = DefaultDynamics,
   webDirt = wd,
   superDirt = sd,
@@ -86,9 +84,6 @@ type ContextChange = Context -> Context
 
 setTheme :: Text -> ContextChange
 setTheme x c = c { theme = x }
-
-setClockDiff :: (UTCTime,Double) -> ContextChange
-setClockDiff x c = c { clockDiff = x }
 
 setLanguage :: Language -> ContextChange
 setLanguage x c = c { language = x }
