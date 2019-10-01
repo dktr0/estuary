@@ -54,6 +54,18 @@ foreign import javascript unsafe
 videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
 videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
 
+----  Rate and Position -----
+
+--playbackRate( rate )  -- sets / gets the playback rate of the video
+foreign import javascript unsafe
+  "$1.playBackRate"
+  videoPlayBackRate :: CineCer0Video -> IO Double
+
+foreign import javascript unsafe
+  "$1.currentTime"
+  videoPlayBackPosition :: CineCer0Video -> IO Double
+
+
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
@@ -61,6 +73,8 @@ addVideo j spec = do
   x <- makeVideo url
   muteVideo x
   appendVideo x j
+  videoPlayBackRate x 
+  videoPlayBackPosition x
   return x
 
 updateCineCer0State :: Tempo -> UTCTime -> CineCer0Spec -> CineCer0State -> IO CineCer0State
@@ -85,6 +99,7 @@ updateContinuingVideo t now (sw,sh) s v = do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
+  vr <- videoPlayBackRate v
   when (vw /= 0 && vh /= 0) $ do
     let aspectRatio = vw/vh
     let heightIfFitsWidth = sw / aspectRatio
