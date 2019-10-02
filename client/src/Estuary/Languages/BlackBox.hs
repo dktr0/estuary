@@ -26,7 +26,7 @@ import Data.List
 --blackChair.sit
 
 --stool.dragging Room
---stool.tilt 
+--stool.tilt
 
 --whiteChair.stacking
 --whiteChair.unstacking

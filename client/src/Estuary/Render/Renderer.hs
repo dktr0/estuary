@@ -36,6 +36,7 @@ import qualified Sound.TimeNot.MapEstuary as TimeNot
 
 import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
 import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
+import qualified Estuary.Languages.Morelia.Dos as Dos
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
@@ -268,6 +269,7 @@ renderZoneAnimation _ _ _ _ = return ()
 renderZoneAnimationTextProgram :: UTCTime -> Context -> Int -> (TextNotation,Text) -> Renderer
 renderZoneAnimationTextProgram tNow c z (Punctual,x) = renderPunctualWebGL tNow c z
 renderZoneAnimationTextProgram tNow c z (Oir,x) = renderPunctualWebGL tNow c z
+renderZoneAnimationTextProgram tNow c z (Dos,x) = renderPunctualWebGL tNow c z
 renderZoneAnimationTextProgram _ _ _ _ = return ()
 
 renderPunctualWebGL :: UTCTime -> Context -> Int -> Renderer
@@ -324,6 +326,8 @@ renderBaseProgramChanged c z (Right (Punctual,x)) = parsePunctualNotation c z Pu
 renderBaseProgramChanged c z (Right (Ver,x)) = parsePunctualNotation c z Ver.ver x
 
 renderBaseProgramChanged c z (Right (Oir,x)) = parsePunctualNotation c z Oir.oir x
+
+renderBaseProgramChanged c z (Right (Dos,x)) = parsePunctualNotation c z Dos.dos x
 
 renderBaseProgramChanged c z (Right (Escuchar,x)) = do
   s <- get

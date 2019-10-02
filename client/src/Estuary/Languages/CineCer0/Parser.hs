@@ -21,19 +21,9 @@ cineCer0Spec = fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
 
 videoSpec :: ExpParser VideoSpec
 videoSpec =
-  --videoMiscelanea <|>
   literalVideoSpec <|>
   int_VideoSpec <*> int <|>
   videoSpec_videoSpec <*> videoSpec
-
--- videoMiscelanea :: ExpParser VideoSpec
--- videoMiscelanea = do
---   miscelanea
---   v <- literalVideoSpec
---   return v
---
--- miscelanea :: ExpParser ()
--- miscelanea = () <$ reserved "me"
 
 int :: ExpParser Int
 int = fromIntegral <$> integer
@@ -68,9 +58,9 @@ rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> V
 rat_rat_videoSpec_videoSpec =
   playEvery <$ reserved "playEvery" <|> --time function
 
-  setPosCoord <$ (reserved "sentada" <|> reserved "escuchar" <|> reserved "escucho" <|> reserved "escuchando" <|> reserved "suena" <|> reserved "gustan" <|> reserved "recuerdo" <|> reserved "recordando" <|> reserved "atraviesan" <|> reserved "atravesando" <|> reserved "hago" <|> reserved "hacen") <|>
+  setPosCoord <$ (reserved "pos" <|> reserved "vivir" <|> reserved "existir" <|> reserved "sentada" <|> reserved "escuchar" <|> reserved "escucho" <|> reserved "escuchando" <|> reserved "suena" <|> reserved "gustan" <|> reserved "recuerdo" <|> reserved "recordando" <|> reserved "atraviesan" <|> reserved "atravesando" <|> reserved "hago" <|> reserved "hacen") <|>
 
-  setSize <$ (reserved "consciente" <|> reserved "conscientes" <|> reserved "extraño" <|> reserved "extraña" <|> reserved "extraños" <|> reserved "extrañas" <|> reserved "diferente" <|> reserved "diferentes" <|> reserved "fuerte" <|> reserved "fuertes" <|> reserved "tempestuoso" <|> reserved "tempestuosa" <|> reserved "tempestuosos" <|> reserved "tempestuosas" <|> reserved "transformado" <|> reserved "transformada" <|> reserved "transformados" <|> reserved "transformadas")
+  setSize <$ (reserved "size" <|> reserved "sentir" <|> reserved "latir" <|> reserved "consciente" <|> reserved "conscientes" <|> reserved "extraño" <|> reserved "extraña" <|> reserved "extraños" <|> reserved "extrañas" <|> reserved "diferente" <|> reserved "diferentes" <|> reserved "fuerte" <|> reserved "fuertes" <|> reserved "tempestuoso" <|> reserved "tempestuosa" <|> reserved "tempestuosos" <|> reserved "tempestuosas" <|> reserved "transformado" <|> reserved "transformada" <|> reserved "transformados" <|> reserved "transformadas")
 
 rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_videoSpec_videoSpec =

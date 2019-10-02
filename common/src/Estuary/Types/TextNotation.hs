@@ -13,7 +13,8 @@ data TextNotation =
   Escuchar |
   TimeNot |
   Ver |
-  Oir
+  Oir |
+  Dos
   deriving (Read,Eq,Ord,Show,Generic)
 
 instance ToJSON TextNotation where
