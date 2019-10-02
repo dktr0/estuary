@@ -190,7 +190,7 @@ verb = choice [ --saw (fx*fy* [10, 10.05, 11])
   reserved "playing" >> return (Sine Fy),
   (reserved "have" <|> reserved "has") >> return (Sine (Product Fy Fy)),
   (reserved "shine" <|> reserved "shines") >> return (Sine (Product Fx (Multi [Constant 2, Constant 3, Constant 4]))),
-  reserved "shining" >> return (Saw (Product Fy (Multi [Constant 2, Constant 3, Constant 4]))),
+  reserved "shinning" >> return (Saw (Product Fy (Multi [Constant 2, Constant 3, Constant 4]))),
   (reserved "miss" <|> reserved "misses") >> return (Sine (Product Fx (Multi [Constant 0.01, Constant 0.02, Constant 0.03, Constant 0.04, Constant 0.05]))),
   reserved "missing" >> return (Sine (Product Fy (Multi [Constant 0.01, Constant 0.02, Constant 0.03, Constant 0.04, Constant 0.05])))
   ]

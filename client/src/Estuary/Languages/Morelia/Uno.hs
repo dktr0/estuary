@@ -49,7 +49,7 @@ oracion :: Parser Tidal.ControlPattern
 oracion = do  -- [sonido sonido] t t t
   option () miscelanea
   symbol "["
-  a <- option [" "] (many audio)
+  a <- option [" "] (many audios)
   symbol "]"
   option () miscelanea
   t <- option id transformaciones
@@ -61,6 +61,16 @@ oracion = do  -- [sonido sonido] t t t
   return $ t $ t' $ t'' $ Tidal.s $ parseBP' $ (unwords a)
 
 
+audios = choice [try audio', try audio]
+
+audio' = do
+  a <- audio
+  (symbol ":")
+  s <- option 0 int
+  return $ a ++ ":" ++ (show s)
+
+int :: Parser Int
+int = fromIntegral <$> integer
 -- ////////////////////
 -- MIS FUNCIONES
 
@@ -74,12 +84,10 @@ miscelanea = choice [
 
 audio :: Parser String
 audio = choice [
-  reserved "vida" >> return "vidaPerraVida",
+  reserved "vida" >> return "vida",
   reserved "infancia" >> return "infancia",
   reserved "perro" >> return "perro",
-  reserved "vidas" >> return "palabra1",
-  reserved "infancias" >> return "palabra2",
-  reserved "perros" >> return "palabra3"
+  (reserved "vidas" <|> reserved "infancias" <|> reserved "perros") >> return "palabra"
   ]
 
 transformacion :: Parser Tidal.ControlPattern
