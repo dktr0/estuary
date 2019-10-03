@@ -269,7 +269,6 @@ renderZoneAnimation _ _ _ _ = return ()
 renderZoneAnimationTextProgram :: UTCTime -> Context -> Int -> (TextNotation,Text) -> Renderer
 renderZoneAnimationTextProgram tNow c z (Punctual,x) = renderPunctualWebGL tNow c z
 renderZoneAnimationTextProgram tNow c z (Oir,x) = renderPunctualWebGL tNow c z
-renderZoneAnimationTextProgram tNow c z (Dos,x) = renderPunctualWebGL tNow c z
 renderZoneAnimationTextProgram _ _ _ _ = return ()
 
 renderPunctualWebGL :: UTCTime -> Context -> Int -> Renderer

@@ -58,7 +58,9 @@ oracion = do  -- [sonido sonido] t t t
   option () miscelanea
   t'' <- option id transformaciones
   option () miscelanea
-  return $ t $ t' $ t'' $ Tidal.s $ parseBP' $ (unwords a)
+  t''' <- option id transformaciones
+  option () miscelanea
+  return $ t $ t' $ t'' $ t''' $ Tidal.s $ parseBP' $ (unwords a)
 
 
 audios = choice [try audio', try audio]
@@ -94,7 +96,6 @@ transformacion :: Parser Tidal.ControlPattern
 transformacion = choice [
   ((reserved "anchos" <|> reserved "altos" <|> reserved "existir") >> return Tidal.up) <*> option 0 doublePattern,
   (reserved "sollozos" >> return Tidal.gain) <*> option 1 doublePattern,
-  (reserved "salvación" >> return Tidal.delay) <*> option 0 doublePattern,
   (reserved "miedo" >> return Tidal.delaytime) <*> option 0 doublePattern
   ]
 
