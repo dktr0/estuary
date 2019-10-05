@@ -54,6 +54,7 @@ import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
+import Estuary.Render.DynamicsMode
 
 type Renderer = StateT RenderState IO ()
 
@@ -243,18 +244,18 @@ renderZone c z d = do
   let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
   modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
 
-renderAnimation :: Renderer
-renderAnimation = do
+renderAnimation :: (Double,Double,Double) -> Renderer
+renderAnimation (lo,mid,hi) = do
   tNow <- liftIO $ getCurrentTime
   defs <- gets cachedDefs
-  traverseWithKey (renderZoneAnimation tNow) defs
+  traverseWithKey (renderZoneAnimation (tNow,lo,mid,hi)) defs
   return ()
 
-renderZoneAnimation :: UTCTime -> Int -> Definition -> Renderer
-renderZoneAnimation tNow z (TextProgram x) = do
+renderZoneAnimation :: (UTCTime,Double,Double,Double) -> Int -> Definition -> Renderer
+renderZoneAnimation (tNow,lo,mid,hi) z (TextProgram x) = do
   s <- get
   t1 <- liftIO $ getCurrentTime
-  renderZoneAnimationTextProgram tNow z $ forRendering x
+  renderZoneAnimationTextProgram (tNow,lo,mid,hi) z $ forRendering x
   t2 <- liftIO $ getCurrentTime
   let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
   let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
@@ -262,17 +263,17 @@ renderZoneAnimation tNow z (TextProgram x) = do
   return ()
 renderZoneAnimation _ _ _ = return ()
 
-renderZoneAnimationTextProgram :: UTCTime -> Int -> (TextNotation,Text) -> Renderer
-renderZoneAnimationTextProgram tNow z (Punctual,x) = renderPunctualWebGL tNow z
-renderZoneAnimationTextProgram tNow z (Oir,x) = renderPunctualWebGL tNow z
+renderZoneAnimationTextProgram :: (UTCTime,Double,Double,Double) -> Int -> (TextNotation,Text) -> Renderer
+renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Punctual,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
+renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Oir,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
 renderZoneAnimationTextProgram _ _ _ = return ()
 
-renderPunctualWebGL :: UTCTime -> Int -> Renderer
-renderPunctualWebGL tNow z = do
+renderPunctualWebGL :: (UTCTime,Double,Double,Double) -> Int -> Renderer
+renderPunctualWebGL (tNow,lo,mid,hi) z = do
   s <- get
   let webGL = findWithDefault Punctual.emptyPunctualWebGL z $ punctualWebGLs s
   let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
-  liftIO $ Punctual.drawFrame tNow' webGL
+  liftIO $ Punctual.drawFrame (tNow',lo,mid,hi) webGL
 
 renderZoneChanged :: Context -> Int -> Definition -> Renderer
 renderZoneChanged c z (Structure x) = do
@@ -365,7 +366,7 @@ punctualProgramChanged :: Context -> Int -> Punctual.Evaluation -> Renderer
 punctualProgramChanged c z e = do
   s <- get
   -- A. update PunctualW (audio state) in response to new, syntactically correct program
-  let (mainBusIn,_,_,_,_) = mainBus c
+  let (mainBusIn,_,_,_,_,_,_) = mainBus c
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
   let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 t) z (punctuals s)
@@ -461,7 +462,13 @@ animationThread :: MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
 animationThread ctxM riM rsM = void $ inAnimationFrame ThrowWouldBlock $ \_ -> do
   rs <- readMVar rsM
   when (animationOn rs) $ do
-    _ <- execStateT renderAnimation rs
+    ctx <- readMVar ctxM -- ** TODO: since the mainBusNodes don't ever change they don't need to be in Dynamic/MVar-ed Context at all!
+    let (_,_,_,_,_,node,array) = mainBus ctx
+    getByteFrequencyData node array
+    lo <- getLo array
+    mid <- getMid array
+    hi <- getHi array
+    _ <- execStateT (renderAnimation (lo,mid,hi)) rs
     -- putMVar rsM rs'
     return ()
   animationThread ctxM riM rsM
