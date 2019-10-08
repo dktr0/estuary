@@ -54,27 +54,27 @@ foreign import javascript unsafe
 videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
 videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
 
+
+--playNatural 0.0  $ "agua.mov"  -- example
+
 ----  Rate and Position -----
 
 --playbackRate( rate )  -- sets / gets the playback rate of the video
 foreign import javascript unsafe
-  "$1.playBackRate"
-  videoPlayBackRate :: CineCer0Video -> IO Double
+  "$1.playbackRate = $2;"  -- ; might not be necessary
+  videoPlaybackRate :: CineCer0Video -> Double -> IO ()
 
 foreign import javascript unsafe
-  "$1.currentTime"
-  videoPlayBackPosition :: CineCer0Video -> IO Double
+  "$1.currentTime = $2;"
+  videoPlaybackPosition :: CineCer0Video -> Double -> IO ()
 
-
-
+  
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
   muteVideo x
   appendVideo x j
-  videoPlayBackRate x 
-  videoPlayBackPosition x
   return x
 
 updateCineCer0State :: Tempo -> UTCTime -> CineCer0Spec -> CineCer0State -> IO CineCer0State
@@ -99,7 +99,6 @@ updateContinuingVideo t now (sw,sh) s v = do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
-  vr <- videoPlayBackRate v
   when (vw /= 0 && vh /= 0) $ do
     let aspectRatio = vw/vh
     let heightIfFitsWidth = sw / aspectRatio
@@ -114,6 +113,10 @@ updateContinuingVideo t now (sw,sh) s v = do
     let centreY = (realToFrac $ posY s * 0.5 + 0.5) * sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = sh - (centreY + (actualHeight * 0.5))
+
+    let rate = Just 1 -- !!! This is what you actually need to do !!!! !!!!
+    
+    maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
     videoGeometry v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight)
   when (vw == 0 || vh == 0) $
     -- video not ready, don't display
@@ -145,3 +148,32 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.offsetHeight"
   offsetHeight :: HTMLDivElement -> IO Double
+
+
+--  Maybe- not execute at all
+
+-- servicedesk.mcmaster.ca
+
+-- x :: Maybe a
+
+-- f :: a -> IO ()
+
+-- videoPlaybackRate :: CineCer0Video -> Double -> IO ()
+
+-- videoPlaybackRate aVideo :: Double -> IO ()
+
+-- g :: IO ()
+
+-- g = do
+
+--   ...
+
+--   ...
+
+--   let rate = ... something that combines information to generate a maybe rational
+
+--   maybe (return ()) (videoPlaybackRate aVideo) $ fmap realToFrac rate
+
+  
+
+-- maybe :: b -> (a -> b) -> Maybe a -> b 
