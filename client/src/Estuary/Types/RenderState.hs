@@ -18,6 +18,7 @@ import Estuary.Types.TextNotation
 
 
 data RenderState = RenderState {
+  animationOn :: Bool,
   wakeTimeAudio :: !Double,
   wakeTimeSystem :: !UTCTime,
   renderStart :: !UTCTime,
@@ -41,6 +42,7 @@ data RenderState = RenderState {
 initialRenderState :: UTCTime -> AudioTime -> IO RenderState
 initialRenderState t0System t0Audio = do
   return $ RenderState {
+    animationOn = False,
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
     renderStart = t0System,

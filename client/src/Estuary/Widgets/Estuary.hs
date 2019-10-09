@@ -72,8 +72,7 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   samplesLoadedEv <- loadSampleMap
-  clockDiffEv <- pollClockDiff (clockDiff iCtx)
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange, clockDiffEv]
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, samplesLoadedEv, wsCtxChange]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -109,30 +108,6 @@ pollRenderInfo riM = do
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 
--- every 10.02 seconds, resample the difference between system clock and audio clock
-pollClockDiff :: MonadWidget t m => (UTCTime,AudioTime) -> m (Event t ContextChange)
-pollClockDiff i = mdo
-  now <- liftIO $ getCurrentTime
-  ticks <- tickLossy (10.02::NominalDiffTime) now
-  oldClockDiff <- holdDyn i newClockDiff
-  newClockDiff <- performEvent $ fmap (liftIO . const Estuary.Widgets.Estuary.getClockDiff) ticks
-  performEvent_ $ fmap (liftIO . T.putStrLn) $ attachWith clockDiffLogMessage (current oldClockDiff) newClockDiff
-  return $ fmap setClockDiff newClockDiff
-
-clockDiffLogMessage :: (UTCTime,AudioTime) -> (UTCTime,AudioTime) -> Text
-clockDiffLogMessage (oldUtc,oldAudio) (newUtc,newAudio) = "pollClockDiff: audio time advanced " <> x <> " relative to system time"
-  where
-    utcDiff = (realToFrac $ diffUTCTime newUtc oldUtc) :: Double
-    audioDiff = newAudio - oldAudio
-    x = showt $ audioDiff - utcDiff
-
-getClockDiff :: IO (UTCTime,Double)
-getClockDiff = do
-  x <- getCurrentTime
-  y <- liftAudioIO $ audioTime
-  return (x,y)
-
-
 -- load the sample map and issue an appropriate ContextChange event when finished
 -- (if there is a better way to trigger an event from an async callback then this should be updated to reflect that)
 loadSampleMap :: MonadWidget t m => m (Event t ContextChange)
@@ -150,7 +125,7 @@ loadSampleMap = do
 performContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 performContext cMvar cDyn = do
   iCtx <- sample $ current cDyn
-  performEvent_ $ fmap (liftIO . void . swapMVar cMvar) $ updated cDyn -- transfer whole Context for render/animation threads
+  performEvent_ $ fmap (liftIO . updateContext cMvar) $ updated cDyn -- transfer whole Context for render/animation threads
   updateDynamicsModes cDyn -- when dynamics modes change, make it so
   -- when the theme changes,
   t <- holdUniqDyn $ fmap theme cDyn -- Dynamic t String
@@ -161,6 +136,11 @@ performContext cMvar cDyn = do
   sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
+updateContext :: MVar Context -> Context -> IO ()
+updateContext mv x = do
+  T.putStrLn "context updated"
+  swapMVar mv x
+  return ()
 
 updateDynamicsModes :: MonadWidget t m => Dynamic t Context -> m ()
 updateDynamicsModes ctx = do

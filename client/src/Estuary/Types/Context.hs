@@ -32,8 +32,7 @@ import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 
 data Context = Context {
-  mainBus :: (Node,Node,Node,Node,Node), -- ^ main bus input, delay, pregain, compressor, postgain
-  clockDiff :: (UTCTime,Double), -- ^ a sampled value of equivalent times in UTC and on the audio clock
+  mainBus :: (Node,Node,Node,Node,Node,Node,JSVal), -- ^ main bus input, delay, pregain, compressor, postgain, analyser, analyserArray
   dynamicsMode :: DynamicsMode,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
@@ -56,10 +55,9 @@ data Context = Context {
   theVideoDiv :: Maybe JSVal
   }
 
-initialContext :: UTCTime -> Double -> (Node,Node,Node,Node,Node) -> WebDirt -> SuperDirt -> PeerProtocol -> Context
+initialContext :: UTCTime -> Double -> (Node,Node,Node,Node,Node,Node,JSVal) -> WebDirt -> SuperDirt -> PeerProtocol -> Context
 initialContext nowUtc nowAudio mBus wd sd pp = Context {
   mainBus = mBus,
-  clockDiff = (nowUtc,nowAudio),
   dynamicsMode = DefaultDynamics,
   webDirt = wd,
   superDirt = sd,
@@ -86,9 +84,6 @@ type ContextChange = Context -> Context
 
 setTheme :: Text -> ContextChange
 setTheme x c = c { theme = x }
-
-setClockDiff :: (UTCTime,Double) -> ContextChange
-setClockDiff x c = c { clockDiff = x }
 
 setLanguage :: Language -> ContextChange
 setLanguage x c = c { language = x }

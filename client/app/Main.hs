@@ -50,7 +50,7 @@ main = do
   ac <- getGlobalAudioContext
   addWorklets ac
 
-  mainBusNodes@(mainBusIn,_,_,_,_) <- initializeMainBus
+  mainBusNodes@(mainBusIn,_,_,_,_,_,_) <- initializeMainBus
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
   sd <- newSuperDirt
