@@ -16,6 +16,7 @@ import Control.Monad
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec
+import Estuary.Languages.CineCer0.PositionAndRate
 
 newtype CineCer0Video = CineCer0Video { videoJSVal :: JSVal }
 
@@ -114,7 +115,8 @@ updateContinuingVideo t now (sw,sh) s v = do
     let leftX = centreX - (actualWidth * 0.5)
     let topY = sh - (centreY + (actualHeight * 0.5))
 
-    let rate = Just 1 -- !!! This is what you actually need to do !!!! !!!!
+    -- let rate = playNatural_Rate 1 (playbackRate s)
+    let rate = Just 1.0 
     
     maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
     videoGeometry v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight)
