@@ -38,7 +38,7 @@ foreign import javascript safe
 
 foreign import javascript safe
   "$1.style = $2;"
-  videoGeometry_ :: CineCer0Video -> Text -> IO ()
+  videoStyle_ :: CineCer0Video -> Text -> IO ()
 
 foreign import javascript unsafe
   "$1.muted = true;"
@@ -52,38 +52,23 @@ foreign import javascript unsafe
   "$1.videoHeight"
   videoHeight :: CineCer0Video -> IO Double
 
--- ///// new
-foreign import javascript safe
-  "$1.style = $2;"
-  videoAppearance_ :: CineCer0Video -> Text -> IO ()
-
-foreign import javascript unsafe
-  "$1.videoOpacity"
-  videoOpacity :: CineCer0Video -> IO Double
--- /////
-
-videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
-videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
-
--- ///// new
-videoAppearance :: CineCer0Video -> Double -> IO ()
-videoAppearance v o = videoAppearance_ v $ "opacity: " <> showt o
--- /////
-
---playNatural 0.0  $ "agua.mov"  -- example
+videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Double -> IO ()
+videoStyle v x y w h o = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o
 
 ----  Rate and Position -----
 
---playbackRate( rate )  -- sets / gets the playback rate of the video
 foreign import javascript unsafe
-  "$1.playbackRate = $2;"  -- ; might not be necessary
+  "$1.playbackRate = $2;"
   videoPlaybackRate :: CineCer0Video -> Double -> IO ()
 
 foreign import javascript unsafe
   "$1.currentTime = $2;"
   videoPlaybackPosition :: CineCer0Video -> Double -> IO ()
 
-  
+foreign import javascript unsafe
+  "$1.duration"
+  getLengthOfVideo :: CineCer0Video -> IO Double
+
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
   let url = T.pack $ sampleVideo spec
@@ -123,24 +108,20 @@ updateContinuingVideo t now (sw,sh) s v = do
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
     let actualWidth = (realToFrac $ width s) * fitWidth
     let actualHeight = (realToFrac $ height s) * fitHeight
-    -- T.putStrLn $ "file=" <> showt vw <> "x" <> showt vh <> " fit=" <> showt fitWidth <> "x" <> showt fitHeight <> " actual=" <> showt actualWidth <> "x" <> showt actualHeight
     let centreX = (realToFrac $ posX s * 0.5 + 0.5) * sw
     let centreY = (realToFrac $ posY s * 0.5 + 0.5) * sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = sh - (centreY + (actualHeight * 0.5))
-
-    -- let rate = playNatural_Rate 1 (playbackRate s)
-    let rate = Just 1.0 
-    
+    -- update playback rate
+    lengthOfVideo <- realToFrac <$> getLengthOfVideo v
+    let rate = (playbackRate s) t lengthOfVideo now
     maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
-    videoGeometry v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight)
-  -- *** also needs to query position in time of the video
-  -- and set position in time of the video if necessary
-  -- or maybe do other things, like...
-  -- let lengthOfVideo = ?
-  -- let newPos = playbackPosition s t lengthOfVideo now -- :: Maybe NominalDiffTime
-  -- let newRate = playbackRate s t lengthOfVideo now -- :: Maybe Rational
-  -- then... maybe set newPos and newRate if necessary?
+    -- update position in time
+    let pos = (playbackPosition s) t lengthOfVideo now
+    maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
+    -- update geometry/appearance/etc
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac (opacity s))
+
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
@@ -186,6 +167,6 @@ foreign import javascript unsafe
 
 --   maybe (return ()) (videoPlaybackRate aVideo) $ fmap realToFrac rate
 
-  
 
--- maybe :: b -> (a -> b) -> Maybe a -> b 
+
+-- maybe :: b -> (a -> b) -> Maybe a -> b
