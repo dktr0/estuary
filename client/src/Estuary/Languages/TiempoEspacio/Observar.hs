@@ -142,6 +142,8 @@ verb = choice [
   (reserved "mirar" <|> reserved "miro" <|> reserved "mira" <|> reserved "miran" <|> reserved "mirado" <|> reserved "mirando") >> return "mirar",
   (reserved "caminar" <|> reserved "camino" <|> reserved "camina" <|> reserved "caminan" <|> reserved "caminado" <|> reserved "caminando") >> return "caminar",
   (reserved "reir" <|> reserved "río" <|> reserved "ríe" <|> reserved "ríen" <|> reserved "reído" <|> reserved "riendo") >> return "reir",
+  (reserved "aparece" <|> reserved "aparezco" <|> reserved "aparece" <|> reserved "aparecen" <|> reserved "aparecido" <|> reserved "apareciendo") >> return "aparece",
+  (reserved "volver" <|> reserved "vuelvo" <|> reserved "vuelve" <|> reserved "vuelven" <|> reserved "vuelto" <|> reserved "volviendo") >> return "volver",
   espacio,
   silencio
   ]

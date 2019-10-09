@@ -5,24 +5,26 @@ More advanced customization is available through CSS classes within this documen
 --------------------------------------------------------------------
 */
 
+
 @font-face {
-  font-family: 'Montserrat';
+  font-family: Dosis;
   font-style: normal;
   font-weight: 400;
-  src: local('Montserrat Regular'), local('Montserrat-Regular'), url(https://fonts.gstatic.com/s/montserrat/v13/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url('https://fonts.googleapis.com/css?family=Dosis');
 }
+
+
 
 :root {
 /* sets the background color */
-  --background-color: linear-gradient(to bottom left, rgb(179, 255, 238), rgba(81, 76, 156, 0.5));
+  --background-color: black;
 ;
 
 /* set the color of all text and typically some borders*/
-  --primary-color: rgba(81, 76, 156);
+  --primary-color: white;
 
 /* sets the background color of buttons and other borders */
-  --secondary-color: hsl(0,0%,100%);
+  --secondary-color: transparent;
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
@@ -36,24 +38,24 @@ More advanced customization is available through CSS classes within this documen
 
 /*styles the code font*/
 .code-font {
-	  font-family: 'Montserrat';
-	  font-size:1em;
+	  font-family: Dosis;
+	  font-size:1.7vw;
 	  }
 
 /* styles the fonts for the header, menus and labels */
 .ui-font {
-    font-family: 'Montserrat';
+    font-family: Dosis;
 	font-size: 1em;
 	}
 
 /* styles the user interface-buttons */
 .ui-buttons {
   color:white;
-  background-color:rgba(81, 76, 156, 0.75);
+  background-color:transparent;
+  font-size: 1em;
 
 }
 
-/* styles the dropdown */
 .ui-dropdownMenus {
   background-color: var(--background-color) !important;
 }
@@ -61,11 +63,57 @@ More advanced customization is available through CSS classes within this documen
 /*styles the primary borders (e.g.  from dropdown menus) */
 .primary-borders {
 	border-radius: 5px;
-    border: 1px solid var(--primary-color);
+    border: 1px solid transparent;
 }
 
 /*styles other borders (e.g. from the ui-buttons and sequencer)  */
 .other-borders {
     border-radius: 5px;
-    border: 1px solid hsl(0,0%,40%);
+    border: 1px solid transparent;
     }
+
+
+////////////
+
+.ensembleName {
+	margin-top: 1px;
+	margin-right: 1em;
+	color: transparent !important;
+}
+
+
+.page {
+	border-top: 0px solid !important;
+	border-bottom: 0px solid !important;
+}
+
+.ensembleHeader {
+	display: none !important;
+
+    }
+
+.config-entry {
+	border-right: 0px solid !important;
+}
+
+.ensembleTempo {
+	display: none !important;
+	border: none;
+	width: 25%;
+}
+
+
+.eightMiddleR {/*modifies the middle right view*/
+	border-bottom: 1px solid transparent !important;
+	border-right: 1px solid transparent !important;
+}
+
+
+.eightMiddleL {/*modifies the middle left view*/
+	border-bottom: 1px solid transparent !important;
+	border-right: 1px solid transparent !important;
+}
+
+.referenceButton {
+	font-size: 0em;
+}

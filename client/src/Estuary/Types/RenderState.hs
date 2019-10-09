@@ -15,6 +15,8 @@ import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import Estuary.Types.MovingAverage
 import Estuary.Types.TextNotation
 
+
+
 data RenderState = RenderState {
   animationOn :: Bool,
   wakeTimeAudio :: !Double,

@@ -185,6 +185,8 @@ runServer: nixBuild stageStaticAssets makeSampleMap stageSamples nixStageClient 
 	cd ./$(STAGING_ROOT) && ./EstuaryServer test
 
 selfCertificates:
+	-mkdir staging
+	-mkdir dev-staging
 	openssl genrsa -out staging/privkey.pem 2048
 	openssl req -new -key staging/privkey.pem -out staging/cert.csr
 	openssl x509 -req -in staging/cert.csr -signkey staging/privkey.pem -out staging/cert.pem

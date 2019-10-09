@@ -36,6 +36,7 @@ import qualified Sound.TimeNot.MapEstuary as TimeNot
 
 import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
 import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
+import qualified Estuary.Languages.Morelia.Dos as Dos
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
@@ -322,6 +323,8 @@ renderBaseProgramChanged c z (Right (Punctual,x)) = parsePunctualNotation c z Pu
 renderBaseProgramChanged c z (Right (Ver,x)) = parsePunctualNotation c z Ver.ver x
 
 renderBaseProgramChanged c z (Right (Oir,x)) = parsePunctualNotation c z Oir.oir x
+
+renderBaseProgramChanged c z (Right (Dos,x)) = parsePunctualNotation c z Dos.dos x
 
 renderBaseProgramChanged c z (Right (CineCer0,x)) = do
   s <- get

@@ -15,17 +15,27 @@ import Data.List
 --floor
 --stool
 
---blackChair!arm
+--blackChair!arm N
 --blackChair!floor
 
 --blackChair>arm.tap
---blackChair>arm.slide
+--blackChair>arm.slide W 0.75
 --blackChair.stack.slide
 --blackChair.stack.strum
 --blackChair<>floor.contact
+--blackChair.sit
+
+--stool.dragging Room
+--stool.tilt
 
 --whiteChair.stacking
 --whiteChair.unstacking
+
+--N = pan 0
+--E
+--w
+--S
+--Room
 
 
 
