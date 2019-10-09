@@ -65,7 +65,7 @@ videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
 videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
 
 -- ///// new
-videoAppearance :: CineCer0Video -> Int -> IO ()
+videoAppearance :: CineCer0Video -> Double -> IO ()
 videoAppearance v o = videoAppearance_ v $ "opacity: " <> showt o
 -- /////
 
@@ -94,10 +94,6 @@ updateCineCer0State t now spec st = do
   sequence $ intersectionWith (updateContinuingVideo t now (divWidth,divHeight)) spec continuingVideos
   return $ st { videos = continuingVideos }
 
--- styleContinuingVideo :: Tempo -> UTCTime -> Double -> VideoSpec -> CineCer0Video -> IO ()
--- styleContinuingVideo t now o s v = do
---   o <- videoOpacity v
-
 updateContinuingVideo :: Tempo -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
 updateContinuingVideo t now (sw,sh) s v = do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
@@ -118,11 +114,6 @@ updateContinuingVideo t now (sw,sh) s v = do
     let leftX = centreX - (actualWidth * 0.5)
     let topY = sh - (centreY + (actualHeight * 0.5))
     videoGeometry v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight)
-  when (vw == 0 || vh == 0) $
-    -- video not ready, don't display
-    videoGeometry v 0 0 0 0
-    -- videoAppearance v (floor $ opacity)
-    -- videoAppearance v 0
   -- *** also needs to query position in time of the video
   -- and set position in time of the video if necessary
   -- or maybe do other things, like...
