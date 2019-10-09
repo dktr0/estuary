@@ -16,6 +16,7 @@ import Control.Monad
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec
+import Estuary.Languages.CineCer0.PositionAndRate
 
 newtype CineCer0Video = CineCer0Video { videoJSVal :: JSVal }
 
@@ -55,6 +56,20 @@ videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
 videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
 
 
+--playNatural 0.0  $ "agua.mov"  -- example
+
+----  Rate and Position -----
+
+--playbackRate( rate )  -- sets / gets the playback rate of the video
+foreign import javascript unsafe
+  "$1.playbackRate = $2;"  -- ; might not be necessary
+  videoPlaybackRate :: CineCer0Video -> Double -> IO ()
+
+foreign import javascript unsafe
+  "$1.currentTime = $2;"
+  videoPlaybackPosition :: CineCer0Video -> Double -> IO ()
+
+  
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
   let url = T.pack $ sampleVideo spec
@@ -99,6 +114,11 @@ updateContinuingVideo t now (sw,sh) s v = do
     let centreY = (realToFrac $ posY s * 0.5 + 0.5) * sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = sh - (centreY + (actualHeight * 0.5))
+
+    -- let rate = playNatural_Rate 1 (playbackRate s)
+    let rate = Just 1.0 
+    
+    maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
     videoGeometry v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight)
   when (vw == 0 || vh == 0) $
     -- video not ready, don't display
@@ -130,3 +150,32 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.offsetHeight"
   offsetHeight :: HTMLDivElement -> IO Double
+
+
+--  Maybe- not execute at all
+
+-- servicedesk.mcmaster.ca
+
+-- x :: Maybe a
+
+-- f :: a -> IO ()
+
+-- videoPlaybackRate :: CineCer0Video -> Double -> IO ()
+
+-- videoPlaybackRate aVideo :: Double -> IO ()
+
+-- g :: IO ()
+
+-- g = do
+
+--   ...
+
+--   ...
+
+--   let rate = ... something that combines information to generate a maybe rational
+
+--   maybe (return ()) (videoPlaybackRate aVideo) $ fmap realToFrac rate
+
+  
+
+-- maybe :: b -> (a -> b) -> Maybe a -> b 
