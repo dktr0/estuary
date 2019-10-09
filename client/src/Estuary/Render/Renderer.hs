@@ -328,9 +328,9 @@ renderBaseProgramChanged c z (Right (Oir,x)) = parsePunctualNotation c z Oir.oir
 
 renderBaseProgramChanged c z (Right (Dos,x)) = parsePunctualNotation c z Dos.dos x
 
-renderBaseProgramChanged c z (Right (Escuchar,x)) = do
+renderBaseProgramChanged c z (Right (CineCer0,x)) = do
   s <- get
-  let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.escuchar $ T.unpack x -- Either String CineCer0Spec
+  let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.cineCer0 $ T.unpack x -- Either String CineCer0Spec
   when (isRight parseResult) $ do
     let spec :: CineCer0.CineCer0Spec = fromRight (IntMap.empty) parseResult
     modify' $ \x -> x { cineCer0Specs = insert z spec (cineCer0Specs s) }
@@ -397,7 +397,7 @@ renderTextProgramAlways c z = do
 
 renderBaseProgramAlways :: Context -> Int -> Maybe TextNotation -> Renderer
 renderBaseProgramAlways c z (Just (TidalTextNotation _)) = renderControlPattern c z
-renderBaseProgramAlways c z (Just Escuchar) = do
+renderBaseProgramAlways c z (Just CineCer0) = do
   s <- get
   let maybeTheDiv = videoDivElement c
   when (isJust maybeTheDiv) $ do
