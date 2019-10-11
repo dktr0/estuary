@@ -39,7 +39,6 @@ data ImmutableRenderContext = ImmutableRenderContext {
   }
 
 data Context = Context {
-  peerProtocol :: PeerProtocol,
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   canvasOn :: Bool,
@@ -59,8 +58,8 @@ data Context = Context {
   theVideoDiv :: Maybe JSVal
   }
 
-initialContext :: UTCTime -> PeerProtocol -> Context
-initialContext nowUtc pp = Context {
+initialContext :: UTCTime -> Context
+initialContext nowUtc = Context {
   dynamicsMode = DefaultDynamics,
   language = English,
   theme = "../css-custom/classic.css",
@@ -77,7 +76,6 @@ initialContext nowUtc pp = Context {
   clientCount = 0,
   canvasElement = Nothing,
   videoDivElement = Nothing,
-  peerProtocol = pp,
   theVideoDiv = Nothing
 }
 

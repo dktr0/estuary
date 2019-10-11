@@ -60,8 +60,7 @@ main = do
 
   nowUtc <- getCurrentTime
   nowAudio <- liftAudioIO $ audioTime
-  pp <- newPeerProtocol
-  context <- newMVar $ initialContext nowUtc pp
+  context <- newMVar $ initialContext nowUtc
   renderInfo <- newMVar $ emptyRenderInfo
   forkRenderThreads immutableRenderContext context renderInfo
 

@@ -51,8 +51,9 @@ terminalWidget ctx deltasDown hints = divClass "terminal" $ mdo
   mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
   simpleList mostRecent $ \v -> divClass "chatMessage code-font primary-color" $ dynText v
 
-  startStreamingReflex ctx $ ffilter (== Terminal.StartStreaming) commands
-  streamId <- peerProtocolIdReflex ctx $ ffilter (== Terminal.StreamId) commands
+  pp <- liftIO $ newPeerProtocol
+  startStreamingReflex pp $ ffilter (== Terminal.StartStreaming) commands
+  streamId <- peerProtocolIdReflex pp $ ffilter (== Terminal.StreamId) commands
 
   return commands
 
@@ -63,12 +64,8 @@ hintToMessage :: Hint -> Maybe Text
 hintToMessage (LogMessage x) = Just x
 hintToMessage _ = Nothing
 
-startStreamingReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m ()
-startStreamingReflex ctx e = do
-  pp <- fmap peerProtocol $ (sample . current) ctx
-  performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
+startStreamingReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m ()
+startStreamingReflex pp e = performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
 
-peerProtocolIdReflex :: MonadWidget t m => Dynamic t Context -> Event t a -> m (Event t Text)
-peerProtocolIdReflex ctx e = do
-  pp <- fmap peerProtocol $ (sample . current) ctx
-  performEvent $ fmap (liftIO . const (peerProtocolId pp)) e
+peerProtocolIdReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m (Event t Text)
+peerProtocolIdReflex pp e = performEvent $ fmap (liftIO . const (peerProtocolId pp)) e
