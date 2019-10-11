@@ -41,13 +41,13 @@ import Estuary.Widgets.Footer
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 
-estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
-estuaryWidget ctxM riM = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
+estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
 
   canvasWidget ctxM -- global canvas shared with render threads through Context MVar, this needs to be first in this action
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
-  performContext ctxM ctx -- perform all IO actions consequent to Context changing
+  performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
   renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange) <- estuaryWebSocket ctx renderInfo requestsUp
   let deltasDown = fmap (:[]) deltasDown' -- temporary hack
@@ -77,8 +77,8 @@ estuaryWidget ctxM riM = divClass "estuary" $ mdo
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
   let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint] -- Event t [Hint]
-  performHints (webDirt iCtx) hints
-  performDelayHints ctx hints
+  performHints (webDirt irc) hints
+  performDelayHints irc hints
 
   -- requests up to server
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
@@ -122,38 +122,36 @@ loadSampleMap = do
 
 -- whenever the Dynamic representation of the Context changes, translate that
 -- into various
-performContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
-performContext cMvar cDyn = do
+performContext :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> Dynamic t Context -> m ()
+performContext irc cMvar cDyn = do
   iCtx <- sample $ current cDyn
   performEvent_ $ fmap (liftIO . updateContext cMvar) $ updated cDyn -- transfer whole Context for render/animation threads
-  updateDynamicsModes cDyn -- when dynamics modes change, make it so
+  updateDynamicsModes irc cDyn -- when dynamics modes change, make it so
   -- when the theme changes,
   t <- holdUniqDyn $ fmap theme cDyn -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
   -- when the superDirt flag changes, make it so
-  let sd = superDirt iCtx
+  let sd = superDirt irc
   sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
 updateContext :: MVar Context -> Context -> IO ()
 updateContext mv x = do
-  T.putStrLn "context updated"
+  -- T.putStrLn "context updated"
   swapMVar mv x
   return ()
 
-updateDynamicsModes :: MonadWidget t m => Dynamic t Context -> m ()
-updateDynamicsModes ctx = do
-  iCtx <- (sample . current) ctx
-  let nodes = mainBus iCtx
+updateDynamicsModes :: MonadWidget t m => ImmutableRenderContext -> Dynamic t Context -> m ()
+updateDynamicsModes irc ctx = do
+  let nodes = mainBus irc
   dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap dynamicsMode ctx
   performEvent_ $ fmap (liftIO . changeDynamicsMode nodes) dynamicsModeChanged
 
 
-performDelayHints :: MonadWidget t m => Dynamic t Context -> Event t [Hint] -> m ()
-performDelayHints ctx hs = do
-  iCtx <- (sample . current) ctx
-  let nodes = mainBus iCtx
+performDelayHints :: MonadWidget t m => ImmutableRenderContext -> Event t [Hint] -> m ()
+performDelayHints irc hs = do
+  let nodes = mainBus irc
   let newDelayTime = fmapMaybe justGlobalDelayTime hs
   performEvent_ $ fmap (liftIO . changeDelay nodes) newDelayTime
   where

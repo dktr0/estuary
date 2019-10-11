@@ -169,6 +169,7 @@ makeSampleMap:
 updateSubmodules:
 	@ echo "updateSubModules:"
 	git submodule update --init --recursive
+	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - git submodule update --init --recursive didn't work - make sure you got Estuary with git clone (not by 'downloading')" && exit 1)
 
 fullBuild: downloadDirtSamples updateSubmodules makeSampleMap nixBuild cleanStage nixStageClient nixStageServer stageStaticAssets stageSamples
 
