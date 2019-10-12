@@ -431,10 +431,7 @@ sleepIfNecessary = do
   let targetTime = addUTCTime (maxRenderLatency * (-1) - earlyWakeUp) (renderEnd s)
   tNow <- liftIO $ getCurrentTime
   let diff = diffUTCTime targetTime tNow
-  when (diff > 0) $ do
-    -- liftIO $ T.putStrLn $ "sleeping " <> showt (realToFrac diff :: Double)
-    liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
-  -- when (diff <= 0) $ liftIO $ T.putStrLn "not sleeping"
+  when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
 forkRenderThreads :: ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> IO ()
 forkRenderThreads irc ctxM riM = do

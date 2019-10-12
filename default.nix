@@ -83,7 +83,7 @@ in
           ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
-        estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe"]) (drv: {
+        estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
           preConfigure = ''
             ${ghc8_6.hpack}/bin/hpack --force;
           '';

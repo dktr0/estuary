@@ -38,7 +38,7 @@ cabalBuildClient: assertInNixGhcjsShell
 	@ echo "cabalBuildClient:"
 	cd common && hpack --force
 	cd client && hpack --force
-	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation
+	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation --ghcjs-options=-DGHCJS_GC_INTERVAL=60000
 
 cabalBuildServer: assertInNixGhcShell
 	@ echo "cabalBuildServer:"
