@@ -45,10 +45,10 @@ data Context = Context {
   theme :: Text,
   dynamicsMode :: DynamicsMode,
   language :: Language,
-  samples :: SampleMap,
-  localResourceServers :: LocalResourceServers,
-  privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
-  resources :: Resources, -- ^ The effective resource set.
+--  samples :: SampleMap,
+--  localResourceServers :: LocalResourceServers,
+--  privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
+--  resources :: Resources, -- ^ The effective resource set.
   ensembleC :: EnsembleC,
   wsStatus :: Text,
   serverLatency :: NominalDiffTime,
@@ -64,10 +64,10 @@ initialContext nowUtc = Context {
   language = English,
   theme = "../css-custom/classic.css",
   ensembleC = emptyEnsembleC nowUtc,
-  localResourceServers = emptyLocalResourceServers,
-  privateResources = emptyResources,
-  resources = emptyResources,
-  samples = emptySampleMap,
+--  localResourceServers = emptyLocalResourceServers,
+--  privateResources = emptyResources,
+--  resources = emptyResources,
+--  samples = emptySampleMap,
   webDirtOn = True,
   superDirtOn = False,
   canvasOn = True,
@@ -93,10 +93,11 @@ setClientCount x c = c { clientCount = x }
 modifyEnsembleC :: (EnsembleC -> EnsembleC) -> ContextChange
 modifyEnsembleC f c = c { ensembleC = f (ensembleC c) }
 
-setSampleMap :: SampleMap -> ContextChange
-setSampleMap x c = c { samples = x}
+-- setSampleMap :: SampleMap -> ContextChange
+-- setSampleMap x c = c { samples = x}
 
 -- TODO the resource sets should be lenses so they can be more properly passed around
+{-
 addPrivateResource :: (LocalResourceServers -> LocalResourceServer m)
     -> (LocalResourceServers -> LocalResourceServer m -> LocalResourceServers)
     -> (Resources -> ResourceMap m)
@@ -111,3 +112,4 @@ addPrivateResource getServer setServer getResourceMap setResourceMap group blob 
   privateResources = setResourceMap (privateResources c) $
     insertResource group resource (getResourceMap $ privateResources c)
 }
+-}
