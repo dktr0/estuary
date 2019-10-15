@@ -14,7 +14,6 @@
    src: url(../icons/estuary-icons.otf);
 }
 
-
 body {
  	height: 100%;
 	margin: 0;
@@ -66,9 +65,65 @@ body, .primary-color {
 .languageHelp::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
+
+
+.header {grid-area: header;
+/* background-color: aliceblue */
+padding-left: 10px;
+}
+
+
+
+.page {grid-area: page}
+.ensembleTempo {grid-area: ensembleTempo}
+.item1 { grid-area: item1; }
+.item2 { grid-area: item2; }
+.item3 { grid-area: item3; }
+.item4 { grid-area: item4; }
+.item5 { grid-area: item5; }
+.item6 { grid-area: item6; }
+.item7{ grid-area: item7; }
+.item8 { grid-area: item8; }
+
+.page {
+  display: grid;
+grid-template-rows: 5vh 20vh 20vh 20vh;
+  grid-template-areas:
+  'ensembleTempo ensembleTempo'
+  'item1 item2';
+}
+.footer {grid-area: footer;}
+
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
+display: grid;
+grid-template-rows: 5vh 80vh 10vh;
+  grid-template-areas:
+    'header header'
+    'page page'
+    'page page'
+    'footer footer';
+/*   background-color: #2196F3; */
+/*   padding: 10px; */
+/*   width: 100vw; */
+  height: 100vh;
+}
 
+.estuary > .header {
+/*   background-color: rgba(25, 255, 255, 0.8); */
+  text-align: center;
+/*   padding: 20px 0; */
+  font-size:1.3vw;
+  border: none;
+}
+
+
+.estuary > .footer {
+/*   background-color: rgba(25, 255, 255, 0.8); */
+/*   text-align: center; */
+/*   padding: 20px 0; */
+/*   font-size:1.3vw; */
+  border: none;
 }
 
 .btn {
@@ -77,10 +132,11 @@ body, .primary-color {
 
 /* source  */
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	padding-left: 15px;
-	padding-right: 15px;
-   margin-bottom: 0.05em;
-	border: none;
+/* 	padding-left: 15px; */
+/* 	padding-right: 15px; */
+/*    margin-bottom: 0.05em; */
+/* 	border: none; */
+/* 	background-color: white; */
 
 
 
@@ -140,7 +196,7 @@ body, .primary-color {
 	padding-left: 15px;
 	padding-right: 15px;
 	margin-bottom:0.25em;
-	background-color: transparent;
+/* 	background-color: blue; */
 }
 
 .ourPopUp {
@@ -170,6 +226,7 @@ body, .primary-color {
 }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
+
 	min-width: 50%;
 	box-sizing: border-box;
 	padding: 0.4em;
@@ -294,7 +351,7 @@ body, .primary-color {
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
-	width: 48%;
+	width: 100%;
 }
 
 .eightMiddleL {/*modifies the middle left view*/
@@ -306,7 +363,8 @@ body, .primary-color {
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
-	width: 48%;
+	width: 47vw;
+	font-size: 2vh;
 }
 
 .eightMiddleR {/*modifies the middle right view*/
@@ -318,7 +376,8 @@ body, .primary-color {
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
-	width: 48%;
+	width: 47vw;
+	font-size: 2vh;
 }
 
 .fullRowTopOrBottom {

@@ -53,14 +53,14 @@ presetViews = fromList [
   ]),
 
   ("Lima",Views [
-    ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 5]),
-    ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 5]),
-    ViewDiv "eightMiddleL" (Views [LabelView 8,TextView 9 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 10,TextView 11 5]),
-    ViewDiv "eightMiddleL" (Views [LabelView 12,TextView 13 5]),
-    ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 5])
+    ViewDiv "item1" (Views [LabelView 0,TextView 1 5]),
+    ViewDiv "item2" (Views [LabelView 2,TextView 3 5]),
+    ViewDiv "item3" (Views [LabelView 4,TextView 5 5]),
+    ViewDiv "item4" (Views [LabelView 6,TextView 7 5]),
+    ViewDiv "item5" (Views [LabelView 8,TextView 9 5]),
+    ViewDiv "item6" (Views [LabelView 10,TextView 11 5]),
+    ViewDiv "item6" (Views [LabelView 12,TextView 13 5]),
+    ViewDiv "item7" (Views [LabelView 14,TextView 15 5])
   ]),
 
   ("RGGTRN",Views [
