@@ -10,10 +10,11 @@ import Estuary.Types.TidalParser
 data TextNotation =
   TidalTextNotation TidalParser |
   Punctual |
-  Escuchar |
+  CineCer0 |
   TimeNot |
   Ver |
-  Oir
+  Oir |
+  Dos
   deriving (Read,Eq,Ord,Show,Generic)
 
 instance ToJSON TextNotation where

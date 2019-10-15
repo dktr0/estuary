@@ -1,5 +1,5 @@
 {
-  reflexPlatformVersion ? "716879f16d53c93766e7ed9af17416fccb2edfe1",
+  reflexPlatformVersion ? "9e306f72ed0dbcdccce30a4ba0eb37aa03cf91e3",
   musl ? false,     # build with musl instead of glibc
   linkType ? null   # exectuable linking mode, null will build the closest to unconfigured for the current platform.
                     # 'static' will completely statcially link everything.
@@ -14,7 +14,7 @@ in
   nixpkgsFunc = args:
       let origPkgs = import "${reflex-platform}/nixpkgs" args;
       in if musl then origPkgs.pkgsMusl else origPkgs;
-}).project ({ pkgs, ghc8_4, ... }:
+}).project ({ pkgs, ghc8_6, ... }:
 with pkgs.haskell.lib;
 let linkType = if (args.linkType or null) != null
   then args.linkType
@@ -47,7 +47,7 @@ in
   };
 
   shellToolOverrides = ghc: super: {
-    inherit (ghc8_4) hpack; # always use ghc (not ghcjs) compiled hpack
+    inherit (ghc8_6) hpack; # always use ghc (not ghcjs) compiled hpack
     python3 = pkgs.python3.withPackages (ps: with ps; [ pyyaml ]);
   };
 
@@ -83,9 +83,9 @@ in
           ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
-        estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe"]) (drv: {
+        estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
           preConfigure = ''
-            ${ghc8_4.hpack}/bin/hpack --force;
+            ${ghc8_6.hpack}/bin/hpack --force;
           '';
           postInstall = ''
             ${pkgs.closurecompiler}/bin/closure-compiler $out/bin/Estuary.jsexe/all.js \
@@ -99,7 +99,7 @@ in
 
         estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
-            ${ghc8_4.hpack}/bin/hpack --force;
+            ${ghc8_6.hpack}/bin/hpack --force;
           '';
         });
 
@@ -138,7 +138,7 @@ in
                 };
             }.${linkType} or {}) // {
               preConfigure = ''
-                ${ghc8_4.hpack}/bin/hpack --force;
+                ${ghc8_6.hpack}/bin/hpack --force;
               '';
             }
         );

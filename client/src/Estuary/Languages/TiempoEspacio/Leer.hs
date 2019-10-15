@@ -8,7 +8,6 @@ import Text.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Sound.Tidal.Context (Pattern,ControlPattern)
 import qualified Sound.Tidal.Context as Tidal
---import Estuary.Tidal.ParamPatternable (parseBP')
 import Control.Monad (forever)
 
 parseBP' :: (Tidal.Enumerable a, Tidal.Parseable a) => String -> Tidal.Pattern a
@@ -290,27 +289,3 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
-
-
--- leerIO' :: Tidal.Stream -> String -> Either ParseError (IO ())
--- leerIO' tidal = parse (leerIOParser tidal) "leer"
---
--- leerIOParser :: Tidal.Stream -> Parser (IO ())
--- leerIOParser tidal = whiteSpace >> choice [
---   eof >> return (return ()),
---   dParser tidal <*> leerPattern
---   ]
---
--- dParser :: Tidal.Stream -> Parser (ControlPattern -> IO ())
--- dParser tidal = choice [
---   return (Tidal.streamReplace tidal "1")
---   ]
---
--- main :: IO ()
--- main = do
---   tidal <- Tidal.startTidal Tidal.superdirtTarget Tidal.defaultConfig
---   forever $ do
---     cmd <- leerIO' tidal <$> getLine
---     either (\x -> putStrLn $ "error: " ++ show x) id cmd
---   -- st <- M.defaultMain theApp (onGoingState t)
---   return ()

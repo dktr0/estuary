@@ -91,13 +91,36 @@ playRound_Rate sh t vlen now =
 ------------ playRoundMetre ------------
 ---- round the duration of the video to a power of N so it can align with the notion of metre
                   
--- playRoundMetre:: Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Double
--- playRoundMetre metrVal sh t vlen now =
---     let vl = realToFrac vlen :: Rational
---         cpDur = 1/(cps t)
---         off = sh*cpDur
---         cPerLen = vl/cpDur -- how many cycles for 1 whole video
---     in cPerLen
+playRoundMetrePos:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
+playRoundMetrePos sh t vlen now =
+    let vl = realToFrac vlen :: Rational
+        cpDur = realToFrac (1/(cps t)) :: Rational
+        off = sh*cpDur 
+        cPerLen = vl/cpDur -- how many cycles for 1 whole video
+        newVLinCPS = stretchToMetre cPerLen
+        inSecs = newVLinCPS *cpDur 
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
+        difb0' = difb0 - off
+        lengths = difb0' / inSecs
+        posNorm = lengths - fromIntegral (floor lengths) :: Rational
+        result = reglaDeTres 1 posNorm inSecs
+    in Just (realToFrac  result) --transforms this into seconds
+
+stretchToMetre:: Rational -> Rational
+stretchToMetre cPlen =
+    let ceilFloor =  getCeilFloor [2] cPlen
+        ceil = last ceilFloor
+        floor = last $ init ceilFloor
+    in if (cPlen - floor) < (ceil - cPlen) then floor else ceil
+
+getCeilFloor:: [Rational] -> Rational -> [Rational]
+getCeilFloor [] _ = []
+getCeilFloor n ln 
+        | last n < ln = 
+            let result = (last n)*2 
+            in result : getCeilFloor (n++[result]) ln
+        | last n < ln = n
+        | otherwise = []
 
 
 

@@ -1,4 +1,4 @@
-module Estuary.Languages.CineCer0.Parser (escuchar,CineCer0Spec) where
+module Estuary.Languages.CineCer0.Parser (cineCer0,CineCer0Spec) where
 
 import Language.Haskell.Exts
 import Control.Applicative
@@ -10,8 +10,8 @@ import Estuary.Languages.CineCer0.VideoSpec
 
 type CineCer0Spec = IntMap VideoSpec
 
-escuchar :: String -> Either String CineCer0Spec
-escuchar s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
+cineCer0 :: String -> Either String CineCer0Spec
+cineCer0 s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
   where
     f (ParseOk x) = runExpParser cineCer0Spec x
     f (ParseFailed l s) = Left s
@@ -21,19 +21,9 @@ cineCer0Spec = fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
 
 videoSpec :: ExpParser VideoSpec
 videoSpec =
-  --videoMiscelanea <|>
   literalVideoSpec <|>
   int_VideoSpec <*> int <|>
   videoSpec_videoSpec <*> videoSpec
-
--- videoMiscelanea :: ExpParser VideoSpec
--- videoMiscelanea = do
---   miscelanea
---   v <- literalVideoSpec
---   return v
---
--- miscelanea :: ExpParser ()
--- miscelanea = () <$ reserved "me"
 
 int :: ExpParser Int
 int = fromIntegral <$> integer
@@ -67,10 +57,8 @@ rat_videoSpec_videoSpec =
 rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_videoSpec_videoSpec =
   playEvery <$ reserved "playEvery" <|> --time function
-
-  setPosCoord <$ (reserved "sentada" <|> reserved "escuchar" <|> reserved "escucho" <|> reserved "escuchando" <|> reserved "suena" <|> reserved "gustan" <|> reserved "recuerdo" <|> reserved "recordando" <|> reserved "atraviesan" <|> reserved "atravesando" <|> reserved "hago" <|> reserved "hacen") <|>
-
-  setSize <$ (reserved "consciente" <|> reserved "conscientes" <|> reserved "extraño" <|> reserved "extraña" <|> reserved "extraños" <|> reserved "extrañas" <|> reserved "diferente" <|> reserved "diferentes" <|> reserved "fuerte" <|> reserved "fuertes" <|> reserved "tempestuoso" <|> reserved "tempestuosa" <|> reserved "tempestuosos" <|> reserved "tempestuosas" <|> reserved "transformado" <|> reserved "transformada" <|> reserved "transformados" <|> reserved "transformadas")
+  setPosCoord <$ reserved "pos" <|>
+  setSize <$ reserved "size"
 
 rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_videoSpec_videoSpec =
