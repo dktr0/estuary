@@ -106,6 +106,18 @@ playRoundMetrePos sh t vlen now =
         result = reglaDeTres 1 posNorm inSecs
     in Just (realToFrac  result) --transforms this into seconds
 
+playRoundMetreRate:: Double -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+playRoundMetreRate sh t vlen now =
+    let vl = realToFrac vlen :: Rational
+        cpDur = realToFrac (1/(cps t)) :: Rational
+        off = (realToFrac sh :: Rational) *cpDur 
+        cPerLen = vl/cpDur -- how many cycles for 1 whole video
+        newVLinCPS = stretchToMetre cPerLen
+        newVLinSecs = newVLinCPS * cpDur
+        rate = realToFrac vl / newVLinSecs
+    in Just rate
+
+
 stretchToMetre:: Rational -> Rational
 stretchToMetre cPlen =
     let ceilFloor =  getCeilFloor [2] cPlen
@@ -129,10 +141,10 @@ getCeilFloor n ln
 -- a length in cycles, OJO the startPos is normalised from 0 to 1.
              -- OnsetPos ->   Cycles -> Shift ->    Tempo ->     VideoLength ->     Now -> Position
 playChop_Pos':: Rational -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
-playChop_Pos' onsetPos cycles sh t vlen now =
+playChop_Pos' startPos cycles sh t vlen now =
     let vl = realToFrac vlen :: Rational
         cd = cycles
-        sP = reglaDeTres 1 onsetPos vl
+        sP = reglaDeTres 1 startPos vl
         cp = (cps t)
         cpDur = 1/cp
         off = sh*cpDur
@@ -147,7 +159,7 @@ playChop_Pos' onsetPos cycles sh t vlen now =
 
               -- StartPos ->  Cycles ->  Shift    -> Tempo -> VideoLength ->         Now -> Rate
 playChop_Rate':: Rational -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playChop_Rate' startPos cyclesDur sh t vlen now = Just 1
+playChop_Rate' startPos cycles sh t vlen now = Just 1
 
 
 ------------- Gives a chop start and end position and adjust the rate to any given cycles ------
@@ -199,7 +211,7 @@ playChopSecs_Pos startPos endPos cycles sh t vlen now =
         cpsDur = 1/cp
         vl = realToFrac vlen :: Rational
         start = cycleSecs startPos vlen
-        end = cycleSecs startPos vlen
+        end = cycleSecs endPos vlen
         interval = end - start
         intCyc = interval / cpsDur
         rounded = fromIntegral (round intCyc) :: Rational
