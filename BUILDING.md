@@ -107,5 +107,6 @@ In the **backend** shell (`shells.ghc`) build the server, put it in the staging 
 [nix-shell: ...]$ make cabalBuildServer
 [nix-shell: ...]$ make cabalStageServer
 [nix-shell: ...]$ make devStageSamples
+[nix-shell: ...]$ make makeSampleMap  # Only required if you haven't done a full build
 [nix-shell: ...]$ make runDevServer
 ```
