@@ -6,6 +6,7 @@ import Data.Text (Text)
 import GHC.Generics
 import Data.Aeson
 
+
 data View =
   Views [View] |
   ViewDiv Text View | -- deprecated in favour of next two...
@@ -22,7 +23,10 @@ instance ToJSON View where
 instance FromJSON View
 
 emptyView :: View
-emptyView = Views []
+emptyView =  Views []
+
+
+
 
 viewToRows :: View -> Int
 viewToRows (Views vs) = sum $ fmap viewToRows vs

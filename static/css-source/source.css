@@ -75,37 +75,21 @@ padding-left: 10px;
 
 
 .page {grid-area: page}
-.ensembleTempo {grid-area: ensembleTempo}
-.item1 { grid-area: item1; }
-.item2 { grid-area: item2; }
-.item3 { grid-area: item3; }
-.item4 { grid-area: item4; }
-.item5 { grid-area: item5; }
-.item6 { grid-area: item6; }
-.item7{ grid-area: item7; }
-.item8 { grid-area: item8; }
+.ensembleTempo {grid-area: ensembleTempo;}
+.splash-container {grid-area: splash-container;}
+.footer{grid-area: footer;}
 
-.page {
-  display: grid;
-grid-template-rows: 5vh 20vh 20vh 20vh;
-  grid-template-areas:
-  'ensembleTempo ensembleTempo'
-  'item1 item2';
-}
-.footer {grid-area: footer;}
 
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
 display: grid;
-grid-template-rows: 5vh 80vh 10vh;
+grid-template-rows: 5vh 80vh 5vh;
   grid-template-areas:
     'header header'
     'page page'
     'page page'
     'footer footer';
-/*   background-color: #2196F3; */
-/*   padding: 10px; */
-/*   width: 100vw; */
+  width: 100vw;
   height: 100vh;
 }
 
@@ -145,6 +129,12 @@ grid-template-rows: 5vh 80vh 10vh;
      the controls to the next line doesn't leak out of it's parent container
      preventing interation with it. */
   overflow: hidden;
+}
+
+.page {
+  display: grid;
+  grid-template-areas:
+  'splash-container';
 }
 
 /* source  */
@@ -873,3 +863,13 @@ width: 8em;
 .resourceShape{
 	text-align: center;
 	width: 5em;}
+
+  .ensemble-page {
+    display: grid;
+     width: 100%;
+     height: 100%;
+     font-size: 100%;
+       font-family: inherit;
+       font-size: inherit;
+       background-color: gray;
+  }
