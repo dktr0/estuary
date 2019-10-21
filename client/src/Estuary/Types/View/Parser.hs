@@ -21,6 +21,7 @@ dumpView (StructureView x) = "structure:" <> showInt x
 dumpView (LabelView x) = "label:" <> showInt x
 dumpView (TextView x y) = "text:" <> showInt x <> " " <> showInt y
 dumpView (SequenceView z) = "sequence:" <> showInt z
+dumpView EnsembleStatusView = "ensembleStatus"
 
 showInt :: Int -> Text
 showInt x = showtParen (x < 0) (showt x)
@@ -42,6 +43,7 @@ viewParser = do
     try labelView,
     try structureView,
     try sequenceView,
+    try ensembleStatusView,
     textView
     ]
   return v
@@ -50,6 +52,7 @@ viewDiv = braces $ (ViewDiv <$> (T.pack <$> identifier) <*> viewsParser)
 labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
 structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
 sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
+ensembleStatusView = reserved "ensembleStatus" >> return EnsembleStatusView
 textView = reserved "text" >> reservedOp ":" >> (TextView <$> int <*> int)
 
 int :: Parser Int
@@ -70,7 +73,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
     "label","structure","sequenceView","textView","svgDisplayView",
-    "canvasDisplayView"
+    "canvasDisplayView","ensembleStatus"
     ],
   P.reservedOpNames = [":"],
   P.caseSensitive = True
