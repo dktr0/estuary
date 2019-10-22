@@ -44,36 +44,33 @@ int_VideoSpec = videoSpec_int_videoSpec <*> videoSpec
 
 rat_videoSpec_videoSpec :: ExpParser (Rational -> VideoSpec -> VideoSpec)
 rat_videoSpec_videoSpec =
-  playNatural <$ reserved "playNatural" <|> --time function
-  playRound <$ reserved "playRound" <|> -- time function
+  playNatural <$ reserved "natural" <|> --time function
+  playRound <$ reserved "round" <|> -- time function
   setWidth <$ reserved "w" <|>
   setHeight <$ reserved "h" <|>
   setPosX <$ reserved "posX" <|>
   setPosY <$ reserved "posY" <|>
   setOpacity <$ reserved "opacity" <|>
-  setHue <$ reserved "hue" <|>
-  setSaturation <$ reserved "saturation"
 
 rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_videoSpec_videoSpec =
-  playEvery <$ reserved "playEvery" <|> --time function
+  playEvery <$ reserved "every" <|> --time function
   setPosCoord <$ reserved "pos" <|>
   setSize <$ reserved "size"
 
 rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_videoSpec_videoSpec =
-  playChop' <$ reserved "playChop'" <|> -- time function
-  setRGB <$ reserved "color"
+  playChop' <$ reserved "chop'" <|> -- time function
 
 rat_rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_rat_videoSpec_videoSpec =
-  playChop <$ reserved "playChop" -- time function
+  playChop <$ reserved "chop" -- time function
 
 nd_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
-nd_rat_videoSpec_videoSpec = playNow <$ reserved "playNow" -- time function
+nd_rat_videoSpec_videoSpec = playNow <$ reserved "now" -- time function
 
 nd_nd_rat_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
-nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "playChopSecs" -- time function
+nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "chopSecs" -- time function
 
 videoSpec_videoSpec :: ExpParser (VideoSpec -> VideoSpec)
 videoSpec_videoSpec =

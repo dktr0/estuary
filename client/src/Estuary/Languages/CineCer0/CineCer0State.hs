@@ -53,9 +53,9 @@ foreign import javascript unsafe
   videoHeight :: CineCer0Video -> IO Double
 
 videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Double -> IO ()
-videoStyle v x y w h o = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o
+videoStyle v x y w h o = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o;
 
-----  Rate and Position -----
+----  Rate and Position ----
 
 foreign import javascript unsafe
   "$1.playbackRate = $2;"
@@ -141,32 +141,3 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.offsetHeight"
   offsetHeight :: HTMLDivElement -> IO Double
-
-
---  Maybe- not execute at all
-
--- servicedesk.mcmaster.ca
-
--- x :: Maybe a
-
--- f :: a -> IO ()
-
--- videoPlaybackRate :: CineCer0Video -> Double -> IO ()
-
--- videoPlaybackRate aVideo :: Double -> IO ()
-
--- g :: IO ()
-
--- g = do
-
---   ...
-
---   ...
-
---   let rate = ... something that combines information to generate a maybe rational
-
---   maybe (return ()) (videoPlaybackRate aVideo) $ fmap realToFrac rate
-
-
-
--- maybe :: b -> (a -> b) -> Maybe a -> b

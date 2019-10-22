@@ -13,22 +13,18 @@ data VideoSpec = VideoSpec {
   sourceNumber :: Int,
   playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
   playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
-  --mask :: String,
+  -- opacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
+  -- defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
+  -- defaultOpacity _ _ _ = 1.0
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
   height :: Rational,
-  red :: Rational,
-  green :: Rational,
-  blue :: Rational,
-  opacity :: Rational,
-  hue :: Rational,
-  saturation :: Rational
-
+  opacity :: Rational
   }
 
 instance Show VideoSpec where
-  show (VideoSpec vs n _ _ px py w h r g b a _ _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Opacity " ++ show a
+  show (VideoSpec vs n _ _ px py w h _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " "
 
 
 emptyVideoSpec :: String -> VideoSpec
@@ -42,12 +38,7 @@ emptyVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 0.0,
   height = 0.0,
-  red = 0.0,
-  green = 0.0,
-  blue = 0.0,
   opacity = 1.0,
-  hue = 0.0,
-  saturation = 0.0
 }
 
 stringToVideoSpec :: String -> VideoSpec
@@ -61,22 +52,14 @@ stringToVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 1.0,
   height = 1.0,
-  red = 1.0,
-  green = 1.0,
-  blue = 1.0,
   opacity = 1.0,
-  hue = 0.0,
-  saturation = 0.0
 }
 
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
 setSourceNumber vs n = vs { sourceNumber = n }
 
---maskVideo :: String -> VideoSpec -> VideoSpec
---maskVideo s vs = vs { mask = s }
-
-
--- Video posX, posY, and posCoord (x y)
+--
+-- Geometric Functions --
 
 setPosX :: Rational -> VideoSpec -> VideoSpec
 setPosX n vs = vs { posX = n }
@@ -87,8 +70,6 @@ setPosY n vs = vs { posY = n }
 setPosCoord :: Rational -> Rational -> VideoSpec -> VideoSpec
 setPosCoord m n vs = vs { posX = m, posY = n }
 
--- Video width, height, and size (width height) --
-
 setWidth :: Rational -> VideoSpec -> VideoSpec
 setWidth n vs = vs { width = n }
 
@@ -98,22 +79,22 @@ setHeight n vs = vs { height = n }
 setSize :: Rational -> Rational -> VideoSpec -> VideoSpec
 setSize m n vs = vs { width = m, height = n }
 
--- colors --
-
-setRGB :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
-setRGB l m n vs = vs { red = l, green = m, blue = n }
-
-setHue :: Rational -> VideoSpec -> VideoSpec
-setHue n vs = vs { hue = n }
-
-setSaturation :: Rational -> VideoSpec -> VideoSpec
-setSaturation n vs = vs { saturation = n }
-
-
--- Set alpha --
+--
+-- Style Functions --
 
 setOpacity :: Rational -> VideoSpec -> VideoSpec
 setOpacity n vs = vs { opacity = n }
+
+-- setOpacity :: Rational -> VideoSpec -> VideoSpec
+-- setOpacity r vs = vs {
+--  opacity = \t ndt ut -> r * ((opacity vs) t ndt ut)
+-- }
+
+-- doSthToTheOpacity :: a -> VideoSpec -> VideoSpec
+-- doSthToTheOpacity a vs = vs {
+--  opacity = \t ndt ut -> a {- or f a t ndt ut, etc -} * ((opacity vs) t ndt ut)
+-- }
+
 
 --
 -- Time Functions --
