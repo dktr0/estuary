@@ -1,28 +1,24 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.EnsembleRequest where
 
-import Text.JSON
-import Text.JSON.Generic
+import Data.Time
+import Data.Text
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Types.View
 import Estuary.Types.Definition
 import Estuary.Types.Tempo
-import Data.Time
 
 data EnsembleRequest =
-  AuthenticateInEnsemble String |
-  SendChat String String | -- name message
-  ZoneRequest Int Definition |
-  ListViews |
-  GetView String |
-  PublishView String View |
-  PublishDefaultView View |
-  DeleteView String |
-  SetTempo Tempo |
-  GetEnsembleClientCount
-  deriving (Eq,Data,Typeable)
+  WriteTempo Tempo |
+  WriteZone Int Definition |
+  WriteView Text View |
+  WriteChat Text |
+  WriteStatus Text
+  deriving (Eq,Generic)
 
-instance JSON EnsembleRequest where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON EnsembleRequest where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON EnsembleRequest

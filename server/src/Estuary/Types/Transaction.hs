@@ -1,17 +1,28 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+-- | Transactions in the Estuary server are IO computations that can fail with String error
+-- messages, read the database connection and a handle for the client making the current request, and
+-- can modify the global state of the server. This is implemented as a stack of monad transformers,
+-- so Transaction a will be an instance of MonadState, MonadError, and MonadReader.
+
 module Estuary.Types.Transaction where
 
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Exception
-import Data.Map.Strict as Map
-import Text.JSON
+import qualified Data.Map.Strict as Map
+import qualified Data.IntMap.Strict as IntMap
 import qualified Database.SQLite.Simple as SQLite
 import qualified Network.WebSockets as WS
+import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import Data.Aeson
 
-import Estuary.Types.Server
+import Estuary.Types.ServerState
 import qualified Estuary.Types.Ensemble as E
+import qualified Estuary.Types.EnsembleS as E
 import Estuary.Types.Client
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -19,14 +30,10 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Database
 
--- | Transactions in the Estuary server are IO computations that can fail with String error
--- messages, read the database connection and a handle for the client making the current request, and
--- can modify the global state of the server. This is implemented as a stack of monad transformers,
--- so Transaction a will be an instance of MonadState, MonadError, and MonadReader. 
 
-type Transaction = StateT Server (ReaderT (SQLite.Connection,ClientHandle) (ExceptT String IO))
+type Transaction = StateT ServerState (ReaderT (SQLite.Connection,ClientHandle) (ExceptT Text IO))
 
-runTransaction ::  Transaction a -> SQLite.Connection -> ClientHandle -> Server -> IO Server
+runTransaction ::  Transaction a -> SQLite.Connection -> ClientHandle -> ServerState -> IO ServerState
 runTransaction t db cHandle s = do
   e <- try (runExceptT (runReaderT (runStateT t s) (db,cHandle)))
   case e of
@@ -35,55 +42,73 @@ runTransaction t db cHandle s = do
       postLogToDatabase db x
       return s
     Left (SomeException e) -> do -- unhandled exception in transaction (returns previous server state)
-      let x = "runTransaction caught unhandled exception: " ++ show e
+      let x = "runTransaction caught unhandled exception: " <> (T.pack $ show e)
       postLogToDatabase db x
       return s
 
-postLog :: String -> Transaction ()
+postLog :: Text -> Transaction ()
 postLog msg = do
   db <- asks fst
   liftIO $ postLogToDatabase db msg
 
-justOrError :: Maybe a -> String -> Transaction a
+justOrError :: Maybe a -> Text -> Transaction a
 justOrError x e = maybe (throwError e) return x
 
 getClient :: Transaction Client
 getClient = do
   s <- get
   cHandle <- asks snd
-  justOrError (Map.lookup cHandle $ clients s) "***strange error*** current client not found in Server"
-  
+  justOrError (IntMap.lookup cHandle $ clients s) "***strange error*** current client not found in Server"
+
 modifyClient :: (Client -> Client) -> Transaction ()
 modifyClient f = do
   c <- getClient
   let c' = f c
   cHandle <- asks snd
-  modify' $ \s -> s { clients = insert cHandle c' (clients s) }
+  modify' $ \s -> s { clients = IntMap.insert cHandle c' (clients s) }
 
-getEnsembleName :: Transaction String
+-- get the name of the ensemble the current connection is a member of, or fail
+getEnsembleName :: Transaction Text -- !!! probably should rename to getNameOfClientsEnsemble or something like that
 getEnsembleName = do
   c <- getClient
-  justOrError (ensemble c) $ "***strange error*** getEnsembleName for client not in ensemble"
-  
-getEnsemble :: Transaction E.Ensemble
-getEnsemble = do
+  justOrError (memberOfEnsemble c) $ "***strange error*** getEnsembleName for client not in ensemble"
+
+-- get the data of the ensemble the current connection is a member of, or fail
+getEnsembleS :: Transaction E.EnsembleS
+getEnsembleS = do
   s <- get
   eName <- getEnsembleName
   justOrError (Map.lookup eName $ ensembles s) $ "***strange error*** getEnsemble for non-existent ensemble"
 
-modifyEnsemble :: (E.Ensemble -> E.Ensemble) -> Transaction ()
-modifyEnsemble f = do
+-- modify the ensemble the current connection is a member of, or fail
+modifyEnsembleS :: (E.EnsembleS -> E.EnsembleS) -> Transaction ()
+modifyEnsembleS f = do
   eName <- getEnsembleName
-  e <- getEnsemble
+  e <- getEnsembleS
   let e' = f e
-  modify' $ \s -> s { ensembles = insert eName e' (ensembles s) }
+  modify' $ \s -> s { ensembles = Map.insert eName e' (ensembles s) }
 
-broadcastServerClientCount :: Transaction ()
-broadcastServerClientCount = gets (size . clients) >>= respondAll . ServerClientCount
+handleTakenInEnsemble :: Text -> Text -> Transaction Bool
+handleTakenInEnsemble uName eName = do
+  when (uName == "") $ throwError "*** strange error: handleTakenInEnsemble called with empty uName"
+  when (eName == "") $ throwError "*** strange error: handleTakenInEnsemble called with empty eName"
+  clientMap <- clients <$> get
+  let clientMap' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == uName) clientMap
+  return $ IntMap.size clientMap' > 0
 
-close :: String -> Transaction ()
+countAnonymousParticipants :: Transaction Int
+countAnonymousParticipants = do
+  eName <- getEnsembleName
+  clientMap <- clients <$> get
+  let clientMap' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == "") clientMap
+  return $ IntMap.size clientMap'
+
+getServerClientCount :: Transaction Int
+getServerClientCount = gets (IntMap.size . clients)
+
+close :: Text -> Transaction ()
 close msg = do
-  postLog $ "closing connection: " ++ msg
+  postLog $ "closing connection: " <> msg
   cHandle <- asks snd
   modify' $ deleteClient cHandle
   return ()
@@ -127,58 +152,57 @@ whenNotAuthenticatedInEnsemble t = do
 
 send :: Response -> [Client] -> Transaction ()
 send x cs = forM_ cs $ \c -> do
-  y <- liftIO $ try (WS.sendTextData (connection c) $ (T.pack . encodeStrict) x) 
+  y <- liftIO $ try (WS.sendTextData (connection c) $ encode x)
   case y of
     Right x -> return ()
     Left (SomeException e) -> do
       let ce = fromException (SomeException e)
-      case ce of 
+      case ce of
         Just (WS.CloseRequest _ _) -> closeAnotherConnection c
         Just WS.ConnectionClosed -> closeAnotherConnection c
-        otherwise -> throwError $ "send exception: " ++ show e 
+        otherwise -> throwError $ "send exception: " <> (T.pack $ show e)
 
 respond :: Response -> Transaction ()
 respond x = do
   c <- getClient
-  send x [c] 
+  send x [c]
 
 respondAll :: Response -> Transaction ()
-respondAll x = gets (elems . clients) >>= send x
+respondAll x = gets (IntMap.elems . clients) >>= send x
 
 respondAllNoOrigin :: Response -> Transaction ()
-respondAllNoOrigin x = do 
+respondAllNoOrigin x = do
   cHandle <- asks snd
-  cs <- gets (elems . delete cHandle . clients)
+  cs <- gets (IntMap.elems . IntMap.delete cHandle . clients)
   send x cs
 
 respondEnsemble :: Response -> Transaction ()
 respondEnsemble x = do
   c <- getClient
-  cs <- gets (elems . ensembleFilter (ensemble c) . clients)
+  cs <- gets (IntMap.elems . ensembleFilter (memberOfEnsemble c) . clients)
   send x cs
 
 respondEnsembleNoOrigin :: Response -> Transaction ()
 respondEnsembleNoOrigin x = do
   cHandle <- asks snd
   c <- getClient
-  cs <- gets (elems . delete cHandle . ensembleFilter (ensemble c) . clients)
+  cs <- gets (IntMap.elems . IntMap.delete cHandle . ensembleFilter (memberOfEnsemble c) . clients)
   send x cs
 
-ensembleFilter :: Maybe String -> Map ClientHandle Client -> Map ClientHandle Client
-ensembleFilter (Just e) = Map.filter $ (==(Just e)) . ensemble
-ensembleFilter Nothing = const empty
+ensembleFilter :: Maybe Text -> IntMap.IntMap Client -> IntMap.IntMap Client
+ensembleFilter (Just e) = IntMap.filter $ (==(Just e)) . memberOfEnsemble
+ensembleFilter Nothing = const IntMap.empty
 
-saveNewEnsembleToDatabase :: String -> Transaction ()
+saveNewEnsembleToDatabase :: Text -> Transaction ()
 saveNewEnsembleToDatabase name = do
   s <- get
   e <- justOrError (Map.lookup name $ ensembles s) $ "***strange error*** saveNewEnsembleToDatabase for non-existent ensemble"
   db <- asks fst
-  liftIO $ writeNewEnsemble db name e 
+  liftIO $ writeNewEnsembleS db name e
 
 saveEnsembleToDatabase :: Transaction ()
 saveEnsembleToDatabase = do
-  e <- getEnsemble
+  e <- getEnsembleS
   eName <- getEnsembleName
   db <- asks fst
-  liftIO $ writeEnsemble db eName e
-
+  liftIO $ writeEnsembleS db eName e

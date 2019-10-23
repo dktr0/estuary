@@ -10,7 +10,7 @@ import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Estuary.RenderInfo
+import Estuary.Types.RenderInfo
 import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.Hint
@@ -19,7 +19,7 @@ import Estuary.Types.Request
 import Estuary.Types.View
 import Estuary.Widgets.Generic
 import Estuary.Widgets.View
-import Estuary.Widgets.Text (textNotationWidget)
+import Estuary.Widgets.Text (textProgramWidget)
 import Estuary.Types.TidalParser
 import Estuary.Types.TextNotation
 import GHC.Generics
@@ -44,15 +44,15 @@ instance Show TutorialId where
 
 data Tutorial t m = Tutorial {
   tutorialId::TutorialId,
-  widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t Hint))
+  widget::(Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint]))
 }
 
 
-attachIndex:: [a] -> [(Int,a)]
-attachIndex l = zip (take (length l) [0..]) l
+attachIndex :: [a] -> [(Int,a)]
+attachIndex = zip [0..]
 
 dynList::MonadWidget t m => [Dynamic t a] -> m (Dynamic t [a])
-dynList l = mapDyn elems $ joinDynThroughMap $ constDyn $ fromList $ attachIndex l
+dynList l = return $ fmap elems $ joinDynThroughMap $ constDyn $ fromList $ attachIndex l
 
 title::MonadWidget t m => m a -> m a
 title widget = elClass "div" "title" widget
@@ -60,18 +60,18 @@ title widget = elClass "div" "title" widget
 labelWidget::MonadWidget t m => Dynamic t Context -> M.Map Language Text -> m ()
 labelWidget ctx txt = do
   let dflt = safeHead "" $ elems txt
-  str <- mapDyn (\c-> maybe dflt id $ M.lookup (language c) txt) ctx
+  let str = fmap (\c-> maybe dflt id $ M.lookup (language c) txt) ctx
   dynText str
   where
     safeHead a [] = a
     safeHead _ (x:xs) = x
 
-miniTidalWidget :: MonadWidget t m => Dynamic t Context -> Int -> Int -> String -> m (Dynamic t (Int, Definition), Event t Hint)
+miniTidalWidget :: MonadWidget t m => Dynamic t Context -> Int -> Int -> Text -> m (Dynamic t (Int, Definition), Event t [Hint])
 miniTidalWidget ctx rows index initialText = elClass "div" "panel" $ do
   let silent = (Live (TidalTextNotation MiniTidal,"") L3)
   pb <- liftM (silent <$) $ getPostBuild -- TODO PB used to block things from playing immediately.. should probably be less hacky about this
-  shh <- buttonDynAttrs "silence" silent (constDyn $ M.fromList [("style","float:right")])
-  (v, _, hints) <- textNotationWidget ctx (constDyn Nothing) rows (Live (TidalTextNotation MiniTidal, initialText) L3) never
-  v' <- holdDyn (Live (TidalTextNotation MiniTidal, initialText) L3) $  leftmost [pb, updated v, shh]
-  defn <- mapDyn (\v-> (index,(TextProgram v))) v'
+  shh <- buttonDynAttrs "silence" silent (constDyn $ M.fromList [("style","float:right"), ("class", "ui-buttons other-borders")])
+  (e, hints) <- textProgramWidget ctx (constDyn Nothing) rows (Live (TidalTextNotation MiniTidal, initialText) L3) never
+  v' <- holdDyn (Live (TidalTextNotation MiniTidal, initialText) L3) $  leftmost [pb, e, shh]
+  let defn = fmap (\v-> (index,(TextProgram v))) v'
   return (defn, hints)

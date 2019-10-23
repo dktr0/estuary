@@ -7,6 +7,8 @@ import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
 import Data.Map
+import Estuary.Reflex.Utility
+
 
 --render multiple sub-help files
 naturalHelpFile :: MonadWidget t m => m ()
@@ -23,8 +25,8 @@ naturalHelpFile = divClass "languageHelp" $ do
   -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about" $ text "Natural"
-  divClass "about" $ text "A mini live coding esolang developed in Manizales, Colombia."
+  divClass "about primary-color code-font" $ text "Natural"
+  divClass "about primary-color code-font" $ text "A mini live coding esolang developed in Manizales, Colombia."
 
 exampleText :: Text -> Text
 
@@ -46,9 +48,9 @@ referenceText "ruge" =  "returns TidalCycles' slow"
 
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
-  switchToReference <- divClass "refExampleButton" $ button x
+  switchToReference <- buttonWithClass' x
   exampleVisible <- toggle True switchToReference
   referenceVisible <- toggle False switchToReference
-  hideableWidget exampleVisible "exampleText" $ text (exampleText x)
-  hideableWidget referenceVisible "referenceText" $ text (referenceText x)
+  hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)
+  hideableWidget referenceVisible "referenceText code-font" $ text (referenceText x)
   return ()

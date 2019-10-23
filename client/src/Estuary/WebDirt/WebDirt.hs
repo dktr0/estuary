@@ -1,12 +1,13 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
-module Estuary.WebDirt.WebDirt (WebDirt, newWebDirt, initializeWebAudio,performHint) where
+module Estuary.WebDirt.WebDirt (WebDirt, newWebDirt, initializeWebAudio,performHints) where
 
 import GHCJS.Types
 import GHCJS.Marshal.Pure
 import Control.Monad.IO.Class (liftIO)
 import Reflex.Dom
 import qualified Sound.Tidal.Context as Tidal
+import qualified Data.Text as T
 
 import qualified Estuary.WebDirt.SampleEngine as S
 import Estuary.WebDirt.Foreign (createObjFromMap)
@@ -36,7 +37,6 @@ foreign import javascript unsafe
   initializeWebAudio :: WebDirt -> IO ()
 
 instance S.SampleEngine WebDirt where
-  getClockDiff wd = return 0
   playSample wd x = playSample wd x
   getPeakLevels wd = peakLevels wd
   getRmsLevels wd = rmsLevels wd
@@ -54,9 +54,15 @@ foreign import javascript unsafe
 performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
 
+performHints :: MonadWidget t m => WebDirt -> Event t [Hint] -> m ()
+performHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
+
 doHint :: WebDirt -> Hint -> IO ()
 doHint wd (SampleHint x) = sampleHint wd (pToJSVal x)
 doHint _ _ = return ()
+
+doHints :: WebDirt -> [Hint] -> IO ()
+doHints wd = mapM_ (doHint wd)
 
 foreign import javascript unsafe
   "$1.sampleHint($2)"

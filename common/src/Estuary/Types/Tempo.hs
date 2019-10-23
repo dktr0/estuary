@@ -1,29 +1,38 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.Tempo where
 
-import Text.JSON
-import Text.JSON.Generic
 import Data.Time.Clock
+import Data.Time.Clock.POSIX
+import GHC.Generics
+import Data.Aeson
 
 data Tempo = Tempo {
-  cps :: Double,
+  cps :: Rational,
   at :: UTCTime,
-  beat :: Double
-  } deriving (Eq,Data,Typeable,Show)
+  beat :: Rational
+  } deriving (Eq,Generic,Show)
 
-instance JSON Tempo where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Tempo where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Tempo
 
-elapsedCycles :: Tempo -> UTCTime -> Double
+audioSecondsToUTC :: (UTCTime,Double) -> Double -> UTCTime
+audioSecondsToUTC (t0utc,t0audio) t1audio = posixSecondsToUTCTime $ clockDiff + (realToFrac t1audio)
+  where clockDiff = utcTimeToPOSIXSeconds t0utc - (realToFrac t0audio)
+
+utcTimeToAudioSeconds :: (UTCTime,Double) -> UTCTime -> Double
+utcTimeToAudioSeconds (t0utc,t0audio) t1utc = realToFrac $ utcTimeToPOSIXSeconds $ addUTCTime clockDiff t1utc
+  where clockDiff = realToFrac t0audio - utcTimeToPOSIXSeconds t0utc
+
+elapsedCycles :: Tempo -> UTCTime -> Rational
 elapsedCycles t now = elapsedT * cps t + beat t
   where elapsedT = realToFrac $ diffUTCTime now (at t)
 
-adjustCps :: Double -> Tempo -> UTCTime -> Tempo
+adjustCps :: Rational -> Tempo -> UTCTime -> Tempo
 adjustCps newCps prevTempo now = Tempo { cps = newCps, at = now, beat = elapsedCycles prevTempo now }
 
-adjustCpsNow :: Double -> Tempo -> IO Tempo
+adjustCpsNow :: Rational -> Tempo -> IO Tempo
 adjustCpsNow newCps prevTempo = getCurrentTime >>= return . adjustCps newCps prevTempo
 
 beatZero :: Tempo -> UTCTime

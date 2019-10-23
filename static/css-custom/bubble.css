@@ -1,0 +1,71 @@
+/*
+--------------------------------------------------------------------
+Welcome to the 'bubble' theme template: For quick Estuary's interface customization, modify the colors below.
+More advanced customization is available through CSS classes within this document.
+--------------------------------------------------------------------
+*/
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Montserrat Regular'), local('Montserrat-Regular'), url(https://fonts.gstatic.com/s/montserrat/v13/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+/* sets the background color */
+  --background-color: linear-gradient(to bottom left, rgb(179, 255, 238), rgba(81, 76, 156, 0.5));
+;
+
+/* set the color of all text and typically some borders*/
+  --primary-color: rgba(81, 76, 156);
+
+/* sets the background color of buttons and other borders */
+  --secondary-color: hsl(0,0%,100%);
+
+/* sets the color of things that appear temporarily */
+  --transient-color: orange;
+}
+
+/*
+--------------------------------------------------------------------
+				advanced customization
+--------------------------------------------------------------------
+*/
+
+/*styles the code font*/
+.code-font {
+	  font-family: 'Montserrat';
+	  font-size:1em;
+	  }
+
+/* styles the fonts for the header, menus and labels */
+.ui-font {
+    font-family: 'Montserrat';
+	font-size: 1em;
+	}
+
+/* styles the user interface-buttons */
+.ui-buttons {
+  color:white;
+  background-color:rgba(81, 76, 156, 0.75);
+
+}
+
+/* styles the dropdown */
+.ui-dropdownMenus {
+  background-color: var(--background-color) !important;
+}
+
+/*styles the primary borders (e.g.  from dropdown menus) */
+.primary-borders {
+	border-radius: 5px;
+    border: 1px solid var(--primary-color);
+}
+
+/*styles other borders (e.g. from the ui-buttons and sequencer)  */
+.other-borders {
+    border-radius: 5px;
+    border: 1px solid hsl(0,0%,40%);
+    }

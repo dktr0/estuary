@@ -1,4 +1,4 @@
-{-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
+ {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
 module Main where
 
@@ -12,24 +12,23 @@ import Control.Monad.IO.Class(liftIO)
 
 import Sound.MusicW
 
-import Estuary.Render.AudioContext
 import Estuary.WebDirt.WebDirt
 import Estuary.WebDirt.SuperDirt
-import Estuary.Protocol.Foreign
+import Estuary.Protocol.Peer
 import Estuary.Types.Context
-import Estuary.Types.CanvasState
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
 import Estuary.WebDirt.SampleEngine
-import Estuary.RenderInfo
-import Estuary.RenderState
-import Estuary.Renderer
+import Estuary.Types.RenderInfo
+import Estuary.Types.RenderState
+import Estuary.Render.Renderer
 import Estuary.Render.DynamicsMode
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
 import GHCJS.DOM
 import GHCJS.DOM.Types hiding (toJSString)
+import GHCJS.Foreign.Callback (Callback, syncCallback1')
 import GHCJS.Marshal.Pure
 import GHCJS.Prim(toJSString)
 import GHCJS.Types
@@ -46,21 +45,38 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  mainBusNodes@(mainBusIn,_,_,_) <- initializeMainBus
+  ac <- getGlobalAudioContext
+  addWorklets ac
+
+  mainBusNodes@(mainBusIn,_,_,_,_,_,_) <- initializeMainBus
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
   sd <- newSuperDirt
-  protocol <- estuaryProtocol
-  mv <- emptyCanvasState >>= newMVar
-  now <- liftAudioIO $ audioUTCTime
-  c <- newMVar $ initialContext now mainBusNodes wd sd mv
-  ri <- newMVar $ emptyRenderInfo
-  forkRenderThreads c ri
+  let immutableRenderContext = ImmutableRenderContext {
+    mainBus = mainBusNodes,
+    webDirt = wd,
+    superDirt = sd
+    }
 
-  mainWidgetInElementById "estuary-root" $ estuaryWidget Splash c ri protocol
+  nowUtc <- getCurrentTime
+  nowAudio <- liftAudioIO $ audioTime
+  context <- newMVar $ initialContext nowUtc
+  renderInfo <- newMVar $ emptyRenderInfo
+  forkRenderThreads immutableRenderContext context renderInfo
+
+  cb <- syncCallback1' $ \dest -> do
+    node <- changeDestination mainBusNodes $
+      if dest `js_eq` pToJSVal ("stream" :: JSString) then
+        getSharedMediaStreamDestination
+      else
+        createDestination
+    return $ pToJSVal node
+  js_registerSetEstuaryAudioDestination cb
+
+  mainWidgetInElementById "estuary-root" $ estuaryWidget immutableRenderContext context renderInfo
 
   -- Signal the splash page that estuary is loaded.
-  js_setIconStateLoaded
+  -- js_setIconStateLoaded
 
   -- Resume the audio context after interaction.
   js_waitForClickBody
@@ -108,3 +124,7 @@ foreign import javascript safe
 foreign import javascript safe
   "EstuaryIcon.state = 'loaded';"
   js_setIconStateLoaded :: IO ()
+
+foreign import javascript unsafe
+  "window.___setEstuaryAudioDestination = $1"
+  js_registerSetEstuaryAudioDestination :: Callback (JSVal -> IO JSVal) -> IO ()

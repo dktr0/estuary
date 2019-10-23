@@ -30,6 +30,8 @@ dependencies:
   - estuary-common
   - reflex
   - reflex-dom
+  - reflex-dom-core
+  - lens
   - tidal
   - punctual
   - musicw
@@ -39,6 +41,7 @@ dependencies:
   - ghcjs-base
   - ghcjs-dom
   - text
+  - text-show
   - array
   - ghcjs-prim
   - data-default
@@ -46,13 +49,15 @@ dependencies:
   - file-embed
   - time
   - monad-loops
-  - json
+  - aeson
   - bytestring
   - parsec
   - parsec-numbers
   - reflex-dom-contrib
   - mtl
   - mwc-random
+  - haskell-src-exts
+  - TimeNot
 
 library:
   source-dirs:
@@ -116,13 +121,3 @@ _test-base: &test-base
   dependencies:
     - estuary
     - hspec
-
-tests:
-  mini-tidal:
-    <<: *test-base
-    main: MiniTidalTests.hs
-    ghc-options: -main-is MiniTidalTests
-    dependencies:
-      - estuary
-      - hspec
-      - directory

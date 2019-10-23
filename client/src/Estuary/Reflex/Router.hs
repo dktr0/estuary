@@ -40,7 +40,7 @@ router def inStatChangeEv renderPage = mdo
 
   -- Triggered via a page widget (dynPage is the recursive value from further below).
   -- When a change is explicitly triggered, we notify the history via pushPageState.
-  dynStateChangeEv :: Dynamic t (Event t state) <- mapDyn fst dynPage
+  let dynStateChangeEv = fmap fst dynPage
   let triggeredStateChangeEv = leftmost [
           inStatChangeEv,
           switchPromptlyDyn dynStateChangeEv

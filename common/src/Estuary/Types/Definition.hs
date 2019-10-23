@@ -1,32 +1,37 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.Definition where
 
-import Text.JSON
-import Text.JSON.Generic
 import Data.Maybe (mapMaybe)
 import qualified Data.Map as M
 import qualified Data.IntMap.Strict as IntMap
+import Data.Text (Text)
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 
+type TextProgram = Live (TextNotation,Text)
+
+type Sequence = M.Map Int (Text,[Bool])
+
 data Definition =
   Structure TransformedPattern | -- *** this should be renamed to TidalStructure
-  TextProgram (Live (TextNotation,String)) |
-  Sequence (M.Map Int (String,[Bool])) |
-  LabelText String
-  deriving (Eq,Show,Data,Typeable)
+  TextProgram TextProgram |
+  Sequence Sequence |
+  LabelText Text
+  deriving (Eq,Show,Generic)
+
+instance ToJSON Definition where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Definition
 
 type DefinitionMap = IntMap.IntMap Definition
 
 emptyDefinitionMap :: DefinitionMap
 emptyDefinitionMap = IntMap.empty
-
-instance JSON Definition where
-  showJSON = toJSON
-  readJSON = fromJSON
 
 definitionForRendering :: Definition -> Definition
 definitionForRendering (Structure x) = Structure x
@@ -34,22 +39,30 @@ definitionForRendering (TextProgram x) = TextProgram (Live (forRendering x) L4)
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Sequence x) = Sequence x
 
+maybeStructure :: Definition -> Maybe TransformedPattern
+maybeStructure (Structure x) = Just x
+maybeStructure _ = Nothing
+
 justStructures :: [Definition] -> [TransformedPattern]
-justStructures = mapMaybe f
-  where f (Structure x) = Just x
-        f _ = Nothing
+justStructures = mapMaybe maybeStructure
 
-justTextPrograms :: [Definition] -> [Live (TextNotation,String)]
-justTextPrograms = mapMaybe f
-  where f (TextProgram x) = Just x
-        f _ = Nothing
+maybeTextProgram :: Definition -> Maybe TextProgram
+maybeTextProgram (TextProgram x) = Just x
+maybeTextProgram _ = Nothing
 
-justSequences :: [Definition] -> [M.Map Int (String,[Bool])]
-justSequences = mapMaybe f
-  where f (Sequence x) = Just x
-        f _ = Nothing
+justTextPrograms :: [Definition] -> [TextProgram]
+justTextPrograms = mapMaybe maybeTextProgram
 
-justLabelTexts :: [Definition] -> [String]
-justLabelTexts = mapMaybe f
-  where f (LabelText x) = Just x
-        f _ = Nothing
+maybeSequence :: Definition -> Maybe Sequence
+maybeSequence (Sequence x) = Just x
+maybeSequence _ = Nothing
+
+justSequences :: [Definition] -> [Sequence]
+justSequences = mapMaybe maybeSequence
+
+maybeLabelText :: Definition -> Maybe Text
+maybeLabelText (LabelText x) = Just x
+maybeLabelText _ = Nothing
+
+justLabelTexts :: [Definition] -> [Text]
+justLabelTexts = mapMaybe maybeLabelText

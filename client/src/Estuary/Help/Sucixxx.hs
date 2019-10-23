@@ -6,6 +6,7 @@ import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility
 
 -- import Estuary.Types.Language
 
@@ -42,8 +43,8 @@ sucixxxHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
- divClass "about" $ text "Sucixxx"
- divClass "about" $ text "A mini live coding esolang developed in Quito, Ecuador."
+ divClass "about primary-color code-font" $ text "Sucixxx"
+ divClass "about primary-color code-font" $ text "A mini live coding esolang developed in Quito, Ecuador."
 
 exampleText :: Text -> Text
 
@@ -101,9 +102,9 @@ referenceText "con flow" = "returns TidalCycles' rev"
 -- help files for samples
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
- switchToReference <- divClass "refExampleButton" $ button x
+ switchToReference <- buttonWithClass' x
  exampleVisible <- toggle True switchToReference
  referenceVisible <- toggle False switchToReference
- hideableWidget exampleVisible "exampleText" $ text (exampleText x)
- hideableWidget referenceVisible "referenceText" $ text (referenceText x)
+ hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)
+ hideableWidget referenceVisible "referenceText code-font" $ text (referenceText x)
  return ()

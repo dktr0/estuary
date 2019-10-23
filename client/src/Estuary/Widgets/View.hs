@@ -1,115 +1,78 @@
-{-# LANGUAGE RecursiveDo, OverloadedStrings, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Estuary.Widgets.View where
 
-import qualified Data.IntMap.Strict as Map
-import Control.Monad
 import Reflex
 import Reflex.Dom
-import Text.Read
-import Data.Time.Clock
-import Data.Map as M (fromList)
-import qualified Data.Text as T
+import qualified Data.IntMap.Strict as IntMap
+import qualified Data.Map.Strict as Map
+import Control.Monad
+import Data.Maybe
 
-import Estuary.Types.Response
+import Estuary.Types.Live
 import Estuary.Types.Definition
-import Estuary.Types.Request
 import Estuary.Types.View
-import Estuary.Types.Sited
+import Estuary.Types.EnsembleC
+import Estuary.Types.Ensemble
+import Estuary.Types.Context
+import Estuary.Tidal.Types
+import Estuary.Types.TextNotation
+import Estuary.Types.TidalParser
+import Estuary.Types.RenderInfo
+import Estuary.Widgets.Editor
+import Estuary.Types.Variable
+import Estuary.Widgets.Text
+import Estuary.Widgets.TransformedPattern
+import Estuary.Widgets.Sequencer
+import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
-import Estuary.Types.EnsembleState
-import Estuary.Types.Hint
-import Estuary.Types.Terminal
-import Estuary.Tidal.Types
-import Estuary.Utility
-import Estuary.Widgets.TransformedPattern
-import Estuary.Widgets.Text
-import Estuary.Widgets.Terminal
-import Estuary.Widgets.SvgDisplay
-import Estuary.Widgets.CanvasDisplay
-import Estuary.Types.TidalParser
-import Estuary.Types.Live
-import Estuary.Types.TextNotation
-import Estuary.Types.Context
-import Estuary.RenderInfo
-import Estuary.Widgets.Sequencer
 
 
-viewWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> View -> DefinitionMap -> Event t [EnsembleResponse] -> m (Dynamic t DefinitionMap, Event t EnsembleRequest, Event t Hint)
+viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
-viewWidget ctx renderInfo (Views xs) initialDefs deltasDown = foldM f i xs
-  where
-    i = (constDyn (Map.empty :: DefinitionMap), never, never)
-    f b a = do
-      let (prevZoneMap,prevEdits,prevHints) = b
-      (zoneMap,edits,hints) <- viewWidget ctx renderInfo a initialDefs deltasDown
-      newZoneMap <- combineDyn Map.union prevZoneMap zoneMap
-      let newEdits = leftmost [prevEdits,edits]
-      let newHints = leftmost [prevHints,hints]
-      return (newZoneMap,newEdits,newHints)
+-- viewWidget er (RowView p v) = do
+---  let nRows = viewToRows v
+--   some kind of div where the default font-size is set from the number of rows and percentage (p)
+--   and has to contain the embedded view... so...
+--   let style = ... -- dynamic style
+--   let attrs = ... -- dynamic map of div attributes
+--   elDynAttrs "div" attrs $ viewWidget er v
 
-viewWidget ctx renderInfo (ViewDiv c v) i deltasDown = divClass (T.pack c) $ viewWidget ctx renderInfo v i deltasDown
+-- viewWidget er (CellView p v) = do
+--   similar to RowView where the horizontal width comes from the from percentage (p)
 
-viewWidget ctx renderInfo (StructureView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
-  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
-  (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
-  value' <- mapDyn (Map.singleton n . Structure) value
-  let edits' = fmap (ZoneRequest n . Structure) edits
-  return (value',edits',hints)
-  where f (Structure x) = x
-        f _ = EmptyTransformedPattern
+viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
-viewWidget ctx renderInfo (TextView n rows) i deltasDown = do
-  let i' = f $ Map.findWithDefault (TextProgram (Live (TidalTextNotation MiniTidal,"") L3)) n i
-  let deltasDown' = fmapMaybe (lastOrNothing . justTextPrograms . justEditsInZone n) deltasDown
-  e <- mapDyn (Map.lookup n . errors) renderInfo
-  (value,edits,hints) <- textNotationWidget ctx e rows i' deltasDown'
-  value' <- mapDyn (Map.singleton n . TextProgram) value
-  let edits' = fmap (ZoneRequest n . TextProgram) edits
-  return (value',edits',hints)
-  where f (TextProgram x) = x
-        f _ = Live (TidalTextNotation MiniTidal,"") L3
+viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeStructure Structure er structureEditor
+
+viewWidget er (TextView z rows) = do
+  ri <- askRenderInfo
+  let errorDyn = fmap (IntMap.lookup z . errors) ri
+  zoneWidget z (Live (TidalTextNotation MiniTidal,"") L3) maybeTextProgram TextProgram er (textProgramEditor rows errorDyn)
+
+viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
+  where defaultValue = Map.singleton 0 ("",replicate 8 False)
+
+viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
+
+viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
+
+viewWidget er (Views xs) = liftM leftmost $ mapM (viewWidget er) xs
+
+viewWidget _ _ = return never
 
 
-
-viewWidget ctx renderInfo (SequenceView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Sequence defaultValue) n i
-  let deltasDown' = fmapMaybe (lastOrNothing . justSequences . justEditsInZone n) deltasDown
-  v <- sequencer i' deltasDown'
-  value <- mapDyn (\(a,_,_) -> a) v
-  edits <- liftM switchPromptlyDyn $ mapDyn (\(_,a,_)-> a) v
-  hints <- liftM switchPromptlyDyn $ mapDyn (\(_,_,a)-> a) v
-  value' <- mapDyn (Map.singleton n . Sequence) value
-  let edits' = fmap (ZoneRequest n . Sequence) edits
-  return (value',edits',hints)
-  where f (Sequence x) = x
-        f _ = defaultValue
-        defaultValue = M.fromList [(0,("",replicate 8 False))]
-
-viewWidget _ _ (LabelView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (LabelText "") n i
-  let deltasDown' = fmap (justLabelTexts . justEditsInZone n) deltasDown
-  edits <- labelWidget i' deltasDown'
-  let edits' = fmap (ZoneRequest n) edits
-  return (constDyn Map.empty,edits',never)
-  where f (LabelText x) = x
-        f _ = ""
-
-viewWidget _ rInfo (SvgDisplayView z) _ _ = svgDisplay z rInfo >> return (constDyn Map.empty, never, never)
-
-viewWidget ctx _ (CanvasDisplayView z) _ _ = do
-  mv <- fmap canvasState $ sample $ current ctx
-  canvasDisplay z mv
-  return (constDyn Map.empty, never, never)
-
-viewWidget ctx renderInfo (StructureView n) i deltasDown = do
-  let i' = f $ Map.findWithDefault (Structure EmptyTransformedPattern) n i
-  let deltasDown' = fmap (justStructures . justEditsInZone n) deltasDown
-  (value,edits,hints) <- topLevelTransformedPatternWidget i' deltasDown'
-  value' <- mapDyn (Map.singleton n . Structure) value
-  let edits' = fmap (ZoneRequest n . Structure) edits
-  return (value',edits',hints)
-  where f (Structure x) = x
-        f _ = EmptyTransformedPattern
+zoneWidget :: (MonadWidget t m, Eq a)
+  => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
+  -> (Dynamic t a -> Editor t m (Variable t a))
+  -> Editor t m (Event t EnsembleRequest)
+zoneWidget z defaultA f g ensResponses anEditorWidget = do
+  ctx <- askContext
+  iCtx <- initialValueOfDyn ctx
+  let iDef = IntMap.findWithDefault (g defaultA) z $ zones $ ensemble $ ensembleC iCtx
+  let iValue = maybe defaultA id $ f iDef
+  let deltas = fmapMaybe (join . fmap f . listToMaybe . reverse . justEditsInZone z) ensResponses -- :: Event t a
+  dynUpdates <- liftR $ holdDyn iValue deltas
+  variableFromWidget <- anEditorWidget dynUpdates
+  return $ (WriteZone z . g) <$> localEdits variableFromWidget

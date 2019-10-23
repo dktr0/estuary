@@ -14,25 +14,10 @@
   <meta name="theme-color" content="#62dd73">
 
   <title>Estuary</title>
-  
+
   <link href="../css-custom/classic.css" rel="stylesheet" type="text/css" id="estuary-current-theme"/>
   <link href="../css-source/source.css" rel="stylesheet" type="text/css"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <script defer type="text/javascript" src="EstuaryProtocol.js"></script>
-  <script defer type="text/javascript" src="SuperDirt.js"></script>
-  <script defer type="text/javascript" src="WebDirt/WebDirt.js"></script>
-  <script defer type="text/javascript" src="WebDirt/Graph.js"></script>
-  <script defer type="text/javascript" src="WebDirt/SampleBank.js"></script>
-
-#ifdef PRODUCTION
-  <script defer type="text/javascript" src="all.min.js"></script>
-#else
-  <script defer type="text/javascript" src="rts.js"></script>
-  <script defer type="text/javascript" src="lib.js"></script>
-  <script defer type="text/javascript" src="out.js"></script>
-  <script defer type="text/javascript" src="runmain.js"></script>
-#endif
 
 #ifndef TEST
   <style type="text/css">
@@ -101,75 +86,99 @@
       display: none;
     }
   </style>
-  <script type="text/javascript" src="estuary-icon.js"></script>
 #endif
 </head>
 <body>
   <div id="estuary-root"></div>
-#ifndef TEST
-  <div id="estuary-splash" class="estuary-logo full-screen">
-    <div class="info">
-      <h1 class="title">Estuary</h1>
-      <h5 class="status">Loading...</h5>
-    </div>
-  </div>
   <script type="text/javascript">
-    var EstuaryIcon = (function() {
-      var container = document.querySelector('#estuary-splash');
-      var statusDisplay = container.querySelector('.status');
 
-      var icons = new EstuaryIcons(800, 800, {
-        linesPerSec: 15,
-        secUntilFullRadius: 10
-      });
-      var display = icons.addDisplay();
-      container.appendChild(display.canvas);
+function fatalError(m) {
+  var e = document.getElementById("estuary-root");
+  e.innerHTML = m;
+  console.log(m);
+}
 
-      icons.startRendering();
+function loadJavascript(url, successCallback, failureCallback){
+  var script = document.createElement("script")
+  script.type = "text/javascript";
+  document.getElementsByTagName("head")[0].appendChild(script);
+  script.onload = function() { successCallback(); }
+  script.onerror = function() { failureCallback(); }
+  script.src = url;
+}
 
-      var splash = {
-        claim: container,
-        display: display,
-        renderer: icons
-      };
+function loadJavascript(urls,totalAttempts,remainingAttempts) {
+  if(urls.length == 0) {
+    console.log("loading of Javascript dependencies completed");
+    return;
+  }
+  var url = urls[0];
+  var script = document.createElement("script")
+  script.type = "text/javascript";
+  document.getElementsByTagName("head")[0].appendChild(script);
+  script.onload = function() {
+    console.log("loaded " + url);
+    loadJavascript(urls.slice(1),totalAttempts,totalAttempts);
+  };
+  script.onerror = function() {
+    if(remainingAttempts > 1) {
+      console.log("failed to load " + url + " (retrying, " + (remainingAttempts-1) + " attempts left)...");
+      loadJavascript(urls,totalAttempts,remainingAttempts-1);
+    }
+    else {
+      fatalError("fatal error loading Estuary: failed in last attempt to load " + url + " - This could be caused by network problems and delays, or problems in the configuration of the Estuary server itself. If trying to reload a few times does not resolve the problem, please feel encouraged to ask for help on the Estuary Google group or the #estuary channel at chat.toplap.org.");
+    }
+  };
+  script.src=url;
+}
 
-      var state = '';
-      Object.defineProperty(splash, 'state', {
-        enumerable: true,
-        configurable: true,
-        get: function get() { return state; },
-        set: function set(nextState) {
-          switch (nextState) {
-            case 'loading':
-              // The app is loading and no interaction is available yet.
-              container.classList = 'estuary-logo full-screen';
-              display.canvas.classList.add('center-screen');
-              statusDisplay.innerText = 'Loading...';
-              container.appendChild(display.canvas);
-              break;
-            case 'loaded':
-              // The app has loaded and the splash is ready to click.
-              container.classList = 'estuary-logo full-screen loaded';
-              statusDisplay.innerText = 'Click to start';
-              container.addEventListener('click', function() {
-                splash.state = 'started';
-              }, {once: true});
-              break;
-            case 'started':
-              // The app has loaded and the splash was clicked.
-              container.classList = 'estuary-logo full-screen started';
-              display.canvas.classList.remove('center-screen');
-              break;
-          }
+function checkForAudioWorklets() {
+  var tempAc = new AudioContext();
+  if(!('audioWorklet' in tempAc)) {
+    fatalError("fatal error loading Estuary: your web browser does not support audio worklets. Recommendation: Use Chrome or Chromium instead.");
+    return false;
+  }
+  console.log("browser has audio worklets - great!");
+  return true;
+}
 
-          state = nextState;
-        }
-      });
-      splash.state = 'loading';
+function checkForWebGL() {
+  var tempCanvas = document.createElement("canvas");
+  var tempGl = tempCanvas.getContext("webgl");
+  if(tempGl && tempGl instanceof WebGLRenderingContext) {
+    console.log("browser supports WebGL - great!");
+    return true;
+  }
+  fatalError("fatal error loading Estuary: your web browser does not support WebGL. Recommendation: Use a recent version of Chrome or Chromium. If you are using Linux, especially, this problem can also be caused by misconfigured video drivers.");
+  return false;
+}
 
-      return splash;
-    })();
+function loadJavascriptDependencies() {
+  loadJavascript([
+    "SuperDirt.js",
+    "PeerProtocol.js",
+    "WebDirt/WebDirt.js",
+    "WebDirt/Graph.js",
+    "WebDirt/SampleBank.js",
+    #ifdef PRODUCTION
+    "all.min.js"
+    #else
+    "rts.js",
+    "lib.js",
+    "out.js",
+    "runmain.js"
+    #endif
+  ],10,10);
+}
+
+function loadEstuary() {
+  var x;
+  if(!checkForAudioWorklets())return;
+  if(!checkForWebGL())return;
+  loadJavascriptDependencies();
+}
+
+loadEstuary();
   </script>
-#endif
 </body>
 </html>

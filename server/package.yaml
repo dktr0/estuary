@@ -5,28 +5,34 @@ description: Please see README.md
 category: Web
 author: David Ogborn, Jamie Beverley and others
 maintainer: ogbornd@mcmaster.ca
-copyright: 2015-17 David Ogborn and others
+copyright: 2015-19 David Ogborn and others
 license: GPL-3
 homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
 
 dependencies:
-- base
-- estuary-common
-- containers
-- text
-- json
-- websockets
-- wai
-- warp
-- wai-websockets
-- wai-app-static
-- wai-extra
-- time
-- sqlite-simple
-- mtl
+  - base
+  - estuary-common
+  - containers
+  - directory
+  - filepath
+  - htaglib
+  - text
+  - json
+  - aeson
+  - bytestring
+  - websockets
+  - wai
+  - warp
+  - warp-tls
+  - wai-websockets
+  - wai-app-static
+  - wai-extra
+  - time
+  - sqlite-simple
+  - mtl
 
 library:
-  source-dirs: 
+  source-dirs:
     - ./src
 
 executables:

@@ -6,6 +6,8 @@ import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility
+
 
 -- import Estuary.Types.Language
 
@@ -29,8 +31,8 @@ moreliaHelpFile = divClass "languageHelp" $ do
 -- about
 about :: MonadWidget t m => m ()
 about = do
- divClass "about" $ text "Morelia"
- divClass "about" $ text "A mini live coding esolang developed in Morelia, México."
+ divClass "about primary-color code-font" $ text "Morelia"
+ divClass "about primary-color code-font" $ text "A mini live coding esolang developed in Morelia, México."
 
 exampleText :: Text -> Text
 
@@ -62,9 +64,9 @@ referenceText "I" = "returns Dirt's \"bd\" sample"
 
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
- switchToReference <- divClass "refExampleButton" $ button x
+ switchToReference <- buttonWithClass' x
  exampleVisible <- toggle True switchToReference
  referenceVisible <- toggle False switchToReference
- hideableWidget exampleVisible "exampleText" $ text (exampleText x)
- hideableWidget referenceVisible "referenceText" $ text (referenceText x)
+ hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)
+ hideableWidget referenceVisible "referenceText code-font" $ text (referenceText x)
  return ()

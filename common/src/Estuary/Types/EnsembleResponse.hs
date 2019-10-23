@@ -1,43 +1,51 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Estuary.Types.EnsembleResponse where
 
-import Data.Maybe (mapMaybe)
-import Data.Ratio
-import Text.JSON
-import Text.JSON.Generic
 import Data.Time
+import Data.Text (Text)
+import Data.Maybe (mapMaybe,listToMaybe)
+import GHC.Generics
+import Data.Aeson
 
 import Estuary.Types.View
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
+import Estuary.Types.Participant
+import Estuary.Types.Chat
 
 data EnsembleResponse =
-  Chat String String | -- name message
-  ZoneResponse Int Definition |
-  ViewList [String] |
-  View String View |
-  DefaultView View |
-  NewTempo Tempo UTCTime | -- the tempo plus the time it was sent by the server
-  EnsembleClientCount Int
-  deriving (Data,Typeable)
+  TempoRcvd Tempo |
+  ZoneRcvd Int Definition |
+  ViewRcvd Text View |
+  ChatRcvd Chat |
+  ParticipantJoins Text Participant |
+  ParticipantUpdate Text Participant |
+  ParticipantLeaves Text |
+  AnonymousParticipants Int
+  deriving (Generic)
 
-instance JSON EnsembleResponse where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON EnsembleResponse where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON EnsembleResponse
 
 justEditsInZone :: Int -> [EnsembleResponse] -> [Definition]
 justEditsInZone z1 = mapMaybe f
   where
-    f (ZoneResponse z2 a) | z1==z2 = Just a
+    f (ZoneRcvd z2 a) | z1==z2 = Just a
     f _ = Nothing
 
-justChats :: [EnsembleResponse] -> [(String,String)]
+justChats :: [EnsembleResponse] -> [Chat]
 justChats = mapMaybe f
-  where f (Chat x y) = Just (x,y)
+  where f (ChatRcvd x) = Just x
         f _ = Nothing
 
-justViews :: [EnsembleResponse] -> [(String,View)]
+justViews :: [EnsembleResponse] -> [(Text,View)]
 justViews = mapMaybe f
-  where f (View x y) = Just (x,y)
+  where f (ViewRcvd x y) = Just (x,y)
+        f _ = Nothing
+
+lastTempoChange :: [EnsembleResponse] -> Maybe Tempo
+lastTempoChange = listToMaybe . reverse . mapMaybe f
+  where f (TempoRcvd theTempo) = Just theTempo
         f _ = Nothing

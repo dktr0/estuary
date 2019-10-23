@@ -1,52 +1,67 @@
-body {
-	background-color: rgb(98, 221, 115);
-	color: black;
-	height: 100%;
-	margin: 0;
-	font-family: 'Inconsolata';
+/*
+--------------------------------------------------------------------
+Welcome to the 'inverse' theme template: For quick Estuary's interface customization, modify the colors below.
+More advanced customization is available through CSS classes within this document.
+--------------------------------------------------------------------
+*/
+
+:root {
+/* sets the background color */
+  --background-color: rgb(98, 221, 115);
+
+/* seta the color of all text (except the buttons') and typically some borders*/
+  --primary-color: black;
+
+/* sets the background color of buttons and other borders (like the sequencer's borders)*/
+  --secondary-color: rgba(77, 77, 77, 0.5);
+
+/* sets the color of things that appear temporarily */
+  --transient-color: orange;
 }
 
-/*modfifies the name and terminal textareas*/
-input {
-	background-color: rgb(98, 221, 115);
-	color: black;
+/*
+--------------------------------------------------------------------
+				advanced customization
+--------------------------------------------------------------------
+*/
+
+  /*styles the background */
+.background {
+    background-color: var(--background-color);
+	background-image:  linear-gradient(to bottom right, rgb(98, 221, 115), rgb(98, 205, 115));
+	  }
+
+/*styles the code font*/
+.code-font {
+	  font-family: 'Helvetica';
+	  font-size:1em;
+	  }
+
+/* styles the fonts for the header, menus and labels */
+.ui-font {
+	font-family: 'Helvetica';
+	font-size: 1em;
+	}
+
+/* styles the user-interface buttons */
+.ui-buttons {
+  color:var(--background-color);
+  background-color:var(--secondary-color);
 }
 
-/* modifies the coding textarea or view */
-textarea {
-	background-color: rgb(98, 221, 115);
-	color: black;
-  width: 100%;
-	height: 100%;
+/* styles the dropdown */
+.ui-dropdownMenus {
+  background-color: var(--background-color) !important;
 }
 
-/*modifies all Estuary buttons */
-button {
-	background-color: hsl(0,0%,20%);;
-	color: rgb(98, 221, 115);
-	border: none;
-	border-radius: 4px;
+/* styles the primary borders (e.g. from dropdown menus)*/
+.primary-borders {
+	border-radius: 5px;
+    border: 1px solid var(--primary-color);
 }
 
-/*modifies the theme and language dropdown menus */
-select {
-	background-color: transparent;
-	border: 1px solid;
-}
-
-/* modifies the border of the homepage buttons when hovering on */
-.splash-panel:hover {
-	border-color: black;
-}
-
-/*modifies the text from the structured-view dropdown menus  */
-.atomPopup{
-	color:rgb(98, 221, 115);
-}
-
-/* The div wrapping popupMenus */
-.popupMenu{
-		color:rgb(98, 221, 115);
-	background-color:hsl(0,0%,10%);
-	border: 2pt solid hsl(0,0%,10%);
-}
+/*styles other borders (e.g. from ui buttons and sequencer buttons)  */
+.other-borders {
+    border-radius: 5px;
+    border: 1px solid var(--secondary-color);
+    }

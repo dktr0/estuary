@@ -1,56 +1,80 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+
+-- The type Ensemble represents all information about an ensemble that is shared
+-- between a given client and a server, including but not limited to all of the
+-- live coding "programs" to be rendered by the client.
+--
+-- (See also EnsembleS which wraps this type with further information held only by the
+-- server and EnsembleC which wraps this type with info known only to the client.)
 
 module Estuary.Types.Ensemble where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.IntMap as IntMap
 
-import Data.Time.Clock
-import Data.Time.Clock.POSIX
-import Data.Time.Calendar
-import Text.JSON
-import Text.JSON.Generic
-import Text.Read
-import Data.Ratio
+import Data.Time
+import Data.Text (Text)
+import Control.Applicative
+import GHC.Generics
+import Data.Aeson
 
+import Estuary.Types.Tempo
 import Estuary.Types.Definition
 import Estuary.Types.View
-import Estuary.Types.Tempo
+import Estuary.Types.Chat
+import Estuary.Types.Participant
 
 data Ensemble = Ensemble {
-  password :: String,
-  defs :: Map.Map Int Definition,
-  views :: Map.Map String View,
-  defaultView :: View,
-  tempo :: Tempo
-  } deriving (Data,Typeable)
+  ensembleName :: Text,
+  tempo :: Tempo,
+  zones :: IntMap.IntMap Definition,
+  views :: Map.Map Text View,
+  chats :: [Chat],
+  participants :: Map.Map Text Participant,
+  anonymousParticipants :: Int
+  } deriving (Generic)
 
-instance JSON Ensemble where
-  showJSON = toJSON
-  readJSON = fromJSON
+instance ToJSON Ensemble where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Ensemble
 
 emptyEnsemble :: UTCTime -> Ensemble
 emptyEnsemble t = Ensemble {
-  password = "",
-  defs = Map.empty,
+  ensembleName = "",
+  tempo = Tempo { at=t, beat=0.0, cps=0.5 },
+  zones = IntMap.empty,
   views = Map.empty,
-  defaultView = standardView,
-  tempo = Tempo { at=t, beat=0.0, cps=0.5 }
+  chats = [],
+  participants = Map.empty,
+  anonymousParticipants = 0
   }
 
-setPassword :: String -> Ensemble -> Ensemble
-setPassword s e = e { password = s }
+leaveEnsemble :: Ensemble -> Ensemble
+leaveEnsemble x = x {
+  ensembleName = "",
+  zones = IntMap.empty
+  }
 
-editDef :: Int -> Definition -> Ensemble -> Ensemble
-editDef z d s = s { defs = Map.insert z d (defs s) }
+writeEnsembleName :: Text -> Ensemble -> Ensemble
+writeEnsembleName t e = e { ensembleName = t }
 
-editDefaultView :: View -> Ensemble -> Ensemble
-editDefaultView v s = s { defaultView = v }
+writeTempo :: Tempo -> Ensemble -> Ensemble
+writeTempo t e = e { tempo = t }
 
-editView :: String -> View -> Ensemble -> Ensemble
-editView w v s = s { views = Map.insert w v (views s) }
+writeZone :: Int -> Definition -> Ensemble -> Ensemble
+writeZone z d e = e { zones = IntMap.insert z d (zones e) }
 
-deleteView :: String -> Ensemble -> Ensemble
-deleteView v e = e { views = Map.delete v (views e) }
+writeView :: Text -> View -> Ensemble -> Ensemble
+writeView w v e = e { views = Map.insert w v (views e) }
 
-tempoChange :: Tempo -> Ensemble -> Ensemble
-tempoChange t e = e { tempo = t }
+appendChat :: Chat -> Ensemble -> Ensemble
+appendChat c e = e { chats = c:(chats e) }
+
+writeParticipant :: Text -> Participant -> Ensemble -> Ensemble
+writeParticipant k p e = e { participants = Map.insert k p (participants e) }
+
+deleteParticipant :: Text -> Ensemble -> Ensemble
+deleteParticipant k e = e { participants = Map.delete k (participants e) }
+
+writeAnonymousParticipants :: Int -> Ensemble -> Ensemble
+writeAnonymousParticipants n e = e { anonymousParticipants = n }

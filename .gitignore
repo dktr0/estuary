@@ -1,3 +1,5 @@
+sampleMap.json
+rtpBridge/package-lock.json
 estuary-client.zip
 estuary-client.tgz
 closure-compiler.jar
@@ -21,4 +23,15 @@ EstuaryServer/EstuaryServer.exe
 **/.stack-work/**/*
 **/.stack-work-*/**/*
 **/node_modules/**/*
+
+staging/
+dev-staging/
+
+### nix
+/result
+/*-result
+
+### cabal
 **/*.cabal
+dist-*/
+.ghc.environment*

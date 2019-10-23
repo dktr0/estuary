@@ -1,71 +1,80 @@
-{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings, JavaScriptFFI #-}
 
-module Estuary.Widgets.WebSocket where
+module Estuary.Widgets.WebSocket (estuaryWebSocket) where
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
-import Text.JSON
-import qualified Data.ByteString.Char8 as C
+import Reflex.Dom.WebSocket
+import Control.Lens hiding (Context)
 import Control.Monad.IO.Class (liftIO)
 import Data.Time
 import Data.Either
 import Data.Maybe
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Aeson
 
-import Estuary.Protocol.Foreign
+import Estuary.Types.Context
+import Estuary.Types.RenderInfo
 import Estuary.Types.Request
 import Estuary.Types.Response
-import Estuary.Types.Sited
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.EnsembleResponse
-import Estuary.Types.Context
 
--- an estuaryWebSocket wraps the underlying Reflex WebSocket with some parsing of the EstuaryProtocol
--- for collaborative editing. While the password is dynamic, like the Reflex WebSocket the socket address
--- isn't (so each new address requires a new instance of the widget - see resettingWebSocket below)
--- currently not working, apparently because of a bug in the old version of reflex-dom we are using
--- (see alternateWebSocket below)
--- when we refactor to new reflex we will likely reincorporate this
 
-{- estuaryWebSocket :: MonadWidget t m => String -> Dynamic t String -> Event t EstuaryProtocol
-  -> m (Event t EstuaryProtocol)
-estuaryWebSocket addr pwd toSend = mdo
-  let addr' = "ws://" ++ addr
-  let toSend' = fmap ((:[]) . C.pack . encode) $ attachDynWith setPassword pwd toSend
-  ws <- webSocket addr' $ def & webSocketConfig_send .~ toSend'
-  let ws' = traceEventWith (C.unpack) $ _webSocket_recv ws
-  let wsRcvd = fmap (decode . C.unpack) $ ws'
-  return $ fmapMaybe isOk wsRcvd
-  where
-    isOk (Ok x) = Just x
-    isOk _ = Just (ProtocolError "unknown protocol error")
--}
+estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
+  m (Event t Response, Event t ContextChange)
+estuaryWebSocket ctx rInfo toSend = mdo
+  hostName <- liftIO $ getHostName
+  port <- liftIO $ getPort
+  let url = "wss://" <> hostName <> ":" <> port
+  let requestsToSend = mergeWith (++) [sendBrowserInfo,toSend,clientInfoEvent]
+  let config = def & webSocketConfig_send .~ requestsToSend & webSocketConfig_reconnect .~ True
+  ws <- jsonWebSocket url config
+  let response = fmapMaybe id $ ws^.webSocket_recv
 
-alternateWebSocket :: MonadWidget t m => EstuaryProtocolObject -> Event t Request ->
-  m (Event t [Response], Event t (Context->Context))
-alternateWebSocket obj toSend = mdo
+--  status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
+--  status' <- holdDyn "---" status
+--  status'' <- holdUniqDyn status'
+--  let wsStatusChanges = fmap (\w x -> x { wsStatus = w }) $ updated status''
+
+  -- after widget is built, query and report browser info to server
+  postBuild <- getPostBuild
+  userAgent <- performEvent $ fmap (liftIO . const getUserAgent) postBuild
+  let sendBrowserInfo = fmap ((:[]) . BrowserInfo) userAgent
+
+  -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
+  -- let socketIsOpen = fmap (=="connection open") status'
+  let socketIsOpen = constDyn True
   now <- liftIO $ getCurrentTime
+  pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
+  pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
+  let clientInfoWithPingTime = fmap ClientInfo pingTickTime
+  let loadDyn = fmap avgRenderLoad rInfo
+  let animationLoadDyn = fmap avgAnimationLoad rInfo
+  latencyDyn <- holdDyn 0 $ latency
+  let loadAnimationAndLatency = (\x y z -> (x,y,z)) <$> loadDyn <*> animationLoadDyn <*> latencyDyn
+  let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith (\(x,y,z) w -> w x y z) loadAnimationAndLatency clientInfoWithPingTime
 
-  performEvent_ $ fmap (liftIO . (send obj) . encode) $ leftmost [toSend,pingRequest]
-  ticks <- tickLossy (0.1::NominalDiffTime) now
-  responses <- performEvent $ fmap (liftIO . (\_ -> getResponses obj)) ticks
-  -- responses <- performEventAsync $ ffor ticks $ \_ cb -> liftIO (getResponses obj >>= cb) -- is this more performant???
-  let responses' = fmapMaybe id $ fmap (either (const Nothing) (Just)) responses
-  status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
-  status' <- holdDyn "---" status
-  let wsStatusChanges = fmap (\w x -> x { wsStatus = w }) $ (updated . nubDyn) status'
-
- -- issue Pings to track latency with server, but only when WebSocket connection is open
-  socketIsOpen <- mapDyn (=="connection open") status'
-  pingTick <- tickLossy (5::NominalDiffTime) now
-  pingTick' <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
-  let pingTick'' = gate (current socketIsOpen) pingTick'
-  let pingRequest = fmap Ping pingTick''
-
-  -- when Pongs are received
-  let pongs = fmapMaybe justPongs responses'
-  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pongs
+  -- the server responds to ClientInfo (above) with ServerInfo, which we process below
+  -- by issuing events that update the context
+  let serverInfos = fmapMaybe justServerInfo response
+  let serverClientCounts = fmap fst serverInfos
+  let serverClientCountChanges = fmap (\x c -> c { clientCount = x }) serverClientCounts
+  let pingTimes = fmap snd serverInfos
+  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pingTimes
   let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
+  let contextChanges = mergeWith (.) [serverClientCountChanges,latencyChanges]
 
-  let contextChanges = mergeWith (.) [wsStatusChanges,latencyChanges]
+  return (response,contextChanges)
 
-  return (responses',contextChanges)
+
+foreign import javascript unsafe
+  "$r = location.hostname"
+  getHostName :: IO Text
+
+foreign import javascript unsafe
+  "$r = location.port"
+  getPort :: IO Text
+
+foreign import javascript unsafe
+  "navigator.userAgent"
+  getUserAgent :: IO Text
