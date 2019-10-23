@@ -46,11 +46,17 @@ rat_videoSpec_videoSpec :: ExpParser (Rational -> VideoSpec -> VideoSpec)
 rat_videoSpec_videoSpec =
   playNatural <$ reserved "natural" <|> --time function
   playRound <$ reserved "round" <|> -- time function
+  playRoundMetre <$ reserved "roundMetre" <|> -- time function
   setWidth <$ reserved "w" <|>
   setHeight <$ reserved "h" <|>
   setPosX <$ reserved "posX" <|>
   setPosY <$ reserved "posY" <|>
   setOpacity <$ reserved "opacity" <|>
+  setBlur <$ reserved "blur" <|>
+  setBrightness <$ reserved "brightness" <|>
+  setContranst <$ reserved "contrast" <|>
+  setGrayscale <$ reserved "grayscale" <|>
+  setSaturate <$ reserved "saturate"
 
 rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_videoSpec_videoSpec =
@@ -60,7 +66,7 @@ rat_rat_videoSpec_videoSpec =
 
 rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_videoSpec_videoSpec =
-  playChop' <$ reserved "chop'" <|> -- time function
+  playChop' <$ reserved "chop'" -- time function
 
 rat_rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_rat_videoSpec_videoSpec =

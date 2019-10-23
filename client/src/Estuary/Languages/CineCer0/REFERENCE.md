@@ -1,7 +1,24 @@
 # Cinecer0 Reference
 
+## Playing Videos
 
+"video.extension" --videos play as a string
+"videoURL" --you can add the URL to play videos
 
+## Geometric Functions
+
+width h $ -- changes height (h) of the video, 1 = natural width
+height w $ -- changes width (w) of the video, 1 = natural height
+size h w $ -- changes both height and width
+posX x $ -- moves the video in the X-coordinate, from left (-1) to right 1
+posY y $ -- moves the video in the Y-coordinate from bottom (-1) to top 1
+pos x y $ -- moves in both coordinates
+
+## Style Functions
+
+opacity [o] $ -- changes the opacity, 1 = 100% (no opacity)
+
+## Time Functions
 
 
 
