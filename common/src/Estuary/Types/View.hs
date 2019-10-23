@@ -3,12 +3,14 @@
 module Estuary.Types.View where
 
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics
 import Data.Aeson
 
 
 data View =
   Views [View] |
+  GridView Int Int [View] |
   ViewDiv Text View | -- deprecated in favour of next two...
   RowView Rational View | -- a full row in the layout, number is percent of vertical space
   CellView Rational View | -- a cell (ie. column fragment) in the layout, number is percent of horizontal space
@@ -25,11 +27,9 @@ instance FromJSON View
 emptyView :: View
 emptyView =  Views []
 
-
-
-
 viewToRows :: View -> Int
 viewToRows (Views vs) = sum $ fmap viewToRows vs
+viewToRows (GridView _ _ _) = 1 --this doesnt make sense ??
 viewToRows (ViewDiv _ v) = viewToRows v
 viewToRows (RowView _ v) = viewToRows v
 viewToRows (CellView _ v) = viewToRows v

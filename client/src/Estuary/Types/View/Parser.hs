@@ -16,6 +16,8 @@ import Estuary.Types.View
 
 dumpView :: View -> Text
 dumpView (Views xs) = T.intercalate " " $ fmap dumpView xs
+dumpView (GridView cols rows vs) = showInt cols <> "x" <> showInt  rows <>  " [" <> vs' <> "]"
+  where vs' = T.intercalate ","  $ fmap dumpView vs
 dumpView (ViewDiv css v) = "{ " <> css <> " " <> dumpView v <> " }"
 dumpView (StructureView x) = "structure:" <> showInt x
 dumpView (LabelView x) = "label:" <> showInt x
@@ -35,9 +37,19 @@ topLevelViewsParser = do
 viewsParser :: Parser View
 viewsParser = Views <$> many1 viewParser
 
+gridViewParser :: Parser View
+gridViewParser = do
+  columns <- int
+  reserved "x"
+  rows <- int
+  vs <- brackets $ commaSep viewParser
+  return $ GridView columns rows vs
+
+
 viewParser :: Parser View
 viewParser = do
   v <- choice [
+    try gridViewParser,
     try viewDiv,
     try labelView,
     try structureView,
@@ -70,7 +82,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
     "label","structure","sequenceView","textView","svgDisplayView",
-    "canvasDisplayView"
+    "canvasDisplayView", "x"
     ],
   P.reservedOpNames = [":"],
   P.caseSensitive = True

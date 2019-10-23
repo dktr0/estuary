@@ -72,24 +72,19 @@ body, .primary-color {
 padding-left: 10px;
 }
 
-
-
 .page {grid-area: page}
-.ensembleTempo {grid-area: ensembleTempo;}
-.splash-container {grid-area: splash-container;}
 .footer{grid-area: footer;}
 
 
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
 display: grid;
-grid-template-rows: 5vh 80vh 5vh;
+grid-template-rows: 5vh 90vh 5vh;
   grid-template-areas:
     'header header'
     'page page'
-    'page page'
     'footer footer';
-  width: 100vw;
+  width: 99vw;
   height: 100vh;
 }
 
@@ -132,9 +127,6 @@ grid-template-rows: 5vh 80vh 5vh;
 }
 
 .page {
-  display: grid;
-  grid-template-areas:
-  'splash-container';
 }
 
 /* source  */
@@ -186,7 +178,7 @@ grid-template-rows: 5vh 80vh 5vh;
 	padding-left: 15px;
 	padding-right: 15px;
 	margin-bottom:0.25em;
-/* 	background-color: blue; */
+
 }
 
 .ourPopUp {
@@ -219,7 +211,7 @@ grid-template-rows: 5vh 80vh 5vh;
 
 	min-width: 50%;
 	box-sizing: border-box;
-	padding: 0.4em;
+	padding: 0.5em;
 }
 
 .splash-panel {/*contains the tutorial, solo and collaboration buttons (source)*/
@@ -230,7 +222,8 @@ grid-template-rows: 5vh 80vh 5vh;
 	text-align: center;
 	height: 100%;
 	box-sizing: border-box;
-	max-height: 16em;
+	/*before it was 16em */
+	max-height: 40vh;
 	display: flex;
 	flex-direction: column;
 }
@@ -248,6 +241,8 @@ grid-template-rows: 5vh 80vh 5vh;
 
 .splash-title { /*contains the title "estuary" on the homepage  (source)*/
 	display: flex;
+	/*this padding was added in 23 oct 2019*/
+	padding-top: 3vh;
 	margin-bottom: 1%;
 	margin: auto;
 	font-size: calc(16px + 1.5vw); /* scales a bit nicer with the viewport */
@@ -265,7 +260,8 @@ grid-template-rows: 5vh 80vh 5vh;
 .splash-icon {
 	font-family: estuary-icons;
 	width:100%;
-	font-size: 13em;
+	/*this was 13em*/
+	font-size: 30vh;
 }
 
 .splash-icon > canvas {
@@ -418,7 +414,7 @@ grid-template-rows: 5vh 80vh 5vh;
 
 /* name-tag textarea */
 .name-tag-textarea {
-	flex:1;
+/* 	flex:1; */
 	border: none;
 	background-color: transparent;
 }
@@ -445,10 +441,10 @@ grid-template-rows: 5vh 80vh 5vh;
 .textInputToEndOfLine {
 	font-weight: normal;
 	padding: 0px;
-	margin-top: 0.5em;
-	margin-bottom: 0px;
-	margin-left: 0px;
-	margin-right: 0px;
+/* 	margin-top: 0.5em; */
+	margin-bottom: 0.5em;
+/* 	margin-left: 0px; */
+/* 	margin-right: 0px; */
 	height: auto;
 	resize: none;
 	overflow: hidden;
@@ -737,10 +733,13 @@ table, tr, td {border: none;}
 	display: flex;
 	flex-direction: row;
     border:none
+    display: none;
+
 
 }
 
 .ensembleName {
+	display: none;
 	margin-top: 1px;
 	margin-right: 1em;
 }
@@ -749,12 +748,14 @@ table, tr, td {border: none;}
 	display: flex;
 	border: none;
 	width: 25%;
+	display: none;
 }
 
 .ensembleHandle, .ensemblePassword {
 	margin-right: 1em;
 	border: none;
 	background-color: transparent;
+	display: none;
 }
 
 .ensembleTempo textarea{
@@ -865,52 +866,42 @@ width: 8em;
 	width: 5em;}
 
 /* new grid layout css */
-   /*similar to page  */
-   /*
-   .subGrid-container {grid-area: subGrid-container}
-   .ensemble-header-row {grid-area: ensemble-header-row;
-   background-color: chocolate}
-   .set-tempo-row {grid-area: set-tempo-row;
-   background-color:brown}
-   .viewsContainer {grid-area: viewsContainer}
+   /*this goes inside page  */
 
-  .subGrid-container {
-    display: grid;
-   grid-template-rows: 5% 5% 90%;
-    grid-template-areas:
-    'ensemble-header-row'
-    'set-tempo-row'
-    'viewsContainer';
-  }
+.name-tag-textarea {grid-area: name-tag-textarea;
+  	background-color: black;
+ 	  width: 100%;
+   }
 
-  .nameTag {grid-area: nameTag; background-color: black;}
-  .dropdownContainer {grid-area: dropdownContainer; background-color: gray;}
-  .codingArea {grid-area: codingArea; background-color: darkgray;}
+.fullWidthDiv {
+   grid-area: fullWidthDiv;
+   width: 100%}
+  .textInputToEndOfLine {grid-area: textInputToEndOfLine;
+   width: 100%;
+   }
 
-  .viewsContainer {
+.viewsContainer {
     display: grid;
      width: 100%;
-     height: 100%;
-     font-size: 100%;
      font-family: inherit;
      font-size: inherit;
-     background-color: gray;
-
   }
 
-  .singleViewContainer {
+.singleViewContainer {
+/* 	font-size: 1.1vw; */
     display: grid;
-    grid-template-rows: 10% 10%  80%;
+    grid-template-rows: 20% 10% 70%;
     grid-template-areas:
-    'nameTag'
-    'dropdownContainer'
-    'codingArea';
+    'name-tag-textarea '
+    'fullWidthDiv'
+    'textInputToEndOfLine';
     font-family: inherit;
-    background-color: beige;
-    border: 1px solid black;
+    border: 1px solid hsl(0,0%,10%);;
+
+
     }
 
-  textarea {
+/*   textarea {
     font-family: inherit;
     width:99%;
     height: 99%;

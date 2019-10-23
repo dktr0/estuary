@@ -72,7 +72,7 @@ page :: forall t m. (MonadWidget t m)
 
 page ctx _ wsDown Splash = do
   navEv <- divClass "splash-container" $ do
-    gotoAboutEv <- panel "splash-margin" ctx About Term.About estuaryIcon
+    gotoAboutEv <- panel "splash-margin" ctx About Term.About (text "A") --estuaryIcon
     gotoTutorialEv <- panel "splash-margin" ctx TutorialList Term.Tutorials (text "B") -- icon font: tutorial-icon.svg
     gotoSoloEv <- panel "splash-margin" ctx Solo Term.Solo (text "C") -- icon font: solo-icon.png
     gotoCollaborateEv <- panel "splash-margin" ctx Lobby Term.Collaborate (text "D") -- icon font: collaborate-icon.svg
