@@ -26,12 +26,12 @@ presetViews = fromList [
 
 
       ("default",  GridView 2 3  [
-      ViewDiv "singleViewContainer" (Views [LabelView 1, SequenceView 2]),
-      ViewDiv "singleViewContainer" (Views [LabelView 3, SequenceView 4]),
-      ViewDiv "singleViewContainer" (Views [LabelView 5, TextView 6 5]),
-      ViewDiv "singleViewContainer" (Views [LabelView 7, TextView 8 5]),
-      ViewDiv "singleViewContainer" (Views [LabelView 9, TextView 10 5]),
-      ViewDiv "singleViewContainer" (Views [LabelView 11, TextView 12 5])
+      BorderDiv (Views [LabelView 1, SequenceView 2]),
+      BorderDiv (Views [LabelView 3, SequenceView 4]),
+      (Views [LabelView 5, TextView 6 5]),
+      (Views [LabelView 7, TextView 8 5]),
+      BorderDiv (Views [LabelView 9, TextView 10 5]),
+      BorderDiv (Views [LabelView 11, TextView 12 5])
       ]),
 
       ("fulltexteditor", GridView 1 1 [
@@ -87,6 +87,19 @@ presetViews = fromList [
       ViewDiv "singleViewContainer" (Views [LabelView 3, TextView 4 4]),
       ViewDiv "singleViewContainer" (Views [LabelView 5, TextView 6 4]),
       ViewDiv "singleViewContainer" (Views [LabelView 7, TextView 8 4])
+      ]),
+
+      ("supercontinent",Views [
+      ViewDiv "singleViewContainer" (Views [LabelView 0,TextView 1 5]),
+      ViewDiv "singleViewContainer" (Views [LabelView 2,TextView 3 5]),
+      ViewDiv "singleViewContainer" (Views [LabelView 4,TextView 5 5]),
+      ViewDiv "singleViewContainer" (Views [LabelView 6,TextView 7 5]),
+      ViewDiv "singleViewContainer" (Views [LabelView 8,TextView 9 5]),
+      ViewDiv "singleViewContainer" (Views [LabelView 10,TextView 11 5]),
+      ViewDiv "singleViewContainer" (Views [LabelView 12,TextView 13 5]),
+      ViewDiv "singleViewContainer" (Views [LabelView 14,TextView 15 5]),
+      ViewDiv "singleViewContainer" (Views [LabelView 16,TextView 17 10]),
+      ViewDiv "singleViewContainer" EnsembleStatusView
       ]),
 
       ("iclc2019",GridView 2 2 [

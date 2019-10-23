@@ -23,6 +23,7 @@ dumpView (StructureView x) = "structure:" <> showInt x
 dumpView (LabelView x) = "label:" <> showInt x
 dumpView (TextView x y) = "text:" <> showInt x <> " " <> showInt y
 dumpView (SequenceView z) = "sequence:" <> showInt z
+dumpView (BorderDiv v) = "border { " <> dumpView v <> "} "
 dumpView EnsembleStatusView = "ensembleStatus"
 
 showInt :: Int -> Text
@@ -52,6 +53,7 @@ viewParser = do
   v <- choice [
     try gridViewParser,
     try viewDiv,
+    try borderDiv,
     try labelView,
     try structureView,
     try sequenceView,
@@ -61,6 +63,7 @@ viewParser = do
   return v
 
 viewDiv = braces $ (ViewDiv <$> (T.pack <$> identifier) <*> viewsParser)
+borderDiv = braces $ (BorderDiv <$> viewsParser)
 labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
 structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
 sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
@@ -85,8 +88,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
     "label","structure","sequenceView","textView","svgDisplayView",
-    "canvasDisplayView", "x",
-    "canvasDisplayView","ensembleStatus"
+    "canvasDisplayView", "x", "ensembleStatus"
     ],
   P.reservedOpNames = [":"],
   P.caseSensitive = True

@@ -11,7 +11,8 @@ import Data.Aeson
 data View =
   Views [View] |
   GridView Int Int [View] |
-  ViewDiv Text View | -- deprecated in favour of next two...
+  ViewDiv Text View |
+  BorderDiv View |
   RowView Rational View | -- a full row in the layout, number is percent of vertical space
   CellView Rational View | -- a cell (ie. column fragment) in the layout, number is percent of horizontal space
   LabelView Int |
@@ -27,15 +28,3 @@ instance FromJSON View
 
 emptyView :: View
 emptyView =  Views []
-
-viewToRows :: View -> Int
-viewToRows (Views vs) = sum $ fmap viewToRows vs
-viewToRows (GridView _ _ _) = 1 --this doesnt make sense ??
-viewToRows (ViewDiv _ v) = viewToRows v
-viewToRows (RowView _ v) = viewToRows v
-viewToRows (CellView _ v) = viewToRows v
-viewToRows (LabelView _) = 1
-viewToRows (StructureView _) = 1 -- ???
-viewToRows (SequenceView _) = 1 -- ???
-viewToRows (TextView _ n) = n + 1
-viewToRows EnsembleStatusView = 1 -- ???
