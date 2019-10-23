@@ -24,6 +24,7 @@ import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
+import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 
@@ -52,6 +53,8 @@ viewWidget er (TextView z rows) = do
 
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
+
+viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
 
 viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
 

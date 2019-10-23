@@ -45,8 +45,6 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  pp <- newPeerProtocol
-
   ac <- getGlobalAudioContext
   addWorklets ac
 
@@ -54,15 +52,20 @@ main = do
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
   sd <- newSuperDirt
+  let immutableRenderContext = ImmutableRenderContext {
+    mainBus = mainBusNodes,
+    webDirt = wd,
+    superDirt = sd
+    }
+
   nowUtc <- getCurrentTime
   nowAudio <- liftAudioIO $ audioTime
-  c <- newMVar $ initialContext nowUtc nowAudio mainBusNodes wd sd pp
-  ri <- newMVar $ emptyRenderInfo
-  forkRenderThreads c ri
+  context <- newMVar $ initialContext nowUtc
+  renderInfo <- newMVar $ emptyRenderInfo
+  forkRenderThreads immutableRenderContext context renderInfo
 
   cb <- syncCallback1' $ \dest -> do
-    ctx <- readMVar c
-    node <- changeDestination (mainBus ctx) $
+    node <- changeDestination mainBusNodes $
       if dest `js_eq` pToJSVal ("stream" :: JSString) then
         getSharedMediaStreamDestination
       else
@@ -70,7 +73,7 @@ main = do
     return $ pToJSVal node
   js_registerSetEstuaryAudioDestination cb
 
-  mainWidgetInElementById "estuary-root" $ estuaryWidget c ri
+  mainWidgetInElementById "estuary-root" $ estuaryWidget immutableRenderContext context renderInfo
 
   -- Signal the splash page that estuary is loaded.
   -- js_setIconStateLoaded

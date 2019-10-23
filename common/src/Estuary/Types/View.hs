@@ -14,7 +14,8 @@ data View =
   LabelView Int |
   StructureView Int |
   TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
-  SequenceView Int
+  SequenceView Int |
+  EnsembleStatusView
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where
@@ -33,3 +34,4 @@ viewToRows (LabelView _) = 1
 viewToRows (StructureView _) = 1 -- ???
 viewToRows (SequenceView _) = 1 -- ???
 viewToRows (TextView _ n) = n + 1
+viewToRows EnsembleStatusView = 1 -- ???

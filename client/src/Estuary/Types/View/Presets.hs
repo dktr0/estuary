@@ -70,6 +70,19 @@ presetViews = fromList [
   ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 10])
   ]),
 
+  ("supercontinent",Views [
+  ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 5]),
+  ViewDiv "eightMiddleL" (Views [LabelView 4,TextView 5 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 6,TextView 7 5]),
+  ViewDiv "eightMiddleL" (Views [LabelView 8,TextView 9 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 10,TextView 11 5]),
+  ViewDiv "eightMiddleL" (Views [LabelView 12,TextView 13 5]),
+  ViewDiv "eightMiddleR" (Views [LabelView 14,TextView 15 5]),
+  ViewDiv "eightMiddleL" (Views [LabelView 16,TextView 17 10]),
+  ViewDiv "eightMiddleR" EnsembleStatusView
+  ]),
+
   ("cybernetic",Views [
   ViewDiv "fullRowTopOrBottom" (Views [LabelView 1, SequenceView 2]),
   ViewDiv "fullRowMiddle" (Views [LabelView 3, TextView 4 4]),

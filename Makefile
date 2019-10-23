@@ -38,7 +38,7 @@ cabalBuildClient: assertInNixGhcjsShell
 	@ echo "cabalBuildClient:"
 	cd common && hpack --force
 	cd client && hpack --force
-	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation
+	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation --ghcjs-options=-DGHCJS_GC_INTERVAL=60000
 
 cabalBuildServer: assertInNixGhcShell
 	@ echo "cabalBuildServer:"
@@ -169,6 +169,7 @@ makeSampleMap:
 updateSubmodules:
 	@ echo "updateSubModules:"
 	git submodule update --init --recursive
+	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - git submodule update --init --recursive didn't work - make sure you got Estuary with git clone (not by 'downloading')" && exit 1)
 
 fullBuild: downloadDirtSamples updateSubmodules makeSampleMap nixBuild cleanStage nixStageClient nixStageServer stageStaticAssets stageSamples
 
