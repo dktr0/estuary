@@ -106,7 +106,7 @@ playRoundMetrePos sh t vlen now =
         result = reglaDeTres 1 posNorm inSecs
     in Just (realToFrac  result) --transforms this into seconds
 
-playRoundMetreRate:: Double -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+playRoundMetreRate:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
 playRoundMetreRate sh t vlen now =
     let vl = realToFrac vlen :: Rational
         cpDur = realToFrac (1/(cps t)) :: Rational

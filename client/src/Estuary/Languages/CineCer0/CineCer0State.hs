@@ -119,8 +119,10 @@ updateContinuingVideo t now (sw,sh) s v = do
     -- update position in time
     let pos = (playbackPosition s) t lengthOfVideo now
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
+    -- update opacity 
+    let opacidad = (opacity s) t lengthOfVideo now 
     -- update geometry/appearance/etc
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac (opacity s))
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac opacidad)
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
@@ -141,32 +143,3 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.offsetHeight"
   offsetHeight :: HTMLDivElement -> IO Double
-
-
---  Maybe- not execute at all
-
--- servicedesk.mcmaster.ca
-
--- x :: Maybe a
-
--- f :: a -> IO ()
-
--- videoPlaybackRate :: CineCer0Video -> Double -> IO ()
-
--- videoPlaybackRate aVideo :: Double -> IO ()
-
--- g :: IO ()
-
--- g = do
-
---   ...
-
---   ...
-
---   let rate = ... something that combines information to generate a maybe rational
-
---   maybe (return ()) (videoPlaybackRate aVideo) $ fmap realToFrac rate
-
-
-
--- maybe :: b -> (a -> b) -> Maybe a -> b
