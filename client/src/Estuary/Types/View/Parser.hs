@@ -16,11 +16,14 @@ import Estuary.Types.View
 
 dumpView :: View -> Text
 dumpView (Views xs) = T.intercalate " " $ fmap dumpView xs
+dumpView (GridView cols rows vs) = showInt cols <> "x" <> showInt  rows <>  " [" <> vs' <> "]"
+  where vs' = T.intercalate ","  $ fmap dumpView vs
 dumpView (ViewDiv css v) = "{ " <> css <> " " <> dumpView v <> " }"
 dumpView (StructureView x) = "structure:" <> showInt x
 dumpView (LabelView x) = "label:" <> showInt x
 dumpView (TextView x y) = "text:" <> showInt x <> " " <> showInt y
 dumpView (SequenceView z) = "sequence:" <> showInt z
+dumpView (BorderDiv v) = "border { " <> dumpView v <> "} "
 dumpView EnsembleStatusView = "ensembleStatus"
 
 showInt :: Int -> Text
@@ -36,10 +39,21 @@ topLevelViewsParser = do
 viewsParser :: Parser View
 viewsParser = Views <$> many1 viewParser
 
+gridViewParser :: Parser View
+gridViewParser = do
+  columns <- int
+  reserved "x"
+  rows <- int
+  vs <- brackets $ commaSep viewParser
+  return $ GridView columns rows vs
+
+
 viewParser :: Parser View
 viewParser = do
   v <- choice [
+    try gridViewParser,
     try viewDiv,
+    try borderDiv,
     try labelView,
     try structureView,
     try sequenceView,
@@ -49,6 +63,7 @@ viewParser = do
   return v
 
 viewDiv = braces $ (ViewDiv <$> (T.pack <$> identifier) <*> viewsParser)
+borderDiv = braces $ (BorderDiv <$> viewsParser)
 labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
 structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
 sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
@@ -73,7 +88,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
     "label","structure","sequenceView","textView","svgDisplayView",
-    "canvasDisplayView","ensembleStatus"
+    "canvasDisplayView", "x", "ensembleStatus"
     ],
   P.reservedOpNames = [":"],
   P.caseSensitive = True

@@ -6,8 +6,10 @@ import Reflex
 import Reflex.Dom
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import Control.Monad
 import Data.Maybe
+import TextShow
 
 import Estuary.Types.Live
 import Estuary.Types.Definition
@@ -58,7 +60,21 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
 
 viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
 
+viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ viewWidget er v
+
 viewWidget er (Views xs) = liftM leftmost $ mapM (viewWidget er) xs
+--
+-- liftR3 :: MonadWidget t m => (m (a,Event t [Hint]) -> m (a,Event t [Hint])) -> (m (a,Event t [Hint]) -> m (a,Event t [Hint])) -> Editor t m a -> Editor t m a
+-- liftR3 r x = Editor (\ctx ri -> r $ runEditor x ctx ri)
+
+viewWidget er (GridView c r vs) =  liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
+  where
+    -- subGridDiv x = divClass "subGrid-container" $ x
+    viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows)) $ x
+    defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
+    setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
+    setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
+    setColumnsAndRows  = setNumColumns <> setNumRows
 
 viewWidget _ _ = return never
 
@@ -76,3 +92,6 @@ zoneWidget z defaultA f g ensResponses anEditorWidget = do
   dynUpdates <- liftR $ holdDyn iValue deltas
   variableFromWidget <- anEditorWidget dynUpdates
   return $ (WriteZone z . g) <$> localEdits variableFromWidget
+
+
+  --the code below will be moved to a different module
