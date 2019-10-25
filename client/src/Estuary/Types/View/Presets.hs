@@ -123,7 +123,7 @@ presetViews = fromList [
          ViewDiv "singleViewContainer" (Views [LabelView 10,TextView 11 5])
          ]),
 
-         
+             
          ("supercontinent",GridView 2 3 [
             ViewDiv "eightMiddleL" (Views [LabelView 0,TextView 1 5]),
             ViewDiv "eightMiddleR" (Views [LabelView 2,TextView 3 5]),

@@ -75,11 +75,11 @@ objectOrDescription = choice [
 
 object :: Parser String
 object = choice [
-        (reserved "blackChair" >> return "arpy"),
-        (reserved "arm" >> return "bd"),
-        (reserved "whiteChair" >> return "bass"),
-        (reserved "stool" >> return "sid"),
-        (reserved "floor" >> return "drum:3")
+        (reserved "blackChair" >> return "blackChair"),
+        (reserved "arm" >> return "blackChair:1"),
+        (reserved "whiteChair" >> return "whiteChair"),
+        (reserved "stool" >> return "stool"),
+        (reserved "floor" >> return "blackChair:2")
         ]
 
 
@@ -151,28 +151,6 @@ double = choice [
    fromInteger <$> integer --TO DO: this doesnt work with ints like 1 only if they have decimals 1.0
    ]
 
--- existenceIO :: Tidal.Stream -> String -> Either ParseError (IO ())
--- existenceIO tidal = parse (existenceIOParser tidal) "existence"
---
--- existenceIOParser :: Tidal.Stream -> Parser (IO ())
--- existenceIOParser tidal = whiteSpace >> choice [
---   eof >> return (return ()),
---   dParser tidal <*> existencePattern --la calle parser passes info to tidal parser
---   ]
---
--- dParser :: Tidal.Stream -> Parser (ControlPattern -> IO ())
--- dParser tidal = choice [
---   return (Tidal.streamReplace tidal "1")
---   ]
---
--- main :: IO ()
--- main = do
---   putStrLn "existence"
---   tidal <- Tidal.startTidal Tidal.superdirtTarget Tidal.defaultConfig
---   forever $ do
---     cmd <- existenceIO tidal <$> getLine
---     either (\x -> putStrLn $ "error: " ++ show x) id cmd
---
 tokenParser :: P.TokenParser a
 tokenParser = P.makeTokenParser $ haskellDef {
    P.reservedNames = [ ]
