@@ -42,7 +42,8 @@ viewsParser = Views <$> many1 viewParser
 gridViewParser :: Parser View
 gridViewParser = do
   columns <- int
-  reserved "x"
+  lexeme (oneOf "xX")
+  whiteSpace
   rows <- int
   vs <- brackets $ commaSep viewParser
   return $ GridView columns rows vs
@@ -63,7 +64,7 @@ viewParser = do
   return v
 
 viewDiv = braces $ (ViewDiv <$> (T.pack <$> identifier) <*> viewsParser)
-borderDiv = braces $ (BorderDiv <$> viewsParser)
+borderDiv = reserved "border" >> (braces $ (BorderDiv <$> viewsParser))
 labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
 structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
 sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
@@ -88,7 +89,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
     "label","structure","sequenceView","textView","svgDisplayView",
-    "canvasDisplayView", "x", "ensembleStatus"
+    "canvasDisplayView", "x", "ensembleStatus", "border"
     ],
   P.reservedOpNames = [":"],
   P.caseSensitive = True
