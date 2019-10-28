@@ -30,6 +30,7 @@ dependencies:
   - time
   - sqlite-simple
   - mtl
+  - text-show
 
 library:
   source-dirs:

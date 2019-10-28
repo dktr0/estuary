@@ -63,6 +63,11 @@ nixBuildServer:
 	-mkdir result/ghcjs
 	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
 
+stackBuildServer:
+	@ echo "stackBuildServer:"
+	cd server && stack setup
+	cd server && stack build
+	
 PROD_STAGING_ROOT=staging/
 DEV_STAGING_ROOT=dev-staging/
 STAGING_ROOT=$(PROD_STAGING_ROOT)
@@ -180,10 +185,10 @@ clean: cleanStage cleanDevStage
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer test
+	cd ./$(STAGING_ROOT) && ./EstuaryServer test +RTS -N -RTS
 
 runServer: nixBuild stageStaticAssets makeSampleMap stageSamples nixStageClient nixStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer test
+	cd ./$(STAGING_ROOT) && ./EstuaryServer test +RTS -N -RTS
 
 selfCertificates:
 	-mkdir staging
