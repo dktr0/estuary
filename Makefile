@@ -8,7 +8,6 @@ RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
 CP=cp
 CP_RECURSIVE=cp -Rf
 #endif
-STACK_SERVER=cd server/ && stack
 
 # the hack below is necessary because cabal on OS x seems to build in a
 # subdirectory name ...../x86_64-osx/... rather than the name in $system
@@ -38,7 +37,7 @@ cabalBuildClient: assertInNixGhcjsShell
 	@ echo "cabalBuildClient:"
 	cd common && hpack --force
 	cd client && hpack --force
-	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation
+	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation --ghcjs-options=-DGHCJS_GC_INTERVAL=60000
 
 cabalBuildServer: assertInNixGhcShell
 	@ echo "cabalBuildServer:"
@@ -63,6 +62,16 @@ nixBuildServer:
 	-mkdir result/ghcjs
 	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
 
+stackBuildServer:
+	@ echo "stackBuildServer:"
+	cd server && stack setup
+	cd server && stack build
+
+stackStageServer: prepStage
+	@ echo "stackStageServer:"
+	cp -f $(shell cd server && stack path --local-install-root)/bin/EstuaryServer $(STAGING_ROOT)
+	chmod a+w $(STAGING_ROOT)/EstuaryServer
+	
 PROD_STAGING_ROOT=staging/
 DEV_STAGING_ROOT=dev-staging/
 STAGING_ROOT=$(PROD_STAGING_ROOT)
@@ -169,6 +178,7 @@ makeSampleMap:
 updateSubmodules:
 	@ echo "updateSubModules:"
 	git submodule update --init --recursive
+	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - git submodule update --init --recursive didn't work - make sure you got Estuary with git clone (not by 'downloading')" && exit 1)
 
 fullBuild: downloadDirtSamples updateSubmodules makeSampleMap nixBuild cleanStage nixStageClient nixStageServer stageStaticAssets stageSamples
 
@@ -179,10 +189,10 @@ clean: cleanStage cleanDevStage
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer test
+	cd ./$(STAGING_ROOT) && ./EstuaryServer test +RTS -N -RTS
 
 runServer: nixBuild stageStaticAssets makeSampleMap stageSamples nixStageClient nixStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer test
+	cd ./$(STAGING_ROOT) && ./EstuaryServer test +RTS -N -RTS
 
 selfCertificates:
 	-mkdir staging

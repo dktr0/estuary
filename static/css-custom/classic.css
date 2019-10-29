@@ -34,13 +34,13 @@ More advanced customization is available through CSS classes within this documen
 /*styles the code font*/
 .code-font {
 	  font-family: 'Helvetica';
-	  font-size: 1em;
+	  font-size: 1.1vw;
 	  }
 
 /* styles other fonts (e.g. the header, menus and labels) */
 .ui-font {
 	font-family: 'Helvetica';
-	font-size: 1em;
+	font-size: 1.1vw;
 	}
 
 /* styles the user-inteface buttons */

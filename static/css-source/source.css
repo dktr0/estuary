@@ -14,7 +14,6 @@
    src: url(../icons/estuary-icons.otf);
 }
 
-
 body {
  	height: 100%;
 	margin: 0;
@@ -66,9 +65,44 @@ body, .primary-color {
 .languageHelp::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
+
+
+.header {grid-area: header;
+/* background-color: aliceblue */
+padding-left: 10px;
+}
+
+.page {grid-area: page}
+.footer{grid-area: footer;}
+
+
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
+display: grid;
+grid-template-rows: 5vh 90vh 5vh;
+  grid-template-areas:
+    'header header'
+    'page page'
+    'footer footer';
+  width: 99vw;
+  height: 100vh;
+}
 
+.estuary > .header {
+/*   background-color: rgba(25, 255, 255, 0.8); */
+  text-align: center;
+/*   padding: 20px 0; */
+  font-size:1.3vw;
+  border: none;
+}
+
+
+.estuary > .footer {
+/*   background-color: rgba(25, 255, 255, 0.8); */
+/*   text-align: center; */
+/*   padding: 20px 0; */
+/*   font-size:1.3vw; */
+  border: none;
 }
 
 .btn {
@@ -77,10 +111,11 @@ body, .primary-color {
 
 /* source  */
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-	padding-left: 15px;
-	padding-right: 15px;
-   margin-bottom: 0.05em;
-	border: none;
+/* 	padding-left: 15px; */
+/* 	padding-right: 15px; */
+/*    margin-bottom: 0.05em; */
+/* 	border: none; */
+/* 	background-color: white; */
 
 
 
@@ -89,6 +124,9 @@ body, .primary-color {
      the controls to the next line doesn't leak out of it's parent container
      preventing interation with it. */
   overflow: hidden;
+}
+
+.page {
 }
 
 /* source  */
@@ -140,7 +178,7 @@ body, .primary-color {
 	padding-left: 15px;
 	padding-right: 15px;
 	margin-bottom:0.25em;
-	background-color: transparent;
+
 }
 
 .ourPopUp {
@@ -170,9 +208,10 @@ body, .primary-color {
 }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
+
 	min-width: 50%;
 	box-sizing: border-box;
-	padding: 0.4em;
+	padding: 0.5em;
 }
 
 .splash-panel {/*contains the tutorial, solo and collaboration buttons (source)*/
@@ -183,7 +222,8 @@ body, .primary-color {
 	text-align: center;
 	height: 100%;
 	box-sizing: border-box;
-	max-height: 16em;
+	/*before it was 16em */
+	max-height: 40vh;
 	display: flex;
 	flex-direction: column;
 }
@@ -201,6 +241,8 @@ body, .primary-color {
 
 .splash-title { /*contains the title "estuary" on the homepage  (source)*/
 	display: flex;
+	/*this padding was added in 23 oct 2019*/
+	padding-top: 3vh;
 	margin-bottom: 1%;
 	margin: auto;
 	font-size: calc(16px + 1.5vw); /* scales a bit nicer with the viewport */
@@ -218,7 +260,8 @@ body, .primary-color {
 .splash-icon {
 	font-family: estuary-icons;
 	width:100%;
-	font-size: 13em;
+	/*this was 13em*/
+	font-size: 30vh;
 }
 
 .splash-icon > canvas {
@@ -294,7 +337,7 @@ body, .primary-color {
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
-	width: 48%;
+	width: 100%;
 }
 
 .eightMiddleL {/*modifies the middle left view*/
@@ -306,7 +349,8 @@ body, .primary-color {
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
-	width: 48%;
+	width: 47vw;
+	font-size: 2vh;
 }
 
 .eightMiddleR {/*modifies the middle right view*/
@@ -318,7 +362,8 @@ body, .primary-color {
 	padding: 5px;
 	display: inline-block;
 	vertical-align: top;
-	width: 48%;
+	width: 47vw;
+	font-size: 2vh;
 }
 
 .fullRowTopOrBottom {
@@ -369,7 +414,7 @@ body, .primary-color {
 
 /* name-tag textarea */
 .name-tag-textarea {
-	flex:1;
+/* 	flex:1; */
 	border: none;
 	background-color: transparent;
 }
@@ -396,10 +441,10 @@ body, .primary-color {
 .textInputToEndOfLine {
 	font-weight: normal;
 	padding: 0px;
-	margin-top: 0.5em;
-	margin-bottom: 0px;
-	margin-left: 0px;
-	margin-right: 0px;
+/* 	margin-top: 0.5em; */
+	margin-bottom: 0.5em;
+/* 	margin-left: 0px; */
+/* 	margin-right: 0px; */
 	height: auto;
 	resize: none;
 	overflow: hidden;
@@ -688,10 +733,13 @@ table, tr, td {border: none;}
 	display: flex;
 	flex-direction: row;
     border:none
+    display: none;
+
 
 }
 
 .ensembleName {
+	display: none;
 	margin-top: 1px;
 	margin-right: 1em;
 }
@@ -700,12 +748,14 @@ table, tr, td {border: none;}
 	display: flex;
 	border: none;
 	width: 25%;
+	display: none;
 }
 
 .ensembleHandle, .ensemblePassword {
 	margin-right: 1em;
 	border: none;
 	background-color: transparent;
+	display: none;
 }
 
 .ensembleTempo textarea{
@@ -814,3 +864,62 @@ width: 8em;
 .resourceShape{
 	text-align: center;
 	width: 5em;}
+
+/* new grid layout css */
+   /*this goes inside page  */
+
+.name-tag-textarea {grid-area: name-tag-textarea;
+
+ 	  width: 100%;
+   }
+
+.fullWidthDiv {
+   grid-area: fullWidthDiv;
+   width: 100%}
+  .textInputToEndOfLine {grid-area: textInputToEndOfLine;
+   width: 100%;
+   }
+
+.gridView {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+.gridChild {
+  border: 0px;
+  margin: 0px;
+  padding: 0px;
+  width: 100%;
+  height: 100%;
+}
+
+.borderDiv {
+  border: 1px solid var(--secondary-color);
+  width: 100%;
+  height: 100%;
+}
+
+.singleViewContainer {
+/* 	font-size: 1.1vw; */
+    display: grid;
+    grid-template-rows: 20% 10% 70%;
+    grid-template-areas:
+    'name-tag-textarea '
+    'fullWidthDiv'
+    'textInputToEndOfLine';
+    font-family: inherit;
+    border: 1px solid hsl(0,0%,10%);;
+
+
+    }
+
+/*   textarea {
+    font-family: inherit;
+    width:99%;
+    height: 99%;
+    font-size: inherit;
+  }
+ */

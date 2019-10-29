@@ -11,19 +11,9 @@ This document will outline how to build Estuary. It will walk you through:
 
 **A note for Windows users**: nix is not supported natively on Windows but can be installed in WSL (Windows Subsystem for Linux). Follow the instructions on https://docs.microsoft.com/en-us/windows/wsl/install-win10 to install it. Then use it with any linux instructions from here on out. On occasion there are special notes for WSL users outlined in this document.
 
-## Installing Nix via reflex-platform
+## Installing Nix
 
-The build scripts are all based on [Nix](https://nixos.org/nix/) so the first step is to install Nix via the `try-reflex` script.
-
-```shell
-# download the version used while writing this document
-curl -L https://github.com/reflex-frp/reflex-platform/archive/a229a74ebb9bac69327f33a4416986d614eda7ea.tar.gz -o reflex-platform.tar.gz
-
-# decompress the archive
-mkdir reflex-platform/ && tar xf reflex-platform.tar.gz -C reflex-platform/ --strip-components 1
-```
-
-Next, run the `try-reflex` script at least once. This will install nix and setup the reflex package cache (this is very desireable for decreasing build times).
+The build scripts are all based on [Nix](https://nixos.org/nix/) so the first step is to install Nix in whatever way is recommended/appropriate for your operating system (see the Nix website).
 
 *   **Note:** On WSL your may get `warning: SQLite database '/nix/var/nix/db/db.sqlite' is busy (SQLITE_PROTOCOL)` forever if trying to install nix. See [NixOS/nix#1203](https://github.com/NixOS/nix/issues/1203) for the reason/fix for the issue. As suggested in that issue, setting `use-sqlite-wal = false` in the config (`/etc/nix/nix.conf`) does the trick!
 
@@ -33,31 +23,13 @@ Next, run the `try-reflex` script at least once. This will install nix and setup
 
 Answer `1` for `Yes` if it asks to add binary caches to the config.
 
-```shell
-./reflex-platform/try-reflex
-```
+## Cloning Estuary
 
-Unless `/nix` was already created on your system, running the above command would have installed Nix for you (it logs `performing a single-user installation of Nix...` during execution).
+Use git to clone a copy of the Estuary repository. You can the central repository (maintained by dktr0) or you could fork it on github and clone your copy of the Estuary repository. (Note: do not use github's "download" feature to grab a copy of the Estuary source code - it will give you an Estuary folder that is not an active git project and you will be unable to build Estuary.)
 
 ```
-Installation finished!  To ensure that the necessary environment
-variables are set, either log in again, or type
-
-  . /home/<yourUsername>/.nix-profile/etc/profile.d/nix.sh
-
-in your shell.
+git clone https://github.com/dktr0/Estuary
 ```
-
-When things are ready done you will be in a nix-shell. You can tell because your prompt will be prefixed with `[nix-shell:<yourCurrentPath>]$`.
-
-Get out of the shell with `exit` since we don't need to work in the shell right now. Also Estuary has it's own shell.
-
-Lastly, double check that  `which nix-build` returns a path to the installation. If it doesn't, we need to set up the environment variables. Your `~/.bash_profile`, `~/.bash_login`, or `~/.profile` should have been modified by the installation to have something along the lines of the following at the end. If it does not, then add it so that when you log in:
-```bash
-if [ -e /home/<yourUsername>/.nix-profile/etc/profile.d/nix.sh ]; then . /home/<yourUsername>/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
-```
-
-Log out and log back in after the first install and check `which nix-build`.
 
 ## Building for a release
 
@@ -86,29 +58,39 @@ $ make bundleClient
 
 The `bundleClient` target will create an `estuary-client.zip` with the production version of the client, front-end dependencies, and static assets (excluding samples).
 
-### Creating a full local deployment
+### Creating and launching a full local deployment of the Estuary server
 
 ```shell
-$ git submodule update --init --recursive
-$ make downloadDirtSamples
-$ make makeSampleMap
-$ make nixBuild
-$ make cleanStage
-$ make stageStaticAssets
-$ make stageSamples
-$ make nixStageClient
-$ make nixStageServer
+$ make fullBuild
 ```
 
-Running `make downloadDirtSamples makeSampleMap` only needs to be run once to use the dirt samples in the deployment.
+The full build process above will take a long time. After it completes successfully, a complete Estuary deployment will be present in the staging folder. To generate temporary SSL certificates for this deployment:
 
-The `cleanStage` will clean any old `staging/` after which the remaining commands will repopulate.
+```shell
+$ make selfCertificates
+```
 
-The `stage*` targets copy the required assets into the `staging/` folder.
+You usually need to enter a country code when making the self-signed certificates, but can leave the other fields blank.
 
-The `nix*` targets will build and stage the server binary and client with `nix`.
+If all goes well, you can run the server:
+
+```shell
+$ cd staging
+$ ./EstuaryServer password 8000
+```
+
+The above launches a server that is listening on port 8000 for HTTPS requests, with 'password' as the administrative password. So you would connect to it in your web browser (on the same machine) with https://127.0.0.1:8000
+
+Note: Typically if you want to launch the server on the "standard" HTTPS port (443) you will need root privileges. So that might look like this:
+
+```shell
+$ cd staging
+$ sudo ./EstuaryServer password 443
+```
 
 ## Building for development
+
+The full build above always rebuilds everything from scratch. This is great for having predictable, deterministic results, but is very slow. When actively developing/changing Estuary, the workflow that follows is likely  preferable.
 
 It is recommended to have 2 shells open. One for building and staging the client, and another for the server. The staging folder for the development commands is `dev-staging/`.
 
@@ -125,5 +107,58 @@ In the **backend** shell (`shells.ghc`) build the server, put it in the staging 
 [nix-shell: ...]$ make cabalBuildServer
 [nix-shell: ...]$ make cabalStageServer
 [nix-shell: ...]$ make devStageSamples
+[nix-shell: ...]$ make makeSampleMap  # Only required if you haven't done a full build
 [nix-shell: ...]$ make runDevServer
+```
+
+## Building the server via stack and curlReleaseClient (eg. for cloud servers where Nix is tricky)
+
+On some systems (for example, resource-challenged virtual servers) the Nix build process is too heavy. For these cases, you can use the somewhat lighter stack-based build process for the server binary, and grab a prebuilt copy of the Javascript client for that server to serve.
+
+Step One is to install the Haskell stack tool in whatever way makes sense for your system.
+
+Then you will probably also need to ensure that some system libraries are available. For example, for Debian (and possibly Debian-related systems like Ubuntu):
+
+```shell
+sudo apt-get install libtagc0-dev
+```
+
+For CentOS (and probably other related systems like RedHat):
+
+```shell
+sudo yum install taglib-devel gmp-devel zlib-devel
+```
+
+With stack available and the requisite system libraries installed, you can build the server as follows (change 20191028 in the example below to the 8 digits that identify the latest release of Estuary on github.com - click on Releases there to see available releases; you can put your own sample library instead of doing make downloadDirtSamples):
+
+```shell
+make stackBuildServer
+make stackStageServer
+make updateSubModules
+make downloadDirtSamples
+make makeSampleMap
+make stageSamples
+make stageStaticAssets
+./curlReleaseClient 20191028
+```
+
+You'll need to provide a symbolic link to a certificate and private key for SSL to work (required for Estuary). For example:
+
+```shell
+cd staging
+ln -s /etc/whereverMyCertIs.pem cert.pem
+ln -s /etc/whereverMyPrivateKeyIs.pem privkey.pem
+```
+
+If you don't have valid certificates you can generate temporary invalid "self certificates" which will let things work (but you'll get an intimidating warning from your browser when you connect to an Estuary server using such self certificates...). This should launch a certificate generating process - you can provide nothing for all of the questions it asks except for country (provide a country code):
+
+```shell
+make selfCertificates
+```
+
+To run the server/client thus created listening on port 443 (standard port for https) and using as many threads as there are processor cores (for performance) - change password to your preferred server administrator password (used to create ensembles on the server):
+
+```shell
+cd staging
+sudo ./EstuaryServer password 443 +RTS -N -RTS
 ```

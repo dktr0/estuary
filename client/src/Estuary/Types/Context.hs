@@ -31,43 +31,43 @@ import Estuary.Render.LocalResources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 
-data Context = Context {
-  mainBus :: (Node,Node,Node,Node,Node,Node,JSVal), -- ^ main bus input, delay, pregain, compressor, postgain, analyser, analyserArray
-  dynamicsMode :: DynamicsMode,
+-- things the render engine needs, but the UI doesn't need, and which never change
+data ImmutableRenderContext = ImmutableRenderContext {
+  mainBus :: (Node,Node,Node,Node,Node,Node,JSVal), -- ^ main bus input, delay, pregain, compressor, postgain, analyser, analyserArray,
   webDirt :: WebDirt,
-  superDirt :: SuperDirt,
-  language :: Language,
-  theme :: Text,
-  ensembleC :: EnsembleC,
-  samples :: SampleMap,
-  localResourceServers :: LocalResourceServers,
-  privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
-  resources :: Resources, -- ^ The effective resource set.
+  superDirt :: SuperDirt
+  }
+
+data Context = Context {
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   canvasOn :: Bool,
+  theme :: Text,
+  dynamicsMode :: DynamicsMode,
+  language :: Language,
+--  samples :: SampleMap,
+--  localResourceServers :: LocalResourceServers,
+--  privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
+--  resources :: Resources, -- ^ The effective resource set.
+  ensembleC :: EnsembleC,
   wsStatus :: Text,
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
   canvasElement :: Maybe HTMLCanvasElement,
   videoDivElement :: Maybe HTMLDivElement,
-  peerProtocol :: PeerProtocol,
   theVideoDiv :: Maybe JSVal
   }
 
-initialContext :: UTCTime -> Double -> (Node,Node,Node,Node,Node,Node,JSVal) -> WebDirt -> SuperDirt -> PeerProtocol -> Context
-initialContext nowUtc nowAudio mBus wd sd pp = Context {
-  mainBus = mBus,
+initialContext :: UTCTime -> Context
+initialContext nowUtc = Context {
   dynamicsMode = DefaultDynamics,
-  webDirt = wd,
-  superDirt = sd,
   language = English,
   theme = "../css-custom/classic.css",
   ensembleC = emptyEnsembleC nowUtc,
-  localResourceServers = emptyLocalResourceServers,
-  privateResources = emptyResources,
-  resources = emptyResources,
-  samples = emptySampleMap,
+--  localResourceServers = emptyLocalResourceServers,
+--  privateResources = emptyResources,
+--  resources = emptyResources,
+--  samples = emptySampleMap,
   webDirtOn = True,
   superDirtOn = False,
   canvasOn = True,
@@ -76,7 +76,6 @@ initialContext nowUtc nowAudio mBus wd sd pp = Context {
   clientCount = 0,
   canvasElement = Nothing,
   videoDivElement = Nothing,
-  peerProtocol = pp,
   theVideoDiv = Nothing
 }
 
@@ -94,10 +93,11 @@ setClientCount x c = c { clientCount = x }
 modifyEnsembleC :: (EnsembleC -> EnsembleC) -> ContextChange
 modifyEnsembleC f c = c { ensembleC = f (ensembleC c) }
 
-setSampleMap :: SampleMap -> ContextChange
-setSampleMap x c = c { samples = x}
+-- setSampleMap :: SampleMap -> ContextChange
+-- setSampleMap x c = c { samples = x}
 
 -- TODO the resource sets should be lenses so they can be more properly passed around
+{-
 addPrivateResource :: (LocalResourceServers -> LocalResourceServer m)
     -> (LocalResourceServers -> LocalResourceServer m -> LocalResourceServers)
     -> (Resources -> ResourceMap m)
@@ -112,3 +112,4 @@ addPrivateResource getServer setServer getResourceMap setResourceMap group blob 
   privateResources = setResourceMap (privateResources c) $
     insertResource group resource (getResourceMap $ privateResources c)
 }
+-}

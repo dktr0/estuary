@@ -40,18 +40,20 @@ import Reflex.PerformEvent.Class
 -- no serialization needed from resource map to webdirt samples.
 -- estuary does the loading/caching itself which can be shared logic between the resource types.
 
-addPrivateAudioResource :: Text -> Blob -> Resource AudioMeta -> ContextChange
-addPrivateAudioResource = addPrivateResource 
+{- addPrivateAudioResource :: Text -> Blob -> Resource AudioMeta -> ContextChange
+addPrivateAudioResource = addPrivateResource
   localAudioResources (\s v -> s {localAudioResources = v})
   audioResources (\s v -> s {audioResources = v})
+-}
 
+{-
 resourceUploader :: forall t m. (MonadWidget t m) => m (Event t ContextChange)
 resourceUploader = do
   text "group"
   dynGroupName <- liftM _textInput_value $ textInput $ def
 
   text "file"
-  
+
   let attrs = constDyn ("accept" =: "audio/*") :: Dynamic t (Map Text Text)
   -- try changing constraints of resourceUploader to be more specific and that might fix this?
   --(dynSelectedFiles :: Dynamic t [File]) <- liftM _fileInput_value $ fileInput $ def & fileInputConfig_attributes .~ attrs
@@ -61,8 +63,8 @@ resourceUploader = do
 
   let dynSelected :: Dynamic t [(Text, File)]
       dynSelected = zipDynWith (\name -> fmap (\f -> (name, f))) dynGroupName dynSelectedFiles
-  
-  -- (<@) :: Reflex t => Behavior t b -> Event t a -> Event t b 
+
+  -- (<@) :: Reflex t => Behavior t b -> Event t a -> Event t b
   -- performEventAsync :: Event t ( (a -> IO ()) -> Performable m () ) -> m (Event t a)
   -- forM :: (Traversable t, Monad m) => t a -> (a -> m b) -> m (t b)
 
@@ -71,9 +73,9 @@ resourceUploader = do
       (resourceLoadedEvs :: [Event t ContextChange]) <- forM selectedFiles $ \(group, file) -> do
         (resourceLoadedEv :: Event t (Resource AudioMeta)) <- performEventAsync $ liftIO . pickAudioResource file <$ uploadClickedEv
         return $ resourceLoadedEv <&> addPrivateAudioResource group (toBlob file)
-          
-      return $ mergeWith (.) resourceLoadedEvs
 
+      return $ mergeWith (.) resourceLoadedEvs
+-}
 
 pickAudioResource :: File -> (Resource AudioMeta -> IO ()) -> IO ()
 pickAudioResource f done = do
