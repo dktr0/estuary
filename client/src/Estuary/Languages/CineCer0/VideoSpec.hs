@@ -41,9 +41,9 @@ emptyVideoSpec x = VideoSpec {
   height = 0.0,
   opacity = defaultOpacity,
   blur = 0.0,
-  brightness = 1.0,
-  contrast = 1.0,
-  grayscale = 0.0,
+  brightness = 100,
+  contrast = 100,
+  grayscale = 0,
   saturate = 1.0
 }
 
@@ -60,9 +60,9 @@ stringToVideoSpec x = VideoSpec {
   height = 1.0,
   opacity = defaultOpacity,
   blur = 0.0,
-  brightness = 1.0,
-  contrast = 1.0,
-  grayscale = 0.0,
+  brightness = 100,
+  contrast = 100,
+  grayscale = 0,
   saturate = 1.0
 }
 
