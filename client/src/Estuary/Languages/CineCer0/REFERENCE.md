@@ -16,7 +16,12 @@ pos x y $ -- moves in both coordinates
 
 ## Style Functions
 
-opacity [o] $ -- changes the opacity, 1 = 100% (no opacity)
+opacity [o] $ -- 100 = no opacity, 0-99 = less opacity
+blur [bl] $ -- 0 = no blur (1++ = more)
+brightness [br] $ --  100 = video brightness (0-99 = less, 100++ = more)
+contrast [c] $ -- in which 100 = video contrast (0-99 = less, 100++ = more)
+grayscale [g] $ -- in which 0 = no grayscale, 100 = full grayscale
+saturate [s] $ -- in which 1.0 = video saturation (1++ = more)
 
 ## Time Functions
 
