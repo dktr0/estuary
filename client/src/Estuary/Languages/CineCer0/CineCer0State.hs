@@ -53,9 +53,9 @@ foreign import javascript unsafe
   videoHeight :: CineCer0Video -> IO Double
 
 videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Double -> IO ()
-videoStyle v x y w h o = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o
+videoStyle v x y w h o = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o;
 
-----  Rate and Position -----
+----  Rate and Position ----
 
 foreign import javascript unsafe
   "$1.playbackRate = $2;"
