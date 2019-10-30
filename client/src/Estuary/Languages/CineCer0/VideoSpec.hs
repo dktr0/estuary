@@ -93,6 +93,9 @@ setSize m n vs = vs { width = m, height = n }
 --
 -- Style Functions --
 
+--setOpacity :: Rational -> VideoSpec -> VideoSpec
+--setOpacity n vs = vs { opacity = n }
+
 setOpacity :: Rational -> VideoSpec -> VideoSpec
 setOpacity r vs = vs {
   opacity = \t ndt ut -> r * ((opacity vs) t ndt ut)
