@@ -110,10 +110,10 @@ in
                   static = [ "-optl=-pthread" "-optl=-static" "-optl=-L${pkgs.gmp6.override { withStatic = true; }}/lib"
                       "-optl=-L${pkgs.zlib.static}/lib" "-optl=-L${pkgs.glibc.static}/lib"
                     ];
-                  dynamic = [ "-dynamic" "-threaded" ];
+                  dynamic = [ "-dynamic" "-threaded"];
                 }.${linkType} or [])
               ) ++ (if !pkgs.stdenv.isDarwin then [] else ({
-                  dynamic = [ "-dynamic" "-threaded" ];
+                  dynamic = [ "-dynamic" "-threaded"];
                 }.${linkType} or [])
               )
           );

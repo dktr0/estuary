@@ -52,8 +52,9 @@ foreign import javascript unsafe
   "$1.videoHeight"
   videoHeight :: CineCer0Video -> IO Double
 
-videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Double -> IO ()
-videoStyle v x y w h o = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o;
+videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Double -> Double -> IO ()
+videoStyle v x y w h o b = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "%; object-fit: fill; opacity: " <> showt o <> "px; filter: blur " <> showt b;
+--https://www.w3schools.com/cssref/css3_pr_filter.asp
 
 ----  Rate and Position ----
 
@@ -120,7 +121,7 @@ updateContinuingVideo t now (sw,sh) s v = do
     let pos = (playbackPosition s) t lengthOfVideo now
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
     -- update geometry/appearance/etc
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac (opacity s))
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac (opacity s)) (realToFrac (blur s))
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State

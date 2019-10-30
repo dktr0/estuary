@@ -110,3 +110,55 @@ In the **backend** shell (`shells.ghc`) build the server, put it in the staging 
 [nix-shell: ...]$ make makeSampleMap  # Only required if you haven't done a full build
 [nix-shell: ...]$ make runDevServer
 ```
+
+## Building the server via stack and curlReleaseClient (eg. for cloud servers where Nix is tricky)
+
+On some systems (for example, resource-challenged virtual servers) the Nix build process is too heavy. For these cases, you can use the somewhat lighter stack-based build process for the server binary, and grab a prebuilt copy of the Javascript client for that server to serve.
+
+Step One is to install the Haskell stack tool in whatever way makes sense for your system.
+
+Then you will probably also need to ensure that some system libraries are available. For example, for Debian (and possibly Debian-related systems like Ubuntu):
+
+```shell
+sudo apt-get install libtagc0-dev
+```
+
+For CentOS (and probably other related systems like RedHat):
+
+```shell
+sudo yum install taglib-devel gmp-devel zlib-devel
+```
+
+With stack available and the requisite system libraries installed, you can build the server as follows (change 20191028 in the example below to the 8 digits that identify the latest release of Estuary on github.com - click on Releases there to see available releases; you can put your own sample library instead of doing make downloadDirtSamples):
+
+```shell
+make stackBuildServer
+make stackStageServer
+make updateSubModules
+make downloadDirtSamples
+make makeSampleMap
+make stageSamples
+make stageStaticAssets
+./curlReleaseClient 20191028
+```
+
+You'll need to provide a symbolic link to a certificate and private key for SSL to work (required for Estuary). For example:
+
+```shell
+cd staging
+ln -s /etc/whereverMyCertIs.pem cert.pem
+ln -s /etc/whereverMyPrivateKeyIs.pem privkey.pem
+```
+
+If you don't have valid certificates you can generate temporary invalid "self certificates" which will let things work (but you'll get an intimidating warning from your browser when you connect to an Estuary server using such self certificates...). This should launch a certificate generating process - you can provide nothing for all of the questions it asks except for country (provide a country code):
+
+```shell
+make selfCertificates
+```
+
+To run the server/client thus created listening on port 443 (standard port for https) and using as many threads as there are processor cores (for performance) - change password to your preferred server administrator password (used to create ensembles on the server):
+
+```shell
+cd staging
+sudo ./EstuaryServer password 443 +RTS -N -RTS
+```

@@ -9,6 +9,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Map.Strict as Map
 import qualified Data.IntMap.Strict as IntMap
 import Control.Monad
+import Control.Concurrent
 import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad.State
@@ -29,6 +30,7 @@ import WaiAppStatic.Types (unsafeToPiece,MaxAge(..))
 import Data.Time
 import Data.Time.Clock.POSIX
 import Data.Map
+import TextShow
 
 import Estuary.Utility
 import Estuary.Types.Definition
@@ -49,8 +51,10 @@ import Estuary.Types.Chat
 
 runServerWithDatabase :: Text -> Int -> SQLite.Connection -> IO ()
 runServerWithDatabase pswd port db = do
-  postLogToDatabase db $ "Estuary collaborative editing server, listening on port " <> (T.pack $ show port)
-  postLogToDatabase db $ "administrative password: " <> pswd
+  nCap <- getNumCapabilities
+  postLogToDatabase db $ "Estuary collaborative editing server, listening on port " <> showt port
+  postLogToDatabase db $ "max simultaneous Haskell threads = " <> showt nCap
+  postLogToDatabase db $ "administrative password = " <> pswd
   es <- readEnsembles db
   postLogToDatabase db $ (T.pack $ show (size es)) <> " ensembles restored from database"
   s <- newMVar $ newServerState { administrativePassword = pswd, ensembles = es }
@@ -101,6 +105,7 @@ webSocketsApp db sMVar ws = do
 processLoop :: SQLite.Connection -> WS.Connection -> MVar ServerState -> ClientHandle -> IO ()
 processLoop db ws sMVar cHandle = do
   m <- try $ WS.receiveData ws
+--  t0 <- getCurrentTime
   case m of
     Right m' -> do
       s <- takeMVar sMVar
@@ -110,6 +115,8 @@ processLoop db ws sMVar cHandle = do
           postLogToDatabase db $ "*** warning - failed sanity check: WS.receiveData succeeded for client already deleted from server"
           return s
       putMVar sMVar s'
+--      t1 <- getCurrentTime
+--      T.putStrLn $ showt ((realToFrac $ diffUTCTime t1 t0) :: Double)
       processLoop db ws sMVar cHandle
     Left WS.ConnectionClosed -> do
       s <- takeMVar sMVar
@@ -247,11 +254,12 @@ processEnsembleRequest :: EnsembleRequest -> Transaction ()
 processEnsembleRequest (WriteZone zone value) = do
   whenNotAuthenticatedInEnsemble $ throwError "ignoring ZoneRequest from client not authenticated in ensemble"
   eName <- getEnsembleName
-  postLog $ "Edit in (" <> eName <> "," <> (T.pack $ show zone) <> "): " <> (T.pack $ show value)
+  -- postLog $ "Edit in (" <> eName <> "," <> showt zone <> ")"
   modify' $ writeZone eName zone value
   respondEnsembleNoOrigin $ EnsembleResponse $ ZoneRcvd zone value
-  saveEnsembleToDatabase
+  -- saveEnsembleToDatabase -- note: 100x improvement in server transaction time when not logging message above or saving ensemble
   updateLastEdit
+  return ()
 
 processEnsembleRequest (WriteChat msg) = do
   whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteChat from client not authenticated in ensemble"

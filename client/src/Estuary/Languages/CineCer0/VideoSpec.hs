@@ -13,9 +13,6 @@ data VideoSpec = VideoSpec {
   sourceNumber :: Int,
   playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
   playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
-  -- opacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
-  -- defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
-  -- defaultOpacity _ _ _ = 1.0
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
