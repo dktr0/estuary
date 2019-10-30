@@ -71,7 +71,12 @@ ourTLSSettings = defaultTlsSettings {
   certFile = "cert.pem",
   keyFile = "privkey.pem",
   tlsAllowedVersions = [TLS12],
-  tlsCiphers = ciphersuite_strong,
+  tlsCiphers = [
+    cipher_ECDHE_ECDSA_AES256GCM_SHA384,
+    cipher_ECDHE_RSA_AES256GCM_SHA384,
+    cipher_ECDHE_ECDSA_AES128GCM_SHA256,
+    cipher_ECDHE_RSA_AES128GCM_SHA256
+    ],
   onInsecure = DenyInsecure "You must use HTTPS to connect to Estuary. Try using the same URL in your browser but with https instead of http at the beginning."
   }
 
