@@ -23,6 +23,7 @@ dependencies:
   - websockets
   - wai
   - warp
+  - tls
   - warp-tls
   - wai-websockets
   - wai-app-static
