@@ -20,6 +20,14 @@ opacity [o] $ -- changes the opacity, 1 = 100% (no opacity)
 
 ## Time Functions
 
+natural sh $         -- sh shifts the starting point of the video. 0 start of the video (0%), 0.5 starts at 50% of the video, etc.
+every c sh $         -- adjusts/aligns length to the given number of cycles (c).
+round sh $           -- adjusts/aligns length to the nearest amount of cycles of the natural length. 
+roundMetre sh $      -- adjusts/aligns length to the nearest power of 2 number of cycles (metre in musical terms).
+chop sP eP c sh      -- adjusts/aligns length to the given number of cycles (c) from starting position (sP) to ending position (eP). sP and eP in percentage normalised from 0.0 to 1.0.
+chopSecs sP eP c sh  -- sP and eP in seconds.
+chop' sP c sh        -- adjusts/aligns length to the given number of cycles (c) from starting position (sP). sP in percentage normalised from 0.0 to 1.0.
+
 
 
 <!-- # This is the documentation for CineCer0
