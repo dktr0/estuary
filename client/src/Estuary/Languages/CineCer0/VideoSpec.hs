@@ -102,7 +102,7 @@ setOpacity r vs = vs {
   }
 
 defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational
-defaultOpacity _ _ _ = 100.0
+defaultOpacity _ _ _ = 100
 
 setBlur :: Rational -> VideoSpec -> VideoSpec
 setBlur n vs = vs {blur = n}

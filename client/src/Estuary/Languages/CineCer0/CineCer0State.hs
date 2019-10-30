@@ -52,7 +52,7 @@ foreign import javascript unsafe
   "$1.videoHeight"
   videoHeight :: CineCer0Video -> IO Double
 
-videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Double -> Double -> IO ()
+videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
 videoStyle v x y w h o b = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o <> "%; filter: blur( " <> showt b <> "px)"
 
 ----  Rate and Position ----
@@ -122,7 +122,7 @@ updateContinuingVideo t now (sw,sh) s v = do
     -- update opacity
     let opacidad = (opacity s) t lengthOfVideo now
     -- update geometry/appearance/etc
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac opacidad) (realToFrac (blur s))
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (realToFrac (blur s))
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
