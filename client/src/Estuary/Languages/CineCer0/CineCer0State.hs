@@ -120,8 +120,10 @@ updateContinuingVideo t now (sw,sh) s v = do
     -- update position in time
     let pos = (playbackPosition s) t lengthOfVideo now
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
+    -- update opacity
+    let opacidad = (opacity s) t lengthOfVideo now
     -- update geometry/appearance/etc
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac (opacity s)) (realToFrac (blur s))
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac opacidad)
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State

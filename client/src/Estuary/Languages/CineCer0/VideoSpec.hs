@@ -17,7 +17,7 @@ data VideoSpec = VideoSpec {
   posY :: Rational,
   width :: Rational,
   height :: Rational,
-  opacity :: Rational,
+  opacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
   blur :: Rational,
   brightness :: Rational,
   contrast :: Rational,
@@ -39,7 +39,7 @@ emptyVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 0.0,
   height = 0.0,
-  opacity = 1.0,
+  opacity = defaultOpacity,
   blur = 0.0,
   brightness = 1.0,
   contrast = 1.0,
@@ -58,7 +58,7 @@ stringToVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 1.0,
   height = 1.0,
-  opacity = 1.0,
+  opacity = defaultOpacity,
   blur = 0.0,
   brightness = 1.0,
   contrast = 1.0,
@@ -94,17 +94,12 @@ setSize m n vs = vs { width = m, height = n }
 -- Style Functions --
 
 setOpacity :: Rational -> VideoSpec -> VideoSpec
-setOpacity n vs = vs { opacity = n }
+setOpacity r vs = vs {
+  opacity = \t ndt ut -> r * ((opacity vs) t ndt ut)
+  }
 
--- setOpacity :: Rational -> VideoSpec -> VideoSpec
--- setOpacity r vs = vs {
---  opacity = \t ndt ut -> r * ((opacity vs) t ndt ut)
--- }
-
--- doSthToTheOpacity :: a -> VideoSpec -> VideoSpec
--- doSthToTheOpacity a vs = vs {
---  opacity = \t ndt ut -> a {- or f a t ndt ut, etc -} * ((opacity vs) t ndt ut)
--- }
+defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational
+defaultOpacity _ _ _ = 1.0
 
 setBlur :: Rational -> VideoSpec -> VideoSpec
 setBlur n vs = vs {blur = n}
