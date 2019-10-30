@@ -26,6 +26,7 @@ import Network.Wai.Handler.Warp
 import Network.Wai.Handler.Warp.Internal
 import Network.Wai.Handler.WarpTLS
 import Network.TLS (Version(..))
+import Network.TLS.Extra.Cipher
 import Network.Wai.Middleware.Gzip
 import WaiAppStatic.Types (unsafeToPiece,MaxAge(..))
 import Data.Time
@@ -70,6 +71,7 @@ ourTLSSettings = defaultTlsSettings {
   certFile = "cert.pem",
   keyFile = "privkey.pem",
   tlsAllowedVersions = [TLS12],
+  tlsCiphers = ciphersuite_strong,
   onInsecure = DenyInsecure "You must use HTTPS to connect to Estuary. Try using the same URL in your browser but with https instead of http at the beginning."
   }
 
