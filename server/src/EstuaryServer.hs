@@ -22,6 +22,7 @@ import qualified Network.WebSockets as WS
 import qualified Network.Wai as WS
 import qualified Network.Wai.Handler.WebSockets as WS
 import Network.Wai.Application.Static (staticApp, defaultWebAppSettings, ssIndices, ssMaxAge)
+import Network.HTTP.Types.Status (status200, status301)
 import Network.Wai.Handler.Warp
 import Network.Wai.Handler.Warp.Internal
 import Network.Wai.Handler.WarpTLS
@@ -51,10 +52,10 @@ import Estuary.Types.Tempo
 import Estuary.Types.Transaction
 import Estuary.Types.Chat
 
-runServerWithDatabase :: Text -> Int -> SQLite.Connection -> IO ()
-runServerWithDatabase pswd port db = do
+runServerWithDatabase :: Text -> Int -> Bool -> SQLite.Connection -> IO ()
+runServerWithDatabase pswd port httpRedirect db = do
   nCap <- getNumCapabilities
-  postLogToDatabase db $ "Estuary collaborative editing server, listening on port " <> showt port
+  postLogToDatabase db $ "Estuary collaborative editing server"
   postLogToDatabase db $ "max simultaneous Haskell threads = " <> showt nCap
   postLogToDatabase db $ "administrative password = " <> pswd
   es <- readEnsembles db
@@ -64,7 +65,16 @@ runServerWithDatabase pswd port db = do
     ssIndices = [unsafeToPiece "index.html"],
     ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
     }
-  runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+  postLogToDatabase db $ "listening on port " <> showt port <> " (HTTPS only)"
+  forkIO $ runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+  when httpRedirect $ do
+    postLogToDatabase db $ "(also listening on port 80 and redirecting plain HTTP requests to HTTPS, ie. on port 443)"
+    run 80 ourRedirect
+
+ourRedirect :: WS.Application
+ourRedirect req respond = do
+  let location = "https://" <> (maybe "localhost" id $ WS.requestHeaderHost req) <> "/" <> WS.rawPathInfo req
+  respond $ WS.responseLBS status301 [("Content-Type","text/plain"),("Location",location)] "Redirect"
 
 ourTLSSettings :: TLSSettings
 ourTLSSettings = defaultTlsSettings {

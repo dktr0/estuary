@@ -71,7 +71,7 @@ stackStageServer: prepStage
 	@ echo "stackStageServer:"
 	cp -f $(shell cd server && stack path --local-install-root)/bin/EstuaryServer $(STAGING_ROOT)
 	chmod a+w $(STAGING_ROOT)/EstuaryServer
-	
+
 PROD_STAGING_ROOT=staging/
 DEV_STAGING_ROOT=dev-staging/
 STAGING_ROOT=$(PROD_STAGING_ROOT)
@@ -189,10 +189,10 @@ clean: cleanStage cleanDevStage
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer test +RTS -N -RTS
+	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer test +RTS -N -RTS
 
 runServer: nixBuild stageStaticAssets makeSampleMap stageSamples nixStageClient nixStageServer
-	cd ./$(STAGING_ROOT) && ./EstuaryServer test +RTS -N -RTS
+	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer test +RTS -N -RTS
 
 selfCertificates:
 	-mkdir staging
