@@ -145,7 +145,6 @@ in
 
         webdirt = import ./deps/webdirt self;
 
-        # timeNot = import ./deps/timeNot self;
         TimeNot = if !(self.ghc.isGhcjs or false) then null
           else dontHaddock (import ./deps/TimeNot self);
 
@@ -158,6 +157,18 @@ in
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (import ./deps/tidal self);
+
+        tidal-parse = if !(self.ghc.isGhcjs or false) then null
+          else doJailbreak (self.callCabal2nixWithOptions
+#            "tidal-parse" ../tidal/tidal-parse "" {});
+            "tidal-parse"
+            ( pkgs.fetchgit {
+              url = "https://github.com/dktr0/Tidal.git";
+              rev = "2e8f61385f8b88289302a4197f9385af286902dd";
+              sha256 = "0i7kl99cqbjg970494xhrb3337y4y4z80h34f9hlxvsxxbad9g5a";
+              fetchSubmodules = true;
+              })
+            "--subpath tidal-parse" {});
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 

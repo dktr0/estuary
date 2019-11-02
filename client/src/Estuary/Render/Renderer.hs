@@ -119,7 +119,7 @@ renderTidalPattern start range t p = events''
     f e = (utcTime,Tidal.value e)
       where
         utcTime = addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t)
-        w1 = Tidal.start $ Tidal.whole e
+        w1 = Tidal.start $ fromJust $ Tidal.whole e
 
 sequenceToControlPattern :: (Text,[Bool]) -> Tidal.ControlPattern
 sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " " $ fmap f pat
