@@ -109,6 +109,13 @@ getServerClientCount = gets (IntMap.size . clients)
 close :: Text -> Transaction ()
 close msg = do
   postLog $ "closing connection: " <> msg
+  eName <- getEnsembleName
+  when (eName /= "") $ do
+    eHandle <- handleInEnsemble <$> getClient
+    when (eHandle /= "") $ respondEnsembleNoOrigin $ EnsembleResponse (ParticipantLeaves eHandle)
+    when (eHandle == "") $ do
+      n <- countAnonymousParticipants
+      respondEnsembleNoOrigin $ EnsembleResponse (AnonymousParticipants (n-1))
   cHandle <- asks snd
   modify' $ deleteClient cHandle
   return ()
@@ -116,6 +123,8 @@ close msg = do
 closeAnotherConnection :: Client -> Transaction ()
 closeAnotherConnection c = do
   postLog $ "closing connection (for another client)"
+  -- TODO: *** if the other client was a member of ensemble then all of the members of that ensemble need to get ParticipantLeaves or countAnonymousParticipants
+  --  but we can't use respondEnsembleNoOrigin because it could be a different ensemble they were a part of
   let cHandle = Estuary.Types.Client.handle c
   modify' $ deleteClient cHandle
   return ()
