@@ -161,7 +161,9 @@ page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
   cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
   let cancelNav = Lobby <$ cancel
   let navEvents = leftmost [joinedEnsembleNav,cancelNav]
-  return (navEvents, (joinRequest, never, never))
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  let serverRequests = leftmost [leaveEnsemble,joinRequest]
+  return (navEvents, (serverRequests, never, never))
 
 page ctx renderInfo rs (EnsemblePage ensembleName) = do
   let ensResponses = fmap justEnsembleResponses rs
