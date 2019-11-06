@@ -71,6 +71,7 @@ sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
 ensembleStatusView = reserved "ensembleStatus" >> return EnsembleStatusView
 textView = reserved "text" >> reservedOp ":" >> (TextView <$> int <*> int)
 
+
 int :: Parser Int
 int = choice [
   parens $ (fromIntegral <$> integer),

@@ -72,18 +72,21 @@ body, .primary-color {
 padding-left: 10px;
 }
 
-.page {grid-area: page}
-.footer{grid-area: footer;}
+.page {grid-area: page;
+    height: 85vh;
+
+}
+
 
 
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
 display: grid;
-grid-template-rows: 5vh 90vh 5vh;
+grid-template-rows: 5vh 85vh 10vh;
   grid-template-areas:
-    'header header'
-    'page page'
-    'footer footer';
+    'header '
+    'page'
+    'footer';
   width: 99vw;
   height: 100vh;
 }
@@ -194,7 +197,8 @@ grid-template-rows: 5vh 90vh 5vh;
 
 
 .footer {
-	padding-top: 5px;
+	grid-area: footer;
+	padding-top: 1em;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
@@ -285,7 +289,7 @@ grid-template-rows: 5vh 90vh 5vh;
 }
 
 /*modifies the chat messages (source)*/
-.chatMessage { display: block;}
+.chatMessage { display: block}
 
 .translationDNEWidget { /*source*/
 	text-align: center;
@@ -390,20 +394,26 @@ grid-template-rows: 5vh 90vh 5vh;
 
 /*contains the elements parser selector, name-tag area, textarea, eval button and info button (source) */
 .textPatternChain {
-	width: 100%;
-}
+  	 height:85%;
+  	 display:grid;
+  	 grid-template-rows: 10% 80%;
+  	 grid-template-areas:
+  	 'fullWidthDiv'
+  	 'labelAndTextPattern';
+   }
 
 /* coding textarea */
 .labelAndTextPattern {
-	width: 100%;
-	margin: 0px;
+	grid-area:labelAndTextPattern;
+	margin: 10px;
 	padding: 0px;
+	height: 85%;
 }
 
 .coding-textarea {
 	width: 100%;
 	height: 100%;
-  border: none;
+	 border: none;
 }
 
 /* contains the name-tag textarea */
@@ -441,15 +451,18 @@ grid-template-rows: 5vh 90vh 5vh;
 .textInputToEndOfLine {
 	font-weight: normal;
 	padding: 0px;
-/* 	margin-top: 0.5em; */
-	margin-bottom: 0.5em;
-/* 	margin-left: 0px; */
-/* 	margin-right: 0px; */
-	height: auto;
+	margin-top: 0.5em;
+/* 	margin-bottom: 0.5em; */
+	margin-left: 0px;
+	margin-right: 0px;
 	resize: none;
 	overflow: hidden;
-	background-color: transparent;
-}
+	height:-webkit-fill-available;
+    box-sizing:border-box;
+    background-color: transparent;
+  }
+
+
 
 
 /*ex. the div that 'Sound' is written in, in ICLCFixed)*/
@@ -713,15 +726,11 @@ table, tr, td {border: none;}
 	display: flex;
 	flex-direction: row;
 	border:none;
-    background-color: transparent;
-
 }
 
 .terminalInput {
 	flex-grow: 1;
 	border:none;
-
-
 }
 
 .terminalInput input {
@@ -874,52 +883,31 @@ width: 8em;
    }
 
 .fullWidthDiv {
-   grid-area: fullWidthDiv;
-   width: 100%}
-  .textInputToEndOfLine {grid-area: textInputToEndOfLine;
    width: 100%;
-   }
+	grid-area: fullWidthDiv;
+   	background-color: transparent}
+
 
 .gridView {
     display: grid;
+    width:100%;
+    font-family: inherit;
+    font-size: inherit;
+    height: 100%;
+  }
+
+  .gridChild {
+    border: 0px;
+    margin: 0px;
+    padding: 0px;
+    height:100%;
+
+  }
+
+  .borderDiv {
+    border: 1px solid var(--secondary-color);
+    grid-template-rows: 1em 85%;
     width: 100%;
     height: 100%;
-    font-family: inherit;
-    font-size: inherit;
+    display:grid;
   }
-
-.gridChild {
-  border: 0px;
-  margin: 0px;
-  padding: 0px;
-  width: 100%;
-  height: 100%;
-}
-
-.borderDiv {
-  border: 1px solid var(--secondary-color);
-  width: 100%;
-  height: 100%;
-}
-
-.singleViewContainer {
-/* 	font-size: 1.1vw; */
-    display: grid;
-    grid-template-rows: 20% 10% 70%;
-    grid-template-areas:
-    'name-tag-textarea '
-    'fullWidthDiv'
-    'textInputToEndOfLine';
-    font-family: inherit;
-    border: 1px solid hsl(0,0%,10%);;
-
-
-    }
-
-/*   textarea {
-    font-family: inherit;
-    width:99%;
-    height: 99%;
-    font-size: inherit;
-  }
- */

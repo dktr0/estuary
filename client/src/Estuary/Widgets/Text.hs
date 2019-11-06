@@ -35,9 +35,12 @@ import Estuary.Widgets.Editor
 import Estuary.Types.Context
 import Estuary.Types.Variable
 
-textWidget :: MonadWidget t m => Int -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+
+textWidget :: MonadWidget t m =>  Int -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
 textWidget rows i delta = do
-  let attrs = constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
+  let attrs = case rows of 0 -> constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font")
+                           _ -> constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
+  -- let attrs = constDyn $ (constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font")) else
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let e = _textArea_element x
   e' <- wrapDomEvent (e) (onEventName Keypress) $ do
@@ -50,6 +53,7 @@ textWidget rows i delta = do
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
 
+
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual, CineCer0, TimeNot, Ver, Oir, Dos] ++ (fmap TidalTextNotation tidalParsers)
 
@@ -58,7 +62,6 @@ textProgramEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic
 textProgramEditor nRows errorDyn updates = do
   ctx <- askContext
   reflexWidgetToEditor updates $ textProgramWidget ctx errorDyn nRows
-
 
 textProgramWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) -> Int
   -> TextProgram -> Event t TextProgram -> m (Event t TextProgram,Event t [Hint])
@@ -108,7 +111,7 @@ textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** T
 labelEditor :: MonadWidget t m => Dynamic t Text -> Editor t m (Variable t Text)
 labelEditor delta = do
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
-  y <- liftR $ divClass "textPatternChain" $ divClass "labelWidgetDiv" $ do
+  y <- liftR $  divClass "labelWidgetDiv" $ do
     i <- (sample . current) delta
     textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   return $ Variable (_textInput_value y) (_textInput_input y)

@@ -17,7 +17,7 @@ data View =
   CellView Rational View | -- a cell (ie. column fragment) in the layout, number is percent of horizontal space
   LabelView Int |
   StructureView Int |
-  TextView Int Int | -- first int is zone to edit, second int is number of lines in editor
+  TextView Int Int| -- first int is zone to edit, second int is number of lines in editor
   SequenceView Int |
   EnsembleStatusView
   deriving (Show,Eq,Generic)
