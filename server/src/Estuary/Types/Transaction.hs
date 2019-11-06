@@ -19,6 +19,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Aeson
+import Data.Maybe
 
 import Estuary.Types.ServerState
 import qualified Estuary.Types.Ensemble as E
@@ -106,9 +107,33 @@ countAnonymousParticipants = do
 getServerClientCount :: Transaction Int
 getServerClientCount = gets (IntMap.size . clients)
 
+leaveEnsemble :: Transaction ()
+leaveEnsemble = do
+  e <- memberOfEnsemble <$> getClient
+  when (isJust e) $ do
+    -- notify all other members of the ensemble of this client's departure
+    uName <- handleInEnsemble <$> getClient
+    let anonymous = uName == ""
+    when (not anonymous) $ do
+      postLog $ uName <> " leaving ensemble " <> fromJust e
+      respondEnsembleNoOrigin $ EnsembleResponse $ ParticipantLeaves uName
+    when anonymous $ do
+      postLog $ "(anonymous) leaving ensemble " <> fromJust e
+      n <- countAnonymousParticipants
+      respondEnsembleNoOrigin $ EnsembleResponse $ AnonymousParticipants (n-1)
+    -- modify servers record of this client so that they are ensemble-less
+    modifyClient $ \c -> c {
+      memberOfEnsemble = Nothing,
+      handleInEnsemble = "",
+      locationInEnsemble = "",
+      statusInEnsemble = "",
+      authenticatedInEnsemble = False
+      }
+
 close :: Text -> Transaction ()
 close msg = do
   postLog $ "closing connection: " <> msg
+  leaveEnsemble
   cHandle <- asks snd
   modify' $ deleteClient cHandle
   return ()
@@ -116,6 +141,8 @@ close msg = do
 closeAnotherConnection :: Client -> Transaction ()
 closeAnotherConnection c = do
   postLog $ "closing connection (for another client)"
+  -- TODO: *** if the other client was a member of ensemble then all of the members of that ensemble need to get ParticipantLeaves or countAnonymousParticipants
+  --  but we can't use respondEnsembleNoOrigin because it could be a different ensemble they were a part of
   let cHandle = Estuary.Types.Client.handle c
   modify' $ deleteClient cHandle
   return ()

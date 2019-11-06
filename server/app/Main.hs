@@ -14,13 +14,13 @@ main :: IO ()
 main = do
   db <- openDatabase
   (pswd, port) <- getArgs >>= return . processArgs
-  runServerWithDatabase (T.pack pswd) port db
+  runServerWithDatabase (T.pack pswd) port True db -- True is hard-coded http redirect for now
     `catch` (closeDatabaseOnException db)
 
 processArgs :: [String] -> (String,Int) -- (password,port)
 processArgs xs = case length xs of
-  0 -> ("",8002)
-  1 -> (xs!!0,8002)
+  0 -> ("",443)
+  1 -> (xs!!0,443)
   _ -> (xs!!0,read (xs!!1))
 
 closeDatabaseOnException :: SQLite.Connection -> SomeException -> IO ()

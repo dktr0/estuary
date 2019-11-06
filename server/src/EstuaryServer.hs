@@ -22,9 +22,12 @@ import qualified Network.WebSockets as WS
 import qualified Network.Wai as WS
 import qualified Network.Wai.Handler.WebSockets as WS
 import Network.Wai.Application.Static (staticApp, defaultWebAppSettings, ssIndices, ssMaxAge)
+import Network.HTTP.Types.Status (status200, status301)
 import Network.Wai.Handler.Warp
 import Network.Wai.Handler.Warp.Internal
 import Network.Wai.Handler.WarpTLS
+import Network.TLS (Version(..))
+import Network.TLS.Extra.Cipher
 import Network.Wai.Middleware.Gzip
 import WaiAppStatic.Types (unsafeToPiece,MaxAge(..))
 import Data.Time
@@ -49,10 +52,10 @@ import Estuary.Types.Tempo
 import Estuary.Types.Transaction
 import Estuary.Types.Chat
 
-runServerWithDatabase :: Text -> Int -> SQLite.Connection -> IO ()
-runServerWithDatabase pswd port db = do
+runServerWithDatabase :: Text -> Int -> Bool -> SQLite.Connection -> IO ()
+runServerWithDatabase pswd port httpRedirect db = do
   nCap <- getNumCapabilities
-  postLogToDatabase db $ "Estuary collaborative editing server, listening on port " <> showt port
+  postLogToDatabase db $ "Estuary collaborative editing server"
   postLogToDatabase db $ "max simultaneous Haskell threads = " <> showt nCap
   postLogToDatabase db $ "administrative password = " <> pswd
   es <- readEnsembles db
@@ -62,12 +65,28 @@ runServerWithDatabase pswd port db = do
     ssIndices = [unsafeToPiece "index.html"],
     ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
     }
-  runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+  postLogToDatabase db $ "listening on port " <> showt port <> " (HTTPS only)"
+  forkIO $ runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+  when httpRedirect $ do
+    postLogToDatabase db $ "(also listening on port 80 and redirecting plain HTTP requests to HTTPS, ie. on port 443)"
+    run 80 ourRedirect
+
+ourRedirect :: WS.Application
+ourRedirect req respond = do
+  let location = "https://" <> (maybe "localhost" id $ WS.requestHeaderHost req) <> "/" <> WS.rawPathInfo req
+  respond $ WS.responseLBS status301 [("Content-Type","text/plain"),("Location",location)] "Redirect"
 
 ourTLSSettings :: TLSSettings
 ourTLSSettings = defaultTlsSettings {
   certFile = "cert.pem",
   keyFile = "privkey.pem",
+  tlsAllowedVersions = [TLS12],
+  tlsCiphers = [
+    cipher_ECDHE_ECDSA_AES256GCM_SHA384,
+    cipher_ECDHE_RSA_AES256GCM_SHA384,
+    cipher_ECDHE_ECDSA_AES128GCM_SHA256,
+    cipher_ECDHE_RSA_AES128GCM_SHA256
+    ],
   onInsecure = DenyInsecure "You must use HTTPS to connect to Estuary. Try using the same URL in your browser but with https instead of http at the beginning."
   }
 
@@ -227,27 +246,9 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
     n <- countAnonymousParticipants
     respondEnsemble $ EnsembleResponse $ AnonymousParticipants n
 
--- *** note: other members still need to be notified of departure due to disconnection also!!! ***
-processRequest LeaveEnsemble = do
-  postLog $ "leaving ensemble"
-  -- notify all other members of the ensemble of this client's departure
-  uName <- handleInEnsemble <$> getClient
-  let anonymous = uName == ""
-  when (not anonymous) $ respondEnsembleNoOrigin $ EnsembleResponse $ ParticipantLeaves uName
-  when anonymous $ do
-    n <- countAnonymousParticipants
-    respondEnsembleNoOrigin $ EnsembleResponse $ AnonymousParticipants (n-1)
-  -- modify servers record of this client so that they are ensemble-less
-  modifyClient $ \c -> c {
-    memberOfEnsemble = Nothing,
-    handleInEnsemble = "",
-    locationInEnsemble = "",
-    statusInEnsemble = "",
-    authenticatedInEnsemble = False
-    }
+processRequest LeaveEnsemble = leaveEnsemble
 
 processRequest (EnsembleRequest x) = processEnsembleRequest x
-
 
 processEnsembleRequest :: EnsembleRequest -> Transaction ()
 

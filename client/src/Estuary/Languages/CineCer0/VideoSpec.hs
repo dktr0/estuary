@@ -13,22 +13,20 @@ data VideoSpec = VideoSpec {
   sourceNumber :: Int,
   playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
   playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
-  --mask :: String,
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
   height :: Rational,
-  red :: Rational,
-  green :: Rational,
-  blue :: Rational,
-  opacity :: Rational,
-  hue :: Rational,
-  saturation :: Rational
-
+  opacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
+  blur :: Rational,
+  brightness :: Rational,
+  contrast :: Rational,
+  grayscale :: Rational,
+  saturate :: Rational
   }
 
-instance Show VideoSpec where
-  show (VideoSpec vs n _ _ px py w h r g b a _ _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " " ++ "Color:" ++ show r ++ show g ++ show b ++ " " ++ "Opacity " ++ show a
+-- instance Show VideoSpec where
+--   show (VideoSpec vs n _ _ px py w h _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " "
 
 
 emptyVideoSpec :: String -> VideoSpec
@@ -37,17 +35,16 @@ emptyVideoSpec x = VideoSpec {
   sourceNumber = 0,
   playbackPosition = VT.playNatural_Pos 0.0,
   playbackRate = VT.playNatural_Rate 0.0,
-  --mask = "none"
   posX = 0.0,
   posY = 0.0,
   width = 0.0,
   height = 0.0,
-  red = 0.0,
-  green = 0.0,
-  blue = 0.0,
-  opacity = 1.0,
-  hue = 0.0,
-  saturation = 0.0
+  opacity = defaultOpacity,
+  blur = 0.0,
+  brightness = 100,
+  contrast = 100,
+  grayscale = 0,
+  saturate = 1.0
 }
 
 stringToVideoSpec :: String -> VideoSpec
@@ -61,22 +58,19 @@ stringToVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 1.0,
   height = 1.0,
-  red = 1.0,
-  green = 1.0,
-  blue = 1.0,
-  opacity = 1.0,
-  hue = 0.0,
-  saturation = 0.0
+  opacity = defaultOpacity,
+  blur = 0.0,
+  brightness = 100,
+  contrast = 100,
+  grayscale = 0,
+  saturate = 1.0
 }
 
 setSourceNumber :: VideoSpec -> Int -> VideoSpec
 setSourceNumber vs n = vs { sourceNumber = n }
 
---maskVideo :: String -> VideoSpec -> VideoSpec
---maskVideo s vs = vs { mask = s }
-
-
--- Video posX, posY, and posCoord (x y)
+--
+-- Geometric Functions --
 
 setPosX :: Rational -> VideoSpec -> VideoSpec
 setPosX n vs = vs { posX = n }
@@ -87,8 +81,6 @@ setPosY n vs = vs { posY = n }
 setPosCoord :: Rational -> Rational -> VideoSpec -> VideoSpec
 setPosCoord m n vs = vs { posX = m, posY = n }
 
--- Video width, height, and size (width height) --
-
 setWidth :: Rational -> VideoSpec -> VideoSpec
 setWidth n vs = vs { width = n }
 
@@ -98,22 +90,35 @@ setHeight n vs = vs { height = n }
 setSize :: Rational -> Rational -> VideoSpec -> VideoSpec
 setSize m n vs = vs { width = m, height = n }
 
--- colors --
+--
+-- Style Functions --
 
-setRGB :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
-setRGB l m n vs = vs { red = l, green = m, blue = n }
-
-setHue :: Rational -> VideoSpec -> VideoSpec
-setHue n vs = vs { hue = n }
-
-setSaturation :: Rational -> VideoSpec -> VideoSpec
-setSaturation n vs = vs { saturation = n }
-
-
--- Set alpha --
+--setOpacity :: Rational -> VideoSpec -> VideoSpec
+--setOpacity n vs = vs { opacity = n }
 
 setOpacity :: Rational -> VideoSpec -> VideoSpec
-setOpacity n vs = vs { opacity = n }
+setOpacity r vs = vs {
+  opacity = \t ndt ut -> r * ((opacity vs) t ndt ut)
+  }
+
+defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational
+defaultOpacity _ _ _ = 100
+
+setBlur :: Rational -> VideoSpec -> VideoSpec
+setBlur n vs = vs {blur = n}
+
+setBrightness :: Rational -> VideoSpec -> VideoSpec
+setBrightness n vs = vs {brightness = n}
+
+setContranst :: Rational -> VideoSpec -> VideoSpec
+setContranst n vs = vs {contrast = n}
+
+setGrayscale :: Rational -> VideoSpec -> VideoSpec
+setGrayscale n vs = vs {grayscale = n}
+
+setSaturate :: Rational -> VideoSpec -> VideoSpec
+setSaturate n vs = vs {saturate = n}
+
 
 --
 -- Time Functions --
@@ -124,16 +129,22 @@ playNatural n vs = vs {
   playbackRate = VT.playNatural_Rate n
 }
 
-playEvery :: Rational -> Rational -> VideoSpec -> VideoSpec
-playEvery m n vs = vs {
-  playbackPosition = VT.playEvery_Pos m n,
-  playbackRate = VT.playEvery_Rate m n
-  }
-
 playRound :: Rational -> VideoSpec -> VideoSpec
 playRound n vs = vs {
   playbackPosition = VT.playRound_Pos n,
   playbackRate = VT.playRound_Rate n
+  }
+
+playRoundMetre :: Rational -> VideoSpec -> VideoSpec
+playRoundMetre n vs = vs {
+  playbackPosition = VT.playRoundMetrePos n,
+  playbackRate = VT.playRoundMetreRate n
+  }
+
+playEvery :: Rational -> Rational -> VideoSpec -> VideoSpec
+playEvery m n vs = vs {
+  playbackPosition = VT.playEvery_Pos m n,
+  playbackRate = VT.playEvery_Rate m n
   }
 
 playChop' :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec

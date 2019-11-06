@@ -52,10 +52,10 @@ foreign import javascript unsafe
   "$1.videoHeight"
   videoHeight :: CineCer0Video -> IO Double
 
-videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Double -> IO ()
-videoStyle v x y w h o = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o
+videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+videoStyle v x y w h o bl br c g s = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o <> "%; filter:blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
 
-----  Rate and Position -----
+----  Rate and Position ----
 
 foreign import javascript unsafe
   "$1.playbackRate = $2;"
@@ -119,8 +119,10 @@ updateContinuingVideo t now (sw,sh) s v = do
     -- update position in time
     let pos = (playbackPosition s) t lengthOfVideo now
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
+    -- update opacity
+    let opacidad = (opacity s) t lengthOfVideo now
     -- update geometry/appearance/etc
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac (opacity s))
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor (blur s)) (floor (brightness s)) (floor (contrast s)) (floor (grayscale s)) (realToFrac (saturate s))
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
@@ -141,32 +143,3 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.offsetHeight"
   offsetHeight :: HTMLDivElement -> IO Double
-
-
---  Maybe- not execute at all
-
--- servicedesk.mcmaster.ca
-
--- x :: Maybe a
-
--- f :: a -> IO ()
-
--- videoPlaybackRate :: CineCer0Video -> Double -> IO ()
-
--- videoPlaybackRate aVideo :: Double -> IO ()
-
--- g :: IO ()
-
--- g = do
-
---   ...
-
---   ...
-
---   let rate = ... something that combines information to generate a maybe rational
-
---   maybe (return ()) (videoPlaybackRate aVideo) $ fmap realToFrac rate
-
-
-
--- maybe :: b -> (a -> b) -> Maybe a -> b

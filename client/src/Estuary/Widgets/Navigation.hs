@@ -77,17 +77,20 @@ page ctx _ wsDown Splash = do
     gotoSoloEv <- panel "splash-margin" ctx Solo Term.Solo (text "C") -- icon font: solo-icon.png
     gotoCollaborateEv <- panel "splash-margin" ctx Lobby Term.Collaborate (text "D") -- icon font: collaborate-icon.svg
     return $ leftmost [gotoAboutEv, gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
-  return (navEv, (never, never, never))
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  return (navEv, (leaveEnsemble, never, never))
 
 page ctx _ wsDown TutorialList = do
   divClass "ui-font primary-color" $ text "Click on a button to select a tutorial interface:"
   bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ buttonWithClass $ (T.pack . show) $ T.tutorialId b) (tutorials::[T.Tutorial t m])
-  return (leftmost bs, (never, never, never))
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  return (leftmost bs, (leaveEnsemble, never, never))
 
 page ctx _ wsDown (Tutorial tid) = do
   let widget = (Map.lookup tid tutorialMap) :: Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint]))
   (dm, hs) <- maybe errMsg id (fmap (\x-> x ctx) widget)
-  return (never, (never, never, hs)) -- *** RENDERING IS THUS BROKEN IN TUTORIALS, need to make sure tutorials return edits ***
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  return (never, (leaveEnsemble, never, hs)) -- *** RENDERING IS THUS BROKEN IN TUTORIALS, need to make sure tutorials return edits ***
   where
     errMsg = do
       text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
@@ -95,19 +98,20 @@ page ctx _ wsDown (Tutorial tid) = do
 
 page ctx _ wsDown About = do
   aboutEstuaryParagraph ctx
-  return (never, (never, never, never))
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  return (never, (leaveEnsemble, never, never))
 
 page ctx _ wsDown Lobby = do
-  -- at widget build and every 3 seconds thereafter, request the list of available ensembles
-  requestEnsembleList0 <- liftM (GetEnsembleList <$) getPostBuild
-  now <- liftIO $ getCurrentTime
-  requestEnsembleList1 <- liftM (GetEnsembleList <$) $ tickLossy (3::NominalDiffTime) now
-  let requestEnsembleList = leftmost [requestEnsembleList0,requestEnsembleList1]
   -- process received ensemble lists into widgets that display info about, and let us join, ensembles
   ensembleList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
   ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton -- Event t Text
   let navToJoinEnsemble = fmap JoinEnsemblePage ensembleClicked
   navToCreateEnsemble <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
+  -- LeaveEnsemble is issued at build time, 0.25s after build and every 3s after that an updated EnsembleList is requested
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  now <- liftIO $ getCurrentTime
+  requestEnsembleList <- liftM (GetEnsembleList <$) $ tickLossy (3::NominalDiffTime) (addUTCTime 0.25 now)
+  let serverRequests = leftmost [leaveEnsemble,requestEnsembleList]
   return (leftmost [navToJoinEnsemble, navToCreateEnsemble], (requestEnsembleList, never, never))
 
 page ctx _ _ CreateEnsemblePage = do
@@ -130,7 +134,8 @@ page ctx _ _ CreateEnsemblePage = do
   let createEnsemble = fmap (\(a,b) -> CreateEnsemble a b) $ tagPromptlyDyn nameAndPassword confirm
   let authenticateAdmin = fmap Authenticate $ updated adminPwd
   cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
-  let serverRequests = leftmost [createEnsemble,authenticateAdmin]
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  let serverRequests = leftmost [createEnsemble,authenticateAdmin,leaveEnsemble]
   let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
   return (navEvents, (serverRequests, never, never))
 
@@ -161,7 +166,9 @@ page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
   cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
   let cancelNav = Lobby <$ cancel
   let navEvents = leftmost [joinedEnsembleNav,cancelNav]
-  return (navEvents, (joinRequest, never, never))
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  let serverRequests = leftmost [leaveEnsemble,joinRequest]
+  return (navEvents, (serverRequests, never, never))
 
 page ctx renderInfo rs (EnsemblePage ensembleName) = do
   let ensResponses = fmap justEnsembleResponses rs
@@ -170,7 +177,8 @@ page ctx renderInfo rs (EnsemblePage ensembleName) = do
 
 page ctx renderInfo _ Solo = do
   (ensReq,hs) <- runEditor (ensembleView never) ctx renderInfo
-  return (never,(never,ensReq,hs))
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  return (never,(leaveEnsemble,ensReq,hs))
 
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
