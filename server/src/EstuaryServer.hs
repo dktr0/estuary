@@ -148,7 +148,10 @@ processLoop db ws sMVar cHandle = do
     Left (WS.ParseException e) -> do
       postLogToDatabase db $ "parse exception: " <> (T.pack e)
       processLoop db ws sMVar cHandle
-    Left _ -> postLogToDatabase db $ "***unknown exception in processLoop - terminating this client's connection***"
+    Left _ -> do
+      s <- takeMVar sMVar
+      s' <- runTransaction (close "***unknown exception in processLoop***") db cHandle s
+      putMVar sMVar s'
     -- Left (WS.UnicodeException e) -> do
     --  postLog db $ "Unicode exception: " ++ e
     --  processLoop db ws s h

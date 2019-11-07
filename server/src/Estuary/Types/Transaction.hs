@@ -79,7 +79,12 @@ getEnsembleS :: Transaction E.EnsembleS
 getEnsembleS = do
   s <- get
   eName <- getEnsembleName
-  justOrError (Map.lookup eName $ ensembles s) $ "***strange error*** getEnsemble for non-existent ensemble"
+  justOrError (Map.lookup eName $ ensembles s) $ "***strange error*** getEnsembleS for non-existent ensemble"
+
+getEnsembleSbyName :: Text -> Transaction E.EnsembleS
+getEnsembleSbyName eName = do
+  s <- get
+  justOrError (Map.lookup eName $ ensembles s) $ "***strange error*** getEnsembleSbyName for non-existent ensemble"
 
 -- modify the ensemble the current connection is a member of, or fail
 modifyEnsembleS :: (E.EnsembleS -> E.EnsembleS) -> Transaction ()
@@ -100,6 +105,12 @@ handleTakenInEnsemble uName eName = do
 countAnonymousParticipants :: Transaction Int
 countAnonymousParticipants = do
   eName <- getEnsembleName
+  clientMap <- clients <$> get
+  let clientMap' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == "") clientMap
+  return $ IntMap.size clientMap'
+
+countAnonymousParticipantsInOtherEnsemble :: Text -> Transaction Int
+countAnonymousParticipantsInOtherEnsemble eName = do
   clientMap <- clients <$> get
   let clientMap' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == "") clientMap
   return $ IntMap.size clientMap'
@@ -130,6 +141,21 @@ leaveEnsemble = do
       authenticatedInEnsemble = False
       }
 
+removeClientFromEnsemble :: Client -> Transaction ()
+removeClientFromEnsemble c = do
+  let e = memberOfEnsemble c
+  when (isJust e) $ do
+    let e' = fromJust e
+    let uName = handleInEnsemble c
+    let anonymous = uName == ""
+    when (not anonymous) $ do
+      postLog $ uName <> " removed from ensemble " <> e'
+      respondOtherEnsemble e' $ EnsembleResponse $ ParticipantLeaves uName
+    when anonymous $ do
+      postLog $ "(anonymous) removed from ensemble " <> e'
+      n <- countAnonymousParticipantsInOtherEnsemble e'
+      respondOtherEnsemble e' $ EnsembleResponse $ AnonymousParticipants (n-1)
+
 close :: Text -> Transaction ()
 close msg = do
   postLog $ "closing connection: " <> msg
@@ -141,10 +167,8 @@ close msg = do
 closeAnotherConnection :: Client -> Transaction ()
 closeAnotherConnection c = do
   postLog $ "closing connection (for another client)"
-  -- TODO: *** if the other client was a member of ensemble then all of the members of that ensemble need to get ParticipantLeaves or countAnonymousParticipants
-  --  but we can't use respondEnsembleNoOrigin because it could be a different ensemble they were a part of
-  let cHandle = Estuary.Types.Client.handle c
-  modify' $ deleteClient cHandle
+  modify' $ deleteClient (Estuary.Types.Client.handle c)
+  removeClientFromEnsemble c
   return ()
 
 isAuthenticated :: Transaction Bool
@@ -214,6 +238,11 @@ respondEnsembleNoOrigin x = do
   cHandle <- asks snd
   c <- getClient
   cs <- gets (IntMap.elems . IntMap.delete cHandle . ensembleFilter (memberOfEnsemble c) . clients)
+  send x cs
+
+respondOtherEnsemble :: Text -> Response -> Transaction ()
+respondOtherEnsemble eName x = do
+  cs <- gets (IntMap.elems . ensembleFilter (Just eName) . clients)
   send x cs
 
 ensembleFilter :: Maybe Text -> IntMap.IntMap Client -> IntMap.IntMap Client
