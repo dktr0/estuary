@@ -148,7 +148,10 @@ processLoop db ws sMVar cHandle = do
     Left (WS.ParseException e) -> do
       postLogToDatabase db $ "parse exception: " <> (T.pack e)
       processLoop db ws sMVar cHandle
-    Left _ -> postLogToDatabase db $ "***unknown exception in processLoop - terminating this client's connection***"
+    Left _ -> do
+      s <- takeMVar sMVar
+      s' <- runTransaction (close "***unknown exception in processLoop***") db cHandle s
+      putMVar sMVar s'
     -- Left (WS.UnicodeException e) -> do
     --  postLog db $ "Unicode exception: " ++ e
     --  processLoop db ws s h
@@ -246,27 +249,9 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
     n <- countAnonymousParticipants
     respondEnsemble $ EnsembleResponse $ AnonymousParticipants n
 
--- *** note: other members still need to be notified of departure due to disconnection also!!! ***
-processRequest LeaveEnsemble = do
-  postLog $ "leaving ensemble"
-  -- notify all other members of the ensemble of this client's departure
-  uName <- handleInEnsemble <$> getClient
-  let anonymous = uName == ""
-  when (not anonymous) $ respondEnsembleNoOrigin $ EnsembleResponse $ ParticipantLeaves uName
-  when anonymous $ do
-    n <- countAnonymousParticipants
-    respondEnsembleNoOrigin $ EnsembleResponse $ AnonymousParticipants (n-1)
-  -- modify servers record of this client so that they are ensemble-less
-  modifyClient $ \c -> c {
-    memberOfEnsemble = Nothing,
-    handleInEnsemble = "",
-    locationInEnsemble = "",
-    statusInEnsemble = "",
-    authenticatedInEnsemble = False
-    }
+processRequest LeaveEnsemble = leaveEnsemble
 
 processRequest (EnsembleRequest x) = processEnsembleRequest x
-
 
 processEnsembleRequest :: EnsembleRequest -> Transaction ()
 
