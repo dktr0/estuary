@@ -11,6 +11,7 @@ homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
 
 dependencies:
   - base
+  - stm
   - estuary-common
   - containers
   - directory
