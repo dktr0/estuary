@@ -2,7 +2,7 @@ module Estuary.Languages.TidalParsers where
 
 import Text.ParserCombinators.Parsec
 import qualified Sound.Tidal.Context as Tidal
-import Sound.Tidal.MiniTidal
+import Sound.Tidal.Parse
 import Data.Bifunctor (first)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -30,17 +30,18 @@ import Estuary.Languages.BlackBox
 import Estuary.Languages.TiempoEspacio.Escribir
 import Estuary.Languages.TiempoEspacio.Observar
 import Estuary.Languages.TiempoEspacio.Leer
+import Estuary.Languages.Morelia.Uno
 
 
 tidalParsers :: [TidalParser]
 tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
   Saludos,ColombiaEsPasion,Si,Sentidos,Natural,Medellin,LaCalle,
-  Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia,Togo, BlackBox, Escribir, Observar, Leer
+  Maria,Crudo,Puntoyya,Sucixxx,Vocesotrevez,Imagina,Alobestia,Togo, BlackBox, Escribir, Observar, Leer, Uno
   ]
 
 
 tidalParser :: TidalParser -> Text -> Either String Tidal.ControlPattern
-tidalParser MiniTidal = miniTidal . T.unpack
+tidalParser MiniTidal = parseTidal . T.unpack
 tidalParser CQenze = first show . cqenzeControlPattern . T.unpack
 tidalParser Morelia = first show . morelia . T.unpack
 tidalParser Saborts = first show . saborts . T.unpack
@@ -63,3 +64,4 @@ tidalParser BlackBox = first show . blackBox . T.unpack
 tidalParser Escribir = first show . escribir . T.unpack
 tidalParser Observar = first show . observar . T.unpack
 tidalParser Leer = first show . leer . T.unpack
+tidalParser Uno = first show . uno . T.unpack

@@ -14,7 +14,7 @@ import Data.Monoid
 import Control.Monad
 import GHCJS.DOM.HTMLSelectElement as Select
 import Safe -- for readMay
--- import GHCJS.DOM.Element hiding (error) --for 'change'
+
 import GHCJS.DOM.GlobalEventHandlers (change)
 import Data.List (nub, elemIndex)
 
@@ -24,14 +24,16 @@ import Estuary.Types.Language
 import Estuary.Types.TranslatedText
 
 translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t Text)
-translateDyn t ctx = holdUniqDyn $ fmap (translate t . language) ctx
+translateDyn t ctx = do
+  l <- holdUniqDyn $ fmap language ctx
+  return $ fmap (translate t) l
 
 -- translationList should be considered deprecated in favour of TranslationText etc
 translationList :: MonadWidget t m => Dynamic t Context -> [(Language,a)] -> m (Dynamic t a)
-translationList c m = do
+translationList ctx m = do
   let m' = fromList m
   let d = snd (m!!0)
-  let l = fmap language c
+  l <- holdUniqDyn $ fmap language ctx
   return $ fmap (\k -> findWithDefault d k m') l
 
 -- a temporary button with class for the reference files

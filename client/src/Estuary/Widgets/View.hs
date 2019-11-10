@@ -6,8 +6,10 @@ import Reflex
 import Reflex.Dom
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import Control.Monad
 import Data.Maybe
+import TextShow
 
 import Estuary.Types.Live
 import Estuary.Types.Definition
@@ -24,22 +26,14 @@ import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
+import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
--- viewWidget er (RowView p v) = do
----  let nRows = viewToRows v
---   some kind of div where the default font-size is set from the number of rows and percentage (p)
---   and has to contain the embedded view... so...
---   let style = ... -- dynamic style
---   let attrs = ... -- dynamic map of div attributes
---   elDynAttrs "div" attrs $ viewWidget er v
-
--- viewWidget er (CellView p v) = do
---   similar to RowView where the horizontal width comes from the from percentage (p)
+viewWidget er EmptyView = return never
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
@@ -53,11 +47,26 @@ viewWidget er (TextView z rows) = do
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
 
+viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
+
+viewWidget er (Paragraph t) = return never -- placeholder, Paragraph TranslatedText
+
+viewWidget er (Example n t) = return never -- placeholder, Example TextNotation Text
+
 viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
+
+viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ viewWidget er v
 
 viewWidget er (Views xs) = liftM leftmost $ mapM (viewWidget er) xs
 
-viewWidget _ _ = return never
+viewWidget er (GridView c r vs) =  liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
+  where
+    -- subGridDiv x = divClass "subGrid-container" $ x
+    viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows)) $ x
+    defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
+    setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
+    setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
+    setColumnsAndRows  = setNumColumns <> setNumRows
 
 
 zoneWidget :: (MonadWidget t m, Eq a)

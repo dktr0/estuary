@@ -33,6 +33,7 @@ dependencies:
   - reflex-dom-core
   - lens
   - tidal
+  - tidal-parse
   - punctual
   - musicw
   - hosc

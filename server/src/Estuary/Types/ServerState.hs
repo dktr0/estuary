@@ -8,7 +8,7 @@ module Estuary.Types.ServerState where
 import qualified Network.WebSockets as WS
 import qualified Data.Map.Strict as Map
 import qualified Data.IntMap.Strict as IntMap
-import Control.Concurrent.MVar
+import Control.Concurrent.STM
 import Data.List ((\\))
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock
@@ -24,40 +24,53 @@ import qualified Estuary.Types.Ensemble as E
 
 data ServerState = ServerState {
   administrativePassword :: Text,
-  clients :: IntMap.IntMap Client,
-  ensembles :: Map.Map Text E.EnsembleS,
-  connectionCount :: Int
+  clients :: TVar (IntMap.IntMap (TVar Client)),
+  ensembles :: TVar (Map.Map Text (TVar E.EnsembleS))
 }
 
-newServerState :: ServerState
-newServerState = ServerState {
-  administrativePassword = "",
-  clients = IntMap.empty,
-  ensembles = Map.empty,
-  connectionCount = 0
-}
+newServerState :: Text -> Map.Map Text E.EnsembleS -> IO ServerState
+newServerState pwd es = atomically $ do
+  c <- newTVar IntMap.empty
+  es' <- mapM newTVar es
+  es'' <- newTVar es'
+  return $ ServerState {
+    administrativePassword = pwd,
+    clients = c,
+    ensembles = es''
+  }
 
-addClient :: UTCTime -> ServerState -> WS.Connection -> (ClientHandle,ServerState)
-addClient t s x = (i,s { clients=newMap} )
-  where i = lowestAvailableKey $ clients s
-        newMap = IntMap.insert i (newClient t i x) (clients s)
+addClient :: ServerState -> UTCTime -> WS.Connection -> IO ClientHandle
+addClient s t x = atomically $ do
+  oldMap <- readTVar (clients s)
+  let i = lowestAvailableKey oldMap
+  c <- newTVar $ newClient t i x
+  let newMap = IntMap.insert i c oldMap
+  writeTVar (clients s) newMap
+  return i
 
 lowestAvailableKey :: IntMap.IntMap a -> IntMap.Key
 lowestAvailableKey m = Prelude.head ([0..] \\ (IntMap.keys m))
 
-deleteClient :: ClientHandle -> ServerState -> ServerState
-deleteClient h s = s { clients = IntMap.delete h (clients s) }
+deleteClient :: ServerState -> ClientHandle -> IO ()
+deleteClient s h = atomically $ do
+  oldMap <- readTVar (clients s)
+  let newMap = IntMap.delete h oldMap
+  writeTVar (clients s) newMap
 
--- if space already exists, createEnsemble does not make any change
-createEnsemble :: Text -> Text -> UTCTime -> ServerState -> ServerState
-createEnsemble name pwd t s = s { ensembles = Map.insertWith (\_ x -> x) name e (ensembles s) }
-  where e = E.writePassword pwd (E.emptyEnsembleS t)
+addEnsemble :: ServerState -> Text -> Text -> UTCTime -> IO ()
+addEnsemble s name pwd now = atomically $ do
+  oldMap <- readTVar (ensembles s)
+  newEns <- newTVar $ E.writePassword pwd $ E.emptyEnsembleS now
+  let newMap = Map.insertWith (\_ x -> x) name newEns oldMap -- if space already exists, addEnsemble does not make any change
+  -- ??? should it perhaps through an exception instead ???
+  writeTVar (ensembles s) newMap
 
-writeZone :: Text -> Int -> Definition -> ServerState -> ServerState
-writeZone eName zone def s = s { ensembles = Map.adjust (E.modifyEnsemble (E.writeZone zone def)) eName (ensembles s) }
-
-writeView :: Text -> Text -> View -> ServerState -> ServerState
-writeView eName vName v s = s { ensembles = Map.adjust (E.modifyEnsemble (E.writeView vName v)) eName (ensembles s) }
-
-writeTempo :: Text -> Tempo -> ServerState -> ServerState
-writeTempo eName t s = s { ensembles = Map.adjust (E.modifyEnsemble (E.writeTempo t)) eName (ensembles s) }
+{- modifyEnsemble :: ServerState -> Text -> (E.EnsembleS -> E.EnsembleS) -> IO ()
+modifyEnsemble s name f = do
+  eMap <- atomically $ readTVar (ensembles s)
+  let e = Map.lookup name eMap
+  case e of
+    Just e' -> atomically $ do
+      e'' <- readTVar e'
+      writeTVar e' (f e'')
+    Nothing -> return () -- ??? or should this throw an exception ??? -}

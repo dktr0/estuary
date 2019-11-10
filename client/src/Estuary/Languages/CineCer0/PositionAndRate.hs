@@ -90,14 +90,49 @@ playRound_Rate sh t vlen now =
 
 ------------ playRoundMetre ------------
 ---- round the duration of the video to a power of N so it can align with the notion of metre
-                  
--- playRoundMetre:: Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Double
--- playRoundMetre metrVal sh t vlen now =
---     let vl = realToFrac vlen :: Rational
---         cpDur = 1/(cps t)
---         off = sh*cpDur
---         cPerLen = vl/cpDur -- how many cycles for 1 whole video
---     in cPerLen
+
+playRoundMetrePos:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
+playRoundMetrePos sh t vlen now =
+    let vl = realToFrac vlen :: Rational
+        cpDur = realToFrac (1/(cps t)) :: Rational
+        off = sh*cpDur
+        cPerLen = vl/cpDur -- how many cycles for 1 whole video
+        newVLinCPS = stretchToMetre cPerLen
+        inSecs = newVLinCPS *cpDur
+        difb0 = realToFrac (diffUTCTime now (beatZero t)) :: Rational
+        difb0' = difb0 - off
+        lengths = difb0' / inSecs
+        posNorm = lengths - fromIntegral (floor lengths) :: Rational
+        result = reglaDeTres 1 posNorm inSecs
+    in Just (realToFrac  result) --transforms this into seconds
+
+playRoundMetreRate:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+playRoundMetreRate sh t vlen now =
+    let vl = realToFrac vlen :: Rational
+        cpDur = realToFrac (1/(cps t)) :: Rational
+        off = (realToFrac sh :: Rational) *cpDur
+        cPerLen = vl/cpDur -- how many cycles for 1 whole video
+        newVLinCPS = stretchToMetre cPerLen
+        newVLinSecs = newVLinCPS * cpDur
+        rate = realToFrac vl / newVLinSecs
+    in Just rate
+
+
+stretchToMetre:: Rational -> Rational
+stretchToMetre cPlen =
+    let ceilFloor =  getCeilFloor [2] cPlen
+        ceil = last ceilFloor
+        floor = last $ init ceilFloor
+    in if (cPlen - floor) < (ceil - cPlen) then floor else ceil
+
+getCeilFloor:: [Rational] -> Rational -> [Rational]
+getCeilFloor [] _ = []
+getCeilFloor n ln
+        | last n < ln =
+            let result = (last n)*2
+            in result : getCeilFloor (n++[result]) ln
+        | last n < ln = n
+        | otherwise = []
 
 
 
@@ -106,10 +141,10 @@ playRound_Rate sh t vlen now =
 -- a length in cycles, OJO the startPos is normalised from 0 to 1.
              -- OnsetPos ->   Cycles -> Shift ->    Tempo ->     VideoLength ->     Now -> Position
 playChop_Pos':: Rational -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime
-playChop_Pos' onsetPos cycles sh t vlen now =
+playChop_Pos' startPos cycles sh t vlen now =
     let vl = realToFrac vlen :: Rational
         cd = cycles
-        sP = reglaDeTres 1 onsetPos vl
+        sP = reglaDeTres 1 startPos vl
         cp = (cps t)
         cpDur = 1/cp
         off = sh*cpDur
@@ -124,7 +159,7 @@ playChop_Pos' onsetPos cycles sh t vlen now =
 
               -- StartPos ->  Cycles ->  Shift    -> Tempo -> VideoLength ->         Now -> Rate
 playChop_Rate':: Rational -> Rational -> Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
-playChop_Rate' startPos cyclesDur sh t vlen now = Just 1
+playChop_Rate' startPos cycles sh t vlen now = Just 1
 
 
 ------------- Gives a chop start and end position and adjust the rate to any given cycles ------
@@ -176,7 +211,7 @@ playChopSecs_Pos startPos endPos cycles sh t vlen now =
         cpsDur = 1/cp
         vl = realToFrac vlen :: Rational
         start = cycleSecs startPos vlen
-        end = cycleSecs startPos vlen
+        end = cycleSecs endPos vlen
         interval = end - start
         intCyc = interval / cpsDur
         rounded = fromIntegral (round intCyc) :: Rational

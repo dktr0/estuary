@@ -37,13 +37,13 @@ More advanced customization is available through CSS classes within this documen
 /*styles the code font*/
 .code-font {
 	  font-family: 'Montserrat';
-	  font-size:1em;
+    font-size: 1.1vw;
 	  }
 
 /* styles the fonts for the header, menus and labels */
 .ui-font {
     font-family: 'Montserrat';
-	font-size: 1em;
+    font-size: 1.1vw;
 	}
 
 /* styles the user interface-buttons */
@@ -53,6 +53,10 @@ More advanced customization is available through CSS classes within this documen
 
 }
 
+/* styles the dropdown */
+.ui-dropdownMenus {
+  background-color: var(--background-color) !important;
+}
 
 /*styles the primary borders (e.g.  from dropdown menus) */
 .primary-borders {

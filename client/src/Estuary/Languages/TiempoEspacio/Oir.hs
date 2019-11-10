@@ -24,7 +24,10 @@ oirParser = do
 sentence :: Parser Expression
 sentence = choice [
   try $ silence,
-  try $ graphic
+  try $ graphic,
+  try $ graphicPlusConstrain,
+  try $ polarPlusGraphic,
+  try $ polarPlusGraphicPlusConstrain
   ]
 
 -- // Opciones de gramática .
@@ -38,13 +41,111 @@ silence = do
 graphic :: Parser Expression
 graphic = do
   f <- option DefaultCrossFade fade
+  option () miscelanea
+  option () miscelanea
   v <- verb
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
   l <- parens $ level
   o <- out
   let g = Product v (Constant l)
   return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
 
+graphicPlusConstrain :: Parser Expression
+graphicPlusConstrain = do
+  f <- option DefaultCrossFade fade
+  option () miscelanea
+  option () miscelanea
+  v <- verb
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
+  n <- noun
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
+  l <- parens $ level
+  o <- out
+  let g = Product (Product v n) (Constant l)
+  return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
+
+polarPlusGraphic :: Parser Expression
+polarPlusGraphic = do
+  f <- option DefaultCrossFade fade
+  option () miscelanea
+  option () miscelanea
+  a <- auxiliar
+  v <- verb
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
+  l <- parens $ level
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
+  o <- out
+  let g = Product (a v) (Constant l)
+  return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
+
+polarPlusGraphicPlusConstrain :: Parser Expression
+polarPlusGraphicPlusConstrain = do
+  f <- option DefaultCrossFade fade
+  option () miscelanea
+  option () miscelanea
+  a <- auxiliar
+  v <- verb
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
+  n <- noun
+  option () miscelanea
+  option () miscelanea
+  option () miscelanea
+  l <- parens $ level
+  o <- out
+  let g = Product (Product (a v) n) (Constant l)
+  return $ Expression (Definition Anonymous (Quant 1 (Seconds 0.0)) f g) o
+
+
 -- [Expression {definition = Definition {target = Anonymous, defTime = Quant 1.0 (Seconds 0.0), transition = DefaultCrossFade, graph = Product (Sine (Constant 0.5)) (Constant 10.0)}, output = NamedOutput "rgb"}]
+
+-- // miscelánea
+
+miscelanea :: Parser ()
+miscelanea = choice [
+  reserved "I" >> return (),
+  reserved "They" >> return (),
+  reserved "a" >> return (),
+  reserved "an" >> return (),
+  reserved "on" >> return (),
+  reserved "in" >> return (),
+  reserved "my" >> return (),
+  reserved "their" >> return (),
+  reserved "her" >> return (),
+  reserved "golden" >> return (),
+  reserved "the" >> return (),
+  reserved "whale" >> return (),
+  reserved "whales" >> return (),
+  reserved "over" >> return (),
+  reserved "off" >> return (),
+  reserved "with" >> return (),
+  reserved "big" >> return (),
+  reserved "Big" >> return (),
+  reserved "blue" >> return (),
+  reserved "next" >> return (),
+  reserved "to" >> return (),
+  reserved "me" >> return (),
+  reserved "them" >> return (),
+  reserved "under" >> return (),
+  reserved "Whale" >> return (),
+  reserved "Whales" >> return (),
+  reserved "Lights" >> return (),
+  reserved "Tale" >> return (),
+  reserved "bed" >> return (),
+  reserved "Dreams" >> return ()
+  ]
+
 
 -- // Fade in/out
 
@@ -56,10 +157,62 @@ fade = choice [
   reserved "veinte_" >> return (CrossFade (Seconds 20))
   ]
 
--- // Funciones
+-- // bipolar / unipolar
+
+auxiliar :: Parser (Graph -> Graph)
+auxiliar = choice [
+  (reserved "do" <|> reserved "dont" <|> reserved "does" <|> reserved "doesnt" <|> reserved "am" <|> reserved "is" <|> reserved "are" <|> reserved "isnt" <|> reserved "arent") >> return unipolar,
+  (reserved "did" <|> reserved "didnt" <|> reserved "was" <|> reserved "wasnt" <|> reserved "were" <|> reserved "werent") >> return bipolar
+  ]
+
+-- // sound waves y fx / fy
 
 verb :: Parser Graph
-verb = reserved "yo" >> return (Sine (Constant 0.5))
+verb = choice [ --saw (fx*fy* [10, 10.05, 11])
+  reserved "dream" >> return Fx,
+  reserved "dreams" >> return Fy,
+  reserved "dreaming" >> return (Product Fx Fy),
+  (reserved "crush" <|> reserved "crushes") >> return (Sine (Product Fx (Multi [Constant 10,Constant 10.05,Constant 11]))),
+  reserved "crushing" >> return (Sine (Product Fy (Multi [Constant 10,Constant 10.05,Constant 11]))),
+  (reserved "scream" <|> reserved "screams") >> return (Product Fx (Product Fx (Sine (Multi [Constant 0.1, Constant 0.2])))),
+  reserved "screaming" >> return (Product Fy (Product Fy (Sine (Multi [Constant 0.1, Constant 0.2])))),
+  (reserved "open" <|> reserved "opens") >> return (Sine (Constant 0.1)),
+  reserved "opening" >> return (Sine (Constant 0.2)),
+  (reserved "swallow" <|> reserved "swallows") >> return (Saw (Product Fx (Multi [Constant 1.0, Constant 2.0, Constant 3.0]))),
+  reserved "swallowing" >> return (Sine (Product Fy (Multi [Constant 1.0, Constant 2.0, Constant 3.0]))),
+  (reserved "run" <|> reserved "runs") >> return (Saw (Product Fx (Product Fy (Multi [Constant 0.1,Constant 0.2,Constant 0.3])))),
+  reserved "running" >> return (Saw (Product Fy (Product Fx (Multi [Constant 5,Constant 6,Constant 7])))),
+  (reserved "vanish" <|> reserved "vanishes") >> return (Sine (Product Fy (Constant 0.2))),
+  reserved "vanishing" >> return (Sine (Product Fy (Multi [Constant 0.1, Constant 0.2, Constant 0.3]))),
+  (reserved "disappear" <|> reserved "disappears") >> return (Saw (Product Fx (Product Fy (Multi [Constant 10,Constant 10.05,Constant 11])))),
+  reserved "disappearing" >> return (Sine (Product Fx (Product Fy (Multi [Constant 20,Constant 12.05,Constant 21])))),
+  (reserved "play" <|> reserved "plays") >> return (Sine Fx),
+  reserved "playing" >> return (Sine Fy),
+  (reserved "have" <|> reserved "has") >> return (Sine (Product Fy Fy)),
+  (reserved "shine" <|> reserved "shines") >> return (Sine (Product Fx (Multi [Constant 2, Constant 3, Constant 4]))),
+  reserved "shinning" >> return (Saw (Product Fy (Multi [Constant 2, Constant 3, Constant 4]))),
+  (reserved "miss" <|> reserved "misses") >> return (Sine (Product Fx (Multi [Constant 0.01, Constant 0.02, Constant 0.03, Constant 0.04, Constant 0.05]))),
+  reserved "missing" >> return (Sine (Product Fy (Multi [Constant 0.01, Constant 0.02, Constant 0.03, Constant 0.04, Constant 0.05])))
+  ]
+
+-- // constrains rect / circle
+
+noun :: Parser Graph
+noun = choice [ --(sin (fx *[0.01, 0.02])) (sin (fx* 0.1)) 0.5
+  (reserved "bed" <|> reserved "beds") >> return (circle (Sine (Product Fx (Multi [Constant 0.01, Constant 0.02]))) (Sine (Product Fx (Constant 0.1))) (Constant 0.5)),
+  (reserved "ocean" <|> reserved "oceans") >> return (circle (Product (Sine Fy) (Product Fx (Multi [Constant 0.6, Constant 0.7, Constant 0.8]))) (Product (Sine Fy) (Product Fx (Multi [Constant 0.02, Constant 0.03, Constant 0.04]))) (Constant 0.7) ),
+  (reserved "mouth" <|> reserved "mouths") >> return (circle (Product (Sine Fy) (Product Fx (Multi [Constant 0.5, Constant 0.6, Constant 0.7]))) (Product (Sine Fy) (Product Fx (Multi [Constant 0.01, Constant 0.02, Constant 0.03]))) (Constant 0.7) ),
+  (reserved "fish" <|> reserved "fishes") >> return (circle (Product (Sine Fy) (Product Fx (Multi [Constant 0.5, Constant 0.6, Constant 0.7]))) (Product (Sine Fy) (Product Fx (Multi [Constant 0.01, Constant 0.02, Constant 0.03]))) (Constant 0.7) ),
+  reserved "voice" >> return (circle (Product (Sine Fy) (Product Fx (Multi [Constant (-0.3), Constant (-0.4), Constant (-0.5)]))) (Product (Sine Fy) (Product Fx (Multi [Constant (-1), Constant (-1.1), Constant (-1.2)]))) (Constant 0.3) ),
+  (reserved "tale" <|> reserved "tales") >> return (circle (Product (Sine Fx) (Product Fx (Constant (-0.4)))) (Product (Sine Fy) (Product Fx (Constant (-1)))) (Constant 0.3) ),
+  (reserved "light" <|> reserved "lights") >> return (circle (Product (Sine Fx) (Multi [Constant 0.01, Constant 0.02, Constant 0.03])) (Product (Sine Fy) (Multi [Constant 0.1, Constant 0.2, Constant 0.3])) (Constant 0.5)),
+
+  reserved "sand" >> return (rect (Saw Fx) (Saw Fy) (Constant 0.5) (Constant 0.5)),
+  (reserved "noise" <|> reserved "noises") >> return (rect (Product (Saw Fx) (Multi [Constant 1, Constant 2, Constant 3])) (Product (Saw Fy) (Multi [Constant 0.1, Constant 0.2, Constant 0.3])) (Constant 0.5) (Constant 0.5)),
+  (reserved "song" <|> reserved "songs") >> return (rect (Product (Saw Fy) (Product Fy (Multi [Constant 1, Constant 2, Constant 3]))) (Product (Saw Fy) (Multi [Constant 0.1, Constant 0.2, Constant 0.3])) (Constant 0.8) (Constant 0.8)),
+  reserved "sky" >> return (rect (Product (Sine Fy) (Multi [Constant (-0.3), Constant (-0.4), Constant (-0.5)])) (Product (Sine Fy) (Product Fx (Multi [Constant (-1), Constant (-1.1), Constant (-1.2)]))) (Constant 0.5) (Constant 0.5)),
+  reserved "death" >> return (rect (Product (Saw Fy) (Product Fy (Multi [Constant 0.5, Constant 0.6, Constant 0.7]))) (Product (Saw Fx) (Product Fy (Multi [Constant 0.1, Constant 0.2, Constant 0.4, Constant 0.5]))) (Constant 0.7) (Constant 0.7))
+  ]
 
 -- // Salidas
 
@@ -81,20 +234,8 @@ out = choice [
 
 -- //////////////////////////////////
 
-bipolar :: Graph -> Graph
-bipolar x = Sum (Product x (Constant 2)) (Constant (-1))
-
-unipolar :: Graph -> Graph
-unipolar x = Sum (Product x (Constant 0.5)) (Constant 0.5)
-
-average :: Graph -> Graph -> Graph
-average x y = Product (Sum x y) (Constant 0.5)
-
 difference :: Graph -> Graph -> Graph
 difference x y = Sum x (Product y (Constant (-1)))
-
-modulatedRangeGraph :: Graph -> Graph -> Graph -> Graph
-modulatedRangeGraph low high mod = Sum (average low high) (Product (Product (difference high low) (Constant 0.5)) mod)
 
 seconds :: Parser Duration
 seconds = do

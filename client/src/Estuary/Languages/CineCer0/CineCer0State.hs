@@ -16,6 +16,7 @@ import Control.Monad
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec
+import Estuary.Languages.CineCer0.PositionAndRate
 
 newtype CineCer0Video = CineCer0Video { videoJSVal :: JSVal }
 
@@ -24,7 +25,7 @@ instance PToJSVal CineCer0Video where pToJSVal (CineCer0Video val) = val
 instance PFromJSVal CineCer0Video where pFromJSVal = CineCer0Video
 
 foreign import javascript safe
-  "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video"
+  "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO CineCer0Video
 
 foreign import javascript safe
@@ -37,7 +38,7 @@ foreign import javascript safe
 
 foreign import javascript safe
   "$1.style = $2;"
-  videoGeometry_ :: CineCer0Video -> Text -> IO ()
+  videoStyle_ :: CineCer0Video -> Text -> IO ()
 
 foreign import javascript unsafe
   "$1.muted = true;"
@@ -51,9 +52,22 @@ foreign import javascript unsafe
   "$1.videoHeight"
   videoHeight :: CineCer0Video -> IO Double
 
-videoGeometry :: CineCer0Video -> Int -> Int -> Int -> Int -> IO ()
-videoGeometry v x y w h = videoGeometry_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
+videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+videoStyle v x y w h o bl br c g s = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o <> "%; filter:blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
 
+----  Rate and Position ----
+
+foreign import javascript unsafe
+  "$1.playbackRate = $2;"
+  videoPlaybackRate :: CineCer0Video -> Double -> IO ()
+
+foreign import javascript unsafe
+  "$1.currentTime = $2;"
+  videoPlaybackPosition :: CineCer0Video -> Double -> IO ()
+
+foreign import javascript unsafe
+  "$1.duration"
+  getLengthOfVideo :: CineCer0Video -> IO Double
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
@@ -94,23 +108,22 @@ updateContinuingVideo t now (sw,sh) s v = do
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
     let actualWidth = (realToFrac $ width s) * fitWidth
     let actualHeight = (realToFrac $ height s) * fitHeight
-    -- T.putStrLn $ "file=" <> showt vw <> "x" <> showt vh <> " fit=" <> showt fitWidth <> "x" <> showt fitHeight <> " actual=" <> showt actualWidth <> "x" <> showt actualHeight
     let centreX = (realToFrac $ posX s * 0.5 + 0.5) * sw
     let centreY = (realToFrac $ posY s * 0.5 + 0.5) * sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = sh - (centreY + (actualHeight * 0.5))
-    videoGeometry v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight)
-  when (vw == 0 || vh == 0) $
-    -- video not ready, don't display
-    videoGeometry v 0 0 0 0
+    -- update playback rate
+    lengthOfVideo <- realToFrac <$> getLengthOfVideo v
+    let rate = (playbackRate s) t lengthOfVideo now
+    maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
+    -- update position in time
+    let pos = (playbackPosition s) t lengthOfVideo now
+    maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
+    -- update opacity
+    let opacidad = (opacity s) t lengthOfVideo now
+    -- update geometry/appearance/etc
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor (blur s)) (floor (brightness s)) (floor (contrast s)) (floor (grayscale s)) (realToFrac (saturate s))
 
-  -- *** also needs to query position in time of the video
-  -- and set position in time of the video if necessary
-  -- or maybe do other things, like...
-  -- let lengthOfVideo = ?
-  -- let newPos = playbackPosition s t lengthOfVideo now -- :: Maybe NominalDiffTime
-  -- let newRate = playbackRate s t lengthOfVideo now -- :: Maybe Rational
-  -- then... maybe set newPos and newRate if necessary?
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
