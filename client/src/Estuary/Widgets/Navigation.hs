@@ -20,8 +20,6 @@ import Estuary.Reflex.Router
 import Estuary.Reflex.Utility
 import Estuary.Types.RenderInfo
 import Estuary.Tidal.Types
-import Estuary.Tutorials.Context
-import qualified Estuary.Tutorials.Tutorial as T
 import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.EnsembleC
@@ -34,6 +32,7 @@ import Estuary.Types.Tempo
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Terminal
 import Estuary.Types.View
+import Estuary.Types.Tutorial
 import Estuary.WebDirt.Foreign
 import Estuary.Widgets.Ensemble
 import Estuary.Widgets.EstuaryIcon
@@ -42,6 +41,8 @@ import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.View
 import Estuary.Widgets.Editor
+import Estuary.Widgets.Tutorial
+import Estuary.Tutorials.TidalCyclesBasics
 
 data Navigation =
   Splash |
@@ -88,7 +89,7 @@ page ctx _ wsDown TutorialList = do
   return (nav, (leaveEnsemble, never, never))
 
 page ctx renderInfo wsDown (TutorialNav "TidalCyclesBasics") = do
-  let ensResponses = fmap justEnsembleResponses rs
+  let ensResponses = fmap justEnsembleResponses wsDown
   (ensReq,hs) <- runEditor (runTutorial tidalCyclesBasics ensResponses) ctx renderInfo
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never,(leaveEnsemble,ensReq,hs))
