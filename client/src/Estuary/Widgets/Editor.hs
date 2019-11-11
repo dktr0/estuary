@@ -21,7 +21,7 @@ import Estuary.Types.Term
 
 data Editor t m a = Editor {
   runEditor :: Dynamic t Context -> Dynamic t RenderInfo -> m (a, Event t [Hint])
-  }
+  } 
 
 askContext :: MonadWidget t m => Editor t m (Dynamic t Context)
 askContext = Editor (\ctx _ -> return (ctx,never))
@@ -79,7 +79,7 @@ reflexWidgetToEditor delta widget = do -- in ReaderT
   hints hs
   returnVariable delta editEvents
 
--- Naturally we provide Functor, Applicative, Monad, MonadIO, and MonadFix instances...
+-- Naturally we provide Functor, Applicative, Monad, and MonadIO instances...
 
 instance MonadWidget t m => Functor (Editor t m) where
   fmap f x = Editor (\ctx ri -> do
@@ -107,13 +107,6 @@ instance MonadWidget t m => Monad (Editor t m) where
 instance MonadWidget t m => MonadIO (Editor t m) where
   liftIO x = liftR $ liftIO x
 
-instance MonadWidget t m => MonadFix (Editor t m) where
-  -- mfix :: (a -> m a) -> m a
-  mfix f = Editor (\ctx ri -> mdo
-    (x,hs) <- runEditor (f a) ctx ri
-    let a = x
-    return (a,hs)
-    )
 
 dynEditor :: MonadWidget t m => Dynamic t (Editor t m a) -> Editor t m (Dynamic t a)
 dynEditor dynWidgets = Editor (\ctx ri -> do

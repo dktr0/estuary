@@ -31,7 +31,21 @@ tidalCyclesBasics = Tutorial {
         Example (TidalTextNotation MiniTidal) "s \"bd cp\"",
         TextView 1 5
       ]
+    }),
+    (TutorialPage {
+      tutorialPageTitle = Map.fromList [
+        (English,"Page Two!")
+      ],
+      tutorialPageView = Views [
+        Paragraph $ Map.fromList [
+          (English,"Here is a second page of a tutorial."),
+          (Español,"Aqui esta la segunda pagina."),
+          (Français,"Ici se trouve la deuxieme page.")],
+        Example (TidalTextNotation MiniTidal) "s \"arpy*8\"",
+        TextView 1 5
+      ]
     })
+
   ]
 }
 

@@ -49,9 +49,9 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
 
-viewWidget er (Paragraph t) = return never -- placeholder, Paragraph TranslatedText
+viewWidget er (Paragraph t) = liftR2 (elClass "div" "paragraph") $ translatedText t >> return never
 
-viewWidget er (Example n t) = return never -- placeholder, Example TextNotation Text
+viewWidget er (Example n t) = liftR $ elClass "div" "example" $ text t >> return never -- placeholder: needs to be a clickable example that issues an appropriate hint, etc
 
 viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
 
