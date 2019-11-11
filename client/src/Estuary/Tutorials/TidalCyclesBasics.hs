@@ -5,27 +5,29 @@ module Estuary.Tutorials.TidalCyclesBasics (tidalCyclesBasics) where
 import Data.Text (Text)
 import qualified Data.Map.Strict as Map
 import qualified Data.IntMap.Strict as IntMap
+import qualified Data.Sequence as Seq
 
 import Estuary.Types.Tutorial
-import Estuary.Types.TutorialPage
 import Estuary.Types.View
-import Estuary.Types.TranslatedText
+import Estuary.Types.TranslatableText
 import Estuary.Types.Language
 import Estuary.Types.Definition
+import Estuary.Types.TextNotation
+import Estuary.Types.TidalParser
 
-tidalCyclesBasics :: Tutorials
+tidalCyclesBasics :: Tutorial
 tidalCyclesBasics = Tutorial {
   tutorialTitle = Map.fromList [
     (English,"TidalCycles basics")
   ],
-  tutorialPages = IntMap.fromList [
-    (0,TutorialPage {
+  tutorialPages = Seq.fromList [
+    (TutorialPage {
       tutorialPageTitle = Map.fromList [
         (English,"Welcome!")
-      ]
+      ],
       tutorialPageView = Views [
         Paragraph $ Map.fromList [(English,"This tutorial will cover some of the basics of making music with MiniTidal. MiniTidal is a subset of TidalCycles that supports most typical TidalCycles operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles. Lets make some sound!")],
-        Paragraph $ Map.fromList [(English,"Copy the code below to the text editing area below and then click Eval to \"evaluate" it, or, if you prefer, click on the code example to automatically copy and evaluate it.")],
+        Paragraph $ Map.fromList [(English,"Copy the code below to the text editing area below and then click Eval to \"evaluate\" it, or, if you prefer, click on the code example to automatically copy and evaluate it.")],
         Example (TidalTextNotation MiniTidal) "s \"bd cp\"",
         TextView 1 5
       ]

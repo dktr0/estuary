@@ -21,7 +21,7 @@ import Data.List (nub, elemIndex)
 import Estuary.Types.Term
 import Estuary.Types.Context
 import Estuary.Types.Language
-import Estuary.Types.TranslatedText
+import Estuary.Types.TranslatableText
 
 translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t Text)
 translateDyn t ctx = do

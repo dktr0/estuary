@@ -1,18 +1,22 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
-﻿module Estuary.Types.Language where
+module Estuary.Types.Language where
 
 import Data.Text (Text)
+import GHC.Generics
+import Data.Aeson
 
 data Language =
   English |
   Español |
   Français
-  deriving (Read,Show,Eq,Ord,Generic)
+  deriving (Read,Ord,Show,Eq,Generic)
 
 instance ToJSON Language where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Language
+instance ToJSONKey Language
+instance FromJSONKey Language
 
 languages :: [Language]
 languages = [English,Español,Français]

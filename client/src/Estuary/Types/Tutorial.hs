@@ -1,15 +1,15 @@
 module Estuary.Types.Tutorial where
 
 import Data.Sequence
-import Estuary.Types.TranslatedText
+import Estuary.Types.TranslatableText
 import Estuary.Types.View
 
 data TutorialPage = TutorialPage {
-  tutorialPageTitle :: TranslatedText,
+  tutorialPageTitle :: TranslatableText,
   tutorialPageView :: View
   }
 
 data Tutorial = Tutorial {
-  tutorialTitle :: TranslatedText,
+  tutorialTitle :: TranslatableText,
   tutorialPages :: Seq TutorialPage
   }

@@ -72,7 +72,7 @@ modifyEnsemble f e = e { ensemble = f (ensemble e) }
 
 activeView :: EnsembleC -> View
 activeView e = either id f (view e)
-  where f x = maybe emptyView id $ lookupView x (ensemble e)
+  where f x = maybe EmptyView id $ lookupView x (ensemble e)
 
 nameOfActiveView :: EnsembleC -> Text
 nameOfActiveView e = either (const "(local view)") id $ view e
