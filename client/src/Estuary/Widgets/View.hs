@@ -50,10 +50,10 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
 
-viewWidget er (Paragraph t) = liftR2 (elClass "div" "paragraph") $ translatedText t >> return never
+viewWidget er (Paragraph t) = liftR2 (elClass "div" "paragraph code-font") $ translatedText t >> return never
 
 viewWidget er (Example n t) = do
-  b <- liftR $ clickableDiv "example" $ text t
+  b <- liftR $ clickableDiv "example code-font" $ text t
   hint $ (ZoneHint 1 (TextProgram (Live (n,t) L3))) <$ b
   return never
 

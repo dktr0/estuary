@@ -29,6 +29,9 @@ tidalCyclesBasics = Tutorial {
         Paragraph $ Map.fromList [(English,"This tutorial will cover some of the basics of making music with MiniTidal. MiniTidal is a subset of TidalCycles that supports most typical TidalCycles operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles. Lets make some sound!")],
         Paragraph $ Map.fromList [(English,"Copy the code below to the text editing area below and then click Eval to \"evaluate\" it, or, if you prefer, click on the code example to automatically copy and evaluate it.")],
         Example (TidalTextNotation MiniTidal) "s \"bd cp\"",
+        Example (TidalTextNotation MiniTidal) "s \"bd*2 cp\"",
+        Example (TidalTextNotation MiniTidal) "s \"bd cp*2\"",
+        Example (TidalTextNotation MiniTidal) "s \"bd cp sn\"",
         TextView 1 5
       ]
     }),

@@ -38,6 +38,21 @@ body, .primary-color {
 }
 
 
+/* for the Paragraph element in the view system, which is primarily used in tutorials for explanatory text */
+.paragraph {
+  max-width: 40em;
+  overflow: scroll;
+  color: var(--primary-color);
+}
+
+/* for the Example element in the view system, which is primarly used in tutorials for clickable examples */
+.example {
+  max-width: 40em;
+  overflow: hidden;
+  color: var(--primary-color);
+}
+
+
 /* modifies the help view (source)*/
 .languageHelp {
   overflow:scroll;
