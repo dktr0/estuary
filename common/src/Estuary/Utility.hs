@@ -6,3 +6,7 @@ module Estuary.Utility where
 lastOrNothing :: [a] -> Maybe a
 lastOrNothing [] = Nothing
 lastOrNothing xs = Just (last xs)
+
+listOrNothing :: [a] -> Maybe [a]
+listOrNothing [] = Nothing
+listOrNothing xs = Just xs

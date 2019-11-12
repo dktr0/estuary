@@ -22,6 +22,7 @@ import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 import Estuary.Types.RenderInfo
 import Estuary.Widgets.Editor
+import Estuary.Widgets.Generic
 import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
@@ -29,7 +30,7 @@ import Estuary.Widgets.Sequencer
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
-
+import Estuary.Types.Hint
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
@@ -51,7 +52,10 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
 
 viewWidget er (Paragraph t) = liftR2 (elClass "div" "paragraph") $ translatedText t >> return never
 
-viewWidget er (Example n t) = liftR $ elClass "div" "example" $ text t >> return never -- placeholder: needs to be a clickable example that issues an appropriate hint, etc
+viewWidget er (Example n t) = do
+  b <- liftR $ clickableDiv "example" $ text t
+  hint $ (ZoneHint 1 (TextProgram (Live (n,t) L3))) <$ b
+  return never
 
 viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
 
