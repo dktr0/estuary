@@ -22,6 +22,7 @@ import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 import Estuary.Types.RenderInfo
 import Estuary.Widgets.Editor
+import Estuary.Widgets.Generic
 import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
@@ -29,20 +30,11 @@ import Estuary.Widgets.Sequencer
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
-
+import Estuary.Types.Hint
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
--- viewWidget er (RowView p v) = do
----  let nRows = viewToRows v
---   some kind of div where the default font-size is set from the number of rows and percentage (p)
---   and has to contain the embedded view... so...
---   let style = ... -- dynamic style
---   let attrs = ... -- dynamic map of div attributes
---   elDynAttrs "div" attrs $ viewWidget er v
-
--- viewWidget er (CellView p v) = do
---   similar to RowView where the horizontal width comes from the from percentage (p)
+viewWidget er EmptyView = return never
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
@@ -58,14 +50,18 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
 
+viewWidget er (Paragraph t) = liftR2 (elClass "div" "paragraph code-font") $ translatedText t >> return never
+
+viewWidget er (Example n t) = do
+  b <- liftR $ clickableDiv "example code-font" $ text t
+  hint $ (ZoneHint 1 (TextProgram (Live (n,t) L3))) <$ b
+  return never
+
 viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
 
 viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ viewWidget er v
 
 viewWidget er (Views xs) = liftM leftmost $ mapM (viewWidget er) xs
---
--- liftR3 :: MonadWidget t m => (m (a,Event t [Hint]) -> m (a,Event t [Hint])) -> (m (a,Event t [Hint]) -> m (a,Event t [Hint])) -> Editor t m a -> Editor t m a
--- liftR3 r x = Editor (\ctx ri -> r $ runEditor x ctx ri)
 
 viewWidget er (GridView c r vs) =  liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
   where
@@ -76,8 +72,6 @@ viewWidget er (GridView c r vs) =  liftR2 viewsContainer $ liftM leftmost $ mapM
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
     test = "--test: " <> showt r <> ";"
     setColumnsAndRows  = setNumColumns <> setNumRows <> test
-
-viewWidget _ _ = return never
 
 
 zoneWidget :: (MonadWidget t m, Eq a)
@@ -93,6 +87,3 @@ zoneWidget z defaultA f g ensResponses anEditorWidget = do
   dynUpdates <- liftR $ holdDyn iValue deltas
   variableFromWidget <- anEditorWidget dynUpdates
   return $ (WriteZone z . g) <$> localEdits variableFromWidget
-
-
-  --the code below will be moved to a different module

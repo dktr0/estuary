@@ -20,8 +20,6 @@ import Estuary.Reflex.Router
 import Estuary.Reflex.Utility
 import Estuary.Types.RenderInfo
 import Estuary.Tidal.Types
-import Estuary.Tutorials.Context
-import qualified Estuary.Tutorials.Tutorial as T
 import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.EnsembleC
@@ -34,6 +32,7 @@ import Estuary.Types.Tempo
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Terminal
 import Estuary.Types.View
+import Estuary.Types.Tutorial
 import Estuary.WebDirt.Foreign
 import Estuary.Widgets.Ensemble
 import Estuary.Widgets.EstuaryIcon
@@ -42,12 +41,14 @@ import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.View
 import Estuary.Widgets.Editor
+import Estuary.Widgets.Tutorial
+import Estuary.Tutorials.TidalCyclesBasics
 
 data Navigation =
   Splash |
   About |
   TutorialList |
-  Tutorial T.TutorialId |
+  TutorialNav Text |
   Solo |
   Lobby |
   CreateEnsemblePage |
@@ -81,20 +82,21 @@ page ctx _ wsDown Splash = do
   return (navEv, (leaveEnsemble, never, never))
 
 page ctx _ wsDown TutorialList = do
-  divClass "ui-font primary-color" $ text "Click on a button to select a tutorial interface:"
-  bs <- sequence $ fmap (\b-> liftM ((Tutorial $ T.tutorialId b) <$) $ buttonWithClass $ (T.pack . show) $ T.tutorialId b) (tutorials::[T.Tutorial t m])
+  divClass "ui-font primary-color" $ text "Select a tutorial:"
+  navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ button "TidalCycles Basics"
+  let nav = leftmost [navTidalCyclesBasics]
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (leftmost bs, (leaveEnsemble, never, never))
+  return (nav, (leaveEnsemble, never, never))
 
-page ctx _ wsDown (Tutorial tid) = do
-  let widget = (Map.lookup tid tutorialMap) :: Maybe (Dynamic t Context -> m (Dynamic t DefinitionMap, Event t [Hint]))
-  (dm, hs) <- maybe errMsg id (fmap (\x-> x ctx) widget)
+page ctx renderInfo wsDown (TutorialNav "TidalCyclesBasics") = do
+  let ensResponses = fmap justEnsembleResponses wsDown
+  (ensReq,hs) <- runEditor (runTutorial tidalCyclesBasics ensResponses) ctx renderInfo
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never, (leaveEnsemble, never, hs)) -- *** RENDERING IS THUS BROKEN IN TUTORIALS, need to make sure tutorials return edits ***
-  where
-    errMsg = do
-      text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as a bug on Estuary's github site"
-      return (constDyn empty, never)
+  return (never,(leaveEnsemble,ensReq,hs))
+
+page _ _ _ (TutorialNav _) = do
+  text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as an 'issue' on Estuary's github site"
+  return (never,(never,never,never))
 
 page ctx _ wsDown About = do
   aboutEstuaryParagraph ctx

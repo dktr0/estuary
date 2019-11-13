@@ -1,15 +1,18 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, RecursiveDo #-}
 module Estuary.Widgets.Editor where
 
 import Reflex
 import Reflex.Dom
 import Data.Text as T
 import Control.Monad.IO.Class
+import Control.Monad.Fix
 
 import Estuary.Types.Context
 import Estuary.Types.RenderInfo
 import Estuary.Types.Hint
 import Estuary.Types.Variable
+import Estuary.Types.TranslatableText
+import Estuary.Types.Term
 
 -- In this module, we define a type that represents the greater majority of widgets
 -- in the Estuary project. Such Editor widgets have access to shared information about the
@@ -18,7 +21,7 @@ import Estuary.Types.Variable
 
 data Editor t m a = Editor {
   runEditor :: Dynamic t Context -> Dynamic t RenderInfo -> m (a, Event t [Hint])
-  }
+  } 
 
 askContext :: MonadWidget t m => Editor t m (Dynamic t Context)
 askContext = Editor (\ctx _ -> return (ctx,never))
@@ -43,6 +46,17 @@ liftR x = Editor (\_ _ -> do
 
 liftR2 :: MonadWidget t m => (m (a,Event t [Hint]) -> m (a,Event t [Hint])) -> Editor t m a -> Editor t m a
 liftR2 r x = Editor (\ctx ri -> r $ runEditor x ctx ri)
+
+-- like widgetHold, but using Editor...
+editorHold :: MonadWidget t m => Editor t m a -> Event t (Editor t m a) -> Editor t m (Dynamic t a)
+editorHold i b = Editor (\ctx ri -> do
+  let i' = runEditor i ctx ri
+  let b' = fmap (\x -> runEditor x ctx ri) b
+  w <- widgetHold i' b' -- m (Dynamic t (a,Event t [Hint]))
+  let a = fmap fst w
+  let hs = switchDyn $ fmap snd w
+  return (a,hs)
+  )
 
 initialValueOfDyn :: MonadWidget t m => Dynamic t a -> Editor t m a
 initialValueOfDyn = liftR . sample . current
@@ -93,6 +107,7 @@ instance MonadWidget t m => Monad (Editor t m) where
 instance MonadWidget t m => MonadIO (Editor t m) where
   liftIO x = liftR $ liftIO x
 
+
 dynEditor :: MonadWidget t m => Dynamic t (Editor t m a) -> Editor t m (Dynamic t a)
 dynEditor dynWidgets = Editor (\ctx ri -> do
   initialWidget <- sample $ current dynWidgets
@@ -104,6 +119,28 @@ dynEditor dynWidgets = Editor (\ctx ri -> do
   let hs = switchPromptlyDyn $ fmap snd theWidget
   return (a, hs)
   )
+
+translatedTerm :: MonadWidget t m => Term -> Editor t m ()
+translatedTerm t = do
+  c <- askContext
+  l <- liftR $ holdUniqDyn $ fmap language c
+  let t' = fmap (translate t) l
+  liftR $ dynText t'
+
+translatedText :: MonadWidget t m => TranslatableText -> Editor t m ()
+translatedText t = do
+  c <- askContext
+  l <- liftR $ holdUniqDyn $ fmap language c
+  let t' = fmap (translateText t) l
+  liftR $ dynText t'
+
+translatedDynText :: MonadWidget t m => Dynamic t TranslatableText -> Editor t m ()
+translatedDynText t = do
+  c <- askContext
+  l <- liftR $ holdUniqDyn $ fmap language c
+  let t' = translateText <$> t <*> l
+  liftR $ dynText t'
+
 
 
 {- examples:
