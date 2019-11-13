@@ -70,11 +70,12 @@ viewWidget er (Views xs) = liftM leftmost $ mapM (viewWidget er) xs
 viewWidget er (GridView c r vs) =  liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
   where
     -- subGridDiv x = divClass "subGrid-container" $ x
-    viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows)) $ x
+    viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
     defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
     setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
-    setColumnsAndRows  = setNumColumns <> setNumRows
+    test = "--test: " <> showt r <> ";"
+    setColumnsAndRows  = setNumColumns <> setNumRows <> test
 
 viewWidget _ _ = return never
 
