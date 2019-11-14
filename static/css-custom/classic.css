@@ -14,7 +14,7 @@ More advanced customization is available through CSS classes within this documen
   --primary-color: rgb(98, 221, 115);
 
 /* sets the background color of buttons and other borders */
-  --secondary-color: rgba(102,102,102,0.15);
+--secondary-color: rgba(102, 102, 102, 0.47);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
@@ -34,13 +34,13 @@ More advanced customization is available through CSS classes within this documen
 /*styles the code font*/
 .code-font {
 	  font-family: 'Helvetica';
-	  font-size: 1.1vw;
+	  font-size: 1.1em;
 	  }
 
 /* styles other fonts (e.g. the header, menus and labels) */
 .ui-font {
 	font-family: 'Helvetica';
-	font-size: 1.1vw;
+	font-size: 1em;
 	}
 
 /* styles the user-inteface buttons */

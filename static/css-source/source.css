@@ -130,14 +130,6 @@ grid-template-rows: 5vh 85vh 10vh;
 
 /* source  */
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-/* 	padding-left: 15px; */
-/* 	padding-right: 15px; */
-/*    margin-bottom: 0.05em; */
-/* 	border: none; */
-/* 	background-color: white; */
-
-
-
   /* Force the browser to try it's best to float properly on overflow.
      When the window doesn't fit the entire header, this ensures that moving
      the controls to the next line doesn't leak out of it's parent container
@@ -309,7 +301,6 @@ grid-template-rows: 5vh 85vh 10vh;
 
 .translationDNEWidget { /*source*/
 	text-align: center;
-	color:yellow;
 	margin:auto;
 	width: 50%;
 	border-radius: 5pt;
@@ -410,43 +401,30 @@ grid-template-rows: 5vh 85vh 10vh;
 
 /*contains the elements parser selector, name-tag area, textarea, eval button and info button (source) */
 .textPatternChain {
-  height: calc(100% - 1.1em );
-  border: 1px solid yellow;
-/*      overflow: hidden; */
-/*  width: 80%; */
- display: grid;
- grid-template-rows: 1.4em;
+  flex:1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
    }
 
 /* coding textarea */
 .labelAndTextPattern {
-/* 	grid-area:labelAndTextPattern; */
-	/* margin: 10px; */
-	/* padding: 0px; */
-  	border: 1px solid gray;
-/*     width: 90%; */
+	flex-grow:1;
+	display: grid;
     overflow: hidden;
-    display: grid;
-    grid-template-rows: 100%;
 }
 
 .coding-textarea {
-	width: 100%;
-	height: 100%;
 	 border: none;
 }
 
 /* contains the name-tag textarea */
 .labelWidgetDiv {
-/* 	width: 100%; */
-	/* display: inline-flex; */
-  border:1px solid pink;
-  font-size: 0.8em;
 }
 
 /* name-tag textarea */
 .name-tag-textarea {
-/* 	flex:1; */
+	flex: 1;
 	border: none;
 	background-color: transparent;
 }
@@ -470,31 +448,15 @@ grid-template-rows: 5vh 85vh 10vh;
 
 /*contains the tempo and coding textareas  */
 
-.textInputToEndOfLine {
-	/* font-weight: normal;
-	padding: 0px;
-	margin-top: 0.5em; */
-/* 	margin-bottom: 0.5em; */
-	/* margin-left: 0px;
-	margin-right: 0px;
-	resize: none;
+.textInputToEndOfLine  {
+	height:100%;
+	width: 100%;
+	box-sizing:border-box;
+    background-color: transparent;
 	overflow: hidden;
-	height: 100%; */
-/* 	height:-webkit-fill-available; */
-    /* box-sizing:border-box; */
-    /* background-color: transparent; */
-/*     width:90%; */
-       display: grid;
-       grid-template-rows: 95%;
-
-  background-color: transparent;
-   overflow: hidden;
-   resize: none;
-
+  	resize: none;
+  	border:none;
   }
-
-
-
 
 /*ex. the div that 'Sound' is written in, in ICLCFixed)*/
 .singlePatternDiv-label{
@@ -532,7 +494,6 @@ ______________________________
 	flex-direction: column;
 	padding:2%;
 	flex-grow: 1;
-	height: 98%;
 	margin: auto;
 }
 
@@ -541,12 +502,10 @@ ______________________________
 	width: 100%;
 	flex-grow: 1;
 	min-height: 0px;
-
 }
 
 .sequencer-textarea {
     border-radius: 5px;
-/*     border:1pt solid var( --secondary-color); */
     }
 
 .sequencer-textarea input {
@@ -566,6 +525,7 @@ ______________________________
 	border-radius: 5px;
 	flex-grow: 1;
 	width:20px;
+/* 	border:1px solid gray; */
 }
 
 /* sets the color for the pads when hovering on */
@@ -914,29 +874,32 @@ width: 8em;
    }
 
 .fullWidthDiv {
-/*    width: 100%; */
-   /* font-size: 0.8em; */
-   height: 1.3em;
+	flex:0.025;
    	background-color: transparent;
-  border: 1px solid red;}
+  }
 
+.viewParentContainer{
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 
 .gridView {
+	height: 100%;
     display: grid;
-    height: 100%;
     width:100%;
   }
 
   .gridChild {
-    border: 0px;
-    margin: 0px;
-    padding: 0px;
-    height:100%;
-
+	height:100%;
+  	display: flex;
+  	flex-direction: column;
   }
 
   .borderDiv {
+	height: 100%;
+  	display: flex;
+  	flex-direction: column;
     border: 1px solid var(--secondary-color);
     width: 100%;
-    height: 100%;
   }

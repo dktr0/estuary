@@ -38,9 +38,8 @@ import Estuary.Types.Variable
 
 textWidget :: MonadWidget t m =>  Int -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
 textWidget rows i delta = do
-  let attrs = case rows of 0 -> constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font")
-                           _ -> constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
-  -- let attrs = constDyn $ (constDyn $ ("class" =: "textInputToEndOfLine coding-textarea primary-color code-font")) else
+  let attrs = case rows of 0 -> constDyn $ ("class" =: "textInputToEndOfLine  primary-color code-font")
+                           _ -> constDyn $ ("class" =: "textInputToEndOfLine  primary-color code-font" <> "rows" =: T.pack (show rows) <> "style" =: "height: auto")
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let e = _textArea_element x
   e' <- wrapDomEvent (e) (onEventName Keypress) $ do

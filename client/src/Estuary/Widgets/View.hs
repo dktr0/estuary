@@ -57,15 +57,18 @@ viewWidget er (Example n t) = do
   hint $ (ZoneHint 1 (TextProgram (Live (n,t) L3))) <$ b
   return never
 
-viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
+viewWidget er (ViewDiv c v) =  liftR2 (divClass c) $ viewWidget er v
 
-viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ viewWidget er v
 
-viewWidget er (Views xs) = liftM leftmost $ mapM (viewWidget er) xs
+viewWidget er (BorderDiv v) =   liftR2 (divClass "borderDiv") $ viewWidget er v
 
-viewWidget er (GridView c r vs) =  liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
+
+viewWidget er (Views xs) =   liftM leftmost $ mapM (viewWidget er) xs
+
+
+viewWidget er (GridView c r vs) =  liftR2 viewParentContainer $ liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
   where
-    -- subGridDiv x = divClass "subGrid-container" $ x
+    viewParentContainer x = divClass "viewParentContainer" $ x
     viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
     defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
     setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"

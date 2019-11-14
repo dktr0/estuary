@@ -40,8 +40,6 @@ presetViews = fromList [
       ("twocolumns", GridView 2 1  [
       BorderDiv (Views [LabelView 0,TextView 1 0]),
       BorderDiv (Views [LabelView 2,TextView 3 0])
-      -- BorderDiv (TextView 1 30),
-      -- BorderDiv (TextView 2 30)
       ]),
 
       ("twobytwo", GridView 2 2 [
@@ -134,6 +132,41 @@ presetViews = fromList [
       BorderDiv (Views [LabelView 50,TextView 51 0]),
       BorderDiv (Views [LabelView 52,TextView 53 0]),
       BorderDiv (Views [LabelView 54,TextView 55 0])
+      ]),
+
+      ("fourbyeight", GridView 4 8  [
+      (Views [LabelView 0,TextView 1 0]),
+       (Views [LabelView 2,TextView 3 0]),
+       (Views [LabelView 4,TextView 5 0]),
+       (Views [LabelView 6,TextView 7 0]),
+       (Views [LabelView 8,TextView 9 0]),
+       (Views [LabelView 10,TextView 11 0]),
+       (Views [LabelView 12,TextView 13 0]),
+       (Views [LabelView 14,TextView 15 0]),
+       (Views [LabelView 16,TextView 17 0]),
+       (Views [LabelView 18,TextView 19 0]),
+       (Views [LabelView 20,TextView 21 0]),
+       (Views [LabelView 22,TextView 23 0]),
+       (Views [LabelView 24,TextView 25 0]),
+       (Views [LabelView 26,TextView 27 0]),
+       (Views [LabelView 28,TextView 29 0]),
+       (Views [LabelView 30,TextView 31 0]),
+       (Views [LabelView 32,TextView 33 0]),
+       (Views [LabelView 34,TextView 35 0]),
+       (Views [LabelView 36,TextView 37 0]),
+       (Views [LabelView 38,TextView 39 0]),
+       (Views [LabelView 40,TextView 41 0]),
+       (Views [LabelView 42,TextView 43 0]),
+       (Views [LabelView 44,TextView 45 0]),
+       (Views [LabelView 46,TextView 47 0]),
+       (Views [LabelView 48,TextView 49 0]),
+       (Views [LabelView 50,TextView 51 0]),
+       (Views [LabelView 52,TextView 53 0]),
+       (Views [LabelView 54,TextView 55 0]),
+       (Views [LabelView 56,TextView 57 0]),
+       (Views [LabelView 58,TextView 59 0]),
+       (Views [LabelView 60,TextView 61 0]),
+       (Views [LabelView 62,TextView 63 0])
       ]),
 
       ("cybernetic",GridView 2 2 [
