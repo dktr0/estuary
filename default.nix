@@ -164,8 +164,8 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
               url = "https://github.com/dktr0/Tidal.git";
-              rev = "2e8f61385f8b88289302a4197f9385af286902dd";
-              sha256 = "0i7kl99cqbjg970494xhrb3337y4y4z80h34f9hlxvsxxbad9g5a";
+              rev = "3655fa92059e9d7a93bab1b5d36e91b7d6a4a987";
+              sha256 = "1hdp70vf3wq1lcxs80kglqbpm03rlv2qwdld6y5fj4w7fd855avl";
               fetchSubmodules = true;
               })
             "--subpath tidal-parse" {});
