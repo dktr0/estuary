@@ -52,7 +52,7 @@ header ctx = divClass "header primary-color primary-borders" $ divClass "config-
   dynamicsModeEv <- divClass "config-entry primary-color ui-font" $ do
     text "Dynamics:"
     let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
-    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
+    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
 
   -- privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader

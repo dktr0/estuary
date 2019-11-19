@@ -7,10 +7,10 @@ More advanced customization is available through CSS classes within this documen
 
 :root {
 /* sets the background color */
-  --background-color: linear-gradient(to top right, black, rgb(182, 178, 247));
+  --background-color:  rgb(182, 178, 247);
 
 /* set the color of all text and typically some borders*/
-  --primary-color:   #e8e4e4;
+  --primary-color:   #0e0e0e;
 ;
 
 /* sets the background color of buttons and other borders */
@@ -34,13 +34,14 @@ More advanced customization is available through CSS classes within this documen
 /*styles the code font*/
 .code-font {
 	  font-family: 'Helvetica';
-    font-size: 1.1vw;
+    font-size: 1em;
 	  }
+
 
 /* styles the fonts for the header, menus and labels */
 .ui-font {
 	font-family: 'Helvetica';
-  font-size: 1.1vw;
+  font-size: 1em;
 	}
 
 /* styles the user-interface buttons */
@@ -50,9 +51,14 @@ More advanced customization is available through CSS classes within this documen
 }
 
 /* styles the dropdown */
-.ui-dropdownMenus {
+.ui-dropdownMenus{
+	background-color: transparent;
+}
+
+.ui-dropdownMenus:focus {
   background-color: var(--background-color) !important;
 }
+
 /* styles the primary borders (e.g. from dropdown menus)*/
 .primary-borders {
 	border-radius: 5px;
