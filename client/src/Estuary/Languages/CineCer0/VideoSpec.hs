@@ -5,6 +5,7 @@ import Control.Applicative
 import Data.Time
 
 import qualified Estuary.Languages.CineCer0.PositionAndRate as VT
+import qualified Estuary.Languages.CineCer0.DynamicOpacity as DynOp
 
 import Estuary.Types.Tempo
 
@@ -103,6 +104,15 @@ setOpacity r vs = vs {
 
 defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational
 defaultOpacity _ _ _ = 100
+
+-- opacityChanger:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Rational
+-- opacityChanger arg t len now = arg  
+
+changeOpacity :: Rational -> VideoSpec -> VideoSpec
+changeOpacity n vs = vs {
+  opacity = DynOp.opacityChanger n
+}
+
 
 setBlur :: Rational -> VideoSpec -> VideoSpec
 setBlur n vs = vs {blur = n}
