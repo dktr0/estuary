@@ -14,7 +14,7 @@ data View =
   EmptyView |
   Views [View] |
   ViewDiv Text View | -- a div with an arbitrary CSS class (specified by first argument to constructor)
-  GridView Int Int [View] |
+  GridView Int Int [View] | -- columns rows [children]
   BorderDiv View |
   LabelView Int |
   StructureView Int |
