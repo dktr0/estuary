@@ -28,15 +28,14 @@ import Estuary.Types.Hint
 terminalWidget :: MonadWidget t m => Dynamic t Context ->
   Event t [Response] -> Event t [Hint] -> m (Event t Terminal.Command)
 terminalWidget ctx deltasDown hints = divClass "terminal" $ mdo
-  (sendButton,inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
-    sendButton' <- divClass "webSocketButtons" $ dynButton =<< translateDyn Term.Send ctx
+  (inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
     divClass "webSocketButtons" $ dynText =<< translateDyn Term.TerminalChat ctx
     let resetText = fmap (const "") terminalInput
     let attrs = constDyn $ fromList [("class","primary-color code-font"),("style","width: 100%")]
     inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
-    return (sendButton',inputWidget')
+    return (inputWidget')
   let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
-  let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [sendButton,enterPressed]
+  let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [enterPressed]
   let parsedInput = fmap Terminal.parseCommand terminalInput
   let commands = fmapMaybe (either (const Nothing) Just) parsedInput
   let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) parsedInput

@@ -52,7 +52,6 @@ textWidget rows i delta = do
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
 
-
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual, CineCer0, TimeNot, Ver, Oir, Dos] ++ (fmap TidalTextNotation tidalParsers)
 

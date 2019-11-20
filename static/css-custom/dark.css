@@ -1,20 +1,20 @@
 /*
 --------------------------------------------------------------------
-Welcome to the 'grayscale' theme template: For quick Estuary's interface customization, modify the colors below.
+Welcome to the 'classic' theme template: For quick Estuary's interface customization, modify the colors below.
 More advanced customization is available through CSS classes within this document.
 --------------------------------------------------------------------
 */
 
+
 :root {
 /* sets the background color */
-  --background-color:  rgb(182, 178, 247);
+  --background-color: black;
 
 /* set the color of all text and typically some borders*/
-  --primary-color:   #0e0e0e;
-;
+  --primary-color: rgba(255, 255, 255, 255);
 
 /* sets the background color of buttons and other borders */
-  --secondary-color: hsl(0,0%,10%);
+--secondary-color: rgba(102, 102, 102, 0.47);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
@@ -26,7 +26,7 @@ More advanced customization is available through CSS classes within this documen
 --------------------------------------------------------------------
 */
 
-  /*styles the background */
+/*styles the background */
 .background {
     background-color: var(--background-color);
 	  }
@@ -34,25 +34,26 @@ More advanced customization is available through CSS classes within this documen
 /*styles the code font*/
 .code-font {
 	  font-family: 'Helvetica';
-    font-size: 1em;
+	  font-size: 1em;
 	  }
 
-
-/* styles the fonts for the header, menus and labels */
+/* styles other fonts (e.g. the header, menus and labels) */
 .ui-font {
 	font-family: 'Helvetica';
-  font-size: 1em;
+	font-size: 1em;
 	}
 
-/* styles the user-interface buttons */
+/* styles the user-inteface buttons */
 .ui-buttons {
-  color: var(--primary-color);
-  background-color:rgba(0,0,0,0.12);
+  color:var(--primary-color);
+  background-color:var(--secondary-color);
 }
 
 /* styles the dropdown */
+
 .ui-dropdownMenus{
 	background-color: transparent;
+
 }
 
 .ui-dropdownMenus:focus {
@@ -62,11 +63,11 @@ More advanced customization is available through CSS classes within this documen
 /* styles the primary borders (e.g. from dropdown menus)*/
 .primary-borders {
 	border-radius: 5px;
-    border: 1px solid black;
+    border: 1px solid var(--primary-color);
 }
 
 /*styles other borders (e.g. from ui buttons and sequencer buttons)  */
 .other-borders {
     border-radius: 5px;
-    border: 1px solid black;
+    border: 1px solid var(--secondary-color);
     }

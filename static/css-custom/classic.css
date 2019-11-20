@@ -34,7 +34,7 @@ More advanced customization is available through CSS classes within this documen
 /*styles the code font*/
 .code-font {
 	  font-family: 'Helvetica';
-	  font-size: 1.1em;
+	  font-size: 1em;
 	  }
 
 /* styles other fonts (e.g. the header, menus and labels) */
@@ -50,7 +50,13 @@ More advanced customization is available through CSS classes within this documen
 }
 
 /* styles the dropdown */
-.ui-dropdownMenus {
+
+.ui-dropdownMenus{
+	background-color: transparent;
+
+}
+
+.ui-dropdownMenus:focus {
   background-color: var(--background-color) !important;
 }
 

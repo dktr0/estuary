@@ -1,6 +1,6 @@
 /*
 --------------------------------------------------------------------
-							General setup
+					(last working w/grid)		General setup
 --------------------------------------------------------------------
 */
 
@@ -110,8 +110,6 @@ grid-template-rows: 5vh 85vh 10vh;
 .estuary > .header {
 /*   background-color: rgba(25, 255, 255, 0.8); */
   text-align: center;
-/*   padding: 20px 0; */
-  font-size:1.3vw;
   border: none;
 }
 
@@ -163,6 +161,7 @@ grid-template-rows: 5vh 85vh 10vh;
 */
 
 .config-toolbar {
+	padding-right: 1em;
 	float: right;
 	display: block;
 }
@@ -710,13 +709,16 @@ table, tr, td {border: none;}
 	vertical-align:middle
 }
 
-.terminal{}
+.terminal{
+	padding-left: 0.7em;
+
+}
 
 .terminalHeader {
-	width: 60%;
 	display: flex;
 	flex-direction: row;
 	border:none;
+
 }
 
 .terminalInput {
@@ -734,7 +736,6 @@ table, tr, td {border: none;}
 	flex-direction: row;
     border:none
     display: none;
-
 
 }
 
@@ -875,8 +876,16 @@ width: 8em;
 
 .fullWidthDiv {
 	flex:0.025;
-   	background-color: transparent;
+	background-color: transparent;
   }
+
+.fullWidthDiv select{
+	margin-right: 1em;
+}
+
+.fullWidthDiv button {
+
+}
 
 .viewParentContainer{
   display: flex;
