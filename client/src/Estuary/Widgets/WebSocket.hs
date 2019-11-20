@@ -18,6 +18,22 @@ import Estuary.Types.Context
 import Estuary.Types.RenderInfo
 import Estuary.Types.Request
 import Estuary.Types.Response
+import Estuary.Types.EnsembleRequest
+
+filterRequests :: [Request] -> [Request]
+filterRequests [] = []
+filterRequests [x] = [x]
+filterRequests xs = foldr keepOneRequestPerZone [] xs
+
+keepOneRequestPerZone :: Request -> [Request] -> [Request]
+keepOneRequestPerZone (EnsembleRequest (WriteZone n d)) xs | zoneInRequestList n xs = xs
+keepOneRequestPerZone x xs = x:xs
+
+zoneInRequestList :: Int -> [Request] -> Bool
+zoneInRequestList n1 ((EnsembleRequest (WriteZone n2 _)):xs) | n1 == n2 = True
+                                                             | otherwise = zoneInRequestList n1 xs
+zoneInRequestList n (x:xs) = zoneInRequestList n xs
+zoneInRequestList n [] = False
 
 
 estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
@@ -25,26 +41,33 @@ estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
 estuaryWebSocket ctx rInfo toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
+  userAgent <- liftIO $ getUserAgent
+  now <- liftIO $ getCurrentTime
+
+  -- instead of sending most requests immediately, send in 0.165s blocks, keeping only the newest edit to each zone
+  -- (only the requests issued from this widget - browser and client info - are sent immediately outside of this queue)
+  let toSend' = fmap (++) toSend
+  let toSend'' = mergeWith (.) [toSend',resetSend]
+  toSendDyn <- foldDyn ($) [] toSend''
+  toSendTick <- gate (current socketIsOpen) <$> tickLossy (0.165::NominalDiffTime) now
+  let toSend''' = tag (current toSendDyn) toSendTick
+  let toSend'''' = fmap filterRequests toSend'''
+  let resetSend = fmap (\_ _ -> []) toSend''''
+
+  -- the web socket itself
   let url = "wss://" <> hostName <> ":" <> port
-  let requestsToSend = mergeWith (++) [sendBrowserInfo,toSend,clientInfoEvent]
+  let requestsToSend = mergeWith (++) [sendBrowserInfo,toSend'''',clientInfoEvent]
   let config = def & webSocketConfig_send .~ requestsToSend & webSocketConfig_reconnect .~ True
   ws <- jsonWebSocket url config
   let response = fmapMaybe id $ ws^.webSocket_recv
 
---  status <- performEvent $ fmap (liftIO . (\_ -> getStatus obj)) ticks
---  status' <- holdDyn "---" status
---  status'' <- holdUniqDyn status'
---  let wsStatusChanges = fmap (\w x -> x { wsStatus = w }) $ updated status''
-
   -- after widget is built, query and report browser info to server
   postBuild <- getPostBuild
-  userAgent <- performEvent $ fmap (liftIO . const getUserAgent) postBuild
-  let sendBrowserInfo = fmap ((:[]) . BrowserInfo) userAgent
+  let sendBrowserInfo = fmap (const [BrowserInfo userAgent]) postBuild
 
   -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
   -- let socketIsOpen = fmap (=="connection open") status'
   let socketIsOpen = constDyn True
-  now <- liftIO $ getCurrentTime
   pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
   pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
   let clientInfoWithPingTime = fmap ClientInfo pingTickTime

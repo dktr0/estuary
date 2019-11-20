@@ -1,6 +1,6 @@
 /*
 --------------------------------------------------------------------
-							General setup
+					(last working w/grid)		General setup
 --------------------------------------------------------------------
 */
 
@@ -38,6 +38,21 @@ body, .primary-color {
 }
 
 
+/* for the Paragraph element in the view system, which is primarily used in tutorials for explanatory text */
+.paragraph {
+  max-width: 40em;
+  overflow: scroll;
+  color: var(--primary-color);
+}
+
+/* for the Example element in the view system, which is primarly used in tutorials for clickable examples */
+.example {
+  max-width: 40em;
+  overflow: hidden;
+  color: var(--primary-color);
+}
+
+
 /* modifies the help view (source)*/
 .languageHelp {
   overflow:scroll;
@@ -72,27 +87,29 @@ body, .primary-color {
 padding-left: 10px;
 }
 
-.page {grid-area: page}
-.footer{grid-area: footer;}
+.page {grid-area: page;
+    height: 85vh;
+
+}
+
 
 
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
-display: grid;
-grid-template-rows: 5vh 90vh 5vh;
-  grid-template-areas:
-    'header header'
-    'page page'
-    'footer footer';
-  width: 99vw;
   height: 100vh;
+display: grid;
+grid-template-rows: 5vh 85vh 10vh;
+  grid-template-areas:
+    'header '
+    'page'
+    'footer';
+  width: 99vw;
+
 }
 
 .estuary > .header {
 /*   background-color: rgba(25, 255, 255, 0.8); */
   text-align: center;
-/*   padding: 20px 0; */
-  font-size:1.3vw;
   border: none;
 }
 
@@ -111,14 +128,6 @@ grid-template-rows: 5vh 90vh 5vh;
 
 /* source  */
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-/* 	padding-left: 15px; */
-/* 	padding-right: 15px; */
-/*    margin-bottom: 0.05em; */
-/* 	border: none; */
-/* 	background-color: white; */
-
-
-
   /* Force the browser to try it's best to float properly on overflow.
      When the window doesn't fit the entire header, this ensures that moving
      the controls to the next line doesn't leak out of it's parent container
@@ -152,6 +161,7 @@ grid-template-rows: 5vh 90vh 5vh;
 */
 
 .config-toolbar {
+	padding-right: 1em;
 	float: right;
 	display: block;
 }
@@ -194,7 +204,8 @@ grid-template-rows: 5vh 90vh 5vh;
 
 
 .footer {
-	padding-top: 5px;
+	grid-area: footer;
+	padding-top: 1em;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
@@ -285,11 +296,10 @@ grid-template-rows: 5vh 90vh 5vh;
 }
 
 /*modifies the chat messages (source)*/
-.chatMessage { display: block;}
+.chatMessage { display: block}
 
 .translationDNEWidget { /*source*/
 	text-align: center;
-	color:yellow;
 	margin:auto;
 	width: 50%;
 	border-radius: 5pt;
@@ -390,31 +400,30 @@ grid-template-rows: 5vh 90vh 5vh;
 
 /*contains the elements parser selector, name-tag area, textarea, eval button and info button (source) */
 .textPatternChain {
-	width: 100%;
-}
+  flex:1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+   }
 
 /* coding textarea */
 .labelAndTextPattern {
-	width: 100%;
-	margin: 0px;
-	padding: 0px;
+	flex-grow:1;
+	display: grid;
+    overflow: hidden;
 }
 
 .coding-textarea {
-	width: 100%;
-	height: 100%;
-  border: none;
+	 border: none;
 }
 
 /* contains the name-tag textarea */
 .labelWidgetDiv {
-	width: 100%;
-	display: inline-flex;
 }
 
 /* name-tag textarea */
 .name-tag-textarea {
-/* 	flex:1; */
+	flex: 1;
 	border: none;
 	background-color: transparent;
 }
@@ -438,19 +447,15 @@ grid-template-rows: 5vh 90vh 5vh;
 
 /*contains the tempo and coding textareas  */
 
-.textInputToEndOfLine {
-	font-weight: normal;
-	padding: 0px;
-/* 	margin-top: 0.5em; */
-	margin-bottom: 0.5em;
-/* 	margin-left: 0px; */
-/* 	margin-right: 0px; */
-	height: auto;
-	resize: none;
+.textInputToEndOfLine  {
+	height:100%;
+	width: 100%;
+	box-sizing:border-box;
+    background-color: transparent;
 	overflow: hidden;
-	background-color: transparent;
-}
-
+  	resize: none;
+  	border:none;
+  }
 
 /*ex. the div that 'Sound' is written in, in ICLCFixed)*/
 .singlePatternDiv-label{
@@ -488,7 +493,6 @@ ______________________________
 	flex-direction: column;
 	padding:2%;
 	flex-grow: 1;
-	height: 98%;
 	margin: auto;
 }
 
@@ -497,12 +501,10 @@ ______________________________
 	width: 100%;
 	flex-grow: 1;
 	min-height: 0px;
-
 }
 
 .sequencer-textarea {
     border-radius: 5px;
-/*     border:1pt solid var( --secondary-color); */
     }
 
 .sequencer-textarea input {
@@ -522,6 +524,7 @@ ______________________________
 	border-radius: 5px;
 	flex-grow: 1;
 	width:20px;
+/* 	border:1px solid gray; */
 }
 
 /* sets the color for the pads when hovering on */
@@ -706,22 +709,21 @@ table, tr, td {border: none;}
 	vertical-align:middle
 }
 
-.terminal{}
+.terminal{
+	padding-left: 0.7em;
+
+}
 
 .terminalHeader {
-	width: 60%;
 	display: flex;
 	flex-direction: row;
 	border:none;
-    background-color: transparent;
 
 }
 
 .terminalInput {
 	flex-grow: 1;
 	border:none;
-
-
 }
 
 .terminalInput input {
@@ -734,7 +736,6 @@ table, tr, td {border: none;}
 	flex-direction: row;
     border:none
     display: none;
-
 
 }
 
@@ -874,52 +875,40 @@ width: 8em;
    }
 
 .fullWidthDiv {
-   grid-area: fullWidthDiv;
-   width: 100%}
-  .textInputToEndOfLine {grid-area: textInputToEndOfLine;
-   width: 100%;
-   }
+	flex:0.025;
+	background-color: transparent;
+  }
+
+.fullWidthDiv select{
+	margin-right: 1em;
+}
+
+.fullWidthDiv button {
+
+}
+
+.viewParentContainer{
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 
 .gridView {
+	height: 100%;
     display: grid;
+    width:100%;
+  }
+
+  .gridChild {
+	height:100%;
+  	display: flex;
+  	flex-direction: column;
+  }
+
+  .borderDiv {
+	height: 100%;
+  	display: flex;
+  	flex-direction: column;
+    border: 1px solid var(--secondary-color);
     width: 100%;
-    height: 100%;
-    font-family: inherit;
-    font-size: inherit;
   }
-
-.gridChild {
-  border: 0px;
-  margin: 0px;
-  padding: 0px;
-  width: 100%;
-  height: 100%;
-}
-
-.borderDiv {
-  border: 1px solid var(--secondary-color);
-  width: 100%;
-  height: 100%;
-}
-
-.singleViewContainer {
-/* 	font-size: 1.1vw; */
-    display: grid;
-    grid-template-rows: 20% 10% 70%;
-    grid-template-areas:
-    'name-tag-textarea '
-    'fullWidthDiv'
-    'textInputToEndOfLine';
-    font-family: inherit;
-    border: 1px solid hsl(0,0%,10%);;
-
-
-    }
-
-/*   textarea {
-    font-family: inherit;
-    width:99%;
-    height: 99%;
-    font-size: inherit;
-  }
- */

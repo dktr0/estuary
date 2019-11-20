@@ -11,6 +11,7 @@ homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
 
 dependencies:
   - base
+  - stm
   - estuary-common
   - containers
   - directory
@@ -20,9 +21,11 @@ dependencies:
   - json
   - aeson
   - bytestring
+  - http-types
   - websockets
   - wai
   - warp
+  - tls
   - warp-tls
   - wai-websockets
   - wai-app-static

@@ -5,11 +5,14 @@ import Data.Maybe (mapMaybe)
 
 import Estuary.Types.Tempo
 import Estuary.Utility
+import Estuary.Types.Definition
 
 data Hint =
   SampleHint Text |
   LogMessage Text |
-  SetGlobalDelayTime Double
+  SetGlobalDelayTime Double |
+  SilenceHint |
+  ZoneHint Int Definition
   deriving (Eq,Show)
 
 justGlobalDelayTime :: [Hint] -> Maybe Double

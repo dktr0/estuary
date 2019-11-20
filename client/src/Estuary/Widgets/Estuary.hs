@@ -8,6 +8,7 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Data.Time
 import Data.Map
+import Data.Maybe
 import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
@@ -21,6 +22,7 @@ import qualified Data.Text.IO as T
 import TextShow
 import Sound.MusicW.AudioContext
 
+import Estuary.Utility
 import Estuary.Widgets.Navigation
 import Estuary.WebDirt.SampleEngine
 import Estuary.WebDirt.WebDirt
@@ -28,7 +30,9 @@ import Estuary.WebDirt.SuperDirt
 import Estuary.Widgets.WebSocket
 import Estuary.Types.Definition
 import Estuary.Types.Request
+import Estuary.Types.EnsembleRequest
 import Estuary.Types.Response
+import Estuary.Types.EnsembleResponse
 import Estuary.Types.Context
 import Estuary.Types.Hint
 import Estuary.Types.Samples
@@ -50,7 +54,7 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
   renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange) <- estuaryWebSocket ctx renderInfo requestsUp
-  let deltasDown = fmap (:[]) deltasDown' -- temporary hack
+  let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
 
   let ensembleCDyn = fmap ensembleC ctx
 
@@ -59,7 +63,7 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
   (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
   command <- footer ctx renderInfo deltasDown hints
   let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
-  let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage]
+  let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
 
   -- map from EnsembleRequests (eg. edits) and Commands (ie. from the terminal) to
 
@@ -77,6 +81,8 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
   let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint] -- Event t [Hint]
+  let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
+  let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (webDirt irc) hints
   performDelayHints irc hints
 
@@ -86,6 +92,18 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
   let requests' = fmap (:[]) $ requests
   let requestsUp = mergeWith (++) [ensembleRequestsUp',requests']
   return ()
+
+hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
+hintsToEnsembleRequests = catMaybes . fmap f
+  where
+    f (ZoneHint n d) = Just (WriteZone n d)
+    f _ = Nothing
+
+hintsToResponses :: [Hint] -> [Response]
+hintsToResponses = catMaybes . fmap f
+  where
+    f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
+    f _ = Nothing
 
 -- a standard canvas that, in addition to being part of reflex-dom's DOM representation, is shared with other threads through the Context
 canvasWidget :: MonadWidget t m => MVar Context -> m ()

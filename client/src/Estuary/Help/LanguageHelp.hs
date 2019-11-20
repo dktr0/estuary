@@ -66,5 +66,5 @@ languageHelpWidget' = parserToHelp
 languageHelpWidget :: (MonadWidget t m) => Dynamic t TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t Text)
 languageHelpWidget t = do
    let p = fmap parserToHelp t -- Dynamic t (m ())
-   p' <- dyn p -- m Event t (()) but if Event t (Event t String) then we should flattenn event to only Event t String with coincidence
+   dyn p
    return ()

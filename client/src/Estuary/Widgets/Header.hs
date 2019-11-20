@@ -21,7 +21,7 @@ header :: (MonadWidget t m) => Dynamic t Context -> m (Event t ContextChange)
 header ctx = divClass "header primary-color primary-borders" $ divClass "config-toolbar" $ do
 
   themeChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
-    let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale"), ("../css-custom/bubble.css","Bubble"), ("../css-custom/memorias.css","Memorias")]
+    let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/dark.css", "Dark" ),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale"), ("../css-custom/bubble.css","Bubble"), ("../css-custom/memorias.css","Memorias")]
     translateDyn Term.Theme ctx >>= dynText
     styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" )) -- Event t String
     return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
@@ -52,7 +52,7 @@ header ctx = divClass "header primary-color primary-borders" $ divClass "config-
   dynamicsModeEv <- divClass "config-entry primary-color ui-font" $ do
     text "Dynamics:"
     let dmMap = fromList $ zip dynamicsModes (fmap (T.pack . show) dynamicsModes)
-    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
+    dmChange <- _dropdown_change <$> dropdown DefaultDynamics (constDyn dmMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
     return $ fmap (\x c -> c { dynamicsMode = x }) dmChange
 
   -- privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader

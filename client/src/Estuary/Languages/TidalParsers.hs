@@ -2,7 +2,7 @@ module Estuary.Languages.TidalParsers where
 
 import Text.ParserCombinators.Parsec
 import qualified Sound.Tidal.Context as Tidal
-import Sound.Tidal.MiniTidal
+import Sound.Tidal.Parse
 import Data.Bifunctor (first)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -41,7 +41,7 @@ tidalParsers = [MiniTidal,CQenze,Morelia,Saborts,
 
 
 tidalParser :: TidalParser -> Text -> Either String Tidal.ControlPattern
-tidalParser MiniTidal = miniTidal . T.unpack
+tidalParser MiniTidal = parseTidal . T.unpack
 tidalParser CQenze = first show . cqenzeControlPattern . T.unpack
 tidalParser Morelia = first show . morelia . T.unpack
 tidalParser Saborts = first show . saborts . T.unpack

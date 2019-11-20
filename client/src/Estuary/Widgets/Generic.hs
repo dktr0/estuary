@@ -88,16 +88,13 @@ justChangeValues _ = Nothing
 debug::(MonadWidget t m, Show a) => Event t a -> m ()
 debug e = performEvent_ $ fmap (liftIO . putStrLn . show) e
 
-clickableDiv :: MonadWidget t m => Text -> m (Event t ())
-clickableDiv label = do
-  (element,_) <- elAttr' "div" attr $ text label
+clickableDiv :: MonadWidget t m => Text -> m a -> m (Event t ())
+clickableDiv cssclass child = do
+  (element,_) <- elAttr' "div" attr $ child
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
   where
-    attr = singleton "style" "background-color: gray; display: inline;"
-
-clickableDiv' :: MonadWidget t m => Text -> a -> m (Event t a)
-clickableDiv' label e = liftM (e <$) $ clickableDiv label
+    attr = singleton "class" cssclass
 
 clickableDivClass :: MonadWidget t m => Text -> Text -> m (Event t ())
 clickableDivClass label c = do
@@ -180,14 +177,6 @@ makeNewButton:: (MonadWidget t m)=> Text -> a -> b -> m (Dynamic t ((),Event t (
 makeNewButton label _ _ = do
   a <- button label
   return $ constDyn ((), ((MakeNew::EditSignal ()) <$) a)
-
-pingDiv :: MonadWidget t m => Text -> m (Event t ())
-pingDiv label = clickableDiv' label ()
-
-pingDiv' :: MonadWidget t m => Text -> m (Dynamic t ((),Event t ()))
-pingDiv' label = do
-  x <- pingDiv label
-  return $ constDyn ((),x)
 
 
 tdButtonAttrs:: MonadWidget t m => Text -> a -> Map Text Text -> m (Event t a)

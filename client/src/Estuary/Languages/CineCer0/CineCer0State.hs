@@ -52,8 +52,8 @@ foreign import javascript unsafe
   "$1.videoHeight"
   videoHeight :: CineCer0Video -> IO Double
 
-videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Double -> IO ()
-videoStyle v x y w h o = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o;
+videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+videoStyle v x y w h o bl br c g s = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o <> "%; filter:blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
 
 ----  Rate and Position ----
 
@@ -119,10 +119,10 @@ updateContinuingVideo t now (sw,sh) s v = do
     -- update position in time
     let pos = (playbackPosition s) t lengthOfVideo now
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
-    -- update opacity 
-    let opacidad = (opacity s) t lengthOfVideo now 
+    -- update opacity
+    let opacidad = (opacity s) t lengthOfVideo now
     -- update geometry/appearance/etc
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (realToFrac opacidad)
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor (blur s)) (floor (brightness s)) (floor (contrast s)) (floor (grayscale s)) (realToFrac (saturate s))
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
