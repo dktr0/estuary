@@ -170,10 +170,10 @@ presetViews = fromList [
       ]),
 
       ("cybernetic",GridView 2 2 [
-      BorderDiv (Views [LabelView 1, SequenceView 2]),
-      BorderDiv (Views [LabelView 3, TextView 4 0]),
-      BorderDiv (Views [LabelView 5, TextView 6 0]),
-      BorderDiv (Views [LabelView 7, TextView 8 0])
+        BorderDiv (Views [LabelView 1, SequenceView 2]),
+        BorderDiv (Views [LabelView 3, TextView 4 0]),
+        BorderDiv (Views [LabelView 5, TextView 6 0]),
+        BorderDiv (Views [LabelView 7, TextView 8 0])
       ]),
 
       ("supercontinent", GridView 2 5 [
