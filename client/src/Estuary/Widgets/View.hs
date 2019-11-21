@@ -57,14 +57,13 @@ viewWidget er (Example n t) = do
   hint $ (ZoneHint 1 (TextProgram (Live (n,t) L3))) <$ b
   return never
 
-viewWidget er (ViewDiv c v) =  liftR2 (divClass c) $ viewWidget er v
+viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ liftR2 (divClass "gridChild") $ viewWidget er v
+-- TODO: shouldn't be gridChild but an appropriately specific class
 
+viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ liftR2 (divClass "gridChild") $ viewWidget er v
+-- TODO: shouldn't be gridChild but an appropriately specific class
 
-viewWidget er (BorderDiv v) =   liftR2 (divClass "borderDiv") $ viewWidget er v
-
-
-viewWidget er (Views xs) =   liftM leftmost $ mapM (viewWidget er) xs
-
+viewWidget er (Views xs) = liftM leftmost $ mapM (\x -> liftR2 (divClass "gridChild") $ viewWidget er x) xs
 
 viewWidget er (GridView c r vs) =  liftR2 viewParentContainer $ liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
   where
