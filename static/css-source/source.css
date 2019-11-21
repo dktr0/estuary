@@ -440,8 +440,13 @@ grid-template-rows: 5vh 85vh 10vh;
 /* coding textarea */
 .labelAndTextPattern {
 	flex-grow:1;
-	display: grid;
+/* 	display: grid; */
+	display: flex;
     overflow: hidden;
+}
+
+.width-100-percent{
+	width: 100%;
 }
 
 .coding-textarea {
@@ -608,12 +613,44 @@ ______________________________
 .panel button {
 	border-color: var(--primary-color)}
 
+
+.tutorialContainer{
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
 .tutorialButton {
 	cursor: pointer;
 	margin-top: 1em;
 	padding: 4px;
 	width: fit-content;
 }
+
+.tutorialTitle{
+	width:fit-content;
+	font-weight:bolder;
+	margin-right: 1em;
+	margin-bottom: 0.5em;
+}
+
+.tutorialPageTitle{
+	width: fit-content;
+	font-weight: bold;
+	margin-left: 1em;
+	margin-bottom: 0.5em;
+}
+.prevNextButtons{
+	width: fit-content;
+}
+.prevNextButtons button {
+	background-color: var(--secondary-color);
+	 color: var(--primary-color);
+	 border-radius: 5px;
+	 margin-bottom: 0.5em;
+     border: 1px solid var(--secondary-color);
+}
+
 
 /*
 --------------------------------------------------------------------
