@@ -28,6 +28,7 @@ import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
 import Estuary.Widgets.EnsembleStatus
+import Estuary.Widgets.Tempo
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
@@ -49,6 +50,14 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
+
+viewWidget er TempoView = do
+  ctx <- askContext
+  iCtx <- initialValueOfDyn ctx
+  let initialTempo = (tempo . ensemble . ensembleC) iCtx
+  tempoDelta <- liftR $ holdDyn initialTempo $ fmapMaybe lastTempoChange er
+  tempoE <- tempoWidget tempoDelta
+  return $ fmap WriteTempo tempoE
 
 viewWidget er (Paragraph t) = liftR2 (divClass "paragraph code-font") $ translatedText t >> return never
 

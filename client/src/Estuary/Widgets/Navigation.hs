@@ -43,6 +43,7 @@ import Estuary.Widgets.View
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Tutorial
 import Estuary.Tutorials.TidalCyclesBasics
+import Estuary.Tutorials.Punctual
 
 data Navigation =
   Splash |
@@ -83,14 +84,21 @@ page ctx _ wsDown Splash = do
 
 page ctx _ wsDown TutorialList = do
   divClass "ui-font primary-color" $ text "Select a tutorial:"
-  navTidalCyclesBasics <- clickableDivClass' "TidalCycles Basics" "tutorialButton ui-buttons other-borders code-font" (TutorialNav "TidalCyclesBasics") 
-  let nav = leftmost [navTidalCyclesBasics]
+  navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ button "TidalCycles"
+  navPunctualTutorial <- liftM (TutorialNav "Punctual" <$) $ button "Punctual"
+  let nav = leftmost [navTidalCyclesBasics,navPunctualTutorial]
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (nav, (leaveEnsemble, never, never))
 
 page ctx renderInfo wsDown (TutorialNav "TidalCyclesBasics") = do
   let ensResponses = fmap justEnsembleResponses wsDown
   (ensReq,hs) <- runEditor (runTutorial tidalCyclesBasics ensResponses) ctx renderInfo
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  return (never,(leaveEnsemble,ensReq,hs))
+
+page ctx renderInfo wsDown (TutorialNav "Punctual") = do
+  let ensResponses = fmap justEnsembleResponses wsDown
+  (ensReq,hs) <- runEditor (runTutorial punctualTutorial ensResponses) ctx renderInfo
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never,(leaveEnsemble,ensReq,hs))
 
