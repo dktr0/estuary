@@ -11,7 +11,7 @@ import Estuary.Widgets.Generic
 
 --render multiple sub-help files
 noHelpFile :: MonadWidget t m => m ()
-noHelpFile = divClass "languageHelp" $ do
+noHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
     about
     return ()
 

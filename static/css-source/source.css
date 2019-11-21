@@ -54,11 +54,21 @@ body, .primary-color {
 
 
 /* modifies the help view (source)*/
+
+.languageHelpContainer{
+	display: flex;
+	height: 100%;
+	width: 100%;
+	padding-right: 1em;
+	box-sizing: border-box;
+
+}
+
 .languageHelp {
+	width: 100%;
   overflow:scroll;
-  padding-right: 1.8em;
-  height:100%;
-  max-height: 48px
+  padding-right: 0.5em;
+  padding-left: 0.5em;
 }
 
 .languageHelp::-webkit-scrollbar  {
@@ -219,7 +229,6 @@ grid-template-rows: 5vh 85vh 10vh;
 }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
-
 	min-width: 50%;
 	box-sizing: border-box;
 	padding: 0.5em;
@@ -409,7 +418,7 @@ grid-template-rows: 5vh 85vh 10vh;
 /* coding textarea */
 .labelAndTextPattern {
 	flex-grow:1;
-	display: grid;
+	display: flex;
     overflow: hidden;
 }
 
@@ -446,6 +455,9 @@ grid-template-rows: 5vh 85vh 10vh;
 }
 
 /*contains the tempo and coding textareas  */
+.width-100-percent{
+	width: 100%;
+}
 
 .textInputToEndOfLine  {
 	height:100%;

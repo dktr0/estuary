@@ -13,7 +13,7 @@ import Estuary.Reflex.Utility
 
 --render multiple sub-help files
 laCalleHelpFile :: MonadWidget t m => m ()
-laCalleHelpFile = divClass "languageHelp" $ do
+laCalleHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
     about
     holaChoche
     unasChelas

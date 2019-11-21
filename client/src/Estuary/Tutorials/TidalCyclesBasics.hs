@@ -32,7 +32,7 @@ tidalCyclesBasics = Tutorial {
         Example (TidalTextNotation MiniTidal) "s \"bd*2 cp\"",
         Example (TidalTextNotation MiniTidal) "s \"bd cp*2\"",
         Example (TidalTextNotation MiniTidal) "s \"bd cp sn\"",
-        TextView 1 5
+        TextView 1 0
       ]
     }),
     (TutorialPage {
@@ -45,7 +45,7 @@ tidalCyclesBasics = Tutorial {
           (Español,"Aqui esta la segunda pagina."),
           (Français,"Ici se trouve la deuxieme page.")],
         Example (TidalTextNotation MiniTidal) "s \"arpy*8\"",
-        TextView 1 5
+        TextView 1 0
       ]
     })
 

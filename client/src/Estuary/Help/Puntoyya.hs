@@ -11,7 +11,7 @@ import Estuary.Reflex.Utility
 
 --render multiple sub-help files
 puntoyyaHelpFile :: MonadWidget t m => m ()
-puntoyyaHelpFile = divClass "languageHelp" $ do
+puntoyyaHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
   about
   functionRef ". _ ."
   functionRef ". - ."

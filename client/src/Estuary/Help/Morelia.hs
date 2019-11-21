@@ -13,7 +13,7 @@ import Estuary.Reflex.Utility
 
 --render multiple sub-help files
 moreliaHelpFile :: MonadWidget t m => m ()
-moreliaHelpFile = divClass "languageHelp" $ do
+moreliaHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
   about
   functionRef "~"
   functionRef "X"

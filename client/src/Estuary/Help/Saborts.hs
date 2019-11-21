@@ -9,7 +9,7 @@ import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility
 
 sabortsHelpFile :: MonadWidget t m => m ()
-sabortsHelpFile = divClass "languageHelp" $ do
+sabortsHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
   about
   functionRef "g"
   functionRef "b"
