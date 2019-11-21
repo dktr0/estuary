@@ -44,16 +44,9 @@ ensembleView ensResponses = do
     divClass "ensembleName ui-font primary-color" $ text $ "Ensemble: " <> eName
     divClass "ensembleHandle ui-font primary-color" $ text $ "UserName: " <> uName
 
-  -- Tempo UI
-  let initialTempo = (tempo . ensemble . ensembleC) iCtx
-  tempoDelta <- liftR $ holdDyn initialTempo $ fmapMaybe lastTempoChange ensResponses
-  tempoE <- tempoWidget tempoDelta
-  let tempoRequests = fmap WriteTempo tempoE
-
   -- Dynamic core View UI
   currentView <- liftR $ holdUniqDyn $ fmap (activeView . ensembleC) ctx
   let dynamicViews = fmap (viewWidget ensResponses) currentView -- Dynamic t (Editor t m (Event t EnsembleRequest))
   x <- dynEditor dynamicViews -- Dynamic t (Event t EnsembleRequest)
   let widgetRequests = switchDyn x -- Event t EnsembleRequest
-
-  return $ leftmost [tempoRequests,widgetRequests]
+  return widgetRequests

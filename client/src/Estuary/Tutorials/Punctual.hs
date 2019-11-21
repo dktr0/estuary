@@ -41,11 +41,43 @@ punctualTutorial = Tutorial {
           Paragraph $ Map.fromList [
             (English,"In the above, the word 'tri' refers to a 'triangle wave'. The '60m' '48m' and '72m' change the frequency of the oscillator resulting in different pitches. You can make it quieter by decreasing the -20db to lower values such as -30db or -40db. We can also use Punctual to make sound and visuals at the same time, using similar language. In the example below note how one line ends with => rgb and is drawing a circle on the screen, while the other line ends with => splay and is causing some sound to happen. Notice also that the two lines have a semicolon (;) between them. You can even put the two statements on the same line but you must have a semicolon (;) between them. When you are finished playing with these examples, you can click Next (above) to go to the next page of this tutorial.")
             ],
-          Example Punctual "circle 0.5 -0.5 0.1 => rgb;\ntri 63m * -20db => splay"            
+          Example Punctual "circle 0.5 -0.5 0.1 => rgb;\ntri 63m * -20db => splay"
+          ],
+        TextView 1 0
+      ]
+    }),
+    (TutorialPage {
+      tutorialPageTitle = Map.fromList [
+        (English,"More drawing examples")
+      ],
+      tutorialPageView = GridView 1 2 [
+        Views [
+          Paragraph $ Map.fromList [
+            (English,"Here are some of the simple shapes we can make using Punctual, apart from the circle introduced on the previous page. Copying the examples and then changing the numbers to other numbers will help you figure out what the numbers mean:")
+            ],
+          Example Punctual "vline 0 => rgb",
+          Example Punctual "hline 0 => rgb",
+          Example Punctual "rect 0 0 0.5 0.5 => rgb",
+          Example Punctual "point 0 => rgb",
+          Paragraph $ Map.fromList [
+            (English,"We can replace any individual number with a set of multiple numbers. When we do this we get different results on different \"channels\" of the visual output - red, green, and blue:")
+            ],
+          Example Punctual "vline [-0.25,0,0.25] => rgb",
+          Example Punctual "circle [-0.25,0,0.25] => rgb",
+          Paragraph $ Map.fromList [
+            (English,"We can also replace any number with an oscillator with a low frequency so that things move around:")
+            ],
+          Example Punctual "hline (tri 1) => rgb",
+          Example Punctual "hline (tri 2) => rgb",
+          Example Punctual "hline (tri 0.25) => rgb",
+          Paragraph $ Map.fromList [
+            (English,"Notice the brackets in the preceding examples - they are very important as they make sure that the number gets applied to the oscillator:")
+            ]
           ],
         TextView 1 0
       ]
     })
+
 
   ]
 }

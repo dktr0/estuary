@@ -787,7 +787,7 @@ table, tr, td {border: none;}
 	display: flex;
 	border: none;
 	width: 25%;
-	display: none;
+	/* display: none; */
 }
 
 .ensembleHandle, .ensemblePassword {

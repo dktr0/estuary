@@ -177,7 +177,7 @@ performDelayHints irc hs = do
   where
     f (SetGlobalDelayTime x) = Just x
     f _ = Nothing
-
+  
 
 changeTheme :: MonadWidget t m => Event t Text -> m ()
 changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref) newStyle
