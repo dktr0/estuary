@@ -887,28 +887,33 @@ width: 8em;
 
 }
 
-.viewParentContainer{
+/* the Views view contains any number of children, some of which are fixed height, some of which grow to use available space
+ (a) so it is a flex parent in the column direction that claims 100% of the available height [display, flex-direction, height], and
+ (b) ??? does it */
+.views {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
 .gridView {
-	height: 100%;
-    display: grid;
-    width:100%;
-  }
+  flex-grow: 1;
+  height: 100%;
+  display: grid;
+  width:100%;
+}
 
-  .gridChild {
-	height:100%;
-  	display: flex;
-  	flex-direction: column;
-  }
+.gridChild {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 
-  .borderDiv {
-	height: 100%;
-  	display: flex;
-  	flex-direction: column;
-    border: 1px solid var(--secondary-color);
-    width: 100%;
-  }
+.borderDiv {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--secondary-color);
+  width: 100%;
+}
