@@ -11,7 +11,7 @@ import Estuary.Reflex.Utility
 
 --render multiple sub-help files
 crudoHelpFile :: MonadWidget t m => m ()
-crudoHelpFile = divClass "languageHelp" $ do
+crudoHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
   about
   functionRef "trueno"
   functionRef "río"

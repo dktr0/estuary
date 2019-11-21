@@ -10,7 +10,7 @@ import Estuary.Reflex.Utility
 
 --render multiple sub-help files
 miniTidalHelpFile :: MonadWidget t m => m ()
-miniTidalHelpFile = divClass "languageHelp" $ do
+miniTidalHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
     about
     functionRef "silence"
     functionRef "stack"

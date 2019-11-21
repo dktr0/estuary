@@ -2,6 +2,7 @@
 
 module Estuary.Tutorials.TidalCyclesBasics (tidalCyclesBasics) where
 
+import Reflex.Dom
 import Data.Text (Text)
 import qualified Data.Map.Strict as Map
 import qualified Data.IntMap.Strict as IntMap
@@ -15,11 +16,12 @@ import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 
-tidalCyclesBasics :: Tutorial
+
+tidalCyclesBasics ::  Tutorial
 tidalCyclesBasics = Tutorial {
-  tutorialTitle = Map.fromList [
-    (English,"TidalCycles basics")
-  ],
+  tutorialTitle =  Map.fromList [
+    (English, "TidalCycles basics")
+    ],
   tutorialPages = Seq.fromList [
     TutorialPage {
       tutorialPageTitle = Map.fromList [
@@ -37,9 +39,9 @@ tidalCyclesBasics = Tutorial {
           Paragraph $ Map.fromList [
             (English, "In the text field above, we've specified a pattern of samples (specifically 'bd' and 'cp') that fill up a 'cycle' (which can be thought of sort of like musical bars if you like). Everything that appears within the quotes (\"\") divides a cycle into equal parts: the \"bd\" sample gets the first half of the cycle, and the \"cp\" gets the second half. If we put a third element into our pattern we get a different rhythm - each sample gets 1/3rd of a cycle:")
             ],
-          Example (TidalTextNotation MiniTidal) "s \"bd cp hh\"",
+          Example (TidalTextNotation MiniTidal) "s \"bd cp sn\"",
           Paragraph $ Map.fromList [
-            (English,"A \"~\" placed in a Tidal pattern has a special designation as a 'rest' (silence). So we can get rid of the 'hh' in the above example but preserve the rhythm:")
+            (English,"A \"~\" placed in a Tidal pattern has a special designation as a 'rest' (silence). So we can get rid of the 'sn' in the above example but preserve the rhythm:")
             ],
           Example (TidalTextNotation MiniTidal) "s \"bd cp ~\"",
           Paragraph $ Map.fromList [
@@ -58,15 +60,15 @@ tidalCyclesBasics = Tutorial {
           Paragraph $ Map.fromList [
             (English,"Sometimes we want to subdivide a part of a cycle - for instance if we want 2 samples to play in the last half of a cycle instead of just one: ")
             ],
-          Example (TidalTextNotation MiniTidal) "s \"bd [cp hh]\"",
+          Example (TidalTextNotation MiniTidal) "s \"bd [cp sn]\"",
           Paragraph $ Map.fromList [
             (English,"Or if we want two samples to play at the same time we can enclose them in square brackets with a comma between them: ")
             ],
-          Example (TidalTextNotation MiniTidal) "s \"bd [cp,hh]\"",
+          Example (TidalTextNotation MiniTidal) "s \"bd [cp,sn]\"",
           Paragraph $ Map.fromList [
             (English,"Both ideas together: ")
             ],
-          Example (TidalTextNotation MiniTidal) "s \"bd [cp,hh casio]\""
+          Example (TidalTextNotation MiniTidal) "s \"bd [cp,sn casio]\""
           ],
         TextView 1 0
       ]
@@ -82,7 +84,7 @@ tidalCyclesBasics = Tutorial {
             ],
           Example (TidalTextNotation MiniTidal) "fast 2 $ s \"bd cp\"",
           Example (TidalTextNotation MiniTidal) "jux (fast 2) $ s \"bd cp\"",
-          Example (TidalTextNotation MiniTidal) "s \"bd? sn? hh? cp?",
+          Example (TidalTextNotation MiniTidal) "s \"bd? sn? hh? cp?\"",
           Example (TidalTextNotation MiniTidal) "every 4 (fast 4) $ s \"bd cp\"",
           Example (TidalTextNotation MiniTidal) "s \"arpy*8\" # note \"0 2 4 5 7 9 11 12\"",
           Example (TidalTextNotation MiniTidal) "s \"glitch\" # n (irand 8)",

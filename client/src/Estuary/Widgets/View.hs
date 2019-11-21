@@ -71,7 +71,6 @@ viewWidget er (GridView c r vs) = liftR2 viewsContainer $ liftM leftmost $ mapM 
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
     setColumnsAndRows  = setNumColumns <> setNumRows
 
-
 zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
   -> (Dynamic t a -> Editor t m (Variable t a))

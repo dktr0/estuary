@@ -40,18 +40,49 @@ body, .primary-color {
 
 /* for the Paragraph element in the view system, which is primarily used in tutorials for explanatory text */
 .paragraph {
-  max-width: 40em;
-  overflow: scroll;
-  color: var(--primary-color);
+	padding: 0.15em;
+   	overflow-y: auto;
+   	text-align: justify;
 }
+
+.paragraph::-webkit-scrollbar  {
+    width: 10px;
+    height: 10px;
+}
+
+.paragraph::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.paragraph::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.paragraph::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
+
+
 
 /* for the Example element in the view system, which is primarly used in tutorials for clickable examples */
 .example {
-  max-width: 40em;
+	cursor: pointer;
+	margin:0.25em;
+	width: fit-content;
   overflow: hidden;
-  color: var(--primary-color);
+	border:none;
+	padding: 0.25em;
+	border-radius: 5px;
+    box-shadow: 0px 0.25px 4px 0.025px grey;
+    margin-bottom: auto;
 }
 
+.example:hover{
+	border: 1px dashed var(--primary-color);
+}
 
 /* modifies the help view (source)*/
 .languageHelp {
@@ -576,6 +607,13 @@ ______________________________
 
 .panel button {
 	border-color: var(--primary-color)}
+
+.tutorialButton {
+	cursor: pointer;
+	margin-top: 1em;
+	padding: 4px;
+	width: fit-content;
+}
 
 /*
 --------------------------------------------------------------------
