@@ -40,19 +40,25 @@ body, .primary-color {
 
 /* for the Paragraph element in the view system, which is primarily used in tutorials for explanatory text */
 .paragraph {
-  max-width: 40em;
-  overflow: scroll;
-  color: var(--primary-color);
+		overflow: auto;
+		padding: 1em;
+		text-align: justify;
 }
 
 /* for the Example element in the view system, which is primarly used in tutorials for clickable examples */
 .example {
-  max-width: 40em;
-  overflow: hidden;
-  color: var(--primary-color);
+    width: fit-content;
+    overflow: hidden;
+	padding: 0.125em;
+	border-radius: 5px;
+    box-shadow: 0px 0.25px 4px 0.025px  var(--primary-color);
+    margin-bottom: auto;
+  }
+
+.example:hover {
+	border-bottom: 1.5px dashed var(--primary-color);
+	cursor:pointer;
 }
-
-
 /* modifies the help view (source)*/
 
 .languageHelpContainer{
@@ -92,10 +98,6 @@ body, .primary-color {
 }
 
 
-.header {grid-area: header;
-/* background-color: aliceblue */
-padding-left: 10px;
-}
 
 .page {grid-area: page;
     height: 85vh;
@@ -117,36 +119,19 @@ grid-template-rows: 5vh 85vh 10vh;
 
 }
 
-.estuary > .header {
-/*   background-color: rgba(25, 255, 255, 0.8); */
-  text-align: center;
-  border: none;
-}
-
-
-.estuary > .footer {
-/*   background-color: rgba(25, 255, 255, 0.8); */
-/*   text-align: center; */
-/*   padding: 20px 0; */
-/*   font-size:1.3vw; */
-  border: none;
-}
 
 .btn {
 	cursor: pointer;
 }
 
-/* source  */
 .header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-  /* Force the browser to try it's best to float properly on overflow.
-     When the window doesn't fit the entire header, this ensures that moving
-     the controls to the next line doesn't leak out of it's parent container
-     preventing interation with it. */
-  overflow: hidden;
+   overflow: hidden;
+  grid-area: header;
+  padding-left: 10px;
+   text-align: center;
+  border: none;
 }
 
-.page {
-}
 
 /* source  */
 .peak{
@@ -219,6 +204,7 @@ grid-template-rows: 5vh 85vh 10vh;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+    border: none;
 }
 
 .splash-container { /*contains the four buttons in the home page  (source) */
@@ -229,6 +215,7 @@ grid-template-rows: 5vh 85vh 10vh;
 }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
+
 	min-width: 50%;
 	box-sizing: border-box;
 	padding: 0.5em;
@@ -418,7 +405,7 @@ grid-template-rows: 5vh 85vh 10vh;
 /* coding textarea */
 .labelAndTextPattern {
 	flex-grow:1;
-	display: flex;
+	display: grid;
     overflow: hidden;
 }
 
@@ -455,9 +442,6 @@ grid-template-rows: 5vh 85vh 10vh;
 }
 
 /*contains the tempo and coding textareas  */
-.width-100-percent{
-	width: 100%;
-}
 
 .textInputToEndOfLine  {
 	height:100%;
@@ -588,6 +572,13 @@ ______________________________
 
 .panel button {
 	border-color: var(--primary-color)}
+
+.tutorialButton {
+	margin-top: 1em;
+	padding: 4px;
+	width: fit-content;
+	cursor: pointer;
+}
 
 /*
 --------------------------------------------------------------------

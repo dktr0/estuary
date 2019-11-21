@@ -83,7 +83,7 @@ page ctx _ wsDown Splash = do
 
 page ctx _ wsDown TutorialList = do
   divClass "ui-font primary-color" $ text "Select a tutorial:"
-  navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ button "TidalCycles Basics"
+  navTidalCyclesBasics <- clickableDivClass' "TidalCycles Basics" "tutorialButton ui-buttons other-borders code-font" (TutorialNav "TidalCyclesBasics") 
   let nav = leftmost [navTidalCyclesBasics]
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (nav, (leaveEnsemble, never, never))

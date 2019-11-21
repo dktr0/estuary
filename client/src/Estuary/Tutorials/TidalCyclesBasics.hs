@@ -2,6 +2,7 @@
 
 module Estuary.Tutorials.TidalCyclesBasics (tidalCyclesBasics) where
 
+import Reflex.Dom
 import Data.Text (Text)
 import qualified Data.Map.Strict as Map
 import qualified Data.IntMap.Strict as IntMap
@@ -15,16 +16,17 @@ import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 
-tidalCyclesBasics :: Tutorial
+
+tidalCyclesBasics ::  Tutorial
 tidalCyclesBasics = Tutorial {
-  tutorialTitle = Map.fromList [
-    (English,"TidalCycles basics")
-  ],
+  tutorialTitle =  Map.fromList [
+    (English, "TidalCycles basics")
+    ],
   tutorialPages = Seq.fromList [
     (TutorialPage {
-      tutorialPageTitle = Map.fromList [
+      tutorialPageTitle =  Map.fromList [
         (English,"Welcome!")
-      ],
+        ],
       tutorialPageView = Views [
         Views [
           Paragraph $ Map.fromList [(English,"This tutorial will cover some of the basics of making music with MiniTidal. MiniTidal is a subset of TidalCycles that supports most typical TidalCycles operations (but not all), but everything shown here (and anything that works with MiniTidal) will also work with TidalCycles. Lets make some sound!")],

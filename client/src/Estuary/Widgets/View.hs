@@ -65,6 +65,7 @@ viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ liftR2 (divClass "
 
 viewWidget er (Views xs) = liftM leftmost $ mapM (\x -> liftR2 (divClass "gridChild") $ viewWidget er x) xs
 
+
 viewWidget er (GridView c r vs) =  liftR2 viewParentContainer $ liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
   where
     viewParentContainer x = divClass "viewParentContainer" $ x
@@ -74,7 +75,6 @@ viewWidget er (GridView c r vs) =  liftR2 viewParentContainer $ liftR2 viewsCont
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
     test = "--test: " <> showt r <> ";"
     setColumnsAndRows  = setNumColumns <> setNumRows <> test
-
 
 zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
