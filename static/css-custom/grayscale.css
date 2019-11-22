@@ -7,14 +7,14 @@ More advanced customization is available through CSS classes within this documen
 
 :root {
 /* sets the background color */
-  --background-color:  rgb(182, 178, 247);
+  --background-color:  #9E9E9E;
 
 /* set the color of all text and typically some borders*/
   --primary-color:   #0e0e0e;
 ;
 
 /* sets the background color of buttons and other borders */
-  --secondary-color: hsl(0,0%,10%);
+  --secondary-color: hsl(0, 3%, 70%);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;

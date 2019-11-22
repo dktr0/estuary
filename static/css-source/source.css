@@ -620,11 +620,18 @@ ______________________________
 	height: 100%;
 }
 
-.tutorialButton {
+.tutorialButton{
+	width: fit-content;
+}
+
+.tutorialButton button {
 	cursor: pointer;
 	margin-top: 1em;
 	padding: 4px;
-	width: fit-content;
+	background-color: var(--secondary-color);
+	color: var(--primary-color);
+	border-radius: 5px;
+    border: 1px solid var(--secondary-color);
 }
 
 .tutorialTitle{
