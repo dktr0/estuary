@@ -193,7 +193,7 @@ page ctx renderInfo _ Solo = do
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
 joinButton x = do
-  b <- clickableDivClass'' x "ui-font primary-color" ()
+  b <- clickableDivClass'' x "joinButton ui-font ui-buttons other-borders" ()
   return $ tag (current x) b
 
 

@@ -85,11 +85,19 @@ body, .primary-color {
 }
 
 /* modifies the help view (source)*/
+.languageHelpContainer{
+	display: flex;
+	height: 100%;
+	width: 100%;
+	padding-right: 1em;
+	box-sizing: border-box;
+
+}
+
 .languageHelp {
   overflow:scroll;
   padding-right: 1.8em;
   height:100%;
-  max-height: 48px
 }
 
 .languageHelp::-webkit-scrollbar  {
@@ -811,6 +819,14 @@ table, tr, td {border: none;}
 .terminalInput input {
 	border:none;
 	background-color: transparent;
+}
+
+.joinButton {
+
+width: fit-content;
+padding: 0.25em;
+margin-bottom: 0.25em;
+cursor: pointer;
 }
 
 .ensembleHeader {
