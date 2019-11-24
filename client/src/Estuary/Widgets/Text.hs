@@ -89,7 +89,7 @@ textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** T
     helpVisible <- toggle False infoButton
     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "width-100-percent" $ textWidget rows initialText textFuture
     languageToDisplayHelp <- (holdDyn initialParser $ updated parserValue) >>= holdUniqDyn
-    hideableWidget helpVisible "width-100-percent" $ languageHelpWidget languageToDisplayHelp
+    deferredWidget "width-100-percent" helpVisible $ fmap parserToHelp languageToDisplayHelp
     let v' = (,) <$> parserValue <*> textValue
     let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagPromptlyDyn v' $ leftmost [evalButton,shiftEnter]
