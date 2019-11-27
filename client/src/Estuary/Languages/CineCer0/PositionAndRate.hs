@@ -12,6 +12,11 @@ import Estuary.Types.Tempo
 -- type Rate = NominalDiffTime
 -- type Position = NominalDiffTime
 
+------ Manually apply a rate into a video ------
+
+applyRate:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational
+applyRate rate t length now = Just rate 
+
 
 ------ Play at Natural Rate and without alteration ------
 

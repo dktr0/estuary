@@ -40,7 +40,7 @@ emptyVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 0.0,
   height = 0.0,
-  opacity = defaultOpacity,
+  opacity = DynOp.defaultOpacity,
   blur = 0.0,
   brightness = 100,
   contrast = 100,
@@ -59,7 +59,7 @@ stringToVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 1.0,
   height = 1.0,
-  opacity = defaultOpacity,
+  opacity = DynOp.defaultOpacity,
   blur = 0.0,
   brightness = 100,
   contrast = 100,
@@ -102,8 +102,8 @@ setOpacity r vs = vs {
   opacity = \t ndt ut -> r * ((opacity vs) t ndt ut)
   }
 
-defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational
-defaultOpacity _ _ _ = 100
+-- defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational
+-- defaultOpacity _ _ _ = 100
 
 -- opacityChanger:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Rational
 -- opacityChanger arg t len now = arg  
@@ -132,6 +132,12 @@ setSaturate n vs = vs {saturate = n}
 
 --
 -- Time Functions --
+
+rate:: Rational -> VideoSpec -> VideoSpec
+rate n vs = vs {
+  playbackRate = VT.applyRate n
+}
+
 
 playNatural :: Rational -> VideoSpec -> VideoSpec
 playNatural n vs = vs {
