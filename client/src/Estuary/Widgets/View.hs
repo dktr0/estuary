@@ -28,6 +28,7 @@ import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
 import Estuary.Widgets.EnsembleStatus
+import Estuary.Widgets.Tempo
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
@@ -50,31 +51,34 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
 
-viewWidget er (Paragraph t) = liftR2 (elClass "div" "paragraph code-font") $ translatedText t >> return never
+viewWidget er TempoView = do
+  ctx <- askContext
+  iCtx <- initialValueOfDyn ctx
+  let initialTempo = (tempo . ensemble . ensembleC) iCtx
+  tempoDelta <- liftR $ holdDyn initialTempo $ fmapMaybe lastTempoChange er
+  tempoE <- tempoWidget tempoDelta
+  return $ fmap WriteTempo tempoE
+
+viewWidget er (Paragraph t) = liftR2 (divClass "paragraph code-font") $ translatedText t >> return never
 
 viewWidget er (Example n t) = do
   b <- liftR $ clickableDiv "example code-font" $ text t
   hint $ (ZoneHint 1 (TextProgram (Live (n,t) L3))) <$ b
   return never
 
-viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ liftR2 (divClass "gridChild") $ viewWidget er v
--- TODO: shouldn't be gridChild but an appropriately specific class
+viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
 
-viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ liftR2 (divClass "gridChild") $ viewWidget er v
--- TODO: shouldn't be gridChild but an appropriately specific class
+viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ viewWidget er v
 
-viewWidget er (Views xs) = liftM leftmost $ mapM (\x -> liftR2 (divClass "gridChild") $ viewWidget er x) xs
+viewWidget er (Views xs) = liftR2 (divClass "views") $ liftM leftmost $ mapM (viewWidget er) xs
 
-viewWidget er (GridView c r vs) =  liftR2 viewParentContainer $ liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
+viewWidget er (GridView c r vs) = liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
   where
-    viewParentContainer x = divClass "viewParentContainer" $ x
     viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
     defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
     setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
-    test = "--test: " <> showt r <> ";"
-    setColumnsAndRows  = setNumColumns <> setNumRows <> test
-
+    setColumnsAndRows  = setNumColumns <> setNumRows
 
 zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]

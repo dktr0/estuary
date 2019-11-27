@@ -11,7 +11,7 @@ import Estuary.Reflex.Utility
 
 --render multiple sub-help files
 punctualAudioHelpFile :: MonadWidget t m => m ()
-punctualAudioHelpFile = divClass "languageHelp" $ do
+punctualAudioHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
     about
     functionRef "sin"
     functionRef "tri"

@@ -22,7 +22,8 @@ data View =
   SequenceView Int |
   Paragraph TranslatableText | -- a block of explanatory text in multiple languages
   Example TextNotation Text | -- a clickable text-code example
-  EnsembleStatusView
+  EnsembleStatusView |
+  TempoView
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

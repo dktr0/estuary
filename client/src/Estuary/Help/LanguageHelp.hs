@@ -57,14 +57,3 @@ parserToHelp (TidalTextNotation Vocesotrevez) = vocesotrevezHelpFile
 parserToHelp (TidalTextNotation Togo) = togoHelpFile
 parserToHelp Punctual = punctualAudioHelpFile
 parserToHelp _ = noHelpFile
-
--- a widget  that renders a TidalTextNotation
-languageHelpWidget' :: (MonadWidget t m) => TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t Text)
-languageHelpWidget' = parserToHelp
-
--- a widget  that renders a dynamic TidalTextNotation
-languageHelpWidget :: (MonadWidget t m) => Dynamic t TextNotation ->  m () --this should be TidalParser -> Language -> m (Event t Text)
-languageHelpWidget t = do
-   let p = fmap parserToHelp t -- Dynamic t (m ())
-   dyn p
-   return ()

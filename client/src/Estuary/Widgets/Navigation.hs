@@ -42,7 +42,9 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.View
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Tutorial
+import Estuary.Widgets.AboutEstuary
 import Estuary.Tutorials.TidalCyclesBasics
+import Estuary.Tutorials.Punctual
 
 data Navigation =
   Splash |
@@ -83,8 +85,9 @@ page ctx _ wsDown Splash = do
 
 page ctx _ wsDown TutorialList = do
   divClass "ui-font primary-color" $ text "Select a tutorial:"
-  navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ button "TidalCycles Basics"
-  let nav = leftmost [navTidalCyclesBasics]
+  navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ divClass "tutorialButton" $ button "TidalCycles"
+  navPunctualTutorial <- liftM (TutorialNav "Punctual" <$) $ divClass "tutorialButton" $ button "Punctual"
+  let nav = leftmost [navTidalCyclesBasics,navPunctualTutorial]
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (nav, (leaveEnsemble, never, never))
 
@@ -94,12 +97,18 @@ page ctx renderInfo wsDown (TutorialNav "TidalCyclesBasics") = do
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never,(leaveEnsemble,ensReq,hs))
 
+page ctx renderInfo wsDown (TutorialNav "Punctual") = do
+  let ensResponses = fmap justEnsembleResponses wsDown
+  (ensReq,hs) <- runEditor (runTutorial punctualTutorial ensResponses) ctx renderInfo
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  return (never,(leaveEnsemble,ensReq,hs))
+
 page _ _ _ (TutorialNav _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as an 'issue' on Estuary's github site"
   return (never,(never,never,never))
 
 page ctx _ wsDown About = do
-  aboutEstuaryParagraph ctx
+  aboutEstuary ctx
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never, (leaveEnsemble, never, never))
 
@@ -185,7 +194,7 @@ page ctx renderInfo _ Solo = do
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
 joinButton x = do
-  b <- clickableDivClass'' x "ui-font primary-color" ()
+  b <- clickableDivClass'' x "joinButton ui-font ui-buttons other-borders" ()
   return $ tag (current x) b
 
 
@@ -198,44 +207,3 @@ panel c ctx targetPage title icon = do
           dynText =<< translateDyn title ctx
         divClass "splash-icon-container" $ do
           divClass "splash-icon" icon
-
-
-aboutEstuaryParagraph :: MonadWidget t m => Dynamic t Context -> m ()
-aboutEstuaryParagraph ctx = divClass "aboutEstuaryParagraph ui-font background" $ do
-  dynText =<< translationList ctx [
-    (English,"Estuary is a platform for collaboration and learning through live coding. It enables you to create sound, music, and visuals in a web browser. Key features include:"),
-    (Español,"Estuary es una plataforma de colaboración y aprendizaje a través del la codificación en vivo (live coding). Estuary le permite crear sonidos, música y visuales en el explorador de internet. Algunas características importantes de esta plataforma son:")
-    ]
-  el "ul" $ do
-    el "li" $ dynText =<< translationList ctx [
-      (English,"built-in tutorials and reference materials"),
-      (Español,"tutoriales y materiales de referencia")
-      ]
-    el "li" $ dynText =<< translationList ctx [
-      (English,"a growing collection of different interfaces and live coding languages"),
-      (Español,"una creciente colección de diferentes interfaces y lenguajes de codificación en vivo.")
-      ]
-    el "li" $ dynText =<< translationList ctx [
-      (English,"support for networked ensembles (whether in the same room or distributed around the world)"),
-      (Español,"soporte para ensambles en red (ya sea que esten en la misma sala o distribuidos en todo el mundo)")
-      ]
-    el "li" $ dynText =<< translationList ctx [
-      (English,"text localization to an expanding set of natural languages"),
-      (Español,"localización de texto a un conjunto creciente de lenguajes naturales.")
-      ]
-    el "li" $ dynText =<< translationList ctx [
-      (English,"visual customization via themes (described by CSS)"),
-      (Español,"personalización visual a través de temas (descritos por CSS).")
-      ]
-  dynText =<< translationList ctx [
-    (English,"The development of Estuary is the result of ongoing collaborative work that has been \
-    \supported by two grants from Canada's Social Sciences and Humanities Research Council (SSHRC) - \
-    \initially for the project \"Projectional interfaces for musical live coding\", and more recently \
-    \as part of the project \"Platforms  and  practices  for networked, language-neutral live coding\". \ \Estuary builds upon, and depends on, the work of many others, including but not limited to all \
-    \those who contribute to Reflex and TidalCycles. Estuary is free and open source software, released \ \ under the terms of the GNU Public License (version 3)."),
-    (Español,"El desarrollo de Estuary es el resultado del trabajo colaborativo que se ha realizado \
-    \apoyado por dos becas del Consejo de Investigación de Ciencias Sociales y Humanidades de Canadá (SSHRC) -\
-    \inicialmente para el proyecto \"Interfaces proyectivas para la codificación musical en vivo\", y más recientemente \
-    \como parte del proyecto \"Plataformas y prácticas para la codificación en vivo en red y en idioma neutral\". Estuary se construye desde del trabajo de muchos otres, incluyendo pero no limitado a todes \
-    \aquellos que contribuyen a Reflex y TidalCycles. Estuary es un software gratuito y de código abierto, publicado \ \ bajo los términos de la Licencia Pública GNU (versión 3).")
-    ]

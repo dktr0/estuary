@@ -64,14 +64,15 @@ textProgramEditor nRows errorDyn updates = do
 textProgramWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) -> Int
   -> TextProgram -> Event t TextProgram -> m (Event t TextProgram,Event t [Hint])
 textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
+
   let deltaFuture = fmap forEditing delta
   let parserFuture = fmap fst deltaFuture
   let textFuture = fmap snd deltaFuture
+  let initialParser = fst $ forEditing i
+  let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
+  d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
-    let initialParser = fst $ forEditing i
-    let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- dynButton =<< translateDyn Term.Eval ctx
       e' <- holdUniqDyn e
@@ -87,8 +88,8 @@ textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** T
     textVisible <- toggle True infoButton
     helpVisible <- toggle False infoButton
     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "width-100-percent" $ textWidget rows initialText textFuture
-    let languageToDisplayHelp = ( _dropdown_value d)
-    hideableWidget helpVisible "width-100-percent" $ languageHelpWidget languageToDisplayHelp
+    languageToDisplayHelp <- (holdDyn initialParser $ updated parserValue) >>= holdUniqDyn
+    deferredWidget "width-100-percent" helpVisible $ fmap parserToHelp languageToDisplayHelp
     let v' = (,) <$> parserValue <*> textValue
     let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent = tagPromptlyDyn v' $ leftmost [evalButton,shiftEnter]

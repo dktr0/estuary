@@ -15,15 +15,15 @@ import Estuary.Widgets.View
 
 runTutorial :: MonadWidget t m => Tutorial -> Event t [EnsembleResponse]
   -> Editor t m (Event t EnsembleRequest)
-runTutorial t responsesDown = do
-  translatedText $ tutorialTitle t
+runTutorial t responsesDown =  liftR2 (divClass "tutorialContainer") $ do
+  liftR2 (divClass "tutorialTitle code-font") $ translatedText $ tutorialTitle t
   curPage <- liftR $ mdo
     let nPages = Seq.length $ tutorialPages t
     cp <- holdDyn 0 pageNavEvents
     let prevPage = fmap (\x -> max (x-1) 0) cp
     let nextPage = fmap (\x -> min (x+1) (nPages-1)) cp
-    navPrev <- liftM (tag $ current prevPage) $ button "prev" -- *** TODO: should be translated + active/inactive text, disactivated when on first page
-    navNext <- liftM (tag $ current nextPage) $ button "next" -- *** TODO: should be translated + active/inactive
+    navPrev <- liftM (tag $ current prevPage)  $ divClass "prevNextButtons" $ do button "prev" -- *** TODO: should be translated + active/inactive text, disactivated when on first page
+    navNext <- liftM (tag $ current nextPage) $ divClass "prevNextButtons" $ do button "next" -- *** TODO: should be translated + active/inactive
     let pageNavEvents = leftmost [navPrev,navNext]
     return cp
   let initialPage = runTutorialPage (index (tutorialPages t) 0) responsesDown
@@ -34,5 +34,5 @@ runTutorial t responsesDown = do
 runTutorialPage :: MonadWidget t m => TutorialPage -> Event t [EnsembleResponse]
   -> Editor t m (Event t EnsembleRequest)
 runTutorialPage p responsesDown = do
-  translatedText $ tutorialPageTitle p
+  liftR2 (divClass "tutorialPageTitle code-font") $ translatedText $ tutorialPageTitle p
   viewWidget responsesDown $ tutorialPageView p
