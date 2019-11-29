@@ -70,9 +70,9 @@ textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** T
   let textFuture = fmap snd deltaFuture
   let initialParser = fst $ forEditing i
   let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-  d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
+    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- dynButton =<< translateDyn Term.Eval ctx
       e' <- holdUniqDyn e
