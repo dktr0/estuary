@@ -18,6 +18,7 @@ body {
  	height: 100%;
 	margin: 0;
 	background: var(--background-color);
+	overflow: auto;
 }
 
 
@@ -25,6 +26,27 @@ body {
 body, .primary-color {
 	 color: var( --primary-color);
 }
+
+body::-webkit-scrollbar  {
+    width: 0.5%;
+    height: 0px;
+}
+
+body::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.body::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
+
 
 
 /*styles the canvas and svg display */
@@ -123,7 +145,9 @@ body, .primary-color {
 
 .header {grid-area: header;
 /* background-color: aliceblue */
-padding-left: 10px;
+	padding-left: 10px;
+	 overflow: hidden;
+    white-space: nowrap;
 }
 
 .page {grid-area: page;
@@ -137,7 +161,7 @@ padding-left: 10px;
 .estuary { /* the entire interface, contains .header .page and .footer */
   height: 100vh;
 display: grid;
-grid-template-rows: 5vh 85vh 10vh;
+grid-template-rows: min-content 85vh 10vh;
   grid-template-areas:
     'header '
     'page'
@@ -251,14 +275,13 @@ grid-template-rows: 5vh 85vh 10vh;
 }
 
 .splash-container { /*contains the four buttons in the home page  (source) */
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: auto auto;
 	width: 100%;
 	height: 100%;
 }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
-
 	min-width: 50%;
 	box-sizing: border-box;
 	padding: 0.5em;
@@ -295,7 +318,8 @@ grid-template-rows: 5vh 85vh 10vh;
 	padding-top: 3vh;
 	margin-bottom: 1%;
 	margin: auto;
-	font-size: calc(16px + 1.5vw); /* scales a bit nicer with the viewport */
+	/* scales a bit nicer with the viewport */
+ 	font-size: calc(80% + 1.5vw);
 }
 
 .splash-icon-container {
@@ -335,7 +359,36 @@ grid-template-rows: 5vh 85vh 10vh;
 }
 
 /*modifies the chat messages (source)*/
-.chatMessage { display: block}
+.chatMessageContainer {
+	overflow: auto;
+	height: 2em;
+}
+
+.chatMessage {
+display: block;
+
+}
+
+
+.chatMessageContainer::-webkit-scrollbar  {
+    width: 10px;
+    height: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
 
 .translationDNEWidget { /*source*/
 	text-align: center;
@@ -907,7 +960,7 @@ display: inline-flex;
      max-height: 55px
 }
 
-.resourceWidgetContainer::-webkit-scrollbar  {
+.resourceWidgetContainerm::-webkit-scrollbar  {
     width: 10px;
     height: 10px;
 }
