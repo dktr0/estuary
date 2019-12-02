@@ -198,7 +198,7 @@ selfCertificates:
 	-mkdir staging
 	-mkdir dev-staging
 	openssl genrsa -out staging/privkey.pem 2048
-	openssl req -new -key staging/privkey.pem -out staging/cert.csr
+	openssl req -new -key staging/privkey.pem -out staging/cert.csr -addext extendedKeyUsage=serverAuth -addext subjectAltName=DNS:localhost
 	openssl x509 -req -in staging/cert.csr -signkey staging/privkey.pem -out staging/cert.pem
 	cp staging/privkey.pem dev-staging/privkey.pem
 	cp staging/cert.csr dev-staging/cert.csr
