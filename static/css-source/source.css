@@ -144,6 +144,8 @@ body::-webkit-scrollbar-thumb {
 
 
 .header {grid-area: header;
+display: flex;
+flex-direction: row-reverse;
 /* background-color: aliceblue */
 	padding-left: 10px;
 	 overflow: hidden;
@@ -225,14 +227,18 @@ grid-template-rows: min-content 85vh 10vh;
 
 .config-toolbar {
 	padding-right: 1em;
-	float: right;
+/* 	float: right; */
 	display: block;
+	text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .config-entry {
 	border-right: 1px solid;
 	padding: 0.25em 0.5em;
 	display: inline-block;
+
 }
 
 .config-entry:last-child {
@@ -356,6 +362,10 @@ grid-template-rows: min-content 85vh 10vh;
 .webSocketButtons {/*contains the "send" button and "terminal/chat" label (source)*/
 	display: inline;
 	margin-right: 5px;
+	overflow:hidden;
+	text-overflow: ellipsis;
+    overflow: hidden;
+
 }
 
 /*modifies the chat messages (source)*/
@@ -854,6 +864,8 @@ table, tr, td {border: none;}
 
 .terminal{
 	padding-left: 0.7em;
+	overflow:hidden;
+
 
 }
 
@@ -861,7 +873,6 @@ table, tr, td {border: none;}
 	display: flex;
 	flex-direction: row;
 	border:none;
-
 }
 
 .terminalInput {
