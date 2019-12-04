@@ -142,66 +142,49 @@ body::-webkit-scrollbar-thumb {
 	background-color: transparent;
 }
 
-
-.header {grid-area: header;
-display: flex;
-flex-direction: row-reverse;
-/* background-color: aliceblue */
-	padding-left: 10px;
-	 overflow: hidden;
-    white-space: nowrap;
-}
-
-.page {grid-area: page;
-    height: 85vh;
-
-}
-
-
-
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
   height: 100vh;
-display: grid;
-grid-template-rows: min-content 85vh 10vh;
-  grid-template-areas:
-    'header '
-    'page'
-    'footer';
-  width: 99vw;
+display: flex;
+flex-direction:column;
+}
+
+.header {
+	flex-grow:0;
+	display: flex;
+	flex-direction: row-reverse;
+	padding-left: 10px;
+	 overflow: hidden;
+    white-space: nowrap;
+    border: none;
+}
+
+.page {
+	flex:1;
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+	left: 0px;
+	top: 0px;
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+	padding-top: 5px;
+/* 	padding-bottom: 5px; */
+	padding-left: 15px;
+	padding-right: 15px;
+/* 	margin-bottom:0.25em; */
 
 }
 
-.estuary > .header {
-/*   background-color: rgba(25, 255, 255, 0.8); */
-  text-align: center;
-  border: none;
-}
+.footer{
+	flex-grow:0;
+	border: none;}
 
 
-.estuary > .footer {
-/*   background-color: rgba(25, 255, 255, 0.8); */
-/*   text-align: center; */
-/*   padding: 20px 0; */
-/*   font-size:1.3vw; */
-  border: none;
-}
 
 .btn {
 	cursor: pointer;
 }
 
-/* source  */
-.header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-  /* Force the browser to try it's best to float properly on overflow.
-     When the window doesn't fit the entire header, this ensures that moving
-     the controls to the next line doesn't leak out of it's parent container
-     preventing interation with it. */
-  overflow: hidden;
-}
 
-.page {
-}
 
 /* source  */
 .peak{
@@ -245,20 +228,6 @@ grid-template-rows: min-content 85vh 10vh;
 	border-right: none;
 }
 
-/* contains the navigation buttons on the homepage (source)*/
-.page {
-	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
-	left: 0px;
-	top: 0px;
-	border-top: 1px solid;
-	border-bottom: 1px solid;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-	margin-bottom:0.25em;
-
-}
 
 .ourPopUp {
 	display:inline-block;
