@@ -22,7 +22,6 @@ contrast [c] $ -- in which 100 = video contrast (0-99 = less, 100++ = more) <br 
 grayscale [g] $ -- in which 0 = no grayscale, 100 = full grayscale <br />
 saturate [s] $ -- in which 1.0 = video saturation (1++ = more) <br />
 
--- https://github.com/jac307/memoriasVideoSamples/blob/master/mariposa/08.mov?raw=true
 
 ## Time Functions
 
