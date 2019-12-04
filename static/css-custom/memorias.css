@@ -1,0 +1,124 @@
+/*
+--------------------------------------------------------------------
+Welcome to the 'bubble' theme template: For quick Estuary's interface customization, modify the colors below.
+More advanced customization is available through CSS classes within this document.
+--------------------------------------------------------------------
+*/
+
+
+@font-face {
+  font-family: Dosis;
+  font-style: normal;
+  font-weight: 400;
+  src: url('https://fonts.googleapis.com/css?family=Dosis');
+}
+
+
+
+:root {
+/* sets the background color */
+  --background-color: black;
+;
+
+/* set the color of all text and typically some borders*/
+  --primary-color: white;
+
+/* sets the background color of buttons and other borders */
+  --secondary-color: transparent;
+
+/* sets the color of things that appear temporarily */
+  --transient-color: orange;
+}
+
+/*
+--------------------------------------------------------------------
+				advanced customization
+--------------------------------------------------------------------
+*/
+
+/*styles the code font*/
+.code-font {
+	  font-family: Dosis;
+	  font-size:1em;
+	  }
+
+/* styles the fonts for the header, menus and labels */
+.ui-font {
+    font-family: Dosis;
+	font-size: 1em;
+	}
+
+/* styles the user interface-buttons */
+.ui-buttons {
+  color:white;
+  background-color:transparent;
+  font-size: 1em;
+  cursor:pointer;
+}
+
+.ui-dropdownMenus{
+	background-color: transparent;
+
+}
+
+.ui-dropdownMenus:focus {
+  background-color: var(--background-color) !important;
+}
+/*styles the primary borders (e.g.  from dropdown menus) */
+.primary-borders {
+	border-radius: 5px;
+    border: 1px solid transparent;
+}
+
+/*styles other borders (e.g. from the ui-buttons and sequencer)  */
+.other-borders {
+    border-radius: 5px;
+    border: 1px solid transparent;
+    }
+
+
+////////////
+
+.ensembleName {
+	margin-top: 1px;
+	margin-right: 1em;
+	color: transparent !important;
+}
+
+
+.page {
+	border-top: 0px solid !important;
+	border-bottom: 0px solid !important;
+}
+
+.ensembleHeader {
+	display: none !important;
+
+    }
+
+.config-entry {
+	border-right: 0px solid !important;
+}
+
+.ensembleTempo {
+	display: none !important;
+	border: none;
+	width: 25%;
+}
+
+
+.eightMiddleR {/*modifies the middle right view*/
+	text-align: right !important;
+	border-bottom: 1px solid transparent !important;
+	border-right: 1px solid transparent !important;
+}
+
+
+.eightMiddleL {/*modifies the middle left view*/
+	border-bottom: 1px solid transparent !important;
+	border-right: 1px solid transparent !important;
+}
+
+.referenceButton {
+	font-size: 0em;
+}
