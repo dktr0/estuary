@@ -186,10 +186,10 @@ in
           else self.callCabal2nixWithOptions
           "haskellish"
           ( pkgs.fetchgit {
-            url = "https://github.com/dktr0/Haskellish.git";
-            sha256 = "1gghc6jpxflygy1i7a4k0y0cy1gsxal5l2d072pz96q48qvifmg3";
-            rev = "fc951bad108df4e03abedf2511cf56632fa19636";
-            fetchSubmodules = true;
+          url = "https://github.com/dktr0/Haskellish.git";
+          sha256 = "0kkyyab96hwbbf4cd1fmy5y9a1g1wj3mkb18p090nmw9ib1fm6bb";
+          rev = "08b46f830e2c8ba29fb0b3abce8af848834bd8f8";
+          fetchSubmodules = true;
           })
           "" {};
 
