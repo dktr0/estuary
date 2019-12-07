@@ -158,10 +158,10 @@ in
         tidal = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
-              url = "https://github.com/dktr0/Tidal.git";
-              sha256 = "02n1vqvzm3p3s65sxvvdmlg4x41cannpvkqwq2ksf1qa9k4bfjx2";
-              rev = "7358675ddd29e656999f053e137c46107cd556f6";
-              fetchSubmodules = true;
+          url = "https://github.com/dktr0/Tidal.git";
+          sha256 = "0nlas7999q6nfy6cghl3w2cn6af46mbwv03my33sci8dlxkkp0hg";
+          rev = "9840e257d84ec04b1b80d97aba52f20001211e88";
+          fetchSubmodules = true;
           }) "" {});
 
         tidal-parse = if !(self.ghc.isGhcjs or false) then null
@@ -170,8 +170,8 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "02n1vqvzm3p3s65sxvvdmlg4x41cannpvkqwq2ksf1qa9k4bfjx2";
-            rev = "7358675ddd29e656999f053e137c46107cd556f6";
+            sha256 = "0nlas7999q6nfy6cghl3w2cn6af46mbwv03my33sci8dlxkkp0hg";
+            rev = "9840e257d84ec04b1b80d97aba52f20001211e88";
             fetchSubmodules = true;
               })
             "--subpath tidal-parse" {});
