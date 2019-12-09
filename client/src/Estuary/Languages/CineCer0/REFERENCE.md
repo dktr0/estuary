@@ -1,6 +1,6 @@
 # Cinecer0 Reference
 
-The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows video files to b e projected temporally and geometrically, targeting similar functionality to that of [Cine Vivo](https://github.com/essteban/CineVivo), again with an economical Haskell-like notation.
+The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows video files to b e projected temporally and geometrically, targeting similar functionality to that of [CineVivo](https://github.com/essteban/CineVivo), again with an economical Haskell-like notation.
 
 ## Playing Videos
 
