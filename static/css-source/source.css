@@ -18,6 +18,7 @@ body {
  	height: 100%;
 	margin: 0;
 	background: var(--background-color);
+	overflow: auto;
 }
 
 
@@ -25,6 +26,27 @@ body {
 body, .primary-color {
 	 color: var( --primary-color);
 }
+
+body::-webkit-scrollbar  {
+    width: 0.5%;
+    height: 0px;
+}
+
+body::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.body::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
+
 
 
 /*styles the canvas and svg display */
@@ -120,66 +142,62 @@ body, .primary-color {
 	background-color: transparent;
 }
 
-
-.header {grid-area: header;
-/* background-color: aliceblue */
-padding-left: 10px;
-}
-
-.page {grid-area: page;
-    height: 85vh;
-
-}
-
-
-
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
   height: 100vh;
-display: grid;
-grid-template-rows: 5vh 85vh 10vh;
-  grid-template-areas:
-    'header '
-    'page'
-    'footer';
-  width: 99vw;
-
+  display: flex;
+  flex-direction:column;
 }
 
-.estuary > .header {
-/*   background-color: rgba(25, 255, 255, 0.8); */
-  text-align: center;
-  border: none;
+.header {
+/* In flex: none the grow and shrink options are off. It is a fixed elemente whose width and height us based off the content size	 */
+	flex:none;
+	display: flex;
+	flex-direction: row-reverse;
+	padding-left: 10px;
+	overflow: hidden;
+    white-space: nowrap;
+    border: none;
+}
+
+.page {
+/* 	flex-grow:1; */
+/* 	flex-shrink:0; */
+	flex: 1 1 auto;
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG fdisplay */
+	left: 0px;
+	top: 0px;
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+	padding-left: 15px;
+	padding-right: 15px;
+	overflow:hidden;
+}
+
+.footer{
+	flex:none;
+/* 	flex-grow:0;
+	flex-shrink:1; */
+	display:flex;
+	flex-direction: row-reverse;
+	border: none;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
 }
 
 
-.estuary > .footer {
-/*   background-color: rgba(25, 255, 255, 0.8); */
-/*   text-align: center; */
-/*   padding: 20px 0; */
-/*   font-size:1.3vw; */
-  border: none;
-}
 
 .btn {
 	cursor: pointer;
 }
 
-/* source  */
-.header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-  /* Force the browser to try it's best to float properly on overflow.
-     When the window doesn't fit the entire header, this ensures that moving
-     the controls to the next line doesn't leak out of it's parent container
-     preventing interation with it. */
-  overflow: hidden;
-}
 
-.page {
-}
 
 /* source  */
 .peak{
-  float: right;
+  flex:none;
   border:none;
 }
 
@@ -201,34 +219,24 @@ grid-template-rows: 5vh 85vh 10vh;
 
 .config-toolbar {
 	padding-right: 1em;
-	float: right;
+/* 	float: right; */
 	display: block;
+	text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .config-entry {
 	border-right: 1px solid;
 	padding: 0.25em 0.5em;
 	display: inline-block;
+
 }
 
 .config-entry:last-child {
 	border-right: none;
 }
 
-/* contains the navigation buttons on the homepage (source)*/
-.page {
-	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
-	left: 0px;
-	top: 0px;
-	border-top: 1px solid;
-	border-bottom: 1px solid;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-	margin-bottom:0.25em;
-
-}
 
 .ourPopUp {
 	display:inline-block;
@@ -242,35 +250,28 @@ grid-template-rows: 5vh 85vh 10vh;
 	}
 
 
-.footer {
-	grid-area: footer;
-	padding-top: 1em;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-}
 
 .splash-container { /*contains the four buttons in the home page  (source) */
 	display: flex;
 	flex-wrap: wrap;
 	width: 100%;
 	height: 100%;
-}
+	align-items: center;
+ }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
-
-	min-width: 50%;
+	width: 50%;
 	box-sizing: border-box;
 	padding: 0.5em;
 }
 
 .splash-panel {/*contains the tutorial, solo and collaboration buttons (source)*/
 	font-family: estuaryFont;
+
 	border: 0.25em solid;
 	border-radius: 4px;
 	padding: 0.5em;
 	text-align: center;
-	height: 100%;
 	box-sizing: border-box;
 	/*before it was 16em */
 	max-height: 40vh;
@@ -295,7 +296,8 @@ grid-template-rows: 5vh 85vh 10vh;
 	padding-top: 3vh;
 	margin-bottom: 1%;
 	margin: auto;
-	font-size: calc(16px + 1.5vw); /* scales a bit nicer with the viewport */
+	/* scales a bit nicer with the viewport */
+ 	font-size: calc(80% + 1.5vw);
 }
 
 .splash-icon-container {
@@ -332,10 +334,43 @@ grid-template-rows: 5vh 85vh 10vh;
 .webSocketButtons {/*contains the "send" button and "terminal/chat" label (source)*/
 	display: inline;
 	margin-right: 5px;
+	overflow:hidden;
+	text-overflow: ellipsis;
+    overflow: hidden;
+
 }
 
 /*modifies the chat messages (source)*/
-.chatMessage { display: block}
+.chatMessageContainer {
+	overflow: auto;
+	height: 1em;
+}
+
+.chatMessage {
+display: block;
+
+}
+
+
+.chatMessageContainer::-webkit-scrollbar  {
+    width: 10px;
+    height: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
 
 .translationDNEWidget { /*source*/
 	text-align: center;
@@ -463,11 +498,12 @@ grid-template-rows: 5vh 85vh 10vh;
 
 /* contains the name-tag textarea */
 .labelWidgetDiv {
+	flex: none;
 }
 
 /* name-tag textarea */
 .name-tag-textarea {
-	flex: 1;
+	width: 100%;
 	border: none;
 	background-color: transparent;
 }
@@ -484,9 +520,8 @@ grid-template-rows: 5vh 85vh 10vh;
 
 /* contains the reference button  */
 .referenceButton {
-	margin-left: 1em;
 	margin-right: 1em;
-	float: right;
+	margin-left: auto;
 }
 
 /*contains the tempo and coding textareas  */
@@ -800,7 +835,9 @@ table, tr, td {border: none;}
 }
 
 .terminal{
+	flex: 1 1 auto;
 	padding-left: 0.7em;
+	overflow:hidden;
 
 }
 
@@ -808,7 +845,6 @@ table, tr, td {border: none;}
 	display: flex;
 	flex-direction: row;
 	border:none;
-
 }
 
 .terminalInput {
@@ -846,8 +882,6 @@ cursor: pointer;
 .ensembleTempo {
 	display: flex;
 	border: none;
-	width: 25%;
-	/* display: none; */
 }
 
 .ensembleHandle, .ensemblePassword {
@@ -858,12 +892,12 @@ cursor: pointer;
 }
 
 .ensembleTempo textarea{
-    margin-right: 1em;
 	position: relative;
-	top: 0.25em;
 	border: none;
 	max-width:13em;
-	text-align: center;
+    text-align: center;
+    width: fit-content;
+
 }
 
 /*
@@ -907,7 +941,7 @@ display: inline-flex;
      max-height: 55px
 }
 
-.resourceWidgetContainer::-webkit-scrollbar  {
+.resourceWidgetContainerm::-webkit-scrollbar  {
     width: 10px;
     height: 10px;
 }
@@ -944,9 +978,8 @@ display: inline-flex;
 }
 
 .resourceName{
-
-text-align: center;
-width: 8em;
+	text-align: center;
+	width: 8em;
 }
 
 .resourceDur{
@@ -967,12 +1000,10 @@ width: 8em;
 /* new grid layout css */
    /*this goes inside page  */
 
-.name-tag-textarea {grid-area: name-tag-textarea;
-
- 	  width: 100%;
-   }
 
 .fullWidthDiv {
+	display: flex;
+	flex-wrap: nowrap;
 	flex:0.025;
 	background-color: transparent;
   }
@@ -1013,5 +1044,4 @@ width: 8em;
   flex-direction: column;
   height: 100%;
   border: 1px solid var(--secondary-color);
-  width: 100%;
 }
