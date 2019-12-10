@@ -145,38 +145,47 @@ body::-webkit-scrollbar-thumb {
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
   height: 100vh;
-display: flex;
-flex-direction:column;
+  display: flex;
+  flex-direction:column;
 }
 
 .header {
-	flex-grow:0;
+/* In flex: none the grow and shrink options are off. It is a fixed elemente whose width and height us based off the content size	 */
+	flex:none;
 	display: flex;
 	flex-direction: row-reverse;
 	padding-left: 10px;
-	 overflow: hidden;
+	overflow: hidden;
     white-space: nowrap;
     border: none;
 }
 
 .page {
-	flex:1;
-	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
+/* 	flex-grow:1; */
+/* 	flex-shrink:0; */
+	flex: 1 1 auto;
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG fdisplay */
 	left: 0px;
 	top: 0px;
 	border-top: 1px solid;
 	border-bottom: 1px solid;
-	padding-top: 5px;
-/* 	padding-bottom: 5px; */
 	padding-left: 15px;
 	padding-right: 15px;
-/* 	margin-bottom:0.25em; */
-
+	overflow:hidden;
 }
 
 .footer{
-	flex-grow:0;
-	border: none;}
+	flex:none;
+/* 	flex-grow:0;
+	flex-shrink:1; */
+	display:flex;
+	flex-direction: row-reverse;
+	border: none;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
+}
 
 
 
@@ -188,7 +197,7 @@ flex-direction:column;
 
 /* source  */
 .peak{
-  float: right;
+  flex:none;
   border:none;
 }
 
@@ -241,34 +250,28 @@ flex-direction:column;
 	}
 
 
-.footer {
-	grid-area: footer;
-	padding-top: 1em;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-}
 
 .splash-container { /*contains the four buttons in the home page  (source) */
-	display: grid;
-	grid-template-columns: auto auto;
+	display: flex;
+	flex-wrap: wrap;
 	width: 100%;
 	height: 100%;
-}
+	align-items: center;
+ }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
-	min-width: 50%;
+	width: 50%;
 	box-sizing: border-box;
 	padding: 0.5em;
 }
 
 .splash-panel {/*contains the tutorial, solo and collaboration buttons (source)*/
 	font-family: estuaryFont;
+
 	border: 0.25em solid;
 	border-radius: 4px;
 	padding: 0.5em;
 	text-align: center;
-	height: 100%;
 	box-sizing: border-box;
 	/*before it was 16em */
 	max-height: 40vh;
@@ -340,7 +343,7 @@ flex-direction:column;
 /*modifies the chat messages (source)*/
 .chatMessageContainer {
 	overflow: auto;
-	height: 2em;
+	height: 1em;
 }
 
 .chatMessage {
@@ -495,11 +498,12 @@ display: block;
 
 /* contains the name-tag textarea */
 .labelWidgetDiv {
+	flex: none;
 }
 
 /* name-tag textarea */
 .name-tag-textarea {
-	flex: 1;
+	width: 100%;
 	border: none;
 	background-color: transparent;
 }
@@ -516,9 +520,8 @@ display: block;
 
 /* contains the reference button  */
 .referenceButton {
-	margin-left: 1em;
 	margin-right: 1em;
-	float: right;
+	margin-left: auto;
 }
 
 /*contains the tempo and coding textareas  */
@@ -832,9 +835,9 @@ table, tr, td {border: none;}
 }
 
 .terminal{
+	flex: 1 1 auto;
 	padding-left: 0.7em;
 	overflow:hidden;
-
 
 }
 
@@ -879,8 +882,6 @@ cursor: pointer;
 .ensembleTempo {
 	display: flex;
 	border: none;
-	width: 25%;
-	/* display: none; */
 }
 
 .ensembleHandle, .ensemblePassword {
@@ -891,12 +892,12 @@ cursor: pointer;
 }
 
 .ensembleTempo textarea{
-    margin-right: 1em;
 	position: relative;
-	top: 0.25em;
 	border: none;
 	max-width:13em;
-	text-align: center;
+    text-align: center;
+    width: fit-content;
+
 }
 
 /*
@@ -977,9 +978,8 @@ display: inline-flex;
 }
 
 .resourceName{
-
-text-align: center;
-width: 8em;
+	text-align: center;
+	width: 8em;
 }
 
 .resourceDur{
@@ -1000,12 +1000,10 @@ width: 8em;
 /* new grid layout css */
    /*this goes inside page  */
 
-.name-tag-textarea {grid-area: name-tag-textarea;
-
- 	  width: 100%;
-   }
 
 .fullWidthDiv {
+	display: flex;
+	flex-wrap: nowrap;
 	flex:0.025;
 	background-color: transparent;
   }
@@ -1046,5 +1044,4 @@ width: 8em;
   flex-direction: column;
   height: 100%;
   border: 1px solid var(--secondary-color);
-  width: 100%;
 }

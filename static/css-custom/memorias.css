@@ -5,9 +5,10 @@ More advanced customization is available through CSS classes within this documen
 --------------------------------------------------------------------
 */
 
+@import url('https://fonts.googleapis.com/css?family=Dosis&display=swap');
 
 @font-face {
-  font-family: Dosis;
+  font-family: 'Dosis', sans-serif;
   font-style: normal;
   font-weight: 400;
   src: url('https://fonts.googleapis.com/css?family=Dosis');
