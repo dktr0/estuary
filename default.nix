@@ -156,17 +156,23 @@ in
 
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null
-          else doJailbreak (import ./deps/tidal self);
+          else doJailbreak (self.callCabal2nixWithOptions "tidal"
+          ( pkgs.fetchgit {
+          url = "https://github.com/dktr0/Tidal.git";
+          sha256 = "0nlas7999q6nfy6cghl3w2cn6af46mbwv03my33sci8dlxkkp0hg";
+          rev = "9840e257d84ec04b1b80d97aba52f20001211e88";
+          fetchSubmodules = true;
+          }) "" {});
 
         tidal-parse = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (self.callCabal2nixWithOptions
 #            "tidal-parse" ../tidal/tidal-parse "" {});
             "tidal-parse"
             ( pkgs.fetchgit {
-              url = "https://github.com/dktr0/Tidal.git";
-              rev = "3655fa92059e9d7a93bab1b5d36e91b7d6a4a987";
-              sha256 = "1hdp70vf3wq1lcxs80kglqbpm03rlv2qwdld6y5fj4w7fd855avl";
-              fetchSubmodules = true;
+            url = "https://github.com/dktr0/Tidal.git";
+            sha256 = "0nlas7999q6nfy6cghl3w2cn6af46mbwv03my33sci8dlxkkp0hg";
+            rev = "9840e257d84ec04b1b80d97aba52f20001211e88";
+            fetchSubmodules = true;
               })
             "--subpath tidal-parse" {});
 
@@ -175,6 +181,18 @@ in
         # It is a nix package, but use cabal2nix anyways. The nix one
         # has a bad base constraint.
         reflex-dom-contrib = import ./deps/reflex-dom-contrib self;
+
+        haskellish = if !(self.ghc.isGhcjs or false) then null
+          else self.callCabal2nixWithOptions
+          "haskellish"
+          ( pkgs.fetchgit {
+          url = "https://github.com/dktr0/Haskellish.git";
+          sha256 = "0kkyyab96hwbbf4cd1fmy5y9a1g1wj3mkb18p090nmw9ib1fm6bb";
+          rev = "08b46f830e2c8ba29fb0b3abce8af848834bd8f8";
+          fetchSubmodules = true;
+          })
+          "" {};
+
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [
