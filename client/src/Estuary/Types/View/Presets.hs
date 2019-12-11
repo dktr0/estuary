@@ -25,12 +25,12 @@ presetViews :: Map Text View
 presetViews = fromList [
 
       ("default",  GridView 2 3  [
-       (Views [LabelView 1, SequenceView 2]),
-       (Views [LabelView 3, SequenceView 4]),
+       (Views [LabelView 1, TextView 2 0]),
+       (Views [LabelView 3, TextView 4 0]),
        (Views [LabelView 5, TextView 6 0]),
        (Views [LabelView 7, TextView 8 0]),
        (Views [LabelView 9, TextView 10 0]),
-       (Views [LabelView 11, TextView 12 0])
+       (Views [LabelView 11, TempoView])
       ]),
 
       ("fulltexteditor", GridView 1 1 [
@@ -170,10 +170,10 @@ presetViews = fromList [
       ]),
 
       ("cybernetic",GridView 2 2 [
-      BorderDiv (Views [LabelView 1, SequenceView 2]),
-      BorderDiv (Views [LabelView 3, TextView 4 0]),
-      BorderDiv (Views [LabelView 5, TextView 6 0]),
-      BorderDiv (Views [LabelView 7, TextView 8 0])
+        BorderDiv (Views [LabelView 1, SequenceView 2]),
+        BorderDiv (Views [LabelView 3, TextView 4 0]),
+        BorderDiv (Views [LabelView 5, TextView 6 0]),
+        BorderDiv (Views [LabelView 7, TextView 8 0])
       ]),
 
       ("supercontinent", GridView 2 5 [

@@ -47,6 +47,7 @@ More advanced customization is available through CSS classes within this documen
 .ui-buttons {
   color:var(--primary-color);
   background-color:var(--secondary-color);
+  cursor:pointer;
 }
 
 /* styles the dropdown */

@@ -18,6 +18,7 @@ body {
  	height: 100%;
 	margin: 0;
 	background: var(--background-color);
+	overflow: auto;
 }
 
 
@@ -25,6 +26,27 @@ body {
 body, .primary-color {
 	 color: var( --primary-color);
 }
+
+body::-webkit-scrollbar  {
+    width: 0.5%;
+    height: 0px;
+}
+
+body::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.body::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
+
 
 
 /*styles the canvas and svg display */
@@ -40,25 +62,64 @@ body, .primary-color {
 
 /* for the Paragraph element in the view system, which is primarily used in tutorials for explanatory text */
 .paragraph {
-  max-width: 40em;
-  overflow: scroll;
-  color: var(--primary-color);
+	padding: 0.15em;
+   	overflow-y: auto;
+   	text-align: justify;
 }
+
+.paragraph::-webkit-scrollbar  {
+    width: 10px;
+    height: 10px;
+}
+
+.paragraph::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.paragraph::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.paragraph::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
+
+
 
 /* for the Example element in the view system, which is primarly used in tutorials for clickable examples */
 .example {
-  max-width: 40em;
+	cursor: pointer;
+	margin:0.25em;
+	width: fit-content;
   overflow: hidden;
-  color: var(--primary-color);
+	border:none;
+	padding: 0.25em;
+	border-radius: 5px;
+    box-shadow: 0px 0.25px 4px 0.025px grey;
+    margin-bottom: auto;
 }
 
+.example:hover{
+	border: 1px dashed var(--primary-color);
+}
 
 /* modifies the help view (source)*/
+.languageHelpContainer{
+	display: flex;
+	height: 100%;
+	width: 100%;
+	padding-right: 1em;
+	box-sizing: border-box;
+
+}
+
 .languageHelp {
   overflow:scroll;
   padding-right: 1.8em;
   height:100%;
-  max-height: 48px
 }
 
 .languageHelp::-webkit-scrollbar  {
@@ -81,66 +142,62 @@ body, .primary-color {
 	background-color: transparent;
 }
 
-
-.header {grid-area: header;
-/* background-color: aliceblue */
-padding-left: 10px;
-}
-
-.page {grid-area: page;
-    height: 85vh;
-
-}
-
-
-
 /* source  */
 .estuary { /* the entire interface, contains .header .page and .footer */
   height: 100vh;
-display: grid;
-grid-template-rows: 5vh 85vh 10vh;
-  grid-template-areas:
-    'header '
-    'page'
-    'footer';
-  width: 99vw;
-
+  display: flex;
+  flex-direction:column;
 }
 
-.estuary > .header {
-/*   background-color: rgba(25, 255, 255, 0.8); */
-  text-align: center;
-  border: none;
+.header {
+/* In flex: none the grow and shrink options are off. It is a fixed elemente whose width and height us based off the content size	 */
+	flex:none;
+	display: flex;
+	flex-direction: row-reverse;
+	padding-left: 10px;
+	overflow: hidden;
+    white-space: nowrap;
+    border: none;
+}
+
+.page {
+/* 	flex-grow:1; */
+/* 	flex-shrink:0; */
+	flex: 1 1 auto;
+	position: relative; /* note that relative positioning with 0x0 is required here for SVG fdisplay */
+	left: 0px;
+	top: 0px;
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+	padding-left: 15px;
+	padding-right: 15px;
+	overflow:hidden;
+}
+
+.footer{
+	flex:none;
+/* 	flex-grow:0;
+	flex-shrink:1; */
+	display:flex;
+	flex-direction: row-reverse;
+	border: none;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 15px;
+	padding-right: 15px;
 }
 
 
-.estuary > .footer {
-/*   background-color: rgba(25, 255, 255, 0.8); */
-/*   text-align: center; */
-/*   padding: 20px 0; */
-/*   font-size:1.3vw; */
-  border: none;
-}
 
 .btn {
 	cursor: pointer;
 }
 
-/* source  */
-.header { /* the header area containing logo, webDirt, pageMenu and hintArea */
-  /* Force the browser to try it's best to float properly on overflow.
-     When the window doesn't fit the entire header, this ensures that moving
-     the controls to the next line doesn't leak out of it's parent container
-     preventing interation with it. */
-  overflow: hidden;
-}
 
-.page {
-}
 
 /* source  */
 .peak{
-  float: right;
+  flex:none;
   border:none;
 }
 
@@ -162,34 +219,24 @@ grid-template-rows: 5vh 85vh 10vh;
 
 .config-toolbar {
 	padding-right: 1em;
-	float: right;
+/* 	float: right; */
 	display: block;
+	text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .config-entry {
 	border-right: 1px solid;
 	padding: 0.25em 0.5em;
 	display: inline-block;
+
 }
 
 .config-entry:last-child {
 	border-right: none;
 }
 
-/* contains the navigation buttons on the homepage (source)*/
-.page {
-	position: relative; /* note that relative positioning with 0x0 is required here for SVG display */
-	left: 0px;
-	top: 0px;
-	border-top: 1px solid;
-	border-bottom: 1px solid;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-	margin-bottom:0.25em;
-
-}
 
 .ourPopUp {
 	display:inline-block;
@@ -203,35 +250,28 @@ grid-template-rows: 5vh 85vh 10vh;
 	}
 
 
-.footer {
-	grid-area: footer;
-	padding-top: 1em;
-	padding-bottom: 5px;
-	padding-left: 15px;
-	padding-right: 15px;
-}
 
 .splash-container { /*contains the four buttons in the home page  (source) */
 	display: flex;
 	flex-wrap: wrap;
 	width: 100%;
 	height: 100%;
-}
+	align-items: center;
+ }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
-
-	min-width: 50%;
+	width: 50%;
 	box-sizing: border-box;
 	padding: 0.5em;
 }
 
 .splash-panel {/*contains the tutorial, solo and collaboration buttons (source)*/
 	font-family: estuaryFont;
+
 	border: 0.25em solid;
 	border-radius: 4px;
 	padding: 0.5em;
 	text-align: center;
-	height: 100%;
 	box-sizing: border-box;
 	/*before it was 16em */
 	max-height: 40vh;
@@ -256,7 +296,8 @@ grid-template-rows: 5vh 85vh 10vh;
 	padding-top: 3vh;
 	margin-bottom: 1%;
 	margin: auto;
-	font-size: calc(16px + 1.5vw); /* scales a bit nicer with the viewport */
+	/* scales a bit nicer with the viewport */
+ 	font-size: calc(80% + 1.5vw);
 }
 
 .splash-icon-container {
@@ -293,10 +334,43 @@ grid-template-rows: 5vh 85vh 10vh;
 .webSocketButtons {/*contains the "send" button and "terminal/chat" label (source)*/
 	display: inline;
 	margin-right: 5px;
+	overflow:hidden;
+	text-overflow: ellipsis;
+    overflow: hidden;
+
 }
 
 /*modifies the chat messages (source)*/
-.chatMessage { display: block}
+.chatMessageContainer {
+	overflow: auto;
+	height: 1em;
+}
+
+.chatMessage {
+display: block;
+
+}
+
+
+.chatMessageContainer::-webkit-scrollbar  {
+    width: 10px;
+    height: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.chatMessageContainer::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
 
 .translationDNEWidget { /*source*/
 	text-align: center;
@@ -409,8 +483,13 @@ grid-template-rows: 5vh 85vh 10vh;
 /* coding textarea */
 .labelAndTextPattern {
 	flex-grow:1;
-	display: grid;
+/* 	display: grid; */
+	display: flex;
     overflow: hidden;
+}
+
+.width-100-percent{
+	width: 100%;
 }
 
 .coding-textarea {
@@ -419,11 +498,12 @@ grid-template-rows: 5vh 85vh 10vh;
 
 /* contains the name-tag textarea */
 .labelWidgetDiv {
+	flex: none;
 }
 
 /* name-tag textarea */
 .name-tag-textarea {
-	flex: 1;
+	width: 100%;
 	border: none;
 	background-color: transparent;
 }
@@ -440,9 +520,8 @@ grid-template-rows: 5vh 85vh 10vh;
 
 /* contains the reference button  */
 .referenceButton {
-	margin-left: 1em;
 	margin-right: 1em;
-	float: right;
+	margin-left: auto;
 }
 
 /*contains the tempo and coding textareas  */
@@ -577,6 +656,52 @@ ______________________________
 .panel button {
 	border-color: var(--primary-color)}
 
+
+.tutorialContainer{
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.tutorialButton{
+	width: fit-content;
+}
+
+.tutorialButton button {
+	cursor: pointer;
+	margin-top: 1em;
+	padding: 4px;
+	background-color: var(--secondary-color);
+	color: var(--primary-color);
+	border-radius: 5px;
+    border: 1px solid var(--secondary-color);
+}
+
+.tutorialTitle{
+	width:fit-content;
+	font-weight:bolder;
+	margin-right: 1em;
+	margin-bottom: 0.5em;
+}
+
+.tutorialPageTitle{
+	width: fit-content;
+	font-weight: bold;
+	margin-left: 1em;
+	margin-bottom: 0.5em;
+}
+.prevNextButtons{
+	width: fit-content;
+}
+.prevNextButtons button {
+	background-color: var(--secondary-color);
+	 color: var(--primary-color);
+	 border-radius: 5px;
+	 margin-bottom: 0.5em;
+     border: 1px solid var(--secondary-color);
+}
+
+
 /*
 --------------------------------------------------------------------
 							GENERAL PATTERN
@@ -710,7 +835,9 @@ table, tr, td {border: none;}
 }
 
 .terminal{
+	flex: 1 1 auto;
 	padding-left: 0.7em;
+	overflow:hidden;
 
 }
 
@@ -718,7 +845,6 @@ table, tr, td {border: none;}
 	display: flex;
 	flex-direction: row;
 	border:none;
-
 }
 
 .terminalInput {
@@ -729,6 +855,14 @@ table, tr, td {border: none;}
 .terminalInput input {
 	border:none;
 	background-color: transparent;
+}
+
+.joinButton {
+
+width: fit-content;
+padding: 0.25em;
+margin-bottom: 0.25em;
+cursor: pointer;
 }
 
 .ensembleHeader {
@@ -748,8 +882,6 @@ table, tr, td {border: none;}
 .ensembleTempo {
 	display: flex;
 	border: none;
-	width: 25%;
-	display: none;
 }
 
 .ensembleHandle, .ensemblePassword {
@@ -760,12 +892,12 @@ table, tr, td {border: none;}
 }
 
 .ensembleTempo textarea{
-    margin-right: 1em;
 	position: relative;
-	top: 0.25em;
 	border: none;
 	max-width:13em;
-	text-align: center;
+    text-align: center;
+    width: fit-content;
+
 }
 
 /*
@@ -809,7 +941,7 @@ display: inline-flex;
      max-height: 55px
 }
 
-.resourceWidgetContainer::-webkit-scrollbar  {
+.resourceWidgetContainerm::-webkit-scrollbar  {
     width: 10px;
     height: 10px;
 }
@@ -846,9 +978,8 @@ display: inline-flex;
 }
 
 .resourceName{
-
-text-align: center;
-width: 8em;
+	text-align: center;
+	width: 8em;
 }
 
 .resourceDur{
@@ -869,12 +1000,10 @@ width: 8em;
 /* new grid layout css */
    /*this goes inside page  */
 
-.name-tag-textarea {grid-area: name-tag-textarea;
-
- 	  width: 100%;
-   }
 
 .fullWidthDiv {
+	display: flex;
+	flex-wrap: nowrap;
 	flex:0.025;
 	background-color: transparent;
   }
@@ -887,28 +1016,32 @@ width: 8em;
 
 }
 
-.viewParentContainer{
+/* the Views view contains any number of children, some of which are fixed height, some of which grow to use available space
+ (a) so it is a flex parent in the column direction that claims 100% of the available height [display, flex-direction, height], and
+ (b) ??? does it */
+.views {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
 .gridView {
-	height: 100%;
-    display: grid;
-    width:100%;
-  }
+  flex-grow: 1;
+  height: 100%;
+  display: grid;
+  width:100%;
+}
 
-  .gridChild {
-	height:100%;
-  	display: flex;
-  	flex-direction: column;
-  }
+.gridChild {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 
-  .borderDiv {
-	height: 100%;
-  	display: flex;
-  	flex-direction: column;
-    border: 1px solid var(--secondary-color);
-    width: 100%;
-  }
+.borderDiv {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--secondary-color);
+}

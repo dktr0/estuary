@@ -14,6 +14,7 @@ import Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Bool(bool)
+import Control.Monad.Fix
 
 import Estuary.Reflex.Utility
 import Estuary.Tidal.Types
@@ -323,8 +324,6 @@ popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; po
   let popupEvents = leftmost [Just genericSignalMenu <$ x,Nothing <$ y]
   return $ (fmap fromJust . ffilter isJust) y
 
-
-
 genericSignalWidget :: MonadWidget t m => m (Event t (EditSignal a))
 genericSignalWidget = elClass "div" "genericSignalWidget" $ do
   b <- button' "-" DeleteMe
@@ -341,3 +340,24 @@ hideableWidget' :: MonadWidget t m => Dynamic t Bool -> m a -> m a
 hideableWidget' b m = do
   let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
   elDynAttr "div" attrs m
+
+traceDynamic :: (MonadWidget t m, Show a) => String -> Dynamic t a -> m (Dynamic t a)
+traceDynamic m x = do
+  initialValue <- sample $ current x
+  let x' = traceEvent m $ updated x
+  holdDyn initialValue x'
+
+-- a hideable widget that is only built/rebuilt when it is made visible
+deferredWidget :: (MonadFix m, DomBuilder t m, MonadSample t m, MonadHold t m, Adjustable t m, NotReady t m, PostBuild t m) => Text -> Dynamic t Bool -> Dynamic t (m ()) -> m ()
+deferredWidget cssClass isVisible dynWidgets = do
+  initialVisibility <- sample $ current isVisible
+  defaultWidget <- sample $ current dynWidgets
+  let initialWidget = if initialVisibility then defaultWidget else return ()
+  isVisible' <- holdUniqDyn isVisible
+  let transitionsToVisible = ffilter (== True) $ updated isVisible'
+  let becomesVisible = tag (current dynWidgets) transitionsToVisible
+  let visibleChanges = gate (current isVisible) $ updated dynWidgets
+  let changes = leftmost [becomesVisible,visibleChanges]
+  let attrs = fmap (bool (fromList [("hidden","true"),("class",cssClass)]) (singleton "class" cssClass)) isVisible
+  elDynAttr "div" attrs $ widgetHold initialWidget changes
+  return ()
