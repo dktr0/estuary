@@ -327,7 +327,7 @@ renderBaseProgramChanged irc c z (Right (CineCer0,x)) = do
   let eTime = renderStart s
   let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack x -- Either String CineCer0Spec
   when (isRight parseResult) $ do
-    let spec :: CineCer0.Spec = fromRight (IntMap.empty) parseResult
+    let spec :: CineCer0.Spec = fromRight (CineCer0.emptySpec eTime) parseResult
     modify' $ \x -> x { cineCer0Specs = insert z spec (cineCer0Specs s) }
     clearZoneError z
   when (isLeft parseResult) $ do
@@ -396,7 +396,7 @@ renderBaseProgramAlways irc c z (Just CineCer0) = do
   s <- get
   let maybeTheDiv = videoDivElement c
   when (isJust maybeTheDiv) $ do
-    let spec = IntMap.findWithDefault (IntMap.empty) z (cineCer0Specs s)
+    let spec = IntMap.findWithDefault (CineCer0.emptySpec $ renderStart s) z (cineCer0Specs s)
     let theDiv = fromJust maybeTheDiv
     let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
     let t = tempo $ ensemble $ ensembleC c

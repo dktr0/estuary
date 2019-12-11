@@ -89,12 +89,12 @@ updateCineCer0State t now spec st = do
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
-  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") spec -- :: IntMap CineCer0Video
+  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-  sequence $ intersectionWith (updateContinuingVideo eTime t now (divWidth,divHeight)) vSpecs continuingVideos
+  sequence $ intersectionWith (updateContinuingVideo t eTime now (divWidth,divHeight)) vSpecs continuingVideos
   return $ st { videos = continuingVideos }
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
