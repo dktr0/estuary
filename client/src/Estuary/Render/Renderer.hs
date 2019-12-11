@@ -39,6 +39,7 @@ import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
 import qualified Estuary.Languages.Morelia.Dos as Dos
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
+import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
@@ -323,9 +324,10 @@ renderBaseProgramChanged irc c z (Right (Dos,x)) = parsePunctualNotation irc c z
 
 renderBaseProgramChanged irc c z (Right (CineCer0,x)) = do
   s <- get
-  let parseResult :: Either String CineCer0.CineCer0Spec = CineCer0.cineCer0 $ T.unpack x -- Either String CineCer0Spec
+  let eTime = renderStart s
+  let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack x -- Either String CineCer0Spec
   when (isRight parseResult) $ do
-    let spec :: CineCer0.CineCer0Spec = fromRight (IntMap.empty) parseResult
+    let spec :: CineCer0.Spec = fromRight (IntMap.empty) parseResult
     modify' $ \x -> x { cineCer0Specs = insert z spec (cineCer0Specs s) }
     clearZoneError z
   when (isLeft parseResult) $ do

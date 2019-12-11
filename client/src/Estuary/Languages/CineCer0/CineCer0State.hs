@@ -16,6 +16,7 @@ import Control.Monad
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec
+import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.PositionAndRate
 
 newtype CineCer0Video = CineCer0Video { videoJSVal :: JSVal }
@@ -77,25 +78,27 @@ addVideo j spec = do
   appendVideo x j
   return x
 
-updateCineCer0State :: Tempo -> UTCTime -> CineCer0Spec -> CineCer0State -> IO CineCer0State
+updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
+  let vSpecs = videoSpecMap spec
+  let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
   divHeight <- offsetHeight $ videoDiv st
   -- add or delete videos
-  let newVideoSpecs = difference spec (videos st) -- :: IntMap VideoSpec
+  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
-  let videosWithRemovedSpecs = difference (videos st) spec -- :: IntMap CineCer0Video
+  let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") spec -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-  sequence $ intersectionWith (updateContinuingVideo t now (divWidth,divHeight)) spec continuingVideos
+  sequence $ intersectionWith (updateContinuingVideo eTime t now (divWidth,divHeight)) vSpecs continuingVideos
   return $ st { videos = continuingVideos }
 
-updateContinuingVideo :: Tempo -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
-updateContinuingVideo t now (sw,sh) s v = do
+updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
+updateContinuingVideo t eTime now (sw,sh) s v = do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
