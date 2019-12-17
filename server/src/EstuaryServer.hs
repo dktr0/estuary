@@ -66,10 +66,10 @@ runServerWithDatabase pwd port httpRedirect db = do
     ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
     }
   postLogToDatabase db $ "listening on port " <> showt port <> " (HTTPS only)"
-  forkIO $ runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
-  when httpRedirect $ do
+  when httpRedirect $ forkIO $ do
     postLogToDatabase db $ "(also listening on port 80 and redirecting plain HTTP requests to HTTPS, ie. on port 443)"
     run 80 ourRedirect
+  runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
 
 ourRedirect :: WS.Application
 ourRedirect req respond = do
