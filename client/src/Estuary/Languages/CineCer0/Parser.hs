@@ -1,4 +1,4 @@
-module Estuary.Languages.CineCer0.Parser (cineCer0,CineCer0Spec) where
+module Estuary.Languages.CineCer0.Parser (cineCer0) where
 
 import Language.Haskell.Exts
 import Control.Applicative
@@ -7,17 +7,21 @@ import Data.Time
 import Language.Haskellish
 
 import Estuary.Languages.CineCer0.VideoSpec
+import Estuary.Languages.CineCer0.Spec
 
-type CineCer0Spec = IntMap VideoSpec
-
-cineCer0 :: String -> Either String CineCer0Spec
-cineCer0 s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
+cineCer0 :: UTCTime -> String -> Either String Spec
+cineCer0 eTime s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
   where
-    f (ParseOk x) = runHaskellish cineCer0Spec x
+    f (ParseOk x) = runHaskellish (spec eTime) x
     f (ParseFailed l s) = Left s
 
-cineCer0Spec :: Haskellish CineCer0Spec
-cineCer0Spec = fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
+spec :: UTCTime -> Haskellish Spec
+spec eTime = do
+  vs <- fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
+  return $ Spec {
+    evalTime = eTime,
+    videoSpecMap = vs
+  }
 
 videoSpec :: Haskellish VideoSpec
 videoSpec =
