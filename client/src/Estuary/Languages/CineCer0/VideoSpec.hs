@@ -9,6 +9,11 @@ import qualified Estuary.Languages.CineCer0.DynamicOpacity as DynOp
 
 import Estuary.Types.Tempo
 
+type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a
+
+constantSignal:: a -> Signal a
+constantSignal x = atempo alength aEvalTime arenderTime x
+
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
   sourceNumber :: Int,
@@ -19,7 +24,7 @@ data VideoSpec = VideoSpec {
   width :: Rational,
   height :: Rational,
   opacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
-  blur :: Rational,
+  blur :: Signal Rational,
   brightness :: Rational,
   contrast :: Rational,
   grayscale :: Rational,
@@ -41,7 +46,7 @@ emptyVideoSpec x = VideoSpec {
   width = 0.0,
   height = 0.0,
   opacity = DynOp.defaultOpacity,
-  blur = 0.0,
+  blur = constantSignal 0.0,
   brightness = 100,
   contrast = 100,
   grayscale = 0,
@@ -60,7 +65,7 @@ stringToVideoSpec x = VideoSpec {
   width = 1.0,
   height = 1.0,
   opacity = DynOp.defaultOpacity,
-  blur = 0.0,
+  blur = constantSignal 0.0,
   brightness = 100,
   contrast = 100,
   grayscale = 0,
@@ -114,7 +119,7 @@ changeOpacity n vs = vs {
 }
 
 
-setBlur :: Rational -> VideoSpec -> VideoSpec
+setBlur :: Signal Rational -> VideoSpec -> VideoSpec
 setBlur n vs = vs {blur = n}
 
 setBrightness :: Rational -> VideoSpec -> VideoSpec
