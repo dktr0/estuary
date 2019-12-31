@@ -311,13 +311,21 @@ renderBaseProgramChanged irc c z (Left e) = setZoneError z (T.pack $ show e)
 
 renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y)) = do
   s <- get
-  let parseResult = tidalParser x y -- :: Either ParseError ControlPattern
+  t1 <- liftIO $ getCurrentTime
+  parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
+  t2 <- liftIO $ getCurrentTime
+  liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
-renderBaseProgramChanged irc c z (Right (Punctual,x)) = parsePunctualNotation irc c z Punctual.runPunctualParser x
+renderBaseProgramChanged irc c z (Right (Punctual,x)) = do
+  t1 <- liftIO $ getCurrentTime
+  r <- parsePunctualNotation irc c z Punctual.runPunctualParser x
+  t2 <- liftIO $ getCurrentTime
+  liftIO $ T.putStrLn $ "parsePunctualNotation: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
+  return r
 renderBaseProgramChanged irc c z (Right (Ver,x)) = parsePunctualNotation irc c z Ver.ver x
 renderBaseProgramChanged irc c z (Right (Oir,x)) = parsePunctualNotation irc c z Oir.oir x
 renderBaseProgramChanged irc c z (Right (Dos,x)) = parsePunctualNotation irc c z Dos.dos x
@@ -355,7 +363,7 @@ parsePunctualNotation irc c z p t = do
   let parseResult = p t
   when (isRight parseResult) $ do
     let exprs = fromRight [] parseResult -- :: [Expression]
-    liftIO $ putStrLn $ show exprs
+    -- liftIO $ putStrLn $ show exprs
     let evalTime = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ renderStart s -- :: AudioTime/Double
     let eval = (exprs,evalTime) -- :: Punctual.Evaluation
     punctualProgramChanged irc c z eval

@@ -9,6 +9,7 @@ import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad(liftM)
 import Control.Monad.IO.Class(liftIO)
+import System.IO
 
 import Sound.MusicW
 
@@ -39,6 +40,7 @@ import System.Timeout(timeout)
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser
   existingUncaughtHandler <- getUncaughtExceptionHandler
   setUncaughtExceptionHandler $ \e -> do
