@@ -18,6 +18,7 @@ import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.PositionAndRate
+import Estuary.Languages.CineCer0.Types
 
 newtype CineCer0Video = CineCer0Video { videoJSVal :: JSVal }
 
@@ -98,7 +99,7 @@ updateCineCer0State t now spec st = do
   return $ st { videos = continuingVideos }
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
-updateContinuingVideo t eTime now (sw,sh) s v = do
+updateContinuingVideo t eTime rTime (sw,sh) s v = do 
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
@@ -117,13 +118,13 @@ updateContinuingVideo t eTime now (sw,sh) s v = do
     let topY = sh - (centreY + (actualHeight * 0.5))
     -- update playback rate
     lengthOfVideo <- realToFrac <$> getLengthOfVideo v
-    let rate = (playbackRate s) t lengthOfVideo now
+    let rate = (playbackRate s) t lengthOfVideo rTime eTime
     maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
     -- update position in time
-    let pos = (playbackPosition s) t lengthOfVideo now
+    let pos = (playbackPosition s) t lengthOfVideo rTime eTime
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
     -- update opacity
-    let opacidad = (opacity s) t lengthOfVideo now
+    let opacidad = (opacity s) t lengthOfVideo rTime eTime
     -- update geometry/appearance/etc
     videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor (blur s)) (floor (brightness s)) (floor (contrast s)) (floor (grayscale s)) (realToFrac (saturate s))
 

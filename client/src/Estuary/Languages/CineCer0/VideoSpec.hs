@@ -5,26 +5,25 @@ import Control.Applicative
 import Data.Time
 
 import qualified Estuary.Languages.CineCer0.PositionAndRate as VT
-import qualified Estuary.Languages.CineCer0.DynamicOpacity as DynOp
+import qualified Estuary.Languages.CineCer0.GeometryAndStyle as GS
 
 import Estuary.Types.Tempo
+import Estuary.Languages.CineCer0.Types
 
-type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a
-
-constantSignal:: a -> Signal a
-constantSignal x = atempo alength aEvalTime arenderTime x
+--type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a 
+-- This is in Types already!
 
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
   sourceNumber :: Int, 
-  playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
-  playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
+  playbackPosition :: Signal (Maybe NominalDiffTime),
+  playbackRate :: Signal (Maybe Rational),
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
   height :: Rational,
-  opacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational,
-  blur :: Signal Rational,
+  opacity :: Signal Rational,
+  blur :: Rational,
   brightness :: Rational,
   contrast :: Rational,
   grayscale :: Rational,
@@ -45,8 +44,8 @@ emptyVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 0.0,
   height = 0.0,
-  opacity = DynOp.defaultOpacity,
-  blur = constantSignal 0.0,
+  opacity = GS.defaultOpacity,
+  blur = 0.0,
   brightness = 100,
   contrast = 100,
   grayscale = 0,
@@ -64,8 +63,8 @@ stringToVideoSpec x = VideoSpec {
   posY = 0.0,
   width = 1.0,
   height = 1.0,
-  opacity = DynOp.defaultOpacity,
-  blur = constantSignal 0.0,
+  opacity = GS.defaultOpacity,
+  blur = 0.0,
   brightness = 100,
   contrast = 100,
   grayscale = 0,
@@ -104,7 +103,7 @@ setSize m n vs = vs { width = m, height = n }
 
 setOpacity :: Rational -> VideoSpec -> VideoSpec
 setOpacity r vs = vs {
-  opacity = \t ndt ut -> r * ((opacity vs) t ndt ut)
+  opacity = \t ndt rt et -> r * ((opacity vs) t ndt rt et)
   }
 
 -- defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational
@@ -115,11 +114,11 @@ setOpacity r vs = vs {
 
 changeOpacity :: Rational -> VideoSpec -> VideoSpec
 changeOpacity n vs = vs {
-  opacity = DynOp.opacityChanger n
+  opacity = GS.opacityChanger n
 }
 
 
-setBlur :: Signal Rational -> VideoSpec -> VideoSpec
+setBlur :: Rational -> VideoSpec -> VideoSpec
 setBlur n vs = vs {blur = n}
 
 setBrightness :: Rational -> VideoSpec -> VideoSpec
