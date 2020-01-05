@@ -16,7 +16,7 @@ constantSignal x = atempo alength aEvalTime arenderTime x
 
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
-  sourceNumber :: Int,
+  sourceNumber :: Int, 
   playbackPosition :: Tempo -> NominalDiffTime -> UTCTime -> Maybe NominalDiffTime,
   playbackRate :: Tempo -> NominalDiffTime -> UTCTime -> Maybe Rational,
   posX :: Rational,

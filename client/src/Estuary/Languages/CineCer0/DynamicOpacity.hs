@@ -29,8 +29,8 @@ opacityChanger arg t len now = arg
 
 --------- Helper Functions ------------
 
-getPercentage:: Rational -> Rational -> Rational
-getPercentage value scale = (value/scale) * 100        
+getPercentage:: Rational -> Rational -> Rational -> Rational
+getPercentage value scale limit = (value/scale) * limit        
 
 reglaDeTres:: Rational -> Rational -> Rational -> Rational
 reglaDeTres normScale normPos realScale = (normPos*realScale) / normScale
@@ -49,17 +49,20 @@ cycleSecs startPos vlen
     in cycle
 
 
--- Ramper !!! ------ Creates a ramp given the rendering time (now)
-
-ramp:: UTCTime -> UTCTime -> UTCTime -> Rational
-ramp now start end 
-    | start > now = 0
-    | end < now = 1
+-- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
+ramp:: UTCTime -> UTCTime -> NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Rational
+ramp renderTime evalTime startTime endTime startVal endVal
+    | addUTCTime startTime evalTime > renderTime = startVal
+    | addUTCTime endTime evalTime < renderTime = endVal
     | otherwise = 
-        let processInterval = diffUTCTime end start
-            renderInterval = diffUTCTime now start 
-            result = getPercentage (realToFrac renderInterval :: Rational) (realToFrac processInterval :: Rational)
-        in result * 0.01
+        let segmentVal = endVal - startVal
+            startScale = startVal
+            start = addUTCTime startTime evalTime
+            end = addUTCTime endTime evalTime
+            processInterval = diffUTCTime end start
+            renderInterval = diffUTCTime renderTime start 
+            result = getPercentage (realToFrac renderInterval :: Double) (realToFrac processInterval :: Double) segmentVal
+        in startScale + (result)
 
 -- test functions
 
