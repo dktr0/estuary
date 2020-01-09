@@ -1,7 +1,7 @@
 {
   reflexPlatformVersion ? "9e306f72ed0dbcdccce30a4ba0eb37aa03cf91e3",
   musl ? false,     # build with musl instead of glibc
-  linkType ? null   # exectuable linking mode, null will build the closest to unconfigured for the current platform.
+  linkType ? null   # executable linking mode, null will build the closest to unconfigured for the current platform.
                     # 'static' will completely statcially link everything.
                     # 'static-libs' will statically link the haskell libs and dynamically link system. linux default.
                     # 'dynamic' will dynamically link everything. darwin default.
@@ -148,19 +148,43 @@ in
         TimeNot = if !(self.ghc.isGhcjs or false) then null
           else dontHaddock (import ./deps/TimeNot self);
 
-        musicw = if !(self.ghc.isGhcjs or false) then null
-          else dontHaddock (import ./deps/musicw self);
+        musicw = dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
+          owner = "dktr0";
+          repo = "musicw";
+          sha256 = "0q05d02cbsgqcryq78hq2sbn12md07bj09nxn0zp55s0wfvv3syh";
+          rev = "8ad568d0465eafffe308751fa5aafece1850eaad";
+          }) {});
 
-        punctual = if !(self.ghc.isGhcjs or false) then null
-          else import ./deps/punctual self;
+        reflex-dom-contrib = dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
+          owner = "reflex-frp";
+          repo = "reflex-dom-contrib";
+          rev = "b9e2965dff062a4e13140f66d487362a34fe58b3";
+          sha256 = "1aa045mr82hdzzd8qlqhfrycgyhd29lad8rf7vsqykly9axpl52a";
+          }) {});
+
+        haskellish = dontHaddock # (self.callCabal2nix "haskellish" ../haskellish {});
+         (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
+          owner = "dktr0";
+          repo = "Haskellish";
+          sha256 = "16l83igxr9i1kmm6a571a0i8qhybh65p6hrnzyb4znf66dvvr2ig";
+          rev = "71a2310aebdc37d6a78bcc8d13e59eaf7845df10";
+         }) {});
+
+        punctual = if !(self.ghc.isGhcjs or false) then null else dontHaddock
+         (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
+          owner = "dktr0";
+          repo = "punctual";
+          sha256 = "0vygai0cvn958ijr3ri5zhnwf82xmxx49ccy8x4vgcfciazbim2j";
+          rev = "5135c2cfb818e459921d880411156117a0f2446e";
+         }) {});
 
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null
           else doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0nlas7999q6nfy6cghl3w2cn6af46mbwv03my33sci8dlxkkp0hg";
-          rev = "9840e257d84ec04b1b80d97aba52f20001211e88";
+          sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
+          rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
           fetchSubmodules = true;
           }) "" {});
 
@@ -170,28 +194,13 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0nlas7999q6nfy6cghl3w2cn6af46mbwv03my33sci8dlxkkp0hg";
-            rev = "9840e257d84ec04b1b80d97aba52f20001211e88";
+            sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
+            rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
             fetchSubmodules = true;
               })
             "--subpath tidal-parse" {});
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
-
-        # It is a nix package, but use cabal2nix anyways. The nix one
-        # has a bad base constraint.
-        reflex-dom-contrib = import ./deps/reflex-dom-contrib self;
-
-        haskellish = if !(self.ghc.isGhcjs or false) then null
-          else self.callCabal2nixWithOptions
-          "haskellish"
-          ( pkgs.fetchgit {
-          url = "https://github.com/dktr0/Haskellish.git";
-          sha256 = "0kkyyab96hwbbf4cd1fmy5y9a1g1wj3mkb18p090nmw9ib1fm6bb";
-          rev = "08b46f830e2c8ba29fb0b3abce8af848834bd8f8";
-          fetchSubmodules = true;
-          })
-          "" {};
 
       };
     in

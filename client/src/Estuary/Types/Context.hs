@@ -30,6 +30,7 @@ import Estuary.Render.DynamicsMode
 import Estuary.Render.LocalResources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
+import Sound.Punctual.GL (GLContext)
 
 -- things the render engine needs, but the UI doesn't need, and which never change
 data ImmutableRenderContext = ImmutableRenderContext {

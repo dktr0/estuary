@@ -8,18 +8,20 @@ import Text.Parsec
 import Text.Parsec.Text
 import qualified Text.Parsec.Token as P
 import Control.Monad.Identity (Identity)
+import Control.Applicative
 
 import Sound.Punctual.Extent
 import Sound.Punctual.Graph
-import Sound.Punctual.Types
+import Sound.Punctual.Program
 
 
 
 -- ///////////////////
 --Mi Parser (Un String será error o Expresión de Punctual)
-dos :: Text -> Either ParseError [Expression]
-dos = parse dosParser ""
+dos :: Text -> Either ParseError Program
+dos = parse empty ""
 
+{-
 --Función que te permite aceptar espacios y dividir oraciones
 dosParser :: Parser [Expression]
 dosParser = do
@@ -175,3 +177,4 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
+-}

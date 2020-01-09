@@ -6,14 +6,16 @@ import Text.Parsec
 import Text.Parsec.Text
 import qualified Text.Parsec.Token as P
 import Control.Monad.Identity (Identity)
+import Control.Applicative
 
 import Sound.Punctual.Extent
 import Sound.Punctual.Graph
-import Sound.Punctual.Types
+import Sound.Punctual.Program
 
-oir :: Text -> Either ParseError [Expression]
-oir = parse oirParser ""
+oir :: Text -> Either ParseError Program
+oir = parse empty "" -- parse oirParser ""
 
+{-
 oirParser :: Parser [Expression]
 oirParser = do
   whiteSpace
@@ -299,3 +301,4 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
+-}

@@ -64,7 +64,7 @@ main = do
   nowAudio <- liftAudioIO $ audioTime
   context <- newMVar $ initialContext nowUtc
   renderInfo <- newMVar $ emptyRenderInfo
-  forkRenderThreads immutableRenderContext context renderInfo
+  -- forkRenderThreads immutableRenderContext context renderInfo
 
   cb <- syncCallback1' $ \dest -> do
     node <- changeDestination mainBusNodes $
