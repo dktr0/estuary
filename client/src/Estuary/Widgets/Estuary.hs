@@ -111,7 +111,6 @@ hintsToResponses = catMaybes . fmap f
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
     f _ = Nothing
 
--- a standard canvas that, in addition to being part of reflex-dom's DOM representation, is shared with other threads through the Context
 canvasWidget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m GLContext
 canvasWidget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
@@ -121,7 +120,7 @@ canvasWidget ctxM ctx = do
   videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" divAttrs $ return ()
   canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" canvasAttrs $ return ()
   glc <- liftIO $ newGLContext canvas
-  let ic = ic0 { canvasElement = Just canvas, videoDivElement = Just videoDiv }
+  let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
   return glc
   where

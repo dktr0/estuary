@@ -31,6 +31,7 @@ import qualified Sound.Punctual.Program as Punctual
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.GL as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
+import qualified Sound.Punctual.AsyncProgram as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.TimeNot.MapEstuary as TimeNot
 
@@ -258,7 +259,6 @@ renderPunctualWebGL (tNow,lo,mid,hi) z = do
   let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
   case IntMap.lookup z (punctualWebGLs s) of
     (Just webGL) -> do
-      liftIO $ putStrLn "about to draw frame"
       webGL' <- liftIO $ Punctual.drawFrame (glContext s) (tNow',lo,mid,hi) webGL
       modify' $ \x -> x { punctualWebGLs = insert z webGL' (punctualWebGLs s)}
     Nothing -> return ()

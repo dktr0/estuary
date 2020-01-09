@@ -54,7 +54,6 @@ data Context = Context {
   wsStatus :: Text,
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
-  canvasElement :: Maybe HTMLCanvasElement,
   videoDivElement :: Maybe HTMLDivElement,
   theVideoDiv :: Maybe JSVal
   }
@@ -75,7 +74,6 @@ initialContext nowUtc = Context {
   wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
-  canvasElement = Nothing,
   videoDivElement = Nothing,
   theVideoDiv = Nothing
 }
