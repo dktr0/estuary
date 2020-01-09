@@ -1,7 +1,7 @@
 {
   reflexPlatformVersion ? "9e306f72ed0dbcdccce30a4ba0eb37aa03cf91e3",
   musl ? false,     # build with musl instead of glibc
-  linkType ? null   # exectuable linking mode, null will build the closest to unconfigured for the current platform.
+  linkType ? null   # executable linking mode, null will build the closest to unconfigured for the current platform.
                     # 'static' will completely statcially link everything.
                     # 'static-libs' will statically link the haskell libs and dynamically link system. linux default.
                     # 'dynamic' will dynamically link everything. darwin default.
@@ -151,14 +151,18 @@ in
 
         webdirt = import ./deps/webdirt self;
 
-        TimeNot = if !(self.ghc.isGhcjs or false) then null
-          else dontHaddock (import ./deps/TimeNot self);
+        TimeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
+            owner = "afrancob";
+            repo = "timeNot";
+            sha256 = "0klz2y87fqhbnkcqqf3accv5hwj73b6snc0nm34270wk7wrbyg3m";
+            rev = "93c31f3dda915546946d1c962cf44e96f3da357d";
+          }) {});
 
         punctual = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "1w0768x4865882rhfirixak6c3d3n819f2bjvkjsrkx0dimpkdrh";
-          rev = "dfdf3ee0a0ea5847c6f5a9032e515cf8e3a35a22";
+          sha256 = "0vygai0cvn958ijr3ri5zhnwf82xmxx49ccy8x4vgcfciazbim2j";
+          rev = "5135c2cfb818e459921d880411156117a0f2446e";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
@@ -179,8 +183,8 @@ in
         tidal = if !(self.ghc.isGhcjs or false) then null else doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0nlas7999q6nfy6cghl3w2cn6af46mbwv03my33sci8dlxkkp0hg";
-          rev = "9840e257d84ec04b1b80d97aba52f20001211e88";
+          sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
+          rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
           fetchSubmodules = true;
           }) "" {});
 
@@ -189,8 +193,8 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0nlas7999q6nfy6cghl3w2cn6af46mbwv03my33sci8dlxkkp0hg";
-            rev = "9840e257d84ec04b1b80d97aba52f20001211e88";
+            sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
+            rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
             fetchSubmodules = true;
               })
             "--subpath tidal-parse" {});
