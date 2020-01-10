@@ -300,7 +300,7 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y)) = do
   t1 <- liftIO $ getCurrentTime
   parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
   t2 <- liftIO $ getCurrentTime
-  liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
+  -- liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
@@ -310,7 +310,7 @@ renderBaseProgramChanged irc c z (Right (Punctual,x)) = do
   t1 <- liftIO $ getCurrentTime
   r <- parsePunctualNotation' irc c z x
   t2 <- liftIO $ getCurrentTime
-  liftIO $ T.putStrLn $ "parsePunctualNotation: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
+  -- liftIO $ T.putStrLn $ "parsePunctualNotation: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   return r
 renderBaseProgramChanged irc c z (Right (Ver,x)) = parsePunctualNotation irc c z Ver.ver x
 renderBaseProgramChanged irc c z (Right (Oir,x)) = parsePunctualNotation irc c z Oir.oir x
@@ -357,7 +357,7 @@ parsePunctualNotation' :: ImmutableRenderContext -> Context -> Int -> Text -> Re
 parsePunctualNotation' irc c z t = do
   s <- get
   let evalTime = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ renderStart s -- :: AudioTime/Double
-  parseResult <- liftIO $ Punctual.runPunctualParserTimed evalTime t
+  parseResult <- liftIO $ Punctual.runPunctualParser evalTime t
   case parseResult of
     Right punctualProgram -> punctualProgramChanged irc c z punctualProgram
     Left _ -> return ()
