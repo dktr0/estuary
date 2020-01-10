@@ -161,9 +161,9 @@ in
         punctual = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "10ar1a7z52j9jmz1555a01idlx89wg2k7r4vnhpih4ml4yis3vj1";
-          rev = "b402fd076883d5fede0a582e29cd7a30809d9a7b";
-        }) {});
+          sha256 = "0rsa7f5v1k5xc4kzf56kjdn7hb2vmpyza017cb7sjwk0spr2aq3l";
+          rev = "193048b9038762210a6a7f064df62f559244fc1f";
+          }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
