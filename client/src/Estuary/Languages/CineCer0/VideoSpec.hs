@@ -4,11 +4,11 @@ import Language.Haskell.Exts
 import Control.Applicative
 import Data.Time
 
-import qualified Estuary.Languages.CineCer0.PositionAndRate as VT
-import qualified Estuary.Languages.CineCer0.GeometryAndStyle as GS
+import qualified Estuary.Languages.CineCer0.Signals as Sig
+
+
 
 import Estuary.Types.Tempo
-import Estuary.Languages.CineCer0.Types
 
 --type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a 
 -- This is in Types already!
@@ -16,13 +16,13 @@ import Estuary.Languages.CineCer0.Types
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
   sourceNumber :: Int, 
-  playbackPosition :: Signal (Maybe NominalDiffTime),
-  playbackRate :: Signal (Maybe Rational),
+  playbackPosition :: Sig.Signal (Maybe NominalDiffTime),
+  playbackRate :: Sig.Signal (Maybe Rational),
   posX :: Rational,
   posY :: Rational,
   width :: Rational,
   height :: Rational,
-  opacity :: Signal Rational,
+  opacity :: Sig.Signal Rational,
   blur :: Rational,
   brightness :: Rational,
   contrast :: Rational,
@@ -38,13 +38,13 @@ emptyVideoSpec :: String -> VideoSpec
 emptyVideoSpec x = VideoSpec {
   sampleVideo = "",
   sourceNumber = 0,
-  playbackPosition = VT.playNatural_Pos 0.0,
-  playbackRate = VT.playNatural_Rate 0.0,
+  playbackPosition = Sig.playNatural_Pos 0.0,
+  playbackRate = Sig.playNatural_Rate 0.0,
   posX = 0.0,
   posY = 0.0,
   width = 0.0,
   height = 0.0,
-  opacity = GS.defaultOpacity,
+  opacity = Sig.defaultOpacity,
   blur = 0.0,
   brightness = 100,
   contrast = 100,
@@ -56,14 +56,14 @@ stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = VideoSpec {
   sampleVideo = x,
   sourceNumber = 0,
-  playbackPosition = VT.playNatural_Pos 0.0,
-  playbackRate = VT.playNatural_Rate 0.0,
+  playbackPosition = Sig.playNatural_Pos 0.0,
+  playbackRate = Sig.playNatural_Rate 0.0,
   --mask = "none"
   posX = 0.0,
   posY = 0.0,
   width = 1.0,
   height = 1.0,
-  opacity = GS.defaultOpacity,
+  opacity = Sig.defaultOpacity,
   blur = 0.0,
   brightness = 100,
   contrast = 100,
@@ -114,7 +114,7 @@ setOpacity r vs = vs {
 
 changeOpacity :: Rational -> VideoSpec -> VideoSpec
 changeOpacity n vs = vs {
-  opacity = GS.opacityChanger n
+  opacity = Sig.opacityChanger n
 }
 
 
@@ -139,54 +139,54 @@ setSaturate n vs = vs {saturate = n}
 
 rate:: Rational -> VideoSpec -> VideoSpec
 rate n vs = vs {
-  playbackRate = VT.applyRate n
+  playbackRate = Sig.applyRate n
 }
 
 
 playNatural :: Rational -> VideoSpec -> VideoSpec
 playNatural n vs = vs {
-  playbackPosition = VT.playNatural_Pos n,
-  playbackRate = VT.playNatural_Rate n
+  playbackPosition = Sig.playNatural_Pos n,
+  playbackRate = Sig.playNatural_Rate n
 }
 
 playRound :: Rational -> VideoSpec -> VideoSpec
 playRound n vs = vs {
-  playbackPosition = VT.playRound_Pos n,
-  playbackRate = VT.playRound_Rate n
+  playbackPosition = Sig.playRound_Pos n,
+  playbackRate = Sig.playRound_Rate n
   }
 
 playRoundMetre :: Rational -> VideoSpec -> VideoSpec
 playRoundMetre n vs = vs {
-  playbackPosition = VT.playRoundMetrePos n,
-  playbackRate = VT.playRoundMetreRate n
+  playbackPosition = Sig.playRoundMetrePos n,
+  playbackRate = Sig.playRoundMetreRate n
   }
   
 playEvery :: Rational -> Rational -> VideoSpec -> VideoSpec
 playEvery m n vs = vs {
-  playbackPosition = VT.playEvery_Pos m n,
-  playbackRate = VT.playEvery_Rate m n
+  playbackPosition = Sig.playEvery_Pos m n,
+  playbackRate = Sig.playEvery_Rate m n
   }
   
 playChop' :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChop' l m n vs = vs {
-  playbackPosition = VT.playChop_Pos' l m n,
-  playbackRate = VT.playChop_Rate' l m n
+  playbackPosition = Sig.playChop_Pos' l m n,
+  playbackRate = Sig.playChop_Rate' l m n
   }
   
 playChop :: Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChop k l m n vs = vs {
-  playbackPosition = VT.playChop_Pos k l m n,
-  playbackRate = VT.playChop_Rate k l m n
+  playbackPosition = Sig.playChop_Pos k l m n,
+  playbackRate = Sig.playChop_Rate k l m n
 }
   
 playChopSecs :: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChopSecs k l m n vs = vs {
-  playbackPosition = VT.playChopSecs_Pos k l m n,
-  playbackRate = VT.playChopSecs_Rate k l m n
+  playbackPosition = Sig.playChopSecs_Pos k l m n,
+  playbackRate = Sig.playChopSecs_Rate k l m n
   }
   
 playNow :: NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
 playNow m n vs = vs {
-  playbackPosition = VT.playNow_Pos m n,
-  playbackRate = VT.playNow_Rate m n
+  playbackPosition = Sig.playNow_Pos m n,
+  playbackRate = Sig.playNow_Rate m n
   }

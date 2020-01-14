@@ -1,17 +1,39 @@
-module Estuary.Languages.CineCer0.PositionAndRate where
+module Estuary.Languages.CineCer0.Signals where
 
 {-# LANGUAGE DeriveDataTypeable #-}
+
+{-# LANGUAGE FlexibleInstances #-}
+
+{-# LANGUAGE TypeSynonymInstances #-}
 
 import Data.Time
 
 import Estuary.Types.Tempo
-import Estuary.Languages.CineCer0.Types
 
 
--- type VideoLength = NominalDiffTime
--- type Now = UTCTime
--- type Rate = NominalDiffTime
--- type Position = NominalDiffTime
+ --              Tempo    Video Length      render T   eval T
+type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a
+
+instance Num (Signal a) where
+    x + y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) + (y t dur renderTime evalTime)
+--    x * y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) + (y t dur renderTime evalTime)
+--    negate x = \t dur renderTime evalTime -> (Product x (Constant (-1))) t dur renderTime evalTime
+--    abs x = \t dur renderTime evalTime -> (Abs x) t dur renderTime evalTime
+--    signum x = \t dur renderTime evalTime -> ((GreaterThan x 0) + (LessThan x 0 * (-1))) t dur renderTime evalTime
+--    fromIntegral x = \t dur renderTime evalTime -> (Constant $ fromInteger x) t dur renderTime evalTime
+
+--   x * y = Product x y
+--   negate x = Product x (Constant (-1))
+--   abs x = Abs x
+--   signum x = (GreaterThan x 0) + (LessThan x 0 * (-1))
+--   fromInteger x = Constant $ fromInteger x
+
+------ functions that generate signals 
+
+constantSignal :: a -> Signal a 
+constantSignal x = \_ _ _ _ -> x
+
+-- Temporal Functions
 
 ------ Manually apply a rate into a video ------
 
@@ -259,7 +281,48 @@ playNow_Pos startPos rate t vlen render eval = Just $ (realToFrac (cycleSecs sta
 playNow_Rate:: NominalDiffTime -> Rational -> Signal (Maybe Rational)
 playNow_Rate startPos rate t vlen render eval = Just rate
 
+-- Geometry
+
+
+
+
+-- Style
+
+
+---- Opacity
+
+-- sets a default opacity for new videos --
+defaultOpacity :: Signal Rational 
+defaultOpacity = \_ _ _ _ -> 100
+
+------ Manually changes the opacity of a video ------
+
+opacityChanger:: Rational -> Signal Rational 
+opacityChanger arg t len rend eval = arg  
+
+
+-- Dynamic Functions
+
+-- Add Signal type!!!!!
+-- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
+ramp:: UTCTime -> UTCTime -> NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Rational
+ramp renderTime evalTime startTime endTime startVal endVal
+    | addUTCTime startTime evalTime > renderTime = startVal
+    | addUTCTime endTime evalTime < renderTime = endVal
+    | otherwise = 
+        let segmentVal = endVal - startVal
+            startScale = startVal
+            start = addUTCTime startTime evalTime
+            end = addUTCTime endTime evalTime
+            processInterval = diffUTCTime end start
+            renderInterval = diffUTCTime renderTime start 
+            result = getPercentage (realToFrac renderInterval :: Rational) (realToFrac processInterval :: Rational) segmentVal
+        in startScale + (result)
+
 --------- Helper Functions ------------
+
+getPercentage:: Rational -> Rational -> Rational -> Rational
+getPercentage value scale limit = (value/scale) * limit        
 
 reglaDeTres:: Rational -> Rational -> Rational -> Rational
 reglaDeTres normScale normPos realScale = (normPos*realScale) / normScale
@@ -277,6 +340,7 @@ cycleSecs startPos vlen
         cycle = sp - rest
     in cycle
 
+
 -- test functions
 
 today = fromGregorian 2019 07 18
@@ -286,3 +350,12 @@ myUTCTest = UTCTime today 30
 myUTCTest2 = UTCTime today 60
 
 myTempo = Tempo { cps= 0.5, at= myUTCTest, beat= 10.3}
+
+-- test functions for ramps
+
+startPoint = UTCTime today 30
+
+endPoint = UTCTime today 40
+
+renderTime = UTCTime today 34.5
+

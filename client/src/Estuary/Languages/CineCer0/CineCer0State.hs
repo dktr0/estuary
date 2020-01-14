@@ -17,8 +17,7 @@ import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
-import Estuary.Languages.CineCer0.PositionAndRate
-import Estuary.Languages.CineCer0.Types
+import Estuary.Languages.CineCer0.Signals
 
 newtype CineCer0Video = CineCer0Video { videoJSVal :: JSVal }
 
