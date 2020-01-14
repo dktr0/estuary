@@ -1,7 +1,7 @@
 {
   reflexPlatformVersion ? "9e306f72ed0dbcdccce30a4ba0eb37aa03cf91e3",
   musl ? false,     # build with musl instead of glibc
-  linkType ? null   # exectuable linking mode, null will build the closest to unconfigured for the current platform.
+  linkType ? null   # executable linking mode, null will build the closest to unconfigured for the current platform.
                     # 'static' will completely statcially link everything.
                     # 'static-libs' will statically link the haskell libs and dynamically link system. linux default.
                     # 'dynamic' will dynamically link everything. darwin default.
@@ -143,38 +143,72 @@ in
             }
         );
 
+        text-show = dontCheck super.text-show;
+
+        text-short = dontCheck super.text-short;
+
+        criterion = dontCheck super.criterion;
+
         webdirt = import ./deps/webdirt self;
 
-        TimeNot = if !(self.ghc.isGhcjs or false) then null
-          else dontHaddock (import ./deps/TimeNot self);
+        TimeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
+            owner = "afrancob";
+            repo = "timeNot";
+            sha256 = "0klz2y87fqhbnkcqqf3accv5hwj73b6snc0nm34270wk7wrbyg3m";
+            rev = "93c31f3dda915546946d1c962cf44e96f3da357d";
+          }) {});
 
-        musicw = if !(self.ghc.isGhcjs or false) then null
-          else dontHaddock (import ./deps/musicw self);
+        punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
+          owner = "dktr0";
+          repo = "punctual";
+          sha256 = "07i5k98z1h4knygp0g0kbfgizv1jcdbbngnr9w68l9ahldpf2k17";
+          rev = "76683208852dd8872f62f34ec3491bf751e9800e";
+          }) {});
 
-        punctual = if !(self.ghc.isGhcjs or false) then null
-          else import ./deps/punctual self;
+        musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
+          owner = "dktr0";
+          repo = "musicw";
+          sha256 = "0q05d02cbsgqcryq78hq2sbn12md07bj09nxn0zp55s0wfvv3syh";
+          rev = "8ad568d0465eafffe308751fa5aafece1850eaad";
+        }) {});
+
+        reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
+          owner = "reflex-frp";
+          repo = "reflex-dom-contrib";
+          rev = "b9e2965dff062a4e13140f66d487362a34fe58b3";
+          sha256 = "1aa045mr82hdzzd8qlqhfrycgyhd29lad8rf7vsqykly9axpl52a";
+        }) {});
 
         # needs jailbreak for dependency microspec >=0.2.0.1
-        tidal = if !(self.ghc.isGhcjs or false) then null
-          else doJailbreak (import ./deps/tidal self);
+        tidal = if !(self.ghc.isGhcjs or false) then null else doJailbreak (self.callCabal2nixWithOptions "tidal"
+          ( pkgs.fetchgit {
+          url = "https://github.com/dktr0/Tidal.git";
+          sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
+          rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
+          fetchSubmodules = true;
+          }) "" {});
 
-        tidal-parse = if !(self.ghc.isGhcjs or false) then null
-          else doJailbreak (self.callCabal2nixWithOptions
+        tidal-parse = if !(self.ghc.isGhcjs or false) then null else doJailbreak (self.callCabal2nixWithOptions
 #            "tidal-parse" ../tidal/tidal-parse "" {});
             "tidal-parse"
             ( pkgs.fetchgit {
-              url = "https://github.com/dktr0/Tidal.git";
-              rev = "3655fa92059e9d7a93bab1b5d36e91b7d6a4a987";
-              sha256 = "1hdp70vf3wq1lcxs80kglqbpm03rlv2qwdld6y5fj4w7fd855avl";
-              fetchSubmodules = true;
+            url = "https://github.com/dktr0/Tidal.git";
+            sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
+            rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
+            fetchSubmodules = true;
               })
             "--subpath tidal-parse" {});
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
-        # It is a nix package, but use cabal2nix anyways. The nix one
-        # has a bad base constraint.
-        reflex-dom-contrib = import ./deps/reflex-dom-contrib self;
+        haskellish = # dontHaddock (self.callCabal2nix "haskellish" ../Haskellish {}); #
+        dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
+           owner = "dktr0";
+           repo = "Haskellish";
+           sha256 = "16l83igxr9i1kmm6a571a0i8qhybh65p6hrnzyb4znf66dvvr2ig";
+           rev = "71a2310aebdc37d6a78bcc8d13e59eaf7845df10";
+        }) {});
+
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [

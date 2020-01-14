@@ -14,7 +14,7 @@ main :: IO ()
 main = do
   db <- openDatabase
   (pswd, port) <- getArgs >>= return . processArgs
-  runServerWithDatabase (T.pack pswd) port True db -- True is hard-coded http redirect for now
+  runServerWithDatabase (T.pack pswd) port False db -- False is hard-coded http redirect for now, will add an option later
     `catch` (closeDatabaseOnException db)
 
 processArgs :: [String] -> (String,Int) -- (password,port)

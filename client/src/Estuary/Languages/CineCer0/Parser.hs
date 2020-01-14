@@ -1,48 +1,55 @@
-module Estuary.Languages.CineCer0.Parser (cineCer0,CineCer0Spec) where
+module Estuary.Languages.CineCer0.Parser (cineCer0) where
 
 import Language.Haskell.Exts
 import Control.Applicative
 import Data.IntMap.Strict
 import Data.Time
+import Language.Haskellish
+import Data.Bifunctor
 
-import Estuary.Languages.ExpParser
 import Estuary.Languages.CineCer0.VideoSpec
+import Estuary.Languages.CineCer0.Spec
 
-type CineCer0Spec = IntMap VideoSpec
+type H = Haskellish ()
 
-cineCer0 :: String -> Either String CineCer0Spec
-cineCer0 s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
+cineCer0 :: UTCTime -> String -> Either String Spec
+cineCer0 eTime s = (f . parseExp) $ ( "do {" ++ s ++ "}" )
   where
-    f (ParseOk x) = runExpParser cineCer0Spec x
+    f (ParseOk x) = second fst $ runHaskellish (spec eTime) () x
     f (ParseFailed l s) = Left s
 
-cineCer0Spec :: ExpParser CineCer0Spec
-cineCer0Spec = fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
+spec :: UTCTime -> H Spec
+spec eTime = do
+  vs <- fmap (fromList . zip [0..]) $ listOfDoStatements videoSpec
+  return $ Spec {
+    evalTime = eTime,
+    videoSpecMap = vs
+  }
 
-videoSpec :: ExpParser VideoSpec
+videoSpec :: H VideoSpec
 videoSpec =
   literalVideoSpec <|>
   int_VideoSpec <*> int <|>
   videoSpec_videoSpec <*> videoSpec
 
-int :: ExpParser Int
+int :: H Int
 int = fromIntegral <$> integer
 
-nominalDiffTime :: ExpParser NominalDiffTime
+nominalDiffTime :: H NominalDiffTime
 nominalDiffTime = fromRational <$> rationalOrInteger
 
-literalVideoSpec :: ExpParser VideoSpec
+literalVideoSpec :: H VideoSpec
 literalVideoSpec =
   fmap stringToVideoSpec string <|>
   fmap emptyVideoSpec string
 
-videoSpec_int_videoSpec :: ExpParser (VideoSpec -> Int -> VideoSpec)
+videoSpec_int_videoSpec :: H (VideoSpec -> Int -> VideoSpec)
 videoSpec_int_videoSpec = setSourceNumber <$ reserved ":"
 
-int_VideoSpec :: ExpParser (Int -> VideoSpec)
+int_VideoSpec :: H (Int -> VideoSpec)
 int_VideoSpec = videoSpec_int_videoSpec <*> videoSpec
 
-rat_videoSpec_videoSpec :: ExpParser (Rational -> VideoSpec -> VideoSpec)
+rat_videoSpec_videoSpec :: H (Rational -> VideoSpec -> VideoSpec)
 rat_videoSpec_videoSpec =
   playNatural <$ reserved "natural" <|> --time function
   playRound <$ reserved "round" <|> -- time function
@@ -58,27 +65,27 @@ rat_videoSpec_videoSpec =
   setGrayscale <$ reserved "grayscale" <|>
   setSaturate <$ reserved "saturate"
 
-rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_videoSpec_videoSpec :: H (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_videoSpec_videoSpec =
   playEvery <$ reserved "every" <|> --time function
   setPosCoord <$ reserved "pos" <|>
   setSize <$ reserved "size"
 
-rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_rat_videoSpec_videoSpec :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_videoSpec_videoSpec =
   playChop' <$ reserved "chop'" -- time function
 
-rat_rat_rat_rat_videoSpec_videoSpec :: ExpParser (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_rat_rat_videoSpec_videoSpec :: H (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_rat_videoSpec_videoSpec =
   playChop <$ reserved "chop" -- time function
 
-nd_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
+nd_rat_videoSpec_videoSpec :: H (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
 nd_rat_videoSpec_videoSpec = playNow <$ reserved "now" -- time function
 
-nd_nd_rat_rat_videoSpec_videoSpec :: ExpParser (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
+nd_nd_rat_rat_videoSpec_videoSpec :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
 nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "chopSecs" -- time function
 
-videoSpec_videoSpec :: ExpParser (VideoSpec -> VideoSpec)
+videoSpec_videoSpec :: H (VideoSpec -> VideoSpec)
 videoSpec_videoSpec =
   --string_VideoSpec_VideoSpec <*> string <|> --mask function
   rat_videoSpec_videoSpec <*> rationalOrInteger <|> -- time function

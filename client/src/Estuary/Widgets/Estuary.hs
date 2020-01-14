@@ -17,10 +17,12 @@ import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..),HTMLDivElement(..)
 import GHCJS.Marshal.Pure
 import Data.Functor (void)
 import Data.Text (Text)
+import Data.Bool
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import TextShow
 import Sound.MusicW.AudioContext
+import Sound.Punctual.GL
 
 import Estuary.Utility
 import Estuary.Widgets.Navigation
@@ -44,11 +46,13 @@ import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
+import Estuary.Render.Renderer
+
 
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
 
-  canvasWidget ctxM -- global canvas shared with render threads through Context MVar, this needs to be first in this action
+  glCtx <- canvasWidget ctxM ctx -- global canvas shared with render threads through Context MVar, this needs to be first in this action
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
@@ -91,6 +95,8 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
   let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
   let requests' = fmap (:[]) $ requests
   let requestsUp = mergeWith (++) [ensembleRequestsUp',requests']
+
+  liftIO $ forkRenderThreads irc ctxM glCtx riM
   return ()
 
 hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
@@ -105,16 +111,22 @@ hintsToResponses = catMaybes . fmap f
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
     f _ = Nothing
 
--- a standard canvas that, in addition to being part of reflex-dom's DOM representation, is shared with other threads through the Context
-canvasWidget :: MonadWidget t m => MVar Context -> m ()
-canvasWidget ctxM = do
+canvasWidget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m GLContext
+canvasWidget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
-  let divAttrs = fromList [("class","canvas-or-svg-display"),("style",T.pack $ "z-index: -2;"), ("width","1920"), ("height","1080")]
-  videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elAttr' "div" divAttrs $ return ()
-  let canvasAttrs = fromList [("class","canvas-or-svg-display"),("style",T.pack $ "z-index: -1;"), ("width","1920"), ("height","1080")]
-  canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elAttr' "canvas" canvasAttrs $ return ()
-  let ic = ic0 { canvasElement = Just canvas, videoDivElement = Just videoDiv }
+  let canvasVisible = fmap (("visibility:" <>)  . bool "hidden" "visible" . canvasOn) ctx
+  let divAttrs = fmap divF canvasVisible
+  let canvasAttrs = fmap canvasF canvasVisible
+  videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" divAttrs $ return ()
+  canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" canvasAttrs $ return ()
+  glc <- liftIO $ newGLContext canvas
+  let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
+  return glc
+  where
+    divF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -2;") <> x <> ";"), ("width","1920"), ("height","1080")]
+    canvasF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -1;") <> x <> ";"), ("width","1920"), ("height","1080")]
+
 
 
 -- every .204 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
@@ -177,7 +189,7 @@ performDelayHints irc hs = do
   where
     f (SetGlobalDelayTime x) = Just x
     f _ = Nothing
-  
+
 
 changeTheme :: MonadWidget t m => Event t Text -> m ()
 changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref) newStyle
