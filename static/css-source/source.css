@@ -1045,3 +1045,23 @@ display: inline-flex;
   height: 100%;
   border: 1px solid var(--secondary-color);
 }
+
+/* ///////////status Widget/////////// */
+
+
+.ensembleStatusView {
+  border-radius: 5px;
+  box-shadow: 0px 0.25px 4px 0.025px;
+}
+
+.ensemble-name {
+	text-align:center;
+	padding: 0.125em;
+	box-shadow: 0px 1px 3px 0px;
+}
+
+.statusElement {
+  display: flex;
+	padding: 0.125em;
+	box-shadow: 0px 1px 3px 0px;
+}

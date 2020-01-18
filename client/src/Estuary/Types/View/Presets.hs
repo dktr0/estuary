@@ -220,6 +220,6 @@ presetViews = fromList [
          (Views [LabelView 12,TextView 13 0]),
          (Views [LabelView 14,TextView 15 0]),
          (Views [LabelView 16,TextView 17 0]),
-        ViewDiv "eightMiddleR" EnsembleStatusView
+          ViewDiv "ensembleStatusView" EnsembleStatusView
         ])
       ]
