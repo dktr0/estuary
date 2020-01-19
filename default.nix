@@ -158,7 +158,7 @@ in
             rev = "93c31f3dda915546946d1c962cf44e96f3da357d";
           }) {});
 
-        punctual = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
+        punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
           sha256 = "0glr29q7bspfvhccbpi0g9sr538dldc3frcqp8q1qrdf5s7s0xfl";

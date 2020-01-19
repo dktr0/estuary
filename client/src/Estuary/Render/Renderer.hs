@@ -35,9 +35,8 @@ import qualified Sound.Punctual.AsyncProgram as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.TimeNot.MapEstuary as TimeNot
 
-import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
-import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
-import qualified Estuary.Languages.Morelia.Dos as Dos
+-- import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
+-- import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
@@ -252,7 +251,7 @@ renderZoneAnimation  _ _ _ = return ()
 
 renderZoneAnimationTextProgram :: (UTCTime,Double,Double,Double) -> Int -> (TextNotation,Text) -> Renderer
 renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Punctual,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
-renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Oir,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
+-- renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Oir,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
 renderPunctualWebGL :: (UTCTime,Double,Double,Double) -> Int -> Renderer
@@ -299,7 +298,7 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y)) = do
   t1 <- liftIO $ getCurrentTime
   parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
   t2 <- liftIO $ getCurrentTime
-  liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
+  -- liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
@@ -309,11 +308,11 @@ renderBaseProgramChanged irc c z (Right (Punctual,x)) = do
   t1 <- liftIO $ getCurrentTime
   r <- parsePunctualNotation' irc c z x
   t2 <- liftIO $ getCurrentTime
-  liftIO $ T.putStrLn $ "parsePunctualNotation: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
+  -- liftIO $ T.putStrLn $ "parsePunctualNotation: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   return r
-renderBaseProgramChanged irc c z (Right (Ver,x)) = parsePunctualNotation irc c z Ver.ver x
-renderBaseProgramChanged irc c z (Right (Oir,x)) = parsePunctualNotation irc c z Oir.oir x
-renderBaseProgramChanged irc c z (Right (Dos,x)) = parsePunctualNotation irc c z Dos.dos x
+--Jessica's parsers:
+-- renderBaseProgramChanged irc c z (Right (Ver,x)) = parsePunctualNotation irc c z Ver.ver x
+-- renderBaseProgramChanged irc c z (Right (Oir,x)) = parsePunctualNotation irc c z Oir.oir x
 
 renderBaseProgramChanged irc c z (Right (CineCer0,x)) = do
   s <- get
