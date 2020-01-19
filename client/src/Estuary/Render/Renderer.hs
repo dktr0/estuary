@@ -234,7 +234,9 @@ renderAnimation (lo,mid,hi) = do
   tNow <- liftIO $ getCurrentTime
   defs <- gets cachedDefs
   traverseWithKey (renderZoneAnimation (tNow,lo,mid,hi)) defs
-  return ()
+  s <- get
+  newWebGL <- liftIO $ Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
+  modify' $ \x -> x { punctualWebGL = newWebGL }
 
 renderZoneAnimation :: (UTCTime,Double,Double,Double) -> Int -> Definition -> Renderer
 renderZoneAnimation (tNow,lo,mid,hi) z (TextProgram x) = do
@@ -257,11 +259,8 @@ renderPunctualWebGL :: (UTCTime,Double,Double,Double) -> Int -> Renderer
 renderPunctualWebGL (tNow,lo,mid,hi) z = do
   s <- get
   let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
-  case IntMap.lookup z (punctualWebGLs s) of
-    (Just webGL) -> do
-      webGL' <- liftIO $ Punctual.drawFrame (glContext s) (tNow',lo,mid,hi) webGL
-      modify' $ \x -> x { punctualWebGLs = insert z webGL' (punctualWebGLs s)}
-    Nothing -> return ()
+  newWebGL <- liftIO $ Punctual.drawPunctualWebGL (glContext s) (tNow',lo,mid,hi) z (punctualWebGL s)
+  modify' $ \x -> x { punctualWebGL = newWebGL }
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
 renderZoneChanged irc c z (Structure x) = do
@@ -357,7 +356,7 @@ parsePunctualNotation' :: ImmutableRenderContext -> Context -> Int -> Text -> Re
 parsePunctualNotation' irc c z t = do
   s <- get
   let evalTime = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ renderStart s -- :: AudioTime/Double
-  parseResult <- liftIO $ Punctual.runPunctualParserTimed evalTime t
+  parseResult <- liftIO $ Punctual.runPunctualParser evalTime t
   case parseResult of
     Right punctualProgram -> punctualProgramChanged irc c z punctualProgram
     Left _ -> return ()
@@ -378,13 +377,9 @@ punctualProgramChanged irc c z p = do
   newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') p
   modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   -- B. update Punctual WebGL state in response to new, syntactically correct program
-  webGLs <- gets punctualWebGLs
-  let prevWebGL = IntMap.lookup z webGLs
-  prevWebGL' <- case prevWebGL of
-    (Just x) -> return x
-    (Nothing) -> liftIO $ Punctual.newPunctualWebGL $ glContext s
-  newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL (glContext s) prevWebGL' (beat0,realToFrac cps') p
-  modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
+  pWebGL <- gets punctualWebGL
+  newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL (glContext s) (beat0,realToFrac cps') z p pWebGL
+  modify' $ \x -> x { punctualWebGL = newWebGL }
 
 
 renderTextProgramAlways :: ImmutableRenderContext -> Context -> Int -> Renderer

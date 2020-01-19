@@ -32,7 +32,7 @@ data RenderState = RenderState {
   dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap Punctual.PunctualW),
-  punctualWebGLs :: !(IntMap Punctual.PunctualWebGL),
+  punctualWebGL :: Punctual.PunctualWebGL,
   cineCer0Specs :: !(IntMap CineCer0.Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
   renderTime :: !MovingAverage,
@@ -44,6 +44,7 @@ data RenderState = RenderState {
 
 initialRenderState :: GLContext -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState glCtx t0System t0Audio = do
+  pWebGL <- Punctual.newPunctualWebGL glCtx
   return $ RenderState {
     animationOn = False,
     wakeTimeSystem = t0System,
@@ -57,7 +58,7 @@ initialRenderState glCtx t0System t0Audio = do
     dirtEvents = [],
     baseNotations = empty,
     punctuals = empty,
-    punctualWebGLs = empty,
+    punctualWebGL = pWebGL,
     cineCer0Specs = empty,
     cineCer0States = empty,
     renderTime = newAverage 20,
