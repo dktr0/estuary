@@ -6,8 +6,6 @@ import Data.Time
 
 import qualified Estuary.Languages.CineCer0.Signals as Sig
 
-
-
 import Estuary.Types.Tempo
 
 --type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a 

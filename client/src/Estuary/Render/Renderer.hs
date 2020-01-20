@@ -27,16 +27,16 @@ import Sound.OSC.Datum
 import Text.Parsec
 
 import Sound.MusicW.AudioContext
+import qualified Sound.Punctual.Program as Punctual
 import qualified Sound.Punctual.PunctualW as Punctual
-import qualified Sound.Punctual.Evaluation as Punctual
+import qualified Sound.Punctual.GL as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
-import qualified Sound.Punctual.Types as Punctual
+import qualified Sound.Punctual.AsyncProgram as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.TimeNot.MapEstuary as TimeNot
 
-import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
-import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
-import qualified Estuary.Languages.Morelia.Dos as Dos
+-- import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
+-- import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
@@ -184,10 +184,6 @@ render irc c = do
   -- if there is no reason not to traverse/render zones, then do so
   -- using renderStart and renderEnd from the state as the window to render
   when (not wait && not rewind) $ do
-    when (canvasElement c /= cachedCanvasElement s) $ do
-      liftIO $ putStrLn "render: canvasElement new/changed"
-      traverseWithKey (canvasChanged c) (zones $ ensemble $ ensembleC c)
-      modify' $ \x -> x { cachedCanvasElement = canvasElement c }
     traverseWithKey (renderZone irc c) (zones $ ensemble $ ensembleC c)
     flushEvents irc c
     -- calculate how much time this render cycle took and update load measurements
@@ -201,21 +197,7 @@ render irc c = do
     traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s -- *** SHOULDN'T BE HERE
     traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s -- *** SHOULDN'T BE HERE
     return ()
-  sleepIfNecessary
-
-
-canvasChanged :: Context -> Int -> Definition -> Renderer
-canvasChanged c z (TextProgram x) = canvasChangedTextProgram c z $ forRendering x
-canvasChanged _ _ _ = return ()
-
-canvasChangedTextProgram :: Context -> Int -> (TextNotation,Text) -> Renderer
-canvasChangedTextProgram c z (Punctual,x) = do
-  webGLs <- gets punctualWebGLs
-  let prevWebGL = IntMap.findWithDefault Punctual.emptyPunctualWebGL z webGLs
-  liftIO $ T.putStrLn "about to Punctual.updateRenderingContext"
-  newWebGL <- liftIO $ Punctual.updateRenderingContext prevWebGL (canvasElement c)
-  modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
-canvasChangedTextProgram _ _ _ = return ()
+  -- sleepIfNecessary
 
 setZoneError :: Int -> Text -> Renderer
 setZoneError z t = do
@@ -251,31 +233,33 @@ renderAnimation (lo,mid,hi) = do
   tNow <- liftIO $ getCurrentTime
   defs <- gets cachedDefs
   traverseWithKey (renderZoneAnimation (tNow,lo,mid,hi)) defs
-  return ()
+  s <- get
+  newWebGL <- liftIO $ Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
+  modify' $ \x -> x { punctualWebGL = newWebGL }
 
 renderZoneAnimation :: (UTCTime,Double,Double,Double) -> Int -> Definition -> Renderer
 renderZoneAnimation (tNow,lo,mid,hi) z (TextProgram x) = do
-  s <- get
   t1 <- liftIO $ getCurrentTime
   renderZoneAnimationTextProgram (tNow,lo,mid,hi) z $ forRendering x
   t2 <- liftIO $ getCurrentTime
+  s <- get
   let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
   let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
   modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
   return ()
-renderZoneAnimation _ _ _ = return ()
+renderZoneAnimation  _ _ _ = return ()
 
 renderZoneAnimationTextProgram :: (UTCTime,Double,Double,Double) -> Int -> (TextNotation,Text) -> Renderer
 renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Punctual,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
-renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Oir,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
-renderZoneAnimationTextProgram _ _ _ = return ()
+-- renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Oir,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
+renderZoneAnimationTextProgram  _ _ _ = return ()
 
 renderPunctualWebGL :: (UTCTime,Double,Double,Double) -> Int -> Renderer
 renderPunctualWebGL (tNow,lo,mid,hi) z = do
   s <- get
-  let webGL = findWithDefault Punctual.emptyPunctualWebGL z $ punctualWebGLs s
   let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
-  liftIO $ Punctual.drawFrame (tNow',lo,mid,hi) webGL
+  newWebGL <- liftIO $ Punctual.drawPunctualWebGL (glContext s) (tNow',lo,mid,hi) z (punctualWebGL s)
+  modify' $ \x -> x { punctualWebGL = newWebGL }
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
 renderZoneChanged irc c z (Structure x) = do
@@ -314,7 +298,7 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y)) = do
   t1 <- liftIO $ getCurrentTime
   parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
   t2 <- liftIO $ getCurrentTime
-  liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
+  -- liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
@@ -322,13 +306,13 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y)) = do
 
 renderBaseProgramChanged irc c z (Right (Punctual,x)) = do
   t1 <- liftIO $ getCurrentTime
-  r <- parsePunctualNotation irc c z Punctual.runPunctualParser x
+  r <- parsePunctualNotation' irc c z x
   t2 <- liftIO $ getCurrentTime
-  liftIO $ T.putStrLn $ "parsePunctualNotation: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
+  -- liftIO $ T.putStrLn $ "parsePunctualNotation: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   return r
-renderBaseProgramChanged irc c z (Right (Ver,x)) = parsePunctualNotation irc c z Ver.ver x
-renderBaseProgramChanged irc c z (Right (Oir,x)) = parsePunctualNotation irc c z Oir.oir x
-renderBaseProgramChanged irc c z (Right (Dos,x)) = parsePunctualNotation irc c z Dos.dos x
+--Jessica's parsers:
+-- renderBaseProgramChanged irc c z (Right (Ver,x)) = parsePunctualNotation irc c z Ver.ver x
+-- renderBaseProgramChanged irc c z (Right (Oir,x)) = parsePunctualNotation irc c z Oir.oir x
 
 renderBaseProgramChanged irc c z (Right (CineCer0,x)) = do
   s <- get
@@ -357,21 +341,29 @@ renderBaseProgramChanged irc c z (Right (TimeNot,x)) = do
 renderBaseProgramChanged irc c z _ = setZoneError z "renderBaseProgramChanged: no match for base language"
 
 
-parsePunctualNotation :: ImmutableRenderContext -> Context -> Int -> (Text -> Either ParseError [Punctual.Expression]) -> Text -> Renderer
+parsePunctualNotation :: ImmutableRenderContext -> Context -> Int -> (Text -> Either ParseError Punctual.Program) -> Text -> Renderer
 parsePunctualNotation irc c z p t = do
   s <- get
   let parseResult = p t
-  when (isRight parseResult) $ do
-    let exprs = fromRight [] parseResult -- :: [Expression]
-    -- liftIO $ putStrLn $ show exprs
-    let evalTime = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ renderStart s -- :: AudioTime/Double
-    let eval = (exprs,evalTime) -- :: Punctual.Evaluation
-    punctualProgramChanged irc c z eval
+  case parseResult of
+    Right punctualProgram -> punctualProgramChanged irc c z punctualProgram
+    Left _ -> return ()
   let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
 
-punctualProgramChanged :: ImmutableRenderContext -> Context -> Int -> Punctual.Evaluation -> Renderer
-punctualProgramChanged irc c z e = do
+parsePunctualNotation' :: ImmutableRenderContext -> Context -> Int -> Text -> Renderer
+parsePunctualNotation' irc c z t = do
+  s <- get
+  let evalTime = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ renderStart s -- :: AudioTime/Double
+  parseResult <- liftIO $ Punctual.runPunctualParser evalTime t
+  case parseResult of
+    Right punctualProgram -> punctualProgramChanged irc c z punctualProgram
+    Left _ -> return ()
+  let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  modify' $ \x -> x { info = (info s) { errors = newErrors }}
+
+punctualProgramChanged :: ImmutableRenderContext -> Context -> Int -> Punctual.Program -> Renderer
+punctualProgramChanged irc c z p = do
   s <- get
   -- A. update PunctualW (audio state) in response to new, syntactically correct program
   let (mainBusIn,_,_,_,_,_,_) = mainBus irc
@@ -381,15 +373,12 @@ punctualProgramChanged irc c z e = do
   let tempo' = tempo $ ensemble $ ensembleC c
   let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ beatZero tempo'
   let cps' = cps tempo'
-  newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') e
+  newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') p
   modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   -- B. update Punctual WebGL state in response to new, syntactically correct program
-  webGLs <- gets punctualWebGLs
-  let prevWebGL = IntMap.lookup z webGLs
-  prevWebGL' <- if isJust prevWebGL then return (fromJust prevWebGL) else
-    liftIO $ Punctual.updateRenderingContext Punctual.emptyPunctualWebGL (canvasElement c)
-  newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL prevWebGL' (beat0,realToFrac cps') e
-  modify' $ \x -> x { punctualWebGLs = insert z newWebGL webGLs }
+  pWebGL <- gets punctualWebGL
+  newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL (glContext s) (beat0,realToFrac cps') z p pWebGL
+  modify' $ \x -> x { punctualWebGL = newWebGL }
 
 
 renderTextProgramAlways :: ImmutableRenderContext -> Context -> Int -> Renderer
@@ -443,27 +432,28 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> IO ()
-forkRenderThreads irc ctxM riM = do
+forkRenderThreads :: ImmutableRenderContext -> MVar Context -> Punctual.GLContext -> MVar RenderInfo -> IO ()
+forkRenderThreads irc ctxM glCtx riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
-  irs <- initialRenderState t0System t0Audio
+  irs <- initialRenderState glCtx t0System t0Audio
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread irc ctxM riM rsM
-  void $ forkIO $ animationThread irc rsM
+  void $ forkIO $ animationThread irc ctxM rsM
 
 mainRenderThread :: ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
 mainRenderThread irc ctxM riM rsM = do
   ctx <- readMVar ctxM
-  rs <- readMVar rsM
+  rs <- takeMVar rsM
   rs' <- execStateT (render irc ctx) rs
   let rs'' = rs' { animationOn = canvasOn ctx }
-  swapMVar rsM rs''
+  putMVar rsM rs''
   swapMVar riM (info rs'') -- copy RenderInfo from state into MVar for instant reading elsewhere
+  _ <- execStateT sleepIfNecessary rs''
   mainRenderThread irc ctxM riM rsM
 
-animationThread :: ImmutableRenderContext -> MVar RenderState -> IO ()
-animationThread irc rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
+animationThread :: ImmutableRenderContext -> MVar Context -> MVar RenderState -> IO ()
+animationThread irc ctxM rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
   rs <- readMVar rsM
   when (animationOn rs) $ do
     let (_,_,_,_,_,node,array) = mainBus irc
@@ -471,6 +461,7 @@ animationThread irc rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
     lo <- getLo array
     mid <- getMid array
     hi <- getHi array
-    _ <- execStateT (renderAnimation (lo,mid,hi)) rs
-    return ()
-  animationThread irc rsM
+    rs' <- takeMVar rsM
+    rs'' <- execStateT (renderAnimation (lo,mid,hi)) rs'
+    putMVar rsM rs''
+  animationThread irc ctxM rsM

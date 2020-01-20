@@ -11,10 +11,9 @@ data TextNotation =
   TidalTextNotation TidalParser |
   Punctual |
   CineCer0 |
-  TimeNot |
-  Ver |
-  Oir |
-  Dos
+  TimeNot
+  -- Ver |
+  -- Oir
   deriving (Read,Eq,Ord,Show,Generic)
 
 instance ToJSON TextNotation where

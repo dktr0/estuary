@@ -30,6 +30,7 @@ import Estuary.Render.DynamicsMode
 import Estuary.Render.LocalResources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
+import Sound.Punctual.GL (GLContext)
 
 -- things the render engine needs, but the UI doesn't need, and which never change
 data ImmutableRenderContext = ImmutableRenderContext {
@@ -53,7 +54,6 @@ data Context = Context {
   wsStatus :: Text,
   serverLatency :: NominalDiffTime,
   clientCount :: Int,
-  canvasElement :: Maybe HTMLCanvasElement,
   videoDivElement :: Maybe HTMLDivElement,
   theVideoDiv :: Maybe JSVal
   }
@@ -74,7 +74,6 @@ initialContext nowUtc = Context {
   wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
-  canvasElement = Nothing,
   videoDivElement = Nothing,
   theVideoDiv = Nothing
 }

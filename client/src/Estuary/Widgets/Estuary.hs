@@ -22,6 +22,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import TextShow
 import Sound.MusicW.AudioContext
+import Sound.Punctual.GL
 
 import Estuary.Utility
 import Estuary.Widgets.Navigation
@@ -45,11 +46,13 @@ import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
+import Estuary.Render.Renderer
+
 
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
 
-  canvasWidget ctxM ctx -- global canvas shared with render threads through Context MVar, this needs to be first in this action
+  glCtx <- canvasWidget ctxM ctx -- global canvas shared with render threads through Context MVar, this needs to be first in this action
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
@@ -92,6 +95,8 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
   let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
   let requests' = fmap (:[]) $ requests
   let requestsUp = mergeWith (++) [ensembleRequestsUp',requests']
+
+  liftIO $ forkRenderThreads irc ctxM glCtx riM
   return ()
 
 hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
@@ -106,8 +111,7 @@ hintsToResponses = catMaybes . fmap f
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
     f _ = Nothing
 
--- a standard canvas that, in addition to being part of reflex-dom's DOM representation, is shared with other threads through the Context
-canvasWidget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
+canvasWidget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m GLContext
 canvasWidget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
   let canvasVisible = fmap (("visibility:" <>)  . bool "hidden" "visible" . canvasOn) ctx
@@ -115,8 +119,10 @@ canvasWidget ctxM ctx = do
   let canvasAttrs = fmap canvasF canvasVisible
   videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" divAttrs $ return ()
   canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" canvasAttrs $ return ()
-  let ic = ic0 { canvasElement = Just canvas, videoDivElement = Just videoDiv }
+  glc <- liftIO $ newGLContext canvas
+  let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
+  return glc
   where
     divF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -2;") <> x <> ";"), ("width","1920"), ("height","1080")]
     canvasF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -1;") <> x <> ";"), ("width","1920"), ("height","1080")]
