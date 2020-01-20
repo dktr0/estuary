@@ -8,17 +8,18 @@ import qualified Data.IntMap.Strict as IntMap
 import Data.Text (Text)
 import GHC.Generics
 import Data.Aeson
+import Data.Time
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 
-type TextProgram = Live (TextNotation,Text)
+type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 
 data Definition =
-  TextProgram TextProgram |
+  TextProgram (Live TextProgram) |
   Sequence Sequence |
   TidalStructure TransformedPattern |
   LabelText Text
@@ -46,11 +47,11 @@ maybeTidalStructure _ = Nothing
 justTidalStructures :: [Definition] -> [TransformedPattern]
 justTidalStructures = mapMaybe maybeTidalStructure
 
-maybeTextProgram :: Definition -> Maybe TextProgram
+maybeTextProgram :: Definition -> Maybe (Live TextProgram)
 maybeTextProgram (TextProgram x) = Just x
 maybeTextProgram _ = Nothing
 
-justTextPrograms :: [Definition] -> [TextProgram]
+justTextPrograms :: [Definition] -> [Live TextProgram]
 justTextPrograms = mapMaybe maybeTextProgram
 
 maybeSequence :: Definition -> Maybe Sequence

@@ -13,6 +13,7 @@ import Data.Map (fromList)
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time
 
 import Estuary.Tidal.Types
 import Estuary.WebDirt.Foreign
@@ -55,27 +56,27 @@ textWidget rows i delta = do
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual, CineCer0, TimeNot {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)
 
-textProgramEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t TextProgram
-  -> Editor t m (Variable t TextProgram)
+textProgramEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t (Live TextProgram)
+  -> Editor t m (Variable t (Live TextProgram))
 textProgramEditor nRows errorDyn updates = do
   ctx <- askContext
   reflexWidgetToEditor updates $ textProgramWidget ctx errorDyn nRows
 
 textProgramWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) -> Int
-  -> TextProgram -> Event t TextProgram -> m (Event t TextProgram,Event t [Hint])
-textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
+  -> Live TextProgram -> Event t (Live TextProgram) -> m (Event t (Live TextProgram),Event t [Hint])
+textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
 
   let deltaFuture = fmap forEditing delta
-  let parserFuture = fmap fst deltaFuture
-  let textFuture = fmap snd deltaFuture
-  let initialParser = fst $ forEditing i
+  let parserFuture = fmap (\(x,_,_) -> x) deltaFuture
+  let textFuture = fmap (\(_,x,_) -> x) deltaFuture
+  let initialParser = (\(x,_,_) -> x) $ forEditing i
   let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- dynButton =<< translateDyn Term.Eval ctx
-      e' <- holdUniqDyn e
+      e' <- holdUniqDyn errorText
       dynText =<< (return $ fmap (maybe "" (const "!")) e')
       return x
     infoButton' <- divClass "referenceButton" $ dynButton "?"
@@ -84,16 +85,23 @@ textProgramWidget ctx e rows i delta = divClass "textPatternChain" $ do -- *** T
   (edit,eval) <- divClass "labelAndTextPattern" $ do
     let parserValue = _dropdown_value d -- Dynamic t TidalParser
     let parserEvent = _dropdown_change d
-    let initialText = snd $ forEditing i
+    let initialText = (\(_,x,_) -> x) $ forEditing i
     textVisible <- toggle True infoButton
     helpVisible <- toggle False infoButton
     (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "width-100-percent" $ textWidget rows initialText textFuture
     languageToDisplayHelp <- (holdDyn initialParser $ updated parserValue) >>= holdUniqDyn
     deferredWidget "width-100-percent" helpVisible $ fmap parserToHelp languageToDisplayHelp
-    let v' = (,) <$> parserValue <*> textValue
+
+    let evalEvent = leftmost [evalButton,shiftEnter]
+    let initialEvalTime = (\(_,_,x) -> x) $ forRendering i
+    localEvalTime <- performEvent $ fmap (liftIO . const getCurrentTime) evalEvent
+    let remoteEvalTime = fmap ( (\(_,_,x) -> x) . forRendering) delta
+    evalTimeValue <- holdDyn initialEvalTime $ leftmost [localEvalTime,remoteEvalTime]
+
+    let v' = (\x y z -> (x,y,z)) <$> parserValue <*> textValue <*> evalTimeValue
     let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent = tagPromptlyDyn v' $ leftmost [evalButton,shiftEnter]
-    return (editEvent,evalEvent)
+    let evalEvent' = tagPromptlyDyn v' $ evalEvent
+    return (editEvent,evalEvent')
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]

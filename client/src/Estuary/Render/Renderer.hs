@@ -249,9 +249,8 @@ renderZoneAnimation (tNow,lo,mid,hi) z (TextProgram x) = do
   return ()
 renderZoneAnimation  _ _ _ = return ()
 
-renderZoneAnimationTextProgram :: (UTCTime,Double,Double,Double) -> Int -> (TextNotation,Text) -> Renderer
-renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Punctual,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
--- renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Oir,x) = renderPunctualWebGL (tNow,lo,mid,hi) z
+renderZoneAnimationTextProgram :: (UTCTime,Double,Double,Double) -> Int -> TextProgram -> Renderer
+renderZoneAnimationTextProgram (tNow,lo,mid,hi) z (Punctual,x,eTime) = renderPunctualWebGL (tNow,lo,mid,hi) z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
 renderPunctualWebGL :: (UTCTime,Double,Double,Double) -> Int -> Renderer
@@ -280,20 +279,22 @@ renderZoneAlways irc c z (TextProgram x) = renderTextProgramAlways irc c z
 renderZoneAlways irc c z (Sequence _) = renderControlPattern irc c z
 renderZoneAlways _ _ _ _ = return ()
 
-renderTextProgramChanged :: ImmutableRenderContext -> Context -> Int -> (TextNotation,Text) -> Renderer
+renderTextProgramChanged :: ImmutableRenderContext -> Context -> Int -> TextProgram -> Renderer
 renderTextProgramChanged irc c z prog = do
   let x = applyTextReplacement prog
   renderBaseProgramChanged irc c z x
-  when (isRight x) $ do
-    let (n,t) = fromRight (Punctual,"") x
-    oldBaseNotations <- gets baseNotations
-    modify' $ \y -> y { baseNotations = insert z n oldBaseNotations }
+  case x of
+    (Right x') -> do
+      let (n,_,_) = x'
+      oldBaseNotations <- gets baseNotations
+      modify' $ \y -> y { baseNotations = insert z n oldBaseNotations }
+    (Left _) -> return ()
 
-renderBaseProgramChanged :: ImmutableRenderContext -> Context -> Int -> Either ParseError (TextNotation,Text) -> Renderer
+renderBaseProgramChanged :: ImmutableRenderContext -> Context -> Int -> Either ParseError TextProgram -> Renderer
 
 renderBaseProgramChanged irc c z (Left e) = setZoneError z (T.pack $ show e)
 
-renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y)) = do
+renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
   s <- get
   t1 <- liftIO $ getCurrentTime
   parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
@@ -304,31 +305,22 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y)) = do
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
-renderBaseProgramChanged irc c z (Right (Punctual,x)) = do
-  t1 <- liftIO $ getCurrentTime
-  r <- parsePunctualNotation' irc c z x
-  t2 <- liftIO $ getCurrentTime
-  -- liftIO $ T.putStrLn $ "parsePunctualNotation: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
-  return r
---Jessica's parsers:
--- renderBaseProgramChanged irc c z (Right (Ver,x)) = parsePunctualNotation irc c z Ver.ver x
--- renderBaseProgramChanged irc c z (Right (Oir,x)) = parsePunctualNotation irc c z Oir.oir x
+renderBaseProgramChanged irc c z (Right (Punctual,x,_)) = parsePunctualNotation' irc c z x
 
-renderBaseProgramChanged irc c z (Right (CineCer0,x)) = do
-  s <- get
-  let eTime = renderStart s
+renderBaseProgramChanged irc c z (Right (CineCer0,x,eTime)) = do
   let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack x -- Either String CineCer0Spec
   when (isRight parseResult) $ do
     let spec :: CineCer0.Spec = fromRight (CineCer0.emptySpec eTime) parseResult
+    s <- get
     modify' $ \x -> x { cineCer0Specs = insert z spec (cineCer0Specs s) }
     clearZoneError z
   when (isLeft parseResult) $ do
     let err = fromLeft "" parseResult
     setZoneError z (T.pack err)
 
-renderBaseProgramChanged irc c z (Right (TimeNot,x)) = do
+renderBaseProgramChanged irc c z (Right (TimeNot,x,eTime)) = do
   s <- get
-  let parseResult = TimeNot.timeNot (renderStart s) x -- :: Either Text [(UTCTime, Map Text Datum)]
+  let parseResult = TimeNot.timeNot eTime x -- :: Either Text [(UTCTime, Map Text Datum)]
   when (isRight parseResult) $ do
     let evs = fromRight [] parseResult -- :: [(UTCTime, Map Text Datum)]
     let evs' = fmap (second (mapTextDatumToControlMap)) evs -- :: [(UTCTime,Tidal.ControlMap)]
