@@ -13,14 +13,14 @@ type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a
 instance Num a => Num (Signal a) where
     x + y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) + (y t dur renderTime evalTime)
     x * y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) * (y t dur renderTime evalTime)
-    negate x = \t dur renderTime evalTime -> negate (x t dur renderTime evalTime) 
+    negate x = \t dur renderTime evalTime -> negate (x t dur renderTime evalTime)
     abs x = \t dur renderTime evalTime -> abs (x t dur renderTime evalTime)
     signum x = \t dur renderTime evalTime -> signum (x t dur renderTime evalTime)
-    fromIntegral x = \t dur renderTime evalTime -> fromIntegral (x t dur renderTime evalTime)
+    fromInteger x = \t dur renderTime evalTime -> fromInteger x
 
------- functions that generate signals 
+------ functions that generate signals
 
-constantSignal :: a -> Signal a 
+constantSignal :: a -> Signal a
 constantSignal x = \_ _ _ _ -> x
 
 -- Temporal Functions
@@ -28,7 +28,7 @@ constantSignal x = \_ _ _ _ -> x
 ------ Manually apply a rate into a video ------
 
 applyRate:: Rational -> Signal (Maybe Rational)
-applyRate rate t length render eval = Just rate 
+applyRate rate t length render eval = Just rate
 
 
 ------ Play at Natural Rate and without alteration ------
@@ -282,13 +282,13 @@ playNow_Rate startPos rate t vlen render eval = Just rate
 ---- Opacity
 
 -- sets a default opacity for new videos --
-defaultOpacity :: Signal Rational 
+defaultOpacity :: Signal Rational
 defaultOpacity = \_ _ _ _ -> 100
 
 ------ Manually changes the opacity of a video ------
 
-opacityChanger:: Rational -> Signal Rational 
-opacityChanger arg t len rend eval = arg  
+opacityChanger:: Rational -> Signal Rational
+opacityChanger arg t len rend eval = arg
 
 
 -- Dynamic Functions
@@ -299,20 +299,20 @@ ramp:: UTCTime -> UTCTime -> NominalDiffTime -> NominalDiffTime -> Rational -> R
 ramp renderTime evalTime startTime endTime startVal endVal
     | addUTCTime startTime evalTime > renderTime = startVal
     | addUTCTime endTime evalTime < renderTime = endVal
-    | otherwise = 
+    | otherwise =
         let segmentVal = endVal - startVal
             startScale = startVal
             start = addUTCTime startTime evalTime
             end = addUTCTime endTime evalTime
             processInterval = diffUTCTime end start
-            renderInterval = diffUTCTime renderTime start 
+            renderInterval = diffUTCTime renderTime start
             result = getPercentage (realToFrac renderInterval :: Rational) (realToFrac processInterval :: Rational) segmentVal
         in startScale + (result)
 
 --------- Helper Functions ------------
 
 getPercentage:: Rational -> Rational -> Rational -> Rational
-getPercentage value scale limit = (value/scale) * limit        
+getPercentage value scale limit = (value/scale) * limit
 
 reglaDeTres:: Rational -> Rational -> Rational -> Rational
 reglaDeTres normScale normPos realScale = (normPos*realScale) / normScale
@@ -348,4 +348,3 @@ startPoint = UTCTime today 30
 endPoint = UTCTime today 40
 
 renderTime = UTCTime today 34.5
-
