@@ -15,16 +15,8 @@ instance Num a => Num (Signal a) where
     x * y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) * (y t dur renderTime evalTime)
     negate x = \t dur renderTime evalTime -> negate (x t dur renderTime evalTime) 
     abs x = \t dur renderTime evalTime -> abs (x t dur renderTime evalTime)
---    negate x = \t dur renderTime evalTime -> (Product x (Constant (-1))) t dur renderTime evalTime
---    abs x = \t dur renderTime evalTime -> (Abs x) t dur renderTime evalTime
---    signum x = \t dur renderTime evalTime -> ((GreaterThan x 0) + (LessThan x 0 * (-1))) t dur renderTime evalTime
---    fromIntegral x = \t dur renderTime evalTime -> (Constant $ fromInteger x) t dur renderTime evalTime
-
---   x * y = Product x y
---   negate x = Product x (Constant (-1))
---   abs x = Abs x
---   signum x = (GreaterThan x 0) + (LessThan x 0 * (-1))
---   fromInteger x = Constant $ fromInteger x
+    signum x = \t dur renderTime evalTime -> signum (x t dur renderTime evalTime)
+    fromIntegral x = \t dur renderTime evalTime -> fromIntegral (x t dur renderTime evalTime)
 
 ------ functions that generate signals 
 
