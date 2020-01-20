@@ -1,10 +1,6 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+
 module Estuary.Languages.CineCer0.Signals where
-
-{-# LANGUAGE DeriveDataTypeable #-}
-
-{-# LANGUAGE FlexibleInstances #-}
-
-{-# LANGUAGE TypeSynonymInstances #-}
 
 import Data.Time
 
@@ -14,9 +10,11 @@ import Estuary.Types.Tempo
  --              Tempo    Video Length      render T   eval T
 type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a
 
-instance Num (Signal a) where
+instance Num a => Num (Signal a) where
     x + y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) + (y t dur renderTime evalTime)
---    x * y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) + (y t dur renderTime evalTime)
+    x * y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) * (y t dur renderTime evalTime)
+    negate x = \t dur renderTime evalTime -> negate (x t dur renderTime evalTime) 
+    abs x = \t dur renderTime evalTime -> abs (x t dur renderTime evalTime)
 --    negate x = \t dur renderTime evalTime -> (Product x (Constant (-1))) t dur renderTime evalTime
 --    abs x = \t dur renderTime evalTime -> (Abs x) t dur renderTime evalTime
 --    signum x = \t dur renderTime evalTime -> ((GreaterThan x 0) + (LessThan x 0 * (-1))) t dur renderTime evalTime
