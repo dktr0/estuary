@@ -18,9 +18,9 @@ type TextProgram = Live (TextNotation,Text)
 type Sequence = M.Map Int (Text,[Bool])
 
 data Definition =
-  Structure TransformedPattern | -- *** this should be renamed to TidalStructure
   TextProgram TextProgram |
   Sequence Sequence |
+  TidalStructure TransformedPattern |
   LabelText Text
   deriving (Eq,Show,Generic)
 
@@ -34,17 +34,17 @@ emptyDefinitionMap :: DefinitionMap
 emptyDefinitionMap = IntMap.empty
 
 definitionForRendering :: Definition -> Definition
-definitionForRendering (Structure x) = Structure x
 definitionForRendering (TextProgram x) = TextProgram (Live (forRendering x) L4)
-definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Sequence x) = Sequence x
+definitionForRendering (TidalStructure x) = TidalStructure x
+definitionForRendering (LabelText x) = LabelText x
 
-maybeStructure :: Definition -> Maybe TransformedPattern
-maybeStructure (Structure x) = Just x
-maybeStructure _ = Nothing
+maybeTidalStructure :: Definition -> Maybe TransformedPattern
+maybeTidalStructure (TidalStructure x) = Just x
+maybeTidalStructure _ = Nothing
 
-justStructures :: [Definition] -> [TransformedPattern]
-justStructures = mapMaybe maybeStructure
+justTidalStructures :: [Definition] -> [TransformedPattern]
+justTidalStructures = mapMaybe maybeTidalStructure
 
 maybeTextProgram :: Definition -> Maybe TextProgram
 maybeTextProgram (TextProgram x) = Just x

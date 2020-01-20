@@ -39,7 +39,7 @@ viewWidget er EmptyView = return never
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
-viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeStructure Structure er structureEditor
+viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
 viewWidget er (TextView z rows) = do
   ri <- askRenderInfo

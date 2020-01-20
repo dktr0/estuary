@@ -262,7 +262,7 @@ renderPunctualWebGL (tNow,lo,mid,hi) z = do
   modify' $ \x -> x { punctualWebGL = newWebGL }
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
-renderZoneChanged irc c z (Structure x) = do
+renderZoneChanged irc c z (TidalStructure x) = do
   let newParamPattern = toParamPattern x
   s <- get
   modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
@@ -275,7 +275,7 @@ renderZoneChanged irc c z (Sequence xs) = do
 renderZoneChanged _ _ _ _ = return ()
 
 renderZoneAlways :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
-renderZoneAlways irc c z (Structure _) = renderControlPattern irc c z
+renderZoneAlways irc c z (TidalStructure _) = renderControlPattern irc c z
 renderZoneAlways irc c z (TextProgram x) = renderTextProgramAlways irc c z
 renderZoneAlways irc c z (Sequence _) = renderControlPattern irc c z
 renderZoneAlways _ _ _ _ = return ()
