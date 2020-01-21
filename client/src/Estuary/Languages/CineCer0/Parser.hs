@@ -85,6 +85,9 @@ rat_rat_rat_rat_videoSpec_videoSpec =
 -- rat_rat_rat_rat =
 --   ramp renderTime evalTime <$ reserved "ramp"
 
+-- parsed (part of the “language”)
+-- ramp :: a -> b -> c -> d -> Signal Rational
+
 nd_rat_videoSpec_videoSpec :: H (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
 nd_rat_videoSpec_videoSpec = playNow <$ reserved "now" -- time function
 

@@ -115,6 +115,14 @@ changeOpacity n vs = vs {
   opacity = Sig.opacityChanger n
 }
 
+-- opacity :: Signal Rational -> VideoSpec -> VideoSpec
+-- opacity s v = v {
+-- 	_opacity = \a b c d -> (s a b c d) * ((_opacity v) a b c d)
+-- 	_opacity = s * _opacity v
+-- 	}
+--
+-- setOpacity :: Signal Rational -> VideoSpec -> VideoSpec
+-- setOpacity s v = v { _opacity = s }
 
 setBlur :: Rational -> VideoSpec -> VideoSpec
 setBlur n vs = vs {blur = n}
