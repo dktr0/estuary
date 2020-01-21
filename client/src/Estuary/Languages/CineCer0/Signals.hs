@@ -276,14 +276,14 @@ playNow_Rate startPos rate t vlen render eval = Just rate
 
 
 
--- Style
+-- Image
 
 
 ---- Opacity
 
 -- sets a default opacity for new videos --
 defaultOpacity :: Signal Rational
-defaultOpacity = \_ _ _ _ -> 100
+defaultOpacity = \_ _ _ _ -> 1
 
 ------ Manually changes the opacity of a video ------
 
@@ -293,10 +293,17 @@ opacityChanger arg t len rend eval = arg
 
 -- Dynamic Functions
 
+ramp:: UTCTime -> UTCTime -> NominalDiffTime -> Rational -> Rational -> Rational
+ramp renderTime evalTime durVal startVal endVal =
+  let startTime = diffUTCTime evalTime evalTime -- place holder, add quant later
+      endTime' = addUTCTime durVal evalTime
+      endTime = diffUTCTime endTime' evalTime
+  in ramp' renderTime evalTime startTime endTime startVal endVal
+
 -- Add Signal type!!!!!
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
-ramp:: UTCTime -> UTCTime -> NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Rational
-ramp renderTime evalTime startTime endTime startVal endVal
+ramp':: UTCTime -> UTCTime -> NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Rational
+ramp' renderTime evalTime startTime endTime startVal endVal
     | addUTCTime startTime evalTime > renderTime = startVal
     | addUTCTime endTime evalTime < renderTime = endVal
     | otherwise =
@@ -308,6 +315,7 @@ ramp renderTime evalTime startTime endTime startVal endVal
             renderInterval = diffUTCTime renderTime start
             result = getPercentage (realToFrac renderInterval :: Rational) (realToFrac processInterval :: Rational) segmentVal
         in startScale + (result)
+--This function need to be corrected. Provide duration instead of startTime and endTime. starTime = evalTime (for now), endTime = evalTime + duration
 
 --------- Helper Functions ------------
 

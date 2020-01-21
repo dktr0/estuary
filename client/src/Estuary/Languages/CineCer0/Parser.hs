@@ -9,6 +9,7 @@ import Data.Bifunctor
 
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
+-- import Estuary.Languages.CineCer0.Signals
 
 type H = Haskellish ()
 
@@ -29,7 +30,7 @@ spec eTime = do
 videoSpec :: H VideoSpec
 videoSpec =
   literalVideoSpec <|>
-  int_VideoSpec <*> int <|>
+  int_VideoSpec <*> int <|> -- Set Video Source
   videoSpec_videoSpec <*> videoSpec
 
 int :: H Int
@@ -79,6 +80,11 @@ rat_rat_rat_rat_videoSpec_videoSpec :: H (Rational -> Rational -> Rational -> Ra
 rat_rat_rat_rat_videoSpec_videoSpec =
   playChop <$ reserved "chop" -- time function
 
+-- -- !!!!!! NEW
+-- rat_rat_rat_rat ::  H (Rational -> Rational -> Rational -> Rational)
+-- rat_rat_rat_rat =
+--   ramp renderTime evalTime <$ reserved "ramp"
+
 nd_rat_videoSpec_videoSpec :: H (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
 nd_rat_videoSpec_videoSpec = playNow <$ reserved "now" -- time function
 
@@ -87,7 +93,6 @@ nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "chopSecs" -- time 
 
 videoSpec_videoSpec :: H (VideoSpec -> VideoSpec)
 videoSpec_videoSpec =
-  --string_VideoSpec_VideoSpec <*> string <|> --mask function
   rat_videoSpec_videoSpec <*> rationalOrInteger <|> -- time function
   rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <|> -- pos function
   rat_rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <|> -- time function

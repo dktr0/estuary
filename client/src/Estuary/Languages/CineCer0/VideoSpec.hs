@@ -8,12 +8,12 @@ import qualified Estuary.Languages.CineCer0.Signals as Sig
 
 import Estuary.Types.Tempo
 
---type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a 
+--type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a
 -- This is in Types already!
 
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
-  sourceNumber :: Int, 
+  sourceNumber :: Int,
   playbackPosition :: Sig.Signal (Maybe NominalDiffTime),
   playbackRate :: Sig.Signal (Maybe Rational),
   posX :: Rational,
@@ -108,7 +108,7 @@ setOpacity r vs = vs {
 -- defaultOpacity _ _ _ = 100
 
 -- opacityChanger:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Rational
--- opacityChanger arg t len now = arg  
+-- opacityChanger arg t len now = arg
 
 changeOpacity :: Rational -> VideoSpec -> VideoSpec
 changeOpacity n vs = vs {
@@ -131,15 +131,8 @@ setGrayscale n vs = vs {grayscale = n}
 setSaturate :: Rational -> VideoSpec -> VideoSpec
 setSaturate n vs = vs {saturate = n}
 
-
 --
 -- Time Functions --
-
-rate:: Rational -> VideoSpec -> VideoSpec
-rate n vs = vs {
-  playbackRate = Sig.applyRate n
-}
-
 
 playNatural :: Rational -> VideoSpec -> VideoSpec
 playNatural n vs = vs {
@@ -158,31 +151,31 @@ playRoundMetre n vs = vs {
   playbackPosition = Sig.playRoundMetrePos n,
   playbackRate = Sig.playRoundMetreRate n
   }
-  
+
 playEvery :: Rational -> Rational -> VideoSpec -> VideoSpec
 playEvery m n vs = vs {
   playbackPosition = Sig.playEvery_Pos m n,
   playbackRate = Sig.playEvery_Rate m n
   }
-  
+
 playChop' :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChop' l m n vs = vs {
   playbackPosition = Sig.playChop_Pos' l m n,
   playbackRate = Sig.playChop_Rate' l m n
   }
-  
+
 playChop :: Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChop k l m n vs = vs {
   playbackPosition = Sig.playChop_Pos k l m n,
   playbackRate = Sig.playChop_Rate k l m n
 }
-  
+
 playChopSecs :: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChopSecs k l m n vs = vs {
   playbackPosition = Sig.playChopSecs_Pos k l m n,
   playbackRate = Sig.playChopSecs_Rate k l m n
   }
-  
+
 playNow :: NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
 playNow m n vs = vs {
   playbackPosition = Sig.playNow_Pos m n,
