@@ -27,17 +27,20 @@ ensembleStatusWidget = do
   let anonymous = fmap anonymousParticipants ens -- Dynamic t Int
 
   -- display name of ensemble
-  liftR $ divClass "ensemble-name" $ do
+  liftR $ divClass "ensemble-name code-font" $ do
     text "Ensemble: "
     dynText ensName
 
-  -- display list of non-anonymous participants and locations
-  liftR $ divClass "statusElement" $ listWithKey ensParticipants ensembleParticipantWidget
+  liftR2 (divClass "statusElementsWrapper") $ do
+    -- display list of non-anonymous participants and locations
+      liftR $ divClass "statusElementWrapper code-font" $ do
+         divClass "statusElementName" $ text "Participants: "
+         divClass "statusElement" $ listWithKey ensParticipants ensembleParticipantWidget
 
-  -- display count of anonymous participants
-  liftR $ divClass "statusElement" $ do
-    text "Anonymous Participants: "
-    dynText $ fmap showt anonymous
+      -- display count of anonymous participants
+      liftR $ divClass "statusElementWrapper code-font" $ do
+        divClass "statusElementName" $ text "Anonymous Participants: "
+        divClass "statusElement" $ dynText $ fmap showt anonymous
 
   return ()
 
@@ -46,4 +49,4 @@ ensembleParticipantWidget name part = elClass "div" "" $ do
   text name
   text " ("
   dynText $ fmap location part
-  text "); "
+  text ") "
