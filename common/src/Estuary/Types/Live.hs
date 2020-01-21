@@ -11,7 +11,10 @@ instance ToJSON Liveness where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Liveness
 
-data Live a = Live a Liveness | Edited a a deriving (Eq,Generic)
+data Live a =
+  Live a Liveness |
+  Edited a a
+  deriving (Eq,Generic)
 
 instance ToJSON a => ToJSON (Live a) where
   toEncoding = genericToEncoding defaultOptions

@@ -8,19 +8,20 @@ import qualified Data.IntMap.Strict as IntMap
 import Data.Text (Text)
 import GHC.Generics
 import Data.Aeson
+import Data.Time
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 
-type TextProgram = Live (TextNotation,Text)
+type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 
 data Definition =
-  Structure TransformedPattern | -- *** this should be renamed to TidalStructure
-  TextProgram TextProgram |
+  TextProgram (Live TextProgram) |
   Sequence Sequence |
+  TidalStructure TransformedPattern |
   LabelText Text
   deriving (Eq,Show,Generic)
 
@@ -34,23 +35,23 @@ emptyDefinitionMap :: DefinitionMap
 emptyDefinitionMap = IntMap.empty
 
 definitionForRendering :: Definition -> Definition
-definitionForRendering (Structure x) = Structure x
 definitionForRendering (TextProgram x) = TextProgram (Live (forRendering x) L4)
-definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Sequence x) = Sequence x
+definitionForRendering (TidalStructure x) = TidalStructure x
+definitionForRendering (LabelText x) = LabelText x
 
-maybeStructure :: Definition -> Maybe TransformedPattern
-maybeStructure (Structure x) = Just x
-maybeStructure _ = Nothing
+maybeTidalStructure :: Definition -> Maybe TransformedPattern
+maybeTidalStructure (TidalStructure x) = Just x
+maybeTidalStructure _ = Nothing
 
-justStructures :: [Definition] -> [TransformedPattern]
-justStructures = mapMaybe maybeStructure
+justTidalStructures :: [Definition] -> [TransformedPattern]
+justTidalStructures = mapMaybe maybeTidalStructure
 
-maybeTextProgram :: Definition -> Maybe TextProgram
+maybeTextProgram :: Definition -> Maybe (Live TextProgram)
 maybeTextProgram (TextProgram x) = Just x
 maybeTextProgram _ = Nothing
 
-justTextPrograms :: [Definition] -> [TextProgram]
+justTextPrograms :: [Definition] -> [Live TextProgram]
 justTextPrograms = mapMaybe maybeTextProgram
 
 maybeSequence :: Definition -> Maybe Sequence

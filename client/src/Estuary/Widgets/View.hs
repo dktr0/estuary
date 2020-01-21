@@ -8,8 +8,10 @@ import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.Maybe
 import TextShow
+import Data.Time
 
 import Estuary.Types.Live
 import Estuary.Types.Definition
@@ -39,12 +41,13 @@ viewWidget er EmptyView = return never
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
-viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeStructure Structure er structureEditor
+viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
 viewWidget er (TextView z rows) = do
+  whenever <- liftIO $ getCurrentTime
   ri <- askRenderInfo
   let errorDyn = fmap (IntMap.lookup z . errors) ri
-  zoneWidget z (Live (TidalTextNotation MiniTidal,"") L3) maybeTextProgram TextProgram er (textProgramEditor rows errorDyn)
+  zoneWidget z (Live (TidalTextNotation MiniTidal,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor rows errorDyn)
 
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
@@ -63,7 +66,8 @@ viewWidget er (Paragraph t) = liftR2 (divClass "paragraph code-font") $ translat
 
 viewWidget er (Example n t) = do
   b <- liftR $ clickableDiv "example code-font" $ text t
-  hint $ (ZoneHint 1 (TextProgram (Live (n,t) L3))) <$ b
+  bTime <- liftR $ performEvent $ fmap (liftIO . const getCurrentTime) b
+  hint $ fmap (\et -> ZoneHint 1 (TextProgram (Live (n,t,et) L3))) bTime
   return never
 
 viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v

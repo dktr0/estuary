@@ -9,6 +9,7 @@ import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad(liftM)
 import Control.Monad.IO.Class(liftIO)
+import System.IO
 
 import Sound.MusicW
 
@@ -39,6 +40,7 @@ import System.Timeout(timeout)
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser
   existingUncaughtHandler <- getUncaughtExceptionHandler
   setUncaughtExceptionHandler $ \e -> do
@@ -62,7 +64,7 @@ main = do
   nowAudio <- liftAudioIO $ audioTime
   context <- newMVar $ initialContext nowUtc
   renderInfo <- newMVar $ emptyRenderInfo
-  forkRenderThreads immutableRenderContext context renderInfo
+  -- forkRenderThreads immutableRenderContext context renderInfo
 
   cb <- syncCallback1' $ \dest -> do
     node <- changeDestination mainBusNodes $

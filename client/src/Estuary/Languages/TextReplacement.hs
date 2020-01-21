@@ -5,14 +5,15 @@ import Text.Parsec
 
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
+import Estuary.Types.Definition
 
-applyTextReplacement :: (TextNotation,Text) -> Either ParseError (TextNotation,Text)
+applyTextReplacement :: TextProgram -> Either ParseError TextProgram
 
 -- 1. for base languages, we simply return the unmodified input...
-applyTextReplacement (TidalTextNotation MiniTidal,x) = Right (TidalTextNotation MiniTidal,x)
-applyTextReplacement (Punctual,x) = Right (Punctual,x)
-applyTextReplacement (CineCer0,x) = Right (CineCer0,x)
-applyTextReplacement (TimeNot,x) = Right (TimeNot,x)
+applyTextReplacement (TidalTextNotation MiniTidal,x,t) = Right (TidalTextNotation MiniTidal,x,t)
+applyTextReplacement (Punctual,x,t) = Right (Punctual,x,t)
+applyTextReplacement (CineCer0,x,t) = Right (CineCer0,x,t)
+applyTextReplacement (TimeNot,x,t) = Right (TimeNot,x,t)
 
 -- 2. for text replacement languages, we recursively apply this function to the output
 -- of their parsers. For example:
