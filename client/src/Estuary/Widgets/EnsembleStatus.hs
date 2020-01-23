@@ -31,16 +31,28 @@ ensembleStatusWidget = do
     text "Ensemble: "
     dynText ensName
 
+    -- display list of non-anonymous participants
   liftR2 (divClass "statusElementsWrapper") $ do
-    -- display list of non-anonymous participants and locations
       liftR $ divClass "statusElementWrapper code-font" $ do
-         divClass "statusElementName" $ text "Participants: "
-         divClass "statusElement" $ listWithKey ensParticipants ensembleParticipantWidget
+         divClass "statusElementName" $ text "Name: "
+         divClass "statusElement" $ listWithKey ensParticipants participantNameWidget
+
+    -- display list of locations for non-anonymous participants
+      liftR $ divClass "statusElementWrapper code-font" $ do
+         divClass "statusElementName" $ text "Location: "
+         divClass "statusElement" $ listWithKey ensParticipants participantLocationWidget
+
+   -- display the status of the ensParticipants
+      liftR $ divClass "statusElementWrapper code-font" $ do
+         divClass "statusElementName" $ text "Status: "
+         divClass "statusElement" $ listWithKey ensParticipants participantStatusWidget
 
       -- display count of anonymous participants
+  liftR2 (divClass "statusElementsWrapper") $ do
       liftR $ divClass "statusElementWrapper code-font" $ do
-        divClass "statusElementName" $ text "Anonymous Participants: "
-        divClass "statusElement" $ dynText $ fmap showt anonymous
+        divClass "statusElementName" $ do
+          text "Anonymous Participants: "
+          dynText $ fmap showt anonymous
 
   return ()
 
@@ -50,3 +62,16 @@ ensembleParticipantWidget name part = elClass "div" "" $ do
   text " ("
   dynText $ fmap location part
   text ") "
+
+participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantNameWidget name part = elClass "div" "" $ do
+  text name
+
+participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantLocationWidget name part = elClass "div" "" $ do
+  dynText $ fmap location part
+
+participantStatusWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantStatusWidget name part = divClass "participantStatusWidget" $ do
+  ti <- textInput $ def & attributes .~ constDyn ("class" =: "statusInputWidget code-font") & textInputConfig_initialValue .~ "active"
+  return ()

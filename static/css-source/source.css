@@ -1094,7 +1094,7 @@ display: inline-flex;
 	display:block;
 	padding: 0.125em;
 	box-shadow: 0px 1px 3px 0px;
-	width: 50%;
+	width: 100%;
 }
 
 .statusElementName {
@@ -1105,4 +1105,12 @@ display: inline-flex;
 
 .statusElement {
 	margin: 0.125em
+}
+
+.statusInputWidget {
+    background: var(--background-color);
+    color: var( --primary-color);
+    width: 100%;
+    border: none;
+   	padding: 0.125em;
 }
