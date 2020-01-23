@@ -151,11 +151,13 @@ in
 
         webdirt = import ./deps/webdirt self;
 
-        TimeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
+        TimeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock
+        # (self.callCabal2nix "TimeNot" ../TimeNot "" {});
+        (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
             owner = "afrancob";
             repo = "timeNot";
-            sha256 = "0klz2y87fqhbnkcqqf3accv5hwj73b6snc0nm34270wk7wrbyg3m";
-            rev = "93c31f3dda915546946d1c962cf44e96f3da357d";
+            sha256 = "083prbp97qdynx0m4m2m9ljxsz1caprvlxsz7vvxz8n23kffy2h3";
+            rev = "b5d4ff4578e0a1112cc81238e6704915eea33097";
           }) {});
 
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {

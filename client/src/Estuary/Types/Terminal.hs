@@ -29,11 +29,15 @@ parseCommand :: Text -> Either ParseError Command
 parseCommand = parse terminal "(unknown)"
 
 terminal :: Parser Command
-terminal = whiteSpace >> (terminalCommand <|> chatP)
+terminal = do
+  whiteSpace
+  x <- terminalCommand <|> chatP
+  eof
+  return x
 
 terminalCommand :: Parser Command
 terminalCommand = symbol "!" >> choice [
-  reserved "localview" >> viewsParser >>= return . LocalView,
+  reserved "localview" >> viewParser >>= return . LocalView,
   reserved "presetview" >> identifierText >>= return . PresetView,
   reserved "publishview" >> identifierText >>= return . PublishView,
   reserved "activeview" >> return ActiveView,

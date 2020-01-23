@@ -25,6 +25,7 @@ import Data.Bifunctor
 import TextShow
 import Sound.OSC.Datum
 import Text.Parsec
+import qualified Data.ByteString as B
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Punctual.Program as Punctual
@@ -33,10 +34,9 @@ import qualified Sound.Punctual.GL as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.AsyncProgram as Punctual
 import qualified Sound.Punctual.Parser as Punctual
-import qualified Sound.TimeNot.MapEstuary as TimeNot
-
--- import qualified Estuary.Languages.TiempoEspacio.Ver as Ver
--- import qualified Estuary.Languages.TiempoEspacio.Oir as Oir
+import qualified Sound.TimeNot.AST as TimeNot
+import qualified Sound.TimeNot.Parsers as TimeNot
+import qualified Sound.TimeNot.ToEvents as TimeNot
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
@@ -285,9 +285,11 @@ renderTextProgramChanged irc c z prog = do
   renderBaseProgramChanged irc c z x
   case x of
     (Right x') -> do
-      let (n,_,_) = x'
-      oldBaseNotations <- gets baseNotations
-      modify' $ \y -> y { baseNotations = insert z n oldBaseNotations }
+      let (n,_,eTime) = x'
+      s <- get
+      let oldBaseNotations = baseNotations s
+      let oldEvaluationTimes = evaluationTimes s
+      modify' $ \y -> y { baseNotations = insert z n oldBaseNotations, evaluationTimes = insert z eTime oldEvaluationTimes }
     (Left _) -> return ()
 
 renderBaseProgramChanged :: ImmutableRenderContext -> Context -> Int -> Either ParseError TextProgram -> Renderer
@@ -299,7 +301,7 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
   t1 <- liftIO $ getCurrentTime
   parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
   t2 <- liftIO $ getCurrentTime
-  -- liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
+  liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
@@ -320,18 +322,16 @@ renderBaseProgramChanged irc c z (Right (CineCer0,x,eTime)) = do
 
 renderBaseProgramChanged irc c z (Right (TimeNot,x,eTime)) = do
   s <- get
-  let parseResult = TimeNot.timeNot eTime x -- :: Either Text [(UTCTime, Map Text Datum)]
-  when (isRight parseResult) $ do
-    let evs = fromRight [] parseResult -- :: [(UTCTime, Map Text Datum)]
-    let evs' = fmap (second (mapTextDatumToControlMap)) evs -- :: [(UTCTime,Tidal.ControlMap)]
-    modify' $ \x -> x { dirtEvents = dirtEvents x ++ evs' }
-    -- liftIO $ T.putStrLn $ T.pack $ show evs
-  when (isLeft parseResult) $ do
-    let errs = either (\e -> insert z e (errors (info s))) (const $ delete z (errors (info s))) parseResult
-    modify' $ \x -> x { info = (info s) { errors = errs }}
+  let parseResult = TimeNot.runCanonParser $ T.unpack x
+  case parseResult of
+    (Right p) -> do
+      clearZoneError z
+      modify' $ \x -> x { timeNots = insert z p (timeNots s) }
+    (Left e) -> do
+      liftIO $ putStrLn (show e)
+      setZoneError z (T.pack $ show e)
 
 renderBaseProgramChanged irc c z _ = setZoneError z "renderBaseProgramChanged: no match for base language"
-
 
 parsePunctualNotation :: ImmutableRenderContext -> Context -> Int -> (Text -> Either ParseError Punctual.Program) -> Text -> Renderer
 parsePunctualNotation irc c z p t = do
@@ -392,7 +392,22 @@ renderBaseProgramAlways irc c z (Just CineCer0) = do
     let now = renderStart s
     newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
     modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
+renderBaseProgramAlways irc c z (Just TimeNot) = do
+  s <- get
+  let p = IntMap.lookup z $ timeNots s
+  case p of
+    (Just p') -> do
+      let theTempo = (tempo . ensemble . ensembleC) c
+      let eTime = IntMap.findWithDefault (wakeTimeSystem s) z $ evaluationTimes s
+      let wStart = renderStart s
+      let wEnd = renderEnd s
+      let oTime = firstCycleStartAfter theTempo eTime
+      let events = fmap (second mapTextDatumToControlMap . TimeNot.mapForEstuary) $ TimeNot.render oTime p' wStart wEnd
+      modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
+    Nothing -> return ()
+
 renderBaseProgramAlways _ _ _ _ = return ()
+
 
 renderControlPattern :: ImmutableRenderContext -> Context -> Int -> Renderer
 renderControlPattern irc c z = when (webDirtOn c || superDirtOn c) $ do
