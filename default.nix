@@ -151,7 +151,9 @@ in
 
         webdirt = import ./deps/webdirt self;
 
-        TimeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
+        TimeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock
+        # (self.callCabal2nix "TimeNot" ../TimeNot "" {});
+        (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
             owner = "afrancob";
             repo = "timeNot";
             sha256 = "083prbp97qdynx0m4m2m9ljxsz1caprvlxsz7vvxz8n23kffy2h3";
