@@ -14,6 +14,8 @@ import Estuary.Types.RenderInfo
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
+import qualified Sound.TimeNot.AST as TimeNot
+
 import Estuary.Types.MovingAverage
 import Estuary.Types.TextNotation
 
@@ -35,6 +37,8 @@ data RenderState = RenderState {
   punctualWebGL :: Punctual.PunctualWebGL,
   cineCer0Specs :: !(IntMap CineCer0.Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
+  timeNots :: IntMap TimeNot.Program,
+  evaluationTimes :: IntMap UTCTime, -- this is probably temporary
   renderTime :: !MovingAverage,
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
@@ -61,6 +65,8 @@ initialRenderState glCtx t0System t0Audio = do
     punctualWebGL = pWebGL,
     cineCer0Specs = empty,
     cineCer0States = empty,
+    timeNots = empty,
+    evaluationTimes = empty,
     renderTime = newAverage 20,
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
