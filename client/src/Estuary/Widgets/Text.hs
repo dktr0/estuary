@@ -79,7 +79,7 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
       e' <- holdUniqDyn errorText
       dynText =<< (return $ fmap (maybe "" (const "!")) e')
       return x
-    infoButton' <- divClass "referenceButton" $ dynButton "?"
+    infoButton' <- divClass "referenceButton" $ tooltip (divClass "" $ dynButton "?") (text "test")
     return (d',evalButton',infoButton')
 
   (edit,eval) <- divClass "labelAndTextPattern" $ do
