@@ -47,8 +47,6 @@ body::-webkit-scrollbar-thumb {
 }
 
 
-
-
 /*styles the canvas and svg display */
 .canvas-or-svg-display {
 	position: absolute;
@@ -1079,7 +1077,7 @@ display: inline-flex;
 
 
 
-.statusElementsWrapper {
+.statusTableWrapper {
 	display: flex;
 }
 
