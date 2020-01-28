@@ -156,8 +156,8 @@ in
         (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
             owner = "afrancob";
             repo = "timeNot";
-            sha256 = "083prbp97qdynx0m4m2m9ljxsz1caprvlxsz7vvxz8n23kffy2h3";
-            rev = "b5d4ff4578e0a1112cc81238e6704915eea33097";
+            sha256 = "1phpw8v96ps16al5pvskmfd11pfibgmqszzfivwn4ks42wzffh46";
+            rev = "c4f00cab6f69226679b74d1fed5c5401ce84beeb";
           }) {});
 
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
