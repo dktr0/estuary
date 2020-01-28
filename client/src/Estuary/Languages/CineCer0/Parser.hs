@@ -29,8 +29,8 @@ spec eTime = do
 
 videoSpec :: H VideoSpec
 videoSpec =
-  literalVideoSpec <|>
-  vs_vs <*> videoSpec
+  vs_vs <*> videoSpec <|>
+  literalVideoSpec
 
 -- //////////////
 
@@ -65,7 +65,7 @@ ndt_rat_rat_sigRat = reserved "ramp" >> return ramp
 
 vs_vs :: H (VideoSpec -> VideoSpec)
 vs_vs =
-  sigRat_vs_vs <*> sigRat  <|>
+  sigRat_vs_vs <*> sigRat <|>
   rat_vs_vs <*> rationalOrInteger
 
 sigRat_vs_vs :: H (Signal Rational -> VideoSpec -> VideoSpec)
@@ -78,8 +78,10 @@ sigRat_vs_vs =
   shiftWidth <$ reserved "width" <|>
   setHeight <$ reserved "setHeight" <|>
   shiftHeight <$ reserved "height" <|>
-  setOpacity <$ reserved "opacity" <|>
-  setBlur <$ reserved "blur" <|>
+  setOpacity <$ reserved "setOpacity" <|>
+  shiftOpacity <$ reserved "opacity" <|>
+  setBlur <$ reserved "setBlur" <|>
+  shiftBlur <$ reserved "blur" <|>
   setBrightness <$ reserved "setBrightness" <|>
   shiftBrightness <$ reserved "brightness" <|>
   setContrast <$ reserved "setContrast" <|>
