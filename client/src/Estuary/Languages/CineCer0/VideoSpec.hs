@@ -4,188 +4,214 @@ import Language.Haskell.Exts
 import Control.Applicative
 import Data.Time
 
-import qualified Estuary.Languages.CineCer0.Signals as Sig
-
 import Estuary.Types.Tempo
 
---type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a
--- This is in Types already!
+import Estuary.Languages.CineCer0.Signal
 
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
-  sourceNumber :: Int,
-  playbackPosition :: Sig.Signal (Maybe NominalDiffTime),
-  playbackRate :: Sig.Signal (Maybe Rational),
-  posX :: Rational,
-  posY :: Rational,
-  width :: Rational,
-  height :: Rational,
-  opacity :: Sig.Signal Rational,
-  blur :: Rational,
-  brightness :: Rational,
-  contrast :: Rational,
-  grayscale :: Rational,
-  saturate :: Rational
+  playbackPosition :: Signal (Maybe NominalDiffTime),
+  playbackRate :: Signal (Maybe Rational),
+  posX :: Signal Rational,
+  posY :: Signal Rational,
+  width :: Signal Rational,
+  height :: Signal Rational,
+  opacity :: Signal Rational,
+  blur :: Signal Rational,
+  brightness :: Signal Rational,
+  contrast :: Signal Rational,
+  grayscale :: Signal Rational,
+  saturate :: Signal Rational
   }
-
--- instance Show VideoSpec where
---   show (VideoSpec vs n _ _ px py w h _) = "Sample Video:" ++ show vs ++ " " ++ "Source Number:" ++ show n ++ " " ++ "Position:" ++ show px ++ show py ++ " " ++ "Size:" ++ show w ++ show h ++ " "
-
 
 emptyVideoSpec :: String -> VideoSpec
 emptyVideoSpec x = VideoSpec {
   sampleVideo = "",
-  sourceNumber = 0,
-  playbackPosition = Sig.playNatural_Pos 0.0,
-  playbackRate = Sig.playNatural_Rate 0.0,
-  posX = 0.0,
-  posY = 0.0,
-  width = 0.0,
-  height = 0.0,
-  opacity = Sig.defaultOpacity,
-  blur = 0.0,
-  brightness = 100,
-  contrast = 100,
-  grayscale = 0,
-  saturate = 1.0
+  playbackPosition = playNatural_Pos 0.0,
+  playbackRate = playNatural_Rate 0.0,
+  posX = constantSignal 0.0,
+  posY = constantSignal 0.0,
+  width = constantSignal 0.0,
+  height = constantSignal 0.0,
+  opacity = constantSignal 100,
+  blur = constantSignal 0.0,
+  brightness = constantSignal 100,
+  contrast = constantSignal 100,
+  grayscale = constantSignal 0,
+  saturate = constantSignal 1.0
 }
 
 stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = VideoSpec {
-  sampleVideo = x,
-  sourceNumber = 0,
-  playbackPosition = Sig.playNatural_Pos 0.0,
-  playbackRate = Sig.playNatural_Rate 0.0,
-  --mask = "none"
-  posX = 0.0,
-  posY = 0.0,
-  width = 1.0,
-  height = 1.0,
-  opacity = Sig.defaultOpacity,
-  blur = 0.0,
-  brightness = 100,
-  contrast = 100,
-  grayscale = 0,
-  saturate = 1.0
+  sampleVideo = "",
+  playbackPosition = playNatural_Pos 0.0,
+  playbackRate = playNatural_Rate 0.0,
+  posX = constantSignal 0.0,
+  posY = constantSignal 0.0,
+  width = constantSignal 0.0,
+  height = constantSignal 0.0,
+  opacity = constantSignal 100,
+  blur = constantSignal 0.0,
+  brightness = constantSignal 100,
+  contrast = constantSignal 100,
+  grayscale = constantSignal 0,
+  saturate = constantSignal 1.0
 }
 
-setSourceNumber :: VideoSpec -> Int -> VideoSpec
-setSourceNumber vs n = vs { sourceNumber = n }
-
---
--- Geometric Functions --
-
-setPosX :: Rational -> VideoSpec -> VideoSpec
-setPosX n vs = vs { posX = n }
-
-setPosY :: Rational -> VideoSpec -> VideoSpec
-setPosY n vs = vs { posY = n }
-
-setPosCoord :: Rational -> Rational -> VideoSpec -> VideoSpec
-setPosCoord m n vs = vs { posX = m, posY = n }
-
-setWidth :: Rational -> VideoSpec -> VideoSpec
-setWidth n vs = vs { width = n }
-
-setHeight :: Rational -> VideoSpec -> VideoSpec
-setHeight n vs = vs { height = n }
-
-setSize :: Rational -> Rational -> VideoSpec -> VideoSpec
-setSize m n vs = vs { width = m, height = n }
 
 --
 -- Style Functions --
 
---setOpacity :: Rational -> VideoSpec -> VideoSpec
---setOpacity n vs = vs { opacity = n }
+setPosX :: Signal Rational -> VideoSpec -> VideoSpec
+setPosX s v = v { posX = s } --Just sets the opacity to x
 
-setOpacity :: Rational -> VideoSpec -> VideoSpec
-setOpacity r vs = vs {
-  opacity = \t ndt rt et -> r * ((opacity vs) t ndt rt et)
+shiftPosX :: Signal Rational -> VideoSpec -> VideoSpec
+shiftPosX s v = v {
+  posX = s * posX v
   }
 
--- defaultOpacity :: Tempo -> NominalDiffTime -> UTCTime -> Rational
--- defaultOpacity _ _ _ = 100
+setPosY :: Signal Rational -> VideoSpec -> VideoSpec
+setPosY s v = v { posY = s } --Just sets the opacity to x
 
--- opacityChanger:: Rational -> Tempo -> NominalDiffTime -> UTCTime -> Rational
--- opacityChanger arg t len now = arg
+shiftPosY :: Signal Rational -> VideoSpec -> VideoSpec
+shiftPosY s v = v {
+  posY = s * posY v
+  }
 
-changeOpacity :: Rational -> VideoSpec -> VideoSpec
-changeOpacity n vs = vs {
-  opacity = Sig.opacityChanger n
+setCoord :: Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec
+setCoord s1 s2 vs = vs { posX = s1, posY = s2}
+
+shiftCoord :: Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec
+shiftCoord s1 s2 vs = vs {
+  posX = s1 * posX vs,
+  posY = s2 * posY vs
 }
 
--- opacity :: Signal Rational -> VideoSpec -> VideoSpec
--- opacity s v = v {
--- 	_opacity = \a b c d -> (s a b c d) * ((_opacity v) a b c d)
--- 	_opacity = s * _opacity v
--- 	}
---
--- setOpacity :: Signal Rational -> VideoSpec -> VideoSpec
--- setOpacity s v = v { _opacity = s }
 
-setBlur :: Rational -> VideoSpec -> VideoSpec
-setBlur n vs = vs {blur = n}
 
-setBrightness :: Rational -> VideoSpec -> VideoSpec
-setBrightness n vs = vs {brightness = n}
+setWidth :: Signal Rational -> VideoSpec -> VideoSpec
+setWidth s v = v { width = s } --Just sets the opacity to x
 
-setContranst :: Rational -> VideoSpec -> VideoSpec
-setContranst n vs = vs {contrast = n}
+shiftWidth :: Signal Rational -> VideoSpec -> VideoSpec
+shiftWidth s v = v {
+  width = s * width v
+  }
 
-setGrayscale :: Rational -> VideoSpec -> VideoSpec
-setGrayscale n vs = vs {grayscale = n}
+setHeight :: Signal Rational -> VideoSpec -> VideoSpec
+setHeight s v = v { height = s } --Just sets the opacity to x
 
-setSaturate :: Rational -> VideoSpec -> VideoSpec
-setSaturate n vs = vs {saturate = n}
+shiftHeight :: Signal Rational -> VideoSpec -> VideoSpec
+shiftHeight s v = v {
+  height = s * height v
+  }
+
+setSize :: Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec
+setSize s1 s2 vs = vs { width = s1, height = s2}
+
+shiftSize :: Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec
+shiftSize s1 s2 vs = vs {
+  width = s1 * width vs,
+  height = s2 * height vs
+}
+
+
+
+setOpacity :: Signal Rational -> VideoSpec -> VideoSpec
+setOpacity s v = v { opacity = s } --Just sets the opacity to x
+
+shiftOpacity :: Signal Rational -> VideoSpec -> VideoSpec
+shiftOpacity s v = v {
+  opacity = s * opacity v
+  } -- It takes note of what opacity was before and multiplies it with new one
+
+setBlur :: Signal Rational -> VideoSpec -> VideoSpec
+setBlur s v = v { blur = s }
+
+shiftBlur :: Signal Rational -> VideoSpec -> VideoSpec
+shiftBlur s v = v {
+  blur = s * blur v
+  }
+
+setBrightness :: Signal Rational -> VideoSpec -> VideoSpec
+setBrightness s v = v { brightness = s }
+
+shiftBrightness :: Signal Rational -> VideoSpec -> VideoSpec
+shiftBrightness s v = v {
+  brightness = s * brightness v
+  }
+
+setContrast :: Signal Rational -> VideoSpec -> VideoSpec
+setContrast s v = v { contrast = s }
+
+shiftContrast :: Signal Rational -> VideoSpec -> VideoSpec
+shiftContrast s v = v {
+  contrast = s * contrast v
+  }
+
+setGrayscale :: Signal Rational -> VideoSpec -> VideoSpec
+setGrayscale s v = v { grayscale = s }
+
+shiftGrayscale :: Signal Rational -> VideoSpec -> VideoSpec
+shiftGrayscale s v = v {
+  grayscale = s * grayscale v
+  }
+
+setSaturate :: Signal Rational -> VideoSpec -> VideoSpec
+setSaturate s v = v { saturate = s }
+
+shiftSaturate :: Signal Rational -> VideoSpec -> VideoSpec
+shiftSaturate s v = v {
+  saturate = s * saturate v
+  }
+
 
 --
 -- Time Functions --
 
 playNatural :: Rational -> VideoSpec -> VideoSpec
 playNatural n vs = vs {
-  playbackPosition = Sig.playNatural_Pos n,
-  playbackRate = Sig.playNatural_Rate n
+  playbackPosition = playNatural_Pos n,
+  playbackRate = playNatural_Rate n
 }
 
 playRound :: Rational -> VideoSpec -> VideoSpec
 playRound n vs = vs {
-  playbackPosition = Sig.playRound_Pos n,
-  playbackRate = Sig.playRound_Rate n
+  playbackPosition = playRound_Pos n,
+  playbackRate = playRound_Rate n
   }
 
 playRoundMetre :: Rational -> VideoSpec -> VideoSpec
 playRoundMetre n vs = vs {
-  playbackPosition = Sig.playRoundMetrePos n,
-  playbackRate = Sig.playRoundMetreRate n
+  playbackPosition = playRoundMetrePos n,
+  playbackRate = playRoundMetreRate n
   }
 
 playEvery :: Rational -> Rational -> VideoSpec -> VideoSpec
 playEvery m n vs = vs {
-  playbackPosition = Sig.playEvery_Pos m n,
-  playbackRate = Sig.playEvery_Rate m n
+  playbackPosition = playEvery_Pos m n,
+  playbackRate = playEvery_Rate m n
   }
 
 playChop' :: Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChop' l m n vs = vs {
-  playbackPosition = Sig.playChop_Pos' l m n,
-  playbackRate = Sig.playChop_Rate' l m n
+  playbackPosition = playChop_Pos' l m n,
+  playbackRate = playChop_Rate' l m n
   }
 
 playChop :: Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChop k l m n vs = vs {
-  playbackPosition = Sig.playChop_Pos k l m n,
-  playbackRate = Sig.playChop_Rate k l m n
+  playbackPosition = playChop_Pos k l m n,
+  playbackRate = playChop_Rate k l m n
 }
 
 playChopSecs :: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec
 playChopSecs k l m n vs = vs {
-  playbackPosition = Sig.playChopSecs_Pos k l m n,
-  playbackRate = Sig.playChopSecs_Rate k l m n
+  playbackPosition = playChopSecs_Pos k l m n,
+  playbackRate = playChopSecs_Rate k l m n
   }
 
 playNow :: NominalDiffTime -> Rational -> VideoSpec -> VideoSpec
 playNow m n vs = vs {
-  playbackPosition = Sig.playNow_Pos m n,
-  playbackRate = Sig.playNow_Rate m n
+  playbackPosition = playNow_Pos m n,
+  playbackRate = playNow_Rate m n
   }

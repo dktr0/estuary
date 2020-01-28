@@ -9,7 +9,7 @@ import Data.Bifunctor
 
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
--- import Estuary.Languages.CineCer0.Signals
+import Estuary.Languages.CineCer0.Signal
 
 type H = Haskellish ()
 
@@ -30,75 +30,103 @@ spec eTime = do
 videoSpec :: H VideoSpec
 videoSpec =
   literalVideoSpec <|>
-  int_VideoSpec <*> int <|> -- Set Video Source
-  videoSpec_videoSpec <*> videoSpec
+  vs_vs <*> videoSpec
+
+-- //////////////
 
 int :: H Int
 int = fromIntegral <$> integer
 
-nominalDiffTime :: H NominalDiffTime
-nominalDiffTime = fromRational <$> rationalOrInteger
+ndt :: H NominalDiffTime
+ndt = fromRational <$> rationalOrInteger
 
 literalVideoSpec :: H VideoSpec
 literalVideoSpec =
   fmap stringToVideoSpec string <|>
   fmap emptyVideoSpec string
 
-videoSpec_int_videoSpec :: H (VideoSpec -> Int -> VideoSpec)
-videoSpec_int_videoSpec = setSourceNumber <$ reserved ":"
+-- //////////////
 
-int_VideoSpec :: H (Int -> VideoSpec)
-int_VideoSpec = videoSpec_int_videoSpec <*> videoSpec
+sigRat :: H (Signal Rational)
+sigRat =
+  rat_sigRat <*> rationalOrInteger <|>
+  constantSignal <$> rationalOrInteger
 
-rat_videoSpec_videoSpec :: H (Rational -> VideoSpec -> VideoSpec)
-rat_videoSpec_videoSpec =
-  playNatural <$ reserved "natural" <|> --time function
-  playRound <$ reserved "round" <|> -- time function
-  playRoundMetre <$ reserved "roundMetre" <|> -- time function
-  setWidth <$ reserved "w" <|>
-  setHeight <$ reserved "h" <|>
-  setPosX <$ reserved "posX" <|>
-  setPosY <$ reserved "posY" <|>
+rat_sigRat :: H (Rational -> Signal Rational)
+rat_sigRat = rat_rat_sigRat <*> rationalOrInteger
+
+rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
+rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
+
+ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
+ndt_rat_rat_sigRat = reserved "ramp" >> return ramp
+
+-- //////////////
+
+vs_vs :: H (VideoSpec -> VideoSpec)
+vs_vs =
+  sigRat_vs_vs <*> sigRat  <|>
+  rat_vs_vs <*> rationalOrInteger
+
+sigRat_vs_vs :: H (Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_vs_vs =
+  setPosX <$ reserved "setPosX" <|>
+  shiftPosX <$ reserved "posX" <|>
+  setPosY <$ reserved "setPosY" <|>
+  shiftPosY <$ reserved "posX" <|>
+  setWidth <$ reserved "setWidth" <|>
+  shiftWidth <$ reserved "width" <|>
+  setHeight <$ reserved "setHeight" <|>
+  shiftHeight <$ reserved "height" <|>
   setOpacity <$ reserved "opacity" <|>
   setBlur <$ reserved "blur" <|>
-  setBrightness <$ reserved "brightness" <|>
-  setContranst <$ reserved "contrast" <|>
-  setGrayscale <$ reserved "grayscale" <|>
-  setSaturate <$ reserved "saturate"
+  setBrightness <$ reserved "setBrightness" <|>
+  shiftBrightness <$ reserved "brightness" <|>
+  setContrast <$ reserved "setContrast" <|>
+  shiftContrast <$ reserved "contrast" <|>
+  setGrayscale <$ reserved "setGrayscale" <|>
+  shiftGrayscale <$ reserved "grayscale" <|>
+  setSaturate <$ reserved "setSaturate" <|>
+  shiftSaturate <$ reserved "saturate" <|>
+  sigRat_sigRat_vs_vs <*> sigRat
 
-rat_rat_videoSpec_videoSpec :: H (Rational -> Rational -> VideoSpec -> VideoSpec)
-rat_rat_videoSpec_videoSpec =
-  playEvery <$ reserved "every" <|> --time function
-  setPosCoord <$ reserved "pos" <|>
-  setSize <$ reserved "size"
+sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_sigRat_vs_vs =
+  setCoord <$ reserved "setCoord" <|>
+  shiftCoord <$ reserved "coord" <|>
+  setSize <$ reserved "setSize" <|>
+  shiftSize <$ reserved "size"
 
-rat_rat_rat_videoSpec_videoSpec :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
-rat_rat_rat_videoSpec_videoSpec =
-  playChop' <$ reserved "chop'" -- time function
+rat_vs_vs :: H (Rational -> VideoSpec -> VideoSpec)
+rat_vs_vs =
+  playNatural <$ reserved "natural" <|>
+  playRound <$ reserved "round" <|>
+  playRoundMetre <$ reserved "roundMetre" <|>
+  rat_rat_vs_vs <*> rationalOrInteger <|>
+  ndt_rat_vs_vs <*> ndt
 
-rat_rat_rat_rat_videoSpec_videoSpec :: H (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
-rat_rat_rat_rat_videoSpec_videoSpec =
-  playChop <$ reserved "chop" -- time function
+rat_rat_vs_vs :: H (Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_vs_vs =
+  playEvery <$ reserved "every" <|>
+  rat_rat_rat_vs_vs <*> rationalOrInteger <|>
+  ndt_rat_rat_vs_vs <*> ndt
 
--- -- !!!!!! NEW
--- rat_rat_rat_rat ::  H (Rational -> Rational -> Rational -> Rational)
--- rat_rat_rat_rat =
---   ramp renderTime evalTime <$ reserved "ramp"
+rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_rat_vs_vs =
+  playChop' <$ reserved "chop'" <|>
+  rat_rat_rat_rat_vs_vs <*> rationalOrInteger
 
--- parsed (part of the “language”)
--- ramp :: a -> b -> c -> d -> Signal Rational
+rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_rat_rat_vs_vs =
+  playChop <$ reserved "chop"
 
-nd_rat_videoSpec_videoSpec :: H (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
-nd_rat_videoSpec_videoSpec = playNow <$ reserved "now" -- time function
+ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
+ndt_rat_vs_vs =
+  playNow <$ reserved "now"
 
-nd_nd_rat_rat_videoSpec_videoSpec :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
-nd_nd_rat_rat_videoSpec_videoSpec = playChopSecs <$ reserved "chopSecs" -- time function
+ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
+ndt_rat_rat_vs_vs =
+  ndt_ndt_rat_rat_vs_vs <*> ndt
 
-videoSpec_videoSpec :: H (VideoSpec -> VideoSpec)
-videoSpec_videoSpec =
-  rat_videoSpec_videoSpec <*> rationalOrInteger <|> -- time function
-  rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <|> -- pos function
-  rat_rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <|> -- time function
-  rat_rat_rat_rat_videoSpec_videoSpec <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <*> rationalOrInteger <|> -- time function
-  nd_rat_videoSpec_videoSpec <*> nominalDiffTime <*> rationalOrInteger <|> -- time function
-  nd_nd_rat_rat_videoSpec_videoSpec <*> nominalDiffTime <*> nominalDiffTime <*> rationalOrInteger <*> rationalOrInteger -- time function
+ndt_ndt_rat_rat_vs_vs :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
+ndt_ndt_rat_rat_vs_vs = playChopSecs <$ reserved "chopSecs" -- time function
