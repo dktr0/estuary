@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Types.View.Parser (viewsParser,dumpView) where
+module Estuary.Types.View.Parser (viewParser,dumpView) where
 
 import Text.Parsec
 import Text.Parsec.Text
@@ -15,7 +15,7 @@ import Control.Monad.Identity (Identity)
 import Estuary.Types.View
 
 dumpView :: View -> Text
-dumpView (Views xs) = T.intercalate " " $ fmap dumpView xs
+dumpView (Views xs) = "[" <> (T.intercalate "," $ fmap dumpView xs) <> "]"
 dumpView (GridView cols rows vs) = showInt cols <> "x" <> showInt  rows <>  " [" <> vs' <> "]"
   where vs' = T.intercalate ","  $ fmap dumpView vs
 dumpView (ViewDiv css v) = "{ " <> css <> " " <> dumpView v <> " }"
@@ -30,15 +30,10 @@ dumpView EnsembleStatusView = "ensembleStatus"
 showInt :: Int -> Text
 showInt x = showtParen (x < 0) (showt x)
 
-topLevelViewsParser :: Parser View
-topLevelViewsParser = do
-  whiteSpace
-  v <- viewsParser
-  eof
-  return v
-
 viewsParser :: Parser View
-viewsParser = Views <$> many1 viewParser
+viewsParser = do
+  vs <- brackets $ commaSep viewParser
+  return $ Views vs
 
 gridViewParser :: Parser View
 gridViewParser = do
@@ -49,11 +44,11 @@ gridViewParser = do
   vs <- brackets $ commaSep viewParser
   return $ GridView columns rows vs
 
-
 viewParser :: Parser View
 viewParser = do
   v <- choice [
     try gridViewParser,
+    try viewsParser,
     try viewDiv,
     try borderDiv,
     try labelView,

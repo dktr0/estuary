@@ -101,7 +101,7 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
     let v' = (\x y z -> (x,y,z)) <$> parserValue <*> textValue <*> evalTimeValue
     let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
     let evalEvent' = tagPromptlyDyn v' $ evalEvent
-    return (editEvent,evalEvent')
+    return (traceEvent "editEvent" editEvent,traceEvent "evalEvent'" evalEvent')
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]

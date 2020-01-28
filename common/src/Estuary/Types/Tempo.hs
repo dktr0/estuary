@@ -45,3 +45,9 @@ adjustByClockDiff x t = do
   return $ t {
     at = addUTCTime (clockDiff*(-1)) (at t)
   }
+
+firstCycleStartAfter :: Tempo -> UTCTime -> UTCTime
+firstCycleStartAfter t eTime = cycleToUTCTime t $ fromIntegral $ ceiling $ elapsedCycles t eTime
+
+cycleToUTCTime :: Tempo -> Rational -> UTCTime
+cycleToUTCTime t c = addUTCTime  (realToFrac $ c * cps t) (beatZero t) 
