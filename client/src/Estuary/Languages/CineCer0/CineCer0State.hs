@@ -103,21 +103,21 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
   vw <- videoWidth v
   vh <- videoHeight v
   when (vw /= 0 && vh /= 0) $ do
+    lengthOfVideo <- realToFrac <$> getLengthOfVideo v
     let aspectRatio = vw/vh
     let heightIfFitsWidth = sw / aspectRatio
     let widthIfFitsHeight = sh * aspectRatio
     let fitByWidth = heightIfFitsWidth <= sh
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
-    let actualWidth = (realToFrac $ width s) * fitWidth
-    let actualHeight = (realToFrac $ height s) * fitHeight
-    let centreX = (realToFrac $ posX s * 0.5 + 0.5) * sw
-    let centreY = (realToFrac $ posY s * 0.5 + 0.5) * sh
+    let actualWidth = (width s t lengthOfVideo rTime eTime) * realToFrac fitWidth
+    let actualHeight = (height s t lengthOfVideo rTime eTime) * realToFrac fitHeight
+    let centreX = ((posX s t lengthOfVideo rTime eTime)* 0.5 + 0.5) * realToFrac sw
+    let centreY = ((posY s t lengthOfVideo rTime eTime)* 0.5 + 0.5) * realToFrac sh
     let leftX = centreX - (actualWidth * 0.5)
-    let topY = sh - (centreY + (actualHeight * 0.5))
+    let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
     -- update playback rate
-    lengthOfVideo <- realToFrac <$> getLengthOfVideo v
-    let rate = (playbackRate s) t lengthOfVideo rTime eTime
+    let rate = playbackRate s t lengthOfVideo rTime eTime
     maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
     -- update position in time
     let pos = (playbackPosition s) t lengthOfVideo rTime eTime
@@ -125,7 +125,12 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     -- update opacity
     let opacidad = (opacity s) t lengthOfVideo rTime eTime
     -- update style
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor (blur s)) (floor (brightness s)) (floor (contrast s)) (floor (grayscale s)) (realToFrac (saturate s))
+    let blur' = blur s t lengthOfVideo rTime eTime
+    let brightness' = brightness  s t lengthOfVideo rTime eTime
+    let contrast' = contrast s t lengthOfVideo rTime eTime
+    let grayscale' = grayscale  s t lengthOfVideo rTime eTime
+    let saturate' = saturate  s t lengthOfVideo rTime eTime
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor blur') (floor brightness') (floor contrast') (floor grayscale') (realToFrac saturate')
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
