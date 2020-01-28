@@ -36,7 +36,7 @@ import qualified Sound.Punctual.AsyncProgram as Punctual
 import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.TimeNot.Parsers as TimeNot
-import qualified Sound.TimeNot.ToEvents as TimeNot
+import qualified Sound.TimeNot.Render as TimeNot
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0

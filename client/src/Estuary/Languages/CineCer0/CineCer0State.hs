@@ -72,6 +72,7 @@ foreign import javascript unsafe
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
+  putStrLn $ "addVideo " ++ (sampleVideo spec)
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
   muteVideo x
@@ -80,6 +81,7 @@ addVideo j spec = do
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
+  putStrLn $ show spec
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
@@ -123,13 +125,14 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let pos = (playbackPosition s) t lengthOfVideo rTime eTime
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
     -- update opacity
-    let opacidad = (opacity s) t lengthOfVideo rTime eTime
+    let opacidad = (opacity s) t lengthOfVideo rTime eTime * 100
     -- update style
     let blur' = blur s t lengthOfVideo rTime eTime
-    let brightness' = brightness  s t lengthOfVideo rTime eTime
-    let contrast' = contrast s t lengthOfVideo rTime eTime
+    let brightness' = brightness  s t lengthOfVideo rTime eTime * 100
+    let contrast' = contrast s t lengthOfVideo rTime eTime * 100
     let grayscale' = grayscale  s t lengthOfVideo rTime eTime
     let saturate' = saturate  s t lengthOfVideo rTime eTime
+    putStrLn $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
     videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor blur') (floor brightness') (floor contrast') (floor grayscale') (realToFrac saturate')
 
 

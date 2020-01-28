@@ -43,7 +43,7 @@ ndt = fromRational <$> rationalOrInteger
 literalVideoSpec :: H VideoSpec
 literalVideoSpec =
   fmap stringToVideoSpec string <|>
-  fmap emptyVideoSpec string
+  return emptyVideoSpec -- assuming emptyVideoSpec doesn't take an argument...
 
 -- //////////////
 

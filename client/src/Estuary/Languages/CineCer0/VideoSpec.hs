@@ -24,40 +24,28 @@ data VideoSpec = VideoSpec {
   saturate :: Signal Rational
   }
 
-emptyVideoSpec :: String -> VideoSpec
-emptyVideoSpec x = VideoSpec {
+instance Show VideoSpec where
+  show s = show $ sampleVideo s
+
+emptyVideoSpec :: VideoSpec
+emptyVideoSpec = VideoSpec {
   sampleVideo = "",
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
   posX = constantSignal 0.0,
   posY = constantSignal 0.0,
-  width = constantSignal 0.0,
-  height = constantSignal 0.0,
-  opacity = constantSignal 100,
+  width = constantSignal 1.0,
+  height = constantSignal 1.0,
+  opacity = constantSignal 1.0,
   blur = constantSignal 0.0,
-  brightness = constantSignal 100,
-  contrast = constantSignal 100,
+  brightness = constantSignal 1.0,
+  contrast = constantSignal 1.0,
   grayscale = constantSignal 0,
   saturate = constantSignal 1.0
 }
 
 stringToVideoSpec :: String -> VideoSpec
-stringToVideoSpec x = VideoSpec {
-  sampleVideo = "",
-  playbackPosition = playNatural_Pos 0.0,
-  playbackRate = playNatural_Rate 0.0,
-  posX = constantSignal 0.0,
-  posY = constantSignal 0.0,
-  width = constantSignal 0.0,
-  height = constantSignal 0.0,
-  opacity = constantSignal 100,
-  blur = constantSignal 0.0,
-  brightness = constantSignal 100,
-  contrast = constantSignal 100,
-  grayscale = constantSignal 0,
-  saturate = constantSignal 1.0
-}
-
+stringToVideoSpec x = emptyVideoSpec { sampleVideo = x }
 
 --
 -- Style Functions --
