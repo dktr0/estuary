@@ -51,7 +51,7 @@ stringToVideoSpec x = emptyVideoSpec { sampleVideo = x }
 -- Style Functions --
 
 setPosX :: Signal Rational -> VideoSpec -> VideoSpec
-setPosX s v = v { posX = s } --Just sets the opacity to x
+setPosX s v = v { posX = s} --Just sets the opacity to x
 
 shiftPosX :: Signal Rational -> VideoSpec -> VideoSpec
 shiftPosX s v = v {
