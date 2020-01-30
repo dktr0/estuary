@@ -17,7 +17,7 @@ import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
-import Estuary.Languages.CineCer0.Signals
+import Estuary.Languages.CineCer0.Signal
 
 newtype CineCer0Video = CineCer0Video { videoJSVal :: JSVal }
 
@@ -72,6 +72,7 @@ foreign import javascript unsafe
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
+  putStrLn $ "addVideo " ++ (sampleVideo spec)
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
   muteVideo x
@@ -80,6 +81,7 @@ addVideo j spec = do
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
+  putStrLn $ show spec
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
@@ -98,34 +100,40 @@ updateCineCer0State t now spec st = do
   return $ st { videos = continuingVideos }
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
-updateContinuingVideo t eTime rTime (sw,sh) s v = do 
+updateContinuingVideo t eTime rTime (sw,sh) s v = do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
   when (vw /= 0 && vh /= 0) $ do
+    lengthOfVideo <- realToFrac <$> getLengthOfVideo v
     let aspectRatio = vw/vh
     let heightIfFitsWidth = sw / aspectRatio
     let widthIfFitsHeight = sh * aspectRatio
     let fitByWidth = heightIfFitsWidth <= sh
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
-    let actualWidth = (realToFrac $ width s) * fitWidth
-    let actualHeight = (realToFrac $ height s) * fitHeight
-    let centreX = (realToFrac $ posX s * 0.5 + 0.5) * sw
-    let centreY = (realToFrac $ posY s * 0.5 + 0.5) * sh
+    let actualWidth = (width s t lengthOfVideo rTime eTime) * realToFrac fitWidth
+    let actualHeight = (height s t lengthOfVideo rTime eTime) * realToFrac fitHeight
+    let centreX = ((posX s t lengthOfVideo rTime eTime)* 0.5 + 0.5) * realToFrac sw
+    let centreY = ((posY s t lengthOfVideo rTime eTime)* 0.5 + 0.5) * realToFrac sh
     let leftX = centreX - (actualWidth * 0.5)
-    let topY = sh - (centreY + (actualHeight * 0.5))
+    let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
     -- update playback rate
-    lengthOfVideo <- realToFrac <$> getLengthOfVideo v
-    let rate = (playbackRate s) t lengthOfVideo rTime eTime
+    let rate = playbackRate s t lengthOfVideo rTime eTime
     maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
     -- update position in time
     let pos = (playbackPosition s) t lengthOfVideo rTime eTime
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
     -- update opacity
-    let opacidad = (opacity s) t lengthOfVideo rTime eTime
-    -- update geometry/appearance/etc
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor (blur s)) (floor (brightness s)) (floor (contrast s)) (floor (grayscale s)) (realToFrac (saturate s))
+    let opacidad = (opacity s) t lengthOfVideo rTime eTime * 100
+    -- update style
+    let blur' = blur s t lengthOfVideo rTime eTime
+    let brightness' = brightness  s t lengthOfVideo rTime eTime * 100
+    let contrast' = contrast s t lengthOfVideo rTime eTime * 100
+    let grayscale' = grayscale  s t lengthOfVideo rTime eTime
+    let saturate' = saturate  s t lengthOfVideo rTime eTime
+    putStrLn $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
+    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor blur') (floor brightness') (floor contrast') (floor grayscale') (realToFrac saturate')
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State

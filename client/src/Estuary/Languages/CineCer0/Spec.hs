@@ -10,6 +10,9 @@ data Spec = Spec {
   videoSpecMap :: IntMap VideoSpec
   }
 
+instance Show Spec where
+  show s = show (videoSpecMap s)
+
 emptySpec :: UTCTime -> Spec
 emptySpec t = Spec {
   evalTime = t,
