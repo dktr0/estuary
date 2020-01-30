@@ -40,7 +40,7 @@ emptyVideoSpec = VideoSpec {
   blur = constantSignal 0.0,
   brightness = constantSignal 1.0,
   contrast = constantSignal 1.0,
-  grayscale = constantSignal 0,
+  grayscale = constantSignal 0.0,
   saturate = constantSignal 1.0
 }
 
