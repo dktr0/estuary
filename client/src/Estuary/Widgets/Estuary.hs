@@ -64,7 +64,7 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
 
   -- three GUI components: header, main (navigation), footer
   headerChange <- header ctx
-  (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
+  (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
   command <- footer ctx renderInfo deltasDown hints
   let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
