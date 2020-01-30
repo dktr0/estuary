@@ -35,13 +35,13 @@ ensembleStatusWidget = do
     text "Ensemble"
     dynText ensName
 
-    -- display list of non-anonymous participants
+    -- display list of known participants
   liftR2 (divClass "statusTableWrapper") $ do
       liftR $ divClass "statusElementWrapper code-font" $ do
          divClass "statusElementName" $ text "Name"
          divClass "statusElement" $ listWithKey ensParticipants participantNameWidget
 
-    -- display list of locations for non-anonymous participants
+    -- display list of locations for known participants
       liftR $ divClass "statusElementWrapper code-font" $ do
          divClass "statusElementName" $ text "Location"
          divClass "statusElement" $ listWithKey ensParticipants participantLocationWidget
@@ -50,13 +50,15 @@ ensembleStatusWidget = do
       liftR $ divClass "statusElementWrapper code-font" $ do
          divClass "statusElementName" $ text "Status"
          divClass "statusElement" $ listWithKey ensParticipants participantStatusWidget
+         -- TO DO: create a helper/pure function that unblocks their (one) editor
+         -- blockEditor :: Participant -> Text
+        -- blockEditor p = ?
 
   -- display the activity of the ensParticipants
       liftR $ divClass "statusElementWrapper code-font" $ do
         divClass "statusElementName" $ text "Activity"
         mapActivities <- pollParticipantActivity ensParticipants -- :: Dynamic t Map Text  Text
         listWithKey mapActivities participantActivityWidget -- m (Dynamic t (Map k a))
-        --where the first Texte is the name of particp and the 2nd Text is the
 
       -- display count of anonymous participants
   liftR2 (divClass "statusElementsWrapper") $ do
@@ -79,12 +81,14 @@ participantNameWidget name part = elClass "div" "" $ do
   text name
 
 participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantLocationWidget name part = elClass "div" "" $ do
-  dynText $ fmap location part
+participantLocationWidget name part = elClass "div" "" $ dynText $ fmap location part
 
 participantStatusWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantStatusWidget name part = divClass "" $ do
-  dynText $ fmap status part -- from where is this status going to be settable?
+  -- s <- dynText $ fmap status part -- from where is this status going to be settable?
+  textInput $ def & attributes .~ constDyn ("class" =: "statusInputWidget code-font") & textInputConfig_initialValue .~ ""
+  return ()
+
 
 participantActivityWidget :: MonadWidget t m => Text -> Dynamic t Text -> m ()
 participantActivityWidget name part = divClass "" $ dynText part
@@ -93,8 +97,8 @@ pollParticipantActivity :: MonadWidget t m => Dynamic t (Map Text Participant) -
 pollParticipantActivity ensParticipants = do
   now <- liftIO getCurrentTime -- this time is measured before building the widget
   evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
-  currTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
-  let ev = attachWith generateActivityMessages (current ensParticipants) currTime
+  currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
+  let ev = attachWith generateActivityMessages (current ensParticipants) currentTime
   ip <- sample $ current ensParticipants
   let im = generateActivityMessages ip now
   holdDyn im ev

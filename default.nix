@@ -156,15 +156,15 @@ in
         (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
             owner = "afrancob";
             repo = "timeNot";
-            sha256 = "1phpw8v96ps16al5pvskmfd11pfibgmqszzfivwn4ks42wzffh46";
-            rev = "c4f00cab6f69226679b74d1fed5c5401ce84beeb";
+            sha256 = "1d0b35caaskvd8hhf8k72bn2cbgm4y03533ga2hrkvdrf652qqzi";
+            rev = "ec12cb5d8e9078f9347f9ed4831aee4c0992130f";
           }) {});
 
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0mrvnm4whvzxfz580v1sjivixzsks005b0y78xpha4wykk333jhc";
-          rev = "22faf1c8f03ede41b6acf470e6d70599ca5dd80d";
+          sha256 = "0s10241fkkxhwmcs1dwksjb9cyvp7yqhycy9j6ip5zpp72ac2p9a";
+          rev = "7a1917840d15907730ec8cb89c7c64ab54f64342";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {

@@ -51,7 +51,7 @@ stringToVideoSpec x = emptyVideoSpec { sampleVideo = x }
 -- Style Functions --
 
 setPosX :: Signal Rational -> VideoSpec -> VideoSpec
-setPosX s v = v { posX = s} --Just sets the opacity to x
+setPosX s v = v { posX = s }
 
 shiftPosX :: Signal Rational -> VideoSpec -> VideoSpec
 shiftPosX s v = v {
@@ -59,7 +59,7 @@ shiftPosX s v = v {
   }
 
 setPosY :: Signal Rational -> VideoSpec -> VideoSpec
-setPosY s v = v { posY = s } --Just sets the opacity to x
+setPosY s v = v { posY = s }
 
 shiftPosY :: Signal Rational -> VideoSpec -> VideoSpec
 shiftPosY s v = v {
@@ -78,7 +78,7 @@ shiftCoord s1 s2 vs = vs {
 
 
 setWidth :: Signal Rational -> VideoSpec -> VideoSpec
-setWidth s v = v { width = s } --Just sets the opacity to x
+setWidth s v = v { width = s }
 
 shiftWidth :: Signal Rational -> VideoSpec -> VideoSpec
 shiftWidth s v = v {
@@ -86,7 +86,7 @@ shiftWidth s v = v {
   }
 
 setHeight :: Signal Rational -> VideoSpec -> VideoSpec
-setHeight s v = v { height = s } --Just sets the opacity to x
+setHeight s v = v { height = s }
 
 shiftHeight :: Signal Rational -> VideoSpec -> VideoSpec
 shiftHeight s v = v {
@@ -105,12 +105,12 @@ shiftSize s1 s2 vs = vs {
 
 
 setOpacity :: Signal Rational -> VideoSpec -> VideoSpec
-setOpacity s v = v { opacity = s } --Just sets the opacity to x
+setOpacity s v = v { opacity = s }
 
 shiftOpacity :: Signal Rational -> VideoSpec -> VideoSpec
 shiftOpacity s v = v {
   opacity = s * opacity v
-  } -- It takes note of what opacity was before and multiplies it with new one
+  }
 
 setBlur :: Signal Rational -> VideoSpec -> VideoSpec
 setBlur s v = v { blur = s }
