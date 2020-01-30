@@ -20,7 +20,7 @@ setBlur [bl] $ -- 0 = no blur (1++ = more) <br />
 setBrightness [br] $ --  0-0.9 = less, 1++ = more <br />
 setContrast [c] $ -- 0-0.9 = less, 1++ = more <br />
 setGrayscale [g] $ -- 0 = no grayscale, 1 = full grayscale <br />
-setSaturate [s] $ -- 1.0 = natural video saturation (1++ = more, 1-- =less) <br />
+setSaturate [s] $ -- 0 = natural video saturation (1++ = more, 1-- =less) <br />
 
 ## ramp
 
