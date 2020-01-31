@@ -7,6 +7,9 @@ import Reflex.Dom
 import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
+import Data.Time
+import Control.Monad.Trans (liftIO)
+import Data.Map.Strict
 
 import Estuary.Types.Context
 import Estuary.Types.EnsembleC
@@ -24,20 +27,45 @@ ensembleStatusWidget = do
   let ens = fmap ensemble ensC
   let ensName = fmap ensembleName ens -- Dynamic t Text
   let ensParticipants = fmap participants ens -- Dynamic t (Map.Map Text Participant)
+  let status = fmap wsStatus ctx --ensemble status
   let anonymous = fmap anonymousParticipants ens -- Dynamic t Int
 
   -- display name of ensemble
-  liftR $ elClass "div" "" $ do
-    text "Ensemble: "
+  liftR $ divClass "ensemble-name code-font" $ do
+    text "Ensemble"
     dynText ensName
 
-  -- display list of non-anonymous participants and locations
-  liftR $ listWithKey ensParticipants ensembleParticipantWidget
+    -- display list of known participants
+  liftR2 (divClass "statusTableWrapper") $ do
+      liftR $ divClass "statusElementWrapper code-font" $ do
+         divClass "statusElementName" $ text "Name"
+         divClass "statusElement" $ listWithKey ensParticipants participantNameWidget
 
-  -- display count of anonymous participants
-  liftR $ elClass "div" "" $ do
-    text "Anonymous Participants: "
-    dynText $ fmap showt anonymous
+    -- display list of locations for known participants
+      liftR $ divClass "statusElementWrapper code-font" $ do
+         divClass "statusElementName" $ text "Location"
+         divClass "statusElement" $ listWithKey ensParticipants participantLocationWidget
+
+    -- display the status of the ensParticipants
+      liftR $ divClass "statusElementWrapper code-font" $ do
+         divClass "statusElementName" $ text "Status"
+         divClass "statusElement" $ listWithKey ensParticipants participantStatusWidget
+         -- TO DO: create a helper/pure function that unblocks their (one) editor
+         -- blockEditor :: Participant -> Text
+        -- blockEditor p = ?
+
+  -- display the activity of the ensParticipants
+      liftR $ divClass "statusElementWrapper code-font" $ do
+        divClass "statusElementName" $ text "Activity"
+        mapActivities <- pollParticipantActivity ensParticipants -- :: Dynamic t Map Text  Text
+        listWithKey mapActivities participantActivityWidget -- m (Dynamic t (Map k a))
+
+      -- display count of anonymous participants
+  liftR2 (divClass "statusElementsWrapper") $ do
+      liftR $ divClass "statusElementWrapper code-font" $ do
+        divClass "statusElementName" $ do
+          text "Anonymous Participants: "
+          dynText $ fmap showt anonymous
 
   return ()
 
@@ -46,4 +74,44 @@ ensembleParticipantWidget name part = elClass "div" "" $ do
   text name
   text " ("
   dynText $ fmap location part
-  text "): "
+  text ") "
+
+participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantNameWidget name part = elClass "div" "" $ do
+  text name
+
+participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantLocationWidget name part = elClass "div" "" $ dynText $ fmap location part
+
+participantStatusWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantStatusWidget name part = divClass "" $ do
+  -- s <- dynText $ fmap status part -- from where is this status going to be settable?
+  textInput $ def & attributes .~ constDyn ("class" =: "statusInputWidget code-font") & textInputConfig_initialValue .~ ""
+  return ()
+
+
+participantActivityWidget :: MonadWidget t m => Text -> Dynamic t Text -> m ()
+participantActivityWidget name part = divClass "" $ dynText part
+
+pollParticipantActivity :: MonadWidget t m => Dynamic t (Map Text Participant) ->  m (Dynamic t (Map Text Text))  -- :: Dynamic t Map Text  Text
+pollParticipantActivity ensParticipants = do
+  now <- liftIO getCurrentTime -- this time is measured before building the widget
+  evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
+  currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
+  let ev = attachWith generateActivityMessages (current ensParticipants) currentTime
+  ip <- sample $ current ensParticipants
+  let im = generateActivityMessages ip now
+  holdDyn im ev
+
+generateActivityMessages :: Map Text Participant -> UTCTime -> Map Text Text
+generateActivityMessages m t = fmap (flip generateActivityMessage $ t) m
+
+generateActivityMessage :: Participant -> UTCTime -> Text
+generateActivityMessage p t = f (diffUTCTime t (lastEdit p))
+  where
+    f x | x < 60 = "< 1m"
+        | x < 120 = "< 2m"
+        | x < 180 = "< 3m"
+        | x < 240 = "< 4m"
+        | x < 300 = "< 5m"
+        | otherwise = "inactive"
