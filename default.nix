@@ -163,15 +163,15 @@ in
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "17w28rpi9wn5fynkfcbfxh3dcdqvdmibvkbr7xmld9ipr7dkkv5d";
-          rev = "260083f6e55935810501ac1df6e180f62c945744";
+          sha256 = "02lssaj77cys30bawvzcfg93qmig4gny2xlr6s1xcw5bcmm7cghx";
+          rev = "b7401ccb089e5c9ca0825ce3b04b1396d15364d7";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "1c954035fsb9pb3x4hi2fl97y9sbf3xkb0fsl4ssly2f88ykxv8l";
-          rev = "dda24f19af8ca172adfd404fe0b75b25bd1c7fa2";
+          sha256 = "0rx7z6q2x1xqccwwc7036gzyy28kb8k45fj2v0zmjgsnv496qfd9";
+          rev = "820f78d97e2257d5445f498f81f9e9a8b3d06e43";
         }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
@@ -207,8 +207,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "16l83igxr9i1kmm6a571a0i8qhybh65p6hrnzyb4znf66dvvr2ig";
-           rev = "71a2310aebdc37d6a78bcc8d13e59eaf7845df10";
+           sha256 = "05dn0lyyaagljibxf0pnlin9ni1c5v7kh9c4bs76ch9z5wsk9nf1";
+           rev = "a1d78aedde218f8429517d8cfc599f9d7bbbc2d3";
         }) {});
 
       };
