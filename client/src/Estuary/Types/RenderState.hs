@@ -41,6 +41,9 @@ data RenderState = RenderState {
   timeNots :: IntMap TimeNot.Program,
   evaluationTimes :: IntMap UTCTime, -- this is probably temporary
   renderTime :: !MovingAverage,
+  wakeTimeAnimation :: !UTCTime,
+  animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
+  animationTime :: !MovingAverage, -- time between frame start and end of drawing operations
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo,
@@ -69,6 +72,9 @@ initialRenderState mic out glCtx t0System t0Audio = do
     timeNots = empty,
     evaluationTimes = empty,
     renderTime = newAverage 20,
+    wakeTimeAnimation = t0System,
+    animationDelta = newAverage 20,
+    animationTime = newAverage 20,
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
     info = emptyRenderInfo,
