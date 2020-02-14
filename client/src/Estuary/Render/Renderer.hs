@@ -230,12 +230,26 @@ renderZone irc c z d = do
 
 renderAnimation :: Renderer
 renderAnimation = do
-  tNow <- liftIO $ getCurrentTime
+  t1 <- liftIO $ getCurrentTime
   defs <- gets cachedDefs
-  traverseWithKey (renderZoneAnimation tNow) defs
+  traverseWithKey (renderZoneAnimation t1) defs
   s <- get
   newWebGL <- liftIO $ Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
-  modify' $ \x -> x { punctualWebGL = newWebGL }
+  t2 <- liftIO $ getCurrentTime
+  let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 (wakeTimeAnimation s))
+  let newAnimationTime = updateAverage (animationTime s) (realToFrac $ diffUTCTime t2 t1)
+  let newAnimationFPS = round $ 1 / getAverage newAnimationDelta
+  let newAnimationLoad = round $ getAverage newAnimationTime * 1000
+  modify' $ \x -> x {
+    punctualWebGL = newWebGL,
+    wakeTimeAnimation = t1,
+    animationDelta = newAnimationDelta,
+    animationTime = newAnimationTime,
+    info = (info x) {
+      animationFPS = newAnimationFPS,
+      animationLoad = newAnimationLoad
+      }
+    }
 
 renderZoneAnimation :: UTCTime -> Int -> Definition -> Renderer
 renderZoneAnimation tNow z (TextProgram x) = do

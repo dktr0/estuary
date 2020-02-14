@@ -4,6 +4,7 @@ module Estuary.Widgets.Footer where
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
+import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
 
@@ -22,13 +23,20 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
   -> Event t [Response] -> Event t [Hint] -> m (Event t Terminal.Command)
 footer ctx renderInfo deltasDown hints = divClass "footer" $ do
   divClass "peak primary-color code-font" $ do
-    serverInfo <- holdUniqDyn $ fmap (\c -> (clientCount c,serverLatency c)) ctx
-    dynText $ fmap f serverInfo
-    text " "
+    dynText =<< holdUniqDyn (fmap formatServerInfo ctx)
+    text ", "
     dynText =<< translateDyn Term.Load ctx
-    text ": "
-    dynText =<< holdUniqDyn (fmap (T.pack . show . avgRenderLoad) renderInfo)
-    text "%"
+    text " "
+    dynText =<< holdUniqDyn (fmap (showt . avgRenderLoad) renderInfo)
+    text "%, "
+    dynText =<< holdUniqDyn (fmap (showt . animationFPS) renderInfo)
+    text "FPS ("
+    dynText =<< holdUniqDyn (fmap (showt . animationLoad) renderInfo)
+    text "ms)"
   terminalWidget ctx deltasDown hints
+
+formatServerInfo :: Context -> Text
+formatServerInfo c = showt cc <> " connections, latency " <> showt l <> "ms"
   where
-    f (cc,lat) = "(" <> (showt cc) <> " connections, latency " <> (showt $ (realToFrac lat :: Double)) <> ")"
+    cc = clientCount c
+    l = ((round $ serverLatency c * 1000) :: Int)

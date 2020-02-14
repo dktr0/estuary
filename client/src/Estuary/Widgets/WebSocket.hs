@@ -47,7 +47,7 @@ estuaryWebSocket ctx rInfo toSend = mdo
   pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
   let clientInfoWithPingTime = fmap ClientInfo pingTickTime
   let loadDyn = fmap avgRenderLoad rInfo
-  let animationLoadDyn = fmap avgAnimationLoad rInfo
+  let animationLoadDyn = fmap animationLoad rInfo
   latencyDyn <- holdDyn 0 $ latency
   let loadAnimationAndLatency = (\x y z -> (x,y,z)) <$> loadDyn <*> animationLoadDyn <*> latencyDyn
   let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith (\(x,y,z) w -> w x y z) loadAnimationAndLatency clientInfoWithPingTime
