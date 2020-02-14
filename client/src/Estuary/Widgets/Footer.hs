@@ -28,7 +28,7 @@ footer ctx renderInfo deltasDown hints = divClass "footer" $ do
     dynText =<< translateDyn Term.Load ctx
     text " "
     dynText =<< holdUniqDyn (fmap (showt . avgRenderLoad) renderInfo)
-    text "%, "
+    text "%,   "
     dynText =<< holdUniqDyn (fmap (showt . animationFPS) renderInfo)
     text "FPS ("
     dynText =<< holdUniqDyn (fmap (showt . animationLoad) renderInfo)
