@@ -42,7 +42,7 @@ newServerState pwd es = atomically $ do
 addClient :: ServerState -> UTCTime -> WS.Connection -> IO ClientHandle
 addClient s t x = atomically $ do
   oldMap <- readTVar (clients s)
-  let i = lowestAvailableKey oldMap
+  let i = nextAvailableKey oldMap
   c <- newTVar $ newClient t i x
   let newMap = IntMap.insert i c oldMap
   writeTVar (clients s) newMap
@@ -50,6 +50,12 @@ addClient s t x = atomically $ do
 
 lowestAvailableKey :: IntMap.IntMap a -> IntMap.Key
 lowestAvailableKey m = Prelude.head ([0..] \\ (IntMap.keys m))
+
+nextAvailableKey :: IntMap.IntMap a -> IntMap.Key
+nextAvailableKey m = f (IntMap.keys m)
+  where
+    f [] = 0
+    f xs = Prelude.maximum xs + 1
 
 deleteClient :: ServerState -> ClientHandle -> IO ()
 deleteClient s h = atomically $ do

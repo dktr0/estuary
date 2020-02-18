@@ -107,10 +107,10 @@ webSocketsApp db ss pc = do
   ws' <- try $ WS.acceptRequest pc
   case ws' of
     Right ws'' -> do
-      postLogToDatabase db $ "received new connection"
       now <- getCurrentTime
       cHandle <- addClient ss now ws''
-      (WS.forkPingThread ws'' 30) `catch` \(SomeException e) -> postLogToDatabase db $ "exception in forking ping thread: " <> (T.pack $ show e)
+      postLogToDatabase db $ "received new connection (" <> showt cHandle <> ")"
+      (WS.forkPingThread ws'' 30) `catch` \(SomeException e) -> postLogToDatabase db $ "exception in forking ping thread (" <> showt cHandle <> "): " <> (T.pack $ show e)
       processLoop db ws'' ss cHandle
     Left (SomeException e) -> do
       postLogToDatabase db $ "exception during WS.acceptRequest: " <> (T.pack $ show e)
@@ -143,11 +143,9 @@ processMessage msg =
 processRequest :: Request -> Transaction ()
 
 processRequest (BrowserInfo t) = do
-  -- postLog "BrowserInfo"
   modifyClient $ \c -> c { browserInfo = t }
 
 processRequest (ClientInfo pingTime load animationLoad latency) = do
-  -- postLog "ClientInfo" -- note: should disable or throttle logging of this for high user count situations
   modifyClient $ \c -> c {
     clientMainLoad = load,
     clientAnimationLoad = animationLoad,
