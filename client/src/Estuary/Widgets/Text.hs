@@ -77,7 +77,8 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
     evalButton' <- divClass "textInputLabel" $ do
       x <- dynButton =<< translateDyn Term.Eval ctx
       e' <- holdUniqDyn errorText
-      dynText =<< (return $ fmap (maybe "" (const "!")) e')
+      let y = fmap (maybe (return ()) (syntaxErrorWidget ctx)) $ updated e'
+      widgetHold (return ()) y
       return x
     infoButton' <- divClass "referenceButton" $ dynButton "?"
     return (d',evalButton',infoButton')
@@ -122,3 +123,9 @@ labelEditor delta = do
     i <- (sample . current) delta
     textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   return $ Variable (_textInput_value y) (_textInput_input y)
+
+syntaxErrorWidget :: MonadWidget t m => Dynamic t Context -> Text -> m ()
+syntaxErrorWidget ctx t = do
+  let hoverArea = dynButton =<< translateDyn Term.Syntax ctx
+  tooltip hoverArea (text t)
+  return ()
