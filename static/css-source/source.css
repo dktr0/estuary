@@ -1111,6 +1111,8 @@ display: inline-flex;
     width: 100%;
     border: none;
    	padding: 0.125em;
+}
+
 /* Tooltip classes */
 
 .tooltip {
