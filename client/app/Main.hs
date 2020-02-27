@@ -47,17 +47,19 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  ac <- getGlobalAudioContext
+  ac <- getGlobalAudioContextPlayback
   addWorklets ac
 
-  mainBusNodes@(mainBusIn,_,_,_,_,_,_) <- initializeMainBus
+  mainBusNodes@(mainBusIn,_,_,_,_) <- initializeMainBus
   wd <- liftAudioIO $ newWebDirt mainBusIn
   initializeWebAudio wd
   sd <- newSuperDirt
+  theMic <- liftAudioIO $ createMicrophone
   let immutableRenderContext = ImmutableRenderContext {
     mainBus = mainBusNodes,
     webDirt = wd,
-    superDirt = sd
+    superDirt = sd,
+    mic = theMic
     }
 
   nowUtc <- getCurrentTime

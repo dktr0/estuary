@@ -6,6 +6,7 @@ import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
 import Sound.MusicW.AudioContext
+import Sound.MusicW.Node as MusicW
 import GHCJS.DOM.Types
 import Sound.Punctual.GL
 
@@ -40,15 +41,18 @@ data RenderState = RenderState {
   timeNots :: IntMap TimeNot.Program,
   evaluationTimes :: IntMap UTCTime, -- this is probably temporary
   renderTime :: !MovingAverage,
+  wakeTimeAnimation :: !UTCTime,
+  animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
+  animationTime :: !MovingAverage, -- time between frame start and end of drawing operations
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo,
   glContext :: GLContext
   }
 
-initialRenderState :: GLContext -> UTCTime -> AudioTime -> IO RenderState
-initialRenderState glCtx t0System t0Audio = do
-  pWebGL <- Punctual.newPunctualWebGL glCtx
+initialRenderState :: MusicW.Node -> MusicW.Node -> GLContext -> UTCTime -> AudioTime -> IO RenderState
+initialRenderState mic out glCtx t0System t0Audio = do
+  pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) glCtx
   return $ RenderState {
     animationOn = False,
     wakeTimeSystem = t0System,
@@ -68,6 +72,9 @@ initialRenderState glCtx t0System t0Audio = do
     timeNots = empty,
     evaluationTimes = empty,
     renderTime = newAverage 20,
+    wakeTimeAnimation = t0System,
+    animationDelta = newAverage 20,
+    animationTime = newAverage 20,
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
     info = emptyRenderInfo,

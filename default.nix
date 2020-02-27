@@ -151,27 +151,27 @@ in
 
         webdirt = import ./deps/webdirt self;
 
-        TimeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock
-        # (self.callCabal2nix "TimeNot" ../TimeNot "" {});
+        timeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock
+        #(self.callCabal2nix "timeNot" ../timeNot {});
         (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
             owner = "afrancob";
             repo = "timeNot";
-            sha256 = "083prbp97qdynx0m4m2m9ljxsz1caprvlxsz7vvxz8n23kffy2h3";
-            rev = "b5d4ff4578e0a1112cc81238e6704915eea33097";
+            sha256 = "0bij6wzb85kb9wbqqjdpb6x3s9w48kb62zxi2qw93p8jj15wyh84";
+            rev =  "4da8daa5e1e16f6be3deba4637ad9aab0e46ee5e";
           }) {});
 
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0glr29q7bspfvhccbpi0g9sr538dldc3frcqp8q1qrdf5s7s0xfl";
-          rev = "f0fd3e7dd7e95fed282b2c562f3515d1bd73d305";
+          sha256 = "02lssaj77cys30bawvzcfg93qmig4gny2xlr6s1xcw5bcmm7cghx";
+          rev = "b7401ccb089e5c9ca0825ce3b04b1396d15364d7";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "0q05d02cbsgqcryq78hq2sbn12md07bj09nxn0zp55s0wfvv3syh";
-          rev = "8ad568d0465eafffe308751fa5aafece1850eaad";
+          sha256 = "0rx7z6q2x1xqccwwc7036gzyy28kb8k45fj2v0zmjgsnv496qfd9";
+          rev = "820f78d97e2257d5445f498f81f9e9a8b3d06e43";
         }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
@@ -207,8 +207,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "16l83igxr9i1kmm6a571a0i8qhybh65p6hrnzyb4znf66dvvr2ig";
-           rev = "71a2310aebdc37d6a78bcc8d13e59eaf7845df10";
+           sha256 = "05dn0lyyaagljibxf0pnlin9ni1c5v7kh9c4bs76ch9z5wsk9nf1";
+           rev = "a1d78aedde218f8429517d8cfc599f9d7bbbc2d3";
         }) {});
 
       };

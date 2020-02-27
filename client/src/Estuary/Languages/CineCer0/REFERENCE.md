@@ -9,34 +9,30 @@ The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows 
 
 ## Image
 
-width [w] $ -- changes height (h) of the video, 1 = natural width <br/>
-height [h] $ -- changes width (w) of the video, 1 = natural height <br />
-size [w] [h] $ -- changes both height and width <br />
-posX [x] $ -- moves the video in the X-coordinate, from left (-1) to right 1 <br />
-posY [y] $ -- moves the video in the Y-coordinate from bottom (-1) to top 1 <br />
-pos [x] [y] $ -- moves in both coordinates <br />
-opacity [o] $ -- opacity goes from 0 - 1 (no opacity) <br />
-blur [bl] $ -- 0 = no blur (1++ = more) <br />
-brightness [br] $ --  100 = video brightness (0-99 = less, 100++ = more) <br />
-contrast [c] $ -- in which 100 = video contrast (0-99 = less, 100++ = more) <br />
-grayscale [g] $ -- in which 0 = no grayscale, 100 = full grayscale <br />
-saturate [s] $ -- in which 1.0 = video saturation (1++ = more) <br />
+setWidth [w] $ -- 1 = natural video width <br/>
+setHeight [h] $ -- 1 = natural video height <br />
+setSize [w] [h] $ <br />
+setPosX [x] $ -- from left (-1) to right 1 <br />
+setPosY [y] $ -- from bottom (-1) to top 1 <br />
+setCoord [x] [y] $ <br />
+setOpacity [o] $ -- from 0 - 1 (no opacity) <br />
+setBlur [bl] $ -- 0 = no blur (1++ = more) <br />
+setBrightness [br] $ --  0-0.9 = less, 1++ = more <br />
+setContrast [c] $ -- 0-0.9 = less, 1++ = more <br />
+setGrayscale [g] $ -- 0 = no grayscale, 1 = full grayscale <br />
+setSaturate [s] $ -- 1 = natural video saturation (1++ = more, 1-- =less) <br />
+
+## ramp
+
+(ramp [x] [y] [z]) -- in which x =, y =, z= <br />
+
+The following can be use with the ramp function: <br />
+width (ramp x y z) $ | height (ramp x y z) $ | posX (ramp x y z) $ | posY (ramp x y z) $ | opacity (ramp x y z) $ | blur (ramp x y z) $ | brightness (ramp x y z) $ | contrast (ramp x y z) $ | grayscale (ramp x y z) $ | saturate (ramp x y z) $ <br />
 
 
 ## Time Functions
 
-<<<<<<< HEAD
-natural sh $         -- sh shifts the starting point of the video. 0 start of the video (0%), 0.5 starts at 50% of the video, etc.
-every c sh $         -- adjusts/aligns length to the given number of cycles (c).
-round sh $           -- adjusts/aligns length to the nearest amount of cycles of the natural length. 
-roundMetre sh $      -- adjusts/aligns length to the nearest power of 2 number of cycles (metre in musical terms).
-chop sP eP c sh      -- adjusts/aligns length to the given number of cycles (c) from starting position (sP) to ending position (eP). sP and eP in percentage normalised from 0.0 to 1.0.
-chopSecs sP eP c sh  -- sP and eP in seconds.
-chop' sP c sh        -- adjusts/aligns length to the given number of cycles (c) from starting position (sP). sP in percentage normalised from 0.0 to 1.0.
-
-=======
 natural [shift] $ -- aligns the starting time of the video with the first beat of the first measure <br />
->>>>>>> 5187e1fb51a0e84cd3e71784b9f071fccf700b11
 
 every [cycles] [shift] $ -- adjusts the length to a given number of cycles <br />
 
@@ -48,4 +44,4 @@ chop [startPos] [endPos] [cycles] [shift] $ -- plays the video from the starting
 
 chop' [startPos] [cycles] [shift] $ --  plays the video from the starting position (0-1) stretching or compressing its length to adjust it to the number of cycles provided as a parameter. <br />
 
-chopSecs [startPos] [endPos] [cycles] [shift] $ -- plays the video from the starting position to the end position stretching or compressing its length to adjust it to the number of cycles provided as a parameter. This function does not have the start and end positions normalised from 0 to 1. <br />
+chopSecs [startPos] [endPos] [cycles] [shift] $ -- plays the video from the starting position to the end position stretching or compressing its length to adjust it to the number of cycles provided as a parameter. This function does not have the start and end positions normalized from 0 to 1. <br />

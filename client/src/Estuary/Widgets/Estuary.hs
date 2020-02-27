@@ -64,7 +64,7 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
 
   -- three GUI components: header, main (navigation), footer
   headerChange <- header ctx
-  (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page " $ navigation ctx renderInfo deltasDown
+  (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
   command <- footer ctx renderInfo deltasDown hints
   let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
@@ -129,12 +129,12 @@ canvasWidget ctxM ctx = do
 
 
 
--- every .204 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
+-- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
 pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
 pollRenderInfo riM = do
   now <- liftIO $ getCurrentTime
   riInitial <- liftIO $ readMVar riM
-  ticks <- tickLossy (0.204::NominalDiffTime) now
+  ticks <- tickLossy (1.02::NominalDiffTime) now
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 

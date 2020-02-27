@@ -34,10 +34,14 @@ import Sound.Punctual.GL (GLContext)
 
 -- things the render engine needs, but the UI doesn't need, and which never change
 data ImmutableRenderContext = ImmutableRenderContext {
-  mainBus :: (Node,Node,Node,Node,Node,Node,JSVal), -- ^ main bus input, delay, pregain, compressor, postgain, analyser, analyserArray,
+  mainBus :: (Node,Node,Node,Node,Node), -- ^ main bus input, delay, pregain, compressor, postgain
   webDirt :: WebDirt,
-  superDirt :: SuperDirt
+  superDirt :: SuperDirt,
+  mic :: Node
   }
+
+out :: ImmutableRenderContext -> Node
+out (ImmutableRenderContext (_,_,_,x,_) _ _ _) = x
 
 data Context = Context {
   webDirtOn :: Bool,
@@ -71,7 +75,7 @@ initialContext nowUtc = Context {
   webDirtOn = True,
   superDirtOn = False,
   canvasOn = True,
-  wsStatus = "",
+  wsStatus = "", 
   serverLatency = 0,
   clientCount = 0,
   videoDivElement = Nothing,
