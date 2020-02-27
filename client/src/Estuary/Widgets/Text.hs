@@ -80,7 +80,7 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
       let y = fmap (maybe (return ()) (syntaxErrorWidget ctx)) $ updated e'
       widgetHold (return ()) y
       return x
-    infoButton' <- divClass "referenceButton" $ tooltip (divClass "" $ dynButton "?") (text "test")
+    infoButton' <- divClass "referenceButton" $ dynButton "?"
     return (d',evalButton',infoButton')
 
   (edit,eval) <- divClass "labelAndTextPattern" $ do
