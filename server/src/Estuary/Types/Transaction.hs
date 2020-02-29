@@ -1,10 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Transactions in the Estuary server are IO computations that can fail with String error
--- messages, read the database connection and a handle for the client making the current request, and
--- can modify the global state of the server. This is implemented as a stack of monad transformers,
--- so Transaction a will be an instance of MonadState, MonadError, and MonadReader.
-
 module Estuary.Types.Transaction where
 
 import Control.Monad.Except
@@ -37,62 +32,75 @@ import Estuary.Types.View
 import Estuary.Types.Tempo
 
 
-type Transaction = ReaderT (SQLite.Connection,ClientHandle,ServerState) (ExceptT Text IO)
-
-askDatabase :: Transaction SQLite.Connection
-askDatabase = do
-  (db,_,_) <- ask
-  return db
-
-askClientHandle :: Transaction ClientHandle
-askClientHandle = do
-  (_,c,_) <- ask
-  return c
+type Transaction = ReaderT (ServerState,ClientHandle) (ExceptT Text STM)
 
 askServerState :: Transaction ServerState
-askServerState = do
-  (_,_,s) <- ask
-  return s
+askServerState = asks fst
 
-runTransaction ::  ServerState -> SQLite.Connection -> ClientHandle -> Transaction a -> IO ()
-runTransaction s db cHandle t = do
-  e <- try (runExceptT (runReaderT t (db,cHandle,s)))
-  case e of
-    Right (Right _) -> return () -- successful transaction
-    Right (Left x) -> postLogToDatabase db x -- transaction with error
-    Left (SomeException e) -> postLogToDatabase db $ "(" <> showt cHandle <> ") runTransaction caught unhandled exception: " <> (T.pack $ show e) -- unhandled exception in transaction
+askClientHandle :: Transaction ClientHandle
+askClientHandle = asks snd
 
-postLog :: Text -> Transaction ()
-postLog msg = do
-  db <- askDatabase
-  ch <- askClientHandle
-  liftIO $ postLogToDatabase db $ "(" <> showt ch <> ") " <> msg
+liftSTM :: STM a -> Transaction a
+liftSTM = lift . lift
 
-justOrError :: Maybe a -> Text -> Transaction a
-justOrError x e = maybe (throwError e) return x
+runTransaction :: SQLite.Connection -> ServerState -> ClientHandle -> Transaction a -> IO a
+runTransaction db ss cHandle t = do
+  x <- try $ atomically $ runExceptT (runReaderT t (ss,cHandle))
+  case x of
+    Right (Right a) -> return a
+    Right (Left e) -> postLogToDatabase db $ "(" <> showt cHandle <> ") ERROR in runTransaction: " <> e
+    Left (SomeException e) -> postLogToDatabase db $ "(" <> showt cHandle <> ") EXCEPTION in runTransaction: " <> (T.pack $ show e)
+
+runTransactionIO :: SQLite.Connection -> ServerState -> ClientHandle -> Transaction (IO a) -> IO a
+runTransactionIO db ss cHandle t = do
+  x <- try $ join $ atomically $ runExceptT (runReaderT t (ss,cHandle))
+  case x of
+    Right (Right a) -> return a
+    Right (Left e) -> postLogToDatabase db $ "(" <> showt cHandle <> ") ERROR in runTransactionIO: " <> e
+    Left (SomeException e) -> postLogToDatabase db $ "(" <> showt cHandle <> ") EXCEPTION in runTransactionIO: " <> (T.pack $ show e)
+
+addClient :: UTCTime -> WS.Connection -> Transaction ClientHandle
+addClient t x = do
+  s <- askServerState
+  liftSTM $ do
+    oldMap <- readTVar (clients s)
+    i <- readTVar (nextClientHandle s)
+    c <- newTVar $ newClient t i x
+    let newMap = IntMap.insert i c oldMap
+    writeTVar (clients s) newMap
+    writeTVar (nextClientHandle s) (i+1)
+    return i
+
+deleteClient :: ClientHandle -> Transaction ()
+deleteClient h = do
+  s <- askServerState
+  liftSTM $ do
+    oldMap <- readTVar (clients s)
+    let newMap = IntMap.delete h oldMap
+    writeTVar (clients s) newMap
 
 readClient :: Transaction Client
 readClient = do
   s <- askServerState
   cHandle <- askClientHandle
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  ctvar <- justOrError (IntMap.lookup cHandle cMap) "***strange error*** current client not found in Server"
-  liftIO $ atomically $ readTVar ctvar
+  cMap <- liftSTM $ readTVar (clients s)
+  ctvar <- justOrError (IntMap.lookup cHandle cMap) "current client not found in Server"
+  liftSTM $ readTVar ctvar
 
 modifyClient :: (Client -> Client) -> Transaction ()
 modifyClient f = do
   s <- askServerState
   cHandle <- askClientHandle
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  ctvar <- justOrError (IntMap.lookup cHandle cMap) "***strange error*** current client not found in Server"
-  liftIO $ atomically $ do
+  cMap <- liftSTM $ readTVar (clients s)
+  ctvar <- justOrError (IntMap.lookup cHandle cMap) "current client not found in Server"
+  liftSTM $ do
     c <- readTVar ctvar
     writeTVar ctvar $ f c
 
 readEnsembleName :: Transaction Text
 readEnsembleName = do
   c <- readClient
-  justOrError (memberOfEnsemble c) $ "***strange error*** readEnsembleName for client not in ensemble"
+  justOrError (memberOfEnsemble c) $ "readEnsembleName for client not in ensemble"
 
 readEnsembleS :: Transaction E.EnsembleS
 readEnsembleS = readEnsembleName >>= readEnsembleSbyName
@@ -100,28 +108,34 @@ readEnsembleS = readEnsembleName >>= readEnsembleSbyName
 readEnsembleSbyName :: Text -> Transaction E.EnsembleS
 readEnsembleSbyName eName = do
   s <- askServerState
-  eMap <- liftIO $ atomically $ readTVar (ensembles s)
-  etvar <- justOrError (Map.lookup eName eMap) $ "***strange error*** ensemble " <> eName <> " not found in Server"
-  liftIO $ atomically $ readTVar etvar
+  eMap <- liftSTM $ readTVar (ensembles s)
+  etvar <- justOrError (Map.lookup eName eMap) $ "ensemble " <> eName <> " not found in Server"
+  liftSTM $ readTVar etvar
 
 readAllEnsembleNames :: Transaction [Text]
 readAllEnsembleNames = do
   s <- askServerState
-  eMap <- liftIO $ atomically $ readTVar (ensembles s)
+  eMap <- liftSTM $ readTVar (ensembles s)
   return $ Map.keys eMap
 
 modifyEnsembleS :: (E.EnsembleS -> E.EnsembleS) -> Transaction ()
 modifyEnsembleS f = do
   c <- readClient
-  when (isNothing $ memberOfEnsemble c) $ postLog "***strange error*** modifyEnsembleS for client not in ensemble"
+  when (isNothing $ memberOfEnsemble c) $ postLog "modifyEnsembleS for client not in ensemble"
   when (isJust $ memberOfEnsemble c) $ do
     let eName = fromJust $ memberOfEnsemble c
     s <- askServerState
-    eMap <- liftIO $ atomically $ readTVar (ensembles s)
-    etvar <- justOrError (Map.lookup eName eMap) $ "***strange error*** ensemble " <> eName <> " not found in Server"
-    liftIO $ atomically $ do
+    eMap <- liftSTM $ readTVar (ensembles s)
+    etvar <- justOrError (Map.lookup eName eMap) $ "ensemble " <> eName <> " not found in Server"
+    liftSTM $ do
       e <- readTVar etvar
       writeTVar etvar $ f e
+
+authenticate :: Text -> Transaction Bool
+authenticate x = do
+  pwd <- administrativePassword <$> askServerState
+  modifyClient $ \c -> c { authenticated = x == pwd }
+  return x == pwd
 
 writeZone :: Int -> Definition -> Transaction ()
 writeZone zone def = modifyEnsembleS $ E.modifyEnsemble (E.writeZone zone def)
@@ -134,13 +148,14 @@ writeTempo t = modifyEnsembleS $ E.modifyEnsemble (E.writeTempo t)
 
 handleTakenInEnsemble :: Text -> Text -> Transaction Bool
 handleTakenInEnsemble uName eName = do
-  when (uName == "") $ throwError "*** strange error: handleTakenInEnsemble called with empty uName"
-  when (eName == "") $ throwError "*** strange error: handleTakenInEnsemble called with empty eName"
+  when (uName == "") $ throwError "handleTakenInEnsemble called with empty uName"
+  when (eName == "") $ throwError "handleTakenInEnsemble called with empty eName"
   s <- askServerState
-  clientMap <- liftIO $ atomically $ readTVar $ clients s
-  clientMap' <- liftIO $ mapM (atomically . readTVar) clientMap
-  let clientMap'' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == uName) clientMap'
-  return $ IntMap.size clientMap'' > 0
+  liftSTM $ do
+    x <- readTVar $ clients s
+    x' <- mapM readTVar x
+    let x'' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == uName) x'
+    return $ IntMap.size x'' > 0
 
 countAnonymousParticipants :: Transaction Int
 countAnonymousParticipants = readEnsembleName >>= countAnonymousParticipantsInEnsemble
@@ -148,17 +163,31 @@ countAnonymousParticipants = readEnsembleName >>= countAnonymousParticipantsInEn
 countAnonymousParticipantsInEnsemble :: Text -> Transaction Int
 countAnonymousParticipantsInEnsemble eName = do
   s <- askServerState
-  clientMap <- liftIO $ atomically $ readTVar $ clients s
-  clientMap' <- liftIO $ mapM (atomically . readTVar) clientMap
-  let clientMap'' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == "") clientMap'
-  return $ IntMap.size clientMap''
+  liftSTM $ do
+    x <- readTVar $ clients s
+    x' <- mapM readTVar x
+    let x'' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == "") x'
+    return $ IntMap.size x''
 
 getServerClientCount :: Transaction Int
 getServerClientCount = do
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
+  cMap <- liftSTM $ readTVar (clients s)
   return $ IntMap.size cMap
 
+createEnsemble :: Text -> Text -> UTCTime -> Transaction E.EnsembleS
+createEnsemble name pwd now = do
+  whenNotAuthenticated $ throwError "ignoring CreateEnsemble from non-authenticated client"
+  s <- askServerState
+  oldMap <- readTVar (ensembles s)
+  when (isJust $ Map.lookup name oldMap) $ throwError "ignoring CreateEnsemble for duplicate ensemble name"
+  newEns <- newTVar $ E.writePassword pwd $ E.emptyEnsembleS now
+  let newMap = Map.insert name newEns oldMap
+  writeTVar (ensembles s) newMap
+  return newEns
+
+
+-- *** TODO: rework this (contains response semantics that should be elsewhere)
 leaveEnsemble :: Transaction ()
 leaveEnsemble = do
   c <- readClient
@@ -182,30 +211,6 @@ leaveEnsemble = do
       statusInEnsemble = "",
       authenticatedInEnsemble = False
       }
-
-removeClientFromEnsemble :: Client -> Transaction ()
-removeClientFromEnsemble c = do
-  let e = memberOfEnsemble c
-  when (isJust e) $ do
-    let e' = fromJust e
-    let uName = handleInEnsemble c
-    let anonymous = uName == ""
-    when (not anonymous) $ do
-      postLog $ uName <> " removed from ensemble " <> e'
-      respondOtherEnsemble e' $ EnsembleResponse $ ParticipantLeaves uName
-    when anonymous $ do
-      postLog $ "(anonymous) removed from ensemble " <> e'
-      n <- countAnonymousParticipantsInEnsemble e'
-      respondOtherEnsemble e' $ EnsembleResponse $ AnonymousParticipants (n-1)
-
-close :: Text -> Transaction ()
-close msg = do
-  cHandle <- askClientHandle
-  postLog $ "closing connection " <> showt cHandle <> ": " <> msg
-  leaveEnsemble
-  s <- askServerState
-  liftIO $ deleteClient s cHandle
-
 
 isAuthenticated :: Transaction Bool
 isAuthenticated = readClient >>= return . authenticated
@@ -237,8 +242,9 @@ whenNotAuthenticatedInEnsemble t = do
   when (not x) $ void t
   return ()
 
-send :: Response -> [Client] -> Transaction ()
-send x cs = forM_ cs $ \c -> do
+-- *** TODO: this has been refactored but should probably be moved to EstuaryServer.hs
+send :: SQLite.Connection -> [Client] -> Response -> IO ()
+send db cs x = forM_ cs $ \c -> do
   y <- liftIO $ try (WS.sendTextData (connection c) $ encode x)
   case y of
     Right x -> return ()
@@ -246,63 +252,33 @@ send x cs = forM_ cs $ \c -> do
       let ce = fromException (SomeException e)
       let ch = Estuary.Types.Client.handle c
       case ce of
-        Just (WS.CloseRequest _ _) -> throwError $ "CloseRequest exception sending to (" <> showt ch <> ")"
-        Just WS.ConnectionClosed -> throwError $ "ConnectionClosed exception sending to (" <> showt ch <> ")"
-        otherwise -> throwError $ "unusual exception sending to (" <> showt ch <> ") : " <> (T.pack $ show e)
+        Just (WS.CloseRequest _ _) -> postLogToDatabase db $ "CloseRequest exception sending to (" <> showt ch <> ")"
+        Just WS.ConnectionClosed -> postLogToDatabase db $ "ConnectionClosed exception sending to (" <> showt ch <> ")"
+        otherwise -> postLogToDatabase db $ "unusual exception sending to (" <> showt ch <> ") : " <> (T.pack $ show e)
 
-respond :: Response -> Transaction ()
-respond x = do
-  c <- readClient
-  send x [c]
-
--- respondAll :: Response -> Transaction ()
--- respondAll x = gets (IntMap.elems . clients) >>= send x
-
--- respondAllNoOrigin :: Response -> Transaction ()
--- respondAllNoOrigin x = do
---  cHandle <- asks snd
---  cs <- gets (IntMap.elems . IntMap.delete cHandle . clients)
---  send x cs
-
-respondEnsemble :: Response -> Transaction ()
-respondEnsemble x = do
+ensembleClients :: Transaction [Client]
+ensembleClients = do
   c <- readClient
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ ensembleFilter (memberOfEnsemble c) cMap'
-  send x cs
+  liftSTM $ do
+    cMap <- readTVar (clients s)
+    cMap' <- mapM readTVar cMap
+    return $ IntMap.elems $ ensembleFilter (memberOfEnsemble c) cMap'
 
-respondEnsembleNoOrigin :: Response -> Transaction ()
-respondEnsembleNoOrigin x = do
+ensembleClientsNoOrigin :: Transaction [Client]
+ensembleClientsNoOrigin x = do
   cHandle <- askClientHandle
   c <- readClient
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ IntMap.delete cHandle $ ensembleFilter (memberOfEnsemble c) cMap'
-  send x cs
-
-respondOtherEnsemble :: Text -> Response -> Transaction ()
-respondOtherEnsemble eName x = do
-  s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ ensembleFilter (Just eName) cMap'
-  send x cs
+  liftSTM $ do
+    cMap <- readTVar (clients s)
+    cMap' <- mapM readTVar cMap
+    return $ IntMap.elems $ IntMap.delete cHandle $ ensembleFilter (memberOfEnsemble c) cMap'
 
 ensembleFilter :: Maybe Text -> IntMap.IntMap Client -> IntMap.IntMap Client
 ensembleFilter (Just e) = IntMap.filter $ (==(Just e)) . memberOfEnsemble
 ensembleFilter Nothing = const IntMap.empty
 
-saveNewEnsembleToDatabase :: Text -> Transaction ()
-saveNewEnsembleToDatabase name = do
-  s <- askServerState
-  eMap <- liftIO $ atomically $ readTVar (ensembles s)
-  etvar <- justOrError (Map.lookup name eMap) $ "***strange error*** saveNewEnsembleToDatabase for non-existent ensemble"
-  e <- liftIO $ atomically $ readTVar etvar
-  db <- askDatabase
-  liftIO $ writeNewEnsembleS db name e
 
 saveEnsembleToDatabase :: Transaction ()
 saveEnsembleToDatabase = do

@@ -107,78 +107,91 @@ webSocketsApp db ss pc = do
   ws' <- try $ WS.acceptRequest pc
   case ws' of
     Right ws'' -> do
-      now <- getCurrentTime
-      cHandle <- addClient ss now ws''
+      cHandle <- addClient ss ws''
       postLogToDatabase db $ "received new connection (" <> showt cHandle <> ")"
       (WS.forkPingThread ws'' 30) `catch` \(SomeException e) -> postLogToDatabase db $ "exception in forking ping thread (" <> showt cHandle <> "): " <> (T.pack $ show e)
-      processLoop db ws'' ss cHandle
+      processLoop db ss cHandle ws''
     Left (SomeException e) -> do
       postLogToDatabase db $ "exception during WS.acceptRequest: " <> (T.pack $ show e)
 
 
-processLoop :: SQLite.Connection -> WS.Connection -> ServerState -> ClientHandle -> IO ()
-processLoop db ws ss cHandle = do
+processLoop :: SQLite.Connection -> ServerState -> ClientHandle -> WS.Connection -> IO ()
+processLoop db ss cHandle ws = do
   m <- try $ WS.receiveData ws
---  t0 <- getCurrentTime
   case m of
     Right m' -> do
-      runTransaction ss db cHandle $ processMessage m'
---      t1 <- getCurrentTime
---      T.putStrLn $ showt ((realToFrac $ diffUTCTime t1 t0) :: Double)
-      processLoop db ws ss cHandle
-    Left WS.ConnectionClosed -> runTransaction ss db cHandle $ close "unexpected loss of connection"
-    Left (WS.CloseRequest _ _) -> runTransaction ss db cHandle $ close "connection closed by request from peer"
+      processMessage db ss cHandle m'
+      processLoop db ss cHandle ws
     Left (WS.ParseException e) -> do
-      postLogToDatabase db $ "parse exception: " <> (T.pack e)
-      processLoop db ws ss cHandle
-    Left _ -> runTransaction ss db cHandle $ close "***unknown exception in processLoop***"
+      postLogToDatabase db $ "(" <> showt cHandle <> ") parse exception: " <> (T.pack e)
+      processLoop db ss cHandle ws
+    Left WS.ConnectionClosed -> close db ss cHandle "unexpected loss of connection"
+    Left (WS.CloseRequest _ _) -> close db ss cHandle "by request from peer"
+    Left _ -> close db ss cHandle "***unknown exception in receiveData***"
 
 
-processMessage :: ByteString -> Transaction ()
-processMessage msg =
-  case eitherDecode msg of
-    Right x -> processRequest x
-    Left x -> throwError (T.pack x)
+close :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> IO ()
+close db ss cHandle msg = do
+  postLogToDatabase db $ "closing connection (" <> showt cHandle <> "): " <> msg
+  runTransactionIO db ss cHandle $ do
+    c <- readClient
+    let uName = handleInEnsemble c
+    n <- countAnonymousParticipants
+    let r = if uName == "" then AnonymousParticipants (n-1) else ParticipantLeaves uName
+    xs <- ensembleClientsNoOrigin
+    deleteClient
+    return $ send db xs (EnsembleResponse r)
 
-processRequest :: Request -> Transaction ()
+-- *** TODO re above: (already refactored) need to
+-- make sure countAnonymousParticipants works when not in ensemble (returns 0)
+-- make sure ensembleClientsNoOrigin works when not in ensemble (returns [])
+-- implement deleteClient :: Transaction ()
 
-processRequest (BrowserInfo t) = do
-  modifyClient $ \c -> c { browserInfo = t }
+processMessage :: SQLite.Connection -> ServerState -> ClientHandle -> ByteString -> IO ()
+processMessage db ss cHandle msg = case eitherDecode msg of
+  Right x -> processRequest db ss cHandle x
+  Left x -> postLogToDatabase db $ "(" <> showt cHandle <> ") eitherDecode error: " <> (T.pack x)
 
-processRequest (ClientInfo pingTime load animationLoad latency) = do
-  modifyClient $ \c -> c {
-    clientMainLoad = load,
-    clientAnimationLoad = animationLoad,
-    clientLatency = latency
-    }
-  n <- getServerClientCount
-  respond $ ServerInfo n pingTime
-  updateParticipant
+processRequest :: SQLite.Connection -> ServerState -> ClientHandle -> Request -> IO ()
 
-processRequest GetEnsembleList = do
-  postLog $ "GetEnsembleList"
-  eNames <- readAllEnsembleNames
-  respond $ EnsembleList eNames
+processRequest db ss cHandle (BrowserInfo t) =
+  runTransaction db ss cHandle $ modifyClient $ \c -> c { browserInfo = t }
 
-processRequest (Authenticate x) = do
-  pwd <- administrativePassword <$> askServerState
-  if x == pwd
-    then do
-      postLog $ "Authenticate with correct password"
-      modifyClient $ \x -> x { authenticated = True }
-    else do
-      postLog $ "Authenticate with incorrect password"
-      modifyClient $ \x -> x { authenticated = False }
+processRequest db ss cHandle (ClientInfo pingTime load animationLoad latency) = do
+  runTransactionIO db ss cHandle $ do
+    modifyClient $ \c -> c {
+      clientMainLoad = load,
+      clientAnimationLoad = animationLoad,
+      clientLatency = latency
+      }
+    n <- getServerClientCount
+    self <- readClient
+    ecs <- if handleInEnsemble self /= "" then ensembleClients else return []
+    return $ do
+      send db [self] $ ServerInfo n pingTime
+      send db ecs $ EnsembleResponse $ ParticipantUpdate (handleInEnsemble self) (clientToParticipant self)
 
-processRequest (CreateEnsemble name pwd) = do
-  whenNotAuthenticated $ throwError "ignoring CreateEnsemble from non-authenticated client"
-  postLog $ "CreateEnsemble " <> name
-  now <- liftIO $ getCurrentTime
-  s <- askServerState
-  liftIO $ addEnsemble s name pwd now
-  saveNewEnsembleToDatabase name
+processRequest db ss cHandle GetEnsembleList = do
+  runTransactionIO db ss cHandle $ do
+    eNames <- readAllEnsembleNames
+    self <- readClient
+    return $ send db [self] $ EnsembleList eNames
 
-processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Text Text Text
+processRequest db ss cHandle (Authenticate x) = do
+  runTransactionIO db ss cHandle $ do
+    y <- authenticate x
+    return $ case y of
+      True -> postLogToDatabase db $ "(" <> showt cHandle <> ") Authenticate with correct password"
+      False -> postLogToDatabase db $ "(" <> showt cHandle <> ") Authenticate with incorrect password"
+
+processRequest db ss cHandle (CreateEnsemble name pwd) = do
+  now <- getCurrentTime
+  runTransactionIO db ss cHandle $ do
+    e <- createEnsemble name pwd now
+    return $ writeNewEnsembleS db name e
+
+*** WORKING BELOW HERE ***
+processRequest db ss cHandle (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Text Text Text
   postLog $ "joining ensemble " <> eName
   e <- readEnsembleSbyName eName
   when (uName /= "") $ do
@@ -222,9 +235,9 @@ processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Tex
     n <- countAnonymousParticipants
     respondEnsemble $ EnsembleResponse $ AnonymousParticipants n
 
-processRequest LeaveEnsemble = leaveEnsemble
+processRequest db ss cHandle LeaveEnsemble = leaveEnsemble
 
-processRequest (EnsembleRequest x) = processEnsembleRequest x
+processRequest db ss cHandle (EnsembleRequest x) = processEnsembleRequest x
 
 processEnsembleRequest :: EnsembleRequest -> Transaction ()
 
@@ -276,12 +289,6 @@ processEnsembleRequest (WriteTempo t) = do
   respondEnsembleNoOrigin $ EnsembleResponse $ TempoRcvd t
   saveEnsembleToDatabase
   updateLastEdit
-
-updateParticipant :: Transaction ()
-updateParticipant = do
-  -- note: probably should fail silently (non-failure) if not in an ensemble or anonymous
-  p <- clientToParticipant <$> readClient
-  respondEnsembleNoOrigin $ EnsembleResponse $ ParticipantUpdate (name p) p
 
 updateLastEdit :: Transaction ()
 updateLastEdit = do
