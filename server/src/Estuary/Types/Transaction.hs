@@ -39,14 +39,6 @@ import Estuary.Types.Tempo
 
 type Transaction = ReaderT (SQLite.Connection,ClientHandle,ServerState) (ExceptT Text IO)
 
-runTransaction ::  ServerState -> SQLite.Connection -> ClientHandle -> Transaction a -> IO ()
-runTransaction s db cHandle t = do
-  e <- try (runExceptT (runReaderT t (db,cHandle,s)))
-  case e of
-    Right (Right _) -> return () -- successful transaction
-    Right (Left x) -> postLogToDatabase db x -- transaction with error
-    Left (SomeException e) -> postLogToDatabase db ("runTransaction caught unhandled exception: " <> (T.pack $ show e)) -- unhandled exception in transaction
-
 askDatabase :: Transaction SQLite.Connection
 askDatabase = do
   (db,_,_) <- ask
@@ -62,10 +54,19 @@ askServerState = do
   (_,_,s) <- ask
   return s
 
+runTransaction ::  ServerState -> SQLite.Connection -> ClientHandle -> Transaction a -> IO ()
+runTransaction s db cHandle t = do
+  e <- try (runExceptT (runReaderT t (db,cHandle,s)))
+  case e of
+    Right (Right _) -> return () -- successful transaction
+    Right (Left x) -> postLogToDatabase db x -- transaction with error
+    Left (SomeException e) -> postLogToDatabase db $ "(" <> showt cHandle <> ") runTransaction caught unhandled exception: " <> (T.pack $ show e) -- unhandled exception in transaction
+
 postLog :: Text -> Transaction ()
 postLog msg = do
   db <- askDatabase
-  liftIO $ postLogToDatabase db msg
+  ch <- askClientHandle
+  liftIO $ postLogToDatabase db $ "(" <> showt ch <> ") " <> msg
 
 justOrError :: Maybe a -> Text -> Transaction a
 justOrError x e = maybe (throwError e) return x
@@ -205,12 +206,6 @@ close msg = do
   s <- askServerState
   liftIO $ deleteClient s cHandle
 
-closeAnotherConnection :: Client -> Transaction ()
-closeAnotherConnection c = do
-  postLog $ "closing connection " <> showt (Estuary.Types.Client.handle c) <> " (for another client)"
-  s <- askServerState
-  liftIO $ deleteClient s (Estuary.Types.Client.handle c)
-  removeClientFromEnsemble c
 
 isAuthenticated :: Transaction Bool
 isAuthenticated = readClient >>= return . authenticated
@@ -249,10 +244,11 @@ send x cs = forM_ cs $ \c -> do
     Right x -> return ()
     Left (SomeException e) -> do
       let ce = fromException (SomeException e)
+      let ch = Estuary.Types.Client.handle c
       case ce of
-        Just (WS.CloseRequest _ _) -> closeAnotherConnection c
-        Just WS.ConnectionClosed -> closeAnotherConnection c
-        otherwise -> throwError $ "send exception: " <> (T.pack $ show e)
+        Just (WS.CloseRequest _ _) -> throwError $ "CloseRequest exception sending to (" <> showt ch <> ")"
+        Just WS.ConnectionClosed -> throwError $ "ConnectionClosed exception sending to (" <> showt ch <> ")"
+        otherwise -> throwError $ "unusual exception sending to (" <> showt ch <> ") : " <> (T.pack $ show e)
 
 respond :: Response -> Transaction ()
 respond x = do

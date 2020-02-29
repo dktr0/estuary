@@ -24,6 +24,7 @@ import qualified Estuary.Types.Ensemble as E
 
 data ServerState = ServerState {
   administrativePassword :: Text,
+  nextClientHandle :: TVar Int,
   clients :: TVar (IntMap.IntMap (TVar Client)),
   ensembles :: TVar (Map.Map Text (TVar E.EnsembleS))
 }
@@ -33,8 +34,10 @@ newServerState pwd es = atomically $ do
   c <- newTVar IntMap.empty
   es' <- mapM newTVar es
   es'' <- newTVar es'
+  nch <- newTVar 0
   return $ ServerState {
     administrativePassword = pwd,
+    nextClientHandle = nch,
     clients = c,
     ensembles = es''
   }
@@ -42,14 +45,12 @@ newServerState pwd es = atomically $ do
 addClient :: ServerState -> UTCTime -> WS.Connection -> IO ClientHandle
 addClient s t x = atomically $ do
   oldMap <- readTVar (clients s)
-  let i = lowestAvailableKey oldMap
+  i <- readTVar (nextClientHandle s)
   c <- newTVar $ newClient t i x
   let newMap = IntMap.insert i c oldMap
   writeTVar (clients s) newMap
+  writeTVar (nextClientHandle s) (i+1)
   return i
-
-lowestAvailableKey :: IntMap.IntMap a -> IntMap.Key
-lowestAvailableKey m = Prelude.head ([0..] \\ (IntMap.keys m))
 
 deleteClient :: ServerState -> ClientHandle -> IO ()
 deleteClient s h = atomically $ do
