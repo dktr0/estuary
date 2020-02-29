@@ -28,7 +28,8 @@ data Term =
   JoiningEnsemble |
   EnsembleUserName |
   EnsembleLocation |
-  EnsembleLogin
+  EnsembleLogin |
+  Syntax
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -133,5 +134,7 @@ translate EnsembleLogin Español = "Ingresar"
 translate Peak Français = "pic"
 translate Peak English = "peak"
 translate Peak Español = "tope"
+
+translate Syntax English = "SYNTAX"
 
 translate x _ = pack $ "?" ++ show x

@@ -109,7 +109,7 @@ webSocketsApp db ss pc = do
     Right ws'' -> do
       cHandle <- addClient ss ws''
       postLogToDatabase db $ "received new connection (" <> showt cHandle <> ")"
-      (WS.forkPingThread ws'' 30) `catch` \(SomeException e) -> postLogToDatabase db $ "exception in forking ping thread (" <> showt cHandle <> "): " <> (T.pack $ show e)
+      (WS.forkPingThread ws'' 5) `catch` \(SomeException e) -> postLogToDatabase db $ "exception in forking ping thread (" <> showt cHandle <> "): " <> (T.pack $ show e)
       processLoop db ss cHandle ws''
     Left (SomeException e) -> do
       postLogToDatabase db $ "exception during WS.acceptRequest: " <> (T.pack $ show e)
