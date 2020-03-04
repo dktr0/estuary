@@ -206,6 +206,13 @@ close msg = do
   s <- askServerState
   liftIO $ deleteClient s cHandle
 
+closeAnotherConnection :: Text -> Client -> Transaction ()
+closeAnotherConnection t c = do
+  tch <- askClientHandle
+  postLog $ "closing connection " <> showt (Estuary.Types.Client.handle c) <> " (for another client " <> showt tch <> ")"
+  s <- askServerState
+  liftIO $ deleteClient s (Estuary.Types.Client.handle c)
+  removeClientFromEnsemble c
 
 isAuthenticated :: Transaction Bool
 isAuthenticated = readClient >>= return . authenticated
@@ -246,9 +253,9 @@ send x cs = forM_ cs $ \c -> do
       let ce = fromException (SomeException e)
       let ch = Estuary.Types.Client.handle c
       case ce of
-        Just (WS.CloseRequest _ _) -> throwError $ "CloseRequest exception sending to (" <> showt ch <> ")"
-        Just WS.ConnectionClosed -> throwError $ "ConnectionClosed exception sending to (" <> showt ch <> ")"
-        otherwise -> throwError $ "unusual exception sending to (" <> showt ch <> ") : " <> (T.pack $ show e)
+        Just (WS.CloseRequest _ _) -> closeAnotherConnection "CloseRequest exception" c
+        Just WS.ConnectionClosed -> closeAnotherConnection "ConnectionClosed exception" c
+        otherwise -> postLog $ "unusual exception sending to (" <> showt ch <> ") : " <> (T.pack $ show e)
 
 respond :: Response -> Transaction ()
 respond x = do
