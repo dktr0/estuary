@@ -192,11 +192,11 @@ removeClientFromEnsemble c = do
     let anonymous = uName == ""
     when (not anonymous) $ do
       postLog $ uName <> " removed from ensemble " <> e'
-      respondOtherEnsemble e' $ EnsembleResponse $ ParticipantLeaves uName
+      respondOtherEnsembleNoOrigin e' $ EnsembleResponse $ ParticipantLeaves uName
     when anonymous $ do
       postLog $ "(anonymous) removed from ensemble " <> e'
       n <- countAnonymousParticipantsInEnsemble e'
-      respondOtherEnsemble e' $ EnsembleResponse $ AnonymousParticipants (n-1)
+      respondOtherEnsembleNoOrigin e' $ EnsembleResponse $ AnonymousParticipants (n-1)
 
 close :: Text -> Transaction ()
 close msg = do
@@ -262,22 +262,14 @@ respond x = do
   c <- readClient
   send x [c]
 
--- respondAll :: Response -> Transaction ()
--- respondAll x = gets (IntMap.elems . clients) >>= send x
-
--- respondAllNoOrigin :: Response -> Transaction ()
--- respondAllNoOrigin x = do
---  cHandle <- asks snd
---  cs <- gets (IntMap.elems . IntMap.delete cHandle . clients)
---  send x cs
-
 respondEnsemble :: Response -> Transaction ()
 respondEnsemble x = do
   c <- readClient
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ ensembleFilter (memberOfEnsemble c) cMap'
+  cs <- liftIO $ atomically $ do
+    x <- readTVar (clients s)
+    y <- mapM readTVar x
+    return $ IntMap.elems $ ensembleFilter (memberOfEnsemble c) y
   send x cs
 
 respondEnsembleNoOrigin :: Response -> Transaction ()
@@ -285,17 +277,20 @@ respondEnsembleNoOrigin x = do
   cHandle <- askClientHandle
   c <- readClient
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ IntMap.delete cHandle $ ensembleFilter (memberOfEnsemble c) cMap'
+  cs <- liftIO $ atomically $ do
+    x <- readTVar (clients s)
+    y <- mapM readTVar x
+    return $ IntMap.elems $ IntMap.delete cHandle $ ensembleFilter (memberOfEnsemble c) y
   send x cs
 
-respondOtherEnsemble :: Text -> Response -> Transaction ()
-respondOtherEnsemble eName x = do
+respondOtherEnsembleNoOrigin :: Text -> Response -> Transaction ()
+respondOtherEnsembleNoOrigin eName x = do
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ ensembleFilter (Just eName) cMap'
+  cHandle <- askClientHandle
+  cs <- liftIO $ atomically $ do
+    x <- readTVar (clients s)
+    y <- mapM readTVar x
+    return $ IntMap.elems $ IntMap.delete cHandle $ ensembleFilter (Just eName) y
   send x cs
 
 ensembleFilter :: Maybe Text -> IntMap.IntMap Client -> IntMap.IntMap Client
