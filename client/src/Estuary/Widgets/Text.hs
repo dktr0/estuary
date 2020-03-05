@@ -126,6 +126,7 @@ labelEditor delta = do
 
 syntaxErrorWidget :: MonadWidget t m => Dynamic t Context -> Text -> m ()
 syntaxErrorWidget ctx t = do
-  let hoverArea = dynButton =<< translateDyn Term.Syntax ctx
-  tooltip hoverArea (text t)
+  s <- translateDyn Term.Syntax ctx
+  let wb = elClass "div" "syntaxIssue" $ dynText s
+  tooltip wb (text t)
   return ()

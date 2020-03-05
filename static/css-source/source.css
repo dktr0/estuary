@@ -1118,7 +1118,6 @@ display: inline-flex;
 .tooltip {
   position: relative;
   display: inline-block;
-  border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
 }
 
 .tooltip .tooltiptext {
@@ -1149,4 +1148,10 @@ display: inline-flex;
 
 .tooltip:hover .tooltiptext {
   visibility: visible;
+}
+
+.syntaxIssue {
+  color: var(--transient-color);
+  border-bottom: 1px dotted var(--secondary-color);
+  margin-left: 3px;
 }
