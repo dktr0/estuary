@@ -10,6 +10,7 @@ import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 import Control.Concurrent.STM
 import Data.Text
+import Data.Time
 
 import Estuary.Types.Client
 import Estuary.Types.Response
@@ -34,3 +35,27 @@ newServerState pwd es = atomically $ do
     clients = c,
     ensembles = es''
   }
+
+addClient :: ServerState -> WS.Connection -> IO ClientHandle
+addClient s x = do
+  t <- getCurrentTime
+  atomically $ do
+    oldMap <- readTVar (clients s)
+    i <- readTVar (nextClientHandle s)
+    c <- newTVar $ newClient t i x
+    let newMap = IntMap.insert i c oldMap
+    writeTVar (clients s) newMap
+    writeTVar (nextClientHandle s) (i+1)
+    return i
+
+-- fails silently if no client matching the given handle is in the map of clients
+deleteClient :: ServerState -> ClientHandle -> IO (Maybe Client)
+deleteClient ss cHandle = atomically $ do
+  oldMap <- readTVar (clients s)
+  let ctvar = lookup cHandle oldMap
+  case ctvar of
+    Just ctvar' -> do
+      let newMap = IntMap.delete cHandle oldMap
+      writeTVar (clients s) newMap
+      Just <$> readTVar ctvar'
+    Nothing -> return Nothing

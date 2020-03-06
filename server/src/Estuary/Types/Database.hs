@@ -36,11 +36,18 @@ createEnsembleTable c = execute_ c "CREATE TABLE IF NOT EXISTS ensembles (name T
 createLogTable :: Connection -> IO ()
 createLogTable c = execute_ c "CREATE TABLE IF NOT EXISTS log (time TEXT,msg TEXT)"
 
-postLogToDatabase :: Connection -> Text -> IO ()
-postLogToDatabase c l = do
+postLogNoHandle :: Connection -> Text -> IO ()
+postLogNoHandle c msg = do
   now <- getCurrentTime
-  T.putStrLn $ (T.pack $ show now) <> ": " <> l
-  execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,l)
+  T.putStrLn $ (T.pack $ show now) <> ": " <> msg
+  execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,msg)
+
+postLog :: Connection -> Int -> Text -> IO ()
+postLog c cHandle msg = do
+  now <- getCurrentTime
+  let msg' = "(" <> showt cHandle <> ") " <> l
+  T.putStrLn $ (T.pack $ show now) <> ":" <> msg'
+  execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,msg')
 
 writeNewEnsembleS :: Connection -> Text -> EnsembleS -> IO ()
 writeNewEnsembleS c eName e = do
