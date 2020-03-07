@@ -74,6 +74,11 @@ getClient cHandle = do
   ctvar <- justOrError (IntMap.lookup cHandle cMap) $ "client (" <> showt cHandle <> ") not found in Server"
   liftSTM $ readTVar ctvar
 
+getEnsembleName :: ClientHandle -> Transaction Text
+getEnsembleName cHandle = do
+  eName <- memberOfEnsemble <$> getClient
+  justOrError eName "getEnsembleName for client not member of ensemble"
+
 modifyClient :: ClientHandle -> (Client -> Client) -> Transaction ()
 modifyClient cHandle f = do
   s <- ask
@@ -311,10 +316,12 @@ ensembleFilter :: Maybe Text -> IntMap.IntMap Client -> IntMap.IntMap Client
 ensembleFilter (Just e) = IntMap.filter $ (==(Just e)) . memberOfEnsemble
 ensembleFilter Nothing = const IntMap.empty
 
-saveEnsembleToDatabase :: SQLite.Connection -> Text -> Transaction (IO ())
-saveEnsembleToDatabase db eName = do
-  e <- getEnsembleS eName
-  return $ writeEnsembleS db eName e
+saveEnsembleToDatabase :: SQLite.Connection -> ServerState -> Text -> IO ()
+saveEnsembleToDatabase db ss eName = do
+  etvar <- atomically $ lookup eName <$> readTVar (ensembles ss)
+  case etvar of
+    Nothing -> postLogNoHandle db "*** strange error: saveEnsembleToDatabase for " <> eName <> " (not found in ensemble map)"
+    Just x -> writeEnsembleS db eName x
 
 updateLastEdit :: ClientHandle -> UTCTime -> Transaction Participant
 updateLastEdit cHandle now = do
