@@ -75,7 +75,7 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
-      x <- dynButton =<< translateDyn Term.Eval ctx
+      x <- dynButton "\x25B6"
       return x
     e' <- holdUniqDyn errorText
     let y = fmap (maybe (return ()) (syntaxErrorWidget ctx)) $ updated e'
@@ -126,6 +126,7 @@ labelEditor delta = do
 
 syntaxErrorWidget :: MonadWidget t m => Dynamic t Context -> Text -> m ()
 syntaxErrorWidget ctx t = do
-  let hoverArea = dynButton =<< translateDyn Term.Syntax ctx
-  tooltip hoverArea (text t)
+  s <- translateDyn Term.Syntax ctx
+  let wb = elClass "div" "syntaxIssue" $ dynText s
+  tooltip wb (text t)
   return ()
