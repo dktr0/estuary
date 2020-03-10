@@ -75,7 +75,7 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
-      x <- dynButton =<< translateDyn Term.Eval ctx
+      x <- dynButton "\x25B6"
       return x
     e' <- holdUniqDyn errorText
     let y = fmap (maybe (return ()) (syntaxErrorWidget ctx)) $ updated e'
