@@ -37,25 +37,25 @@ newServerState pwd es = atomically $ do
   }
 
 addClient :: ServerState -> WS.Connection -> IO ClientHandle
-addClient s x = do
+addClient ss x = do
   t <- getCurrentTime
   atomically $ do
-    oldMap <- readTVar (clients s)
-    i <- readTVar (nextClientHandle s)
+    oldMap <- readTVar (clients ss)
+    i <- readTVar (nextClientHandle ss)
     c <- newTVar $ newClient t i x
     let newMap = IntMap.insert i c oldMap
-    writeTVar (clients s) newMap
-    writeTVar (nextClientHandle s) (i+1)
+    writeTVar (clients ss) newMap
+    writeTVar (nextClientHandle ss) (i+1)
     return i
 
 -- fails silently if no client matching the given handle is in the map of clients
 deleteClient :: ServerState -> ClientHandle -> IO (Maybe Client)
 deleteClient ss cHandle = atomically $ do
-  oldMap <- readTVar (clients s)
-  let ctvar = lookup cHandle oldMap
+  oldMap <- readTVar (clients ss)
+  let ctvar = IntMap.lookup cHandle oldMap
   case ctvar of
     Just ctvar' -> do
       let newMap = IntMap.delete cHandle oldMap
-      writeTVar (clients s) newMap
+      writeTVar (clients ss) newMap
       Just <$> readTVar ctvar'
     Nothing -> return Nothing

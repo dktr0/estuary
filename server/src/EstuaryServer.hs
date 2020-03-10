@@ -105,7 +105,7 @@ gzipMiddleware = gzip $ def {
 webSocketsApp :: SQLite.Connection -> ServerState -> WS.PendingConnection -> IO ()
 webSocketsApp db ss pc = do
   let rh = WS.pendingRequest pc
-  putStrLn $ show rh
+  Prelude.putStrLn $ show rh
   ws' <- try $ WS.acceptRequest pc
   case ws' of
     Right ws'' -> do
@@ -148,7 +148,7 @@ notifyEnsembleAboutClose db ss cHandle c = when (isJust $ memberOfEnsemble c) $ 
   let uName = handleInEnsemble c
   runTransactionIO ss $ do
     cs <- clientsInEnsemble eName
-    n <- countAnonymousParticipants eName
+    n <- countAnonymousParticipants cHandle
     let r = if uName == "" then AnonymousParticipants n else ParticipantLeaves uName
     return $ sendClients db cHandle cs (EnsembleResponse r)
   return ()
@@ -175,17 +175,17 @@ processRequest db ss ws cHandle (ClientInfo pingTime load animationLoad latency)
     self <- getClient cHandle
     ecs <- getEnsembleClients cHandle
     return $ do
-      send db cHandle ws $ ServerInfo n pingTime
+      send db cHandle cHandle ws $ ServerInfo n pingTime
       sendClients db cHandle ecs $ EnsembleResponse $ ParticipantUpdate (handleInEnsemble self) (clientToParticipant self)
 
 processRequest db ss ws cHandle GetEnsembleList = do
   runTransactionIOLogged db ss cHandle "GetEnsembleList" $ do
     eNames <- getEnsembleNames
-    return $ send db cHandle ws $ EnsembleList eNames
+    return $ send db cHandle cHandle ws $ EnsembleList eNames
 
 processRequest db ss ws cHandle (Authenticate x) = do
   runTransactionIOLogged db ss cHandle "Authenticate" $ do
-    y <- authenticate x
+    y <- authenticate cHandle x
     return $ case y of
       True -> postLog db cHandle $ "Authenticate with correct password"
       False -> postLog db cHandle $ "Authenticate with incorrect password"
@@ -197,15 +197,16 @@ processRequest db ss ws cHandle (CreateEnsemble name pwd) = do
     return $ writeNewEnsembleS db name e -- NOTE: this database write will be unnecessary when we move to a model where database operations (except logging) are in a different "low priority" thread
 
 processRequest db ss ws cHandle (JoinEnsemble eName uName loc pwd) = do
-  x <- runTransactionIO ss $ joinEnsemble eName uName loc pwd
+  x <- runTransactionIO ss $ joinEnsemble db cHandle eName uName loc pwd
   let uName' = if uName == "" then "(anonymous)" else uName
-  case e of
+  case x of
     Left e -> do
-      send db cHandle ws $ ResponseError e
+      send db cHandle cHandle ws $ ResponseError e
       postLog db cHandle $ "JoinEnsemble " <> eName <> " as " <> uName' <> " FAILED because: " <> e
     Right _ -> postLog db cHandle $ "joined ensemble " <> eName <> " as " <> uName'
 
-processRequest db ss ws cHandle LeaveEnsemble = leaveEnsemble
+processRequest db ss ws cHandle LeaveEnsemble = do
+  runTransactionIOLogged db ss cHandle "LeaveEnsemble" $ leaveEnsemble db cHandle
 
 processRequest db ss ws cHandle (EnsembleRequest x) = processEnsembleRequest db ss ws cHandle x
 
@@ -218,6 +219,7 @@ processEnsembleRequest db ss ws cHandle (WriteZone zone value) = do
     p <- updateLastEdit cHandle now
     cs <- getEnsembleClientsNoOrigin cHandle
     cs' <- getEnsembleClients cHandle
+    eName <- getEnsembleName cHandle
     return $ do
       sendClients db cHandle cs $ EnsembleResponse $ ZoneRcvd zone value
       sendClients db cHandle cs' $ EnsembleResponse $ ParticipantUpdate (name p) p
@@ -226,20 +228,22 @@ processEnsembleRequest db ss ws cHandle (WriteZone zone value) = do
 processEnsembleRequest db ss ws cHandle (WriteChat msg) = do
   now <- getCurrentTime
   runTransactionIOLogged db ss cHandle "WriteChat" $ do
-    whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteChat (not authenticated)"
+    whenNotAuthenticatedInEnsemble cHandle $ throwError "ignoring WriteChat (not authenticated)"
     eName <- getEnsembleName cHandle
     uName <- handleInEnsemble <$> getClient cHandle
     when (uName == "") $ throwError "ignoring WriteChat from anonymous"
     p <- updateLastEdit cHandle now
     cs <- getEnsembleClients cHandle
+    eName <- getEnsembleName cHandle
     return $ do
       postLog db cHandle $ uName <> " in " <> eName <> " chats: " <> msg
-      sendClients db cHandle cs $ EnsembleResponse $ ChatRcvd $ Chat now sender msg
+      sendClients db cHandle cs $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
       sendClients db cHandle cs $ EnsembleResponse $ ParticipantUpdate (name p) p
 
-processEnsembleRequest (WriteStatus msg) = do
+processEnsembleRequest db ss ws cHandle (WriteStatus msg) = do
+  now <- getCurrentTime
   runTransactionIOLogged db ss cHandle "WriteStatus" $ do
-    whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteStatus (not authenticated)"
+    whenNotAuthenticatedInEnsemble cHandle $ throwError "ignoring WriteStatus (not authenticated)"
     eName <- getEnsembleName cHandle
     uName <- handleInEnsemble <$> getClient cHandle
     when (uName == "") $ throwError "ignoring WriteStatus from anonymous"
@@ -250,22 +254,24 @@ processEnsembleRequest (WriteStatus msg) = do
       postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> eName <> ": " <> msg
       sendClients db cHandle cs $ EnsembleResponse $ ParticipantUpdate (name p) p
 
-processEnsembleRequest (WriteView preset view) = do
+processEnsembleRequest db ss ws cHandle (WriteView preset view) = do
+  now <- getCurrentTime
   runTransactionIOLogged db ss cHandle "WriteStatus" $ do
-    writeView preset view -- *** need to make this ***
+    writeView cHandle preset view
     eName <- getEnsembleName cHandle
     p <- updateLastEdit cHandle now
     cs <- getEnsembleClientsNoOrigin cHandle
     cs' <- getEnsembleClients cHandle
     return $ do
       postLog db cHandle $ "WriteView in (" <> eName <> "," <> preset <> ")"
-      sendClients db cHandle cs $ EnsembleResponse $ ViewRcvd zone value
+      sendClients db cHandle cs $ EnsembleResponse $ ViewRcvd preset view
       sendClients db cHandle cs' $ EnsembleResponse $ ParticipantUpdate (name p) p
       saveEnsembleToDatabase db ss eName
 
-processEnsembleRequest (WriteTempo t) = do
+processEnsembleRequest db ss ws cHandle (WriteTempo t) = do
+  now <- getCurrentTime
   runTransactionIOLogged db ss cHandle "WriteTempo" $ do
-    writeTempo t -- *** need to make this ***
+    writeTempo cHandle t
     eName <- getEnsembleName cHandle
     p <- updateLastEdit cHandle now
     cs <- getEnsembleClientsNoOrigin cHandle
