@@ -47,15 +47,3 @@ addClient ss x = do
     writeTVar (clients ss) newMap
     writeTVar (nextClientHandle ss) (i+1)
     return i
-
--- fails silently if no client matching the given handle is in the map of clients
-deleteClient :: ServerState -> ClientHandle -> IO (Maybe Client)
-deleteClient ss cHandle = atomically $ do
-  oldMap <- readTVar (clients ss)
-  let ctvar = IntMap.lookup cHandle oldMap
-  case ctvar of
-    Just ctvar' -> do
-      let newMap = IntMap.delete cHandle oldMap
-      writeTVar (clients ss) newMap
-      Just <$> readTVar ctvar'
-    Nothing -> return Nothing

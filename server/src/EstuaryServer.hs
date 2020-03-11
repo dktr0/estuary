@@ -133,25 +133,20 @@ processLoop db ss cHandle ws = do
 
 
 close :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> IO ()
-close db ss cHandle msg = do
-  c0 <- deleteClient ss cHandle
-  case c0 of
-    Just c -> do
-      postLog db cHandle $ "closing connection: " <> msg
-      notifyEnsembleAboutClose db ss cHandle c
-    Nothing -> postLog db cHandle $ "* close requested (" <> msg <> "), but already removed from map of clients"
-
-
-notifyEnsembleAboutClose :: SQLite.Connection -> ServerState -> ClientHandle -> Client -> IO ()
-notifyEnsembleAboutClose db ss cHandle c = when (isJust $ memberOfEnsemble c) $ do
-  let eName = fromJust $ memberOfEnsemble c
-  let uName = handleInEnsemble c
-  runTransactionIO ss $ do
-    cs <- clientsInEnsemble eName
-    n <- countAnonymousParticipants cHandle
-    let r = if uName == "" then AnonymousParticipants n else ParticipantLeaves uName
-    return $ sendClients db cHandle cs (EnsembleResponse r)
-  return ()
+close db ss cHandle msg = runTransactionIOLogged db ss cHandle "close" $ do
+  c <- getClient cHandle
+  n <- countAnonymousParticipants cHandle
+  cs <- getEnsembleClientsNoOrigin cHandle
+  deleteClient cHandle
+  return $ do
+    postLog db cHandle $ "closing connection: " <> msg
+    when (isJust $ memberOfEnsemble c) $ do
+      let eName = fromJust $ memberOfEnsemble c
+      let uName = handleInEnsemble c
+      let uName' = if uName == "" then "(anonymous)" else uName
+      postLog db cHandle $ uName' <> " leaves ensemble " <> eName
+      let r = if uName == "" then AnonymousParticipants n else ParticipantLeaves uName
+      sendClients db cHandle cs (EnsembleResponse r)
 
 
 processMessage :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> ByteString -> IO ()
@@ -194,7 +189,9 @@ processRequest db ss ws cHandle (CreateEnsemble name pwd) = do
   now <- getCurrentTime
   runTransactionIOLogged db ss cHandle "CreateEnsemble" $ do
     e <- createEnsemble cHandle name pwd now
-    return $ writeNewEnsembleS db name e -- NOTE: this database write will be unnecessary when we move to a model where database operations (except logging) are in a different "low priority" thread
+    return $ do
+      postLog db cHandle $ "CreateEnsemble " <> name <> " password=" <> pwd
+      writeNewEnsembleS db name e -- NOTE: this database write will be unnecessary when we move to a model where database operations (except logging) are in a different "low priority" thread
 
 processRequest db ss ws cHandle (JoinEnsemble eName uName loc pwd) = do
   x <- runTransactionIO ss $ joinEnsemble db cHandle eName uName loc pwd

@@ -60,7 +60,7 @@ runTransactionLogged :: SQLite.Connection -> ServerState -> ClientHandle -> Text
 runTransactionLogged db ss cHandle msgPrefix t = runTransaction ss t >>= postLeftsToLog db cHandle msgPrefix
 
 runTransactionIOLogged :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> Transaction (IO a) -> IO ()
-runTransactionIOLogged db ss cHandle msgPrefix t = runTransaction ss t >>= postLeftsToLog db cHandle msgPrefix
+runTransactionIOLogged db ss cHandle msgPrefix t = runTransactionIO ss t >>= postLeftsToLog db cHandle msgPrefix
 
 justOrError :: Maybe a -> Text -> Transaction a
 justOrError m e = maybe (throwError e) (return) m
@@ -71,6 +71,18 @@ getClient cHandle = do
   cMap <- liftSTM $ readTVar (clients s)
   ctvar <- justOrError (IntMap.lookup cHandle cMap) $ "client (" <> showt cHandle <> ") not found in Server"
   liftSTM $ readTVar ctvar
+
+deleteClient :: ClientHandle -> Transaction Client
+deleteClient cHandle = do
+  ss <- ask
+  oldMap <- liftSTM $ readTVar (clients ss)
+  let ctvar = IntMap.lookup cHandle oldMap
+  case ctvar of
+    Just ctvar' -> liftSTM $ do
+      let newMap = IntMap.delete cHandle oldMap
+      writeTVar (clients ss) newMap
+      readTVar ctvar'
+    Nothing -> throwError $ "client " <> showt cHandle <> "not found"
 
 getEnsembleName :: ClientHandle -> Transaction Text
 getEnsembleName cHandle = do
