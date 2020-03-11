@@ -17,6 +17,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as Lazy
 import qualified Data.Text.Lazy.Encoding as Lazy
+import TextShow
 
 import Estuary.Types.View
 import Estuary.Types.EnsembleS
@@ -27,7 +28,7 @@ openDatabase = do
   c <- open "Estuary.db"
   createLogTable c
   createEnsembleTable c
-  postLogToDatabase c "database opened"
+  postLogNoHandle c "database opened"
   return c
 
 createEnsembleTable :: Connection -> IO ()
@@ -36,11 +37,22 @@ createEnsembleTable c = execute_ c "CREATE TABLE IF NOT EXISTS ensembles (name T
 createLogTable :: Connection -> IO ()
 createLogTable c = execute_ c "CREATE TABLE IF NOT EXISTS log (time TEXT,msg TEXT)"
 
-postLogToDatabase :: Connection -> Text -> IO ()
-postLogToDatabase c l = do
+postLogNoHandle :: Connection -> Text -> IO ()
+postLogNoHandle c msg = do
   now <- getCurrentTime
-  T.putStrLn $ (T.pack $ show now) <> ": " <> l
-  execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,l)
+  T.putStrLn $ (T.pack $ show now) <> ": " <> msg
+  execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,msg)
+
+postLog :: Connection -> Int -> Text -> IO ()
+postLog c cHandle msg = do
+  now <- getCurrentTime
+  let msg' = "(" <> showt cHandle <> ") " <> msg
+  T.putStrLn $ (T.pack $ show now) <> ":" <> msg'
+  execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,msg')
+
+postLeftsToLog :: Connection -> Int -> Text -> Either Text a -> IO ()
+postLeftsToLog _ _ _ (Right _) = return ()
+postLeftsToLog db cHandle msgPrefix (Left e) = postLog db cHandle $ msgPrefix <> " " <> e
 
 writeNewEnsembleS :: Connection -> Text -> EnsembleS -> IO ()
 writeNewEnsembleS c eName e = do

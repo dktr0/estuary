@@ -1,3 +1,5 @@
+*.pem
+*.csr
 sampleMap.json
 rtpBridge/package-lock.json
 estuary-client.zip
