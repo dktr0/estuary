@@ -132,23 +132,30 @@ playRound_Rate sh t vlen render eval =
 -- and each cycle is 2.5 secs long, this functions will change the rate so the video fits in four cycles (10 secs)
 -- this functions only accept from the player one argument: shift
 
+------------ playRoundMetre ------------
+
+-- Similar to the above but it fits the length of the video to a power of 2 number of cycles so it can adapt
+-- to common music understandings of period, phrase and subdivision. For example, if a video is 12 secs long 
+-- and each cycle is 2.5 secs long, this functions will change the rate so the video fits in four cycles (10 secs)
+-- this functions only accept from the player one argument: shift
+
 ---- round the duration of the video to a power of 2 so it can align with the notion of metre
 playRoundMetrePos:: Rational -> Signal (Maybe NominalDiffTime)
 playRoundMetrePos sh t vlen render eval =
     let vl = realToFrac vlen :: Rational
-        cpDur = realToFrac (1/(cps t)) :: Rational
+        cpDur = realToFrac (1/(cps t)) :: Rational --- cps expresado en duracion if 0.5 cps then 2 segundos (SEGUNDOS, NO ciclos!!)
         off = sh*cpDur
-        cPerLen = vl/cpDur -- how many cycles for 1 whole video
-        newVLinCPS = stretchToMetre cPerLen
-        inSecs = newVLinCPS *cpDur
-        difb0 = realToFrac (diffUTCTime render (beatZero t)) :: Rational
+        cPerLen = vl/cpDur -- how many cycles for 1 whole video || if length is 28 secs and the cpDur is 2 = 14 (ciclos!!!!!!)
+        newVLinCPS = stretchToMetre cPerLen     -- outputs de cycles that will be the new dur of the video (16 ciclos)
+        inSecs = newVLinCPS *cpDur -- express the new video duration in secs rather than cycles 16*2 = 32
+        difb0 = realToFrac (diffUTCTime render (beatZero t)) :: Rational -- the amount of time passed between render time and beatZero
         difb0' = difb0 - off
-        lengths = difb0' / inSecs
-        posNorm = lengths - fromIntegral (floor lengths) :: Rational
-        result = reglaDeTres 1 posNorm inSecs
+        lengths = difb0' / inSecs -- if dif 30 secs and inSecs is 16 then = 1.875. 1.875 ciclos han transcurrido
+        posNorm = lengths - fromIntegral (floor lengths) :: Rational -- 0.875, this is the percentage of the duration of a cycle
+        result = reglaDeTres 1 posNorm inSecs -- 100 % 87.5 % 
     in Just (realToFrac  result) --transforms this into seconds
 
-playRoundMetreRate:: Rational -> Signal (Maybe Rational)
+playRoundMetreRate:: Rational -> Signal (Maybe Double)
 playRoundMetreRate sh t vlen render eval =
     let vl = realToFrac vlen :: Rational
         cpDur = realToFrac (1/(cps t)) :: Rational
@@ -157,12 +164,12 @@ playRoundMetreRate sh t vlen render eval =
         newVLinCPS = stretchToMetre cPerLen
         newVLinSecs = newVLinCPS * cpDur
         rate = realToFrac vl / newVLinSecs
-    in Just rate
+    in Just (realToFrac rate)
 
 
 stretchToMetre:: Rational -> Rational
 stretchToMetre cPlen =
-    let ceilFloor =  getCeilFloor [2] cPlen
+    let ceilFloor =  getCeilFloor [0.125/16] cPlen
         ceil = last ceilFloor
         floor = last $ init ceilFloor
     in if (cPlen - floor) < (ceil - cPlen) then floor else ceil
