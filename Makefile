@@ -8,6 +8,8 @@ RSYNC_EXISTS := $(shell rsync --version 2>/dev/null)
 CP=cp
 CP_RECURSIVE=cp -Rf
 #endif
+WEBDIRT = $(shell nix-store -r $(shell nix-instantiate webdirt.nix))
+MAKESAMPLEMAP = $(shell nix-store -r $(shell nix-instantiate webdirt.nix))/makeSampleMap.sh
 
 # the hack below is necessary because cabal on OS x seems to build in a
 # subdirectory name ...../x86_64-osx/... rather than the name in $system
@@ -16,7 +18,6 @@ ifeq (${system},x86_64-darwin)
 else
 	SYSTEM = ${system}
 endif
-
 
 assertInNixShell:
 ifndef IN_NIX_SHELL
@@ -51,8 +52,8 @@ nixBuild:
 	-mkdir result
 	-mkdir result/ghc
 	-mkdir result/ghcjs
-	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
-	nix-build -o result/ghcjs/estuary/ -A ghcjs.estuary
+	nix-build --max-jobs 4 --cores 0 -o result/ghc/estuary-server/ -A ghc.estuary-server
+	nix-build --max-jobs 4 --cores 0 -o result/ghcjs/estuary/ -A ghcjs.estuary
 
 nixBuildServer:
 	@ echo "nixBuildServer:"
@@ -60,7 +61,7 @@ nixBuildServer:
 	-mkdir result
 	-mkdir result/ghc
 	-mkdir result/ghcjs
-	nix-build -o result/ghc/estuary-server/ -A ghc.estuary-server
+	nix-build --max-jobs 4 --cores 0 -o result/ghc/estuary-server/ -A ghc.estuary-server
 
 stackBuildServer:
 	@ echo "stackBuildServer:"
@@ -72,13 +73,14 @@ stackStageServer: prepStage
 	cp -f $(shell cd server && stack path --local-install-root)/bin/EstuaryServer $(STAGING_ROOT)
 	chmod a+w $(STAGING_ROOT)/EstuaryServer
 
-PROD_STAGING_ROOT=staging/
-DEV_STAGING_ROOT=dev-staging/
+PROD_STAGING_ROOT=staging
+DEV_STAGING_ROOT=dev-staging
 STAGING_ROOT=$(PROD_STAGING_ROOT)
 prepStage:
 	@ echo "prepStage:"
 	-mkdir $(STAGING_ROOT)
 	-mkdir $(STAGING_ROOT)/Estuary.jsexe/
+	-mkdir $(STAGING_ROOT)/Estuary.jsexe/WebDirt
 prepDevStage: STAGING_ROOT=$(DEV_STAGING_ROOT)
 prepDevStage: prepStage
 
@@ -90,8 +92,8 @@ cleanDevStage: cleanStage
 
 stageStaticAssets: prepStage
 	@ echo "stageStaticAssets:"
+	cp -Rf $(WEBDIRT)/* $(STAGING_ROOT)/Estuary.jsexe/WebDirt
 	$(CP_RECURSIVE) static/*.js $(STAGING_ROOT)/Estuary.jsexe/
-	$(CP_RECURSIVE) static/WebDirt $(STAGING_ROOT)/Estuary.jsexe/
 	$(CP_RECURSIVE) static/css-custom $(STAGING_ROOT)/Estuary.jsexe/
 	$(CP_RECURSIVE) static/css-source $(STAGING_ROOT)/Estuary.jsexe/
 	$(CP_RECURSIVE) static/fonts $(STAGING_ROOT)/Estuary.jsexe/
@@ -121,7 +123,7 @@ cabalStageClient: assertInNixGhcjsShell prepDevStage
 	# stage the client js
 	for part in lib out rts runmain ; do \
 		$(CP) $(CABAL_CLIENT_BIN_DIR)/$$part.js $(DEV_STAGING_ROOT)/Estuary.jsexe/ ; \
-		chmod a+w $(DEV_STAGING_ROOT)Estuary.jsexe/$$part.js ; \
+		chmod a+w $(DEV_STAGING_ROOT)/Estuary.jsexe/$$part.js ; \
 	done
 
 GET_CABAL_SERVER_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('server/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
@@ -170,22 +172,18 @@ downloadDirtSamples:
 makeSampleMap:
 	@ echo "makeSampleMap:"
 	@[ -d static/samples ] || (echo Directory static/samples does not exist. Have you provided a sample library, for example, by running 'make downloadDirtSamples'? && exit 1)
-	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - you probably have forgotten to 'git submodule update --init --recursive'" && exit 1)
-	cd static/samples && bash ../WebDirt/makeSampleMap.sh . > sampleMap.json
+	cd static/samples && bash $(MAKESAMPLEMAP) . > sampleMap.json
 	@[ -f static/samples/sampleMap.json ] || (echo "Error: make makeSampleMap did NOT work!" && exit 1)
 	@ echo "Sample map made."
 
-updateSubmodules:
-	@ echo "updateSubModules:"
-	git submodule update --init --recursive
-	@[ -f static/WebDirt/makeSampleMap.sh ] || (echo "Couldn't find static/WebDirt/makeSampleMap.sh - git submodule update --init --recursive didn't work - make sure you got Estuary with git clone (not by 'downloading')" && exit 1)
+fullBuild: downloadDirtSamples makeSampleMap nixBuild cleanStage nixStageClient nixStageServer stageStaticAssets stageSamples
 
-fullBuild: downloadDirtSamples updateSubmodules makeSampleMap nixBuild cleanStage nixStageClient nixStageServer stageStaticAssets stageSamples
-
-clean: cleanStage cleanDevStage
-	-rm -rf result/
-	-rm -rf dist-newstyle/
-	-rm -rf dist-ghcjs/
+clean:
+	-rm -rf staging
+	-rm -rf dev-staging
+	-rm -rf result
+	-rm -rf dist-newstyle
+	-rm -rf dist-ghcjs
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
@@ -195,11 +193,6 @@ runServer: nixBuild stageStaticAssets makeSampleMap stageSamples nixStageClient 
 	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer test +RTS -N -RTS
 
 selfCertificates:
-	-mkdir staging
-	-mkdir dev-staging
-	openssl genrsa -out staging/privkey.pem 2048
-	openssl req -new -key staging/privkey.pem -out staging/cert.csr -addext extendedKeyUsage=serverAuth -addext subjectAltName=DNS:localhost
-	openssl x509 -req -in staging/cert.csr -signkey staging/privkey.pem -out staging/cert.pem
-	cp staging/privkey.pem dev-staging/privkey.pem
-	cp staging/cert.csr dev-staging/cert.csr
-	cp staging/cert.pem dev-staging/cert.pem
+	openssl genrsa -out privkey.pem 2048
+	openssl req -new -key privkey.pem -out cert.csr -addext extendedKeyUsage=serverAuth -addext subjectAltName=DNS:localhost
+	openssl x509 -req -in cert.csr -signkey privkey.pem -out cert.pem

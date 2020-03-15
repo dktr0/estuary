@@ -19,12 +19,15 @@ instance Show DynamicsMode where
   show LoudDynamics = "Loud"
   show WideDynamics = "Wide"
 
+maxDelayTime :: Double
+maxDelayTime = 10
+
 initializeMainBus :: IO (Node,Node,Node,Node,Node)
 initializeMainBus = liftAudioIO $ do
     acDestination <- createDestination
     ((v,w,x,y,z),s) <- playSynthNow acDestination $ do
       v <- audioIn
-      w <- delay 5.0 v
+      w <- delay maxDelayTime v
       x <- gain (dbamp (-10)) w
       y <- compressor (-20) 3 4 0.050 0.100 x -- args are: threshold knee ratio attack release input
       z <- gain 1.0 y
@@ -81,6 +84,7 @@ changeDestination (_, _, _, _, postGain) destCreator = liftAudioIO $ do
   return newDest
 
 changeDelay :: (Node,Node,Node,Node,Node) -> AudioTime -> IO ()
-changeDelay (input,del,preGain,comp,postGain) newDelayTime = liftAudioIO $ do
+changeDelay (input,del,preGain,comp,postGain) newDelayTime | newDelayTime > maxDelayTime = putStrLn "delay time greater than maxDelayTime"
+                                                           | otherwise = liftAudioIO $ do
   setValue del DelayTime newDelayTime
   return ()

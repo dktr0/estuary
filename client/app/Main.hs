@@ -47,7 +47,7 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  ac <- getGlobalAudioContext
+  ac <- getGlobalAudioContextPlayback
   addWorklets ac
 
   mainBusNodes@(mainBusIn,_,_,_,_) <- initializeMainBus

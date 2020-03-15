@@ -55,19 +55,19 @@ import Estuary.Types.Chat
 runServerWithDatabase :: Text -> Int -> Bool -> SQLite.Connection -> IO ()
 runServerWithDatabase pwd port httpRedirect db = do
   nCap <- getNumCapabilities
-  postLogToDatabase db $ "Estuary collaborative editing server"
-  postLogToDatabase db $ "max simultaneous Haskell threads = " <> showt nCap
-  postLogToDatabase db $ "administrative password = " <> pwd
+  postLogNoHandle db $ "Estuary collaborative editing server"
+  postLogNoHandle db $ "max simultaneous Haskell threads = " <> showt nCap
+  postLogNoHandle db $ "administrative password = " <> pwd
   es <- readEnsembles db
-  postLogToDatabase db $ showt (size es) <> " ensembles restored from database"
+  postLogNoHandle db $ showt (size es) <> " ensembles restored from database"
   s <- newServerState pwd es
   let settings = (defaultWebAppSettings "Estuary.jsexe") {
     ssIndices = [unsafeToPiece "index.html"],
     ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
     }
-  postLogToDatabase db $ "listening on port " <> showt port <> " (HTTPS only)"
+  postLogNoHandle db $ "listening on port " <> showt port <> " (HTTPS only)"
   when httpRedirect $ void $ forkIO $ do
-    postLogToDatabase db $ "(also listening on port 80 and redirecting plain HTTP requests to HTTPS, ie. on port 443)"
+    postLogNoHandle db $ "(also listening on port 80 and redirecting plain HTTP requests to HTTPS, ie. on port 443)"
     run 80 ourRedirect
   runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
 
@@ -78,8 +78,8 @@ ourRedirect req respond = do
 
 ourTLSSettings :: TLSSettings
 ourTLSSettings = defaultTlsSettings {
-  certFile = "cert.pem",
-  keyFile = "privkey.pem",
+  certFile = "../cert.pem",
+  keyFile = "../privkey.pem",
   tlsAllowedVersions = [TLS12],
   tlsCiphers = [
     cipher_ECDHE_ECDSA_AES256GCM_SHA384,
@@ -104,191 +104,177 @@ gzipMiddleware = gzip $ def {
 
 webSocketsApp :: SQLite.Connection -> ServerState -> WS.PendingConnection -> IO ()
 webSocketsApp db ss pc = do
+  let rh = WS.pendingRequest pc
+  Prelude.putStrLn $ show rh
   ws' <- try $ WS.acceptRequest pc
   case ws' of
     Right ws'' -> do
-      postLogToDatabase db $ "received new connection"
-      now <- getCurrentTime
-      cHandle <- addClient ss now ws''
-      (WS.forkPingThread ws'' 30) `catch` \(SomeException e) -> postLogToDatabase db $ "exception in forking ping thread: " <> (T.pack $ show e)
-      processLoop db ws'' ss cHandle
+      cHandle <- addClient ss ws''
+      postLog db cHandle "new connection"
+      (WS.forkPingThread ws'' 10) `catch` \(SomeException e) -> postLog db cHandle $ "exception forking ping thread: " <> (T.pack $ show e)
+      processLoop db ss cHandle ws''
     Left (SomeException e) -> do
-      postLogToDatabase db $ "exception during WS.acceptRequest: " <> (T.pack $ show e)
+      postLogNoHandle db $ "exception during WS.acceptRequest: " <> (T.pack $ show e)
 
 
-processLoop :: SQLite.Connection -> WS.Connection -> ServerState -> ClientHandle -> IO ()
-processLoop db ws ss cHandle = do
+processLoop :: SQLite.Connection -> ServerState -> ClientHandle -> WS.Connection -> IO ()
+processLoop db ss cHandle ws = do
   m <- try $ WS.receiveData ws
---  t0 <- getCurrentTime
   case m of
     Right m' -> do
-      runTransaction ss db cHandle $ processMessage m'
---      t1 <- getCurrentTime
---      T.putStrLn $ showt ((realToFrac $ diffUTCTime t1 t0) :: Double)
-      processLoop db ws ss cHandle
-    Left WS.ConnectionClosed -> runTransaction ss db cHandle $ close "unexpected loss of connection"
-    Left (WS.CloseRequest _ _) -> runTransaction ss db cHandle $ close "connection closed by request from peer"
+      processMessage db ss ws cHandle m'
+      processLoop db ss cHandle ws
     Left (WS.ParseException e) -> do
-      postLogToDatabase db $ "parse exception: " <> (T.pack e)
-      processLoop db ws ss cHandle
-    Left _ -> runTransaction ss db cHandle $ close "***unknown exception in processLoop***"
+      postLog db cHandle $ "parse exception: " <> (T.pack e)
+      processLoop db ss cHandle ws
+    Left WS.ConnectionClosed -> close db ss cHandle "unexpected loss of connection"
+    Left (WS.CloseRequest _ _) -> close db ss cHandle "by request from peer"
+    Left _ -> close db ss cHandle "* unknown exception in receiveData"
 
 
-processMessage :: ByteString -> Transaction ()
-processMessage msg =
-  case eitherDecode msg of
-    Right x -> processRequest x
-    Left x -> throwError (T.pack x)
+close :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> IO ()
+close db ss cHandle msg = runTransactionIOLogged db ss cHandle "close" $ do
+  c <- getClient cHandle
+  n <- countAnonymousParticipants cHandle
+  cs <- getEnsembleClientsNoOrigin cHandle
+  deleteClient cHandle
+  return $ do
+    postLog db cHandle $ "closing connection: " <> msg
+    when (isJust $ memberOfEnsemble c) $ do
+      let eName = fromJust $ memberOfEnsemble c
+      let uName = handleInEnsemble c
+      let uName' = if uName == "" then "(anonymous)" else uName
+      postLog db cHandle $ uName' <> " leaves ensemble " <> eName
+      let r = if uName == "" then AnonymousParticipants n else ParticipantLeaves uName
+      sendClients db cHandle cs (EnsembleResponse r)
 
-processRequest :: Request -> Transaction ()
 
-processRequest (BrowserInfo t) = do
-  -- postLog "BrowserInfo"
-  modifyClient $ \c -> c { browserInfo = t }
+processMessage :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> ByteString -> IO ()
+processMessage db ss ws cHandle msg = case eitherDecode msg of
+  Right x -> processRequest db ss ws cHandle x
+  Left x -> postLog db cHandle $ "* eitherDecode error in processMessage: " <> (T.pack x)
 
-processRequest (ClientInfo pingTime load animationLoad latency) = do
-  -- postLog "ClientInfo" -- note: should disable or throttle logging of this for high user count situations
-  modifyClient $ \c -> c {
-    clientMainLoad = load,
-    clientAnimationLoad = animationLoad,
-    clientLatency = latency
-    }
-  n <- getServerClientCount
-  respond $ ServerInfo n pingTime
-  updateParticipant
+processRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> Request -> IO ()
 
-processRequest GetEnsembleList = do
-  postLog $ "GetEnsembleList"
-  eNames <- readAllEnsembleNames
-  respond $ EnsembleList eNames
+processRequest db ss ws cHandle (BrowserInfo t) =
+  runTransactionLogged db ss cHandle "BrowserInfo" $ modifyClient cHandle $ \c -> c { browserInfo = t }
 
-processRequest (Authenticate x) = do
-  pwd <- administrativePassword <$> askServerState
-  if x == pwd
-    then do
-      postLog $ "Authenticate with correct password"
-      modifyClient $ \x -> x { authenticated = True }
-    else do
-      postLog $ "Authenticate with incorrect password"
-      modifyClient $ \x -> x { authenticated = False }
+processRequest db ss ws cHandle (ClientInfo pingTime load animationLoad latency) = do
+  runTransactionIOLogged db ss cHandle "ClientInfo" $ do
+    modifyClient cHandle $ \c -> c {
+      clientMainLoad = load,
+      clientAnimationLoad = animationLoad,
+      clientLatency = latency
+      }
+    n <- getServerClientCount
+    self <- getClient cHandle
+    ecs <- getEnsembleClients cHandle
+    return $ do
+      send db cHandle cHandle ws $ ServerInfo n pingTime
+      sendClients db cHandle ecs $ EnsembleResponse $ ParticipantUpdate (handleInEnsemble self) (clientToParticipant self)
 
-processRequest (CreateEnsemble name pwd) = do
-  whenNotAuthenticated $ throwError "ignoring CreateEnsemble from non-authenticated client"
-  postLog $ "CreateEnsemble " <> name
-  now <- liftIO $ getCurrentTime
-  s <- askServerState
-  liftIO $ addEnsemble s name pwd now
-  saveNewEnsembleToDatabase name
+processRequest db ss ws cHandle GetEnsembleList = do
+  runTransactionIOLogged db ss cHandle "GetEnsembleList" $ do
+    eNames <- getEnsembleNames
+    return $ send db cHandle cHandle ws $ EnsembleList eNames
 
-processRequest (JoinEnsemble eName uName loc pwd) = do  -- JoinEnsemble Text Text Text Text
-  postLog $ "joining ensemble " <> eName
-  e <- readEnsembleSbyName eName
-  when (uName /= "") $ do
-    -- client is requesting a specific user name in the ensemble, succeeds only if not already taken
-    handleTaken <- handleTakenInEnsemble uName eName
-    when handleTaken $ do
-      let m = "user handle already used by someone else in this ensemble"
-      respond $ ResponseError m
-      throwError m
-  when (E.password e /= "" && pwd /= "" && E.password e /= pwd) $ do
-    -- the ensemble requires password for authentication, they provided one, but it doesn't match
-    let m = "incorrect ensemble password"
-    respond $ ResponseError m
-    throwError m
-  -- if we get this far, the client's join attempt will succeed
-  -- we need to record whether they are authorized in the ensemble
-  -- which will be true if either:
-  -- (a) no password is required, or
-  -- (b) they entered the required password
-  let authed = (E.password e == "" || E.password e == pwd)
-  -- update the server's record for this client to register successful ensemble join
-  modifyClient $ \c -> c {
-    memberOfEnsemble = Just eName,
-    handleInEnsemble = uName,
-    locationInEnsemble = loc,
-    statusInEnsemble = "",
-    authenticatedInEnsemble = authed
-    }
-  -- send responses to this client indicating successful join, and ensemble tempo, defs and views
-  respond $ JoinedEnsemble eName uName
-  respond $ EnsembleResponse $ TempoRcvd (E.tempo $ E.ensemble e)
-  mapM_ respond $ fmap EnsembleResponse $ IntMap.mapWithKey ZoneRcvd $ E.zones $ E.ensemble e
-  mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd $ E.views $ E.ensemble e
-  -- TODO: send new participant information about existing participants (they'll get *some* info on updates, anyway)
-  -- send information about new participant to all clients in this ensemble
-  let anonymous = uName == ""
-  when (not anonymous) $ do
-    p <- clientToParticipant <$> readClient
-    respondEnsemble $ EnsembleResponse $ ParticipantJoins uName p
-  when anonymous $ do
-    n <- countAnonymousParticipants
-    respondEnsemble $ EnsembleResponse $ AnonymousParticipants n
+processRequest db ss ws cHandle (Authenticate x) = do
+  runTransactionIOLogged db ss cHandle "Authenticate" $ do
+    y <- authenticate cHandle x
+    return $ case y of
+      True -> postLog db cHandle $ "Authenticate with correct password"
+      False -> postLog db cHandle $ "Authenticate with incorrect password"
 
-processRequest LeaveEnsemble = leaveEnsemble
+processRequest db ss ws cHandle (CreateEnsemble name pwd) = do
+  now <- getCurrentTime
+  runTransactionIOLogged db ss cHandle "CreateEnsemble" $ do
+    e <- createEnsemble cHandle name pwd now
+    return $ do
+      postLog db cHandle $ "CreateEnsemble " <> name <> " password=" <> pwd
+      writeNewEnsembleS db name e -- NOTE: this database write will be unnecessary when we move to a model where database operations (except logging) are in a different "low priority" thread
 
-processRequest (EnsembleRequest x) = processEnsembleRequest x
+processRequest db ss ws cHandle (JoinEnsemble eName uName loc pwd) = do
+  x <- runTransactionIO ss $ joinEnsemble db cHandle eName uName loc pwd
+  let uName' = if uName == "" then "(anonymous)" else uName
+  case x of
+    Left e -> do
+      send db cHandle cHandle ws $ ResponseError e
+      postLog db cHandle $ "JoinEnsemble " <> eName <> " as " <> uName' <> " FAILED because: " <> e
+    Right _ -> postLog db cHandle $ "joined ensemble " <> eName <> " as " <> uName'
 
-processEnsembleRequest :: EnsembleRequest -> Transaction ()
+processRequest db ss ws cHandle LeaveEnsemble = do
+  runTransactionIOLogged db ss cHandle "LeaveEnsemble" $ leaveEnsemble db cHandle
 
-processEnsembleRequest (WriteZone zone value) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring ZoneRequest from client not authenticated in ensemble"
-  -- eName <- readEnsembleName
-  -- postLog $ "Edit in (" <> eName <> "," <> showt zone <> ")"
-  writeZone zone value
-  respondEnsembleNoOrigin $ EnsembleResponse $ ZoneRcvd zone value
-  -- saveEnsembleToDatabase -- note: 100x improvement in server transaction time when not logging message above or saving ensemble
-  updateLastEdit
-  return ()
+processRequest db ss ws cHandle (EnsembleRequest x) = processEnsembleRequest db ss ws cHandle x
 
-processEnsembleRequest (WriteChat msg) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteChat from client not authenticated in ensemble"
-  sender <- handleInEnsemble <$> readClient
-  when (sender == "") $ throwError "ignoring WriteChat from anonymous (yet authenticated) client in ensemble"
-  eName <- readEnsembleName
-  postLog $ "WriteChat in " <> eName <> " from " <> sender <> ": " <> msg
-  now <- liftIO $ getCurrentTime
-  respondEnsemble $ EnsembleResponse (ChatRcvd (Chat now sender msg))
-  updateLastEdit
+processEnsembleRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> EnsembleRequest -> IO ()
 
-processEnsembleRequest (WriteStatus msg) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteStatus from client not authenticated in ensemble"
-  name <- handleInEnsemble <$> readClient
-  when (name == "") $ throwError "ignoring WriteStatus from anonymous (yet authenticated) client in ensemble"
-  eName <- readEnsembleName
-  postLog $ "WriteStatus in " <> eName <> " from " <> name <> ": " <> msg
-  modifyClient $ \c -> c { statusInEnsemble = msg }
-  p <- clientToParticipant <$> readClient
-  respondEnsembleNoOrigin $ EnsembleResponse $ ParticipantUpdate name p
-  updateLastEdit
+processEnsembleRequest db ss ws cHandle (WriteZone zone value) = do
+  now <- getCurrentTime
+  runTransactionIOLogged db ss cHandle "WriteZone" $ do
+    writeZone cHandle zone value
+    p <- updateLastEdit cHandle now
+    cs <- getEnsembleClientsNoOrigin cHandle
+    cs' <- getEnsembleClients cHandle
+    eName <- getEnsembleName cHandle
+    return $ do
+      sendClients db cHandle cs $ EnsembleResponse $ ZoneRcvd zone value
+      sendClients db cHandle cs' $ EnsembleResponse $ ParticipantUpdate (name p) p
+      saveEnsembleToDatabase db ss eName
 
-processEnsembleRequest (WriteView preset view) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteView from client not authenticated in ensemble"
-  eName <- readEnsembleName
-  postLog $ "WriteView in (" <> eName <> "," <> preset <> ")"
-  writeView preset view
-  saveEnsembleToDatabase
-  respondEnsembleNoOrigin $ EnsembleResponse $ ViewRcvd preset view
-  updateLastEdit
+processEnsembleRequest db ss ws cHandle (WriteChat msg) = do
+  now <- getCurrentTime
+  runTransactionIOLogged db ss cHandle "WriteChat" $ do
+    whenNotAuthenticatedInEnsemble cHandle $ throwError "ignoring WriteChat (not authenticated)"
+    eName <- getEnsembleName cHandle
+    uName <- handleInEnsemble <$> getClient cHandle
+    when (uName == "") $ throwError "ignoring WriteChat from anonymous"
+    p <- updateLastEdit cHandle now
+    cs <- getEnsembleClients cHandle
+    eName <- getEnsembleName cHandle
+    return $ do
+      postLog db cHandle $ uName <> " in " <> eName <> " chats: " <> msg
+      sendClients db cHandle cs $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
+      sendClients db cHandle cs $ EnsembleResponse $ ParticipantUpdate (name p) p
 
-processEnsembleRequest (WriteTempo t) = do
-  whenNotAuthenticatedInEnsemble $ throwError "ignoring WriteTempo from client not authenticated in ensemble"
-  eName <- readEnsembleName
-  postLog $ "WriteTempo in " <> eName
-  writeTempo t
-  respondEnsembleNoOrigin $ EnsembleResponse $ TempoRcvd t
-  saveEnsembleToDatabase
-  updateLastEdit
+processEnsembleRequest db ss ws cHandle (WriteStatus msg) = do
+  now <- getCurrentTime
+  runTransactionIOLogged db ss cHandle "WriteStatus" $ do
+    whenNotAuthenticatedInEnsemble cHandle $ throwError "ignoring WriteStatus (not authenticated)"
+    eName <- getEnsembleName cHandle
+    uName <- handleInEnsemble <$> getClient cHandle
+    when (uName == "") $ throwError "ignoring WriteStatus from anonymous"
+    modifyClient cHandle $ \c -> c { statusInEnsemble = msg }
+    p <- updateLastEdit cHandle now
+    cs <- getEnsembleClients cHandle
+    return $ do
+      postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> eName <> ": " <> msg
+      sendClients db cHandle cs $ EnsembleResponse $ ParticipantUpdate (name p) p
 
-updateParticipant :: Transaction ()
-updateParticipant = do
-  -- note: probably should fail silently (non-failure) if not in an ensemble or anonymous
-  p <- clientToParticipant <$> readClient
-  respondEnsembleNoOrigin $ EnsembleResponse $ ParticipantUpdate (name p) p
+processEnsembleRequest db ss ws cHandle (WriteView preset view) = do
+  now <- getCurrentTime
+  runTransactionIOLogged db ss cHandle "WriteStatus" $ do
+    writeView cHandle preset view
+    eName <- getEnsembleName cHandle
+    p <- updateLastEdit cHandle now
+    cs <- getEnsembleClientsNoOrigin cHandle
+    cs' <- getEnsembleClients cHandle
+    return $ do
+      postLog db cHandle $ "WriteView in (" <> eName <> "," <> preset <> ")"
+      sendClients db cHandle cs $ EnsembleResponse $ ViewRcvd preset view
+      sendClients db cHandle cs' $ EnsembleResponse $ ParticipantUpdate (name p) p
+      saveEnsembleToDatabase db ss eName
 
-updateLastEdit :: Transaction ()
-updateLastEdit = do
-  -- note: probably should fail silently (non-failure) if not in an ensemble or anonymous
-  now <- liftIO $ getCurrentTime
-  modifyClient $ \c -> c { lastEditInEnsemble = now }
-  p <- clientToParticipant <$> readClient
-  respondEnsembleNoOrigin $ EnsembleResponse $ ParticipantUpdate (name p) p
+processEnsembleRequest db ss ws cHandle (WriteTempo t) = do
+  now <- getCurrentTime
+  runTransactionIOLogged db ss cHandle "WriteTempo" $ do
+    writeTempo cHandle t
+    eName <- getEnsembleName cHandle
+    p <- updateLastEdit cHandle now
+    cs <- getEnsembleClientsNoOrigin cHandle
+    cs' <- getEnsembleClients cHandle
+    return $ do
+      postLog db cHandle $ "WriteTempo in " <> eName
+      sendClients db cHandle cs $ EnsembleResponse $ TempoRcvd t
+      sendClients db cHandle cs' $ EnsembleResponse $ ParticipantUpdate (name p) p
+      saveEnsembleToDatabase db ss eName
