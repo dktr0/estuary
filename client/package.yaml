@@ -59,7 +59,7 @@ dependencies:
   - mwc-random
   - haskell-src-exts
   - haskellish
-  - TimeNot
+  - timeNot
 
 library:
   source-dirs:

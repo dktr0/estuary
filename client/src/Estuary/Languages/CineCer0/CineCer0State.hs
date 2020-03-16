@@ -81,15 +81,16 @@ addVideo j spec = do
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
-  putStrLn $ show spec
+  putStrLn $ show spec -- -> this is just for debugging
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
-  divWidth <- offsetWidth $ videoDiv st
-  divHeight <- offsetHeight $ videoDiv st
+  divWidth <- offsetWidth $ videoDiv st -- ->getting geometry of the container
+  divHeight <- offsetHeight $ videoDiv st -- ->getting geometry of the container
   -- add or delete videos
-  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
+  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec  -> difference between the previous map = videos st with the new one vSpec... taking out elements that were in the old to the new map... it just reads the things that were not there but for that reason changing videos does not work, it is not seeing the change of the name as a change.
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
-  addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+  addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video  -> this is incomplete (91 and 92)... it is only adding videos that are new lines of the program, and not adding videos whos source has changed... add more functionality alongside this functionallity DONT GET RID OF EVERYTHING, JUST AUGMENT... new jvals have to be incorporated.. delete the old cinecero value and store the new one.
+  -- It is just adding an extra case not re-working everything... look documentation with in-maps: union, difference....
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource

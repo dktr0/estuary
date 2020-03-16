@@ -129,12 +129,12 @@ canvasWidget ctxM ctx = do
 
 
 
--- every .204 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
+-- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
 pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
 pollRenderInfo riM = do
   now <- liftIO $ getCurrentTime
   riInitial <- liftIO $ readMVar riM
-  ticks <- tickLossy (0.204::NominalDiffTime) now
+  ticks <- tickLossy (1.02::NominalDiffTime) now
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 

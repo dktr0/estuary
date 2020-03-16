@@ -361,3 +361,10 @@ deferredWidget cssClass isVisible dynWidgets = do
   let attrs = fmap (bool (fromList [("hidden","true"),("class",cssClass)]) (singleton "class" cssClass)) isVisible
   elDynAttr "div" attrs $ widgetHold initialWidget changes
   return ()
+
+tooltip :: DomBuilder t m => m a -> m b -> m a
+tooltip child popup = do
+  elClass "div" "tooltip" $ do
+    a <- child
+    elClass "span" "tooltiptext code-font" popup
+    return a

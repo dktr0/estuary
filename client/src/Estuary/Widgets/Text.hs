@@ -75,10 +75,11 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
   (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
     d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
-      x <- dynButton =<< translateDyn Term.Eval ctx
-      e' <- holdUniqDyn errorText
-      dynText =<< (return $ fmap (maybe "" (const "!")) e')
+      x <- dynButton "\x25B6"
       return x
+    e' <- holdUniqDyn errorText
+    let y = fmap (maybe (return ()) (syntaxErrorWidget ctx)) $ updated e'
+    widgetHold (return ()) y
     infoButton' <- divClass "referenceButton" $ dynButton "?"
     return (d',evalButton',infoButton')
 
@@ -122,3 +123,10 @@ labelEditor delta = do
     i <- (sample . current) delta
     textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   return $ Variable (_textInput_value y) (_textInput_input y)
+
+syntaxErrorWidget :: MonadWidget t m => Dynamic t Context -> Text -> m ()
+syntaxErrorWidget ctx t = do
+  s <- translateDyn Term.Syntax ctx
+  let wb = elClass "div" "syntaxIssue" $ dynText s
+  tooltip wb (text t)
+  return ()
