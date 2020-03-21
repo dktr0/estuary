@@ -192,11 +192,11 @@ removeClientFromEnsemble c = do
     let anonymous = uName == ""
     when (not anonymous) $ do
       postLog $ uName <> " removed from ensemble " <> e'
-      respondOtherEnsemble e' $ EnsembleResponse $ ParticipantLeaves uName
+      respondOtherEnsembleNoOrigin e' $ EnsembleResponse $ ParticipantLeaves uName
     when anonymous $ do
       postLog $ "(anonymous) removed from ensemble " <> e'
       n <- countAnonymousParticipantsInEnsemble e'
-      respondOtherEnsemble e' $ EnsembleResponse $ AnonymousParticipants (n-1)
+      respondOtherEnsembleNoOrigin e' $ EnsembleResponse $ AnonymousParticipants (n-1)
 
 close :: Text -> Transaction ()
 close msg = do
@@ -206,6 +206,13 @@ close msg = do
   s <- askServerState
   liftIO $ deleteClient s cHandle
 
+closeAnotherConnection :: Text -> Client -> Transaction ()
+closeAnotherConnection t c = do
+  tch <- askClientHandle
+  postLog $ "closing connection " <> showt (Estuary.Types.Client.handle c) <> " (for another client " <> showt tch <> ")"
+  s <- askServerState
+  liftIO $ deleteClient s (Estuary.Types.Client.handle c)
+  removeClientFromEnsemble c
 
 isAuthenticated :: Transaction Bool
 isAuthenticated = readClient >>= return . authenticated
@@ -246,31 +253,23 @@ send x cs = forM_ cs $ \c -> do
       let ce = fromException (SomeException e)
       let ch = Estuary.Types.Client.handle c
       case ce of
-        Just (WS.CloseRequest _ _) -> throwError $ "CloseRequest exception sending to (" <> showt ch <> ")"
-        Just WS.ConnectionClosed -> throwError $ "ConnectionClosed exception sending to (" <> showt ch <> ")"
-        otherwise -> throwError $ "unusual exception sending to (" <> showt ch <> ") : " <> (T.pack $ show e)
+        Just (WS.CloseRequest _ _) -> closeAnotherConnection "CloseRequest exception" c
+        Just WS.ConnectionClosed -> closeAnotherConnection "ConnectionClosed exception" c
+        otherwise -> postLog $ "unusual exception sending to (" <> showt ch <> ") : " <> (T.pack $ show e)
 
 respond :: Response -> Transaction ()
 respond x = do
   c <- readClient
   send x [c]
 
--- respondAll :: Response -> Transaction ()
--- respondAll x = gets (IntMap.elems . clients) >>= send x
-
--- respondAllNoOrigin :: Response -> Transaction ()
--- respondAllNoOrigin x = do
---  cHandle <- asks snd
---  cs <- gets (IntMap.elems . IntMap.delete cHandle . clients)
---  send x cs
-
 respondEnsemble :: Response -> Transaction ()
 respondEnsemble x = do
   c <- readClient
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ ensembleFilter (memberOfEnsemble c) cMap'
+  cs <- liftIO $ atomically $ do
+    x <- readTVar (clients s)
+    y <- mapM readTVar x
+    return $ IntMap.elems $ ensembleFilter (memberOfEnsemble c) y
   send x cs
 
 respondEnsembleNoOrigin :: Response -> Transaction ()
@@ -278,17 +277,20 @@ respondEnsembleNoOrigin x = do
   cHandle <- askClientHandle
   c <- readClient
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ IntMap.delete cHandle $ ensembleFilter (memberOfEnsemble c) cMap'
+  cs <- liftIO $ atomically $ do
+    x <- readTVar (clients s)
+    y <- mapM readTVar x
+    return $ IntMap.elems $ IntMap.delete cHandle $ ensembleFilter (memberOfEnsemble c) y
   send x cs
 
-respondOtherEnsemble :: Text -> Response -> Transaction ()
-respondOtherEnsemble eName x = do
+respondOtherEnsembleNoOrigin :: Text -> Response -> Transaction ()
+respondOtherEnsembleNoOrigin eName x = do
   s <- askServerState
-  cMap <- liftIO $ atomically $ readTVar (clients s)
-  cMap' <- liftIO $ mapM (atomically . readTVar) cMap
-  let cs = IntMap.elems $ ensembleFilter (Just eName) cMap'
+  cHandle <- askClientHandle
+  cs <- liftIO $ atomically $ do
+    x <- readTVar (clients s)
+    y <- mapM readTVar x
+    return $ IntMap.elems $ IntMap.delete cHandle $ ensembleFilter (Just eName) y
   send x cs
 
 ensembleFilter :: Maybe Text -> IntMap.IntMap Client -> IntMap.IntMap Client
