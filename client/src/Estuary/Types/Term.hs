@@ -135,6 +135,6 @@ translate Peak Français = "pic"
 translate Peak English = "peak"
 translate Peak Español = "tope"
 
-translate Syntax English = "Syntax!"
+translate Syntax English = "Syntax"
 
 translate x _ = pack $ "?" ++ show x
