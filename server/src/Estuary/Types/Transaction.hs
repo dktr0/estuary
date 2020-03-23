@@ -341,3 +341,26 @@ updateLastEdit :: ClientHandle -> UTCTime -> Transaction Participant
 updateLastEdit cHandle now = do
   modifyClient cHandle $ \c -> c { lastEditInEnsemble = now }
   clientToParticipant <$> getClient cHandle
+
+
+sendEnsemble :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> Response -> IO ()
+sendEnsemble db ss cHandle eName r = do
+  cs <- getEnsembleClientsIO ss eName
+  sendClients db cHandle cs r
+
+sendEnsembleNoOrigin :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> Response -> IO ()
+sendEnsembleNoOrigin db ss cHandle eName r = do
+  cs <- getEnsembleClientsNoOriginIO ss cHandle eName
+  sendClients db cHandle cs r
+
+getEnsembleClientsIO :: ServerState -> Text -> IO [Client]
+getEnsembleClientsIO ss eName = do
+  cMap <- atomically $ readTVar (clients ss)
+  cMap' <- mapM (atomically . readTVar) cMap
+  return $ IntMap.elems $ ensembleFilter (Just eName) cMap'
+
+getEnsembleClientsNoOriginIO :: ServerState -> ClientHandle -> Text -> IO [Client]
+getEnsembleClientsNoOriginIO ss cHandle eName = do
+  cMap <- atomically $ readTVar (clients ss)
+  cMap' <- mapM (atomically . readTVar) $ IntMap.delete cHandle cMap
+  return $ IntMap.elems $ ensembleFilter (Just eName) cMap'
