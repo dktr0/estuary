@@ -27,7 +27,7 @@ footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
 footer ctx renderInfo deltasDown hints = do
   let footerEvent = ffilter (elem ToggleTerminal) hints
   footerVisible <- toggle False footerEvent
-  hideableWidget footerVisible "footer" $ do
+  hideableWidget'' footerVisible "footer" "footer-hidden" $ do
     divClass "peak primary-color code-font" $ do
       dynText =<< holdUniqDyn (fmap formatServerInfo ctx)
       text ", "
