@@ -185,6 +185,9 @@ body::-webkit-scrollbar-thumb {
 	padding-right: 15px;
 }
 
+.footer-hidden{
+	display:none;
+}
 
 
 .btn {

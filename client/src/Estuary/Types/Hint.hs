@@ -12,7 +12,10 @@ data Hint =
   LogMessage Text |
   SetGlobalDelayTime Double |
   SilenceHint |
-  ZoneHint Int Definition
+  ZoneHint Int Definition |
+  ToggleTerminal |
+  TogglePerformance |
+  ToggleHeader
   deriving (Eq,Show)
 
 justGlobalDelayTime :: [Hint] -> Maybe Double
