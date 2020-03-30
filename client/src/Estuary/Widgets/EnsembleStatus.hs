@@ -10,14 +10,17 @@ import TextShow
 import Data.Time
 import Control.Monad.Trans (liftIO)
 import Data.Map.Strict
+import Control.Monad
 
 import Estuary.Types.Context
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
+import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.Editor
 
-ensembleStatusWidget :: MonadWidget t m => Editor t m ()
+
+ensembleStatusWidget :: MonadWidget t m => Editor t m (Event t EnsembleRequest)
 ensembleStatusWidget = do
 
   -- extract data about ensemble from the context, filtering out all duplicate events
@@ -32,49 +35,65 @@ ensembleStatusWidget = do
 
   -- display name of ensemble
   liftR $ divClass "ensemble-name code-font" $ do
-    text "Ensemble"
+    text "Ensemble: "
     dynText ensName
 
     -- display list of known participants
-  liftR2 (divClass "statusTableWrapper") $ do
-      liftR $ divClass "statusElementWrapper code-font" $ do
-         divClass "statusElementName" $ text "Name"
-         divClass "statusElement" $ listWithKey ensParticipants participantNameWidget
+  liftR2 (divClass "tableContainer") $ do
+    liftR2 (el "table") $ do
+       liftR $ el "tr" $ do
+          el "th" $ text ""
+          el "th" $ text ""
+          el "th" $ text ""
 
     -- display list of locations for known participants
-      liftR $ divClass "statusElementWrapper code-font" $ do
-         divClass "statusElementName" $ text "Location"
-         divClass "statusElement" $ listWithKey ensParticipants participantLocationWidget
+       liftR $ el "tr" $ do
+          el "td" $ listWithKey ensParticipants participantAndLocationWidget
+          mapActivities <- pollParticipantActivity ensParticipants -- :: Dynamic t Map Text  Text
+          el "td" $ listWithKey mapActivities participantActivityWidget -- m (Dynamic t (Map k a))
+          el "td" $ listWithKey ensParticipants participantFPSWidget
+          el "td" $ listWithKey ensParticipants participantLatencyWidget
+          statusMonster <- elClass "td" "participantStatusInput" $ listWithKey ensParticipants participantStatusWidget
+          let statusEvent = switchDyn $ fmap (leftmost . elems) statusMonster --Event t EnsembleRequest
+          return statusEvent
+  --
+  -- liftR2 (divClass "statusElementsWrapper") $ do
+  --     liftR $ divClass "statusElementWrapper code-font" $ do
+  --       divClass "statusElementName" $ do
+  --         text "Anonymous Participants: "
+  --         dynText $ fmap showt anonymous
 
-    -- display the status of the ensParticipants
-      liftR $ divClass "statusElementWrapper code-font" $ do
-         divClass "statusElementName" $ text "Status"
-         divClass "statusElement" $ listWithKey ensParticipants participantStatusWidget
-         -- TO DO: create a helper/pure function that unblocks their (one) editor
-         -- blockEditor :: Participant -> Text
-        -- blockEditor p = ?
 
-  -- display the activity of the ensParticipants
-      liftR $ divClass "statusElementWrapper code-font" $ do
-        divClass "statusElementName" $ text "Activity"
-        mapActivities <- pollParticipantActivity ensParticipants -- :: Dynamic t Map Text  Text
-        listWithKey mapActivities participantActivityWidget -- m (Dynamic t (Map k a))
+participantStatusWidget :: MonadWidget t m  => Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
+participantStatusWidget _ part = do
+  initialStatus <- sample (current part)
+  -- initialStatus <- sample <$> status (current part)  -- Text -- reflex widget
+  let updatedStatus = fmap status (updated part)  --Event t Participant -> Event t Text -- and event that changes the text
+  s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ ""
+  let writeStatusToServer = fmap (\x -> WriteStatus x) $ _textInput_input s --msg only sent when they press a key
+  return writeStatusToServer
 
-      -- display count of anonymous participants
-  liftR2 (divClass "statusElementsWrapper") $ do
-      liftR $ divClass "statusElementWrapper code-font" $ do
-        divClass "statusElementName" $ do
-          text "Anonymous Participants: "
-          dynText $ fmap showt anonymous
+-- sample :: Behavior a -> m a  ---- Behavior to Behavior by sampling current values
+-- current :: Dynamic a -> Behavior a
+-- updated :: Dynamic a -> Event a
 
-  return ()
 
-ensembleParticipantWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-ensembleParticipantWidget name part = elClass "div" "" $ do
-  text name
-  text " ("
+-- participantStatusWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+-- participantStatusWidget name part = divClass "" $ do
+--   -- s <- dynText $ fmap status part -- from where is this status going to be settable?
+--   -- t <- textInput $ def & attributes .~ constDyn ( "placeholder" =: "edit me") --"class" =: "statusInputWidget code-font" <>
+--   -- let a =  fmap ( T.pack . (++) "luis". T.unpack . status)  part
+--     s <- el "div" $ do
+--       let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
+--       liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs --aqui me devuelve el
+--     let a = fmap (flip s . status) part
+--     return ()
+
+participantAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantAndLocationWidget name part = elClass "div" "" $ do
+  text $ name <> " @ "
   dynText $ fmap location part
-  text ") "
+
 
 participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantNameWidget name part = elClass "div" "" $ do
@@ -83,11 +102,20 @@ participantNameWidget name part = elClass "div" "" $ do
 participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantLocationWidget name part = elClass "div" "" $ dynText $ fmap location part
 
-participantStatusWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantStatusWidget name part = divClass "" $ do
-  -- s <- dynText $ fmap status part -- from where is this status going to be settable?
-  textInput $ def & attributes .~ constDyn ("class" =: "statusInputWidget code-font") & textInputConfig_initialValue .~ ""
-  return ()
+participantFPSWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantFPSWidget name part = elClass "div" "" $ do
+  let a = fmap (showt . animationLoad) part
+  dynText a
+  text "FPS "
+
+participantLatencyWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantLatencyWidget name part = elClass "div" "" $ do
+  let a = fmap (T.pack. show . latency) part
+  dynText a
+
+
+
+
 
 
 participantActivityWidget :: MonadWidget t m => Text -> Dynamic t Text -> m ()
@@ -114,4 +142,4 @@ generateActivityMessage p t = f (diffUTCTime t (lastEdit p))
         | x < 180 = "< 3m"
         | x < 240 = "< 4m"
         | x < 300 = "< 5m"
-        | otherwise = "inactive"
+        | otherwise = "inact."

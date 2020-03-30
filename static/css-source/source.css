@@ -1047,6 +1047,7 @@ display: inline-flex;
 /* ///////////status Widget/////////// */
 
 
+
 .ensembleStatusView {
   overflow: hidden;
   overflow-y: auto;
@@ -1072,9 +1073,6 @@ display: inline-flex;
 .ensembleStatusView::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
-
-
-
 
 
 .statusTableWrapper {
@@ -1106,13 +1104,21 @@ display: inline-flex;
 }
 
 .statusInputWidget {
-    background: var(--background-color);
+    background: transparent;
     color: var( --primary-color);
-    width: 100%;
+    width: 99%;
     border: none;
    	padding: 0.125em;
 }
 
+.tableContainer table {
+	border-collapse:collapse;
+}
+
+
+.participantStatusInput {
+width: 70%;
+}
 /* Tooltip classes */
 
 .tooltip {
