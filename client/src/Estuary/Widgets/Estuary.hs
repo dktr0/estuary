@@ -63,7 +63,7 @@ keyboardHintsCatcher irc ctxM riM = mdo
   return ()
 
 keyEventToHint :: KeyEvent -> Maybe Hint
-keyEventToHint x | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 20) = Just ToggleTerminal
+keyEventToHint x | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 3) = Just ToggleTerminal
 keyEventToHint _ = Nothing
 
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
