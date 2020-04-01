@@ -52,7 +52,7 @@ viewWidget er (TextView z rows) = do
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
 
-viewWidget er EnsembleStatusView = ensembleStatusWidget >> return never
+viewWidget er EnsembleStatusView = ensembleStatusWidget 
 
 viewWidget er TempoView = do
   ctx <- askContext
