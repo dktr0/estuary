@@ -45,16 +45,18 @@ ensembleStatusWidget = do
           el "th" $ text ""
           el "th" $ text ""
           el "th" $ text ""
+          el "th" $ text ""
+          el "th" $ text ""
 
     -- display list of locations for known participants
-       liftR $ el "tr" $ do
-          el "td" $ listWithKey ensParticipants participantAndLocationWidget
-          mapActivities <- pollParticipantActivity ensParticipants -- :: Dynamic t Map Text  Text
-          el "td" $ listWithKey mapActivities participantActivityWidget -- m (Dynamic t (Map k a))
-          el "td" $ listWithKey ensParticipants participantFPSWidget
-          el "td" $ listWithKey ensParticipants participantLatencyWidget
-          statusMonster <- elClass "td" "participantStatusInput" $ listWithKey ensParticipants participantStatusWidget
+       liftR $ el "tr"  $ do
+          elClass "td"  "statusWidgetNameAndLocation" $ listWithKey ensParticipants participantAndLocationWidget
+          statusMonster <- elClass "td" "statusWidgetStatusInput" $ listWithKey ensParticipants participantStatusWidget
           let statusEvent = switchDyn $ fmap (leftmost . elems) statusMonster --Event t EnsembleRequest
+          mapActivities <- pollParticipantActivity ensParticipants -- :: Dynamic t Map Text  Text
+          elClass "td" "statusWidgetActivity" $ listWithKey mapActivities participantActivityWidget -- m (Dynamic t (Map k a))
+          elClass "td" "statusWidgetFPS" $ listWithKey ensParticipants participantFPSWidget
+          elClass "td" "statusWidgetLatency" $ listWithKey ensParticipants participantLatencyWidget
           return statusEvent
   --
   -- liftR2 (divClass "statusElementsWrapper") $ do
@@ -66,44 +68,26 @@ ensembleStatusWidget = do
 
 participantStatusWidget :: MonadWidget t m  => Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
 participantStatusWidget _ part = do
-  initialStatus <- sample (current part)
-  -- initialStatus <- sample <$> status (current part)  -- Text -- reflex widget
+  initialStatus <- status <$> sample (current part)
   let updatedStatus = fmap status (updated part)  --Event t Participant -> Event t Text -- and event that changes the text
-  s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ ""
+  s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ constDyn ("class" =: "code-font")
   let writeStatusToServer = fmap (\x -> WriteStatus x) $ _textInput_input s --msg only sent when they press a key
   return writeStatusToServer
 
--- sample :: Behavior a -> m a  ---- Behavior to Behavior by sampling current values
--- current :: Dynamic a -> Behavior a
--- updated :: Dynamic a -> Event a
-
-
--- participantStatusWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
--- participantStatusWidget name part = divClass "" $ do
---   -- s <- dynText $ fmap status part -- from where is this status going to be settable?
---   -- t <- textInput $ def & attributes .~ constDyn ( "placeholder" =: "edit me") --"class" =: "statusInputWidget code-font" <>
---   -- let a =  fmap ( T.pack . (++) "luis". T.unpack . status)  part
---     s <- el "div" $ do
---       let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
---       liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs --aqui me devuelve el
---     let a = fmap (flip s . status) part
---     return ()
-
 participantAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantAndLocationWidget name part = elClass "div" "" $ do
+participantAndLocationWidget name part = do
   text $ name <> " @ "
   dynText $ fmap location part
-
+  el "br" $ blank
 
 participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantNameWidget name part = elClass "div" "" $ do
-  text name
+participantNameWidget name part = text name
 
 participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantLocationWidget name part = elClass "div" "" $ dynText $ fmap location part
+participantLocationWidget name part = dynText $ fmap location part
 
 participantFPSWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantFPSWidget name part = elClass "div" "" $ do
+participantFPSWidget name part = do
   let a = fmap (showt . animationLoad) part
   dynText a
   text "FPS "
@@ -114,12 +98,11 @@ participantLatencyWidget name part = elClass "div" "" $ do
   dynText a
 
 
-
-
-
-
 participantActivityWidget :: MonadWidget t m => Text -> Dynamic t Text -> m ()
-participantActivityWidget name part = divClass "" $ dynText part
+participantActivityWidget name part = divClass "" $ do
+  dynText part
+  el "br" $ blank
+
 
 pollParticipantActivity :: MonadWidget t m => Dynamic t (Map Text Participant) ->  m (Dynamic t (Map Text Text))  -- :: Dynamic t Map Text  Text
 pollParticipantActivity ensParticipants = do
@@ -135,11 +118,12 @@ generateActivityMessages :: Map Text Participant -> UTCTime -> Map Text Text
 generateActivityMessages m t = fmap (flip generateActivityMessage $ t) m
 
 generateActivityMessage :: Participant -> UTCTime -> Text
-generateActivityMessage p t = f (diffUTCTime t (lastEdit p))
+generateActivityMessage p t = do
+  f (diffUTCTime t (lastEdit p))
   where
-    f x | x < 60 = "< 1m"
-        | x < 120 = "< 2m"
-        | x < 180 = "< 3m"
-        | x < 240 = "< 4m"
-        | x < 300 = "< 5m"
+    f x | x < 60 = "<1m"
+        | x < 120 = "<2m"
+        | x < 180 = "<3m"
+        | x < 240 = "<4m"
+        | x < 300 = "<5m"
         | otherwise = "inact."

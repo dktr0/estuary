@@ -170,7 +170,28 @@ body::-webkit-scrollbar-thumb {
 	padding-left: 15px;
 	padding-right: 15px;
 	overflow:hidden;
+	overflow-y: auto;
 }
+
+.page::-webkit-scrollbar  {
+    width: 10px;
+    height: 10px;
+}
+
+.page::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.page::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.page::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
 
 .footer{
 	flex:none;
@@ -185,9 +206,6 @@ body::-webkit-scrollbar-thumb {
 	padding-right: 15px;
 }
 
-.footer-hidden{
-	display:none;
-}
 
 
 .btn {
@@ -1050,7 +1068,6 @@ display: inline-flex;
 /* ///////////status Widget/////////// */
 
 
-
 .ensembleStatusView {
   overflow: hidden;
   overflow-y: auto;
@@ -1076,6 +1093,9 @@ display: inline-flex;
 .ensembleStatusView::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
+
+
+
 
 
 .statusTableWrapper {
@@ -1107,21 +1127,13 @@ display: inline-flex;
 }
 
 .statusInputWidget {
-    background: transparent;
+    background: var(--background-color);
     color: var( --primary-color);
-    width: 99%;
+    width: 100%;
     border: none;
    	padding: 0.125em;
 }
 
-.tableContainer table {
-	border-collapse:collapse;
-}
-
-
-.participantStatusInput {
-width: 70%;
-}
 /* Tooltip classes */
 
 .tooltip {
