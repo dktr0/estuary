@@ -166,7 +166,6 @@ body::-webkit-scrollbar-thumb {
 	left: 0px;
 	top: 0px;
 	border-top: 1px solid;
-	border-bottom: 1px solid;
 	padding-left: 15px;
 	padding-right: 15px;
 	overflow:hidden;
@@ -857,7 +856,7 @@ table, tr, td {border: none;}
 	flex: 1 1 auto;
 	padding-left: 0.7em;
 	overflow:hidden;
-
+  border-top: 1px solid;
 }
 
 .terminalHeader {
