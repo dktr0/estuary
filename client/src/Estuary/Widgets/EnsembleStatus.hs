@@ -48,6 +48,13 @@ ensembleStatusWidget = do
           el "th" $ text ""
           el "th" $ text ""
 
+--
+-- liftR2 (divClass "statusElementsWrapper") $ do
+--     liftR $ divClass "statusElementWrapper code-font" $ do
+--       divClass "statusElementName" $ do
+--         text "Anonymous Participants: "
+--         dynText $ fmap showt anonymous
+
     -- display list of locations for known participants
        liftR $ el "tr"  $ do
           elClass "td"  "statusWidgetNameAndLocation" $ listWithKey ensParticipants participantAndLocationWidget
@@ -58,12 +65,6 @@ ensembleStatusWidget = do
           elClass "td" "statusWidgetFPS" $ listWithKey ensParticipants participantFPSWidget
           elClass "td" "statusWidgetLatency" $ listWithKey ensParticipants participantLatencyWidget
           return statusEvent
-  --
-  -- liftR2 (divClass "statusElementsWrapper") $ do
-  --     liftR $ divClass "statusElementWrapper code-font" $ do
-  --       divClass "statusElementName" $ do
-  --         text "Anonymous Participants: "
-  --         dynText $ fmap showt anonymous
 
 
 participantStatusWidget :: MonadWidget t m  => Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
@@ -76,7 +77,7 @@ participantStatusWidget _ part = do
 
 participantAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantAndLocationWidget name part = do
-  text $ name <> " @ "
+  text $ name <> "@"
   dynText $ fmap location part
   el "br" $ blank
 

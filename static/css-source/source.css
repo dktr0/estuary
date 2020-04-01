@@ -1073,6 +1073,7 @@ display: inline-flex;
   overflow-y: auto;
   border-radius: 5px;
   box-shadow: 0px 0.25px 4px 0.025px;
+
 }
 
 .ensembleStatusView::-webkit-scrollbar  {
@@ -1092,15 +1093,9 @@ display: inline-flex;
 
 .ensembleStatusView::-webkit-scrollbar-corner{
 	background-color: transparent;
+
 }
 
-
-
-
-
-.statusTableWrapper {
-	display: flex;
-}
 
 .ensemble-name {
 	text-align:center;
@@ -1109,29 +1104,25 @@ display: inline-flex;
 }
 
 
-.statusElementWrapper{
-	display:block;
-	padding: 0.125em;
-	box-shadow: 0px 1px 3px 0px;
+.tableContainer table {
+  table-layout: auto;
+  width: 100%;
+}
+
+.statusWidgetNameAndLocation {
+	display: flex;
+	flex-wrap: nowrap   ;
+}
+
+.statusWidgetStatusInput input {
+	color: var(--primary-color);
+	background-color: transparent;
+	border: none;
+	width: 99%;
+}
+
+.tableContainer td {
 	width: 100%;
-}
-
-.statusElementName {
-	text-align:center;
-	padding: 0.125em;
-	box-shadow: 0px 0px 3px 0px;
-}
-
-.statusElement {
-	margin: 0.125em
-}
-
-.statusInputWidget {
-    background: var(--background-color);
-    color: var( --primary-color);
-    width: 100%;
-    border: none;
-   	padding: 0.125em;
 }
 
 /* Tooltip classes */
