@@ -55,15 +55,15 @@ keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Contex
 keyboardHintsCatcher irc ctxM riM = mdo
   (theElement,_) <- elClass' "div" "" $ estuaryWidget irc ctxM riM keyboardHints
   let e = _el_element theElement
-  e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do -- Event t (Maybe Hint)
+  e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
     y <- getKeyEvent
     if (isJust $ keyEventToHint y) then (preventDefault >> return (keyEventToHint y)) else return Nothing
-  let e'' = fmapMaybe id e' -- Event t (Hint)
+  let e'' = fmapMaybe id e'
   let keyboardHints = fmap (:[]) $ e''
   return ()
 
 keyEventToHint :: KeyEvent -> Maybe Hint
-keyEventToHint x | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 3) = Just ToggleTerminal
+keyEventToHint x | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 24) = Just ToggleTerminal
 keyEventToHint _ = Nothing
 
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
