@@ -1077,7 +1077,7 @@ display: inline-flex;
 }
 
 .tableContainer::-webkit-scrollbar  {
-    width: 2%;
+    width: 1%;
     height: 0px;
 }
 
@@ -1095,14 +1095,12 @@ display: inline-flex;
 	background-color: transparent;
 }
 
-
 .ensemble-name {
 	text-align:center;
 	padding: 0.125em;
 	border: 1px solid var(--primary-color);
 	border-radius: 5px;
 }
-
 
 
 .tableContainer table {
