@@ -361,7 +361,7 @@ body::-webkit-scrollbar-thumb {
 /*modifies the chat messages (source)*/
 .chatMessageContainer {
 	overflow: auto;
-	height: 1em;
+	height: 7em;
 }
 
 .chatMessage {
