@@ -86,7 +86,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
   let terminalEvent = ffilter (elem ToggleTerminal) hints
   terminalVisible <- toggle False terminalEvent
-  command <- hideableWidget'' terminalVisible "terminal" "terminal-hidden" $ do
+  command <- hideableWidget' terminalVisible $ do
     terminalWidget ctx deltasDown hints
   footer ctx renderInfo
   let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
