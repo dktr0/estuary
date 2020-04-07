@@ -52,15 +52,16 @@ import Estuary.Types.Tempo
 import Estuary.Types.Transaction
 import Estuary.Types.Chat
 
-runServerWithDatabase :: Text -> Int -> Bool -> SQLite.Connection -> IO ()
-runServerWithDatabase pwd port httpRedirect db = do
+runServerWithDatabase :: Text -> Text -> Int -> Bool -> SQLite.Connection -> IO ()
+runServerWithDatabase mpwd cpwd port httpRedirect db = do
   nCap <- getNumCapabilities
   postLogNoHandle db $ "Estuary collaborative editing server"
-  postLogNoHandle db $ "max simultaneous Haskell threads = " <> showt nCap
-  postLogNoHandle db $ "administrative password = " <> pwd
+  postLogNoHandle db $ "max simultaneous Haskell threads: " <> showt nCap
+  postLogNoHandle db $ "moderator password: " <> mpwd
+  postLogNoHandle db $ "community password: " <> cpwd
   es <- readEnsembles db
   postLogNoHandle db $ showt (size es) <> " ensembles restored from database"
-  s <- newServerState pwd es
+  s <- newServerState mpwd cpwd es
   forkIO $ maintenanceThread db s
   let settings = (defaultWebAppSettings "Estuary.jsexe") {
     ssIndices = [unsafeToPiece "index.html"],
@@ -212,30 +213,57 @@ processRequest db ss ws cHandle (ClientInfo pingTime load animationLoad latency)
 processRequest db ss ws cHandle GetEnsembleList = do
   x <- runTransaction ss $ getEnsembleNames
   case x of
-    Left e -> postLog db cHandle $ "*GetEnsembleList* " <> e
+    Left e -> do
+      let m = "unable to GetEnsembleList: " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle $ "*GetEnsembleList* " <> m
     Right eNames -> send db cHandle cHandle ws $ EnsembleList eNames
 
-processRequest db ss ws cHandle (Authenticate x) = do
-  y <- runTransaction ss $ authenticate cHandle x
-  case y of
-    Left e -> postLog db cHandle $ "*Authenticate* " <> e
-    Right True -> postLog db cHandle $ "Authenticate with correct password"
-    Right False -> postLog db cHandle $ "Authenticate with incorrect password"
-
-processRequest db ss ws cHandle (CreateEnsemble name pwd) = do
+processRequest db ss ws cHandle (CreateEnsemble cpwd name opwd jpwd expTime) = do
   now <- getCurrentTime
-  x <- runTransaction ss $ createEnsemble cHandle name pwd now
+  x <- runTransaction ss $ createEnsemble cHandle cpwd name opwd jpwd expTime now
   case x of
-    Left e -> postLog db cHandle $ "*CreateEnsemble* " <> e
-    Right _ -> postLog db cHandle $ "CreateEnsemble " <> name <> " password=" <> pwd
+    Left e -> do
+      let m = "unable to CreateEnsemble: " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle $ "*CreateEnsemble* " <> m
+    Right _ -> do
+      let m = "created ensemble " <> name <> " ownerPassword=" <> opwd <> " joinPassword=" <> jpwd
+      sendThisClient db cHandle ws (ResponseOK m)
+      postLog db cHandle m
+
+processRequest db ss ws cHandle (DeleteThisEnsemble opwd) = do
+  x <- runTransaction ss $ deleteThisEnsemble cHandle opwd
+  case x of
+    Left e -> do
+      let m = "unable to delete this ensemble: " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle $ "*DeleteThisEnsemble* " <> m
+    Right eName -> do
+      let m = "deleted this ensemble " <> eName
+      sendThisClient db cHandle ws (ResponseOK m)
+      postLog db cHandle m
+
+processRequest db ss ws cHandle (DeleteEnsemble eName mpwd) = do
+  x <- runTransaction ss $ Estuary.Types.Transaction.deleteEnsemble cHandle eName mpwd
+  case x of
+    Left e -> do
+      let m = "unable to delete ensemble " <> eName <> ": " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle $ "*DeleteEnsemble* " <> m
+    Right _ -> do
+      let m = "deleted ensemble " <> eName
+      sendThisClient db cHandle ws (ResponseOK m)
+      postLog db cHandle m
 
 processRequest db ss ws cHandle (JoinEnsemble eName uName loc pwd) = do
   x <- runTransactionIO ss $ joinEnsemble db cHandle eName uName loc pwd
   let uName' = if uName == "" then "(anonymous)" else uName
   case x of
     Left e -> do
-      send db cHandle cHandle ws $ ResponseError e
-      postLog db cHandle $ "*JoinEnsemble " <> eName <> " as " <> uName' <> " FAILED* " <> e
+      let m = "unable to join ensemble " <> eName <> " as " <> uName' <> ": " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle m
     Right _ -> postLog db cHandle $ "joined ensemble " <> eName <> " as " <> uName'
 
 processRequest db ss ws cHandle LeaveEnsemble = do

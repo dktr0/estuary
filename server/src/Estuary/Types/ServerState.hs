@@ -17,20 +17,22 @@ import Estuary.Types.Response
 import qualified Estuary.Types.EnsembleS as E
 
 data ServerState = ServerState {
-  administrativePassword :: Text,
+  moderatorPassword :: Text, -- to make announcements, delete/change ensembles, block IP addresses, etc
+  communityPassword :: Text, -- to make ensembles with longer/permanent expiry times
   nextClientHandle :: TVar Int,
   clients :: TVar (IntMap.IntMap (TVar Client)),
   ensembles :: TVar (Map.Map Text (TVar E.EnsembleS))
 }
 
-newServerState :: Text -> Map.Map Text E.EnsembleS -> IO ServerState
-newServerState pwd es = atomically $ do
+newServerState :: Text -> Text -> Map.Map Text E.EnsembleS -> IO ServerState
+newServerState mpwd cpwd es = atomically $ do
   c <- newTVar IntMap.empty
   es' <- mapM newTVar es
   es'' <- newTVar es'
   nch <- newTVar 0
   return $ ServerState {
-    administrativePassword = pwd,
+    moderatorPassword = mpwd,
+    communityPassword = cpwd,
     nextClientHandle = nch,
     clients = c,
     ensembles = es''
