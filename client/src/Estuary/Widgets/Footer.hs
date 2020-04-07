@@ -17,11 +17,12 @@ import Estuary.Types.Response
 import Estuary.Types.Hint
 import qualified Estuary.Types.Term as Term
 import Estuary.Widgets.Generic
-import Estuary.Reflex.Utility (translateDyn)
+import Estuary.Reflex.Utility (translateDyn,dynButton)
 
 
-footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> m ()
+footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ())
 footer ctx renderInfo = divClass "footer" $ do
+  terminalButton <- el "div" $ dynButton "Terminal"
   divClass "peak primary-color code-font" $ do
     dynText =<< holdUniqDyn (fmap formatServerInfo ctx)
     text ", "
@@ -33,6 +34,7 @@ footer ctx renderInfo = divClass "footer" $ do
     text "FPS ("
     dynText =<< holdUniqDyn (fmap (showt . animationLoad) renderInfo)
     text "ms)"
+  return terminalButton
 
 formatServerInfo :: Context -> Text
 formatServerInfo c = showt cc <> " connections, latency " <> showt l <> "ms"
