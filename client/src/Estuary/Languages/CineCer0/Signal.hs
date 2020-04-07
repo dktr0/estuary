@@ -22,6 +22,36 @@ instance Num a => Num (Signal a) where
 constantSignal :: a -> Signal a
 constantSignal x = \_ _ _ _ -> x
 
+defaultAnchor:: Signal UTCTime
+defaultAnchor t vl render eval = quantAnchor 1 0 t vl render eval
+
+  -- 0.86  -- thresh: 85%
+-- opacity (ramp 0 1 3) $ "myMov.mp4"
+
+-- opacity (ramp 0 1 3) $ quant 2 0.5 $ "myMov.mp4" 
+-- quant defined by 2 numbers: cycle multiplier, offset (metre and the position inside the metre)
+
+-- this function gets the next bar that aligns with the quant multiplier value
+quantomatic:: Integer -> Integer -> Integer
+quantomatic cycleMult nextBeat = 
+  let quanted = if (mod nextBeat cycleMult) == 0 then nextBeat else quantomatic cycleMult (nextBeat + 1)
+  in quanted
+
+-- calculates the anchorTime 
+quantAnchor:: Integer -> Rational -> Signal UTCTime
+quantAnchor cycleMult offset t vl render eval = 
+  let ec = elapsedCycles t eval 
+      currentCycle = fromIntegral (floor ec):: Rational
+      align = if ec - currentCycle > 0.95 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
+      toQuant = floor (currentCycle + align) -- as integer to go through the quantomatic
+      quanted = quantomatic cycleMult toQuant 
+      anchor = cycsToSecs t (fromIntegral quanted:: Rational) -- into seconds (as NDT)
+  in addUTCTime anchor (at t) -- as UTCTime
+
+cycsToSecs:: Tempo -> Rational -> Rational
+cycsToSecs t x = x * (1/ cps t)
+
+
 -- Temporal Functions
 
 ------ Manually apply a rate into a video ------
@@ -341,12 +371,6 @@ ramp durVal startVal endVal = \_ _ renderTime evalTime ->
       endTime = diffUTCTime endTime' evalTime
   in ramp' renderTime evalTime startTime endTime startVal endVal
 
--- ramp:: UTCTime -> UTCTime -> NominalDiffTime -> Rational -> Rational -> Rational
--- ramp renderTime evalTime durVal startVal endVal =
---   let startTime = diffUTCTime evalTime evalTime -- place holder, add quant later
---       endTime' = addUTCTime durVal evalTime
---       endTime = diffUTCTime endTime' evalTime
---   in ramp'' renderTime evalTime startTime endTime startVal endVal
 
 -- Add Signal type!!!!!
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)

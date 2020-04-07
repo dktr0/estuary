@@ -10,7 +10,7 @@ import Estuary.Languages.CineCer0.Signal
 
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
---  anchorTime :: Signal UTCTime,
+  anchorTime :: Signal UTCTime,
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
   posX :: Signal Rational,
@@ -31,7 +31,7 @@ instance Show VideoSpec where
 emptyVideoSpec :: VideoSpec
 emptyVideoSpec = VideoSpec {
   sampleVideo = "",
---  anchorTime = shortlyAfterEval, -- :: Signal UTCTime default 0.2 after eval.
+  anchorTime = defaultAnchor
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
   posX = constantSignal 0.0,
@@ -157,6 +157,10 @@ shiftSaturate s v = v {
 
 --
 -- Time Functions --
+
+-- anchorTime:: 
+quant:: Rational -> Rational -> VideoSpec -> VideoSpec
+quant nc offset vs = vs { anchorTime = quantAnchor nc offset }
 
 playNatural :: Rational -> VideoSpec -> VideoSpec
 playNatural n vs = vs {

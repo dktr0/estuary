@@ -56,7 +56,7 @@ rat_sigRat :: H (Rational -> Signal Rational)
 rat_sigRat = rat_rat_sigRat <*> rationalOrInteger
 
 rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
-rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
+rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt 
 
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = reserved "ramp" >> return ramp
@@ -111,7 +111,8 @@ rat_rat_vs_vs :: H (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
-  ndt_rat_rat_vs_vs <*> ndt
+  ndt_rat_rat_vs_vs <*> ndt <|>
+  reserved "quant" >> return quant -- Look here! 
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_vs_vs =
