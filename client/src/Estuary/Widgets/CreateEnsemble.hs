@@ -48,18 +48,23 @@ createEnsembleWidget ctx rs = do
                    ]
     _dropdown_value <$> dropdown (Just 3600) (constDyn expMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
 
-  cpwd <- el "div" $ do
+  cpwd <- divClass "" $ do
     translateDyn Term.CommunityPassword ctx >>= dynText
     let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
 
-  confirm <- el "div" $ dynButton =<< translateDyn Term.Confirm ctx
+  confirm <- divClass "" $ dynButton =<< translateDyn Term.Confirm ctx
 
-  cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
+  divClass "" $ do -- display of errors from server in response to ensemble creation requests
+    x <- holdDyn "" $ fmapMaybe justResponseError rs
+    dynText x
+
+  cancel <- divClass "" $ dynButton =<< translateDyn Term.Cancel ctx
 
   let draftRequest = CreateEnsemble <$> cpwd <*> ename <*> hpwd <*> ppwd <*> exptime
   let createEnsemble = tagPromptlyDyn draftRequest confirm
   leaveEnsemble <- (LeaveEnsemble <$) <$> getPostBuild
   let serverRequests = leftmost [createEnsemble,leaveEnsemble]
-  let navigateAway = leftmost [cancel,() <$ createEnsemble]
+  let ensembleCreated = () <$ fmapMaybe justResponseOK rs
+  let navigateAway = leftmost [cancel,() <$ ensembleCreated]
   return (navigateAway, serverRequests)
