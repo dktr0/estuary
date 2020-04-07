@@ -43,6 +43,7 @@ import Estuary.Widgets.View
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Tutorial
 import Estuary.Widgets.AboutEstuary
+import Estuary.Widgets.CreateEnsemble
 import Estuary.Tutorials.TidalCyclesBasics
 import Estuary.Tutorials.Punctual
 
@@ -125,30 +126,9 @@ page ctx _ wsDown Lobby = do
   let serverRequests = leftmost [leaveEnsemble,requestEnsembleList]
   return (leftmost [navToJoinEnsemble, navToCreateEnsemble], (requestEnsembleList, never, never))
 
-page ctx _ _ CreateEnsemblePage = do
-  el "div" $ dynText =<< translateDyn Term.CreateNewEnsemble ctx
-  el "div" $ dynText =<< translateDyn Term.CreateNewEnsembleNote ctx
-  adminPwd <- el "div" $ do
-    translateDyn Term.AdministratorPassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
-    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
-  name <- el "div" $ do
-    translateDyn Term.EnsembleName ctx >>= dynText
-    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
-    liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
-  password <- el "div" $ do
-    translateDyn Term.EnsemblePassword ctx >>= dynText
-    let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
-    liftM _textInput_value $ textInput $ def & textInputConfig_inputType .~ "password" & textInputConfig_attributes .~ attrs
-  let nameAndPassword = (,) <$> name <*> password
-  confirm <- el "div" $ dynButton =<< translateDyn Term.Confirm ctx
-  let createEnsemble = fmap (\(a,b) -> CreateEnsemble a b) $ tagPromptlyDyn nameAndPassword confirm
-  let authenticateAdmin = fmap Authenticate $ updated adminPwd
-  cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  let serverRequests = leftmost [createEnsemble,authenticateAdmin,leaveEnsemble]
-  let navEvents = fmap (const Lobby) $ leftmost [cancel,() <$ createEnsemble]
-  return (navEvents, (serverRequests, never, never))
+page ctx _ rs CreateEnsemblePage = do
+  (navigateAway,responses) <- createEnsembleWidget ctx rs
+  return (Lobby <$ navigateAway,(responses,never,never))
 
 page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
   el "div" $ do
@@ -163,7 +143,7 @@ page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
     let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   p <- el "div" $ do
-    translateDyn Term.EnsemblePassword ctx >>= dynText
+    translateDyn Term.ParticipantPassword ctx >>= dynText
     let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   go <- el "div" $ dynButton =<< translateDyn Term.EnsembleLogin ctx
