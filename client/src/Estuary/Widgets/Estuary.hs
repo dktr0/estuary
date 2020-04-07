@@ -51,6 +51,7 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
 import Estuary.Widgets.Terminal
+import Estuary.Widgets.Generic
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -80,10 +81,13 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   let ensembleCDyn = fmap ensembleC ctx
 
-  -- three GUI components: header, main (navigation), footer
+  -- four GUI components: header, main (navigation), terminal, footer
   headerChange <- header ctx
   (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
-  command <- terminalWidget ctx deltasDown hints
+  let terminalEvent = ffilter (elem ToggleTerminal) hints
+  terminalVisible <- toggle False terminalEvent
+  command <- hideableWidget'' terminalVisible "terminal" "terminal-hidden" $ do
+    terminalWidget ctx deltasDown hints
   footer ctx renderInfo
   let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage,ensembleRequestsFromHints]

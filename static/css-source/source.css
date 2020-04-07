@@ -875,6 +875,10 @@ table, tr, td {border: none;}
 	background-color: transparent;
 }
 
+.terminalHidden {
+  display: none;
+}
+
 .joinButton {
 
 width: fit-content;
