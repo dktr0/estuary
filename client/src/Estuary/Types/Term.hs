@@ -80,9 +80,9 @@ translate ModeratorPassword English = "Moderator password:"
 
 translate CommunityPassword English = "Community password:"
 
-translate HostPassword English = "Password for ensemble host:"
+translate HostPassword English = "Host password:"
 
-translate ParticipantPassword English = "Password to participate in ensemble:"
+translate ParticipantPassword English = "Participant password:"
 
 translate EnsembleName Français = "Nom de l'ensemble:"
 translate EnsembleName English = "Ensemble name:"
