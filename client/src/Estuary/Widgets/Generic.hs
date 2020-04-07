@@ -341,6 +341,11 @@ hideableWidget' b m = do
   let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
   elDynAttr "div" attrs m
 
+hideableWidget'' :: MonadWidget t m => Dynamic t Bool -> Text -> Text -> m a -> m a
+hideableWidget'' b c c2 m = do
+  let attrs = fmap (bool (fromList [("hidden","true"),("class",c2)]) (singleton "class" c)) b
+  elDynAttr "div" attrs m
+
 traceDynamic :: (MonadWidget t m, Show a) => String -> Dynamic t a -> m (Dynamic t a)
 traceDynamic m x = do
   initialValue <- sample $ current x

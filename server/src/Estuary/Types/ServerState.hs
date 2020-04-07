@@ -47,3 +47,8 @@ addClient ss x = do
     writeTVar (clients ss) newMap
     writeTVar (nextClientHandle ss) (i+1)
     return i
+
+deleteEnsemble :: ServerState -> Text -> IO ()
+deleteEnsemble ss eName = atomically $ do
+    oldMap <- readTVar (ensembles ss)
+    writeTVar (ensembles ss) $ Map.delete eName oldMap

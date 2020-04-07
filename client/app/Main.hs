@@ -77,7 +77,7 @@ main = do
     return $ pToJSVal node
   js_registerSetEstuaryAudioDestination cb
 
-  mainWidgetInElementById "estuary-root" $ estuaryWidget immutableRenderContext context renderInfo
+  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher immutableRenderContext context renderInfo
 
   -- Signal the splash page that estuary is loaded.
   -- js_setIconStateLoaded

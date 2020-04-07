@@ -5,7 +5,9 @@ module Estuary.Widgets.Estuary where
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault)
+import Reflex.Dom.Contrib.KeyEvent
+import Reflex.Dom.Old
 import Data.Time
 import Data.Map
 import Data.Maybe
@@ -15,6 +17,7 @@ import Control.Concurrent.MVar
 import GHCJS.Types
 import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..),HTMLDivElement(..))
 import GHCJS.Marshal.Pure
+import GHCJS.DOM.EventM
 import Data.Functor (void)
 import Data.Text (Text)
 import Data.Bool
@@ -48,9 +51,23 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
 
+keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
+keyboardHintsCatcher irc ctxM riM = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget irc ctxM riM keyboardHints
+  let e = _el_element theElement
+  e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
+    y <- getKeyEvent
+    if (isJust $ keyEventToHint y) then (preventDefault >> return (keyEventToHint y)) else return Nothing
+  let e'' = fmapMaybe id e'
+  let keyboardHints = fmap (:[]) $ e''
+  return ()
 
-estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
-estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
+keyEventToHint :: KeyEvent -> Maybe Hint
+keyEventToHint x | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 24) = Just ToggleTerminal
+keyEventToHint _ = Nothing
+
+estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
+estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   glCtx <- canvasWidget ctxM ctx -- global canvas shared with render threads through Context MVar, this needs to be first in this action
   iCtx <- liftIO $ readMVar ctxM
@@ -84,7 +101,7 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint] -- Event t [Hint]
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (webDirt irc) hints
@@ -105,7 +122,7 @@ hintsToEnsembleRequests = catMaybes . fmap f
     f (ZoneHint n d) = Just (WriteZone n d)
     f _ = Nothing
 
-hintsToResponses :: [Hint] -> [Response]
+hintsToResponses :: [Hint] -> [Estuary.Types.Response.Response]
 hintsToResponses = catMaybes . fmap f
   where
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))

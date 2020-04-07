@@ -6,8 +6,8 @@ import Data.Maybe (fromMaybe,isJust,fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import qualified Data.Map.Strict as Map
-import qualified Data.IntMap.Strict as IntMap
+import qualified Data.Map as Map
+import qualified Data.IntMap as IntMap
 import Control.Monad
 import Control.Concurrent
 import Control.Concurrent.STM
@@ -61,6 +61,7 @@ runServerWithDatabase pwd port httpRedirect db = do
   es <- readEnsembles db
   postLogNoHandle db $ showt (size es) <> " ensembles restored from database"
   s <- newServerState pwd es
+  forkIO $ maintenanceThread db s
   let settings = (defaultWebAppSettings "Estuary.jsexe") {
     ssIndices = [unsafeToPiece "index.html"],
     ssMaxAge = MaxAgeSeconds 30 -- 30 seconds max cache time
@@ -70,6 +71,30 @@ runServerWithDatabase pwd port httpRedirect db = do
     postLogNoHandle db $ "(also listening on port 80 and redirecting plain HTTP requests to HTTPS, ie. on port 443)"
     run 80 ourRedirect
   runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+
+maintenanceThread :: SQLite.Connection -> ServerState -> IO ()
+maintenanceThread db ss = do
+  nClients <- atomically $ fmap IntMap.size $ readTVar $ clients ss
+  es <- atomically $ readTVar $ ensembles ss
+  sequence $ Map.mapWithKey (deleteEnsembleIfExpired db ss) es
+  nEnsembles <- writeAllEnsembles db ss
+  postLogNoHandle db $ "maintenance: " <> showt nClients <> " clients, " <> showt nEnsembles <> " ensembles"
+  threadDelay $ 900000000 -- maintenance runs every 15 minutes
+  maintenanceThread db ss
+
+deleteEnsembleIfExpired :: SQLite.Connection -> ServerState -> Text -> TVar E.EnsembleS -> IO ()
+deleteEnsembleIfExpired db ss eName etv = do
+  e <- atomically $ readTVar etv
+  case E.expiry e of
+    Nothing -> return ()
+    Just x -> do
+      t0 <- atomically $ readTVar $ E.lastActionTime e
+      t1 <- getCurrentTime
+      let elapsed = diffUTCTime t1 t0
+      when (elapsed >= x) $ do
+        Estuary.Types.ServerState.deleteEnsemble ss eName
+        Estuary.Types.Database.deleteEnsemble db eName
+        postLogNoHandle db $ "maintenance: deleting expired ensembles " <> eName
 
 ourRedirect :: WS.Application
 ourRedirect req respond = do
@@ -202,9 +227,7 @@ processRequest db ss ws cHandle (CreateEnsemble name pwd) = do
   x <- runTransaction ss $ createEnsemble cHandle name pwd now
   case x of
     Left e -> postLog db cHandle $ "*CreateEnsemble* " <> e
-    Right e -> do
-      postLog db cHandle $ "CreateEnsemble " <> name <> " password=" <> pwd
-      writeNewEnsembleS db name e -- NOTE: this database write will be unnecessary when we move to a model where database operations (except logging) are in a different "low priority" thread
+    Right _ -> postLog db cHandle $ "CreateEnsemble " <> name <> " password=" <> pwd
 
 processRequest db ss ws cHandle (JoinEnsemble eName uName loc pwd) = do
   x <- runTransactionIO ss $ joinEnsemble db cHandle eName uName loc pwd
@@ -225,7 +248,7 @@ processEnsembleRequest :: SQLite.Connection -> ServerState -> WS.Connection -> C
 processEnsembleRequest db ss ws cHandle (WriteZone zone value) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
-    writeZone cHandle zone value
+    writeZone now cHandle zone value
     p <- updateLastEdit cHandle now
     eName <- getEnsembleName cHandle
     return (p,eName)
@@ -234,7 +257,6 @@ processEnsembleRequest db ss ws cHandle (WriteZone zone value) = do
     Right (p,eName) -> do
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ZoneRcvd zone value
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
-      saveEnsembleToDatabase db ss eName
 
 processEnsembleRequest db ss ws cHandle (WriteChat msg) = do
   now <- getCurrentTime
@@ -271,7 +293,7 @@ processEnsembleRequest db ss ws cHandle (WriteStatus msg) = do
 processEnsembleRequest db ss ws cHandle (WriteView preset view) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
-    writeView cHandle preset view
+    writeView now cHandle preset view
     eName <- getEnsembleName cHandle
     p <- updateLastEdit cHandle now
     return (p,eName)
@@ -281,12 +303,11 @@ processEnsembleRequest db ss ws cHandle (WriteView preset view) = do
       postLog db cHandle $ "WriteView in (" <> eName <> "," <> preset <> ")"
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ViewRcvd preset view
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
-      saveEnsembleToDatabase db ss eName
 
 processEnsembleRequest db ss ws cHandle (WriteTempo t) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
-    writeTempo cHandle t
+    writeTempo now cHandle t
     eName <- getEnsembleName cHandle
     p <- updateLastEdit cHandle now
     return (p,eName)
@@ -296,4 +317,3 @@ processEnsembleRequest db ss ws cHandle (WriteTempo t) = do
       postLog db cHandle $ "WriteTempo in " <> eName
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ TempoRcvd t
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
-      saveEnsembleToDatabase db ss eName
