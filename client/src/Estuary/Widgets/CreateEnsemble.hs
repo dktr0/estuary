@@ -48,12 +48,10 @@ createEnsembleWidget ctx rs = do
   exptime <- el "div" $ do
     translateDyn Term.EnsembleExpiry ctx >>= dynText
     let expMap = fromList [
-                   (Nothing,"No expiry"),
                    (Just 3600,"1 hr"),
                    (Just 86400,"1 day"),
                    (Just 604800,"1 week"),
-                   (Just 1209600,"2 weeks"),
-                   (Just 2678400,"31 days")
+                   (Just 2678400,"1 month (31 days)")
                    ]
     _dropdown_value <$> dropdown (Just 3600) (constDyn expMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
 
