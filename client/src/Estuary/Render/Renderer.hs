@@ -24,7 +24,7 @@ import qualified Data.Text.IO as T
 import Data.Bifunctor
 import TextShow
 import Sound.OSC.Datum
-import Text.Parsec
+import Text.Parsec (ParseError)
 import qualified Data.ByteString as B
 
 import Sound.MusicW.AudioContext
@@ -112,14 +112,14 @@ flushEvents irc c = do
 renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
 renderTidalPattern start range t p = events''
   where
-    start' = (realToFrac $ diffUTCTime start (at t)) * cps t + beat t -- start time in cycles since beginning of tempo
-    end = realToFrac range * cps t + start' -- end time in cycles since beginning of tempo
+    start' = (realToFrac $ diffUTCTime start (time t)) * freq t + count t -- start time in cycles since beginning of tempo
+    end = realToFrac range * freq t + start' -- end time in cycles since beginning of tempo
     events = Tidal.queryArc p (Tidal.Arc (toRational start') (toRational end)) -- events with t in cycles
     events' = Prelude.filter Tidal.eventHasOnset events
     events'' = f <$> events'
     f e = (utcTime,Tidal.value e)
       where
-        utcTime = addUTCTime (realToFrac ((fromRational w1 - beat t)/cps t)) (at t)
+        utcTime = addUTCTime (realToFrac ((fromRational w1 - count t)/freq t)) (time t)
         w1 = Tidal.start $ fromJust $ Tidal.whole e
 
 sequenceToControlPattern :: (Text,[Bool]) -> Tidal.ControlPattern
@@ -377,8 +377,8 @@ punctualProgramChanged irc c z p = do
   t <- liftAudioIO $ audioTime
   let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2) z (punctuals s)
   let tempo' = tempo $ ensemble $ ensembleC c
-  let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ beatZero tempo'
-  let cps' = cps tempo'
+  let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ origin tempo'
+  let cps' = freq tempo'
   newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') p
   modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   -- B. update Punctual WebGL state in response to new, syntactically correct program

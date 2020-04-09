@@ -28,9 +28,9 @@ data EnsembleS = EnsembleS {
 newEnsembleS :: UTCTime -> Text -> Text -> Maybe NominalDiffTime -> STM EnsembleS
 newEnsembleS now opwd jpwd expTime = do
   tempoTvar <- newTVar $ Tempo {
-    cps = 0.5,
-    at = now,
-    beat = 0
+    freq = 0.5,
+    time = now,
+    count = 0
     }
   zonesTvar <- newTVar IntMap.empty
   viewsTvar <- newTVar Map.empty

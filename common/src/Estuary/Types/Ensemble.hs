@@ -41,7 +41,7 @@ instance FromJSON Ensemble
 emptyEnsemble :: UTCTime -> Ensemble
 emptyEnsemble t = Ensemble {
   ensembleName = "",
-  tempo = Tempo { at=t, beat=0.0, cps=0.5 },
+  tempo = Tempo { time=t, count=0.0, freq=0.5 },
   zones = IntMap.empty,
   views = Map.empty,
   chats = [],

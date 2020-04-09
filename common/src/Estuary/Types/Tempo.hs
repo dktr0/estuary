@@ -1,17 +1,12 @@
-{-# LANGUAGE DeriveGeneric #-}
+{- LANGUAGE DeriveGeneric -}
 
-module Estuary.Types.Tempo where
+module Estuary.Types.Tempo (module Data.Tempo,module Estuary.Types.Tempo) where
 
-import Data.Time.Clock
+import Data.Tempo
+import Data.Time
 import Data.Time.Clock.POSIX
-import GHC.Generics
+-- import GHC.Generics
 import Data.Aeson
-
-data Tempo = Tempo {
-  cps :: Rational,
-  at :: UTCTime,
-  beat :: Rational
-  } deriving (Eq,Generic,Show)
 
 instance ToJSON Tempo where
   toEncoding = genericToEncoding defaultOptions
@@ -25,29 +20,13 @@ utcTimeToAudioSeconds :: (UTCTime,Double) -> UTCTime -> Double
 utcTimeToAudioSeconds (t0utc,t0audio) t1utc = realToFrac $ utcTimeToPOSIXSeconds $ addUTCTime clockDiff t1utc
   where clockDiff = realToFrac t0audio - utcTimeToPOSIXSeconds t0utc
 
-elapsedCycles :: Tempo -> UTCTime -> Rational
-elapsedCycles t now = elapsedT * cps t + beat t
-  where elapsedT = realToFrac $ diffUTCTime now (at t)
-
-adjustCps :: Rational -> Tempo -> UTCTime -> Tempo
-adjustCps newCps prevTempo now = Tempo { cps = newCps, at = now, beat = elapsedCycles prevTempo now }
-
-adjustCpsNow :: Rational -> Tempo -> IO Tempo
-adjustCpsNow newCps prevTempo = getCurrentTime >>= return . adjustCps newCps prevTempo
-
-beatZero :: Tempo -> UTCTime
-beatZero x = addUTCTime (realToFrac $ beat x * (-1) / cps x) (at x)
-
 adjustByClockDiff :: UTCTime -> Tempo -> IO Tempo
 adjustByClockDiff x t = do
   tSystem <- getCurrentTime
   let clockDiff = diffUTCTime tSystem x
   return $ t {
-    at = addUTCTime (clockDiff*(-1)) (at t)
+    time = addUTCTime (clockDiff*(-1)) (time t)
   }
 
 firstCycleStartAfter :: Tempo -> UTCTime -> UTCTime
-firstCycleStartAfter t eTime = cycleToUTCTime t $ fromIntegral $ ceiling $ elapsedCycles t eTime
-
-cycleToUTCTime :: Tempo -> Rational -> UTCTime
-cycleToUTCTime t c = addUTCTime  (realToFrac $ c * cps t) (beatZero t) 
+firstCycleStartAfter x t = countToTime x $ fromIntegral $ ceiling $ timeToCount x t
