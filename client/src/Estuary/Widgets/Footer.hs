@@ -22,7 +22,7 @@ import Estuary.Reflex.Utility (translateDyn,dynButton)
 
 footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ())
 footer ctx renderInfo = divClass "footer" $ do
-  terminalButton <- el "div" $ dynButton "Terminal"
+  terminalButton <- el "div" $ dynButton ">_"
   divClass "peak primary-color code-font" $ do
     dynText =<< holdUniqDyn (fmap formatServerInfo ctx)
     text ", "

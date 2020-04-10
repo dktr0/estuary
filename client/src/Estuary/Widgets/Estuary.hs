@@ -85,7 +85,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   headerChange <- header ctx
   (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
-  let terminalEvent = terminalShortcut -- or terminalButton
+  let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle False terminalEvent
   command <- hideableWidget' terminalVisible $ do
     terminalWidget ctx deltasDown hints
