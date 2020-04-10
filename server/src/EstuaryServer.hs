@@ -282,7 +282,10 @@ processEnsembleRequest db ss ws cHandle (WriteZone zone value) = do
     eName <- getEnsembleName cHandle
     return (p,eName)
   case x of
-    Left e -> postLog db cHandle $ "*WriteZone* " <> e
+    Left e -> do
+      let m = "*WriteZone* " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle m
     Right (p,eName) -> do
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ZoneRcvd zone value
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
@@ -297,7 +300,10 @@ processEnsembleRequest db ss ws cHandle (WriteChat msg) = do
     p <- updateLastEdit cHandle now
     return (p,eName,uName)
   case x of
-    Left e -> postLog db cHandle $ "*WriteChat* " <> e
+    Left e -> do
+      let m = "*WriteChat* " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle m
     Right (p,eName,uName) -> do
       postLog db cHandle $ uName <> " in " <> eName <> " chats: " <> msg
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
@@ -314,7 +320,10 @@ processEnsembleRequest db ss ws cHandle (WriteStatus msg) = do
     p <- updateLastEdit cHandle now
     return (p,eName,uName)
   case x of
-    Left e -> postLog db cHandle $ "*WriteStatus* " <> e
+    Left e -> do
+      let m = "*WriteStatus* " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle m
     Right (p,eName,uName) -> do
       postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> eName <> ": " <> msg
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
@@ -322,16 +331,21 @@ processEnsembleRequest db ss ws cHandle (WriteStatus msg) = do
 processEnsembleRequest db ss ws cHandle (WriteView preset view) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
+    when (not $ nameIsLegal preset) $ throwError "view name cannot contain spaces/newlines/control characters"
     writeView now cHandle preset view
     eName <- getEnsembleName cHandle
     p <- updateLastEdit cHandle now
     return (p,eName)
   case x of
-    Left e -> postLog db cHandle $ "*WriteView* " <> e
+    Left e -> do
+      let m = "*PublishView* " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle m
     Right (p,eName) -> do
-      postLog db cHandle $ "WriteView in (" <> eName <> "," <> preset <> ")"
+      sendThisClient db cHandle ws (ResponseOK $ "published view " <> preset)
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ViewRcvd preset view
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
+      postLog db cHandle $ "WriteView in (" <> eName <> "," <> preset <> ")"
 
 processEnsembleRequest db ss ws cHandle (WriteTempo t) = do
   now <- getCurrentTime
@@ -341,8 +355,12 @@ processEnsembleRequest db ss ws cHandle (WriteTempo t) = do
     p <- updateLastEdit cHandle now
     return (p,eName)
   case x of
-    Left e -> postLog db cHandle $ "*WriteTempo* " <> e
+    Left e -> do
+      let m = "*WriteTempo* " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle m
     Right (p,eName) -> do
-      postLog db cHandle $ "WriteTempo in " <> eName
+      sendThisClient db cHandle ws (ResponseOK $ "setting tempo succeeded")
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ TempoRcvd t
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
+      postLog db cHandle $ "WriteTempo in " <> eName
