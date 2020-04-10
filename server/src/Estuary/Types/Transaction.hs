@@ -31,6 +31,7 @@ import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.Tempo
 import Estuary.Types.Participant
+import Estuary.Types.Name
 
 type Transaction = ReaderT ServerState (ExceptT Text STM)
 
@@ -166,9 +167,11 @@ getServerClientCount = do
   return $ IntMap.size cMap
 
 
-createEnsemble :: ClientHandle -> Text -> Text -> Text -> Text -> Maybe NominalDiffTime -> UTCTime -> Transaction ()
-createEnsemble cHandle cpwd name opwd jpwd expTime now = do
-  when (T.isInfixOf " " name || T.isInfixOf "\t" name || T.isInfixOf "\r" name || T.isInfixOf "\n" name) $ throwError "ensemble name cannot contain spaces/tabs/newlines"
+createEnsemble :: ClientHandle -> Password -> Name -> Password -> Password -> Maybe NominalDiffTime -> UTCTime -> Transaction ()
+createEnsemble cHandle cpwd name hpwd ppwd expTime now = do
+  when (not $ nameIsLegal name) $ throwError "ensemble name cannot contain spaces/tabs/newlines/control characters"
+  when (not $ nameIsLegal hpwd) $ throwError "host password cannot contain spaces/tabs/newlines/control characters"
+  when (not $ nameIsLegal ppwd) $ throwError "participant password cannot contain spaces/tabs/newlines/control characters"
   s <- ask
   oldMap <- liftSTM $ readTVar (ensembles s)
   when (isJust $ Map.lookup name oldMap) $ throwError "ensemble with same name already exists"
@@ -176,7 +179,7 @@ createEnsemble cHandle cpwd name opwd jpwd expTime now = do
   when (needsCommunityPwd && cpwd == "") $ throwError "community password required but not provided"
   when (needsCommunityPwd && cpwd /= communityPassword s) $ throwError "incorrect community password"
   liftSTM $ do
-    e <- E.newEnsembleS now opwd jpwd expTime
+    e <- E.newEnsembleS now hpwd ppwd expTime
     etvar <- newTVar e
     let newMap = Map.insert name etvar oldMap
     writeTVar (ensembles s) newMap
@@ -211,11 +214,12 @@ deleteEnsemble cHandle ename mpwd = do
   liftSTM $ writeTVar (ensembles s) $ Map.delete ename oldMap
 
 
-joinEnsemble :: SQLite.Connection -> ClientHandle -> Text -> Text -> Text -> Text -> Transaction (IO ())
+joinEnsemble :: SQLite.Connection -> ClientHandle -> Name -> Name -> Text -> Password -> Transaction (IO ())
 joinEnsemble db cHandle eName uName loc pwd = do
   e <- getEnsemble eName
   -- when client is requesting a specific user name in the ensemble, succeeds only if not already taken...
   when (uName /= "") $ do
+    when (not $ nameIsLegal uName) $ throwError "handles must not contain spaces/tabs/newlines/control characters"
     handleTaken <- handleTakenInEnsemble uName eName
     when handleTaken $ throwError $ "handle " <> uName <> " already in use in ensemble " <> eName
   -- when the ensemble requires password for authentication, they provided one, but it doesn't match...

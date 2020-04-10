@@ -36,6 +36,7 @@ import Data.Map
 import TextShow
 
 import Estuary.Utility
+import Estuary.Types.Name
 import Estuary.Types.Definition
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
@@ -52,7 +53,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.Transaction
 import Estuary.Types.Chat
 
-runServerWithDatabase :: Text -> Text -> Int -> Bool -> SQLite.Connection -> IO ()
+runServerWithDatabase :: Password -> Password -> Int -> Bool -> SQLite.Connection -> IO ()
 runServerWithDatabase mpwd cpwd port httpRedirect db = do
   nCap <- getNumCapabilities
   postLogNoHandle db $ "Estuary collaborative editing server"
@@ -228,7 +229,7 @@ processRequest db ss ws cHandle (CreateEnsemble cpwd name opwd jpwd expTime) = d
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle $ "*CreateEnsemble* " <> m
     Right _ -> do
-      let m = "created ensemble " <> name <> " ownerPassword=" <> opwd <> " joinPassword=" <> jpwd
+      let m = "created ensemble " <> name <> " host password=" <> opwd <> " participant password=" <> jpwd
       sendThisClient db cHandle ws (ResponseOK m)
       postLog db cHandle m
 
