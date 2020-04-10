@@ -12,6 +12,7 @@ import Data.IntMap.Strict as IntMap
 import Data.Time
 import TextShow
 import Control.Monad
+import Reflex.FunctorMaybe
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
@@ -44,6 +45,10 @@ foreign import javascript safe
 foreign import javascript unsafe
   "$1.muted = true;"
   muteVideo :: CineCer0Video -> IO ()
+
+foreign import javascript unsafe
+  "$1.src = $2; $1.load()"
+  changeVideoSource :: CineCer0Video -> Text -> IO ()
 
 foreign import javascript unsafe
   "$1.videoWidth"
@@ -79,26 +84,48 @@ addVideo j spec = do
   appendVideo x j
   return x
 
+onlyChangedVideoSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
+onlyChangedVideoSources nSpec oSpec
+  | (sampleVideo nSpec /= sampleVideo oSpec) == True = Just nSpec
+  | (sampleVideo nSpec /= sampleVideo oSpec) == False = Nothing
+
+
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
-  putStrLn $ show spec -- -> this is just for debugging
+  putStrLn $ show spec
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
   divHeight <- offsetHeight $ videoDiv st
-  -- add or delete videos
-  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec  -> difference between the previous map = videos st with the new one vSpec... taking out elements that were in the old to the new map... it just reads the things that were not there but for that reason changing videos does not work, it is not seeing the change of the name as a change.
-  let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
-  addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video  -> this is incomplete (91 and 92)... it is only adding videos that are new lines of the program, and not adding videos whos source has changed... add more functionality alongside this functionallity DONT GET RID OF EVERYTHING, JUST AUGMENT... new jvals have to be incorporated.. delete the old cinecero value and store the new one.
-  -- It is just adding an extra case not re-working everything... look documentation with in-maps: union, difference...
+  -- add, change or delete videos:
+  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
+
+  -- add videos
+  let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
+  addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+
+  -- change videos
+  --intersectionWith :: Ord k => (VideoSpec -> VideoSpec -> Maybe VideoSpec) -> IntMap VideoSpec -> IntMap VideoSpec -> IntMap (Maybe VideoSpec)
+  let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
+  let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
+  changedVideos <- mapM (addVideo $ videoDiv st) toChange
+
+  --fmapMaybe :: (a -> Maybe b) -> f a -> f b
+  --fmapMaybe :: (VideoSpec -> Maybe VideoSpec) -> IntMap (Maybe VideoSpec) -> IntMap VideoSpec
+
+
+  -- delete videoSpecs
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
+
+  -- update videoSpecs
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
+
   sequence $ intersectionWith (updateContinuingVideo t eTime now (divWidth,divHeight)) vSpecs continuingVideos
-  return $ st { videos = continuingVideos }
+  return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs } --
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
 updateContinuingVideo t eTime rTime (sw,sh) s v = do
@@ -145,7 +172,8 @@ emptyCineCer0State j = CineCer0State {
 
 data CineCer0State = CineCer0State {
   videoDiv :: HTMLDivElement,
-  videos :: IntMap CineCer0Video
+  videos :: IntMap CineCer0Video,
+  previousVideoSpecs :: IntMap VideoSpec
   }
 
 foreign import javascript unsafe
