@@ -211,6 +211,14 @@ in
            rev = "a1d78aedde218f8429517d8cfc599f9d7bbbc2d3";
         }) {});
 
+        tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
+         dontHaddock (self.callCabal2nix "tempi" (pkgs.fetchFromGitHub {
+           owner = "dktr0";
+           repo = "tempi";
+           sha256 = "10apprl5hzf7i7j6yp35vah174ds78x1q695cmcdcyd4qin3lzim";
+           rev = "7e4ddcfd57af1d28c6970e9039701804e7145deb";
+        }) {});
+
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [

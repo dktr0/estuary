@@ -16,6 +16,7 @@ dependencies:
   - containers
   - text
   - aeson
+  - tempi
 
 extra-source-files:
   - package.yaml

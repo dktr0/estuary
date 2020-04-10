@@ -130,12 +130,6 @@ getEnsembleNames = do
   eMap <- liftSTM $ readTVar (ensembles s)
   return $ Map.keys eMap
 
-authenticate :: ClientHandle -> Text -> Transaction Bool
-authenticate cHandle x = do
-  pwd <- administrativePassword <$> ask
-  modifyClient cHandle $ \c -> c { authenticated = x == pwd }
-  return $ x == pwd
-
 writeZone :: UTCTime -> ClientHandle -> Int -> Definition -> Transaction ()
 writeZone now cHandle zone def = do
   whenNotAuthenticatedInEnsemble cHandle $ throwError "ignoring writeZone from client not authenticated in ensemble"
@@ -171,17 +165,51 @@ getServerClientCount = do
   cMap <- liftSTM $ readTVar (clients s)
   return $ IntMap.size cMap
 
-createEnsemble :: ClientHandle -> Text -> Text -> UTCTime -> Transaction ()
-createEnsemble cHandle name pwd now = do
-  -- whenNotAuthenticated cHandle $ throwError "ignoring CreateEnsemble from non-authenticated client"
+
+createEnsemble :: ClientHandle -> Text -> Text -> Text -> Text -> Maybe NominalDiffTime -> UTCTime -> Transaction ()
+createEnsemble cHandle cpwd name opwd jpwd expTime now = do
+  when (T.isInfixOf " " name || T.isInfixOf "\t" name || T.isInfixOf "\r" name || T.isInfixOf "\n" name) $ throwError "ensemble name cannot contain spaces/tabs/newlines"
   s <- ask
   oldMap <- liftSTM $ readTVar (ensembles s)
-  when (isJust $ Map.lookup name oldMap) $ throwError "ignoring CreateEnsemble for duplicate ensemble name"
-  etvar <- liftSTM $ do
-    newEns <- E.newEnsembleS now pwd
-    newTVar newEns
-  let newMap = Map.insert name etvar oldMap
-  liftSTM $ writeTVar (ensembles s) newMap
+  when (isJust $ Map.lookup name oldMap) $ throwError "ensemble with same name already exists"
+  let needsCommunityPwd = case expTime of Nothing -> True; Just expTime' -> expTime' > 3600
+  when (needsCommunityPwd && cpwd == "") $ throwError "community password required but not provided"
+  when (needsCommunityPwd && cpwd /= communityPassword s) $ throwError "incorrect community password"
+  liftSTM $ do
+    e <- E.newEnsembleS now opwd jpwd expTime
+    etvar <- newTVar e
+    let newMap = Map.insert name etvar oldMap
+    writeTVar (ensembles s) newMap
+
+
+deleteThisEnsemble :: ClientHandle -> Text -> Transaction Text
+deleteThisEnsemble cHandle opwd = do
+  ename <- getEnsembleName cHandle
+  e <- getEnsemble ename
+  let op = E.ownerPassword e
+  when ((opwd == "") && (op /= "")) $
+    throwError "owner password not provided"
+  when ((opwd /= op) && (op /= "")) $
+    throwError "incorrect owner password"
+  s <- ask
+  liftSTM $ do
+    oldMap <- readTVar (ensembles s)
+    writeTVar (ensembles s) $ Map.delete ename oldMap
+  return ename
+
+
+deleteEnsemble :: ClientHandle -> Text -> Text -> Transaction ()
+deleteEnsemble cHandle ename mpwd = do
+  when (mpwd == "") $
+    throwError "moderator password not provided"
+  s <- ask
+  when (mpwd /= moderatorPassword s) $
+    throwError "incorrect moderator password"
+  oldMap <- liftSTM $ readTVar (ensembles s)
+  when (isNothing $ Map.lookup ename oldMap) $
+    throwError "no ensemble by that name"
+  liftSTM $ writeTVar (ensembles s) $ Map.delete ename oldMap
+
 
 joinEnsemble :: SQLite.Connection -> ClientHandle -> Text -> Text -> Text -> Text -> Transaction (IO ())
 joinEnsemble db cHandle eName uName loc pwd = do
@@ -191,9 +219,10 @@ joinEnsemble db cHandle eName uName loc pwd = do
     handleTaken <- handleTakenInEnsemble uName eName
     when handleTaken $ throwError $ "handle " <> uName <> " already in use in ensemble " <> eName
   -- when the ensemble requires password for authentication, they provided one, but it doesn't match...
-  when (E.password e /= "" && pwd /= "" && E.password e /= pwd) $ throwError "incorrect ensemble password"
+  let epwd = E.joinPassword e
+  when (epwd /= "" && pwd /= "" && epwd /= pwd) $ throwError "incorrect ensemble password"
   -- if we get this far, the client's join attempt will succeed
-  let authed = (E.password e == "" || E.password e == pwd)
+  let authed = (epwd == "" || epwd == pwd)
   modifyClient cHandle $ \c -> c {
     memberOfEnsemble = Just eName,
     handleInEnsemble = uName,
@@ -248,23 +277,8 @@ leaveEnsemble db cHandle = do
         sendClients db cHandle cs $ EnsembleResponse $ AnonymousParticipants n
 
 
-isAuthenticated :: ClientHandle -> Transaction Bool
-isAuthenticated cHandle = getClient cHandle >>= return . authenticated
-
 isAuthenticatedInEnsemble :: ClientHandle -> Transaction Bool
 isAuthenticatedInEnsemble cHandle = getClient cHandle >>= return . authenticatedInEnsemble
-
-whenAuthenticated :: ClientHandle -> Transaction a -> Transaction ()
-whenAuthenticated cHandle t = do
-  x <- isAuthenticated cHandle
-  when x $ void t
-  return ()
-
-whenNotAuthenticated :: ClientHandle -> Transaction a -> Transaction ()
-whenNotAuthenticated cHandle t = do
-  x <- isAuthenticated cHandle
-  when (not x) $ void t
-  return ()
 
 whenAuthenticatedInEnsemble :: ClientHandle -> Transaction a -> Transaction ()
 whenAuthenticatedInEnsemble cHandle t = do
@@ -289,6 +303,9 @@ send db originHandle destHandle c x = do
         Just (WS.CloseRequest _ _) -> postLog db originHandle $ "CloseRequest exception sending to (" <> showt destHandle <> ")"
         Just WS.ConnectionClosed -> postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
         otherwise -> postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
+
+sendThisClient :: SQLite.Connection -> ClientHandle -> WS.Connection -> Response -> IO ()
+sendThisClient db originHandle c x = send db originHandle originHandle c x
 
 sendClient :: SQLite.Connection -> ClientHandle -> Client -> Response -> IO ()
 sendClient db originHandle c x = send db originHandle (Estuary.Types.Client.handle c) (connection c) x
