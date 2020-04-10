@@ -1,11 +1,8 @@
-{- LANGUAGE DeriveGeneric -}
-
 module Estuary.Types.Tempo (module Data.Tempo,module Estuary.Types.Tempo) where
 
 import Data.Tempo
 import Data.Time
 import Data.Time.Clock.POSIX
--- import GHC.Generics
 import Data.Aeson
 
 instance ToJSON Tempo where
