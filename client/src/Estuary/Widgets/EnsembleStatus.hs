@@ -24,7 +24,6 @@ ensembleStatusWidget :: MonadWidget t m => Editor t m (Event t EnsembleRequest)
 ensembleStatusWidget = do
 
   -- extract data about ensemble from the context, filtering out all duplicate events
-  -- TODO: still need to add filtering of duplicate events...
   ctx <- askContext
   let ensC = fmap ensembleC ctx
   let ens = fmap ensemble ensC
@@ -70,7 +69,7 @@ participantStatusWidget :: MonadWidget t m  => Text -> Dynamic t Participant -> 
 -- participantStatusWidget thisUserhandle _ part = do
 participantStatusWidget _ part = do
   initialStatus <- status <$> sample (current part)
-  let updatedStatus = fmap status (updated part)  --Event t Participant -> Event t Text -- and event that changes the text
+  updatedStatus <- fmap updated $ holdUniqDyn $ fmap status part -- event issued only when status changes
   -- style <- -- dynamic style -- compare their handle in their ensemble and this user, current user's handle is in the initial value context (do this function somewhere else)
   s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ constDyn ("class" =: "code-font")
   -- ("style" =: ".avoid-clicks { pointer-events: none;}")
@@ -79,7 +78,8 @@ participantStatusWidget _ part = do
 
 participantNameAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantNameAndLocationWidget name part = do
-  dynText $ constDyn name <> fmap location' part
+  x <- holdUniqDyn $ constDyn name <> fmap location' part
+  dynText x
 
 location' :: Participant -> Text
 location' p = f (location p)
@@ -87,26 +87,18 @@ location' p = f (location p)
     f x | x == "" = x
         | otherwise = "@" <> x
 
-participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantNameWidget name part = text name
-
-participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantLocationWidget name part = dynText $ fmap location part
-
 participantFPSWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantFPSWidget name part = do
-  let a = fmap (showt . animationLoad) part
+  a <- holdUniqDyn $ fmap (showt . animationLoad) part
   dynText $ a <> (constDyn "FPS")
 
 participantLatencyWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantLatencyWidget name part = elClass "div" "" $ do
-  let a = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
+  a <- holdUniqDyn $ fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
   dynText $ a <> (constDyn "ms")
 
 participantActivityWidget :: MonadWidget t m => Event t UTCTime -> Text -> Dynamic t Participant -> m ()
-participantActivityWidget t name part = divClass "" $ do
-   x <- pollParticipantActivity t part
-   dynText x
+participantActivityWidget t name part = divClass "" $ pollParticipantActivity t part >>= holdUniqDyn >>= dynText
 
 pollParticipantActivity :: MonadWidget t m => Event t UTCTime -> Dynamic t Participant -> m (Dynamic t Text)
 pollParticipantActivity e part = do

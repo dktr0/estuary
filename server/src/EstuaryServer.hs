@@ -204,7 +204,8 @@ processRequest db ss ws cHandle ctvar (ClientInfo pingTime load animationLoad la
     return (n,c)
   send db cHandle cHandle ws $ ServerInfo n pingTime
   case memberOfEnsemble c of
-    Just eName -> sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate $ clientToParticipant c
+    Just eName -> do
+      when (handleInEnsemble c /= "") $ sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate $ clientToParticipant c
     Nothing -> return ()
 
 processRequest db ss ws cHandle ctvar GetEnsembleList = do
@@ -313,7 +314,7 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteStatus msg) = do
       postLog db cHandle m
     Right (p,eName,uName) -> do
       postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> eName <> ": " <> msg
-      sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate p
+      sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate p
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteView preset view) = do
   now <- getCurrentTime
