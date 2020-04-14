@@ -155,7 +155,7 @@ silencio = reserved "silencio" >> return "~"
 noun :: Parser Tidal.ControlPattern
 noun = choice [
   (reserved "recuerdos" >> return Tidal.up) <*> option 0 parentsdoublePattern,
-  ((reserved "sueño" <|> reserved "sueños") >> return Tidal.overgain) <*> option 1 parentsdoublePattern,
+  ((reserved "sueño" <|> reserved "sueños") >> return Tidal.gain) <*> option 1 parentsdoublePattern,
   ((reserved "flor" <|> reserved "flores") >> return Tidal.pan) <*> option 0.5 parentsdoublePattern,
   ((reserved "luz" <|> reserved "luces") >> return Tidal.delay) <*> option 0 parentsdoublePattern,
   ((reserved "rayo" <|> reserved "rayos") >> return Tidal.delayfeedback) <*> option 0 parentsdoublePattern,

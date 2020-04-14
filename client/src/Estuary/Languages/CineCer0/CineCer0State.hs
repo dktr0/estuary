@@ -97,33 +97,26 @@ updateCineCer0State t now spec st = do
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
   divHeight <- offsetHeight $ videoDiv st
-  -- add, change or delete videos:
-  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
-
   -- add videos
+  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
-
   -- change videos
-  --intersectionWith :: Ord k => (VideoSpec -> VideoSpec -> Maybe VideoSpec) -> IntMap VideoSpec -> IntMap VideoSpec -> IntMap (Maybe VideoSpec)
   let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
   let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
-  changedVideos <- mapM (addVideo $ videoDiv st) toChange
+  --changedVideos <- mapM (\x -> changeVideoSource $ sampleVideo x) toChange
 
-  --fmapMaybe :: (a -> Maybe b) -> f a -> f b
-  --fmapMaybe :: (VideoSpec -> Maybe VideoSpec) -> IntMap (Maybe VideoSpec) -> IntMap VideoSpec
+  --mapM :: Monad m => (a -> m b) -> t a -> m (t b)
+  --changeVideoSource :: CineCer0Video -> Text -> IO ()
 
-
-  -- delete videoSpecs
+  -- delete VideoSpecs
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
-
   -- update videoSpecs
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-
   sequence $ intersectionWith (updateContinuingVideo t eTime now (divWidth,divHeight)) vSpecs continuingVideos
   return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs } --
 
