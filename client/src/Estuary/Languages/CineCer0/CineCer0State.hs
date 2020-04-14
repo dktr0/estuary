@@ -91,8 +91,8 @@ addVideo j spec = do
 
 onlyChangedVideoSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
 onlyChangedVideoSources nSpec oSpec
-  | (sampleVideo nSpec /= sampleVideo oSpec) == True = Just nSpec
-  | (sampleVideo nSpec /= sampleVideo oSpec) == False = Nothing
+  | (sampleVideo nSpec /= sampleVideo oSpec) = Just nSpec
+  | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
 
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
