@@ -33,6 +33,7 @@ import WaiAppStatic.Types (unsafeToPiece,MaxAge(..))
 import Data.Time
 import Data.Time.Clock.POSIX
 import Data.Map
+import Data.Maybe
 import TextShow
 
 import Estuary.Utility
@@ -137,90 +138,80 @@ webSocketsApp db ss pc = do
       let rh = WS.requestHeaders $ WS.pendingRequest pc
       let rhMap = Map.fromList rh
       let ip = Map.findWithDefault "unknown IP address" "Host" rhMap
-      cHandle <- addClient ss ws''
+      (cHandle,ctvar) <- addClient ss ws''
       postLog db cHandle $ "new connection from " <> showt ip
       (WS.forkPingThread ws'' 10) `catch` \(SomeException e) -> postLog db cHandle $ "exception forking ping thread: " <> (T.pack $ show e)
-      processLoop db ss cHandle ws''
+      processLoop db ss cHandle ctvar ws''
     Left (SomeException e) -> do
       postLogNoHandle db $ "exception during WS.acceptRequest: " <> (T.pack $ show e)
 
 
-processLoop :: SQLite.Connection -> ServerState -> ClientHandle -> WS.Connection -> IO ()
-processLoop db ss cHandle ws = do
+processLoop :: SQLite.Connection -> ServerState -> ClientHandle -> TVar Client -> WS.Connection -> IO ()
+processLoop db ss cHandle ctvar ws = do
   m <- try $ WS.receiveData ws
   case m of
     Right m' -> do
-      processMessage db ss ws cHandle m'
-      processLoop db ss cHandle ws
+      processMessage db ss ws cHandle ctvar m'
+      processLoop db ss cHandle ctvar ws
     Left (WS.ParseException e) -> do
       postLog db cHandle $ "parse exception: " <> (T.pack e)
-      processLoop db ss cHandle ws
-    Left WS.ConnectionClosed -> close db ss cHandle "unexpected loss of connection"
-    Left (WS.CloseRequest _ _) -> close db ss cHandle "by request from peer"
-    Left _ -> close db ss cHandle "* unknown exception in receiveData"
+      processLoop db ss cHandle ctvar ws
+    Left WS.ConnectionClosed -> close db ss cHandle ctvar "unexpected loss of connection"
+    Left (WS.CloseRequest _ _) -> close db ss cHandle ctvar "by request from peer"
+    Left _ -> close db ss cHandle ctvar "* unknown exception in receiveData"
 
 
-close :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> IO ()
-close db ss cHandle msg = do
+close :: SQLite.Connection -> ServerState -> ClientHandle -> TVar Client -> Text -> IO ()
+close db ss cHandle ctvar msg = do
   x <- runTransaction ss $ do
-    c <- getClient cHandle
-    n <- countAnonymousParticipants cHandle
+    c <- liftSTM $ readTVar ctvar
     deleteClient cHandle
-    return (c,n)
+    return c
   case x of
     Left e -> postLog db cHandle $ "*close* " <> e
-    Right (c,n) -> do
+    Right c -> do
       postLog db cHandle $ "closing connection: " <> msg
-      when (isJust $ memberOfEnsemble c) $ do
-        let eName = fromJust $ memberOfEnsemble c
-        let uName = handleInEnsemble c
-        let uName' = if uName == "" then "(anonymous)" else uName
-        postLog db cHandle $ uName' <> " leaves ensemble " <> eName
-        let r = if uName == "" then AnonymousParticipants n else ParticipantLeaves uName
-        sendEnsembleNoOrigin db ss cHandle eName (EnsembleResponse r)
+      case memberOfEnsemble c of
+        Nothing -> return ()
+        Just eName -> do
+          case handleInEnsemble c of
+            "" -> do
+              n <- countAnonymousParticipantsIO ss ctvar
+              postLog db cHandle $ "(anonymous) leaves ensemble " <> eName
+              sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ AnonymousParticipants n
+            h -> do
+              postLog db cHandle $ h <> " leaves ensemble " <> eName
+              sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ParticipantLeaves h
 
-
-processMessage :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> ByteString -> IO ()
-processMessage db ss ws cHandle msg = case eitherDecode msg of
-  Right x -> processRequest db ss ws cHandle x
+processMessage :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> TVar Client -> ByteString -> IO ()
+processMessage db ss ws cHandle ctvar msg = case eitherDecode msg of
+  Right x -> processRequest db ss ws cHandle ctvar x
   Left x -> postLog db cHandle $ "* eitherDecode error in processMessage: " <> (T.pack x)
 
-processRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> Request -> IO ()
+processRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> TVar Client -> Request -> IO ()
 
-processRequest db ss ws cHandle (BrowserInfo t) = do
-  x <- runTransaction ss $ modifyClient cHandle $ \c -> c { browserInfo = t }
-  case x of
-    Left e -> postLog db cHandle $ "*BrowserInfo* " <> e
-    Right () -> return ()
+processRequest db ss ws cHandle ctvar (BrowserInfo t) = atomically $ modifyTVar ctvar $ \c -> c { browserInfo = t }
 
-processRequest db ss ws cHandle (ClientInfo pingTime load animationLoad latency) = do
-  x <- runTransaction ss $ do
-    modifyClient cHandle $ \c -> c {
+processRequest db ss ws cHandle ctvar (ClientInfo pingTime load animationLoad latency) = do
+  (n,self) <- atomically $ do
+    modifyTVar ctvar $ \c -> c {
       clientMainLoad = load,
       clientAnimationLoad = animationLoad,
       clientLatency = latency
       }
-    n <- getServerClientCount
-    self <- getClient cHandle
+    n <- readTVar $ clientCount ss
+    self <- readTVar ctvar
     return (n,self)
-  case x of
-    Left e -> postLog db cHandle $ "*ClientInfo* " <> e
-    Right (n,self) -> do
-      send db cHandle cHandle ws $ ServerInfo n pingTime
-      case memberOfEnsemble self of
-        Just eName -> sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (handleInEnsemble self) (clientToParticipant self)
-        Nothing -> return ()
+  send db cHandle cHandle ws $ ServerInfo n pingTime
+  case memberOfEnsemble self of
+    Just eName -> sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (handleInEnsemble self) (clientToParticipant self)
+    Nothing -> return ()
 
-processRequest db ss ws cHandle GetEnsembleList = do
-  x <- runTransaction ss $ getEnsembleNames
-  case x of
-    Left e -> do
-      let m = "unable to GetEnsembleList: " <> e
-      sendThisClient db cHandle ws (ResponseError m)
-      postLog db cHandle $ "*GetEnsembleList* " <> m
-    Right eNames -> send db cHandle cHandle ws $ EnsembleList eNames
+processRequest db ss ws cHandle ctvar GetEnsembleList = do
+  eNames <- atomically $ Map.keys <$> readTVar (ensembles ss)
+  send db cHandle cHandle ws $ EnsembleList eNames
 
-processRequest db ss ws cHandle (CreateEnsemble cpwd name opwd jpwd expTime) = do
+processRequest db ss ws cHandle ctvar (CreateEnsemble cpwd name opwd jpwd expTime) = do
   now <- getCurrentTime
   x <- runTransaction ss $ createEnsemble cHandle cpwd name opwd jpwd expTime now
   case x of
@@ -233,8 +224,8 @@ processRequest db ss ws cHandle (CreateEnsemble cpwd name opwd jpwd expTime) = d
       sendThisClient db cHandle ws (ResponseOK m)
       postLog db cHandle m
 
-processRequest db ss ws cHandle (DeleteThisEnsemble opwd) = do
-  x <- runTransaction ss $ deleteThisEnsemble cHandle opwd
+processRequest db ss ws cHandle ctvar (DeleteThisEnsemble opwd) = do
+  x <- runTransaction ss $ deleteThisEnsemble ctvar opwd
   case x of
     Left e -> do
       let m = "unable to delete this ensemble: " <> e
@@ -245,7 +236,7 @@ processRequest db ss ws cHandle (DeleteThisEnsemble opwd) = do
       sendThisClient db cHandle ws (ResponseOK m)
       postLog db cHandle m
 
-processRequest db ss ws cHandle (DeleteEnsemble eName mpwd) = do
+processRequest db ss ws cHandle ctvar (DeleteEnsemble eName mpwd) = do
   x <- runTransaction ss $ Estuary.Types.Transaction.deleteEnsemble cHandle eName mpwd
   case x of
     Left e -> do
@@ -257,8 +248,8 @@ processRequest db ss ws cHandle (DeleteEnsemble eName mpwd) = do
       sendThisClient db cHandle ws (ResponseOK m)
       postLog db cHandle m
 
-processRequest db ss ws cHandle (JoinEnsemble eName uName loc pwd) = do
-  x <- runTransactionIO ss $ joinEnsemble db cHandle eName uName loc pwd
+processRequest db ss ws cHandle ctvar (JoinEnsemble eName uName loc pwd) = do
+  x <- runTransactionIO ss $ joinEnsemble db cHandle ctvar eName uName loc pwd
   let uName' = if uName == "" then "(anonymous)" else uName
   case x of
     Left e -> do
@@ -267,19 +258,19 @@ processRequest db ss ws cHandle (JoinEnsemble eName uName loc pwd) = do
       postLog db cHandle m
     Right _ -> postLog db cHandle $ "joined ensemble " <> eName <> " as " <> uName'
 
-processRequest db ss ws cHandle LeaveEnsemble = do
-  runTransactionIOLogged db ss cHandle "LeaveEnsemble" $ leaveEnsemble db cHandle
+processRequest db ss ws cHandle ctvar LeaveEnsemble = do
+  runTransactionIOLogged db ss cHandle "LeaveEnsemble" $ leaveEnsemble db ctvar
 
-processRequest db ss ws cHandle (EnsembleRequest x) = processEnsembleRequest db ss ws cHandle x
+processRequest db ss ws cHandle ctvar (EnsembleRequest x) = processEnsembleRequest db ss ws cHandle ctvar x
 
-processEnsembleRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> EnsembleRequest -> IO ()
+processEnsembleRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> TVar Client -> EnsembleRequest -> IO ()
 
-processEnsembleRequest db ss ws cHandle (WriteZone zone value) = do
+processEnsembleRequest db ss ws cHandle ctvar (WriteZone zone value) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
-    writeZone now cHandle zone value
-    p <- updateLastEdit cHandle now
-    eName <- getEnsembleName cHandle
+    writeZone now ctvar zone value
+    p <- updateLastEdit ctvar now
+    eName <- getEnsembleName ctvar
     return (p,eName)
   case x of
     Left e -> do
@@ -290,14 +281,14 @@ processEnsembleRequest db ss ws cHandle (WriteZone zone value) = do
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ZoneRcvd zone value
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
 
-processEnsembleRequest db ss ws cHandle (WriteChat msg) = do
+processEnsembleRequest db ss ws cHandle ctvar (WriteChat msg) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
-    whenNotAuthenticatedInEnsemble cHandle $ throwError "not authenticated"
-    eName <- getEnsembleName cHandle
-    uName <- handleInEnsemble <$> getClient cHandle
-    when (uName == "") $ throwError "ignoring from anonymous"
-    p <- updateLastEdit cHandle now
+    whenNotAuthenticatedInEnsemble ctvar $ throwError "not authenticated"
+    eName <- getEnsembleName ctvar
+    uName <- liftSTM $ handleInEnsemble <$> readTVar ctvar
+    when (uName == "") $ throwError "ignoring anonymous chat"
+    p <- updateLastEdit ctvar now
     return (p,eName,uName)
   case x of
     Left e -> do
@@ -309,15 +300,15 @@ processEnsembleRequest db ss ws cHandle (WriteChat msg) = do
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
 
-processEnsembleRequest db ss ws cHandle (WriteStatus msg) = do
+processEnsembleRequest db ss ws cHandle ctvar (WriteStatus msg) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
-    whenNotAuthenticatedInEnsemble cHandle $ throwError "not authenticated"
-    eName <- getEnsembleName cHandle
-    uName <- handleInEnsemble <$> getClient cHandle
-    when (uName == "") $ throwError "ignoring from anonymous"
-    modifyClient cHandle $ \c -> c { statusInEnsemble = msg }
-    p <- updateLastEdit cHandle now
+    whenNotAuthenticatedInEnsemble ctvar $ throwError "not authenticated"
+    eName <- getEnsembleName ctvar
+    uName <- liftSTM $ handleInEnsemble <$> readTVar ctvar
+    when (uName == "") $ throwError "ignoring anonymous status update"
+    liftSTM $ modifyTVar ctvar $ \c -> c { statusInEnsemble = msg }
+    p <- updateLastEdit ctvar now
     return (p,eName,uName)
   case x of
     Left e -> do
@@ -328,13 +319,13 @@ processEnsembleRequest db ss ws cHandle (WriteStatus msg) = do
       postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> eName <> ": " <> msg
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
 
-processEnsembleRequest db ss ws cHandle (WriteView preset view) = do
+processEnsembleRequest db ss ws cHandle ctvar (WriteView preset view) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     when (not $ nameIsLegal preset) $ throwError "view name cannot contain spaces/newlines/control characters"
-    writeView now cHandle preset view
-    eName <- getEnsembleName cHandle
-    p <- updateLastEdit cHandle now
+    writeView now ctvar preset view
+    eName <- getEnsembleName ctvar
+    p <- updateLastEdit ctvar now
     return (p,eName)
   case x of
     Left e -> do
@@ -347,12 +338,12 @@ processEnsembleRequest db ss ws cHandle (WriteView preset view) = do
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
       postLog db cHandle $ "WriteView in (" <> eName <> "," <> preset <> ")"
 
-processEnsembleRequest db ss ws cHandle (WriteTempo t) = do
+processEnsembleRequest db ss ws cHandle ctvar (WriteTempo t) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
-    writeTempo now cHandle t
-    eName <- getEnsembleName cHandle
-    p <- updateLastEdit cHandle now
+    writeTempo now ctvar t
+    eName <- getEnsembleName ctvar
+    p <- updateLastEdit ctvar now
     return (p,eName)
   case x of
     Left e -> do

@@ -21,6 +21,7 @@ data ServerState = ServerState {
   communityPassword :: Text, -- to make ensembles with longer/permanent expiry times
   nextClientHandle :: TVar Int,
   clients :: TVar (IntMap.IntMap (TVar Client)),
+  clientCount :: TVar Int,
   ensembles :: TVar (Map.Map Text (TVar E.EnsembleS))
 }
 
@@ -30,15 +31,17 @@ newServerState mpwd cpwd es = atomically $ do
   es' <- mapM newTVar es
   es'' <- newTVar es'
   nch <- newTVar 0
+  cc <- newTVar 0
   return $ ServerState {
     moderatorPassword = mpwd,
     communityPassword = cpwd,
     nextClientHandle = nch,
     clients = c,
+    clientCount = cc,
     ensembles = es''
   }
 
-addClient :: ServerState -> WS.Connection -> IO ClientHandle
+addClient :: ServerState -> WS.Connection -> IO (ClientHandle,TVar Client)
 addClient ss x = do
   t <- getCurrentTime
   atomically $ do
@@ -47,8 +50,9 @@ addClient ss x = do
     c <- newTVar $ newClient t i x
     let newMap = IntMap.insert i c oldMap
     writeTVar (clients ss) newMap
+    writeTVar (clientCount ss) (IntMap.size newMap)
     writeTVar (nextClientHandle ss) (i+1)
-    return i
+    return (i,c)
 
 deleteEnsemble :: ServerState -> Text -> IO ()
 deleteEnsemble ss eName = atomically $ do
