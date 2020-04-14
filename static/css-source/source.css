@@ -1108,20 +1108,33 @@ display: inline-flex;
   width: 100%;
 }
 
-.statusWidgetNameAndLocation {
-	display: flex;
-	flex-wrap: nowrap   ;
+.tableContainer tr {
+
 }
+
+.tableContainer table,  td {
+	width: 100%;
+    border-bottom: 1px solid var(--primary-color);
+    border-collapse: collapse;
+}
+
+.statusWidgetNameAndLocation{
+		margin-bottom: 1%;
+		width: auto;
+}
+
 
 .statusWidgetStatusInput input {
 	color: var(--primary-color);
 	background-color: transparent;
 	border: none;
 	width: 99%;
+/* 	pointer-events: none; */
 }
 
-.tableContainer td {
-	width: 100%;
+
+.statusWidgetAnonymousPart {
+	text-align: center;
 }
 
 /* Tooltip classes */
