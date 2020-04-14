@@ -16,7 +16,8 @@ import Estuary.Types.View
 
 data EnsembleS = EnsembleS {
   creationTime :: UTCTime,
-  password :: Text,
+  ownerPassword :: Text, -- used to "self-delete" this ensemble
+  joinPassword :: Text, -- used to join an ensemble with editing privileges
   expiry :: Maybe NominalDiffTime,
   lastActionTime :: TVar UTCTime,
   tempo :: TVar Tempo,
@@ -24,20 +25,21 @@ data EnsembleS = EnsembleS {
   views :: TVar (Map.Map Text (TVar View))
   }
 
-newEnsembleS :: UTCTime -> Text -> STM EnsembleS
-newEnsembleS now pwd = do
+newEnsembleS :: UTCTime -> Text -> Text -> Maybe NominalDiffTime -> STM EnsembleS
+newEnsembleS now opwd jpwd expTime = do
   tempoTvar <- newTVar $ Tempo {
-    cps = 0.5,
-    at = now,
-    beat = 0
+    freq = 0.5,
+    time = now,
+    count = 0
     }
   zonesTvar <- newTVar IntMap.empty
   viewsTvar <- newTVar Map.empty
   lat <- newTVar now
   return $ EnsembleS {
     creationTime = now,
-    password = pwd,
-    expiry = Just 604800, -- expiry hard-coded at seven days for now
+    ownerPassword = opwd,
+    joinPassword = jpwd,
+    expiry = expTime,
     lastActionTime = lat,
     tempo = tempoTvar,
     zones = zonesTvar,

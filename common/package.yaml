@@ -1,13 +1,13 @@
 name: estuary-common
 version: '0.0.0.1'
-synopsis: Projectional editor for TidalCycles
+synopsis: Platform for collaboration and learning through live coding
 description: Please see README.md
 category: Web
-author: David Ogborn, Jamie Beverley and others
+author: David Ogborn and contributors
 maintainer: ogbornd@mcmaster.ca
-copyright: 2015-19 David Ogborn and others
+copyright: 2015-20 David Ogborn and contributors
 license: GPL-3
-homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
+homepage: http://github.com/dktr0/estuary/blob/master/README.md
 
 dependencies:
   - base
@@ -16,6 +16,8 @@ dependencies:
   - containers
   - text
   - aeson
+  - tempi
+  - parsec
 
 extra-source-files:
   - package.yaml

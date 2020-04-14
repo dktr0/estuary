@@ -18,7 +18,6 @@ type ClientHandle = Int
 data Client = Client {
   handle :: ClientHandle,
   connection :: Connection,
-  authenticated :: Bool,
   browserInfo :: Text,
   memberOfEnsemble :: Maybe Text,
   handleInEnsemble :: Text,
@@ -35,7 +34,6 @@ newClient :: UTCTime -> ClientHandle -> Connection -> Client
 newClient t h c = Client {
   handle = h,
   connection = c,
-  authenticated = False,
   browserInfo = "",
   memberOfEnsemble = Nothing,
   handleInEnsemble = "",

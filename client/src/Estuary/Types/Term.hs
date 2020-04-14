@@ -15,9 +15,12 @@ data Term =
   Confirm |
   Cancel |
   CreateNewEnsembleNote |
-  AdministratorPassword |
+  ModeratorPassword |
+  CommunityPassword |
+  HostPassword |
+  ParticipantPassword |
   EnsembleName |
-  EnsemblePassword |
+  EnsembleExpiry |
   TerminalChat |
   Theme |
   Load |
@@ -73,21 +76,19 @@ translate Cancel Français = "Annuler"
 translate Cancel English = "Cancel"
 translate Cancel Español = "Cancelar"
 
-translate CreateNewEnsembleNote Français = "Note: pour créer un ensemble, vous devez entrer un mot de passe administrateur"
-translate CreateNewEnsembleNote English = "Note: to create an ensemble you must enter an administrator password"
-translate CreateNewEnsembleNote Español = "Nota: para crear un enamble escribe la contraseña de administrador"
+translate ModeratorPassword English = "Moderator password:"
 
-translate AdministratorPassword Français = "Mot de passe administrateur:"
-translate AdministratorPassword English = "Administrator password:"
-translate AdministratorPassword Español = "Contraseña del admin:"
+translate CommunityPassword English = "Community password:"
+
+translate HostPassword English = "Host password:"
+
+translate ParticipantPassword English = "Participant password:"
 
 translate EnsembleName Français = "Nom de l'ensemble:"
 translate EnsembleName English = "Ensemble name:"
 translate EnsembleName Español = "Nombre del ensamble:"
 
-translate EnsemblePassword Français = "Mot de passe de l'ensemble:"
-translate EnsemblePassword English = "Ensemble password:"
-translate EnsemblePassword Español = "Contraseña del ensamble:"
+translate EnsembleExpiry English = "Ensemble Expiry:"
 
 translate TerminalChat Français = "Terminal/Chat:"
 translate TerminalChat English = "Terminal/Chat:"

@@ -187,10 +187,10 @@ clean:
 
 runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
-	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer test +RTS -N -RTS
+	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer moderator community +RTS -N -RTS
 
 runServer: nixBuild stageStaticAssets makeSampleMap stageSamples nixStageClient nixStageServer
-	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer test +RTS -N -RTS
+	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer moderator community +RTS -N -RTS
 
 selfCertificates:
 	openssl genrsa -out privkey.pem 2048

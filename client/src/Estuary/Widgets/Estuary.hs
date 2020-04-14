@@ -50,6 +50,9 @@ import Estuary.Widgets.Footer
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
+import Estuary.Widgets.Terminal
+import Estuary.Widgets.Generic
+import qualified Estuary.Types.Terminal as Terminal
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -79,12 +82,18 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   let ensembleCDyn = fmap ensembleC ctx
 
-  -- three GUI components: header, main (navigation), footer
+  -- four GUI components: header, main (navigation), terminal, footer
   headerChange <- header ctx
   (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
-  command <- footer ctx renderInfo deltasDown hints
-  let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
-  let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
+  let terminalShortcut = ffilter (elem ToggleTerminal) hints
+  let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
+  terminalVisible <- toggle False terminalEvent
+  command <- hideableWidget' terminalVisible $ do
+    terminalWidget ctx deltasDown hints
+  terminalButton <- footer ctx renderInfo
+  let commandEnsembleRequests = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
+  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
+  let commandRequests = fmapMaybe commandToRequest command
 
   -- map from EnsembleRequests (eg. edits) and Commands (ie. from the terminal) to
 
@@ -111,7 +120,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
   let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
   let requests' = fmap (:[]) $ requests
-  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests']
+  let requests'' = fmap (:[]) $ commandRequests
+  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
 
   liftIO $ forkRenderThreads irc ctxM glCtx riM
   return ()
@@ -214,3 +224,8 @@ changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref) newStyle
 foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: Text -> IO ()
+
+commandToRequest :: Terminal.Command -> Maybe Request
+commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
+commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
+commandToRequest _ = Nothing

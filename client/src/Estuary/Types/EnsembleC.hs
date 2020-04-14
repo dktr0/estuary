@@ -132,15 +132,17 @@ responseToStateChange :: Response -> EnsembleC -> EnsembleC
 responseToStateChange (JoinedEnsemble eName uName) es = joinEnsembleC eName uName es
 responseToStateChange _ es = es
 
-commandToRequest :: EnsembleC -> Terminal.Command -> Maybe EnsembleRequest
-commandToRequest es (Terminal.PublishView x) = Just (WriteView x (activeView es))
-commandToRequest es (Terminal.Chat x) = Just (WriteChat x)
-commandToRequest _ _ = Nothing
+commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe EnsembleRequest
+commandToEnsembleRequest es (Terminal.PublishView x) = Just (WriteView x (activeView es))
+commandToEnsembleRequest es (Terminal.Chat x) = Just (WriteChat x)
+commandToEnsembleRequest _ _ = Nothing
 
-responseToMessage :: EnsembleResponse -> Maybe Text
-responseToMessage (ChatRcvd c) = Just $ showChatMessage c
-responseToMessage (ParticipantJoins n _) = Just $ n <> " has joined the ensemble"
-responseToMessage (ParticipantLeaves n) = Just $ n <> " has left the ensemble"
+responseToMessage :: Response -> Maybe Text
+responseToMessage (ResponseError e) = Just $ "error: " <> e
+responseToMessage (ResponseOK m) = Just m
+responseToMessage (EnsembleResponse (ChatRcvd c)) = Just $ showChatMessage c
+responseToMessage (EnsembleResponse (ParticipantJoins n _)) = Just $ n <> " has joined the ensemble"
+responseToMessage (EnsembleResponse (ParticipantLeaves n)) = Just $ n <> " has left the ensemble"
 -- the cases below are for debugging only and can be commented out when not debugging:
 -- responseToMessage (TempoRcvd _) = Just $ "received new tempo"
 -- responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showtl n

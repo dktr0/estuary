@@ -9,20 +9,23 @@ import Text.Parsec.Text
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Control.Monad.Identity (Identity)
 
+import Estuary.Types.Name
 import Estuary.Types.View
 import Estuary.Types.View.Parser
 
 data Command =
   LocalView View | -- change the active view to a local view that is not shared/stored anywhere
-  PresetView Text | -- make the current active view a named preset of current ensemble or Estuary itself
-  PublishView Text | -- take the current local view and publish it with the specified name
+  PresetView Name | -- make the current active view a named preset of current ensemble or Estuary itself
+  PublishView Name | -- take the current local view and publish it with the specified name
   ActiveView | -- display name of active view if it is standard/published, otherwise report that it is a local view
   ListViews | -- display the names of all available standard/published views
   DumpView | -- display the definition of the current view, regardless of whether standard/published or local
   Chat Text | -- send a chat message
   StartStreaming | -- start RTP streaming of Estuary audio
   StreamId | -- display the id assigned to RTP streaming of Estuary audio
-  Delay Double -- delay estuary's audio output by the specified time in seconds
+  Delay Double | -- delay estuary's audio output by the specified time in seconds
+  DeleteThisEnsemble Password | -- delete the current ensemble from the server (with host password)
+  DeleteEnsemble Name Password -- delete the ensemble specified by first argument from the server (with moderator password)
   deriving (Show,Eq)
 
 parseCommand :: Text -> Either ParseError Command
@@ -45,7 +48,9 @@ terminalCommand = symbol "!" >> choice [
   reserved "dumpview" >> return DumpView,
   reserved "startstreaming" >> return StartStreaming,
   reserved "streamid" >> return StreamId,
-  (reserved "delay" >> return Delay) <*> double
+  (reserved "delay" >> return Delay) <*> double,
+  (reserved "deletethisensemble" >> return DeleteThisEnsemble) <*> nameOrPassword,
+  (reserved "deleteensemble" >> return DeleteEnsemble) <*> nameOrPassword <*> nameOrPassword
   ]
 
 identifierText :: Parser Text
@@ -72,7 +77,8 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
     "localview","presetview","publishview","activeview","listviews",
-    "dumpview","startstreaming","streamid"
+    "dumpview","startstreaming","streamid","delay","deletethisensemble",
+    "deleteensemble"
     ],
   P.reservedOpNames = [],
   P.caseSensitive = False

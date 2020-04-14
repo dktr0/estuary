@@ -1,13 +1,13 @@
 name: estuary
 version: '0.0.0.1'
-synopsis: live coding symbiont
+synopsis: Platform for collaboration and learning through live coding
 description: Please see README.md
 category: Web
-author: David Ogborn, Jamie Beverley, Luis Navarro del Angel, Spencer Park, Jessica Rodriguez and others
+author: David Ogborn and contributors
 maintainer: ogbornd@mcmaster.ca
-copyright: 2015-19 David Ogborn and others
+copyright: 2015-20 David Ogborn and contributors
 license: GPL-3
-homepage: http://github.com/d0kt0r0/estuary/blob/master/README.md
+homepage: http://github.com/dktr0/estuary/blob/master/README.md
 
 # Our build is a Simple build with a preTest hook for running tests with
 # puppeteer.
