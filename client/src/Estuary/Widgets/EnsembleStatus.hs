@@ -89,7 +89,7 @@ location' p = f (location p)
 
 participantFPSWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantFPSWidget name part = do
-  a <- holdUniqDyn $ fmap (showt . animationLoad) part
+  a <- holdUniqDyn $ fmap (showt . animationFPS) part
   dynText $ a <> (constDyn "FPS")
 
 participantLatencyWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()

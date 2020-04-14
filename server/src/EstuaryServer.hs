@@ -192,10 +192,11 @@ processRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHan
 
 processRequest db ss ws cHandle ctvar (BrowserInfo t) = atomically $ modifyTVar ctvar $ \c -> c { browserInfo = t }
 
-processRequest db ss ws cHandle ctvar (ClientInfo pingTime load animationLoad latency) = do
+processRequest db ss ws cHandle ctvar (ClientInfo load animationFPS animationLoad latency pingTime) = do
   (n,c) <- atomically $ do
     modifyTVar ctvar $ \c -> c {
       clientMainLoad = load,
+      clientAnimationFPS = animationFPS,
       clientAnimationLoad = animationLoad,
       clientLatency = latency
       }

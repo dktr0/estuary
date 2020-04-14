@@ -15,7 +15,7 @@ import Estuary.Types.Definition
 
 data Request =
   BrowserInfo Text | -- text is browser userAgent field, issued at client launch (by alternateWebSocket)
-  ClientInfo UTCTime Int Int NominalDiffTime | -- pingTime load animationLoad serverLatency, issued every 5s (by alternateWebSocket)
+  ClientInfo Int Int Int NominalDiffTime UTCTime | -- load animationFPS animationLoad serverLatency pingTime, issued every 5s (by alternateWebSocket)
   GetEnsembleList | -- issued when client enters Lobby page
   JoinEnsemble Text Text Text Text | -- ensemble username location password (username, location, and password can be "")
   EnsembleRequest EnsembleRequest | -- see Estuary.Types.EnsembleRequest, request "within" an ensemble
