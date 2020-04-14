@@ -12,6 +12,7 @@ import Data.IntMap.Strict as IntMap
 import Data.Time
 import TextShow
 import Control.Monad
+import Reflex.FunctorMaybe
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
@@ -44,6 +45,10 @@ foreign import javascript safe
 foreign import javascript unsafe
   "$1.muted = true;"
   muteVideo :: CineCer0Video -> IO ()
+
+foreign import javascript unsafe
+  "$1.src = $2; $1.load()"
+  changeVideoSource :: CineCer0Video -> Text -> IO ()
 
 foreign import javascript unsafe
   "$1.videoWidth"
@@ -79,6 +84,12 @@ addVideo j spec = do
   appendVideo x j
   return x
 
+onlyChangedVideoSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
+onlyChangedVideoSources nSpec oSpec
+  | (sampleVideo nSpec /= sampleVideo oSpec) == True = Just nSpec
+  | (sampleVideo nSpec /= sampleVideo oSpec) == False = Nothing
+
+
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
   putStrLn $ show spec
@@ -86,18 +97,28 @@ updateCineCer0State t now spec st = do
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
   divHeight <- offsetHeight $ videoDiv st
-  -- add or delete videos
+  -- add videos
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
-  let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
+  let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+  -- change videos
+  let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
+  let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
+  --changedVideos <- mapM (\x -> changeVideoSource $ sampleVideo x) toChange
+
+  --mapM :: Monad m => (a -> m b) -> t a -> m (t b)
+  --changeVideoSource :: CineCer0Video -> Text -> IO ()
+
+  -- delete VideoSpecs
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
+  -- update videoSpecs
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
   sequence $ intersectionWith (updateContinuingVideo t eTime now (divWidth,divHeight)) vSpecs continuingVideos
-  return $ st { videos = continuingVideos }
+  return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs } --
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
 updateContinuingVideo t eTime rTime (sw,sh) s v = do
@@ -144,7 +165,8 @@ emptyCineCer0State j = CineCer0State {
 
 data CineCer0State = CineCer0State {
   videoDiv :: HTMLDivElement,
-  videos :: IntMap CineCer0Video
+  videos :: IntMap CineCer0Video,
+  previousVideoSpecs :: IntMap VideoSpec
   }
 
 foreign import javascript unsafe

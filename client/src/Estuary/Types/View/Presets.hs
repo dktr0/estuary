@@ -266,6 +266,12 @@ presetViews = fromList [
          BorderDiv (Views [LabelView 10,TextView 11 0])
          ]),
 
+      ("memorias2",GridView 3 1 [
+         BorderDiv (Views [LabelView 0,TextView 1 0]),
+         BorderDiv (Views [LabelView 2,TextView 3 0]),
+         BorderDiv (Views [LabelView 4,TextView 5 0])
+         ]),
+
      ("supercontinent",GridView 2 5 [
          (Views [LabelView 0,TextView 1 0]),
          (Views [LabelView 2,TextView 3 0]),

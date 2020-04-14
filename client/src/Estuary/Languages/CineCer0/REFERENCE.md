@@ -24,7 +24,7 @@ setSaturate [s] $ -- 1 = natural video saturation (1++ = more, 1-- =less) <br />
 
 ## ramp
 
-(ramp [x] [y] [z]) -- in which x =, y =, z= <br />
+(ramp [durVal] [startVal] [endVal]) -- in which x =, y =, z= <br />
 
 The following can be use with the ramp function: <br />
 width (ramp x y z) $ | height (ramp x y z) $ | posX (ramp x y z) $ | posY (ramp x y z) $ | opacity (ramp x y z) $ | blur (ramp x y z) $ | brightness (ramp x y z) $ | contrast (ramp x y z) $ | grayscale (ramp x y z) $ | saturate (ramp x y z) $ <br />
