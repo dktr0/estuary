@@ -94,6 +94,14 @@ getEnsemble eName = do
   liftSTM $ readTVar etvar
 
 
+getNamedParticipants :: ServerState -> Text -> IO [Participant]
+getNamedParticipants ss eName = do
+  a <- atomically $ readTVar $ clients ss
+  b <- mapM (atomically . readTVar ) a
+  let c = IntMap.filter (\x -> (memberOfEnsemble x == Just eName) && (handleInEnsemble x /= "")) b
+  return $ IntMap.elems $ fmap clientToParticipant c
+
+
 -- returns how many anonymous participants in the ensemble the given ClientHandle is a part of
 -- if the given ClientHandle is not part of an ensemble, returns -1
 countAnonymousParticipantsIO :: ServerState -> TVar Client -> IO Int
@@ -222,20 +230,27 @@ joinEnsemble db cHandle ctvar eName uName loc pwd = do
   self <- liftSTM $ readTVar ctvar
   ss <- ask
   return $ do
+
     -- send responses to this client indicating successful join, and ensemble tempo, defs and views
     let respond = sendClient db cHandle self
     respond $ JoinedEnsemble eName uName
     respond $ EnsembleResponse $ TempoRcvd t
     mapM_ respond $ fmap EnsembleResponse $ IntMap.mapWithKey ZoneRcvd zs
-    mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd $ vs
-    -- TODO: send new participant information about existing participants (they'll get *some* info on updates, anyway)
-    -- send information about new participant to all clients in this ensemble
-    let respondEnsemble = sendEnsemble db ss cHandle eName
+    mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd vs
+
+    -- send new participant information about existing participants
+    ps <- getNamedParticipants ss eName
+    mapM_ respond $ fmap (EnsembleResponse . ParticipantUpdate) ps
+    n <- countAnonymousParticipantsIO ss ctvar
+    respond  $ EnsembleResponse $ AnonymousParticipants n
+
+    -- send information about new participant to all of the other clients in this ensemble
+    let respondEnsemble = sendEnsembleNoOrigin db ss cHandle eName
     case uName of
-      "" -> respondEnsemble $ EnsembleResponse $ ParticipantJoins uName (clientToParticipant self)
-      otherwise -> do
+      "" -> do
         n <- countAnonymousParticipantsIO ss ctvar
         respondEnsemble $ EnsembleResponse $ AnonymousParticipants n
+      _ -> respondEnsemble $ EnsembleResponse $ ParticipantJoins (clientToParticipant self)
 
 
 leaveEnsemble :: SQLite.Connection -> TVar Client -> Transaction (IO ())
