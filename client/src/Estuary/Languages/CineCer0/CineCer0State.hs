@@ -86,8 +86,8 @@ addVideo j spec = do
 
 onlyChangedVideoSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
 onlyChangedVideoSources nSpec oSpec
-  | (sampleVideo nSpec /= sampleVideo oSpec) == True = Just nSpec
-  | (sampleVideo nSpec /= sampleVideo oSpec) == False = Nothing
+  | (sampleVideo nSpec /= sampleVideo oSpec) = Just nSpec
+  | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
 
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
@@ -105,10 +105,6 @@ updateCineCer0State t now spec st = do
   let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
   let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
   --changedVideos <- mapM (\x -> changeVideoSource $ sampleVideo x) toChange
-
-  --mapM :: Monad m => (a -> m b) -> t a -> m (t b)
-  --changeVideoSource :: CineCer0Video -> Text -> IO ()
-
   -- delete VideoSpecs
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video

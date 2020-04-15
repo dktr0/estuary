@@ -27,10 +27,6 @@ data VideoSpec = VideoSpec {
 instance Show VideoSpec where
   show s = show $ sampleVideo s
 
-instance Eq VideoSpec where
-  (/=) sampleVideo s = True
-  (==) sampleVideo s = False
-
 emptyVideoSpec :: VideoSpec
 emptyVideoSpec = VideoSpec {
   sampleVideo = "",
