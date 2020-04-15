@@ -5,6 +5,8 @@ module Estuary.Widgets.Footer where
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Data.Text (Text)
+import Data.Map.Strict
+import Data.Bool
 import qualified Data.Text as T
 import TextShow
 
@@ -13,15 +15,14 @@ import Estuary.Types.RenderInfo
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.Hint
-import qualified Estuary.Types.Terminal as Terminal
 import qualified Estuary.Types.Term as Term
-import Estuary.Widgets.Terminal
-import Estuary.Reflex.Utility (translateDyn)
+import Estuary.Widgets.Generic
+import Estuary.Reflex.Utility (translateDyn,dynButton)
 
 
-footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo
-  -> Event t [Response] -> Event t [Hint] -> m (Event t Terminal.Command)
-footer ctx renderInfo deltasDown hints = divClass "footer" $ do
+footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ())
+footer ctx renderInfo = divClass "footer" $ do
+  terminalButton <- el "div" $ dynButton ">_"
   divClass "peak primary-color code-font" $ do
     dynText =<< holdUniqDyn (fmap formatServerInfo ctx)
     text ", "
@@ -33,7 +34,7 @@ footer ctx renderInfo deltasDown hints = divClass "footer" $ do
     text "FPS ("
     dynText =<< holdUniqDyn (fmap (showt . animationLoad) renderInfo)
     text "ms)"
-  terminalWidget ctx deltasDown hints
+  return terminalButton
 
 formatServerInfo :: Context -> Text
 formatServerInfo c = showt cc <> " connections, latency " <> showt l <> "ms"

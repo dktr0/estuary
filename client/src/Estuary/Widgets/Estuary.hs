@@ -5,7 +5,9 @@ module Estuary.Widgets.Estuary where
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response)
+import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault)
+import Reflex.Dom.Contrib.KeyEvent
+import Reflex.Dom.Old
 import Data.Time
 import Data.Map
 import Data.Maybe
@@ -15,6 +17,7 @@ import Control.Concurrent.MVar
 import GHCJS.Types
 import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..),HTMLDivElement(..))
 import GHCJS.Marshal.Pure
+import GHCJS.DOM.EventM
 import Data.Functor (void)
 import Data.Text (Text)
 import Data.Bool
@@ -47,10 +50,27 @@ import Estuary.Widgets.Footer
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
+import Estuary.Widgets.Terminal
+import Estuary.Widgets.Generic
+import qualified Estuary.Types.Terminal as Terminal
 
+keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
+keyboardHintsCatcher irc ctxM riM = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget irc ctxM riM keyboardHints
+  let e = _el_element theElement
+  e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
+    y <- getKeyEvent
+    if (isJust $ keyEventToHint y) then (preventDefault >> return (keyEventToHint y)) else return Nothing
+  let e'' = fmapMaybe id e'
+  let keyboardHints = fmap (:[]) $ e''
+  return ()
 
-estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
-estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
+keyEventToHint :: KeyEvent -> Maybe Hint
+keyEventToHint x | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 24) = Just ToggleTerminal
+keyEventToHint _ = Nothing
+
+estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
+estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   glCtx <- canvasWidget ctxM ctx -- global canvas shared with render threads through Context MVar, this needs to be first in this action
   iCtx <- liftIO $ readMVar ctxM
@@ -62,12 +82,18 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
 
   let ensembleCDyn = fmap ensembleC ctx
 
-  -- three GUI components: header, main (navigation), footer
+  -- four GUI components: header, main (navigation), terminal, footer
   headerChange <- header ctx
   (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
-  command <- footer ctx renderInfo deltasDown hints
-  let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
-  let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
+  let terminalShortcut = ffilter (elem ToggleTerminal) hints
+  let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
+  terminalVisible <- toggle False terminalEvent
+  command <- hideableWidget' terminalVisible $ do
+    terminalWidget ctx deltasDown hints
+  terminalButton <- footer ctx renderInfo
+  let commandEnsembleRequests = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
+  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
+  let commandRequests = fmapMaybe commandToRequest command
 
   -- map from EnsembleRequests (eg. edits) and Commands (ie. from the terminal) to
 
@@ -84,7 +110,7 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint] -- Event t [Hint]
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (webDirt irc) hints
@@ -94,7 +120,8 @@ estuaryWidget irc ctxM riM = divClass "estuary" $ mdo
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
   let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
   let requests' = fmap (:[]) $ requests
-  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests']
+  let requests'' = fmap (:[]) $ commandRequests
+  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
 
   liftIO $ forkRenderThreads irc ctxM glCtx riM
   return ()
@@ -105,7 +132,7 @@ hintsToEnsembleRequests = catMaybes . fmap f
     f (ZoneHint n d) = Just (WriteZone n d)
     f _ = Nothing
 
-hintsToResponses :: [Hint] -> [Response]
+hintsToResponses :: [Hint] -> [Estuary.Types.Response.Response]
 hintsToResponses = catMaybes . fmap f
   where
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
@@ -197,3 +224,8 @@ changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref) newStyle
 foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: Text -> IO ()
+
+commandToRequest :: Terminal.Command -> Maybe Request
+commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
+commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
+commandToRequest _ = Nothing

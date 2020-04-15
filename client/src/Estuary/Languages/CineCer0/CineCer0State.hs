@@ -50,6 +50,11 @@ foreign import javascript unsafe
   "$1.src = $2; $1.load()"
   changeVideoSource :: CineCer0Video -> Text -> IO ()
 
+changeVideoSource' :: CineCer0Video -> Text -> IO ()
+changeVideoSource' cv t = do
+  T.putStrLn $ "changing to " <> t
+  changeVideoSource cv t
+
 foreign import javascript unsafe
   "$1.videoWidth"
   videoWidth :: CineCer0Video -> IO Double
@@ -101,10 +106,13 @@ updateCineCer0State t now spec st = do
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+
   -- change videos
   let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
   let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
-  --changedVideos <- mapM (\x -> changeVideoSource $ sampleVideo x) toChange
+  let toChange' = intersectionWith (\a b -> (a,b)) toChange $ videos st -- IntMap (VideoSpec,CineCer0Video)
+  mapM_ (\(x,cv) -> changeVideoSource' cv $ T.pack (sampleVideo x)) toChange'
+
   -- delete VideoSpecs
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
@@ -156,7 +164,8 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
   videoDiv = j,
-  videos = empty
+  videos = empty,
+  previousVideoSpecs = empty
   }
 
 data CineCer0State = CineCer0State {

@@ -166,32 +166,45 @@ body::-webkit-scrollbar-thumb {
 	left: 0px;
 	top: 0px;
 	border-top: 1px solid;
-	border-bottom: 1px solid;
 	padding-left: 15px;
 	padding-right: 15px;
 	overflow:hidden;
+	overflow-y: auto;
+}
+
+.page::-webkit-scrollbar  {
+    width: 10px;
+    height: 10px;
+}
+
+.page::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.page::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.page::-webkit-scrollbar-corner{
+	background-color: transparent;
 }
 
 .footer{
 	flex:none;
-/* 	flex-grow:0;
-	flex-shrink:1; */
 	display:flex;
-	flex-direction: row-reverse;
 	border: none;
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+  justify-content: space-between;
 }
-
-
 
 .btn {
 	cursor: pointer;
 }
-
-
 
 /* source  */
 .peak{
@@ -341,7 +354,7 @@ body::-webkit-scrollbar-thumb {
 /*modifies the chat messages (source)*/
 .chatMessageContainer {
 	overflow: auto;
-	height: 1em;
+	height: 7em;
 }
 
 .chatMessage {
@@ -836,7 +849,7 @@ table, tr, td {border: none;}
 	flex: 1 1 auto;
 	padding-left: 0.7em;
 	overflow:hidden;
-
+  border-top: 1px solid;
 }
 
 .terminalHeader {
@@ -853,6 +866,10 @@ table, tr, td {border: none;}
 .terminalInput input {
 	border:none;
 	background-color: transparent;
+}
+
+.terminalHidden {
+  display: none;
 }
 
 .joinButton {
@@ -1047,70 +1064,73 @@ display: inline-flex;
 /* ///////////status Widget/////////// */
 
 
-.ensembleStatusView {
+.tableContainer {
   overflow: hidden;
   overflow-y: auto;
+  border: 1px solid var(--primary-color);
   border-radius: 5px;
-  box-shadow: 0px 0.25px 4px 0.025px;
+  margin-bottom: 0.5%;
 }
 
-.ensembleStatusView::-webkit-scrollbar  {
+.tableContainer::-webkit-scrollbar  {
     width: 1%;
     height: 0px;
 }
 
-.ensembleStatusView::-webkit-scrollbar-track {
+.tableContainer::-webkit-scrollbar-track {
   box-shadow: inset 0 0 5px var(--primary-color);
   border-radius: 10px;
 }
 
-.ensembleStatusView::-webkit-scrollbar-thumb {
-  background: var(--primary-color);;
+.tableContainer::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
   border-radius: 10px;
 }
 
-.ensembleStatusView::-webkit-scrollbar-corner{
+.tableContainer::-webkit-scrollbar-corner{
 	background-color: transparent;
-}
-
-
-
-
-
-.statusTableWrapper {
-	display: flex;
 }
 
 .ensemble-name {
 	text-align:center;
 	padding: 0.125em;
-	box-shadow: 0px 1px 3px 0px;
+	border: 1px solid var(--primary-color);
+	border-radius: 5px;
 }
 
 
-.statusElementWrapper{
-	display:block;
-	padding: 0.125em;
-	box-shadow: 0px 1px 3px 0px;
+.tableContainer table {
+  table-layout: auto;
+  width: 100%;
+}
+
+.tableContainer tr {
+
+}
+
+.tableContainer table,  td {
 	width: 100%;
+    border-bottom: 1px solid var(--primary-color);
+    border-collapse: collapse;
 }
 
-.statusElementName {
-	text-align:center;
-	padding: 0.125em;
-	box-shadow: 0px 0px 3px 0px;
+.statusWidgetNameAndLocation{
+		margin-bottom: 1%;
+		width: auto;
 }
 
-.statusElement {
-	margin: 0.125em
+
+.statusWidgetStatusInput input {
+	color: var(--primary-color);
+	background-color: transparent;
+	border: none;
+	width: 99%;
+/* 	pointer-events: none; */
 }
 
-.statusInputWidget {
-    background: var(--background-color);
-    color: var( --primary-color);
-    width: 100%;
-    border: none;
-   	padding: 0.125em;
+
+.statusWidgetAnonymousPart {
+	text-align: center;
 }
 
 /* Tooltip classes */

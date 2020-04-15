@@ -18,7 +18,6 @@ type ClientHandle = Int
 data Client = Client {
   handle :: ClientHandle,
   connection :: Connection,
-  authenticated :: Bool,
   browserInfo :: Text,
   memberOfEnsemble :: Maybe Text,
   handleInEnsemble :: Text,
@@ -27,6 +26,7 @@ data Client = Client {
   lastEditInEnsemble :: UTCTime,
   authenticatedInEnsemble :: Bool,
   clientMainLoad :: Int,
+  clientAnimationFPS :: Int,
   clientAnimationLoad :: Int,
   clientLatency :: NominalDiffTime
 }
@@ -35,7 +35,6 @@ newClient :: UTCTime -> ClientHandle -> Connection -> Client
 newClient t h c = Client {
   handle = h,
   connection = c,
-  authenticated = False,
   browserInfo = "",
   memberOfEnsemble = Nothing,
   handleInEnsemble = "",
@@ -44,6 +43,7 @@ newClient t h c = Client {
   lastEditInEnsemble = t,
   authenticatedInEnsemble = False,
   clientMainLoad = 0,
+  clientAnimationFPS = 0,
   clientAnimationLoad = 0,
   clientLatency = 0
 }
@@ -55,6 +55,7 @@ clientToParticipant c = Participant {
   status = statusInEnsemble c,
   lastEdit = lastEditInEnsemble c,
   mainLoad = clientMainLoad c,
+  animationFPS = clientAnimationFPS c,
   animationLoad = clientAnimationLoad c,
   latency = clientLatency c,
   browser = browserInfo c

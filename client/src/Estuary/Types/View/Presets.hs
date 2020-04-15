@@ -82,6 +82,39 @@ presetViews = fromList [
       BorderDiv (Views [LabelView 17,TextView 18 0])
       ]),
 
+      ("twobysix",  GridView 2 6 [
+      BorderDiv (Views [LabelView 0,TextView 1 0]),
+      BorderDiv (Views [LabelView 2,TextView 3 0]),
+      BorderDiv (Views [LabelView 4,TextView 5 0]),
+      BorderDiv (Views [LabelView 6,TextView 7 0]),
+      BorderDiv (Views [LabelView 8,TextView 9 0]),
+      BorderDiv (Views [LabelView 10,TextView 11 0]),
+      BorderDiv (Views [LabelView 12,TextView 13 0]),
+      BorderDiv (Views [LabelView 14,TextView 15 0]),
+      BorderDiv (Views [LabelView 15,TextView 16 0]),
+      BorderDiv (Views [LabelView 17,TextView 18 0]),
+      BorderDiv (Views [LabelView 19,TextView 20 0]),
+      BorderDiv (Views [LabelView 21,TextView 22 0])
+      ]),
+
+      ("threebyfive",  GridView 3 5 [
+      BorderDiv (Views [LabelView 0,TextView 1 0]),
+      BorderDiv (Views [LabelView 2,TextView 3 0]),
+      BorderDiv (Views [LabelView 4,TextView 5 0]),
+      BorderDiv (Views [LabelView 6,TextView 7 0]),
+      BorderDiv (Views [LabelView 8,TextView 9 0]),
+      BorderDiv (Views [LabelView 10,TextView 11 0]),
+      BorderDiv (Views [LabelView 12,TextView 13 0]),
+      BorderDiv (Views [LabelView 14,TextView 15 0]),
+      BorderDiv (Views [LabelView 15,TextView 16 0]),
+      BorderDiv (Views [LabelView 17,TextView 18 0]),
+      BorderDiv (Views [LabelView 19,TextView 20 0]),
+      BorderDiv (Views [LabelView 21,TextView 22 0]),
+      BorderDiv (Views [LabelView 22,TextView 23 0]),
+      BorderDiv (Views [LabelView 24,TextView 25 0]),
+      BorderDiv (Views [LabelView 25,TextView 26 0])
+      ]),
+
       ("threebysix", GridView 3 6  [
       BorderDiv (Views [LabelView 0,TextView 1 0]),
       BorderDiv (Views [LabelView 2,TextView 3 0]),
@@ -101,6 +134,29 @@ presetViews = fromList [
       BorderDiv (Views [LabelView 30,TextView 31 0]),
       BorderDiv (Views [LabelView 32,TextView 33 0]),
       BorderDiv (Views [LabelView 34,TextView 35 0])
+      ]),
+
+      ("threebyseven", GridView 3 7  [
+      BorderDiv (Views [LabelView 0,TextView 1 0]),
+      BorderDiv (Views [LabelView 2,TextView 3 0]),
+      BorderDiv (Views [LabelView 4,TextView 5 0]),
+      BorderDiv (Views [LabelView 6,TextView 7 0]),
+      BorderDiv (Views [LabelView 8,TextView 9 0]),
+      BorderDiv (Views [LabelView 10,TextView 11 0]),
+      BorderDiv (Views [LabelView 12,TextView 13 0]),
+      BorderDiv (Views [LabelView 14,TextView 15 0]),
+      BorderDiv (Views [LabelView 16,TextView 17 0]),
+      BorderDiv (Views [LabelView 18,TextView 19 0]),
+      BorderDiv (Views [LabelView 20,TextView 21 0]),
+      BorderDiv (Views [LabelView 22,TextView 23 0]),
+      BorderDiv (Views [LabelView 24,TextView 25 0]),
+      BorderDiv (Views [LabelView 26,TextView 27 0]),
+      BorderDiv (Views [LabelView 28,TextView 29 0]),
+      BorderDiv (Views [LabelView 30,TextView 31 0]),
+      BorderDiv (Views [LabelView 32,TextView 33 0]),
+      BorderDiv (Views [LabelView 34,TextView 35 0]),
+      BorderDiv (Views [LabelView 35,TextView 36 0]),
+      BorderDiv (Views [LabelView 37,TextView 38 0])
       ]),
 
       ("fourbyseven", GridView 4 7  [
@@ -226,6 +282,6 @@ presetViews = fromList [
          (Views [LabelView 12,TextView 13 0]),
          (Views [LabelView 14,TextView 15 0]),
          (Views [LabelView 16,TextView 17 0]),
-          ViewDiv "ensembleStatusView" EnsembleStatusView
+         (Views [TempoView,EnsembleStatusView])
         ])
       ]

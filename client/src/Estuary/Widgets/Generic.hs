@@ -331,11 +331,15 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
   d <- button' "{}" MakeLayer
   return $ leftmost [b,c,d]
 
+-- Used heavily in Help section
+-- Contains the child in a hideable div with a class
 hideableWidget :: MonadWidget t m => Dynamic t Bool -> Text -> m a -> m a
 hideableWidget b c m = do
   let attrs = fmap (bool (fromList [("hidden","true"),("class",c)]) (singleton "class" c)) b
   elDynAttr "div" attrs m
 
+-- Used for the terminal
+-- Contains the child in a hideable div with no class
 hideableWidget' :: MonadWidget t m => Dynamic t Bool -> m a -> m a
 hideableWidget' b m = do
   let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
