@@ -43,7 +43,7 @@ ndt = fromRational <$> rationalOrInteger
 literalVideoSpec :: H VideoSpec
 literalVideoSpec =
   fmap stringToVideoSpec string <|>
-  return emptyVideoSpec -- assuming emptyVideoSpec doesn't take an argument...
+  emptyVideoSpec <$ reserved ""
 
 -- //////////////
 
@@ -59,7 +59,7 @@ rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
 rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
-ndt_rat_rat_sigRat = reserved "ramp" >> return ramp
+ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
 -- //////////////
 
@@ -90,14 +90,14 @@ sigRat_vs_vs =
   shiftGrayscale <$ reserved "grayscale" <|>
   setSaturate <$ reserved "setSaturate" <|>
   shiftSaturate <$ reserved "saturate" <|>
+  setSize <$ reserved "setSize" <|>
+  shiftSize <$ reserved "size" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
 sigRat_sigRat_vs_vs =
   setCoord <$ reserved "setCoord" <|>
-  shiftCoord <$ reserved "coord" <|>
-  setSize <$ reserved "setSize" <|>
-  shiftSize <$ reserved "size"
+  shiftCoord <$ reserved "coord"
 
 rat_vs_vs :: H (Rational -> VideoSpec -> VideoSpec)
 rat_vs_vs =
