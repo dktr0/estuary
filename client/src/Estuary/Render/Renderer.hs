@@ -312,10 +312,7 @@ renderBaseProgramChanged irc c z (Left e) = setZoneError z (T.pack $ show e)
 
 renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
   s <- get
-  t1 <- liftIO $ getCurrentTime
   parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
-  t2 <- liftIO $ getCurrentTime
-  liftIO $ T.putStrLn $ "tidalParser: " <> " " <> showt (round (diffUTCTime t2 t1 * 1000) :: Int) <> " ms"
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult

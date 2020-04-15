@@ -2,8 +2,8 @@
   reflexPlatformVersion ? "9e306f72ed0dbcdccce30a4ba0eb37aa03cf91e3",
   musl ? false,     # build with musl instead of glibc
   linkType ? null   # executable linking mode, null will build the closest to unconfigured for the current platform.
-                    # 'static' will completely statcially link everything.
-                    # 'static-libs' will statically link the haskell libs and dynamically link system. linux default.
+                    # 'static' will completely statically link everything.
+                    # 'static-libs' will statically link the Haskell libs and dynamically link system. linux default.
                     # 'dynamic' will dynamically link everything. darwin default.
 } @ args:
 
@@ -184,9 +184,9 @@ in
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null else doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
-          url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
-          rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
+          url = "https://github.com/TidalCycles/Tidal.git";
+          sha256 = "0ja9i8hrsm1dpa1xp884qppg19df52npcxiqjxkx6lxf8spi5mkk";
+          rev = "2049766f34e200180c385486cce4cf45589ea1b2";
           fetchSubmodules = true;
           }) "" {});
 
@@ -194,9 +194,9 @@ in
 #            "tidal-parse" ../tidal/tidal-parse "" {});
             "tidal-parse"
             ( pkgs.fetchgit {
-            url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
-            rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
+            url = "https://github.com/TidalCycles/Tidal.git";
+            sha256 = "0ja9i8hrsm1dpa1xp884qppg19df52npcxiqjxkx6lxf8spi5mkk";
+            rev = "2049766f34e200180c385486cce4cf45589ea1b2";
             fetchSubmodules = true;
               })
             "--subpath tidal-parse" {});
