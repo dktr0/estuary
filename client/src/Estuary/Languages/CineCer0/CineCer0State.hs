@@ -52,7 +52,7 @@ foreign import javascript unsafe
 
 changeVideoSource' :: CineCer0Video -> Text -> IO ()
 changeVideoSource' cv t = do
-  T.putStrLn $ "changing to " <> t
+  --T.putStrLn $ "changing to " <> t
   changeVideoSource cv t
 
 foreign import javascript unsafe
@@ -82,7 +82,7 @@ foreign import javascript unsafe
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
-  putStrLn $ "addVideo " ++ (sampleVideo spec)
+  --putStrLn $ "addVideo " ++ (sampleVideo spec)
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
   muteVideo x
@@ -97,7 +97,7 @@ onlyChangedVideoSources nSpec oSpec
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
-  putStrLn $ show spec
+  --putStrLn $ show spec
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
@@ -106,13 +106,11 @@ updateCineCer0State t now spec st = do
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
-
   -- change videos
   let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
   let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
   let toChange' = intersectionWith (\a b -> (a,b)) toChange $ videos st -- IntMap (VideoSpec,CineCer0Video)
   mapM_ (\(x,cv) -> changeVideoSource' cv $ T.pack (sampleVideo x)) toChange'
-
   -- delete VideoSpecs
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
@@ -157,7 +155,7 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let contrast' = contrast s t lengthOfVideo rTime eTime * 100
     let grayscale' = grayscale  s t lengthOfVideo rTime eTime * 100
     let saturate' = saturate  s t lengthOfVideo rTime eTime
-    putStrLn $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
+    return $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
     videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor blur') (floor brightness') (floor contrast') (floor grayscale') (realToFrac saturate')
 
 

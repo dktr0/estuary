@@ -6,12 +6,13 @@ The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows 
 
 "video.extension" --videos play as a string <br />
 "videoURL" --you can add the URL to play videos <br />
+"" --empty state
 
 ## Image
 
 setWidth [w] $ -- 1 = natural video width <br/>
 setHeight [h] $ -- 1 = natural video height <br />
-setSize [w] [h] $ <br />
+setSize [wh] $ <br /> --one parameter will affect both width and heigh proportionally
 setPosX [x] $ -- from left (-1) to right 1 <br />
 setPosY [y] $ -- from bottom (-1) to top 1 <br />
 setCoord [x] [y] $ <br />
