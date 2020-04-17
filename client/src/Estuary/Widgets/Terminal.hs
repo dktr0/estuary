@@ -23,13 +23,12 @@ import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Hint
+import Estuary.Widgets.Editor
 
-
-terminalWidget :: MonadWidget t m => Dynamic t Context ->
-  Event t [Response] -> Event t [Hint] -> m (Event t Terminal.Command)
-terminalWidget ctx deltasDown hints = divClass "terminal" $ mdo
+terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> Editor t m (Event t Terminal.Command)
+terminalWidget deltasDown hints = divClass "terminal" $ mdo
   (inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
-    divClass "webSocketButtons" $ dynText =<< translateDyn Term.TerminalChat ctx
+    divClass "webSocketButtons" $ term Term.TerminalChat >>= dynText
     let resetText = fmap (const "") terminalInput
     let attrs = constDyn $ fromList [("class","primary-color code-font"),("style","width: 100%")]
     inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs

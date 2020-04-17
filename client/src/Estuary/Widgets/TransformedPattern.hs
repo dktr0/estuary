@@ -26,22 +26,19 @@ import Estuary.Widgets.Editor
 
 structureEditor :: MonadWidget t m =>
   Dynamic t TransformedPattern -> Editor t m (Variable t TransformedPattern)
-structureEditor x = reflexWidgetToEditor x topLevelTransformedPatternWidget
+structureEditor x = variableWidget x topLevelTransformedPatternWidget
 
 
-topLevelTransformedPatternWidget :: MonadWidget t m =>
-  TransformedPattern -> -- initial value
-  Event t TransformedPattern -> -- deltas down from elsehwere (must not re-propagate as local user edits!)
-  m (
-    Event t TransformedPattern, -- local user edits up (must not be based on deltas down!)
-    Event t [Hint] -- hints to rendering engine (eg. about imminent need for a specific sample, allowing pre-loading)
-  )
+topLevelTransformedPatternWidget :: MonadWidget t m
+  => TransformedPattern
+  -> Event t TransformedPattern
+  -> Editor t m (Event t TransformedPattern)
 topLevelTransformedPatternWidget i delta = do
-  let updates = fmap midLevelTransformedPatternWidget delta -- *** structure widget is entirely rebuilt with every delta received... no wonder it is slow!
+  let updates = fmap midLevelTransformedPatternWidget delta
   w <- widgetHold (midLevelTransformedPatternWidget i) updates
   let edits = switchPromptlyDyn $ fmap fst w
-  let hs = switchPromptlyDyn $ fmap snd w
-  return (edits,hs)
+  hints $ switchPromptlyDyn $ fmap snd w
+  return edits
 
 
 midLevelTransformedPatternWidget:: MonadWidget t m =>

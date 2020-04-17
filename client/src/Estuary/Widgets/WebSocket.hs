@@ -21,9 +21,9 @@ import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
 
 
-estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
+estuaryWebSocket :: MonadWidget t m => Dynamic t RenderInfo -> Event t [Request] ->
   m (Event t Response, Event t ContextChange)
-estuaryWebSocket ctx rInfo toSend = mdo
+estuaryWebSocket rInfo toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
   userAgent <- liftIO $ getUserAgent

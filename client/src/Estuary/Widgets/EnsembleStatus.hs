@@ -18,37 +18,37 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.Editor
+import qualified Estuary.Types.Term as Term
 
 
 ensembleStatusWidget :: MonadWidget t m => Editor t m (Event t EnsembleRequest)
 ensembleStatusWidget = do
 
   -- extract data about ensemble from the context, filtering out all duplicate events
-  ctx <- askContext
+  ctx <- context
   let ensC = fmap ensembleC ctx
   let ens = fmap ensemble ensC
-  let ensName = fmap ensembleName ens -- Dynamic t Text
+  ensName <- holdUniqDyn $ fmap ensembleName ens -- Dynamic t Text
   let ensParticipants = fmap participants ens -- Dynamic t (Map.Map Text Participant)
-  let status = fmap wsStatus ctx --ensemble status
-  let anonymous = fmap anonymousParticipants ens -- Dynamic t Int
+  anonymous <- holdUniqDyn $ fmap anonymousParticipants ens -- Dynamic t Int
 
-  liftR $ divClass "ensemble-name code-font" $ do
-    text "Ensemble: "
+  divClass "ensemble-name code-font" $ do
+    term Term.Ensemble >>= dynText
+    text ":"
     dynText ensName
 
-  liftR2 (divClass "tableContainer") $ do
-    status <- liftR2 (el "table") $ do
-        liftR $ do
-          -- get indiviual handler and pass it down as a pure value
-          now <- liftIO getCurrentTime -- this time is measured before building the widget
-          evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
-          currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
-          x <- listWithKey ensParticipants (row currentTime)
-          let statusEvent = switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
-          return statusEvent
+  divClass "tableContainer" $ do
+    status <- el "table" $ do
+      -- get individual handler and pass it down as a pure value
+      now <- liftIO getCurrentTime -- this time is measured before building the widget
+      evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
+      currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
+      x <- listWithKey ensParticipants (row currentTime)
+      return $ switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
 
-    liftR $ divClass "statusWidgetAnonymousPart" $ do
-      text "Anonymous Participants: "
+    divClass "statusWidgetAnonymousPart" $ do
+      term Term.AnonymousParticipants >>= dynText
+      text ": "
       dynText $ fmap showt anonymous
 
     return status

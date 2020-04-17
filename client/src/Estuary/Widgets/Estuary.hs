@@ -53,6 +53,7 @@ import Estuary.Render.Renderer
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
+import Estuary.Widgets.Editor
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -76,21 +77,22 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
-  renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  (deltasDown',wsCtxChange) <- estuaryWebSocket ctx renderInfo requestsUp
+  rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
+  (deltasDown',wsCtxChange) <- estuaryWebSocket rInfo requestsUp
   let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
 
   let ensembleCDyn = fmap ensembleC ctx
 
   -- four GUI components: header, main (navigation), terminal, footer
-  headerChange <- header ctx
-  (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
+  (headerChange,_) <- runEditor ctx rInfo header
+  ((requests, ensembleRequestFromPage), hintsFromPage) <- divClass "page ui-font" $ do
+    runEditor ctx rInfo $ navigation deltasDown
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle False terminalEvent
-  command <- hideableWidget' terminalVisible $ do
-    terminalWidget ctx deltasDown hints
-  terminalButton <- footer ctx renderInfo
+  (command,_) <- hideableWidget' terminalVisible $ do
+    runEditor ctx rInfo $ terminalWidget deltasDown hints
+  (terminalButton,_) <- runEditor ctx rInfo footer
   let commandEnsembleRequests = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
   let commandRequests = fmapMaybe commandToRequest command

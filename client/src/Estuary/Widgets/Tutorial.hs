@@ -15,9 +15,10 @@ import Estuary.Widgets.View
 
 runTutorial :: MonadWidget t m => Tutorial -> Event t [EnsembleResponse]
   -> Editor t m (Event t EnsembleRequest)
-runTutorial t responsesDown =  liftR2 (divClass "tutorialContainer") $ do
-  liftR2 (divClass "tutorialTitle code-font") $ translatedText $ tutorialTitle t
-  curPage <- liftR $ mdo
+runTutorial t responsesDown = divClass "tutorialContainer" $ do
+  divClass "tutorialTitle code-font" $ do
+    translatableText (tutorialTitle t) >>= dynText
+  curPage <- mdo
     let nPages = Seq.length $ tutorialPages t
     cp <- holdDyn 0 pageNavEvents
     let prevPage = fmap (\x -> max (x-1) 0) cp
@@ -28,11 +29,12 @@ runTutorial t responsesDown =  liftR2 (divClass "tutorialContainer") $ do
     return cp
   let initialPage = runTutorialPage (index (tutorialPages t) 0) responsesDown
   let builder = fmap (\x -> runTutorialPage (index (tutorialPages t) x) responsesDown) $ updated curPage
-  thePage <- editorHold initialPage builder
+  thePage <- widgetHold initialPage builder
   return $ switchDyn thePage
 
 runTutorialPage :: MonadWidget t m => TutorialPage -> Event t [EnsembleResponse]
   -> Editor t m (Event t EnsembleRequest)
 runTutorialPage p responsesDown = do
-  liftR2 (divClass "tutorialPageTitle code-font") $ translatedText $ tutorialPageTitle p
+  divClass "tutorialPageTitle code-font" $ do
+    translatableText (tutorialPageTitle p) >>= dynText
   viewWidget responsesDown $ tutorialPageView p

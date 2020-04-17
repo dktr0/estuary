@@ -45,38 +45,38 @@ viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTida
 
 viewWidget er (TextView z rows) = do
   whenever <- liftIO $ getCurrentTime
-  ri <- askRenderInfo
+  ri <- renderInfo
   let errorDyn = fmap (IntMap.lookup z . errors) ri
   zoneWidget z (Live (TidalTextNotation MiniTidal,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor rows errorDyn)
 
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
 
-viewWidget er EnsembleStatusView = ensembleStatusWidget 
+viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er TempoView = do
-  ctx <- askContext
-  iCtx <- initialValueOfDyn ctx
+  ctx <- context
+  iCtx <- sample $ current ctx
   let initialTempo = (tempo . ensemble . ensembleC) iCtx
-  tempoDelta <- liftR $ holdDyn initialTempo $ fmapMaybe lastTempoChange er
+  tempoDelta <- holdDyn initialTempo $ fmapMaybe lastTempoChange er
   tempoE <- tempoWidget tempoDelta
   return $ fmap WriteTempo tempoE
 
-viewWidget er (Paragraph t) = liftR2 (divClass "paragraph code-font") $ translatedText t >> return never
+viewWidget er (Paragraph t) = divClass "paragraph code-font" $ translatableText t >> return never
 
 viewWidget er (Example n t) = do
-  b <- liftR $ clickableDiv "example code-font" $ text t
-  bTime <- liftR $ performEvent $ fmap (liftIO . const getCurrentTime) b
+  b <- clickableDiv "example code-font" $ text t
+  bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
   hint $ fmap (\et -> ZoneHint 1 (TextProgram (Live (n,t,et) L3))) bTime
   return never
 
-viewWidget er (ViewDiv c v) = liftR2 (divClass c) $ viewWidget er v
+viewWidget er (ViewDiv c v) = divClass c $ viewWidget er v
 
-viewWidget er (BorderDiv v) = liftR2 (divClass "borderDiv") $ viewWidget er v
+viewWidget er (BorderDiv v) = divClass "borderDiv" $ viewWidget er v
 
-viewWidget er (Views xs) = liftR2 (divClass "views") $ liftM leftmost $ mapM (viewWidget er) xs
+viewWidget er (Views xs) = divClass "views" $ liftM leftmost $ mapM (viewWidget er) xs
 
-viewWidget er (GridView c r vs) = liftR2 viewsContainer $ liftM leftmost $ mapM (\v -> liftR2 (divClass "gridChild") $ viewWidget er v ) vs
+viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> divClass "gridChild" $ viewWidget er v) vs
   where
     viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
     defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
@@ -89,11 +89,11 @@ zoneWidget :: (MonadWidget t m, Eq a)
   -> (Dynamic t a -> Editor t m (Variable t a))
   -> Editor t m (Event t EnsembleRequest)
 zoneWidget z defaultA f g ensResponses anEditorWidget = do
-  ctx <- askContext
-  iCtx <- initialValueOfDyn ctx
+  ctx <- context
+  iCtx <- sample $ current ctx
   let iDef = IntMap.findWithDefault (g defaultA) z $ zones $ ensemble $ ensembleC iCtx
   let iValue = maybe defaultA id $ f iDef
   let deltas = fmapMaybe (join . fmap f . listToMaybe . reverse . justEditsInZone z) ensResponses -- :: Event t a
-  dynUpdates <- liftR $ holdDyn iValue deltas
+  dynUpdates <- holdDyn iValue deltas
   variableFromWidget <- anEditorWidget dynUpdates
   return $ (WriteZone z . g) <$> localEdits variableFromWidget
