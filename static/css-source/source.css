@@ -872,6 +872,11 @@ table, tr, td {border: none;}
   display: none;
 }
 
+.chat {
+  display: inline-block;
+  width: 60%;
+}
+
 .joinButton {
 
 width: fit-content;
@@ -913,6 +918,12 @@ cursor: pointer;
     text-align: center;
     width: fit-content;
 
+}
+
+.ensembleStatus {
+  display: inline-block;
+  width: 40%;
+  vertical-align: top;
 }
 
 /*
