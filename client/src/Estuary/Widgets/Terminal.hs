@@ -55,7 +55,7 @@ terminalWidget deltasDown hints = divClass "terminal" $ mdo
     streamId <- peerProtocolIdReflex pp $ ffilter (== Terminal.StreamId) commands
     return commands
 
-  divClass "views ensembleStatus" $ ensembleStatusWidget
+  divClass "ensembleStatus" $ ensembleStatusWidget
 
   return commands
 
