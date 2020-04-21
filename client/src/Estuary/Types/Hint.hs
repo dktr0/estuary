@@ -14,6 +14,7 @@ data Hint =
   SilenceHint |
   ZoneHint Int Definition |
   ToggleTerminal |
+  ToggleFooter |
   TogglePerformance |
   ToggleHeader
   deriving (Eq,Show)
