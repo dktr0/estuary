@@ -28,6 +28,7 @@ ensembleStatusWidget = do
   ctx <- askContext
   let ensC = fmap ensembleC ctx
   let ens = fmap ensemble ensC
+  let uHandle = fmap userHandle ensC
   let ensName = fmap ensembleName ens -- Dynamic t Text
   let ensParticipants = fmap participants ens -- Dynamic t (Map.Map Text Participant)
   let status = fmap wsStatus ctx --ensemble status
@@ -41,10 +42,11 @@ ensembleStatusWidget = do
     status <- liftR2 (el "table") $ do
         liftR $ do
           -- get indiviual handler and pass it down as a pure value
+          --   let userHandle' = fmap userHandle ensC -- dynamic Text
           now <- liftIO getCurrentTime -- this time is measured before building the widget
           evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
           currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
-          x <- listWithKey ensParticipants (row currentTime)
+          x <- listWithKey ensParticipants (row uHandle currentTime)
           let statusEvent = switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
           return statusEvent
 
@@ -54,11 +56,11 @@ ensembleStatusWidget = do
 
     return status
 
-row ::  MonadWidget t m  => Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
-row t name part = do
+row ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
+row uHandle t name part = do
   row <- el "tr" $ do
     elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
-    status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget name part
+    status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
     elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
     elClass "td" "statusWidgetFPS" $ participantFPSWidget name part
     elClass "td" "statusWidgetLatency" $ participantLatencyWidget name part
@@ -66,16 +68,27 @@ row t name part = do
   return (row)
 
 -- participantStatusWidget :: MonadWidget t m  => Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
-participantStatusWidget :: MonadWidget t m  => Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
--- participantStatusWidget thisUserhandle _ part = do
-participantStatusWidget _ part = do
+participantStatusWidget :: MonadWidget t m  => Dynamic t Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
+participantStatusWidget thisUserhandle _ part = do
   initialStatus <- status <$> sample (current part)
-  let updatedStatus = fmap status (updated part)  --Event t Participant -> Event t Text -- and event that changes the text
+  let updatedStatus = fmap status (updated part)  --Event t Participant -> Event t Text -- an event that changes the text
+  let dynBool = fmap (compareHandles $ thisUserhandle) part   -- constDyn True
+  let dynAttrs = attrs <$> dynBool'
   -- style <- -- dynamic style -- compare their handle in their ensemble and this user, current user's handle is in the initial value context (do this function somewhere else)
-  s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ constDyn ("class" =: "code-font")
-  -- ("style" =: ".avoid-clicks { pointer-events: none;}")
+  s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ dynAttrs
   let writeStatusToServer = fmap (\x -> WriteStatus x) $ _textInput_input s --msg only sent when they press a key
   return writeStatusToServer
+
+compareHandles ::  Dynamic t Text -> Participant -> Bool -- -> Dynamic t Text -> Bool
+compareHandles uHandle part
+  | uHandle == (name part) = True -- here goes the context on
+  | otherwise = False
+
+attrs :: Bool -> Map T.Text T.Text
+attrs b = "style" =: ("pointer-events: " <> pevents b)
+  where
+    pevents True  = "auto"
+    pevents False = "none"
 
 participantNameAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantNameAndLocationWidget name part = do
