@@ -28,9 +28,10 @@ ensembleStatusWidget = do
   ctx <- context
   let ensC = fmap ensembleC ctx
   let ens = fmap ensemble ensC
-  let uHandle = fmap userHandle ensC
+  let uHandle = fmap userHandle ensC -- Dynamic Text
   ensName <- holdUniqDyn $ fmap ensembleName ens -- Dynamic t Text
   let ensParticipants = fmap participants ens -- Dynamic t (Map.Map Text Participant)
+  let status = fmap wsStatus ctx --ensemble status
   anonymous <- holdUniqDyn $ fmap anonymousParticipants ens -- Dynamic t Int
 
   divClass "ensemble-name code-font" $ do
@@ -40,8 +41,6 @@ ensembleStatusWidget = do
 
   divClass "tableContainer" $ do
     status <- el "table" $ do
-      -- get indiviual handler and pass it down as a pure value
-      --   let userHandle' = fmap userHandle ensC -- dynamic Text
       now <- liftIO getCurrentTime -- this time is measured before building the widget
       evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
       currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
@@ -68,20 +67,21 @@ row uHandle t name part = do
 
 -- participantStatusWidget :: MonadWidget t m  => Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
 participantStatusWidget :: MonadWidget t m  => Dynamic t Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
-participantStatusWidget thisUserhandle _ part = do
+participantStatusWidget thisUserHandle _ part = do
   initialStatus <- status <$> sample (current part)
   updatedStatus <- fmap updated $ holdUniqDyn $ fmap status part -- event issued only when status changes
-  let dynBool = fmap (compareHandles $ thisUserhandle) part   -- constDyn True
-  let dynAttrs = attrs <$> dynBool'
-  -- style <- -- dynamic style -- compare their handle in their ensemble and this user, current user's handle is in the initial value context (do this function somewhere else)
+  let dynBool = compareHandles <$> thisUserHandle <*> part
+  let dynAttrs = attrs <$> dynBool
   s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ dynAttrs
   let writeStatusToServer = fmap (\x -> WriteStatus x) $ _textInput_input s --msg only sent when they press a key
   return writeStatusToServer
 
-compareHandles ::  Dynamic t Text -> Participant -> Bool -- -> Dynamic t Text -> Bool
-compareHandles uHandle part
-  | uHandle == (name part) = True -- here goes the context on
-  | otherwise = False
+participantNameAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantNameAndLocationWidget name part = do
+  dynText $ constDyn name <> fmap location' part
+
+compareHandles ::  Text -> Participant -> Bool -- -> Dynamic t Text -> Bool
+compareHandles uHandle part = uHandle == (name part)
 
 attrs :: Bool -> Map T.Text T.Text
 attrs b = "style" =: ("pointer-events: " <> pevents b)
@@ -89,29 +89,32 @@ attrs b = "style" =: ("pointer-events: " <> pevents b)
     pevents True  = "auto"
     pevents False = "none"
 
-participantNameAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantNameAndLocationWidget name part = do
-  x <- holdUniqDyn $ constDyn name <> fmap location' part
-  dynText x
-
 location' :: Participant -> Text
 location' p = f (location p)
   where
     f x | x == "" = x
         | otherwise = "@" <> x
 
+participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantNameWidget name part = text name
+
+participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantLocationWidget name part = dynText $ fmap location part
+
 participantFPSWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantFPSWidget name part = do
-  a <- holdUniqDyn $ fmap (showt . animationFPS) part
+  let a = fmap (showt . animationLoad) part
   dynText $ a <> (constDyn "FPS")
 
 participantLatencyWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantLatencyWidget name part = elClass "div" "" $ do
-  a <- holdUniqDyn $ fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
+  let a = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
   dynText $ a <> (constDyn "ms")
 
 participantActivityWidget :: MonadWidget t m => Event t UTCTime -> Text -> Dynamic t Participant -> m ()
-participantActivityWidget t name part = divClass "" $ pollParticipantActivity t part >>= holdUniqDyn >>= dynText
+participantActivityWidget t name part = divClass "" $ do
+   x <- pollParticipantActivity t part
+   dynText x
 
 pollParticipantActivity :: MonadWidget t m => Event t UTCTime -> Dynamic t Participant -> m (Dynamic t Text)
 pollParticipantActivity e part = do
