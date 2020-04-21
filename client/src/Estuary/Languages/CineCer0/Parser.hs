@@ -61,6 +61,8 @@ rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = reserved "ramp" >> return ramp
 
+
+tshb108   to erase ensembles!!
 -- //////////////
 
 vs_vs :: H (VideoSpec -> VideoSpec)
@@ -112,7 +114,8 @@ rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_rat_vs_vs <*> ndt <|>
-  reserved "quant" >> return quant -- Look here! 
+  quant <$ reserved "quant" -- esto es igual a: fmap . const == fmap (quant) . "quant"  ¿?
+--  (reserved "quant" >> return quant) -- Look here! parenthesis make this work properly
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_vs_vs =
