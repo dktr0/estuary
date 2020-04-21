@@ -19,8 +19,8 @@ data EnsembleResponse =
   ZoneRcvd Int Definition |
   ViewRcvd Text View |
   ChatRcvd Chat |
-  ParticipantJoins Text Participant |
-  ParticipantUpdate Text Participant |
+  ParticipantJoins Participant |
+  ParticipantUpdate Participant |
   ParticipantLeaves Text |
   AnonymousParticipants Int
   deriving (Generic)

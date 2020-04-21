@@ -43,7 +43,7 @@ import Estuary.Widgets.View
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Tutorial
 import Estuary.Widgets.AboutEstuary
-import Estuary.Widgets.CreateEnsemble     
+import Estuary.Widgets.CreateEnsemble
 import Estuary.Tutorials.TidalCyclesBasics
 import Estuary.Tutorials.Punctual
 
@@ -60,93 +60,91 @@ data Navigation =
   deriving (Generic, FromJSVal, ToJSVal)
 
 
-navigation :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] -> m (Event t Request, Event t EnsembleRequest, Event t [Hint])
-navigation ctx renderInfo wsDown = do
-  dynPage <- router Splash never $ page ctx renderInfo wsDown
-  let dynPageData = fmap snd dynPage
-  let requestsUp = switchPromptlyDyn $ fmap (\(x,_,_) -> x) dynPageData
-  let ensembleRequestsUp = switchPromptlyDyn $ fmap (\(_,x,_) -> x) dynPageData
-  let hintsUp = switchPromptlyDyn $ fmap (\(_,_,x) -> x) dynPageData
-  return (requestsUp,ensembleRequestsUp,hintsUp)
+navigation :: MonadWidget t m => Event t [Response] -> Editor t m (Event t Request, Event t EnsembleRequest)
+navigation wsDown = do
+  x <- router Splash never $ page wsDown
+  let y = fmap snd x
+  let a = switchDyn $ fmap fst y
+  let b = switchDyn $ fmap snd y
+  return (a,b)
 
 
-page :: forall t m. (MonadWidget t m)
-  => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Response] -> Navigation
-  -> m (Event t Navigation, (Event t Request, Event t EnsembleRequest, Event t [Hint]))
+page :: MonadWidget t m => Event t [Response] -> Navigation
+  -> Editor t m (Event t Navigation, (Event t Request, Event t EnsembleRequest))
 
-page ctx _ wsDown Splash = do
+page wsDown Splash = do
   navEv <- divClass "splash-container" $ do
-    gotoAboutEv <- panel "splash-margin" ctx About Term.About (text "A") --estuaryIcon
-    gotoTutorialEv <- panel "splash-margin" ctx TutorialList Term.Tutorials (text "B") -- icon font: tutorial-icon.svg
-    gotoSoloEv <- panel "splash-margin" ctx Solo Term.Solo (text "C") -- icon font: solo-icon.png
-    gotoCollaborateEv <- panel "splash-margin" ctx Lobby Term.Collaborate (text "D") -- icon font: collaborate-icon.svg
+    gotoAboutEv <- panel "splash-margin" About Term.About (text "A") --estuaryIcon
+    gotoTutorialEv <- panel "splash-margin" TutorialList Term.Tutorials (text "B") -- icon font: tutorial-icon.svg
+    gotoSoloEv <- panel "splash-margin" Solo Term.Solo (text "C") -- icon font: solo-icon.png
+    gotoCollaborateEv <- panel "splash-margin" Lobby Term.Collaborate (text "D") -- icon font: collaborate-icon.svg
     return $ leftmost [gotoAboutEv, gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (navEv, (leaveEnsemble, never, never))
+  return (navEv, (leaveEnsemble, never))
 
-page ctx _ wsDown TutorialList = do
+page wsDown TutorialList = do
   divClass "ui-font primary-color" $ text "Select a tutorial:"
   navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ divClass "tutorialButton" $ button "TidalCycles"
   navPunctualTutorial <- liftM (TutorialNav "Punctual" <$) $ divClass "tutorialButton" $ button "Punctual"
   let nav = leftmost [navTidalCyclesBasics,navPunctualTutorial]
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (nav, (leaveEnsemble, never, never))
+  return (nav, (leaveEnsemble, never))
 
-page ctx renderInfo wsDown (TutorialNav "TidalCyclesBasics") = do
+page wsDown (TutorialNav "TidalCyclesBasics") = do
   let ensResponses = fmap justEnsembleResponses wsDown
-  (ensReq,hs) <- runEditor (runTutorial tidalCyclesBasics ensResponses) ctx renderInfo
+  ensReq <- runTutorial tidalCyclesBasics ensResponses
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,ensReq,hs))
+  return (never,(leaveEnsemble,ensReq))
 
-page ctx renderInfo wsDown (TutorialNav "Punctual") = do
+page wsDown (TutorialNav "Punctual") = do
   let ensResponses = fmap justEnsembleResponses wsDown
-  (ensReq,hs) <- runEditor (runTutorial punctualTutorial ensResponses) ctx renderInfo
+  ensReq <- runTutorial punctualTutorial ensResponses
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,ensReq,hs))
+  return (never,(leaveEnsemble,ensReq))
 
-page _ _ _ (TutorialNav _) = do
+page _ (TutorialNav _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as an 'issue' on Estuary's github site"
-  return (never,(never,never,never))
+  return (never,(never,never))
 
-page ctx _ wsDown About = do
-  aboutEstuary ctx
+page wsDown About = do
+  aboutEstuary
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never, (leaveEnsemble, never, never))
+  return (never, (leaveEnsemble, never))
 
-page ctx _ wsDown Lobby = do
+page wsDown Lobby = do
   -- process received ensemble lists into widgets that display info about, and let us join, ensembles
   ensembleList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
-  ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton -- Event t Text
+  ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton
   let navToJoinEnsemble = fmap JoinEnsemblePage ensembleClicked
-  navToCreateEnsemble <- liftM (CreateEnsemblePage <$) $ el "div" $ dynButton =<< translateDyn Term.CreateNewEnsemble ctx
-  -- LeaveEnsemble is issued at build time, 0.25s after build and every 3s after that an updated EnsembleList is requested
+  navToCreateEnsemble <- liftM (CreateEnsemblePage <$) $ el "div" $ term Term.CreateNewEnsemble >>= dynButton
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   now <- liftIO $ getCurrentTime
   requestEnsembleList <- liftM (GetEnsembleList <$) $ tickLossy (3::NominalDiffTime) (addUTCTime 0.25 now)
   let serverRequests = leftmost [leaveEnsemble,requestEnsembleList]
-  return (leftmost [navToJoinEnsemble, navToCreateEnsemble], (requestEnsembleList, never, never))
+  return (leftmost [navToJoinEnsemble, navToCreateEnsemble], (requestEnsembleList, never))
 
-page ctx _ rs CreateEnsemblePage = do
-  (navigateAway,responses) <- createEnsembleWidget ctx rs
-  return (Lobby <$ navigateAway,(responses,never,never))
+page rs CreateEnsemblePage = do
+  (navigateAway,responses) <- createEnsembleWidget rs
+  return (Lobby <$ navigateAway,(responses,never))
 
-page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
+page wsDown (JoinEnsemblePage ensembleName) = do
   el "div" $ do
-    prefix <- translateDyn Term.JoiningEnsemble ctx
-    dynText $ fmap (<> (" " <> ensembleName)) prefix
+    term Term.JoiningEnsemble >>= dynText
+    text " "
+    text ensembleName
   h <- el "div" $ do
-    translateDyn Term.EnsembleUserName ctx >>= dynText
+    term Term.EnsembleUserName >>= dynText
     let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   l <- el "div" $ do
-    translateDyn Term.EnsembleLocation ctx >>= dynText
+    term Term.EnsembleLocation >>= dynText
     let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   p <- el "div" $ do
-    translateDyn Term.ParticipantPassword ctx >>= dynText
+    term Term.ParticipantPassword >>= dynText
     let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
-  go <- el "div" $ dynButton =<< translateDyn Term.EnsembleLogin ctx
+  go <- el "div" $ dynButton =<< term Term.EnsembleLogin
   let joinRequest = tagPromptlyDyn (JoinEnsemble <$> constDyn ensembleName <*> h <*> l <*> p) go
   let joinedEnsembleResponses = fmapMaybe justJoinedEnsemble wsDown
   let joinedEnsembleNav = fmap (EnsemblePage . fst) joinedEnsembleResponses
@@ -154,22 +152,22 @@ page ctx _ wsDown (JoinEnsemblePage ensembleName) = do
   p <- el "div" $ do
     errorDisplay <- holdDyn "" responseError
     dynText errorDisplay
-  cancel <- el "div" $ dynButton =<< translateDyn Term.Cancel ctx
+  cancel <- el "div" $ dynButton =<< term Term.Cancel
   let cancelNav = Lobby <$ cancel
   let navEvents = leftmost [joinedEnsembleNav,cancelNav]
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   let serverRequests = leftmost [leaveEnsemble,joinRequest]
-  return (navEvents, (serverRequests, never, never))
+  return (navEvents, (serverRequests, never))
 
-page ctx renderInfo rs (EnsemblePage ensembleName) = do
+page rs (EnsemblePage ensembleName) = do
   let ensResponses = fmap justEnsembleResponses rs
-  (ensReq,hs) <- runEditor (ensembleView ensResponses) ctx renderInfo
-  return (never,(never,ensReq,hs))
+  ensReq <- ensembleView ensResponses
+  return (never,(never,ensReq))
 
-page ctx renderInfo _ Solo = do
-  (ensReq,hs) <- runEditor (ensembleView never) ctx renderInfo
+page _ Solo = do
+  ensReq <- ensembleView never
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,ensReq,hs))
+  return (never,(leaveEnsemble,ensReq))
 
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
@@ -178,12 +176,8 @@ joinButton x = do
   return $ tag (current x) b
 
 
-panel :: MonadWidget t m => Text -> Dynamic t Context -> Navigation -> Term.Term -> m () -> m (Event t Navigation)
-panel c ctx targetPage title icon = do
-  liftM (targetPage <$) $ do
-    divClass c $ do
-      dynButtonWithChild "splash-panel" $ do
-        divClass "splash-title" $ do
-          dynText =<< translateDyn title ctx
-        divClass "splash-icon-container" $ do
-          divClass "splash-icon" icon
+panel :: MonadWidget t m => Text -> Navigation -> Term.Term -> Editor t m () -> Editor t m (Event t Navigation)
+panel c targetPage title icon = divClass c $ do
+  liftM (targetPage <$) $ dynButtonWithChild "splash-panel" $ do
+    divClass "splash-title" $ term title >>= dynText
+    divClass "splash-icon-container" $ divClass "splash-icon" icon

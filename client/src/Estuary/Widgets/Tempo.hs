@@ -28,14 +28,13 @@ import Estuary.Types.Variable
 
 tempoWidget :: MonadWidget t m => Dynamic t Tempo -> Editor t m (Event t Tempo)
 tempoWidget tempoDyn = do
-  ctx <- askContext
-  v <- reflexWidgetToEditor tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
+  v <- variableWidget tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
     let initialText = showt (freq a)
     let updatedText = fmap (showt . freq) eventA
     (tValue,_,tEval) <- textWidget 1 initialText updatedText
-    b <- dynButton =<< translateDyn Term.NewTempo ctx
+    b <- dynButton =<< term Term.NewTempo
     let evalEvent = tagPromptlyDyn tValue $ leftmost [b,tEval]
     let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Rational) . T.unpack) evalEvent
     edits <- performEvent $ fmap liftIO $ attachPromptlyDynWith (flip changeTempoNow) tempoDyn cpsEvent -- *** attachPromptlyDynWith here might not be right!!!
-    return (edits,never)
+    return edits
   return $ localEdits v

@@ -2,8 +2,8 @@
   reflexPlatformVersion ? "9e306f72ed0dbcdccce30a4ba0eb37aa03cf91e3",
   musl ? false,     # build with musl instead of glibc
   linkType ? null   # executable linking mode, null will build the closest to unconfigured for the current platform.
-                    # 'static' will completely statcially link everything.
-                    # 'static-libs' will statically link the haskell libs and dynamically link system. linux default.
+                    # 'static' will completely statically link everything.
+                    # 'static-libs' will statically link the Haskell libs and dynamically link system. linux default.
                     # 'dynamic' will dynamically link everything. darwin default.
 } @ args:
 
@@ -185,8 +185,8 @@ in
         tidal = if !(self.ghc.isGhcjs or false) then null else doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
-          rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
+          sha256 = "0aa60b82y2ybhxm09r4l7jr95igxh8bl0n8bb4hz9h8hir9zlpiy";
+          rev = "7c47c99cc4e523f676d4ec1be93639cd3f2beab6";
           fetchSubmodules = true;
           }) "" {});
 
@@ -195,8 +195,8 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0qhif7cc6myyqakyavjpj7sv4r0aqy1jkiirjw77s5l9lxaqvz95";
-            rev = "b3d07637f78b3a7d4c65814d8c49380d3f1570d2";
+            sha256 = "0aa60b82y2ybhxm09r4l7jr95igxh8bl0n8bb4hz9h8hir9zlpiy";
+            rev = "7c47c99cc4e523f676d4ec1be93639cd3f2beab6";
             fetchSubmodules = true;
               })
             "--subpath tidal-parse" {});

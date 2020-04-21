@@ -12,6 +12,7 @@ import Data.IntMap.Strict as IntMap
 import Data.Time
 import TextShow
 import Control.Monad
+import Reflex.FunctorMaybe
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
@@ -46,6 +47,15 @@ foreign import javascript unsafe
   muteVideo :: CineCer0Video -> IO ()
 
 foreign import javascript unsafe
+  "$1.src = $2; $1.load()"
+  changeVideoSource :: CineCer0Video -> Text -> IO ()
+
+changeVideoSource' :: CineCer0Video -> Text -> IO ()
+changeVideoSource' cv t = do
+  --T.putStrLn $ "changing to " <> t
+  changeVideoSource cv t
+
+foreign import javascript unsafe
   "$1.videoWidth"
   videoWidth :: CineCer0Video -> IO Double
 
@@ -72,32 +82,45 @@ foreign import javascript unsafe
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
-  putStrLn $ "addVideo " ++ (sampleVideo spec)
+  --putStrLn $ "addVideo " ++ (sampleVideo spec)
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
   muteVideo x
   appendVideo x j
   return x
 
+onlyChangedVideoSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
+onlyChangedVideoSources nSpec oSpec
+  | (sampleVideo nSpec /= sampleVideo oSpec) = Just nSpec
+  | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
+
+
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
-  putStrLn $ show spec
+  --putStrLn $ show spec
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
   divHeight <- offsetHeight $ videoDiv st
-  -- add or delete videos
+  -- add videos
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
-  let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs
+  let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+  -- change videos
+  let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
+  let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
+  let toChange' = intersectionWith (\a b -> (a,b)) toChange $ videos st -- IntMap (VideoSpec,CineCer0Video)
+  mapM_ (\(x,cv) -> changeVideoSource' cv $ T.pack (sampleVideo x)) toChange'
+  -- delete VideoSpecs
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
+  -- update videoSpecs
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
   sequence $ intersectionWith (updateContinuingVideo t eTime now (divWidth,divHeight)) vSpecs continuingVideos
-  return $ st { videos = continuingVideos }
+  return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs } --
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
 updateContinuingVideo t eTime rTime (sw,sh) s v = do
@@ -132,19 +155,21 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let contrast' = contrast s t lengthOfVideo rTime eTime * 100
     let grayscale' = grayscale  s t lengthOfVideo rTime eTime * 100
     let saturate' = saturate  s t lengthOfVideo rTime eTime
-    putStrLn $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
+    return $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
     videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor blur') (floor brightness') (floor contrast') (floor grayscale') (realToFrac saturate')
 
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
   videoDiv = j,
-  videos = empty
+  videos = empty,
+  previousVideoSpecs = empty
   }
 
 data CineCer0State = CineCer0State {
   videoDiv :: HTMLDivElement,
-  videos :: IntMap CineCer0Video
+  videos :: IntMap CineCer0Video,
+  previousVideoSpecs :: IntMap VideoSpec
   }
 
 foreign import javascript unsafe

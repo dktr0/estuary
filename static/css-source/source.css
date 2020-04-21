@@ -872,6 +872,11 @@ table, tr, td {border: none;}
   display: none;
 }
 
+.chat {
+  display: inline-block;
+  width: 50%;
+}
+
 .joinButton {
 
 width: fit-content;
@@ -913,6 +918,12 @@ cursor: pointer;
     text-align: center;
     width: fit-content;
 
+}
+
+.ensembleStatus {
+  display: inline-block;
+  width: 50%;
+  vertical-align: top;
 }
 
 /*
@@ -1070,6 +1081,7 @@ display: inline-flex;
   border: 1px solid var(--primary-color);
   border-radius: 5px;
   margin-bottom: 0.5%;
+  height: 7em;
 }
 
 .tableContainer::-webkit-scrollbar  {

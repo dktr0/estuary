@@ -77,6 +77,7 @@ resourceUploader = do
       return $ mergeWith (.) resourceLoadedEvs
 -}
 
+{-
 pickAudioResource :: File -> (Resource AudioMeta -> IO ()) -> IO ()
 pickAudioResource f done = do
   withAudioMeta f $ \meta -> do
@@ -104,3 +105,4 @@ foreign import javascript unsafe
   \_audio.addEventListener('loadedmetadata', function() {$2(_audio.duration)}); \
   \_audio.src = window.URL.createObjectURL($1);"
   js_getAudioDuration :: File -> Callback (JSVal -> IO ()) -> IO ()
+  -}

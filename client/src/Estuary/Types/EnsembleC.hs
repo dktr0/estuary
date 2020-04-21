@@ -122,8 +122,8 @@ ensembleResponseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) e
 ensembleResponseToStateChange (ZoneRcvd n v) es = modifyEnsemble (writeZone n v) es
 ensembleResponseToStateChange (ViewRcvd t v) es = modifyEnsemble (writeView t v) es
 ensembleResponseToStateChange (ChatRcvd c) es = modifyEnsemble (appendChat c) es
-ensembleResponseToStateChange (ParticipantJoins n x) es = modifyEnsemble (writeParticipant n x) es
-ensembleResponseToStateChange (ParticipantUpdate n x) es = modifyEnsemble (writeParticipant n x) es
+ensembleResponseToStateChange (ParticipantJoins x) es = modifyEnsemble (writeParticipant (name x) x) es
+ensembleResponseToStateChange (ParticipantUpdate x) es = modifyEnsemble (writeParticipant (name x) x) es
 ensembleResponseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
 ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
 ensembleResponseToStateChange _ es = es
@@ -141,7 +141,7 @@ responseToMessage :: Response -> Maybe Text
 responseToMessage (ResponseError e) = Just $ "error: " <> e
 responseToMessage (ResponseOK m) = Just m
 responseToMessage (EnsembleResponse (ChatRcvd c)) = Just $ showChatMessage c
-responseToMessage (EnsembleResponse (ParticipantJoins n _)) = Just $ n <> " has joined the ensemble"
+responseToMessage (EnsembleResponse (ParticipantJoins x)) = Just $ name x <> " has joined the ensemble"
 responseToMessage (EnsembleResponse (ParticipantLeaves n)) = Just $ n <> " has left the ensemble"
 -- the cases below are for debugging only and can be commented out when not debugging:
 -- responseToMessage (TempoRcvd _) = Just $ "received new tempo"

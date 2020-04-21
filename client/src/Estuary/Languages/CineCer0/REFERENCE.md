@@ -6,12 +6,13 @@ The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows 
 
 "video.extension" --videos play as a string <br />
 "videoURL" --you can add the URL to play videos <br />
+"" --empty state
 
 ## Image
 
 setWidth [w] $ -- 1 = natural video width <br/>
 setHeight [h] $ -- 1 = natural video height <br />
-setSize [w] [h] $ <br />
+setSize [wh] $ <br /> --one parameter will affect both width and heigh proportionally
 setPosX [x] $ -- from left (-1) to right 1 <br />
 setPosY [y] $ -- from bottom (-1) to top 1 <br />
 setCoord [x] [y] $ <br />
@@ -24,7 +25,7 @@ setSaturate [s] $ -- 1 = natural video saturation (1++ = more, 1-- =less) <br />
 
 ## ramp
 
-(ramp [x] [y] [z]) -- in which x =, y =, z= <br />
+(ramp [durVal] [startVal] [endVal]) -- in which x =, y =, z= <br />
 
 The following can be use with the ramp function: <br />
 width (ramp x y z) $ | height (ramp x y z) $ | posX (ramp x y z) $ | posY (ramp x y z) $ | opacity (ramp x y z) $ | blur (ramp x y z) $ | brightness (ramp x y z) $ | contrast (ramp x y z) $ | grayscale (ramp x y z) $ | saturate (ramp x y z) $ <br />

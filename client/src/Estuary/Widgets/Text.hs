@@ -56,16 +56,13 @@ textWidget rows i delta = do
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual, CineCer0, TimeNot {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)
 
-textProgramEditor :: MonadWidget t m => Int -> Dynamic t (Maybe Text) -> Dynamic t (Live TextProgram)
-  -> Editor t m (Variable t (Live TextProgram))
-textProgramEditor nRows errorDyn updates = do
-  ctx <- askContext
-  reflexWidgetToEditor updates $ textProgramWidget ctx errorDyn nRows
 
-textProgramWidget :: forall t m. MonadWidget t m => Dynamic t Context -> Dynamic t (Maybe Text) -> Int
-  -> Live TextProgram -> Event t (Live TextProgram) -> m (Event t (Live TextProgram),Event t [Hint])
-textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do -- *** TODO: change css class
+textProgramEditor :: forall t m. MonadWidget t m => Int -> Dynamic t (Maybe Text)
+  -> Dynamic t (Live TextProgram) -> Editor t m (Variable t (Live TextProgram))
+textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ do -- *** TODO: change css class
 
+  i <- sample $ current deltasDown
+  let delta = updated deltasDown
   let deltaFuture = fmap forEditing delta
   let parserFuture = fmap (\(x,_,_) -> x) deltaFuture
   let textFuture = fmap (\(_,x,_) -> x) deltaFuture
@@ -78,7 +75,7 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
       x <- dynButton "\x25B6"
       return x
     e' <- holdUniqDyn errorText
-    let y = fmap (maybe (return ()) (syntaxErrorWidget ctx)) $ updated e'
+    let y = fmap (maybe (return ()) syntaxErrorWidget) $ updated e'
     widgetHold (return ()) y
     infoButton' <- divClass "referenceButton" $ dynButton "?"
     return (d',evalButton',infoButton')
@@ -110,7 +107,7 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
   let deltaUpEdit = tagPromptlyDyn value edit
   let deltaUpEval = tagPromptlyDyn value eval
   let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
-  return (deltaUp,never)
+  returnVariable deltasDown deltaUp
   where
     f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
           | otherwise = Edited p x
@@ -119,14 +116,14 @@ textProgramWidget ctx errorText rows i delta = divClass "textPatternChain" $ do 
 labelEditor :: MonadWidget t m => Dynamic t Text -> Editor t m (Variable t Text)
 labelEditor delta = do
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
-  y <- liftR $  divClass "labelWidgetDiv" $ do
-    i <- (sample . current) delta
+  y <- divClass "labelWidgetDiv" $ do
+    i <- sample $ current delta
     textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
-  return $ Variable (_textInput_value y) (_textInput_input y)
+  returnVariable delta $ _textInput_input y
 
-syntaxErrorWidget :: MonadWidget t m => Dynamic t Context -> Text -> m ()
-syntaxErrorWidget ctx t = do
-  s <- translateDyn Term.Syntax ctx
+syntaxErrorWidget :: MonadWidget t m => Text -> Editor t m ()
+syntaxErrorWidget t = do
+  s <- term Term.Syntax
   let wb = elClass "div" "syntaxIssue" $ dynText s
   tooltip wb (text t)
   return ()

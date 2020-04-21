@@ -192,19 +192,21 @@ processRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHan
 
 processRequest db ss ws cHandle ctvar (BrowserInfo t) = atomically $ modifyTVar ctvar $ \c -> c { browserInfo = t }
 
-processRequest db ss ws cHandle ctvar (ClientInfo pingTime load animationLoad latency) = do
-  (n,self) <- atomically $ do
+processRequest db ss ws cHandle ctvar (ClientInfo load animationFPS animationLoad latency pingTime) = do
+  (n,c) <- atomically $ do
     modifyTVar ctvar $ \c -> c {
       clientMainLoad = load,
+      clientAnimationFPS = animationFPS,
       clientAnimationLoad = animationLoad,
       clientLatency = latency
       }
     n <- readTVar $ clientCount ss
-    self <- readTVar ctvar
-    return (n,self)
+    c <- readTVar ctvar
+    return (n,c)
   send db cHandle cHandle ws $ ServerInfo n pingTime
-  case memberOfEnsemble self of
-    Just eName -> sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (handleInEnsemble self) (clientToParticipant self)
+  case memberOfEnsemble c of
+    Just eName -> do
+      when (handleInEnsemble c /= "") $ sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate $ clientToParticipant c
     Nothing -> return ()
 
 processRequest db ss ws cHandle ctvar GetEnsembleList = do
@@ -269,17 +271,14 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteZone zone value) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     writeZone now ctvar zone value
-    p <- updateLastEdit ctvar now
-    eName <- getEnsembleName ctvar
-    return (p,eName)
+    updateLastEdit ctvar now
+    getEnsembleName ctvar
   case x of
     Left e -> do
       let m = "*WriteZone* " <> e
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right (p,eName) -> do
-      sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ZoneRcvd zone value
-      sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
+    Right eName -> sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ZoneRcvd zone value
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteChat msg) = do
   now <- getCurrentTime
@@ -288,17 +287,16 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteChat msg) = do
     eName <- getEnsembleName ctvar
     uName <- liftSTM $ handleInEnsemble <$> readTVar ctvar
     when (uName == "") $ throwError "ignoring anonymous chat"
-    p <- updateLastEdit ctvar now
-    return (p,eName,uName)
+    updateLastEdit ctvar now
+    return (eName,uName)
   case x of
     Left e -> do
       let m = "*WriteChat* " <> e
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right (p,eName,uName) -> do
+    Right (eName,uName) -> do
       postLog db cHandle $ uName <> " in " <> eName <> " chats: " <> msg
       sendEnsemble db ss cHandle eName $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
-      sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteStatus msg) = do
   now <- getCurrentTime
@@ -317,41 +315,37 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteStatus msg) = do
       postLog db cHandle m
     Right (p,eName,uName) -> do
       postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> eName <> ": " <> msg
-      sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
+      sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate p
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteView preset view) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     when (not $ nameIsLegal preset) $ throwError "view name cannot contain spaces/newlines/control characters"
     writeView now ctvar preset view
-    eName <- getEnsembleName ctvar
-    p <- updateLastEdit ctvar now
-    return (p,eName)
+    updateLastEdit ctvar now
+    getEnsembleName ctvar
   case x of
     Left e -> do
       let m = "*PublishView* " <> e
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right (p,eName) -> do
+    Right eName -> do
       sendThisClient db cHandle ws (ResponseOK $ "published view " <> preset)
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ViewRcvd preset view
-      sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
       postLog db cHandle $ "WriteView in (" <> eName <> "," <> preset <> ")"
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteTempo t) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     writeTempo now ctvar t
-    eName <- getEnsembleName ctvar
-    p <- updateLastEdit ctvar now
-    return (p,eName)
+    updateLastEdit ctvar now
+    getEnsembleName ctvar
   case x of
     Left e -> do
       let m = "*WriteTempo* " <> e
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right (p,eName) -> do
+    Right eName -> do
       sendThisClient db cHandle ws (ResponseOK $ "setting tempo succeeded")
       sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ TempoRcvd t
-      sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate (name p) p
       postLog db cHandle $ "WriteTempo in " <> eName
