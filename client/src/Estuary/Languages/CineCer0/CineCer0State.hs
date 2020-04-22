@@ -26,6 +26,29 @@ instance PToJSVal CineCer0Video where pToJSVal (CineCer0Video val) = val
 
 instance PFromJSVal CineCer0Video where pFromJSVal = CineCer0Video
 
+data CineCer0State = CineCer0State {
+  videoDiv :: HTMLDivElement,
+  videos :: IntMap CineCer0Video,
+  previousVideoSpecs :: IntMap VideoSpec
+  }
+
+foreign import javascript unsafe
+  "$1.offsetWidth"
+  offsetWidth :: HTMLDivElement -> IO Double
+
+foreign import javascript unsafe
+  "$1.offsetHeight"
+  offsetHeight :: HTMLDivElement -> IO Double
+
+emptyCineCer0State :: HTMLDivElement -> CineCer0State
+emptyCineCer0State j = CineCer0State {
+  videoDiv = j,
+  videos = empty,
+  previousVideoSpecs = empty
+  }
+
+----  Create a video ----
+
 foreign import javascript safe
   "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO CineCer0Video
@@ -63,9 +86,6 @@ foreign import javascript unsafe
   "$1.videoHeight"
   videoHeight :: CineCer0Video -> IO Double
 
-videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-videoStyle v x y w h o bl br c g s = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o <> "%; filter:blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
-
 ----  Rate and Position ----
 
 foreign import javascript unsafe
@@ -79,6 +99,25 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.duration"
   getLengthOfVideo :: CineCer0Video -> IO Double
+
+----  Style a Video ----
+
+videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+videoStyle v x y w h o bl br c g s = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o <> "%; filter:blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
+
+-- videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Maybe Int -> Maybe Int -> Maybe Int -> Maybe Int -> Maybe Int -> Maybe Double -> IO () -- Change to Double
+-- videoStyle v x y w h o bl br c g s = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o <> "%; filter:blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
+
+-- just add parameters when they are Just values
+--object-fit: fill; opacity: " <> showt o <> "%; filter:blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
+
+--generateFilter :: Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Text
+--generateFilter
+--pattern matching ? 16 combinations?
+--or a common mechanism that include them?
+--write it in a separate module and try it with ghci
+
+----  Add and Change Source ----
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
@@ -94,6 +133,8 @@ onlyChangedVideoSources nSpec oSpec
   | (sampleVideo nSpec /= sampleVideo oSpec) = Just nSpec
   | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
 
+
+---- update CineCer0 State and Continuing Video ----
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t now spec st = do
@@ -147,9 +188,8 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     -- update position in time
     let pos = (playbackPosition s) t lengthOfVideo rTime eTime
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
-    -- update opacity
-    let opacidad = (opacity s) t lengthOfVideo rTime eTime * 100
     -- update style
+    let opacidad = (opacity s) t lengthOfVideo rTime eTime * 100
     let blur' = blur s t lengthOfVideo rTime eTime
     let brightness' = brightness  s t lengthOfVideo rTime eTime * 100
     let contrast' = contrast s t lengthOfVideo rTime eTime * 100
@@ -157,25 +197,3 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let saturate' = saturate  s t lengthOfVideo rTime eTime
     return $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
     videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor blur') (floor brightness') (floor contrast') (floor grayscale') (realToFrac saturate')
-
-
-emptyCineCer0State :: HTMLDivElement -> CineCer0State
-emptyCineCer0State j = CineCer0State {
-  videoDiv = j,
-  videos = empty,
-  previousVideoSpecs = empty
-  }
-
-data CineCer0State = CineCer0State {
-  videoDiv :: HTMLDivElement,
-  videos :: IntMap CineCer0Video,
-  previousVideoSpecs :: IntMap VideoSpec
-  }
-
-foreign import javascript unsafe
-  "$1.offsetWidth"
-  offsetWidth :: HTMLDivElement -> IO Double
-
-foreign import javascript unsafe
-  "$1.offsetHeight"
-  offsetHeight :: HTMLDivElement -> IO Double

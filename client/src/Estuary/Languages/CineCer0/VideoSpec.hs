@@ -3,6 +3,7 @@ module Estuary.Languages.CineCer0.VideoSpec where
 import Language.Haskell.Exts
 import Control.Applicative
 import Data.Time
+import Data.Text
 
 import Estuary.Types.Tempo
 
@@ -21,7 +22,8 @@ data VideoSpec = VideoSpec {
   brightness :: Signal Rational,
   contrast :: Signal Rational,
   grayscale :: Signal Rational,
-  saturate :: Signal Rational
+  saturate :: Signal Rational,
+  mask :: Signal Text
   }
 
 instance Show VideoSpec where
@@ -29,7 +31,7 @@ instance Show VideoSpec where
 
 emptyVideoSpec :: VideoSpec
 emptyVideoSpec = VideoSpec {
-  sampleVideo = "",
+  sampleVideo = "", -- Data.Text.pack ""
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
   posX = constantSignal 0.0,
@@ -41,11 +43,15 @@ emptyVideoSpec = VideoSpec {
   brightness = constantSignal 1.0,
   contrast = constantSignal 1.0,
   grayscale = constantSignal 0.0,
-  saturate = constantSignal 1.0
+  saturate = constantSignal 1.0,
+  mask = emptyText
 }
 
 stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = emptyVideoSpec { sampleVideo = x }
+
+emptyText :: Signal Text
+emptyText _ _ _ _ = Data.Text.empty
 
 --
 -- Style Functions --
@@ -152,6 +158,15 @@ shiftSaturate s v = v {
   saturate = s * saturate v
   }
 
+-- Masks
+-- it should be just four arguments a b c d
+-- circleMask :: Signal Rational -> VideoSpec -> VideoSpec
+-- circleMask s vs = vs {
+--   mask = \a b c d e -> "clip-path: circle(" <> showt ((x*100) :: Double)<> "% at center);"
+--           where x = s a b c d e
+--   }
+
+-- try to include rectMask
 
 --
 -- Time Functions --
