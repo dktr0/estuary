@@ -23,18 +23,11 @@ import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.TranslatableText
 
-translateDyn :: MonadWidget t m => Term -> Dynamic t Context -> m (Dynamic t Text)
-translateDyn t ctx = do
-  l <- holdUniqDyn $ fmap language ctx
-  return $ fmap (translate t) l
-
--- translationList should be considered deprecated in favour of TranslationText etc
-translationList :: MonadWidget t m => Dynamic t Context -> [(Language,a)] -> m (Dynamic t a)
-translationList ctx m = do
-  let m' = fromList m
-  let d = snd (m!!0)
-  l <- holdUniqDyn $ fmap language ctx
-  return $ fmap (\k -> findWithDefault d k m') l
+-- the former 'dynEditor'...
+dyn' :: MonadWidget t m => Dynamic t (m a) -> m (Dynamic t a)
+dyn' x = do
+  initialWidget <- sample $ current x
+  widgetHold initialWidget $ updated x -- m (Dynamic t a)
 
 -- a temporary button with class for the reference files
 buttonWithClass' :: MonadWidget t m => Text -> m (Event t ())

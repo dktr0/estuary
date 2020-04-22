@@ -7,3 +7,4 @@ packages:
 - '../common'
 
 extra-deps:
+- tempi-1.0.0.0

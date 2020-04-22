@@ -24,10 +24,10 @@ attachIndex :: [a] -> [(Int,a)]
 attachIndex = zip [0..]
 
 sequencer :: MonadWidget t m => Dynamic t Sequence -> Editor t m (Variable t Sequence)
-sequencer x = reflexWidgetToEditor x sequencer'
+sequencer x = variableWidget x sequencer'
 
 sequencer' :: MonadWidget t m
-  => Sequence -> Event t Sequence -> m (Event t Sequence, Event t [Hint])
+  => Sequence -> Event t Sequence -> m (Event t Sequence)
 sequencer' iMap update = elClass "table" "sequencer" $ mdo
   let seqLen = maximum $ fmap (length . snd) $ elems iMap
   let serverDeletes = fmap (Nothing <$) $ attachWith M.difference (current values) update -- for deleted rows
@@ -46,16 +46,9 @@ sequencer' iMap update = elClass "table" "sequencer" $ mdo
   let maxKey = fmap (maybe 0 id . maximumMay . keys) newValues
   plusButton <- el "tr" $ clickableTdClass (constDyn " + ") (constDyn "") ()
   let newRow = attachWith (\k _-> singleton (k+1) (Just ("",Prelude.take seqLen $ repeat False))) (current maxKey) plusButton
-  return (updateVal,never)
+  return updateVal
   -- *** TODO should rework the above since some of the above management is unnecessary with Editor approach
 
--- listWithKeyShallowDiff
---  :: (Ord k, Adjustable t m, MonadFix m, MonadHold t m)
---  => Map k v
---  -> Event t (Map k (Maybe v))
---  -> (k -> v -> Event t v -> m a)
---  -> m (Dynamic t (Map k a))
--- joinDynThroughMap :: forall t k a. (Reflex t, Ord k) => Dynamic t (Map k (Dynamic t a)) -> Dynamic t (Map k a)
 
 -- Event returned is a message to delete that row
 sequencerRow ::(MonadWidget t m) => (Text,[Bool]) -> Event t (Text,[Bool]) -> m (Dynamic t ((Text,[Bool]), Event t ()))
@@ -69,6 +62,7 @@ sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
   buttons <-  liftM joinDynThroughMap $ listWithKeyShallowDiff buttonIVals buttonUpdates sequencerButton  -- Dyn (Map Int Bool)
   let val = (\s b -> (s, elems b)) <$> (_textInput_value rowInput) <*> buttons
   return $ fmap (\x->(x,deleteMe)) val
+
 
 sequencerButton::(MonadWidget t m) => Int -> Bool -> Event t Bool -> m (Dynamic t Bool)
 sequencerButton pos val edits = mdo

@@ -43,7 +43,7 @@ ndt = fromRational <$> rationalOrInteger
 literalVideoSpec :: H VideoSpec
 literalVideoSpec =
   fmap stringToVideoSpec string <|>
-  return emptyVideoSpec -- assuming emptyVideoSpec doesn't take an argument...
+  emptyVideoSpec <$ reserved ""
 
 -- //////////////
 
@@ -58,11 +58,12 @@ rat_sigRat = rat_rat_sigRat <*> rationalOrInteger
 rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
 rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt 
 
+rat_rat_UTCTime:: H (Rational -> Rational -> Signal UTCTime) -- this is new ¡!
+rat_rat_UTCTime = quant <$ reserved "quant" -- quant is setting the anchor time
+
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
-ndt_rat_rat_sigRat = reserved "ramp" >> return ramp
+ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
-
-tshb108   to erase ensembles!!
 -- //////////////
 
 vs_vs :: H (VideoSpec -> VideoSpec)
@@ -92,14 +93,14 @@ sigRat_vs_vs =
   shiftGrayscale <$ reserved "grayscale" <|>
   setSaturate <$ reserved "setSaturate" <|>
   shiftSaturate <$ reserved "saturate" <|>
+  setSize <$ reserved "setSize" <|>
+  shiftSize <$ reserved "size" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
 sigRat_sigRat_vs_vs =
   setCoord <$ reserved "setCoord" <|>
-  shiftCoord <$ reserved "coord" <|>
-  setSize <$ reserved "setSize" <|>
-  shiftSize <$ reserved "size"
+  shiftCoord <$ reserved "coord"
 
 rat_vs_vs :: H (Rational -> VideoSpec -> VideoSpec)
 rat_vs_vs =
@@ -114,7 +115,7 @@ rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_rat_vs_vs <*> ndt <|>
-  quant <$ reserved "quant" -- esto es igual a: fmap . const == fmap (quant) . "quant"  ¿?
+--  quant <$ reserved "quant" -- esto es igual a: fmap . const == fmap (quant) . "quant"  ¿?
 --  (reserved "quant" >> return quant) -- Look here! parenthesis make this work properly
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)

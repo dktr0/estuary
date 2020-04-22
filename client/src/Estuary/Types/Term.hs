@@ -15,9 +15,14 @@ data Term =
   Confirm |
   Cancel |
   CreateNewEnsembleNote |
-  AdministratorPassword |
+  ModeratorPassword |
+  CommunityPassword |
+  HostPassword |
+  ParticipantPassword |
+  Ensemble |
   EnsembleName |
-  EnsemblePassword |
+  EnsembleExpiry |
+  AnonymousParticipants |
   TerminalChat |
   Theme |
   Load |
@@ -29,7 +34,9 @@ data Term =
   EnsembleUserName |
   EnsembleLocation |
   EnsembleLogin |
-  Syntax
+  Syntax |
+  Connections |
+  Latency
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -57,6 +64,10 @@ translate Send Français = "Envoyer"
 translate Send Español = "enviar"
 translate Send English = "Send"
 
+translate Ensemble English = "Ensemble"
+translate Ensemble Français = "Ensemble"
+translate Ensemble Español = "Ensamble"
+
 translate CreateNewEnsemble Français = "Créer un nouvel ensemble"
 translate CreateNewEnsemble English = "Create new ensemble"
 translate CreateNewEnsemble Español = "Crear nuevo ensamble"
@@ -73,21 +84,21 @@ translate Cancel Français = "Annuler"
 translate Cancel English = "Cancel"
 translate Cancel Español = "Cancelar"
 
-translate CreateNewEnsembleNote Français = "Note: pour créer un ensemble, vous devez entrer un mot de passe administrateur"
-translate CreateNewEnsembleNote English = "Note: to create an ensemble you must enter an administrator password"
-translate CreateNewEnsembleNote Español = "Nota: para crear un enamble escribe la contraseña de administrador"
+translate ModeratorPassword English = "Moderator password:"
 
-translate AdministratorPassword Français = "Mot de passe administrateur:"
-translate AdministratorPassword English = "Administrator password:"
-translate AdministratorPassword Español = "Contraseña del admin:"
+translate CommunityPassword English = "Community password:"
+
+translate HostPassword English = "Host password:"
+
+translate ParticipantPassword English = "Participant password:"
 
 translate EnsembleName Français = "Nom de l'ensemble:"
 translate EnsembleName English = "Ensemble name:"
 translate EnsembleName Español = "Nombre del ensamble:"
 
-translate EnsemblePassword Français = "Mot de passe de l'ensemble:"
-translate EnsemblePassword English = "Ensemble password:"
-translate EnsemblePassword Español = "Contraseña del ensamble:"
+translate EnsembleExpiry English = "Ensemble Expiry:"
+
+translate AnonymousParticipants English = "Anonymous Participants"
 
 translate TerminalChat Français = "Terminal/Chat:"
 translate TerminalChat English = "Terminal/Chat:"
@@ -117,11 +128,9 @@ translate JoiningEnsemble Français = "Joindre l'ensemble"
 translate JoiningEnsemble English = "Joining ensemble"
 translate JoiningEnsemble Español = "Unirse al ensamble"
 
-
 translate EnsembleUserName Français = "Entrer le nom d'utilisateur (optionel) comme membre de l'ensemble:"
 translate EnsembleUserName English = "Enter username (optional) within ensemble:"
 translate EnsembleUserName Español = "Ingresar nombre de usuario dentro del ensamble (opcional):"
-
 
 translate EnsembleLocation Français = "Décrivez votre situation géographique (optionel):"
 translate EnsembleLocation English = "Describe your location (optional):"
@@ -137,4 +146,8 @@ translate Peak Español = "tope"
 
 translate Syntax English = "Syntax"
 
-translate x _ = pack $ "?" ++ show x
+translate Connections English = "connections"
+
+translate Latency English = "latency"
+
+translate x _ = translate x English

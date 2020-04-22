@@ -21,9 +21,9 @@ import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
 
 
-estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
+estuaryWebSocket :: MonadWidget t m => Dynamic t RenderInfo -> Event t [Request] ->
   m (Event t Response, Event t ContextChange)
-estuaryWebSocket ctx rInfo toSend = mdo
+estuaryWebSocket rInfo toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
   userAgent <- liftIO $ getUserAgent
@@ -40,19 +40,7 @@ estuaryWebSocket ctx rInfo toSend = mdo
   postBuild <- getPostBuild
   let sendBrowserInfo = fmap (const [BrowserInfo userAgent]) postBuild
 
-  -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
-  -- let socketIsOpen = fmap (=="connection open") status'
-  let socketIsOpen = constDyn True
-  pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
-  pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
-  let clientInfoWithPingTime = fmap ClientInfo pingTickTime
-  let loadDyn = fmap avgRenderLoad rInfo
-  let animationLoadDyn = fmap animationLoad rInfo
-  latencyDyn <- holdDyn 0 $ latency
-  let loadAnimationAndLatency = (\x y z -> (x,y,z)) <$> loadDyn <*> animationLoadDyn <*> latencyDyn
-  let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith (\(x,y,z) w -> w x y z) loadAnimationAndLatency clientInfoWithPingTime
-
-  -- the server responds to ClientInfo (above) with ServerInfo, which we process below
+  -- the server responds to ClientInfo (below) with ServerInfo, which we process below
   -- by issuing events that update the context
   let serverInfos = fmapMaybe justServerInfo response
   let serverClientCounts = fmap fst serverInfos
@@ -62,8 +50,16 @@ estuaryWebSocket ctx rInfo toSend = mdo
   let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
   let contextChanges = mergeWith (.) [serverClientCountChanges,latencyChanges]
 
-  return (response,contextChanges)
+  -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
+  -- let socketIsOpen = fmap (=="connection open") status'
+  let socketIsOpen = constDyn True
+  pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
+  pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
+  latencyDyn <- holdDyn 0 $ latency
+  let clientInfoDyn = ClientInfo <$> fmap avgRenderLoad rInfo <*> fmap animationFPS rInfo <*> fmap animationLoad rInfo <*> latencyDyn
+  let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith ($) clientInfoDyn pingTickTime
 
+  return (response,contextChanges)
 
 foreign import javascript unsafe
   "$r = location.hostname"

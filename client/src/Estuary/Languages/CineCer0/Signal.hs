@@ -6,33 +6,52 @@ import Data.Time
 import Estuary.Types.Tempo
 
 
- --              Tempo    Video Length      render T   eval T     anchor
+ --              Tempo    Video Length      render T   eval T    anchor t
 type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> a
 
 -- anchor in signal and not in videoSpec.
 -- opacity (ramp 0 1 3) $ "myMov.mp4"
 
 instance Num a => Num (Signal a) where
-    x + y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) + (y t dur renderTime evalTime)
-    x * y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) * (y t dur renderTime evalTime)
-    negate x = \t dur renderTime evalTime -> negate (x t dur renderTime evalTime)
-    abs x = \t dur renderTime evalTime -> abs (x t dur renderTime evalTime)
-    signum x = \t dur renderTime evalTime -> signum (x t dur renderTime evalTime)
-    fromInteger x = \t dur renderTime evalTime -> fromInteger x
+    x + y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) + (y t dur renderTime evalTime anchTime)
+    x * y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) * (y t dur renderTime evalTime anchTime)
+    negate x = \t dur renderTime evalTime anchTime -> negate (x t dur renderTime evalTime anchTime)
+    abs x = \t dur renderTime evalTime anchTime -> abs (x t dur renderTime evalTime anchTime)
+    signum x = \t dur renderTime evalTime anchTime -> signum (x t dur renderTime evalTime anchTime)
+    fromInteger x = \t dur renderTime evalTime anchTime -> fromInteger x
 
 ------ functions that generate signals
 
 constantSignal :: a -> Signal a
-constantSignal x = \_ _ _ _ -> x
+constantSignal x = \_ _ _ _ _ -> x
 
-defaultAnchor:: Signal UTCTime
-defaultAnchor t vl render eval = quantAnchor 1 0 t vl render eval
 
-  -- 0.86  -- thresh: 85%
--- opacity (ramp 0 1 3) $ "myMov.mp4"
+-- Two cases that should work:
+-- opacity (ramp 0 1 3) $ "myMov.mp4" -- implicit quant 
 
 -- opacity (ramp 0 1 3) $ quant 2 0.5 $ "myMov.mp4" 
--- quant defined by 2 numbers: cycle multiplier, offset (metre and the position inside the metre)
+
+defaultAnchor:: Tempo -> UTCTime -> UTCTime
+defaultAnchor t eval = quantAnchor 1 0 t eval
+
+quant:: Rational -> Rational -> Signal UTCTime -- parser "quant"
+quant cycleMult offset t vl rT eT aT = quantAnchor cycleMult offset t eT
+
+-- calculates the anchorTime 
+quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
+quantAnchor cycleMult offset t eval = 
+  let ec = elapsedCycles t eval 
+      currentCycle = fromIntegral (floor ec):: Rational
+      align = if ec - currentCycle > 0.95 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
+      toQuant = currentCycle + align -- as integer to go through the quantomatic
+      quanted = quantomatic cycleMult toQuant 
+      anchor = cycsToSecs t quanted -- into seconds (as NDT)
+      -- offset should be in percentage of cycle!
+      off = (offset*(1/(freq t))) / 1
+    in addUTCTime anchor ((time t) + off) -- as UTCTime
+
+cycsToSecs:: Tempo -> Rational -> NominalDiffTime
+cycsToSecs t x = realToFrac (x * (1/ freq t))
 
 -- this function gets the next bar that aligns with the quant multiplier value
 quantomatic:: Rational -> Rational -> Rational
@@ -48,23 +67,6 @@ remIsZero nextBeat cycleMultiplier =
       remainder = divi - floored
   in if remainder == 0 then True else False 
 
--- calculates the anchorTime 
-quantAnchor:: Rational -> Rational -> Signal UTCTime
-quantAnchor cycleMult offset t vl render eval = 
-  let ec = elapsedCycles t eval 
-      currentCycle = fromIntegral (floor ec):: Rational
-      align = if ec - currentCycle > 0.95 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
-      toQuant = currentCycle + align -- as integer to go through the quantomatic
-      quanted = quantomatic cycleMult toQuant 
-      anchor = cycsToSecs t quanted -- into seconds (as NDT)
-      -- offset should be in percentage of cycle!
-      off = (offset*(1/(freq t))) / 1
-    in addUTCTime anchor ((time t) + off) -- as UTCTime
-
-cycsToSecs:: Tempo -> Rational -> NominalDiffTime
-cycsToSecs t x = realToFrac (x * (1/ freq t))
-
-
 -- Temporal Functions
 
 ------ Manually apply a rate into a video ------
@@ -74,7 +76,7 @@ cycsToSecs t x = realToFrac (x * (1/ freq t))
 -- producing inconsistencies
 
 applyRate:: Rational -> Signal (Maybe Rational)
-applyRate rate t length render eval = Just rate
+applyRate rate t length render eval a = Just rate
 
 
 ------ Play at Natural Rate and without alteration ------
@@ -378,7 +380,7 @@ opacityChanger arg t len rend eval = arg
 -- Dynamic Functions
 
 ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
-ramp durVal startVal endVal = \_ _ renderTime evalTime ->
+ramp durVal startVal endVal = \_ _ renderTime evalTime anchorTime ->
   let startTime = anchorTime -- place holder, add quant later
       endTime' = addUTCTime durVal evalTime
       endTime = diffUTCTime endTime' evalTime

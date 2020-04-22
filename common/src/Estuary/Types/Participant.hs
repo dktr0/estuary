@@ -18,6 +18,7 @@ data Participant = Participant {
   status :: Text,
   lastEdit :: UTCTime,
   mainLoad :: Int,
+  animationFPS :: Int,
   animationLoad :: Int,
   latency :: NominalDiffTime,
   browser :: Text

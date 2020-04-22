@@ -50,6 +50,10 @@ import Estuary.Widgets.Footer
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
+import Estuary.Widgets.Terminal
+import Estuary.Widgets.Generic
+import qualified Estuary.Types.Terminal as Terminal
+import Estuary.Widgets.Editor
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -73,18 +77,25 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
-  renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  (deltasDown',wsCtxChange) <- estuaryWebSocket ctx renderInfo requestsUp
+  rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
+  (deltasDown',wsCtxChange) <- estuaryWebSocket rInfo requestsUp
   let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
 
   let ensembleCDyn = fmap ensembleC ctx
 
-  -- three GUI components: header, main (navigation), footer
-  headerChange <- header ctx
-  (requests, ensembleRequestFromPage, hintsFromPage) <- divClass "page ui-font" $ navigation ctx renderInfo deltasDown
-  command <- footer ctx renderInfo deltasDown hints
-  let commandRequests = attachWithMaybe commandToRequest (current ensembleCDyn) command
-  let ensembleRequests = leftmost [commandRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
+  -- four GUI components: header, main (navigation), terminal, footer
+  (headerChange,_) <- runEditor ctx rInfo header
+  ((requests, ensembleRequestFromPage), hintsFromPage) <- divClass "page ui-font" $ do
+    runEditor ctx rInfo $ navigation deltasDown
+  let terminalShortcut = ffilter (elem ToggleTerminal) hints
+  let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
+  terminalVisible <- toggle False terminalEvent
+  (command,_) <- hideableWidget' terminalVisible $ do
+    runEditor ctx rInfo $ terminalWidget deltasDown hints
+  (terminalButton,_) <- runEditor ctx rInfo footer
+  let commandEnsembleRequests = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
+  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
+  let commandRequests = fmapMaybe commandToRequest command
 
   -- map from EnsembleRequests (eg. edits) and Commands (ie. from the terminal) to
 
@@ -111,7 +122,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
   let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
   let requests' = fmap (:[]) $ requests
-  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests']
+  let requests'' = fmap (:[]) $ commandRequests
+  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
 
   liftIO $ forkRenderThreads irc ctxM glCtx riM
   return ()
@@ -214,3 +226,8 @@ changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref) newStyle
 foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: Text -> IO ()
+
+commandToRequest :: Terminal.Command -> Maybe Request
+commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
+commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
+commandToRequest _ = Nothing

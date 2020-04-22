@@ -166,7 +166,6 @@ body::-webkit-scrollbar-thumb {
 	left: 0px;
 	top: 0px;
 	border-top: 1px solid;
-	border-bottom: 1px solid;
 	padding-left: 15px;
 	padding-right: 15px;
 	overflow:hidden;
@@ -192,27 +191,20 @@ body::-webkit-scrollbar-thumb {
 	background-color: transparent;
 }
 
-
 .footer{
 	flex:none;
-/* 	flex-grow:0;
-	flex-shrink:1; */
 	display:flex;
-	flex-direction: row-reverse;
 	border: none;
 	padding-top: 5px;
 	padding-bottom: 5px;
 	padding-left: 15px;
 	padding-right: 15px;
+  justify-content: space-between;
 }
-
-
 
 .btn {
 	cursor: pointer;
 }
-
-
 
 /* source  */
 .peak{
@@ -362,7 +354,7 @@ body::-webkit-scrollbar-thumb {
 /*modifies the chat messages (source)*/
 .chatMessageContainer {
 	overflow: auto;
-	height: 1em;
+	height: 7em;
 }
 
 .chatMessage {
@@ -857,7 +849,7 @@ table, tr, td {border: none;}
 	flex: 1 1 auto;
 	padding-left: 0.7em;
 	overflow:hidden;
-
+  border-top: 1px solid;
 }
 
 .terminalHeader {
@@ -874,6 +866,15 @@ table, tr, td {border: none;}
 .terminalInput input {
 	border:none;
 	background-color: transparent;
+}
+
+.terminalHidden {
+  display: none;
+}
+
+.chat {
+  display: inline-block;
+  width: 50%;
 }
 
 .joinButton {
@@ -917,6 +918,12 @@ cursor: pointer;
     text-align: center;
     width: fit-content;
 
+}
+
+.ensembleStatus {
+  display: inline-block;
+  width: 50%;
+  vertical-align: top;
 }
 
 /*
@@ -1074,6 +1081,7 @@ display: inline-flex;
   border: 1px solid var(--primary-color);
   border-radius: 5px;
   margin-bottom: 0.5%;
+  height: 7em;
 }
 
 .tableContainer::-webkit-scrollbar  {
@@ -1108,20 +1116,33 @@ display: inline-flex;
   width: 100%;
 }
 
-.statusWidgetNameAndLocation {
-	display: flex;
-	flex-wrap: nowrap   ;
+.tableContainer tr {
+
 }
+
+.tableContainer table,  td {
+	width: 100%;
+    border-bottom: 1px solid var(--primary-color);
+    border-collapse: collapse;
+}
+
+.statusWidgetNameAndLocation{
+		margin-bottom: 1%;
+		width: auto;
+}
+
 
 .statusWidgetStatusInput input {
 	color: var(--primary-color);
 	background-color: transparent;
 	border: none;
 	width: 99%;
+/* 	pointer-events: none; */
 }
 
-.tableContainer td {
-	width: 100%;
+
+.statusWidgetAnonymousPart {
+	text-align: center;
 }
 
 /* Tooltip classes */

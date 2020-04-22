@@ -61,7 +61,8 @@ postLeftsToLog db cHandle msgPrefix (Left e) = postLog db cHandle $ msgPrefix <>
 
 data EnsembleD = EnsembleD {
   ensemble :: Ensemble.Ensemble,
-  password :: Text,
+  ownerPassword :: Text,
+  joinPassword :: Text,
   creationTime :: UTCTime,
   expiry :: Maybe NominalDiffTime,
   lastActionTime :: UTCTime
@@ -87,7 +88,8 @@ ensembleStoEnsembleD eName x = do
   }
   return $ EnsembleD {
     ensemble = e,
-    Estuary.Types.Database.password = Estuary.Types.EnsembleS.password x,
+    Estuary.Types.Database.ownerPassword = Estuary.Types.EnsembleS.ownerPassword x,
+    Estuary.Types.Database.joinPassword = Estuary.Types.EnsembleS.joinPassword x,
     Estuary.Types.Database.creationTime = Estuary.Types.EnsembleS.creationTime x,
     Estuary.Types.Database.expiry = Estuary.Types.EnsembleS.expiry x,
     Estuary.Types.Database.lastActionTime = lat
@@ -102,7 +104,8 @@ ensembleDtoEnsembleS x = do
   vs' <- atomically (mapM newTVar vs >>= newTVar)
   lat <- atomically $ newTVar $ Estuary.Types.Database.lastActionTime x
   return $ EnsembleS {
-    Estuary.Types.EnsembleS.password = Estuary.Types.Database.password x,
+    Estuary.Types.EnsembleS.ownerPassword = Estuary.Types.Database.ownerPassword x,
+    Estuary.Types.EnsembleS.joinPassword = Estuary.Types.Database.joinPassword x,
     Estuary.Types.EnsembleS.creationTime = Estuary.Types.Database.creationTime x,
     Estuary.Types.EnsembleS.expiry = Estuary.Types.Database.expiry x,
     Estuary.Types.EnsembleS.lastActionTime = lat,

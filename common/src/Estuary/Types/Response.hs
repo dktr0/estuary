@@ -16,6 +16,7 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Types.Definition
 
 data Response =
+  ResponseOK Text | -- eg. ensemble successfully deleted
   ResponseError Text | -- eg. ensemble login failure
   EnsembleList [Text] |
   JoinedEnsemble Text Text | -- ensemble username
@@ -40,6 +41,11 @@ justEnsembleList = lastOrNothing . mapMaybe f
 justJoinedEnsemble :: [Response] -> Maybe (Text,Text)
 justJoinedEnsemble = lastOrNothing . mapMaybe f
   where f (JoinedEnsemble x y) = Just (x,y)
+        f _ = Nothing
+
+justResponseOK :: [Response] -> Maybe Text
+justResponseOK = lastOrNothing . mapMaybe f
+  where f (ResponseOK x) = Just x
         f _ = Nothing
 
 justResponseError :: [Response] -> Maybe Text
