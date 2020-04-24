@@ -15,11 +15,11 @@ import qualified Estuary.Types.Term as Term
 import Estuary.Types.Hint
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Generic
-import Estuary.Reflex.Utility (dynButton)
+import Estuary.Reflex.Utility (dynButton, invisibleButton)
 
 footer :: MonadWidget t m => Event t [Hint] -> Editor t m (Event t ())
 footer hints = divClass "footer" $ do
-  terminalButton <- el "div" $ dynButton ">_"
+  toggleTerminalButton <- divClass "footer-area" $ invisibleButton
   let statsEvent = ffilter (elem ToggleStats) hints
   statsVisible <- toggle True statsEvent
   hideableWidget' statsVisible $ do
@@ -44,4 +44,4 @@ footer hints = divClass "footer" $ do
       text "FPS ("
       (fmap (fmap (showt :: Int -> Text)) $ holdUniqDyn $ fmap animationLoad ri) >>= dynText
       text "ms)"
-  return terminalButton
+  return toggleTerminalButton
