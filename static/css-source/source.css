@@ -200,6 +200,7 @@ body::-webkit-scrollbar-thumb {
 	padding-left: 15px;
 	padding-right: 15px;
   justify-content: space-between;
+  height: 18px;
 }
 
 .btn {
@@ -1202,4 +1203,6 @@ display: inline-flex;
 .footer-area {
   width: 50%;
   display: inline-block;
+  text-align: end;
+  cursor: pointer;
 }

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.Footer where
 
@@ -18,12 +18,13 @@ import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility (dynButton, invisibleButton)
 
 footer :: MonadWidget t m => Event t [Hint] -> Editor t m (Event t ())
-footer hints = divClass "footer" $ do
+footer hints = divClass "footer code-font" $ mdo
   toggleTerminalButton <- divClass "footer-area" $ invisibleButton
-  let statsEvent = ffilter (elem ToggleStats) hints
+  let statsShortcut = ffilter (elem ToggleStats) hints
+  let statsEvent = leftmost [() <$ statsShortcut, statsButton]
   statsVisible <- toggle True statsEvent
-  hideableWidget' statsVisible $ do
-    divClass "peak primary-color code-font" $ do
+  statsButton <- clickableDiv "footer-area" $ do
+    hideableWidget' statsVisible $ do
       ctx <- context
       ri <- renderInfo
       cc <- fmap (fmap showt) $ holdUniqDyn $ fmap clientCount ctx
