@@ -27,7 +27,7 @@ import Estuary.Widgets.Editor
 import Estuary.Widgets.EnsembleStatus
 
 terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> Editor t m (Event t Terminal.Command)
-terminalWidget deltasDown hints = divClass "terminal" $ mdo
+terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
   commands <- divClass "chat" $ mdo
     (inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
       divClass "webSocketButtons" $ term Term.TerminalChat >>= dynText
