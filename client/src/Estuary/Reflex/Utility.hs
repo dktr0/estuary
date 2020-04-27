@@ -41,6 +41,12 @@ buttonWithClass s = do
   (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "ui-buttons other-borders code-font")]) $ text s
   return $ domEvent Click e
 
+-- used in the footer
+invisibleButton :: MonadWidget t m => m (Event t ())
+invisibleButton = do
+  (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "invisible-button")]) $ text "none"
+  return $ domEvent Click e
+
 --Button with dynamic label.
 dynButton :: MonadWidget t m => Dynamic t Text -> m (Event t ())
 dynButton = dynE . fmap buttonWithClass
