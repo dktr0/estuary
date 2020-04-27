@@ -56,7 +56,6 @@ dependencies:
   - parsec-numbers
   - reflex-dom-contrib
   - mtl
-  - mwc-random
   - haskell-src-exts
   - haskellish
   - timeNot

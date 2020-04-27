@@ -182,24 +182,24 @@ in
         }) {});
 
         # needs jailbreak for dependency microspec >=0.2.0.1
-        tidal = if !(self.ghc.isGhcjs or false) then null else doJailbreak (self.callCabal2nixWithOptions "tidal"
+        tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0aa60b82y2ybhxm09r4l7jr95igxh8bl0n8bb4hz9h8hir9zlpiy";
-          rev = "7c47c99cc4e523f676d4ec1be93639cd3f2beab6";
+          sha256 = "0y9xw4i6hmhh6dz591am20mm4cjv68fl8j1n4lxlldsyjrr610h7";
+          rev = "acd7fb449efa996ac175239aa256d28dbffab89a";
           fetchSubmodules = true;
-          }) "" {});
+          }) "" {}));
 
-        tidal-parse = if !(self.ghc.isGhcjs or false) then null else doJailbreak (self.callCabal2nixWithOptions
+        tidal-parse = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
 #            "tidal-parse" ../tidal/tidal-parse "" {});
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0aa60b82y2ybhxm09r4l7jr95igxh8bl0n8bb4hz9h8hir9zlpiy";
-            rev = "7c47c99cc4e523f676d4ec1be93639cd3f2beab6";
+            sha256 = "0y9xw4i6hmhh6dz591am20mm4cjv68fl8j1n4lxlldsyjrr610h7";
+            rev = "acd7fb449efa996ac175239aa256d28dbffab89a";
             fetchSubmodules = true;
               })
-            "--subpath tidal-parse" {});
+            "--subpath tidal-parse" {}));
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
