@@ -1,9 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Languages.CineCer0.VideoSpec where
 
 import Language.Haskell.Exts
 import Control.Applicative
 import Data.Time
 import Data.Text
+import TextShow
 
 import Estuary.Types.Tempo
 
@@ -17,7 +20,7 @@ data VideoSpec = VideoSpec {
   posY :: Signal Rational,
   width :: Signal Rational,
   height :: Signal Rational,
-  opacity :: Signal Rational,
+  opacity :: Signal Rational, --Signal (Maybe Rational),
   blur :: Signal Rational,
   brightness :: Signal Rational,
   contrast :: Signal Rational,
@@ -160,11 +163,16 @@ shiftSaturate s v = v {
 
 -- Masks
 -- it should be just four arguments a b c d
--- circleMask :: Signal Rational -> VideoSpec -> VideoSpec
--- circleMask s vs = vs {
---   mask = \a b c d e -> "clip-path: circle(" <> showt ((x*100) :: Double)<> "% at center);"
---           where x = s a b c d e
---   }
+circleMask :: Signal Rational -> VideoSpec -> VideoSpec
+circleMask s vs = vs {
+  mask = \a b c d -> "clip-path: circle(" <> showt (((s a b c d)*100) :: Rational) <> "% at center);"
+  --where x = s a b c d
+  }
+
+-- a     b           c    d
+-- t lengthOfVideo rTime eTime
+-- setCircleMask 50 $ ""
+-- setCircleMask 50 (ramp 1 1 1)
 
 -- try to include rectMask
 

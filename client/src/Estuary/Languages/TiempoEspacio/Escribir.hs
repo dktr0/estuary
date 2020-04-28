@@ -123,17 +123,15 @@ miscelanea = choice [
 
 --subject = choice [try articleAndSubject, try nounSubject]
 
--- --intPattern
-
 nounSubject :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 nounSubject = choice [
   (reserved "Palabra" <|> reserved "Palabras" <|> reserved "Idioma" <|> reserved "Idiomas" <|> reserved "Ideas") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational),
   (reserved "Dedo" <|> reserved "Dedos" <|> reserved "Eggplant" <|> reserved "Eggplants") >> option (Tidal.fast 1) (double' >>= return . Tidal.fast . pure . toRational)
   ]
 
--- articleAndSubject :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern -> Tidal.ControlPattern)
--- articleAndSubject =
---   (reserved "la" <|> reserved "las" <|> reserved "La" <|> reserved "Las" <|> reserved "los" <|> reserved "Los" <|> reserved "El" <|> reserved "el") >> return (intPattern >>= return . Tidal.every) <*> nounSubject
+-- articleAndSubject' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern -> Tidal.ControlPattern)
+-- articleAndSubject' =
+--   (reserved "la" <|> reserved "las" <|> reserved "La" <|> reserved "Las" <|> reserved "los" <|> reserved "Los" <|> reserved "El" <|> reserved "el") >> return (int' >>= return . Tidal.every) <*> nounSubject
 
 articleAndSubject :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 articleAndSubject =
