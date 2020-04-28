@@ -10,7 +10,7 @@ import Estuary.Languages.CineCer0.Signal
 
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
-  anchorTime :: (UTCTime -> Tempo -> UTCTime), -- evalTime, ¿tempo? what other things it needs?
+  anchorTime :: (Tempo -> UTCTime -> UTCTime), -- evalTime, ¿tempo? what other things it needs?
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
   posX :: Signal Rational,
@@ -31,7 +31,7 @@ instance Show VideoSpec where
 emptyVideoSpec :: VideoSpec
 emptyVideoSpec = VideoSpec {
   sampleVideo = "",
-  anchorTime = defaultAnchor, -- a function which throws back the "default anchorTime (placeholder value)"
+  anchorTime = defaultAnchor, -- how to get the tempo and evaltime for this enmptyVideoSpec
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
   posX = constantSignal 0.0,
