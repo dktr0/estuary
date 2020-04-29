@@ -2,6 +2,7 @@
 module Estuary.Types.Variable where
 
 import Reflex
+import Reflex.Dom
 import Control.Applicative
 import Control.Monad
 
@@ -41,6 +42,19 @@ instance (Reflex t, Semigroup a) => Semigroup (Variable t a) where
 
 instance (Reflex t, Monoid a) => Monoid (Variable t a) where
   mempty = Variable (constDyn mempty) never
+
+returnVariable :: (Monad m, Reflex t, MonadSample t m, MonadHold t m) => Dynamic t a -> Event t a -> m (Variable t a)
+returnVariable deltasDown editsUp = do
+  i <- sample $ current deltasDown
+  val <- holdDyn i $ leftmost [editsUp, updated deltasDown]
+  return $ Variable val editsUp
+
+-- the former reflexWidgetToEditor...
+variableWidget :: MonadWidget t m => Dynamic t a -> (a -> Event t a -> m (Event t a)) -> m (Variable t a)
+variableWidget delta widget = do
+  i <- sample $ current delta
+  x <- widget i $ updated delta
+  returnVariable delta x
 
 flattenDynamicVariable :: Reflex t => Dynamic t (Variable t a) -> Variable t a
 flattenDynamicVariable x = Variable d e

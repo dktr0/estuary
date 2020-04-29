@@ -1,43 +1,48 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.Footer where
 
-import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response)
+import Reflex
+import Reflex.Dom
 import Data.Text (Text)
-import Data.Map.Strict
-import Data.Bool
 import qualified Data.Text as T
 import TextShow
+import Control.Monad
 
 import Estuary.Types.Context
 import Estuary.Types.RenderInfo
-import Estuary.Types.Request
-import Estuary.Types.Response
-import Estuary.Types.Hint
 import qualified Estuary.Types.Term as Term
+import Estuary.Types.Hint
+import Estuary.Widgets.Editor
 import Estuary.Widgets.Generic
-import Estuary.Reflex.Utility (translateDyn,dynButton)
+import Estuary.Reflex.Utility (dynButton, invisibleButton)
 
-
-footer :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> m (Event t ())
-footer ctx renderInfo = divClass "footer" $ do
-  terminalButton <- el "div" $ dynButton ">_"
-  divClass "peak primary-color code-font" $ do
-    dynText =<< holdUniqDyn (fmap formatServerInfo ctx)
-    text ", "
-    dynText =<< translateDyn Term.Load ctx
-    text " "
-    dynText =<< holdUniqDyn (fmap (showt . avgRenderLoad) renderInfo)
-    text "%,   "
-    dynText =<< holdUniqDyn (fmap (showt . animationFPS) renderInfo)
-    text "FPS ("
-    dynText =<< holdUniqDyn (fmap (showt . animationLoad) renderInfo)
-    text "ms)"
-  return terminalButton
-
-formatServerInfo :: Context -> Text
-formatServerInfo c = showt cc <> " connections, latency " <> showt l <> "ms"
-  where
-    cc = clientCount c
-    l = ((round $ serverLatency c * 1000) :: Int)
+footer :: MonadWidget t m => Event t [Hint] -> Editor t m (Event t ())
+footer hints = divClass "footer code-font" $ mdo
+  toggleTerminalButton <- divClass "footer-area" $ invisibleButton
+  let statsShortcut = ffilter (elem ToggleStats) hints
+  let statsEvent = leftmost [() <$ statsShortcut, statsButton]
+  statsVisible <- toggle True statsEvent
+  statsButton <- clickableDiv "footer-area" $ do
+    hideableWidget' statsVisible $ do
+      ctx <- context
+      ri <- renderInfo
+      cc <- fmap (fmap showt) $ holdUniqDyn $ fmap clientCount ctx
+      dynText cc
+      text " "
+      term Term.Connections >>= dynText
+      text ", "
+      term Term.Latency >>= dynText
+      text " "
+      sl <- fmap (fmap $ (showt :: Int -> Text) . round . (*1000)) $ holdUniqDyn $ fmap serverLatency ctx
+      dynText sl
+      text "ms, "
+      term Term.Load >>= dynText
+      text " "
+      (fmap (fmap showt) $ holdUniqDyn $ fmap avgRenderLoad ri) >>= dynText
+      text "%,   "
+      (fmap (fmap showt) $ holdUniqDyn $ fmap animationFPS ri) >>= dynText
+      text "FPS ("
+      (fmap (fmap (showt :: Int -> Text)) $ holdUniqDyn $ fmap animationLoad ri) >>= dynText
+      text "ms)"
+  return toggleTerminalButton

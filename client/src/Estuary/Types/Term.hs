@@ -19,8 +19,10 @@ data Term =
   CommunityPassword |
   HostPassword |
   ParticipantPassword |
+  Ensemble |
   EnsembleName |
   EnsembleExpiry |
+  AnonymousParticipants |
   TerminalChat |
   Theme |
   Load |
@@ -32,7 +34,9 @@ data Term =
   EnsembleUserName |
   EnsembleLocation |
   EnsembleLogin |
-  Syntax
+  Syntax |
+  Connections |
+  Latency
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -59,6 +63,10 @@ translate Collaborate English = "Collaborate"
 translate Send Français = "Envoyer"
 translate Send Español = "enviar"
 translate Send English = "Send"
+
+translate Ensemble English = "Ensemble"
+translate Ensemble Français = "Ensemble"
+translate Ensemble Español = "Ensamble"
 
 translate CreateNewEnsemble Français = "Créer un nouvel ensemble"
 translate CreateNewEnsemble English = "Create new ensemble"
@@ -90,6 +98,8 @@ translate EnsembleName Español = "Nombre del ensamble:"
 
 translate EnsembleExpiry English = "Ensemble Expiry:"
 
+translate AnonymousParticipants English = "Anonymous Participants"
+
 translate TerminalChat Français = "Terminal/Chat:"
 translate TerminalChat English = "Terminal/Chat:"
 translate TerminalChat Español = "Terminal/Chat:"
@@ -118,11 +128,9 @@ translate JoiningEnsemble Français = "Joindre l'ensemble"
 translate JoiningEnsemble English = "Joining ensemble"
 translate JoiningEnsemble Español = "Unirse al ensamble"
 
-
 translate EnsembleUserName Français = "Entrer le nom d'utilisateur (optionel) comme membre de l'ensemble:"
 translate EnsembleUserName English = "Enter username (optional) within ensemble:"
 translate EnsembleUserName Español = "Ingresar nombre de usuario dentro del ensamble (opcional):"
-
 
 translate EnsembleLocation Français = "Décrivez votre situation géographique (optionel):"
 translate EnsembleLocation English = "Describe your location (optional):"
@@ -138,4 +146,8 @@ translate Peak Español = "tope"
 
 translate Syntax English = "Syntax"
 
-translate x _ = pack $ "?" ++ show x
+translate Connections English = "connections"
+
+translate Latency English = "latency"
+
+translate x _ = translate x English
