@@ -119,7 +119,8 @@ rat_rat_vs_vs :: H (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
-  ndt_rat_rat_vs_vs <*> ndt
+  ndt_rat_rat_vs_vs <*> ndt <|>
+  quant <$ reserved "quant"
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_vs_vs =

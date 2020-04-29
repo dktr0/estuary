@@ -155,7 +155,7 @@ onlyChangedVideoSources nSpec oSpec
 ---- update CineCer0 State and Continuing Video ----
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
-updateCineCer0State t now spec st = do
+updateCineCer0State t rTime spec st = do
   --putStrLn $ show spec
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
@@ -178,7 +178,7 @@ updateCineCer0State t now spec st = do
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   -- update videoSpecs
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-  sequence $ intersectionWith (updateContinuingVideo t eTime now (divWidth,divHeight)) vSpecs continuingVideos
+  sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos
   return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs } --
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
@@ -194,25 +194,26 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let fitByWidth = heightIfFitsWidth <= sh
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
-    let actualWidth = (width s t lengthOfVideo rTime eTime) * realToFrac fitWidth
-    let actualHeight = (height s t lengthOfVideo rTime eTime) * realToFrac fitHeight
-    let centreX = ((posX s t lengthOfVideo rTime eTime)* 0.5 + 0.5) * realToFrac sw
-    let centreY = ((posY s t lengthOfVideo rTime eTime)* 0.5 + 0.5) * realToFrac sh
+    let aTime = anchorTime s t eTime -- :: UTCTime
+    let actualWidth = (width s t lengthOfVideo rTime eTime aTime) * realToFrac fitWidth
+    let actualHeight = (height s t lengthOfVideo rTime eTime aTime) * realToFrac fitHeight
+    let centreX = ((posX s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
+    let centreY = ((posY s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
     -- update playback rate
-    let rate = playbackRate s t lengthOfVideo rTime eTime
+    let rate = playbackRate s t lengthOfVideo rTime eTime aTime
     maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
     -- update position in time
-    let pos = (playbackPosition s) t lengthOfVideo rTime eTime
+    let pos = (playbackPosition s) t lengthOfVideo rTime eTime aTime
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
     -- style filters
-    let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime <*> Just 100
-    let blur' = blur s t lengthOfVideo rTime eTime
-    let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime <*> Just 100
-    let contrast' = (*) <$> (contrast s) t lengthOfVideo rTime eTime <*> Just 100
-    let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime <*> Just 100
-    let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime <*> Just 100
+    let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let blur' = blur s t lengthOfVideo rTime eTime aTime
+    let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let contrast' = (*) <$> (contrast s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let generateFilter' = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     --update style
     videoStyle v (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) generateFilter'

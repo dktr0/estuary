@@ -14,6 +14,7 @@ import Estuary.Languages.CineCer0.Signal
 
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
+  anchorTime :: (Tempo -> UTCTime -> UTCTime),
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
   posX :: Signal Rational,
@@ -34,7 +35,8 @@ instance Show VideoSpec where
 
 emptyVideoSpec :: VideoSpec
 emptyVideoSpec = VideoSpec {
-  sampleVideo = "", -- Data.Text.pack ""
+  sampleVideo = "",
+  anchorTime = defaultAnchor,
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
   posX = constantSignal 0.0,
@@ -53,9 +55,9 @@ emptyVideoSpec = VideoSpec {
 stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = emptyVideoSpec { sampleVideo = x }
 
--- it should be just five arguments _ _ _ _ _ 
+-- it should be just five arguments _ _ _ _ _
 emptyText :: Signal Text
-emptyText _ _ _ _ = Data.Text.empty
+emptyText _ _ _ _ _ = Data.Text.empty
 
 --
 -- Style Functions --
@@ -164,11 +166,15 @@ shiftSaturate s v = v {
 -- it should be just five arguments a b c d e
 circleMask :: Signal Rational -> VideoSpec -> VideoSpec
 circleMask s vs = vs {
-  mask = \a b c d -> "clip-path: circle(" <> showt (((s a b c d)*100) :: Rational) <> "% at center);"
+  mask = \a b c d e -> "clip-path: circle(" <> showt (((s a b c d e)*100) :: Rational) <> "% at center);"
   }
 
 --
 -- Time Functions --
+
+-- anchorTime:: -- parser
+quant:: Rational -> Rational -> VideoSpec -> VideoSpec
+quant nc offset vs = vs { anchorTime = quantAnchor nc offset }
 
 playNatural :: Rational -> VideoSpec -> VideoSpec
 playNatural n vs = vs {
@@ -184,8 +190,8 @@ playRound n vs = vs {
 
 playRoundMetre :: Rational -> VideoSpec -> VideoSpec
 playRoundMetre n vs = vs {
-  playbackPosition = playRoundMetrePos n,
-  playbackRate = playRoundMetreRate n
+  playbackPosition = playRoundMetre_Pos n,
+  playbackRate = playRoundMetre_Rate n
   }
 
 playEvery :: Rational -> Rational -> VideoSpec -> VideoSpec
