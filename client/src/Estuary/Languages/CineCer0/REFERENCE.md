@@ -25,10 +25,19 @@ setSaturate [s] $ -- 1 = natural video saturation (1++ = more, 1-- =less) <br />
 
 ## ramp
 
-(ramp [durVal] [startVal] [endVal]) -- in which x =, y =, z= <br />
+(ramp [Initial_Value] [End_Value] [Cicles]) <br />
 
-The following can be use with the ramp function: <br />
-width (ramp x y z) $ | height (ramp x y z) $ | posX (ramp x y z) $ | posY (ramp x y z) $ | opacity (ramp x y z) $ | blur (ramp x y z) $ | brightness (ramp x y z) $ | contrast (ramp x y z) $ | grayscale (ramp x y z) $ | saturate (ramp x y z) $ <br />
+ramp can be use in style functions. Example <br />
+width (ramp x y z) <br />
+
+## quant
+
+$ quant [Cicle_Multiplier] [Offset] <br />
+
+quant function has two values. Cycle multiplier aligns the anchor time with multiples of the given value. Offset is a value from 0 to 1 that will shift the starting position of the quantisation <br />
+
+quant can be use with any style functions with or without a ramp. Example: <br />
+opacity (ramp x y z) $ quant x y <br />
 
 
 ## Time Functions

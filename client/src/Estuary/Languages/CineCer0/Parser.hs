@@ -48,21 +48,21 @@ literalVideoSpec =
 -- //////////////
 
 sigMayRat :: H (Signal (Maybe Rational))
-sigMayRat = (constantSignal . Just) <$> rationalOrInteger
+sigMayRat =
+  rat_sigMayRat <*> rationalOrInteger <|>
+  (constantSignal . Just) <$> rationalOrInteger
+
+rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
+rat_sigRat = ndt_rat_rat_sigMayRat <*> rationalOrInteger
+
+rat_rat_sigMayRat :: H (Rational -> Rational -> Signal (Maybe Rational))
+rat_rat_sigRat = ndt_rat_rat_sigMayRat <*> ndt
+
+ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
+ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
 sigRat :: H (Signal Rational)
-sigRat =
-  rat_sigRat <*> rationalOrInteger <|>
-  constantSignal <$> rationalOrInteger
-
-rat_sigRat :: H (Rational -> Signal Rational)
-rat_sigRat = rat_rat_sigRat <*> rationalOrInteger
-
-rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
-rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
-
-ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
-ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
+sigRat = constantSignal <$> rationalOrInteger
 
 -- //////////////
 

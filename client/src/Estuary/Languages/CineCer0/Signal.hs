@@ -29,7 +29,7 @@ multiplyMaybe Nothing (Just x) = Just x
 multiplyMaybe (Just x) (Just y) = Just (x*y)
 
 multipleMaybeSignal :: Num a => Signal (Maybe a) -> Signal (Maybe a) -> Signal (Maybe a)
-multipleMaybeSignal x y = \a b c d -> multiplyMaybe (x a b c d) (y a b c d)
+multipleMaybeSignal x y = \a b c d e -> multiplyMaybe (x a b c d e) (y a b c d e)
 
 
 ------ functions that generate signals
@@ -77,8 +77,8 @@ remIsZero nextBeat cycleMultiplier =
   in if remainder == 0 then True else False
 
 constantSignal' :: Maybe a -> Signal (Maybe a)
-constantSignal' Nothing = \_ _ _ _ -> Nothing
-constantSignal' (Just x) = \_ _ _ _ -> (Just x)
+constantSignal' Nothing = \_ _ _ _ _ -> Nothing
+constantSignal' (Just x) = \_ _ _ _ _ -> (Just x)
 
 -- Temporal Functions
 
