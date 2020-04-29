@@ -135,8 +135,7 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let fitByWidth = heightIfFitsWidth <= sh
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
-    let aTime = defaultAnchor t eTime
-    -- from here on I need to incorporate an anchorTime
+    let aTime = anchorTime s t eTime -- :: UTCTime
     let actualWidth = (width s t lengthOfVideo rTime eTime aTime) * realToFrac fitWidth
     let actualHeight = (height s t lengthOfVideo rTime eTime aTime) * realToFrac fitHeight
     let centreX = ((posX s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw

@@ -58,8 +58,8 @@ rat_sigRat = rat_rat_sigRat <*> rationalOrInteger
 rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
 rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt 
 
-rat_rat_UTCTime:: H (Rational -> Rational -> Signal UTCTime) -- this is new ¡!
-rat_rat_UTCTime = quant <$ reserved "quant" -- quant is setting the anchor time
+--rat_rat_UTCTime:: H (Rational -> Rational -> Signal UTCTime) -- this is new ¡!
+--rat_rat_UTCTime = quant <$ reserved "quant" -- quant is setting the anchor time
 
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
@@ -115,7 +115,7 @@ rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_rat_vs_vs <*> ndt <|>
---  quant <$ reserved "quant" -- esto es igual a: fmap . const == fmap (quant) . "quant"  ¿?
+  quant <$ reserved "quant" -- esto es igual a: fmap . const == fmap (quant) . "quant"  ¿?
 --  (reserved "quant" >> return quant) -- Look here! parenthesis make this work properly
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)

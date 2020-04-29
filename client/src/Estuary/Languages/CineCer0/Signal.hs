@@ -20,14 +20,14 @@ instance Num a => Num (Signal a) where
     signum x = \t dur renderTime evalTime anchTime -> signum (x t dur renderTime evalTime anchTime)
     fromInteger x = \t dur renderTime evalTime anchTime -> fromInteger x
 
-multipleMaybeSignal :: Num a => Signal (Maybe a) -> Signal (Maybe a) -> Signal (Maybe a)
-multiplyMaybeSignal x y = \a b c d -> multiplyMaybe (x a b c d) (y a b c d)
+-- multiplyMaybeSignal :: Num a => Signal (Maybe a) -> Signal (Maybe a) -> Signal (Maybe a)
+-- multiplyMaybeSignal x y = \a b c d -> multiplyMaybe (x a b c d) (y a b c d)
 
-multiplyMaybe :: Num a => Maybe a -> Maybe a -> Maybe a
-multiplyMaybe Nothing Nothing = Nothing
-multiplyMaybe (Just x) Nothing = Just x
-multiplyMaybe Nothing (Just x) = Just x
-multiplyMaybe (Just x) (Just y) = Just (x*y)
+-- multiplyMaybe :: Num a => Maybe a -> Maybe a -> Maybe a
+-- multiplyMaybe Nothing Nothing = Nothing
+-- multiplyMaybe (Just x) Nothing = Just x
+-- multiplyMaybe Nothing (Just x) = Just x
+-- multiplyMaybe (Just x) (Just y) = Just (x*y)
 
 ------ functions that generate signals
 
@@ -42,9 +42,6 @@ constantSignal x = \_ _ _ _ _ -> x
 
 defaultAnchor:: Tempo -> UTCTime -> UTCTime
 defaultAnchor t eval = quantAnchor 1 0 t eval
-
-quant:: Rational -> Rational -> Signal UTCTime -- parser "quant"
-quant cycleMult offset t vl rT eT aT = quantAnchor cycleMult offset t eT
 
 -- calculates the anchorTime 
 quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
@@ -402,7 +399,7 @@ ramp' renderTime startTime endTime startVal endVal -- delete what is not needed
     | endTime <= renderTime = endVal
     | otherwise =    -- args: 3 secs of dur, startval: 0.2, endval: 0.7
         let segmentVal = endVal - startVal -- 0.5 
-            processInterval = realTofrac (diffUTCTime endTime startTime) :: Rational --  3 segs
+            processInterval = realToFrac (diffUTCTime endTime startTime) :: Rational --  3 segs
             momentAtRender = realToFrac (diffUTCTime renderTime startTime) :: Rational -- assuming render is half way through the process: 1.5 out of 3.0
             percOfProcessAtRender = getPercentage momentAtRender processInterval segmentVal
         in startVal + percOfProcessAtRender
@@ -432,7 +429,7 @@ cycleSecs startPos vlen
     in cycle
 
 chronoIncrease:: UTCTime -> UTCTime -> UTCTime
-chronoHorizon first second = 
+chronoIncrease first second = 
   let diff = diffUTCTime second first
       increase = if signum diff == 1 then first else second
   in increase

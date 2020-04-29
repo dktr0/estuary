@@ -158,7 +158,7 @@ shiftSaturate s v = v {
 --
 -- Time Functions --
 
--- anchorTime:: 
+-- anchorTime:: -- parser
 quant:: Rational -> Rational -> VideoSpec -> VideoSpec
 quant nc offset vs = vs { anchorTime = quantAnchor nc offset }
 
