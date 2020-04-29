@@ -17,10 +17,26 @@ instance Num a => Num (Signal a) where
     signum x = \t dur renderTime evalTime -> signum (x t dur renderTime evalTime)
     fromInteger x = \t dur renderTime evalTime -> fromInteger x
 
+------
+
+multiplyMaybe :: Num a => Maybe a -> Maybe a -> Maybe a
+multiplyMaybe Nothing Nothing = Nothing
+multiplyMaybe (Just x) Nothing = Just x
+multiplyMaybe Nothing (Just x) = Just x
+multiplyMaybe (Just x) (Just y) = Just (x*y)
+
+multipleMaybeSignal :: Num a => Signal (Maybe a) -> Signal (Maybe a) -> Signal (Maybe a)
+multipleMaybeSignal x y = \a b c d -> multiplyMaybe (x a b c d) (y a b c d)
+
+
 ------ functions that generate signals
 
 constantSignal :: a -> Signal a
 constantSignal x = \_ _ _ _ -> x
+
+constantSignal' :: Maybe a -> Signal (Maybe a)
+constantSignal' Nothing = \_ _ _ _ -> Nothing
+constantSignal' (Just x) = \_ _ _ _ -> (Just x)
 
 -- Temporal Functions
 

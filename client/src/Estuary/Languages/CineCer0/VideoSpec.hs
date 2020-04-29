@@ -20,12 +20,12 @@ data VideoSpec = VideoSpec {
   posY :: Signal Rational,
   width :: Signal Rational,
   height :: Signal Rational,
-  opacity :: Signal Rational, --Signal (Maybe Rational),
-  blur :: Signal Rational,
-  brightness :: Signal Rational,
-  contrast :: Signal Rational,
-  grayscale :: Signal Rational,
-  saturate :: Signal Rational,
+  opacity :: Signal (Maybe Rational),
+  blur :: Signal (Maybe Rational),
+  brightness :: Signal (Maybe Rational),
+  contrast :: Signal (Maybe Rational),
+  grayscale :: Signal (Maybe Rational),
+  saturate :: Signal (Maybe Rational),
   mask :: Signal Text
   }
 
@@ -41,18 +41,19 @@ emptyVideoSpec = VideoSpec {
   posY = constantSignal 0.0,
   width = constantSignal 1.0,
   height = constantSignal 1.0,
-  opacity = constantSignal 1.0,
-  blur = constantSignal 0.0,
-  brightness = constantSignal 1.0,
-  contrast = constantSignal 1.0,
-  grayscale = constantSignal 0.0,
-  saturate = constantSignal 1.0,
+  opacity = constantSignal' Nothing,
+  blur = constantSignal Nothing,
+  brightness = constantSignal Nothing,
+  contrast = constantSignal Nothing,
+  grayscale = constantSignal Nothing,
+  saturate = constantSignal Nothing,
   mask = emptyText
 }
 
 stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = emptyVideoSpec { sampleVideo = x }
 
+-- it should be just five arguments _ _ _ _ _ 
 emptyText :: Signal Text
 emptyText _ _ _ _ = Data.Text.empty
 
@@ -84,8 +85,6 @@ shiftCoord s1 s2 vs = vs {
   posY = s2 * posY vs
 }
 
-
-
 setWidth :: Signal Rational -> VideoSpec -> VideoSpec
 setWidth s v = v { width = s }
 
@@ -111,70 +110,62 @@ shiftSize s vs = vs {
   height = s * height vs
 }
 
+-- Filters
 
-
-setOpacity :: Signal Rational -> VideoSpec -> VideoSpec
+setOpacity :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setOpacity s v = v { opacity = s }
 
-shiftOpacity :: Signal Rational -> VideoSpec -> VideoSpec
+shiftOpacity :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftOpacity s v = v {
-  opacity = s * opacity v
+  opacity = multipleMaybeSignal s (opacity v)
   }
 
-setBlur :: Signal Rational -> VideoSpec -> VideoSpec
+setBlur :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setBlur s v = v { blur = s }
 
-shiftBlur :: Signal Rational -> VideoSpec -> VideoSpec
+shiftBlur :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftBlur s v = v {
-  blur = s * blur v
+  blur = multipleMaybeSignal s (blur v)
   }
 
-setBrightness :: Signal Rational -> VideoSpec -> VideoSpec
+setBrightness :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setBrightness s v = v { brightness = s }
 
-shiftBrightness :: Signal Rational -> VideoSpec -> VideoSpec
+shiftBrightness :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftBrightness s v = v {
-  brightness = s * brightness v
+  brightness = multipleMaybeSignal s (brightness v)
   }
 
-setContrast :: Signal Rational -> VideoSpec -> VideoSpec
+setContrast :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setContrast s v = v { contrast = s }
 
-shiftContrast :: Signal Rational -> VideoSpec -> VideoSpec
+shiftContrast :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftContrast s v = v {
-  contrast = s * contrast v
+  contrast = multipleMaybeSignal s (contrast v)
   }
 
-setGrayscale :: Signal Rational -> VideoSpec -> VideoSpec
+setGrayscale :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setGrayscale s v = v { grayscale = s }
 
-shiftGrayscale :: Signal Rational -> VideoSpec -> VideoSpec
+shiftGrayscale :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftGrayscale s v = v {
-  grayscale = s * grayscale v
+  grayscale = multipleMaybeSignal s (grayscale v)
   }
 
-setSaturate :: Signal Rational -> VideoSpec -> VideoSpec
+setSaturate :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setSaturate s v = v { saturate = s }
 
-shiftSaturate :: Signal Rational -> VideoSpec -> VideoSpec
+shiftSaturate :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftSaturate s v = v {
-  saturate = s * saturate v
+  saturate = multipleMaybeSignal s (saturate v)
   }
 
 -- Masks
--- it should be just four arguments a b c d
+-- it should be just five arguments a b c d e
 circleMask :: Signal Rational -> VideoSpec -> VideoSpec
 circleMask s vs = vs {
   mask = \a b c d -> "clip-path: circle(" <> showt (((s a b c d)*100) :: Rational) <> "% at center);"
-  --where x = s a b c d
   }
-
--- a     b           c    d
--- t lengthOfVideo rTime eTime
--- setCircleMask 50 $ ""
--- setCircleMask 50 (ramp 1 1 1)
-
--- try to include rectMask
 
 --
 -- Time Functions --

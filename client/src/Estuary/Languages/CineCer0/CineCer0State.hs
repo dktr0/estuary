@@ -100,7 +100,7 @@ foreign import javascript unsafe
   "$1.duration"
   getLengthOfVideo :: CineCer0Video -> IO Double
 
-----  Style a Video ----
+----  Filters
 
 generateOpacity :: Maybe Double -> Text
 generateOpacity (Just o) = "opacity(" <> showt o <> "%)"
@@ -130,13 +130,10 @@ generateFilter :: Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -
 generateFilter Nothing Nothing Nothing Nothing Nothing Nothing = ""
 generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl <> generateBrightness br <> generateContrast c <> generateGrayscale g <> generateSaturate s <> ";"
 
+----  Style a Video ----
+
 videoStyle :: CineCer0Video -> Double -> Double -> Double -> Double -> Text -> IO ()
 videoStyle v x y w h t = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> t
-
--- videoStyle :: CineCer0Video -> Double -> Double -> Double -> Double -> Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> IO ()
--- videoStyle v x y w h o bl br c g s = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> generateFilter o bl br c g s
-
--- filter: opacity(" <> showt o <> "%); blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
 
 ----  Add and Change Source ----
 
@@ -209,15 +206,13 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     -- update position in time
     let pos = (playbackPosition s) t lengthOfVideo rTime eTime
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
-    -- update style
-    let opacidad = (opacity s) t lengthOfVideo rTime eTime * 100
+    -- style filters
+    let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime <*> Just 100
     let blur' = blur s t lengthOfVideo rTime eTime
-    let brightness' = brightness s t lengthOfVideo rTime eTime * 100
-    let contrast' = contrast s t lengthOfVideo rTime eTime * 100
-    let grayscale' = grayscale s t lengthOfVideo rTime eTime * 100
-    let saturate' = saturate s t lengthOfVideo rTime eTime * 100
-    let generateFilter' = generateFilter (Just $ realToFrac opacidad) (Just $ realToFrac blur') (Just $ realToFrac brightness') (Just $ realToFrac contrast') (Just $ realToFrac grayscale') (Just $ realToFrac saturate')
-    return $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
+    let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime <*> Just 100
+    let contrast' = (*) <$> (contrast s) t lengthOfVideo rTime eTime <*> Just 100
+    let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime <*> Just 100
+    let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime <*> Just 100
+    let generateFilter' = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
+    --update style
     videoStyle v (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) generateFilter'
-
-    --(realToFrac opacidad) (realToFrac blur') (realToFrac brightness') (realToFrac contrast') (realToFrac grayscale') (realToFrac saturate')

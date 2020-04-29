@@ -47,6 +47,9 @@ literalVideoSpec =
 
 -- //////////////
 
+sigMayRat :: H (Signal (Maybe Rational))
+sigMayRat = (constantSignal . Just) <$> rationalOrInteger
+
 sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
@@ -66,18 +69,11 @@ ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 vs_vs :: H (VideoSpec -> VideoSpec)
 vs_vs =
   sigRat_vs_vs <*> sigRat <|>
+  sigMayRat_vs_vs <*> sigMayRat <|>
   rat_vs_vs <*> rationalOrInteger
 
-sigRat_vs_vs :: H (Signal Rational -> VideoSpec -> VideoSpec)
-sigRat_vs_vs =
-  setPosX <$ reserved "setPosX" <|>
-  shiftPosX <$ reserved "posX" <|>
-  setPosY <$ reserved "setPosY" <|>
-  shiftPosY <$ reserved "posX" <|>
-  setWidth <$ reserved "setWidth" <|>
-  shiftWidth <$ reserved "width" <|>
-  setHeight <$ reserved "setHeight" <|>
-  shiftHeight <$ reserved "height" <|>
+sigMayRat_vs_vs :: H (Signal (Maybe Rational) -> VideoSpec -> VideoSpec)
+sigMayRat_vs_vs =
   setOpacity <$ reserved "setOpacity" <|>
   shiftOpacity <$ reserved "opacity" <|>
   setBlur <$ reserved "setBlur" <|>
@@ -89,9 +85,21 @@ sigRat_vs_vs =
   setGrayscale <$ reserved "setGrayscale" <|>
   shiftGrayscale <$ reserved "grayscale" <|>
   setSaturate <$ reserved "setSaturate" <|>
-  shiftSaturate <$ reserved "saturate" <|>
+  shiftSaturate <$ reserved "saturate"
+
+sigRat_vs_vs :: H (Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_vs_vs =
+  setPosX <$ reserved "setPosX" <|>
+  shiftPosX <$ reserved "posX" <|>
+  setPosY <$ reserved "setPosY" <|>
+  shiftPosY <$ reserved "posX" <|>
+  setWidth <$ reserved "setWidth" <|>
+  shiftWidth <$ reserved "width" <|>
+  setHeight <$ reserved "setHeight" <|>
+  shiftHeight <$ reserved "height" <|>
   setSize <$ reserved "setSize" <|>
   shiftSize <$ reserved "size" <|>
+  circleMask <$ reserved "circleMask" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
