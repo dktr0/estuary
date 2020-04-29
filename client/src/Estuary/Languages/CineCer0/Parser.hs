@@ -53,7 +53,7 @@ sigMayRat =
   (constantSignal . Just) <$> rationalOrInteger
 
 rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
-rat_sigMayRat = ndt_rat_rat_sigMayRat <*> rationalOrInteger
+rat_sigMayRat = rat_rat_sigMayRat <*> rationalOrInteger
 
 rat_rat_sigMayRat :: H (Rational -> Rational -> Signal (Maybe Rational))
 rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
