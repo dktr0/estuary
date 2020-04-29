@@ -53,13 +53,13 @@ sigMayRat =
   (constantSignal . Just) <$> rationalOrInteger
 
 rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
-rat_sigRat = ndt_rat_rat_sigMayRat <*> rationalOrInteger
+rat_sigMayRat = ndt_rat_rat_sigMayRat <*> rationalOrInteger
 
 rat_rat_sigMayRat :: H (Rational -> Rational -> Signal (Maybe Rational))
-rat_rat_sigRat = ndt_rat_rat_sigMayRat <*> ndt
+rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
 
 ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
-ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
+ndt_rat_rat_sigMayRat = ramp <$ reserved "ramp"
 
 sigRat :: H (Signal Rational)
 sigRat = constantSignal <$> rationalOrInteger

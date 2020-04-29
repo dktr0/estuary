@@ -393,11 +393,11 @@ opacityChanger arg t len rend eval anchor = arg
 -- Dynamic Functions
 -- durVal is the amount of time the process takes place
 
-ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
+ramp :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
   let startTime = anchorTime :: UTCTime -- place holder, add quant later
       endTime = addUTCTime durVal anchorTime
-  in ramp' renderTime startTime endTime startVal endVal
+  in Just $ ramp' renderTime startTime endTime startVal endVal
 
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
 ramp':: UTCTime -> UTCTime -> UTCTime -> Rational -> Rational -> Rational
