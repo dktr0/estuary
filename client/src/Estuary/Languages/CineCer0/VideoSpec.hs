@@ -1,8 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Languages.CineCer0.VideoSpec where
 
 import Language.Haskell.Exts
 import Control.Applicative
 import Data.Time
+import Data.Text
+import TextShow
 
 import Estuary.Types.Tempo
 
@@ -10,18 +14,20 @@ import Estuary.Languages.CineCer0.Signal
 
 data VideoSpec = VideoSpec {
   sampleVideo :: String,
+  anchorTime :: (Tempo -> UTCTime -> UTCTime),
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
   posX :: Signal Rational,
   posY :: Signal Rational,
   width :: Signal Rational,
   height :: Signal Rational,
-  opacity :: Signal Rational,
-  blur :: Signal Rational,
-  brightness :: Signal Rational,
-  contrast :: Signal Rational,
-  grayscale :: Signal Rational,
-  saturate :: Signal Rational
+  opacity :: Signal (Maybe Rational),
+  blur :: Signal (Maybe Rational),
+  brightness :: Signal (Maybe Rational),
+  contrast :: Signal (Maybe Rational),
+  grayscale :: Signal (Maybe Rational),
+  saturate :: Signal (Maybe Rational),
+  mask :: Signal Text
   }
 
 instance Show VideoSpec where
@@ -30,22 +36,28 @@ instance Show VideoSpec where
 emptyVideoSpec :: VideoSpec
 emptyVideoSpec = VideoSpec {
   sampleVideo = "",
+  anchorTime = defaultAnchor,
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
   posX = constantSignal 0.0,
   posY = constantSignal 0.0,
   width = constantSignal 1.0,
   height = constantSignal 1.0,
-  opacity = constantSignal 1.0,
-  blur = constantSignal 0.0,
-  brightness = constantSignal 1.0,
-  contrast = constantSignal 1.0,
-  grayscale = constantSignal 0.0,
-  saturate = constantSignal 1.0
+  opacity = constantSignal' Nothing,
+  blur = constantSignal Nothing,
+  brightness = constantSignal Nothing,
+  contrast = constantSignal Nothing,
+  grayscale = constantSignal Nothing,
+  saturate = constantSignal Nothing,
+  mask = emptyText
 }
 
 stringToVideoSpec :: String -> VideoSpec
 stringToVideoSpec x = emptyVideoSpec { sampleVideo = x }
+
+-- it should be just five arguments _ _ _ _ _
+emptyText :: Signal Text
+emptyText _ _ _ _ _ = Data.Text.empty
 
 --
 -- Style Functions --
@@ -75,8 +87,6 @@ shiftCoord s1 s2 vs = vs {
   posY = s2 * posY vs
 }
 
-
-
 setWidth :: Signal Rational -> VideoSpec -> VideoSpec
 setWidth s v = v { width = s }
 
@@ -102,59 +112,69 @@ shiftSize s vs = vs {
   height = s * height vs
 }
 
+-- Filters
 
-
-setOpacity :: Signal Rational -> VideoSpec -> VideoSpec
+setOpacity :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setOpacity s v = v { opacity = s }
 
-shiftOpacity :: Signal Rational -> VideoSpec -> VideoSpec
+shiftOpacity :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftOpacity s v = v {
-  opacity = s * opacity v
+  opacity = multipleMaybeSignal s (opacity v)
   }
 
-setBlur :: Signal Rational -> VideoSpec -> VideoSpec
+setBlur :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setBlur s v = v { blur = s }
 
-shiftBlur :: Signal Rational -> VideoSpec -> VideoSpec
+shiftBlur :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftBlur s v = v {
-  blur = s * blur v
+  blur = multipleMaybeSignal s (blur v)
   }
 
-setBrightness :: Signal Rational -> VideoSpec -> VideoSpec
+setBrightness :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setBrightness s v = v { brightness = s }
 
-shiftBrightness :: Signal Rational -> VideoSpec -> VideoSpec
+shiftBrightness :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftBrightness s v = v {
-  brightness = s * brightness v
+  brightness = multipleMaybeSignal s (brightness v)
   }
 
-setContrast :: Signal Rational -> VideoSpec -> VideoSpec
+setContrast :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setContrast s v = v { contrast = s }
 
-shiftContrast :: Signal Rational -> VideoSpec -> VideoSpec
+shiftContrast :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftContrast s v = v {
-  contrast = s * contrast v
+  contrast = multipleMaybeSignal s (contrast v)
   }
 
-setGrayscale :: Signal Rational -> VideoSpec -> VideoSpec
+setGrayscale :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setGrayscale s v = v { grayscale = s }
 
-shiftGrayscale :: Signal Rational -> VideoSpec -> VideoSpec
+shiftGrayscale :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftGrayscale s v = v {
-  grayscale = s * grayscale v
+  grayscale = multipleMaybeSignal s (grayscale v)
   }
 
-setSaturate :: Signal Rational -> VideoSpec -> VideoSpec
+setSaturate :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setSaturate s v = v { saturate = s }
 
-shiftSaturate :: Signal Rational -> VideoSpec -> VideoSpec
+shiftSaturate :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 shiftSaturate s v = v {
-  saturate = s * saturate v
+  saturate = multipleMaybeSignal s (saturate v)
   }
 
+-- Masks
+-- it should be just five arguments a b c d e
+circleMask :: Signal Rational -> VideoSpec -> VideoSpec
+circleMask s vs = vs {
+  mask = \a b c d e -> "clip-path: circle(" <> showt (((s a b c d e)*100) :: Rational) <> "% at center);"
+  }
 
 --
 -- Time Functions --
+
+-- anchorTime:: -- parser
+quant:: Rational -> Rational -> VideoSpec -> VideoSpec
+quant nc offset vs = vs { anchorTime = quantAnchor nc offset }
 
 playNatural :: Rational -> VideoSpec -> VideoSpec
 playNatural n vs = vs {
@@ -170,8 +190,8 @@ playRound n vs = vs {
 
 playRoundMetre :: Rational -> VideoSpec -> VideoSpec
 playRoundMetre n vs = vs {
-  playbackPosition = playRoundMetrePos n,
-  playbackRate = playRoundMetreRate n
+  playbackPosition = playRoundMetre_Pos n,
+  playbackRate = playRoundMetre_Rate n
   }
 
 playEvery :: Rational -> Rational -> VideoSpec -> VideoSpec

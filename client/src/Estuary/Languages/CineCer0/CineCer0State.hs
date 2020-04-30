@@ -26,6 +26,29 @@ instance PToJSVal CineCer0Video where pToJSVal (CineCer0Video val) = val
 
 instance PFromJSVal CineCer0Video where pFromJSVal = CineCer0Video
 
+data CineCer0State = CineCer0State {
+  videoDiv :: HTMLDivElement,
+  videos :: IntMap CineCer0Video,
+  previousVideoSpecs :: IntMap VideoSpec
+  }
+
+foreign import javascript unsafe
+  "$1.offsetWidth"
+  offsetWidth :: HTMLDivElement -> IO Double
+
+foreign import javascript unsafe
+  "$1.offsetHeight"
+  offsetHeight :: HTMLDivElement -> IO Double
+
+emptyCineCer0State :: HTMLDivElement -> CineCer0State
+emptyCineCer0State j = CineCer0State {
+  videoDiv = j,
+  videos = empty,
+  previousVideoSpecs = empty
+  }
+
+----  Create a video ----
+
 foreign import javascript safe
   "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO CineCer0Video
@@ -63,9 +86,6 @@ foreign import javascript unsafe
   "$1.videoHeight"
   videoHeight :: CineCer0Video -> IO Double
 
-videoStyle :: CineCer0Video -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-videoStyle v x y w h o bl br c g s = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill; opacity: " <> showt o <> "%; filter:blur( " <> showt bl <> "px) " <> "brightness( " <> showt br <> "%) " <> "contrast( " <> showt c <> "%) " <> "grayscale( " <> showt g <> "%) " <> "saturate( " <> showt s <> ");"
-
 ----  Rate and Position ----
 
 foreign import javascript unsafe
@@ -79,6 +99,43 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.duration"
   getLengthOfVideo :: CineCer0Video -> IO Double
+
+----  Filters
+
+generateOpacity :: Maybe Double -> Text
+generateOpacity (Just o) = "opacity(" <> showt o <> "%)"
+generateOpacity Nothing = ""
+
+generateBlur :: Maybe Double -> Text
+generateBlur (Just bl) = "blur(" <> showt bl <> "px)"
+generateBlur Nothing = ""
+
+generateBrightness :: Maybe Double -> Text
+generateBrightness (Just br) = "brightness(" <> showt br <> "%)"
+generateBrightness Nothing = ""
+
+generateContrast :: Maybe Double -> Text
+generateContrast (Just c) = "contrast(" <> showt c <> "%)"
+generateContrast Nothing = ""
+
+generateGrayscale :: Maybe Double -> Text
+generateGrayscale (Just g) = "grayscale(" <> showt g <> "%)"
+generateGrayscale Nothing = ""
+
+generateSaturate :: Maybe Double -> Text
+generateSaturate (Just s) = "saturate(" <> showt s <> "%)"
+generateSaturate Nothing = ""
+
+generateFilter :: Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Text
+generateFilter Nothing Nothing Nothing Nothing Nothing Nothing = ""
+generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl <> generateBrightness br <> generateContrast c <> generateGrayscale g <> generateSaturate s <> ";"
+
+----  Style a Video ----
+
+videoStyle :: CineCer0Video -> Double -> Double -> Double -> Double -> Text -> IO ()
+videoStyle v x y w h t = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> t
+
+----  Add and Change Source ----
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
 addVideo j spec = do
@@ -95,8 +152,10 @@ onlyChangedVideoSources nSpec oSpec
   | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
 
 
+---- update CineCer0 State and Continuing Video ----
+
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
-updateCineCer0State t now spec st = do
+updateCineCer0State t rTime spec st = do
   --putStrLn $ show spec
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
@@ -119,7 +178,7 @@ updateCineCer0State t now spec st = do
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   -- update videoSpecs
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-  sequence $ intersectionWith (updateContinuingVideo t eTime now (divWidth,divHeight)) vSpecs continuingVideos
+  sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos
   return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs } --
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
@@ -135,47 +194,26 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let fitByWidth = heightIfFitsWidth <= sh
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
-    let actualWidth = (width s t lengthOfVideo rTime eTime) * realToFrac fitWidth
-    let actualHeight = (height s t lengthOfVideo rTime eTime) * realToFrac fitHeight
-    let centreX = ((posX s t lengthOfVideo rTime eTime)* 0.5 + 0.5) * realToFrac sw
-    let centreY = ((posY s t lengthOfVideo rTime eTime)* 0.5 + 0.5) * realToFrac sh
+    let aTime = anchorTime s t eTime -- :: UTCTime
+    let actualWidth = (width s t lengthOfVideo rTime eTime aTime) * realToFrac fitWidth
+    let actualHeight = (height s t lengthOfVideo rTime eTime aTime) * realToFrac fitHeight
+    let centreX = ((posX s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
+    let centreY = ((posY s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
     -- update playback rate
-    let rate = playbackRate s t lengthOfVideo rTime eTime
+    let rate = playbackRate s t lengthOfVideo rTime eTime aTime
     maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
     -- update position in time
-    let pos = (playbackPosition s) t lengthOfVideo rTime eTime
+    let pos = (playbackPosition s) t lengthOfVideo rTime eTime aTime
     maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
-    -- update opacity
-    let opacidad = (opacity s) t lengthOfVideo rTime eTime * 100
-    -- update style
-    let blur' = blur s t lengthOfVideo rTime eTime
-    let brightness' = brightness  s t lengthOfVideo rTime eTime * 100
-    let contrast' = contrast s t lengthOfVideo rTime eTime * 100
-    let grayscale' = grayscale  s t lengthOfVideo rTime eTime * 100
-    let saturate' = saturate  s t lengthOfVideo rTime eTime
-    return $ concat $ fmap show $ [("leftX",leftX),("topY",topY),("actualWidth",actualWidth), ("actualHeight",actualHeight),("opacidad",opacidad),("blur'",blur'),("brightness",brightness'),("contrast'",contrast'),("grayscale",grayscale'),("saturate'",saturate')]
-    videoStyle v (floor $ leftX) (floor $ topY) (floor $ actualWidth) (floor $ actualHeight) (floor opacidad) (floor blur') (floor brightness') (floor contrast') (floor grayscale') (realToFrac saturate')
-
-
-emptyCineCer0State :: HTMLDivElement -> CineCer0State
-emptyCineCer0State j = CineCer0State {
-  videoDiv = j,
-  videos = empty,
-  previousVideoSpecs = empty
-  }
-
-data CineCer0State = CineCer0State {
-  videoDiv :: HTMLDivElement,
-  videos :: IntMap CineCer0Video,
-  previousVideoSpecs :: IntMap VideoSpec
-  }
-
-foreign import javascript unsafe
-  "$1.offsetWidth"
-  offsetWidth :: HTMLDivElement -> IO Double
-
-foreign import javascript unsafe
-  "$1.offsetHeight"
-  offsetHeight :: HTMLDivElement -> IO Double
+    -- style filters
+    let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let blur' = blur s t lengthOfVideo rTime eTime aTime
+    let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let contrast' = (*) <$> (contrast s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let generateFilter' = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
+    --update style
+    videoStyle v (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) generateFilter'

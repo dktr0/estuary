@@ -47,37 +47,33 @@ literalVideoSpec =
 
 -- //////////////
 
+sigMayRat :: H (Signal (Maybe Rational))
+sigMayRat =
+  rat_sigMayRat <*> rationalOrInteger <|>
+  (constantSignal . Just) <$> rationalOrInteger
+
+rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
+rat_sigMayRat = rat_rat_sigMayRat <*> rationalOrInteger
+
+rat_rat_sigMayRat :: H (Rational -> Rational -> Signal (Maybe Rational))
+rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
+
+ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
+ndt_rat_rat_sigMayRat = ramp <$ reserved "ramp"
+
 sigRat :: H (Signal Rational)
-sigRat =
-  rat_sigRat <*> rationalOrInteger <|>
-  constantSignal <$> rationalOrInteger
-
-rat_sigRat :: H (Rational -> Signal Rational)
-rat_sigRat = rat_rat_sigRat <*> rationalOrInteger
-
-rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
-rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
-
-ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
-ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
+sigRat = constantSignal <$> rationalOrInteger
 
 -- //////////////
 
 vs_vs :: H (VideoSpec -> VideoSpec)
 vs_vs =
   sigRat_vs_vs <*> sigRat <|>
+  sigMayRat_vs_vs <*> sigMayRat <|>
   rat_vs_vs <*> rationalOrInteger
 
-sigRat_vs_vs :: H (Signal Rational -> VideoSpec -> VideoSpec)
-sigRat_vs_vs =
-  setPosX <$ reserved "setPosX" <|>
-  shiftPosX <$ reserved "posX" <|>
-  setPosY <$ reserved "setPosY" <|>
-  shiftPosY <$ reserved "posX" <|>
-  setWidth <$ reserved "setWidth" <|>
-  shiftWidth <$ reserved "width" <|>
-  setHeight <$ reserved "setHeight" <|>
-  shiftHeight <$ reserved "height" <|>
+sigMayRat_vs_vs :: H (Signal (Maybe Rational) -> VideoSpec -> VideoSpec)
+sigMayRat_vs_vs =
   setOpacity <$ reserved "setOpacity" <|>
   shiftOpacity <$ reserved "opacity" <|>
   setBlur <$ reserved "setBlur" <|>
@@ -89,9 +85,21 @@ sigRat_vs_vs =
   setGrayscale <$ reserved "setGrayscale" <|>
   shiftGrayscale <$ reserved "grayscale" <|>
   setSaturate <$ reserved "setSaturate" <|>
-  shiftSaturate <$ reserved "saturate" <|>
+  shiftSaturate <$ reserved "saturate"
+
+sigRat_vs_vs :: H (Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_vs_vs =
+  setPosX <$ reserved "setPosX" <|>
+  shiftPosX <$ reserved "posX" <|>
+  setPosY <$ reserved "setPosY" <|>
+  shiftPosY <$ reserved "posX" <|>
+  setWidth <$ reserved "setWidth" <|>
+  shiftWidth <$ reserved "width" <|>
+  setHeight <$ reserved "setHeight" <|>
+  shiftHeight <$ reserved "height" <|>
   setSize <$ reserved "setSize" <|>
   shiftSize <$ reserved "size" <|>
+  circleMask <$ reserved "circleMask" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
@@ -111,7 +119,8 @@ rat_rat_vs_vs :: H (Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
-  ndt_rat_rat_vs_vs <*> ndt
+  ndt_rat_rat_vs_vs <*> ndt <|>
+  quant <$ reserved "quant"
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
 rat_rat_rat_vs_vs =
