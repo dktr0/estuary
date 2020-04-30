@@ -58,4 +58,6 @@ header = divClass "header primary-color primary-borders" $ divClass "config-tool
 
   -- privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader
 
+  divClass "config-entry display-inline-block primary-color ui-font" $ dynButton "?"
+
   return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv {-, privateSamplesChangeEv -}]

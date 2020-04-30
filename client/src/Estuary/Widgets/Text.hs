@@ -69,7 +69,7 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ do -
   let initialParser = (\(x,_,_) -> x) $ forEditing i
   let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
 
-  (d,evalButton,infoButton) <- divClass "fullWidthDiv" $ do
+  (d,evalButton) <- divClass "fullWidthDiv" $ do
     d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
     evalButton' <- divClass "textInputLabel" $ do
       x <- dynButton "\x25B6"
@@ -77,18 +77,14 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ do -
     e' <- holdUniqDyn errorText
     let y = fmap (maybe (return ()) syntaxErrorWidget) $ updated e'
     widgetHold (return ()) y
-    infoButton' <- divClass "referenceButton" $ dynButton "?"
-    return (d',evalButton',infoButton')
+    return (d',evalButton')
 
   (edit,eval) <- divClass "labelAndTextPattern" $ do
     let parserValue = _dropdown_value d -- Dynamic t TidalParser
     let parserEvent = _dropdown_change d
     let initialText = (\(_,x,_) -> x) $ forEditing i
-    textVisible <- toggle True infoButton
-    helpVisible <- toggle False infoButton
-    (textValue,textEvent,shiftEnter) <- hideableWidget textVisible "width-100-percent" $ textWidget rows initialText textFuture
+    (textValue,textEvent,shiftEnter) <- textWidget rows initialText textFuture
     languageToDisplayHelp <- (holdDyn initialParser $ updated parserValue) >>= holdUniqDyn
-    deferredWidget "width-100-percent" helpVisible $ fmap parserToHelp languageToDisplayHelp
 
     let evalEvent = leftmost [evalButton,shiftEnter]
     let initialEvalTime = (\(_,_,x) -> x) $ forRendering i
