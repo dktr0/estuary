@@ -25,7 +25,7 @@ setSaturate [s] $ -- 1 = natural video saturation (1++ = more, 1-- =less) <br />
 
 ## ramp
 
-(ramp [Initial_Value] [End_Value] [Cicles]) <br />
+(ramp [Cicles] [Initial_Value] [End_Value]) <br />
 
 ramp can be use in style functions. Example <br />
 width (ramp x y z) <br />
