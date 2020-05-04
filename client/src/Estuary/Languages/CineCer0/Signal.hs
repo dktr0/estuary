@@ -6,21 +6,79 @@ import Data.Time
 import Estuary.Types.Tempo
 
 
- --              Tempo    Video Length      render T   eval T
-type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> a
+ --              Tempo    Video Length      render T   eval T    anchor t
+type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> a
+
+-- anchor in signal and not in videoSpec.
+-- opacity (ramp 0 1 3) $ "myMov.mp4"
 
 instance Num a => Num (Signal a) where
-    x + y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) + (y t dur renderTime evalTime)
-    x * y = \t dur renderTime evalTime -> (x t dur renderTime evalTime) * (y t dur renderTime evalTime)
-    negate x = \t dur renderTime evalTime -> negate (x t dur renderTime evalTime)
-    abs x = \t dur renderTime evalTime -> abs (x t dur renderTime evalTime)
-    signum x = \t dur renderTime evalTime -> signum (x t dur renderTime evalTime)
-    fromInteger x = \t dur renderTime evalTime -> fromInteger x
+    x + y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) + (y t dur renderTime evalTime anchTime)
+    x * y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) * (y t dur renderTime evalTime anchTime)
+    negate x = \t dur renderTime evalTime anchTime -> negate (x t dur renderTime evalTime anchTime)
+    abs x = \t dur renderTime evalTime anchTime -> abs (x t dur renderTime evalTime anchTime)
+    signum x = \t dur renderTime evalTime anchTime -> signum (x t dur renderTime evalTime anchTime)
+    fromInteger x = \t dur renderTime evalTime anchTime -> fromInteger x
+
+------
+
+multiplyMaybe :: Num a => Maybe a -> Maybe a -> Maybe a
+multiplyMaybe Nothing Nothing = Nothing
+multiplyMaybe (Just x) Nothing = Just x
+multiplyMaybe Nothing (Just x) = Just x
+multiplyMaybe (Just x) (Just y) = Just (x*y)
+
+multipleMaybeSignal :: Num a => Signal (Maybe a) -> Signal (Maybe a) -> Signal (Maybe a)
+multipleMaybeSignal x y = \a b c d e -> multiplyMaybe (x a b c d e) (y a b c d e)
+
 
 ------ functions that generate signals
 
 constantSignal :: a -> Signal a
-constantSignal x = \_ _ _ _ -> x
+constantSignal x = \_ _ _ _ _ -> x
+
+
+-- Two cases that should work:
+-- opacity (ramp 0 1 3) $ "myMov.mp4" -- implicit quant
+
+-- opacity (ramp 0 1 3) $ quant 2 0.5 $ "myMov.mp4"
+
+defaultAnchor:: Tempo -> UTCTime -> UTCTime
+defaultAnchor t eval = quantAnchor 1 0 t eval
+
+-- calculates the anchorTime
+quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
+quantAnchor cycleMult offset t eval =
+  let ec = timeToCount t eval
+      currentCycle = fromIntegral (floor ec):: Rational
+      align = if ec - currentCycle > 0.95 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
+      toQuant = currentCycle + align -- as integer to go through the quantomatic
+      quanted = quantomatic cycleMult toQuant
+      anchor = cycsToSecs t quanted -- into seconds (as NDT)
+      -- offset should be in percentage of cycle!
+      off = realToFrac $ (offset*(1/(freq t))) / 1
+    in addUTCTime (anchor + off) $ time t -- as UTCTime
+
+cycsToSecs:: Tempo -> Rational -> NominalDiffTime
+cycsToSecs t x = realToFrac (x * (1/ freq t))
+
+-- this function gets the next bar that aligns with the quant multiplier value
+quantomatic:: Rational -> Rational -> Rational
+quantomatic cycleMult nextBeat =
+  let quanted = if remIsZero nextBeat cycleMult then nextBeat else quantomatic cycleMult (nextBeat + 1)
+  in quanted
+
+  -- substitutes mod operation for one that would detect the remainder of a division when it is 0
+remIsZero:: Rational -> Rational -> Bool
+remIsZero nextBeat cycleMultiplier =
+  let divi = nextBeat / cycleMultiplier
+      floored = realToFrac (floor divi) :: Rational
+      remainder = divi - floored
+  in if remainder == 0 then True else False
+
+constantSignal' :: Maybe a -> Signal (Maybe a)
+constantSignal' Nothing = \_ _ _ _ _ -> Nothing
+constantSignal' (Just x) = \_ _ _ _ _ -> (Just x)
 
 -- Temporal Functions
 
@@ -31,7 +89,7 @@ constantSignal x = \_ _ _ _ -> x
 -- producing inconsistencies
 
 applyRate:: Rational -> Signal (Maybe Rational)
-applyRate rate t length render eval = Just rate
+applyRate rate t length render eval anchor = Just rate
 
 
 ------ Play at Natural Rate and without alteration ------
@@ -45,7 +103,7 @@ applyRate rate t length render eval = Just rate
 
 
 playNatural_Pos:: Rational -> Signal (Maybe NominalDiffTime)
-playNatural_Pos sh t vl render eval =
+playNatural_Pos sh t vl render eval anchor =
     let vLen = realToFrac vl :: Rational
         cpDur = 1/(freq t)
         off = sh*cpDur
@@ -57,7 +115,7 @@ playNatural_Pos sh t vl render eval =
     in Just (realToFrac result)
 
 playNatural_Rate :: Rational-> Signal (Maybe Rational)
-playNatural_Rate sh t vl render eval = Just 1
+playNatural_Rate sh t vl render eval anchor = Just 1
 
 ------ Makes a video shorter or longer acording to given # of cycles ------
 
@@ -70,7 +128,7 @@ playNatural_Rate sh t vl render eval = Just 1
 
 -- gets the onset time of the video in playEvery
 playEvery_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playEvery_Pos c sh t vl render eval =
+playEvery_Pos c sh t vl render eval anchor =
     let n = c
         ec = (timeToCount t render)
         ecOf = ec - sh
@@ -82,11 +140,11 @@ playEvery_Pos c sh t vl render eval =
 -- gets the rate time for the video in playEvery
 
 playEvery_Rate:: Rational -> Rational -> Signal (Maybe Rational)
-playEvery_Rate c sh t vl render eval =
+playEvery_Rate c sh t vl render eval anchor =
     let vLen = realToFrac vl :: Rational
         n = c
-        cps' = freq t
-        rate = vLen/(n/cps')
+        freq' = freq t
+        rate = vLen/(n/freq')
     in Just (realToFrac rate)
 
 ------ Rounds the duration of video to the nearest cycle ------
@@ -98,10 +156,10 @@ playEvery_Rate c sh t vl render eval =
 -- this functions only accept from the player one argument: shift
 
 playRound_Pos:: Rational -> Signal (Maybe NominalDiffTime)
-playRound_Pos sh t vlen render eval =
+playRound_Pos sh t vlen render eval anchor =
     let vl = realToFrac vlen :: Rational
-        cp = (freq t)
-        cpDur = 1/cp -- reciprocal of cps is duration in secs
+        cps = (freq t)
+        cpDur = 1/cps -- reciprocal of cps is duration in secs
         off = sh*cpDur
         cPerLen = vl/cpDur -- how many cycles for 1 whole video
         newLVinCPS = fromIntegral (round cPerLen) :: Rational -- this is new length
@@ -114,13 +172,13 @@ playRound_Pos sh t vlen render eval =
     in Just (realToFrac  result) --transforms this into seconds
 
 playRound_Rate:: Rational -> Signal (Maybe Rational)
-playRound_Rate sh t vlen render eval =
+playRound_Rate sh t vlen render eval anchor =
     let vl = realToFrac vlen :: Rational
-        cp = (freq t)
-        cpDur = 1/cp
+        cps = (freq t)
+        cpDur = 1/cps
         cPerLen = vl/cpDur
         floored = fromIntegral (floor cPerLen) :: Rational -- new length in cycles
-        newVl = floored / cp -- new length in seconds
+        newVl = floored / cps -- new length in seconds
         rate = vl / newVl
     in Just rate
 
@@ -132,24 +190,31 @@ playRound_Rate sh t vlen render eval =
 -- and each cycle is 2.5 secs long, this functions will change the rate so the video fits in four cycles (10 secs)
 -- this functions only accept from the player one argument: shift
 
+------------ playRoundMetre ------------
+
+-- Similar to the above but it fits the length of the video to a power of 2 number of cycles so it can adapt
+-- to common music understandings of period, phrase and subdivision. For example, if a video is 12 secs long
+-- and each cycle is 2.5 secs long, this functions will change the rate so the video fits in four cycles (10 secs)
+-- this functions only accept from the player one argument: shift
+
 ---- round the duration of the video to a power of 2 so it can align with the notion of metre
-playRoundMetrePos:: Rational -> Signal (Maybe NominalDiffTime)
-playRoundMetrePos sh t vlen render eval =
+playRoundMetre_Pos:: Rational -> Signal (Maybe NominalDiffTime)
+playRoundMetre_Pos sh t vlen render eval anchor =
     let vl = realToFrac vlen :: Rational
-        cpDur = realToFrac (1/(freq t)) :: Rational
+        cpDur = realToFrac (1/(freq t)) :: Rational --- cps expresado en duracion if 0.5 cps then 2 segundos (SEGUNDOS, NO ciclos!!)
         off = sh*cpDur
-        cPerLen = vl/cpDur -- how many cycles for 1 whole video
-        newVLinCPS = stretchToMetre cPerLen
-        inSecs = newVLinCPS *cpDur
-        difb0 = realToFrac (diffUTCTime render (origin t)) :: Rational
+        cPerLen = vl/cpDur -- how many cycles for 1 whole video || if length is 28 secs and the cpDur is 2 = 14 (ciclos!!!!!!)
+        newVLinCPS = stretchToMetre cPerLen     -- outputs de cycles that will be the new dur of the video (16 ciclos)
+        inSecs = newVLinCPS *cpDur -- express the new video duration in secs rather than cycles 16*2 = 32
+        difb0 = realToFrac (diffUTCTime render (origin t)) :: Rational -- the amount of time passed between render time and beatZero
         difb0' = difb0 - off
-        lengths = difb0' / inSecs
-        posNorm = lengths - fromIntegral (floor lengths) :: Rational
-        result = reglaDeTres 1 posNorm inSecs
+        lengths = difb0' / inSecs -- if dif 30 secs and inSecs is 16 then = 1.875. 1.875 ciclos han transcurrido
+        posNorm = lengths - fromIntegral (floor lengths) :: Rational -- 0.875, this is the percentage of the duration of a cycle
+        result = reglaDeTres 1 posNorm inSecs -- 100 % 87.5 %
     in Just (realToFrac  result) --transforms this into seconds
 
-playRoundMetreRate:: Rational -> Signal (Maybe Rational)
-playRoundMetreRate sh t vlen render eval =
+playRoundMetre_Rate:: Rational -> Signal (Maybe Rational)
+playRoundMetre_Rate sh t vlen render eval anchor =
     let vl = realToFrac vlen :: Rational
         cpDur = realToFrac (1/(freq t)) :: Rational
         off = (realToFrac sh :: Rational) *cpDur
@@ -157,12 +222,12 @@ playRoundMetreRate sh t vlen render eval =
         newVLinCPS = stretchToMetre cPerLen
         newVLinSecs = newVLinCPS * cpDur
         rate = realToFrac vl / newVLinSecs
-    in Just rate
+    in Just (realToFrac rate)
 
 
 stretchToMetre:: Rational -> Rational
 stretchToMetre cPlen =
-    let ceilFloor =  getCeilFloor [2] cPlen
+    let ceilFloor =  getCeilFloor [0.125/16] cPlen
         ceil = last ceilFloor
         floor = last $ init ceilFloor
     in if (cPlen - floor) < (ceil - cPlen) then floor else ceil
@@ -189,7 +254,7 @@ getCeilFloor n ln
 -- gets the interval of the video reproduced with an offset time and
 -- a length in cycles, OJO the startPos is normalised from 0 to 1.
 playChop_Pos':: Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playChop_Pos' startPos cycles sh t vlen render eval =
+playChop_Pos' startPos cycles sh t vlen render eval anchor =
     let vl = realToFrac vlen :: Rational
         cd = cycles
         sP = reglaDeTres 1 startPos vl
@@ -207,7 +272,7 @@ playChop_Pos' startPos cycles sh t vlen render eval =
 
               -- StartPos ->  Cycles ->  Shift    -> Tempo -> VideoLength ->         Now -> Rate
 playChop_Rate':: Rational -> Rational -> Rational -> Signal (Maybe Rational)
-playChop_Rate' startPos cycles sh t vlen render eval = Just 1
+playChop_Rate' startPos cycles sh t vlen render eval anchor = Just 1
 
 
 ------------- Gives a chop start and end position and adjust the rate to any given cycles ------
@@ -216,7 +281,7 @@ playChop_Rate' startPos cycles sh t vlen render eval = Just 1
 -- Similar to the one above but it takes a start and an end position, bot normalised from 0 to 1
 
 playChop_Pos:: Rational -> Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playChop_Pos startPos endPos cycles sh t vlen render eval =
+playChop_Pos startPos endPos cycles sh t vlen render eval anchor =
     let cp = (freq t)
         cpsDur = 1/cp
         vl = realToFrac vlen :: Rational
@@ -236,18 +301,18 @@ playChop_Pos startPos endPos cycles sh t vlen render eval =
 
 
 playChop_Rate:: Rational -> Rational -> Rational -> Rational -> Signal (Maybe Rational)
-playChop_Rate startPos endPos cycles sh t vlen render eval
+playChop_Rate startPos endPos cycles sh t vlen render eval anchor
     | startPos == endPos = Just 0
     | otherwise =
-    let cp = (freq t)
-        cpsDur = 1/cp
+    let cps = (freq t)
+        cpsDur = 1/cps
         vl = realToFrac vlen :: Rational
         start = reglaDeTres 1 startPos vl
         end = reglaDeTres 1 endPos vl
         interval = end - start
         cPerLen = interval/cpsDur
         rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
-        newVl = rounded / cp -- new length in seconds
+        newVl = rounded / cps -- new length in seconds
         rate = interval / newVl
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
@@ -257,9 +322,9 @@ playChop_Rate startPos endPos cycles sh t vlen render eval
 -- Similar to the one above but the start and end position are not percentages, but seconds
 
 playChopSecs_Pos:: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playChopSecs_Pos startPos endPos cycles sh t vlen render eval =
-    let cp = (freq t)
-        cpsDur = 1/cp
+playChopSecs_Pos startPos endPos cycles sh t vlen render eval anchor =
+    let cps = (freq t)
+        cpsDur = 1/cps
         vl = realToFrac vlen :: Rational
         start = cycleSecs startPos vlen
         end = cycleSecs endPos vlen
@@ -277,18 +342,18 @@ playChopSecs_Pos startPos endPos cycles sh t vlen render eval =
 
 
 playChopSecs_Rate:: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
-playChopSecs_Rate startPos endPos cycles sh t vlen render eval
+playChopSecs_Rate startPos endPos cycles sh t vlen render eval anchor
     | startPos == endPos = Just 0
     | otherwise =
-    let cp = (freq t)
-        cpsDur = 1/cp
+    let cps = (freq t)
+        cpsDur = 1/cps
         vl = realToFrac vlen :: Rational
         start = cycleSecs startPos vlen
         end = cycleSecs startPos vlen
         interval = end - start
         cPerLen = interval/cpsDur
         rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
-        newVl = rounded / cp -- new length in seconds
+        newVl = rounded / cps -- new length in seconds
         rate = interval / newVl
         addNeg = if start > end then rate * (-1) else rate
     in  Just (realToFrac addNeg)
@@ -300,10 +365,10 @@ playChopSecs_Rate startPos endPos cycles sh t vlen render eval
 
            --  startPos        -- rate
 playNow_Pos:: NominalDiffTime -> Rational -> Signal (Maybe NominalDiffTime)
-playNow_Pos startPos rate t vlen render eval = Just $ (realToFrac (cycleSecs startPos vlen))
+playNow_Pos startPos rate t vlen render eval anchor = Just $ (realToFrac (cycleSecs startPos vlen))
 
 playNow_Rate:: NominalDiffTime -> Rational -> Signal (Maybe Rational)
-playNow_Rate startPos rate t vlen render eval = Just rate
+playNow_Rate startPos rate t vlen render eval anchor = Just rate
 
 -- Geometry
 
@@ -322,46 +387,37 @@ playNow_Rate startPos rate t vlen render eval = Just rate
 ------ Manually changes the opacity of a video ------
 
 opacityChanger:: Rational -> Signal Rational
-opacityChanger arg t len rend eval = arg
+opacityChanger arg t len rend eval anchor = arg
 
 
 -- Dynamic Functions
+-- durVal is the amount of time the process takes place
 
-ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
-ramp durVal startVal endVal = \_ _ renderTime evalTime ->
-  let startTime = diffUTCTime evalTime evalTime -- place holder, add quant later
-      endTime' = addUTCTime durVal evalTime
-      endTime = diffUTCTime endTime' evalTime
-  in ramp' renderTime evalTime startTime endTime startVal endVal
+ramp :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
+ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
+  let startTime = anchorTime :: UTCTime -- place holder, add quant later
+      endTime = addUTCTime durVal anchorTime
+  in Just $ ramp' renderTime startTime endTime startVal endVal
 
--- ramp:: UTCTime -> UTCTime -> NominalDiffTime -> Rational -> Rational -> Rational
--- ramp renderTime evalTime durVal startVal endVal =
---   let startTime = diffUTCTime evalTime evalTime -- place holder, add quant later
---       endTime' = addUTCTime durVal evalTime
---       endTime = diffUTCTime endTime' evalTime
---   in ramp'' renderTime evalTime startTime endTime startVal endVal
-
--- Add Signal type!!!!!
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
-ramp':: UTCTime -> UTCTime -> NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Rational
-ramp' renderTime evalTime startTime endTime startVal endVal
-    | addUTCTime startTime evalTime > renderTime = startVal
-    | addUTCTime endTime evalTime < renderTime = endVal
-    | otherwise =
-        let segmentVal = endVal - startVal
-            startScale = startVal
-            start = addUTCTime startTime evalTime
-            end = addUTCTime endTime evalTime
-            processInterval = diffUTCTime end start
-            renderInterval = diffUTCTime renderTime start
-            result = getPercentage (realToFrac renderInterval :: Rational) (realToFrac processInterval :: Rational) segmentVal
-        in startScale + (result)
---This function need to be corrected. Provide duration instead of startTime and endTime. starTime = evalTime (for now), endTime = evalTime + duration
+ramp':: UTCTime -> UTCTime -> UTCTime -> Rational -> Rational -> Rational
+ramp' renderTime startTime endTime startVal endVal -- delete what is not needed
+    | startTime >= renderTime = startVal
+    | endTime <= renderTime = endVal
+    | otherwise =    -- args: 3 secs of dur, startval: 0.2, endval: 0.7
+        let segmentVal = endVal - startVal -- 0.5
+            processInterval = realToFrac (diffUTCTime endTime startTime) :: Rational --  3 segs
+            momentAtRender = realToFrac (diffUTCTime renderTime startTime) :: Rational -- assuming render is half way through the process: 1.5 out of 3.0
+            percOfProcessAtRender = getPercentage momentAtRender processInterval segmentVal
+        in startVal + percOfProcessAtRender
+
 
 --------- Helper Functions ------------
 
+-- gets percentage and modulates the result to a new scale. Example:
+-- value: 10 scale: 50 new scale: 1 -> 0.2  (10 is 20% of 50, 20% of 1 is 0.2)
 getPercentage:: Rational -> Rational -> Rational -> Rational
-getPercentage value scale limit = (value/scale) * limit
+getPercentage value scale newScale = (value/scale) * newScale
 
 reglaDeTres:: Rational -> Rational -> Rational -> Rational
 reglaDeTres normScale normPos realScale = (normPos*realScale) / normScale
@@ -378,6 +434,19 @@ cycleSecs startPos vlen
         rest = vl * floored
         cycle = sp - rest
     in cycle
+
+chronoIncrease:: UTCTime -> UTCTime -> UTCTime
+chronoIncrease first second =
+  let diff = diffUTCTime second first
+      increase = if signum diff == 1 then first else second
+  in increase
+
+chronoDecrease:: UTCTime -> UTCTime -> UTCTime
+chronoDecrease first second =
+  let diff = diffUTCTime second first
+      decrease = if signum diff == (-1) then first else second
+  in decrease
+
 
 
 -- test functions

@@ -69,7 +69,7 @@ keyboardHintsCatcher irc ctxM riM = mdo
 keyEventToHint :: KeyEvent -> Maybe Hint
 keyEventToHint x
   | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 24) = Just ToggleTerminal
-  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just ToggleFooter
+  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just ToggleStats
 keyEventToHint _ = Nothing
 
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
@@ -94,10 +94,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   terminalVisible <- toggle False terminalEvent
   (command,_) <- hideableWidget' terminalVisible $ do
     runEditor ctx rInfo $ terminalWidget deltasDown hints
-  let footerShortcut = ffilter (elem ToggleFooter) hints
-  footerVisible <- toggle True footerShortcut
-  (terminalButton,_) <- hideableWidget' footerVisible $ do
-    runEditor ctx rInfo footer
+  (terminalButton,_) <- runEditor ctx rInfo $ footer hints
   let commandEnsembleRequests = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
   let commandRequests = fmapMaybe commandToRequest command
