@@ -396,7 +396,8 @@ opacityChanger arg t len rend eval anchor = arg
 ramp :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
   let startTime = anchorTime :: UTCTime -- place holder, add quant later
-      endTime = addUTCTime durVal anchorTime
+      durVal' = durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)
+      endTime = addUTCTime durVal' anchorTime
   in Just $ ramp' renderTime startTime endTime startVal endVal
 
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
