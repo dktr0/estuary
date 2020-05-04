@@ -49,9 +49,9 @@ defaultAnchor t eval = quantAnchor 1 0 t eval
 -- calculates the anchorTime
 quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
 quantAnchor cycleMult offset t eval =
-  let ec = timeToCount t eval
+  let ec = timeToCount t eval -- elapsed cycles
       currentCycle = fromIntegral (floor ec):: Rational
-      align = if ec - currentCycle > 0.95 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
+      align = if ec - currentCycle > 0.25 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
       toQuant = currentCycle + align -- as integer to go through the quantomatic
       quanted = quantomatic cycleMult toQuant
       anchor = cycsToSecs t quanted -- into seconds (as NDT)
@@ -396,7 +396,8 @@ opacityChanger arg t len rend eval anchor = arg
 ramp :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
   let startTime = anchorTime :: UTCTime -- place holder, add quant later
-      endTime = addUTCTime durVal anchorTime
+      durVal' = durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)
+      endTime = addUTCTime durVal' anchorTime
   in Just $ ramp' renderTime startTime endTime startVal endVal
 
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
