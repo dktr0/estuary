@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-} {-# LANGUAGE RecursiveDo #-}
+
 
 module Estuary.Widgets.EnsembleStatus where
 
@@ -18,6 +19,7 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.Editor
+import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 
 
@@ -39,7 +41,7 @@ ensembleStatusWidget = do
     text ":"
     dynText ensName
 
-  divClass "tableContainer" $ do
+  divClass "tableContainer code-font" $ do
     status <- el "table" $ do
       now <- liftIO getCurrentTime -- this time is measured before building the widget
       evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
@@ -47,12 +49,24 @@ ensembleStatusWidget = do
       x <- listWithKey ensParticipants (row uHandle currentTime)
       return $ switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
 
-    divClass "statusWidgetAnonymousPart" $ do
+    divClass "statusWidgetAnonymousPart code-font" $ do
       term Term.AnonymousParticipants >>= dynText
       text ": "
       dynText $ fmap showt anonymous
 
     return status
+
+-- -- help files for samples
+-- functionRef :: MonadWidget t m => Text -> m ()
+-- functionRef x = divClass "helpWrapper" $ do
+-- switchToReference <- buttonWithClass' x
+-- exampleVisible <- toggle True switchToReference
+-- referenceVisible <- toggle False switchToReference
+-- hideableWidget exampleVisible "exampleText primary-color code-font" $ text (exampleText x)
+-- hideableWidget referenceVisible "referenceText code-font" $ text (referenceText x)
+-- return ()
+-- --hideableWidget :: MonadWidget t m => Dynamic t Bool -> Text -> m a -> m a
+
 
 row ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
 row uHandle t name part = do
@@ -60,10 +74,33 @@ row uHandle t name part = do
     elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
     status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
     elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
-    elClass "td" "statusWidgetFPS" $ participantFPSWidget name part
-    elClass "td" "statusWidgetLatency" $ participantLatencyWidget name part
+    evClick <- buttonForCollapsable
+    dynBool <- toggle False evClick
+    let dynAttrs = collapseFPSandLatency <$> dynBool
+    elDynAttr "td" dynAttrs $ participantFPSWidget name part
+    elClass "td" "test" $ participantLatencyWidget name part
     return status
   return (row)
+
+buttonForCollapsable :: MonadWidget t m =>  m (Event t ())
+buttonForCollapsable = do
+  rec
+    let dynButtonLabel = fmap buttonLabel evClick
+    button <- dynButton dynButtonLabel
+    evClick <- toggle True button
+  return button
+
+buttonLabel :: Bool -> Text
+buttonLabel b = label b
+  where
+    label True = "+"
+    label False = "-"
+
+collapseFPSandLatency :: Bool -> Map Text Text
+collapseFPSandLatency b = "style" =: (display b)
+  where
+    display True  = ""
+    display False = "display: none;"
 
 -- participantStatusWidget :: MonadWidget t m  => Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
 participantStatusWidget :: MonadWidget t m  => Dynamic t Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
@@ -83,11 +120,14 @@ participantNameAndLocationWidget name part = do
 compareHandles ::  Text -> Participant -> Bool -- -> Dynamic t Text -> Bool
 compareHandles uHandle part = uHandle == (name part)
 
-attrs :: Bool -> Map T.Text T.Text
-attrs b = "style" =: ("pointer-events: " <> pevents b)
+attrs :: Bool -> Map Text Text
+attrs b = "class" =: "code-font" <> "style" =: ("pointer-events: " <> pevents b <> bevents b)
   where
-    pevents True  = "auto"
-    pevents False = "none"
+    pevents True  = "auto; "
+    pevents False = "none; "
+    bevents True = "box-shadow: inset 0 0 3px var(--primary-color); "
+    bevents False = ""
+
 
 location' :: Participant -> Text
 location' p = f (location p)
@@ -107,7 +147,7 @@ participantFPSWidget name part = do
   dynText $ a <> (constDyn "FPS")
 
 participantLatencyWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantLatencyWidget name part = elClass "div" "" $ do
+participantLatencyWidget name part = elClass "div" "test2" $ do
   let a = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
   dynText $ a <> (constDyn "ms")
 

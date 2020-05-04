@@ -179,5 +179,5 @@ joinButton x = do
 panel :: MonadWidget t m => Text -> Navigation -> Term.Term -> Editor t m () -> Editor t m (Event t Navigation)
 panel c targetPage title icon = divClass c $ do
   liftM (targetPage <$) $ dynButtonWithChild "splash-panel" $ do
-    divClass "splash-title" $ term title >>= dynText
+    divClass "splash-title-container" $ divClass "splash-title" $ term title >>= dynText
     divClass "splash-icon-container" $ divClass "splash-icon" icon
