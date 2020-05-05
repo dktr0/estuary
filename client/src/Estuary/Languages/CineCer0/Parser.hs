@@ -122,8 +122,8 @@ sigRat_sigRat_vs_vs =
 rat_vs_vs :: H (Rational -> VideoSpec -> VideoSpec)
 rat_vs_vs =
   playNatural <$ reserved "natural" <|>
-  playRound <$ reserved "round" <|>
-  playRoundMetre <$ reserved "roundMetre" <|>
+  playSnap <$ reserved "snap" <|>
+  playSnapMetre <$ reserved "snapMetre" <|>
   rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_vs_vs <*> ndt
 
