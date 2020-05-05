@@ -18,6 +18,7 @@ instance Applicative Signal where
 
 instance Monad Signal where
   a >>= f = \t videoDur renderT evalT anchorT -> f (a t videoDur renderT evalT anchorT) a t videoDur renderT evalT anchorT
+-}
 
 instance Num a => Num (Signal a) where
     x + y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) + (y t dur renderTime evalTime anchTime)
@@ -26,7 +27,7 @@ instance Num a => Num (Signal a) where
     abs x = \t dur renderTime evalTime anchTime -> abs (x t dur renderTime evalTime anchTime)
     signum x = \t dur renderTime evalTime anchTime -> signum (x t dur renderTime evalTime anchTime)
     fromInteger x = \t dur renderTime evalTime anchTime -> fromInteger x
-    -}
+    
 
 ------
 
