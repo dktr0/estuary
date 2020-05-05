@@ -59,10 +59,22 @@ rat_rat_sigMayRat :: H (Rational -> Rational -> Signal (Maybe Rational))
 rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
 
 ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
-ndt_rat_rat_sigMayRat = ramp <$ reserved "ramp"
+ndt_rat_rat_sigMayRat = ramp2 <$ reserved "ramp"
+
 
 sigRat :: H (Signal Rational)
-sigRat = constantSignal <$> rationalOrInteger
+sigRat =
+  rat_sigRat <*> rationalOrInteger <|>
+  constantSignal <$> rationalOrInteger
+
+rat_sigRat :: H (Rational -> Signal Rational)
+rat_sigRat = rat_rat_sigRat <*> rationalOrInteger
+
+rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
+rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
+
+ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
+ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
 -- //////////////
 
@@ -92,7 +104,7 @@ sigRat_vs_vs =
   setPosX <$ reserved "setPosX" <|>
   shiftPosX <$ reserved "posX" <|>
   setPosY <$ reserved "setPosY" <|>
-  shiftPosY <$ reserved "posX" <|>
+  shiftPosY <$ reserved "posY" <|>
   setWidth <$ reserved "setWidth" <|>
   shiftWidth <$ reserved "width" <|>
   setHeight <$ reserved "setHeight" <|>
