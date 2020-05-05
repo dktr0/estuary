@@ -9,7 +9,7 @@ import Estuary.Types.Tempo
  --              Tempo    Video Length      render T   eval T    anchor t
 type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> a
 
-instance Functor Signal where
+{- instance Functor Signal where
   fmap f s = \t videoDur renderT evalT anchorT -> f (s t videoDur renderT evalT anchorT)
 
 instance Applicative Signal where
@@ -26,6 +26,7 @@ instance Num a => Num (Signal a) where
     abs x = \t dur renderTime evalTime anchTime -> abs (x t dur renderTime evalTime anchTime)
     signum x = \t dur renderTime evalTime anchTime -> signum (x t dur renderTime evalTime anchTime)
     fromInteger x = \t dur renderTime evalTime anchTime -> fromInteger x
+    -}
 
 ------
 
