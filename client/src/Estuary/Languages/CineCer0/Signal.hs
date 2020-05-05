@@ -43,7 +43,7 @@ multipleMaybeSignal x y = \a b c d e -> multiplyMaybe (x a b c d e) (y a b c d e
 ------ functions that generate signals
 
 constantSignal :: a -> Signal a
-constantSignal = pure
+constantSignal x = \_ _ _ _ _ -> x
 
 defaultAnchor:: Tempo -> UTCTime -> UTCTime
 defaultAnchor t eval = quantAnchor 1 0 t eval
