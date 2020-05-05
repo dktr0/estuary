@@ -27,7 +27,7 @@ instance Num a => Num (Signal a) where
     abs x = \t dur renderTime evalTime anchTime -> abs (x t dur renderTime evalTime anchTime)
     signum x = \t dur renderTime evalTime anchTime -> signum (x t dur renderTime evalTime anchTime)
     fromInteger x = \t dur renderTime evalTime anchTime -> fromInteger x
-    
+
 
 ------
 
@@ -391,16 +391,22 @@ playNow_Rate startPos rate t vlen render eval anchor = Just rate
 opacityChanger:: Rational -> Signal Rational
 opacityChanger arg t len rend eval anchor = arg
 
-
 -- Dynamic Functions
 -- durVal is the amount of time the process takes place
 
-ramp :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
-ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
+ramp2 :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
+ramp2 durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
   let startTime = anchorTime :: UTCTime -- place holder, add quant later
       durVal' = durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)
       endTime = addUTCTime durVal' anchorTime
   in Just $ ramp' renderTime startTime endTime startVal endVal
+
+ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
+ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
+  let startTime = anchorTime :: UTCTime -- place holder, add quant later
+      durVal' = durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)
+      endTime = addUTCTime durVal' anchorTime
+  in ramp' renderTime startTime endTime startVal endVal
 
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
 ramp':: UTCTime -> UTCTime -> UTCTime -> Rational -> Rational -> Rational

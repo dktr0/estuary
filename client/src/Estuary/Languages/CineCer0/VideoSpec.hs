@@ -182,14 +182,14 @@ playNatural n vs = vs {
   playbackRate = playNatural_Rate n
 }
 
-playRound :: Rational -> VideoSpec -> VideoSpec
-playRound n vs = vs {
+playSnap :: Rational -> VideoSpec -> VideoSpec
+playSnap n vs = vs {
   playbackPosition = playRound_Pos n,
   playbackRate = playRound_Rate n
   }
 
-playRoundMetre :: Rational -> VideoSpec -> VideoSpec
-playRoundMetre n vs = vs {
+playSnapMetre :: Rational -> VideoSpec -> VideoSpec
+playSnapMetre n vs = vs {
   playbackPosition = playRoundMetre_Pos n,
   playbackRate = playRoundMetre_Rate n
   }
