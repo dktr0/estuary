@@ -9,8 +9,15 @@ import Estuary.Types.Tempo
  --              Tempo    Video Length      render T   eval T    anchor t
 type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> a
 
--- anchor in signal and not in videoSpec.
--- opacity (ramp 0 1 3) $ "myMov.mp4"
+instance Functor Signal where
+  fmap f s = \t videoDur renderT evalT anchorT -> f (s t videoDur renderT evalT anchorT)
+
+instance Applicative Signal where
+  pure x = \_ _ _ _ _ -> x
+  f <*> x = \t videoDur renderT evalT anchorT -> f t videoDur renderT evalT anchorT $ x t videoDur renderT evalT anchorT
+
+instance Monad Signal where
+  a >>= f = \t videoDur renderT evalT anchorT -> f (a t videoDur renderT evalT anchorT) a t videoDur renderT evalT anchorT
 
 instance Num a => Num (Signal a) where
     x + y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) + (y t dur renderTime evalTime anchTime)
@@ -35,13 +42,7 @@ multipleMaybeSignal x y = \a b c d e -> multiplyMaybe (x a b c d e) (y a b c d e
 ------ functions that generate signals
 
 constantSignal :: a -> Signal a
-constantSignal x = \_ _ _ _ _ -> x
-
-
--- Two cases that should work:
--- opacity (ramp 0 1 3) $ "myMov.mp4" -- implicit quant
-
--- opacity (ramp 0 1 3) $ quant 2 0.5 $ "myMov.mp4"
+constantSignal = pure
 
 defaultAnchor:: Tempo -> UTCTime -> UTCTime
 defaultAnchor t eval = quantAnchor 1 0 t eval
