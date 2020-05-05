@@ -262,31 +262,31 @@ body::-webkit-scrollbar-thumb {
 	}
 
 
-
 .splash-container { /*contains the four buttons in the home page  (source) */
 	display: flex;
 	flex-wrap: wrap;
 	width: 100%;
 	height: 100%;
 	align-items: center;
+	overflow:hidden;
  }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
-	width: 50%;
+    width: 50%;
+    height: 50%;
 	box-sizing: border-box;
 	padding: 0.5em;
-}
+    display: flex;
+    }
 
 .splash-panel {/*contains the tutorial, solo and collaboration buttons (source)*/
 	font-family: estuaryFont;
-
+    width: 100%;
 	border: 0.25em solid;
 	border-radius: 4px;
 	padding: 0.5em;
 	text-align: center;
 	box-sizing: border-box;
-	/*before it was 16em */
-	max-height: 40vh;
 	display: flex;
 	flex-direction: column;
 }
@@ -302,30 +302,30 @@ body::-webkit-scrollbar-thumb {
 	border: 0.5em solid;
 }
 
-.splash-title { /*contains the title "estuary" on the homepage  (source)*/
-	display: flex;
-	/*this padding was added in 23 oct 2019*/
-	padding-top: 3vh;
-	margin-bottom: 1%;
-	margin: auto;
-	/* scales a bit nicer with the viewport */
- 	font-size: calc(80% + 1.5vw);
+.splash-title-container { /*contains the title "estuary" on the homepage  (source)*/
+   height: 40%;
+   display:flex;
+   justify-content: center;
+   align-items:center;
+
+}
+
+.splash-title{
+	width:fit-content;
+	font-size: calc(80% + 1.5vw);
 }
 
 .splash-icon-container {
+	    width: 100%;
 		display: flex;
-		width: 100%;
-		height: 100%;
-		max-width: 16em; /* Taken from .splash-panel */
-		margin: auto; /* centered */
+        justify-content: center;
+		margin: auto;
 		min-height: 0; /* Fixes flex stretching for underspecified boxes to be the flex'd height rather than parent height. */
 }
 
 .splash-icon {
 	font-family: estuary-icons;
-	width:100%;
-	/*this was 13em*/
-	font-size: 30vh;
+ 	font-size: calc(80% + 10vw);
 }
 
 .splash-icon > canvas {
@@ -1075,14 +1075,20 @@ display: inline-flex;
 
 /* ///////////status Widget/////////// */
 
+.ensembleStatusWidget {
+	height: 8em;
+    border: 1px solid var(--primary-color);
+    border-radius: 5px;
+    margin-top: 0.5%;
+}
 
 .tableContainer {
-  overflow: hidden;
-  overflow-y: auto;
-  border: 1px solid var(--primary-color);
-  border-radius: 5px;
-  margin-bottom: 0.5%;
-  height: 7em;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+    overflow: hidden;
+    overflow-y: auto;
+    max-height: 7em;
 }
 
 .tableContainer::-webkit-scrollbar  {
@@ -1104,46 +1110,72 @@ display: inline-flex;
 	background-color: transparent;
 }
 
-.ensemble-name {
-	text-align:center;
-	padding: 0.125em;
-	border: 1px solid var(--primary-color);
+.ensemble-name-container {
+	padding: 0.1em;
+	margin-bottom: 1%;
+	border-bottom: 1px solid var(--primary-color);
 	border-radius: 5px;
 }
 
+.ensemble-name {
+    margin-left: 2%;
+}
 
 .tableContainer table {
-  table-layout: auto;
-  width: 100%;
+  margin-left: 2%;
+  table-layout:auto;
+  flex-grow: 1;
+  order:0;
+  border-collapse: collapse;
+
 }
 
-.tableContainer tr {
-
+.tableContainerButtonDiv {
+	order: 1;
 }
 
-.tableContainer table,  td {
-	width: 100%;
-    border-bottom: 1px solid var(--primary-color);
-    border-collapse: collapse;
+.tableContainerButtonDiv button {
+	height: 100%;
+	background-color: transparent;
+	border:none;
 }
 
-.statusWidgetNameAndLocation{
+
+.statusWidgetNameAndLocation {
 		margin-bottom: 1%;
-		width: auto;
+		width: 10%;
 }
-
 
 .statusWidgetStatusInput input {
+	box-sizing: border-box;
 	color: var(--primary-color);
 	background-color: transparent;
 	border: none;
-	width: 99%;
-/* 	pointer-events: none; */
+	width:99%;
+    border-radius: 5px;
+    padding-left: 2%;
+
 }
 
+.statusWidgetActivity {
+	width:1%;
+}
+.statusWidgetFPSAndLatency {
+   width:1%;
+}
 
 .statusWidgetAnonymousPart {
-	text-align: center;
+   order: 3;
+   width: 100%;
+   margin-top:0.5%;
+   margin-left: 2%;
+}
+
+.statusFPSAndLatency button{
+	border:none;
+	width: max-content;
+	height: 1.3em;
+	background-color: transparent;
 }
 
 /* Tooltip classes */
