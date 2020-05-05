@@ -13,6 +13,7 @@ import Data.Time
 import TextShow
 import Control.Monad
 import Reflex.FunctorMaybe
+import Control.Exception
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
@@ -50,19 +51,19 @@ foreign import javascript unsafe
   offsetHeight :: HTMLDivElement -> IO Double
 ----  Create a video ----
 
-foreign import javascript safe
+foreign import javascript unsafe
   "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO CineCer0Video
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$2.appendChild($1); $1.play();"
   appendVideo :: CineCer0Video -> HTMLDivElement -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.removeChild($2)"
   removeVideo :: HTMLDivElement -> CineCer0Video -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.style = $2;"
   videoStyle_ :: CineCer0Video -> Text -> IO ()
 
@@ -93,7 +94,7 @@ foreign import javascript unsafe
   "$1.playbackRate"
   getVideoPlaybackRate :: CineCer0Video -> IO Double
 
-foreign import javascript unsafe
+foreign import javascript safe
   "$1.playbackRate = $2;"
   setVideoPlaybackRate :: CineCer0Video -> Double -> IO ()
 
@@ -174,8 +175,14 @@ onlyChangedVideoSources nSpec oSpec
   | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
 
 
+logExceptions :: a -> SomeException -> IO a
+logExceptions r e = do
+  putStrLn $ "EXCEPTION (CineCer0): " ++ show e
+  return r
+
+
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
-updateCineCer0State t rTime spec st = do
+updateCineCer0State t rTime spec st = handle (logExceptions st) $ do
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
@@ -205,7 +212,7 @@ updateCineCer0State t rTime spec st = do
 
 -- note: return value represents style text of this frame
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> (CineCer0Video,Text) -> IO Text
-updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = do
+updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExceptions prevStyle) $ do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
@@ -230,8 +237,10 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = do
     let pos = fmap realToFrac $ playbackPosition s t lengthOfVideo rTime eTime aTime
     case (rate,pos) of
       (Just rate',Just pos') -> do
-        videoPlaybackRate v rate'
-        videoPlaybackPosition v rate' pos'
+        -- silently fail when rate is outside of range of [0.0625,16]
+        when ((rate' >= 0.0625) && (rate' <= 16)) $ do
+          videoPlaybackRate v rate'
+          videoPlaybackPosition v rate' pos'
       otherwise -> return ()
 
     -- style filters
