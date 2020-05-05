@@ -400,7 +400,7 @@ renderBaseProgramAlways irc c z (Just CineCer0) = do
     let theDiv = fromJust maybeTheDiv
     let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
     let t = tempo $ ensemble $ ensembleC c
-    let now = renderStart s
+    now <- liftIO $ getCurrentTime
     newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
     modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
 renderBaseProgramAlways irc c z (Just TimeNot) = do
