@@ -196,3 +196,8 @@ selfCertificates:
 	openssl genrsa -out privkey.pem 2048
 	openssl req -new -key privkey.pem -out cert.csr -addext extendedKeyUsage=serverAuth -addext subjectAltName=DNS:localhost
 	openssl x509 -req -in cert.csr -signkey privkey.pem -out cert.pem
+
+stageLocalWebDirt: prepStage prepDevStage
+	cp -Rf ~/WebDirt/* $(STAGING_ROOT)/Estuary.jsexe/WebDirt/
+	cp -Rf ~/WebDirt/* $(DEV_STAGING_ROOT)/Estuary.jsexe/WebDirt/
+	
