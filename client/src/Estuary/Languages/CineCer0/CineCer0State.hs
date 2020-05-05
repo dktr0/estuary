@@ -29,7 +29,16 @@ instance PFromJSVal CineCer0Video where pFromJSVal = CineCer0Video
 data CineCer0State = CineCer0State {
   videoDiv :: HTMLDivElement,
   videos :: IntMap CineCer0Video,
-  previousVideoSpecs :: IntMap VideoSpec
+  previousVideoSpecs :: IntMap VideoSpec,
+  previousStyles :: IntMap Text
+  }
+
+emptyCineCer0State :: HTMLDivElement -> CineCer0State
+emptyCineCer0State j = CineCer0State {
+  videoDiv = j,
+  videos = empty,
+  previousVideoSpecs = empty,
+  previousStyles = empty
   }
 
 foreign import javascript unsafe
@@ -39,14 +48,6 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.offsetHeight"
   offsetHeight :: HTMLDivElement -> IO Double
-
-emptyCineCer0State :: HTMLDivElement -> CineCer0State
-emptyCineCer0State j = CineCer0State {
-  videoDiv = j,
-  videos = empty,
-  previousVideoSpecs = empty
-  }
-
 ----  Create a video ----
 
 foreign import javascript safe
@@ -89,12 +90,32 @@ foreign import javascript unsafe
 ----  Rate and Position ----
 
 foreign import javascript unsafe
+  "$1.playbackRate"
+  getVideoPlaybackRate :: CineCer0Video -> IO Double
+
+foreign import javascript unsafe
   "$1.playbackRate = $2;"
-  videoPlaybackRate :: CineCer0Video -> Double -> IO ()
+  setVideoPlaybackRate :: CineCer0Video -> Double -> IO ()
+
+videoPlaybackRate :: CineCer0Video -> Double -> IO ()
+videoPlaybackRate v r = do
+  x <- getVideoPlaybackRate v
+  when (x /= r) $ setVideoPlaybackRate v r
+
+foreign import javascript unsafe
+  "$1.currentTime"
+  getVideoPlaybackPosition :: CineCer0Video -> IO Double
 
 foreign import javascript unsafe
   "$1.currentTime = $2;"
-  videoPlaybackPosition :: CineCer0Video -> Double -> IO ()
+  setVideoPlaybackPosition :: CineCer0Video -> Double -> IO ()
+
+videoPlaybackPosition :: CineCer0Video -> Double -> IO ()
+videoPlaybackPosition v p = do
+  x <- getVideoPlaybackPosition v
+  let diff = abs (x - p)
+  when (diff > 0.030) $ do
+    setVideoPlaybackPosition v p
 
 foreign import javascript unsafe
   "$1.duration"
@@ -132,8 +153,8 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 
 ----  Style a Video ----
 
-videoStyle :: CineCer0Video -> Double -> Double -> Double -> Double -> Text -> IO ()
-videoStyle v x y w h t = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> t
+videoStyle :: Double -> Double -> Double -> Double -> Text -> Text
+videoStyle x y w h t = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> t
 
 ----  Add and Change Source ----
 
@@ -156,6 +177,7 @@ onlyChangedVideoSources nSpec oSpec
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t rTime spec st = do
+  t0 <- getCurrentTime
   --putStrLn $ show spec
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
@@ -165,6 +187,7 @@ updateCineCer0State t rTime spec st = do
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+  let addedStyles = fmap (const "") addedVideos -- :: IntMap Text
   -- change videos
   let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
   let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
@@ -178,15 +201,20 @@ updateCineCer0State t rTime spec st = do
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   -- update videoSpecs
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-  sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos
-  return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs } --
+  let continuingVideos' = intersectionWith (\a b -> (a,b)) continuingVideos (previousStyles st)
+  continuingStyles <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos' -- :: IntMap Text
+  let styles = union addedStyles continuingStyles
+  t1 <- getCurrentTime
+  putStrLn $ show $ diffUTCTime t1 t0
+  return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs, previousStyles = styles }
 
-updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
-updateContinuingVideo t eTime rTime (sw,sh) s v = do
+-- note: return value represents style text of this frame
+updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> (CineCer0Video,Text) -> IO Text
+updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
-  when (vw /= 0 && vh /= 0) $ do
+  if (vw /= 0 && vh /= 0) then do
     lengthOfVideo <- realToFrac <$> getLengthOfVideo v
     let aspectRatio = vw/vh
     let heightIfFitsWidth = sw / aspectRatio
@@ -216,4 +244,8 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let generateFilter' = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     --update style
-    videoStyle v (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) generateFilter'
+    let style = videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) generateFilter'
+    -- compare style to previous frame's style
+    when (style /= prevStyle) $ videoStyle_ v style
+    return style
+  else return ""
