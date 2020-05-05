@@ -9,8 +9,16 @@ import Estuary.Types.Tempo
  --              Tempo    Video Length      render T   eval T    anchor t
 type Signal a = Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> a
 
--- anchor in signal and not in videoSpec.
--- opacity (ramp 0 1 3) $ "myMov.mp4"
+{- instance Functor Signal where
+  fmap f s = \t videoDur renderT evalT anchorT -> f (s t videoDur renderT evalT anchorT)
+
+instance Applicative Signal where
+  pure x = \_ _ _ _ _ -> x
+  f <*> x = \t videoDur renderT evalT anchorT -> f t videoDur renderT evalT anchorT $ x t videoDur renderT evalT anchorT
+
+instance Monad Signal where
+  a >>= f = \t videoDur renderT evalT anchorT -> f (a t videoDur renderT evalT anchorT) a t videoDur renderT evalT anchorT
+-}
 
 instance Num a => Num (Signal a) where
     x + y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) + (y t dur renderTime evalTime anchTime)
@@ -19,6 +27,7 @@ instance Num a => Num (Signal a) where
     abs x = \t dur renderTime evalTime anchTime -> abs (x t dur renderTime evalTime anchTime)
     signum x = \t dur renderTime evalTime anchTime -> signum (x t dur renderTime evalTime anchTime)
     fromInteger x = \t dur renderTime evalTime anchTime -> fromInteger x
+    
 
 ------
 
@@ -37,21 +46,15 @@ multipleMaybeSignal x y = \a b c d e -> multiplyMaybe (x a b c d e) (y a b c d e
 constantSignal :: a -> Signal a
 constantSignal x = \_ _ _ _ _ -> x
 
-
--- Two cases that should work:
--- opacity (ramp 0 1 3) $ "myMov.mp4" -- implicit quant
-
--- opacity (ramp 0 1 3) $ quant 2 0.5 $ "myMov.mp4"
-
 defaultAnchor:: Tempo -> UTCTime -> UTCTime
 defaultAnchor t eval = quantAnchor 1 0 t eval
 
 -- calculates the anchorTime
 quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
 quantAnchor cycleMult offset t eval =
-  let ec = timeToCount t eval
+  let ec = timeToCount t eval -- elapsed cycles
       currentCycle = fromIntegral (floor ec):: Rational
-      align = if ec - currentCycle > 0.95 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
+      align = if ec - currentCycle > 0.25 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
       toQuant = currentCycle + align -- as integer to go through the quantomatic
       quanted = quantomatic cycleMult toQuant
       anchor = cycsToSecs t quanted -- into seconds (as NDT)
@@ -396,7 +399,8 @@ opacityChanger arg t len rend eval anchor = arg
 ramp :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
   let startTime = anchorTime :: UTCTime -- place holder, add quant later
-      endTime = addUTCTime durVal anchorTime
+      durVal' = durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)
+      endTime = addUTCTime durVal' anchorTime
   in Just $ ramp' renderTime startTime endTime startVal endVal
 
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
