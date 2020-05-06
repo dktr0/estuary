@@ -37,6 +37,7 @@ import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.TimeNot.Parsers as TimeNot
 import qualified Sound.TimeNot.Render as TimeNot
+import qualified Sound.Cumbia.Parser as Cumbia
 
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
@@ -289,7 +290,9 @@ renderZoneChanged _ _ _ _ = return ()
 
 renderZoneAlways :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
 renderZoneAlways irc c z (TidalStructure _) = renderControlPattern irc c z
-renderZoneAlways irc c z (TextProgram x) = renderTextProgramAlways irc c z
+renderZoneAlways irc c z (TextProgram x) = do
+  let (_,_,evalTime) = forRendering x
+  renderTextProgramAlways irc c z evalTime
 renderZoneAlways irc c z (Sequence _) = renderControlPattern irc c z
 renderZoneAlways _ _ _ _ = return ()
 
@@ -332,13 +335,24 @@ renderBaseProgramChanged irc c z (Right (CineCer0,x,eTime)) = do
     setZoneError z (T.pack err)
 
 renderBaseProgramChanged irc c z (Right (TimeNot,x,eTime)) = do
-  s <- get
   let parseResult = TimeNot.runCanonParser $ T.unpack x
   case parseResult of
     (Right p) -> do
       clearZoneError z
+      s <- get
       modify' $ \x -> x { timeNots = insert z p (timeNots s) }
     (Left e) -> do
+      liftIO $ putStrLn (show e)
+      setZoneError z (T.pack $ show e)
+
+renderBaseProgramChanged irc c z (Right (Cumbia,x,eTime)) = do
+  let parseResult = Cumbia.parseLang $ T.unpack x
+  case parseResult of
+    Right p -> do
+      clearZoneError z
+      s <- get
+      modify' $ \x -> x { cumbias = insert z p (cumbias s) }
+    Left e -> do
       liftIO $ putStrLn (show e)
       setZoneError z (T.pack $ show e)
 
@@ -384,15 +398,15 @@ punctualProgramChanged irc c z p = do
   modify' $ \x -> x { punctualWebGL = newWebGL }
 
 
-renderTextProgramAlways :: ImmutableRenderContext -> Context -> Int -> Renderer
-renderTextProgramAlways irc c z = do
+renderTextProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Renderer
+renderTextProgramAlways irc c z eTime = do
   s <- get
   let baseNotation = IntMap.lookup z $ baseNotations s
-  renderBaseProgramAlways irc c z $ baseNotation
+  renderBaseProgramAlways irc c z eTime $ baseNotation
 
-renderBaseProgramAlways :: ImmutableRenderContext -> Context -> Int -> Maybe TextNotation -> Renderer
-renderBaseProgramAlways irc c z (Just (TidalTextNotation _)) = renderControlPattern irc c z
-renderBaseProgramAlways irc c z (Just CineCer0) = do
+renderBaseProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Maybe TextNotation -> Renderer
+renderBaseProgramAlways irc c z _ (Just (TidalTextNotation _)) = renderControlPattern irc c z
+renderBaseProgramAlways irc c z _ (Just CineCer0) = do
   s <- get
   let maybeTheDiv = videoDivElement c
   when (isJust maybeTheDiv) $ do
@@ -403,7 +417,7 @@ renderBaseProgramAlways irc c z (Just CineCer0) = do
     now <- liftIO $ getCurrentTime
     newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
     modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
-renderBaseProgramAlways irc c z (Just TimeNot) = do
+renderBaseProgramAlways irc c z _ (Just TimeNot) = do
   s <- get
   let p = IntMap.lookup z $ timeNots s
   case p of
@@ -416,8 +430,18 @@ renderBaseProgramAlways irc c z (Just TimeNot) = do
       let events = fmap (second mapTextDatumToControlMap . TimeNot.mapForEstuary) $ TimeNot.render oTime p' wStart wEnd
       modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
     Nothing -> return ()
-
-renderBaseProgramAlways _ _ _ _ = return ()
+renderBaseProgramAlways irc c z _ (Just Cumbia) = do
+  s <- get
+  let p = IntMap.lookup z $ cumbias s
+  case p of
+    Just p' -> do
+      let theTempo = (tempo . ensemble . ensembleC) c
+      let wStart = renderStart s
+      let wEnd = renderEnd s
+      let events = Cumbia.render p' theTempo wStart wEnd
+      modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
+    Nothing -> return ()
+renderBaseProgramAlways _ _ _ _ _ = return ()
 
 
 renderControlPattern :: ImmutableRenderContext -> Context -> Int -> Renderer

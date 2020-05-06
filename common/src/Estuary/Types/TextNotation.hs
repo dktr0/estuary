@@ -11,7 +11,8 @@ data TextNotation =
   TidalTextNotation TidalParser |
   Punctual |
   CineCer0 |
-  TimeNot
+  TimeNot |
+  Cumbia
   -- Ver |
   -- Oir
   deriving (Read,Eq,Ord,Show,Generic)
