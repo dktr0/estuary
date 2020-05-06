@@ -13,6 +13,7 @@ import Data.Time
 import TextShow
 import Control.Monad
 import Reflex.FunctorMaybe
+import Control.Exception
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
@@ -29,7 +30,16 @@ instance PFromJSVal CineCer0Video where pFromJSVal = CineCer0Video
 data CineCer0State = CineCer0State {
   videoDiv :: HTMLDivElement,
   videos :: IntMap CineCer0Video,
-  previousVideoSpecs :: IntMap VideoSpec
+  previousVideoSpecs :: IntMap VideoSpec,
+  previousStyles :: IntMap Text
+  }
+
+emptyCineCer0State :: HTMLDivElement -> CineCer0State
+emptyCineCer0State j = CineCer0State {
+  videoDiv = j,
+  videos = empty,
+  previousVideoSpecs = empty,
+  previousStyles = empty
   }
 
 foreign import javascript unsafe
@@ -39,29 +49,21 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "$1.offsetHeight"
   offsetHeight :: HTMLDivElement -> IO Double
-
-emptyCineCer0State :: HTMLDivElement -> CineCer0State
-emptyCineCer0State j = CineCer0State {
-  videoDiv = j,
-  videos = empty,
-  previousVideoSpecs = empty
-  }
-
 ----  Create a video ----
 
-foreign import javascript safe
+foreign import javascript unsafe
   "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO CineCer0Video
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$2.appendChild($1); $1.play();"
   appendVideo :: CineCer0Video -> HTMLDivElement -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.removeChild($2)"
   removeVideo :: HTMLDivElement -> CineCer0Video -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.style = $2;"
   videoStyle_ :: CineCer0Video -> Text -> IO ()
 
@@ -89,12 +91,33 @@ foreign import javascript unsafe
 ----  Rate and Position ----
 
 foreign import javascript unsafe
+  "$1.playbackRate"
+  getVideoPlaybackRate :: CineCer0Video -> IO Double
+
+foreign import javascript safe
   "$1.playbackRate = $2;"
-  videoPlaybackRate :: CineCer0Video -> Double -> IO ()
+  setVideoPlaybackRate :: CineCer0Video -> Double -> IO ()
+
+videoPlaybackRate :: CineCer0Video -> Double -> IO ()
+videoPlaybackRate v r = do
+  x <- getVideoPlaybackRate v
+  when (x /= r) $ setVideoPlaybackRate v r
+
+foreign import javascript unsafe
+  "$1.currentTime"
+  getVideoPlaybackPosition :: CineCer0Video -> IO Double
 
 foreign import javascript unsafe
   "$1.currentTime = $2;"
-  videoPlaybackPosition :: CineCer0Video -> Double -> IO ()
+  setVideoPlaybackPosition :: CineCer0Video -> Double -> IO ()
+
+-- takes a rate argument as well because we use the rate in
+-- compensating for the delay in new positions taking effect
+videoPlaybackPosition :: CineCer0Video -> Double -> Double -> IO ()
+videoPlaybackPosition v r p = do
+  x <- getVideoPlaybackPosition v
+  let diff = abs (x - p)
+  when (diff > 0.050) $ setVideoPlaybackPosition v (p+(0.15*r))
 
 foreign import javascript unsafe
   "$1.duration"
@@ -132,8 +155,8 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 
 ----  Style a Video ----
 
-videoStyle :: CineCer0Video -> Double -> Double -> Double -> Double -> Text -> IO ()
-videoStyle v x y w h t = videoStyle_ v $ "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> t
+videoStyle :: Double -> Double -> Double -> Double -> Text -> Text
+videoStyle x y w h t = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> t
 
 ----  Add and Change Source ----
 
@@ -152,11 +175,14 @@ onlyChangedVideoSources nSpec oSpec
   | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
 
 
----- update CineCer0 State and Continuing Video ----
+logExceptions :: a -> SomeException -> IO a
+logExceptions r e = do
+  putStrLn $ "EXCEPTION (CineCer0): " ++ show e
+  return r
+
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
-updateCineCer0State t rTime spec st = do
-  --putStrLn $ show spec
+updateCineCer0State t rTime spec st = handle (logExceptions st) $ do
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
@@ -165,6 +191,7 @@ updateCineCer0State t rTime spec st = do
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
   let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
   addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+  let addedStyles = fmap (const "") addedVideos -- :: IntMap Text
   -- change videos
   let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
   let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
@@ -178,15 +205,18 @@ updateCineCer0State t rTime spec st = do
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
   -- update videoSpecs
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
-  sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos
-  return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs } --
+  let continuingVideos' = intersectionWith (\a b -> (a,b)) continuingVideos (previousStyles st)
+  continuingStyles <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos' -- :: IntMap Text
+  let styles = union addedStyles continuingStyles
+  return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs, previousStyles = styles }
 
-updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO ()
-updateContinuingVideo t eTime rTime (sw,sh) s v = do
+-- note: return value represents style text of this frame
+updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> (CineCer0Video,Text) -> IO Text
+updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExceptions prevStyle) $ do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
-  when (vw /= 0 && vh /= 0) $ do
+  if (vw /= 0 && vh /= 0) then do
     lengthOfVideo <- realToFrac <$> getLengthOfVideo v
     let aspectRatio = vw/vh
     let heightIfFitsWidth = sw / aspectRatio
@@ -201,12 +231,18 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let centreY = ((posY s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
-    -- update playback rate
-    let rate = playbackRate s t lengthOfVideo rTime eTime aTime
-    maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
-    -- update position in time
-    let pos = (playbackPosition s) t lengthOfVideo rTime eTime aTime
-    maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
+
+    -- update playback rate and position, if both are not Nothing
+    let rate = fmap realToFrac $ playbackRate s t lengthOfVideo rTime eTime aTime
+    let pos = fmap realToFrac $ playbackPosition s t lengthOfVideo rTime eTime aTime
+    case (rate,pos) of
+      (Just rate',Just pos') -> do
+        -- silently fail when rate is outside of range of [0.0625,16]
+        when ((rate' >= 0.0625) && (rate' <= 16)) $ do
+          videoPlaybackRate v rate'
+          videoPlaybackPosition v rate' pos'
+      otherwise -> return ()
+
     -- style filters
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let blur' = blur s t lengthOfVideo rTime eTime aTime
@@ -214,6 +250,9 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = do
     let contrast' = (*) <$> (contrast s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
-    let generateFilter' = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
+    let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     --update style
-    videoStyle v (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) generateFilter'
+    let style = videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText
+    when (style /= prevStyle) $ videoStyle_ v style
+    return style
+  else return ""

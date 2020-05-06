@@ -16,6 +16,7 @@ import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import qualified Sound.TimeNot.AST as TimeNot
+import qualified Sound.Cumbia.Program as Cumbia
 
 import Estuary.Types.MovingAverage
 import Estuary.Types.TextNotation
@@ -39,6 +40,7 @@ data RenderState = RenderState {
   cineCer0Specs :: !(IntMap CineCer0.Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
   timeNots :: IntMap TimeNot.Program,
+  cumbias :: IntMap Cumbia.Program,
   evaluationTimes :: IntMap UTCTime, -- this is probably temporary
   renderTime :: !MovingAverage,
   wakeTimeAnimation :: !UTCTime,
@@ -70,6 +72,7 @@ initialRenderState mic out glCtx t0System t0Audio = do
     cineCer0Specs = empty,
     cineCer0States = empty,
     timeNots = empty,
+    cumbias = empty,
     evaluationTimes = empty,
     renderTime = newAverage 20,
     wakeTimeAnimation = t0System,

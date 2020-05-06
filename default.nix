@@ -215,8 +215,15 @@ in
          dontHaddock (self.callCabal2nix "tempi" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "tempi";
-           sha256 = "10apprl5hzf7i7j6yp35vah174ds78x1q695cmcdcyd4qin3lzim";
-           rev = "7e4ddcfd57af1d28c6970e9039701804e7145deb";
+           sha256 = "0z4fjdnl7riivw77pl8wypw1a98av3nhpmw0z5g2a1q2kjja0sfp";
+           rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
+        }) {});
+
+        cumbia = dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
+           owner = "luisnavarrodelangel";
+           repo = "cumbia";
+           sha256 = "17v27fp6aq162hby728gqcdhlaaihxw6iz81gr19bj55022ngi0j";
+           rev = "3fee1434f2766c23b675fcd34a37c86aed9d2e4b";
         }) {});
 
       };
