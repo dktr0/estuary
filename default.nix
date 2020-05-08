@@ -185,8 +185,8 @@ in
         tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0y9xw4i6hmhh6dz591am20mm4cjv68fl8j1n4lxlldsyjrr610h7";
-          rev = "acd7fb449efa996ac175239aa256d28dbffab89a";
+          sha256 = "0r3nz4hxwvgwjka6rhkyhp6g0wbgjyaik0wkk7n27jp5mj5lwcv0";
+          rev = "3e3f568c059912ee90f337fb4d21b56b88c4ada7";
           fetchSubmodules = true;
           }) "" {}));
 
@@ -195,8 +195,8 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0y9xw4i6hmhh6dz591am20mm4cjv68fl8j1n4lxlldsyjrr610h7";
-            rev = "acd7fb449efa996ac175239aa256d28dbffab89a";
+            sha256 = "0r3nz4hxwvgwjka6rhkyhp6g0wbgjyaik0wkk7n27jp5mj5lwcv0";
+            rev = "3e3f568c059912ee90f337fb4d21b56b88c4ada7";
             fetchSubmodules = true;
               })
             "--subpath tidal-parse" {}));
@@ -215,8 +215,15 @@ in
          dontHaddock (self.callCabal2nix "tempi" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "tempi";
-           sha256 = "10apprl5hzf7i7j6yp35vah174ds78x1q695cmcdcyd4qin3lzim";
-           rev = "7e4ddcfd57af1d28c6970e9039701804e7145deb";
+           sha256 = "0z4fjdnl7riivw77pl8wypw1a98av3nhpmw0z5g2a1q2kjja0sfp";
+           rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
+        }) {});
+
+        cumbia = dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
+           owner = "luisnavarrodelangel";
+           repo = "cumbia";
+           sha256 = "17v27fp6aq162hby728gqcdhlaaihxw6iz81gr19bj55022ngi0j";
+           rev = "3fee1434f2766c23b675fcd34a37c86aed9d2e4b";
         }) {});
 
       };
