@@ -14,7 +14,7 @@ More advanced customization is available through CSS classes within this documen
   --primary-color: rgba(255, 255, 255, 255);
 
 /* sets the background color of buttons and other borders */
---secondary-color: rgba(102, 102, 102, 0.47);
+--secondary-color: rgb(102, 102, 102);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
