@@ -88,6 +88,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   -- four GUI components: header, main (navigation), terminal, footer
   (headerChange,_) <- runEditor ctx rInfo header
   ((requests, ensembleRequestFromPage), hintsFromPage) <- divClass "page ui-font" $ do
+    divClass "sidebar" $ text "Help Documentation"
     runEditor ctx rInfo $ navigation deltasDown
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]

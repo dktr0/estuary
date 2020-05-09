@@ -1206,3 +1206,15 @@ display: inline-flex;
   text-align: end;
   cursor: pointer;
 }
+
+.sidebar {
+  height: 100%;
+  width: 25%;
+  position: fixed;
+  z-index: 1;
+  top: 2em;
+  right: 0;
+  background-color: var(--secondary-color);
+  overflow-x: hidden;
+  transition: 0.5s;
+}
