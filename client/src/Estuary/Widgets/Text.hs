@@ -54,7 +54,7 @@ textWidget rows i delta = do
 
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = [Punctual, CineCer0, TimeNot {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)
+textNotationParsers = [Punctual, CineCer0, TimeNot, Cumbia {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)
 
 
 textProgramEditor :: forall t m. MonadWidget t m => Int -> Dynamic t (Maybe Text)
@@ -98,8 +98,8 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ do -
 
     let v' = (\x y z -> (x,y,z)) <$> parserValue <*> textValue <*> evalTimeValue
     let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent' = tagPromptlyDyn v' $ evalEvent
-    return ({- traceEvent "editEvent" -} editEvent,{- traceEvent "evalEvent'" -} evalEvent')
+    let evalEvent' = attachPromptlyDynWith (\(x,y,_) z -> (x,y,z)) v' localEvalTime
+    return (editEvent,evalEvent')
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]

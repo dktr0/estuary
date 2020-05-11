@@ -856,7 +856,8 @@ table, tr, td {border: none;}
 .terminalHeader {
 	display: flex;
 	flex-direction: row;
-	border:none;
+	border: none;
+  padding: 0.125em;
 }
 
 .terminalInput {
@@ -1230,6 +1231,7 @@ display: inline-flex;
   cursor: pointer;
   padding: 0;
   display: block;
+  outline: none;
 }
 
 .footer-area {

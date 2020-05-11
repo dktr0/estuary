@@ -103,7 +103,7 @@ applyRate rate t length render eval anchor = Just rate
 -- it has only one argument (that can also be found in every time function): shift,
 -- shift changes the start value of the video: 0.5 shift in a 12 secs video will align the 0 of the tempo
 -- with the video at its 50% (6:00 secs)
-
+-- ??? the code suggests that the shift is multiples of cycles of the tempo rather than video length ???
 
 playNatural_Pos:: Rational -> Signal (Maybe NominalDiffTime)
 playNatural_Pos sh t vl render eval anchor =
@@ -112,9 +112,7 @@ playNatural_Pos sh t vl render eval anchor =
         off = sh*cpDur
         difb0 = realToFrac (diffUTCTime render (origin t)) :: Rational
         difb0' = difb0 - off
-        lengths = difb0' / vLen
-        posNorm = lengths - fromIntegral (floor lengths) :: Rational
-        result = reglaDeTres 1 posNorm vLen
+        result = ((* vLen) . snd . properFraction) $ difb0' / vLen
     in Just (realToFrac result)
 
 playNatural_Rate :: Rational-> Signal (Maybe Rational)
@@ -134,7 +132,7 @@ playEvery_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
 playEvery_Pos c sh t vl render eval anchor =
     let n = c -- 4
         ec = (timeToCount t render) -- 30 cycles (60 secs if each cycle is 2 secs long)
-        ecOf = ec - sh 
+        ecOf = ec - sh
         floored = floor (ecOf/n) -- 30/4 = 7.5 then floored= 7
         nlb = (fromIntegral floored :: Rational)*n -- 7 * 4 = 28
         pos= (realToFrac vl) * ((ecOf-nlb)/n) -- 12.5 secs * 30-28/4 = 12.5 * 0.5
@@ -161,7 +159,7 @@ playEvery_Rate c sh t vl render eval anchor =
 playRound_Pos:: Rational -> Signal (Maybe NominalDiffTime)
 playRound_Pos sh t vlen render eval anchor =
     let vl = realToFrac vlen :: Rational
-        ec = (timeToCount t render) 
+        ec = (timeToCount t render)
         ecSh = ec - sh
 
         oldVLInC = vl / (1/(freq t)) -- 6.25
@@ -171,7 +169,7 @@ playRound_Pos sh t vlen render eval anchor =
         rSegment = ecSh / newVLInC -- 30.5 / 12 = 5.083333333 -- rounded segment
         posInSegment = rSegment - (fromIntegral (floor rSegment) :: Rational) -- 0.083333333
         scaled = posInSegment*vl
-    in Just (realToFrac scaled :: NominalDiffTime) 
+    in Just (realToFrac scaled :: NominalDiffTime)
 
 playRound_Rate:: Rational -> Signal (Maybe Rational)
 playRound_Rate sh t vlen render eval anchor =
@@ -210,9 +208,9 @@ playRoundMetre_Pos sh t vlen render eval anchor =
         inSecs = newVLinCPS *dur -- 8.0 * 2.0
         difb0 = realToFrac (diffUTCTime render (origin t)) :: Rational -- 60
         difb0' = difb0 - off -- 60
-        lengths = difb0' / inSecs -- 
+        lengths = difb0' / inSecs --
         posNorm = lengths - fromIntegral (floor lengths) :: Rational -- 0.875, this is the percentage of the duration of a cycle
-        result = posNorm * (realToFrac vl :: Rational) 
+        result = posNorm * (realToFrac vl :: Rational)
     in Just (realToFrac  result) --transforms this into seconds
 
 playRoundMetre_Rate:: Rational -> Signal (Maybe Rational)

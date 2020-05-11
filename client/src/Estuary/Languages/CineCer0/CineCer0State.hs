@@ -13,6 +13,7 @@ import Data.Time
 import TextShow
 import Control.Monad
 import Reflex.FunctorMaybe
+import Control.Exception
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
@@ -50,19 +51,19 @@ foreign import javascript unsafe
   offsetHeight :: HTMLDivElement -> IO Double
 ----  Create a video ----
 
-foreign import javascript safe
+foreign import javascript unsafe
   "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO CineCer0Video
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$2.appendChild($1); $1.play();"
   appendVideo :: CineCer0Video -> HTMLDivElement -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.removeChild($2)"
   removeVideo :: HTMLDivElement -> CineCer0Video -> IO ()
 
-foreign import javascript safe
+foreign import javascript unsafe
   "$1.style = $2;"
   videoStyle_ :: CineCer0Video -> Text -> IO ()
 
@@ -93,7 +94,7 @@ foreign import javascript unsafe
   "$1.playbackRate"
   getVideoPlaybackRate :: CineCer0Video -> IO Double
 
-foreign import javascript unsafe
+foreign import javascript safe
   "$1.playbackRate = $2;"
   setVideoPlaybackRate :: CineCer0Video -> Double -> IO ()
 
@@ -110,12 +111,13 @@ foreign import javascript unsafe
   "$1.currentTime = $2;"
   setVideoPlaybackPosition :: CineCer0Video -> Double -> IO ()
 
-videoPlaybackPosition :: CineCer0Video -> Double -> IO ()
-videoPlaybackPosition v p = do
+-- takes a rate argument as well because we use the rate in
+-- compensating for the delay in new positions taking effect
+videoPlaybackPosition :: CineCer0Video -> Double -> Double -> IO ()
+videoPlaybackPosition v r p = do
   x <- getVideoPlaybackPosition v
   let diff = abs (x - p)
-  when (diff > 0.030) $ do
-    setVideoPlaybackPosition v p
+  when (diff > 0.050) $ setVideoPlaybackPosition v (p+(0.15*r))
 
 foreign import javascript unsafe
   "$1.duration"
@@ -173,12 +175,14 @@ onlyChangedVideoSources nSpec oSpec
   | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
 
 
----- update CineCer0 State and Continuing Video ----
+logExceptions :: a -> SomeException -> IO a
+logExceptions r e = do
+  putStrLn $ "EXCEPTION (CineCer0): " ++ show e
+  return r
+
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
-updateCineCer0State t rTime spec st = do
-  t0 <- getCurrentTime
-  --putStrLn $ show spec
+updateCineCer0State t rTime spec st = handle (logExceptions st) $ do
   let vSpecs = videoSpecMap spec
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
@@ -204,13 +208,11 @@ updateCineCer0State t rTime spec st = do
   let continuingVideos' = intersectionWith (\a b -> (a,b)) continuingVideos (previousStyles st)
   continuingStyles <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos' -- :: IntMap Text
   let styles = union addedStyles continuingStyles
-  t1 <- getCurrentTime
-  putStrLn $ show $ diffUTCTime t1 t0
   return $ st { videos = continuingVideos, previousVideoSpecs = vSpecs, previousStyles = styles }
 
 -- note: return value represents style text of this frame
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> (CineCer0Video,Text) -> IO Text
-updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = do
+updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExceptions prevStyle) $ do
   -- need fitWidth and fitHeight to be some representation of "maximal fit"
   vw <- videoWidth v
   vh <- videoHeight v
@@ -229,12 +231,18 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = do
     let centreY = ((posY s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
-    -- update playback rate
-    let rate = playbackRate s t lengthOfVideo rTime eTime aTime
-    maybe (return ()) (videoPlaybackRate v) $ fmap realToFrac rate
-    -- update position in time
-    let pos = (playbackPosition s) t lengthOfVideo rTime eTime aTime
-    maybe (return ()) (videoPlaybackPosition v) $ fmap realToFrac pos
+
+    -- update playback rate and position, if both are not Nothing
+    let rate = fmap realToFrac $ playbackRate s t lengthOfVideo rTime eTime aTime
+    let pos = fmap realToFrac $ playbackPosition s t lengthOfVideo rTime eTime aTime
+    case (rate,pos) of
+      (Just rate',Just pos') -> do
+        -- silently fail when rate is outside of range of [0.0625,16]
+        when ((rate' >= 0.0625) && (rate' <= 16)) $ do
+          videoPlaybackRate v rate'
+          videoPlaybackPosition v rate' pos'
+      otherwise -> return ()
+
     -- style filters
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let blur' = blur s t lengthOfVideo rTime eTime aTime
@@ -242,10 +250,9 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = do
     let contrast' = (*) <$> (contrast s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
-    let generateFilter' = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
+    let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     --update style
-    let style = videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) generateFilter'
-    -- compare style to previous frame's style
+    let style = videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText
     when (style /= prevStyle) $ videoStyle_ v style
     return style
   else return ""

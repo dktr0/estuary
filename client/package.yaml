@@ -59,6 +59,7 @@ dependencies:
   - haskell-src-exts
   - haskellish
   - timeNot
+  - cumbia
 
 library:
   source-dirs:
