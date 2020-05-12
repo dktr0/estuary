@@ -312,7 +312,7 @@ body::-webkit-scrollbar-thumb {
 
 .splash-title{
 	width:fit-content;
-	font-size: calc(80% + 1.5vw);
+	font-size: calc(80% + 2vw);
 }
 
 .splash-icon-container {
@@ -325,7 +325,7 @@ body::-webkit-scrollbar-thumb {
 
 .splash-icon {
 	font-family: estuary-icons;
- 	font-size: calc(80% + 10vw);
+ 	font-size: calc(80% + 20vh);
 }
 
 .splash-icon > canvas {
@@ -1132,14 +1132,17 @@ display: inline-flex;
 
 .tableContainerButtonDiv {
 	order: 1;
+    min-width: 10px;
+/*   background-color: gray; */
+    cursor:pointer;
 }
 
-.tableContainerButtonDiv button {
-	height: 100%;
-	background-color: transparent;
-	border:none;
-}
 
+.statusWidgetFPSAndLatency {
+   margin-bottom: 3%;
+   margin-top: 2.5%;
+
+}
 
 .statusWidgetNameAndLocation {
 		margin-bottom: 1%;
@@ -1160,9 +1163,6 @@ display: inline-flex;
 .statusWidgetActivity {
 	width:1%;
 }
-.statusWidgetFPSAndLatency {
-   width:1%;
-}
 
 .statusWidgetAnonymousPart {
    order: 3;
@@ -1171,12 +1171,6 @@ display: inline-flex;
    margin-left: 2%;
 }
 
-.statusFPSAndLatency button{
-	border:none;
-	width: max-content;
-	height: 1.3em;
-	background-color: transparent;
-}
 
 /* Tooltip classes */
 

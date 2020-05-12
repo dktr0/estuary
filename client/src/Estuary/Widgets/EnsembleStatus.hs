@@ -44,16 +44,16 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       dynText ensName
 
   divClass "tableContainer code-font" $ do
-    dynBool <- divClass "tableContainerButtonDiv" $ do
-      evClick <- button ""
-      dynBool' <- toggle False evClick
-      return dynBool'
+    rec
+      evClick <- clickableDiv "tableContainerButtonDiv" $ do
+        hideableWidget' dynBool (listWithKey ensParticipants participantFPSLatencyAndLoad)
+      dynBool <- toggle False evClick
 
     status <- el "table" $ do
       now <- liftIO getCurrentTime -- this time is measured before building the widget
       evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
       currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
-      x <- listWithKey ensParticipants (row dynBool uHandle currentTime)
+      x <- listWithKey ensParticipants  (row uHandle currentTime)
       return $ switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
 
     divClass "statusWidgetAnonymousPart code-font" $ do
@@ -63,30 +63,20 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
 
     return status
 
-row ::  MonadWidget t m  => Dynamic t Bool -> Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
-row dynBool uHandle t name part = do
-  row <- el "tr" $ do
+row ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
+row uHandle t name part = el "tr" $ do
     elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
     status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
     elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
-    let dynAttrsFPSAndLatency = collapseFPSAndLatency <$> dynBool
-    elDynAttr "td" dynAttrsFPSAndLatency $ participantFPSWidget name part
-    elDynAttr "td" dynAttrsFPSAndLatency $ participantLatencyWidget name part
     return status
-  return (row)
 
-collapseFPSAndLatency :: Bool -> Map Text Text
-collapseFPSAndLatency b = "class" =: "statusWidgetFPSAndLatency" <> "style" =: (display b)
-  where
-    display True  = ""
-    display False = "display: none;"
+participantFPSLatencyAndLoad :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantFPSLatencyAndLoad name part = divClass "statusWidgetFPSAndLatency" $ do
+  let latency' = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
+  let load' = fmap (showt . mainLoad) part
+  let fps' = fmap (showt . animationLoad) part
+  dynText $ latency' <> (constDyn "ms ") <> load' <> (constDyn "% ") <> fps' <>(constDyn "FPS")
 
-participantFPSWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantFPSWidget name part = do
-  let a = fmap (showt . animationLoad) part
-  dynText $ a <> (constDyn "FPS")
-
--- participantStatusWidget :: MonadWidget t m  => Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
 participantStatusWidget :: MonadWidget t m  => Dynamic t Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
 participantStatusWidget thisUserHandle _ part = do
   initialStatus <- status <$> sample (current part)
@@ -126,10 +116,6 @@ participantNameWidget name part = text name
 participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantLocationWidget name part = dynText $ fmap location part
 
-participantLatencyWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantLatencyWidget name part =  do
-  let a = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
-  dynText $ a <> (constDyn "ms")
 
 participantActivityWidget :: MonadWidget t m => Event t UTCTime -> Text -> Dynamic t Participant -> m ()
 participantActivityWidget t name part =  do
