@@ -29,9 +29,8 @@ import Sound.Punctual.GL
 
 import Estuary.Utility
 import Estuary.Widgets.Navigation
-import Estuary.WebDirt.SampleEngine
-import Estuary.WebDirt.WebDirt
-import Estuary.WebDirt.SuperDirt
+import Estuary.Render.WebDirt
+import Estuary.Render.SuperDirt
 import Estuary.Widgets.WebSocket
 import Estuary.Types.Definition
 import Estuary.Types.Request

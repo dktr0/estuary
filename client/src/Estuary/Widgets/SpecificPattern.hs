@@ -15,7 +15,6 @@ import qualified Data.Text as T
 import Estuary.Types.Hint
 import Estuary.Types.Live
 import Estuary.Widgets.Generic
-import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Container
 import qualified Estuary.Widgets.GeneralPattern as G
 import Estuary.Tidal.Types
