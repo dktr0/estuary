@@ -86,9 +86,12 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleCDyn = fmap ensembleC ctx
 
   -- four GUI components: header, main (navigation), terminal, footer
-  (headerChange,_) <- runEditor ctx rInfo header
+  (headerChange,headerHints) <- runEditor ctx rInfo header
   ((requests, ensembleRequestFromPage), hintsFromPage) <- divClass "page ui-font" $ do
-    divClass "sidebar" $ text "Help Documentation"
+    let sidebarToggle = ffilter (elem ToggleSidebar) hints
+    sidebarVisible <- toggle False sidebarToggle
+    hideableWidget' sidebarVisible $ do
+      divClass "sidebar" $ text "Help Documentation"
     runEditor ctx rInfo $ navigation deltasDown
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
@@ -115,7 +118,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints] -- Event t [Hint]
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, headerHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (webDirt irc) hints

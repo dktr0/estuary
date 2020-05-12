@@ -11,6 +11,7 @@ import Data.Map.Strict
 import Estuary.Types.Context
 import Estuary.Types.RenderInfo
 import Estuary.Types.Language
+import Estuary.Types.Hint
 import qualified Estuary.Types.Term as Term
 import Estuary.Render.DynamicsMode
 import Estuary.Reflex.Utility
@@ -58,6 +59,7 @@ header = divClass "header primary-color primary-borders" $ divClass "config-tool
 
   -- privateSamplesChangeEv <- divClass "config-entry primary-color ui-font" resourceUploader
 
-  divClass "config-entry display-inline-block primary-color ui-font" $ dynButton "?"
+  sidebarButtonEvent <- divClass "config-entry display-inline-block primary-color ui-font" $ dynButton "?"
+  hint $ fmap (const ToggleSidebar) sidebarButtonEvent
 
   return $ mergeWith (.) [themeChangeEv, langChangeEv, canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv {-, privateSamplesChangeEv -}]
