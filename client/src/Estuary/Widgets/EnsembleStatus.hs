@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-} {-# LANGUAGE RecursiveDo #-}
+
 
 module Estuary.Widgets.EnsembleStatus where
 
@@ -18,68 +19,98 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.Editor
+import Estuary.Reflex.Utility
+import Estuary.Widgets.Generic
 import qualified Estuary.Types.Term as Term
 
 
 ensembleStatusWidget :: MonadWidget t m => Editor t m (Event t EnsembleRequest)
-ensembleStatusWidget = do
+ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
 
   -- extract data about ensemble from the context, filtering out all duplicate events
   ctx <- context
   let ensC = fmap ensembleC ctx
   let ens = fmap ensemble ensC
+  let uHandle = fmap userHandle ensC -- Dynamic Text
   ensName <- holdUniqDyn $ fmap ensembleName ens -- Dynamic t Text
   let ensParticipants = fmap participants ens -- Dynamic t (Map.Map Text Participant)
+  let status = fmap wsStatus ctx --ensemble status
   anonymous <- holdUniqDyn $ fmap anonymousParticipants ens -- Dynamic t Int
 
-  divClass "ensemble-name code-font" $ do
-    term Term.Ensemble >>= dynText
-    text ":"
-    dynText ensName
+  divClass "ensemble-name-container code-font" $ do
+    divClass "ensemble-name" $ do
+      term Term.Ensemble >>= dynText
+      text ": "
+      dynText ensName
 
-  divClass "tableContainer" $ do
-    status <- el "table" $ do
-      -- get individual handler and pass it down as a pure value
-      now <- liftIO getCurrentTime -- this time is measured before building the widget
-      evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
-      currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
-      x <- listWithKey ensParticipants (row currentTime)
-      return $ switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
+  divClass "infoContainer" $ do
+    
+    status <- divClass "tableContainer code-font" $ do
+      status' <- el "table" $ do
+        now <- liftIO getCurrentTime -- this time is measured before building the widget
+        evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
+        currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
+        x <- listWithKey ensParticipants  (row uHandle currentTime)
+        return $ switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
 
-    divClass "statusWidgetAnonymousPart" $ do
+      rec
+        evClick <- clickableDiv "tableContainerButtonDiv" $ do
+          hideableWidget'' dynBool "infoClass" (listWithKey ensParticipants participantFPSLatencyAndLoad)
+        dynBool <- toggle False evClick
+
+      return status'
+
+    divClass "statusWidgetAnonymousPart code-font" $ do
       term Term.AnonymousParticipants >>= dynText
       text ": "
       dynText $ fmap showt anonymous
 
     return status
 
-row ::  MonadWidget t m  => Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
-row t name part = do
-  row <- el "tr" $ do
-    elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
-    status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget name part
-    elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
-    elClass "td" "statusWidgetFPS" $ participantFPSWidget name part
-    elClass "td" "statusWidgetLatency" $ participantLatencyWidget name part
-    return status
-  return (row)
 
--- participantStatusWidget :: MonadWidget t m  => Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
-participantStatusWidget :: MonadWidget t m  => Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
--- participantStatusWidget thisUserhandle _ part = do
-participantStatusWidget _ part = do
+
+
+
+row ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
+row uHandle t name part = el "tr" $ do
+    elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
+    status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
+    elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
+    return status
+
+participantFPSLatencyAndLoad :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantFPSLatencyAndLoad name part = divClass "statusWidgetFPSAndLatency" $ do
+  let latency' = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
+  let load' = fmap (showt . mainLoad) part
+  let fps' = fmap (showt . animationLoad) part
+  dynText $ latency' <> (constDyn "ms ") <> load' <> (constDyn "% ") <> fps' <>(constDyn "FPS")
+
+participantStatusWidget :: MonadWidget t m  => Dynamic t Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
+participantStatusWidget thisUserHandle _ part = do
   initialStatus <- status <$> sample (current part)
   updatedStatus <- fmap updated $ holdUniqDyn $ fmap status part -- event issued only when status changes
-  -- style <- -- dynamic style -- compare their handle in their ensemble and this user, current user's handle is in the initial value context (do this function somewhere else)
-  s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ constDyn ("class" =: "code-font")
-  -- ("style" =: ".avoid-clicks { pointer-events: none;}")
+  let dynBool = compareHandles <$> thisUserHandle <*> part
+  let dynAttrs = attrs <$> dynBool
+  s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ dynAttrs
   let writeStatusToServer = fmap (\x -> WriteStatus x) $ _textInput_input s --msg only sent when they press a key
   return writeStatusToServer
 
 participantNameAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantNameAndLocationWidget name part = do
-  x <- holdUniqDyn $ constDyn name <> fmap location' part
-  dynText x
+  let child = dynText $ constDyn name <> fmap location' part
+  let popup = dynText $ fmap browser part
+  tooltip child popup
+
+compareHandles ::  Text -> Participant -> Bool -- -> Dynamic t Text -> Bool
+compareHandles uHandle part = uHandle == (name part)
+
+attrs :: Bool -> Map Text Text
+attrs b = "class" =: "code-font" <> "style" =: ("pointer-events: " <> pevents b <> bevents b)
+  where
+    pevents True  = "auto; "
+    pevents False = "none; "
+    bevents True = "box-shadow: inset 0 0 3px var(--primary-color); "
+    bevents False = ""
 
 location' :: Participant -> Text
 location' p = f (location p)
@@ -87,18 +118,17 @@ location' p = f (location p)
     f x | x == "" = x
         | otherwise = "@" <> x
 
-participantFPSWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantFPSWidget name part = do
-  a <- holdUniqDyn $ fmap (showt . animationFPS) part
-  dynText $ a <> (constDyn "FPS")
+participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantNameWidget name part = text name
 
-participantLatencyWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantLatencyWidget name part = elClass "div" "" $ do
-  a <- holdUniqDyn $ fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
-  dynText $ a <> (constDyn "ms")
+participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantLocationWidget name part = dynText $ fmap location part
+
 
 participantActivityWidget :: MonadWidget t m => Event t UTCTime -> Text -> Dynamic t Participant -> m ()
-participantActivityWidget t name part = divClass "" $ pollParticipantActivity t part >>= holdUniqDyn >>= dynText
+participantActivityWidget t name part =  do
+   x <- pollParticipantActivity t part
+   dynText x
 
 pollParticipantActivity :: MonadWidget t m => Event t UTCTime -> Dynamic t Participant -> m (Dynamic t Text)
 pollParticipantActivity e part = do

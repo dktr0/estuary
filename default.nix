@@ -219,12 +219,13 @@ in
            rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
         }) {});
 
-        cumbia = dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
-           owner = "luisnavarrodelangel";
-           repo = "cumbia";
-           sha256 = "17v27fp6aq162hby728gqcdhlaaihxw6iz81gr19bj55022ngi0j";
-           rev = "3fee1434f2766c23b675fcd34a37c86aed9d2e4b";
-        }) {});
+        cumbia = dontHaddock (self.callCabal2nix "cumbia" ../../cumbia {});
+         #dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
+          # owner = "luisnavarrodelangel";
+          # repo = "cumbia";
+          # sha256 = "1v62m8xxbq0jszw7q3mm6jd21397bhhifmycvh40xnq7nvvfq72s";
+          # rev = "6b9d13fda2151c3fce396216e47bcefd59e3d900";
+      #  }) {});
 
       };
     in
