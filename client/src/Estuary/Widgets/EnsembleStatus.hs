@@ -43,18 +43,22 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       text ": "
       dynText ensName
 
-  divClass "tableContainer code-font" $ do
-    rec
-      evClick <- clickableDiv "tableContainerButtonDiv" $ do
-        hideableWidget' dynBool (listWithKey ensParticipants participantFPSLatencyAndLoad)
-      dynBool <- toggle False evClick
+  divClass "infoContainer" $ do
+    
+    status <- divClass "tableContainer code-font" $ do
+      status' <- el "table" $ do
+        now <- liftIO getCurrentTime -- this time is measured before building the widget
+        evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
+        currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
+        x <- listWithKey ensParticipants  (row uHandle currentTime)
+        return $ switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
 
-    status <- el "table" $ do
-      now <- liftIO getCurrentTime -- this time is measured before building the widget
-      evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
-      currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
-      x <- listWithKey ensParticipants  (row uHandle currentTime)
-      return $ switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
+      rec
+        evClick <- clickableDiv "tableContainerButtonDiv" $ do
+          hideableWidget'' dynBool "infoClass" (listWithKey ensParticipants participantFPSLatencyAndLoad)
+        dynBool <- toggle False evClick
+
+      return status'
 
     divClass "statusWidgetAnonymousPart code-font" $ do
       term Term.AnonymousParticipants >>= dynText
@@ -62,6 +66,10 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       dynText $ fmap showt anonymous
 
     return status
+
+
+
+
 
 row ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
 row uHandle t name part = el "tr" $ do

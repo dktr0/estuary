@@ -1031,7 +1031,7 @@ display: inline-flex;
 
 .fullWidthDiv {
 	display: flex;
-	flex-wrap: nowrap;
+	flex-wrap: wrap;
 	flex:0.025;
 	background-color: transparent;
   }
@@ -1081,33 +1081,42 @@ display: inline-flex;
     border: 1px solid var(--primary-color);
     border-radius: 5px;
     margin-top: 0.5%;
+    overflow: hidden;
+
+}
+
+.infoContainer {
+/* 	background-color: red; */
+	margin-left:1%;
+	margin-right: 1%;
+	overflow: hidden;
+	overflow-y: auto;
+	height: 6em;
 }
 
 .tableContainer {
+/* 	background-color: gray; */
 	display: flex;
 	flex-direction: row;
-	flex-wrap: wrap;
-    overflow: hidden;
-    overflow-y: auto;
-    max-height: 7em;
+	flex-wrap: nowrap;
 }
 
-.tableContainer::-webkit-scrollbar  {
+.infoContainer::-webkit-scrollbar  {
     width: 1%;
     height: 0px;
 }
 
-.tableContainer::-webkit-scrollbar-track {
+.infoContainer::-webkit-scrollbar-track {
   box-shadow: inset 0 0 5px var(--primary-color);
   border-radius: 10px;
 }
 
-.tableContainer::-webkit-scrollbar-thumb {
+.infoContainer::-webkit-scrollbar-thumb {
   background: var(--primary-color);
   border-radius: 10px;
 }
 
-.tableContainer::-webkit-scrollbar-corner{
+.infoContainer::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
 
@@ -1119,29 +1128,37 @@ display: inline-flex;
 }
 
 .ensemble-name {
-    margin-left: 2%;
+    margin-left: 1%;
 }
 
 .tableContainer table {
-  margin-left: 2%;
+
+
   table-layout:auto;
   flex-grow: 1;
   order:0;
   border-collapse: collapse;
-
+/*   background-color: green; */
 }
 
 .tableContainerButtonDiv {
-	order: 1;
+/* 	order: 1; */
     min-width: 10px;
-/*   background-color: gray; */
+/*     background-color: gray; */
     cursor:pointer;
+
 }
 
+.infoClass {
+/* 	background-color:azure; */
+	height:100%;
+}
 
 .statusWidgetFPSAndLatency {
-   margin-bottom: 3%;
-   margin-top: 2.5%;
+    flex-grow: 1;
+    padding-top: 1.8%;
+/*   background-color: yellow; */
+    box-sizing:content-box;
 
 }
 
@@ -1163,13 +1180,15 @@ display: inline-flex;
 
 .statusWidgetActivity {
 	width:1%;
+/* 	background-color: red; */
 }
 
 .statusWidgetAnonymousPart {
    order: 3;
    width: 100%;
    margin-top:0.5%;
-   margin-left: 2%;
+/*    background-color: aliceblue; */
+
 }
 
 
