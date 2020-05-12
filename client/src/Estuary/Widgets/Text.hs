@@ -98,8 +98,8 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ do -
 
     let v' = (\x y z -> (x,y,z)) <$> parserValue <*> textValue <*> evalTimeValue
     let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent' = tagPromptlyDyn v' $ evalEvent
-    return ({- traceEvent "editEvent" -} editEvent,{- traceEvent "evalEvent'" -} evalEvent')
+    let evalEvent' = attachPromptlyDynWith (\(x,y,_) z -> (x,y,z)) v' localEvalTime
+    return (editEvent,evalEvent')
   let deltaPast = fmap forRendering delta
   pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
   futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]

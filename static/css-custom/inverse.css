@@ -13,7 +13,7 @@ More advanced customization is available through CSS classes within this documen
   --primary-color: black;
 
 /* sets the background color of buttons and other borders (like the sequencer's borders)*/
-  --secondary-color: rgba(77, 77, 77, 0.5);
+  --secondary-color: rgb(77, 77, 77);
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;

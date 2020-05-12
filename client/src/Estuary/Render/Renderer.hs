@@ -97,6 +97,9 @@ datumToValue (Double x) = Just $ Tidal.VF $ x
 datumToValue (ASCII_String x) = Just $ Tidal.VS $ ascii_to_string x
 datumToValue _ = Nothing
 
+pushEvents :: [(UTCTime,Tidal.ControlMap)] -> Renderer
+pushEvents xs = modify' $ \x -> x { dirtEvents = dirtEvents x ++ xs }
+
 -- flush events for SuperDirt and WebDirt
 flushEvents :: ImmutableRenderContext -> Context -> Renderer
 flushEvents irc c = do
@@ -427,8 +430,7 @@ renderBaseProgramAlways irc c z _ (Just TimeNot) = do
       let wStart = renderStart s
       let wEnd = renderEnd s
       let oTime = firstCycleStartAfter theTempo eTime
-      let events = fmap (second mapTextDatumToControlMap . TimeNot.mapForEstuary) $ TimeNot.render oTime p' wStart wEnd
-      modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
+      pushEvents $ fmap (second mapTextDatumToControlMap . TimeNot.mapForEstuary) $ TimeNot.render oTime p' wStart wEnd
     Nothing -> return ()
 renderBaseProgramAlways irc c z _ (Just Cumbia) = do
   s <- get
@@ -438,8 +440,7 @@ renderBaseProgramAlways irc c z _ (Just Cumbia) = do
       let theTempo = (tempo . ensemble . ensembleC) c
       let wStart = renderStart s
       let wEnd = renderEnd s
-      let events = Cumbia.render p' theTempo wStart wEnd
-      modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
+      pushEvents $ Cumbia.render p' theTempo wStart wEnd
     Nothing -> return ()
 renderBaseProgramAlways _ _ _ _ _ = return ()
 
@@ -451,8 +452,7 @@ renderControlPattern irc c z = when (webDirtOn c || superDirtOn c) $ do
   let lt = renderStart s
   let rp = renderPeriod s
   let tempo' = tempo $ ensemble $ ensembleC c
-  let events = maybe [] id $ fmap (renderTidalPattern lt rp tempo') controlPattern
-  modify' $ \x -> x { dirtEvents = (dirtEvents s) ++ events }
+  pushEvents $ maybe [] id $ fmap (renderTidalPattern lt rp tempo') controlPattern
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
 calculateZoneRenderTimes z zrt = do
