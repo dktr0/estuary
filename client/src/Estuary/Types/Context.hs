@@ -21,8 +21,8 @@ import Estuary.Types.Language
 import Estuary.Types.Definition
 import Estuary.Types.Resources
 import Estuary.Types.Samples
-import Estuary.WebDirt.WebDirt
-import Estuary.WebDirt.SuperDirt
+import Estuary.Render.WebDirt
+import Estuary.Render.SuperDirt
 import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.EnsembleC
@@ -75,7 +75,7 @@ initialContext nowUtc = Context {
   webDirtOn = True,
   superDirtOn = False,
   canvasOn = True,
-  wsStatus = "", 
+  wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
   videoDivElement = Nothing,

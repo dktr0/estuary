@@ -3,6 +3,7 @@
 module Estuary.Render.Renderer where
 
 import Data.Time.Clock
+import Data.Time.Clock.POSIX
 import qualified Sound.Tidal.Context as Tidal
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict
@@ -52,7 +53,9 @@ import Estuary.Tidal.ParamPatternable
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
 import Estuary.Languages.TextReplacement
-import Estuary.WebDirt.SampleEngine
+import qualified Estuary.Render.WebDirt as WebDirt
+import qualified Estuary.Render.SuperDirt as SuperDirt
+import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Types.Tempo
@@ -86,31 +89,28 @@ rewindThreshold = 1.0
 earlyWakeUp :: NominalDiffTime
 earlyWakeUp = 0.002
 
-mapTextDatumToControlMap :: Map.Map Text Datum -> Tidal.ControlMap
-mapTextDatumToControlMap m = Map.mapKeys T.unpack $ Map.mapMaybe datumToValue m
+pushNoteEvents :: [NoteEvent] -> Renderer
+pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
-datumToValue :: Datum -> Maybe Tidal.Value
-datumToValue (Int32 x) = Just $ Tidal.VI $ fromIntegral x
-datumToValue (Int64 x) = Just $ Tidal.VI $ fromIntegral x
-datumToValue (Float x) = Just $ Tidal.VF $ realToFrac x
-datumToValue (Double x) = Just $ Tidal.VF $ x
-datumToValue (ASCII_String x) = Just $ Tidal.VS $ ascii_to_string x
-datumToValue _ = Nothing
-
-pushEvents :: [(UTCTime,Tidal.ControlMap)] -> Renderer
-pushEvents xs = modify' $ \x -> x { dirtEvents = dirtEvents x ++ xs }
+pushTidalEvents :: [(UTCTime,Tidal.ControlMap)] -> Renderer
+pushTidalEvents xs = modify' $ \x -> x { tidalEvents = tidalEvents x ++ xs }
 
 -- flush events for SuperDirt and WebDirt
 flushEvents :: ImmutableRenderContext -> Context -> Renderer
 flushEvents irc c = do
   s <- get
-  let events = dirtEvents s
-  let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
-  when (webDirtOn c) $ do
-    let events' = fmap (first (utcTimeToAudioSeconds cDiff)) events
-    liftIO $ sendSoundsAudio (webDirt irc) events'
-  when (superDirtOn c) $ liftIO $ sendSoundsPOSIX (superDirt irc) events
-  modify' $ \x -> x { dirtEvents = [] }
+  when (webDirtOn c) $ liftIO $ do
+    let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
+    let f = first (utcTimeToAudioSeconds cDiff)
+    noteEvents' <- mapM mapToWebDirtMessage $ fmap f (noteEvents s)
+    tidalEvents' <- mapM controlMapToWebDirtMessage $ fmap f (tidalEvents s)
+    mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents'
+  when (superDirtOn c) $ liftIO $ do
+    let f = first (realToFrac . utcTimeToPOSIXSeconds)
+    noteEvents' <- mapM mapToWebDirtMessage $ fmap f (noteEvents s)
+    tidalEvents' <- mapM controlMapToWebDirtMessage $ fmap f (tidalEvents s)
+    mapM_ (SuperDirt.playSample (superDirt irc)) $ noteEvents' ++ tidalEvents'
+  modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
   return ()
 
 renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
@@ -430,7 +430,7 @@ renderBaseProgramAlways irc c z _ (Just TimeNot) = do
       let wStart = renderStart s
       let wEnd = renderEnd s
       let oTime = firstCycleStartAfter theTempo eTime
-      pushEvents $ fmap (second mapTextDatumToControlMap . TimeNot.mapForEstuary) $ TimeNot.render oTime p' wStart wEnd
+      pushNoteEvents $ fmap TimeNot.mapForEstuary $ TimeNot.render oTime p' wStart wEnd
     Nothing -> return ()
 renderBaseProgramAlways irc c z _ (Just Cumbia) = do
   s <- get
@@ -440,7 +440,7 @@ renderBaseProgramAlways irc c z _ (Just Cumbia) = do
       let theTempo = (tempo . ensemble . ensembleC) c
       let wStart = renderStart s
       let wEnd = renderEnd s
-      pushEvents $ Cumbia.render p' theTempo wStart wEnd
+      pushTidalEvents $ Cumbia.render p' theTempo wStart wEnd
     Nothing -> return ()
 renderBaseProgramAlways _ _ _ _ _ = return ()
 
@@ -452,7 +452,7 @@ renderControlPattern irc c z = when (webDirtOn c || superDirtOn c) $ do
   let lt = renderStart s
   let rp = renderPeriod s
   let tempo' = tempo $ ensemble $ ensembleC c
-  pushEvents $ maybe [] id $ fmap (renderTidalPattern lt rp tempo') controlPattern
+  pushTidalEvents $ maybe [] id $ fmap (renderTidalPattern lt rp tempo') controlPattern
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
 calculateZoneRenderTimes z zrt = do

@@ -33,7 +33,6 @@ import qualified Estuary.Types.Term as Term
 import Estuary.Types.Terminal
 import Estuary.Types.View
 import Estuary.Types.Tutorial
-import Estuary.WebDirt.Foreign
 import Estuary.Widgets.Ensemble
 import Estuary.Widgets.EstuaryIcon
 import Estuary.Widgets.Generic
@@ -179,5 +178,5 @@ joinButton x = do
 panel :: MonadWidget t m => Text -> Navigation -> Term.Term -> Editor t m () -> Editor t m (Event t Navigation)
 panel c targetPage title icon = divClass c $ do
   liftM (targetPage <$) $ dynButtonWithChild "splash-panel" $ do
-    divClass "splash-title" $ term title >>= dynText
+    divClass "splash-title-container" $ divClass "splash-title" $ term title >>= dynText
     divClass "splash-icon-container" $ divClass "splash-icon" icon

@@ -14,7 +14,6 @@ import Data.Maybe (fromJust)
 import Text.Read
 
 import Estuary.Tidal.Types
-import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Container

@@ -20,7 +20,6 @@ import Control.Applicative (liftA2)
 import Estuary.Types.Hint
 import Estuary.Types.Live
 import Estuary.Widgets.Generic
-import Estuary.WebDirt.Foreign
 import Estuary.Reflex.Container
 import Estuary.Tidal.Types
 import Estuary.Reflex.Utility
