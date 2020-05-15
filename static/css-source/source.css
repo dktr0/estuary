@@ -170,6 +170,7 @@ body::-webkit-scrollbar-thumb {
 	padding-right: 15px;
 	overflow:hidden;
 	overflow-y: auto;
+  display: inline-flex;
 }
 
 .page::-webkit-scrollbar  {
@@ -1256,11 +1257,7 @@ display: inline-flex;
 
 .sidebar {
   height: 100%;
-  width: 25%;
-  position: fixed;
-  z-index: 1;
-  top: 2em;
-  right: 0;
+  width: 33%;
   background-color: var(--secondary-color);
   overflow-x: hidden;
   transition: 0.5s;
