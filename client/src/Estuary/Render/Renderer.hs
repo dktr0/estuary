@@ -35,6 +35,7 @@ import qualified Sound.Punctual.GL as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.AsyncProgram as Punctual
 import qualified Sound.Punctual.Parser as Punctual
+import qualified Sound.Punctual.Resolution as Punctual
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.TimeNot.Parsers as TimeNot
 import qualified Sound.TimeNot.Render as TimeNot
@@ -275,8 +276,12 @@ renderPunctualWebGL :: UTCTime -> Int -> Renderer
 renderPunctualWebGL tNow z = do
   s <- get
   let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
-  newWebGL <- liftIO $ Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
-  modify' $ \x -> x { punctualWebGL = newWebGL }
+  newWebGL <- liftIO $ Punctual.setResolution (glContext s) Punctual.HD (punctualWebGL s)
+  newWebGL' <- liftIO $ Punctual.setBrightness 1.0 newWebGL
+  newWebGL'' <- liftIO $ Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
+  modify' $ \x -> x { punctualWebGL = newWebGL'' }
+  -- ^-- *** TODO: setResolution and brightness really only need to be done once per render
+  -- frame, not once per Punctual zone, although the overhead of the extra calls are small
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
 renderZoneChanged irc c z (TidalStructure x) = do
@@ -399,7 +404,6 @@ punctualProgramChanged irc c z p = do
   pWebGL <- gets punctualWebGL
   newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL (glContext s) (beat0,realToFrac cps') z p pWebGL
   modify' $ \x -> x { punctualWebGL = newWebGL }
-
 
 renderTextProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Renderer
 renderTextProgramAlways irc c z eTime = do

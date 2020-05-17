@@ -145,8 +145,8 @@ canvasWidget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m GLCont
 canvasWidget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
   let canvasVisible = fmap (("visibility:" <>)  . bool "hidden" "visible" . canvasOn) ctx
-  let divAttrs = fmap divF canvasVisible
-  let canvasAttrs = fmap canvasF canvasVisible
+  let divAttrs = fmap divF canvasVisible -- used by CineCer0
+  let canvasAttrs = fmap canvasF canvasVisible -- used by Punctual
   videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" divAttrs $ return ()
   canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" canvasAttrs $ return ()
   glc <- liftIO $ newGLContext canvas
@@ -154,8 +154,8 @@ canvasWidget ctxM ctx = do
   liftIO $ putMVar ctxM ic
   return glc
   where
-    divF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -2;") <> x <> ";"), ("width","1920"), ("height","1080")]
-    canvasF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -1;") <> x <> ";"), ("width","1920"), ("height","1080")]
+    divF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -1;") <> x <> ";"), ("width","1920"), ("height","1080")]
+    canvasF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -2;") <> x <> ";"), ("width","1280"), ("height","720")]
 
 
 
