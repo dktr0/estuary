@@ -454,10 +454,16 @@ renderControlPattern :: ImmutableRenderContext -> Context -> Int -> Renderer
 renderControlPattern irc c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
-  let lt = renderStart s
-  let rp = renderPeriod s
-  let tempo' = tempo $ ensemble $ ensembleC c
-  pushTidalEvents $ maybe [] id $ fmap (renderTidalPattern lt rp tempo') controlPattern
+  case controlPattern of
+    Just controlPattern' -> do
+      let lt = renderStart s
+      let rp = renderPeriod s
+      let tempo' = tempo $ ensemble $ ensembleC c
+      newEvents <- liftIO $ (return $! force $ renderTidalPattern lt rp tempo' controlPattern')
+        `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
+      pushTidalEvents newEvents
+    Nothing -> return ()
+
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
 calculateZoneRenderTimes z zrt = do
