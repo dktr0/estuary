@@ -36,7 +36,9 @@ data Term =
   EnsembleLogin |
   Syntax |
   Connections |
-  Latency
+  Latency |
+  Resolution |
+  Brightness
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -149,5 +151,9 @@ translate Syntax English = "Syntax"
 translate Connections English = "connections"
 
 translate Latency English = "latency"
+
+translate Resolution English = "Resolution"
+
+translate Brightness English = "Brightness"
 
 translate x _ = translate x English
