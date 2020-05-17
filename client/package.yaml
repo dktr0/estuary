@@ -60,6 +60,7 @@ dependencies:
   - haskellish
   - timeNot
   - cumbia
+  - deepseq
 
 library:
   source-dirs:

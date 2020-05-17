@@ -9,7 +9,8 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict
 import Control.Concurrent
 import Control.Concurrent.MVar
-import Control.Exception (evaluate)
+import Control.Exception (evaluate,catch,SomeException)
+import Control.DeepSeq
 import Control.Monad.Loops
 import Data.Functor (void)
 import Data.List (intercalate,zipWith4)
@@ -323,7 +324,7 @@ renderBaseProgramChanged irc c z (Left e) = setZoneError z (T.pack $ show e)
 
 renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
   s <- get
-  parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
+  parseResult <- liftIO $ (return $! force (tidalParser x y)) `catch` (return . Left . (show :: SomeException -> String))
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
