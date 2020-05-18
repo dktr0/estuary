@@ -33,7 +33,6 @@ import qualified Estuary.Types.Term as Term
 import Estuary.Types.Terminal
 import Estuary.Types.View
 import Estuary.Types.Tutorial
-import Estuary.WebDirt.Foreign
 import Estuary.Widgets.Ensemble
 import Estuary.Widgets.EstuaryIcon
 import Estuary.Widgets.Generic

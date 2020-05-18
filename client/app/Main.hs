@@ -13,13 +13,12 @@ import System.IO
 
 import Sound.MusicW
 
-import Estuary.WebDirt.WebDirt
-import Estuary.WebDirt.SuperDirt
+import Estuary.Render.WebDirt
+import Estuary.Render.SuperDirt
 import Estuary.Protocol.Peer
 import Estuary.Types.Context
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
-import Estuary.WebDirt.SampleEngine
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Render.Renderer

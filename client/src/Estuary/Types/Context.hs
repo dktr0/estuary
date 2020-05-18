@@ -21,8 +21,8 @@ import Estuary.Types.Language
 import Estuary.Types.Definition
 import Estuary.Types.Resources
 import Estuary.Types.Samples
-import Estuary.WebDirt.WebDirt
-import Estuary.WebDirt.SuperDirt
+import Estuary.Render.WebDirt
+import Estuary.Render.SuperDirt
 import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.EnsembleC
@@ -31,6 +31,7 @@ import Estuary.Render.LocalResources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 import Sound.Punctual.GL (GLContext)
+import qualified Sound.Punctual.Resolution as Punctual
 
 -- things the render engine needs, but the UI doesn't need, and which never change
 data ImmutableRenderContext = ImmutableRenderContext {
@@ -48,6 +49,8 @@ data Context = Context {
   superDirtOn :: Bool,
   canvasOn :: Bool,
   theme :: Text,
+  resolution :: Punctual.Resolution,
+  brightness :: Double,
   dynamicsMode :: DynamicsMode,
   language :: Language,
 --  samples :: SampleMap,
@@ -67,6 +70,8 @@ initialContext nowUtc = Context {
   dynamicsMode = DefaultDynamics,
   language = English,
   theme = "../css-custom/classic.css",
+  resolution = Punctual.HD,
+  brightness = 1.0,
   ensembleC = emptyEnsembleC nowUtc,
 --  localResourceServers = emptyLocalResourceServers,
 --  privateResources = emptyResources,
@@ -75,7 +80,7 @@ initialContext nowUtc = Context {
   webDirtOn = True,
   superDirtOn = False,
   canvasOn = True,
-  wsStatus = "", 
+  wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
   videoDivElement = Nothing,

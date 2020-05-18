@@ -5,6 +5,7 @@ import Data.IntMap.Strict
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
+import qualified Sound.Punctual.Resolution as Punctual
 import Sound.MusicW.AudioContext
 import Sound.MusicW.Node as MusicW
 import GHCJS.DOM.Types
@@ -12,15 +13,14 @@ import Sound.Punctual.GL
 
 import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
+import Estuary.Types.NoteEvent
+import Estuary.Types.MovingAverage
+import Estuary.Types.TextNotation
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.Cumbia.Program as Cumbia
-
-import Estuary.Types.MovingAverage
-import Estuary.Types.TextNotation
-
 
 
 data RenderState = RenderState {
@@ -33,7 +33,8 @@ data RenderState = RenderState {
   cachedDefs :: !DefinitionMap,
   cachedCanvasElement :: !(Maybe HTMLCanvasElement),
   paramPatterns :: !(IntMap Tidal.ControlPattern),
-  dirtEvents :: ![(UTCTime,Tidal.ControlMap)],
+  noteEvents :: ![NoteEvent],
+  tidalEvents :: ![(UTCTime,Tidal.ControlMap)],
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap Punctual.PunctualW),
   punctualWebGL :: Punctual.PunctualWebGL,
@@ -54,7 +55,7 @@ data RenderState = RenderState {
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> GLContext -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState mic out glCtx t0System t0Audio = do
-  pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) glCtx
+  pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) Punctual.HD 1.0 glCtx
   return $ RenderState {
     animationOn = False,
     wakeTimeSystem = t0System,
@@ -65,7 +66,8 @@ initialRenderState mic out glCtx t0System t0Audio = do
     cachedDefs = empty,
     cachedCanvasElement = Nothing,
     paramPatterns = empty,
-    dirtEvents = [],
+    noteEvents = [],
+    tidalEvents = [],
     baseNotations = empty,
     punctuals = empty,
     punctualWebGL = pWebGL,

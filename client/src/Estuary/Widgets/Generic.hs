@@ -22,7 +22,6 @@ import Estuary.Types.Live
 import Estuary.Reflex.Container
 import Data.Maybe
 import Text.Read (readMaybe)
-import Estuary.WebDirt.Foreign
 import qualified GHCJS.Types as T
 import qualified GHCJS.Marshal.Pure as P
 
@@ -85,9 +84,6 @@ isChangeValue _ = False
 justChangeValues :: EditSignal a -> Maybe a
 justChangeValues (ChangeValue x) = Just x
 justChangeValues _ = Nothing
-
-debug::(MonadWidget t m, Show a) => Event t a -> m ()
-debug e = performEvent_ $ fmap (liftIO . putStrLn . show) e
 
 clickableDiv :: MonadWidget t m => Text -> m a -> m (Event t ())
 clickableDiv cssclass child = do

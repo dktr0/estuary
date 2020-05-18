@@ -163,8 +163,8 @@ in
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0d1jmwkrp4aj3v43j37w3jv1lb07clg15yc8vgpygjirfjcry7hw";
-          rev = "e91567a43d852a189e5e5b50ace771792875686a";
+          sha256 = "06sq5i6jcakgsv3w39999nb66m1z498fcl2w7lh8hmz7fgsvlgzh";
+          rev = "95be6c3bb7eb35d81839bc77992f7afbec5bdad5";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
@@ -219,7 +219,7 @@ in
            rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
         }) {});
 
-        cumbia = #dontHaddock (self.callCabal2nix "cumbia" ../../cumbia {});
+        cumbia = # dontHaddock (self.callCabal2nix "cumbia" ../../cumbia {});
          dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "cumbia";
