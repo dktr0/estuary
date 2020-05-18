@@ -9,7 +9,8 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict
 import Control.Concurrent
 import Control.Concurrent.MVar
-import Control.Exception (evaluate)
+import Control.Exception (evaluate,catch,SomeException)
+import Control.DeepSeq
 import Control.Monad.Loops
 import Data.Functor (void)
 import Data.List (intercalate,zipWith4)
@@ -35,6 +36,7 @@ import qualified Sound.Punctual.GL as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.AsyncProgram as Punctual
 import qualified Sound.Punctual.Parser as Punctual
+import qualified Sound.Punctual.Resolution as Punctual
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.TimeNot.Parsers as TimeNot
 import qualified Sound.TimeNot.Render as TimeNot
@@ -275,8 +277,12 @@ renderPunctualWebGL :: UTCTime -> Int -> Renderer
 renderPunctualWebGL tNow z = do
   s <- get
   let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
-  newWebGL <- liftIO $ Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
-  modify' $ \x -> x { punctualWebGL = newWebGL }
+  newWebGL <- liftIO $ Punctual.setResolution (glContext s) Punctual.HD (punctualWebGL s)
+  newWebGL' <- liftIO $ Punctual.setBrightness 1.0 newWebGL
+  newWebGL'' <- liftIO $ Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
+  modify' $ \x -> x { punctualWebGL = newWebGL'' }
+  -- ^-- *** TODO: setResolution and brightness really only need to be done once per render
+  -- frame, not once per Punctual zone, although the overhead of the extra calls are small
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
 renderZoneChanged irc c z (TidalStructure x) = do
@@ -318,7 +324,7 @@ renderBaseProgramChanged irc c z (Left e) = setZoneError z (T.pack $ show e)
 
 renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
   s <- get
-  parseResult <- return $! tidalParser x y -- :: Either ParseError ControlPattern
+  parseResult <- liftIO $ (return $! force (tidalParser x y)) `catch` (return . Left . (show :: SomeException -> String))
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
   liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
@@ -400,7 +406,6 @@ punctualProgramChanged irc c z p = do
   newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL (glContext s) (beat0,realToFrac cps') z p pWebGL
   modify' $ \x -> x { punctualWebGL = newWebGL }
 
-
 renderTextProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Renderer
 renderTextProgramAlways irc c z eTime = do
   s <- get
@@ -449,10 +454,16 @@ renderControlPattern :: ImmutableRenderContext -> Context -> Int -> Renderer
 renderControlPattern irc c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
-  let lt = renderStart s
-  let rp = renderPeriod s
-  let tempo' = tempo $ ensemble $ ensembleC c
-  pushTidalEvents $ maybe [] id $ fmap (renderTidalPattern lt rp tempo') controlPattern
+  case controlPattern of
+    Just controlPattern' -> do
+      let lt = renderStart s
+      let rp = renderPeriod s
+      let tempo' = tempo $ ensemble $ ensembleC c
+      newEvents <- liftIO $ (return $! force $ renderTidalPattern lt rp tempo' controlPattern')
+        `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
+      pushTidalEvents newEvents
+    Nothing -> return ()
+
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
 calculateZoneRenderTimes z zrt = do

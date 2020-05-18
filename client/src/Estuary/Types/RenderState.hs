@@ -5,6 +5,7 @@ import Data.IntMap.Strict
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
+import qualified Sound.Punctual.Resolution as Punctual
 import Sound.MusicW.AudioContext
 import Sound.MusicW.Node as MusicW
 import GHCJS.DOM.Types
@@ -54,7 +55,7 @@ data RenderState = RenderState {
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> GLContext -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState mic out glCtx t0System t0Audio = do
-  pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) glCtx
+  pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) Punctual.HD 1.0 glCtx
   return $ RenderState {
     animationOn = False,
     wakeTimeSystem = t0System,
