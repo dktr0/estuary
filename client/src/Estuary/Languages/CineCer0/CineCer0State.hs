@@ -155,8 +155,8 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 
 ----  Style a Video ----
 
-videoStyle :: Double -> Double -> Double -> Double -> Text -> Text
-videoStyle x y w h t = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> t
+videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
+videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m
 
 ----  Add and Change Source ----
 
