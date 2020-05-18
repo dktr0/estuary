@@ -192,6 +192,7 @@ render irc c = do
   when (not wait && not rewind) $ do
     traverseWithKey (renderZone irc c) (zones $ ensemble $ ensembleC c)
     flushEvents irc c
+    updatePunctualResolutionAndBrightness c
     -- calculate how much time this render cycle took and update load measurements
     t2System <- liftIO $ getCurrentTime
     t2Audio <- liftAudioIO $ audioTime
@@ -273,16 +274,19 @@ renderZoneAnimationTextProgram :: UTCTime -> Int -> TextProgram -> Renderer
 renderZoneAnimationTextProgram tNow z (Punctual,x,eTime) = renderPunctualWebGL tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
+updatePunctualResolutionAndBrightness :: Context -> Renderer
+updatePunctualResolutionAndBrightness ctx = do
+  s <- get
+  newWebGL <- liftIO $ Punctual.setResolution (glContext s) (resolution ctx) (punctualWebGL s)
+  newWebGL' <- liftIO $ Punctual.setBrightness (brightness ctx) newWebGL
+  modify' $ \x -> x { punctualWebGL = newWebGL' }
+
 renderPunctualWebGL :: UTCTime -> Int -> Renderer
 renderPunctualWebGL tNow z = do
   s <- get
   let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
-  newWebGL <- liftIO $ Punctual.setResolution (glContext s) Punctual.HD (punctualWebGL s)
-  newWebGL' <- liftIO $ Punctual.setBrightness 1.0 newWebGL
-  newWebGL'' <- liftIO $ Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
-  modify' $ \x -> x { punctualWebGL = newWebGL'' }
-  -- ^-- *** TODO: setResolution and brightness really only need to be done once per render
-  -- frame, not once per Punctual zone, although the overhead of the extra calls are small
+  newWebGL <- liftIO $ Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
+  modify' $ \x -> x { punctualWebGL = newWebGL }
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
 renderZoneChanged irc c z (TidalStructure x) = do
