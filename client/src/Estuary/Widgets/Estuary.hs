@@ -144,7 +144,7 @@ hintsToResponses = catMaybes . fmap f
 canvasWidget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m GLContext
 canvasWidget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
-  let canvasVisible = fmap (("visibility:" <>)  . bool "hidden" "visible" . canvasOn) ctx
+  canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
   let divAttrs = fmap divF canvasVisible -- used by CineCer0
   let canvasAttrs = fmap canvasF canvasVisible -- used by Punctual
   videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" divAttrs $ return ()
