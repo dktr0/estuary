@@ -26,6 +26,7 @@ import qualified Data.Text.IO as T
 import TextShow
 import Sound.MusicW.AudioContext
 import Sound.Punctual.GL
+import Sound.Punctual.Resolution
 
 import Estuary.Utility
 import Estuary.Widgets.Navigation
@@ -74,7 +75,8 @@ keyEventToHint _ = Nothing
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
-  glCtx <- canvasWidget ctxM ctx -- global canvas shared with render threads through Context MVar, this needs to be first in this action
+  cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
+  glCtx <- canvasWidget ctx -- canvas for Punctual
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
@@ -141,22 +143,28 @@ hintsToResponses = catMaybes . fmap f
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
     f _ = Nothing
 
-canvasWidget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m GLContext
-canvasWidget ctxM ctx = do
+cinecer0Widget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
+cinecer0Widget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
-  let divAttrs = fmap divF canvasVisible -- used by CineCer0
-  let canvasAttrs = fmap canvasF canvasVisible -- used by Punctual
-  videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" divAttrs $ return ()
-  canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" canvasAttrs $ return ()
-  glc <- liftIO $ newGLContext canvas
+  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -1;" <> x <> ";")]
+  res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
+  let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
+  let attrs = (<>) <$> baseAttrs <*> resMap
+  videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
-  return glc
-  where
-    divF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -1;") <> x <> ";"), ("width","1920"), ("height","1080")]
-    canvasF x = fromList [("class","canvas-or-svg-display"),("style",(T.pack $ "z-index: -2;") <> x <> ";"), ("width","1280"), ("height","720")]
 
+canvasWidget :: MonadWidget t m => Dynamic t Context -> m GLContext
+canvasWidget ctx = do
+  canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
+  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -2;" <> x <> ";")]
+  res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
+  let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
+  let attrs = (<>) <$> baseAttrs <*> resMap
+  canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
+  glc <- liftIO $ newGLContext canvas
+  return glc
 
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
