@@ -19,7 +19,6 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.Editor
-import Estuary.Reflex.Utility
 import Estuary.Widgets.Generic
 import qualified Estuary.Types.Term as Term
 
@@ -27,7 +26,6 @@ import qualified Estuary.Types.Term as Term
 ensembleStatusWidget :: MonadWidget t m => Editor t m (Event t EnsembleRequest)
 ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
 
-  -- extract data about ensemble from the context, filtering out all duplicate events
   ctx <- context
   let ensC = fmap ensembleC ctx
   let ens = fmap ensemble ensC
@@ -44,7 +42,6 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       dynText ensName
 
   divClass "infoContainer" $ do
-    
     status <- divClass "tableContainer code-font" $ do
       status' <- el "table" $ do
         now <- liftIO getCurrentTime -- this time is measured before building the widget
@@ -66,9 +63,6 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       dynText $ fmap showt anonymous
 
     return status
-
-
-
 
 
 row ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
@@ -96,7 +90,7 @@ participantStatusWidget thisUserHandle _ part = do
   return writeStatusToServer
 
 participantNameAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantNameAndLocationWidget name part = do
+participantNameAndLocationWidget name part = divClass "pNameLocationAndTooltop" $ do
   let child = dynText $ constDyn name <> fmap location' part
   let popup = dynText $ fmap browser part
   tooltip child popup
