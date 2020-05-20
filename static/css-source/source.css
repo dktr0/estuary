@@ -927,6 +927,7 @@ cursor: pointer;
   display: inline-block;
   width: 50%;
   vertical-align: top;
+  height: 8em;
 }
 
 /*
@@ -1078,21 +1079,20 @@ display: inline-flex;
 /* ///////////status Widget/////////// */
 
 .ensembleStatusWidget {
-	height: 8em;
+/* 	background-color: red; */
+	height: 100%;
     border: 1px solid var(--primary-color);
     border-radius: 5px;
     margin-top: 0.5%;
     overflow: hidden;
-
+    overflow-y: auto;
 }
 
 .infoContainer {
-/* 	background-color: red; */
+/* 	background-color: blue; */
 	margin-left:1%;
 	margin-right: 1%;
 	overflow: hidden;
-	overflow-y: auto;
-	height: 6em;
 }
 
 .tableContainer {
@@ -1102,22 +1102,22 @@ display: inline-flex;
 	flex-wrap: nowrap;
 }
 
-.infoContainer::-webkit-scrollbar  {
+.ensembleStatusWidget::-webkit-scrollbar  {
     width: 1%;
     height: 0px;
 }
 
-.infoContainer::-webkit-scrollbar-track {
+.ensembleStatusWidget::-webkit-scrollbar-track {
   box-shadow: inset 0 0 5px var(--primary-color);
   border-radius: 10px;
 }
 
-.infoContainer::-webkit-scrollbar-thumb {
+.ensembleStatusWidget::-webkit-scrollbar-thumb {
   background: var(--primary-color);
   border-radius: 10px;
 }
 
-.infoContainer::-webkit-scrollbar-corner{
+.ensembleStatusWidget::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
 
@@ -1157,7 +1157,7 @@ display: inline-flex;
 
 .statusWidgetFPSAndLatency {
     flex-grow: 1;
-    padding-top: 1.8%;
+    padding-top: 1.9%;
 /*   background-color: yellow; */
     box-sizing:content-box;
 
@@ -1198,11 +1198,14 @@ display: inline-flex;
 .tooltip {
   position: relative;
   display: inline-block;
+  cursor: pointer;
 }
 
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 120px;
+/*   width: 120px; */
+  display:flex;
+  width:200px;
   background-color: var(--secondary-color);
   color: var(--primary-color);
   text-align: center;
