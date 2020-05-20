@@ -449,7 +449,7 @@ renderBaseProgramAlways irc c z _ (Just Cumbia) = do
       let theTempo = (tempo . ensemble . ensembleC) c
       let wStart = renderStart s
       let wEnd = renderEnd s
-      pushTidalEvents $ Cumbia.render p' theTempo wStart wEnd
+      pushNoteEvents $ Cumbia.render p' theTempo wStart wEnd
     Nothing -> return ()
 renderBaseProgramAlways _ _ _ _ _ = return ()
 
