@@ -1261,7 +1261,7 @@ display: inline-flex;
 .sidebar {
   height: 100%;
   width: 33%;
-  background-color: var(--secondary-color);
   overflow-x: hidden;
   transition: 0.5s;
+  border-left: 1px solid;
 }
