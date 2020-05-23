@@ -71,6 +71,10 @@ foreign import javascript unsafe
   "$1.muted = true;"
   muteVideo :: CineCer0Video -> IO ()
 
+-- foreign import javascript unsafe
+--   "$1.muted = $2;"
+--   muteVideo :: CineCer0Video -> Bool -> IO ()
+
 foreign import javascript unsafe
   "$1.src = $2; $1.load()"
   changeVideoSource :: CineCer0Video -> Text -> IO ()
