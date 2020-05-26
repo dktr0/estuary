@@ -54,6 +54,7 @@ import Estuary.Widgets.Terminal
 import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
+import Estuary.Widgets.SideBar
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -92,7 +93,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
     requestsAndHints <- runEditor ctx rInfo $ navigation deltasDown
-    hideableWidget sidebarVisible "sidebar" $ text "Help Documentation"
+    hideableWidget sidebarVisible "sidebar" $ sidebarWidget
     return requestsAndHints
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]

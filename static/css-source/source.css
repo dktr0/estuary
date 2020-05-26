@@ -1265,3 +1265,11 @@ display: inline-flex;
   transition: 0.5s;
   border-left: 1px solid;
 }
+
+.sidebar-tab {
+  width: 48%;
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid;
+  padding: 0.125em;
+}
