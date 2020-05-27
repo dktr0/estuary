@@ -255,7 +255,5 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExcepti
     --update style
     let style = videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask'
     when (style /= prevStyle) $ videoStyle_ v style
-    --print the style
-    putStrLn (T.unpack style)
     return style
   else return ""
