@@ -45,6 +45,7 @@ literalVideoSpec =
   fmap stringToVideoSpec string <|>
   emptyVideoSpec <$ reserved ""
 
+
 -- //////////////
 
 sigMayRat :: H (Signal (Maybe Rational))
@@ -112,12 +113,25 @@ sigRat_vs_vs =
   setSize <$ reserved "setSize" <|>
   shiftSize <$ reserved "size" <|>
   circleMask <$ reserved "circleMask" <|>
+  sqrMask <$ reserved "sqrMask" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
 sigRat_sigRat_vs_vs =
   setCoord <$ reserved "setCoord" <|>
-  shiftCoord <$ reserved "coord"
+  shiftCoord <$ reserved "coord" <|>
+  sigRat_sigRat_sigRat_vs_vs <*> sigRat
+
+sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_sigRat_sigRat_vs_vs =
+  circleMask' <$ reserved "circleMask'" <|>
+  sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
+
+sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_sigRat_sigRat_sigRat_vs_vs =
+  rectMask <$ reserved "rectMask"
+
+-- ////
 
 rat_vs_vs :: H (Rational -> VideoSpec -> VideoSpec)
 rat_vs_vs =
