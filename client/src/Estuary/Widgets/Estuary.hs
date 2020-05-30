@@ -54,7 +54,7 @@ import Estuary.Widgets.Terminal
 import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
-import Estuary.Widgets.SideBar
+import Estuary.Widgets.Sidebar
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
