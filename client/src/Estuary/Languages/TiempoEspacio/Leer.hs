@@ -117,8 +117,6 @@ miscelanea = choice [
         reserved "everything" >> return (),
         reserved "everything" >> return (),
         reserved "suspended" >> return (),
-        reserved "Words" >> return (),
-        reserved "words" >> return (),
         reserved "without" >> return (),
         reserved "through" >> return (),
         reserved "Through" >> return (),
@@ -151,7 +149,11 @@ noun = choice [
   ((reserved "door" <|> reserved "doors") >> return Tidal.pan) <*> option 0.5 parentsdoublePattern,
   ((reserved "time" <|> reserved "times") >> return Tidal.delay) <*> option 0 parentsdoublePattern,
   ((reserved "space" <|> reserved "spaces") >> return Tidal.delayfeedback) <*> option 0 parentsdoublePattern,
-  ((reserved "room" <|> reserved "rooms") >> return Tidal.delaytime) <*> option 0 parentsdoublePattern
+  ((reserved "room" <|> reserved "rooms") >> return Tidal.delaytime) <*> option 0 parentsdoublePattern,
+  ((reserved "word" <|> reserved "words") >> return Tidal.begin) <*> option 0.0 parentsdoublePattern,
+  ((reserved "vowel" <|> reserved "vowels") >> return Tidal.end) <*> option 1.0 parentsdoublePattern,
+  ((reserved "hall" <|> reserved "halls") >> return Tidal.room) <*> option 0 parentsdoublePattern,
+  ((reserved "wall" <|> reserved "walls") >> return Tidal.size) <*> option 0 parentsdoublePattern
   ]
 
 nouns' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)

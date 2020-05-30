@@ -36,9 +36,8 @@ oracion :: Parser Tidal.ControlPattern
 oracion = do
   option () miscelanea
   option () miscelanea
-  --s <- option id subject
-  option () miscelanea
-  option () miscelanea
+  ns <- option id nounSubject
+  fn <- option id fakenoun
   v <- option [" "] (many verbs)
   option () miscelanea
   option () miscelanea
@@ -62,7 +61,7 @@ oracion = do
   option () miscelanea
   n''''' <- option id nouns
   option () miscelanea
-  return $ a $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
+  return $ ns $ a $ fn $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
 
 verbs = choice [try verb'''', try verb''', try verb'', try verb', try verb ]
 
@@ -98,10 +97,10 @@ verb' = do
 miscelanea :: Parser ()
 miscelanea = choice [
         reserved "Yo" >> return (),
-        -- reserved "La" >> return (),
-        -- reserved "Las" >> return (),
-        -- reserved "la" >> return (),
-        -- reserved "las" >> return (),
+        reserved "La" >> return (),
+        reserved "Las" >> return (),
+        reserved "la" >> return (),
+        reserved "las" >> return (),
         reserved "mi" >> return (),
         reserved "mis" >> return (),
         reserved "su" >> return (),
@@ -110,32 +109,12 @@ miscelanea = choice [
         reserved "una" >> return (),
         reserved "Un" >> return (),
         reserved "un" >> return (),
-        reserved "palabras" >> return (),
-        reserved "idioma" >> return (),
-        reserved "idiomas" >> return (),
-        reserved "ideas" >> return (),
         reserved "dedo" >> return (),
         reserved "Agosto" >> return (),
         reserved "con" >> return (),
         reserved "ajeno" >> return (),
         reserved "ajenos" >> return ()
       ]
-
---subject = choice [try articleAndSubject, try nounSubject]
-
-nounSubject :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-nounSubject = choice [
-  (reserved "Palabra" <|> reserved "Palabras" <|> reserved "Idioma" <|> reserved "Idiomas" <|> reserved "Ideas") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational),
-  (reserved "Dedo" <|> reserved "Dedos" <|> reserved "Eggplant" <|> reserved "Eggplants") >> option (Tidal.fast 1) (double' >>= return . Tidal.fast . pure . toRational)
-  ]
-
--- articleAndSubject' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern -> Tidal.ControlPattern)
--- articleAndSubject' =
---   (reserved "la" <|> reserved "las" <|> reserved "La" <|> reserved "Las" <|> reserved "los" <|> reserved "Los" <|> reserved "El" <|> reserved "el") >> return (int' >>= return . Tidal.every) <*> nounSubject
-
-articleAndSubject :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-articleAndSubject =
-  (reserved "la" <|> reserved "las" <|> reserved "La" <|> reserved "Las" <|> reserved "los" <|> reserved "Los" <|> reserved "El" <|> reserved "el") >> return (Tidal.every 1) <*> nounSubject
 
 -- //////
 
@@ -164,13 +143,20 @@ noun = choice [
   ((reserved "textura" <|> reserved "texturas") >> return Tidal.pan) <*> option 0.5 parentsdoublePattern,
   (reserved "EGGPLANT" >> return Tidal.delay) <*> option 0 parentsdoublePattern,
   (reserved "eggPLANT" >> return Tidal.delayfeedback) <*> option 0 parentsdoublePattern,
-  (reserved "EGGplant" >> return Tidal.delaytime) <*> option 0 parentsdoublePattern
+  (reserved "EGGplant" >> return Tidal.delaytime) <*> option 0 parentsdoublePattern,
+  ((reserved "palabra" <|> reserved "palabras") >> return Tidal.begin) <*> option 0.0 parentsdoublePattern,
+  ((reserved "idioma" <|> reserved "idiomas") >> return Tidal.end) <*> option 1.0 parentsdoublePattern,
+  ((reserved "idea" <|> reserved "ideas") >> return Tidal.room) <*> option 0 parentsdoublePattern,
+  ((reserved "imagen" <|> reserved "imagenes") >> return Tidal.size) <*> option 0 parentsdoublePattern
   ]
 
 nouns :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 nouns = do
   x <- noun
   return (Tidal.# x)
+
+fakenoun :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+fakenoun = (reserved "odio" <|> reserved "Odio" <|> reserved "odian" <|> reserved "amo" <|> reserved "Amo" <|> reserved "ama" <|> reserved "aman" <|> reserved "amaba" <|> reserved "amaban") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational)
 
 adjective' :: Parser Tidal.ControlPattern
 adjective' = ((reserved "vívidas" <|> reserved "vívidos" <|> reserved "vívida" <|> reserved "vívido" <|> reserved "presurosas" <|> reserved "presurosos" <|> reserved "presurosa" <|> reserved "presuroso" <|> reserved "ansiosas" <|> reserved "ansiosos" <|> reserved "ansiosa" <|> reserved "ansioso") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
@@ -180,6 +166,25 @@ adjective = do
   x <- adjective'
   return (Tidal.# x)
 
+nounSubject = choice [try nounSubject'', try nounSubject']
+
+nounSubject' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+nounSubject' = choice [
+  (reserved "Palabra" <|> reserved "Palabras") >> return (Tidal.every 2) <*> (double' >>= return . Tidal.slow . pure . toRational),
+  (reserved "Dedo" <|> reserved "Dedos") >> return (Tidal.every 3) <*> (double' >>= return . Tidal.slow . pure . toRational),
+  (reserved "Idioma" <|> reserved "Idiomas") >> return (Tidal.every 4) <*> (double' >>= return . Tidal.slow . pure . toRational),
+  reserved "Ideas" >> return (Tidal.every 5) <*> (double' >>= return . Tidal.slow . pure . toRational),
+  reserved "Eggplant" >> return (Tidal.every 6) <*> (double' >>= return . Tidal.slow . pure . toRational)
+  ]
+
+nounSubject'' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+nounSubject'' = choice [
+  (reserved "Palabra" <|> reserved "Palabras") >> return (Tidal.every 2) <*> fakenoun,
+  (reserved "Dedo" <|> reserved "Dedos") >> return (Tidal.every 3) <*> fakenoun,
+  (reserved "Idioma" <|> reserved "Idiomas") >> return (Tidal.every 4) <*> fakenoun,
+  reserved "Ideas" >> return (Tidal.every 5) <*> fakenoun,
+  reserved "Eggplant" >> return (Tidal.every 6) <*> fakenoun
+  ]
 
 -- ////////////////
 -- Right not you can only do ([]) or (<>), not a pattern of ([][]) or (<><>)
@@ -203,7 +208,7 @@ patternWithBrackets = do
 
 -- muchosPatternWithAngles = do
 --   p <- (many patternWithAngles)
---   return $ parseBP' $ (unwords p)
+--   return $ show p
 
 patternWithAngles = do
   (symbol "<")
