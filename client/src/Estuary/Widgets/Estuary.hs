@@ -92,9 +92,12 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   ((requests, ensembleRequestFromPage), hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
-    requestsAndHints <- runEditor ctx rInfo $ navigation deltasDown
-    hideableWidget sidebarVisible "sidebar" $ sidebarWidget
-    return requestsAndHints
+    headerRequestsAndHints <- runEditor ctx rInfo $ navigation deltasDown
+    sidebarRequestsAndHints <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget
+    --requests <- ?? -- combine requests
+    --hints <- ?? -- combine hints
+    --return (requests,hints)
+    return headerRequestsAndHints
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle False terminalEvent
