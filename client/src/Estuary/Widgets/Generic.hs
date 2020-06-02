@@ -367,6 +367,7 @@ deferredWidget cssClass isVisible dynWidgets = do
   elDynAttr "div" attrs $ widgetHold initialWidget changes
   return ()
 
+--this is a special type of tooltip that is used in statusWidget, tooltip has position relative
 tooltipForScrollableTable :: DomBuilder t m => m a -> m b -> m a
 tooltipForScrollableTable child popup = do
   divClass "tooltip-scrollable-table" $ do
@@ -374,6 +375,8 @@ tooltipForScrollableTable child popup = do
     elClass "span" "tooltiptext-scrollable-table" popup
     return a
 
+-- this is a standard tooltip that "overrides" the overflow hidden of its parents.
+--this won't work fine if the label is inside a scrollable div.
 tooltip :: DomBuilder t m => m a -> m b -> m a
 tooltip child popup = do
   elClass "div" "tooltip" $ do

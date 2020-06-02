@@ -41,8 +41,8 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       text ": "
       dynText ensName
 
-  divClass "scrollbar" $ do
-    divClass "infoContainer" $ do
+  divClass "statusWidgetScrollableContainer" $ do
+    divClass "statusWidgetInfoContainer" $ do
       status <- divClass "tableContainer code-font" $ do
         status' <- el "table" $ do
           now <- liftIO getCurrentTime -- this time is measured before building the widget
