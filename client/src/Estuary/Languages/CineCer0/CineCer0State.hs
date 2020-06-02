@@ -17,7 +17,7 @@ import Control.Exception
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
-import Estuary.Languages.CineCer0.VideoSpec
+import Estuary.Languages.CineCer0.VideoSpec as Cinecer0
 import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.Signal
 
@@ -155,8 +155,8 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 
 ----  Style a Video ----
 
-videoStyle :: Double -> Double -> Double -> Double -> Text -> Text
-videoStyle x y w h t = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> t
+videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
+videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m
 
 ----  Add and Change Source ----
 
@@ -251,8 +251,9 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExcepti
     let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
+    let mask' = ((Cinecer0.mask s) t lengthOfVideo rTime eTime aTime)
     --update style
-    let style = videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText
+    let style = videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask'
     when (style /= prevStyle) $ videoStyle_ v style
     return style
   else return ""

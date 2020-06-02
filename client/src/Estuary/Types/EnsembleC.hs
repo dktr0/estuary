@@ -100,6 +100,7 @@ commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ nameOfActiveView es
 commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ ensemble es
 commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
 commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
+commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $ T.pack $ show $ tempo $ ensemble es
 commandToHint _ _ = Nothing
 
 commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
@@ -132,9 +133,17 @@ responseToStateChange :: Response -> EnsembleC -> EnsembleC
 responseToStateChange (JoinedEnsemble eName uName) es = joinEnsembleC eName uName es
 responseToStateChange _ es = es
 
-commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe EnsembleRequest
-commandToEnsembleRequest es (Terminal.PublishView x) = Just (WriteView x (activeView es))
-commandToEnsembleRequest es (Terminal.Chat x) = Just (WriteChat x)
+commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe (IO EnsembleRequest)
+commandToEnsembleRequest es (Terminal.PublishView x) = Just $ return (WriteView x (activeView es))
+commandToEnsembleRequest es (Terminal.Chat x) = Just $ return (WriteChat x)
+commandToEnsembleRequest es Terminal.AncientTempo = Just $ return (WriteTempo x)
+  where x = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
+commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ do
+  x' <- changeTempoNow (realToFrac x) (tempo $ ensemble es)
+  return (WriteTempo x')
+commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ do
+  x' <- changeTempoNow (realToFrac x / 240) (tempo $ ensemble es)
+  return (WriteTempo x')
 commandToEnsembleRequest _ _ = Nothing
 
 responseToMessage :: Response -> Maybe Text

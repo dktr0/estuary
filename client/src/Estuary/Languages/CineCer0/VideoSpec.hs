@@ -163,11 +163,31 @@ shiftSaturate s v = v {
   }
 
 -- Masks
--- it should be just five arguments a b c d e
+
 circleMask :: Signal Rational -> VideoSpec -> VideoSpec
 circleMask s vs = vs {
-  mask = \a b c d e -> "clip-path: circle(" <> showt (((s a b c d e)*100) :: Rational) <> "% at center);"
+  mask = \a b c d e -> "clip-path:circle(" <> (showt (realToFrac ((
+  (((s a b c d e)*71)-71)*(-1)
+  ) :: Rational) :: Double)) <> "% at 50% 50%);"
   }
+
+circleMask' :: Signal Rational -> Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec
+circleMask' m n s vs = vs {
+  mask = \a b c d e -> "clip-path:circle(" <> (showt (realToFrac ((
+  (((m a b c d e)*71)-71)*(-1)
+  ) :: Rational) :: Double)) <> "% at " <> (showt (realToFrac (((n a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((s a b c d e)*100) :: Rational) :: Double)) <> "%);"
+  }
+
+sqrMask :: Signal Rational -> VideoSpec -> VideoSpec
+sqrMask s vs = vs {
+  mask = \a b c d e -> "clip-path: inset(" <> (showt (realToFrac (((s a b c d e)*50) :: Rational) :: Double)) <> "%);"
+  }
+
+rectMask :: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec
+rectMask m n s t vs = vs {
+  mask = \ a b c d e -> "clip-path: inset(" <> (showt (realToFrac (((m a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((n a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((s a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((t a b c d e)*100) :: Rational) :: Double)) <> "%);"
+  }
+
 
 --
 -- Time Functions --

@@ -385,7 +385,7 @@ parsePunctualNotation' :: ImmutableRenderContext -> Context -> Int -> Text -> Re
 parsePunctualNotation' irc c z t = do
   s <- get
   let evalTime = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ renderStart s -- :: AudioTime/Double
-  parseResult <- liftIO $ Punctual.parse evalTime t
+  parseResult <- liftIO $ return $! Punctual.parse evalTime t
   case parseResult of
     Right punctualProgram -> punctualProgramChanged irc c z punctualProgram
     Left _ -> return ()

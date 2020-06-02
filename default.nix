@@ -163,8 +163,8 @@ in
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "06sq5i6jcakgsv3w39999nb66m1z498fcl2w7lh8hmz7fgsvlgzh";
-          rev = "95be6c3bb7eb35d81839bc77992f7afbec5bdad5";
+          sha256 = "0dm1r6np9isgim243klaig0zc3czyv1lzyilz3q4s596vgm9wwah";
+          rev = "b7c51baacf15a11c50a7b23341de9e34a96bc8d0";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
@@ -207,8 +207,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "05dn0lyyaagljibxf0pnlin9ni1c5v7kh9c4bs76ch9z5wsk9nf1";
-           rev = "a1d78aedde218f8429517d8cfc599f9d7bbbc2d3";
+           sha256 = "1lrw14v4n5cdk7b8la9z4bc9sh8n0496hb4s7fcbm6g7p5m8qc0j";
+           rev = "bd5daf365086a4b3a75af9ad9c0b6dedf687f48a";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
