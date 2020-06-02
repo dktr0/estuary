@@ -367,9 +367,16 @@ deferredWidget cssClass isVisible dynWidgets = do
   elDynAttr "div" attrs $ widgetHold initialWidget changes
   return ()
 
+tooltipForScrollableTable :: DomBuilder t m => m a -> m b -> m a
+tooltipForScrollableTable child popup = do
+  divClass "tooltip-scrollable-table" $ do
+    a <- child
+    elClass "span" "tooltiptext-scrollable-table" popup
+    return a
+
 tooltip :: DomBuilder t m => m a -> m b -> m a
 tooltip child popup = do
   elClass "div" "tooltip" $ do
     a <- child
-    elClass "span" "tooltiptext code-font" popup
+    divClass "tooltipPosAbsolute" $ elClass "span" "tooltiptext code-font" popup
     return a

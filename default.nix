@@ -223,7 +223,7 @@ in
          dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "cumbia";
-          sha256 = "1m5i0mr2mbkbwrqs4kfr8ddy23apaq6l0kf8dggxbxy6g16whlja";
+           sha256 = "1m5i0mr2mbkbwrqs4kfr8ddy23apaq6l0kf8dggxbxy6g16whlja";
            rev = "3ce00b56012acb7682afe99aa0e0241c67dc187b";
         }) {});
 

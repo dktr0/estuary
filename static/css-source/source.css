@@ -365,7 +365,7 @@ display: block;
 
 
 .chatMessageContainer::-webkit-scrollbar  {
-    width: 10px;
+    width: 1%;
     height: 10px;
 }
 
@@ -868,6 +868,8 @@ table, tr, td {border: none;}
 .terminalInput input {
 	border:none;
 	background-color: transparent;
+	box-shadow: inset 0 0 3px var(--primary-color);
+	border-radius: 5px;
 }
 
 .terminalHidden {
@@ -926,7 +928,7 @@ cursor: pointer;
   display: inline-block;
   width: 50%;
   vertical-align: top;
-  height: 8em;
+  height: 8.2em;
 }
 
 /*
@@ -1078,50 +1080,51 @@ display: inline-flex;
 /* ///////////status Widget/////////// */
 
 .ensembleStatusWidget {
-/* 	background-color: red; */
 	height: 100%;
     border: 1px solid var(--primary-color);
     border-radius: 5px;
-    margin-top: 0.5%;
-    overflow: hidden;
-    overflow-y: auto;
+    margin-top: 0.35%;
+   	overflow: hidden;
+   	margin-right: 0.7em;
+}
+
+.scrollbar{
+overflow:hidden;
+overflow-y: auto;
+height: 6.5em;
 }
 
 .infoContainer {
-/* 	background-color: blue; */
 	margin-left:1%;
 	margin-right: 1%;
-	overflow: hidden;
 }
 
 .tableContainer {
-/* 	background-color: gray; */
 	display: flex;
 	flex-direction: row;
 	flex-wrap: nowrap;
 }
 
-.ensembleStatusWidget::-webkit-scrollbar  {
+.scrollbar::-webkit-scrollbar  {
     width: 1%;
     height: 0px;
 }
 
-.ensembleStatusWidget::-webkit-scrollbar-track {
+.scrollbar::-webkit-scrollbar-track {
   box-shadow: inset 0 0 5px var(--primary-color);
   border-radius: 10px;
 }
 
-.ensembleStatusWidget::-webkit-scrollbar-thumb {
+.scrollbar::-webkit-scrollbar-thumb {
   background: var(--primary-color);
   border-radius: 10px;
 }
 
-.ensembleStatusWidget::-webkit-scrollbar-corner{
+.scrollbar::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
 
 .ensemble-name-container {
-	padding: 0.1em;
 	margin-bottom: 1%;
 	border-bottom: 1px solid var(--primary-color);
 	border-radius: 5px;
@@ -1138,26 +1141,22 @@ display: inline-flex;
   flex-grow: 1;
   order:0;
   border-collapse: collapse;
-/*   background-color: green; */
 }
 
 .tableContainerButtonDiv {
 /* 	order: 1; */
     min-width: 10px;
-/*     background-color: gray; */
     cursor:pointer;
 
 }
 
 .infoClass {
-/* 	background-color:azure; */
-	height:100%;
+		height:100%;
 }
 
 .statusWidgetFPSAndLatency {
     flex-grow: 1;
-    padding-top: 1.9%;
-/*   background-color: yellow; */
+    padding-top: 1.3%;
     box-sizing:content-box;
 
 }
@@ -1165,6 +1164,7 @@ display: inline-flex;
 .statusWidgetNameAndLocation {
 		margin-bottom: 1%;
 		width: 10%;
+
 }
 
 .statusWidgetStatusInput input {
@@ -1180,37 +1180,39 @@ display: inline-flex;
 
 .statusWidgetActivity {
 	width:1%;
-/* 	background-color: red; */
 }
 
 .statusWidgetAnonymousPart {
    order: 3;
    width: 100%;
    margin-top:0.5%;
-/*    background-color: aliceblue; */
-
 }
 
 
 /* Tooltip classes */
-
 .tooltip {
-  position: relative;
   display: inline-block;
   cursor: pointer;
-}
+  }
+
+.tooltipPosAbsolute {
+  position: absolute;
+  width: 10px;
+  height: 1px;
+  }
 
 .tooltip .tooltiptext {
   visibility: hidden;
-/*   width: 120px; */
   display:flex;
-  width:200px;
+  min-width:15vw;
+  max-width: 35vw;
+  width:max-content;
   background-color: var(--secondary-color);
   color: var(--primary-color);
   text-align: center;
   border-radius: 6px;
   padding: 5px 0;
-  position: absolute;
+  position: relative;
   z-index: 1;
   top: 150%;
   left: 50%;
@@ -1221,16 +1223,59 @@ display: inline-flex;
   content: "";
   position: absolute;
   bottom: 100%;
-  left: 50%;
-  margin-left: -5px;
+  left: 12vh;
+/*   margin-left: -5px; */
   border-width: 5px;
   border-style: solid;
   border-color: transparent transparent var(--secondary-color) transparent;
+
 }
 
 .tooltip:hover .tooltiptext {
   visibility: visible;
 }
+
+/* special parameters for status widget tooltip */
+.tooltip-scrollable-table {
+  display: inline-block;
+  cursor: pointer;
+  position:relative;
+  }
+
+
+.tooltip-scrollable-table .tooltiptext-scrollable-table {
+  visibility: hidden;
+  display:flex;
+  min-width:15vw;
+  max-width: 35vw;
+  width:max-content;
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  top: 1.4em;
+  left: 5em;
+  margin-left: -60px;
+}
+
+.tooltip-scrollable-table .tooltiptext-scrollable-table::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 0.5vh;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent var(--secondary-color) transparent;
+
+}
+
+.tooltip-scrollable-table:hover .tooltiptext-scrollable-table {
+  visibility: visible;
+}
+
 
 .syntaxIssue {
   color: var(--transient-color);
