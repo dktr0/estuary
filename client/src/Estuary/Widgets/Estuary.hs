@@ -89,15 +89,13 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   -- four GUI components: header, main (navigation), terminal, footer
   (headerChange,headerHints) <- runEditor ctx rInfo header
-  ((requests, ensembleRequestFromPage), hintsFromPage) <- divClass "page ui-font" $ do
+  ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
-    headerRequestsAndHints <- runEditor ctx rInfo $ navigation deltasDown
-    sidebarRequestsAndHints <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget
-    --requests <- ?? -- combine requests
-    --hints <- ?? -- combine hints
-    --return (requests,hints)
-    return headerRequestsAndHints
+    (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDown
+    (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget
+    let mergedHints = mergeWith (++) [pageHints, sidebarHints]
+    return (navRequests,ctxChange,mergedHints)
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle False terminalEvent
@@ -119,7 +117,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   -- samplesLoadedEv <- loadSampleMap
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange]
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange, sidebarChange]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
