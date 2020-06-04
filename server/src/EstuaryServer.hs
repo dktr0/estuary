@@ -140,6 +140,7 @@ webSocketsApp db ss pc = do
       let ip = Map.findWithDefault "unknown IP address" "Host" rhMap
       (cHandle,ctvar) <- addClient ss ws''
       postLog db cHandle $ "new connection from " <> showt ip
+      postLog db cHandle $ "request headers: " <> T.pack (show rhMap)
       (WS.forkPingThread ws'' 10) `catch` \(SomeException e) -> postLog db cHandle $ "exception forking ping thread: " <> (T.pack $ show e)
       processLoop db ss cHandle ctvar ws''
     Left (SomeException e) -> do
@@ -163,14 +164,15 @@ processLoop db ss cHandle ctvar ws = do
 
 close :: SQLite.Connection -> ServerState -> ClientHandle -> TVar Client -> Text -> IO ()
 close db ss cHandle ctvar msg = do
+  postLog db cHandle $ "closing connection: " <> msg
   x <- runTransaction ss $ do
     c <- liftSTM $ readTVar ctvar
     deleteClient cHandle
     return c
   case x of
-    Left e -> postLog db cHandle $ "*close* " <> e
+    Left e -> postLog db cHandle $ "*error closing connection* " <> e
     Right c -> do
-      postLog db cHandle $ "closing connection: " <> msg
+      postLog db cHandle $ "(client deleted)"
       case memberOfEnsemble c of
         Nothing -> return ()
         Just etvar -> do
@@ -179,11 +181,12 @@ close db ss cHandle ctvar msg = do
           case handleInEnsemble c of
             "" -> do
               n <- readTVarIO $ E.anonymousConnections e
-              postLog db cHandle $ "(anonymous) leaves ensemble " <> eName
               sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ AnonymousParticipants n
+              postLog db cHandle $ "(anonymous) leaves ensemble " <> eName <> " (close completed)"
             h -> do
-              postLog db cHandle $ h <> " leaves ensemble " <> eName
               sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ParticipantLeaves h
+              postLog db cHandle $ h <> " leaves ensemble " <> eName <> " (close completed)"
+
 
 processMessage :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> TVar Client -> ByteString -> IO ()
 processMessage db ss ws cHandle ctvar msg = case eitherDecode msg of
