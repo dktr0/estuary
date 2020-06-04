@@ -287,10 +287,10 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteChat msg) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     whenNotAuthenticatedInEnsemble ctvar $ throwError "not authenticated"
-    e <- getClientEnsemble ctvar
     uName <- liftSTM $ handleInEnsemble <$> readTVar ctvar
     when (uName == "") $ throwError "ignoring anonymous chat"
     updateLastEdit ctvar now
+    e <- getClientEnsemble ctvar
     return (e,uName)
   case x of
     Left err -> do
@@ -305,11 +305,11 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteStatus msg) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     whenNotAuthenticatedInEnsemble ctvar $ throwError "not authenticated"
-    e <- getClientEnsemble ctvar
     uName <- liftSTM $ handleInEnsemble <$> readTVar ctvar
     when (uName == "") $ throwError "ignoring anonymous status update"
     liftSTM $ modifyTVar ctvar $ \c -> c { statusInEnsemble = msg }
     p <- updateLastEdit ctvar now
+    e <- getClientEnsemble ctvar
     return (p,e,uName)
   case x of
     Left err -> do
