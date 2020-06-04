@@ -41,7 +41,7 @@ import Estuary.Types.Name
 import Estuary.Types.Definition
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
-import qualified Estuary.Types.Ensemble as E
+import qualified Estuary.Types.Ensemble as E hiding (ensembleName)
 import qualified Estuary.Types.EnsembleS as E
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -173,15 +173,17 @@ close db ss cHandle ctvar msg = do
       postLog db cHandle $ "closing connection: " <> msg
       case memberOfEnsemble c of
         Nothing -> return ()
-        Just eName -> do
+        Just etvar -> do
+          e <- readTVarIO etvar
+          let eName = E.ensembleName e
           case handleInEnsemble c of
             "" -> do
-              n <- countAnonymousParticipantsIO ss ctvar
+              n <- readTVarIO $ E.anonymousConnections e
               postLog db cHandle $ "(anonymous) leaves ensemble " <> eName
-              sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ AnonymousParticipants n
+              sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ AnonymousParticipants n
             h -> do
               postLog db cHandle $ h <> " leaves ensemble " <> eName
-              sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ParticipantLeaves h
+              sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ParticipantLeaves h
 
 processMessage :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> TVar Client -> ByteString -> IO ()
 processMessage db ss ws cHandle ctvar msg = case eitherDecode msg of
@@ -205,8 +207,9 @@ processRequest db ss ws cHandle ctvar (ClientInfo load animationFPS animationLoa
     return (n,c)
   send db cHandle cHandle ws $ ServerInfo n pingTime
   case memberOfEnsemble c of
-    Just eName -> do
-      when (handleInEnsemble c /= "") $ sendEnsemble db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate $ clientToParticipant c
+    Just etvar -> do
+      e <- readTVarIO etvar
+      when (handleInEnsemble c /= "") $ sendEnsemble db cHandle e $ EnsembleResponse $ ParticipantUpdate $ clientToParticipant c
     Nothing -> return ()
 
 processRequest db ss ws cHandle ctvar GetEnsembleList = do
@@ -272,50 +275,50 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteZone zone value) = do
   x <- runTransaction ss $ do
     writeZone now ctvar zone value
     updateLastEdit ctvar now
-    getEnsembleName ctvar
+    getClientEnsemble ctvar
   case x of
-    Left e -> do
-      let m = "*WriteZone* " <> e
+    Left err -> do
+      let m = "*WriteZone* " <> err
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right eName -> sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ZoneRcvd zone value
+    Right e -> sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ZoneRcvd zone value
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteChat msg) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     whenNotAuthenticatedInEnsemble ctvar $ throwError "not authenticated"
-    eName <- getEnsembleName ctvar
+    e <- getClientEnsemble ctvar
     uName <- liftSTM $ handleInEnsemble <$> readTVar ctvar
     when (uName == "") $ throwError "ignoring anonymous chat"
     updateLastEdit ctvar now
-    return (eName,uName)
+    return (e,uName)
   case x of
-    Left e -> do
-      let m = "*WriteChat* " <> e
+    Left err -> do
+      let m = "*WriteChat* " <> err
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right (eName,uName) -> do
-      postLog db cHandle $ uName <> " in " <> eName <> " chats: " <> msg
-      sendEnsemble db ss cHandle eName $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
+    Right (e,uName) -> do
+      postLog db cHandle $ uName <> " in " <> E.ensembleName e <> " chats: " <> msg
+      sendEnsemble db cHandle e $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteStatus msg) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     whenNotAuthenticatedInEnsemble ctvar $ throwError "not authenticated"
-    eName <- getEnsembleName ctvar
+    e <- getClientEnsemble ctvar
     uName <- liftSTM $ handleInEnsemble <$> readTVar ctvar
     when (uName == "") $ throwError "ignoring anonymous status update"
     liftSTM $ modifyTVar ctvar $ \c -> c { statusInEnsemble = msg }
     p <- updateLastEdit ctvar now
-    return (p,eName,uName)
+    return (p,e,uName)
   case x of
-    Left e -> do
-      let m = "*WriteStatus* " <> e
+    Left err -> do
+      let m = "*WriteStatus* " <> err
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right (p,eName,uName) -> do
-      postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> eName <> ": " <> msg
-      sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ParticipantUpdate p
+    Right (p,e,uName) -> do
+      postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> E.ensembleName e <> ": " <> msg
+      sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ParticipantUpdate p
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteView preset view) = do
   now <- getCurrentTime
@@ -323,29 +326,29 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteView preset view) = do
     when (not $ nameIsLegal preset) $ throwError "view name cannot contain spaces/newlines/control characters"
     writeView now ctvar preset view
     updateLastEdit ctvar now
-    getEnsembleName ctvar
+    getClientEnsemble ctvar
   case x of
-    Left e -> do
-      let m = "*PublishView* " <> e
+    Left err -> do
+      let m = "*PublishView* " <> err
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right eName -> do
+    Right e -> do
       sendThisClient db cHandle ws (ResponseOK $ "published view " <> preset)
-      sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ViewRcvd preset view
-      postLog db cHandle $ "WriteView in (" <> eName <> "," <> preset <> ")"
+      sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ViewRcvd preset view
+      postLog db cHandle $ "WriteView in (" <> E.ensembleName e <> "," <> preset <> ")"
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteTempo t) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     writeTempo now ctvar t
     updateLastEdit ctvar now
-    getEnsembleName ctvar
+    getClientEnsemble ctvar
   case x of
-    Left e -> do
-      let m = "*WriteTempo* " <> e
+    Left err -> do
+      let m = "*WriteTempo* " <> err
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right eName -> do
+    Right e -> do
       sendThisClient db cHandle ws (ResponseOK $ "setting tempo succeeded")
-      sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ TempoRcvd t
-      postLog db cHandle $ "WriteTempo in " <> eName
+      sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ TempoRcvd t
+      postLog db cHandle $ "WriteTempo in " <> E.ensembleName e

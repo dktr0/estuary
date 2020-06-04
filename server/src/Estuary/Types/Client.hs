@@ -10,8 +10,10 @@ module Estuary.Types.Client where
 import Network.WebSockets
 import Data.Time
 import Data.Text
+import Control.Concurrent.STM
 
 import Estuary.Types.Participant
+import Estuary.Types.EnsembleS
 
 type ClientHandle = Int
 
@@ -19,7 +21,7 @@ data Client = Client {
   handle :: ClientHandle,
   connection :: Connection,
   browserInfo :: Text,
-  memberOfEnsemble :: Maybe Text,
+  memberOfEnsemble :: Maybe (TVar EnsembleS),
   handleInEnsemble :: Text,
   locationInEnsemble :: Text,
   statusInEnsemble :: Text,
