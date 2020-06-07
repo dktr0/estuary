@@ -163,15 +163,15 @@ in
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0dm1r6np9isgim243klaig0zc3czyv1lzyilz3q4s596vgm9wwah";
-          rev = "b7c51baacf15a11c50a7b23341de9e34a96bc8d0";
+          sha256 = "0gmvbm1lhq6px2si581k39wx6fx91rbb8gnca0fkp28yhfz45nhz";
+          rev = "02e79ea8208029865c2bf99d1ae91e6eb4492a0d";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "0rx7z6q2x1xqccwwc7036gzyy28kb8k45fj2v0zmjgsnv496qfd9";
-          rev = "820f78d97e2257d5445f498f81f9e9a8b3d06e43";
+          sha256 = "186gcyma9sldki7l0jgy80lzqyhlz6b248iqj4m645nzk4ncv2l3";
+          rev = "ac0de845001430af98be168cf7478f55cd439274";
         }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
