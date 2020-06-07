@@ -19,10 +19,11 @@ import Estuary.Types.RenderInfo
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
+import Estuary.Types.Hint
 
 
 estuaryWebSocket :: MonadWidget t m => Dynamic t RenderInfo -> Event t [Request] ->
-  m (Event t Response, Event t ContextChange)
+  m (Event t Response, Event t ContextChange, Event t Hint)
 estuaryWebSocket rInfo toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
@@ -35,6 +36,12 @@ estuaryWebSocket rInfo toSend = mdo
   let config = def & webSocketConfig_send .~ requestsToSend & webSocketConfig_reconnect .~ True
   ws <- jsonWebSocket url config
   let response = fmapMaybe id $ ws^.webSocket_recv
+
+  -- respond to websocket open, error, and close events
+  let wsOpenHint = LogMessage "websocket opened" <$ ws^.webSocket_open
+  let wsErrorHint = LogMessage "websocket error" <$ ws^.webSocket_error
+  let wsCloseHint = LogMessage "websocket closed" <$ ws^.webSocket_close
+  let wsHints = leftmost [wsOpenHint,wsErrorHint,wsCloseHint]
 
   -- after widget is built, query and report browser info to server
   postBuild <- getPostBuild
@@ -59,7 +66,7 @@ estuaryWebSocket rInfo toSend = mdo
   let clientInfoDyn = ClientInfo <$> fmap avgRenderLoad rInfo <*> fmap animationFPS rInfo <*> fmap animationLoad rInfo <*> latencyDyn
   let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith ($) clientInfoDyn pingTickTime
 
-  return (response,contextChanges)
+  return (response,contextChanges,wsHints)
 
 foreign import javascript unsafe
   "$r = location.hostname"
