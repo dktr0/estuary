@@ -25,8 +25,8 @@ import Estuary.Types.View.Presets
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Tempo
 import Estuary.Types.Hint
-import Estuary.Types.Participant
 import Estuary.Types.Tempo
+import Estuary.Types.Participant
 
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
@@ -34,6 +34,8 @@ import Estuary.Types.Chat
 data EnsembleC = EnsembleC {
   ensemble :: Ensemble,
   userHandle :: Text, -- how the user is logged in/appears to others in the ensemble; "" = anonymous
+  location :: Text, -- the user's location in the ensemble (cached for re-authentication scenarios)
+  password :: Text, -- the participant password for the ensemble (cached for re-authentication scenarios)
   view :: Either View Text -- Rights are from preset views, Lefts are local views
 }
 
@@ -41,16 +43,20 @@ emptyEnsembleC :: UTCTime -> EnsembleC
 emptyEnsembleC t = EnsembleC {
   ensemble = emptyEnsemble t,
   userHandle = "",
+  Estuary.Types.EnsembleC.location = "",
+  Estuary.Types.EnsembleC.password = "",
   view = Right "default"
   }
 
-joinEnsembleC :: Text -> Text -> EnsembleC -> EnsembleC
-joinEnsembleC eName uName es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, view = Right "default" }
+joinEnsembleC :: Text -> Text -> Text -> Text -> EnsembleC -> EnsembleC
+joinEnsembleC eName uName loc pwd es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, Estuary.Types.EnsembleC.location = loc, Estuary.Types.EnsembleC.password = pwd, view = Right "default" }
 
 leaveEnsembleC :: EnsembleC -> EnsembleC
 leaveEnsembleC x = x {
   ensemble = leaveEnsemble (ensemble x),
-  userHandle = ""
+  userHandle = "",
+  Estuary.Types.EnsembleC.location = "",
+  Estuary.Types.EnsembleC.password = ""
   }
 
 -- if a specific named view is in the ensemble's map of views we get that
@@ -130,7 +136,7 @@ ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (wri
 ensembleResponseToStateChange _ es = es
 
 responseToStateChange :: Response -> EnsembleC -> EnsembleC
-responseToStateChange (JoinedEnsemble eName uName) es = joinEnsembleC eName uName es
+responseToStateChange (JoinedEnsemble eName uName loc pwd) es = joinEnsembleC eName uName loc pwd es
 responseToStateChange _ es = es
 
 commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe (IO EnsembleRequest)

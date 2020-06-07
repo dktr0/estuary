@@ -82,7 +82,7 @@ maintenanceThread db ss = do
   sequence $ Map.mapWithKey (deleteEnsembleIfExpired db ss) es
   nEnsembles <- writeAllEnsembles db ss
   postLogNoHandle db $ "maintenance: " <> showt nClients <> " clients, " <> showt nEnsembles <> " ensembles"
-  threadDelay $ 900000000 -- maintenance runs every 15 minutes
+  threadDelay $ 300000000 -- maintenance runs every 5 minutes
   maintenanceThread db ss
 
 deleteEnsembleIfExpired :: SQLite.Connection -> ServerState -> Text -> TVar E.EnsembleS -> IO ()
@@ -257,7 +257,7 @@ processRequest db ss ws cHandle ctvar (DeleteEnsemble eName mpwd) = do
       postLog db cHandle m
 
 processRequest db ss ws cHandle ctvar (JoinEnsemble eName uName loc pwd) = do
-  x <- runTransactionIO ss $ joinEnsemble db cHandle ctvar eName uName loc pwd
+  x <- runTransactionIO ss $ joinEnsemble db cHandle ctvar eName uName loc pwd False
   let uName' = if uName == "" then "(anonymous)" else uName
   case x of
     Left e -> do
@@ -265,6 +265,16 @@ processRequest db ss ws cHandle ctvar (JoinEnsemble eName uName loc pwd) = do
       sendThisClient db cHandle ws (ResponseError m)
       postLog db cHandle m
     Right _ -> postLog db cHandle $ "joined ensemble " <> eName <> " as " <> uName'
+
+processRequest db ss ws cHandle ctvar (RejoinEnsemble eName uName loc pwd) = do
+  x <- runTransactionIO ss $ joinEnsemble db cHandle ctvar eName uName loc pwd True
+  let uName' = if uName == "" then "(anonymous)" else uName
+  case x of
+    Left e -> do
+      let m = "unable to rejoin ensemble " <> eName <> " as " <> uName' <> ": " <> e
+      sendThisClient db cHandle ws (ResponseError m)
+      postLog db cHandle m
+    Right _ -> postLog db cHandle $ "rejoined ensemble " <> eName <> " as " <> uName'
 
 processRequest db ss ws cHandle ctvar LeaveEnsemble = do
   runTransactionIOLogged db ss cHandle "LeaveEnsemble" $ leaveEnsemble db ctvar

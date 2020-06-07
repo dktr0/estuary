@@ -20,11 +20,13 @@ import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Hint
+import Estuary.Types.EnsembleC
+import Estuary.Types.Ensemble
 
 
-estuaryWebSocket :: MonadWidget t m => Dynamic t RenderInfo -> Event t [Request] ->
+estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
   m (Event t Response, Event t ContextChange, Event t Hint)
-estuaryWebSocket rInfo toSend = mdo
+estuaryWebSocket ctx rInfo toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
   userAgent <- liftIO $ getUserAgent
@@ -32,7 +34,7 @@ estuaryWebSocket rInfo toSend = mdo
 
   -- the web socket itself
   let url = "wss://" <> hostName <> ":" <> port
-  let requestsToSend = mergeWith (++) [sendBrowserInfo,toSend,clientInfoEvent]
+  let requestsToSend = mergeWith (++) [sendBrowserInfo,toSend,clientInfoEvent,rejoinEvent]
   let config = def & webSocketConfig_send .~ requestsToSend & webSocketConfig_reconnect .~ True
   ws <- jsonWebSocket url config
   let response = fmapMaybe id $ ws^.webSocket_recv
@@ -42,6 +44,7 @@ estuaryWebSocket rInfo toSend = mdo
   let wsErrorHint = LogMessage "websocket error" <$ ws^.webSocket_error
   let wsCloseHint = LogMessage "websocket closed" <$ ws^.webSocket_close
   let wsHints = leftmost [wsOpenHint,wsErrorHint,wsCloseHint]
+  let rejoinEvent = fmap pure $ attachWithMaybe maybeRejoinEnsemble (current ctx) $ ws^.webSocket_open
 
   -- after widget is built, query and report browser info to server
   postBuild <- getPostBuild
@@ -67,6 +70,16 @@ estuaryWebSocket rInfo toSend = mdo
   let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith ($) clientInfoDyn pingTickTime
 
   return (response,contextChanges,wsHints)
+
+maybeRejoinEnsemble :: Context -> () -> Maybe Request
+maybeRejoinEnsemble ctx _
+  | ensembleName (ensemble (ensembleC ctx)) == "" = Nothing
+  | otherwise = Just $ RejoinEnsemble eName uName loc pwd
+    where
+      eName = ensembleName (ensemble (ensembleC ctx))
+      uName = userHandle (ensembleC ctx)
+      loc = location (ensembleC ctx)
+      pwd = password (ensembleC ctx)
 
 foreign import javascript unsafe
   "$r = location.hostname"

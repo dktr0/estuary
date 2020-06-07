@@ -213,8 +213,8 @@ deleteEnsemble cHandle ename mpwd = do
       removeAllClientsFromEnsemble s e
 
 
-joinEnsemble :: SQLite.Connection -> ClientHandle -> TVar Client -> Name -> Name -> Text -> Password -> Transaction (IO ())
-joinEnsemble db cHandle ctvar eName uName loc pwd = do
+joinEnsemble :: SQLite.Connection -> ClientHandle -> TVar Client -> Name -> Name -> Text -> Password -> Bool -> Transaction (IO ())
+joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
   etvar <- getEnsembleTVar eName
   e <- liftSTM $ readTVar etvar
   -- when client is requesting a specific user name in the ensemble, succeeds only if not already taken...
@@ -248,7 +248,8 @@ joinEnsemble db cHandle ctvar eName uName loc pwd = do
 
     -- send responses to this client indicating successful join, and ensemble tempo, defs and views
     let respond = sendThisClient db cHandle (connection self)
-    respond $ JoinedEnsemble eName uName
+    when (not isReauth) $ respond $ JoinedEnsemble eName uName loc pwd
+    when (isReauth) $ respond $ ResponseOK "rejoined ensemble"
     respond $ EnsembleResponse $ TempoRcvd t
     mapM_ respond $ fmap EnsembleResponse $ IntMap.mapWithKey ZoneRcvd zs
     mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd vs

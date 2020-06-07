@@ -19,7 +19,7 @@ data Response =
   ResponseOK Text | -- eg. ensemble successfully deleted
   ResponseError Text | -- eg. ensemble login failure
   EnsembleList [Text] |
-  JoinedEnsemble Text Text | -- ensemble username
+  JoinedEnsemble Text Text Text Text | -- ensemble username location password
   EnsembleResponse EnsembleResponse |
   ServerInfo Int UTCTime -- response to ClientInfo: serverClientCount pingTime (from triggering ClientInfo)
   deriving (Generic)
@@ -38,9 +38,9 @@ justEnsembleList = lastOrNothing . mapMaybe f
   where f (EnsembleList x) = Just x
         f _ = Nothing
 
-justJoinedEnsemble :: [Response] -> Maybe (Text,Text)
+justJoinedEnsemble :: [Response] -> Maybe (Text,Text,Text,Text)
 justJoinedEnsemble = lastOrNothing . mapMaybe f
-  where f (JoinedEnsemble x y) = Just (x,y)
+  where f (JoinedEnsemble a b c d) = Just (a,b,c,d)
         f _ = Nothing
 
 justResponseOK :: [Response] -> Maybe Text
