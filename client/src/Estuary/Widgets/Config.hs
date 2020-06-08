@@ -8,6 +8,7 @@ import qualified Data.Text as T
 import Data.Map.Strict
 
 import Estuary.Widgets.Editor
+import Estuary.Widgets.Generic
 import Estuary.Types.Context
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
@@ -17,21 +18,25 @@ import qualified Sound.Punctual.Resolution as Punctual
 configWidget :: MonadWidget t m => Editor t m (Event t ContextChange)
 configWidget = do
 
-  let condigCheckboxAttrs = def & attributes .~ constDyn ("class" =: "primary-color")
+  let configCheckboxAttrs = def & attributes .~ constDyn ("class" =: "checkbox primary-color")
 
   canvasEnabledEv <- divClass "primary-color ui-font" $ do
     text "Canvas:"
-    canvasInput <- checkbox True condigCheckboxAttrs
+    canvasInput <- checkbox True configCheckboxAttrs -- How do I add id="toggle"?
+    labelWithClass "toggle" "switch"
     return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+-- <input type="checkbox" class="checkbox primary-color" id="toggle">
+-- <label for="toggle" class="switch"></label>
+-- https://medium.com/front-end-weekly/creating-a-toggle-switch-in-css-2d23e496d035
 
   superDirtEnabledEv <- divClass "primary-color ui-font" $ do
     text "SuperDirt:"
-    sdInput <- checkbox False condigCheckboxAttrs
+    sdInput <- checkbox False configCheckboxAttrs
     return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
 
   webDirtEnabledEv <- divClass "primary-color ui-font" $ do
     text "WebDirt:"
-    wdInput <- checkbox True condigCheckboxAttrs
+    wdInput <- checkbox True configCheckboxAttrs
     return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
 
   dynamicsModeEv <- divClass "primary-color ui-font" $ do

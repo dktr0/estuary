@@ -17,5 +17,5 @@ sidebarWidget = do
   configEvent <- fmap (2 <$) $ clickableDiv "sidebar-tab" $ text "Config"
   curPage <- holdDyn 1 $ leftmost [referenceEvent,configEvent]
   hideableWidget' (fmap (==1) curPage) $ referenceWidget
-  configChange <- hideableWidget' (fmap (==2) curPage) $ configWidget
+  configChange <- hideableWidget (fmap (==2) curPage) "config-options" $ configWidget
   return configChange
