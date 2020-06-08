@@ -146,7 +146,7 @@ page wsDown (JoinEnsemblePage ensembleName) = do
   go <- el "div" $ dynButton =<< term Term.EnsembleLogin
   let joinRequest = tagPromptlyDyn (JoinEnsemble <$> constDyn ensembleName <*> h <*> l <*> p) go
   let joinedEnsembleResponses = fmapMaybe justJoinedEnsemble wsDown
-  let joinedEnsembleNav = fmap (EnsemblePage . fst) joinedEnsembleResponses
+  let joinedEnsembleNav = fmap (EnsemblePage . (\(x,_,_,_) -> x)) joinedEnsembleResponses
   let responseError = fmapMaybe justResponseError wsDown
   p <- el "div" $ do
     errorDisplay <- holdDyn "" responseError

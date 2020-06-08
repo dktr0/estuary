@@ -83,7 +83,7 @@ in
           ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
-        estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
+        estuary = dontCheck (overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
           preConfigure = ''
             ${ghc8_6.hpack}/bin/hpack --force;
           '';
@@ -95,7 +95,7 @@ in
               --jscomp_off=checkVars;
             gzip -fk "$out/bin/all.min.js"
          '';
-        });
+        }));
 
         estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
@@ -163,15 +163,15 @@ in
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0dm1r6np9isgim243klaig0zc3czyv1lzyilz3q4s596vgm9wwah";
-          rev = "b7c51baacf15a11c50a7b23341de9e34a96bc8d0";
+          sha256 = "0gmvbm1lhq6px2si581k39wx6fx91rbb8gnca0fkp28yhfz45nhz";
+          rev = "02e79ea8208029865c2bf99d1ae91e6eb4492a0d";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "0rx7z6q2x1xqccwwc7036gzyy28kb8k45fj2v0zmjgsnv496qfd9";
-          rev = "820f78d97e2257d5445f498f81f9e9a8b3d06e43";
+          sha256 = "186gcyma9sldki7l0jgy80lzqyhlz6b248iqj4m645nzk4ncv2l3";
+          rev = "ac0de845001430af98be168cf7478f55cd439274";
         }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
@@ -219,12 +219,12 @@ in
            rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
         }) {});
 
-        cumbia = # dontHaddock (self.callCabal2nix "cumbia" ../../cumbia {});
+        cumbia = #dontHaddock (self.callCabal2nix "cumbia" ../../cumbia {});
          dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "cumbia";
-           sha256 = "1v62m8xxbq0jszw7q3mm6jd21397bhhifmycvh40xnq7nvvfq72s";
-           rev = "6b9d13fda2151c3fce396216e47bcefd59e3d900";
+           sha256 = "1m5i0mr2mbkbwrqs4kfr8ddy23apaq6l0kf8dggxbxy6g16whlja";
+           rev = "3ce00b56012acb7682afe99aa0e0241c67dc187b";
         }) {});
 
       };

@@ -25,8 +25,8 @@ import Estuary.Types.View.Presets
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Tempo
 import Estuary.Types.Hint
-import Estuary.Types.Participant
 import Estuary.Types.Tempo
+import Estuary.Types.Participant
 
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
@@ -34,6 +34,8 @@ import Estuary.Types.Chat
 data EnsembleC = EnsembleC {
   ensemble :: Ensemble,
   userHandle :: Text, -- how the user is logged in/appears to others in the ensemble; "" = anonymous
+  location :: Text, -- the user's location in the ensemble (cached for re-authentication scenarios)
+  password :: Text, -- the participant password for the ensemble (cached for re-authentication scenarios)
   view :: Either View Text -- Rights are from preset views, Lefts are local views
 }
 
@@ -41,16 +43,20 @@ emptyEnsembleC :: UTCTime -> EnsembleC
 emptyEnsembleC t = EnsembleC {
   ensemble = emptyEnsemble t,
   userHandle = "",
+  Estuary.Types.EnsembleC.location = "",
+  Estuary.Types.EnsembleC.password = "",
   view = Right "default"
   }
 
-joinEnsembleC :: Text -> Text -> EnsembleC -> EnsembleC
-joinEnsembleC eName uName es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, view = Right "default" }
+joinEnsembleC :: Text -> Text -> Text -> Text -> EnsembleC -> EnsembleC
+joinEnsembleC eName uName loc pwd es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, Estuary.Types.EnsembleC.location = loc, Estuary.Types.EnsembleC.password = pwd, view = Right "default" }
 
 leaveEnsembleC :: EnsembleC -> EnsembleC
 leaveEnsembleC x = x {
   ensemble = leaveEnsemble (ensemble x),
-  userHandle = ""
+  userHandle = "",
+  Estuary.Types.EnsembleC.location = "",
+  Estuary.Types.EnsembleC.password = ""
   }
 
 -- if a specific named view is in the ensemble's map of views we get that
@@ -100,6 +106,7 @@ commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ nameOfActiveView es
 commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ ensemble es
 commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
 commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
+commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $ T.pack $ show $ tempo $ ensemble es
 commandToHint _ _ = Nothing
 
 commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
@@ -129,12 +136,20 @@ ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (wri
 ensembleResponseToStateChange _ es = es
 
 responseToStateChange :: Response -> EnsembleC -> EnsembleC
-responseToStateChange (JoinedEnsemble eName uName) es = joinEnsembleC eName uName es
+responseToStateChange (JoinedEnsemble eName uName loc pwd) es = joinEnsembleC eName uName loc pwd es
 responseToStateChange _ es = es
 
-commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe EnsembleRequest
-commandToEnsembleRequest es (Terminal.PublishView x) = Just (WriteView x (activeView es))
-commandToEnsembleRequest es (Terminal.Chat x) = Just (WriteChat x)
+commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe (IO EnsembleRequest)
+commandToEnsembleRequest es (Terminal.PublishView x) = Just $ return (WriteView x (activeView es))
+commandToEnsembleRequest es (Terminal.Chat x) = Just $ return (WriteChat x)
+commandToEnsembleRequest es Terminal.AncientTempo = Just $ return (WriteTempo x)
+  where x = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
+commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ do
+  x' <- changeTempoNow (realToFrac x) (tempo $ ensemble es)
+  return (WriteTempo x')
+commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ do
+  x' <- changeTempoNow (realToFrac x / 240) (tempo $ ensemble es)
+  return (WriteTempo x')
 commandToEnsembleRequest _ _ = Nothing
 
 responseToMessage :: Response -> Maybe Text
