@@ -355,9 +355,11 @@ send ss db originHandle destHandle c x = do
       let ce = fromException (SomeException e)
       case ce of
         Just (WS.CloseRequest _ _) ->
-          removeAnotherClient ss db originHandle destHandle $ "CloseRequest exception during send"
+          -- removeAnotherClient ss db originHandle destHandle $ "CloseRequest exception during send"
+          postLog db originHandle $ "CloseRequest exception sending to (" <> showt destHandle <> ")"
         Just WS.ConnectionClosed ->
-          removeAnotherClient ss db originHandle destHandle $ "ConnectionClosed exception during send"
+          -- removeAnotherClient ss db originHandle destHandle $ "ConnectionClosed exception during send"
+          postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
         otherwise ->
           postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
 
