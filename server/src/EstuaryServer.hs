@@ -172,20 +172,8 @@ close db ss cHandle ctvar msg = do
   case x of
     Left e -> postLog db cHandle $ "*error closing connection* " <> e
     Right c -> do
-      postLog db cHandle $ "(client deleted)"
-      case memberOfEnsemble c of
-        Nothing -> return ()
-        Just etvar -> do
-          e <- readTVarIO etvar
-          let eName = E.ensembleName e
-          case handleInEnsemble c of
-            "" -> do
-              n <- readTVarIO $ E.anonymousConnections e
-              sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ AnonymousParticipants n
-              postLog db cHandle $ "(anonymous) leaves ensemble " <> eName <> " (close completed)"
-            h -> do
-              sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ParticipantLeaves h
-              postLog db cHandle $ h <> " leaves ensemble " <> eName <> " (close completed)"
+      notifyWhenClientDepartsEnsemble ss db cHandle c
+      postLog db cHandle $ "close connection completed."
 
 
 processMessage :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> TVar Client -> ByteString -> IO ()
@@ -208,16 +196,16 @@ processRequest db ss ws cHandle ctvar (ClientInfo load animationFPS animationLoa
     n <- readTVar $ clientCount ss
     c <- readTVar ctvar
     return (n,c)
-  send db cHandle cHandle ws $ ServerInfo n pingTime
+  send ss db cHandle cHandle ws $ ServerInfo n pingTime
   case memberOfEnsemble c of
     Just etvar -> do
       e <- readTVarIO etvar
-      when (handleInEnsemble c /= "") $ sendEnsemble db cHandle e $ EnsembleResponse $ ParticipantUpdate $ clientToParticipant c
+      when (handleInEnsemble c /= "") $ sendEnsemble ss db cHandle e $ EnsembleResponse $ ParticipantUpdate $ clientToParticipant c
     Nothing -> return ()
 
 processRequest db ss ws cHandle ctvar GetEnsembleList = do
   eNames <- atomically $ Map.keys <$> readTVar (ensembles ss)
-  send db cHandle cHandle ws $ EnsembleList eNames
+  send ss db cHandle cHandle ws $ EnsembleList eNames
 
 processRequest db ss ws cHandle ctvar (CreateEnsemble cpwd name opwd jpwd expTime) = do
   now <- getCurrentTime
@@ -225,11 +213,11 @@ processRequest db ss ws cHandle ctvar (CreateEnsemble cpwd name opwd jpwd expTim
   case x of
     Left e -> do
       let m = "unable to CreateEnsemble: " <> e
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle $ "*CreateEnsemble* " <> m
     Right _ -> do
       let m = "created ensemble " <> name <> " host password=" <> opwd <> " participant password=" <> jpwd
-      sendThisClient db cHandle ws (ResponseOK m)
+      sendThisClient ss db cHandle ws (ResponseOK m)
       postLog db cHandle m
 
 processRequest db ss ws cHandle ctvar (DeleteThisEnsemble opwd) = do
@@ -237,11 +225,11 @@ processRequest db ss ws cHandle ctvar (DeleteThisEnsemble opwd) = do
   case x of
     Left e -> do
       let m = "unable to delete this ensemble: " <> e
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle $ "*DeleteThisEnsemble* " <> m
     Right eName -> do
       let m = "deleted this ensemble " <> eName
-      sendThisClient db cHandle ws (ResponseOK m)
+      sendThisClient ss db cHandle ws (ResponseOK m)
       postLog db cHandle m
 
 processRequest db ss ws cHandle ctvar (DeleteEnsemble eName mpwd) = do
@@ -249,11 +237,11 @@ processRequest db ss ws cHandle ctvar (DeleteEnsemble eName mpwd) = do
   case x of
     Left e -> do
       let m = "unable to delete ensemble " <> eName <> ": " <> e
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle $ "*DeleteEnsemble* " <> m
     Right _ -> do
       let m = "deleted ensemble " <> eName
-      sendThisClient db cHandle ws (ResponseOK m)
+      sendThisClient ss db cHandle ws (ResponseOK m)
       postLog db cHandle m
 
 processRequest db ss ws cHandle ctvar (JoinEnsemble eName uName loc pwd) = do
@@ -262,7 +250,7 @@ processRequest db ss ws cHandle ctvar (JoinEnsemble eName uName loc pwd) = do
   case x of
     Left e -> do
       let m = "unable to join ensemble " <> eName <> " as " <> uName' <> ": " <> e
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle m
     Right _ -> postLog db cHandle $ "joined ensemble " <> eName <> " as " <> uName'
 
@@ -272,7 +260,7 @@ processRequest db ss ws cHandle ctvar (RejoinEnsemble eName uName loc pwd) = do
   case x of
     Left e -> do
       let m = "unable to rejoin ensemble " <> eName <> " as " <> uName' <> ": " <> e
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle m
     Right _ -> postLog db cHandle $ "rejoined ensemble " <> eName <> " as " <> uName'
 
@@ -292,9 +280,9 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteZone zone value) = do
   case x of
     Left err -> do
       let m = "*WriteZone* " <> err
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle m
-    Right e -> sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ZoneRcvd zone value
+    Right e -> sendEnsembleNoOrigin ss db cHandle e $ EnsembleResponse $ ZoneRcvd zone value
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteChat msg) = do
   now <- getCurrentTime
@@ -308,11 +296,11 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteChat msg) = do
   case x of
     Left err -> do
       let m = "*WriteChat* " <> err
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle m
     Right (e,uName) -> do
       postLog db cHandle $ uName <> " in " <> E.ensembleName e <> " chats: " <> msg
-      sendEnsemble db cHandle e $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
+      sendEnsemble ss db cHandle e $ EnsembleResponse $ ChatRcvd $ Chat now uName msg
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteStatus msg) = do
   now <- getCurrentTime
@@ -327,11 +315,11 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteStatus msg) = do
   case x of
     Left err -> do
       let m = "*WriteStatus* " <> err
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle m
     Right (p,e,uName) -> do
       postLog db cHandle $ "WriteStatus from " <> uName <> " in " <> E.ensembleName e <> ": " <> msg
-      sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ParticipantUpdate p
+      sendEnsembleNoOrigin ss db cHandle e $ EnsembleResponse $ ParticipantUpdate p
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteView preset view) = do
   now <- getCurrentTime
@@ -343,11 +331,11 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteView preset view) = do
   case x of
     Left err -> do
       let m = "*PublishView* " <> err
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle m
     Right e -> do
-      sendThisClient db cHandle ws (ResponseOK $ "published view " <> preset)
-      sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ViewRcvd preset view
+      sendThisClient ss db cHandle ws (ResponseOK $ "published view " <> preset)
+      sendEnsembleNoOrigin ss db cHandle e $ EnsembleResponse $ ViewRcvd preset view
       postLog db cHandle $ "WriteView in (" <> E.ensembleName e <> "," <> preset <> ")"
 
 processEnsembleRequest db ss ws cHandle ctvar (WriteTempo t) = do
@@ -359,9 +347,9 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteTempo t) = do
   case x of
     Left err -> do
       let m = "*WriteTempo* " <> err
-      sendThisClient db cHandle ws (ResponseError m)
+      sendThisClient ss db cHandle ws (ResponseError m)
       postLog db cHandle m
     Right e -> do
-      sendThisClient db cHandle ws (ResponseOK $ "setting tempo succeeded")
-      sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ TempoRcvd t
+      sendThisClient ss db cHandle ws (ResponseOK $ "setting tempo succeeded")
+      sendEnsembleNoOrigin ss db cHandle e $ EnsembleResponse $ TempoRcvd t
       postLog db cHandle $ "WriteTempo in " <> E.ensembleName e
