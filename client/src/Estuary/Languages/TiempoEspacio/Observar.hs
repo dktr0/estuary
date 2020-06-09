@@ -162,6 +162,7 @@ noun = choice [
   ((reserved "brillo" <|> reserved "brillos") >> return Tidal.delaytime) <*> option 0 parentsdoublePattern,
   ((reserved "tiempo" <|> reserved "tiempos") >> return Tidal.speed) <*> option 0 parentsdoublePattern,
   (reserved "cacahuates" >> return Tidal.shape) <*> option 0 parentsdoublePattern,
+  ((reserved "puerta" <|> reserved "puertas") >> return Tidal.begin) <*> option 0.0 parentsdoublePattern,
   ((reserved "pasillo" <|> reserved "pasillos") >> return Tidal.end) <*> option 1.0 parentsdoublePattern,
   ((reserved "puerta" <|> reserved "puertas") >> return Tidal.room) <*> option 0 parentsdoublePattern,
   ((reserved "cuarto" <|> reserved "cuartos") >> return Tidal.size) <*> option 0 parentsdoublePattern

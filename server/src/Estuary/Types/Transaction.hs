@@ -73,88 +73,97 @@ deleteClient cHandle = do
   let ctvar = IntMap.lookup cHandle oldMap
   case ctvar of
     Just ctvar' -> liftSTM $ do
+      -- remove client from any ensemble they are a part of
+      theClient <- readTVar ctvar'
+      case (memberOfEnsemble theClient) of
+        Just etvar -> readTVar etvar >>= E.deleteConnection (Estuary.Types.Client.handle theClient)
+        Nothing -> return ()
+      -- remove client from global list of clients
       let newMap = IntMap.delete cHandle oldMap
       writeTVar (clients ss) newMap
       writeTVar (clientCount ss) (IntMap.size newMap)
-      readTVar ctvar'
+      return theClient
     Nothing -> throwError $ "client " <> showt cHandle <> "not found"
+
+removeAnotherClient :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> Text -> IO ()
+removeAnotherClient ss db originHandle targetHandle msg = do
+  postLog db originHandle $ "removing (" <> showt targetHandle <> ") because: " <> msg
+  x <- runTransaction ss $ deleteClient targetHandle
+  case x of
+    Left err -> postLog db originHandle $ "*error during removal* " <> err
+    Right c -> do
+      notifyWhenClientDepartsEnsemble ss db originHandle c
+      postLog db originHandle $ "removal of (" <> showt targetHandle <> ") complete."
 
 
 getEnsembleName :: TVar Client -> Transaction Text
 getEnsembleName ctvar = do
-  eName <- liftSTM $ memberOfEnsemble <$> readTVar ctvar
-  justOrError eName "getEnsembleName for client not member of ensemble"
+  e <- liftSTM $ memberOfEnsemble <$> readTVar ctvar
+  etvar <- justOrError e "getEnsembleName for client not member of ensemble"
+  liftSTM $ E.ensembleName <$> readTVar etvar
 
+getClientEnsemble :: TVar Client -> Transaction E.EnsembleS
+getClientEnsemble ctvar = do
+  e <- liftSTM $ memberOfEnsemble <$> readTVar ctvar
+  etvar <- justOrError e "getClientEnsemble for client not member of ensemble"
+  liftSTM $ readTVar etvar
 
 getEnsemble :: Text -> Transaction E.EnsembleS
 getEnsemble eName = do
-  s <- ask
-  eMap <- liftSTM $ readTVar (ensembles s)
-  etvar <- justOrError (Map.lookup eName eMap) $ "ensemble " <> eName <> " not found on Estuary server"
+  etvar <- getEnsembleTVar eName
   liftSTM $ readTVar etvar
 
+getEnsembleTVar :: Text -> Transaction (TVar E.EnsembleS)
+getEnsembleTVar eName = do
+  s <- ask
+  eMap <- liftSTM $ readTVar (ensembles s)
+  justOrError (Map.lookup eName eMap) $ "ensemble " <> eName <> " not found on Estuary server"
 
-getNamedParticipants :: ServerState -> Text -> IO [Participant]
-getNamedParticipants ss eName = do
-  a <- atomically $ readTVar $ clients ss
-  b <- mapM (atomically . readTVar ) a
-  let c = IntMap.filter (\x -> (memberOfEnsemble x == Just eName) && (handleInEnsemble x /= "")) b
+
+getNamedParticipants :: ServerState -> E.EnsembleS -> IO [Participant]
+getNamedParticipants ss e = do
+  a <- readTVarIO $ clients ss -- IntMap (TVar Client)
+  b <- readTVarIO $ E.namedConnections e -- IntMap Text
+  c <- traverse readTVarIO $ IntMap.intersection a b
   return $ IntMap.elems $ fmap clientToParticipant c
-
-
--- returns how many anonymous participants in the ensemble the given ClientHandle is a part of
--- if the given ClientHandle is not part of an ensemble, returns -1
-countAnonymousParticipantsIO :: ServerState -> TVar Client -> IO Int
-countAnonymousParticipantsIO ss ctvar = do
-  c <- atomically $ readTVar ctvar
-  case memberOfEnsemble c of
-    Nothing -> return (-1)
-    Just eName -> do
-      cMap <- atomically $ readTVar $ clients ss
-      cs <- mapM (atomically . readTVar) cMap
-      return $ IntMap.size $ IntMap.filter (\x -> (handleInEnsemble x == "") && (memberOfEnsemble x == Just eName)) cs
 
 
 writeZone :: UTCTime -> TVar Client -> Int -> Definition -> Transaction ()
 writeZone now ctvar zone def = do
-  x <- liftSTM $ memberOfEnsemble <$> readTVar ctvar
-  case x of
-    Just eName -> do
-      e <- getEnsemble eName
-      liftSTM $ E.writeZone e now zone def
-    Nothing -> throwError "client not authenticated in ensemble"
+  c <- liftSTM $ readTVar ctvar
+  etvar <- justOrError (memberOfEnsemble c) "client not part of ensemble"
+  when (not $ authenticatedInEnsemble c) $ throwError "client not authenticated in ensemble"
+  liftSTM $ do
+    e <- readTVar etvar
+    E.writeZone e now zone def
 
 
 writeView :: UTCTime -> TVar Client -> Text -> View -> Transaction ()
 writeView now ctvar vName v = do
-  x <- liftSTM $ memberOfEnsemble <$> readTVar ctvar
-  case x of
-    Just eName -> do
-      e <- getEnsemble eName
-      liftSTM $ E.writeView e now vName v
-    Nothing -> throwError "client not authenticated in ensemble"
+  c <- liftSTM $ readTVar ctvar
+  etvar <- justOrError (memberOfEnsemble c) "client not part of ensemble"
+  when (not $ authenticatedInEnsemble c) $ throwError "client not authenticated in ensemble"
+  liftSTM $ do
+    e <- readTVar etvar
+    E.writeView e now vName v
 
 
 writeTempo :: UTCTime -> TVar Client -> Tempo -> Transaction ()
 writeTempo now ctvar t = do
-  x <- liftSTM $ memberOfEnsemble <$> readTVar ctvar
-  case x of
-    Just eName -> do
-      e <- getEnsemble eName
-      liftSTM $ E.writeTempo e now t
-    Nothing -> throwError "client not authenticated in ensemble"
+  c <- liftSTM $ readTVar ctvar
+  etvar <- justOrError (memberOfEnsemble c) "client not part of ensemble"
+  when (not $ authenticatedInEnsemble c) $ throwError "client not authenticated in ensemble"
+  liftSTM $ do
+    e <- readTVar etvar
+    E.writeTempo e now t
 
 
 handleTakenInEnsemble :: Text -> Text -> Transaction Bool
 handleTakenInEnsemble uName eName = do
   when (uName == "") $ throwError "handleTakenInEnsemble called with empty uName"
   when (eName == "") $ throwError "handleTakenInEnsemble called with empty eName"
-  s <- ask
-  liftSTM $ do
-    x <- readTVar $ clients s
-    x' <- mapM readTVar x -- *** TODO: this is bad
-    let x'' = IntMap.filter (\c -> memberOfEnsemble c == Just eName && handleInEnsemble c == uName) x'
-    return $ IntMap.size x'' > 0
+  e <- getEnsemble eName
+  liftSTM $ E.nameTaken e uName
 
 
 createEnsemble :: ClientHandle -> Password -> Name -> Password -> Password -> Maybe NominalDiffTime -> UTCTime -> Transaction ()
@@ -169,7 +178,7 @@ createEnsemble cHandle cpwd name hpwd ppwd expTime now = do
   when (needsCommunityPwd && cpwd == "") $ throwError "community password required but not provided"
   when (needsCommunityPwd && cpwd /= communityPassword s) $ throwError "incorrect community password"
   liftSTM $ do
-    e <- E.newEnsembleS now hpwd ppwd expTime
+    e <- E.newEnsembleS name now hpwd ppwd expTime
     etvar <- newTVar e
     let newMap = Map.insert name etvar oldMap
     writeTVar (ensembles s) newMap
@@ -188,8 +197,15 @@ deleteThisEnsemble ctvar opwd = do
   liftSTM $ do
     oldMap <- readTVar (ensembles s)
     writeTVar (ensembles s) $ Map.delete ename oldMap
+    removeAllClientsFromEnsemble s e
   return ename
 
+removeAllClientsFromEnsemble :: ServerState -> E.EnsembleS -> STM ()
+removeAllClientsFromEnsemble ss e = do
+  allClients <- readTVar (clients ss)
+  ensembleConnections <- readTVar (E.connections e)
+  let ensembleClients = IntMap.intersection allClients ensembleConnections
+  mapM_ (flip modifyTVar $ \x -> x { memberOfEnsemble = Nothing }) ensembleClients
 
 deleteEnsemble :: ClientHandle -> Text -> Text -> Transaction ()
 deleteEnsemble cHandle ename mpwd = do
@@ -199,92 +215,115 @@ deleteEnsemble cHandle ename mpwd = do
   when (mpwd /= moderatorPassword s) $
     throwError "incorrect moderator password"
   oldMap <- liftSTM $ readTVar (ensembles s)
-  when (isNothing $ Map.lookup ename oldMap) $
-    throwError "no ensemble by that name"
-  liftSTM $ writeTVar (ensembles s) $ Map.delete ename oldMap
+  case Map.lookup ename oldMap of
+    Nothing -> throwError "no ensemble by that name"
+    Just etvar -> liftSTM $ do
+      writeTVar (ensembles s) $ Map.delete ename oldMap
+      e <- readTVar etvar
+      removeAllClientsFromEnsemble s e
 
 
-joinEnsemble :: SQLite.Connection -> ClientHandle -> TVar Client -> Name -> Name -> Text -> Password -> Transaction (IO ())
-joinEnsemble db cHandle ctvar eName uName loc pwd = do
-  e <- getEnsemble eName
+joinEnsemble :: SQLite.Connection -> ClientHandle -> TVar Client -> Name -> Name -> Text -> Password -> Bool -> Transaction (IO ())
+joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
+  etvar <- getEnsembleTVar eName
+  e <- liftSTM $ readTVar etvar
   -- when client is requesting a specific user name in the ensemble, succeeds only if not already taken...
   when (uName /= "") $ do
     when (not $ nameIsLegal uName) $ throwError "handles must not contain spaces/tabs/newlines/control characters"
     handleTaken <- handleTakenInEnsemble uName eName
-    when handleTaken $ throwError $ "handle " <> uName <> " already in use in ensemble " <> eName
+    when (handleTaken && not isReauth) $ throwError $ "handle " <> uName <> " already in use in ensemble " <> eName
   -- when the ensemble requires password for authentication, they provided one, but it doesn't match...
   let epwd = E.joinPassword e
   when (epwd /= "" && pwd /= "" && epwd /= pwd) $ throwError "incorrect ensemble password"
   -- if we get this far, the client's join attempt will succeed
   let authed = (epwd == "" || epwd == pwd)
-  liftSTM $ modifyTVar ctvar $ \c -> c {
-    memberOfEnsemble = Just eName,
-    handleInEnsemble = uName,
-    locationInEnsemble = loc,
-    statusInEnsemble = "",
-    authenticatedInEnsemble = authed
-  }
+  liftSTM $ do
+    ws <- connection <$> readTVar ctvar
+    when (uName /= "") $ E.addNamedConnection cHandle uName ws e
+    when (uName == "") $ E.addAnonymousConnection cHandle ws e
+    modifyTVar ctvar $ \c -> c {
+      memberOfEnsemble = Just etvar,
+      handleInEnsemble = uName,
+      locationInEnsemble = loc,
+      statusInEnsemble = "",
+      authenticatedInEnsemble = authed
+    }
   t <- liftSTM $ E.readTempo e
   zs <- liftSTM $ E.readZones e
   vs <- liftSTM $ E.readViews e
   self <- liftSTM $ readTVar ctvar
+  e' <- liftSTM $ readTVar etvar -- deliberate reread
   ss <- ask
   return $ do
 
     -- send responses to this client indicating successful join, and ensemble tempo, defs and views
-    let respond = sendClient db cHandle self
-    respond $ JoinedEnsemble eName uName
+    let respond = sendThisClient ss db cHandle (connection self)
+    when (not isReauth) $ respond $ JoinedEnsemble eName uName loc pwd
+    when (isReauth) $ respond $ ResponseOK "rejoined ensemble"
     respond $ EnsembleResponse $ TempoRcvd t
     mapM_ respond $ fmap EnsembleResponse $ IntMap.mapWithKey ZoneRcvd zs
     mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd vs
 
     -- send new participant information about existing participants
-    ps <- getNamedParticipants ss eName
+    ps <- getNamedParticipants ss e'
     mapM_ respond $ fmap (EnsembleResponse . ParticipantUpdate) ps
-    n <- countAnonymousParticipantsIO ss ctvar
-    respond  $ EnsembleResponse $ AnonymousParticipants n
+    anonN <- readTVarIO $ E.anonymousConnections e'
+    respond  $ EnsembleResponse $ AnonymousParticipants anonN
 
     -- send information about new participant to all of the other clients in this ensemble
-    let respondEnsemble = sendEnsembleNoOrigin db ss cHandle eName
+    let respondEnsemble = sendEnsembleNoOrigin ss db cHandle e
     case uName of
       "" -> do
-        n <- countAnonymousParticipantsIO ss ctvar
-        respondEnsemble $ EnsembleResponse $ AnonymousParticipants n
+        respondEnsemble $ EnsembleResponse $ AnonymousParticipants anonN
       _ -> respondEnsemble $ EnsembleResponse $ ParticipantJoins (clientToParticipant self)
 
 
 leaveEnsemble :: SQLite.Connection -> TVar Client -> Transaction (IO ())
 leaveEnsemble db ctvar = do
   clientBefore  <- liftSTM $ readTVar ctvar
-  liftSTM $ modifyTVar ctvar $ \x -> x {
-    memberOfEnsemble = Nothing,
-    handleInEnsemble = "",
-    locationInEnsemble = "",
-    statusInEnsemble = "",
-    authenticatedInEnsemble = False
-    }
-  ss <- ask
-  return $ do
-    case memberOfEnsemble clientBefore of
-      Nothing -> return ()
-      Just eName -> do -- notify all other members of the ensemble of this client's departure
-        let uName = handleInEnsemble clientBefore
-        let anonymous = uName == ""
-        let cHandle = Estuary.Types.Client.handle clientBefore
-        case uName of
-          "" -> do
-            n <- countAnonymousParticipantsIO ss ctvar
-            postLog db cHandle $ "(anonymous) leaving ensemble " <> eName
-            sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ AnonymousParticipants n
-          otherwise -> do
-            postLog db cHandle $ uName <> " leaving ensemble " <> eName
-            sendEnsembleNoOrigin db ss cHandle eName $ EnsembleResponse $ ParticipantLeaves uName
+  let cHandle = Estuary.Types.Client.handle clientBefore
+  case memberOfEnsemble clientBefore of
+    Nothing -> return $ return ()
+    Just etvar -> do
+      e <- liftSTM $ readTVar etvar
+      liftSTM $ do
+        E.deleteConnection cHandle e
+        modifyTVar ctvar $ \x -> x {
+          memberOfEnsemble = Nothing,
+          handleInEnsemble = "",
+          locationInEnsemble = "",
+          statusInEnsemble = "",
+          authenticatedInEnsemble = False
+          }
+      ss <- ask
+      return $ notifyWhenClientDepartsEnsemble ss db cHandle clientBefore
+
+
+notifyWhenClientDepartsEnsemble :: ServerState -> SQLite.Connection -> ClientHandle -> Client -> IO ()
+notifyWhenClientDepartsEnsemble ss db originHandle c = do
+  case memberOfEnsemble c of
+    Nothing -> return ()
+    Just etvar -> do
+      let uName = handleInEnsemble c
+      let anonymous = uName == ""
+      e <- readTVarIO etvar
+      let eName = E.ensembleName e
+      case uName of
+        "" -> do
+          n <- readTVarIO $ E.anonymousConnections e
+          postLog db originHandle $ "(anonymous) leaving ensemble " <> eName
+          sendEnsembleNoOrigin ss db originHandle e $ EnsembleResponse $ AnonymousParticipants n
+        otherwise -> do
+          postLog db originHandle $ uName <> " leaving ensemble " <> eName
+          sendEnsembleNoOrigin ss db originHandle e $ EnsembleResponse $ ParticipantLeaves uName
 
 
 updateLastEdit :: TVar Client -> UTCTime -> Transaction Participant
 updateLastEdit ctvar now = liftSTM $ do
-  modifyTVar ctvar $ \c -> c { lastEditInEnsemble = now }
-  clientToParticipant <$> readTVar ctvar
+  c <- readTVar ctvar
+  let c' = c { lastEditInEnsemble = now }
+  writeTVar ctvar c'
+  return $ clientToParticipant c'
 
 
 isAuthenticatedInEnsemble :: TVar Client -> Transaction Bool
@@ -307,49 +346,35 @@ whenNotAuthenticatedInEnsemble ctvar t = do
   return ()
 
 
-send :: SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
-send db originHandle destHandle c x = do
+send :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
+send ss db originHandle destHandle c x = do
   y <- try $ WS.sendTextData c $ encode x
   case y of
     Right x -> return ()
     Left (SomeException e) -> do
       let ce = fromException (SomeException e)
       case ce of
-        Just (WS.CloseRequest _ _) -> postLog db originHandle $ "CloseRequest exception sending to (" <> showt destHandle <> ")"
-        Just WS.ConnectionClosed -> postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
-        otherwise -> postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
+        Just (WS.CloseRequest _ _) ->
+          removeAnotherClient ss db originHandle destHandle $ "CloseRequest exception during send"
+        Just WS.ConnectionClosed ->
+          removeAnotherClient ss db originHandle destHandle $ "ConnectionClosed exception during send"
+        otherwise ->
+          postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
 
-sendThisClient :: SQLite.Connection -> ClientHandle -> WS.Connection -> Response -> IO ()
-sendThisClient db originHandle c x = send db originHandle originHandle c x
+sendThisClient :: ServerState -> SQLite.Connection -> ClientHandle -> WS.Connection -> Response -> IO ()
+sendThisClient ss db originHandle c x = send ss db originHandle originHandle c x
 
-sendClient :: SQLite.Connection -> ClientHandle -> Client -> Response -> IO ()
-sendClient db originHandle c x = send db originHandle (Estuary.Types.Client.handle c) (connection c) x
+sendClients :: ServerState -> SQLite.Connection -> ClientHandle -> IntMap.IntMap WS.Connection -> Response -> IO ()
+sendClients ss db originHandle cs r = do
+  IntMap.traverseWithKey (\k v -> send ss db originHandle k v r) cs
+  return ()
 
-sendClients :: SQLite.Connection -> ClientHandle -> [Client] -> Response -> IO ()
-sendClients db originHandle cs r = mapM_ (\x -> sendClient db originHandle x r) cs
+sendEnsemble :: ServerState -> SQLite.Connection -> ClientHandle -> E.EnsembleS -> Response -> IO ()
+sendEnsemble ss db cHandle e r = do
+  cs <- E.readConnections e
+  sendClients ss db cHandle cs r
 
-sendEnsemble :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> Response -> IO ()
-sendEnsemble db ss cHandle eName r = do
-  cs <- getEnsembleClientsIO ss eName
-  sendClients db cHandle cs r
-
-sendEnsembleNoOrigin :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> Response -> IO ()
-sendEnsembleNoOrigin db ss cHandle eName r = do
-  cs <- getEnsembleClientsNoOriginIO ss cHandle eName
-  sendClients db cHandle cs r
-
-getEnsembleClientsIO :: ServerState -> Text -> IO [Client]
-getEnsembleClientsIO ss eName = do
-  cMap <- atomically $ readTVar (clients ss)
-  cMap' <- mapM (atomically . readTVar) cMap
-  return $ IntMap.elems $ ensembleFilter (Just eName) cMap'
-
-getEnsembleClientsNoOriginIO :: ServerState -> ClientHandle -> Text -> IO [Client]
-getEnsembleClientsNoOriginIO ss cHandle eName = do
-  cMap <- atomically $ readTVar (clients ss)
-  cMap' <- mapM (atomically . readTVar) $ IntMap.delete cHandle cMap
-  return $ IntMap.elems $ ensembleFilter (Just eName) cMap'
-
-ensembleFilter :: Maybe Text -> IntMap.IntMap Client -> IntMap.IntMap Client
-ensembleFilter (Just e) = IntMap.filter $ (==(Just e)) . memberOfEnsemble
-ensembleFilter Nothing = const IntMap.empty
+sendEnsembleNoOrigin :: ServerState -> SQLite.Connection -> ClientHandle -> E.EnsembleS -> Response -> IO ()
+sendEnsembleNoOrigin ss db cHandle e r = do
+  cs <- E.readConnectionsNoOrigin e cHandle
+  sendClients ss db cHandle cs r

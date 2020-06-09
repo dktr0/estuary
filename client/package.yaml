@@ -61,6 +61,7 @@ dependencies:
   - timeNot
   - cumbia
   - deepseq
+  - microspec
 
 library:
   source-dirs:
@@ -124,3 +125,11 @@ _test-base: &test-base
   dependencies:
     - estuary
     - hspec
+
+tests:
+  clientTest:
+    main: ClientTests.hs
+    source-dirs: ./tests
+    dependencies:
+      - microspec >= 0.2.1.3
+      - estuary

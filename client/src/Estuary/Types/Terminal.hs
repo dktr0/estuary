@@ -25,7 +25,11 @@ data Command =
   StreamId | -- display the id assigned to RTP streaming of Estuary audio
   Delay Double | -- delay estuary's audio output by the specified time in seconds
   DeleteThisEnsemble Password | -- delete the current ensemble from the server (with host password)
-  DeleteEnsemble Name Password -- delete the ensemble specified by first argument from the server (with moderator password)
+  DeleteEnsemble Name Password | -- delete the ensemble specified by first argument from the server (with moderator password)
+  AncientTempo | -- for testing, sets active tempo to one anchored years in the past
+  ShowTempo | -- for testing, displays current tempo in terminal
+  SetCPS Double |
+  SetBPM Double
   deriving (Show,Eq)
 
 parseCommand :: Text -> Either ParseError Command
@@ -50,7 +54,11 @@ terminalCommand = symbol "!" >> choice [
   reserved "streamid" >> return StreamId,
   (reserved "delay" >> return Delay) <*> double,
   (reserved "deletethisensemble" >> return DeleteThisEnsemble) <*> nameOrPassword,
-  (reserved "deleteensemble" >> return DeleteEnsemble) <*> nameOrPassword <*> nameOrPassword
+  (reserved "deleteensemble" >> return DeleteEnsemble) <*> nameOrPassword <*> nameOrPassword,
+  reserved "ancienttempo" >> return AncientTempo,
+  reserved "showtempo" >> return ShowTempo,
+  (reserved "setcps" >> return SetCPS) <*> double,
+  (reserved "setbpm" >> return SetBPM) <*> double
   ]
 
 identifierText :: Parser Text

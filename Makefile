@@ -200,4 +200,9 @@ selfCertificates:
 stageLocalWebDirt: prepStage prepDevStage
 	cp -Rf ~/WebDirt/* $(STAGING_ROOT)/Estuary.jsexe/WebDirt/
 	cp -Rf ~/WebDirt/* $(DEV_STAGING_ROOT)/Estuary.jsexe/WebDirt/
-	
+
+clientTest:
+	@ echo "clientTest:"
+	cd common && hpack --force
+	cd client && hpack --force
+	cabal --ghcjs new-test --project-file=cabal-ghcjs.project --builddir=test-ghcjs test:clientTest --disable-library-profiling --disable-documentation

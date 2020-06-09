@@ -8,7 +8,8 @@ import Database.SQLite.Simple.ToRow
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.ToField
 import Database.SQLite.Simple.Ok
-import Data.Map
+import Data.Map as Map
+import Data.IntMap as IntMap
 import Data.Time.Clock
 import Data.Aeson
 import Data.Text (Text)
@@ -71,19 +72,19 @@ data EnsembleD = EnsembleD {
 instance ToJSON EnsembleD
 instance FromJSON EnsembleD
 
-ensembleStoEnsembleD :: Text -> EnsembleS -> IO EnsembleD
-ensembleStoEnsembleD eName x = do
+ensembleStoEnsembleD :: EnsembleS -> IO EnsembleD
+ensembleStoEnsembleD x = do
   t <- atomically $ readTempo x
   zs <- atomically $ readZones x
   vs <- atomically $ readViews x
   lat <- atomically $ readTVar $ Estuary.Types.EnsembleS.lastActionTime x
   let e = Ensemble.Ensemble {
-    Ensemble.ensembleName = eName,
+    Ensemble.ensembleName = Estuary.Types.EnsembleS.ensembleName x,
     Ensemble.tempo = t,
     Ensemble.zones = zs,
     Ensemble.views = vs,
     Ensemble.chats = [],
-    Ensemble.participants = empty,
+    Ensemble.participants = Map.empty,
     Ensemble.anonymousParticipants = 0
   }
   return $ EnsembleD {
@@ -103,7 +104,14 @@ ensembleDtoEnsembleS x = do
   let vs = Ensemble.views (ensemble x)
   vs' <- atomically (mapM newTVar vs >>= newTVar)
   lat <- atomically $ newTVar $ Estuary.Types.Database.lastActionTime x
+  connectionsTvar <- atomically $ newTVar IntMap.empty
+  namedConnectionsTvar <- atomically $ newTVar IntMap.empty
+  anonymousConnectionsTvar <- atomically $ newTVar 0
   return $ EnsembleS {
+    Estuary.Types.EnsembleS.ensembleName = Ensemble.ensembleName $ ensemble x,
+    Estuary.Types.EnsembleS.connections = connectionsTvar,
+    Estuary.Types.EnsembleS.namedConnections = namedConnectionsTvar,
+    Estuary.Types.EnsembleS.anonymousConnections = anonymousConnectionsTvar,
     Estuary.Types.EnsembleS.ownerPassword = Estuary.Types.Database.ownerPassword x,
     Estuary.Types.EnsembleS.joinPassword = Estuary.Types.Database.joinPassword x,
     Estuary.Types.EnsembleS.creationTime = Estuary.Types.Database.creationTime x,
@@ -114,17 +122,18 @@ ensembleDtoEnsembleS x = do
     views = vs'
   }
 
-writeEnsemble :: Connection -> Text -> EnsembleS -> IO ()
-writeEnsemble c eName e = do
-  e' <- ensembleStoEnsembleD eName e
+writeEnsemble :: Connection -> EnsembleS -> IO ()
+writeEnsemble c e = do
+  e' <- ensembleStoEnsembleD e
+  let eName = Estuary.Types.EnsembleS.ensembleName e
   execute c "REPLACE INTO ensembles (name,json) VALUES (?,?)" (eName,e')
 
 writeAllEnsembles :: Connection -> ServerState -> IO Int
 writeAllEnsembles c ss = do
   x <- atomically $ readTVar $ ensembles ss
-  xs <- mapM (atomically . readTVar) x
-  sequence $ mapWithKey (writeEnsemble c) xs
-  return $ size xs
+  xs <- mapM readTVarIO x
+  mapM_ (writeEnsemble c) xs
+  return $ Map.size xs
 
 deleteEnsemble :: Connection -> Text -> IO ()
 deleteEnsemble c eName = execute c "DELETE FROM ensembles WHERE name=?" (Only eName)
@@ -132,7 +141,7 @@ deleteEnsemble c eName = execute c "DELETE FROM ensembles WHERE name=?" (Only eN
 readEnsembles :: Connection -> IO (Map Text EnsembleS)
 readEnsembles c = do
   r <- query_ c "SELECT name,json FROM ensembles" -- [(n,j)]
-  mapM ensembleDtoEnsembleS $ fromList r
+  mapM ensembleDtoEnsembleS $ Map.fromList r
 
 instance ToField EnsembleD where
   toField = SQLText . Lazy.toStrict . Lazy.decodeUtf8 . encode

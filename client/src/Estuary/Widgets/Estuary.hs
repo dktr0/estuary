@@ -81,7 +81,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  (deltasDown',wsCtxChange) <- estuaryWebSocket rInfo requestsUp
+  (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
   let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
 
   let ensembleCDyn = fmap ensembleC ctx
@@ -96,7 +96,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   (command,_) <- hideableWidget' terminalVisible $ do
     runEditor ctx rInfo $ terminalWidget deltasDown hints
   (terminalButton,_) <- runEditor ctx rInfo $ footer hints
-  let commandEnsembleRequests = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
+  let commandEnsembleRequestsIO = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
+  commandEnsembleRequests <- performEvent $ fmap liftIO commandEnsembleRequestsIO
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
   let commandRequests = fmapMaybe commandToRequest command
 
@@ -115,7 +116,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints] -- Event t [Hint]
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (webDirt irc) hints
