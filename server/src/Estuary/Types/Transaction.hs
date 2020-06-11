@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 
 module Estuary.Types.Transaction where
 
@@ -15,7 +15,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Aeson
 import Data.Maybe
-import Control.Concurrent.STM
+import Control.Concurrent.STM hiding (atomically,readTVarIO)
 import TextShow
 import Data.Time
 
@@ -32,6 +32,7 @@ import Estuary.Types.View
 import Estuary.Types.Tempo
 import Estuary.Types.Participant
 import Estuary.Types.Name
+import Estuary.AtomicallyTimed
 
 type Transaction = ReaderT ServerState (ExceptT Text STM)
 
@@ -40,7 +41,7 @@ liftSTM = lift . lift
 
 runTransaction :: ServerState -> Transaction a -> IO (Either Text a)
 runTransaction ss t = do
-  x <- try $ atomically $ runExceptT (runReaderT t ss)
+  x <- try $ $atomically $ runExceptT (runReaderT t ss)
   case x of
     Left e -> return $ Left $ "* runTransaction caught exception: " <> T.pack (show (e :: SomeException))
     Right a -> return a
@@ -122,9 +123,9 @@ getEnsembleTVar eName = do
 
 getNamedParticipants :: ServerState -> E.EnsembleS -> IO [Participant]
 getNamedParticipants ss e = do
-  a <- readTVarIO $ clients ss -- IntMap (TVar Client)
-  b <- readTVarIO $ E.namedConnections e -- IntMap Text
-  c <- traverse readTVarIO $ IntMap.intersection a b
+  a <- $readTVarIO $ clients ss -- IntMap (TVar Client)
+  b <- $readTVarIO $ E.namedConnections e -- IntMap Text
+  c <- traverse $readTVarIO $ IntMap.intersection a b
   return $ IntMap.elems $ fmap clientToParticipant c
 
 
@@ -267,7 +268,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
     -- send new participant information about existing participants
     ps <- getNamedParticipants ss e'
     mapM_ respond $ fmap (EnsembleResponse . ParticipantUpdate) ps
-    anonN <- readTVarIO $ E.anonymousConnections e'
+    anonN <- $readTVarIO $ E.anonymousConnections e'
     respond  $ EnsembleResponse $ AnonymousParticipants anonN
 
     -- send information about new participant to all of the other clients in this ensemble
@@ -306,11 +307,11 @@ notifyWhenClientDepartsEnsemble ss db originHandle c = do
     Just etvar -> do
       let uName = handleInEnsemble c
       let anonymous = uName == ""
-      e <- readTVarIO etvar
+      e <- $readTVarIO etvar
       let eName = E.ensembleName e
       case uName of
         "" -> do
-          n <- readTVarIO $ E.anonymousConnections e
+          n <- $readTVarIO $ E.anonymousConnections e
           postLog db originHandle $ "(anonymous) leaving ensemble " <> eName
           sendEnsembleNoOrigin ss db originHandle e $ EnsembleResponse $ AnonymousParticipants n
         otherwise -> do
@@ -351,7 +352,7 @@ send ss db originHandle destHandle c x = do
   send' ss db originHandle destHandle c x
   t1 <- getCurrentTime
   let diff = diffUTCTime t1 t0
-  when (diff > 0.050) $ putStrLn $ "*** websocket send took " ++ show diff ++ " seconds ***"
+  when (diff > 0.001) $ putStrLn $ "*** websocket send took " ++ show diff ++ " seconds ***"
 
 send' :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
 send' ss db originHandle destHandle c x = do

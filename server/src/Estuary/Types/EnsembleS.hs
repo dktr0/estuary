@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, TemplateHaskell #-}
 
 -- The type EnsembleS represents an Ensemble from the standpoint of the server.
 
@@ -6,7 +6,7 @@ module Estuary.Types.EnsembleS where
 
 import Data.Text (Text)
 import Data.Time
-import Control.Concurrent.STM
+import Control.Concurrent.STM hiding (atomically,readTVarIO)
 import Data.Map as Map
 import Data.IntMap as IntMap
 import qualified Network.WebSockets as WS
@@ -16,6 +16,7 @@ import Data.Maybe
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
 import Estuary.Types.View
+import Estuary.AtomicallyTimed
 
 data EnsembleS = EnsembleS {
   ensembleName :: Text,
@@ -131,10 +132,10 @@ nameTaken e x = do
   return $ elem x xs
 
 readConnections :: EnsembleS -> IO (IntMap WS.Connection)
-readConnections e = readTVarIO (connections e)
+readConnections e = $readTVarIO (connections e)
 
 -- Int argument is ClientHandle
 readConnectionsNoOrigin :: EnsembleS -> Int -> IO (IntMap WS.Connection)
 readConnectionsNoOrigin e h = do
-  x <- readTVarIO $ connections e
+  x <- $readTVarIO $ connections e
   return $ IntMap.delete h x
