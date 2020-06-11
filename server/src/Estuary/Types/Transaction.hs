@@ -352,7 +352,7 @@ send ss db originHandle destHandle c x = do
   send' ss db originHandle destHandle c x
   t1 <- getCurrentTime
   let diff = diffUTCTime t1 t0
-  when (diff > 0.001) $ putStrLn $ "*** websocket send took " ++ show diff ++ " seconds ***"
+  when (diff > 0.002) $ putStrLn $ "*** websocket send took " ++ show diff ++ " seconds ***"
 
 send' :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
 send' ss db originHandle destHandle c x = do

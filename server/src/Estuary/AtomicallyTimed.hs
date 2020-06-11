@@ -13,7 +13,7 @@ atomicallyTimed m x = do
   x' <- Control.Concurrent.STM.atomically x
   t1 <- getCurrentTime
   let diff = diffUTCTime t1 t0
-  when (diff > 0.000020) $ putStrLn $ "*** atomically (" ++ m ++ ") took " ++ show diff ++ " seconds ***"
+  when (diff > 0.000200) $ putStrLn $ "*** atomically (" ++ m ++ ") took " ++ show diff ++ " seconds ***"
   return x'
 
 readTVarIOTimed :: String -> TVar a -> IO a
