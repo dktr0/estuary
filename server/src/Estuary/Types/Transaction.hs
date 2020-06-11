@@ -85,6 +85,16 @@ deleteClient cHandle = do
       return theClient
     Nothing -> throwError $ "client " <> showt cHandle <> "not found"
 
+removeAnotherClient :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> Text -> IO ()
+removeAnotherClient ss db originHandle targetHandle msg = do
+  postLog db originHandle $ "removing (" <> showt targetHandle <> ") because: " <> msg
+  x <- runTransaction ss $ deleteClient targetHandle
+  case x of
+    Left err -> postLog db originHandle $ "*error during removal* " <> err
+    Right c -> do
+      notifyWhenClientDepartsEnsemble ss db originHandle c
+      postLog db originHandle $ "removal of (" <> showt targetHandle <> ") complete."
+
 
 getEnsembleName :: TVar Client -> Transaction Text
 getEnsembleName ctvar = do
@@ -221,7 +231,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
   when (uName /= "") $ do
     when (not $ nameIsLegal uName) $ throwError "handles must not contain spaces/tabs/newlines/control characters"
     handleTaken <- handleTakenInEnsemble uName eName
-    when handleTaken $ throwError $ "handle " <> uName <> " already in use in ensemble " <> eName
+    when (handleTaken && not isReauth) $ throwError $ "handle " <> uName <> " already in use in ensemble " <> eName
   -- when the ensemble requires password for authentication, they provided one, but it doesn't match...
   let epwd = E.joinPassword e
   when (epwd /= "" && pwd /= "" && epwd /= pwd) $ throwError "incorrect ensemble password"
@@ -247,7 +257,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
   return $ do
 
     -- send responses to this client indicating successful join, and ensemble tempo, defs and views
-    let respond = sendThisClient db cHandle (connection self)
+    let respond = sendThisClient ss db cHandle (connection self)
     when (not isReauth) $ respond $ JoinedEnsemble eName uName loc pwd
     when (isReauth) $ respond $ ResponseOK "rejoined ensemble"
     respond $ EnsembleResponse $ TempoRcvd t
@@ -261,7 +271,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
     respond  $ EnsembleResponse $ AnonymousParticipants anonN
 
     -- send information about new participant to all of the other clients in this ensemble
-    let respondEnsemble = sendEnsembleNoOrigin db cHandle e
+    let respondEnsemble = sendEnsembleNoOrigin ss db cHandle e
     case uName of
       "" -> do
         respondEnsemble $ EnsembleResponse $ AnonymousParticipants anonN
@@ -285,18 +295,27 @@ leaveEnsemble db ctvar = do
           statusInEnsemble = "",
           authenticatedInEnsemble = False
           }
-      return $ do
-        let uName = handleInEnsemble clientBefore
-        let anonymous = uName == ""
-        let eName = E.ensembleName e
-        case uName of
-          "" -> do
-            n <- readTVarIO $ E.anonymousConnections e
-            postLog db cHandle $ "(anonymous) leaving ensemble " <> eName
-            sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ AnonymousParticipants (n-1)
-          otherwise -> do
-            postLog db cHandle $ uName <> " leaving ensemble " <> eName
-            sendEnsembleNoOrigin db cHandle e $ EnsembleResponse $ ParticipantLeaves uName
+      ss <- ask
+      return $ notifyWhenClientDepartsEnsemble ss db cHandle clientBefore
+
+
+notifyWhenClientDepartsEnsemble :: ServerState -> SQLite.Connection -> ClientHandle -> Client -> IO ()
+notifyWhenClientDepartsEnsemble ss db originHandle c = do
+  case memberOfEnsemble c of
+    Nothing -> return ()
+    Just etvar -> do
+      let uName = handleInEnsemble c
+      let anonymous = uName == ""
+      e <- readTVarIO etvar
+      let eName = E.ensembleName e
+      case uName of
+        "" -> do
+          n <- readTVarIO $ E.anonymousConnections e
+          postLog db originHandle $ "(anonymous) leaving ensemble " <> eName
+          sendEnsembleNoOrigin ss db originHandle e $ EnsembleResponse $ AnonymousParticipants n
+        otherwise -> do
+          postLog db originHandle $ uName <> " leaving ensemble " <> eName
+          sendEnsembleNoOrigin ss db originHandle e $ EnsembleResponse $ ParticipantLeaves uName
 
 
 updateLastEdit :: TVar Client -> UTCTime -> Transaction Participant
@@ -326,33 +345,45 @@ whenNotAuthenticatedInEnsemble ctvar t = do
   when (not x) $ void t
   return ()
 
+send :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
+send ss db originHandle destHandle c x = do
+  t0 <- getCurrentTime
+  send' ss db originHandle destHandle c x
+  t1 <- getCurrentTime
+  let diff = diffUTCTime t1 t0
+  when (diff > 0.050) $ putStrLn $ "*** websocket send took " ++ show diff ++ " seconds ***"
 
-send :: SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
-send db originHandle destHandle c x = do
+send' :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
+send' ss db originHandle destHandle c x = do
   y <- try $ WS.sendTextData c $ encode x
   case y of
     Right x -> return ()
     Left (SomeException e) -> do
       let ce = fromException (SomeException e)
       case ce of
-        Just (WS.CloseRequest _ _) -> postLog db originHandle $ "CloseRequest exception sending to (" <> showt destHandle <> ")"
-        Just WS.ConnectionClosed -> postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
-        otherwise -> postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
+        Just (WS.CloseRequest _ _) ->
+          -- removeAnotherClient ss db originHandle destHandle $ "CloseRequest exception during send"
+          postLog db originHandle $ "CloseRequest exception sending to (" <> showt destHandle <> ")"
+        Just WS.ConnectionClosed ->
+          -- removeAnotherClient ss db originHandle destHandle $ "ConnectionClosed exception during send"
+          postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
+        otherwise ->
+          postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
 
-sendThisClient :: SQLite.Connection -> ClientHandle -> WS.Connection -> Response -> IO ()
-sendThisClient db originHandle c x = send db originHandle originHandle c x
+sendThisClient :: ServerState -> SQLite.Connection -> ClientHandle -> WS.Connection -> Response -> IO ()
+sendThisClient ss db originHandle c x = send ss db originHandle originHandle c x
 
-sendClients :: SQLite.Connection -> ClientHandle -> IntMap.IntMap WS.Connection -> Response -> IO ()
-sendClients db originHandle cs r = do
-  IntMap.traverseWithKey (\k v -> send db originHandle k v r) cs
+sendClients :: ServerState -> SQLite.Connection -> ClientHandle -> IntMap.IntMap WS.Connection -> Response -> IO ()
+sendClients ss db originHandle cs r = do
+  IntMap.traverseWithKey (\k v -> send ss db originHandle k v r) cs
   return ()
 
-sendEnsemble :: SQLite.Connection -> ClientHandle -> E.EnsembleS -> Response -> IO ()
-sendEnsemble db cHandle e r = do
+sendEnsemble :: ServerState -> SQLite.Connection -> ClientHandle -> E.EnsembleS -> Response -> IO ()
+sendEnsemble ss db cHandle e r = do
   cs <- E.readConnections e
-  sendClients db cHandle cs r
+  sendClients ss db cHandle cs r
 
-sendEnsembleNoOrigin :: SQLite.Connection -> ClientHandle -> E.EnsembleS -> Response -> IO ()
-sendEnsembleNoOrigin db cHandle e r = do
+sendEnsembleNoOrigin :: ServerState -> SQLite.Connection -> ClientHandle -> E.EnsembleS -> Response -> IO ()
+sendEnsembleNoOrigin ss db cHandle e r = do
   cs <- E.readConnectionsNoOrigin e cHandle
-  sendClients db cHandle cs r
+  sendClients ss db cHandle cs r

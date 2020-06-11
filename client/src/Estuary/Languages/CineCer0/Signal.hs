@@ -52,9 +52,9 @@ defaultAnchor t eval = quantAnchor 1 0 t eval
 -- calculates the anchorTime
 quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
 quantAnchor cycleMult offset t eval =
-  let ec = timeToCount t eval -- elapsed cycles
+  let ec = (timeToCount t eval) - (count t) -- elapsed cycles from reference point in time to evaltime
       currentCycle = fromIntegral (floor ec):: Rational
-      align = if ec - currentCycle > 0.25 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
+      align = if ec - currentCycle > 0.5 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
       toQuant = currentCycle + align -- as integer to go through the quantomatic
       quanted = quantomatic cycleMult toQuant
       anchor = cycsToSecs t quanted -- into seconds (as NDT)
@@ -62,14 +62,15 @@ quantAnchor cycleMult offset t eval =
       off = realToFrac $ (offset*(1/(freq t))) / 1
     in addUTCTime (anchor + off) $ time t -- as UTCTime
 
+    -- from the outcome I need to substract the count added to the 
+
 cycsToSecs:: Tempo -> Rational -> NominalDiffTime
 cycsToSecs t x = realToFrac (x * (1/ freq t))
 
 -- this function gets the next bar that aligns with the quant multiplier value
 quantomatic:: Rational -> Rational -> Rational
-quantomatic cycleMult nextBeat =
-  let quanted = if remIsZero nextBeat cycleMult then nextBeat else quantomatic cycleMult (nextBeat + 1)
-  in quanted
+quantomatic cycleMult nextBeat = quanted
+  where quanted = if remIsZero nextBeat cycleMult then nextBeat else quantomatic cycleMult (nextBeat + 1)
 
   -- substitutes mod operation for one that would detect the remainder of a division when it is 0
 remIsZero:: Rational -> Rational -> Bool
