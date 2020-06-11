@@ -18,25 +18,25 @@ import qualified Sound.Punctual.Resolution as Punctual
 configWidget :: MonadWidget t m => Editor t m (Event t ContextChange)
 configWidget = do
 
-  let configCheckboxAttrs = def & attributes .~ constDyn ("class" =: "checkbox primary-color")
-
   canvasEnabledEv <- divClass "primary-color ui-font" $ do
     text "Canvas:"
-    canvasInput <- checkbox True configCheckboxAttrs -- How do I add id="toggle"?
-    labelWithClass "toggle" "switch"
+    canvasInput <- elClass "label" "switch" $ do
+      x <- checkbox True def
+      elClass "span" "slider round" (return x)
     return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
--- <input type="checkbox" class="checkbox primary-color" id="toggle">
--- <label for="toggle" class="switch"></label>
--- https://medium.com/front-end-weekly/creating-a-toggle-switch-in-css-2d23e496d035
 
   superDirtEnabledEv <- divClass "primary-color ui-font" $ do
     text "SuperDirt:"
-    sdInput <- checkbox False configCheckboxAttrs
+    sdInput <- elClass "label" "switch" $ do
+      x <- checkbox False def
+      elClass "span" "slider round" (return x)
     return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
 
   webDirtEnabledEv <- divClass "primary-color ui-font" $ do
     text "WebDirt:"
-    wdInput <- checkbox True configCheckboxAttrs
+    wdInput <-elClass "label" "switch" $ do
+      x <- checkbox True def
+      elClass "span" "slider round" (return x)
     return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
 
   dynamicsModeEv <- divClass "primary-color ui-font" $ do

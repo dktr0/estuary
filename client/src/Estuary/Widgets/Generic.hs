@@ -383,10 +383,3 @@ tooltip child popup = do
     a <- child
     divClass "tooltipPosAbsolute" $ elClass "span" "tooltiptext code-font" popup
     return a
-
-labelWithClass:: MonadWidget t m => Dynamic t Text -> Text -> m ()
-labelWithClass for c = do
-  let attrs = fromList $ zip ["class","for"] ["switch","toggle"] -- How do I make these dynamic?
-  (element, _) <- elAttr' "label" attrs $ text "none"
-  let x = _el_element element
-  return ()
