@@ -92,7 +92,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
     runEditor ctx rInfo $ navigation deltasDown
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
-  terminalVisible <- toggle False terminalEvent
+  terminalVisible <- toggle True terminalEvent
   (command,_) <- hideableWidget' terminalVisible $ do
     runEditor ctx rInfo $ terminalWidget deltasDown hints
   (terminalButton,_) <- runEditor ctx rInfo $ footer hints
