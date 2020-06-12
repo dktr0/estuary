@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 module EstuaryServer where
 
 import Data.List ((\\))
@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 import Control.Monad
 import Control.Concurrent
-import Control.Concurrent.STM
+import Control.Concurrent.STM hiding (atomically,readTVarIO)
 import Control.Exception
 import Control.Monad.State
 import Control.Monad.Except
@@ -53,6 +53,7 @@ import Estuary.Types.Database
 import Estuary.Types.Tempo
 import Estuary.Types.Transaction
 import Estuary.Types.Chat
+import Estuary.AtomicallyTimed
 
 runServerWithDatabase :: Password -> Password -> Int -> Bool -> SQLite.Connection -> IO ()
 runServerWithDatabase mpwd cpwd port httpRedirect db = do
@@ -77,8 +78,8 @@ runServerWithDatabase mpwd cpwd port httpRedirect db = do
 
 maintenanceThread :: SQLite.Connection -> ServerState -> IO ()
 maintenanceThread db ss = do
-  nClients <- atomically $ fmap IntMap.size $ readTVar $ clients ss
-  es <- atomically $ readTVar $ ensembles ss
+  nClients <- $atomically $ fmap IntMap.size $ readTVar $ clients ss
+  es <- $atomically $ readTVar $ ensembles ss
   sequence $ Map.mapWithKey (deleteEnsembleIfExpired db ss) es
   nEnsembles <- writeAllEnsembles db ss
   postLogNoHandle db $ "maintenance: " <> showt nClients <> " clients, " <> showt nEnsembles <> " ensembles"
@@ -87,11 +88,11 @@ maintenanceThread db ss = do
 
 deleteEnsembleIfExpired :: SQLite.Connection -> ServerState -> Text -> TVar E.EnsembleS -> IO ()
 deleteEnsembleIfExpired db ss eName etv = do
-  e <- atomically $ readTVar etv
+  e <- $atomically $ readTVar etv
   case E.expiry e of
     Nothing -> return ()
     Just x -> do
-      t0 <- atomically $ readTVar $ E.lastActionTime e
+      t0 <- $atomically $ readTVar $ E.lastActionTime e
       t1 <- getCurrentTime
       let elapsed = diffUTCTime t1 t0
       when (elapsed >= x) $ do
@@ -183,10 +184,10 @@ processMessage db ss ws cHandle ctvar msg = case eitherDecode msg of
 
 processRequest :: SQLite.Connection -> ServerState -> WS.Connection -> ClientHandle -> TVar Client -> Request -> IO ()
 
-processRequest db ss ws cHandle ctvar (BrowserInfo t) = atomically $ modifyTVar ctvar $ \c -> c { browserInfo = t }
+processRequest db ss ws cHandle ctvar (BrowserInfo t) = $atomically $ modifyTVar ctvar $ \c -> c { browserInfo = t }
 
 processRequest db ss ws cHandle ctvar (ClientInfo load animationFPS animationLoad latency pingTime) = do
-  (n,c) <- atomically $ do
+  (n,c) <- $atomically $ do
     modifyTVar ctvar $ \c -> c {
       clientMainLoad = load,
       clientAnimationFPS = animationFPS,
@@ -199,12 +200,12 @@ processRequest db ss ws cHandle ctvar (ClientInfo load animationFPS animationLoa
   send ss db cHandle cHandle ws $ ServerInfo n pingTime
   case memberOfEnsemble c of
     Just etvar -> do
-      e <- readTVarIO etvar
+      e <- $readTVarIO etvar
       when (handleInEnsemble c /= "") $ sendEnsemble ss db cHandle e $ EnsembleResponse $ ParticipantUpdate $ clientToParticipant c
     Nothing -> return ()
 
 processRequest db ss ws cHandle ctvar GetEnsembleList = do
-  eNames <- atomically $ Map.keys <$> readTVar (ensembles ss)
+  eNames <- $atomically $ Map.keys <$> readTVar (ensembles ss)
   send ss db cHandle cHandle ws $ EnsembleList eNames
 
 processRequest db ss ws cHandle ctvar (CreateEnsemble cpwd name opwd jpwd expTime) = do

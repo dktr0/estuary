@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 
 module Estuary.Types.ServerState where
 
@@ -8,13 +8,14 @@ module Estuary.Types.ServerState where
 import qualified Network.WebSockets as WS
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
-import Control.Concurrent.STM
+import Control.Concurrent.STM hiding (atomically,readTVarIO)
 import Data.Text
 import Data.Time
 
 import Estuary.Types.Client
 import Estuary.Types.Response
 import qualified Estuary.Types.EnsembleS as E
+import Estuary.AtomicallyTimed
 
 data ServerState = ServerState {
   moderatorPassword :: Text, -- to make announcements, delete/change ensembles, block IP addresses, etc
@@ -26,7 +27,7 @@ data ServerState = ServerState {
 }
 
 newServerState :: Text -> Text -> Map.Map Text E.EnsembleS -> IO ServerState
-newServerState mpwd cpwd es = atomically $ do
+newServerState mpwd cpwd es = $atomically $ do
   c <- newTVar IntMap.empty
   es' <- mapM newTVar es
   es'' <- newTVar es'
@@ -44,7 +45,7 @@ newServerState mpwd cpwd es = atomically $ do
 addClient :: ServerState -> WS.Connection -> IO (ClientHandle,TVar Client)
 addClient ss x = do
   t <- getCurrentTime
-  atomically $ do
+  $atomically $ do
     oldMap <- readTVar (clients ss)
     i <- readTVar (nextClientHandle ss)
     c <- newTVar $ newClient t i x
@@ -55,6 +56,6 @@ addClient ss x = do
     return (i,c)
 
 deleteEnsemble :: ServerState -> Text -> IO ()
-deleteEnsemble ss eName = atomically $ do
+deleteEnsemble ss eName = $atomically $ do
     oldMap <- readTVar (ensembles ss)
     writeTVar (ensembles ss) $ Map.delete eName oldMap
