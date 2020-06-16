@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, TemplateHaskell #-}
 
 -- The type EnsembleS represents an Ensemble from the standpoint of the server.
 
@@ -6,15 +6,20 @@ module Estuary.Types.EnsembleS where
 
 import Data.Text (Text)
 import Data.Time
-import Control.Concurrent.STM
+import Control.Concurrent.STM hiding (atomically,readTVarIO)
 import Data.Map as Map
 import Data.IntMap as IntMap
+import qualified Network.WebSockets as WS
+import Control.Monad
+import Data.Maybe
 
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
 import Estuary.Types.View
+import Estuary.AtomicallyTimed
 
 data EnsembleS = EnsembleS {
+  ensembleName :: Text,
   creationTime :: UTCTime,
   ownerPassword :: Text, -- used to "self-delete" this ensemble
   joinPassword :: Text, -- used to join an ensemble with editing privileges
@@ -22,11 +27,14 @@ data EnsembleS = EnsembleS {
   lastActionTime :: TVar UTCTime,
   tempo :: TVar Tempo,
   zones :: TVar (IntMap.IntMap (TVar Definition)),
-  views :: TVar (Map.Map Text (TVar View))
+  views :: TVar (Map.Map Text (TVar View)),
+  connections :: TVar (IntMap.IntMap WS.Connection),
+  namedConnections :: TVar (IntMap.IntMap Text),
+  anonymousConnections :: TVar Int
   }
 
-newEnsembleS :: UTCTime -> Text -> Text -> Maybe NominalDiffTime -> STM EnsembleS
-newEnsembleS now opwd jpwd expTime = do
+newEnsembleS :: Text -> UTCTime -> Text -> Text -> Maybe NominalDiffTime -> STM EnsembleS
+newEnsembleS eName now opwd jpwd expTime = do
   tempoTvar <- newTVar $ Tempo {
     freq = 0.5,
     time = now,
@@ -34,8 +42,12 @@ newEnsembleS now opwd jpwd expTime = do
     }
   zonesTvar <- newTVar IntMap.empty
   viewsTvar <- newTVar Map.empty
+  connectionsTvar <- newTVar IntMap.empty
+  namedConnectionsTvar <- newTVar IntMap.empty
+  anonymousConnectionsTvar <- newTVar 0
   lat <- newTVar now
   return $ EnsembleS {
+    ensembleName = eName,
     creationTime = now,
     ownerPassword = opwd,
     joinPassword = jpwd,
@@ -43,7 +55,10 @@ newEnsembleS now opwd jpwd expTime = do
     lastActionTime = lat,
     tempo = tempoTvar,
     zones = zonesTvar,
-    views = viewsTvar
+    views = viewsTvar,
+    connections = connectionsTvar,
+    namedConnections = namedConnectionsTvar,
+    anonymousConnections = anonymousConnectionsTvar
   }
 
 writeTempo :: EnsembleS -> UTCTime -> Tempo -> STM ()
@@ -79,3 +94,48 @@ writeView e now n v = do
 
 readViews :: EnsembleS -> STM (Map.Map Text View)
 readViews e = readTVar (views e) >>= mapM readTVar
+
+-- Int argument is ClientHandle
+addNamedConnection :: Int -> Text -> WS.Connection -> EnsembleS -> STM ()
+addNamedConnection h n ws e = do
+  oldConnectionsMap <- readTVar $ connections e
+  writeTVar (connections e) $ IntMap.insert h ws oldConnectionsMap
+  oldNamesMap <- readTVar $ namedConnections e
+  writeTVar (namedConnections e) $ IntMap.insert h n oldNamesMap
+
+-- Int argument is ClientHandle
+addAnonymousConnection :: Int -> WS.Connection -> EnsembleS -> STM ()
+addAnonymousConnection h ws e = do
+  oldConnectionsMap <- readTVar $ connections e
+  writeTVar (connections e) $ IntMap.insert h ws oldConnectionsMap
+  oldCount <- readTVar $ anonymousConnections e
+  writeTVar (anonymousConnections e) $ oldCount + 1
+
+-- Int argument is ClientHandle
+deleteConnection :: Int -> EnsembleS -> STM ()
+deleteConnection h e = do
+  oldConnectionsMap <- readTVar $ connections e
+  writeTVar (connections e) $ IntMap.delete h oldConnectionsMap
+  oldNamesMap <- readTVar $ namedConnections e
+  writeTVar (namedConnections e) $ IntMap.delete h oldNamesMap
+  -- if connection was not named, then decrement anonymous count
+  when (isNothing $ IntMap.lookup h oldNamesMap) $ do
+    oldCount <- readTVar $ anonymousConnections e
+    writeTVar (anonymousConnections e) $ oldCount - 1
+
+countAnonymousConnections :: EnsembleS -> STM Int
+countAnonymousConnections e = readTVar (anonymousConnections e)
+
+nameTaken :: EnsembleS -> Text -> STM Bool
+nameTaken e x = do
+  xs <- IntMap.elems <$> readTVar (namedConnections e)
+  return $ elem x xs
+
+readConnections :: EnsembleS -> IO (IntMap WS.Connection)
+readConnections e = $readTVarIO (connections e)
+
+-- Int argument is ClientHandle
+readConnectionsNoOrigin :: EnsembleS -> Int -> IO (IntMap WS.Connection)
+readConnectionsNoOrigin e h = do
+  x <- $readTVarIO $ connections e
+  return $ IntMap.delete h x

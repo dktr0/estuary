@@ -83,7 +83,7 @@ in
           ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
-        estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
+        estuary = dontCheck (overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
           preConfigure = ''
             ${ghc8_6.hpack}/bin/hpack --force;
           '';
@@ -95,7 +95,7 @@ in
               --jscomp_off=checkVars;
             gzip -fk "$out/bin/all.min.js"
          '';
-        });
+        }));
 
         estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
@@ -156,22 +156,22 @@ in
         (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
             owner = "afrancob";
             repo = "timeNot";
-            sha256 = "0bij6wzb85kb9wbqqjdpb6x3s9w48kb62zxi2qw93p8jj15wyh84";
-            rev =  "4da8daa5e1e16f6be3deba4637ad9aab0e46ee5e";
+            sha256 = "1jq2gwszdcw6blgcfj60knpj0pj6yc330dwrvjzq8ys8rp17skvq";
+            rev =  "c6c88bd9003afc0c69a651f4156a34e6593044bf";
           }) {});
 
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "06sq5i6jcakgsv3w39999nb66m1z498fcl2w7lh8hmz7fgsvlgzh";
-          rev = "95be6c3bb7eb35d81839bc77992f7afbec5bdad5";
+          sha256 = "0gmvbm1lhq6px2si581k39wx6fx91rbb8gnca0fkp28yhfz45nhz";
+          rev = "02e79ea8208029865c2bf99d1ae91e6eb4492a0d";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "0rx7z6q2x1xqccwwc7036gzyy28kb8k45fj2v0zmjgsnv496qfd9";
-          rev = "820f78d97e2257d5445f498f81f9e9a8b3d06e43";
+          sha256 = "186gcyma9sldki7l0jgy80lzqyhlz6b248iqj4m645nzk4ncv2l3";
+          rev = "ac0de845001430af98be168cf7478f55cd439274";
         }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
@@ -207,8 +207,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "05dn0lyyaagljibxf0pnlin9ni1c5v7kh9c4bs76ch9z5wsk9nf1";
-           rev = "a1d78aedde218f8429517d8cfc599f9d7bbbc2d3";
+           sha256 = "1lrw14v4n5cdk7b8la9z4bc9sh8n0496hb4s7fcbm6g7p5m8qc0j";
+           rev = "bd5daf365086a4b3a75af9ad9c0b6dedf687f48a";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
@@ -219,12 +219,12 @@ in
            rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
         }) {});
 
-        cumbia = # dontHaddock (self.callCabal2nix "cumbia" ../../cumbia {});
+        cumbia = #dontHaddock (self.callCabal2nix "cumbia" ../../cumbia {});
          dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "cumbia";
-           sha256 = "1v62m8xxbq0jszw7q3mm6jd21397bhhifmycvh40xnq7nvvfq72s";
-           rev = "6b9d13fda2151c3fce396216e47bcefd59e3d900";
+           sha256 = "1m5i0mr2mbkbwrqs4kfr8ddy23apaq6l0kf8dggxbxy6g16whlja";
+           rev = "3ce00b56012acb7682afe99aa0e0241c67dc187b";
         }) {});
 
       };
