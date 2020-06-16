@@ -162,7 +162,7 @@ noun = choice [
   ((reserved "brillo" <|> reserved "brillos") >> return Tidal.delaytime) <*> option 0 parentsdoublePattern,
   ((reserved "tiempo" <|> reserved "tiempos") >> return Tidal.speed) <*> option 0 parentsdoublePattern,
   (reserved "cacahuates" >> return Tidal.shape) <*> option 0 parentsdoublePattern,
-  ((reserved "puerta" <|> reserved "puertas") >> return Tidal.begin) <*> option 0.0 parentsdoublePattern,
+  ((reserved "ventana" <|> reserved "ventanas") >> return Tidal.begin) <*> option 0.0 parentsdoublePattern,
   ((reserved "pasillo" <|> reserved "pasillos") >> return Tidal.end) <*> option 1.0 parentsdoublePattern,
   ((reserved "puerta" <|> reserved "puertas") >> return Tidal.room) <*> option 0 parentsdoublePattern,
   ((reserved "cuarto" <|> reserved "cuartos") >> return Tidal.size) <*> option 0 parentsdoublePattern
@@ -191,7 +191,7 @@ animales = do
 -- ////////////////
 
 estar :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-estar = (reserved "estar" <|> reserved "estoy" <|> reserved "Estoy" <|> reserved "está" <|> reserved "Está" <|> reserved "están" <|> reserved "Están" <|> reserved "estado") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational)
+estar = (reserved "estar" <|> reserved "estoy" <|> reserved "Estoy" <|> reserved "está" <|> reserved "Está" <|> reserved "están" <|> reserved "Están") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational)
 
 adjective' :: Parser Tidal.ControlPattern
 adjective' = ((reserved "blanco" <|> reserved "blancos" <|> reserved "blanca" <|> reserved "blancas" <|> reserved "opaco" <|> reserved "opacos" <|> reserved "opaca" <|> reserved "opacas" <|> reserved "gris" <|> reserved "grises" <|> reserved "brillante" <|> reserved "brillantes") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
@@ -219,7 +219,7 @@ haber'' = choice [
 
 
 fakeAdjective :: Parser (Pattern Double)
-fakeAdjective = (reserved "negro" <|> reserved "negros" <|> reserved "obscuro" <|> reserved "obscuros") >> option (Tidal.irand 0) (intOrNegativeInt >>= return . Tidal.irand)
+fakeAdjective = (reserved "negro" <|> reserved "negros" <|> reserved "negra" <|> reserved "negras" <|> reserved "obscuro" <|> reserved "obscuros" <|> reserved "obscura" <|> reserved "obscuras") >> option (Tidal.irand 0) (intOrNegativeInt >>= return . Tidal.irand)
 
 
 -- ////////////////

@@ -147,7 +147,7 @@ noun = choice [
   ((reserved "palabra" <|> reserved "palabras") >> return Tidal.begin) <*> option 0.0 parentsdoublePattern,
   ((reserved "idioma" <|> reserved "idiomas") >> return Tidal.end) <*> option 1.0 parentsdoublePattern,
   ((reserved "idea" <|> reserved "ideas") >> return Tidal.room) <*> option 0 parentsdoublePattern,
-  ((reserved "imagen" <|> reserved "imagenes") >> return Tidal.size) <*> option 0 parentsdoublePattern
+  ((reserved "imagen" <|> reserved "imágenes") >> return Tidal.size) <*> option 0 parentsdoublePattern
   ]
 
 nouns :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
