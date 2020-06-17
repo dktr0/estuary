@@ -3,19 +3,16 @@
 module Estuary.Types.Context where
 
 import Control.Concurrent.MVar
-
-import Data.IntMap.Strict as Map
-
+import Data.Map as Map
 import Data.Text
 import Data.Time
-
 import GHCJS.Types
-
 import GHCJS.DOM.Blob
 import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import Estuary.Types.TranslatableText
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
@@ -45,6 +42,8 @@ out :: ImmutableRenderContext -> Node
 out (ImmutableRenderContext (_,_,_,x,_) _ _ _) = x
 
 data Context = Context {
+  aboutThisServer :: TranslatableText,
+  announcements :: Map UTCTime [TranslatableText],
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   canvasOn :: Bool,
@@ -67,6 +66,8 @@ data Context = Context {
 
 initialContext :: UTCTime -> Context
 initialContext nowUtc = Context {
+  aboutThisServer = Map.empty,
+  announcements = Map.empty,
   dynamicsMode = DefaultDynamics,
   language = English,
   theme = "../css-custom/classic.css",
