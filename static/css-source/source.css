@@ -1383,4 +1383,10 @@ input:checked + .slider:before {
 .config-option {
   padding-left: 10px;
   padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+hr.dashed {
+  border-top: 2px dashed var(--primary-color);
+  border-bottom: transparent;
 }
