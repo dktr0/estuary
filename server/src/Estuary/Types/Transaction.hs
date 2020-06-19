@@ -363,13 +363,14 @@ send' ss db originHandle destHandle c x = do
       let ce = fromException (SomeException e)
       case ce of
         Just (WS.CloseRequest _ _) ->
-          -- removeAnotherClient ss db originHandle destHandle $ "CloseRequest exception during send"
-          postLog db originHandle $ "CloseRequest exception sending to (" <> showt destHandle <> ")"
+          removeAnotherClient ss db originHandle destHandle $ "CloseRequest exception during send"
+          -- postLog db originHandle $ "CloseRequest exception sending to (" <> showt destHandle <> ")"
         Just WS.ConnectionClosed ->
-          -- removeAnotherClient ss db originHandle destHandle $ "ConnectionClosed exception during send"
-          postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
+          removeAnotherClient ss db originHandle destHandle $ "ConnectionClosed exception during send"
+          -- postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
         otherwise ->
-          postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
+          removeAnotherClient ss db originHandle destHandle $ "unusual exception during send: " <> (T.pack $ show e)     
+          -- postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
 
 sendThisClient :: ServerState -> SQLite.Connection -> ClientHandle -> WS.Connection -> Response -> IO ()
 sendThisClient ss db originHandle c x = send ss db originHandle originHandle c x
