@@ -6,5 +6,4 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 
 referenceWidget :: MonadWidget t m => m ()
-referenceWidget = do
-  text "Reference stuff"
+referenceWidget = return ()
