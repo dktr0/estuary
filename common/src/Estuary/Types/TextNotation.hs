@@ -12,7 +12,7 @@ data TextNotation =
   Punctual |
   CineCer0 |
   TimeNot |
-  Cumbia
+  Seis8s
   -- Ver |
   -- Oir
   deriving (Read,Eq,Ord,Show,Generic)

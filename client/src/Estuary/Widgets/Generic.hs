@@ -85,6 +85,19 @@ justChangeValues :: EditSignal a -> Maybe a
 justChangeValues (ChangeValue x) = Just x
 justChangeValues _ = Nothing
 
+clickableDivDynAttrsWChild :: MonadWidget t m => Dynamic t (Map Text Text) -> m a -> m (Event t ()) -- return (Event t (), a)
+clickableDivDynAttrsWChild attrs child = do
+  (element,_) <- elDynAttr' "div" attrs $ child
+  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  return $ (() <$) clickEv
+
+clickableDivDynAttrsWChild' :: MonadWidget t m => Text -> m a -> m (Event t (), a) -- return (Event t (), a)
+clickableDivDynAttrsWChild' c child = do
+  (element, a) <- elAttr' "div" (singleton "class" c) $ child -- look elAttr' ::
+  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  let event = (() <$) clickEv
+  return $ (event, a)
+
 clickableDiv :: MonadWidget t m => Text -> m a -> m (Event t ())
 clickableDiv cssclass child = do
   (element,_) <- elAttr' "div" attr $ child
@@ -341,8 +354,8 @@ hideableWidget' b m = do
   let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
   elDynAttr "div" attrs m
 
-hideableWidget'' :: MonadWidget t m => Dynamic t Bool -> Text -> m a -> m a
-hideableWidget'' b c m = do
+hideableWidgetWithChildAndClass :: MonadWidget t m => Dynamic t Bool -> Text -> m a -> m a
+hideableWidgetWithChildAndClass b c m = do
   let attrs = fmap (bool (fromList [("hidden","true"),("class",c)]) (fromList [("style", "display: flex; flex-direction: column;"),("class",c)])) b
   elDynAttr "div" attrs m
 
