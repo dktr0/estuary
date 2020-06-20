@@ -8,7 +8,6 @@ import Text.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Sound.Tidal.Context (Pattern,ControlPattern)
 import qualified Sound.Tidal.Context as Tidal
---import Estuary.Tidal.ParamPatternable (parseBP')
 import Control.Monad (forever)
 
 parseBP' :: (Tidal.Enumerable a, Tidal.Parseable a) => String -> Tidal.Pattern a
@@ -34,8 +33,10 @@ observarPattern = oracion
 
 oracion :: Parser Tidal.ControlPattern
 oracion = do
+  nu <- option id numbers
   option () miscelanea
   option () miscelanea
+  p <- option id pronouns
   h <- option id haber
   e <- option id estar
   v <- option [" "] (many verbs)
@@ -64,44 +65,49 @@ oracion = do
   option () miscelanea
   g <- option id animales
   option () miscelanea
-  return $ h $ a $ e $ g $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
--- $ ns $ a $ fn $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
+  return $ nu $ p $ h $ a $ e $ g $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
 
-verbs = choice [try verb'''', try verb''', try verb'', try verb', try verb ]
+-- ////////////////
 
-verb'''' = do
+verbs = choice [expandVerbs, try verbOrVerb'']
+
+expandVerbs = do
   v'' <- (brackets $ many verbOrVerb'')
   o' <- option "/" operator
   n' <- option 1 int
   return $ "[" ++ (unwords v'') ++ "]" ++ o' ++ (show n')
 
-verbOrVerb'' = choice [try verb''', try verbOrVerb']
+verbOrVerb'' = choice [try changingVerb, try verbOrVerb']
 
-verb''' = do
+changingVerb = do
   v'' <- (angles $ many verbOrVerb')
   return $ "<" ++ (unwords v'') ++ ">"
 
-verbOrVerb' = choice [try verb'', try verb', try verb]
+verbOrVerb' = choice [try multiplyVerb, try maybeVerb, try verbOrVerb]
 
-verb'' = do
+multiplyVerb = do
   v' <- verbOrVerb
   (symbol "*")
   n <- int
   return $ v' ++ "*" ++ (show n)
 
-verbOrVerb = choice [try verb', try verb]
+maybeVerb = do
+  v <- verbOrVerb
+  (symbol "?")
+  return $ v ++ "?"
 
-verb' = do
+verbOrVerb = choice [try verbNumber, try verb]
+
+verbNumber = do
   v <- verb
   (symbol ":")
   s <- option 0 int
   return $ v ++ ":" ++ (show s)
 
+-- ////////////////
 
 miscelanea :: Parser ()
 miscelanea = choice [
-        reserved "Yo" >> return (),
-        reserved "Ella" >> return (),
         reserved "en" >> return (),
         reserved "sobre" >> return (),
         reserved "el" >> return (),
@@ -130,6 +136,31 @@ miscelanea = choice [
       ]
 
 
+-- ////////////////
+
+numbers :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+numbers = choice [
+  (reserved "uno_" <|> reserved "dos_" <|> reserved "tres_") >> return Tidal.jux <*> numbers',
+  (reserved "cuatro_" <|> reserved "cinco_" <|> reserved "seis_") >> return Tidal.juxBy <*> parentsdoublePattern <*> numbers'
+  ]
+
+numbers' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+numbers' = return Tidal.rev
+
+pronouns :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+pronouns = ((reserved "Yo" <|> reserved "yo" <|> reserved "Ella" <|> reserved "ella" <|> reserved "Tu" <|> reserved "tu") >> return Tidal.striate) <*> option 0 intPattern'
+
+haber :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+haber = (reserved "he" <|> reserved "He" <|> reserved "ha" <|> reserved "Ha" <|> reserved "han" <|> reserved "Han") >> return Tidal.every <*> option 0 intPattern' <*> estar
+
+estar :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+estar = choice [
+  (reserved "estar" <|> reserved "estoy" <|> reserved "está" <|> reserved "están" <|> reserved "estado") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational),
+  (reserved "Estar" <|> reserved "Estoy" <|> reserved "Está" <|> reserved "Están" <|> reserved "Estado") >> option (Tidal.fast 1) (double' >>= return . Tidal.fast . pure . toRational)
+  ]
+
+-- ////////////////
+
 verb :: Parser String
 verb = choice [
   (reserved "olvidar" <|> reserved "olvido" <|> reserved "olvida" <|> reserved "olvidan" <|> reserved "olvidado" <|> reserved "olvidando") >> return "olvidar",
@@ -152,6 +183,18 @@ espacio = (reserved "no" <|> reserved "si" <|> reserved "que" <|> reserved "sin"
 silencio :: Parser String
 silencio = reserved "silencio" >> return "~"
 
+-- ////////////////
+
+adjective' :: Parser Tidal.ControlPattern
+adjective' = ((reserved "blanco" <|> reserved "blancos" <|> reserved "blanca" <|> reserved "blancas" <|> reserved "opaco" <|> reserved "opacos" <|> reserved "opaca" <|> reserved "opacas" <|> reserved "gris" <|> reserved "grises" <|> reserved "brillante" <|> reserved "brillantes") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
+
+adjective :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+adjective = do
+  x <- adjective'
+  return (Tidal.# x)
+
+-- ////////////////
+
 noun :: Parser Tidal.ControlPattern
 noun = choice [
   (reserved "recuerdos" >> return Tidal.up) <*> option 0 parentsdoublePattern,
@@ -162,7 +205,7 @@ noun = choice [
   ((reserved "brillo" <|> reserved "brillos") >> return Tidal.delaytime) <*> option 0 parentsdoublePattern,
   ((reserved "tiempo" <|> reserved "tiempos") >> return Tidal.speed) <*> option 0 parentsdoublePattern,
   (reserved "cacahuates" >> return Tidal.shape) <*> option 0 parentsdoublePattern,
-  ((reserved "puerta" <|> reserved "puertas") >> return Tidal.begin) <*> option 0.0 parentsdoublePattern,
+  ((reserved "ventana" <|> reserved "ventanas") >> return Tidal.begin) <*> option 0.0 parentsdoublePattern,
   ((reserved "pasillo" <|> reserved "pasillos") >> return Tidal.end) <*> option 1.0 parentsdoublePattern,
   ((reserved "puerta" <|> reserved "puertas") >> return Tidal.room) <*> option 0 parentsdoublePattern,
   ((reserved "cuarto" <|> reserved "cuartos") >> return Tidal.size) <*> option 0 parentsdoublePattern
@@ -182,7 +225,6 @@ animal = choice [
   reserved "perro" >> return (Tidal.vowel (parseBP' "u"))
   ]
 
-
 animales :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 animales = do
   x <- animal
@@ -190,51 +232,23 @@ animales = do
 
 -- ////////////////
 
-estar :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-estar = (reserved "estar" <|> reserved "estoy" <|> reserved "Estoy" <|> reserved "está" <|> reserved "Está" <|> reserved "están" <|> reserved "Están" <|> reserved "estado") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational)
-
-adjective' :: Parser Tidal.ControlPattern
-adjective' = ((reserved "blanco" <|> reserved "blancos" <|> reserved "blanca" <|> reserved "blancas" <|> reserved "opaco" <|> reserved "opacos" <|> reserved "opaca" <|> reserved "opacas" <|> reserved "gris" <|> reserved "grises" <|> reserved "brillante" <|> reserved "brillantes") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
-
-adjective :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-adjective = do
-  x <- adjective'
-  return (Tidal.# x)
-
-haber = choice [try haber'', try haber']
-
-haber' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-haber' = choice [
-  (reserved "he" <|> reserved "He") >> return (Tidal.every 2) <*> (double' >>= return . Tidal.slow . pure . toRational),
-  (reserved "ha" <|> reserved "Ha") >> return (Tidal.every 3) <*> (double' >>= return . Tidal.slow . pure . toRational),
-  (reserved "han" <|> reserved "Han") >> return (Tidal.every 4) <*> (double' >>= return . Tidal.slow . pure . toRational)
-  ]
-
-haber'' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-haber'' = choice [
-  (reserved "he" <|> reserved "He") >> return (Tidal.every 2) <*> estar,
-  (reserved "ha" <|> reserved "Ha") >> return (Tidal.every 3) <*> estar,
-  (reserved "han" <|> reserved "Han") >> return (Tidal.every 4) <*> estar
-  ]
-
-
 fakeAdjective :: Parser (Pattern Double)
-fakeAdjective = (reserved "negro" <|> reserved "negros" <|> reserved "obscuro" <|> reserved "obscuros") >> option (Tidal.irand 0) (intOrNegativeInt >>= return . Tidal.irand)
+fakeAdjective = (reserved "negro" <|> reserved "negros" <|> reserved "negra" <|> reserved "negras" <|> reserved "obscuro" <|> reserved "obscuros" <|> reserved "obscura" <|> reserved "obscuras") >> option (Tidal.irand 0) (intOrNegativeInt >>= return . Tidal.irand)
 
 
 -- ////////////////
+-- Right not you can only do ([]) or (<>), not a pattern of ([][]) or (<><>)
 parentsdoublePattern = choice [
-   try fakeAdjective,
    try (parens $ stringNegativeDoublePattern''),
    try (parens $ stringPattern)
    ]
 
 stringNegativeDoublePattern'' = choice [
-   try stringNegativeDoublePattern',
-   try stringNegativeDoublePattern
+   try patternWithBrackets,
+   try patternWithAngles
    ]
 
-stringNegativeDoublePattern' = do
+patternWithBrackets = do
   (symbol "[")
   p <-  (many muchosdoubles)
   (symbol "]")
@@ -242,36 +256,35 @@ stringNegativeDoublePattern' = do
   n <- option 1 int
   return $ parseBP' $ "[" ++ (unwords p) ++ "]" ++ o ++ (show n)
 
-stringNegativeDoublePattern = do
+-- muchosPatternWithAngles = do
+--   p <- (many patternWithAngles)
+--   return $ show p
+
+patternWithAngles = do
   (symbol "<")
   p <-  (many muchosdoubles)
   (symbol ">")
   return $ parseBP' $ "<" ++ (unwords p) ++ ">"
 
 muchosdoubles = do
-  d <- doublePattern
+  d <- double
   return $ show d
 
 stringPattern = do
   p <-  (many muchosdoubles)
   return $ parseBP' $ (unwords p)
 
-doublePattern = choice [
-  negativeDouble,
-  double
-  ]
--- ////////////////
-
-double = float
-
 double' = do
   a <- parens $ float
   return a
 
-negativeDouble = do
-  a <- symbol "-"
-  b <- float
-  return $ (-1) * b
+double :: Parser Double
+double = choice [
+  try $ parens double,
+  symbol "-" >> double >>= return . (* (-1)),
+  try float,
+  try $ fromIntegral <$> integer
+  ]
 
 -- /////
 
@@ -283,11 +296,20 @@ operators = choice [
          reserved "/" >> return "/"
          ]
 
-intPattern :: Parser (Pattern Int)
-intPattern = pure <$> int
+-- /////
 
-int :: Parser Int
-int = fromIntegral <$> integer
+intPattern' = do
+  a <- parens $ intPattern
+  return a
+
+intPattern :: Parser (Pattern Int)
+intPattern = do
+  p <- (many muchosint)
+  return $ parseBP' $ (unwords p)
+
+muchosint = do
+  d <- int
+  return $ show d
 
 intOrNegativeInt = choice [ try negativeInt', try int']
 
@@ -301,6 +323,10 @@ negativeInt = do
   a <- symbol "-"
   b <- int
   return $ (-1) * b
+
+int :: Parser Int
+int = fromIntegral <$> integer
+
 
 --Funciones de la librería TokenParser
 
@@ -337,26 +363,3 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
-
---
--- observarIO :: Tidal.Stream -> String -> Either ParseError (IO ())
--- observarIO tidal = parse (observarIOParser tidal) "observar"
---
--- observarIOParser :: Tidal.Stream -> Parser (IO ())
--- observarIOParser tidal = whiteSpace >> choice [
---   eof >> return (return ()),
---   dParser tidal <*> observarPattern
---   ]
---
--- dParser :: Tidal.Stream -> Parser (ControlPattern -> IO ())
--- dParser tidal = choice [
---   return (Tidal.streamReplace tidal "1")
---   ]
---
--- main :: IO ()
--- main = do
---   tidal <- Tidal.startTidal Tidal.superdirtTarget Tidal.defaultConfig
---   forever $ do
---     cmd <- observarIO tidal <$> getLine
---     either (\x -> putStrLn $ "error: " ++ show x) id cmd
---   return ()
