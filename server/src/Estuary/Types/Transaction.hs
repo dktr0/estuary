@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Aeson
 import Data.Maybe
+import Control.Concurrent
 import Control.Concurrent.STM hiding (atomically,readTVarIO)
 import TextShow
 import Data.Time
@@ -348,11 +349,15 @@ whenNotAuthenticatedInEnsemble ctvar t = do
 
 send :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
 send ss db originHandle destHandle c x = do
+  warningThread <- forkIO $ do
+    threadDelay 500000
+    postLog db originHandle $ "*** websocket send to (" <> showt destHandle <> ") is taking a long time..."
   t0 <- getCurrentTime
   send' ss db originHandle destHandle c x
   t1 <- getCurrentTime
+  killThread warningThread
   let diff = diffUTCTime t1 t0
-  when (diff > 0.002) $ putStrLn $ "*** websocket send took " ++ show diff ++ " seconds ***"
+  when (diff > 0.002) $ postLog db originHandle $ "*** websocket send to (" <> showt destHandle <> ") took " <> showt (realToFrac diff :: Double) <> " seconds ***"
 
 send' :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
 send' ss db originHandle destHandle c x = do
@@ -369,7 +374,7 @@ send' ss db originHandle destHandle c x = do
           removeAnotherClient ss db originHandle destHandle $ "ConnectionClosed exception during send"
           -- postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
         otherwise ->
-          removeAnotherClient ss db originHandle destHandle $ "unusual exception during send: " <> (T.pack $ show e)     
+          removeAnotherClient ss db originHandle destHandle $ "unusual exception during send: " <> (T.pack $ show e)
           -- postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
 
 sendThisClient :: ServerState -> SQLite.Connection -> ClientHandle -> WS.Connection -> Response -> IO ()
