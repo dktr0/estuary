@@ -81,7 +81,7 @@ page wsDown Splash = do
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (navEv, (leaveEnsemble, never))
 
-page wsDown TutorialList = do
+page wsDown TutorialList = el "div" $ do
   divClass "ui-font primary-color" $ text "Select a tutorial:"
   navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ divClass "tutorialButton" $ button "TidalCycles"
   navPunctualTutorial <- liftM (TutorialNav "Punctual" <$) $ divClass "tutorialButton" $ button "Punctual"
@@ -110,7 +110,7 @@ page wsDown About = do
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never, (leaveEnsemble, never))
 
-page wsDown Lobby = do
+page wsDown Lobby = el "div" $ do
   -- process received ensemble lists into widgets that display info about, and let us join, ensembles
   ensembleList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
   ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton
@@ -126,7 +126,7 @@ page rs CreateEnsemblePage = do
   (navigateAway,responses) <- createEnsembleWidget rs
   return (Lobby <$ navigateAway,(responses,never))
 
-page wsDown (JoinEnsemblePage ensembleName) = do
+page wsDown (JoinEnsemblePage ensembleName) = el "div" $ do
   el "div" $ do
     term Term.JoiningEnsemble >>= dynText
     text " "
