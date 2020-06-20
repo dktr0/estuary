@@ -170,6 +170,7 @@ body::-webkit-scrollbar-thumb {
 	padding-right: 15px;
 	overflow:hidden;
 	overflow-y: auto;
+  display: inline-flex;
 }
 
 .page::-webkit-scrollbar  {
@@ -1300,4 +1301,92 @@ height: 6.5em;
   display: inline-block;
   text-align: end;
   cursor: pointer;
+}
+
+.sidebar {
+  height: 100%;
+  width: 33%;
+  overflow-x: hidden;
+  transition: 0.5s;
+  border-left: 1px solid;
+}
+
+.sidebar-tab {
+  width: 48%;
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid;
+  padding: 0.125em;
+}
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 15px;
+  width: 15px;
+  bottom: 1px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(25px);
+  -ms-transform: translateX(25px);
+  transform: translateX(25px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.config-option {
+  padding-left: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+hr.dashed {
+  border-top: 2px dashed var(--primary-color);
+  border-bottom: transparent;
 }

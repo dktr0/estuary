@@ -1,3 +1,4 @@
+*.lock
 *.pem
 *.csr
 sampleMap.json

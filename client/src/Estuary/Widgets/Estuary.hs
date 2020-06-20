@@ -54,6 +54,7 @@ import Estuary.Widgets.Terminal
 import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
+import Estuary.Widgets.Sidebar
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -87,9 +88,14 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleCDyn = fmap ensembleC ctx
 
   -- four GUI components: header, main (navigation), terminal, footer
-  (headerChange,_) <- runEditor ctx rInfo header
-  ((requests, ensembleRequestFromPage), hintsFromPage) <- divClass "page ui-font" $ do
-    runEditor ctx rInfo $ navigation deltasDown
+  (headerChange,headerHints) <- runEditor ctx rInfo header
+  ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
+    let sidebarToggle = ffilter (elem ToggleSidebar) hints
+    sidebarVisible <- toggle False sidebarToggle
+    (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDown
+    (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget
+    let mergedHints = mergeWith (++) [pageHints, sidebarHints]
+    return (navRequests,ctxChange,mergedHints)
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle True terminalEvent
@@ -112,11 +118,11 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   -- samplesLoadedEv <- loadSampleMap
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange]
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange, sidebarChange]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints] -- Event t [Hint]
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (webDirt irc) hints

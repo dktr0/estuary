@@ -1,7 +1,7 @@
 module Estuary.Types.TranslatableText where
 
 import Data.Text (Text)
-import Data.Map.Strict
+import Data.Map
 import Estuary.Types.Language
 
 type TranslatableText = Map Language Text
