@@ -8,7 +8,6 @@ import Text.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Sound.Tidal.Context (Pattern,ControlPattern)
 import qualified Sound.Tidal.Context as Tidal
---import Estuary.Tidal.ParamPatternable (parseBP')
 import Control.Monad (forever)
 
 parseBP' :: (Tidal.Enumerable a, Tidal.Parseable a) => String -> Tidal.Pattern a
@@ -66,38 +65,46 @@ oracion = do
   n''''' <- option id nouns
   option () miscelanea
   return $ ns $ a $ fn $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
---s "p ++ v ++ o ++ n ++ p"
 
-verbs = choice [try verb'''', try verb''', try verb'', try verb', try verb ]
 
-verb'''' = do
+-- ////////////////
+
+verbs = choice [expandVerbs, try verbOrVerb'']
+
+expandVerbs = do
   v'' <- (brackets $ many verbOrVerb'')
   o' <- option "/" operator
   n' <- option 1 int
   return $ "[" ++ (unwords v'') ++ "]" ++ o' ++ (show n')
 
-verbOrVerb'' = choice [try verb''', try verbOrVerb']
+verbOrVerb'' = choice [try changingVerb, try verbOrVerb']
 
-verb''' = do
+changingVerb = do
   v'' <- (angles $ many verbOrVerb')
   return $ "<" ++ (unwords v'') ++ ">"
 
-verbOrVerb' = choice [try verb'', try verb', try verb]
+verbOrVerb' = choice [try multiplyVerb, try maybeVerb, try verbOrVerb]
 
-verb'' = do
+multiplyVerb = do
   v' <- verbOrVerb
   (symbol "*")
   n <- int
   return $ v' ++ "*" ++ (show n)
 
-verbOrVerb = choice [try verb', try verb]
+maybeVerb = do
+  v <- verbOrVerb
+  (symbol "?")
+  return $ v ++ "?"
 
-verb' = do
+verbOrVerb = choice [try verbNumber, try verb]
+
+verbNumber = do
   v <- verb
   (symbol ":")
   s <- option 0 int
   return $ v ++ ":" ++ (show s)
 
+-- ////////////////
 
 miscelanea :: Parser ()
 miscelanea = choice [
@@ -197,17 +204,18 @@ adverbs'' = choice [
 
 
 -- ////////////////
+-- Right not you can only do ([]) or (<>), not a pattern of ([][]) or (<><>)
 parentsdoublePattern = choice [
    try (parens $ stringNegativeDoublePattern''),
    try (parens $ stringPattern)
    ]
 
 stringNegativeDoublePattern'' = choice [
-   try stringNegativeDoublePattern',
-   try stringNegativeDoublePattern
+   try patternWithBrackets,
+   try patternWithAngles
    ]
 
-stringNegativeDoublePattern' = do
+patternWithBrackets = do
   (symbol "[")
   p <-  (many muchosdoubles)
   (symbol "]")
@@ -215,37 +223,35 @@ stringNegativeDoublePattern' = do
   n <- option 1 int
   return $ parseBP' $ "[" ++ (unwords p) ++ "]" ++ o ++ (show n)
 
-stringNegativeDoublePattern = do
+-- muchosPatternWithAngles = do
+--   p <- (many patternWithAngles)
+--   return $ show p
+
+patternWithAngles = do
   (symbol "<")
   p <-  (many muchosdoubles)
   (symbol ">")
   return $ parseBP' $ "<" ++ (unwords p) ++ ">"
 
 muchosdoubles = do
-  d <- doublePattern
+  d <- double
   return $ show d
 
 stringPattern = do
   p <-  (many muchosdoubles)
   return $ parseBP' $ (unwords p)
 
-doublePattern = choice [
-  negativeDouble,
-  double
-  ]
-
--- ////////////////
-
-double = float
-
 double' = do
   a <- parens $ float
   return a
 
-negativeDouble = do
-  a <- symbol "-"
-  b <- float
-  return $ (-1) * b
+double :: Parser Double
+double = choice [
+  try $ parens double,
+  symbol "-" >> double >>= return . (* (-1)),
+  try float,
+  try $ fromIntegral <$> integer
+  ]
 
 -- /////
 
@@ -256,6 +262,8 @@ operators = choice [
          reserved "*" >> return "*",
          reserved "/" >> return "/"
          ]
+
+
 
 intPattern :: Parser (Pattern Int)
 intPattern = pure <$> int

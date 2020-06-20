@@ -8,7 +8,6 @@ import Text.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Sound.Tidal.Context (Pattern,ControlPattern)
 import qualified Sound.Tidal.Context as Tidal
---import Estuary.Tidal.ParamPatternable (parseBP')
 import Control.Monad (forever)
 
 parseBP' :: (Tidal.Enumerable a, Tidal.Parseable a) => String -> Tidal.Pattern a
@@ -63,36 +62,45 @@ oracion = do
   option () miscelanea
   return $ ns $ a $ fn $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
 
-verbs = choice [try verb'''', try verb''', try verb'', try verb', try verb ]
 
-verb'''' = do
+-- ////////////////
+
+verbs = choice [expandVerbs, try verbOrVerb'']
+
+expandVerbs = do
   v'' <- (brackets $ many verbOrVerb'')
   o' <- option "/" operator
   n' <- option 1 int
   return $ "[" ++ (unwords v'') ++ "]" ++ o' ++ (show n')
 
-verbOrVerb'' = choice [try verb''', try verbOrVerb']
+verbOrVerb'' = choice [try changingVerb, try verbOrVerb']
 
-verb''' = do
+changingVerb = do
   v'' <- (angles $ many verbOrVerb')
   return $ "<" ++ (unwords v'') ++ ">"
 
-verbOrVerb' = choice [try verb'', try verb', try verb]
+verbOrVerb' = choice [try multiplyVerb, try maybeVerb, try verbOrVerb]
 
-verb'' = do
+multiplyVerb = do
   v' <- verbOrVerb
   (symbol "*")
   n <- int
   return $ v' ++ "*" ++ (show n)
 
-verbOrVerb = choice [try verb', try verb]
+maybeVerb = do
+  v <- verbOrVerb
+  (symbol "?")
+  return $ v ++ "?"
 
-verb' = do
+verbOrVerb = choice [try verbNumber, try verb]
+
+verbNumber = do
   v <- verb
   (symbol ":")
   s <- option 0 int
   return $ v ++ ":" ++ (show s)
 
+-- ////////////////
 
 miscelanea :: Parser ()
 miscelanea = choice [
