@@ -33,10 +33,12 @@ escribirPattern = oracion
 
 oracion :: Parser Tidal.ControlPattern
 oracion = do
+  nu <- option id numbers
   option () miscelanea
   option () miscelanea
+  ar <- option id articles
   ns <- option id nounSubject
-  fn <- option id fakenoun
+  fn <- option id fakeVerb
   v <- option [" "] (many verbs)
   option () miscelanea
   option () miscelanea
@@ -60,7 +62,10 @@ oracion = do
   option () miscelanea
   n''''' <- option id nouns
   option () miscelanea
-  return $ ns $ a $ fn $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
+  option () miscelanea
+  g <- option id variosNouns
+  option () miscelanea
+  return $ nu $ ar $ ns $ a $ fn $ g $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
 
 
 -- ////////////////
@@ -105,10 +110,6 @@ verbNumber = do
 miscelanea :: Parser ()
 miscelanea = choice [
         reserved "Yo" >> return (),
-        reserved "La" >> return (),
-        reserved "Las" >> return (),
-        reserved "la" >> return (),
-        reserved "las" >> return (),
         reserved "mi" >> return (),
         reserved "mis" >> return (),
         reserved "su" >> return (),
@@ -118,11 +119,33 @@ miscelanea = choice [
         reserved "Un" >> return (),
         reserved "un" >> return (),
         reserved "dedo" >> return (),
-        reserved "Agosto" >> return (),
         reserved "con" >> return (),
         reserved "ajeno" >> return (),
         reserved "ajenos" >> return ()
       ]
+
+-- //////
+
+numbers :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+numbers = choice [
+  (reserved "uno_" <|> reserved "dos_" <|> reserved "tres_") >> return Tidal.jux <*> numbers',
+  (reserved "cuatro_" <|> reserved "cinco_" <|> reserved "seis_") >> return Tidal.juxBy <*> parentsdoublePattern <*> numbers'
+  ]
+
+numbers' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+numbers' = return Tidal.rev
+
+articles :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+articles = ((reserved "La" <|> reserved "Las" <|> reserved "la" <|> reserved "las" <|> reserved "El" <|> reserved "el" <|> reserved "Los" <|> reserved "los") >> return Tidal.striate) <*> option 0 intPattern'
+
+nounSubject :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+nounSubject = (reserved "Palabra" <|> reserved "Palabras" <|> reserved "Dedo" <|> reserved "Dedos" <|> reserved "Idioma" <|> reserved "Idiomas") >> return Tidal.every <*> option 0 intPattern' <*> fakeVerb
+
+fakeVerb :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+fakeVerb = choice [
+  (reserved "amo" <|> reserved "Amo" <|> reserved "ama" <|> reserved "aman" <|> reserved "amaba" <|> reserved "amaban") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational),
+  (reserved "odio" <|> reserved "Odio" <|> reserved "odia" <|> reserved "odian" <|> reserved "odiaba" <|> reserved "odiaban") >> option (Tidal.fast 1) (double' >>= return . Tidal.slow . pure . toRational)
+  ]
 
 -- //////
 
@@ -144,6 +167,18 @@ espacio = (reserved "me" <|> reserved "que" <|> reserved "no" <|> reserved "se")
 silencio :: Parser String
 silencio = reserved "silencio" >> return "~"
 
+-- //////
+
+adjective' :: Parser Tidal.ControlPattern
+adjective' = ((reserved "vívidas" <|> reserved "vívidos" <|> reserved "vívida" <|> reserved "vívido" <|> reserved "presurosas" <|> reserved "presurosos" <|> reserved "presurosa" <|> reserved "presuroso" <|> reserved "ansiosas" <|> reserved "ansiosos" <|> reserved "ansiosa" <|> reserved "ansioso") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
+
+adjective :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+adjective = do
+  x <- adjective'
+  return (Tidal.# x)
+
+-- //////
+
 noun :: Parser Tidal.ControlPattern
 noun = choice [
   ((reserved "sonido" <|> reserved "sonidos") >> return Tidal.up) <*> option 0 parentsdoublePattern,
@@ -163,36 +198,19 @@ nouns = do
   x <- noun
   return (Tidal.# x)
 
-fakenoun :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-fakenoun = (reserved "odio" <|> reserved "Odio" <|> reserved "odian" <|> reserved "amo" <|> reserved "Amo" <|> reserved "ama" <|> reserved "aman" <|> reserved "amaba" <|> reserved "amaban") >> option (Tidal.slow 1) (double' >>= return . Tidal.slow . pure . toRational)
+variosNoun :: Parser Tidal.ControlPattern
+variosNoun = choice [
+  reserved "México" >> return (Tidal.vowel (parseBP' "a")),
+  reserved "Colombia" >> return (Tidal.vowel (parseBP' "e")),
+  reserved "English" >> return (Tidal.vowel (parseBP' "i")),
+  reserved "Español" >> return (Tidal.vowel (parseBP' "o")),
+  reserved "Agosto" >> return (Tidal.vowel (parseBP' "u"))
+  ]
 
-adjective' :: Parser Tidal.ControlPattern
-adjective' = ((reserved "vívidas" <|> reserved "vívidos" <|> reserved "vívida" <|> reserved "vívido" <|> reserved "presurosas" <|> reserved "presurosos" <|> reserved "presurosa" <|> reserved "presuroso" <|> reserved "ansiosas" <|> reserved "ansiosos" <|> reserved "ansiosa" <|> reserved "ansioso") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
-
-adjective :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-adjective = do
-  x <- adjective'
+variosNouns :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
+variosNouns = do
+  x <- variosNoun
   return (Tidal.# x)
-
-nounSubject = choice [try nounSubject'', try nounSubject']
-
-nounSubject' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-nounSubject' = choice [
-  (reserved "Palabra" <|> reserved "Palabras") >> return (Tidal.every 2) <*> (double' >>= return . Tidal.slow . pure . toRational),
-  (reserved "Dedo" <|> reserved "Dedos") >> return (Tidal.every 3) <*> (double' >>= return . Tidal.slow . pure . toRational),
-  (reserved "Idioma" <|> reserved "Idiomas") >> return (Tidal.every 4) <*> (double' >>= return . Tidal.slow . pure . toRational),
-  reserved "Ideas" >> return (Tidal.every 5) <*> (double' >>= return . Tidal.slow . pure . toRational),
-  reserved "Eggplant" >> return (Tidal.every 6) <*> (double' >>= return . Tidal.slow . pure . toRational)
-  ]
-
-nounSubject'' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-nounSubject'' = choice [
-  (reserved "Palabra" <|> reserved "Palabras") >> return (Tidal.every 2) <*> fakenoun,
-  (reserved "Dedo" <|> reserved "Dedos") >> return (Tidal.every 3) <*> fakenoun,
-  (reserved "Idioma" <|> reserved "Idiomas") >> return (Tidal.every 4) <*> fakenoun,
-  reserved "Ideas" >> return (Tidal.every 5) <*> fakenoun,
-  reserved "Eggplant" >> return (Tidal.every 6) <*> fakenoun
-  ]
 
 -- ////////////////
 -- Right not you can only do ([]) or (<>), not a pattern of ([][]) or (<><>)
@@ -254,15 +272,36 @@ operators = choice [
          reserved "/" >> return "/"
          ]
 
-intPattern :: Parser (Pattern Int)
-intPattern = pure <$> int
+-- /////
 
-int :: Parser Int
-int = fromIntegral <$> integer
+intPattern' = do
+  a <- parens $ intPattern
+  return a
+
+intPattern :: Parser (Pattern Int)
+intPattern = do
+  p <- (many muchosint)
+  return $ parseBP' $ (unwords p)
+
+muchosint = do
+  d <- int
+  return $ show d
+
+intOrNegativeInt = choice [ try negativeInt', try int']
 
 int' = do
   a <- parens $ int
   return a
+
+negativeInt' = parens $ negativeInt
+
+negativeInt = do
+  a <- symbol "-"
+  b <- int
+  return $ (-1) * b
+
+int :: Parser Int
+int = fromIntegral <$> integer
 
 --Funciones de la librería TokenParser
 
@@ -299,26 +338,3 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
-
-
--- escribirIO :: Tidal.Stream -> String -> Either ParseError (IO ())
--- escribirIO tidal = parse (escribirIOParser tidal) "escribir"
---
--- escribirIOParser :: Tidal.Stream -> Parser (IO ())
--- escribirIOParser tidal = whiteSpace >> choice [
---   eof >> return (return ()),
---   dParser tidal <*> escribirPattern
---   ]
---
--- dParser :: Tidal.Stream -> Parser (ControlPattern -> IO ())
--- dParser tidal = choice [
---   return (Tidal.streamReplace tidal "1")
---   ]
---
--- main :: IO ()
--- main = do
---   tidal <- Tidal.startTidal Tidal.superdirtTarget Tidal.defaultConfig
---   forever $ do
---     cmd <- escribirIO tidal <$> getLine
---     either (\x -> putStrLn $ "error: " ++ show x) id cmd
---   return ()

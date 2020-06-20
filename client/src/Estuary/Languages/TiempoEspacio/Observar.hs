@@ -296,10 +296,13 @@ operators = choice [
          reserved "/" >> return "/"
          ]
 
+-- /////
+
 intPattern' = do
   a <- parens $ intPattern
   return a
 
+intPattern :: Parser (Pattern Int)
 intPattern = do
   p <- (many muchosint)
   return $ parseBP' $ (unwords p)
@@ -360,26 +363,3 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
-
---
--- observarIO :: Tidal.Stream -> String -> Either ParseError (IO ())
--- observarIO tidal = parse (observarIOParser tidal) "observar"
---
--- observarIOParser :: Tidal.Stream -> Parser (IO ())
--- observarIOParser tidal = whiteSpace >> choice [
---   eof >> return (return ()),
---   dParser tidal <*> observarPattern
---   ]
---
--- dParser :: Tidal.Stream -> Parser (ControlPattern -> IO ())
--- dParser tidal = choice [
---   return (Tidal.streamReplace tidal "1")
---   ]
---
--- main :: IO ()
--- main = do
---   tidal <- Tidal.startTidal Tidal.superdirtTarget Tidal.defaultConfig
---   forever $ do
---     cmd <- observarIO tidal <$> getLine
---     either (\x -> putStrLn $ "error: " ++ show x) id cmd
---   return ()

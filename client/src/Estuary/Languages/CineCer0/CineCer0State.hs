@@ -17,7 +17,6 @@ import Control.Exception
 
 import Estuary.Types.Tempo
 import Estuary.Languages.CineCer0.Parser
-import Estuary.Languages.TiempoEspacio.Escuchar
 import Estuary.Languages.CineCer0.VideoSpec as Cinecer0
 import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.Signal
