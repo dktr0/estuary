@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Types.TranslatableText where
 
 import Data.Text (Text)
@@ -7,4 +9,6 @@ import Estuary.Types.Language
 type TranslatableText = Map Language Text
 
 translateText :: TranslatableText -> Language -> Text
-translateText t l = findWithDefault (head $ elems t) l t
+translateText t l
+  | Data.Map.null t = "?"
+  | otherwise = findWithDefault (head $ elems t) l t

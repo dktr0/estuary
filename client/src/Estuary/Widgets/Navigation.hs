@@ -45,6 +45,7 @@ import Estuary.Widgets.AboutEstuary
 import Estuary.Widgets.CreateEnsemble
 import Estuary.Tutorials.TidalCyclesBasics
 import Estuary.Tutorials.Punctual
+import Estuary.Widgets.Announcements
 
 data Navigation =
   Splash |
@@ -72,7 +73,7 @@ page :: MonadWidget t m => Event t [Response] -> Navigation
   -> Editor t m (Event t Navigation, (Event t Request, Event t EnsembleRequest))
 
 page wsDown Splash = do
-  navEv <- divClass "splash-container" $ do
+  navEv <- splitPageWithAnnouncements $ divClass "splash-container" $ do
     gotoAboutEv <- panel "splash-margin" About Term.About (text "A") --estuaryIcon
     gotoTutorialEv <- panel "splash-margin" TutorialList Term.Tutorials (text "B") -- icon font: tutorial-icon.svg
     gotoSoloEv <- panel "splash-margin" Solo Term.Solo (text "C") -- icon font: solo-icon.png
@@ -81,7 +82,7 @@ page wsDown Splash = do
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (navEv, (leaveEnsemble, never))
 
-page wsDown TutorialList = el "div" $ do
+page wsDown TutorialList = splitPageWithAnnouncements $ do
   divClass "ui-font primary-color" $ text "Select a tutorial:"
   navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ divClass "tutorialButton" $ button "TidalCycles"
   navPunctualTutorial <- liftM (TutorialNav "Punctual" <$) $ divClass "tutorialButton" $ button "Punctual"
@@ -110,7 +111,7 @@ page wsDown About = do
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never, (leaveEnsemble, never))
 
-page wsDown Lobby = el "div" $ do
+page wsDown Lobby = splitPageWithAnnouncements $ do
   -- process received ensemble lists into widgets that display info about, and let us join, ensembles
   ensembleList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
   ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton
@@ -122,11 +123,11 @@ page wsDown Lobby = el "div" $ do
   let serverRequests = leftmost [leaveEnsemble,requestEnsembleList]
   return (leftmost [navToJoinEnsemble, navToCreateEnsemble], (requestEnsembleList, never))
 
-page rs CreateEnsemblePage = do
+page rs CreateEnsemblePage = splitPageWithAnnouncements $ do
   (navigateAway,responses) <- createEnsembleWidget rs
   return (Lobby <$ navigateAway,(responses,never))
 
-page wsDown (JoinEnsemblePage ensembleName) = el "div" $ do
+page wsDown (JoinEnsemblePage ensembleName) = splitPageWithAnnouncements $ do
   el "div" $ do
     term Term.JoiningEnsemble >>= dynText
     text " "

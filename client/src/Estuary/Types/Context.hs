@@ -43,7 +43,7 @@ out (ImmutableRenderContext (_,_,_,x,_) _ _ _) = x
 
 data Context = Context {
   aboutThisServer :: TranslatableText,
-  announcements :: Map UTCTime [TranslatableText],
+  announcements :: Map Day [TranslatableText],
   webDirtOn :: Bool,
   superDirtOn :: Bool,
   canvasOn :: Bool,
@@ -66,7 +66,7 @@ data Context = Context {
 
 initialContext :: UTCTime -> Context
 initialContext nowUtc = Context {
-  aboutThisServer = Map.empty,
+  aboutThisServer = Map.fromList [(English,"")], -- non-empty in order to suppress "?"
   announcements = Map.empty,
   dynamicsMode = DefaultDynamics,
   language = English,
