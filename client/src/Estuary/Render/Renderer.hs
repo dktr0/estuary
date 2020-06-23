@@ -364,7 +364,7 @@ renderBaseProgramChanged irc c z (Right (Seis8s,x,eTime)) = do
     Right p -> do
       clearZoneError z
       s <- get
-      modify' $ \x -> x { Seis8s = insert z p (sies8ses s) }
+      modify' $ \x -> x { seis8ses = insert z p (sies8ses s) }
     Left e -> do
       liftIO $ putStrLn (show e)
       setZoneError z (T.pack $ show e)
