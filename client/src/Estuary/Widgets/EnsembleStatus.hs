@@ -62,29 +62,31 @@ row uHandle t name part = el "tr" $ do
     rec
       c <- count evClick   -- count :: Num b => Event a -> m (Dynamic b)
       let c' = fmap (`mod` 3) c -- event 0,1,2
-      -- so class should be attached to child, check hideableWidget' and hideableWidget
-      evClick <- clickableDivClass'' (constDyn "") "tableContainerButtonDiv" $ do -- should be (Event t (), a)
-        -- hideableWidgetWithChildAndClass :: MonadWidget t m => Dynamic t Bool -> Text -> m a -> m a
-        -- mode 1 (name + status + activity)
+      let statusAttrs = ("class" =:  "statusWidgetStatusInput"  <> "style" =: "width: 1000px")
+      -- let trAttrs2 = fromList [("colspan","4")]
+      -- let trAttrs3 = fromList [("colspan","2")]
 
-          -- status' <- hideableWidget (fmap (== 0) c') $ divClass "mode1Class" $ do
-          status' <- hideableWidget (fmap (== 0) c') "mode1Class" $ do
+      (evClick, status) <- clickableDivDynAttrsWChild' "tableContainerButtonDiv" $ do -- (Event t (), a)
+        -- mode 1 (name + status + activity)
+          status' <- hideableWidget' (fmap (== 0) c') $ do
             elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
+            status <- elAttr "td" statusAttrs $ participantStatusWidget uHandle name part
             elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
-            status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
             return status -- ?
 
           -- mode 2 (name + statistics)
-          hideableWidget (fmap (== 1) c') "mode2Class" $ do
+          hideableWidget' (fmap (== 1) c') $ do
             elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
+            elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
             elClass "td" "statusWidgetFPSAndLatency" $ participantFPSLatencyAndLoad name part
 
           -- mode 3 (?)
-            hideableWidget (fmap (== 2) c') "mode3Class" $ do
-              elClass "td" "statusWidgetNameAndLocation" $ text "placeholder"
+          hideableWidget' (fmap (== 2) c') $ do
+            elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
+            elClass "td" "statusWidgetNameAndLocation" $ text "info placeholder"
 
           return status'
-    return $ evClick
+    return $ status
 
 
 modeOneAttrs :: Bool -> Map T.Text T.Text

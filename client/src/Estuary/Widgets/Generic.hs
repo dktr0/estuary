@@ -354,9 +354,9 @@ hideableWidget' b m = do
   let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
   elDynAttr "div" attrs m
 
-hideableWidgetWithChildAndClass :: MonadWidget t m => Dynamic t Bool -> Text -> m a -> m a
-hideableWidgetWithChildAndClass b c m = do
-  let attrs = fmap (bool (fromList [("hidden","true"),("class",c)]) (fromList [("style", "display: flex; flex-direction: column;"),("class",c)])) b
+hideableWidgetWFlexColumn :: MonadWidget t m => Dynamic t Bool -> m a -> m a
+hideableWidgetWFlexColumn b  m = do
+  let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("style", "display: flex; flex-direction: column;")])) b
   elDynAttr "div" attrs m
 
 traceDynamic :: (MonadWidget t m, Show a) => String -> Dynamic t a -> m (Dynamic t a)
