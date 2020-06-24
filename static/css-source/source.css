@@ -241,7 +241,6 @@ body::-webkit-scrollbar-thumb {
 }
 
 .config-entry {
-	border-right: 1px solid;
 	padding: 0.25em 0.5em;
 	display: inline-block;
 
