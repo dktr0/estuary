@@ -48,6 +48,9 @@ parserOut = do
   reserved "out"
   o <- parens $ parserOutput
   return $ o
+-- missing the dot .out()
+-- add . as operator
+-- helfull to include examples of what it pasers
 
 parserOutput :: Parser Output
 parserOutput = choice [
