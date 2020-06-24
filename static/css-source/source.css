@@ -156,6 +156,7 @@ body::-webkit-scrollbar-thumb {
   overflow: hidden;
   white-space: nowrap;
   border: none;
+  height: 30px;
 }
 
 .page {
@@ -165,7 +166,6 @@ body::-webkit-scrollbar-thumb {
 	position: relative; /* note that relative positioning with 0x0 is required here for SVG fdisplay */
 	left: 0px;
 	top: 0px;
-	border-top: 1px solid;
 	padding-left: 15px;
 	padding-right: 15px;
 	overflow:hidden;
@@ -241,7 +241,6 @@ body::-webkit-scrollbar-thumb {
 }
 
 .config-entry {
-	border-right: 1px solid;
 	padding: 0.25em 0.5em;
 	display: inline-block;
 
@@ -1320,6 +1319,12 @@ height: 6.5em;
   width: 50%;
   display: inline-block;
   text-align: end;
+  cursor: pointer;
+}
+
+.header-area {
+  width: 50%;
+  display: inline-block;
   cursor: pointer;
 }
 

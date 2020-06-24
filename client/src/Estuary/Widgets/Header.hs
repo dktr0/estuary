@@ -21,7 +21,9 @@ header = divClass "header primary-color primary-borders" $ mdo
 
   let headerEvent = leftmost [() <$ headerButton]
   headerVisible <- toggle True headerEvent
-  headerButton <- clickableDiv "header-title" $ text "estuary"
+  headerButton <- clickableDiv "header-area" $ do
+    hideableWidget' headerVisible $ do
+      divClass "header-title" $ text "estuary"
 
   hideableWidget' headerVisible $ do
     divClass "config-toolbar" $ do
