@@ -156,6 +156,7 @@ body::-webkit-scrollbar-thumb {
   overflow: hidden;
   white-space: nowrap;
   border: none;
+  height: 30px;
 }
 
 .page {
@@ -1320,6 +1321,12 @@ height: 6.5em;
   width: 50%;
   display: inline-block;
   text-align: end;
+  cursor: pointer;
+}
+
+.header-area {
+  width: 50%;
+  display: inline-block;
   cursor: pointer;
 }
 
