@@ -166,7 +166,6 @@ body::-webkit-scrollbar-thumb {
 	position: relative; /* note that relative positioning with 0x0 is required here for SVG fdisplay */
 	left: 0px;
 	top: 0px;
-	border-top: 1px solid;
 	padding-left: 15px;
 	padding-right: 15px;
 	overflow:hidden;
