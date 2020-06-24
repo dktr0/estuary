@@ -173,6 +173,7 @@ verb = choice [
   (reserved "reir" <|> reserved "río" <|> reserved "ríe" <|> reserved "ríen" <|> reserved "reído" <|> reserved "riendo") >> return "reir",
   (reserved "aparece" <|> reserved "aparezco" <|> reserved "aparece" <|> reserved "aparecen" <|> reserved "aparecido" <|> reserved "apareciendo") >> return "aparece",
   (reserved "volver" <|> reserved "vuelvo" <|> reserved "vuelve" <|> reserved "vuelven" <|> reserved "vuelto" <|> reserved "volviendo") >> return "volver",
+  (reserved "producir" <|> reserved "produzco" <|> reserved "produce" <|> reserved "producen" <|> reserved "producido" <|> reserved "produciendo") >> return "producir",
   espacio,
   silencio
   ]

@@ -139,7 +139,7 @@ pronouns :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 pronouns = ((reserved "I" <|> reserved "We" <|> reserved "we" <|> reserved "They" <|> reserved "they") >> return Tidal.striate) <*> option 0 intPattern'
 
 adverbs :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
-adverbs = (reserved "always" <|> reserved "Sometimes" <|> reserved "sometimes" <|> reserved "Often" <|> reserved "often" <|> reserved "rarelly" <|> reserved "never") >> return Tidal.every <*> option 0 intPattern' <*> fakeverb
+adverbs = (reserved "always" <|> reserved "Sometimes" <|> reserved "sometimes" <|> reserved "Often" <|> reserved "often" <|> reserved "rarely" <|> reserved "never") >> return Tidal.every <*> option 0 intPattern' <*> fakeverb
 
 fakeverb :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 fakeverb = choice [
