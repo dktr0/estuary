@@ -15,7 +15,6 @@ import Data.Aeson
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as Lazy
 import qualified Data.Text.Lazy.Encoding as Lazy
 import TextShow
@@ -33,7 +32,7 @@ openDatabase :: IO Connection
 openDatabase = do
   c <- open "Estuary.db"
   createEnsembleTable c
-  postLogNoHandle c "database opened"
+  putStrLn "database opened"
   return c
 
 closeDatabase :: Connection -> IO ()
@@ -42,23 +41,6 @@ closeDatabase = close
 createEnsembleTable :: Connection -> IO ()
 createEnsembleTable c = do
   execute_ c "CREATE TABLE IF NOT EXISTS ensembles (name TEXT NOT NULL, json TEXT, PRIMARY KEY (name))"
-
-postLogNoHandle :: Connection -> Text -> IO ()
-postLogNoHandle c msg = do
-  now <- getCurrentTime
-  T.putStrLn $ (T.pack $ show now) <> ": " <> msg
-  -- execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,msg)
-
-postLog :: Connection -> Int -> Text -> IO ()
-postLog c cHandle msg = do
-  now <- getCurrentTime
-  let msg' = "(" <> showt cHandle <> ") " <> msg
-  T.putStrLn $ (T.pack $ show now) <> ":" <> msg'
-  -- execute c "INSERT INTO log (time,msg) VALUES (?,?)" (now,msg')
-
-postLeftsToLog :: Connection -> Int -> Text -> Either Text a -> IO ()
-postLeftsToLog _ _ _ (Right _) = return ()
-postLeftsToLog db cHandle msgPrefix (Left e) = postLog db cHandle $ msgPrefix <> " " <> e
 
 data EnsembleD = EnsembleD {
   ensemble :: Ensemble.Ensemble,

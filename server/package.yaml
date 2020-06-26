@@ -12,6 +12,7 @@ homepage: http://github.com/dktr0/estuary/blob/stable/README.md
 dependencies:
   - base
   - stm
+  - async
   - estuary-common
   - containers
   - directory

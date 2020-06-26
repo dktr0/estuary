@@ -10,7 +10,7 @@ import qualified Database.SQLite.Simple as SQLite
 import System.Environment (getArgs)
 
 import EstuaryServer(runServerWithDatabase)
-import Estuary.Types.Database(openDatabase, closeDatabase,postLogNoHandle)
+import Estuary.Types.Database(openDatabase, closeDatabase)
 import Estuary.Types.Name
 
 main :: IO ()
@@ -35,6 +35,6 @@ processArgs xs = do
 
 closeDatabaseOnException :: SQLite.Connection -> SomeException -> IO ()
 closeDatabaseOnException db e = do
-  postLogNoHandle db $ "quitting due to unhandled exception (" <> (T.pack $ show e) <> ")..."
+  putStrLn $ "quitting due to unhandled exception (" ++ show e ++ ")..."
   closeDatabase db
   putStrLn "database connection closed."

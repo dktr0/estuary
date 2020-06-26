@@ -5,6 +5,7 @@ module Estuary.Types.ServerState where
 -- This module presents the type ServerState which represents everything that an
 -- Estuary server keeps track of in memory as it runs.
 
+import Network.Socket (SockAddr)
 import qualified Network.WebSockets as WS
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
@@ -42,18 +43,21 @@ newServerState mpwd cpwd es = $atomically $ do
     ensembles = es''
   }
 
-addClient :: ServerState -> WS.Connection -> IO (ClientHandle,TVar Client)
-addClient ss x = do
+--  newClient :: SockAddr -> TChan (ClientHandle,Response) -> UTCTime -> ClientHandle -> Connection -> Client
+
+addClient :: SockAddr -> ServerState -> WS.Connection -> IO (ClientHandle,TVar Client,TChan (ClientHandle,Response))
+addClient ip ss x = do
   t <- getCurrentTime
   $atomically $ do
     oldMap <- readTVar (clients ss)
     i <- readTVar (nextClientHandle ss)
-    c <- newTVar $ newClient t i x
+    sChan <- newTChan
+    c <- newTVar $ newClient ip sChan t i x
     let newMap = IntMap.insert i c oldMap
     writeTVar (clients ss) newMap
     writeTVar (clientCount ss) (IntMap.size newMap)
     writeTVar (nextClientHandle ss) (i+1)
-    return (i,c)
+    return (i,c,sChan)
 
 deleteEnsemble :: ServerState -> Text -> IO ()
 deleteEnsemble ss eName = $atomically $ do

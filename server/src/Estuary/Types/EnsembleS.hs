@@ -17,6 +17,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.AtomicallyTimed
+import Estuary.Types.Response
 
 data EnsembleS = EnsembleS {
   ensembleName :: Text,
@@ -28,7 +29,7 @@ data EnsembleS = EnsembleS {
   tempo :: TVar Tempo,
   zones :: TVar (IntMap.IntMap (TVar Definition)),
   views :: TVar (Map.Map Text (TVar View)),
-  connections :: TVar (IntMap.IntMap WS.Connection),
+  connections :: TVar (IntMap.IntMap (TChan (Int,Response))),
   namedConnections :: TVar (IntMap.IntMap Text),
   anonymousConnections :: TVar Int
   }
@@ -96,18 +97,18 @@ readViews :: EnsembleS -> STM (Map.Map Text View)
 readViews e = readTVar (views e) >>= mapM readTVar
 
 -- Int argument is ClientHandle
-addNamedConnection :: Int -> Text -> WS.Connection -> EnsembleS -> STM ()
-addNamedConnection h n ws e = do
+addNamedConnection :: Int -> Text -> TChan (Int,Response) -> EnsembleS -> STM ()
+addNamedConnection h n sChan e = do
   oldConnectionsMap <- readTVar $ connections e
-  writeTVar (connections e) $ IntMap.insert h ws oldConnectionsMap
+  writeTVar (connections e) $ IntMap.insert h sChan oldConnectionsMap
   oldNamesMap <- readTVar $ namedConnections e
   writeTVar (namedConnections e) $ IntMap.insert h n oldNamesMap
 
 -- Int argument is ClientHandle
-addAnonymousConnection :: Int -> WS.Connection -> EnsembleS -> STM ()
-addAnonymousConnection h ws e = do
+addAnonymousConnection :: Int -> TChan (Int,Response) -> EnsembleS -> STM ()
+addAnonymousConnection h sChan e = do
   oldConnectionsMap <- readTVar $ connections e
-  writeTVar (connections e) $ IntMap.insert h ws oldConnectionsMap
+  writeTVar (connections e) $ IntMap.insert h sChan oldConnectionsMap
   oldCount <- readTVar $ anonymousConnections e
   writeTVar (anonymousConnections e) $ oldCount + 1
 
@@ -131,11 +132,11 @@ nameTaken e x = do
   xs <- IntMap.elems <$> readTVar (namedConnections e)
   return $ elem x xs
 
-readConnections :: EnsembleS -> IO (IntMap WS.Connection)
-readConnections e = $readTVarIO (connections e)
+readConnections :: EnsembleS -> STM (IntMap (TChan (Int,Response)))
+readConnections e = readTVar (connections e)
 
 -- Int argument is ClientHandle
-readConnectionsNoOrigin :: EnsembleS -> Int -> IO (IntMap WS.Connection)
+readConnectionsNoOrigin :: EnsembleS -> Int -> STM (IntMap (TChan (Int,Response)))
 readConnectionsNoOrigin e h = do
-  x <- $readTVarIO $ connections e
+  x <- readTVar $ connections e
   return $ IntMap.delete h x
