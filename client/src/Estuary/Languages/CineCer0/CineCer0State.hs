@@ -67,17 +67,17 @@ foreign import javascript unsafe
   "$1.style = $2;"
   videoStyle_ :: CineCer0Video -> Text -> IO ()
 
+-- foreign import javascript unsafe
+--   "$1.muted = true;"
+--   muteVideo :: CineCer0Video -> IO ()
+
 foreign import javascript unsafe
-  "$1.muted = true;"
-  muteVideo :: CineCer0Video -> IO ()
+  "$1.muted = $2;"
+  muteVideo :: CineCer0Video -> Bool -> IO ()
 
--- foreign import javascript unsafe
---   "$1.muted = $2;"
---   muteVideo :: CineCer0Video -> Bool -> IO ()
-
--- foreign import javascript unsafe
---   "$1.volume = $2"
---   videoVolume :: CineCer0Video -> Double -> IO ()
+foreign import javascript unsafe
+  "$1.volume = $2"
+  videoVolume :: CineCer0Video -> Double -> IO ()
 
 foreign import javascript unsafe
   "$1.src = $2; $1.load()"
@@ -173,7 +173,7 @@ addVideo j spec = do
   --putStrLn $ "addVideo " ++ (sampleVideo spec)
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
-  muteVideo x
+  muteVideo x True
   appendVideo x j
   return x
 
@@ -233,14 +233,6 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExcepti
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
     let aTime = anchorTime s t eTime -- :: UTCTime
-    debugtp <- putStrLn $ "tempo:"
-    debugTp <- putStrLn $ show $ t
-    debugEt <- putStrLn $ "eval"
-    debugET <- putStrLn $ show $ eTime
-    debugRt <- putStrLn $ "render"
-    debugRT <- putStrLn $ show $ rTime
-    debugAt <- putStrLn $ "anchor"
-    debugAT <- putStrLn $ show $ aTime
     let actualWidth = (width s t lengthOfVideo rTime eTime aTime) * realToFrac fitWidth
     let actualHeight = (height s t lengthOfVideo rTime eTime aTime) * realToFrac fitHeight
     let centreX = ((posX s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
@@ -258,6 +250,10 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExcepti
           videoPlaybackRate v rate'
           videoPlaybackPosition v rate' pos'
       otherwise -> return ()
+
+    -- audio
+    muteVideo v (mute s t lengthOfVideo rTime eTime aTime)
+    videoVolume v $ realToFrac (volume s t lengthOfVideo rTime eTime aTime)
 
     -- style filters
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
