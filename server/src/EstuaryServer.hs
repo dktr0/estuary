@@ -18,6 +18,7 @@ import Control.Monad.Except
 import qualified Database.SQLite.Simple as SQLite
 import Data.Aeson
 import Data.ByteString.Lazy
+import Network.Socket (SockAddr)
 import qualified Network.WebSockets as WS
 import qualified Network.Wai as WS hiding (requestHeaders)
 import qualified Network.Wai.Handler.WebSockets as WS
@@ -74,7 +75,13 @@ runServerWithDatabase mpwd cpwd port httpRedirect db = do
   when httpRedirect $ void $ forkIO $ do
     postLogNoHandle db $ "(also listening on port 80 and redirecting plain HTTP requests to HTTPS, ie. on port 443)"
     run 80 ourRedirect
-  runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ WS.websocketsOr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+  runTLS ourTLSSettings (ourSettings port) $ gzipMiddleware $ websocketsOrWithSockAddr WS.defaultConnectionOptions (webSocketsApp db s) (staticApp settings)
+
+websocketsOrWithSockAddr :: WS.ConnectionOptions -> (SockAddr -> WS.ServerApp) -> WS.Application -> WS.Application
+websocketsOrWithSockAddr opts app backup req sendResponse =
+  case WS.websocketsApp opts (app $ WS.remoteHost req) req of
+    Nothing -> backup req sendResponse
+    Just res -> sendResponse res
 
 maintenanceThread :: SQLite.Connection -> ServerState -> IO ()
 maintenanceThread db ss = do
@@ -131,17 +138,13 @@ gzipMiddleware = gzip $ def {
   gzipFiles = GzipPreCompressed GzipIgnore
 }
 
-webSocketsApp :: SQLite.Connection -> ServerState -> WS.PendingConnection -> IO ()
-webSocketsApp db ss pc = do
+webSocketsApp :: SQLite.Connection -> ServerState -> SockAddr -> WS.PendingConnection -> IO ()
+webSocketsApp db ss sockAddr pc = do
   ws' <- try $ WS.acceptRequest pc
   case ws' of
     Right ws'' -> do
-      let rh = WS.requestHeaders $ WS.pendingRequest pc
-      let rhMap = Map.fromList rh
-      let ip = Map.findWithDefault "unknown IP address" "Host" rhMap
       (cHandle,ctvar) <- addClient ss ws''
-      postLog db cHandle $ "new connection from " <> showt ip
-      postLog db cHandle $ "request headers: " <> T.pack (show rhMap)
+      postLog db cHandle $ "new connection from " <> T.pack (show sockAddr)
       (WS.forkPingThread ws'' 10) `catch` \(SomeException e) -> postLog db cHandle $ "exception forking ping thread: " <> (T.pack $ show e)
       processLoop db ss cHandle ctvar ws''
     Left (SomeException e) -> do

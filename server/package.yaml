@@ -22,6 +22,7 @@ dependencies:
   - aeson
   - bytestring
   - http-types
+  - network
   - websockets
   - wai
   - warp
