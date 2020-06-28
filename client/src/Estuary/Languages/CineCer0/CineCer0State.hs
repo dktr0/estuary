@@ -252,8 +252,12 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExcepti
       otherwise -> return ()
 
     -- audio
-    muteVideo v (mute s t lengthOfVideo rTime eTime aTime)
+    (\ volSig -> if volSig == 0 
+      then muteVideo v True 
+      else muteVideo v False) (realToFrac (volume s t lengthOfVideo rTime eTime aTime))
     videoVolume v $ realToFrac (volume s t lengthOfVideo rTime eTime aTime)
+ --    muteVideo v (mute s t lengthOfVideo rTime eTime aTime)
+
 
     -- style filters
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
