@@ -37,8 +37,8 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       dynText ensName
 
   divClass "infoContainer" $ do
-    status <- divClass "tableContainer code-font" $ do
-      status' <- el "table" $ do
+    -- status <- divClass "tableContainer code-font" $ do
+    status <- elClass "table" "tableContainer code-font"  $ do
         now <- liftIO getCurrentTime -- this time is measured before building the widget
         evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
         currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
@@ -49,16 +49,17 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       --   evClick <- clickableDiv "tableContainerButtonDiv" $ do
       --     hideableWidget'' dynBool "infoClass" (listWithKey ensParticipants participantFPSLatencyAndLoad)
       --   dynBool <- toggle False evClick
-      return status'
+    -- return status
 
     divClass "statusWidgetAnonymousPart code-font" $ do
       term Term.AnonymousParticipants >>= dynText
       text ": "
       dynText $ fmap showt anonymous
+
     return status -- $ Write "placeholder" -- status
 
 row ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
-row uHandle t name part = el "tr" $ do
+row uHandle t name part =  do
     rec
       c <- count evClick   -- count :: Num b => Event a -> m (Dynamic b)
       let c' = fmap (`mod` 3) c -- event 0,1,2
@@ -66,26 +67,29 @@ row uHandle t name part = el "tr" $ do
       -- let trAttrs2 = fromList [("colspan","4")]
       -- let trAttrs3 = fromList [("colspan","2")]
 
-      (evClick, status) <- clickableDivDynAttrsWChild' "tableContainerButtonDiv" $ do -- (Event t (), a)
+      -- (evClick, status) <- clickableDivDynAttrsWChild' "tableContainerButtonDiv" $ do -- (Event t (), a)
+      (evClick, status) <- clickableTrWChild  $ do -- (Event t (), a)
         -- mode 1 (name + status + activity)
-          status' <- hideableWidget' (fmap (== 0) c') $ do
-            elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
-            status <- elAttr "td" statusAttrs $ participantStatusWidget uHandle name part
-            elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
-            return status -- ?
+            status' <- hideableWidget' (fmap (== 0) c') $ do
+              el "tr" $ do
+                elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
+                status <- elAttr "td" statusAttrs $ participantStatusWidget uHandle name part
+                elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
+                return status -- ?
 
-          -- mode 2 (name + statistics)
-          hideableWidget' (fmap (== 1) c') $ do
-            elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
-            elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
-            elClass "td" "statusWidgetFPSAndLatency" $ participantFPSLatencyAndLoad name part
+            -- mode 2 (name + statistics)
+            hideableWidget' (fmap (== 1) c') $ do
+              el "tr" $ do
+                elClass "td" "statusWidgetNameAndLocation" $ participantNameWidget name part
+                elClass "td" "statusWidgetFPSAndLatency" $ participantFPSLatencyAndLoad name part
 
-          -- mode 3 (?)
-          hideableWidget' (fmap (== 2) c') $ do
-            elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
-            elClass "td" "statusWidgetNameAndLocation" $ text "info placeholder"
+            -- mode 3 (?)
+            hideableWidget' (fmap (== 2) c') $ do
+              el "tr" $ do
+                elClass "td" "statusWidgetNameAndLocation" $ participantNameWidget name part
+                elClass "td" "statusWidgetNameAndLocation" $ text "info placeholder"
 
-          return status'
+            return status'
     return $ status
 
 
@@ -103,7 +107,7 @@ modeTwoAttrs b = "class" =: "tableContainerButtonDiv" <> "style" =: ("display: "
     display _    = "none"
 
 participantFPSLatencyAndLoad :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
-participantFPSLatencyAndLoad name part = divClass "statusWidgetFPSAndLatency" $ do
+participantFPSLatencyAndLoad name part = do
   let latency' = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
   let load' = fmap (showt . mainLoad) part
   let fps' = fmap (showt . animationLoad) part

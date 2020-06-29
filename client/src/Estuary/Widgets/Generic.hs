@@ -91,9 +91,9 @@ clickableDivDynAttrsWChild attrs child = do
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
-clickableDivDynAttrsWChild' :: MonadWidget t m => Text -> m a -> m (Event t (), a) -- return (Event t (), a)
-clickableDivDynAttrsWChild' c child = do
-  (element, a) <- elAttr' "div" (singleton "class" c) $ child -- look elAttr' ::
+clickableTrWChild :: MonadWidget t m => m a -> m (Event t (), a) -- return (Event t (), a)
+clickableTrWChild child = do
+  (element, a) <- el' "tr" $ child -- elAttr' "div" (singleton "class" c) $ child -- look elAttr' ::
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   let event = (() <$) clickEv
   return $ (event, a)
