@@ -43,8 +43,6 @@ newServerState mpwd cpwd es = $atomically $ do
     ensembles = es''
   }
 
---  newClient :: SockAddr -> TChan (ClientHandle,Response) -> UTCTime -> ClientHandle -> Connection -> Client
-
 addClient :: SockAddr -> ServerState -> WS.Connection -> IO (ClientHandle,TVar Client,TChan (ClientHandle,Response))
 addClient ip ss x = do
   t <- getCurrentTime

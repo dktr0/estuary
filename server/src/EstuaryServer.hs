@@ -259,6 +259,7 @@ processRequest db ss ws cHandle ctvar (DeleteThisEnsemble opwd) = do
       sendThisClient ctvar (ResponseError m)
       postLog cHandle $ "*DeleteThisEnsemble* " <> m
     Right eName -> do
+      Estuary.Types.Database.deleteEnsemble db eName
       let m = "deleted this ensemble " <> eName
       sendThisClient ctvar (ResponseOK m)
       postLog cHandle m
@@ -271,6 +272,7 @@ processRequest db ss ws cHandle ctvar (DeleteEnsemble eName mpwd) = do
       sendThisClient ctvar (ResponseError m)
       postLog cHandle $ "*DeleteEnsemble* " <> m
     Right _ -> do
+      Estuary.Types.Database.deleteEnsemble db eName
       let m = "deleted ensemble " <> eName
       sendThisClient ctvar (ResponseOK m)
       postLog cHandle m
