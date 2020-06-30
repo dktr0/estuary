@@ -11,6 +11,7 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Control.Monad.Identity (Identity)
 
 import Estuary.Languages.Hydra.Types
+import Estuary.Languages.Hydra.Test
 
 ----
 
@@ -19,39 +20,101 @@ hydra s = parse hydraStatement "hydra" s
 
 hydraStatement :: Parser Statement
 hydraStatement = choice [
-  sourceOut
+  sourceOut,
+  renderOut
   ]
 
+-- Source Output Statement
 sourceOut :: Parser Statement
 sourceOut = do
   s <- parserSource
+  symbol "."
   o <- parserOut
   return $ sourceOutputToStatement s o
-
--- renderOut :: Parser Statement
--- renderOut
--- render()
 
 sourceOutputToStatement :: Source -> Output -> Statement
 sourceOutputToStatement s o = Out s o
 
+-- Render Statement
+-- render()
+renderOut :: Parser Statement
+renderOut = do
+  reserved "render"
+  o <- parens $ parserOutput
+  return $ outputToStatement o
+
+outputToStatement :: Output -> Statement
+outputToStatement o = Render o
+
+-- Osc [Source] [Source] [Source] |
+-- Solid [Source] [Source] [Source] [Source] |
+-- Gradient [Source] |
+-- Noise [Source] [Source] |
+-- Shape [Source] [Source] [Source] |
+-- Voronoi [Source] [Source] [Source] |
+
+-- Adding sources
 parserSource :: Parser Source
-parserSource = constant
+parserSource = choice [
+  osc,
+  fast,
+  list,
+  constantDouble,
+  constantInt
+  ]
 
-constant :: Parser Source
-constant = do
+-- osc() -- osc(0.3) -- osc(0.3,0.5) -- osc(0,10,0.5) -- osc([0.4,0.5],1.0,0.2)
+osc :: Parser Source
+osc = do
+  reserved "osc"
+  p <- parens $ sepBy parserSource (comma)
+  case p of
+      [] -> return $ Osc Nothing Nothing Nothing
+      (x:[]) -> return $ Osc (Just x) Nothing Nothing
+      (x:y:[]) -> return $ Osc (Just x ) (Just y) Nothing
+      (x:y:z:_) -> return $ Osc (Just x) (Just y) (Just z)
+
+
+-- fast() -- fast(0.5) -- fast([0.5,0.2])
+-- check this function and how does it work in hydra
+fast :: Parser Source
+fast = do
+  symbol "."
+  reserved "fast"
+  p <- parens $ sepBy parserSource (comma)
+  case p of
+      [] -> return $ Fast Nothing
+      (x:_) -> return $ Fast (Just x)
+
+
+-- [0.2,0.4] -- [0.3,0.4,1.0]
+list :: Parser Source
+list = do
+  n <- brackets $ sepBy double (comma)
+  return $ List n
+
+-- 0.2 -- 4.0
+constantDouble :: Parser Source
+constantDouble = do
   n <- double
-  return $ Constant n
+  return $ ConstantDouble n
 
+constantInt :: Parser Source
+constantInt = do
+  n <- int
+  return $ ConstantInt n
+
+
+
+-- Adding outputs
+-- out() -- out(O1) -- out(O2) -- out(O3)
 parserOut :: Parser Output
 parserOut = do
   reserved "out"
   o <- parens $ parserOutput
   return $ o
--- missing the dot .out()
--- add . as operator
--- helfull to include examples of what it pasers
 
+--
 parserOutput :: Parser Output
 parserOutput = choice [
   reserved "" >> return O0,
@@ -82,8 +145,8 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.nestedComments = False,
   P.identStart = letter <|> char '_',
   P.identLetter = alphaNum <|> char '_',
-  P.opStart = oneOf "+*:@<>~=%",
-  P.opLetter = oneOf "+*:@<>~=%",
+  P.opStart = oneOf "+*.",
+  P.opLetter = oneOf "+*.",
   P.reservedNames = [
     "out"
     ],
