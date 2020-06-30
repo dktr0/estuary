@@ -64,7 +64,10 @@ oracion = do
   option () miscelanea
   n''''' <- option id nouns
   option () miscelanea
-  return $ nu $ p $ ns $ a $ fn $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
+  option () miscelanea
+  g <- option id variosNouns
+  option () miscelanea
+  return $ nu $ p $ ns $ a $ fn $ g $ n $ n' $ n'' $ n''' $ n'''' $ n''''' $ Tidal.s $ parseBP' $ (unwords v)
 
 
 -- ////////////////

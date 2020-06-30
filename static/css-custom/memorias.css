@@ -41,6 +41,7 @@ More advanced customization is available through CSS classes within this documen
 .code-font {
 	  font-family: Dosis;
 	  font-size:1em;
+    text-shadow: 0 0 10px #333333;
 	  }
 
 /* styles the fonts for the header, menus and labels */
@@ -98,7 +99,7 @@ More advanced customization is available through CSS classes within this documen
     }
 
 .config-entry {
-	border-right: 0px solid !important;
+	border-right: 0px solid transparent !important;
 }
 
 .ensembleTempo {
