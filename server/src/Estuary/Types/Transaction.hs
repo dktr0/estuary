@@ -13,6 +13,7 @@ import qualified Network.WebSockets as WS
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.IO as T
 import Data.Aeson
 import Data.Maybe
 import Control.Concurrent
@@ -59,10 +60,10 @@ runTransactionIO ss t = do
         Right a'' -> return $ Right a''
 
 runTransactionLogged :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> Transaction a -> IO ()
-runTransactionLogged db ss cHandle msgPrefix t = runTransaction ss t >>= postLeftsToLog db cHandle msgPrefix
+runTransactionLogged db ss cHandle msgPrefix t = runTransaction ss t >>= postLeftsToLog cHandle msgPrefix
 
 runTransactionIOLogged :: SQLite.Connection -> ServerState -> ClientHandle -> Text -> Transaction (IO a) -> IO ()
-runTransactionIOLogged db ss cHandle msgPrefix t = runTransactionIO ss t >>= postLeftsToLog db cHandle msgPrefix
+runTransactionIOLogged db ss cHandle msgPrefix t = runTransactionIO ss t >>= postLeftsToLog cHandle msgPrefix
 
 justOrError :: Maybe a -> Text -> Transaction a
 justOrError m e = maybe (throwError e) (return) m
@@ -87,15 +88,15 @@ deleteClient cHandle = do
       return theClient
     Nothing -> throwError $ "client " <> showt cHandle <> "not found"
 
-removeAnotherClient :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> Text -> IO ()
-removeAnotherClient ss db originHandle targetHandle msg = do
-  postLog db originHandle $ "removing (" <> showt targetHandle <> ") because: " <> msg
+removeAnotherClient :: ServerState -> ClientHandle -> ClientHandle -> Text -> IO ()
+removeAnotherClient ss originHandle targetHandle msg = do
+  postLog originHandle $ "removing (" <> showt targetHandle <> ") because: " <> msg
   x <- runTransaction ss $ deleteClient targetHandle
   case x of
-    Left err -> postLog db originHandle $ "*error during removal* " <> err
+    Left err -> postLog originHandle $ "*error during removal* " <> err
     Right c -> do
-      notifyWhenClientDepartsEnsemble ss db originHandle c
-      postLog db originHandle $ "removal of (" <> showt targetHandle <> ") complete."
+      notifyWhenClientDepartsEnsemble ss originHandle c
+      postLog originHandle $ "removal of (" <> showt targetHandle <> ") complete."
 
 
 getEnsembleName :: TVar Client -> Transaction Text
@@ -240,9 +241,9 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
   -- if we get this far, the client's join attempt will succeed
   let authed = (epwd == "" || epwd == pwd)
   liftSTM $ do
-    ws <- connection <$> readTVar ctvar
-    when (uName /= "") $ E.addNamedConnection cHandle uName ws e
-    when (uName == "") $ E.addAnonymousConnection cHandle ws e
+    sChan <- sendChan <$> readTVar ctvar
+    when (uName /= "") $ E.addNamedConnection cHandle uName sChan e
+    when (uName == "") $ E.addAnonymousConnection cHandle sChan e
     modifyTVar ctvar $ \c -> c {
       memberOfEnsemble = Just etvar,
       handleInEnsemble = uName,
@@ -259,7 +260,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
   return $ do
 
     -- send responses to this client indicating successful join, and ensemble tempo, defs and views
-    let respond = sendThisClient ss db cHandle (connection self)
+    let respond = \x -> $atomically $ sendClient cHandle (sendChan self) x
     when (not isReauth) $ respond $ JoinedEnsemble eName uName loc pwd
     when (isReauth) $ respond $ ResponseOK "rejoined ensemble"
     respond $ EnsembleResponse $ TempoRcvd t
@@ -273,7 +274,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
     respond  $ EnsembleResponse $ AnonymousParticipants anonN
 
     -- send information about new participant to all of the other clients in this ensemble
-    let respondEnsemble = sendEnsembleNoOrigin ss db cHandle e
+    let respondEnsemble = sendEnsembleNoOrigin cHandle e
     case uName of
       "" -> do
         respondEnsemble $ EnsembleResponse $ AnonymousParticipants anonN
@@ -298,11 +299,11 @@ leaveEnsemble db ctvar = do
           authenticatedInEnsemble = False
           }
       ss <- ask
-      return $ notifyWhenClientDepartsEnsemble ss db cHandle clientBefore
+      return $ notifyWhenClientDepartsEnsemble ss cHandle clientBefore
 
 
-notifyWhenClientDepartsEnsemble :: ServerState -> SQLite.Connection -> ClientHandle -> Client -> IO ()
-notifyWhenClientDepartsEnsemble ss db originHandle c = do
+notifyWhenClientDepartsEnsemble :: ServerState -> ClientHandle -> Client -> IO ()
+notifyWhenClientDepartsEnsemble ss originHandle c = do
   case memberOfEnsemble c of
     Nothing -> return ()
     Just etvar -> do
@@ -313,11 +314,11 @@ notifyWhenClientDepartsEnsemble ss db originHandle c = do
       case uName of
         "" -> do
           n <- $readTVarIO $ E.anonymousConnections e
-          postLog db originHandle $ "(anonymous) leaving ensemble " <> eName
-          sendEnsembleNoOrigin ss db originHandle e $ EnsembleResponse $ AnonymousParticipants n
+          postLog originHandle $ "(anonymous) leaving ensemble " <> eName
+          sendEnsembleNoOrigin originHandle e $ EnsembleResponse $ AnonymousParticipants n
         otherwise -> do
-          postLog db originHandle $ uName <> " leaving ensemble " <> eName
-          sendEnsembleNoOrigin ss db originHandle e $ EnsembleResponse $ ParticipantLeaves uName
+          postLog originHandle $ uName <> " leaving ensemble " <> eName
+          sendEnsembleNoOrigin originHandle e $ EnsembleResponse $ ParticipantLeaves uName
 
 
 updateLastEdit :: TVar Client -> UTCTime -> Transaction Participant
@@ -347,50 +348,40 @@ whenNotAuthenticatedInEnsemble ctvar t = do
   when (not x) $ void t
   return ()
 
-send :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
-send ss db originHandle destHandle c x = do
-  warningThread <- forkIO $ do
-    threadDelay 500000
-    postLog db originHandle $ "*** websocket send to (" <> showt destHandle <> ") is taking a long time..."
-  t0 <- getCurrentTime
-  send' ss db originHandle destHandle c x
-  t1 <- getCurrentTime
-  killThread warningThread
-  let diff = diffUTCTime t1 t0
-  when (diff > 0.002) $ postLog db originHandle $ "*** websocket send to (" <> showt destHandle <> ") took " <> showt (realToFrac diff :: Double) <> " seconds ***"
 
-send' :: ServerState -> SQLite.Connection -> ClientHandle -> ClientHandle -> WS.Connection -> Response -> IO ()
-send' ss db originHandle destHandle c x = do
-  y <- try $ WS.sendTextData c $ encode x
-  case y of
-    Right x -> return ()
-    Left (SomeException e) -> do
-      let ce = fromException (SomeException e)
-      case ce of
-        Just (WS.CloseRequest _ _) ->
-          removeAnotherClient ss db originHandle destHandle $ "CloseRequest exception during send"
-          -- postLog db originHandle $ "CloseRequest exception sending to (" <> showt destHandle <> ")"
-        Just WS.ConnectionClosed ->
-          removeAnotherClient ss db originHandle destHandle $ "ConnectionClosed exception during send"
-          -- postLog db originHandle $ "ConnectionClosed exception sending to (" <> showt destHandle <> ")"
-        otherwise ->
-          removeAnotherClient ss db originHandle destHandle $ "unusual exception during send: " <> (T.pack $ show e)
-          -- postLog db originHandle $ "unusual exception sending to (" <> showt destHandle <> ") : " <> (T.pack $ show e)
+sendClient :: ClientHandle -> TChan (ClientHandle,Response) -> Response -> STM ()
+sendClient originHandle sChan x = writeTChan sChan (originHandle,x)
 
-sendThisClient :: ServerState -> SQLite.Connection -> ClientHandle -> WS.Connection -> Response -> IO ()
-sendThisClient ss db originHandle c x = send ss db originHandle originHandle c x
+sendClients :: ClientHandle -> IntMap.IntMap (TChan (ClientHandle,Response)) -> Response -> STM ()
+sendClients originHandle cs r = mapM_ (\x -> sendClient originHandle x r) cs
 
-sendClients :: ServerState -> SQLite.Connection -> ClientHandle -> IntMap.IntMap WS.Connection -> Response -> IO ()
-sendClients ss db originHandle cs r = do
-  IntMap.traverseWithKey (\k v -> send ss db originHandle k v r) cs
-  return ()
+sendThisClient :: TVar Client -> Response -> IO ()
+sendThisClient ctvar r = $atomically $ do
+  c <- readTVar ctvar
+  sendClient (Estuary.Types.Client.handle c) (sendChan c) r
 
-sendEnsemble :: ServerState -> SQLite.Connection -> ClientHandle -> E.EnsembleS -> Response -> IO ()
-sendEnsemble ss db cHandle e r = do
+sendEnsemble :: ClientHandle -> E.EnsembleS -> Response -> IO ()
+sendEnsemble originHandle e r = $atomically $ do
   cs <- E.readConnections e
-  sendClients ss db cHandle cs r
+  sendClients originHandle cs r
 
-sendEnsembleNoOrigin :: ServerState -> SQLite.Connection -> ClientHandle -> E.EnsembleS -> Response -> IO ()
-sendEnsembleNoOrigin ss db cHandle e r = do
-  cs <- E.readConnectionsNoOrigin e cHandle
-  sendClients ss db cHandle cs r
+sendEnsembleNoOrigin :: ClientHandle -> E.EnsembleS -> Response -> IO ()
+sendEnsembleNoOrigin originHandle e r = $atomically $ do
+  cs <- E.readConnectionsNoOrigin e originHandle
+  sendClients originHandle cs r
+
+
+postLog :: Int -> Text -> IO ()
+postLog cHandle msg = do
+  now <- getCurrentTime
+  let msg' = "(" <> showt cHandle <> ") " <> msg
+  T.putStrLn $ (T.pack $ show now) <> ":" <> msg'
+
+postLogNoHandle :: Text -> IO ()
+postLogNoHandle msg = do
+  now <- getCurrentTime
+  T.putStrLn $ (T.pack $ show now) <> ": " <> msg
+
+postLeftsToLog :: Int -> Text -> Either Text a -> IO ()
+postLeftsToLog _ _ (Right _) = return ()
+postLeftsToLog cHandle msgPrefix (Left e) = postLog cHandle $ msgPrefix <> " " <> e

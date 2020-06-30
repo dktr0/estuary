@@ -21,7 +21,8 @@ data Participant = Participant {
   animationFPS :: Int,
   animationLoad :: Int,
   latency :: NominalDiffTime,
-  browser :: Text
+  browser :: Text,
+  ipAddress :: Text
   } deriving (Eq,Generic)
 
 instance ToJSON Participant where
