@@ -10,6 +10,7 @@ import Sound.MusicW.AudioContext
 import Sound.MusicW.Node as MusicW
 import GHCJS.DOM.Types
 import Sound.Punctual.GL
+import Data.Tempo
 
 import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
@@ -50,7 +51,9 @@ data RenderState = RenderState {
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo,
-  glContext :: GLContext
+  glContext :: GLContext,
+  videoDivCache :: Maybe HTMLDivElement,
+  tempoCache :: Tempo
   }
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> GLContext -> UTCTime -> AudioTime -> IO RenderState
@@ -83,5 +86,7 @@ initialRenderState mic out glCtx t0System t0Audio = do
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
     info = emptyRenderInfo,
-    glContext = glCtx
+    glContext = glCtx,
+    videoDivCache = Nothing,
+    tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 }
   }
