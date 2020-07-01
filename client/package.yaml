@@ -62,6 +62,7 @@ dependencies:
   - cumbia
   - deepseq
   - microspec
+  - tempi
 
 library:
   source-dirs:
