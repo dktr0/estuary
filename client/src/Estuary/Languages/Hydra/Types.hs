@@ -4,7 +4,7 @@ data Source =
   ConstantInt Int |
   ConstantDouble Double |
   List [Double] |
-  Fast (Maybe Source) |
+  Fast Source (Maybe Source) |
   --Speed Source | -- find a new place, it doesn't go here speed = 1.5
   --Bpm [Source] | -- audio
   Osc (Maybe Source) (Maybe Source) (Maybe Source) |
@@ -13,7 +13,7 @@ data Source =
   Noise (Maybe Source) (Maybe Source) |
   Shape (Maybe Source) (Maybe Source) (Maybe Source) |
   Voronoi (Maybe Source) (Maybe Source) (Maybe Source) |
-  Scr Source |
+--  Scr Source | -- this would actually be Src Input but we don't have input yet
   Brightness Source (Maybe Source) |
   Contrast Source (Maybe Source) |
   Color Source (Maybe Source) (Maybe Source) (Maybe Source) |

@@ -33,11 +33,21 @@ sourceToJSVal :: Hydra -> Source -> JSVal
 sourceToJSVal _ (ConstantInt x) = pToJSVal x
 sourceToJSVal _ (ConstantDouble x) = pToJSVal x
 -- sourceToJSVal _ (List xs) = pToJSVal xs
-sourceToJSVal h (Fast x) = _fast h (maybeSourceToJSVal h x)
+sourceToJSVal h (Fast x y) = _fast (sourceToJSVal h x) (maybeSourceToJSVal h y)
 sourceToJSVal h (Osc x y z) = _osc h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
+sourceToJSVal h (Solid w x y z) = _solid h (maybeSourceToJSVal h w) (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
+sourceToJSVal h (Gradient x) = _gradient h (maybeSourceToJSVal h x)
+sourceToJSVal h (Noise x y) = _noise h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y)
+sourceToJSVal h (Shape x y z) = _shape h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
+sourceToJSVal h (Voronoi x y z) = _voronoi h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
 
-foreign import javascript safe "$1.synth.fast($2)" _fast :: Hydra -> JSVal -> JSVal
+foreign import javascript safe "$1.fast($2)" _fast :: JSVal -> JSVal -> JSVal
 foreign import javascript safe "$1.synth.osc($2,$3,$4)" _osc :: Hydra -> JSVal -> JSVal -> JSVal -> JSVal
+foreign import javascript safe "$1.synth.solid($2,$3,$4,$5)" _solid :: Hydra -> JSVal -> JSVal -> JSVal -> JSVal -> JSVal
+foreign import javascript safe "$1.synth.gradient($2)" _gradient :: Hydra -> JSVal -> JSVal
+foreign import javascript safe "$1.synth.noise($2,$3)" _noise :: Hydra -> JSVal -> JSVal -> JSVal
+foreign import javascript safe "$1.synth.shape($2,$3,$4)" _shape :: Hydra -> JSVal -> JSVal -> JSVal -> JSVal
+foreign import javascript safe "$1.synth.voronoi($2,$3,$4)" _voronoi :: Hydra -> JSVal -> JSVal -> JSVal -> JSVal
 
 maybeSourceToJSVal :: Hydra -> Maybe Source -> JSVal
 maybeSourceToJSVal _ Nothing = nullRef
