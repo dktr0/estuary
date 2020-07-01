@@ -33,7 +33,7 @@ sourceToJSVal :: Hydra -> Source -> JSVal
 sourceToJSVal _ (ConstantInt x) = pToJSVal x
 sourceToJSVal _ (ConstantDouble x) = pToJSVal x
 -- sourceToJSVal _ (List xs) = pToJSVal xs
-sourceToJSVal h (Fast x) = _fast h (maybeSourceToJSVal h x)
+-- sourceToJSVal h (Fast x) = _fast h (maybeSourceToJSVal h x)
 sourceToJSVal h (Osc x y z) = _osc h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
 
 foreign import javascript safe "$1.synth.fast($2)" _fast :: Hydra -> JSVal -> JSVal
