@@ -36,75 +36,57 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
       text ": "
       dynText ensName
 
-  divClass "infoContainer" $ do
-    -- status <- divClass "tableContainer code-font" $ do
-    status <- elClass "table" "tableContainer code-font"  $ do
-        now <- liftIO getCurrentTime -- this time is measured before building the widget
-        evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
-        currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
-        x <- (listWithKey ensParticipants (row uHandle currentTime))
-        return $ switchDyn $ fmap (leftmost . elems) x --Event t EnsembleRequest
+  divClass "statusWidgetScrollableContainer" $ do
+    divClass "infoContainer" $ do
+      divClass "tableContainer code-font" $ do
+        status <- el "table" $ do
+          now <- liftIO getCurrentTime -- this time is measured before building the widget
+          evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
+          currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
+          rec
+            c1 <- count (switchDyn $ fmap (leftmost . fmap fst . elems) $ m1) -- count :: Num b => Event a -> m (Dynamic b)
+            c2 <- count (switchDyn $ fmap (leftmost . elems) $ m2)
+            c3 <- count (switchDyn $ fmap (leftmost . elems) $ m3)
+            let c' = fmap (`mod` 3) (c1 + c2 + c3) -- event 0,1,2
+            -- hideableWidget' :: MonadWidget t m => Dynamic t Bool -> m a -> m a
+            -- listWithKey :: forall t k v m a. (Ord k, MonadWidget t m) => Dynamic t (Map k v) -> (k -> Dynamic t v -> m a) -> m (Dynamic t (Map k a))
+            -- switchDyn :: forall t a. Reflex t => Dynamic t (Event t a) -> Event t a
+            m1 <- hideableWidget' (fmap (== 0) c') $ (listWithKey ensParticipants $ (mode1 uHandle currentTime))
+            m2 <- hideableWidget' (fmap (== 1) c') $ (listWithKey ensParticipants $ (mode2 uHandle currentTime))
+            m3 <- hideableWidget' (fmap (== 2) c') $ (listWithKey ensParticipants $ (mode3 uHandle currentTime))
+          return $ switchDyn $ fmap (leftmost . fmap snd . elems) $ m1 --Event t EnsembleRequest -- Dymaic Map Int (Event t EnsembleRequest)
 
-      -- rec
-      --   evClick <- clickableDiv "tableContainerButtonDiv" $ do
-      --     hideableWidget'' dynBool "infoClass" (listWithKey ensParticipants participantFPSLatencyAndLoad)
-      --   dynBool <- toggle False evClick
-    -- return status
+        divClass "statusWidgetAnonymousPart code-font" $ do
+          term Term.AnonymousParticipants >>= dynText
+          text ": "
+          dynText $ fmap showt anonymous
 
-    divClass "statusWidgetAnonymousPart code-font" $ do
-      term Term.AnonymousParticipants >>= dynText
-      text ": "
-      dynText $ fmap showt anonymous
+        return status -- puts the value on the monad
 
-    return status -- $ Write "placeholder" -- status
+mode1 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t (), Event t EnsembleRequest)
+mode1 uHandle t name part =  divClass "rowContainer" $ do
+  ev <- clickableTr' $ do
+    elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
+    elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
+  status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
+  return (ev, status)
+  -- return (ev, status)
 
-row ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t EnsembleRequest)
-row uHandle t name part =  do
-    rec
-      c <- count evClick   -- count :: Num b => Event a -> m (Dynamic b)
-      let c' = fmap (`mod` 3) c -- event 0,1,2
-      let statusAttrs = ("class" =:  "statusWidgetStatusInput"  <> "style" =: "width: 1000px")
-      -- let trAttrs2 = fromList [("colspan","4")]
-      -- let trAttrs3 = fromList [("colspan","2")]
+mode2 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t ())
+mode2 uHandle t name part = do
+  ev <- clickableTr' $ do
+   elClass "td" "statusWidgetNameAndLocation" $ participantNameWidget name part
+   elClass "td" "statusWidgetFPSAndLatency" $ participantLatency name part
+   elClass "td" "statusWidgetFPSAndLatency" $ participantLoad name part
+   elClass "td" "statusWidgetFPSAndLatency" $ participantFPS name part
+  return ev
 
-      -- (evClick, status) <- clickableDivDynAttrsWChild' "tableContainerButtonDiv" $ do -- (Event t (), a)
-      (evClick, status) <- clickableTrWChild  $ do -- (Event t (), a)
-        -- mode 1 (name + status + activity)
-            status' <- hideableWidget' (fmap (== 0) c') $ do
-              el "tr" $ do
-                elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
-                status <- elAttr "td" statusAttrs $ participantStatusWidget uHandle name part
-                elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
-                return status -- ?
-
-            -- mode 2 (name + statistics)
-            hideableWidget' (fmap (== 1) c') $ do
-              el "tr" $ do
-                elClass "td" "statusWidgetNameAndLocation" $ participantNameWidget name part
-                elClass "td" "statusWidgetFPSAndLatency" $ participantFPSLatencyAndLoad name part
-
-            -- mode 3 (?)
-            hideableWidget' (fmap (== 2) c') $ do
-              el "tr" $ do
-                elClass "td" "statusWidgetNameAndLocation" $ participantNameWidget name part
-                elClass "td" "statusWidgetNameAndLocation" $ text "info placeholder"
-
-            return status'
-    return $ status
-
-
-modeOneAttrs :: Bool -> Map T.Text T.Text
-modeOneAttrs b = "class" =: "tableContainerButtonDiv" <> "style" =: ("display: " <> display b)
-  where
-    display True = "none"
-    display _    = "visible"
-
-
-modeTwoAttrs :: Bool -> Map T.Text T.Text
-modeTwoAttrs b = "class" =: "tableContainerButtonDiv" <> "style" =: ("display: " <> display b)
-  where
-    display True = "visible"
-    display _    = "none"
+mode3 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t ())
+mode3 uHandle t name part =  do
+  ev <- clickableTr' $ do
+   elClass "td" "statusWidgetNameAndLocation" $ participantNameWidget name part
+   elClass "td" "otherInfo" $ text "info placeholder"
+  return ev
 
 participantFPSLatencyAndLoad :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
 participantFPSLatencyAndLoad name part = do
@@ -112,6 +94,22 @@ participantFPSLatencyAndLoad name part = do
   let load' = fmap (showt . mainLoad) part
   let fps' = fmap (showt . animationLoad) part
   dynText $ latency' <> (constDyn "ms ") <> load' <> (constDyn "% ") <> fps' <>(constDyn "FPS")
+
+participantLatency :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantLatency name part = do
+  let latency' = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
+  dynText $ latency' <> (constDyn "ms ")
+
+participantLoad :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantLoad name part = do
+  let load' = fmap (showt . mainLoad) part
+  dynText $ load' <> (constDyn "% ")
+
+participantFPS :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantFPS name part = do
+  let fps' = fmap (showt . animationLoad) part
+  dynText $ fps' <>(constDyn "FPS")
+
 
 participantStatusWidget :: MonadWidget t m  => Dynamic t Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
 participantStatusWidget thisUserHandle _ part = do
@@ -127,7 +125,7 @@ participantNameAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Partici
 participantNameAndLocationWidget name part = divClass "pNameLocationAndTooltop" $ do
   let child = dynText $ constDyn name <> fmap location' part
   let popup = dynText $ fmap browser part
-  tooltip child popup
+  tooltipForScrollableTable child popup
 
 compareHandles ::  Text -> Participant -> Bool -- -> Dynamic t Text -> Bool
 compareHandles uHandle part = uHandle == (name part)
