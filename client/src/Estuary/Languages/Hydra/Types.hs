@@ -3,8 +3,8 @@ module Estuary.Languages.Hydra.Types where
   data Source =
     ConstantInt Int |
     ConstantDouble Double |
-    List [Double] |
-    Fast (Maybe Source) |
+    List [Source] |
+    --Fast List (Maybe Source) |
     --Speed Source | -- find a new place, it doesn't go here speed = 1.5
     --Bpm [Source] | -- audio
     Osc (Maybe Source) (Maybe Source) (Maybe Source) |
@@ -13,7 +13,7 @@ module Estuary.Languages.Hydra.Types where
     Noise (Maybe Source) (Maybe Source) |
     Shape (Maybe Source) (Maybe Source) (Maybe Source) |
     Voronoi (Maybe Source) (Maybe Source) (Maybe Source) |
-    Scr Source |
+    --Scr Source | -- screen/camera as input
     Brightness Source (Maybe Source) |
     Contrast Source (Maybe Source) |
     Color Source (Maybe Source) (Maybe Source) (Maybe Source) |
