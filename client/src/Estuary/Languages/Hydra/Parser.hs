@@ -2,6 +2,7 @@
 
 module Estuary.Languages.Hydra.Parser where
 
+{-
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Parsec
@@ -182,3 +183,4 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
+-}
