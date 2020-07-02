@@ -33,7 +33,7 @@ sourceToJSVal :: Hydra -> Source -> JSVal
 sourceToJSVal _ (ConstantInt x) = pToJSVal x
 sourceToJSVal _ (ConstantDouble x) = pToJSVal x
 -- sourceToJSVal _ (List xs) = pToJSVal xs
-sourceToJSVal h (Fast x y) = _fast (sourceToJSVal h x) (maybeSourceToJSVal h y)
+-- sourceToJSVal h (Fast x) = _fast h (maybeSourceToJSVal h x)
 sourceToJSVal h (Osc x y z) = _osc h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
 sourceToJSVal h (Solid w x y z) = _solid h (maybeSourceToJSVal h w) (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
 sourceToJSVal h (Gradient x) = _gradient h (maybeSourceToJSVal h x)

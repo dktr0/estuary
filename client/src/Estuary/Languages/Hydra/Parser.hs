@@ -2,7 +2,6 @@
 
 module Estuary.Languages.Hydra.Parser where
 
-{-
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Parsec
@@ -47,52 +46,110 @@ renderOut = do
 outputToStatement :: Output -> Statement
 outputToStatement o = Render o
 
--- Osc [Source] [Source] [Source] |
--- Solid [Source] [Source] [Source] [Source] |
--- Gradient [Source] |
--- Noise [Source] [Source] |
--- Shape [Source] [Source] [Source] |
--- Voronoi [Source] [Source] [Source] |
 
--- Adding sources
-parserSource :: Parser Source
-parserSource = choice [
-  osc,
-  fast,
+--------- Adding sources
+
+sourceAsArgument :: Parser Source
+sourceAsArgument = choice [
+  parserSource,
   list,
   constantDouble,
   constantInt
   ]
 
+parserSource :: Parser Source
+parserSource = choice [
+  osc,
+  solid,
+  gradient,
+  noise,
+  shape,
+  voronoi
+  ]
+
+--------- parserSource
+
 -- osc() -- osc(0.3) -- osc(0.3,0.5) -- osc(0,10,0.5) -- osc([0.4,0.5],1.0,0.2)
 osc :: Parser Source
 osc = do
   reserved "osc"
-  p <- parens $ sepBy parserSource (comma)
+  p <- parens $ sepBy sourceAsArgument (comma)
   case p of
       [] -> return $ Osc Nothing Nothing Nothing
       (x:[]) -> return $ Osc (Just x) Nothing Nothing
       (x:y:[]) -> return $ Osc (Just x ) (Just y) Nothing
       (x:y:z:_) -> return $ Osc (Just x) (Just y) (Just z)
 
-
--- fast() -- fast(0.5) -- fast([0.5,0.2])
--- check this function and how does it work in hydra
-fast :: Parser Source
-fast = do
-  symbol "."
-  reserved "fast"
-  p <- parens $ sepBy parserSource (comma)
+-- solid() -- solid(0.5) -- solid(0.2,[0.1,0.2,0.3]) -- solid(1,0.5,1) -- solid(1,0.5,0.2,0.7)
+solid :: Parser Source
+solid = do
+  reserved "solid"
+  p <- parens $ sepBy sourceAsArgument (comma)
   case p of
-      [] -> return $ Fast Nothing
-      (x:_) -> return $ Fast (Just x)
+      [] -> return $ Solid Nothing Nothing Nothing Nothing
+      (x:[]) -> return $ Solid (Just x) Nothing Nothing Nothing
+      (x:y:[]) -> return $ Solid (Just x) (Just y) Nothing Nothing
+      (x:y:z:[]) -> return $ Solid (Just x) (Just y) (Just z) Nothing
+      (x:y:z:v:_) -> return $ Solid (Just x) (Just y) (Just z) (Just v)
 
+-- gradient() -- gradient(0.4) -- gradient(osc())
+gradient :: Parser Source
+gradient = do
+  reserved "gradient"
+  p <- parens $ sepBy sourceAsArgument (comma)
+  case p of
+      [] -> return $ Gradient Nothing
+      (x:_) -> return $ Gradient (Just x)
+
+-- noise() -- noise([5,10]) -- noise(0.5,0.7)
+noise :: Parser Source
+noise = do
+  reserved "noise"
+  p <- parens $ sepBy sourceAsArgument (comma)
+  case p of
+      [] -> return $ Noise Nothing Nothing
+      (x:[]) -> return $ Noise (Just x) Nothing
+      (x:y:_) -> return $ Noise (Just x) (Just y)
+
+-- shape() -- shape(osc()) -- shape(0.5,noise(),gradient())
+shape :: Parser Source
+shape = do
+  reserved "shape"
+  p <- parens $ sepBy sourceAsArgument (comma)
+  case p of
+      [] -> return $ Shape Nothing Nothing Nothing
+      (x:[]) -> return $ Shape (Just x) Nothing Nothing
+      (x:y:[]) -> return $ Shape (Just x) (Just y) Nothing
+      (x:y:z:_) -> return $ Shape (Just x) (Just y) (Just z)
+
+-- voronoi() -- voronoi([0.5,0.8,0.3]) -- voronoi(10,0.5,0.1)
+voronoi :: Parser Source
+voronoi = do
+  reserved "voronoi"
+  p <- parens $ sepBy sourceAsArgument (comma)
+  case p of
+      [] -> return $ Shape Nothing Nothing Nothing
+      (x:[]) -> return $ Shape (Just x) Nothing Nothing
+      (x:y:[]) -> return $ Shape (Just x) (Just y) Nothing
+      (x:y:z:_) -> return $ Shape (Just x) (Just y) (Just z)
+
+--------- sourceAsArgument
 
 -- [0.2,0.4] -- [0.3,0.4,1.0]
 list :: Parser Source
 list = do
-  n <- brackets $ sepBy double (comma)
+  n <- brackets $ sepBy sourceAsArgument (comma)
   return $ List n
+
+-- [].fast() -- [].fast(0.5) -- [].fast([0.5,0.2])
+-- fast :: Parser Source
+-- fast = do
+--   symbol "."
+--   reserved "fast"
+--   p <- parens $ sepBy sourceAsArgument (comma)
+--   case p of
+--       [] -> return $ Fast Nothing
+--       (x:_) -> return $ Fast (Just x)
 
 -- 0.2 -- 4.0
 constantDouble :: Parser Source
@@ -106,6 +163,7 @@ constantInt = do
   return $ ConstantInt n
 
 
+---------
 
 -- Adding outputs
 -- out() -- out(O1) -- out(O2) -- out(O3)
@@ -138,6 +196,7 @@ double = choice [
   ]
 
 ---------
+
 tokenParser :: P.GenTokenParser Text () Identity
 tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.commentStart = "{-",
@@ -183,4 +242,3 @@ semiSep = P.semiSep tokenParser
 semiSep1 = P.semiSep1 tokenParser
 commaSep = P.commaSep tokenParser
 commaSep1 = P.commaSep1 tokenParser
--}
