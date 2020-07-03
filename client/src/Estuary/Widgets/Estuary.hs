@@ -77,7 +77,7 @@ estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MV
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  glCtx <- canvasWidget ctx -- canvas for Punctual
+  (cvsElement,glCtx) <- canvasWidget ctx -- canvas for Punctual
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
@@ -135,7 +135,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let requests'' = fmap (:[]) $ commandRequests
   let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
 
-  liftIO $ forkRenderThreads irc ctxM glCtx riM
+  liftIO $ forkRenderThreads irc ctxM cvsElement glCtx riM
   return ()
 
 hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
@@ -162,7 +162,7 @@ cinecer0Widget ctxM ctx = do
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
-canvasWidget :: MonadWidget t m => Dynamic t Context -> m GLContext
+canvasWidget :: MonadWidget t m => Dynamic t Context -> m (HTMLCanvasElement,GLContext)
 canvasWidget ctx = do
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
   let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -2;" <> x <> ";")]
@@ -171,7 +171,7 @@ canvasWidget ctx = do
   let attrs = (<>) <$> baseAttrs <*> resMap
   canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
   glc <- liftIO $ newGLContext canvas
-  return glc
+  return (canvas,glc)
 
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
