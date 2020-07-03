@@ -19,7 +19,7 @@ import Estuary.Widgets.Editor
 
 createEnsembleWidget :: MonadWidget t m => Event t [Response]
   -> Editor t m (Event t (), Event t Request)
-createEnsembleWidget rs = do
+createEnsembleWidget rs = el "div" $ do
 
   el "div" $ term Term.CreateNewEnsemble >>= dynText
 

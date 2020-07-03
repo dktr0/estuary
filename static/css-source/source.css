@@ -18,7 +18,7 @@ body {
  	height: 100%;
 	margin: 0;
 	background: var(--background-color);
-	overflow: auto;
+	overflow: hidden;
 }
 
 
@@ -148,14 +148,15 @@ body::-webkit-scrollbar-thumb {
 }
 
 .header {
-/* In flex: none the grow and shrink options are off. It is a fixed elemente whose width and height us based off the content size	 */
-	flex:none;
-	display: flex;
-	flex-direction: row-reverse;
-	padding-left: 10px;
-	overflow: hidden;
-    white-space: nowrap;
-    border: none;
+/* With "flex: none" the grow and shrink options are off. It is a fixed element
+  whose width and height is based off the content size */
+  flex: none;
+  display: flex;
+  padding-left: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: none;
+  height: 30px;
 }
 
 .page {
@@ -165,11 +166,11 @@ body::-webkit-scrollbar-thumb {
 	position: relative; /* note that relative positioning with 0x0 is required here for SVG fdisplay */
 	left: 0px;
 	top: 0px;
-	border-top: 1px solid;
 	padding-left: 15px;
 	padding-right: 15px;
 	overflow:hidden;
 	overflow-y: auto;
+  display: inline-flex;
 }
 
 .page::-webkit-scrollbar  {
@@ -230,16 +231,16 @@ body::-webkit-scrollbar-thumb {
 */
 
 .config-toolbar {
-	padding-right: 1em;
-/* 	float: right; */
-	display: block;
-	text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
+  padding-right: 1em;
+  display: block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  position: absolute;
+  right: 0;
 }
 
 .config-entry {
-	border-right: 1px solid;
 	padding: 0.25em 0.5em;
 	display: inline-block;
 
@@ -272,12 +273,13 @@ body::-webkit-scrollbar-thumb {
  }
 
 .splash-margin {/*sets the padding between the home-page buttons (source)*/
-    width: 50%;
-    height: 50%;
+  flex-grow: 1;
+  width: 50%;
+  height: 50%;
 	box-sizing: border-box;
 	padding: 0.5em;
-    display: flex;
-    }
+  display: flex;
+  }
 
 .splash-panel {/*contains the tutorial, solo and collaboration buttons (source)*/
 	font-family: estuaryFont;
@@ -303,29 +305,27 @@ body::-webkit-scrollbar-thumb {
 }
 
 .splash-title-container { /*contains the title "estuary" on the homepage  (source)*/
-   height: 40%;
-   display:flex;
+   height: 50%;
    justify-content: center;
    align-items:center;
 
 }
 
-.splash-title{
-	width:fit-content;
-	font-size: calc(80% + 2vw);
+.splash-title {
+	font-size: 3vmin;
+  overflow-wrap: break-word;
 }
 
 .splash-icon-container {
-	    width: 100%;
-		display: flex;
-        justify-content: center;
+	  width: 100%;
+    justify-content: center;
 		margin: auto;
 		min-height: 0; /* Fixes flex stretching for underspecified boxes to be the flex'd height rather than parent height. */
 }
 
 .splash-icon {
 	font-family: estuary-icons;
- 	font-size: calc(80% + 20vh);
+ 	font-size: 15vmin;
 }
 
 .splash-icon > canvas {
@@ -335,6 +335,26 @@ body::-webkit-scrollbar-thumb {
        trigger the event for the panel, not during the animation. */
     pointer-events: none;
   }
+
+/* used to put splash buttons/lobby on one side, announcements on the other */
+.pageSplitter {
+  display: flex;
+  width: 100%;
+}
+
+/* used with pageSplitter (above) to put splash buttons/lobby on one side, announcements on the other */
+.halfPage {
+  width: 50%;
+  height: 100%;
+}
+
+.announcements {
+  padding: 0.5em;
+}
+
+.announcement {
+  margin-bottom: 0.5em;
+}
 
 /*contains the about text (source)*/
 .aboutEstuaryParagraph {
@@ -1300,4 +1320,109 @@ height: 6.5em;
   display: inline-block;
   text-align: end;
   cursor: pointer;
+}
+
+.header-area {
+  width: 50%;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.sidebar {
+  height: 100%;
+  width: 33%;
+  overflow-x: hidden;
+  transition: 0.5s;
+  border-left: 1px solid;
+}
+
+.sidebar-tab {
+  width: 48%;
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid;
+  padding: 0.125em;
+}
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 15px;
+  width: 15px;
+  bottom: 1px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(25px);
+  -ms-transform: translateX(25px);
+  transform: translateX(25px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.config-option {
+  padding-left: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+hr.dashed {
+  border-top: 2px dashed var(--primary-color);
+  border-bottom: transparent;
+}
+
+.header-title {
+  font-size: 16pt;
+  padding: 2px;
+  font-family: estuaryFont;
+  cursor: pointer;
+}
+
+.opaque {
+  background: var(--background-color);
 }

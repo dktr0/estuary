@@ -274,6 +274,7 @@ renderZoneAnimation  _ _ _ = return ()
 
 renderZoneAnimationTextProgram :: UTCTime -> Int -> TextProgram -> Renderer
 renderZoneAnimationTextProgram tNow z (Punctual,x,eTime) = renderPunctualWebGL tNow z
+renderZoneAnimationTextProgram tNow z (CineCer0,x,eTime) = renderCineCer0 tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
 updatePunctualResolutionAndBrightness :: Context -> Renderer
@@ -294,6 +295,17 @@ renderPunctualWebGL tNow z = do
     Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
   modify' $ \x -> x { punctualWebGL = newWebGL }
+
+renderCineCer0 :: UTCTime -> Int -> Renderer
+renderCineCer0 tNow z = do
+  s <- get
+  case videoDivCache s of
+    Nothing -> return ()
+    Just theDiv -> do
+      let spec = IntMap.findWithDefault (CineCer0.emptySpec $ renderStart s) z (cineCer0Specs s)
+      let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
+      newState <- liftIO $ CineCer0.updateCineCer0State (tempoCache s) tNow spec prevState
+      modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
 renderZoneChanged irc c z (TidalStructure x) = do
@@ -432,17 +444,6 @@ renderTextProgramAlways irc c z eTime = do
 
 renderBaseProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Maybe TextNotation -> Renderer
 renderBaseProgramAlways irc c z _ (Just (TidalTextNotation _)) = renderControlPattern irc c z
-renderBaseProgramAlways irc c z _ (Just CineCer0) = do
-  s <- get
-  let maybeTheDiv = videoDivElement c
-  when (isJust maybeTheDiv) $ do
-    let spec = IntMap.findWithDefault (CineCer0.emptySpec $ renderStart s) z (cineCer0Specs s)
-    let theDiv = fromJust maybeTheDiv
-    let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
-    let t = tempo $ ensemble $ ensembleC c
-    now <- liftIO $ getCurrentTime
-    newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
-    modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
 renderBaseProgramAlways irc c z _ (Just TimeNot) = do
   s <- get
   let p = IntMap.lookup z $ timeNots s
@@ -517,7 +518,11 @@ mainRenderThread irc ctxM riM rsM = do
   ctx <- readMVar ctxM
   rs <- takeMVar rsM
   rs' <- execStateT (render irc ctx) rs
-  let rs'' = rs' { animationOn = canvasOn ctx }
+  let rs'' = rs' {
+    animationOn = canvasOn ctx,
+    tempoCache = tempo $ ensemble $ ensembleC ctx,
+    videoDivCache = videoDivElement ctx
+    }
   putMVar rsM rs''
   swapMVar riM (info rs'') -- copy RenderInfo from state into MVar for instant reading elsewhere
   _ <- execStateT sleepIfNecessary rs''
