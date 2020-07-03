@@ -83,7 +83,7 @@ vs_vs :: H (VideoSpec -> VideoSpec)
 vs_vs =
   sigRat_vs_vs <*> sigRat <|>
   sigMayRat_vs_vs <*> sigMayRat <|>
-  rat_vs_vs <*> rationalOrInteger <|>
+  rat_vs_vs <*> rationalOrInteger -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)
 
