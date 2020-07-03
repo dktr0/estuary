@@ -67,17 +67,17 @@ foreign import javascript unsafe
   "$1.style = $2;"
   videoStyle_ :: CineCer0Video -> Text -> IO ()
 
+-- foreign import javascript unsafe
+--   "$1.muted = true;"
+--   muteVideo :: CineCer0Video -> IO ()
+
 foreign import javascript unsafe
-  "$1.muted = true;"
-  muteVideo :: CineCer0Video -> IO ()
+  "$1.muted = $2;"
+  muteVideo :: CineCer0Video -> Bool -> IO ()
 
--- foreign import javascript unsafe
---   "$1.muted = $2;"
---   muteVideo :: CineCer0Video -> Bool -> IO ()
-
--- foreign import javascript unsafe
---   "$1.volume = $2"
---   videoVolume :: CineCer0Video -> Double -> IO ()
+foreign import javascript unsafe
+  "$1.volume = $2"
+  videoVolume :: CineCer0Video -> Double -> IO ()
 
 foreign import javascript unsafe
   "$1.src = $2; $1.load()"
@@ -173,7 +173,7 @@ addVideo j spec = do
   --putStrLn $ "addVideo " ++ (sampleVideo spec)
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
-  muteVideo x
+  muteVideo x True
   appendVideo x j
   return x
 
@@ -250,6 +250,14 @@ updateContinuingVideo t eTime rTime (sw,sh) s (v,prevStyle) = handle (logExcepti
           videoPlaybackRate v rate'
           videoPlaybackPosition v rate' pos'
       otherwise -> return ()
+
+    -- audio
+    (\ volSig -> if volSig == 0 
+      then muteVideo v True 
+      else muteVideo v False) (realToFrac (volume s t lengthOfVideo rTime eTime aTime))
+    videoVolume v $ realToFrac (volume s t lengthOfVideo rTime eTime aTime)
+ --    muteVideo v (mute s t lengthOfVideo rTime eTime aTime)
+
 
     -- style filters
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100

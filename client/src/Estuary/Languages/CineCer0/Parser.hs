@@ -83,7 +83,9 @@ vs_vs :: H (VideoSpec -> VideoSpec)
 vs_vs =
   sigRat_vs_vs <*> sigRat <|>
   sigMayRat_vs_vs <*> sigMayRat <|>
-  rat_vs_vs <*> rationalOrInteger
+  rat_vs_vs <*> rationalOrInteger -- <|>
+ -- (reserved "mute" >> return setMute) <|>
+ -- (reserved "unmute" >> return setUnmute)
 
 sigMayRat_vs_vs :: H (Signal (Maybe Rational) -> VideoSpec -> VideoSpec)
 sigMayRat_vs_vs =
@@ -114,6 +116,7 @@ sigRat_vs_vs =
   shiftSize <$ reserved "size" <|>
   circleMask <$ reserved "circleMask" <|>
   sqrMask <$ reserved "sqrMask" <|>
+  setVolume <$ reserved "vol" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
