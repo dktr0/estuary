@@ -1426,3 +1426,17 @@ hr.dashed {
 .opaque {
   background: var(--background-color);
 }
+
+.reference-title {
+  font-size: 16pt;
+  font-family: estuaryFont;
+}
+
+.reference {
+  padding: 5px;
+}
+
+.reference-description {
+  padding-top: 8px;
+  font-size: 0.8em;
+}
