@@ -1,3 +1,4 @@
+*.lock
 *.pem
 *.csr
 sampleMap.json
@@ -37,3 +38,4 @@ dev-staging/
 **/*.cabal
 dist-*/
 .ghc.environment*
+test-ghcjs

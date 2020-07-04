@@ -109,7 +109,7 @@ attrs b = "class" =: "code-font" <> "style" =: ("pointer-events: " <> pevents b 
     bevents False = ""
 
 location' :: Participant -> Text
-location' p = f (location p)
+location' p = f (Estuary.Types.Participant.location p)
   where
     f x | x == "" = x
         | otherwise = "@" <> x
@@ -118,7 +118,7 @@ participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m (
 participantNameWidget name part = text name
 
 participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantLocationWidget name part = dynText $ fmap location part
+participantLocationWidget name part = dynText $ fmap Estuary.Types.Participant.location part
 
 
 participantActivityWidget :: MonadWidget t m => Event t UTCTime -> Text -> Dynamic t Participant -> m ()
