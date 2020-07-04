@@ -168,19 +168,33 @@ videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; p
 
 ----  Add and Change Source ----
 
-addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
-addVideo j spec = do
-  --putStrLn $ "addVideo " ++ (sampleVideo spec)
-  let url = T.pack $ sampleVideo spec
+addTextOrVideo :: HTMLDivElement -> Either String String -> IO CineCer0Video
+addTextOrVideo j (Right x) = addVideo j x 
+addTextOrVideo j (Left x) = addVideo j x
+
+addVideo::  HTMLDivElement -> String -> IO CineCer0Video
+addVideo j str = do
+  let url = T.pack str 
   x <- makeVideo url
   muteVideo x True
   appendVideo x j
   return x
 
+addText:: HTMLDivElement -> String -> IO CineCer0Video
+
+-- addVideo :: HTMLDivElement -> VideSpec -> IO CineCer0Video
+-- addVideo j spec = do
+--   --putStrLn $ "addVideo " ++ (sampleVideo spec)
+--   let url = T.pack $ sampleVideo spec     -- :: String
+--   x <- makeVideo url
+--   muteVideo x True
+--   appendVideo x j
+--   return x
+
 onlyChangedVideoSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
 onlyChangedVideoSources nSpec oSpec
-  | (sampleVideo nSpec /= sampleVideo oSpec) = Just nSpec
-  | (sampleVideo nSpec == sampleVideo oSpec) = Nothing
+  | (textOrVideo nSpec /= textOrVideo oSpec) = Just nSpec
+  | (textOrVideo nSpec == textOrVideo oSpec) = Nothing
 
 
 logExceptions :: a -> SomeException -> IO a
@@ -197,17 +211,17 @@ updateCineCer0State t rTime spec st = handle (logExceptions st) $ do
   divHeight <- offsetHeight $ videoDiv st
   -- add videos
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
-  let toAdd = IntMap.filter (\x -> sampleVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
-  addedVideos <- mapM (addVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
+  let toAdd = IntMap.filter (\x -> textOrVideo x /= "") newVideoSpecs -- :: IntMap VideoSpec
+  addedVideos <- mapM (addTextOrVideo $ videoDiv st) toAdd -- :: IntMap CineCer0Video
   let addedStyles = fmap (const "") addedVideos -- :: IntMap Text
   -- change videos
   let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
   let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
   let toChange' = intersectionWith (\a b -> (a,b)) toChange $ videos st -- IntMap (VideoSpec,CineCer0Video)
-  mapM_ (\(x,cv) -> changeVideoSource' cv $ T.pack (sampleVideo x)) toChange'
+  mapM_ (\(x,cv) -> changeVideoSource' cv $ T.pack (sampleVideo x)) toChange' --NEED A TEXORVID FUNC!!
   -- delete VideoSpecs
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
-  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> sampleVideo x == "") vSpecs -- :: IntMap CineCer0Video
+  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> textOrVideo x == "") vSpecs -- :: IntMap CineCer0Video
   let toDelete = union videosWithRemovedSpecs videosWithEmptySource
   mapM (removeVideo $ videoDiv st) toDelete
   let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
