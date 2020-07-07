@@ -22,6 +22,9 @@ main = microspec $ do
     it "parses a StartStreaming command" $ Terminal.parseCommand "!startStreaming" `shouldBe` Right Terminal.StartStreaming
 
   describe "the CineCer0 parser" $ do
+    it "parses an empty string" $ fmap (IntMap.null . videoSpecMap) (cineCer0 eTime "") `shouldBe` Right True
+    it "parses just a comment" $ fmap (IntMap.null . videoSpecMap) (cineCer0 eTime "{-comment-}") `shouldBe` Right True
+    it "parses empty statements" $ fmap (IntMap.null . videoSpecMap) (cineCer0 eTime ";;") `shouldBe` Right True
     it "name of video test" $ fmap (fmap sampleVideo . IntMap.lookup 0 . videoSpecMap) (cineCer0 eTime "\"myMovie.mov\"") `shouldBe` Right (Just "myMovie.mov")
     it "vol parser test" $ fmap (fmap (\vs -> (volume vs) tempoTest vidlen rTime eTime aTime) . IntMap.lookup 0 . videoSpecMap) (cineCer0 eTime "vol 0.5 $ \"myMovie.mov\"") `shouldBe` Right (Just 0.5)
     it "posX parser test" $ fmap (fmap (\vs -> (posX vs) tempoTest vidlen rTime eTime aTime) . IntMap.lookup 0 . videoSpecMap) (cineCer0 eTime "setPosX 0.5 $ \"myMovie.mov\"") `shouldBe` Right (Just 0.5)

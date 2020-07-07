@@ -15,7 +15,7 @@ import Control.Monad
 import Reflex.FunctorMaybe
 import Control.Exception
 
-import Estuary.Types.Tempo
+import Data.Tempo
 import Estuary.Languages.CineCer0.Parser
 import Estuary.Languages.CineCer0.VideoSpec as Cinecer0
 import Estuary.Languages.CineCer0.Spec
@@ -59,7 +59,8 @@ foreign import javascript unsafe "$1.duration" getLengthOfVideo :: JSVideo -> IO
 data CineCer0Video = CineCer0Video {
   jsVideo :: JSVideo,
   positionLock :: Int,
-  previousStyle :: Text
+  previousStyle :: Text,
+  previousVol :: Double
   }
 
 addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
@@ -71,30 +72,32 @@ addVideo j spec = do
   return $ CineCer0Video {
     jsVideo = x,
     positionLock = 0,
-    previousStyle = ""
+    previousStyle = "",
+    previousVol = 0
   }
 
-setVideoRateAndPosition :: CineCer0Video -> Maybe Double -> Maybe Double -> IO CineCer0Video
-setVideoRateAndPosition v (Just r) (Just p) = do
+setVideoRateAndPosition :: CineCer0Video -> Double -> Maybe Double -> Maybe Double -> IO CineCer0Video
+setVideoRateAndPosition v vLength (Just r) (Just p) = do
   if ((r >= 0.0625) && (r <= 16)) then do
     let j = jsVideo v
     -- set rate
     x <- getVideoPlaybackRate j
-    when (x /= r) $ do
-      putStrLn "rate"
-      setVideoPlaybackRate j r
+    when (x /= r) $ setVideoPlaybackRate j r
     -- set playback position
     if positionLock v == 0 then do
-      x <- getVideoPlaybackPosition j
-      let diff = abs (x - p)
+      currentPos <- getVideoPlaybackPosition j
+      let diff1 = abs (currentPos - p)
+      let diff2 = abs (currentPos + vLength - p)
+      let diff3 = abs (p + vLength - currentPos)
+      let diff = min (min diff1 diff2) diff3
       if diff > 0.050 then do
-        putStrLn $ "x=" ++ show x ++ "  p="++show p ++ "  diff=" ++ show (x - p)
-        setVideoPlaybackPosition j (p+0.1) -- (p+(0.15*r))
-        return $ v { positionLock = 30 } -- wait 30 frames before setting position again
+        -- putStrLn $ "currentPos=" ++ show currentPos ++ "  target="++show p ++ "  diff=" ++ show (currentPos - p)
+        setVideoPlaybackPosition j (p+(0.15*r))
+        return $ v { positionLock = 12 } -- wait 12 frames before setting position again
       else return v
     else return $ v { positionLock = positionLock v - 1 }
   else return v -- silently fail when rate is outside of range [0.0625,16]
-setVideoRateAndPosition v _ _ = return v
+setVideoRateAndPosition v _ _ _ = return v
 
 setVideoStyle :: CineCer0Video -> Text -> IO CineCer0Video
 setVideoStyle v x = do
@@ -102,6 +105,15 @@ setVideoStyle v x = do
   else do
     _setVideoStyle (jsVideo v) x
     return $ v { previousStyle = x }
+
+setVideoVol :: CineCer0Video -> Double -> IO CineCer0Video
+setVideoVol v x = do
+  if previousVol v == x then return v
+  else do
+    let j = jsVideo v
+    muteVideo j $ x == 0
+    videoVolume j x
+    return $ v { previousVol = x }
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Video -> IO CineCer0Video
 updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
@@ -127,13 +139,10 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     -- update playback rate and position
     let rate = fmap realToFrac $ playbackRate s t lengthOfVideo rTime eTime aTime
     let pos = fmap realToFrac $ playbackPosition s t lengthOfVideo rTime eTime aTime
-    v' <- setVideoRateAndPosition v rate pos
+    v' <- setVideoRateAndPosition v (realToFrac lengthOfVideo) rate pos
 
     -- update audio (volume and mute)
-{-    (\ volSig -> if volSig == 0
-      then muteVideo j True
-      else muteVideo j False) (realToFrac (volume s t lengthOfVideo rTime eTime aTime))
-    videoVolume j $ realToFrac (volume s t lengthOfVideo rTime eTime aTime) -}
+    v'' <- setVideoVol v' $ realToFrac (volume s t lengthOfVideo rTime eTime aTime)
 
     -- update style (size, position, opacity, etc)
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
@@ -144,7 +153,7 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     let mask' = ((Cinecer0.mask s) t lengthOfVideo rTime eTime aTime)
-    setVideoStyle v' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask'
+    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask'
 
   else return v
 
