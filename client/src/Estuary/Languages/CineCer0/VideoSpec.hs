@@ -8,7 +8,7 @@ import Data.Time
 import Data.Text
 import TextShow
 
-import Estuary.Types.Tempo
+import Data.Tempo
 
 import Estuary.Languages.CineCer0.Signal
 
@@ -204,10 +204,10 @@ rectMask m n s t vs = vs {
 
 -- audio --  keep it simple just mute, unmute and volume
 
-setMute :: VideoSpec -> VideoSpec 
+setMute :: VideoSpec -> VideoSpec
 setMute v = v { mute = constantSignal True }
 
-setUnmute :: VideoSpec -> VideoSpec 
+setUnmute :: VideoSpec -> VideoSpec
 setUnmute v = v { mute = constantSignal False}
 
 setVolume:: Signal Rational -> VideoSpec -> VideoSpec

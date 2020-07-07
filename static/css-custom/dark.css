@@ -35,6 +35,7 @@ More advanced customization is available through CSS classes within this documen
 .code-font {
 	  font-family: 'Helvetica';
 	  font-size: 1em;
+    text-shadow: 0 0 10px #333333;
 	  }
 
 /* styles other fonts (e.g. the header, menus and labels) */
