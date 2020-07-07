@@ -35,8 +35,6 @@ data VideoSpec = VideoSpec {
   grayscale :: Signal (Maybe Rational),
   saturate :: Signal (Maybe Rational),
   mask :: Signal Text
-
---  subtitles :: Signal String
   }
 
 instance Show VideoSpec where

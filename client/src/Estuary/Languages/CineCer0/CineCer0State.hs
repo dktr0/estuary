@@ -63,7 +63,11 @@ data CineCer0Video = CineCer0Video {
   previousVol :: Double
   }
 
-addVideo :: HTMLDivElement -> VideoSpec -> IO CineCer0Video
+addTextOrVideo :: HTMLDivElement -> Either String String -> IO CineCer0Video
+addTextOrVideo j (Right x) = addVideo j x 
+addTextOrVideo j (Left x) = addVideo j x -- for now there is no text infrastructure
+
+addVideo :: HTMLDivElement -> String -> IO CineCer0Video
 addVideo j spec = do
   let url = T.pack $ sampleVideo spec
   x <- makeVideo url
