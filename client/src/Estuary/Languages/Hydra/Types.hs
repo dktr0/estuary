@@ -3,16 +3,17 @@ module Estuary.Languages.Hydra.Types where
 data Source =
   ConstantInt Int |
   ConstantDouble Double |
-  List [Source] |
-  --Fast [Double] (Maybe Source) |
+  List [Source] | -- [0.2,0.4] -- [0.3,0.4,1.0]
+  Osc [Source] | -- osc() -- osc(0.3) -- osc(0.3,0.5) -- osc(0,10,0.5) -- osc([0.4,0.5],1.0,0.2)
+  Solid [Source] | -- solid() -- solid(0.5) -- solid(0.2,[0.1,0.2,0.3]) -- solid(1,0.5,1) -- solid(1,0.5,0.2,0.7)
+  Gradient [Source] | -- gradient() -- gradient(0.4) -- gradient(osc())
+  Noise [Source] | -- noise() -- noise([5,10]) -- noise(0.5,0.7)
+  Shape [Source] | -- shape() -- shape(osc()) -- shape(0.5,noise(),gradient())
+  Voronoi [Source] | -- voronoi() -- voronoi([0.5,0.8,0.3]) -- voronoi(10,0.5,0.1)
+
+  --Fast [Double] [Source] |
   --Speed Source | -- find a new place, it doesn't go here speed = 1.5
   --Bpm [Source] | -- audio
-  Osc (Maybe Source) (Maybe Source) (Maybe Source) |
-  Solid (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  Gradient (Maybe Source) |
-  Noise (Maybe Source) (Maybe Source) |
-  Shape (Maybe Source) (Maybe Source) (Maybe Source) |
-  Voronoi (Maybe Source) (Maybe Source) (Maybe Source) |
   --Src Source | -- screen/camera as input
   Brightness Source (Maybe Source) |
   Contrast Source (Maybe Source) |

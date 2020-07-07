@@ -432,9 +432,9 @@ parsePunctualNotation' irc c z t = do
 parseHydra :: ImmutableRenderContext -> Context -> Int -> Text -> Renderer
 parseHydra irc c z t = do
  s <- get
- parseResult <- liftIO $ try $ return $! Hydra.hydra t
+ parseResult <- liftIO $ try $ return $! Hydra.parseHydra t
  case parseResult of
-   Right (Right stmt) -> do
+   Right (Right stmts) -> do
      clearZoneError z
      let x = IntMap.lookup z $ hydras s
      hydra <- case x of
@@ -444,8 +444,7 @@ parseHydra irc c z t = do
          modify' $ \x -> x { hydras = IntMap.insert z h (hydras x)}
          return h
      -- liftIO $ Hydra.setResolution hydra 1280 720
-     -- let placeholder = [Hydra.Out (Hydra.Osc Nothing Nothing Nothing) (Hydra.O0)]
-     liftIO $ Hydra.evaluate hydra [stmt]
+     liftIO $ Hydra.evaluate hydra stmts
    Right (Left parseErr) -> setZoneError z (T.pack $ show parseErr)
    Left exception -> setZoneError z (T.pack $ show (exception :: SomeException))
 
