@@ -34,7 +34,11 @@ sourceToJSVal _ (ConstantInt x) = pToJSVal x
 sourceToJSVal _ (ConstantDouble x) = pToJSVal x
 -- sourceToJSVal _ (List xs) = pToJSVal xs
 -- sourceToJSVal h (Fast x) = _fast h (maybeSourceToJSVal h x)
-sourceToJSVal h (Osc x y z) = _osc h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
+sourceToJSVal h (Osc Nothing Nothing Nothing) = _osc0 h
+sourceToJSVal h (Osc (Just x) Nothing Nothing) = _osc1 h (sourceToJSVal h x)
+sourceToJSVal h (Osc (Just x) (Just y) Nothing) = _osc2 h (sourceToJSVal h x) (sourceToJSVal h y)
+sourceToJSVal h (Osc (Just x) (Just y) (Just z)) = _osc3 h (sourceToJSVal h x) (sourceToJSVal h y) (sourceToJSVal h z)
+sourceToJSVal h (Osc _ _ _) = error "placeholder, really Osc should be Osc [Source]..."
 sourceToJSVal h (Solid w x y z) = _solid h (maybeSourceToJSVal h w) (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
 sourceToJSVal h (Gradient x) = _gradient h (maybeSourceToJSVal h x)
 sourceToJSVal h (Noise x y) = _noise h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y)
@@ -42,7 +46,10 @@ sourceToJSVal h (Shape x y z) = _shape h (maybeSourceToJSVal h x) (maybeSourceTo
 sourceToJSVal h (Voronoi x y z) = _voronoi h (maybeSourceToJSVal h x) (maybeSourceToJSVal h y) (maybeSourceToJSVal h z)
 
 foreign import javascript safe "$1.fast($2)" _fast :: JSVal -> JSVal -> JSVal
-foreign import javascript safe "$1.synth.osc($2,$3,$4)" _osc :: Hydra -> JSVal -> JSVal -> JSVal -> JSVal
+foreign import javascript safe "$1.synth.osc()" _osc0 :: Hydra -> JSVal
+foreign import javascript safe "$1.synth.osc($2)" _osc1 :: Hydra -> JSVal -> JSVal
+foreign import javascript safe "$1.synth.osc($2,$3)" _osc2 :: Hydra -> JSVal -> JSVal -> JSVal
+foreign import javascript safe "$1.synth.osc($2,$3,$4)" _osc3 :: Hydra -> JSVal -> JSVal -> JSVal -> JSVal
 foreign import javascript safe "$1.synth.solid($2,$3,$4,$5)" _solid :: Hydra -> JSVal -> JSVal -> JSVal -> JSVal -> JSVal
 foreign import javascript safe "$1.synth.gradient($2)" _gradient :: Hydra -> JSVal -> JSVal
 foreign import javascript safe "$1.synth.noise($2,$3)" _noise :: Hydra -> JSVal -> JSVal -> JSVal

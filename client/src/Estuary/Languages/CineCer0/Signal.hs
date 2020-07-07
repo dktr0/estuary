@@ -3,7 +3,7 @@
 module Estuary.Languages.CineCer0.Signal where
 
 import Data.Time
-import Estuary.Types.Tempo
+import Data.Tempo
 
 
  --              Tempo    Video Length      render T   eval T    anchor t
@@ -62,7 +62,7 @@ quantAnchor cycleMult offset t eval =
       off = realToFrac $ (offset*(1/(freq t))) / 1
     in addUTCTime (anchor + off) $ time t -- as UTCTime
 
-    -- from the outcome I need to substract the count added to the 
+    -- from the outcome I need to substract the count added to the
 
 cycsToSecs:: Tempo -> Rational -> NominalDiffTime
 cycsToSecs t x = realToFrac (x * (1/ freq t))
