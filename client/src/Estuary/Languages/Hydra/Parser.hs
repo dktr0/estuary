@@ -51,20 +51,20 @@ outputToStatement o = Render o
 
 sourceAsArgument :: Parser Source
 sourceAsArgument = choice [
-  parserSource,
-  list,
-  constantDouble,
-  constantInt
+  --try $ fast,
+  --try $ list,
+  constantDouble
   ]
 
 parserSource :: Parser Source
 parserSource = choice [
-  osc,
-  solid,
-  gradient,
-  noise,
-  shape,
-  voronoi
+  try $ osc,
+  try $ solid,
+  try $ gradient,
+  try $ noise,
+  try $ shape,
+  try $voronoi,
+  constantDouble
   ]
 
 --------- parserSource
@@ -128,39 +128,35 @@ voronoi = do
   reserved "voronoi"
   p <- parens $ sepBy sourceAsArgument (comma)
   case p of
-      [] -> return $ Shape Nothing Nothing Nothing
-      (x:[]) -> return $ Shape (Just x) Nothing Nothing
-      (x:y:[]) -> return $ Shape (Just x) (Just y) Nothing
-      (x:y:z:_) -> return $ Shape (Just x) (Just y) (Just z)
+      [] -> return $ Voronoi Nothing Nothing Nothing
+      (x:[]) -> return $ Voronoi (Just x) Nothing Nothing
+      (x:y:[]) -> return $ Voronoi (Just x) (Just y) Nothing
+      (x:y:z:_) -> return $ Voronoi (Just x) (Just y) (Just z)
 
 --------- sourceAsArgument
 
 -- [0.2,0.4] -- [0.3,0.4,1.0]
-list :: Parser Source
-list = do
-  n <- brackets $ sepBy sourceAsArgument (comma)
-  return $ List n
-
--- [].fast() -- [].fast(0.5) -- [].fast([0.5,0.2])
--- fast :: Parser Source
+-- list :: Parser ParameterSequence
+-- list = do
+--   n <- brackets $ sepBy constantDouble (comma)
+--   return $ List n
+--
+-- --[0.2,0.4].fast() -- [0.2,0.4].fast(0.5) -- [0.2,0.4].fast([0.5,0.2])
+-- fast :: Parser ParameterSequence
 -- fast = do
+--   n <- brackets $ sepBy constantDouble (comma)
 --   symbol "."
 --   reserved "fast"
---   p <- parens $ sepBy sourceAsArgument (comma)
+--   p <- parens $ sepBy constantDouble (comma)
 --   case p of
---       [] -> return $ Fast Nothing
---       (x:_) -> return $ Fast (Just x)
+--       [] -> return $ Fast n Nothing
+--       (x:_) -> return $ Fast n (Just x)
 
 -- 0.2 -- 4.0
 constantDouble :: Parser Source
 constantDouble = do
   n <- double
   return $ ConstantDouble n
-
-constantInt :: Parser Source
-constantInt = do
-  n <- int
-  return $ ConstantInt n
 
 
 ---------

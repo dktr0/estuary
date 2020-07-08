@@ -30,7 +30,7 @@ foreign import javascript safe
   tick :: Hydra -> Double -> IO () -- second argument is time in millis since last tick
 
 sourceToJSVal :: Hydra -> Source -> JSVal
-sourceToJSVal _ (ConstantInt x) = pToJSVal x
+--sourceToJSVal _ (ConstantInt x) = pToJSVal x
 sourceToJSVal _ (ConstantDouble x) = pToJSVal x
 -- sourceToJSVal _ (List xs) = pToJSVal xs
 -- sourceToJSVal h (Fast x) = _fast h (maybeSourceToJSVal h x)

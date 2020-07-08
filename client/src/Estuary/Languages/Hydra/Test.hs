@@ -21,7 +21,9 @@ test 12 = "noise(0.5,0.7).out(O2)"
 test 13 = "shape(osc(5,0.4)).out()"
 test 14 = "shape(0.5,noise(),gradient()).out()"
 test 15 = "voronoi().out(O1)"
-test 16 = "voronoi([5,0.8,0.3]).out()"
+test 16 = "voronoi([0.2,0.5]).out(O1)"
+test 17 = "solid([-0.2,0.3,0.4].fast()).out()"
+test 18 = "solid([0.2,0.3,0.4].fast(5)).out()"
 test _ = "invalid"
 
 
