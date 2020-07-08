@@ -26,7 +26,7 @@ statement = choice [ outStatement, renderStatement ]
 
 outStatement :: Parser Statement
 outStatement = do
-  s <- source
+  s <- sourceForStatement
   reservedOp "."
   reserved "out"
   o <- choice [
@@ -46,6 +46,12 @@ output = choice [
 renderStatement :: Parser Statement
 renderStatement = Render <$> (reserved "render" >> parens output)
 
+sourceForStatement :: Parser Source
+sourceForStatement = choice [
+  try $ sourceWithTransformer,
+  source
+  ]
+
 source :: Parser Source
 source = choice [
   Osc <$> functionWithSources "osc",
@@ -56,25 +62,33 @@ source = choice [
   Voronoi <$> functionWithSources "voronoi"
   ]
 
-functionWithSources :: String -> Parser [Source]
-functionWithSources x = reserved x >> parens (commaSep sourceAsArgument)
+functionWithSources :: String -> Parser [Parameters]
+functionWithSources x = reserved x >> parens (commaSep argument)
 
-sourceAsArgument :: Parser Source
-sourceAsArgument = choice [
-  source,
-  list,
-  constantDouble,
-  constantInt
+sourceWithTransformer :: Parser Source
+sourceWithTransformer = choice [
+  try $ Brightness <$> source <*> methodWithParameterLists "brightness",
+  try $ Contrast <$> source <*> methodWithParameterLists "contrast",
+  Colorama <$> source <*> methodWithParameterLists "colorama"
   ]
 
-list :: Parser Source
-list = List <$> brackets (commaSep sourceAsArgument)
+methodWithParameterLists :: String -> Parser [Parameters]
+methodWithParameterLists x = do
+  reservedOp "."
+  reserved x
+  parens (commaSep argument)
 
-constantDouble :: Parser Source
-constantDouble = ConstantDouble <$> double
+argument :: Parser Parameters
+argument = choice [
+  list,
+  constantDouble
+  ]
 
-constantInt :: Parser Source
-constantInt = ConstantInt <$> int
+list :: Parser Parameters
+list = Parameters <$> brackets (commaSep double)
+
+constantDouble :: Parser Parameters
+constantDouble = (Parameters . return) <$> double
 
 int :: Parser Int
 int = fromIntegral <$> integer
@@ -101,6 +115,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.reservedNames = [
     "out","render",
     "osc","solid","gradient","noise","shape","voronoi",
+    "brightness", "contrast", "colorama",
     "o0","o1","o2","o3"
     ],
   P.reservedOpNames = ["."],
