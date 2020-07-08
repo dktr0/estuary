@@ -7,11 +7,12 @@ author: David Ogborn and contributors
 maintainer: ogbornd@mcmaster.ca
 copyright: 2015-20 David Ogborn and contributors
 license: GPL-3
-homepage: http://github.com/dktr0/estuary/blob/master/README.md
+homepage: http://github.com/dktr0/estuary/blob/stable/README.md
 
 dependencies:
   - base
   - stm
+  - async
   - estuary-common
   - containers
   - directory
@@ -22,6 +23,7 @@ dependencies:
   - aeson
   - bytestring
   - http-types
+  - network
   - websockets
   - wai
   - warp
@@ -34,6 +36,7 @@ dependencies:
   - sqlite-simple
   - mtl
   - text-show
+  - template-haskell
 
 library:
   source-dirs:

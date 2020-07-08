@@ -54,6 +54,7 @@ import Estuary.Widgets.Terminal
 import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
+import Estuary.Widgets.Sidebar
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -76,23 +77,28 @@ estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MV
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  glCtx <- canvasWidget ctx -- canvas for Punctual
+  (cvsElement,glCtx) <- canvasWidget ctx -- canvas for Punctual
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  (deltasDown',wsCtxChange) <- estuaryWebSocket rInfo requestsUp
+  (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
   let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
 
   let ensembleCDyn = fmap ensembleC ctx
 
   -- four GUI components: header, main (navigation), terminal, footer
-  (headerChange,_) <- runEditor ctx rInfo header
-  ((requests, ensembleRequestFromPage), hintsFromPage) <- divClass "page ui-font" $ do
-    runEditor ctx rInfo $ navigation deltasDown
+  (headerChange,headerHints) <- runEditor ctx rInfo header
+  ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
+    let sidebarToggle = ffilter (elem ToggleSidebar) hints
+    sidebarVisible <- toggle False sidebarToggle
+    (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDown
+    (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget
+    let mergedHints = mergeWith (++) [pageHints, sidebarHints]
+    return (navRequests,ctxChange,mergedHints)
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
-  terminalVisible <- toggle False terminalEvent
+  terminalVisible <- toggle True terminalEvent
   (command,_) <- hideableWidget' terminalVisible $ do
     runEditor ctx rInfo $ terminalWidget deltasDown hints
   (terminalButton,_) <- runEditor ctx rInfo $ footer hints
@@ -112,11 +118,11 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   -- samplesLoadedEv <- loadSampleMap
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange]
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange, sidebarChange]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints] -- Event t [Hint]
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (webDirt irc) hints
@@ -129,7 +135,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let requests'' = fmap (:[]) $ commandRequests
   let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
 
-  liftIO $ forkRenderThreads irc ctxM glCtx riM
+  liftIO $ forkRenderThreads irc ctxM cvsElement glCtx riM
   return ()
 
 hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
@@ -156,7 +162,7 @@ cinecer0Widget ctxM ctx = do
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
-canvasWidget :: MonadWidget t m => Dynamic t Context -> m GLContext
+canvasWidget :: MonadWidget t m => Dynamic t Context -> m (HTMLCanvasElement,GLContext)
 canvasWidget ctx = do
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
   let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -2;" <> x <> ";")]
@@ -165,7 +171,7 @@ canvasWidget ctx = do
   let attrs = (<>) <$> baseAttrs <*> resMap
   canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
   glc <- liftIO $ newGLContext canvas
-  return glc
+  return (canvas,glc)
 
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads

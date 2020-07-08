@@ -38,7 +38,9 @@ data Term =
   Connections |
   Latency |
   Resolution |
-  Brightness
+  Brightness |
+  Reference |
+  Settings
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -155,5 +157,9 @@ translate Latency English = "latency"
 translate Resolution English = "Resolution"
 
 translate Brightness English = "Brightness"
+
+translate Reference English = "Reference"
+
+translate Settings English = "Settings"
 
 translate x _ = translate x English

@@ -7,19 +7,25 @@ module Estuary.Types.Client where
 -- to the related type Participant that is transmitted from the server to all clients as part
 -- of the process of sharing information about the members of an ensemble.)
 
-import Network.WebSockets
+import Network.Socket (SockAddr)
+import Network.WebSockets hiding (Response)
 import Data.Time
-import Data.Text
+import Data.Text as T
+import Control.Concurrent.STM
 
 import Estuary.Types.Participant
+import Estuary.Types.EnsembleS
+import Estuary.Types.Response
 
 type ClientHandle = Int
 
 data Client = Client {
+  ipAddr :: SockAddr,
+  sendChan :: TChan (ClientHandle,Response),
   handle :: ClientHandle,
   connection :: Connection,
   browserInfo :: Text,
-  memberOfEnsemble :: Maybe Text,
+  memberOfEnsemble :: Maybe (TVar EnsembleS),
   handleInEnsemble :: Text,
   locationInEnsemble :: Text,
   statusInEnsemble :: Text,
@@ -31,8 +37,10 @@ data Client = Client {
   clientLatency :: NominalDiffTime
 }
 
-newClient :: UTCTime -> ClientHandle -> Connection -> Client
-newClient t h c = Client {
+newClient :: SockAddr -> TChan (ClientHandle,Response) -> UTCTime -> ClientHandle -> Connection -> Client
+newClient ip sChan t h c = Client {
+  ipAddr = ip,
+  sendChan = sChan,
   handle = h,
   connection = c,
   browserInfo = "",
@@ -58,5 +66,6 @@ clientToParticipant c = Participant {
   animationFPS = clientAnimationFPS c,
   animationLoad = clientAnimationLoad c,
   latency = clientLatency c,
-  browser = browserInfo c
+  browser = browserInfo c,
+  ipAddress = T.pack $ show $ ipAddr c
   }

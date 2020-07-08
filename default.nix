@@ -83,7 +83,7 @@ in
           ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
-        estuary = overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
+        estuary = dontCheck (overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
           preConfigure = ''
             ${ghc8_6.hpack}/bin/hpack --force;
           '';
@@ -95,7 +95,7 @@ in
               --jscomp_off=checkVars;
             gzip -fk "$out/bin/all.min.js"
          '';
-        });
+        }));
 
         estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
@@ -156,22 +156,22 @@ in
         (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
             owner = "afrancob";
             repo = "timeNot";
-            sha256 = "0bij6wzb85kb9wbqqjdpb6x3s9w48kb62zxi2qw93p8jj15wyh84";
-            rev =  "4da8daa5e1e16f6be3deba4637ad9aab0e46ee5e";
+            sha256 = "1jq2gwszdcw6blgcfj60knpj0pj6yc330dwrvjzq8ys8rp17skvq";
+            rev =  "c6c88bd9003afc0c69a651f4156a34e6593044bf";
           }) {});
 
         punctual = dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0dm1r6np9isgim243klaig0zc3czyv1lzyilz3q4s596vgm9wwah";
-          rev = "b7c51baacf15a11c50a7b23341de9e34a96bc8d0";
+          sha256 = "0gmvbm1lhq6px2si581k39wx6fx91rbb8gnca0fkp28yhfz45nhz";
+          rev = "02e79ea8208029865c2bf99d1ae91e6eb4492a0d";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "0rx7z6q2x1xqccwwc7036gzyy28kb8k45fj2v0zmjgsnv496qfd9";
-          rev = "820f78d97e2257d5445f498f81f9e9a8b3d06e43";
+          sha256 = "186gcyma9sldki7l0jgy80lzqyhlz6b248iqj4m645nzk4ncv2l3";
+          rev = "ac0de845001430af98be168cf7478f55cd439274";
         }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
@@ -184,9 +184,9 @@ in
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
-          url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0r3nz4hxwvgwjka6rhkyhp6g0wbgjyaik0wkk7n27jp5mj5lwcv0";
-          rev = "3e3f568c059912ee90f337fb4d21b56b88c4ada7";
+          url = "https://github.com/TidalCycles/Tidal.git";
+          sha256 = "1xr30j90yja0h9cxcyp7gm6b4jv4b4z5x1dqkabkaxvvxpjyxxwk";
+          rev = "5a0ffd78e45761054b432ba51d33cd40b6c1f778";
           fetchSubmodules = true;
           }) "" {}));
 
@@ -194,9 +194,9 @@ in
 #            "tidal-parse" ../tidal/tidal-parse "" {});
             "tidal-parse"
             ( pkgs.fetchgit {
-            url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0r3nz4hxwvgwjka6rhkyhp6g0wbgjyaik0wkk7n27jp5mj5lwcv0";
-            rev = "3e3f568c059912ee90f337fb4d21b56b88c4ada7";
+            url = "https://github.com/TidalCycles/Tidal.git";
+            sha256 = "1xr30j90yja0h9cxcyp7gm6b4jv4b4z5x1dqkabkaxvvxpjyxxwk";
+            rev = "5a0ffd78e45761054b432ba51d33cd40b6c1f778";
             fetchSubmodules = true;
               })
             "--subpath tidal-parse" {}));

@@ -9,7 +9,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict
 import Control.Concurrent
 import Control.Concurrent.MVar
-import Control.Exception (evaluate,catch,SomeException)
+import Control.Exception (evaluate,catch,SomeException,try)
 import Control.DeepSeq
 import Control.Monad.Loops
 import Data.Functor (void)
@@ -28,6 +28,7 @@ import TextShow
 import Sound.OSC.Datum
 import Text.Parsec (ParseError)
 import qualified Data.ByteString as B
+import GHCJS.DOM.Types (HTMLCanvasElement)
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Punctual.Program as Punctual
@@ -42,6 +43,9 @@ import qualified Sound.TimeNot.Parsers as TimeNot
 import qualified Sound.TimeNot.Render as TimeNot
 import qualified Sound.Seis8s.Parser as Seis8s
 
+import qualified Estuary.Languages.Hydra.Types as Hydra
+import qualified Estuary.Languages.Hydra.Parser as Hydra
+import qualified Estuary.Languages.Hydra.Render as Hydra
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
@@ -241,7 +245,9 @@ renderAnimation = do
   defs <- gets cachedDefs
   traverseWithKey (renderZoneAnimation t1) defs
   s <- get
-  newWebGL <- liftIO $ Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
+  newWebGL <- liftIO $
+    Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
+    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
   t2 <- liftIO $ getCurrentTime
   let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 (wakeTimeAnimation s))
   let newAnimationTime = updateAverage (animationTime s) (realToFrac $ diffUTCTime t2 t1)
@@ -272,21 +278,47 @@ renderZoneAnimation  _ _ _ = return ()
 
 renderZoneAnimationTextProgram :: UTCTime -> Int -> TextProgram -> Renderer
 renderZoneAnimationTextProgram tNow z (Punctual,x,eTime) = renderPunctualWebGL tNow z
+renderZoneAnimationTextProgram tNow z (CineCer0,x,eTime) = renderCineCer0 tNow z
+renderZoneAnimationTextProgram tNow z (Hydra,x,eTime) = renderHydra tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
 updatePunctualResolutionAndBrightness :: Context -> Renderer
 updatePunctualResolutionAndBrightness ctx = do
   s <- get
-  newWebGL <- liftIO $ Punctual.setResolution (glContext s) (resolution ctx) (punctualWebGL s)
-  newWebGL' <- liftIO $ Punctual.setBrightness (brightness ctx) newWebGL
-  modify' $ \x -> x { punctualWebGL = newWebGL' }
+  newWebGL <- liftIO $
+    do
+      x <- Punctual.setResolution (glContext s) (resolution ctx) (punctualWebGL s)
+      Punctual.setBrightness (brightness ctx) x
+    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
+  modify' $ \x -> x { punctualWebGL = newWebGL }
 
 renderPunctualWebGL :: UTCTime -> Int -> Renderer
 renderPunctualWebGL tNow z = do
   s <- get
   let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
-  newWebGL <- liftIO $ Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
+  newWebGL <- liftIO $
+    Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
+    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
   modify' $ \x -> x { punctualWebGL = newWebGL }
+
+renderCineCer0 :: UTCTime -> Int -> Renderer
+renderCineCer0 tNow z = do
+  s <- get
+  case videoDivCache s of
+    Nothing -> return ()
+    Just theDiv -> do
+      let spec = IntMap.findWithDefault (CineCer0.emptySpec $ renderStart s) z (cineCer0Specs s)
+      let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
+      newState <- liftIO $ CineCer0.updateCineCer0State (tempoCache s) tNow spec prevState
+      modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
+
+renderHydra :: UTCTime -> Int -> Renderer
+renderHydra tNow z = do
+  s <- get
+  let x = IntMap.lookup z $ hydras s
+  case x of
+    Just hydra -> liftIO $ Hydra.tick hydra 16.6667
+    Nothing -> return ()
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
 renderZoneChanged irc c z (TidalStructure x) = do
@@ -335,6 +367,8 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
 renderBaseProgramChanged irc c z (Right (Punctual,x,_)) = parsePunctualNotation' irc c z x
+
+renderBaseProgramChanged irc c z (Right (Hydra,x,_)) = parseHydra irc c z x
 
 renderBaseProgramChanged irc c z (Right (CineCer0,x,eTime)) = do
   let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack x -- Either String CineCer0Spec
@@ -385,12 +419,34 @@ parsePunctualNotation' :: ImmutableRenderContext -> Context -> Int -> Text -> Re
 parsePunctualNotation' irc c z t = do
   s <- get
   let evalTime = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ renderStart s -- :: AudioTime/Double
-  parseResult <- liftIO $ return $! Punctual.parse evalTime t
-  case parseResult of
-    Right punctualProgram -> punctualProgramChanged irc c z punctualProgram
-    Left _ -> return ()
-  let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
+  parseResult <- liftIO $ try $ return $! Punctual.parse evalTime t
+  parseResult' <- case parseResult of
+    Right (Right punctualProgram) -> do
+      punctualProgramChanged irc c z punctualProgram
+      return (Right punctualProgram)
+    Right (Left parseErr) -> return (Left $ T.pack $ show parseErr)
+    Left exception -> return (Left $ T.pack $ show (exception :: SomeException))
+  let newErrors = either (\e -> insert z e (errors (info s))) (const $ delete z (errors (info s))) parseResult'
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
+
+parseHydra :: ImmutableRenderContext -> Context -> Int -> Text -> Renderer
+parseHydra irc c z t = do
+ s <- get
+ parseResult <- liftIO $ try $ return $! Hydra.parseHydra t
+ case parseResult of
+   Right (Right stmts) -> do
+     clearZoneError z
+     let x = IntMap.lookup z $ hydras s
+     hydra <- case x of
+       Just h -> return h
+       Nothing -> do
+         h <- liftIO $ Hydra.newHydra $ canvasElement s
+         modify' $ \x -> x { hydras = IntMap.insert z h (hydras x)}
+         return h
+     -- liftIO $ Hydra.setResolution hydra 1280 720
+     liftIO $ Hydra.evaluate hydra stmts
+   Right (Left parseErr) -> setZoneError z (T.pack $ show parseErr)
+   Left exception -> setZoneError z (T.pack $ show (exception :: SomeException))
 
 punctualProgramChanged :: ImmutableRenderContext -> Context -> Int -> Punctual.Program -> Renderer
 punctualProgramChanged irc c z p = do
@@ -403,11 +459,15 @@ punctualProgramChanged irc c z p = do
   let tempo' = tempo $ ensemble $ ensembleC c
   let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ origin tempo'
   let cps' = freq tempo'
-  newPunctualW <- liftAudioIO $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') p
+  newPunctualW <- liftIO $ do
+    runAudioContextIO ac $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') p
+    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return prevPunctualW)
   modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   -- B. update Punctual WebGL state in response to new, syntactically correct program
   pWebGL <- gets punctualWebGL
-  newWebGL <- liftIO $ Punctual.evaluatePunctualWebGL (glContext s) (beat0,realToFrac cps') z p pWebGL
+  newWebGL <- liftIO $
+    Punctual.evaluatePunctualWebGL (glContext s) (beat0,realToFrac cps') z p pWebGL
+    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return pWebGL)
   modify' $ \x -> x { punctualWebGL = newWebGL }
 
 renderTextProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Renderer
@@ -418,17 +478,6 @@ renderTextProgramAlways irc c z eTime = do
 
 renderBaseProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Maybe TextNotation -> Renderer
 renderBaseProgramAlways irc c z _ (Just (TidalTextNotation _)) = renderControlPattern irc c z
-renderBaseProgramAlways irc c z _ (Just CineCer0) = do
-  s <- get
-  let maybeTheDiv = videoDivElement c
-  when (isJust maybeTheDiv) $ do
-    let spec = IntMap.findWithDefault (CineCer0.emptySpec $ renderStart s) z (cineCer0Specs s)
-    let theDiv = fromJust maybeTheDiv
-    let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
-    let t = tempo $ ensemble $ ensembleC c
-    now <- liftIO $ getCurrentTime
-    newState <- liftIO $ CineCer0.updateCineCer0State t now spec prevState
-    modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
 renderBaseProgramAlways irc c z _ (Just TimeNot) = do
   s <- get
   let p = IntMap.lookup z $ timeNots s
@@ -489,11 +538,11 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: ImmutableRenderContext -> MVar Context -> Punctual.GLContext -> MVar RenderInfo -> IO ()
-forkRenderThreads irc ctxM glCtx riM = do
+forkRenderThreads :: ImmutableRenderContext -> MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> MVar RenderInfo -> IO ()
+forkRenderThreads irc ctxM cvsElement glCtx riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
-  irs <- initialRenderState (mic irc) (out irc) glCtx t0System t0Audio
+  irs <- initialRenderState (mic irc) (out irc) cvsElement glCtx t0System t0Audio
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread irc ctxM riM rsM
   void $ forkIO $ animationThread irc ctxM rsM
@@ -503,7 +552,11 @@ mainRenderThread irc ctxM riM rsM = do
   ctx <- readMVar ctxM
   rs <- takeMVar rsM
   rs' <- execStateT (render irc ctx) rs
-  let rs'' = rs' { animationOn = canvasOn ctx }
+  let rs'' = rs' {
+    animationOn = canvasOn ctx,
+    tempoCache = tempo $ ensemble $ ensembleC ctx,
+    videoDivCache = videoDivElement ctx
+    }
   putMVar rsM rs''
   swapMVar riM (info rs'') -- copy RenderInfo from state into MVar for instant reading elsewhere
   _ <- execStateT sleepIfNecessary rs''
