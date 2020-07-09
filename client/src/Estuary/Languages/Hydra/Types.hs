@@ -12,13 +12,15 @@ data Source =
   Noise [Parameters] | -- noise() -- noise([5,10]) -- noise(0.5,0.7)
   Shape [Parameters] | -- shape() -- shape(2.0)
   Voronoi [Parameters] | -- voronoi() -- voronoi(10,0.5,0.1)
+  Brightness [Parameters] Source |
+  Contrast [Parameters] Source |
+  Colorama [Parameters] Source |
+
   --Speed Source | -- find a new place, it doesn't go here i.e. speed = 1.5
   --Bpm [Source] | -- audio
   --Src Source | -- screen/camera as input
-  Brightness Source [Parameters] |
-  Contrast Source [Parameters] |
+
   Color Source [Parameters] [Parameters] [Parameters] |
-  Colorama Source [Parameters] |
   Invert Source [Parameters] |
   Luma Source [Parameters] [Parameters] |
   Posterize Source [Parameters] [Parameters] |

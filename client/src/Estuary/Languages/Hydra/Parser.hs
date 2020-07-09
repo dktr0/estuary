@@ -33,59 +33,49 @@ outStatement = do
   s <- source
   reservedOp "."
   reserved "out"
-  o <- choice [
-    try $ parens output,
-    parens whiteSpace >> return O0
-    ]
+  o <- output
   return $ Out s o
 
 output :: Parser Output
-output = choice [
+output = try $ parens $ choice [
   reserved "o0" >> return O0,
   reserved "o1" >> return O1,
   reserved "o2" >> return O2,
-  reserved "o3" >> return O3
+  reserved "o3" >> return O3,
+  whiteSpace >> return O0
   ]
 
 renderStatement :: Parser Statement
-renderStatement = Render <$> (reserved "render" >> parens output)
+renderStatement = Render <$> (reserved "render" >> output)
 
 source :: Parser Source
-source = choice [
-  Osc <$> functionWithSources "osc",
-  Solid <$> functionWithSources "solid",
-  Gradient <$> functionWithSources "gradient",
-  Noise <$> functionWithSources "noise",
-  Shape <$> functionWithSources "shape",
-  Voronoi <$> functionWithSources "voronoi",
-  Brightness <$> source <*> methodWithParameterLists "brightness",
-  Contrast <$> source <*> methodWithParameterLists "contrast",
-  Colorama <$> source <*> methodWithParameterLists "colorama"
+source = do
+  x <- choice [
+    Osc <$> functionWithParameters "osc",
+    Solid <$> functionWithParameters "solid",
+    Gradient <$> functionWithParameters "gradient",
+    Noise <$> functionWithParameters "noise",
+    Shape <$> functionWithParameters "shape",
+    Voronoi <$> functionWithParameters "voronoi"
+    ]
+  fs <- many $ choice [
+    Brightness <$> methodWithParameters "brightness",
+    Contrast <$> methodWithParameters "contrast",
+    Colorama <$> methodWithParameters "colorama"
+    ]
+  return $ (foldl (.) id fs) x
+
+functionWithParameters :: String -> Parser [Parameters]
+functionWithParameters x = try $ reserved x >> parens (commaSep parameters)
+
+methodWithParameters :: String -> Parser [Parameters]
+methodWithParameters x = try $ reservedOp "." >> reserved x >> parens (commaSep parameters)
+
+parameters :: Parser Parameters
+parameters = choice [
+  Parameters <$> try (brackets (commaSep double)),
+  (Parameters . return) <$> double
   ]
-
-functionWithSources :: String -> Parser [Parameters]
-functionWithSources x = reserved x >> try (parens (commaSep argument))
-
-methodWithParameterLists :: String -> Parser [Parameters]
-methodWithParameterLists x = do
-  reservedOp "."
-  reserved x
-  try (parens (commaSep argument))
-
-argument :: Parser Parameters
-argument = choice [
-  list,
-  constantDouble
-  ]
-
-list :: Parser Parameters
-list = Parameters <$> brackets (commaSep double)
-
-constantDouble :: Parser Parameters
-constantDouble = (Parameters . return) <$> double
-
-int :: Parser Int
-int = fromIntegral <$> integer
 
 double :: Parser Double
 double = choice [
