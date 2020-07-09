@@ -56,6 +56,21 @@ router def inStatChangeEv renderPage = mdo
 
   return dynPage
 
+router' :: (MonadWidget t m, FromJSVal state, ToJSVal state) => state -> Event t state -> (state -> m (Event t state)) -> m (Dynamic t (Event t state))
+router' def inStatChangeEv renderPage = mdo
+  let initialPage = renderPage def
+  popStateEv :: Event t state <- fmap (fromMaybe def) <$> getPopStateEv
+  let dynStateChangeEv = dynPage
+  let triggeredStateChangeEv = leftmost [
+          inStatChangeEv,
+          switchPromptlyDyn dynStateChangeEv
+        ]
+  performEvent_ $ ffor triggeredStateChangeEv $ \state -> liftIO $ do
+    pushPageState state ""
+  let stateChangeEv = leftmost [popStateEv, triggeredStateChangeEv]
+  dynPage :: Dynamic t (Event t state) <- widgetHold initialPage (renderPage <$> stateChangeEv)
+  return dynPage
+
 getInitialState :: (FromJSVal state) => state -> IO (state)
 getInitialState def =
   maybeIO def currentWindow $ \window ->
