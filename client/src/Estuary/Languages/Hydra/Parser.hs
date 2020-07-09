@@ -19,14 +19,18 @@ parseHydra :: Text -> Either ParseError [Statement]
 parseHydra s = parse hydra "hydra" s
 
 hydra :: Parser [Statement]
-hydra = semiSep statement
+hydra = do
+  whiteSpace
+  xs <- semiSep statement
+  eof
+  return xs
 
 statement :: Parser Statement
 statement = choice [ outStatement, renderStatement ]
 
 outStatement :: Parser Statement
 outStatement = do
-  s <- sourceForStatement
+  s <- source
   reservedOp "."
   reserved "out"
   o <- choice [
@@ -46,12 +50,6 @@ output = choice [
 renderStatement :: Parser Statement
 renderStatement = Render <$> (reserved "render" >> parens output)
 
-sourceForStatement :: Parser Source
-sourceForStatement = choice [
-  try $ sourceWithTransformer,
-  source
-  ]
-
 source :: Parser Source
 source = choice [
   Osc <$> functionWithSources "osc",
@@ -59,24 +57,20 @@ source = choice [
   Gradient <$> functionWithSources "gradient",
   Noise <$> functionWithSources "noise",
   Shape <$> functionWithSources "shape",
-  Voronoi <$> functionWithSources "voronoi"
+  Voronoi <$> functionWithSources "voronoi",
+  Brightness <$> source <*> methodWithParameterLists "brightness",
+  Contrast <$> source <*> methodWithParameterLists "contrast",
+  Colorama <$> source <*> methodWithParameterLists "colorama"
   ]
 
 functionWithSources :: String -> Parser [Parameters]
-functionWithSources x = reserved x >> parens (commaSep argument)
-
-sourceWithTransformer :: Parser Source
-sourceWithTransformer = choice [
-  try $ Brightness <$> source <*> methodWithParameterLists "brightness",
-  try $ Contrast <$> source <*> methodWithParameterLists "contrast",
-  Colorama <$> source <*> methodWithParameterLists "colorama"
-  ]
+functionWithSources x = reserved x >> try (parens (commaSep argument))
 
 methodWithParameterLists :: String -> Parser [Parameters]
 methodWithParameterLists x = do
   reservedOp "."
   reserved x
-  parens (commaSep argument)
+  try (parens (commaSep argument))
 
 argument :: Parser Parameters
 argument = choice [

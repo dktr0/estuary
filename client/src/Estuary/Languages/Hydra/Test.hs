@@ -22,6 +22,7 @@ test 13 = "voronoi([5,0.8,0.3]).out()"
 test 14 = "solid().brightness().out()"
 test 15 = "solid().contrast([1.6,1.8,2]).out()"
 test 16 = "osc().colorama().out()"
+test 17 = "osc().brightness().colorama().out()"
 test _ = "invalid"
 
 
