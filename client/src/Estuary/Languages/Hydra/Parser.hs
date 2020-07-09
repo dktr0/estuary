@@ -19,7 +19,11 @@ parseHydra :: Text -> Either ParseError [Statement]
 parseHydra s = parse hydra "hydra" s
 
 hydra :: Parser [Statement]
-hydra = semiSep statement
+hydra = do
+  whiteSpace
+  xs <- semiSep statement
+  eof
+  return xs
 
 statement :: Parser Statement
 statement = choice [ outStatement, renderStatement ]
@@ -53,28 +57,32 @@ source = choice [
   Gradient <$> functionWithSources "gradient",
   Noise <$> functionWithSources "noise",
   Shape <$> functionWithSources "shape",
-  Voronoi <$> functionWithSources "voronoi"
+  Voronoi <$> functionWithSources "voronoi",
+  Brightness <$> source <*> methodWithParameterLists "brightness",
+  Contrast <$> source <*> methodWithParameterLists "contrast",
+  Colorama <$> source <*> methodWithParameterLists "colorama"
   ]
 
-functionWithSources :: String -> Parser [Source]
-functionWithSources x = reserved x >> parens (commaSep sourceAsArgument)
+functionWithSources :: String -> Parser [Parameters]
+functionWithSources x = reserved x >> try (parens (commaSep argument))
 
-sourceAsArgument :: Parser Source
-sourceAsArgument = choice [
-  source,
+methodWithParameterLists :: String -> Parser [Parameters]
+methodWithParameterLists x = do
+  reservedOp "."
+  reserved x
+  try (parens (commaSep argument))
+
+argument :: Parser Parameters
+argument = choice [
   list,
-  constantDouble,
-  constantInt
+  constantDouble
   ]
 
-list :: Parser Source
-list = List <$> brackets (commaSep sourceAsArgument)
+list :: Parser Parameters
+list = Parameters <$> brackets (commaSep double)
 
-constantDouble :: Parser Source
-constantDouble = ConstantDouble <$> double
-
-constantInt :: Parser Source
-constantInt = ConstantInt <$> int
+constantDouble :: Parser Parameters
+constantDouble = (Parameters . return) <$> double
 
 int :: Parser Int
 int = fromIntegral <$> integer
@@ -101,6 +109,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.reservedNames = [
     "out","render",
     "osc","solid","gradient","noise","shape","voronoi",
+    "brightness", "contrast", "colorama",
     "o0","o1","o2","o3"
     ],
   P.reservedOpNames = ["."],
