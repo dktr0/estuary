@@ -34,14 +34,14 @@ instance PFromJSVal JSParameters where pFromJSVal = JSParameters
 
 parametersToJS :: Parameters -> JSParameters
 parametersToJS (Parameters []) = _list0
-parametersToJS (Parameters (x:[])) = _list1 (pToJSVal x)
-parametersToJS (Parameters (x:y:[])) = _list2 (pToJSVal x) (pToJSVal y)
-parametersToJS (Parameters (x:y:z:_)) = _list3 (pToJSVal x) (pToJSVal y) (pToJSVal z)
+parametersToJS (Parameters (x:[])) = _list1 x
+parametersToJS (Parameters (x:y:[])) = _list2 x y
+parametersToJS (Parameters (x:y:z:_)) = _list3 x y z
 
 foreign import javascript safe "[]" _list0 :: JSParameters
-foreign import javascript safe "[$1]" _list1 :: JSVal -> JSParameters
-foreign import javascript safe "[$1,$2]" _list2 :: JSVal -> JSVal -> JSParameters
-foreign import javascript safe "[$1,$2,$3]" _list3 :: JSVal -> JSVal -> JSVal -> JSParameters
+foreign import javascript safe "[$1]" _list1 :: Double -> JSParameters
+foreign import javascript safe "[$1,$2]" _list2 :: Double -> Double -> JSParameters
+foreign import javascript safe "[$1,$2,$3]" _list3 :: Double -> Double -> Double -> JSParameters
 
 
 newtype JSSource = JSSource JSVal
