@@ -50,43 +50,61 @@ renderStatement = Render <$> (reserved "render" >> output)
 
 source :: Parser Source
 source = do
-  x <- choice [
-    Osc <$> functionWithParameters "osc",
-    Solid <$> functionWithParameters "solid",
-    Gradient <$> functionWithParameters "gradient",
-    Noise <$> functionWithParameters "noise",
-    Shape <$> functionWithParameters "shape",
-    Voronoi <$> functionWithParameters "voronoi"
+  x <- choice [ -- a source is a single "atomic" Source...
+    functionWithParameters "osc" Osc,
+    functionWithParameters "solid" Solid,
+    functionWithParameters "gradient" Gradient,
+    functionWithParameters "noise" Noise,
+    functionWithParameters "shape" Shape,
+    functionWithParameters "voronoi" Voronoi
     ]
-  fs <- many $ choice [
-    Brightness <$> methodWithParameters "brightness",
-    Contrast <$> methodWithParameters "contrast",
-    Colorama <$> methodWithParameters "colorama",
-    Color <$> methodWithParameters "color",
-    Invert <$> methodWithParameters "invert",
-    Luma <$> methodWithParameters "luma",
-    Posterize <$> methodWithParameters "posterize",
-    Saturate <$> methodWithParameters "saturate",
-    Shift <$> methodWithParameters "shift",
-    Thresh <$> methodWithParameters "tresh",
-    Kaleid <$> methodWithParameters "kaleid",
-    Pixelate <$> methodWithParameters "pixelate",
-    Repeat <$> methodWithParameters "repeat",
-    RepeatX <$> methodWithParameters "repeatX",
-    RepeatY <$> methodWithParameters "repeatY",
-    Rotate <$> methodWithParameters "rotate",
-    Scale <$> methodWithParameters "scale",
-    Scroll <$> methodWithParameters "scroll",
-    ScrollX <$> methodWithParameters "scrollX",
-    ScrollY <$> methodWithParameters "scrollY"
+  fs <- many $ choice [ -- ...to which zero or more transformations [Source -> Source] are applied.
+    methodWithParameters "brightness" Brightness,
+    methodWithParameters "contrast" Contrast,
+    methodWithParameters "colorama" Colorama,
+    methodWithParameters "color" Color,
+    methodWithParameters "invert" Invert,
+    methodWithParameters "luma" Luma,
+    methodWithParameters "posterize" Posterize,
+    methodWithParameters "saturate" Saturate,
+    methodWithParameters "shift" Shift,
+    methodWithParameters "tresh" Thresh,
+    methodWithParameters "kaleid" Kaleid,
+    methodWithParameters "pixelate" Pixelate,
+    methodWithParameters "repeat" Repeat,
+    methodWithParameters "repeatX" RepeatX,
+    methodWithParameters "repeatY" RepeatY,
+    methodWithParameters "rotate" Rotate,
+    methodWithParameters "scale" Scale,
+    methodWithParameters "scroll" Scroll,
+    methodWithParameters "scrollX" ScrollX,
+    methodWithParameters "scrollY" ScrollY,
+    methodWithSourceAndParameters "modulate" Modulate
     ]
-  return $ (foldl (.) id fs) x
+  return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
 
-functionWithParameters :: String -> Parser [Parameters]
-functionWithParameters x = try $ reserved x >> parens (commaSep parameters)
+functionWithParameters :: String -> ([Parameters] -> Source) -> Parser Source
+functionWithParameters funcName constructor = try $ do
+  reserved funcName
+  ps <- parens $ commaSep parameters
+  return $ constructor ps
 
-methodWithParameters :: String -> Parser [Parameters]
-methodWithParameters x = try $ reservedOp "." >> reserved x >> parens (commaSep parameters)
+methodWithParameters :: String -> ([Parameters] -> Source -> Source) -> Parser (Source -> Source)
+methodWithParameters methodName constructor = try $ do
+  reservedOp "."
+  reserved methodName
+  ps <- parens $ commaSep parameters
+  return $ constructor ps
+
+methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source)
+methodWithSourceAndParameters methodName constructor = try $ do
+  reservedOp "."
+  reservedOp methodName
+  (s,ps) <- parens $ do
+    s <- source
+    ps <- (comma >> commaSep1 parameters) <|> return []
+    return (s,ps)
+  return $ constructor s ps
 
 parameters :: Parser Parameters
 parameters = choice [

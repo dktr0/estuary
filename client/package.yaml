@@ -59,7 +59,7 @@ dependencies:
   - haskell-src-exts
   - haskellish
   - timeNot
-  - cumbia
+  - seis8s
   - deepseq
   - microspec
   - tempi

@@ -41,7 +41,7 @@ import qualified Sound.Punctual.Resolution as Punctual
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.TimeNot.Parsers as TimeNot
 import qualified Sound.TimeNot.Render as TimeNot
-import qualified Sound.Cumbia.Parser as Cumbia
+import qualified Sound.Seis8s.Parser as Seis8s
 
 import qualified Estuary.Languages.Hydra.Types as Hydra
 import qualified Estuary.Languages.Hydra.Parser as Hydra
@@ -392,13 +392,13 @@ renderBaseProgramChanged irc c z (Right (TimeNot,x,eTime)) = do
       liftIO $ putStrLn (show e)
       setZoneError z (T.pack $ show e)
 
-renderBaseProgramChanged irc c z (Right (Cumbia,x,eTime)) = do
-  let parseResult = Cumbia.parseLang $ T.unpack x
+renderBaseProgramChanged irc c z (Right (Seis8s,x,eTime)) = do
+  let parseResult = Seis8s.parseLang $ T.unpack x
   case parseResult of
     Right p -> do
       clearZoneError z
       s <- get
-      modify' $ \x -> x { cumbias = insert z p (cumbias s) }
+      modify' $ \x -> x { seis8ses = insert z p (seis8ses s) }
     Left e -> do
       liftIO $ putStrLn (show e)
       setZoneError z (T.pack $ show e)
@@ -490,15 +490,15 @@ renderBaseProgramAlways irc c z _ (Just TimeNot) = do
       let oTime = firstCycleStartAfter theTempo eTime
       pushNoteEvents $ fmap TimeNot.mapForEstuary $ TimeNot.render oTime p' wStart wEnd
     Nothing -> return ()
-renderBaseProgramAlways irc c z _ (Just Cumbia) = do
+renderBaseProgramAlways irc c z _ (Just Seis8s) = do
   s <- get
-  let p = IntMap.lookup z $ cumbias s
+  let p = IntMap.lookup z $ seis8ses s
   case p of
     Just p' -> do
       let theTempo = (tempo . ensemble . ensembleC) c
       let wStart = renderStart s
       let wEnd = renderEnd s
-      pushNoteEvents $ Cumbia.render p' theTempo wStart wEnd
+      pushNoteEvents $ Seis8s.render p' theTempo wStart wEnd
     Nothing -> return ()
 renderBaseProgramAlways _ _ _ _ _ = return ()
 

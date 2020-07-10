@@ -134,7 +134,8 @@ sourceToJS h (ScrollX (x:y:_) s) = _scrollX2 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (ScrollY [] s) = _scrollY0 (sourceToJS h s)
 sourceToJS h (ScrollY (x:[]) s) = _scrollY1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (ScrollY (x:y:_) s) = _scrollY2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
-
+sourceToJS h (Modulate y [] x) = _modulate0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Modulate y (a:_) x) = _modulate1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
 
 foreign import javascript safe "$1.synth.osc()" _osc0 :: Hydra -> JSSource
 foreign import javascript safe "$1.synth.osc($2)" _osc1 :: Hydra -> JSParameters -> JSSource
@@ -221,7 +222,8 @@ foreign import javascript safe "$1.scrollX($2,$3)" _scrollX2 :: JSSource -> JSPa
 foreign import javascript safe "$1.scrollY()" _scrollY0 :: JSSource -> JSSource
 foreign import javascript safe "$1.scrollY($2)" _scrollY1 :: JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.scrollY($2,$3)" _scrollY2 :: JSSource -> JSParameters -> JSParameters -> JSSource
-
+foreign import javascript safe "$1.modulate($2)" _modulate0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulate($2,$3)" _modulate1 :: JSSource -> JSSource -> JSParameters -> JSSource
 
 newtype JSOutput = JSOutput JSVal
 instance PToJSVal JSOutput where pToJSVal (JSOutput x) = x
