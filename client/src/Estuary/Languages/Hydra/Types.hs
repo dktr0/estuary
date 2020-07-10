@@ -12,48 +12,47 @@ data Source =
   Noise [Parameters] | -- noise() -- noise([5,10]) -- noise(0.5,0.7)
   Shape [Parameters] | -- shape() -- shape(2.0)
   Voronoi [Parameters] | -- voronoi() -- voronoi(10,0.5,0.1)
+  --Src Source | -- screen/camera as input
   Brightness [Parameters] Source |
   Contrast [Parameters] Source |
   Colorama [Parameters] Source |
-
-  --Speed Source | -- find a new place, it doesn't go here i.e. speed = 1.5
-  --Bpm [Source] | -- audio
-  --Src Source | -- screen/camera as input
-
-  Color Source [Parameters] [Parameters] [Parameters] |
-  Invert Source [Parameters] |
-  Luma Source [Parameters] [Parameters] |
-  Posterize Source [Parameters] [Parameters] |
-  Saturate Source [Parameters] |
-  Shift Source [Parameters] [Parameters] [Parameters] [Parameters] |
-  Thresh Source [Parameters] [Parameters] |
-  Kaleid Source [Parameters] |
-  Pixelate Source [Parameters] [Parameters] |
-  Repeat Source [Parameters] [Parameters] [Parameters] [Parameters] |
-  RepeatX Source [Parameters] [Parameters] |
-  RepeatY Source [Parameters] [Parameters] |
-  Rotate Source [Parameters] [Parameters] |
-  Scale Source [Parameters] [Parameters] [Parameters] |
-  Scroll Source [Parameters] [Parameters] [Parameters] [Parameters] |
-  ScrollX Source [Parameters] [Parameters] |
-  ScrollY Source [Parameters] [Parameters] |
-  Add Source Source [Parameters] |
-  Mult Source Source [Parameters] |
-  Blend Source Source [Parameters] |
+  Color [Parameters] Source |
+  Invert [Parameters] Source |
+  Luma [Parameters] Source |
+  Posterize [Parameters] Source |
+  Saturate [Parameters] Source |
+  Shift [Parameters] Source |
+  Thresh [Parameters] Source |
+  Kaleid [Parameters] Source |
+  Pixelate [Parameters] Source |
+  Repeat [Parameters] Source |
+  RepeatX [Parameters] Source |
+  RepeatY [Parameters] Source |
+  Rotate [Parameters] Source |
+  Scale [Parameters] Source |
+  Scroll [Parameters] Source |
+  ScrollX [Parameters] Source |
+  ScrollY [Parameters] Source |
+  --modulators
+  Modulate Source [Parameters] Source |
+  ModulateHue Source [Parameters] Source |
+  ModulateKaleid Source [Parameters] Source |
+  ModulatePixelate Source [Parameters] Source |
+  ModulateRepeat Source [Parameters] Source |
+  ModulateRepeatX Source [Parameters] Source |
+  ModulateRepeatY Source [Parameters] Source |
+  ModulateRotate Source [Parameters] Source |
+  ModulateScale Source [Parameters] Source |
+  ModulateScrollX Source [Parameters] Source |
+  ModulateScrollY Source [Parameters] Source |
+  --operators
+  Add Source [Parameters] Source |
+  Mult Source [Parameters] Source |
+  Blend Source [Parameters] Source |
   Diff Source Source |
   Layer Source Source |
-  Mask Source Source [Parameters] [Parameters] |
-  Modulate Source [Parameters] |
-  ModulateHue Source [Parameters] |
-  ModulateKaleid Source [Parameters] |
-  ModulatePixelate Source [Parameters] [Parameters] |
-  ModulateRepeat Source [Parameters] [Parameters] [Parameters] [Parameters] |
-  ModulateRepeatX Source [Parameters] [Parameters] |
-  ModulateRepeatY Source [Parameters] [Parameters] |
-  ModulateRotate Source [Parameters] [Parameters] |
-  ModulateScale Source [Parameters] [Parameters] |
-  ModulateScrollX Source [Parameters] [Parameters] |
-  ModulateScrollY Source [Parameters] [Parameters]
+  Mask Source [Parameters] Source
+  --Speed Source | -- find a new place, it doesn't go here i.e. speed = 1.5
   deriving (Show)
 
 data Output =

@@ -61,7 +61,25 @@ source = do
   fs <- many $ choice [
     Brightness <$> methodWithParameters "brightness",
     Contrast <$> methodWithParameters "contrast",
-    Colorama <$> methodWithParameters "colorama"
+    Colorama <$> methodWithParameters "colorama",
+    Color <$> methodWithParameters "color",
+    Invert <$> methodWithParameters "invert",
+    Luma <$> methodWithParameters "luma",
+    Posterize <$> methodWithParameters "posterize",
+    Saturate <$> methodWithParameters "saturate",
+    Shift <$> methodWithParameters "shift",
+    Thresh <$> methodWithParameters "tresh",
+    Kaleid <$> methodWithParameters "kaleid",
+    Pixelate <$> methodWithParameters "pixelate",
+    Repeat <$> methodWithParameters "repeat",
+    RepeatX <$> methodWithParameters "repeatX",
+    RepeatY <$> methodWithParameters "repeatY",
+    Rotate <$> methodWithParameters "rotate",
+    Scale <$> methodWithParameters "scale",
+    Scroll <$> methodWithParameters "scroll",
+    ScrollX <$> methodWithParameters "scrollX",
+    ScrollY <$> methodWithParameters "scrollY"
+
     ]
   return $ (foldl (.) id fs) x
 
