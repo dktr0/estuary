@@ -46,7 +46,7 @@ render(buffer) // default: o0 <br />
 
 ## Modulators
 
-// t = texture = source => color, osc, src, noise, shape… <br />
+// t = texture = source => osc, solid, gradient, noise, shape, voronoi <br />
 
 .modulate(t, amount) // amount’s default: 0.1 <br />
 .modulateHue(t, amount) // default: 0.4 <br />

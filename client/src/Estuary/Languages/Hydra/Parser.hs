@@ -79,7 +79,6 @@ source = do
     Scroll <$> methodWithParameters "scroll",
     ScrollX <$> methodWithParameters "scrollX",
     ScrollY <$> methodWithParameters "scrollY"
-
     ]
   return $ (foldl (.) id fs) x
 

@@ -210,7 +210,6 @@ foreign import javascript safe "$1.scale()" _scale0 :: JSSource -> JSSource
 foreign import javascript safe "$1.scale($2)" _scale1 :: JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.scale($2,$3)" _scale2 :: JSSource -> JSParameters -> JSParameters -> JSSource
 foreign import javascript safe "$1.scale($2,$3,$4)" _scale3 :: JSSource -> JSParameters -> JSParameters -> JSParameters -> JSSource
-
 foreign import javascript safe "$1.scroll()" _scroll0 :: JSSource -> JSSource
 foreign import javascript safe "$1.scroll($2)" _scroll1 :: JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.scroll($2,$3)" _scroll2 :: JSSource -> JSParameters -> JSParameters -> JSSource
