@@ -22,6 +22,7 @@ import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.Cumbia.Program as Cumbia
+import qualified Estuary.Languages.Hydra.Render as Hydra
 
 
 data RenderState = RenderState {
@@ -32,7 +33,7 @@ data RenderState = RenderState {
   renderPeriod :: !NominalDiffTime,
   renderEnd :: !UTCTime,
   cachedDefs :: !DefinitionMap,
-  cachedCanvasElement :: !(Maybe HTMLCanvasElement),
+--  cachedCanvasElement :: !(Maybe HTMLCanvasElement),
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
   tidalEvents :: ![(UTCTime,Tidal.ControlMap)],
@@ -43,6 +44,7 @@ data RenderState = RenderState {
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
   timeNots :: IntMap TimeNot.Program,
   cumbias :: IntMap Cumbia.Program,
+  hydras :: IntMap Hydra.Hydra,
   evaluationTimes :: IntMap UTCTime, -- this is probably temporary
   renderTime :: !MovingAverage,
   wakeTimeAnimation :: !UTCTime,
@@ -52,12 +54,13 @@ data RenderState = RenderState {
   zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo,
   glContext :: GLContext,
+  canvasElement :: HTMLCanvasElement,
   videoDivCache :: Maybe HTMLDivElement,
   tempoCache :: Tempo
   }
 
-initialRenderState :: MusicW.Node -> MusicW.Node -> GLContext -> UTCTime -> AudioTime -> IO RenderState
-initialRenderState mic out glCtx t0System t0Audio = do
+initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> UTCTime -> AudioTime -> IO RenderState
+initialRenderState mic out cvsElement glCtx t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) Punctual.HD 1.0 glCtx
   return $ RenderState {
     animationOn = False,
@@ -67,7 +70,7 @@ initialRenderState mic out glCtx t0System t0Audio = do
     renderPeriod = 0,
     renderEnd = t0System,
     cachedDefs = empty,
-    cachedCanvasElement = Nothing,
+--    cachedCanvasElement = Nothing,
     paramPatterns = empty,
     noteEvents = [],
     tidalEvents = [],
@@ -78,6 +81,7 @@ initialRenderState mic out glCtx t0System t0Audio = do
     cineCer0States = empty,
     timeNots = empty,
     cumbias = empty,
+    hydras = empty,
     evaluationTimes = empty,
     renderTime = newAverage 20,
     wakeTimeAnimation = t0System,
@@ -87,6 +91,7 @@ initialRenderState mic out glCtx t0System t0Audio = do
     zoneAnimationTimes = empty,
     info = emptyRenderInfo,
     glContext = glCtx,
+    canvasElement = cvsElement,
     videoDivCache = Nothing,
     tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 }
   }
