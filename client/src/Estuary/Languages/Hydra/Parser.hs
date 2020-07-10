@@ -19,7 +19,11 @@ parseHydra :: Text -> Either ParseError [Statement]
 parseHydra s = parse hydra "hydra" s
 
 hydra :: Parser [Statement]
-hydra = semiSep statement
+hydra = do
+  whiteSpace
+  xs <- semiSep statement
+  eof
+  return xs
 
 statement :: Parser Statement
 statement = choice [ outStatement, renderStatement ]
@@ -29,55 +33,49 @@ outStatement = do
   s <- source
   reservedOp "."
   reserved "out"
-  o <- choice [
-    try $ parens output,
-    parens whiteSpace >> return O0
-    ]
+  o <- output
   return $ Out s o
 
 output :: Parser Output
-output = choice [
+output = try $ parens $ choice [
   reserved "o0" >> return O0,
   reserved "o1" >> return O1,
   reserved "o2" >> return O2,
-  reserved "o3" >> return O3
+  reserved "o3" >> return O3,
+  whiteSpace >> return O0
   ]
 
 renderStatement :: Parser Statement
-renderStatement = Render <$> (reserved "render" >> parens output)
+renderStatement = Render <$> (reserved "render" >> output)
 
 source :: Parser Source
-source = choice [
-  Osc <$> functionWithSources "osc",
-  Solid <$> functionWithSources "solid",
-  Gradient <$> functionWithSources "gradient",
-  Noise <$> functionWithSources "noise",
-  Shape <$> functionWithSources "shape",
-  Voronoi <$> functionWithSources "voronoi"
+source = do
+  x <- choice [
+    Osc <$> functionWithParameters "osc",
+    Solid <$> functionWithParameters "solid",
+    Gradient <$> functionWithParameters "gradient",
+    Noise <$> functionWithParameters "noise",
+    Shape <$> functionWithParameters "shape",
+    Voronoi <$> functionWithParameters "voronoi"
+    ]
+  fs <- many $ choice [
+    Brightness <$> methodWithParameters "brightness",
+    Contrast <$> methodWithParameters "contrast",
+    Colorama <$> methodWithParameters "colorama"
+    ]
+  return $ (foldl (.) id fs) x
+
+functionWithParameters :: String -> Parser [Parameters]
+functionWithParameters x = try $ reserved x >> parens (commaSep parameters)
+
+methodWithParameters :: String -> Parser [Parameters]
+methodWithParameters x = try $ reservedOp "." >> reserved x >> parens (commaSep parameters)
+
+parameters :: Parser Parameters
+parameters = choice [
+  Parameters <$> try (brackets (commaSep double)),
+  (Parameters . return) <$> double
   ]
-
-functionWithSources :: String -> Parser [Source]
-functionWithSources x = reserved x >> parens (commaSep sourceAsArgument)
-
-sourceAsArgument :: Parser Source
-sourceAsArgument = choice [
-  source,
-  list,
-  constantDouble,
-  constantInt
-  ]
-
-list :: Parser Source
-list = List <$> brackets (commaSep sourceAsArgument)
-
-constantDouble :: Parser Source
-constantDouble = ConstantDouble <$> double
-
-constantInt :: Parser Source
-constantInt = ConstantInt <$> int
-
-int :: Parser Int
-int = fromIntegral <$> integer
 
 double :: Parser Double
 double = choice [
@@ -101,6 +99,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.reservedNames = [
     "out","render",
     "osc","solid","gradient","noise","shape","voronoi",
+    "brightness", "contrast", "colorama",
     "o0","o1","o2","o3"
     ],
   P.reservedOpNames = ["."],

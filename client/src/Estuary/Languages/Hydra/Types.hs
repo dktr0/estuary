@@ -1,57 +1,59 @@
 module Estuary.Languages.Hydra.Types where
 
-data Source =
-  ConstantInt Int |
-  ConstantDouble Double |
-  List [Source] | -- [0.2,0.4] -- [0.3,0.4,1.0]
-  Osc [Source] | -- osc() -- osc(0.3) -- osc(0.3,0.5) -- osc(0,10,0.5) -- osc([0.4,0.5],1.0,0.2)
-  Solid [Source] | -- solid() -- solid(0.5) -- solid(0.2,[0.1,0.2,0.3]) -- solid(1,0.5,1) -- solid(1,0.5,0.2,0.7)
-  Gradient [Source] | -- gradient() -- gradient(0.4) -- gradient(osc())
-  Noise [Source] | -- noise() -- noise([5,10]) -- noise(0.5,0.7)
-  Shape [Source] | -- shape() -- shape(osc()) -- shape(0.5,noise(),gradient())
-  Voronoi [Source] | -- voronoi() -- voronoi([0.5,0.8,0.3]) -- voronoi(10,0.5,0.1)
+data Parameters =
+  Parameters [Double] -- [0.2,0.4] -- [0.3,0.4,1.0]
+  --Fast [Double] [Source]
+  deriving (Show)
 
-  --Fast [Double] [Source] |
-  --Speed Source | -- find a new place, it doesn't go here speed = 1.5
+data Source =
+  Osc [Parameters] | -- osc() -- osc(0.3) -- osc(0.3,0.5) -- osc(0,10,0.5) -- osc([0.4,0.5],1.0,0.2)
+  Solid [Parameters] | -- solid() -- solid(0.5) -- solid(0.2,[0.1,0.2,0.3]) -- solid(1,0.5,1) -- solid(1,0.5,0.2,0.7)
+  Gradient [Parameters] | -- gradient() -- gradient(0.4)
+  Noise [Parameters] | -- noise() -- noise([5,10]) -- noise(0.5,0.7)
+  Shape [Parameters] | -- shape() -- shape(2.0)
+  Voronoi [Parameters] | -- voronoi() -- voronoi(10,0.5,0.1)
+  Brightness [Parameters] Source |
+  Contrast [Parameters] Source |
+  Colorama [Parameters] Source |
+
+  --Speed Source | -- find a new place, it doesn't go here i.e. speed = 1.5
   --Bpm [Source] | -- audio
   --Src Source | -- screen/camera as input
-  Brightness Source (Maybe Source) |
-  Contrast Source (Maybe Source) |
-  Color Source (Maybe Source) (Maybe Source) (Maybe Source) |
-  Colorama Source (Maybe Source) |
-  Invert Source (Maybe Source) |
-  Luma Source (Maybe Source) (Maybe Source) |
-  Posterize Source (Maybe Source) (Maybe Source) |
-  Saturate Source (Maybe Source) |
-  Shift Source (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  Thresh Source (Maybe Source) (Maybe Source) |
-  Kaleid Source (Maybe Source) |
-  Pixelate Source (Maybe Source) (Maybe Source) |
-  Repeat Source (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  RepeatX Source (Maybe Source) (Maybe Source) |
-  RepeatY Source (Maybe Source) (Maybe Source) |
-  Rotate Source (Maybe Source) (Maybe Source) |
-  Scale Source (Maybe Source) (Maybe Source) (Maybe Source) |
-  Scroll Source (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  ScrollX Source (Maybe Source) (Maybe Source) |
-  ScrollY Source (Maybe Source) (Maybe Source) |
-  Add Source Source (Maybe Source) |
-  Mult Source Source (Maybe Source) |
-  Blend Source Source (Maybe Source) |
+
+  Color Source [Parameters] [Parameters] [Parameters] |
+  Invert Source [Parameters] |
+  Luma Source [Parameters] [Parameters] |
+  Posterize Source [Parameters] [Parameters] |
+  Saturate Source [Parameters] |
+  Shift Source [Parameters] [Parameters] [Parameters] [Parameters] |
+  Thresh Source [Parameters] [Parameters] |
+  Kaleid Source [Parameters] |
+  Pixelate Source [Parameters] [Parameters] |
+  Repeat Source [Parameters] [Parameters] [Parameters] [Parameters] |
+  RepeatX Source [Parameters] [Parameters] |
+  RepeatY Source [Parameters] [Parameters] |
+  Rotate Source [Parameters] [Parameters] |
+  Scale Source [Parameters] [Parameters] [Parameters] |
+  Scroll Source [Parameters] [Parameters] [Parameters] [Parameters] |
+  ScrollX Source [Parameters] [Parameters] |
+  ScrollY Source [Parameters] [Parameters] |
+  Add Source Source [Parameters] |
+  Mult Source Source [Parameters] |
+  Blend Source Source [Parameters] |
   Diff Source Source |
   Layer Source Source |
-  Mask Source Source (Maybe Source) (Maybe Source) |
-  Modulate Source (Maybe Source) |
-  ModulateHue Source (Maybe Source) |
-  ModulateKaleid Source (Maybe Source) |
-  ModulatePixelate Source (Maybe Source) (Maybe Source) |
-  ModulateRepeat Source (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  ModulateRepeatX Source (Maybe Source) (Maybe Source) |
-  ModulateRepeatY Source (Maybe Source) (Maybe Source) |
-  ModulateRotate Source (Maybe Source) (Maybe Source) |
-  ModulateScale Source (Maybe Source) (Maybe Source) |
-  ModulateScrollX Source (Maybe Source) (Maybe Source) |
-  ModulateScrollY Source (Maybe Source) (Maybe Source)
+  Mask Source Source [Parameters] [Parameters] |
+  Modulate Source [Parameters] |
+  ModulateHue Source [Parameters] |
+  ModulateKaleid Source [Parameters] |
+  ModulatePixelate Source [Parameters] [Parameters] |
+  ModulateRepeat Source [Parameters] [Parameters] [Parameters] [Parameters] |
+  ModulateRepeatX Source [Parameters] [Parameters] |
+  ModulateRepeatY Source [Parameters] [Parameters] |
+  ModulateRotate Source [Parameters] [Parameters] |
+  ModulateScale Source [Parameters] [Parameters] |
+  ModulateScrollX Source [Parameters] [Parameters] |
+  ModulateScrollY Source [Parameters] [Parameters]
   deriving (Show)
 
 data Output =
