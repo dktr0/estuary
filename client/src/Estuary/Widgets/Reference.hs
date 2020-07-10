@@ -25,11 +25,10 @@ data Reference =
   CineZer0
   deriving (Generic, FromJSVal, ToJSVal)
 
-navigation :: MonadWidget t m => Editor t m (Event t Request)
+navigation :: MonadWidget t m => Editor t m (Event t Reference)
 navigation = do
   x <- router' MainList never $ referenceWidget
-  let y = fmap snd x
-  let a = switchDyn $ fmap fst y
+  let a = switchDyn x
   return a
 
 referenceWidget :: MonadWidget t m => Reference -> Editor t m (Event t Reference)
@@ -39,10 +38,12 @@ referenceWidget MainList = do
     divClass "reference-title" $ text "estuary"
     divClass "reference-description" $ text "Estuary is a platform for collaboration and learning through live coding. It enables you to create sound, music, and visuals in a web browser."
     el "h3" $ text "Languages"
-    miniTidal <- goTo "reference-margin" MiniTidal "MiniTidal"
-    punctual <- goTo "reference-margin" Punctual "Punctual"
-    cinezero <- goTo "reference-margin" CineZer0 "CineZer0"
-    return $ leftmost [miniTidal, punctual, cinezero]
+    navEv' <- el "ul" $ do
+      miniTidal <- el "li" $ goTo "reference-margin" MiniTidal "MiniTidal"
+      punctual <- el "li" $ goTo "reference-margin" Punctual "Punctual"
+      cinezero <- el "li" $ goTo "reference-margin" CineZer0 "CineZer0"
+      return $ leftmost [miniTidal, punctual, cinezero]
+    return navEv'
   return navEv
 
 referenceWidget MiniTidal = do
@@ -53,11 +54,10 @@ referenceWidget Punctual = do
   text "Punctual Help"
   return never
 
-referenceWidget MiniTidal = do
+referenceWidget CineZer0 = do
   text "CineZer0 Help"
   return never
 
 goTo :: MonadWidget t m => Text -> Reference -> Text -> Editor t m (Event t Reference)
 goTo c targetPage title = divClass c $ do
-  liftM (targetPage <$) $ dynButtonWithChild "reference-link" $ do
-    divClass "reference-title-container" $ divClass "reference-title" $ text title
+  liftM (targetPage <$) $ dynButtonWithChild "reference-link" $ text title
