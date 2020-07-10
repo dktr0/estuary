@@ -220,14 +220,13 @@ in
            rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
         }) {});
 
-        cumbia = #dontHaddock (self.callCabal2nix "cumbia" ../../cumbia {});
-         dontHaddock (self.callCabal2nix "cumbia" (pkgs.fetchFromGitHub {
+        seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
+          dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
-           repo = "cumbia";
-           sha256 = "1m5i0mr2mbkbwrqs4kfr8ddy23apaq6l0kf8dggxbxy6g16whlja";
-           rev = "3ce00b56012acb7682afe99aa0e0241c67dc187b";
-        }) {});
-
+           repo = "seis8s";
+           sha256 = "0v89h9fwhc4qfa8wxj8383ns7902m7rchkikdjlm8d2kmxwkz5sb";
+           rev = "f693ec3bfda429f776cfb6891f92a018e9e598b7";
+         }) {});
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [
