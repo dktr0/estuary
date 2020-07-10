@@ -881,7 +881,7 @@ table, tr, td {border: none;}
 }
 
 .terminalInput {
-	flex-grow: 1;
+	flex-grow: 0.97;
 	border:none;
 }
 
@@ -942,13 +942,6 @@ cursor: pointer;
     text-align: center;
     width: fit-content;
 
-}
-
-.ensembleStatus {
-  display: inline-block;
-  width: 50%;
-  vertical-align: top;
-  height: 8.2em;
 }
 
 /*
@@ -1099,6 +1092,14 @@ display: inline-flex;
 
 /* ///////////status Widget/////////// */
 
+.ensembleStatus {
+  display: inline-block;
+  width: 49.4vw;
+  vertical-align: top;
+  height: 8.4em;
+}
+
+
 .ensembleStatusWidget {
 	height: 100%;
     border: 1px solid var(--primary-color);
@@ -1106,12 +1107,14 @@ display: inline-flex;
     margin-top: 0.35%;
    	overflow: hidden;
    	margin-right: 0.7em;
+
 }
 
 .statusWidgetScrollableContainer {
 overflow:hidden;
 overflow-y: auto;
-height: 6.5em;
+height: 8em;
+
 }
 
 
@@ -1134,58 +1137,71 @@ height: 6.5em;
 	background-color: transparent;
 }
 
-.ensemble-name-container {
-	margin-bottom: 1%;
-	border-bottom: 1px solid var(--primary-color);
-	border-radius: 5px;
-}
-
-.ensemble-name {
-    margin-left: 1%;
-}
 
 .infoContainer {
 	margin-left:1%;
 	margin-right: 1%;
-/* 	background-color: red; */
 }
 
-table.tableContainer  {
+.tableContainer table  {
   border-collapse: collapse;
-/*   background-color: gray; */
   width: 100%;
   cursor: pointer;
 
 }
 
 .rowContainer {
-/* 	background-color: green; */
 	display: flex;
+
 }
 
-tr {
+.rowContainer tr {
   display: flex;
-/*   background-color: blue; */
   width: 100%;
   flex-wrap:nowrap;
+
 }
 
 td.statusWidgetNameAndLocation {
-width: 100%;
-max-width: 16em;
-margin-right:5px;
-/* background-color: red; */
-overflow-x: hidden;
 }
 
-td.statusWidgetActivity {
-/* 	background-color: yellow; */
-	width: 30%;
+th.statusWidgetNameAndLocation {
+	margin-bottom: 2px;
+	}
+
+td.statusWidgetName, th.statusWidgetName {
+	text-align:left;
+	width: calc(45vw/4.1);
+    overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+th.statusWidgetName {
+	margin-bottom: 2px;
+}
+
+.statusWidgetPopupChild, th.statusWidgetPopupChild {
+    width: calc(50vw/2.7);
+	overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+	text-align:left;
+
+}
+
+
+td.statusWidgetActivity, th.statusWidgetActivity  {
+	width: calc(50vw/7);
 	text-align:center;
 }
 
+th.statusWidgetStatusInput {
+	width: calc(50vw/2.3);
+	text-align: center;
+}
+
 td.statusWidgetStatusInput {
-/* 	background-color:aliceblue; */
 	width: 100%;
 }
 
@@ -1194,24 +1210,30 @@ td.statusWidgetStatusInput input {
 	color: var(--primary-color);
 	background-color: transparent;
 	border: none;
-	width:99%;
+	width:98%;
     border-radius: 5px;
     padding-left: 2%;
+
 }
 
-td.statusWidgetFPSAndLatency {
-	width: 100%;
+th.statusWidgetFPSAndLatency {
+    width: calc(45vw/5);
+}
+
+td.statusWidgetFPSAndLatency  {
+    width: calc(45vw/5);
 	text-align: center;
 }
 
+
 td.otherInfo {
  width: 100%;
+ text-align:center;
 }
 
 .statusWidgetAnonymousPart {
    order: 3;
    width: 100%;
-   margin-top:0.5%;
 }
 
 
@@ -1291,7 +1313,7 @@ td.otherInfo {
   content: "";
   position: absolute;
   bottom: 100%;
-  left: 0.5vh;
+  left: 1.5vh;
   border-width: 5px;
   border-style: solid;
   border-color: transparent transparent var(--secondary-color) transparent;

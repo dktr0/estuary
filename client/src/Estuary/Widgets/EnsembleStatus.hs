@@ -30,11 +30,11 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
   let status = fmap wsStatus ctx --ensemble status
   anonymous <- holdUniqDyn $ fmap anonymousParticipants ens -- Dynamic t Int
 
-  divClass "ensemble-name-container code-font" $ do
-    divClass "ensemble-name" $ do
-      term Term.Ensemble >>= dynText
-      text ": "
-      dynText ensName
+  -- divClass "ensemble-name-container code-font" $ do
+  --   divClass "ensemble-name" $ do
+  --     term Term.Ensemble >>= dynText
+  --     text ": "
+  --     dynText ensName
 
   divClass "statusWidgetScrollableContainer" $ do
     divClass "infoContainer" $ do
@@ -51,9 +51,15 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
             -- hideableWidget' :: MonadWidget t m => Dynamic t Bool -> m a -> m a
             -- listWithKey :: forall t k v m a. (Ord k, MonadWidget t m) => Dynamic t (Map k v) -> (k -> Dynamic t v -> m a) -> m (Dynamic t (Map k a))
             -- switchDyn :: forall t a. Reflex t => Dynamic t (Event t a) -> Event t a
-            m1 <- hideableWidget' (fmap (== 0) c') $ (listWithKey ensParticipants $ (mode1 uHandle currentTime))
-            m2 <- hideableWidget' (fmap (== 1) c') $ (listWithKey ensParticipants $ (mode2 uHandle currentTime))
-            m3 <- hideableWidget' (fmap (== 2) c') $ (listWithKey ensParticipants $ (mode3 uHandle currentTime))
+            m1 <- hideableWidget' (fmap (== 0) c') $ do
+              headerMode1 ensName
+              (listWithKey ensParticipants $ (mode1 uHandle currentTime))
+            m2 <- hideableWidget' (fmap (== 1) c') $ do
+              headerMode2 ensName
+              (listWithKey ensParticipants $ (mode2 uHandle currentTime))
+            m3 <- hideableWidget' (fmap (== 2) c') $ do
+              headerMode3 ensName
+              (listWithKey ensParticipants $ (mode3 uHandle currentTime))
           return $ switchDyn $ fmap (leftmost . fmap snd . elems) $ m1 --Event t EnsembleRequest -- Dymaic Map Int (Event t EnsembleRequest)
 
         divClass "statusWidgetAnonymousPart code-font" $ do
@@ -63,28 +69,51 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
 
         return status -- puts the value on the monad
 
+headerMode1 :: MonadWidget t m  => Dynamic t Text -> m ()
+headerMode1 ensName = divClass "rowContainer" $ do
+  el "tr" $ do
+    elClass "th" "statusWidgetNameAndLocation" $ divClass "statusWidgetPopupChild" $ dynText $ (constDyn "Ensemble: ") <> ensName
+    elClass "th" "statusWidgetActivity" $ text "activity"
+    elClass "th" "statusWidgetStatusInput" $ text "status"
+
+headerMode2 :: MonadWidget t m  => Dynamic t Text -> m ()
+headerMode2 ensName = divClass "rowContainer" $ do
+  el "tr" $ do
+    elClass "th" "statusWidgetName" $ dynText $ (constDyn "Ensemble: ") <> ensName
+    elClass "th" "statusWidgetFPSAndLatency" $ text "Latency"
+    elClass "th" "statusWidgetFPSAndLatency" $ text "Load"
+    elClass "th" "statusWidgetFPSAndLatency" $ text "FPS"
+    elClass "th" "statusWidgetFPSAndLatency" $ text "IP address"
+
+headerMode3 :: MonadWidget t m  => Dynamic t Text -> m ()
+headerMode3 ensName = divClass "rowContainer" $ do
+  el "tr" $ do
+    elClass "th" "statusWidgetName" $ dynText $ (constDyn "Ensemble: ") <> ensName
+
 mode1 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t (), Event t EnsembleRequest)
 mode1 uHandle t name part =  divClass "rowContainer" $ do
   ev <- clickableTr' $ do
-    elClass "td" "statusWidgetNameAndLocation" $ participantNameAndLocationWidget name part
+    elClass "td" "statusWidgetNameAndLocation" $ participantNameLocationAndIPWidget name part
     elClass "td" "statusWidgetActivity" $ participantActivityWidget t name part
   status <- elClass "td" "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
   return (ev, status)
   -- return (ev, status)
 
+
 mode2 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t ())
-mode2 uHandle t name part = do
+mode2 uHandle t name part = divClass "rowContainer" $ do
   ev <- clickableTr' $ do
-   elClass "td" "statusWidgetNameAndLocation" $ participantNameWidget name part
+   elClass "td" "statusWidgetName" $ participantNameWidget name part
    elClass "td" "statusWidgetFPSAndLatency" $ participantLatency name part
    elClass "td" "statusWidgetFPSAndLatency" $ participantLoad name part
    elClass "td" "statusWidgetFPSAndLatency" $ participantFPS name part
+   elClass "td" "statusWidgetFPSAndLatency" $ participantIP name part
   return ev
 
 mode3 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t ())
-mode3 uHandle t name part =  do
+mode3 uHandle t name part = divClass "rowContainer" $ do
   ev <- clickableTr' $ do
-   elClass "td" "statusWidgetNameAndLocation" $ participantNameWidget name part
+   elClass "td" "statusWidgetName" $ participantNameWidget name part
    elClass "td" "otherInfo" $ text "info placeholder"
   return ev
 
@@ -110,6 +139,10 @@ participantFPS name part = do
   let fps' = fmap (showt . animationLoad) part
   dynText $ fps' <>(constDyn "FPS")
 
+participantIP :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantIP name part = do
+  let ip' = fmap ipAddress part
+  dynText ip'
 
 participantStatusWidget :: MonadWidget t m  => Dynamic t Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
 participantStatusWidget thisUserHandle _ part = do
@@ -121,10 +154,10 @@ participantStatusWidget thisUserHandle _ part = do
   let writeStatusToServer = fmap (\x -> WriteStatus x) $ _textInput_input s --msg only sent when they press a key
   return writeStatusToServer
 
-participantNameAndLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantNameAndLocationWidget name part = divClass "pNameLocationAndTooltop" $ do
-  let child = dynText $ constDyn name <> fmap location' part
-  let popup = dynText $ fmap browser part
+participantNameLocationAndIPWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantNameLocationAndIPWidget name part = do
+  let child = divClass "statusWidgetPopupChild" $ dynText $ constDyn name <> fmap location' part
+  let popup = dynText $ fmap browser part <> "; " <> "IP address: " <> fmap ipAddress part
   tooltipForScrollableTable child popup
 
 compareHandles ::  Text -> Participant -> Bool -- -> Dynamic t Text -> Bool
@@ -144,7 +177,7 @@ location' p = f (Estuary.Types.Participant.location p)
         | otherwise = "@" <> x
 
 participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantNameWidget name part = text name
+participantNameWidget name part =  text name
 
 participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantLocationWidget name part = dynText $ fmap Estuary.Types.Participant.location part
