@@ -15,174 +15,126 @@ import Estuary.Languages.Hydra.Test
 
 ----
 
-hydra :: Text -> Either ParseError Statement
-hydra s = parse hydraStatement "hydra" s
+parseHydra :: Text -> Either ParseError [Statement]
+parseHydra s = parse hydra "hydra" s
 
-hydraStatement :: Parser Statement
-hydraStatement = choice [
-  sourceOut,
-  renderOut
-  ]
+hydra :: Parser [Statement]
+hydra = do
+  whiteSpace
+  xs <- semiSep statement
+  eof
+  return xs
 
--- Source Output Statement
-sourceOut :: Parser Statement
-sourceOut = do
-  s <- parserSource
-  symbol "."
-  o <- parserOut
-  return $ sourceOutputToStatement s o
+statement :: Parser Statement
+statement = choice [ outStatement, renderStatement ]
 
-sourceOutputToStatement :: Source -> Output -> Statement
-sourceOutputToStatement s o = Out s o
-
--- Render Statement
--- render()
-renderOut :: Parser Statement
-renderOut = do
-  reserved "render"
-  o <- parens $ parserOutput
-  return $ outputToStatement o
-
-outputToStatement :: Output -> Statement
-outputToStatement o = Render o
-
-
---------- Adding sources
-
-sourceAsArgument :: Parser Source
-sourceAsArgument = choice [
-  --try $ fast,
-  --try $ list,
-  constantDouble
-  ]
-
-parserSource :: Parser Source
-parserSource = choice [
-  try $ osc,
-  try $ solid,
-  try $ gradient,
-  try $ noise,
-  try $ shape,
-  try $voronoi,
-  constantDouble
-  ]
-
---------- parserSource
-
--- osc() -- osc(0.3) -- osc(0.3,0.5) -- osc(0,10,0.5) -- osc([0.4,0.5],1.0,0.2)
-osc :: Parser Source
-osc = do
-  reserved "osc"
-  p <- parens $ sepBy sourceAsArgument (comma)
-  case p of
-      [] -> return $ Osc Nothing Nothing Nothing
-      (x:[]) -> return $ Osc (Just x) Nothing Nothing
-      (x:y:[]) -> return $ Osc (Just x ) (Just y) Nothing
-      (x:y:z:_) -> return $ Osc (Just x) (Just y) (Just z)
-
--- solid() -- solid(0.5) -- solid(0.2,[0.1,0.2,0.3]) -- solid(1,0.5,1) -- solid(1,0.5,0.2,0.7)
-solid :: Parser Source
-solid = do
-  reserved "solid"
-  p <- parens $ sepBy sourceAsArgument (comma)
-  case p of
-      [] -> return $ Solid Nothing Nothing Nothing Nothing
-      (x:[]) -> return $ Solid (Just x) Nothing Nothing Nothing
-      (x:y:[]) -> return $ Solid (Just x) (Just y) Nothing Nothing
-      (x:y:z:[]) -> return $ Solid (Just x) (Just y) (Just z) Nothing
-      (x:y:z:v:_) -> return $ Solid (Just x) (Just y) (Just z) (Just v)
-
--- gradient() -- gradient(0.4) -- gradient(osc())
-gradient :: Parser Source
-gradient = do
-  reserved "gradient"
-  p <- parens $ sepBy sourceAsArgument (comma)
-  case p of
-      [] -> return $ Gradient Nothing
-      (x:_) -> return $ Gradient (Just x)
-
--- noise() -- noise([5,10]) -- noise(0.5,0.7)
-noise :: Parser Source
-noise = do
-  reserved "noise"
-  p <- parens $ sepBy sourceAsArgument (comma)
-  case p of
-      [] -> return $ Noise Nothing Nothing
-      (x:[]) -> return $ Noise (Just x) Nothing
-      (x:y:_) -> return $ Noise (Just x) (Just y)
-
--- shape() -- shape(osc()) -- shape(0.5,noise(),gradient())
-shape :: Parser Source
-shape = do
-  reserved "shape"
-  p <- parens $ sepBy sourceAsArgument (comma)
-  case p of
-      [] -> return $ Shape Nothing Nothing Nothing
-      (x:[]) -> return $ Shape (Just x) Nothing Nothing
-      (x:y:[]) -> return $ Shape (Just x) (Just y) Nothing
-      (x:y:z:_) -> return $ Shape (Just x) (Just y) (Just z)
-
--- voronoi() -- voronoi([0.5,0.8,0.3]) -- voronoi(10,0.5,0.1)
-voronoi :: Parser Source
-voronoi = do
-  reserved "voronoi"
-  p <- parens $ sepBy sourceAsArgument (comma)
-  case p of
-      [] -> return $ Voronoi Nothing Nothing Nothing
-      (x:[]) -> return $ Voronoi (Just x) Nothing Nothing
-      (x:y:[]) -> return $ Voronoi (Just x) (Just y) Nothing
-      (x:y:z:_) -> return $ Voronoi (Just x) (Just y) (Just z)
-
---------- sourceAsArgument
-
--- [0.2,0.4] -- [0.3,0.4,1.0]
--- list :: Parser ParameterSequence
--- list = do
---   n <- brackets $ sepBy constantDouble (comma)
---   return $ List n
---
--- --[0.2,0.4].fast() -- [0.2,0.4].fast(0.5) -- [0.2,0.4].fast([0.5,0.2])
--- fast :: Parser ParameterSequence
--- fast = do
---   n <- brackets $ sepBy constantDouble (comma)
---   symbol "."
---   reserved "fast"
---   p <- parens $ sepBy constantDouble (comma)
---   case p of
---       [] -> return $ Fast n Nothing
---       (x:_) -> return $ Fast n (Just x)
-
--- 0.2 -- 4.0
-constantDouble :: Parser Source
-constantDouble = do
-  n <- double
-  return $ ConstantDouble n
-
-
----------
-
--- Adding outputs
--- out() -- out(O1) -- out(O2) -- out(O3)
-parserOut :: Parser Output
-parserOut = do
+outStatement :: Parser Statement
+outStatement = do
+  s <- source
+  reservedOp "."
   reserved "out"
-  o <- parens $ parserOutput
-  return $ o
+  o <- output
+  return $ Out s o
 
---
-parserOutput :: Parser Output
-parserOutput = choice [
-  reserved "" >> return O0,
-  reserved "O0" >> return O0,
-  reserved "O1" >> return O1,
-  reserved "O2" >> return O2,
-  reserved "O3" >> return O3
+output :: Parser Output
+output = try $ parens $ choice [
+  reserved "o0" >> return O0,
+  reserved "o1" >> return O1,
+  reserved "o2" >> return O2,
+  reserved "o3" >> return O3,
+  whiteSpace >> return O0
   ]
 
+renderStatement :: Parser Statement
+renderStatement = Render <$> (reserved "render" >> output)
 
----------
-int :: Parser Int
-int = fromIntegral <$> integer
+source :: Parser Source
+source = do
+  x <- choice [ -- a source is a single "atomic" Source...
+    functionWithParameters "osc" Osc,
+    functionWithParameters "solid" Solid,
+    functionWithParameters "gradient" Gradient,
+    functionWithParameters "noise" Noise,
+    functionWithParameters "shape" Shape,
+    functionWithParameters "voronoi" Voronoi
+    ]
+  fs <- many $ choice [ -- ...to which zero or more transformations [Source -> Source] are applied.
+    methodWithParameters "brightness" Brightness,
+    methodWithParameters "contrast" Contrast,
+    methodWithParameters "colorama" Colorama,
+    methodWithParameters "color" Color,
+    methodWithParameters "invert" Invert,
+    methodWithParameters "luma" Luma,
+    methodWithParameters "posterize" Posterize,
+    methodWithParameters "saturate" Saturate,
+    methodWithParameters "shift" Shift,
+    methodWithParameters "tresh" Thresh,
+    methodWithParameters "kaleid" Kaleid,
+    methodWithParameters "pixelate" Pixelate,
+    methodWithParameters "repeat" Repeat,
+    methodWithParameters "repeatX" RepeatX,
+    methodWithParameters "repeatY" RepeatY,
+    methodWithParameters "rotate" Rotate,
+    methodWithParameters "scale" Scale,
+    methodWithParameters "scroll" Scroll,
+    methodWithParameters "scrollX" ScrollX,
+    methodWithParameters "scrollY" ScrollY,
+    methodWithSourceAndParameters "modulate" Modulate,
+    methodWithSourceAndParameters "modulateHue" ModulateHue,
+    methodWithSourceAndParameters "modulateKaleid" ModulateKaleid,
+    methodWithSourceAndParameters "modulatePixelate" ModulatePixelate,
+    methodWithSourceAndParameters "modulateRepeat" ModulateRepeat,
+    methodWithSourceAndParameters "modulateRepeatX" ModulateRepeatX,
+    methodWithSourceAndParameters "modulateRepeatY" ModulateRepeatY,
+    methodWithSourceAndParameters "modulateRotate" ModulateRotate,
+    methodWithSourceAndParameters "modulateScale" ModulateScale,
+    methodWithSourceAndParameters "modulateScrollX" ModulateScrollX,
+    methodWithSourceAndParameters "modulateScrollY" ModulateScrollY,
+    methodWithSourceAndParameters "add" Add,
+    methodWithSourceAndParameters "mult" Mult,
+    methodWithSourceAndParameters "blend" Blend,
+    methodWithSource "diff" Diff,
+    methodWithSource "layer" Layer,
+    methodWithSourceAndParameters "mask" Mask
+    ]
+  return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
+
+functionWithParameters :: String -> ([Parameters] -> Source) -> Parser Source
+functionWithParameters funcName constructor = try $ do
+  reserved funcName
+  ps <- parens $ commaSep parameters
+  return $ constructor ps
+
+methodWithParameters :: String -> ([Parameters] -> Source -> Source) -> Parser (Source -> Source)
+methodWithParameters methodName constructor = try $ do
+  reservedOp "."
+  reserved methodName
+  ps <- parens $ commaSep parameters
+  return $ constructor ps
+
+methodWithSource :: String -> (Source -> Source -> Source) -> Parser (Source -> Source)
+methodWithSource methodName constructor = try $ do
+  reservedOp "."
+  reservedOp methodName
+  s <- source
+  return $ constructor s
+
+methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source)
+methodWithSourceAndParameters methodName constructor = try $ do
+  reservedOp "."
+  reservedOp methodName
+  (s,ps) <- parens $ do
+    s <- source
+    ps <- (comma >> commaSep1 parameters) <|> return []
+    return (s,ps)
+  return $ constructor s ps
+
+parameters :: Parser Parameters
+parameters = choice [
+  Parameters <$> try (brackets (commaSep double)),
+  (Parameters . return) <$> double
+  ]
+
 
 double :: Parser Double
 double = choice [
@@ -195,18 +147,23 @@ double = choice [
 
 tokenParser :: P.GenTokenParser Text () Identity
 tokenParser = P.makeTokenParser $ P.LanguageDef {
-  P.commentStart = "{-",
-  P.commentEnd = "-}",
-  P.commentLine = "--",
+  P.commentStart = "/*",
+  P.commentEnd = "*/",
+  P.commentLine = "//",
   P.nestedComments = False,
   P.identStart = letter <|> char '_',
   P.identLetter = alphaNum <|> char '_',
-  P.opStart = oneOf "+*.",
-  P.opLetter = oneOf "+*.",
+  P.opStart = oneOf ".",
+  P.opLetter = oneOf ".",
   P.reservedNames = [
-    "out"
+    "out","render", "fast",
+    "osc","solid","gradient","noise","shape","voronoi",
+    "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
+    "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
+    "add", "mult", "blend", "diff", "layer", "mask",
+    "o0","o1","o2","o3"
     ],
-  P.reservedOpNames = [],
+  P.reservedOpNames = ["."],
   P.caseSensitive = False
   }
 

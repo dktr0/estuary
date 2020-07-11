@@ -9,6 +9,7 @@ CP=cp
 CP_RECURSIVE=cp -Rf
 #endif
 WEBDIRT = $(shell nix-store -r $(shell nix-instantiate webdirt.nix))
+HYDRA = $(shell nix-store -r $(shell nix-instantiate hydra-synth.nix))
 MAKESAMPLEMAP = $(shell nix-store -r $(shell nix-instantiate webdirt.nix))/makeSampleMap.sh
 
 # the hack below is necessary because cabal on OS x seems to build in a
@@ -93,6 +94,7 @@ cleanDevStage: cleanStage
 stageStaticAssets: prepStage
 	@ echo "stageStaticAssets:"
 	cp -Rf $(WEBDIRT)/* $(STAGING_ROOT)/Estuary.jsexe/WebDirt
+	cp -f $(HYDRA)/dist/hydra-synth.js $(STAGING_ROOT)/Estuary.jsexe/
 	$(CP_RECURSIVE) static/*.js $(STAGING_ROOT)/Estuary.jsexe/
 	$(CP_RECURSIVE) static/css-custom $(STAGING_ROOT)/Estuary.jsexe/
 	$(CP_RECURSIVE) static/css-source $(STAGING_ROOT)/Estuary.jsexe/

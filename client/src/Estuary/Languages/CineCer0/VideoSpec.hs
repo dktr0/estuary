@@ -8,7 +8,7 @@ import Data.Time
 import Data.Text
 import TextShow
 
-import Estuary.Types.Tempo
+import Data.Tempo
 
 import Estuary.Languages.CineCer0.Signal
 
@@ -17,7 +17,8 @@ data VideoSpec = VideoSpec {
   anchorTime :: (Tempo -> UTCTime -> UTCTime),
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
- -- audio :: Signal Rational,
+  mute :: Signal Bool,
+  volume :: Signal Rational,
   posX :: Signal Rational,
   posY :: Signal Rational,
   width :: Signal Rational,
@@ -40,7 +41,8 @@ emptyVideoSpec = VideoSpec {
   anchorTime = defaultAnchor,
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
---  audio = constantSignal 0.0,
+  mute = constantSignal True,
+  volume = constantSignal 0.0,
   posX = constantSignal 0.0,
   posY = constantSignal 0.0,
   width = constantSignal 1.0,
@@ -164,6 +166,7 @@ shiftSaturate s v = v {
   saturate = multipleMaybeSignal s (saturate v)
   }
 
+
 -- Masks
 
 circleMask :: Signal Rational -> VideoSpec -> VideoSpec
@@ -190,6 +193,16 @@ rectMask m n s t vs = vs {
   mask = \ a b c d e -> "clip-path: inset(" <> (showt (realToFrac (((m a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((n a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((s a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((t a b c d e)*100) :: Rational) :: Double)) <> "%);"
   }
 
+-- audio --  keep it simple just mute, unmute and volume
+
+setMute :: VideoSpec -> VideoSpec
+setMute v = v { mute = constantSignal True }
+
+setUnmute :: VideoSpec -> VideoSpec
+setUnmute v = v { mute = constantSignal False}
+
+setVolume:: Signal Rational -> VideoSpec -> VideoSpec
+setVolume vol v = v { volume = vol }
 
 --
 -- Time Functions --
