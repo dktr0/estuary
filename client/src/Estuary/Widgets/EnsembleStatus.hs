@@ -80,8 +80,8 @@ headerMode2 :: MonadWidget t m  => Dynamic t Text -> m ()
 headerMode2 ensName = divClass "rowContainer" $ do
   el "tr" $ do
     elClass "th" "statusWidgetName" $ dynText $ (constDyn "Ensemble: ") <> ensName
-    elClass "th" "statusWidgetFPSAndLatency" $ text "Latency"
-    elClass "th" "statusWidgetFPSAndLatency" $ text "Load"
+    elClass "th" "statusWidgetFPSAndLatency" $ text "latency"
+    elClass "th" "statusWidgetFPSAndLatency" $ text "load"
     elClass "th" "statusWidgetFPSAndLatency" $ text "FPS"
     elClass "th" "statusWidgetFPSAndLatency" $ text "IP address"
 
