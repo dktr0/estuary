@@ -54,17 +54,12 @@ data Source =
   --Smooth
   deriving (Show)
 
-data ParameterSequence =
-  ParameterSequence [Double] |
-  Fast ParameterSequence (Maybe Source)
-
 data Output =
   O0 |
   O1 |
   O2 |
   O3
   deriving (Show)
-
 
 data Statement =
   Out Source Output |
