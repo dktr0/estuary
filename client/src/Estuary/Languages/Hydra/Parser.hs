@@ -93,8 +93,8 @@ source = do
     methodWithSourceAndParameters "add" Add,
     methodWithSourceAndParameters "mult" Mult,
     methodWithSourceAndParameters "blend" Blend,
-    methodWithSource "diff" Diff,
-    methodWithSource "layer" Layer,
+    methodWithSource "diff" Diff, -- don't work
+    methodWithSource "layer" Layer, -- don't work
     methodWithSourceAndParameters "mask" Mask
     ]
   return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
