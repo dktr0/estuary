@@ -21,7 +21,7 @@ voronoi(scale, speed, blending) // defaults: 5.0, 0.3, 0.3 <br />
 render(buffer) // default: o0 <br />
 
 
-## Transformations
+## Transformers
 .brightness(amount) // default: 0.4 <br />
 .contrast(amount) // default: 1.6 <br />
 .color(red, green, blue, alpha) // vec4 <br />

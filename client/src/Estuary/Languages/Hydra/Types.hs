@@ -1,8 +1,8 @@
 module Estuary.Languages.Hydra.Types where
 
 data Parameters =
-  Parameters [Double] -- [0.2,0.4] -- [0.3,0.4,1.0]
-  --Fast [Double] [Source]
+  Parameters [Double] | -- [0.2,0.4] -- [0.3,0.4,1.0]
+  Fast Double [Double] -- .fast(1.5) not yet implemented
   deriving (Show)
 
 data Source =
@@ -33,7 +33,6 @@ data Source =
   Scroll [Parameters] Source |
   ScrollX [Parameters] Source |
   ScrollY [Parameters] Source |
-  --modulators
   Modulate Source [Parameters] Source |
   ModulateHue Source [Parameters] Source |
   ModulateKaleid Source [Parameters] Source |
@@ -45,14 +44,14 @@ data Source =
   ModulateScale Source [Parameters] Source |
   ModulateScrollX Source [Parameters] Source |
   ModulateScrollY Source [Parameters] Source |
-  --operators
   Add Source [Parameters] Source |
   Mult Source [Parameters] Source |
   Blend Source [Parameters] Source |
   Diff Source Source |
   Layer Source Source |
   Mask Source [Parameters] Source
-  --Speed Source | -- find a new place, it doesn't go here i.e. speed = 1.5
+  --Speed Source => i.e. speed = 1.5
+  --Smooth
   deriving (Show)
 
 data Output =

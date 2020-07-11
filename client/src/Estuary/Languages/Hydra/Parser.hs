@@ -79,7 +79,23 @@ source = do
     methodWithParameters "scroll" Scroll,
     methodWithParameters "scrollX" ScrollX,
     methodWithParameters "scrollY" ScrollY,
-    methodWithSourceAndParameters "modulate" Modulate
+    methodWithSourceAndParameters "modulate" Modulate,
+    methodWithSourceAndParameters "modulateHue" ModulateHue,
+    methodWithSourceAndParameters "modulateKaleid" ModulateKaleid,
+    methodWithSourceAndParameters "modulatePixelate" ModulatePixelate,
+    methodWithSourceAndParameters "modulateRepeat" ModulateRepeat,
+    methodWithSourceAndParameters "modulateRepeatX" ModulateRepeatX,
+    methodWithSourceAndParameters "modulateRepeatY" ModulateRepeatY,
+    methodWithSourceAndParameters "modulateRotate" ModulateRotate,
+    methodWithSourceAndParameters "modulateScale" ModulateScale,
+    methodWithSourceAndParameters "modulateScrollX" ModulateScrollX,
+    methodWithSourceAndParameters "modulateScrollY" ModulateScrollY,
+    methodWithSourceAndParameters "add" Add,
+    methodWithSourceAndParameters "mult" Mult,
+    methodWithSourceAndParameters "blend" Blend,
+    methodWithSource "diff" Diff,
+    methodWithSource "layer" Layer,
+    methodWithSourceAndParameters "mask" Mask
     ]
   return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
 
@@ -96,6 +112,13 @@ methodWithParameters methodName constructor = try $ do
   ps <- parens $ commaSep parameters
   return $ constructor ps
 
+methodWithSource :: String -> (Source -> Source -> Source) -> Parser (Source -> Source)
+methodWithSource methodName constructor = try $ do
+  reservedOp "."
+  reservedOp methodName
+  s <- source
+  return $ constructor s
+
 methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source)
 methodWithSourceAndParameters methodName constructor = try $ do
   reservedOp "."
@@ -111,6 +134,7 @@ parameters = choice [
   Parameters <$> try (brackets (commaSep double)),
   (Parameters . return) <$> double
   ]
+
 
 double :: Parser Double
 double = choice [
@@ -132,9 +156,11 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opStart = oneOf ".",
   P.opLetter = oneOf ".",
   P.reservedNames = [
-    "out","render",
+    "out","render", "fast",
     "osc","solid","gradient","noise","shape","voronoi",
-    "brightness", "contrast", "colorama",
+    "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
+    "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
+    "add", "mult", "blend", "diff", "layer", "mask",
     "o0","o1","o2","o3"
     ],
   P.reservedOpNames = ["."],
