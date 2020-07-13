@@ -79,63 +79,105 @@ sourceToJS h (Colorama [] s) = _colorama0 (sourceToJS h s)
 sourceToJS h (Colorama (x:_) s) = _colorama1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (Color [] s) = _color0  (sourceToJS h s)
 sourceToJS h (Color (x:[]) s) = _color1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Color (x:y:[]) s) = _color2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Color (x:y:z:[]) s) = _color3 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Color (w:x:y:z:_) s) = _color4 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Color (x:y:[]) s) = _color2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
+sourceToJS h (Color (x:y:z:[]) s) = _color3 (sourceToJS h s) (parametersToJS x) (parametersToJS y) (parametersToJS z)
+sourceToJS h (Color (w:x:y:z:_) s) = _color4 (sourceToJS h s) (parametersToJS w) (parametersToJS x) (parametersToJS y) (parametersToJS z)
 sourceToJS h (Invert [] s) = _invert0 (sourceToJS h s)
 sourceToJS h (Invert (x:_) s) = _invert1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (Luma [] s) = _luma0 (sourceToJS h s)
 sourceToJS h (Luma (x:[]) s) = _luma1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Luma (x:y:_) s) = _luma2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Luma (x:y:_) s) = _luma2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (Posterize [] s) = _posterize0 (sourceToJS h s)
 sourceToJS h (Posterize (x:[]) s) = _posterize1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Posterize (x:y:_) s) = _posterize2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Posterize (x:y:_) s) = _posterize2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (Saturate [] s) = _saturate0 (sourceToJS h s)
 sourceToJS h (Saturate (x:_) s) = _saturate1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (Shift [] s) = _shift0  (sourceToJS h s)
 sourceToJS h (Shift (x:[]) s) = _shift1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Shift (x:y:[]) s) = _shift2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Shift (x:y:z:[]) s) = _shift3 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Shift (w:x:y:z:_) s) = _shift4 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Shift (x:y:[]) s) = _shift2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
+sourceToJS h (Shift (x:y:z:[]) s) = _shift3 (sourceToJS h s) (parametersToJS x) (parametersToJS y) (parametersToJS z)
+sourceToJS h (Shift (w:x:y:z:_) s) = _shift4 (sourceToJS h s) (parametersToJS w) (parametersToJS x) (parametersToJS y) (parametersToJS z)
 sourceToJS h (Thresh [] s) = _thresh0 (sourceToJS h s)
 sourceToJS h (Thresh (x:[]) s) = _thresh1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Thresh (x:y:_) s) = _thresh2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Thresh (x:y:_) s) = _thresh2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (Kaleid [] s) = _kaleid0 (sourceToJS h s)
 sourceToJS h (Kaleid (x:_) s) = _kaleid1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (Pixelate [] s) = _pixelate0 (sourceToJS h s)
 sourceToJS h (Pixelate (x:[]) s) = _pixelate1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Pixelate (x:y:_) s) = _pixelate2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Pixelate (x:y:_) s) = _pixelate2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (Repeat [] s) = _repeat0  (sourceToJS h s)
 sourceToJS h (Repeat (x:[]) s) = _repeat1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Repeat (x:y:[]) s) = _repeat2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Repeat (x:y:z:[]) s) = _repeat3 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Repeat (w:x:y:z:_) s) = _repeat4 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Repeat (x:y:[]) s) = _repeat2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
+sourceToJS h (Repeat (x:y:z:[]) s) = _repeat3 (sourceToJS h s) (parametersToJS x) (parametersToJS y) (parametersToJS z)
+sourceToJS h (Repeat (w:x:y:z:_) s) = _repeat4 (sourceToJS h s) (parametersToJS w) (parametersToJS x) (parametersToJS y) (parametersToJS z)
 sourceToJS h (RepeatX [] s) = _repeatX0 (sourceToJS h s)
 sourceToJS h (RepeatX (x:[]) s) = _repeatX1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (RepeatX (x:y:_) s) = _repeatX2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (RepeatX (x:y:_) s) = _repeatX2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (RepeatY [] s) = _repeatY0 (sourceToJS h s)
 sourceToJS h (RepeatY (x:[]) s) = _repeatY1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (RepeatY (x:y:_) s) = _repeatY2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (RepeatY (x:y:_) s) = _repeatY2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (Rotate [] s) = _rotate0 (sourceToJS h s)
 sourceToJS h (Rotate (x:[]) s) = _rotate1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Rotate (x:y:_) s) = _rotate2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Rotate (x:y:_) s) = _rotate2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (Scale [] s) = _scale0  (sourceToJS h s)
 sourceToJS h (Scale (x:[]) s) = _scale1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Scale (x:y:[]) s) = _scale2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Scale (x:y:z:[]) s) = _scale3 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Scale (x:y:[]) s) = _scale2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
+sourceToJS h (Scale (x:y:z:[]) s) = _scale3 (sourceToJS h s) (parametersToJS x) (parametersToJS y) (parametersToJS z)
 sourceToJS h (Scroll [] s) = _scroll0  (sourceToJS h s)
 sourceToJS h (Scroll (x:[]) s) = _scroll1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (Scroll (x:y:[]) s) = _scroll2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Scroll (x:y:z:[]) s) = _scroll3 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x)
-sourceToJS h (Scroll (w:x:y:z:_) s) = _scroll4 (sourceToJS h s) (parametersToJS x) (parametersToJS x) (parametersToJS x) (parametersToJS x)
+sourceToJS h (Scroll (x:y:[]) s) = _scroll2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
+sourceToJS h (Scroll (x:y:z:[]) s) = _scroll3 (sourceToJS h s) (parametersToJS x) (parametersToJS y) (parametersToJS z)
+sourceToJS h (Scroll (w:x:y:z:_) s) = _scroll4 (sourceToJS h s) (parametersToJS w) (parametersToJS x) (parametersToJS y) (parametersToJS z)
 sourceToJS h (ScrollX [] s) = _scrollX0 (sourceToJS h s)
 sourceToJS h (ScrollX (x:[]) s) = _scrollX1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (ScrollX (x:y:_) s) = _scrollX2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (ScrollX (x:y:_) s) = _scrollX2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (ScrollY [] s) = _scrollY0 (sourceToJS h s)
 sourceToJS h (ScrollY (x:[]) s) = _scrollY1 (sourceToJS h s) (parametersToJS x)
-sourceToJS h (ScrollY (x:y:_) s) = _scrollY2 (sourceToJS h s) (parametersToJS x) (parametersToJS x)
+sourceToJS h (ScrollY (x:y:_) s) = _scrollY2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
 sourceToJS h (Modulate y [] x) = _modulate0 (sourceToJS h x) (sourceToJS h y)
 sourceToJS h (Modulate y (a:_) x) = _modulate1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateHue y [] x) = _modulateHue0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateHue y (a:_) x) = _modulateHue1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateKaleid y [] x) = _modulateKaleid0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateKaleid y (a:_) x) = _modulateKaleid1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulatePixelate y [] x) = _modulatePixelate0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulatePixelate y (a:[]) x) = _modulatePixelate1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulatePixelate y (a:b:_) x) = _modulatePixelate2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (ModulateRepeat y [] x) = _modulateRepeat0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateRepeat y (a:[]) x) = _modulateRepeat1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateRepeat y (a:b:_) x) = _modulateRepeat2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (ModulateRepeat y (a:b:c:_) x) = _modulateRepeat3 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b) (parametersToJS c)
+sourceToJS h (ModulateRepeat y (a:b:c:d:_) x) = _modulateRepeat4 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b) (parametersToJS c) (parametersToJS d)
+sourceToJS h (ModulateRepeatX y [] x) = _modulateRepeatX0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateRepeatX y (a:[]) x) = _modulateRepeatX1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateRepeatX y (a:b:_) x) = _modulateRepeatX2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (ModulateRepeatY y [] x) = _modulateRepeatY0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateRepeatY y (a:[]) x) = _modulateRepeatY1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateRepeatY y (a:b:_) x) = _modulateRepeatY2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (ModulateRotate y [] x) = _modulateRotate0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateRotate y (a:[]) x) = _modulateRotate1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateRotate y (a:b:_) x) = _modulateRotate2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (ModulateScale y [] x) = _modulateScale0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateScale y (a:[]) x) = _modulateScale1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateScale y (a:b:_) x) = _modulateScale2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (ModulateScrollX y [] x) = _modulateScrollX0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateScrollX y (a:[]) x) = _modulateScrollX1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateScrollX y (a:b:_) x) = _modulateScrollX2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (ModulateScrollY y [] x) = _modulateScrollY0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (ModulateScrollY y (a:[]) x) = _modulateScrollY1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (ModulateScrollY y (a:b:_) x) = _modulateScrollY2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (Add y [] x) = _add0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Add y (a:_) x) = _add1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (Mult y [] x) = _mult0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Mult y (a:_) x) = _mult1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (Blend y [] x) = _blend0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Blend y (a:_) x) = _blend1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (Diff y x) = _diff0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Layer y x) = _layer0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Mask y [] x) = _mask0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Mask y (a:[]) x) = _mask1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (Mask y (a:b:_) x) = _mask2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+
 
 foreign import javascript safe "$1.synth.osc()" _osc0 :: Hydra -> JSSource
 foreign import javascript safe "$1.synth.osc($2)" _osc1 :: Hydra -> JSParameters -> JSSource
@@ -224,6 +266,54 @@ foreign import javascript safe "$1.scrollY($2)" _scrollY1 :: JSSource -> JSParam
 foreign import javascript safe "$1.scrollY($2,$3)" _scrollY2 :: JSSource -> JSParameters -> JSParameters -> JSSource
 foreign import javascript safe "$1.modulate($2)" _modulate0 :: JSSource -> JSSource -> JSSource
 foreign import javascript safe "$1.modulate($2,$3)" _modulate1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateHue($2)" _modulateHue0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateHue($2,$3)" _modulateHue1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateKaleid($2)" _modulateKaleid0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateKaleid($2,$3)" _modulateKaleid1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulatePixelate($2)" _modulatePixelate0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulatePixelate($2,$3)" _modulatePixelate1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulatePixelate($2,$3,$4)" _modulatePixelate2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRepeat($2)" _modulateRepeat0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateRepeat($2,$3)" _modulateRepeat1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRepeat($2,$3,$4)" _modulateRepeat2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRepeat($2,$3,$4,$5)" _modulateRepeat3 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRepeat($2,$3,$4,$5,$6)" _modulateRepeat4 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRepeatX($2)" _modulateRepeatX0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateRepeatX($2,$3)" _modulateRepeatX1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRepeatX($2,$3,$4)" _modulateRepeatX2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRepeatY($2)" _modulateRepeatY0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateRepeatY($2,$3)" _modulateRepeatY1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRepeatY($2,$3,$4)" _modulateRepeatY2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRotate($2)" _modulateRotate0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateRotate($2,$3)" _modulateRotate1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateRotate($2,$3,$4)" _modulateRotate2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateScale($2)" _modulateScale0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateScale($2,$3)" _modulateScale1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateScale($2,$3,$4)" _modulateScale2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateScrollX($2)" _modulateScrollX0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateScrollX($2,$3)" _modulateScrollX1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateScrollX($2,$3,$4)" _modulateScrollX2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateScrollY($2)" _modulateScrollY0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.modulateScrollY($2,$3)" _modulateScrollY1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.modulateScrollY($2,$3,$4)" _modulateScrollY2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.add($2)" _add0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.add($2,$3)" _add1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.mult($2)" _mult0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.mult($2,$3)" _mult1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.blend($2)" _blend0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.blend($2,$3)" _blend1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.diff($2)" _diff0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.layer($2)" _layer0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.mask($2)" _mask0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.mask($2,$3)" _mask1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.mask($2,$3,$4)" _mask2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+
+-- .add(t, amount)
+-- .mult(t, amount)
+-- .blend(t, amount)
+-- .diff(t) <br />
+-- .layer(t) <br />
+-- .mask(t, reps, offset)
 
 newtype JSOutput = JSOutput JSVal
 instance PToJSVal JSOutput where pToJSVal (JSOutput x) = x

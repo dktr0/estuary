@@ -21,7 +21,7 @@ voronoi(scale, speed, blending) // defaults: 5.0, 0.3, 0.3 <br />
 render(buffer) // default: o0 <br />
 
 
-## Transformations
+## Transformers
 .brightness(amount) // default: 0.4 <br />
 .contrast(amount) // default: 1.6 <br />
 .color(red, green, blue, alpha) // vec4 <br />
@@ -46,7 +46,7 @@ render(buffer) // default: o0 <br />
 
 ## Modulators
 
-// t = texture = source => color, osc, src, noise, shape… <br />
+// t = texture = source => osc, solid, gradient, noise, shape, voronoi <br />
 
 .modulate(t, amount) // amount’s default: 0.1 <br />
 .modulateHue(t, amount) // default: 0.4 <br />
