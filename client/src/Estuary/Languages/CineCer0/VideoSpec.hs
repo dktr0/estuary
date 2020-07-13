@@ -34,6 +34,8 @@ data VideoSpec = VideoSpec {
   contrast :: Signal (Maybe Rational),
   grayscale :: Signal (Maybe Rational),
   saturate :: Signal (Maybe Rational),
+  fontFamily :: Signal (Maybe String),
+  fontSize :: Signal (Maybe Rational),
   mask :: Signal Text
   }
 
@@ -58,8 +60,9 @@ emptyVideoSpec = VideoSpec {
   contrast = constantSignal Nothing,
   grayscale = constantSignal Nothing,
   saturate = constantSignal Nothing,
+  fontFamily = constantSignal Nothing,
+  fontSize = constantSignal Nothing,
   mask = emptyText
---  subtitles = Signal ""
 }
 
 stringToVideoSpec :: String -> VideoSpec
@@ -124,6 +127,12 @@ shiftSize s vs = vs {
 }
 
 -- Filters
+
+setFontFamily :: Signal (Maybe String) -> VideoSpec -> VideoSpec
+setFontFamily s v = v { fontFamily = s }
+
+setFontSize :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
+setFontSize s v = v { fontSize = s }
 
 setOpacity :: Signal (Maybe Rational) -> VideoSpec -> VideoSpec
 setOpacity s v = v { opacity = s }
