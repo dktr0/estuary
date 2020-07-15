@@ -27,7 +27,6 @@ foreign import javascript safe
   "$1.tick($2);"
   tick :: Hydra -> Double -> IO () -- second argument is time in millis since last tick
 
-
 newtype JSParameters = JSParameters JSVal
 instance PToJSVal JSParameters where pToJSVal (JSParameters x) = x
 instance PFromJSVal JSParameters where pFromJSVal = JSParameters

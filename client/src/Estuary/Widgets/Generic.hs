@@ -104,7 +104,6 @@ clickableTr' child = do
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
-
 -- clickableDiv with class
 clickableDiv :: MonadWidget t m => Text -> m a -> m (Event t ())
 clickableDiv cssclass child = do
@@ -403,4 +402,12 @@ tooltip child popup = do
   elClass "div" "tooltip" $ do
     a <- child
     divClass "tooltipPosAbsolute" $ elClass "span" "tooltiptext code-font" popup
+    return a
+
+-- a tooltip with settable class for the popup
+tooltipNoPopUpClass :: DomBuilder t m => m a -> m b -> m a
+tooltipNoPopUpClass child popup = do
+  elClass "div" "tooltip" $ do
+    a <- child
+    divClass "tooltipPosAbsolute" $ popup
     return a

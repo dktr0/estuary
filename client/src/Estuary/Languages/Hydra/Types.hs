@@ -61,7 +61,6 @@ data Output =
   O3
   deriving (Show)
 
-
 data Statement =
   Out Source Output |
   Render Output
