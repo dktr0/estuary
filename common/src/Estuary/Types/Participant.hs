@@ -6,7 +6,7 @@ module Estuary.Types.Participant where
 -- For each ensemble, this list is maintained by the server
 -- and broadcast to the clients in that ensemble periodically
 -- (together with a count of anonymous participants)
-
+ 
 import Data.Text
 import Data.Time
 import GHC.Generics
