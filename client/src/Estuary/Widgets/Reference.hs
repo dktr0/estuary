@@ -47,16 +47,22 @@ referenceWidget MainList = do
   return navEv
 
 referenceWidget MiniTidal = do
-  text "MiniTidal Help"
-  return never
+  navEv <- goTo "reference-margin" MainList "⇦"
+  divClass "reference-page" $ el "h3" $ text "MiniTidal Help"
+  el "p" $ text "Placeholder text"
+  return navEv
 
 referenceWidget Punctual = do
-  text "Punctual Help"
-  return never
+  navEv <- goTo "reference-margin" MainList "⇦"
+  divClass "reference-page" $ el "h3" $ text "Punctual Help"
+  el "p" $ text "Placeholder text"
+  return navEv
 
 referenceWidget CineZer0 = do
-  text "CineZer0 Help"
-  return never
+  navEv <- goTo "reference-margin" MainList "⇦"
+  divClass "reference-page" $ el "h3" $ text "CineZer0 Help"
+  el "p" $ text "Placeholder text"
+  return navEv
 
 goTo :: MonadWidget t m => Text -> Reference -> Text -> Editor t m (Event t Reference)
 goTo c targetPage title = divClass c $ do

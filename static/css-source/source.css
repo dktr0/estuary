@@ -1535,3 +1535,16 @@ hr.dashed {
 .reference-link {
   cursor: pointer;
 }
+
+.reference-link:hover {
+  text-decoration: underline;
+}
+
+.reference-margin {
+  padding: 2px;
+}
+
+.reference-page {
+  padding: 3px;
+}
+
