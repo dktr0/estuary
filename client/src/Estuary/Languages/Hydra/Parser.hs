@@ -50,32 +50,91 @@ renderStatement = Render <$> (reserved "render" >> output)
 
 source :: Parser Source
 source = do
-  x <- choice [
-    Osc <$> functionWithParameters "osc",
-    Solid <$> functionWithParameters "solid",
-    Gradient <$> functionWithParameters "gradient",
-    Noise <$> functionWithParameters "noise",
-    Shape <$> functionWithParameters "shape",
-    Voronoi <$> functionWithParameters "voronoi"
+  x <- choice [ -- a source is a single "atomic" Source...
+    functionWithParameters "osc" Osc,
+    functionWithParameters "solid" Solid,
+    functionWithParameters "gradient" Gradient,
+    functionWithParameters "noise" Noise,
+    functionWithParameters "shape" Shape,
+    functionWithParameters "voronoi" Voronoi
     ]
-  fs <- many $ choice [
-    Brightness <$> methodWithParameters "brightness",
-    Contrast <$> methodWithParameters "contrast",
-    Colorama <$> methodWithParameters "colorama"
+  fs <- many $ choice [ -- ...to which zero or more transformations [Source -> Source] are applied.
+    methodWithParameters "brightness" Brightness,
+    methodWithParameters "contrast" Contrast,
+    methodWithParameters "colorama" Colorama,
+    methodWithParameters "color" Color,
+    methodWithParameters "invert" Invert,
+    methodWithParameters "luma" Luma,
+    methodWithParameters "posterize" Posterize,
+    methodWithParameters "saturate" Saturate,
+    methodWithParameters "shift" Shift,
+    methodWithParameters "tresh" Thresh,
+    methodWithParameters "kaleid" Kaleid,
+    methodWithParameters "pixelate" Pixelate,
+    methodWithParameters "repeat" Repeat,
+    methodWithParameters "repeatX" RepeatX,
+    methodWithParameters "repeatY" RepeatY,
+    methodWithParameters "rotate" Rotate,
+    methodWithParameters "scale" Scale,
+    methodWithParameters "scroll" Scroll,
+    methodWithParameters "scrollX" ScrollX,
+    methodWithParameters "scrollY" ScrollY,
+    methodWithSourceAndParameters "modulate" Modulate,
+    methodWithSourceAndParameters "modulateHue" ModulateHue,
+    methodWithSourceAndParameters "modulateKaleid" ModulateKaleid,
+    methodWithSourceAndParameters "modulatePixelate" ModulatePixelate,
+    methodWithSourceAndParameters "modulateRepeat" ModulateRepeat,
+    methodWithSourceAndParameters "modulateRepeatX" ModulateRepeatX,
+    methodWithSourceAndParameters "modulateRepeatY" ModulateRepeatY,
+    methodWithSourceAndParameters "modulateRotate" ModulateRotate,
+    methodWithSourceAndParameters "modulateScale" ModulateScale,
+    methodWithSourceAndParameters "modulateScrollX" ModulateScrollX,
+    methodWithSourceAndParameters "modulateScrollY" ModulateScrollY,
+    methodWithSourceAndParameters "add" Add,
+    methodWithSourceAndParameters "mult" Mult,
+    methodWithSourceAndParameters "blend" Blend,
+    methodWithSource "diff" Diff,
+    methodWithSource "layer" Layer,
+    methodWithSourceAndParameters "mask" Mask
     ]
-  return $ (foldl (.) id fs) x
+  return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
 
-functionWithParameters :: String -> Parser [Parameters]
-functionWithParameters x = try $ reserved x >> parens (commaSep parameters)
+functionWithParameters :: String -> ([Parameters] -> Source) -> Parser Source
+functionWithParameters funcName constructor = try $ do
+  reserved funcName
+  ps <- parens $ commaSep parameters
+  return $ constructor ps
 
-methodWithParameters :: String -> Parser [Parameters]
-methodWithParameters x = try $ reservedOp "." >> reserved x >> parens (commaSep parameters)
+methodWithParameters :: String -> ([Parameters] -> Source -> Source) -> Parser (Source -> Source)
+methodWithParameters methodName constructor = try $ do
+  reservedOp "."
+  reserved methodName
+  ps <- parens $ commaSep parameters
+  return $ constructor ps
+
+methodWithSource :: String -> (Source -> Source -> Source) -> Parser (Source -> Source)
+methodWithSource methodName constructor = try $ do
+  reservedOp "."
+  reservedOp methodName
+  s <- source
+  return $ constructor s
+
+methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source)
+methodWithSourceAndParameters methodName constructor = try $ do
+  reservedOp "."
+  reservedOp methodName
+  (s,ps) <- parens $ do
+    s <- source
+    ps <- (comma >> commaSep1 parameters) <|> return []
+    return (s,ps)
+  return $ constructor s ps
 
 parameters :: Parser Parameters
 parameters = choice [
   Parameters <$> try (brackets (commaSep double)),
   (Parameters . return) <$> double
   ]
+
 
 double :: Parser Double
 double = choice [
@@ -97,9 +156,11 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opStart = oneOf ".",
   P.opLetter = oneOf ".",
   P.reservedNames = [
-    "out","render",
+    "out","render", "fast",
     "osc","solid","gradient","noise","shape","voronoi",
-    "brightness", "contrast", "colorama",
+    "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
+    "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
+    "add", "mult", "blend", "diff", "layer", "mask",
     "o0","o1","o2","o3"
     ],
   P.reservedOpNames = ["."],

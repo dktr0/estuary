@@ -142,7 +142,8 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     v' <- setVideoRateAndPosition v (realToFrac lengthOfVideo) rate pos
 
     -- update audio (volume and mute)
-    v'' <- setVideoVol v' $ realToFrac (volume s t lengthOfVideo rTime eTime aTime)
+    let normVol = if (volume s t lengthOfVideo rTime eTime aTime) > 1 then 1 else (volume s t lengthOfVideo rTime eTime aTime)
+    v'' <- setVideoVol v' $ realToFrac normVol
 
     -- update style (size, position, opacity, etc)
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100

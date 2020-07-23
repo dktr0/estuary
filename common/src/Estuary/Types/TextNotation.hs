@@ -12,7 +12,7 @@ data TextNotation =
   Punctual |
   CineCer0 |
   TimeNot |
-  Cumbia |
+  Seis8s |
   Hydra
   -- Ver |
   -- Oir

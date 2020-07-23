@@ -85,6 +85,26 @@ justChangeValues :: EditSignal a -> Maybe a
 justChangeValues (ChangeValue x) = Just x
 justChangeValues _ = Nothing
 
+clickableDivDynAttrsWChild :: MonadWidget t m => Dynamic t (Map Text Text) -> m a -> m (Event t ()) -- return (Event t (), a)
+clickableDivDynAttrsWChild attrs child = do
+  (element,_) <- elDynAttr' "div" attrs $ child
+  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  return $ (() <$) clickEv
+
+clickableTr :: MonadWidget t m => m a -> m (Event t (), a) -- return (Event t (), a)
+clickableTr child = do
+  (element, a) <- el' "tr" $ child -- look elAttr' ::
+  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  let event = (() <$) clickEv
+  return $ (event, a)
+
+clickableTr' :: MonadWidget t m => m a -> m (Event t ())
+clickableTr' child = do
+  (element,_) <- el' "tr" $ child
+  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  return $ (() <$) clickEv
+
+-- clickableDiv with class
 clickableDiv :: MonadWidget t m => Text -> m a -> m (Event t ())
 clickableDiv cssclass child = do
   (element,_) <- elAttr' "div" attr $ child
@@ -341,9 +361,9 @@ hideableWidget' b m = do
   let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
   elDynAttr "div" attrs m
 
-hideableWidget'' :: MonadWidget t m => Dynamic t Bool -> Text -> m a -> m a
-hideableWidget'' b c m = do
-  let attrs = fmap (bool (fromList [("hidden","true"),("class",c)]) (fromList [("style", "display: flex; flex-direction: column;"),("class",c)])) b
+hideableWidgetWFlexColumn :: MonadWidget t m => Dynamic t Bool -> m a -> m a
+hideableWidgetWFlexColumn b  m = do
+  let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("style", "display: flex; flex-direction: column;")])) b
   elDynAttr "div" attrs m
 
 traceDynamic :: (MonadWidget t m, Show a) => String -> Dynamic t a -> m (Dynamic t a)
@@ -382,4 +402,12 @@ tooltip child popup = do
   elClass "div" "tooltip" $ do
     a <- child
     divClass "tooltipPosAbsolute" $ elClass "span" "tooltiptext code-font" popup
+    return a
+
+-- a tooltip with settable class for the popup
+tooltipNoPopUpClass :: DomBuilder t m => m a -> m b -> m a
+tooltipNoPopUpClass child popup = do
+  elClass "div" "tooltip" $ do
+    a <- child
+    divClass "tooltipPosAbsolute" $ popup
     return a

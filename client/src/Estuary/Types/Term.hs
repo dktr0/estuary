@@ -40,7 +40,17 @@ data Term =
   Resolution |
   Brightness |
   Reference |
-  Settings
+  Settings |
+  Activity |
+  ActivityDescription |
+  Status |
+  StatusDescription |
+  LatencyDescription |
+  LoadDescription |
+  FPS |
+  FPSDescription |
+  IPaddress |
+  IPaddressDescription
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -89,20 +99,31 @@ translate Cancel English = "Cancel"
 translate Cancel Español = "Cancelar"
 
 translate ModeratorPassword English = "Moderator password:"
+translate ModeratorPassword Español = "Contraseña del/de la moderador(a):"
 
 translate CommunityPassword English = "Community password:"
+translate CommunityPassword Español = "Contraseña comunitaria:"
+
 
 translate HostPassword English = "Host password:"
+translate HostPassword Español = "Contraseña del/de la anfintrión(a):"
+
 
 translate ParticipantPassword English = "Participant password:"
+translate ParticipantPassword Español = "Contraseña del/de la participante:"
+
 
 translate EnsembleName Français = "Nom de l'ensemble:"
 translate EnsembleName English = "Ensemble name:"
 translate EnsembleName Español = "Nombre del ensamble:"
 
 translate EnsembleExpiry English = "Ensemble Expiry:"
+translate EnsembleExpiry Español = "Expiración del ensemble:"
+
 
 translate AnonymousParticipants English = "Anonymous Participants"
+translate AnonymousParticipants Español = "Participantes Anónimos"
+
 
 translate TerminalChat Français = "Terminal/Chat:"
 translate TerminalChat English = "Terminal/Chat:"
@@ -149,17 +170,55 @@ translate Peak English = "peak"
 translate Peak Español = "tope"
 
 translate Syntax English = "Syntax"
+translate Syntax Español = "Sintaxis"
 
 translate Connections English = "connections"
+translate Connections Español = "conexiones"
 
 translate Latency English = "latency"
+translate Latency Español = "latencia"
 
 translate Resolution English = "Resolution"
+translate Resolution Español = "Resolución"
 
 translate Brightness English = "Brightness"
+translate Brightness Español = "Brillo"
 
 translate Reference English = "Reference"
+translate Reference Español = "Referencia"
 
 translate Settings English = "Settings"
+translate Settings Español = "Configuración"
+
+translate Activity English = "activity"
+translate Activity Español = "actividad"
+
+translate ActivityDescription English = "The last time participants edited some code"
+translate ActivityDescription Español = "La última vez que las participantes editaron el código."
+
+translate Status English = "status"
+translate Status Español = "estatus"
+
+translate StatusDescription English = "Displays how are the participants doing today"
+translate StatusDescription Español = "Muestra cómo se sientes l@s participantes el día de hoy"
+
+translate LatencyDescription English = "The delay before a transfer of data begins"
+translate LatencyDescription Español = "El retraso de tiempo entre la transferencia de datos"
+
+translate LoadDescription English = "The amount of work each participant computer is doing"
+translate LoadDescription Español = "La cantidad de trabajo que cada computadora participante está haciendo"
+
+translate FPS English = "FPS"
+translate FPS Español = "CPS"
+
+translate FPSDescription English = "The frames per second of the participants"
+translate FPSDescription Español = "Los cuadros por segundo de cada participante"
+
+translate IPaddress English = "IP Address"
+translate IPaddress Español = "dirección IP"
+
+translate IPaddressDescription English = "The IP addresses of the participants"
+translate IPaddressDescription Español = "Las direcciones IP de l@s participantes"
+
 
 translate x _ = translate x English
