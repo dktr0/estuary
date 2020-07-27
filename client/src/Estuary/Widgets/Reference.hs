@@ -12,6 +12,8 @@ import Data.Text (Text)
 
 import Estuary.Widgets.Generic
 import Estuary.Help.LanguageHelp
+import Estuary.Help.MiniTidal
+import Estuary.Help.PunctualAudio
 import Estuary.Types.Request
 import Estuary.Widgets.Editor
 import Estuary.Reflex.Router
@@ -45,21 +47,21 @@ referenceWidget MainList = do
   return navEv
 
 referenceWidget MiniTidal = do
-  navEv <- goTo MainList "⇦"
-  el "h3" $ text "MiniTidal Help"
-  el "p" $ text "Placeholder text"
+  navEv <- goTo MainList "Home"
+  el "h3" $ text "MiniTidal Reference"
+  miniTidalHelpFile
   return navEv
 
 referenceWidget Punctual = do
-  navEv <- goTo MainList "⇦"
-  el "h3" $ text "Punctual Help"
-  el "p" $ text "Placeholder text"
+  navEv <- goTo MainList "Home"
+  el "h3" $ text "Punctual Reference"
+  punctualAudioHelpFile
   return navEv
 
 referenceWidget CineZer0 = do
-  navEv <- goTo MainList "⇦"
-  el "h3" $ text "CineZer0 Help"
-  el "p" $ text "Placeholder text"
+  navEv <- goTo MainList "Home"
+  el "h3" $ text "CineZer0 Reference"
+  el "p" $ text "Coming soon"
   return navEv
 
 goTo :: MonadWidget t m => Reference -> Text -> Editor t m (Event t Reference)

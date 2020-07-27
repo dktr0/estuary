@@ -109,14 +109,11 @@ body::-webkit-scrollbar-thumb {
 	display: flex;
 	height: 100%;
 	width: 100%;
-	padding-right: 1em;
 	box-sizing: border-box;
 
 }
 
 .languageHelp {
-  overflow:scroll;
-  padding-right: 1.8em;
   height:100%;
 }
 
@@ -957,12 +954,13 @@ cursor: pointer;
 							help files
 --------------------------------------------------------------------
 */
-.helpWrapper {display:flex;}
+.helpWrapper {
+  display: flex;
+  margin-bottom: 0.5em;
+}
 
 .about {
-	border:none;
-	text-align: center;
-	margin-bottom: 1%;
+  margin-bottom: 4%;
 }
 
 .exampleText, .referenceText {
