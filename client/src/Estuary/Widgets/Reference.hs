@@ -34,36 +34,34 @@ navigation = do
 referenceWidget :: MonadWidget t m => Reference -> Editor t m (Event t Reference)
 
 referenceWidget MainList = do
-  navEv <- divClass "reference" $ do
-    divClass "reference-title" $ text "estuary"
-    divClass "reference-description" $ text "Estuary is a platform for collaboration and learning through live coding. It enables you to create sound, music, and visuals in a web browser."
-    el "h3" $ text "Languages"
-    navEv' <- el "ul" $ do
-      miniTidal <- el "li" $ goTo "reference-margin" MiniTidal "MiniTidal"
-      punctual <- el "li" $ goTo "reference-margin" Punctual "Punctual"
-      cinezero <- el "li" $ goTo "reference-margin" CineZer0 "CineZer0"
-      return $ leftmost [miniTidal, punctual, cinezero]
-    return navEv'
+  divClass "reference-title" $ text "estuary"
+  divClass "reference-description" $ text "Estuary is a platform for collaboration and learning through live coding. It enables you to create sound, music, and visuals in a web browser."
+  el "h3" $ text "Languages"
+  navEv <- el "ul" $ do
+    miniTidal <- el "li" $ goTo MiniTidal "MiniTidal"
+    punctual <- el "li" $ goTo Punctual "Punctual"
+    cinezero <- el "li" $ goTo CineZer0 "CineZer0"
+    return $ leftmost [miniTidal, punctual, cinezero]
   return navEv
 
 referenceWidget MiniTidal = do
-  navEv <- goTo "reference-margin" MainList "⇦"
-  divClass "reference-page" $ el "h3" $ text "MiniTidal Help"
+  navEv <- goTo MainList "⇦"
+  el "h3" $ text "MiniTidal Help"
   el "p" $ text "Placeholder text"
   return navEv
 
 referenceWidget Punctual = do
-  navEv <- goTo "reference-margin" MainList "⇦"
-  divClass "reference-page" $ el "h3" $ text "Punctual Help"
+  navEv <- goTo MainList "⇦"
+  el "h3" $ text "Punctual Help"
   el "p" $ text "Placeholder text"
   return navEv
 
 referenceWidget CineZer0 = do
-  navEv <- goTo "reference-margin" MainList "⇦"
-  divClass "reference-page" $ el "h3" $ text "CineZer0 Help"
+  navEv <- goTo MainList "⇦"
+  el "h3" $ text "CineZer0 Help"
   el "p" $ text "Placeholder text"
   return navEv
 
-goTo :: MonadWidget t m => Text -> Reference -> Text -> Editor t m (Event t Reference)
-goTo c targetPage title = divClass c $ do
+goTo :: MonadWidget t m => Reference -> Text -> Editor t m (Event t Reference)
+goTo targetPage title = do
   liftM (targetPage <$) $ dynButtonWithChild "reference-link" $ text title

@@ -17,6 +17,6 @@ sidebarWidget = do
   referenceEvent <- fmap (1 <$) $ clickableDiv "sidebar-tab" $ (dynText =<< term Reference)
   configEvent <- fmap (2 <$) $ clickableDiv "sidebar-tab" $ (dynText =<< term Settings)
   curPage <- holdDyn 1 $ leftmost [referenceEvent,configEvent]
-  hideableWidget' (fmap (==1) curPage) $ navigation   -- Reference panel
+  hideableWidget (fmap (==1) curPage) "reference" $ navigation   -- Reference panel
   configChange <- hideableWidget (fmap (==2) curPage) "config-options" $ configWidget
   return configChange

@@ -1518,13 +1518,13 @@ hr.dashed {
   background: var(--background-color);
 }
 
+.reference {
+  margin: 10px;
+}
+
 .reference-title {
   font-size: 16pt;
   font-family: estuaryFont;
-}
-
-.reference {
-  padding: 5px;
 }
 
 .reference-description {
@@ -1539,12 +1539,3 @@ hr.dashed {
 .reference-link:hover {
   text-decoration: underline;
 }
-
-.reference-margin {
-  padding: 2px;
-}
-
-.reference-page {
-  padding: 3px;
-}
-
