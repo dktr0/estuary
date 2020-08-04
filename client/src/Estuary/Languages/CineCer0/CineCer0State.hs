@@ -31,6 +31,11 @@ newtype TextObject = TextObject { textJSVal :: JSVal }
 
 instance PToJSVal VideoObject where pToJSVal (VideoObject x) = x
 instance PFromJSVal VideoObject where pFromJSVal = VideoObject
+
+instance PToJSVal TextObject where pToJSVal (TextObject x) = x
+instance PFromJSVal TextObject where pFromJSVal = TextObject
+
+
 foreign import javascript unsafe "$1.offsetWidth" offsetWidth :: HTMLDivElement -> IO Double
 foreign import javascript unsafe "$1.offsetHeight" offsetHeight :: HTMLDivElement -> IO Double
 foreign import javascript unsafe
@@ -41,15 +46,18 @@ foreign import javascript unsafe
   appendVideo :: VideoObject -> HTMLDivElement -> IO ()
 foreign import javascript unsafe
   "var text = document.createElement('div'); text.innerText = $1; $r=text;"
-  makeTexto :: Text -> IO TextObject
+  makeText :: Text -> IO TextObject
 foreign import javascript unsafe 
   "$2.appendChild($1);"
-  appendTexto :: TextObject -> HTMLDivElement -> IO ()
+  appendText :: TextObject -> HTMLDivElement -> IO ()
+  -- remove js funcs might become remove object
 foreign import javascript unsafe "$1.removeChild($2)" removeVideo :: HTMLDivElement -> VideoObject -> IO ()
+foreign import javascript unsafe "$1.removeChild($2)" removeText :: HTMLDivElement -> TextObject -> IO ()
 foreign import javascript unsafe "$1.style = $2;" _setVideoStyle :: VideoObject -> Text -> IO ()
 foreign import javascript unsafe "$1.muted = $2;" muteVideo :: VideoObject -> Bool -> IO ()
 foreign import javascript unsafe "$1.volume = $2" videoVolume :: VideoObject -> Double -> IO ()
 foreign import javascript unsafe "$1.pause(); $1.src = $2; $1.load(); $1.play();" changeVideoSource :: VideoObject -> Text -> IO ()
+foreign import javascript unsafe "$1.src = $2;" changeTextSource :: TextObject -> Text -> IO ()
 foreign import javascript unsafe "$1.videoWidth" videoWidth :: VideoObject -> IO Double
 foreign import javascript unsafe "$1.videoHeight" videoHeight :: VideoObject -> IO Double
 foreign import javascript unsafe "$1.playbackRate" getVideoPlaybackRate :: VideoObject -> IO Double
@@ -70,15 +78,17 @@ data CineCer0Video = CineCer0Video {
   previousVol :: Double
   }
 
-data CineCer0Texto = CineCer0Texto {
+data CineCer0Text = CineCer0Text {
   textObject :: TextObject,
   positionLockTx :: Int,
   previousStyleTx :: Text
   }
 
-addTextOrVideo :: HTMLDivElement -> Either String String -> IO CineCer0Video
-addTextOrVideo j (Right x) = addVideo j x 
-addTextOrVideo j (Left x) = addTexto j x -- for now there is no text infrastructure
+
+  -- solve thiss!!!!!!!!!!!!!!!!!!!!
+addObject :: HTMLDivElement -> Either String String -> IO CineCer0Video
+addObject j (Right x) = addVideo j x 
+addObject j (Left x) = addText j x -- for now there is no text infrastructure
 
 addVideo :: HTMLDivElement -> String -> IO CineCer0Video
 addVideo j vspec = do
@@ -93,24 +103,24 @@ addVideo j vspec = do
     previousVol = 0
   }
 
-addTexto :: HTMLDivElement -> String -> IO CineCer0Texto
-addTexto j vspec = do
+addText :: HTMLDivElement -> String -> IO CineCer0Text
+addText j vspec = do
   let texto = T.pack $ vspec
-  x <- makeTexto texto
-  appendTexto x j
-  return $ CineCer0Texto {
+  x <- makeText texto
+  appendText x j
+  return $ CineCer0Text {
     textObject = x,
     positionLockTx = 0,
     previousStyleTx = ""
   }
 
-getTextOrVideoString:: Either String String -> String
-getTextOrVideoString (Right x) = x
-getTextOrVideoString (Left x) = x -- for the moment there is no text infrastructure
+getObjectString:: Either String String -> String
+getObjectString (Right x) = x
+getObjectString (Left x) = x -- for the moment there is no text infrastructure
 
-ifEmpty:: Either String String -> Bool
-ifEmpty (Right x) = x == ""
-ifEmpty (Left x) = x == ""
+ifEmptyObject:: Either String String -> Bool
+ifEmptyObject (Right x) = x == ""
+ifEmptyObject (Left x) = x == ""
 
 setVideoRateAndPosition :: CineCer0Video -> Double -> Maybe Double -> Maybe Double -> IO CineCer0Video
 setVideoRateAndPosition v vLength (Just r) (Just p) = do
@@ -226,10 +236,19 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
 videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m
 
+-- these two might become only one!
+
 onlyChangedVideoSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
 onlyChangedVideoSources nSpec oSpec
-  | (textOrVideo nSpec /= textOrVideo oSpec) = Just nSpec
-  | (textOrVideo nSpec == textOrVideo oSpec) = Nothing
+  | (object nSpec /= object oSpec) = Just nSpec
+  | (object nSpec == object oSpec) = Nothing
+
+onlyChangedTextSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
+onlyChangedTextSources nSpec oSpec
+  | (object nSpec /= object oSpec) = Just nSpec
+  | (object nSpec == object oSpec) = Nothing
+
+-- textOrVideoDiv:: 
 
 
 -- A CineCer0State represents the entire state corresponding to a CineCer0 program
@@ -239,7 +258,8 @@ data CineCer0State = CineCer0State {
   videos :: IntMap CineCer0Video,
   previousVideoSpecs :: IntMap VideoSpec,
   textDiv :: HTMLDivElement,
-  texts :: IntMap CineCer0Texto
+  texts :: IntMap CineCer0Text,
+  previousTextSpecs :: IntMap VideoSpec
   }
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
@@ -248,36 +268,64 @@ emptyCineCer0State j = CineCer0State {
   videos = empty,
   previousVideoSpecs = empty,
   textDiv = j,
-  texts = empty
+  texts = empty,
+  previousTextSpecs = empty
   }
+
+textOrVideo:: IntMap VideoSpec -> (IntMap VideoSpec, IntMap VideoSpec)
+textOrVideo objSpecMap = partition (\x -> objectParti (object x)) objSpecMap
+
+objectParti:: Either String String -> Bool
+objectParti (Right x)= True
+objectParti (Left x) = False 
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t rTime spec st = logExceptions st $ do
-  let vSpecs = videoSpecMap spec
+  let objSpecs = videoSpecMap spec  -- objectSpec instead of vSpec, this needs to change throughout the whole structure
+  let vSpecs = fst $ textOrVideo objSpecs
+  let txSpecs = snd $ textOrVideo objSpecs
   let eTime = evalTime spec
   divWidth <- offsetWidth $ videoDiv st
   divHeight <- offsetHeight $ videoDiv st
   -- add videos
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
-  let toAdd = IntMap.filter (\x -> ifEmpty (textOrVideo x) == False) newVideoSpecs -- :: IntMap VideoSpec
-  addedVideos <- mapM (\x -> addTextOrVideo (videoDiv st) (textOrVideo x)) toAdd -- :: IntMap CineCer0Video
-
+  let toAddv = IntMap.filter (\x -> ifEmptyObject (object x) == False) newVideoSpecs -- operation on objects -- :: IntMap VideoSpec
+  addedVideos <- mapM (\x -> addObject (videoDiv st) (object x)) toAddv -- :: IntMap CineCer0Video
+  -- add text
+  let newTextSpecs = difference txSpecs (texts st) -- :: IntMap VideoSpec (this changes to ObjectSpec, aslo in line 278) 
+  let toAddtx = IntMap.filter (\x -> ifEmptyObject (object x) == False) newTextSpecs
+  addedTexts <- mapM (\x -> addObject (textDiv st) (object x)) toAddtx
   -- change videos
   let continuingVideoSpecs = intersectionWith onlyChangedVideoSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
-  let toChange = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
-  let toChange' = intersectionWith (\a b -> (a,b)) toChange $ videos st -- IntMap (VideoSpec,CineCer0Video)
-  mapM_ (\(x,cv) -> changeVideoSource (videoObject cv) $ T.pack (getTextOrVideoString (textOrVideo x))) toChange'
-  -- delete VideoSpecs
+  let toChangeV = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
+  let toChangeV' = intersectionWith (\a b -> (a,b)) toChangeV $ videos st -- IntMap (VideoSpec,CineCer0Video)
+  mapM_ (\(x,cv) -> changeVideoSource (videoObject cv) $ T.pack (getObjectString (object x))) toChangeV'
+  -- change texts
+  let continuingTextSpecs = intersectionWith onlyChangedTextSources txSpecs (previousTextSpecs st)
+  let toChangeTx = fmapMaybe id continuingTextSpecs -- :: IntMap VideoSpec
+  let toChangeTx' = intersectionWith (\a b -> (a,b)) toChangeTx $ texts st -- IntMap (VideoSpec,CineCer0Video)
+  mapM_ (\(x,cTx) -> changeTextSource (textObject cTx) $ T.pack (getObjectString (object x))) toChangeTx'
+  -- changeTextSource should be a js function that does not exist yet
+  -- delete VideoSpecs <- this wilh change to ObjectSpecs
+  -- delete videos
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
-  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> (ifEmpty $ textOrVideo x) == True) vSpecs -- :: IntMap CineCer0Video
-  let toDelete = union videosWithRemovedSpecs videosWithEmptySource
-  mapM (\x -> removeVideo (videoDiv st) (videoObject x)) toDelete
-  let videosThereBefore = difference (videos st) toDelete -- :: IntMap CineCer0Video
+  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> (ifEmptyObject $ object x) == True) vSpecs -- :: IntMap CineCer0Video
+  let toDeleteV = union videosWithRemovedSpecs videosWithEmptySource
+  mapM (\x -> removeVideo (videoDiv st) (videoObject x)) toDeleteV
+  let videosThereBefore = difference (videos st) toDeleteV -- :: IntMap CineCer0Video
+  -- delete text
+  let textsWithRemovedSpecs = difference (texts st) txSpecs -- IntMap CineCer0Text
+  let textsWithEmptySource = intersection (texts st) $ IntMap.filter (\x -> (ifEmptyObject $ object x) == True) txSpecs -- :: IntMap CineCer0Video
+  let toDeleteTx = union textsWithRemovedSpecs textsWithEmptySource
+  mapM (\x -> removeText (textDiv st) (textObject x)) toDeleteTx
+  let textsThereBefore = difference (texts st) toDeleteTx -- :: IntMap CineCer0Video 
   -- update cached state
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
   continuingVideos' <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos -- :: IntMap CineCer0Video
-  return $ st { videos = continuingVideos', previousVideoSpecs = vSpecs }
-
+  --let continuingTexts = union textsThereBefore addedTexts
+  --continuingTexts' <- sequence $ intersectionWith (XXXXXXXXXXXXXX t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
+  --return $ st { videos = continuingVideos', previousVideoSpecs = vSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
+  return $ st { videos = continuingVideos', previousVideoSpecs = vSpecs}
 
 logExceptions :: a -> IO a -> IO a
 logExceptions a x = x `catch` (\e -> do

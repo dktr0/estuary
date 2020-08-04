@@ -12,13 +12,9 @@ import Data.Tempo
 
 import Estuary.Languages.CineCer0.Signal
 
-type Video = String
-type Texto = String
-
--- sampleVideo
-
+-- object: right is video left is text!!!!!
 data VideoSpec = VideoSpec {
-  textOrVideo :: Either Texto Video,  ----- both are synonims of Text
+  object :: Either String String,  ----- both are synonims of Text
   anchorTime :: (Tempo -> UTCTime -> UTCTime),
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
@@ -40,11 +36,11 @@ data VideoSpec = VideoSpec {
   }
 
 instance Show VideoSpec where
-  show s = show $ textOrVideo s
+  show s = show $ object s
 
 emptyVideoSpec :: VideoSpec
 emptyVideoSpec = VideoSpec {
-  textOrVideo = Right "",
+  object = Right "",
   anchorTime = defaultAnchor,
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
@@ -66,7 +62,7 @@ emptyVideoSpec = VideoSpec {
 }
 
 stringToVideoSpec :: String -> VideoSpec
-stringToVideoSpec x = emptyVideoSpec { textOrVideo = Right x }
+stringToVideoSpec x = emptyVideoSpec { object = Right x }
 
 
 -- it should be just five arguments _ _ _ _ _
