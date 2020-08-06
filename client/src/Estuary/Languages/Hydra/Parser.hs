@@ -38,10 +38,7 @@ outStatement = do
 
 output :: Parser Output
 output = try $ parens $ choice [
-  reserved "o0" >> return O0,
-  reserved "o1" >> return O1,
-  reserved "o2" >> return O2,
-  reserved "o3" >> return O3,
+  outputNoDefault,
   whiteSpace >> return O0
   ]
 
@@ -96,8 +93,17 @@ source = do
     methodWithSource "diff" Diff, -- don't work
     methodWithSource "layer" Layer, -- don't work
     methodWithSourceAndParameters "mask" Mask
+    --OutputAsSource <$> outputNoDefault
     ]
   return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
+
+outputNoDefault :: Parser Output
+outputNoDefault = try $ choice [
+  reserved "o0" >> return O0,
+  reserved "o1" >> return O1,
+  reserved "o2" >> return O2,
+  reserved "o3" >> return O3
+  ]
 
 functionWithParameters :: String -> ([Parameters] -> Source) -> Parser Source
 functionWithParameters funcName constructor = try $ do
@@ -116,7 +122,7 @@ methodWithSource :: String -> (Source -> Source -> Source) -> Parser (Source -> 
 methodWithSource methodName constructor = try $ do
   reservedOp "."
   reservedOp methodName
-  s <- source
+  s <- parens source
   return $ constructor s
 
 methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source)

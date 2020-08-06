@@ -12,7 +12,8 @@ data Source =
   Noise [Parameters] | -- noise() -- noise([5,10]) -- noise(0.5,0.7)
   Shape [Parameters] | -- shape() -- shape(2.0)
   Voronoi [Parameters] | -- voronoi() -- voronoi(10,0.5,0.1)
-  --Src Source | -- screen/camera as input but also o0, o1, o2, o3
+  OutputAsSource Output |
+  --Src Source | -- screen/camera/video/images
   Brightness [Parameters] Source |
   Contrast [Parameters] Source |
   Colorama [Parameters] Source |
@@ -44,7 +45,7 @@ data Source =
   ModulateScale Source [Parameters] Source |
   ModulateScrollX Source [Parameters] Source |
   ModulateScrollY Source [Parameters] Source |
-  Add Source [Parameters] Source | -- they should accept either source or output as source, same for the rest
+  Add Source [Parameters] Source |
   Mult Source [Parameters] Source |
   Blend Source [Parameters] Source |
   Diff Source Source |
@@ -60,7 +61,6 @@ data Output =
   O2 |
   O3
   deriving (Show)
-
 
 data Statement =
   Out Source Output |
