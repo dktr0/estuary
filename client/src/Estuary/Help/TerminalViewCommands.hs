@@ -25,20 +25,20 @@ about = do
   divClass "about primary-color code-font" $ text "A flexible view system is provided in order to create layouts for a wide range of purposes."
 
 exampleText :: Text -> Text
-exampleText "!localview" = "!localview"
-exampleText "!presetview" = "!presetview"
-exampleText "!publishview" = "!publishview"
+exampleText "!localview" = "!localview 1x1 [border {[label:0, text:0 0]}]"
+exampleText "!presetview" = "!presetview cybernetic"
+exampleText "!publishview" = "!publishview basic"
 exampleText "!activeview" =  "!activeview"
 exampleText "!listviews" = "!listviews"
 exampleText "!dumpview" = "!dumpview"
 
 referenceText :: Text -> Text
-referenceText "!localview" = "Create a view"
-referenceText "!presetview" = "Load a view"
-referenceText "!publishview" = "Publish local view"
-referenceText "!activeview" =  "Active a view"
-referenceText "!listviews" = "List preset views"
-referenceText "!dumpview" = "Dump views"
+referenceText "!localview" = "Creates a view"
+referenceText "!presetview" = "Loads a view by name"
+referenceText "!publishview" = "Publishes local view with a name"
+referenceText "!activeview" =  "Returns the name of the current view"
+referenceText "!listviews" = "Lists all preset views"
+referenceText "!dumpview" = "Returns the current view's layout"
 
 functionRef :: MonadWidget t m => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
