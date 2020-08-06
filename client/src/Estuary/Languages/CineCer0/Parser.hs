@@ -32,21 +32,21 @@ _0Arg p = p <|> fmap fst (functionApplication p $ reserved "_0")
 
 spec :: UTCTime -> H Spec
 spec eTime = do
-  vs <- fmap (fromList . zip [0..] . catMaybes) $ list maybeVideoSpec
+  vs <- fmap (fromList . zip [0..] . catMaybes) $ list maybeObjectSpec
   return $ Spec {
     evalTime = eTime,
-    videoSpecMap = vs
+    objectSpecMap = vs
   }
 
-maybeVideoSpec :: H (Maybe VideoSpec)
-maybeVideoSpec = _0Arg $
-  Just <$> videoSpec <|>
+maybeObjectSpec :: H (Maybe ObjectSpec)
+maybeObjectSpec = _0Arg $
+  Just <$> objectSpec <|>
   Nothing <$ reserved "_0"
 
-videoSpec :: H VideoSpec
-videoSpec = _0Arg $
-  vs_vs <*> videoSpec <|>
-  fmap stringToVideoSpec string
+objectSpec :: H ObjectSpec
+objectSpec = _0Arg $
+  vs_vs <*> objectSpec <|>
+  fmap stringToObjectSpec string
 
 -- //////////////
 
@@ -89,7 +89,7 @@ ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
 -- //////////////
 
-vs_vs :: H (VideoSpec -> VideoSpec)
+vs_vs :: H (ObjectSpec -> ObjectSpec)
 vs_vs =
   sigRat_vs_vs <*> sigRat <|>
   sigMayRat_vs_vs <*> sigMayRat <|>
@@ -97,7 +97,7 @@ vs_vs =
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)
 
-sigMayRat_vs_vs :: H (Signal (Maybe Rational) -> VideoSpec -> VideoSpec)
+sigMayRat_vs_vs :: H (Signal (Maybe Rational) -> ObjectSpec -> ObjectSpec)
 sigMayRat_vs_vs =
   setOpacity <$ reserved "setOpacity" <|>
   shiftOpacity <$ reserved "opacity" <|>
@@ -112,7 +112,7 @@ sigMayRat_vs_vs =
   setSaturate <$ reserved "setSaturate" <|>
   shiftSaturate <$ reserved "saturate"
 
-sigRat_vs_vs :: H (Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_vs_vs :: H (Signal Rational -> ObjectSpec -> ObjectSpec)
 sigRat_vs_vs =
   setPosX <$ reserved "setPosX" <|>
   shiftPosX <$ reserved "posX" <|>
@@ -129,24 +129,24 @@ sigRat_vs_vs =
   setVolume <$ reserved "vol" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
-sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> ObjectSpec -> ObjectSpec)
 sigRat_sigRat_vs_vs =
   setCoord <$ reserved "setCoord" <|>
   shiftCoord <$ reserved "coord" <|>
   sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
-sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> ObjectSpec -> ObjectSpec)
 sigRat_sigRat_sigRat_vs_vs =
   circleMask' <$ reserved "circleMask'" <|>
   sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
-sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> VideoSpec -> VideoSpec)
+sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> ObjectSpec -> ObjectSpec)
 sigRat_sigRat_sigRat_sigRat_vs_vs =
   rectMask <$ reserved "rectMask"
 
 -- ////
 
-rat_vs_vs :: H (Rational -> VideoSpec -> VideoSpec)
+rat_vs_vs :: H (Rational -> ObjectSpec -> ObjectSpec)
 rat_vs_vs =
   playNatural <$ reserved "natural" <|>
   playSnap <$ reserved "snap" <|>
@@ -154,29 +154,29 @@ rat_vs_vs =
   rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_vs_vs <*> ndt
 
-rat_rat_vs_vs :: H (Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_vs_vs :: H (Rational -> Rational -> ObjectSpec -> ObjectSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_rat_vs_vs <*> ndt <|>
   quant <$ reserved "quant"
 
-rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> ObjectSpec -> ObjectSpec)
 rat_rat_rat_vs_vs =
   playChop' <$ reserved "chop'" <|>
   rat_rat_rat_rat_vs_vs <*> rationalOrInteger
 
-rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> VideoSpec -> VideoSpec)
+rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> ObjectSpec -> ObjectSpec)
 rat_rat_rat_rat_vs_vs =
   playChop <$ reserved "chop"
 
-ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> VideoSpec -> VideoSpec)
+ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> ObjectSpec -> ObjectSpec)
 ndt_rat_vs_vs =
   playNow <$ reserved "now"
 
-ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
+ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> ObjectSpec -> ObjectSpec)
 ndt_rat_rat_vs_vs =
   ndt_ndt_rat_rat_vs_vs <*> ndt
 
-ndt_ndt_rat_rat_vs_vs :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> VideoSpec -> VideoSpec)
+ndt_ndt_rat_rat_vs_vs :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> ObjectSpec -> ObjectSpec)
 ndt_ndt_rat_rat_vs_vs = playChopSecs <$ reserved "chopSecs" -- time function
