@@ -54,12 +54,15 @@ foreign import javascript unsafe
 foreign import javascript unsafe "$1.removeChild($2)" removeVideo :: HTMLDivElement -> VideoObject -> IO ()
 foreign import javascript unsafe "$1.removeChild($2)" removeText :: HTMLDivElement -> TextObject -> IO ()
 foreign import javascript unsafe "$1.style = $2;" _setVideoStyle :: VideoObject -> Text -> IO ()
+foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextObject -> Text -> IO ()
 foreign import javascript unsafe "$1.muted = $2;" muteVideo :: VideoObject -> Bool -> IO ()
 foreign import javascript unsafe "$1.volume = $2" videoVolume :: VideoObject -> Double -> IO ()
 foreign import javascript unsafe "$1.pause(); $1.src = $2; $1.load(); $1.play();" changeVideoSource :: VideoObject -> Text -> IO ()
 foreign import javascript unsafe "$1.src = $2;" changeTextSource :: TextObject -> Text -> IO ()
 foreign import javascript unsafe "$1.videoWidth" videoWidth :: VideoObject -> IO Double
 foreign import javascript unsafe "$1.videoHeight" videoHeight :: VideoObject -> IO Double
+foreign import javascript unsafe "$1.width" textWidth :: TextObject -> IO Double
+foreign import javascript unsafe "$1.height" textHeight :: TextObject -> IO Double
 foreign import javascript unsafe "$1.playbackRate" getVideoPlaybackRate :: VideoObject -> IO Double
 foreign import javascript safe "$1.playbackRate = $2;" setVideoPlaybackRate :: VideoObject -> Double -> IO ()
 foreign import javascript unsafe "$1.currentTime" getVideoPlaybackPosition :: VideoObject -> IO Double
@@ -163,12 +166,37 @@ setVideoVol v x = do
     videoVolume j x
     return $ v { previousVol = x }
 
--- updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Text -> IO CineCer0Text
--- updateContinuingText t eTime rTime (sw,sh) s tx = logException v $ do
---  let j = textObject tx
---  txw <- textWidth j -- this js function does not exist yet
---  txh <- textHeight j -- this js function does not exist yet
---  if (txw /= 0 && txh /= 0) then do
+setTextStyle :: CineCer0Text -> Text -> IO CineCer0Text
+setTextStyle tx x = do
+  if previousStyleTx tx == x then return tx
+  else do
+    _setTextStyle (textObject tx) x
+    return $ tx { previousStyleTx = x }
+
+updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> VideoSpec -> CineCer0Text -> IO CineCer0Text
+updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
+ let j = textObject tx
+ txw <- textWidth j 
+ txh <- textHeight j 
+ if (txw /= 0 && txh /= 0) then do
+  let aTime = anchorTime s t eTime
+  lengthOfObject <- realToFrac <$> (1 :: Double)
+
+  let aspectRatio = txw/txh
+  let heightIfFitsWidth = sw / aspectRatio
+  let widthIfFitsHeight = sh * aspectRatio
+  let fitByWidth = heightIfFitsWidth <= sh
+  let fitWidth = if fitByWidth then sw else widthIfFitsHeight
+  let fitHeight = if fitByWidth then heightIfFitsWidth else sh
+  let actualWidth = (width s t lengthOfObject rTime eTime aTime) * realToFrac fitWidth
+  let actualHeight = (height s t lengthOfObject rTime eTime aTime) * realToFrac fitHeight
+  let centreX = ((posX s t lengthOfObject rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
+  let centreY = ((posY s t lengthOfObject rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
+  let leftX = centreX - (actualWidth * 0.5)
+  let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
+
+  setTextStyle tx $ textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight)
+  else return tx
     -- solve the width /height issues first, after that, first test with 
     -- default font size, font family, etc.
 
@@ -246,6 +274,10 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
 videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m
 
+textStyle :: Double -> Double -> Double -> Double -> Text
+textStyle x y w h = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
+
+
 -- these two might become only one!
 
 onlyChangedObjectSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
@@ -253,31 +285,29 @@ onlyChangedObjectSources nSpec oSpec
   | (object nSpec /= object oSpec) = Just nSpec
   | (object nSpec == object oSpec) = Nothing
 
-onlyChangedTextSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
-onlyChangedTextSources nSpec oSpec
-  | (object nSpec /= object oSpec) = Just nSpec
-  | (object nSpec == object oSpec) = Nothing
-
--- textOrVideoDiv:: 
+  -- this will have to go also
+-- onlyChangedTextSources :: VideoSpec -> VideoSpec -> Maybe VideoSpec
+-- onlyChangedTextSources nSpec oSpec
+--   | (object nSpec /= object oSpec) = Just nSpec
+--   | (object nSpec == object oSpec) = Nothing
 
 
 -- A CineCer0State represents the entire state corresponding to a CineCer0 program
 -- (each statement separated by ; in the program is one element within various )
 data CineCer0State = CineCer0State {
-  videoDiv :: HTMLDivElement,
+  container :: HTMLDivElement,
   videos :: IntMap CineCer0Video,
   previousVideoSpecs :: IntMap VideoSpec,
-  textDiv :: HTMLDivElement,
   texts :: IntMap CineCer0Text,
   previousTextSpecs :: IntMap VideoSpec
   }
 
+  
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
-  videoDiv = j,
+  container = j,
   videos = empty,
   previousVideoSpecs = empty,
-  textDiv = j,
   texts = empty,
   previousTextSpecs = empty
   }
@@ -289,22 +319,24 @@ objectParti:: Either String String -> Bool
 objectParti (Right x)= True
 objectParti (Left x) = False 
 
+-- ask, do we need two divs or one is enough?
+
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t rTime spec st = logExceptions st $ do
   let objSpecs = videoSpecMap spec  -- objectSpec instead of vSpec, this needs to change throughout the whole structure
   let vSpecs = fst $ textOrVideo objSpecs
   let txSpecs = snd $ textOrVideo objSpecs
   let eTime = evalTime spec
-  divWidth <- offsetWidth $ videoDiv st
-  divHeight <- offsetHeight $ videoDiv st
+  divWidth <- offsetWidth $ container st
+  divHeight <- offsetHeight $ container st
   -- add videos
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap VideoSpec
   let toAddv = IntMap.filter (\x -> ifEmptyObject (object x) == False) newVideoSpecs -- operation on objects -- :: IntMap VideoSpec
-  addedVideos <- mapM (\x -> addVideo (videoDiv st) x) toAddv -- :: IntMap CineCer0Video
+  addedVideos <- mapM (\x -> addVideo (container st) x) toAddv -- :: IntMap CineCer0Video
   -- add text 
   let newTextSpecs = difference txSpecs (texts st) -- :: IntMap VideoSpec (this changes to ObjectSpec, aslo in line 278) 
   let toAddtx = IntMap.filter (\x -> ifEmptyObject (object x) == False) newTextSpecs
-  addedTexts <- mapM (\x -> addText (textDiv st) x) toAddtx
+  addedTexts <- mapM (\x -> addText (container st) x) toAddtx
   -- change videos
   let continuingVideoSpecs = intersectionWith onlyChangedObjectSources vSpecs (previousVideoSpecs st) -- :: IntMap (Maybe VideoSpec)
   let toChangeV = fmapMaybe id continuingVideoSpecs -- :: IntMap VideoSpec
@@ -320,13 +352,13 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> (ifEmptyObject $ object x) == True) vSpecs -- :: IntMap CineCer0Video
   let toDeleteV = union videosWithRemovedSpecs videosWithEmptySource
-  mapM (\x -> removeVideo (videoDiv st) (videoObject x)) toDeleteV
+  mapM (\x -> removeVideo (container st) (videoObject x)) toDeleteV
   let videosThereBefore = difference (videos st) toDeleteV -- :: IntMap CineCer0Video
   -- delete text
   let textsWithRemovedSpecs = difference (texts st) txSpecs -- IntMap CineCer0Text
   let textsWithEmptySource = intersection (texts st) $ IntMap.filter (\x -> (ifEmptyObject $ object x) == True) txSpecs -- :: IntMap CineCer0Video
   let toDeleteTx = union textsWithRemovedSpecs textsWithEmptySource
-  mapM (\x -> removeText (textDiv st) (textObject x)) toDeleteTx
+  mapM (\x -> removeText (container st) (textObject x)) toDeleteTx
   let textsThereBefore = difference (texts st) toDeleteTx -- :: IntMap CineCer0Video 
   -- update cached states
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
