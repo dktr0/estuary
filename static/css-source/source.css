@@ -109,14 +109,11 @@ body::-webkit-scrollbar-thumb {
 	display: flex;
 	height: 100%;
 	width: 100%;
-	padding-right: 1em;
 	box-sizing: border-box;
 
 }
 
 .languageHelp {
-  overflow:scroll;
-  padding-right: 1.8em;
   height:100%;
 }
 
@@ -202,6 +199,7 @@ body::-webkit-scrollbar-thumb {
 	padding-right: 15px;
   justify-content: space-between;
   height: 18px;
+
 }
 
 .btn {
@@ -376,6 +374,7 @@ body::-webkit-scrollbar-thumb {
 .chatMessageContainer {
 	overflow: auto;
 	height: 7em;
+	margin-left: 3px;
 }
 
 .chatMessage {
@@ -868,9 +867,13 @@ table, tr, td {border: none;}
 
 .terminal{
 	flex: 1 1 auto;
-	padding-left: 0.7em;
+/* 	padding-left: 0.95em;
+	padding-right: 0.5em; */
+	padding-left: 15px;
+	padding-right: 6px;
 	overflow:hidden;
   border-top: 1px solid;
+  box-sizing:border-box;
 }
 
 .terminalHeader {
@@ -898,7 +901,9 @@ table, tr, td {border: none;}
 
 .chat {
   display: inline-block;
-  width: 50%;
+  width: 49.5%;
+      border: 1px solid var(--secondary-color);
+/* background-color: green; */
 }
 
 .joinButton {
@@ -949,12 +954,13 @@ cursor: pointer;
 							help files
 --------------------------------------------------------------------
 */
-.helpWrapper {display:flex;}
+.helpWrapper {
+  display: flex;
+  margin-bottom: 0.5em;
+}
 
 .about {
-	border:none;
-	text-align: center;
-	margin-bottom: 1%;
+  margin-bottom: 4%;
 }
 
 .exampleText, .referenceText {
@@ -1094,29 +1100,29 @@ display: inline-flex;
 
 .ensembleStatus {
   display: inline-block;
-  width: 49.4vw;
+  width: 49.5%;
+  border: 1px solid var(--secondary-color);
   vertical-align: top;
-  height: 8.4em;
+  height: 8.5em;
 }
 
 
 .ensembleStatusWidget {
 	height: 100%;
-    border: 1px solid var(--primary-color);
-    border-radius: 5px;
+	width: 100%;
+/*     border: 1px solid var(--primary-color); */
+/*     border-radius: 5px; */
     margin-top: 0.35%;
    	overflow: hidden;
    	margin-right: 0.7em;
-
 }
 
 .statusWidgetScrollableContainer {
 overflow:hidden;
 overflow-y: auto;
 height: 8em;
-
+width: 100%;
 }
-
 
 .statusWidgetScrollableContainer::-webkit-scrollbar  {
     width: 1%;
@@ -1139,101 +1145,119 @@ height: 8em;
 
 
 .infoContainer {
-	margin-left:1%;
-	margin-right: 1%;
+	width: 100%;
 }
 
 .tableContainer table  {
   border-collapse: collapse;
   width: 100%;
   cursor: pointer;
-
+  margin-left: 3px;
 }
 
 .rowContainer {
 	display: flex;
-
+	flex-wrap: nowrap;
+	width: 48vw;
 }
 
-.rowContainer tr {
-  display: flex;
-  width: 100%;
-  flex-wrap:nowrap;
-
+.rowSubContainer {
+ display: flex;
+ flex-wrap: nowrap;
 }
 
-td.statusWidgetNameAndLocation {
-}
-
-th.statusWidgetNameAndLocation {
+.rowHeaderContainer {
+	width: 48vw;
+	display: flex;
+	flex-wrap: nowrap;
+	font-weight:bold;
 	margin-bottom: 2px;
 	}
 
-td.statusWidgetName, th.statusWidgetName {
+
+.statusWidgetNameAndLocation {
+	margin-bottom: 2px;
+	width: 21vw;
+}
+
+
+.statusWidgetNameAndLocationText{
+    width: 21vw;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
 	text-align:left;
-	width: calc(45vw/4.1);
+	}
+
+.statusWidgetName {
+    width: 15vw;
+	text-align:left;
     overflow:hidden;
 	text-overflow:ellipsis;
 	white-space: nowrap;
 }
 
-th.statusWidgetName {
-	margin-bottom: 2px;
-}
 
-.statusWidgetPopupChild, th.statusWidgetPopupChild {
-    width: calc(50vw/2.7);
-	overflow:hidden;
-	text-overflow:ellipsis;
-	white-space: nowrap;
-	text-align:left;
-
-}
-
-
-td.statusWidgetActivity, th.statusWidgetActivity  {
-	width: calc(50vw/7);
+.statusWidgetActivity   {
+	width: 5vw;
 	text-align:center;
+
 }
 
-th.statusWidgetStatusInput {
-	width: calc(50vw/2.3);
+.statusWidgetStatusInput {
+    width: 21vw;
 	text-align: center;
 }
 
-td.statusWidgetStatusInput {
-	width: 100%;
-}
 
-td.statusWidgetStatusInput input {
+.statusWidgetStatusInput input {
 	box-sizing: border-box;
 	color: var(--primary-color);
 	background-color: transparent;
 	border: none;
-	width:98%;
+	width: 97%;
     border-radius: 5px;
-    padding-left: 2%;
+    margin-left: 10px
+}
+
+.statusWidgetLatency, .statusWidgetLoad {
+   width: 8vw;
+   text-align: center;
+    overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+
+.statusWidgetFPS {
+   width: 8vw;
+   text-align: center;
+    overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+.statusWidgetIP {
+   width: 15vw;
+   text-align: center;
+    overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+.statusWidgetLabel {
 
 }
 
-th.statusWidgetFPSAndLatency {
-    width: calc(45vw/5);
-}
-
-td.statusWidgetFPSAndLatency  {
-    width: calc(45vw/5);
-	text-align: center;
-}
-
-
-td.otherInfo {
+.otherInfo {
  width: 100%;
  text-align:center;
 }
 
 .statusWidgetAnonymousPart {
-   order: 3;
    width: 100%;
+   margin-left: 3px;
+
 }
 
 
@@ -1309,6 +1333,7 @@ td.otherInfo {
   margin-left: -60px;
 }
 
+/*tooltip scrollable table  */
 .tooltip-scrollable-table .tooltiptext-scrollable-table::after {
   content: "";
   position: absolute;
@@ -1324,6 +1349,42 @@ td.otherInfo {
   visibility: visible;
 }
 
+/* tooltip satus labels */
+ .tooltiptextStatusLabels {
+  visibility: hidden;
+  white-space:normal;
+  font-weight: lighter;
+  display:flex;
+  min-width:15vw;
+  max-width: 15vw;
+  width:max-content;
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: relative;
+  z-index: 1;
+  top: 150%;
+  left: 50%;
+  margin-left: -60px;
+}
+
+.tooltiptextStatusLabels::after {
+  position: absolute;
+  bottom: 100%;
+  left: 12vh;
+/*   margin-left: -5px; */
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent var(--secondary-color) transparent;
+}
+
+.tooltip:hover .tooltiptextStatusLabels {
+  visibility: visible;
+}
+
+/*Syntax error */
 
 .syntaxIssue {
   color: var(--transient-color);
@@ -1453,4 +1514,26 @@ hr.dashed {
 
 .opaque {
   background: var(--background-color);
+}
+
+.reference {
+  margin: 10px;
+}
+
+.reference-title {
+  font-size: 16pt;
+  font-family: estuaryFont;
+}
+
+.reference-description {
+  padding-top: 8px;
+  font-size: 0.8em;
+}
+
+.reference-link {
+  cursor: pointer;
+}
+
+.reference-link:hover {
+  text-decoration: underline;
 }
