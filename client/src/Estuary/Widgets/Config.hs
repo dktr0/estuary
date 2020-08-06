@@ -9,6 +9,7 @@ import Data.Map.Strict
 
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Generic
+import Estuary.Widgets.ViewEditor
 import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Render.DynamicsMode
@@ -28,7 +29,7 @@ configWidget = do
       (English,"Enable the canvas to display visual results.")
       ])
     return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
-    
+
   elClass "hr" "dashed" $  text ""
 
   resolutionChangeEv <- divClass "config-option primary-color ui-font" $ do
@@ -89,5 +90,10 @@ configWidget = do
       ])
     return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
 
+  elClass "hr" "dashed" $  text ""
+
+  viewEditor <- divClass "config-option primary-color ui-font" $ do
+    el "h3" $ text "View Editor"
+    viewEditor
 
   return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv]
