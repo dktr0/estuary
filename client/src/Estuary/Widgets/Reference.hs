@@ -14,6 +14,7 @@ import Estuary.Widgets.Generic
 import Estuary.Help.LanguageHelp
 import Estuary.Help.MiniTidal
 import Estuary.Help.PunctualAudio
+import Estuary.Help.TerminalViewCommands
 import Estuary.Types.Request
 import Estuary.Widgets.Editor
 import Estuary.Reflex.Router
@@ -24,7 +25,8 @@ data Reference =
   MainList |
   MiniTidal |
   Punctual |
-  CineZer0
+  CineZer0 |
+  TerminalViewCommands
   deriving (Generic, FromJSVal, ToJSVal)
 
 navigation :: MonadWidget t m => Editor t m (Event t Reference)
@@ -39,11 +41,16 @@ referenceWidget MainList = do
   divClass "reference-title" $ text "estuary"
   divClass "reference-description" $ text "Estuary is a platform for collaboration and learning through live coding. It enables you to create sound, music, and visuals in a web browser."
   el "h3" $ text "Languages"
-  navEv <- el "ul" $ do
+  navEv1 <- el "ul" $ do
     miniTidal <- el "li" $ goTo MiniTidal "MiniTidal"
     punctual <- el "li" $ goTo Punctual "Punctual"
     cinezero <- el "li" $ goTo CineZer0 "CineZer0"
     return $ leftmost [miniTidal, punctual, cinezero]
+  el "h3" $ text "View System"
+  navEv2 <- el "ul" $ do
+    terminalViewCommands <- el "li" $ goTo TerminalViewCommands "Terminal View Commands"
+    return $ leftmost [terminalViewCommands]
+  let navEv = leftmost [navEv1, navEv2]
   return navEv
 
 referenceWidget MiniTidal = do
@@ -62,6 +69,12 @@ referenceWidget CineZer0 = do
   navEv <- goTo MainList "Home"
   el "h3" $ text "CineZer0 Reference"
   el "p" $ text "Coming soon"
+  return navEv
+
+referenceWidget TerminalViewCommands = do
+  navEv <- goTo MainList "Home"
+  el "h3" $ text "Terminal View Commands"
+  terminalViewCommandsHelpFile
   return navEv
 
 goTo :: MonadWidget t m => Reference -> Text -> Editor t m (Event t Reference)
