@@ -32,10 +32,10 @@ _0Arg p = p <|> fmap fst (functionApplication p $ reserved "_0")
 
 spec :: UTCTime -> H Spec
 spec eTime = do
-  vs <- fmap (fromList . zip [0..] . catMaybes) $ list maybeObjectSpec
+  os <- fmap (fromList . zip [0..] . catMaybes) $ list maybeObjectSpec
   return $ Spec {
     evalTime = eTime,
-    objectSpecMap = vs
+    objectSpecMap = os
   }
 
 maybeObjectSpec :: H (Maybe ObjectSpec)

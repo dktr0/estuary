@@ -64,6 +64,9 @@ emptyObjectSpec = ObjectSpec {
 stringToObjectSpec :: String -> ObjectSpec
 stringToObjectSpec x = emptyObjectSpec { object = Right x }
 
+xToObjectSpec :: [Char] -> ObjectSpec
+xToObjectSpec x = emptyObjectSpec { object = Left x }
+
 
 -- it should be just five arguments _ _ _ _ _
 emptyText :: Signal Text

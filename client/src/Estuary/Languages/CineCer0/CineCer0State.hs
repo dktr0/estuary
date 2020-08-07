@@ -319,8 +319,6 @@ objectParti:: Either String String -> Bool
 objectParti (Right x)= True
 objectParti (Left x) = False 
 
--- ask, do we need two divs or one is enough?
-
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t rTime spec st = logExceptions st $ do
   let objSpecs = objectSpecMap spec  -- objectSpec instead of vSpec, this needs to change throughout the whole structure
@@ -330,8 +328,8 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   divWidth <- offsetWidth $ container st
   divHeight <- offsetHeight $ container st
   -- add videos
-  let newObjectSpecs = difference vSpecs (videos st) -- :: IntMap ObjectSpec
-  let toAddv = IntMap.filter (\x -> ifEmptyObject (object x) == False) newObjectSpecs -- operation on objects -- :: IntMap ObjectSpec
+  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap ObjectSpec
+  let toAddv = IntMap.filter (\x -> ifEmptyObject (object x) == False) newVideoSpecs -- operation on objects -- :: IntMap ObjectSpec
   addedVideos <- mapM (\x -> addVideo (container st) x) toAddv -- :: IntMap CineCer0Video
   -- add text 
   let newTextSpecs = difference txSpecs (texts st) -- :: IntMap ObjectSpec (this changes to ObjectSpec, aslo in line 278) 
@@ -364,10 +362,9 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
   continuingVideos' <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos -- :: IntMap CineCer0Video
   let continuingTexts = union textsThereBefore addedTexts
-  --continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
-  --return $ st { videos = continuingVideos', previousObjectSpecs = txSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
-  return $ st { videos = continuingVideos', previousObjectSpecs = vSpecs}
-
+  continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
+  return $ st { videos = continuingVideos', previousObjectSpecs = txSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
+  
 logExceptions :: a -> IO a -> IO a
 logExceptions a x = x `catch` (\e -> do
   putStrLn $ "EXCEPTION (CineCer0): " ++ show (e :: SomeException)
