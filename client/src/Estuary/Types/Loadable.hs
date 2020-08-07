@@ -11,4 +11,4 @@ data LoadStatus =
   NotLoaded |
   Loading |
   Loaded |
-  LoadError Text deriving (Eq)
+  LoadError Text deriving (Eq,Show)

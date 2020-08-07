@@ -76,6 +76,9 @@ keyEventToHint _ = Nothing
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
+  -- temporary, just for testing
+  divClass "config-entry display-inline-block primary-color ui-font" $ audioResourceTest (webDirt irc)
+
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   (cvsElement,glCtx) <- canvasWidget ctx -- canvas for Punctual
   iCtx <- liftIO $ readMVar ctxM

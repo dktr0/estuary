@@ -36,7 +36,9 @@ instance Loadable AudioResource where
     ls <- readIORef $ audioLoadStatus x
     case ls of
       NotLoaded -> do
+        let url = audioURL $ audioMeta x
         writeIORef (audioLoadStatus x) Loading
+        T.putStrLn $ "loading " <> url
         let url = audioURL $ audioMeta x
         r <- arraybufferXMLHttpRequest url
         cbLoad <- asyncCallback $ do
