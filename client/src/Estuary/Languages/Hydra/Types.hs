@@ -2,7 +2,8 @@ module Estuary.Languages.Hydra.Types where
 
 data Parameters =
   Parameters [Double] | -- [0.2,0.4] -- [0.3,0.4,1.0]
-  Fast Double [Double] -- .fast(1.5) not yet implemented
+  Fast [Double] Double | -- [].fast(1.5) not yet implemented
+  Smooth [Double] Double -- not yet implemented i.e. [].smooth = 0.5
   deriving (Show)
 
 data Source =
@@ -13,7 +14,7 @@ data Source =
   Shape [Parameters] | -- shape() -- shape(2.0)
   Voronoi [Parameters] | -- voronoi() -- voronoi(10,0.5,0.1)
   OutputAsSource Output |
-  --Src Source | -- screen/camera/video/images
+  --Src Source | -- not yet implemented screen/camera/video/images
   Brightness [Parameters] Source |
   Contrast [Parameters] Source |
   Colorama [Parameters] Source |
@@ -51,8 +52,6 @@ data Source =
   Diff Source Source |
   Layer Source Source |
   Mask Source [Parameters] Source
-  --Speed Source => i.e. speed = 1.5
-  --Smooth
   deriving (Show)
 
 data Output =
@@ -65,4 +64,5 @@ data Output =
 data Statement =
   Out Source Output |
   Render Output
+  --Speed [Parameters] -- not yet implemented i.e. speed = 1.5
   deriving (Show)

@@ -26,7 +26,7 @@ hydra = do
   return xs
 
 statement :: Parser Statement
-statement = choice [ outStatement, renderStatement ]
+statement = choice [ outStatement, renderStatement]
 
 outStatement :: Parser Statement
 outStatement = do
@@ -44,6 +44,13 @@ output = try $ parens $ choice [
 
 renderStatement :: Parser Statement
 renderStatement = Render <$> (reserved "render" >> output)
+
+-- speedStatement :: Parser Statement
+-- speedStatement = do
+--   reserved "speed"
+--   reservedOp "="
+--   p <- double
+--   return $ Speed p
 
 source :: Parser Source
 source = do
@@ -76,6 +83,8 @@ source = do
     methodWithParameters "scroll" Scroll,
     methodWithParameters "scrollX" ScrollX,
     methodWithParameters "scrollY" ScrollY,
+    methodWithSource "diff" Diff, -- don't work
+    methodWithSource "layer" Layer, -- don't work
     methodWithSourceAndParameters "modulate" Modulate,
     methodWithSourceAndParameters "modulateHue" ModulateHue,
     methodWithSourceAndParameters "modulateKaleid" ModulateKaleid,
@@ -90,12 +99,20 @@ source = do
     methodWithSourceAndParameters "add" Add,
     methodWithSourceAndParameters "mult" Mult,
     methodWithSourceAndParameters "blend" Blend,
-    methodWithSource "diff" Diff, -- don't work
-    methodWithSource "layer" Layer, -- don't work
     methodWithSourceAndParameters "mask" Mask
-    --OutputAsSource <$> outputNoDefault
     ]
   return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
+
+sourceAsArgument :: Parser Source
+sourceAsArgument = try $ choice [
+  outputAsSource, --o0
+  source -- osc()
+  ]
+
+outputAsSource :: Parser Source
+outputAsSource = do
+  s <- outputNoDefault
+  return $ OutputAsSource s
 
 outputNoDefault :: Parser Output
 outputNoDefault = try $ choice [
@@ -118,29 +135,35 @@ methodWithParameters methodName constructor = try $ do
   ps <- parens $ commaSep parameters
   return $ constructor ps
 
-methodWithSource :: String -> (Source -> Source -> Source) -> Parser (Source -> Source)
+methodWithSource :: String -> (Source -> Source -> Source) -> Parser (Source -> Source) -- osc().diff(osc()).out()
 methodWithSource methodName constructor = try $ do
   reservedOp "."
   reservedOp methodName
-  s <- parens source
+  s <- parens $ sourceAsArgument
   return $ constructor s
 
-methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source)
+methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source) -- osc().mask(osc(),0.5,0.8).out()  -- mask(o1)
 methodWithSourceAndParameters methodName constructor = try $ do
   reservedOp "."
   reservedOp methodName
   (s,ps) <- parens $ do
-    s <- source
+    s <- sourceAsArgument
     ps <- (comma >> commaSep1 parameters) <|> return []
     return (s,ps)
   return $ constructor s ps
 
 parameters :: Parser Parameters
-parameters = choice [
-  Parameters <$> try (brackets (commaSep double)),
+parameters =
+  Parameters <$> try (brackets (commaSep double)) <|>
   (Parameters . return) <$> double
-  ]
 
+fast :: Parser Parameters -- [].fast()
+fast = do
+  l <- brackets (commaSep double)
+  reservedOp "."
+  reserved "fast"
+  p <- parens $ double
+  return $ Fast l p
 
 double :: Parser Double
 double = choice [
@@ -162,14 +185,14 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opStart = oneOf ".",
   P.opLetter = oneOf ".",
   P.reservedNames = [
-    "out","render", "fast",
+    "out","render", "fast", "speed",
     "osc","solid","gradient","noise","shape","voronoi",
     "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
     "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
     "add", "mult", "blend", "diff", "layer", "mask",
     "o0","o1","o2","o3"
     ],
-  P.reservedOpNames = ["."],
+  P.reservedOpNames = [".", "="],
   P.caseSensitive = False
   }
 

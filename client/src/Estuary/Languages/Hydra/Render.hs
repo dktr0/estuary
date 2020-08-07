@@ -47,7 +47,11 @@ newtype JSSource = JSSource JSVal
 instance PToJSVal JSSource where pToJSVal (JSSource x) = x
 instance PFromJSVal JSSource where pFromJSVal = JSSource
 
+jsOutputToJSSource :: JSOutput -> JSSource
+jsOutputToJSSource = pFromJSVal . pToJSVal
+
 sourceToJS :: Hydra -> Source -> JSSource
+sourceToJS h (OutputAsSource x) = jsOutputToJSSource $ outputToJS h x
 sourceToJS h (Osc []) = _osc0 h
 sourceToJS h (Osc (x:[])) = _osc1 h (parametersToJS x)
 sourceToJS h (Osc (x:y:[])) = _osc2 h (parametersToJS x) (parametersToJS y)
@@ -307,13 +311,6 @@ foreign import javascript safe "$1.mask($2)" _mask0 :: JSSource -> JSSource -> J
 foreign import javascript safe "$1.mask($2,$3)" _mask1 :: JSSource -> JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.mask($2,$3,$4)" _mask2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
 
--- .add(t, amount)
--- .mult(t, amount)
--- .blend(t, amount)
--- .diff(t) <br />
--- .layer(t) <br />
--- .mask(t, reps, offset)
-
 newtype JSOutput = JSOutput JSVal
 instance PToJSVal JSOutput where pToJSVal (JSOutput x) = x
 instance PFromJSVal JSOutput where pFromJSVal = JSOutput
@@ -324,10 +321,10 @@ outputToJS h O1 = _o1 h
 outputToJS h O2 = _o2 h
 outputToJS h O3 = _o3 h
 
-foreign import javascript safe "$1.synth.o0" _o0 :: Hydra -> JSOutput
-foreign import javascript safe "$1.synth.o1" _o1 :: Hydra -> JSOutput
-foreign import javascript safe "$1.synth.o2" _o2 :: Hydra -> JSOutput
-foreign import javascript safe "$1.synth.o3" _o3 :: Hydra -> JSOutput
+foreign import javascript safe "$1.output.o0" _o0 :: Hydra -> JSOutput
+foreign import javascript safe "$1.output.o1" _o1 :: Hydra -> JSOutput
+foreign import javascript safe "$1.output.o2" _o2 :: Hydra -> JSOutput
+foreign import javascript safe "$1.output.o3" _o3 :: Hydra -> JSOutput
 
 
 evaluateStatement :: Hydra -> Statement -> IO ()
