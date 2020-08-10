@@ -63,6 +63,7 @@ foreign import javascript unsafe "$1.videoWidth" videoWidth :: VideoObject -> IO
 foreign import javascript unsafe "$1.videoHeight" videoHeight :: VideoObject -> IO Double
 foreign import javascript unsafe "$1.width" textWidth :: TextObject -> IO Double
 foreign import javascript unsafe "$1.height" textHeight :: TextObject -> IO Double
+
 foreign import javascript unsafe "$1.playbackRate" getVideoPlaybackRate :: VideoObject -> IO Double
 foreign import javascript safe "$1.playbackRate = $2;" setVideoPlaybackRate :: VideoObject -> Double -> IO ()
 foreign import javascript unsafe "$1.currentTime" getVideoPlaybackPosition :: VideoObject -> IO Double
@@ -176,11 +177,14 @@ setTextStyle tx x = do
 updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> ObjectSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
  let j = textObject tx
- txw <- textWidth j 
- txh <- textHeight j 
+ let txw = sw 
+ let txh = sh
+ putStrLn $ show txw
+ putStrLn $ show txh
  if (txw /= 0 && txh /= 0) then do
   let aTime = anchorTime s t eTime
   let lengthOfObject = 1
+  let txFont = (fontFamily s t lengthOfObject rTime eTime aTime)
 
   let aspectRatio = txw/txh
   let heightIfFitsWidth = sw / aspectRatio
@@ -195,7 +199,10 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let leftX = centreX - (actualWidth * 0.5)
   let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
 
-  setTextStyle tx $ textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight)
+  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont)
+  putStrLn $ T.unpack $  txStyle
+  setTextStyle tx $ txStyle
+
   else return tx
     -- solve the width /height issues first, after that, first test with 
     -- default font size, font family, etc.
@@ -274,8 +281,8 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
 videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m
 
-textStyle :: Double -> Double -> Double -> Double -> Text
-textStyle x y w h = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;"
+textStyle :: Double -> Double -> Double -> Double -> Text -> Text
+textStyle x y w h ff = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> "; object-fit: fill;"
 
 
 -- these two might become only one!

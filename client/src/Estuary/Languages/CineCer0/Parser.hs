@@ -40,13 +40,20 @@ spec eTime = do
 
 maybeObjectSpec :: H (Maybe ObjectSpec)
 maybeObjectSpec = _0Arg $
-  Just <$> objectSpec <|>
+  (Just <$> objectSpec) <|>
   Nothing <$ reserved "_0"
 
 objectSpec :: H ObjectSpec
 objectSpec = _0Arg $
-  vs_vs <*> objectSpec <|>
-  fmap stringToObjectSpec string
+  (vs_vs <*> objectSpec) <|> 
+  (objectSpecFunc <*> string) <|>
+  (fmap stringToObjectSpec string)
+
+objectSpecFunc :: H (String -> ObjectSpec)
+objectSpecFunc =
+  textToObjectSpec <$ reserved "text" <|>
+  videoToObjectSpec <$ reserved "video"
+
 
 -- //////////////
 
@@ -128,6 +135,10 @@ sigRat_vs_vs =
   sqrMask <$ reserved "sqrMask" <|>
   setVolume <$ reserved "vol" <|>
   sigRat_sigRat_vs_vs <*> sigRat
+
+sigStr_vs_vs :: H (Signal String -> ObjectSpec -> ObjectSpec)
+sigStr_vs_vs =
+  setFontFamily <$ reserved "font"
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> ObjectSpec -> ObjectSpec)
 sigRat_sigRat_vs_vs =

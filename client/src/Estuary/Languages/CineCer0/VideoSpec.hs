@@ -20,6 +20,9 @@ data ObjectSpec = ObjectSpec {
   playbackRate :: Signal (Maybe Rational),
   mute :: Signal Bool,
   volume :: Signal Rational,
+  fontFamily :: Signal String,
+  fontSize :: Signal Rational,
+  color :: Signal String,
   posX :: Signal Rational,
   posY :: Signal Rational,
   width :: Signal Rational,
@@ -30,8 +33,6 @@ data ObjectSpec = ObjectSpec {
   contrast :: Signal (Maybe Rational),
   grayscale :: Signal (Maybe Rational),
   saturate :: Signal (Maybe Rational),
-  fontFamily :: Signal (Maybe String),
-  fontSize :: Signal (Maybe Rational),
   mask :: Signal Text
   }
 
@@ -46,6 +47,11 @@ emptyObjectSpec = ObjectSpec {
   playbackRate = playNatural_Rate 0.0,
   mute = constantSignal True,
   volume = constantSignal 0.0,
+
+  fontFamily = constantSignal "sans-serif",
+  fontSize = constantSignal 120,
+  color = constantSignal "lightblue",
+
   posX = constantSignal 0.0,
   posY = constantSignal 0.0,
   width = constantSignal 1.0,
@@ -56,17 +62,17 @@ emptyObjectSpec = ObjectSpec {
   contrast = constantSignal Nothing,
   grayscale = constantSignal Nothing,
   saturate = constantSignal Nothing,
-  fontFamily = constantSignal Nothing,
-  fontSize = constantSignal Nothing,
   mask = emptyText
 }
 
 stringToObjectSpec :: String -> ObjectSpec
 stringToObjectSpec x = emptyObjectSpec { object = Right x }
 
-xToObjectSpec :: [Char] -> ObjectSpec
-xToObjectSpec x = emptyObjectSpec { object = Left x }
+textToObjectSpec :: String -> ObjectSpec
+textToObjectSpec x = emptyObjectSpec { object = Left x }
 
+videoToObjectSpec :: String -> ObjectSpec
+videoToObjectSpec x = emptyObjectSpec { object = Right x }
 
 -- it should be just five arguments _ _ _ _ _
 emptyText :: Signal Text
@@ -125,13 +131,14 @@ shiftSize s vs = vs {
   height = s * height vs
 }
 
--- Filters
-
-setFontFamily :: Signal (Maybe String) -> ObjectSpec -> ObjectSpec
+setFontFamily :: Signal String -> ObjectSpec -> ObjectSpec
 setFontFamily s v = v { fontFamily = s }
 
-setFontSize :: Signal (Maybe Rational) -> ObjectSpec -> ObjectSpec
+-- maybe not
+setFontSize :: Signal Rational -> ObjectSpec -> ObjectSpec
 setFontSize s v = v { fontSize = s }
+
+-- Filters
 
 setOpacity :: Signal (Maybe Rational) -> ObjectSpec -> ObjectSpec
 setOpacity s v = v { opacity = s }
