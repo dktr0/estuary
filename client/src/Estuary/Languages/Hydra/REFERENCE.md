@@ -3,7 +3,9 @@
 ## Parameters
 double <br />
 list of doubles = [] <br />
-  .fast(amount) -- as a transformer of list <br />
+  -- Lists' tranformers: <br />
+  .fast(amount) -- default: 1 <br />
+  .smooth(amount) -- default: 1 <br />
 
 
 ## Sources

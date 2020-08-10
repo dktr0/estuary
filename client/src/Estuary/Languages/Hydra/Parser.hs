@@ -154,16 +154,42 @@ methodWithSourceAndParameters methodName constructor = try $ do
 
 parameters :: Parser Parameters
 parameters =
+  methodForLists "fast" Fast <|>
+  methodForLists "smooth" Smooth <|>
   Parameters <$> try (brackets (commaSep double)) <|>
   (Parameters . return) <$> double
 
-fast :: Parser Parameters -- [].fast()
-fast = do
-  l <- brackets (commaSep double)
+
+methodForLists :: String -> ([Double] -> [Double] -> Parameters) -> Parser Parameters
+methodForLists methodName constructor = try $ do
+  l <- brackets $ commaSep double
   reservedOp "."
-  reserved "fast"
-  p <- parens $ double
-  return $ Fast l p
+  reservedOp methodName
+  p <- parens $ commaSep double
+  return $ constructor l p
+
+
+-- parameters :: Parser Parameters
+-- parameters =
+--   transformationParameters <|>
+--   Parameters <$> try (brackets (commaSep double)) <|>
+--   (Parameters . return) <$> double
+--
+-- transformationParameters :: Parser Parameters
+-- transformationParameters = do
+--   x <- brackets (commaSep double)
+--   fs <- many $ choice [
+--     methodForLists "fast" Fast,
+--     methodForLists "smooth" Smooth
+--     ]
+--   return $ (foldl (.) id $ reverse fs) x
+--
+-- methodForLists :: String -> ([Double] -> [Double] -> Parameters) -> Parser Parameters
+-- methodForLists methodName constructor = try $ do
+--   reservedOp "."
+--   reservedOp methodName
+--   p <- parens $ commaSep double
+--   return $ constructor p
 
 double :: Parser Double
 double = choice [

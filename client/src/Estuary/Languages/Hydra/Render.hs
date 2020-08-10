@@ -31,16 +31,41 @@ newtype JSParameters = JSParameters JSVal
 instance PToJSVal JSParameters where pToJSVal (JSParameters x) = x
 instance PFromJSVal JSParameters where pFromJSVal = JSParameters
 
+doubleListToJSVal :: [Double] -> JSVal
+doubleListToJSVal [] = _l0
+doubleListToJSVal (x:[]) = _l1 x
+doubleListToJSVal (x:y:[]) = _l2 x y
+doubleListToJSVal (x:y:z:_) = _l3 x y z
+
+foreign import javascript safe "[]" _l0 :: JSVal
+foreign import javascript safe "[$1]" _l1 :: Double -> JSVal
+foreign import javascript safe "[$1,$2]" _l2 :: Double -> Double -> JSVal
+foreign import javascript safe "[$1,$2,$3]" _l3 :: Double -> Double -> Double -> JSVal
+
+
 parametersToJS :: Parameters -> JSParameters
 parametersToJS (Parameters []) = _list0
 parametersToJS (Parameters (x:[])) = _list1 x
 parametersToJS (Parameters (x:y:[])) = _list2 x y
 parametersToJS (Parameters (x:y:z:_)) = _list3 x y z
+parametersToJS (Fast [] []) = _fast0 -- "[].fast()"
+parametersToJS (Fast xs []) = _fast1 (doubleListToJSVal xs) -- "$1.fast()"
+parametersToJS (Fast xs (x:_)) = _fast2 (doubleListToJSVal xs) (pToJSVal x) -- "$1.fast($2)"
+parametersToJS (Smooth [] []) = _smooth0
+parametersToJS (Smooth xs []) = _smooth1 (doubleListToJSVal xs)
+parametersToJS (Smooth xs (x:_)) = _smooth2 (doubleListToJSVal xs) (pToJSVal x)
+
 
 foreign import javascript safe "[]" _list0 :: JSParameters
 foreign import javascript safe "[$1]" _list1 :: Double -> JSParameters
 foreign import javascript safe "[$1,$2]" _list2 :: Double -> Double -> JSParameters
 foreign import javascript safe "[$1,$2,$3]" _list3 :: Double -> Double -> Double -> JSParameters
+foreign import javascript safe "[].fast()" _fast0 :: JSParameters
+foreign import javascript safe "$1.fast()" _fast1 :: JSVal -> JSParameters
+foreign import javascript safe "$1.fast($2)" _fast2 :: JSVal -> JSVal -> JSParameters
+foreign import javascript safe "[].smooth()" _smooth0 :: JSParameters
+foreign import javascript safe "$1.smooth()" _smooth1 :: JSVal -> JSParameters
+foreign import javascript safe "$1.smooth($2)" _smooth2 :: JSVal -> JSVal -> JSParameters
 
 
 newtype JSSource = JSSource JSVal
