@@ -17,8 +17,8 @@ import qualified Estuary.Types.Term as Term
 
 import qualified Sound.Punctual.Resolution as Punctual
 
-configWidget :: MonadWidget t m => Editor t m (Event t ContextChange)
-configWidget = do
+configWidget :: MonadWidget t m => Dynamic t Context -> Editor t m (Event t ContextChange)
+configWidget ctx = do
 
   canvasEnabledEv <- divClass "config-option primary-color ui-font" $ do
     text "Canvas: "
@@ -94,6 +94,6 @@ configWidget = do
 
   viewEditor <- divClass "config-option primary-color ui-font" $ do
     el "h3" $ text "View Editor"
-    viewEditor
+    viewEditor ctx
 
   return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv]
