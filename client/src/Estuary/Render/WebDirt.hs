@@ -69,10 +69,10 @@ audioResourceTest wd = do
   let url = "samples/cp/HANDCLP0.wav"
   ar <- liftIO $ audioResourceFromMeta $ AudioMeta url 0.0
   w <- button "preload"
-  performEvent_ $ ffor w (const $ liftIO $ load ar)
+  performEvent_ $ ffor w (const $ liftIO $ (load ar >> return ()))
   x <- button "play"
   performEvent_ $ ffor x (const $ liftIO $ do
-    y <- access ar
+    y <- load ar
     case y of
       Right j -> do
         putStrLn "playing buffer"

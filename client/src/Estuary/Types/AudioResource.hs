@@ -31,47 +31,47 @@ audioResourceFromMeta x = do
   }
 
 instance Loadable AudioResource where
-
   load x = do
-    ls <- readIORef $ audioLoadStatus x
-    case ls of
-      NotLoaded -> do
-        let url = audioURL $ audioMeta x
-        writeIORef (audioLoadStatus x) Loading
-        T.putStrLn $ "loading " <> url
-        let url = audioURL $ audioMeta x
-        r <- arraybufferXMLHttpRequest url
-        cbLoad <- asyncCallback $ do
-          cbSuccess <- asyncCallback1 $ \y -> do
-            writeIORef (audioJSVal x) y
-            writeIORef (audioLoadStatus x) Loaded
-            T.putStrLn $ "loaded " <> url
-          cbError <- asyncCallback1 $ \y -> do
-            writeIORef (audioLoadStatus x) (LoadError "decoding error")
-            T.putStrLn $ "error decoding " <> url
-          ac <- getGlobalAudioContext
-          decodeAudioData ac r cbSuccess cbError
-          return ()
-        onLoad r cbLoad
-        cbError <- asyncCallback $ do
-          let e = "error loading " <> url
-          writeIORef (audioLoadStatus x) $ LoadError e
-          T.putStrLn e
-          return ()
-        onError r cbError
-        send r
-      _ -> return ()
-
-  access x = do
     s <- readIORef $ audioLoadStatus x
     case s of
       Loaded -> do
         j <- readIORef $ audioJSVal x
         return $ Right j
       NotLoaded -> do
-        load x
+        loadAudioResource x
         return $ Left s
       _ -> return $ Left s
+
+loadAudioResource :: AudioResource -> IO ()
+loadAudioResource x = do
+  ls <- readIORef $ audioLoadStatus x
+  case ls of
+    NotLoaded -> do
+      let url = audioURL $ audioMeta x
+      writeIORef (audioLoadStatus x) Loading
+      T.putStrLn $ "loading " <> url
+      let url = audioURL $ audioMeta x
+      r <- arraybufferXMLHttpRequest url
+      cbLoad <- asyncCallback $ do
+        cbSuccess <- asyncCallback1 $ \y -> do
+          writeIORef (audioJSVal x) y
+          writeIORef (audioLoadStatus x) Loaded
+          T.putStrLn $ "loaded " <> url
+        cbError <- asyncCallback1 $ \y -> do
+          writeIORef (audioLoadStatus x) (LoadError "decoding error")
+          T.putStrLn $ "error decoding " <> url
+        ac <- getGlobalAudioContext
+        decodeAudioData ac r cbSuccess cbError
+        return ()
+      onLoad r cbLoad
+      cbError <- asyncCallback $ do
+        let e = "error loading " <> url
+        writeIORef (audioLoadStatus x) $ LoadError e
+        T.putStrLn e
+        return ()
+      onError r cbError
+      send r
+    _ -> return ()
 
 
 newtype XMLHttpRequest = XMLHttpRequest JSVal
