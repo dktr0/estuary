@@ -45,6 +45,7 @@ loadSampleMapAsync url onLoad = do
             T.putStrLn "*ERROR* null/undefined sample map in loadSampleMapAsync"
             onLoad Nothing
           else do
+            logJSVal j
             v <- fromJSValUnchecked j
             case fromJSON (v :: Value) of
               Error e -> do
@@ -56,6 +57,9 @@ loadSampleMapAsync url onLoad = do
         releaseCallback cb
   js_loadSamplesAsync url cb
 
+foreign import javascript safe
+  "console.log($1)"
+  logJSVal :: JSVal -> IO ()
 
 
 ------------------------------------------

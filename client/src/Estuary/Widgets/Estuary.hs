@@ -55,6 +55,7 @@ import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Sidebar
+import Estuary.Types.ResourceMap
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -120,8 +121,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  -- samplesLoadedEv <- loadSampleMap
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange, sidebarChange]
+  audioMapEv <- loadAudioMap
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, audioMapEv, wsCtxChange, sidebarChange]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -186,18 +187,19 @@ pollRenderInfo riM = do
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 
-{-
--- load the sample map and issue an appropriate ContextChange event when finished
--- (if there is a better way to trigger an event from an async callback then this should be updated to reflect that)
-loadSampleMap :: MonadWidget t m => m (Event t ContextChange)
-loadSampleMap = do
+
+loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
+loadAudioMap = do
   postBuild <- getPostBuild
   performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
+    putStrLn "loadAudioMap..."
     loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
       case maybeMap of
-        Nothing -> return () -- Couldn't load the map
-        Just map -> triggerEv $ setSampleMap map
--}
+        Nothing -> putStrLn "loadAudioMap couldn't load sample map"
+        Just map -> do
+          putStrLn "loadAudioMap (estuary) succeeded"
+          map' <- sampleMapToAudioMap map
+          triggerEv $ setAudioMap map'
 
 
 -- whenever the Dynamic representation of the Context changes, translate that
