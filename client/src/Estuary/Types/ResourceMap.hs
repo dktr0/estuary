@@ -39,4 +39,4 @@ sampleMapToAudioMap sm = mapM audioResourceFromMeta c
   where
     a = fmap ((zip [0..]) . toList) $ unSampleMap sm -- :: Map Text [(Int,Text)]
     b = concat $ Map.elems $ Map.mapWithKey (\x ys -> fmap (\(y,url) -> ((x,y),url)) ys) a
-    c = fmap (\url -> AudioMeta url 0.0) $ Map.fromList b
+    c = fmap (\url -> AudioMeta ("samples/" <> url) 0.0) $ Map.fromList b

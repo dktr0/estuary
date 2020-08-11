@@ -29,6 +29,7 @@ import Sound.OSC.Datum
 import Text.Parsec (ParseError)
 import qualified Data.ByteString as B
 import GHCJS.DOM.Types (HTMLCanvasElement)
+import Data.Witherable
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Punctual.Program as Punctual
@@ -107,14 +108,12 @@ flushEvents irc c = do
   s <- get
   when (webDirtOn c) $ liftIO $ do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
-    let f = first (utcTimeToAudioSeconds cDiff)
-    noteEvents' <- mapM mapToWebDirtMessage $ fmap f (noteEvents s)
-    tidalEvents' <- mapM controlMapToWebDirtMessage $ fmap f (tidalEvents s)
+    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal (audioMap c) cDiff) $ noteEvents s
+    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal (audioMap c) cDiff) $ tidalEvents s
     mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents'
   when (superDirtOn c) $ liftIO $ do
-    let f = first (realToFrac . utcTimeToPOSIXSeconds)
-    noteEvents' <- mapM mapToWebDirtMessage $ fmap f (noteEvents s)
-    tidalEvents' <- mapM controlMapToWebDirtMessage $ fmap f (tidalEvents s)
+    noteEvents' <- mapM (SuperDirt.noteEventToSuperDirtJSVal (audioMap c)) $ noteEvents s
+    tidalEvents' <- mapM (SuperDirt.tidalEventToSuperDirtJSVal (audioMap c)) $ tidalEvents s
     mapM_ (SuperDirt.playSample (superDirt irc)) $ noteEvents' ++ tidalEvents'
   modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
   return ()

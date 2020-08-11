@@ -199,6 +199,7 @@ loadAudioMap = do
         Just map -> do
           putStrLn "loadAudioMap (estuary) succeeded"
           map' <- sampleMapToAudioMap map
+          putStrLn $ show map'
           triggerEv $ setAudioMap map'
 
 

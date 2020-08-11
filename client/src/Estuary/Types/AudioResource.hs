@@ -20,6 +20,9 @@ data AudioResource = AudioResource {
   audioJSVal :: IORef JSVal
   }
 
+instance Show AudioResource where
+  show = show . audioMeta
+
 audioResourceFromMeta :: AudioMeta -> IO AudioResource
 audioResourceFromMeta x = do
   y <- newIORef NotLoaded
