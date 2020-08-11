@@ -45,15 +45,16 @@ loadSampleMapAsync url onLoad = do
             T.putStrLn "*ERROR* null/undefined sample map in loadSampleMapAsync"
             onLoad Nothing
           else do
-            logJSVal j
+            -- logJSVal j
             v <- fromJSValUnchecked j
+            -- putStrLn $ show v
             case fromJSON (v :: Value) of
               Error e -> do
                 putStrLn $ "*ERROR* can't decode sample map in loadSampleMapAsync: " ++ e
                 onLoad Nothing
               Success map -> do
                 T.putStrLn "loadSampleMapAsync (sample map decode okay)"
-                onLoad $ Just map
+                onLoad $ Just $ SampleMap map
         releaseCallback cb
   js_loadSamplesAsync url cb
 
@@ -71,7 +72,7 @@ foreign import javascript safe
   "var xhr = new XMLHttpRequest();                 \n\
   \xhr.open('GET', $1, true);                      \n\
   \xhr.responseType = 'text';                      \n\
-  \xhr.onload  = function() { $2(xhr.response); }; \n\
+  \xhr.onload  = function() { $2(JSON.parse(xhr.responseText)); }; \n\
   \xhr.onabort = function() { $2(null); };         \n\
   \xhr.onerror = function() { $2(null); };         \n\
   \xhr.send();                                      "
