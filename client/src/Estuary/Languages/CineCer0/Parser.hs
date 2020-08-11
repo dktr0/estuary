@@ -32,27 +32,27 @@ _0Arg p = p <|> fmap fst (functionApplication p $ reserved "_0")
 
 spec :: UTCTime -> H Spec
 spec eTime = do
-  os <- fmap (fromList . zip [0..] . catMaybes) $ list maybeObjectSpec
+  os <- fmap (fromList . zip [0..] . catMaybes) $ list maybeLayerSpec
   return $ Spec {
     evalTime = eTime,
-    objectSpecMap = os
+    layerSpecMap = os
   }
 
-maybeObjectSpec :: H (Maybe ObjectSpec)
-maybeObjectSpec = _0Arg $
-  (Just <$> objectSpec) <|>
+maybeLayerSpec :: H (Maybe LayerSpec)
+maybeLayerSpec = _0Arg $
+  (Just <$> layerSpec) <|>
   Nothing <$ reserved "_0"
 
-objectSpec :: H ObjectSpec
-objectSpec = _0Arg $
-  (vs_vs <*> objectSpec) <|> 
-  (objectSpecFunc <*> string) <|>
-  (fmap stringToObjectSpec string)
+layerSpec :: H LayerSpec
+layerSpec = _0Arg $
+  (vs_vs <*> layerSpec) <|> 
+  (layerSpecFunc <*> string) <|>
+  (fmap stringToLayerSpec string)
 
-objectSpecFunc :: H (String -> ObjectSpec)
-objectSpecFunc =
-  textToObjectSpec <$ reserved "text" <|>
-  videoToObjectSpec <$ reserved "video"
+layerSpecFunc :: H (String -> LayerSpec)
+layerSpecFunc =
+  textToLayerSpec <$ reserved "text" <|>
+  videoToLayerSpec <$ reserved "video"
 
 
 -- //////////////
@@ -79,6 +79,8 @@ rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
 ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
 ndt_rat_rat_sigMayRat = ramp2 <$ reserved "ramp"
 
+sigStr :: H (Signal String)
+sigStr = constantSignal <$> string
 
 sigRat :: H (Signal Rational)
 sigRat =
@@ -96,15 +98,17 @@ ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
 -- //////////////
 
-vs_vs :: H (ObjectSpec -> ObjectSpec)
+vs_vs :: H (LayerSpec -> LayerSpec)
 vs_vs =
   sigRat_vs_vs <*> sigRat <|>
   sigMayRat_vs_vs <*> sigMayRat <|>
-  rat_vs_vs <*> rationalOrInteger -- <|>
+  rat_vs_vs <*> rationalOrInteger <|>
+  sigStr_vs_vs <*> sigStr
+  -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)
 
-sigMayRat_vs_vs :: H (Signal (Maybe Rational) -> ObjectSpec -> ObjectSpec)
+sigMayRat_vs_vs :: H (Signal (Maybe Rational) -> LayerSpec -> LayerSpec)
 sigMayRat_vs_vs =
   setOpacity <$ reserved "setOpacity" <|>
   shiftOpacity <$ reserved "opacity" <|>
@@ -119,7 +123,7 @@ sigMayRat_vs_vs =
   setSaturate <$ reserved "setSaturate" <|>
   shiftSaturate <$ reserved "saturate"
 
-sigRat_vs_vs :: H (Signal Rational -> ObjectSpec -> ObjectSpec)
+sigRat_vs_vs :: H (Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_vs_vs =
   setPosX <$ reserved "setPosX" <|>
   shiftPosX <$ reserved "posX" <|>
@@ -136,28 +140,28 @@ sigRat_vs_vs =
   setVolume <$ reserved "vol" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
-sigStr_vs_vs :: H (Signal String -> ObjectSpec -> ObjectSpec)
+sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
 sigStr_vs_vs =
   setFontFamily <$ reserved "font"
 
-sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> ObjectSpec -> ObjectSpec)
+sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_vs_vs =
   setCoord <$ reserved "setCoord" <|>
   shiftCoord <$ reserved "coord" <|>
   sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
-sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> ObjectSpec -> ObjectSpec)
+sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_vs_vs =
   circleMask' <$ reserved "circleMask'" <|>
   sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
-sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> ObjectSpec -> ObjectSpec)
+sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_sigRat_vs_vs =
   rectMask <$ reserved "rectMask"
 
 -- ////
 
-rat_vs_vs :: H (Rational -> ObjectSpec -> ObjectSpec)
+rat_vs_vs :: H (Rational -> LayerSpec -> LayerSpec)
 rat_vs_vs =
   playNatural <$ reserved "natural" <|>
   playSnap <$ reserved "snap" <|>
@@ -165,29 +169,29 @@ rat_vs_vs =
   rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_vs_vs <*> ndt
 
-rat_rat_vs_vs :: H (Rational -> Rational -> ObjectSpec -> ObjectSpec)
+rat_rat_vs_vs :: H (Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_rat_vs_vs <*> ndt <|>
   quant <$ reserved "quant"
 
-rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> ObjectSpec -> ObjectSpec)
+rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_rat_vs_vs =
   playChop' <$ reserved "chop'" <|>
   rat_rat_rat_rat_vs_vs <*> rationalOrInteger
 
-rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> ObjectSpec -> ObjectSpec)
+rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_rat_rat_vs_vs =
   playChop <$ reserved "chop"
 
-ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> ObjectSpec -> ObjectSpec)
+ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> LayerSpec -> LayerSpec)
 ndt_rat_vs_vs =
   playNow <$ reserved "now"
 
-ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> ObjectSpec -> ObjectSpec)
+ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
 ndt_rat_rat_vs_vs =
   ndt_ndt_rat_rat_vs_vs <*> ndt
 
-ndt_ndt_rat_rat_vs_vs :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> ObjectSpec -> ObjectSpec)
+ndt_ndt_rat_rat_vs_vs :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
 ndt_ndt_rat_rat_vs_vs = playChopSecs <$ reserved "chopSecs" -- time function

@@ -7,14 +7,14 @@ import Estuary.Languages.CineCer0.VideoSpec
 
 data Spec = Spec {
   evalTime :: UTCTime,
-  objectSpecMap :: IntMap ObjectSpec 
+  layerSpecMap :: IntMap LayerSpec 
   }
 
 instance Show Spec where
-  show s = show (objectSpecMap s)
+  show s = show (layerSpecMap s)
 
 emptySpec :: UTCTime -> Spec
 emptySpec t = Spec {
   evalTime = t,
-  objectSpecMap = empty
+  layerSpecMap = empty
   }
