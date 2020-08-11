@@ -2,8 +2,8 @@ module Estuary.Languages.Hydra.Types where
 
 data Parameters =
   Parameters [Double] | -- [0.2,0.4] -- [0.3,0.4,1.0]
-  Fast [Double] [Double] | -- [].fast(1.5) not yet implemented
-  Smooth [Double] [Double] -- not yet implemented i.e. [].smooth = 0.5
+  Fast [Double] Parameters | -- [].fast(1.5)
+  Smooth [Double] Parameters -- [].smooth(1.5) -- [].fast().smooth()
   deriving (Show)
 
 data Source =
@@ -63,6 +63,6 @@ data Output =
 
 data Statement =
   Out Source Output |
-  Render Output
-  --Speed [Parameters] -- not yet implemented i.e. speed = 1.5
+  Render Output |
+  Speed Parameters -- not yet implemented i.e. speed = 1.5
   deriving (Show)

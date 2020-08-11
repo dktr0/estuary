@@ -43,14 +43,16 @@ output = try $ parens $ choice [
   ]
 
 renderStatement :: Parser Statement
-renderStatement = Render <$> (reserved "render" >> output)
+renderStatement =
+  Render <$> (reserved "render" >> output) <|>
+  speedStatement
 
--- speedStatement :: Parser Statement
--- speedStatement = do
---   reserved "speed"
---   reservedOp "="
---   p <- double
---   return $ Speed p
+speedStatement :: Parser Statement -- speed=0.5 or speed = 0.5
+speedStatement = do
+  reserved "speed"
+  reservedOp "="
+  p <- (Parameters . return) <$> double
+  return $ Speed p
 
 source :: Parser Source
 source = do
@@ -152,44 +154,42 @@ methodWithSourceAndParameters methodName constructor = try $ do
     return (s,ps)
   return $ constructor s ps
 
-parameters :: Parser Parameters
-parameters =
-  methodForLists "fast" Fast <|>
-  methodForLists "smooth" Smooth <|>
-  Parameters <$> try (brackets (commaSep double)) <|>
-  (Parameters . return) <$> double
-
-
-methodForLists :: String -> ([Double] -> [Double] -> Parameters) -> Parser Parameters
-methodForLists methodName constructor = try $ do
-  l <- brackets $ commaSep double
-  reservedOp "."
-  reservedOp methodName
-  p <- parens $ commaSep double
-  return $ constructor l p
-
-
 -- parameters :: Parser Parameters
 -- parameters =
---   transformationParameters <|>
+--   methodForLists "fast" Fast <|>
+--   methodForLists "smooth" Smooth <|>
 --   Parameters <$> try (brackets (commaSep double)) <|>
 --   (Parameters . return) <$> double
 --
--- transformationParameters :: Parser Parameters
--- transformationParameters = do
---   x <- brackets (commaSep double)
---   fs <- many $ choice [
---     methodForLists "fast" Fast,
---     methodForLists "smooth" Smooth
---     ]
---   return $ (foldl (.) id $ reverse fs) x
 --
 -- methodForLists :: String -> ([Double] -> [Double] -> Parameters) -> Parser Parameters
 -- methodForLists methodName constructor = try $ do
+--   l <- brackets $ commaSep double
 --   reservedOp "."
 --   reservedOp methodName
 --   p <- parens $ commaSep double
---   return $ constructor p
+--   return $ constructor l p
+
+parameters :: Parser Parameters
+parameters =
+  transformationParameters <|>
+  (Parameters . return) <$> double
+
+transformationParameters :: Parser Parameters
+transformationParameters = do
+  x <- Parameters <$> try (brackets (commaSep double))
+  fs <- many $ choice [
+    methodForLists "fast" Fast,
+    methodForLists "smooth" Smooth
+    ]
+  return $ (foldl (.) id $ reverse fs) x
+
+methodForLists :: String -> ([Double] -> Parameters -> Parameters) -> Parser (Parameters -> Parameters)
+methodForLists methodName constructor = try $ do
+  reservedOp "."
+  reservedOp methodName
+  p <- parens $ commaSep double
+  return $ constructor p
 
 double :: Parser Double
 double = choice [
@@ -211,7 +211,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opStart = oneOf ".",
   P.opLetter = oneOf ".",
   P.reservedNames = [
-    "out","render", "fast", "speed",
+    "out","render", "fast", "smooth", "speed",
     "osc","solid","gradient","noise","shape","voronoi",
     "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
     "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",

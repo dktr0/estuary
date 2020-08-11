@@ -7,6 +7,9 @@ list of doubles = [] <br />
   .fast(amount) -- default: 1 <br />
   .smooth(amount) -- default: 1 <br />
 
+## Statements
+-- Each statement is divided by a semicolon <br />
+speed = double -- default: 1 <br />
 
 ## Sources
 

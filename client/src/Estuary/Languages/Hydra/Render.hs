@@ -31,52 +31,34 @@ newtype JSParameters = JSParameters JSVal
 instance PToJSVal JSParameters where pToJSVal (JSParameters x) = x
 instance PFromJSVal JSParameters where pFromJSVal = JSParameters
 
-doubleListToJSVal :: [Double] -> JSVal
-doubleListToJSVal [] = _l0
-doubleListToJSVal (x:[]) = _l1 x
-doubleListToJSVal (x:y:[]) = _l2 x y
-doubleListToJSVal (x:y:z:_) = _l3 x y z
-
-foreign import javascript safe "[]" _l0 :: JSVal
-foreign import javascript safe "[$1]" _l1 :: Double -> JSVal
-foreign import javascript safe "[$1,$2]" _l2 :: Double -> Double -> JSVal
-foreign import javascript safe "[$1,$2,$3]" _l3 :: Double -> Double -> Double -> JSVal
-
-
 parametersToJS :: Parameters -> JSParameters
 parametersToJS (Parameters []) = _list0
 parametersToJS (Parameters (x:[])) = _list1 x
 parametersToJS (Parameters (x:y:[])) = _list2 x y
 parametersToJS (Parameters (x:y:z:_)) = _list3 x y z
-parametersToJS (Fast [] []) = _fast0 -- "[].fast()"
-parametersToJS (Fast xs []) = _fast1 (doubleListToJSVal xs) -- "$1.fast()"
-parametersToJS (Fast xs (x:_)) = _fast2 (doubleListToJSVal xs) (pToJSVal x) -- "$1.fast($2)"
-parametersToJS (Smooth [] []) = _smooth0
-parametersToJS (Smooth xs []) = _smooth1 (doubleListToJSVal xs)
-parametersToJS (Smooth xs (x:_)) = _smooth2 (doubleListToJSVal xs) (pToJSVal x)
+parametersToJS (Fast [] xs) = _fast1 (parametersToJS xs) -- "$1.fast()"
+parametersToJS (Fast (x:_) xs) = _fast2 (parametersToJS xs) (pToJSVal x) -- "$1.fast($2)"
+parametersToJS (Smooth [] xs) = _smooth1 (parametersToJS xs)
+parametersToJS (Smooth (x:_) xs) = _smooth2 (parametersToJS xs) (pToJSVal x)
 
 
 foreign import javascript safe "[]" _list0 :: JSParameters
 foreign import javascript safe "[$1]" _list1 :: Double -> JSParameters
 foreign import javascript safe "[$1,$2]" _list2 :: Double -> Double -> JSParameters
 foreign import javascript safe "[$1,$2,$3]" _list3 :: Double -> Double -> Double -> JSParameters
-foreign import javascript safe "[].fast()" _fast0 :: JSParameters
-foreign import javascript safe "$1.fast()" _fast1 :: JSVal -> JSParameters
-foreign import javascript safe "$1.fast($2)" _fast2 :: JSVal -> JSVal -> JSParameters
-foreign import javascript safe "[].smooth()" _smooth0 :: JSParameters
-foreign import javascript safe "$1.smooth()" _smooth1 :: JSVal -> JSParameters
-foreign import javascript safe "$1.smooth($2)" _smooth2 :: JSVal -> JSVal -> JSParameters
+foreign import javascript safe "$1.fast()" _fast1 :: JSParameters -> JSParameters
+foreign import javascript safe "$1.fast($2)" _fast2 :: JSParameters -> JSVal -> JSParameters
+foreign import javascript safe "$1.smooth()" _smooth1 :: JSParameters -> JSParameters
+foreign import javascript safe "$1.smooth($2)" _smooth2 :: JSParameters -> JSVal -> JSParameters
 
 
 newtype JSSource = JSSource JSVal
 instance PToJSVal JSSource where pToJSVal (JSSource x) = x
 instance PFromJSVal JSSource where pFromJSVal = JSSource
 
-jsOutputToJSSource :: JSOutput -> JSSource
-jsOutputToJSSource = pFromJSVal . pToJSVal
 
 sourceToJS :: Hydra -> Source -> JSSource
-sourceToJS h (OutputAsSource x) = jsOutputToJSSource $ outputToJS h x
+sourceToJS h (OutputAsSource x) = outputToJSSource h x
 sourceToJS h (Osc []) = _osc0 h
 sourceToJS h (Osc (x:[])) = _osc1 h (parametersToJS x)
 sourceToJS h (Osc (x:y:[])) = _osc2 h (parametersToJS x) (parametersToJS y)
@@ -340,21 +322,34 @@ newtype JSOutput = JSOutput JSVal
 instance PToJSVal JSOutput where pToJSVal (JSOutput x) = x
 instance PFromJSVal JSOutput where pFromJSVal = JSOutput
 
-outputToJS :: Hydra -> Output -> JSOutput
-outputToJS h O0 = _o0 h
-outputToJS h O1 = _o1 h
-outputToJS h O2 = _o2 h
-outputToJS h O3 = _o3 h
+outputToJSSource :: Hydra -> Output -> JSSource
+outputToJSSource h O0 = _oToJSs0 h
+outputToJSSource h O1 = _oToJSs1 h
+outputToJSSource h O2 = _oToJSs2 h
+outputToJSSource h O3 = _oToJSs3 h
 
-foreign import javascript safe "$1.output.o0" _o0 :: Hydra -> JSOutput
-foreign import javascript safe "$1.output.o1" _o1 :: Hydra -> JSOutput
-foreign import javascript safe "$1.output.o2" _o2 :: Hydra -> JSOutput
-foreign import javascript safe "$1.output.o3" _o3 :: Hydra -> JSOutput
+foreign import javascript safe "$1.synth.o[0]" _oToJSs0 :: Hydra -> JSSource
+foreign import javascript safe "$1.synth[o.1]" _oToJSs1 :: Hydra -> JSSource
+foreign import javascript safe "$1.synth[o2]" _oToJSs2 :: Hydra -> JSSource
+foreign import javascript safe "$1.synth[o3]" _oToJSs3 :: Hydra -> JSSource
+
+
+outputToJS :: Hydra -> Output -> JSOutput
+outputToJS h O0 = _oToJSo0 h
+outputToJS h O1 = _oToJSo1 h
+outputToJS h O2 = _oToJSo2 h
+outputToJS h O3 = _oToJSo3 h
+
+foreign import javascript safe "$1.o[0]" _oToJSo0 :: Hydra -> JSOutput
+foreign import javascript safe "$1.o[1]" _oToJSo1 :: Hydra -> JSOutput
+foreign import javascript safe "$1.o[2]" _oToJSo2 :: Hydra -> JSOutput
+foreign import javascript safe "$1.o[3]" _oToJSo3 :: Hydra -> JSOutput
 
 
 evaluateStatement :: Hydra -> Statement -> IO ()
 evaluateStatement h (Out s o) = _out (sourceToJS h s) (outputToJS h o)
 evaluateStatement h (Render o) = _render h (outputToJS h o)
+evaluateStatement h (Speed x) = _speed h (parametersToJS x) -- speed = 0.5
 
 foreign import javascript safe
   "$1.out($2);"
@@ -363,3 +358,7 @@ foreign import javascript safe
 foreign import javascript safe
   "$1.synth.render($2);"
   _render :: Hydra -> JSOutput -> IO ()
+
+foreign import javascript safe
+  "$1.synth.speed=$2;"
+  _speed :: Hydra -> JSParameters -> IO ()
