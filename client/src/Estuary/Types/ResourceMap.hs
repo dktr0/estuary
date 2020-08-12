@@ -27,6 +27,14 @@ access l m = case (Map.lookup l m) of
   Just x -> load x
   Nothing -> return (Left $ LoadError $ "no resource at location " <> T.pack (show l))
 
+-- append takes half of a location - just the bank name - and inserts it into the
+-- specified bank at the lowest vacant n (>=0), returning the new map
+append :: Text -> a -> ResourceMap a -> ResourceMap a
+append bankName a m = Map.insert (bankName,n) a m
+  where
+    prevNs = fmap snd $ Prelude.filter (\(x,y) -> x == bankName) $ Map.keys m
+    n = maybe 0 id $ find (not . (flip elem $ prevNs)) [0..]
+
 emptyResourceMap :: ResourceMap a
 emptyResourceMap = Map.empty
 

@@ -30,8 +30,9 @@ data Command =
   ShowTempo | -- for testing, displays current tempo in terminal
   SetCPS Double |
   SetBPM Double |
-  InsertAudioResource Text Text Int | -- [url] [bankName] [n]
-  DeleteAudioResource Text Int -- [bankName] [n]
+  InsertAudioResource Text Text Int | -- "url" [bankName] [n]
+  DeleteAudioResource Text Int | -- [bankName] [n]
+  AppendAudioResource Text Text -- "url" [bankName]
   deriving (Show,Eq)
 
 parseCommand :: Text -> Either ParseError Command
@@ -62,7 +63,8 @@ terminalCommand = symbol "!" >> choice [
   (reserved "setcps" >> return SetCPS) <*> double,
   (reserved "setbpm" >> return SetBPM) <*> double,
   (reserved "insertaudioresource" >> return InsertAudioResource) <*> textLiteral <*> identifierText <*> int,
-  (reserved "deleteaudioresource" >> return DeleteAudioResource) <*> identifierText <*> int
+  (reserved "deleteaudioresource" >> return DeleteAudioResource) <*> identifierText <*> int,
+  (reserved "appendaudioresource" >> return AppendAudioResource) <*> textLiteral <*> identifierText
   ]
 
 identifierText :: Parser Text
@@ -100,7 +102,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
     "localview","presetview","publishview","activeview","listviews",
     "dumpview","startstreaming","streamid","delay","deletethisensemble",
     "deleteensemble","ancienttempo","showtempo","setcps","setbpm",
-    "insertaudioresource","deleteaudioresource"
+    "insertaudioresource","deleteaudioresource","appendaudioresource"
     ],
   P.reservedOpNames = [],
   P.caseSensitive = False

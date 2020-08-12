@@ -5,7 +5,7 @@ module Estuary.Widgets.Estuary where
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault)
+import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault,append)
 import Reflex.Dom.Contrib.KeyEvent
 import Reflex.Dom.Old
 import Data.Time
@@ -78,9 +78,6 @@ keyEventToHint _ = Nothing
 
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
-
-  -- temporary, just for testing
-  divClass "config-entry display-inline-block primary-color ui-font" $ audioResourceTest (webDirt irc)
 
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   (cvsElement,glCtx) <- canvasWidget ctx -- canvas for Punctual
@@ -263,4 +260,7 @@ commandToContextChangeIO (Terminal.InsertAudioResource url bankName n) = Just $ 
   return $ \x -> x { audioMap = insert (bankName,n) res (audioMap x)}
 commandToContextChangeIO (Terminal.DeleteAudioResource bankName n) = Just $ do
   return $ \x -> x { audioMap = delete (bankName,n) (audioMap x)}
+commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
+  res <- audioResourceFromMeta $ AudioMeta url 0
+  return $ \x -> x { audioMap = append bankName res (audioMap x)}
 commandToContextChangeIO _ = Nothing
