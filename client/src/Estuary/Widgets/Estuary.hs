@@ -56,6 +56,8 @@ import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Sidebar
 import Estuary.Types.ResourceMap
+import Estuary.Types.AudioResource
+import Estuary.Types.AudioMeta
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -122,7 +124,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   audioMapEv <- loadAudioMap
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, audioMapEv, wsCtxChange, sidebarChange]
+  terminalContextChangeIO <- performEvent $ fmap liftIO $ fmapMaybe commandToContextChangeIO command
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, audioMapEv, wsCtxChange, sidebarChange,terminalContextChangeIO]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -253,3 +256,11 @@ commandToRequest :: Terminal.Command -> Maybe Request
 commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
 commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
 commandToRequest _ = Nothing
+
+commandToContextChangeIO :: Terminal.Command -> Maybe (IO ContextChange)
+commandToContextChangeIO (Terminal.InsertAudioResource url bankName n) = Just $ do
+  res <- audioResourceFromMeta $ AudioMeta url 0
+  return $ \x -> x { audioMap = insert (bankName,n) res (audioMap x)}
+commandToContextChangeIO (Terminal.DeleteAudioResource bankName n) = Just $ do
+  return $ \x -> x { audioMap = delete (bankName,n) (audioMap x)}
+commandToContextChangeIO _ = Nothing
