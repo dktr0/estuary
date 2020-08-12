@@ -14,11 +14,12 @@ import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
+import Estuary.Types.RenderInfo
 
 import qualified Sound.Punctual.Resolution as Punctual
 
-configWidget :: MonadWidget t m => Dynamic t Context -> Editor t m (Event t ContextChange)
-configWidget ctx = do
+configWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Editor t m (Event t ContextChange)
+configWidget ctx ri = do
 
   canvasEnabledEv <- divClass "config-option primary-color ui-font" $ do
     text "Canvas: "
@@ -94,6 +95,7 @@ configWidget ctx = do
 
   viewEditorChange <- divClass "config-option primary-color ui-font" $ do
     el "h3" $ text "View Editor"
-    viewEditor ctx
+    (result,_) <- runEditor ctx ri $ viewEditor ctx
+    return result
 
   return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange]
