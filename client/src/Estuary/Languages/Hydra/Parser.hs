@@ -74,7 +74,7 @@ source = do
     methodWithParameters "posterize" Posterize,
     methodWithParameters "saturate" Saturate,
     methodWithParameters "shift" Shift,
-    methodWithParameters "tresh" Thresh,
+    methodWithParameters "thresh" Thresh,
     methodWithParameters "kaleid" Kaleid,
     methodWithParameters "pixelate" Pixelate,
     methodWithParameters "repeat" Repeat,
@@ -107,7 +107,7 @@ source = do
 
 sourceAsArgument :: Parser Source
 sourceAsArgument = try $ choice [
-  outputAsSource, --o0
+  --outputAsSource, --o0,o1,o2,o3
   source -- osc()
   ]
 
@@ -154,22 +154,6 @@ methodWithSourceAndParameters methodName constructor = try $ do
     return (s,ps)
   return $ constructor s ps
 
--- parameters :: Parser Parameters
--- parameters =
---   methodForLists "fast" Fast <|>
---   methodForLists "smooth" Smooth <|>
---   Parameters <$> try (brackets (commaSep double)) <|>
---   (Parameters . return) <$> double
---
---
--- methodForLists :: String -> ([Double] -> [Double] -> Parameters) -> Parser Parameters
--- methodForLists methodName constructor = try $ do
---   l <- brackets $ commaSep double
---   reservedOp "."
---   reservedOp methodName
---   p <- parens $ commaSep double
---   return $ constructor l p
-
 parameters :: Parser Parameters
 parameters =
   transformationParameters <|>
@@ -190,6 +174,7 @@ methodForLists methodName constructor = try $ do
   reservedOp methodName
   p <- parens $ commaSep double
   return $ constructor p
+
 
 double :: Parser Double
 double = choice [
