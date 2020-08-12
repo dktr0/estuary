@@ -12,21 +12,33 @@ import Data.Tempo
 
 import Estuary.Languages.CineCer0.Signal
 
+--------- change String to Text throughout the pipeline!!!!!
+data Colour = Colour String | ColourRGB (Double, Double, Double) | ColourHSV (Double, Double, Double)
+
 -- layer: right is video left is text!!!!!
 data LayerSpec = LayerSpec {
   layer :: Either String String,  ----- both are synonims of Text
+  z :: Signal Int,
+
   anchorTime :: (Tempo -> UTCTime -> UTCTime),
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
+  
   mute :: Signal Bool,
   volume :: Signal Rational,
+
   fontFamily :: Signal String,
   fontSize :: Signal Rational,
-  color :: Signal String,
+  colour :: Signal Colour,
+  strike :: Signal Bool,
+  bold :: Signal Bool,
+  italic :: Signal Bool,
+
   posX :: Signal Rational,
   posY :: Signal Rational,
   width :: Signal Rational,
   height :: Signal Rational,
+
   opacity :: Signal (Maybe Rational),
   blur :: Signal (Maybe Rational),
   brightness :: Signal (Maybe Rational),
@@ -42,15 +54,21 @@ instance Show LayerSpec where
 emptyLayerSpec :: LayerSpec
 emptyLayerSpec = LayerSpec {
   layer = Right "",
+  z = constantSignal 0,
+
   anchorTime = defaultAnchor,
   playbackPosition = playNatural_Pos 0.0,
   playbackRate = playNatural_Rate 0.0,
+
   mute = constantSignal True,
   volume = constantSignal 0.0,
 
   fontFamily = constantSignal "sans-serif",
-  fontSize = constantSignal 120,
-  color = constantSignal "lightblue",
+  fontSize = constantSignal 100,
+  colour = constantSignal $ Colour "White",
+  strike = constantSignal False,
+  bold = constantSignal False,
+  italic = constantSignal False,
 
   posX = constantSignal 0.0,
   posY = constantSignal 0.0,
@@ -131,12 +149,27 @@ shiftSize s vs = vs {
   height = s * height vs
 }
 
+setZIndex :: Signal Int -> LayerSpec -> LayerSpec
+setZIndex n tx = tx { z = n }
+
 setFontFamily :: Signal String -> LayerSpec -> LayerSpec
-setFontFamily s v = v { fontFamily = s }
+setFontFamily s tx = tx { fontFamily = s }
 
 -- maybe not
 setFontSize :: Signal Rational -> LayerSpec -> LayerSpec
-setFontSize s v = v { fontSize = s }
+setFontSize s tx = tx { fontSize = s }
+
+setStrike :: LayerSpec -> LayerSpec
+setStrike tx = tx { strike = constantSignal True }
+
+setBold :: LayerSpec -> LayerSpec
+setBold tx = tx { bold = constantSignal True}
+
+setItalic :: LayerSpec -> LayerSpec
+setItalic tx = tx { italic = constantSignal True}
+
+setColour :: Signal Colour -> LayerSpec -> LayerSpec
+setColour clr tx = tx { colour = clr}
 
 -- Filters
 

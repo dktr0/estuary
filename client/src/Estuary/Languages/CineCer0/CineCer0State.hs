@@ -58,7 +58,7 @@ foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> 
 foreign import javascript unsafe "$1.muted = $2;" muteVideo :: VideoLayer -> Bool -> IO ()
 foreign import javascript unsafe "$1.volume = $2" videoVolume :: VideoLayer -> Double -> IO ()
 foreign import javascript unsafe "$1.pause(); $1.src = $2; $1.load(); $1.play();" changeVideoSource :: VideoLayer -> Text -> IO ()
-foreign import javascript unsafe "$1.src = $2;" changeTextSource :: TextLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.textContent = $2;" changeTextSource :: TextLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.videoWidth" videoWidth :: VideoLayer -> IO Double
 foreign import javascript unsafe "$1.videoHeight" videoHeight :: VideoLayer -> IO Double
 foreign import javascript unsafe "$1.width" textWidth :: TextLayer -> IO Double
@@ -88,8 +88,6 @@ data CineCer0Text = CineCer0Text {
   previousStyleTx :: Text
   }
 
-
-  -- solve thiss!!!!!!!!!!!!!!!!!!!!
 addVideo :: HTMLDivElement -> LayerSpec -> IO CineCer0Video
 addVideo j os = do
   let url = layerToString $ layer os
@@ -113,6 +111,7 @@ addText j os = do
     positionLockTx = 0,
     previousStyleTx = ""
   }
+
 
 
 layerToString:: Either String String -> Text
@@ -167,6 +166,7 @@ setVideoVol v x = do
     videoVolume j x
     return $ v { previousVol = x }
 
+
 setTextStyle :: CineCer0Text -> Text -> IO CineCer0Text
 setTextStyle tx x = do
   if previousStyleTx tx == x then return tx
@@ -179,12 +179,21 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
  let j = textLayer tx
  let txw = sw 
  let txh = sh
- putStrLn $ show txw
- putStrLn $ show txh
+ 
  if (txw /= 0 && txh /= 0) then do
   let aTime = anchorTime s t eTime
   let lengthOfLayer = 1
   let txFont = (fontFamily s t lengthOfLayer rTime eTime aTime)
+  let striked = generateStrike (strike s t lengthOfLayer rTime eTime aTime)
+  let bolded = generateBold (bold s t lengthOfLayer rTime eTime aTime)
+  let italicised = generateItalic (italic s t lengthOfLayer rTime eTime aTime)
+  let coloured = T.pack $ generateColour (colour s t lengthOfLayer rTime eTime aTime)
+  let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
+
+  let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
+
+--  let striked = generateStrike strike
+  -- putStrLn $ show tx
 
   let aspectRatio = txw/txh
   let heightIfFitsWidth = sw / aspectRatio
@@ -198,9 +207,9 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let centreY = ((posY s t lengthOfLayer rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
   let leftX = centreX - (actualWidth * 0.5)
   let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
-
-  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont)
-  putStrLn $ T.unpack $  txStyle
+  
+  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised coloured sized z'
+  putStrLn $ T.unpack $ txStyle
   setTextStyle tx $ txStyle
 
   else return tx
@@ -281,9 +290,34 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
 videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m
 
-textStyle :: Double -> Double -> Double -> Double -> Text -> Text
-textStyle x y w h ff = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> "; object-fit: fill;"
 
+generateZIndex :: Int -> Text
+generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
+
+generateFontSize :: Double -> Text
+generateFontSize size = "; font-size: " <> T.pack (show size) <> "%"
+
+generateColour :: Colour -> String
+generateColour (Colour clr) = "; color: " <> clr <> ";"
+generateColour (ColourRGB (r,g,b)) = "; color: rgb(" <> (show r) <> "," <> (show g) <> "," <> (show b) <> ");"
+generateColour (ColourHSV (h,s,l)) = "; color: hsl(" <> (show h) <> "," <> (show s) <> "," <> (show l) <> ");"
+
+generateStrike :: Bool -> Text
+generateStrike (True) = "; text-decoration: line-through;"
+generateStrike (False) = ""
+
+generateBold :: Bool -> Text
+generateBold (True) = "; font-weight: bold;"
+generateBold (False) = ""
+
+generateItalic :: Bool -> Text
+generateItalic (True) = "; font-style: italic;"
+generateItalic (False) = ""
+
+textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
+textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> "; object-fit: fill;"
+
+-- control Z index !!!
 
 -- these two might become only one!
 
@@ -328,14 +362,14 @@ layerParti (Left x) = False
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t rTime spec st = logExceptions st $ do
-  let objSpecs = layerSpecMap spec  -- objectSpec instead of vSpec, this needs to change throughout the whole structure
+  let objSpecs = layerSpecMap spec  
   let vSpecs = fst $ textOrVideo objSpecs
   let txSpecs = snd $ textOrVideo objSpecs
   let eTime = evalTime spec
   divWidth <- offsetWidth $ container st
   divHeight <- offsetHeight $ container st
   -- add videos
-  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap ObjectSpec
+  let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap LayerSpec
   let toAddv = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newVideoSpecs -- operation on Layers -- :: IntMap LayerSpec
   addedVideos <- mapM (\x -> addVideo (container st) x) toAddv -- :: IntMap CineCer0Video
   -- add text 
@@ -350,9 +384,9 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   -- change texts
   let continuingTextSpecs = intersectionWith onlyChangedLayerSources txSpecs (previousTextSpecs st)
   let toChangeTx = fmapMaybe id continuingTextSpecs -- :: IntMap LayerSpec
-  let toChangeTx' = intersectionWith (\a b -> (a,b)) toChangeTx $ texts st -- IntMap (LayerSpec,CineCer0Video)
+  let toChangeTx' = intersectionWith (\a b -> (a,b)) toChangeTx $ texts st -- IntMap (LayerSpec,CineCer0Text)
   mapM_ (\(x,cTx) -> changeTextSource (textLayer cTx) $ T.pack (getLayerString (layer x))) toChangeTx'
-  -- delete LayerSpecs <- this wilh change to LayerSpecs
+  -- delete LayerSpecs 
   -- delete videos
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> (ifEmptyLayer $ layer x) == True) vSpecs -- :: IntMap CineCer0Video

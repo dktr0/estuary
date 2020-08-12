@@ -79,6 +79,9 @@ rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
 ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
 ndt_rat_rat_sigMayRat = ramp2 <$ reserved "ramp"
 
+sigInt :: H (Signal Int)
+sigInt = constantSignal <$> int
+
 sigStr :: H (Signal String)
 sigStr = constantSignal <$> string
 
@@ -103,7 +106,11 @@ vs_vs =
   sigRat_vs_vs <*> sigRat <|>
   sigMayRat_vs_vs <*> sigMayRat <|>
   rat_vs_vs <*> rationalOrInteger <|>
-  sigStr_vs_vs <*> sigStr
+  sigStr_vs_vs <*> sigStr <|>
+  sigInt_vs_vs <*> sigInt <|>
+  (reserved "strike" >> return setStrike) <|>
+  (reserved "bold" >> return setBold) <|>
+  (reserved "italic" >> return setItalic)
   -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)
@@ -138,7 +145,12 @@ sigRat_vs_vs =
   circleMask <$ reserved "circleMask" <|>
   sqrMask <$ reserved "sqrMask" <|>
   setVolume <$ reserved "vol" <|>
+  setFontSize <$ reserved "fontSize" <|>
   sigRat_sigRat_vs_vs <*> sigRat
+
+sigInt_vs_vs :: H (Signal Int -> LayerSpec -> LayerSpec)
+sigInt_vs_vs =
+  setZIndex <$ reserved "z"
 
 sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
 sigStr_vs_vs =
