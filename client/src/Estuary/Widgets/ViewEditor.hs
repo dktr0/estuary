@@ -24,13 +24,17 @@ viewParseResultToText v = do
     Left errMsg -> "Error"
     Right view -> "OK"
 
--- viewToContextChange :: Either ParseError View -> Maybe ContextChange
--- viewToContextChange v c = do
---   x = x { field = ... }
+viewToContextChange :: Either ParseError View -> Maybe ContextChange
+viewToContextChange v = do
+  case v of
+    Left _ -> Nothing
+    -- modifyEnsembleC :: (EnsembleC -> EnsembleC) -> ContextChange
+    -- selectLocalView :: View -> EnsembleC -> EnsembleC
+    Right view -> Just $ modifyEnsembleC $ selectLocalView view
 
-viewEditor :: MonadWidget t m => Dynamic t Context -> m (Event t ())
+viewEditor :: MonadWidget t m => Dynamic t Context -> m (Event t ContextChange)
 viewEditor ctx = do
-  
+
   let viewList = fromList [(1, "default"), (2, "cybernetic"), (3, "blackbox"), (4, "memorias")]
   viewChange <- _dropdown_change <$> dropdown 1.0 (constDyn viewList) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
   runViewButton <- divClass "config-entry display-inline-block primary-color ui-font" $ buttonWithClass "Run"
@@ -43,11 +47,13 @@ viewEditor ctx = do
   let runViewEvent = leftmost [runViewButton, shiftEnter]
   let evaledText = tag (current textValue) runViewEvent
   let parsedInput = fmap (parse viewParser "") evaledText
-  let viewParseResult = fmap viewParseResultToText parsedInput
-  -- viewCtxChange <- fmapMaybe viewToContextChange parsedInput
+  let viewParseResult = fmap viewParseResultToText parsedInput -- Still needs to be displayed
+  let viewCtxChange = fmapMaybe viewToContextChange parsedInput
   -- fmap fromRight $ fmapMaybe isRight viewParseResult
 
   text "View name: "
   let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
   liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
   buttonWithClass "Publish"
+
+  return viewCtxChange

@@ -92,8 +92,8 @@ configWidget ctx = do
 
   elClass "hr" "dashed" $  text ""
 
-  viewEditor <- divClass "config-option primary-color ui-font" $ do
+  viewEditorChange <- divClass "config-option primary-color ui-font" $ do
     el "h3" $ text "View Editor"
     viewEditor ctx
 
-  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv]
+  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange]
