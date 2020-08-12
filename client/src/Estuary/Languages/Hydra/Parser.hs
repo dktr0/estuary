@@ -107,7 +107,7 @@ source = do
 
 sourceAsArgument :: Parser Source
 sourceAsArgument = try $ choice [
-  --outputAsSource, --o0,o1,o2,o3
+  outputAsSource, --o0,o1,o2,o3
   source -- osc()
   ]
 
