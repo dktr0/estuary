@@ -224,8 +224,8 @@ in
           dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "seis8s";
-           sha256 = "1wyrdzhpyrc7cj7w2cj0ld3x1kd6g6mwd2f70lrxazagalik4g2f";
-           rev = "53e4976a17267341592a5583d42c4ee4e518955a";
+           sha256 = "1qyjxmc6x3wd2418xf2zxq6ix0h5hvn15vf6y7gn2hrq0qd2sh7g";
+           rev = "0d334b633e207277b4796c7d27c438235fe8b1c9";
          }) {});
       };
     in

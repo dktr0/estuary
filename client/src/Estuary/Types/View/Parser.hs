@@ -26,6 +26,7 @@ dumpView (SequenceView z) = "sequence:" <> showInt z
 dumpView (BorderDiv v) = "border { " <> dumpView v <> "} "
 dumpView TempoView = "tempo"
 dumpView EnsembleStatusView = "ensembleStatus"
+dumpView (RouletteView x) = "roulette:" <> showInt x
 
 showInt :: Int -> Text
 showInt x = showtParen (x < 0) (showt x)
@@ -56,6 +57,7 @@ viewParser = do
     try sequenceView,
     try ensembleStatusView,
     try tempo,
+    try rouletteView,
     textView
     ]
   return v
@@ -68,7 +70,7 @@ sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
 ensembleStatusView = reserved "ensembleStatus" >> return EnsembleStatusView
 tempo = reserved "tempo" >> return TempoView
 textView = reserved "text" >> reservedOp ":" >> (TextView <$> int <*> int)
-
+rouletteView = reserved "roulette" >> reservedOp ":" >> (RouletteView <$> int)
 
 int :: Parser Int
 int = choice [
@@ -88,7 +90,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opLetter = oneOf "+*:@<>~=%",
   P.reservedNames = [
     "label","structure","sequenceView","textView","svgDisplayView",
-    "canvasDisplayView", "x", "ensembleStatus", "border", "tempo"
+    "canvasDisplayView", "x", "ensembleStatus", "border", "tempo", "roulette"
     ],
   P.reservedOpNames = [":"],
   P.caseSensitive = True

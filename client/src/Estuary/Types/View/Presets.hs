@@ -29,7 +29,7 @@ presetViews = fromList [
        (Views [LabelView 3, TextView 4 0]),
        (Views [LabelView 5, TextView 6 0]),
        (Views [LabelView 7, TextView 8 0]),
-       (Views [LabelView 9, TextView 10 0]),
+       (Views [LabelView 9, RouletteView 10]),
        (Views [LabelView 11, TempoView])
       ]),
 
