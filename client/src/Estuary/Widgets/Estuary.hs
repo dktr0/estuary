@@ -120,9 +120,9 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  audioMapEv <- loadAudioMap
+  -- audioMapEv <- loadAudioMap
   terminalContextChangeIO <- performEvent $ fmap liftIO $ fmapMaybe commandToContextChangeIO command
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, audioMapEv, wsCtxChange, sidebarChange,terminalContextChangeIO]
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- audioMapEv, -} wsCtxChange, sidebarChange,terminalContextChangeIO]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command

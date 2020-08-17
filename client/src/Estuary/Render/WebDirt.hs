@@ -81,7 +81,11 @@ foreign import javascript unsafe
 
 noteEventToWebDirtJSVal :: AudioMap -> (UTCTime,Double) -> NoteEvent -> IO (Maybe JSVal)
 noteEventToWebDirtJSVal aMap cDiff (utc,m) = do
-  let s = Map.lookup "s" m
+  let t' = utcTimeToAudioSeconds cDiff utc
+  let m' = fmap datumToJSVal m
+  Just <$> mapTextJSValToJSVal (t',m')
+{- for use with new audio resource system:
+ let s = Map.lookup "s" m
   let n = Map.lookup "n" m
   case datumsToLocation s n of
     Nothing -> return Nothing
@@ -92,11 +96,14 @@ noteEventToWebDirtJSVal aMap cDiff (utc,m) = do
           let t' = utcTimeToAudioSeconds cDiff utc
           let m' = Map.insert "buffer" res' $ fmap datumToJSVal m -- :: Map Text JSVal
           Just <$> mapTextJSValToJSVal (t',m')
-        Left _ -> return Nothing
+        Left _ -> return Nothing -}
 
 tidalEventToWebDirtJSVal :: AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ControlMap) -> IO (Maybe JSVal)
 tidalEventToWebDirtJSVal aMap cDiff (utc,m) = do
-  let s = Map.lookup "s" m
+  let t' = utcTimeToAudioSeconds cDiff utc
+  let m' = fmap valueToJSVal m -- :: Map Text JSVal
+  Just <$> mapStringJSValToJSVal (t',m')
+{-  let s = Map.lookup "s" m
   let n = Map.lookup "n" m
   case valuesToLocation s n of
     Nothing -> return Nothing
@@ -107,7 +114,7 @@ tidalEventToWebDirtJSVal aMap cDiff (utc,m) = do
           let t' = utcTimeToAudioSeconds cDiff utc
           let m' = Map.insert "buffer" res' $ fmap valueToJSVal m -- :: Map Text JSVal
           Just <$> mapStringJSValToJSVal (t',m')
-        Left _ -> return Nothing
+        Left _ -> return Nothing -}
 
 mapTextJSValToJSVal :: (Double, Map.Map Text JSVal) -> IO JSVal
 mapTextJSValToJSVal (t,m) = do
