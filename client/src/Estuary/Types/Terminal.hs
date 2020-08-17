@@ -29,7 +29,10 @@ data Command =
   AncientTempo | -- for testing, sets active tempo to one anchored years in the past
   ShowTempo | -- for testing, displays current tempo in terminal
   SetCPS Double |
-  SetBPM Double
+  SetBPM Double |
+  InsertAudioResource Text Text Int | -- "url" [bankName] [n]
+  DeleteAudioResource Text Int | -- [bankName] [n]
+  AppendAudioResource Text Text -- "url" [bankName]
   deriving (Show,Eq)
 
 parseCommand :: Text -> Either ParseError Command
@@ -58,13 +61,25 @@ terminalCommand = symbol "!" >> choice [
   reserved "ancienttempo" >> return AncientTempo,
   reserved "showtempo" >> return ShowTempo,
   (reserved "setcps" >> return SetCPS) <*> double,
-  (reserved "setbpm" >> return SetBPM) <*> double
+  (reserved "setbpm" >> return SetBPM) <*> double,
+  (reserved "insertaudioresource" >> return InsertAudioResource) <*> textLiteral <*> identifierText <*> int,
+  (reserved "deleteaudioresource" >> return DeleteAudioResource) <*> identifierText <*> int,
+  (reserved "appendaudioresource" >> return AppendAudioResource) <*> textLiteral <*> identifierText
   ]
 
 identifierText :: Parser Text
 identifierText = T.pack <$> identifier
 
+textLiteral :: Parser Text
+textLiteral = T.pack <$> stringLiteral
+
 chatP = many1 anyChar >>= return . Chat . T.pack
+
+int :: Parser Int
+int = choice [
+  symbol "-" >> integer >>= (return . (* (-1)) . fromIntegral),
+  try $ fromIntegral <$> integer
+  ]
 
 double :: Parser Double
 double = choice [
@@ -86,7 +101,8 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.reservedNames = [
     "localview","presetview","publishview","activeview","listviews",
     "dumpview","startstreaming","streamid","delay","deletethisensemble",
-    "deleteensemble"
+    "deleteensemble","ancienttempo","showtempo","setcps","setbpm",
+    "insertaudioresource","deleteaudioresource","appendaudioresource"
     ],
   P.reservedOpNames = [],
   P.caseSensitive = False

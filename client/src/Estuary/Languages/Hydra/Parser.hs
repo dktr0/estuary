@@ -26,7 +26,7 @@ hydra = do
   return xs
 
 statement :: Parser Statement
-statement = choice [ outStatement, renderStatement ]
+statement = choice [ outStatement, renderStatement]
 
 outStatement :: Parser Statement
 outStatement = do
@@ -38,15 +38,21 @@ outStatement = do
 
 output :: Parser Output
 output = try $ parens $ choice [
-  reserved "o0" >> return O0,
-  reserved "o1" >> return O1,
-  reserved "o2" >> return O2,
-  reserved "o3" >> return O3,
+  outputNoDefault,
   whiteSpace >> return O0
   ]
 
 renderStatement :: Parser Statement
-renderStatement = Render <$> (reserved "render" >> output)
+renderStatement =
+  Render <$> (reserved "render" >> output) <|>
+  speedStatement
+
+speedStatement :: Parser Statement -- speed=0.5 or speed = 0.5
+speedStatement = do
+  reserved "speed"
+  reservedOp "="
+  p <- (Parameters . return) <$> double
+  return $ Speed p
 
 source :: Parser Source
 source = do
@@ -68,7 +74,7 @@ source = do
     methodWithParameters "posterize" Posterize,
     methodWithParameters "saturate" Saturate,
     methodWithParameters "shift" Shift,
-    methodWithParameters "tresh" Thresh,
+    methodWithParameters "thresh" Thresh,
     methodWithParameters "kaleid" Kaleid,
     methodWithParameters "pixelate" Pixelate,
     methodWithParameters "repeat" Repeat,
@@ -79,6 +85,8 @@ source = do
     methodWithParameters "scroll" Scroll,
     methodWithParameters "scrollX" ScrollX,
     methodWithParameters "scrollY" ScrollY,
+    methodWithSource "diff" Diff, -- don't work
+    methodWithSource "layer" Layer, -- don't work
     methodWithSourceAndParameters "modulate" Modulate,
     methodWithSourceAndParameters "modulateHue" ModulateHue,
     methodWithSourceAndParameters "modulateKaleid" ModulateKaleid,
@@ -93,11 +101,28 @@ source = do
     methodWithSourceAndParameters "add" Add,
     methodWithSourceAndParameters "mult" Mult,
     methodWithSourceAndParameters "blend" Blend,
-    methodWithSource "diff" Diff,
-    methodWithSource "layer" Layer,
     methodWithSourceAndParameters "mask" Mask
     ]
   return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
+
+sourceAsArgument :: Parser Source
+sourceAsArgument = try $ choice [
+  outputAsSource, --o0,o1,o2,o3
+  source -- osc()
+  ]
+
+outputAsSource :: Parser Source
+outputAsSource = do
+  s <- outputNoDefault
+  return $ OutputAsSource s
+
+outputNoDefault :: Parser Output
+outputNoDefault = try $ choice [
+  reserved "o0" >> return O0,
+  reserved "o1" >> return O1,
+  reserved "o2" >> return O2,
+  reserved "o3" >> return O3
+  ]
 
 functionWithParameters :: String -> ([Parameters] -> Source) -> Parser Source
 functionWithParameters funcName constructor = try $ do
@@ -112,28 +137,43 @@ methodWithParameters methodName constructor = try $ do
   ps <- parens $ commaSep parameters
   return $ constructor ps
 
-methodWithSource :: String -> (Source -> Source -> Source) -> Parser (Source -> Source)
+methodWithSource :: String -> (Source -> Source -> Source) -> Parser (Source -> Source) -- osc().diff(osc()).out()
 methodWithSource methodName constructor = try $ do
   reservedOp "."
   reservedOp methodName
-  s <- source
+  s <- parens $ sourceAsArgument
   return $ constructor s
 
-methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source)
+methodWithSourceAndParameters :: String -> (Source -> [Parameters] -> Source -> Source) -> Parser (Source -> Source) -- osc().mask(osc(),0.5,0.8).out()  -- mask(o1)
 methodWithSourceAndParameters methodName constructor = try $ do
   reservedOp "."
   reservedOp methodName
   (s,ps) <- parens $ do
-    s <- source
+    s <- sourceAsArgument
     ps <- (comma >> commaSep1 parameters) <|> return []
     return (s,ps)
   return $ constructor s ps
 
 parameters :: Parser Parameters
-parameters = choice [
-  Parameters <$> try (brackets (commaSep double)),
+parameters =
+  transformationParameters <|>
   (Parameters . return) <$> double
-  ]
+
+transformationParameters :: Parser Parameters
+transformationParameters = do
+  x <- Parameters <$> try (brackets (commaSep double))
+  fs <- many $ choice [
+    methodForLists "fast" Fast,
+    methodForLists "smooth" Smooth
+    ]
+  return $ (foldl (.) id $ reverse fs) x
+
+methodForLists :: String -> ([Double] -> Parameters -> Parameters) -> Parser (Parameters -> Parameters)
+methodForLists methodName constructor = try $ do
+  reservedOp "."
+  reservedOp methodName
+  p <- parens $ commaSep double
+  return $ constructor p
 
 
 double :: Parser Double
@@ -156,14 +196,14 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opStart = oneOf ".",
   P.opLetter = oneOf ".",
   P.reservedNames = [
-    "out","render", "fast",
+    "out","render", "fast", "smooth", "speed",
     "osc","solid","gradient","noise","shape","voronoi",
     "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
     "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
     "add", "mult", "blend", "diff", "layer", "mask",
     "o0","o1","o2","o3"
     ],
-  P.reservedOpNames = ["."],
+  P.reservedOpNames = [".", "="],
   P.caseSensitive = False
   }
 

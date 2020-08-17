@@ -2,6 +2,7 @@
 
 module Estuary.Reflex.Router(
   router,
+  router',
   getInitialState
 ) where
 
@@ -54,6 +55,20 @@ router def inStatChangeEv renderPage = mdo
 
   dynPage :: Dynamic t (Event t state, a) <- widgetHold initialPage (renderPage <$> stateChangeEv)
 
+  return dynPage
+
+router' :: (MonadWidget t m, FromJSVal state, ToJSVal state) => state -> Event t state -> (state -> m (Event t state)) -> m (Dynamic t (Event t state))
+router' def inStatChangeEv renderPage = mdo
+  let initialPage = renderPage def
+  popStateEv :: Event t state <- fmap (fromMaybe def) <$> getPopStateEv
+  let triggeredStateChangeEv = leftmost [
+          inStatChangeEv,
+          switchPromptlyDyn dynPage
+        ]
+  performEvent_ $ ffor triggeredStateChangeEv $ \state -> liftIO $ do
+    pushPageState state ""
+  let stateChangeEv = leftmost [popStateEv, triggeredStateChangeEv]
+  dynPage :: Dynamic t (Event t state) <- widgetHold initialPage (renderPage <$> stateChangeEv)
   return dynPage
 
 getInitialState :: (FromJSVal state) => state -> IO (state)

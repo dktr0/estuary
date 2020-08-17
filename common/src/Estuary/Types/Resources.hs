@@ -11,6 +11,10 @@ import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 
 import Estuary.Types.Scope
+import Estuary.Types.AudioMeta
+import Estuary.Types.ImageMeta
+import Estuary.Types.VideoMeta
+
 
 -- {
 --   "bd": [
@@ -66,24 +70,3 @@ data Resource m = Resource {
   resourceTags :: Seq Text,
   resourceScope :: Scope
 } deriving (Show)
-
-data AspectRatio
-  = FourOverThree
-  | ThreeOverFour
-  | SixteenOverNine
-  | NineOverSixteen
-  | Square
-  | Custom Rational -- Int Int
---  deriving (Show)
-
-instance Show AspectRatio where
-  show FourOverThree = "4:3"
-  show ThreeOverFour = "3:4"
-  show SixteenOverNine = "16:9"
-  show NineOverSixteen = "9:16"
-  show Square = "1:1"
-  show (Custom x) = show x
-
-data AudioMeta = AudioMeta { audioDuration :: Double {- seconds -} } deriving (Show)
-data VideoMeta = VideoMeta { videoDuration :: Double, videoResolution :: (Int, Int), videoAspectRatio :: AspectRatio } deriving (Show)
-data ImageMeta = ImageMeta { imageResolution :: (Int, Int), imageAspectRatio :: AspectRatio } deriving (Show)

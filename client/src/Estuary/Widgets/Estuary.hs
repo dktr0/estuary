@@ -5,7 +5,7 @@ module Estuary.Widgets.Estuary where
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault)
+import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault,append)
 import Reflex.Dom.Contrib.KeyEvent
 import Reflex.Dom.Old
 import Data.Time
@@ -55,6 +55,9 @@ import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Sidebar
+import Estuary.Types.ResourceMap
+import Estuary.Types.AudioResource
+import Estuary.Types.AudioMeta
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -93,7 +96,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
     (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDown
-    (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget
+    (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
@@ -117,8 +120,9 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  -- samplesLoadedEv <- loadSampleMap
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange, sidebarChange]
+  -- audioMapEv <- loadAudioMap
+  terminalContextChangeIO <- performEvent $ fmap liftIO $ fmapMaybe commandToContextChangeIO command
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- audioMapEv, -} wsCtxChange, sidebarChange,terminalContextChangeIO]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -183,18 +187,20 @@ pollRenderInfo riM = do
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 
-{-
--- load the sample map and issue an appropriate ContextChange event when finished
--- (if there is a better way to trigger an event from an async callback then this should be updated to reflect that)
-loadSampleMap :: MonadWidget t m => m (Event t ContextChange)
-loadSampleMap = do
+
+loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
+loadAudioMap = do
   postBuild <- getPostBuild
   performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
+    putStrLn "loadAudioMap..."
     loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
       case maybeMap of
-        Nothing -> return () -- Couldn't load the map
-        Just map -> triggerEv $ setSampleMap map
--}
+        Nothing -> putStrLn "loadAudioMap couldn't load sample map"
+        Just map -> do
+          putStrLn "loadAudioMap (estuary) succeeded"
+          map' <- sampleMapToAudioMap map
+          putStrLn $ show map'
+          triggerEv $ setAudioMap map'
 
 
 -- whenever the Dynamic representation of the Context changes, translate that
@@ -247,3 +253,14 @@ commandToRequest :: Terminal.Command -> Maybe Request
 commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
 commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
 commandToRequest _ = Nothing
+
+commandToContextChangeIO :: Terminal.Command -> Maybe (IO ContextChange)
+commandToContextChangeIO (Terminal.InsertAudioResource url bankName n) = Just $ do
+  res <- audioResourceFromMeta $ AudioMeta url 0
+  return $ \x -> x { audioMap = insert (bankName,n) res (audioMap x)}
+commandToContextChangeIO (Terminal.DeleteAudioResource bankName n) = Just $ do
+  return $ \x -> x { audioMap = delete (bankName,n) (audioMap x)}
+commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
+  res <- audioResourceFromMeta $ AudioMeta url 0
+  return $ \x -> x { audioMap = append bankName res (audioMap x)}
+commandToContextChangeIO _ = Nothing
