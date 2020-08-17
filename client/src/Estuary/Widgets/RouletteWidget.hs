@@ -27,7 +27,7 @@ import Estuary.Types.Variable
 import qualified Estuary.Types.Term as Term
 
 rouletteWidget :: MonadWidget t m => Dynamic t Roulette -> Editor t m (Variable t Roulette)
-rouletteWidget delta = mdo
+rouletteWidget delta = divClass "rouletteContainer" $ mdo
     ctx <- context
     let ensC = fmap ensembleC ctx
     let uHandle = fmap userHandle ensC -- Dynamic Text
@@ -36,36 +36,40 @@ rouletteWidget delta = mdo
     let lineUpBool' = fmap (lineUpBool uHandle') currentVal
     let dynAttrs = attrsLineUpButton <$> lineUpBool'
 
-    lineUpButton' <- lineUpButton dynAttrs "Line up" (addHandleToList uHandle') -- (Event t (Roulette -> Roulette)
-    listOfRouletteButtons <- simpleList currentVal rouletteButton -- m (Dynamic [Event t (Roulette -> Roulette)])
     let listOfRouletteButtons' = fmap leftmost listOfRouletteButtons -- Dynamic t (Event t (Roulette -> Roulette))
     let listOfRouletteButtons'' = switchDyn listOfRouletteButtons'  -- m (Event t (Roulette -> Roulette))
+    let attrsRouletteButton' = attrsRouletteButton uHandle'  --  Map Text Text
+    listOfRouletteButtons <- simpleList currentVal (rouletteButton attrsRouletteButton') -- m (Dynamic [Event t (Roulette -> Roulette)])
+
+    lineUpButton' <- lineUpButton dynAttrs "+" (addHandleToList uHandle') -- (Event t (Roulette -> Roulette)
 
     currentVal <- holdUniqDyn $ currentValue x -- Dynamic t [Text]
     let currentValToBehaviour = current (currentValue x) -- Behaviour RouletteView
-    let buttonEvs = mergeWith (.) [lineUpButton', listOfRouletteButtons''] -- Event t (Roulette -> Roulette)
+    let buttonEvs = mergeWith (.) [listOfRouletteButtons'', lineUpButton'] -- Event t (Roulette -> Roulette)
     let newValue = attachWith (flip ($)) currentValToBehaviour buttonEvs  -- Event t Roulette
     x <- returnVariable delta newValue
-    -- display currentVal
     return x
 
 -- Dynamic t a (comes from the server, and only is the initial value and it also represents the udpates) -> Event t a (come from local user actions) -> Variable t Roulette
 lineUpBool :: Text -> [Text] -> Bool
 lineUpBool uHandle roulette
   |elem uHandle roulette = True
-  |uHandle == "" = False
+  |uHandle == "" = True
   |otherwise = False
 
-rouletteButton :: MonadWidget t m => Dynamic t Text -> m (Event t (Roulette -> Roulette))
-rouletteButton label = do
-  label' <- sample $ current label -- Text
-  let r = removeHandleFromList label' -- Dynamic t (Roulette -> Roulette)
-  (element, _) <- elAttr' "div" attrsRouletteButton $ dynText label
+rouletteButton :: MonadWidget t m =>  Map Text Text -> Dynamic t Text -> m (Event t (Roulette -> Roulette))
+rouletteButton attrs label = do
+  label' <- sample $ current label-- Text
+  let r = removeHandleFromList $ label' -- <> "     " <> "x"  -- Dynamic t (Roulette -> Roulette)
+  (element, _) <- elAttr' "div" attrs $ dynText $ label <> (constDyn " ") <> (constDyn "ⓧ")
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   let roulette = r <$ clickEv
   return roulette
-    where
-      attrsRouletteButton = "class" =: "other-borders code-font" <> "style" =: "pointer-events: auto; "
+
+attrsRouletteButton :: Text -> Map Text Text
+attrsRouletteButton uhandle
+  | uhandle == "" = "class" =: "rouletteButtons ui-buttons code-font" <> "style" =: "cursor: not-allowed; pointer-events: none;"
+  | otherwise = "class" =: "rouletteButtons ui-buttons code-font"
 
 lineUpButton ::  MonadWidget t m => Dynamic t (Map Text Text) -> Text -> (Roulette -> Roulette) -> m (Event t (Roulette -> Roulette))
 lineUpButton attrs label r = do
@@ -75,14 +79,14 @@ lineUpButton attrs label r = do
   return roulette
 
 attrsLineUpButton :: Bool -> Map Text Text
-attrsLineUpButton b = "class" =: "ui-buttons other-borders code-font" <> "style" =: (pevents b <> cursor b <> colour b)
+attrsLineUpButton b = "class" =: "lineUpButton ui-buttons other-borders code-font" <> "style" =: (pevents b <> cursor b <> colour b)
   where
     pevents False  = "pointer-events: auto; "
     pevents True = "pointer-events: none; "
     cursor False = "cursor: pointer; "
     cursor True = "cursor: not-allowed; "
-    colour False =  ""
-    colour True =  "color: #c0c0c0; "
+    colour False =  "color:var(--primary-color)"
+    colour True =  "color: var(--secondary-color)"
 
 
 rouletteToRoulette :: Dynamic t Roulette -> Dynamic t Roulette
