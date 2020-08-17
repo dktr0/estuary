@@ -164,15 +164,15 @@ in
          dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0n98jych5f440ccdkr21wszk14xsc6wim3kx4afj3xb4az498l5c";
-          rev = "f2a27f13c306012dccb29c7534dc193e2bce536e";
+          sha256 = "038smw17q3ffp8y6vhzwjik4mw0n3q8ap7shxd1ivcgma1qhccis";
+          rev = "125e382def66feda35b03829bfa7b214f6b32952";
         }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "186gcyma9sldki7l0jgy80lzqyhlz6b248iqj4m645nzk4ncv2l3";
-          rev = "ac0de845001430af98be168cf7478f55cd439274";
+          sha256 = "0scs7984b1n9wfv68q8yf1x79dgqsdx94kcv80sba02a3wjpzdf5";
+          rev = "b57c3cf3e178e4d5d37e4eeaecd5ba9d644ac64d";
         }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
