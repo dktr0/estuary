@@ -29,6 +29,7 @@ import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
+import Estuary.Widgets.RouletteWidget
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Widgets.Tempo
 import Estuary.Types.EnsembleRequest
@@ -40,6 +41,7 @@ viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t 
 viewWidget er EmptyView = return never
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
+
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
@@ -53,6 +55,9 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget
+
+-- viewWidget er (RouletteView z rows) = rouletteWidget
+viewWidget er (RouletteView z) = zoneWidget z [] maybeRoulette Roulette er rouletteWidget
 
 viewWidget er TempoView = do
   ctx <- context

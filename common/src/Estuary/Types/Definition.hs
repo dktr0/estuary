@@ -17,12 +17,14 @@ import Estuary.Types.TextNotation
 type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
+type Roulette = [Text]
 
 data Definition =
   TextProgram (Live TextProgram) |
   Sequence Sequence |
   TidalStructure TransformedPattern |
-  LabelText Text
+  LabelText Text |
+  Roulette Roulette
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -39,6 +41,7 @@ definitionForRendering (TextProgram x) = TextProgram (Live (forRendering x) L4)
 definitionForRendering (Sequence x) = Sequence x
 definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
+definitionForRendering (Roulette x) = Roulette x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -67,3 +70,10 @@ maybeLabelText _ = Nothing
 
 justLabelTexts :: [Definition] -> [Text]
 justLabelTexts = mapMaybe maybeLabelText
+
+maybeRoulette :: Definition -> Maybe Roulette
+maybeRoulette (Roulette x) = Just x
+maybeRoulette _ = Nothing
+
+justRoulettes :: [Definition] -> [Roulette]
+justRoulettes = mapMaybe maybeRoulette

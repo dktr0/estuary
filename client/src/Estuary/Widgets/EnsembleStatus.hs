@@ -167,6 +167,7 @@ participantNameLocationAndIPWidget name part = do
 
 compareHandles ::  Text -> Participant -> Bool -- -> Dynamic t Text -> Bool
 compareHandles uHandle part = uHandle == (name part)
+
 attrs :: Bool -> Map Text Text
 attrs b = "class" =: "code-font" <> "style" =: ("pointer-events: " <> pevents b <> bevents b)
   where
