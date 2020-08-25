@@ -439,7 +439,7 @@ parseHydra irc c z t = do
      hydra <- case x of
        Just h -> return h
        Nothing -> do
-         h <- liftIO $ Hydra.newHydra $ canvasElement s
+         h <- liftIO $ Hydra.newHydra $ hydraCanvas s
          modify' $ \x -> x { hydras = IntMap.insert z h (hydras x)}
          return h
      -- liftIO $ Hydra.setResolution hydra 1280 720
@@ -537,11 +537,11 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: ImmutableRenderContext -> MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> MVar RenderInfo -> IO ()
-forkRenderThreads irc ctxM cvsElement glCtx riM = do
+forkRenderThreads :: ImmutableRenderContext -> MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO ()
+forkRenderThreads irc ctxM cvsElement glCtx hCanvas riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
-  irs <- initialRenderState (mic irc) (out irc) cvsElement glCtx t0System t0Audio
+  irs <- initialRenderState (mic irc) (out irc) cvsElement glCtx hCanvas t0System t0Audio
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread irc ctxM riM rsM
   void $ forkIO $ animationThread irc ctxM rsM
