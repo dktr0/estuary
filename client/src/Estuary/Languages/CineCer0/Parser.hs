@@ -45,7 +45,7 @@ maybeLayerSpec = _0Arg $
 
 layerSpec :: H LayerSpec
 layerSpec = _0Arg $
-  (vs_vs <*> layerSpec) <|> 
+  (vs_vs <*> layerSpec) <|>
   (layerSpecFunc <*> string) <|>
   (fmap stringToLayerSpec string)
 
