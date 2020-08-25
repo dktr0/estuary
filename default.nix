@@ -220,13 +220,13 @@ in
            rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
         }) {});
 
-        seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
-          dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
-           owner = "luisnavarrodelangel";
-           repo = "seis8s";
-           sha256 = "0da88sq07nv3lylrckb3a6d504c24blh42r24d9h096fcqi0a9vi";
-           rev = "f36cbfb44d083626ababb42f9f78a7f476040be6";
-         }) {});
+        seis8s = dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
+          #dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
+           #owner = "luisnavarrodelangel";
+           #repo = "seis8s";
+           #sha256 = "0da88sq07nv3lylrckb3a6d504c24blh42r24d9h096fcqi0a9vi";
+           #rev = "f36cbfb44d083626ababb42f9f78a7f476040be6";
+         #}) {});
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [

@@ -17,7 +17,8 @@ import Estuary.Languages.CineCer0.Signal
 type H = Haskellish ()
 
 cineCer0 :: UTCTime -> String -> Either String Spec
-cineCer0 eTime x = do
+cineCer0 eTime x | x == "" = return $ emptySpec eTime
+                 |otherwise = do
   let sourceAsList = "[" ++ (intercalate "," $ fmap (++ " _0") $ splitOn ";" x) ++ "\n]"
   sourceAsExp <- case parseExp sourceAsList of
     ParseFailed l e -> Left e
@@ -45,7 +46,7 @@ maybeLayerSpec = _0Arg $
 
 layerSpec :: H LayerSpec
 layerSpec = _0Arg $
-  (vs_vs <*> layerSpec) <|> 
+  (vs_vs <*> layerSpec) <|>
   (layerSpecFunc <*> string) <|>
   (fmap stringToLayerSpec string)
 
