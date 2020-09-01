@@ -24,7 +24,11 @@ type Location = (Text,Int)
 
 access :: Loadable a => Location -> ResourceMap a -> IO (Either LoadStatus JSVal)
 access l m = case (Map.lookup l m) of
-  Just x -> load x
+  Just x -> do
+    ls <- loadStatus x
+    case ls of
+      LoadError e -> return $ Left $ LoadError e
+      otherwise -> Right <$> load x
   Nothing -> return (Left $ LoadError $ "no resource at location " <> T.pack (show l))
 
 -- append takes half of a location - just the bank name - and inserts it into the

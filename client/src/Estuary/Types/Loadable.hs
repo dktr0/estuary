@@ -10,10 +10,12 @@ import Data.Text
 -- c) return Loading if loading is still in progress
 -- d) return LoadError and a text message if there was an error loading this resource
 -- The default idea is that attempts to load a Loadable value that returns an error will
--- not trigger any reattempts at loading, but this could change in the future.  
+-- not trigger any reattempts at loading, but this could change in the future.
 
 class Loadable a where
-  load :: a -> IO (Either LoadStatus JSVal)
+  -- load :: a -> IO (Either LoadStatus JSVal)
+  loadStatus :: a -> IO LoadStatus
+  load :: a -> IO JSVal
 
 data LoadStatus =
   NotLoaded |
