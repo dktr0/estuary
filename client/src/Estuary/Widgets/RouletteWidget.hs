@@ -30,23 +30,23 @@ rouletteWidget :: MonadWidget t m => Dynamic t Roulette -> Editor t m (Variable 
 rouletteWidget delta = divClass "rouletteContainer" $ mdo
 
     ctx <- context
-    initialHandle <- sample $ current $ fmap (userHandle . ensembleC) ctx
+    uHandle <- sample $ current $ fmap (userHandle . ensembleC) ctx
 
-    let attrsRouletteButton' = attrsRouletteButton initialHandle
+    let attrsRouletteButton' = attrsRouletteButton uHandle
     listOfRouletteButtons <- simpleList currentVal (rouletteButton attrsRouletteButton')
     let deleteEv = switchDyn $ fmap leftmost listOfRouletteButtons
 
-    let dynAttrs = attrsLineUpButton <$> fmap (currentlyInLine initialHandle) currentVal
-    lineupEv <- lineUpButton dynAttrs "+" (addHandleToList initialHandle)
+    let dynAttrs = attrsLineUpButton <$> fmap (currentlyLinedUp uHandle) currentVal
+    lineupEv <- lineUpButton dynAttrs "+" (addHandleToList uHandle)
 
     let editEvs = mergeWith (.) [deleteEv,lineupEv]
-    let newValue = traceEvent "newValue" $ attachWith (flip ($)) (current currentVal) editEvs
+    let newValue = attachWith (flip ($)) (current currentVal) editEvs
     x <- returnVariable delta newValue
     currentVal <- holdUniqDyn $ currentValue x
     return x
 
-currentlyInLine :: Text -> [Text] -> Bool
-currentlyInLine uHandle roulette
+currentlyLinedUp :: Text -> [Text] -> Bool
+currentlyLinedUp uHandle roulette
   |elem uHandle roulette = True
   |uHandle == "" = True
   |otherwise = False
@@ -56,7 +56,7 @@ rouletteButton attrs label = do
   (element, _) <- elAttr' "div" attrs $ dynText $ label <> (constDyn " ") <> (constDyn "ⓧ")
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ attachWith (\x _ -> removeHandleFromList x) (current label) clickEv
-  
+
 attrsRouletteButton :: Text -> Map Text Text
 attrsRouletteButton uhandle
   | uhandle == "" = "class" =: "rouletteButtons ui-buttons code-font" <> "style" =: "cursor: not-allowed; pointer-events: none;"
