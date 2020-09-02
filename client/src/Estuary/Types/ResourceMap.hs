@@ -23,13 +23,25 @@ type AudioMap = ResourceMap AudioResource
 type Location = (Text,Int)
 
 access :: Loadable a => Location -> ResourceMap a -> IO (Either LoadStatus JSVal)
-access l m = case (Map.lookup l m) of
-  Just x -> do
-    ls <- loadStatus x
-    case ls of
-      LoadError e -> return $ Left $ LoadError e
-      otherwise -> Right <$> load x
-  Nothing -> return (Left $ LoadError $ "no resource at location " <> T.pack (show l))
+access l m = do
+  let l' = adjustedLocation l m
+  case (Map.lookup l' m) of
+    Just x -> do
+      ls <- loadStatus x
+      case ls of
+        LoadError e -> return $ Left $ LoadError e
+        otherwise -> Right <$> load x
+    Nothing -> return (Left $ LoadError $ "no resource at location " <> T.pack (show l))
+
+-- note: this might be more efficient with a different representation for ResourceMap
+adjustedLocation :: Location -> ResourceMap a -> Location
+adjustedLocation (bankName,n) m = (bankName,n')
+  where
+    ks = Map.keys $ Map.mapKeys snd $ Map.filterWithKey (\(k,_) a -> k == bankName) m
+    n' = case ks of
+      [] -> 0
+      xs -> n `mod` (maximum ks + 1)
+
 
 -- append takes half of a location - just the bank name - and inserts it into the
 -- specified bank at the lowest vacant n (>=0), returning the new map

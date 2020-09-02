@@ -192,14 +192,12 @@ loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
 loadAudioMap = do
   postBuild <- getPostBuild
   performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
-    putStrLn "loadAudioMap..."
     loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
       case maybeMap of
         Nothing -> putStrLn "loadAudioMap couldn't load sample map"
         Just map -> do
           putStrLn "loadAudioMap (estuary) succeeded"
           map' <- sampleMapToAudioMap map
-          putStrLn $ show map'
           triggerEv $ setAudioMap map'
 
 
