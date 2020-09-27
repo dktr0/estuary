@@ -22,7 +22,7 @@ datumToJSVal (ASCII_String x) = pToJSVal $ decodeUtf8 x
 datumToJSVal _ = nullRef
 
 valueToJSVal :: Tidal.Value -> JSVal
-valueToJSVal (Tidal.VI x) = pToJSVal x
-valueToJSVal (Tidal.VF x) = pToJSVal x
-valueToJSVal (Tidal.VS x) = pToJSVal x
+valueToJSVal (Tidal.VI x _) = pToJSVal x
+valueToJSVal (Tidal.VF x _) = pToJSVal x
+valueToJSVal (Tidal.VS x _) = pToJSVal x
 valueToJSVal _ = nullRef

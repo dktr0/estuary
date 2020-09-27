@@ -137,7 +137,7 @@ datumsToLocation (Just (ASCII_String x)) (Just (Int32 y)) = Just (decodeUtf8 x,f
 datumsToLocation _ _ = Nothing
 
 valuesToLocation :: Maybe Tidal.Value -> Maybe Tidal.Value -> Maybe Location
-valuesToLocation (Just (Tidal.VS x)) Nothing = Just (T.pack x,0)
-valuesToLocation (Just (Tidal.VS x)) (Just (Tidal.VF y)) = Just (T.pack x,floor y)
-valuesToLocation (Just (Tidal.VS x)) (Just (Tidal.VI y)) = Just (T.pack x,y)
+valuesToLocation (Just (Tidal.VS x _)) Nothing = Just (T.pack x,0)
+valuesToLocation (Just (Tidal.VS x _)) (Just (Tidal.VF y _)) = Just (T.pack x,floor y)
+valuesToLocation (Just (Tidal.VS x _)) (Just (Tidal.VI y _)) = Just (T.pack x,y)
 valuesToLocation _ _ = Nothing
