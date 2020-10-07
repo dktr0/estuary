@@ -21,6 +21,9 @@ data AudioResource = AudioResource {
   audioJSVal :: JSVal
   }
 
+instance Eq AudioResource where
+  x == y = audioMeta x == audioMeta y
+
 instance Show AudioResource where
   show = show . audioMeta
 

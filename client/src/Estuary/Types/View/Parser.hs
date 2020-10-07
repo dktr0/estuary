@@ -27,6 +27,7 @@ dumpView (BorderDiv v) = "border { " <> dumpView v <> "} "
 dumpView TempoView = "tempo"
 dumpView EnsembleStatusView = "ensembleStatus"
 dumpView (RouletteView x) = "roulette:" <> showInt x
+dumpView AudioMapView = "audiomapview"
 
 showInt :: Int -> Text
 showInt x = showtParen (x < 0) (showt x)
@@ -58,6 +59,7 @@ viewParser = do
     try ensembleStatusView,
     try tempo,
     try rouletteView,
+    try audiomapview,
     textView
     ]
   return v
@@ -71,6 +73,7 @@ ensembleStatusView = reserved "ensembleStatus" >> return EnsembleStatusView
 tempo = reserved "tempo" >> return TempoView
 textView = reserved "text" >> reservedOp ":" >> (TextView <$> int <*> int)
 rouletteView = reserved "roulette" >> reservedOp ":" >> (RouletteView <$> int)
+audiomapview = reserved "audiomap" >> return AudioMapView
 
 int :: Parser Int
 int = choice [

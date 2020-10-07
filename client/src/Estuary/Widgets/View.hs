@@ -35,6 +35,7 @@ import Estuary.Widgets.Tempo
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
+import Estuary.Widgets.AudioMap
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
@@ -88,6 +89,10 @@ viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> 
     setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
     setColumnsAndRows  = setNumColumns <> setNumRows
+
+viewWidget _ AudioMapView = do
+  audioMapWidget
+  return never
 
 zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
