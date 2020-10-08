@@ -31,6 +31,16 @@ import Estuary.Types.Participant
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
 
+-- *** WORKING HERE ***
+-- need to refactor along these lines:
+
+-- new (in progress)
+data EnsembleC = EnsembleC {
+  ensembleAudioMap :: Dynamic t AudioMap,
+  zones :: Dynamic t (IntMap Definition) -- later zones can be refactored to Dynamic t (IntMap (Dynamic t efinition)) which is complicated but will solve the zones checking if they have been updated problem
+}
+
+-- old:
 data EnsembleC = EnsembleC {
   ensemble :: Ensemble,
   userHandle :: Text, -- how the user is logged in/appears to others in the ensemble; "" = anonymous
