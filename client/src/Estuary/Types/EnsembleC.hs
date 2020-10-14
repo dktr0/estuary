@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- The type EnsembleC represents the state of an Ensemble from the perspective
--- of an Estuary client.
+-- of the Estuary client (ie. the widgets/UI)
 
 module Estuary.Types.EnsembleC where
 
@@ -14,6 +14,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
 import Control.Applicative
+import Reflex
 
 import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
@@ -28,35 +29,44 @@ import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Types.Participant
 
-import Estuary.Types.Ensemble
 import Estuary.Types.Chat
 
--- *** WORKING HERE ***
--- need to refactor along these lines:
+-- each field of the EnsembleC record is Dynamic t a, so that any of them can
+-- change independently without triggering computation related to the others.
 
--- new (in progress)
-data EnsembleC = EnsembleC {
+data EnsembleC t = EnsembleC {
+  ensembleName :: Dynamic t Text,
+  tempo :: Dynamic t Tempo,
+  zones :: Dynamic t (IntMap.IntMap Definition), -- refactor later to make individual zones Dynamic
+  views :: Dynamic t (Map.Map Text View),
+  chats :: Dynamic t [Chat],
+  participants :: Dynamic t (Map.Map Text Participant),
+  anonymousParticipants :: Dynamic t Int
   ensembleAudioMap :: Dynamic t AudioMap,
-  zones :: Dynamic t (IntMap Definition) -- later zones can be refactored to Dynamic t (IntMap (Dynamic t efinition)) which is complicated but will solve the zones checking if they have been updated problem
+  userHandle :: Dynamic t Text, -- how the user appears to others in the ensemble; "" == anonymous
+  location :: Dynamic t Text, -- the user's location (cached for re-authentication scenarios)
+  password :: Dynamic t Text, -- the participant password (cached for re-authentication scenarios)
+  view :: Dynamic t (Either View Text) -- Rights are from preset views, Lefts are local views
 }
 
--- old:
-data EnsembleC = EnsembleC {
-  ensemble :: Ensemble,
-  userHandle :: Text, -- how the user is logged in/appears to others in the ensemble; "" = anonymous
-  location :: Text, -- the user's location in the ensemble (cached for re-authentication scenarios)
-  password :: Text, -- the participant password for the ensemble (cached for re-authentication scenarios)
-  view :: Either View Text -- Rights are from preset views, Lefts are local views
-}
-
-emptyEnsembleC :: UTCTime -> EnsembleC
+emptyEnsembleC :: UTCTime -> EnsembleC t
 emptyEnsembleC t = EnsembleC {
-  ensemble = emptyEnsemble t,
-  userHandle = "",
-  Estuary.Types.EnsembleC.location = "",
-  Estuary.Types.EnsembleC.password = "",
-  view = Right "default"
+  ensembleName = constDyn "",
+  tempo = constDyn $ Tempo { time=t, count=0.0, freq=0.5 },
+  zones = constDyn IntMap.empty,
+  views = constDyn $ Map.empty,
+  chats = constDyn [],
+  participants = constDyn Map.empty,
+  anonymousParticipants = constDyn 0,
+  ensembleAudioMap = constDyn Map.empty,
+  userHandle = constDyn "",
+  location = constDyn "",
+  password = constDyn "",
+  view = constDyn $ Right "default"
   }
+
+
+-- ** WORKING below here, continuing to refactor on the basis of the above
 
 joinEnsembleC :: Text -> Text -> Text -> Text -> EnsembleC -> EnsembleC
 joinEnsembleC eName uName loc pwd es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, Estuary.Types.EnsembleC.location = loc, Estuary.Types.EnsembleC.password = pwd, view = Right "default" }
