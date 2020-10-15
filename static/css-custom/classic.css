@@ -46,8 +46,12 @@ More advanced customization is available through CSS classes within this documen
 /* styles the user-inteface buttons */
 .ui-buttons {
   color:var(--primary-color);
-  background-color:var(--secondary-color);
+  background-color: transparent;
   cursor:pointer;
+}
+
+.ui-buttons:hover {
+  background-color: var(--secondary-color);
 }
 
 /* styles the dropdown */

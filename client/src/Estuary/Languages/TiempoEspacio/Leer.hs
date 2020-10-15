@@ -173,7 +173,7 @@ silencio = reserved "silence" >> return "~"
 -- //////
 
 gerundio' :: Parser Tidal.ControlPattern
-gerundio' = ((reserved "imagining" <|> reserved "multiplying" <|> reserved "swinging" <|> reserved "lying") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
+gerundio' = ((reserved "imagining" <|> reserved "multiplying" <|> reserved "swinging" <|> reserved "lying") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand . pure)
 
 gerundio :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 gerundio = do

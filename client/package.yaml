@@ -64,6 +64,7 @@ dependencies:
   - microspec
   - tempi
   - split
+  - witherable
 
 library:
   source-dirs:

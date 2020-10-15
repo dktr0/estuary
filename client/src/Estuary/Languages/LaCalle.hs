@@ -110,7 +110,7 @@ verb'' = choice [
          (reserved "está" >> return Tidal.gain) <*> option 0.75 doublePattern,
          (reserved "estoy" >> return Tidal.resonance) <*> option 0.5 doublePattern,
          (reserved "sírvame" >> return Tidal.crush) <*> option 0 doublePattern,
-         (reserved "fué" >> return Tidal.coarse) <*> option 0 intPattern
+         (reserved "fué" >> return Tidal.coarse) <*> option 0 doublePattern
                  ]
 
 verb''' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)

@@ -164,15 +164,15 @@ in
          dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0n98jych5f440ccdkr21wszk14xsc6wim3kx4afj3xb4az498l5c";
-          rev = "f2a27f13c306012dccb29c7534dc193e2bce536e";
-        }) {});
+          sha256 = "0j09hybq9ga2whxmdk6cywyahvp27cwp4v9chpxqa2cnxvignc3b";
+          rev = "1036d474e53e6615a67b9e95b33da0f30bf2a386";
+          }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "186gcyma9sldki7l0jgy80lzqyhlz6b248iqj4m645nzk4ncv2l3";
-          rev = "ac0de845001430af98be168cf7478f55cd439274";
+          sha256 = "1w3z5xcl56jvp3qb0fkmq0gzxyl8pdw131918n1yx2vgymzz4jh1";
+          rev = "e3f8d7e72047cf021315dc312efb77cd7a7f8a41";
         }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
@@ -185,9 +185,9 @@ in
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
-          url = "https://github.com/TidalCycles/Tidal.git";
-          sha256 = "1xr30j90yja0h9cxcyp7gm6b4jv4b4z5x1dqkabkaxvvxpjyxxwk";
-          rev = "5a0ffd78e45761054b432ba51d33cd40b6c1f778";
+          url = "https://github.com/dktr0/Tidal.git";
+          sha256 = "0rwdq664vp628kp1jwmf71cgsiimldy9hkrrpfbg0qiisf5mbixh";
+          rev = "698fbff36ca14d5be6eee8cb96b1ac3d57940809";
           fetchSubmodules = true;
           }) "" {}));
 
@@ -195,9 +195,9 @@ in
 #            "tidal-parse" ../tidal/tidal-parse "" {});
             "tidal-parse"
             ( pkgs.fetchgit {
-            url = "https://github.com/TidalCycles/Tidal.git";
-            sha256 = "1xr30j90yja0h9cxcyp7gm6b4jv4b4z5x1dqkabkaxvvxpjyxxwk";
-            rev = "5a0ffd78e45761054b432ba51d33cd40b6c1f778";
+            url = "https://github.com/dktr0/Tidal.git";
+            sha256 = "0rwdq664vp628kp1jwmf71cgsiimldy9hkrrpfbg0qiisf5mbixh";
+            rev = "698fbff36ca14d5be6eee8cb96b1ac3d57940809";
             fetchSubmodules = true;
               })
             "--subpath tidal-parse" {}));
@@ -224,8 +224,13 @@ in
           dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "seis8s";
+<<<<<<< HEAD
            sha256 = "012h0bmg0w5hr3w78vj5f2xzbz7h83phkq7dw15907lydc97gdr7";
            rev = "b016fc5f3e83cb0d41c8a64a8da393e726d728be";
+=======
+           sha256 = "0g1ilwd1wikgf5lckk0nrgg6xdrachgj8b7779a8v2rdh3gki5g3";
+           rev = "4e48e02b95e46c0377db95b6829912f81faac8c6";
+>>>>>>> b1c218f92aab3ef2c617cad6b13877efd65c4868
          }) {});
       };
     in

@@ -29,17 +29,20 @@ import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
+import Estuary.Widgets.RouletteWidget
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Widgets.Tempo
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
+import Estuary.Widgets.AudioMap
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
 viewWidget er EmptyView = return never
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
+
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
@@ -53,6 +56,9 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget
+
+-- viewWidget er (RouletteView z rows) = rouletteWidget
+viewWidget er (RouletteView z) = zoneWidget z [] maybeRoulette Roulette er rouletteWidget
 
 viewWidget er TempoView = do
   ctx <- context
@@ -83,6 +89,10 @@ viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> 
     setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
     setColumnsAndRows  = setNumColumns <> setNumRows
+
+viewWidget _ AudioMapView = do
+  audioMapWidget
+  return never
 
 zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]

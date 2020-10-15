@@ -23,7 +23,9 @@ data View =
   Paragraph TranslatableText | -- a block of explanatory text in multiple languages
   Example TextNotation Text | -- a clickable text-code example
   EnsembleStatusView |
-  TempoView
+  TempoView |
+  RouletteView Int |
+  AudioMapView
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

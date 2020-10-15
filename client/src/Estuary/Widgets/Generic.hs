@@ -91,18 +91,30 @@ clickableDivDynAttrsWChild attrs child = do
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
-clickableTr :: MonadWidget t m => m a -> m (Event t (), a) -- return (Event t (), a)
-clickableTr child = do
-  (element, a) <- el' "tr" $ child -- look elAttr' ::
+clickableDivNoClass :: MonadWidget t m => m a -> m (Event t a) -- return (Event t (), a)
+clickableDivNoClass child = do
+  (element, a) <- el' "div" $ child -- look elAttr' ::
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
-  let event = (() <$) clickEv
-  return $ (event, a)
+  let event = (a <$) clickEv
+  return event
 
-clickableTr' :: MonadWidget t m => m a -> m (Event t ())
-clickableTr' child = do
-  (element,_) <- el' "tr" $ child
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
-  return $ (() <$) clickEv
+-- clickableDivWithLabel :: MonadWidget t m => Text -> a -> m (Event t a,  a)
+-- clickableDivWithLabel label e = liftM (e <$) $ clickableDivNoClass $ text label
+
+-- clickableA :: MonadWidget t m => Text -> m a -> m (Event t (), a)
+-- clickableA label child = liftM (child <$) $ (clickableDivWithLabel $ text label)
+   -- return (event, child)
+  -- (element, a) <- el' "div" $ child
+  -- clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  -- let event = (() <$) clickEv
+  -- return $ a
+
+
+-- clickableDivWithLabel :: MonadWidget t m => m a -> m (Event t ())
+-- clickableDivWithLabel child = do
+--   (element,_) <- el' "div" $ child
+--   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+--   return $ (() <$) clickEv
 
 -- clickableDiv with class
 clickableDiv :: MonadWidget t m => Text -> m a -> m (Event t ())

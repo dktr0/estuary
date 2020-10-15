@@ -42,7 +42,7 @@ body::-webkit-scrollbar-thumb {
   border-radius: 10px;
 }
 
-.body::-webkit-scrollbar-corner{
+body::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
 
@@ -1537,3 +1537,40 @@ hr.dashed {
 .reference-link:hover {
   text-decoration: underline;
 }
+
+/* roulette css */
+
+.rouletteButtons {
+	width: max-content;
+	border-radius: 5px;
+/* 	border: 1px solid; */
+/* 	cursor: pointer; */
+
+}
+
+.lineUpButton {
+ 	width: max-content;
+}
+
+.rouletteContainer{
+	overflow-y: auto;
+
+}
+
+.rouletteContainer::-webkit-scrollbar  {
+    width: 0.5%;
+    height: 0px;
+}
+
+.rouletteContainer::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.rouletteContainer::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.rouletteContainer::-webkit-scrollbar-corner{
+	background-color: transparent;

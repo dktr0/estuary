@@ -16,6 +16,9 @@ import Data.Text
 
 import Estuary.Types.Scope as Scope
 import Estuary.Types.Resources
+import Estuary.Types.AudioMeta
+import Estuary.Types.ImageMeta
+import Estuary.Types.VideoMeta
 
 import Sound.HTagLib
 
@@ -44,10 +47,10 @@ import qualified Text.JSON as JSON
 -- also allow putting an entire library in a <resourceMap>
 --    - no files -> sample library
 --    audio/ensembles/<name>/
---    audio/Cybernetic/bd and audio/dirt/db 
---    ensembles/<name>/audio/Cybernetic/bd 
+--    audio/Cybernetic/bd and audio/dirt/db
+--    ensembles/<name>/audio/Cybernetic/bd
 
-
+{-
 loadFromFileSystem :: FilePath -> IO Resources
 loadFromFileSystem resourceRoot = undefined
 
@@ -70,7 +73,7 @@ instance JSON MetaMap where
     readJSON jsonVal = do
       pairs <- JSON.decJSDict "MetaMap" jsonVal
       return $ MetaMap $ Map.fromList pairs
-    showJSON = JSON.encJSDict . Map.toList . unMetaMap 
+    showJSON = JSON.encJSDict . Map.toList . unMetaMap
 
 instance JSON ResourceMeta where
     readJSON (JSON.JSObject jsonVal) = do
@@ -113,7 +116,7 @@ loadResourceGroup loadResourceMeta scope groupName groupPath = do
             resourceTags = resourceMetaTags explicitMeta,
             resourceScope = scope
           }
-    
+
     return $ Seq.fromList resources
 
 loadMetaMap :: FilePath -> IO MetaMap
@@ -128,7 +131,7 @@ loadMetaMap groupPath = do
             let !(JSON.Ok out) = JSON.decode contents
             return out
     else
-        return $ MetaMap $ Map.empty 
+        return $ MetaMap $ Map.empty
 
 --------------------------------------------------------------------------------
 -- File meta readers
@@ -140,3 +143,4 @@ readAudioMeta path = getTags path audioMetaGetter
         audioMetaGetter = AudioMeta
             <$> fmap (fromIntegral . unDuration) durationGetter
             -- <*> channelsGetter
+-}

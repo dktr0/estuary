@@ -55,12 +55,13 @@ data RenderState = RenderState {
   info :: !RenderInfo,
   glContext :: GLContext,
   canvasElement :: HTMLCanvasElement,
+  hydraCanvas :: HTMLCanvasElement,
   videoDivCache :: Maybe HTMLDivElement,
   tempoCache :: Tempo
   }
 
-initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> UTCTime -> AudioTime -> IO RenderState
-initialRenderState mic out cvsElement glCtx t0System t0Audio = do
+initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
+initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) Punctual.HD 1.0 glCtx
   return $ RenderState {
     animationOn = False,
@@ -92,6 +93,7 @@ initialRenderState mic out cvsElement glCtx t0System t0Audio = do
     info = emptyRenderInfo,
     glContext = glCtx,
     canvasElement = cvsElement,
+    hydraCanvas = hCanvas,
     videoDivCache = Nothing,
     tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 }
   }

@@ -13,6 +13,9 @@ import GHCJS.DOM.Blob
 import Estuary.Render.ResourceProvider
 
 import Estuary.Types.Resources
+import Estuary.Types.AudioMeta
+import Estuary.Types.ImageMeta
+import Estuary.Types.VideoMeta
 import Estuary.Types.Scope
 
 data LocalResourceServers = LocalResourceServers {
@@ -36,19 +39,19 @@ emptyLocalResourceServer :: LocalResourceServer m
 emptyLocalResourceServer = LocalResourceServer Map.empty
 
 uploadLocal :: Text -> Text -> Blob -> LocalResourceServer m -> LocalResourceServer m
-uploadLocal groupName url file (LocalResourceServer server) = 
+uploadLocal groupName url file (LocalResourceServer server) =
   let group = Map.insert url file (Map.findWithDefault Map.empty groupName server)
   in LocalResourceServer (Map.insert groupName group server)
 
 instance ResourceDataProvider LocalResourceServer where
-  resourceIsProvidedBy (LocalResourceServer fs) Resource{resourceScope=Private, resourceGroup, resourceFileName} = 
+  resourceIsProvidedBy (LocalResourceServer fs) Resource{resourceScope=Private, resourceGroup, resourceFileName} =
     isJust $ do
         group <- Map.lookup resourceGroup fs
         Map.lookup resourceFileName group
   resourceIsProvidedBy _ _ = False
 
   fetchResource server@(LocalResourceServer fs) resource@Resource{resourceGroup, resourceFileName} =
-    if resourceIsProvidedBy server resource then 
+    if resourceIsProvidedBy server resource then
       return $ Right $ (fs ! resourceGroup) ! resourceFileName
     else
       return $ Left $ "No resource in " `T.append` resourceGroup `T.append` " named " `T.append` resourceFileName

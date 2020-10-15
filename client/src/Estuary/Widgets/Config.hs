@@ -9,15 +9,17 @@ import Data.Map.Strict
 
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Generic
+import Estuary.Widgets.ViewEditor
 import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
+import Estuary.Types.RenderInfo
 
 import qualified Sound.Punctual.Resolution as Punctual
 
-configWidget :: MonadWidget t m => Editor t m (Event t ContextChange)
-configWidget = do
+configWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Editor t m (Event t ContextChange)
+configWidget ctx ri = do
 
   canvasEnabledEv <- divClass "config-option primary-color ui-font" $ do
     text "Canvas: "
@@ -28,7 +30,7 @@ configWidget = do
       (English,"Enable the canvas to display visual results.")
       ])
     return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
-    
+
   elClass "hr" "dashed" $  text ""
 
   resolutionChangeEv <- divClass "config-option primary-color ui-font" $ do
@@ -89,5 +91,11 @@ configWidget = do
       ])
     return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
 
+  elClass "hr" "dashed" $  text ""
 
-  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv]
+  viewEditorChange <- divClass "config-option primary-color ui-font" $ do
+    el "h3" $ text "View Editor"
+    (result,_) <- runEditor ctx ri $ viewEditor ctx
+    return result
+
+  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange]

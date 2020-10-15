@@ -29,6 +29,7 @@ import Sound.OSC.Datum
 import Text.Parsec (ParseError)
 import qualified Data.ByteString as B
 import GHCJS.DOM.Types (HTMLCanvasElement)
+import Data.Witherable
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Punctual.Program as Punctual
@@ -107,14 +108,12 @@ flushEvents irc c = do
   s <- get
   when (webDirtOn c) $ liftIO $ do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
-    let f = first (utcTimeToAudioSeconds cDiff)
-    noteEvents' <- mapM mapToWebDirtMessage $ fmap f (noteEvents s)
-    tidalEvents' <- mapM controlMapToWebDirtMessage $ fmap f (tidalEvents s)
+    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal (audioMap c) cDiff) $ noteEvents s
+    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal (audioMap c) cDiff) $ tidalEvents s
     mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents'
   when (superDirtOn c) $ liftIO $ do
-    let f = first (realToFrac . utcTimeToPOSIXSeconds)
-    noteEvents' <- mapM mapToWebDirtMessage $ fmap f (noteEvents s)
-    tidalEvents' <- mapM controlMapToWebDirtMessage $ fmap f (tidalEvents s)
+    noteEvents' <- mapM (SuperDirt.noteEventToSuperDirtJSVal (audioMap c)) $ noteEvents s
+    tidalEvents' <- mapM (SuperDirt.tidalEventToSuperDirtJSVal (audioMap c)) $ tidalEvents s
     mapM_ (SuperDirt.playSample (superDirt irc)) $ noteEvents' ++ tidalEvents'
   modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
   return ()
@@ -440,7 +439,7 @@ parseHydra irc c z t = do
      hydra <- case x of
        Just h -> return h
        Nothing -> do
-         h <- liftIO $ Hydra.newHydra $ canvasElement s
+         h <- liftIO $ Hydra.newHydra $ hydraCanvas s
          modify' $ \x -> x { hydras = IntMap.insert z h (hydras x)}
          return h
      -- liftIO $ Hydra.setResolution hydra 1280 720
@@ -538,11 +537,11 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: ImmutableRenderContext -> MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> MVar RenderInfo -> IO ()
-forkRenderThreads irc ctxM cvsElement glCtx riM = do
+forkRenderThreads :: ImmutableRenderContext -> MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO ()
+forkRenderThreads irc ctxM cvsElement glCtx hCanvas riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
-  irs <- initialRenderState (mic irc) (out irc) cvsElement glCtx t0System t0Audio
+  irs <- initialRenderState (mic irc) (out irc) cvsElement glCtx hCanvas t0System t0Audio
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread irc ctxM riM rsM
   void $ forkIO $ animationThread irc ctxM rsM
