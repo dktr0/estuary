@@ -64,6 +64,5 @@ data Output =
 data Statement =
   Out Source Output |
   Render Output |
-  Speed Parameters | -- i.e. speed = 1.5
-  BMP Parameters -- i.e. bpm(140) not yet implemented
+  Speed Parameters -- i.e. speed = 1.5
   deriving (Show)
