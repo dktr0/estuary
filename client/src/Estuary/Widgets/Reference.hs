@@ -48,6 +48,7 @@ referenceWidget MainList = do
     miniTidal <- el "li" $ goTo MiniTidal "MiniTidal"
     punctual <- el "li" $ goTo Punctual "Punctual"
     cineCero <- el "li" $ goTo CineCer0 "CineCer0"
+    hydra <- el "li" $ goTo Hydra "Hydra"
     return $ leftmost [miniTidal, punctual, cineCero, hydra]
   el "h3" $ text "View System"
   navEv2 <- el "ul" $ do
@@ -71,14 +72,13 @@ referenceWidget Punctual = do
 referenceWidget CineCer0 = do
   navEv <- goTo MainList "Home"
   el "h3" $ text "CineCer0 Reference"
-  cineCer0HelpFile
-  -- el "p" $ text "Coming soon"
+  cineCer0Help
   return navEv
 
 referenceWidget Hydra = do
   navEv <- goTo MainList "Home"
   el "h3" $ text "Hydra Reference"
-  hydraHelpFile
+  hydraHelp
   return navEv
 
 referenceWidget TerminalViewCommands = do

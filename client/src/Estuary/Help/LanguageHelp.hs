@@ -30,6 +30,4 @@ parserToHelp (TidalTextNotation MiniTidal) = miniTidalHelpFile
 parserToHelp (TidalTextNotation LaCalle) = laCalleHelpFile
 parserToHelp (TidalTextNotation Togo) = togoHelpFile
 parserToHelp Punctual = punctualAudioHelpFile
-parserToHelp Hydra = hydraHelpFile
-parserToHelp CineCer0 = cineCer0HelpFile
 parserToHelp _ = noHelpFile
