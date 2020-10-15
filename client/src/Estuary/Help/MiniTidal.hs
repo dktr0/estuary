@@ -172,7 +172,7 @@ miniTidalHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about primary-color code-font" $ text  "A live coding langugae that allows you to make musical patterns with text, describing sequences and ways of transforming and combining them, exploring complex interactions between simple parts."
+  divClass "about primary-color code-font" $ text  "A live coding language that allows you to make musical patterns with text, describing sequences and ways of transforming and combining them, exploring complex interactions between simple parts."
 
 exampleText :: Text -> Text
 
