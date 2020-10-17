@@ -99,6 +99,13 @@ rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
+-- new fade in (syntax sugar funcs)
+ndt_sigRat :: H (NominalDiffTime -> Signal Rational)
+ndt_sigRat = 
+  (reserved "fadeIn" >> return fadeIn) <|>
+  (reserved "fadeOut" >> return fadeOut)
+
+
 -- //////////////
 
 vs_vs :: H (LayerSpec -> LayerSpec)
@@ -154,6 +161,7 @@ sigInt_vs_vs =
 
 sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
 sigStr_vs_vs =
+  setColour <$ reserved "colour" -- this is wrong, the type is actually Colour not String
   setFontFamily <$ reserved "font"
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
@@ -165,6 +173,8 @@ sigRat_sigRat_vs_vs =
 sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_vs_vs =
   circleMask' <$ reserved "circleMask'" <|>
+  setRGB <$ reserved "colour" <|>
+  setHSV <$ reserved "colour'" <|>
   sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)

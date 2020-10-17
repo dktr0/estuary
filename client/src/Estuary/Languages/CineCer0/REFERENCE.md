@@ -1,12 +1,17 @@
 # Cinecer0 Reference
 
-The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows video files to b e projected temporally and geometrically, targeting similar functionality to that of [CineVivo](https://github.com/essteban/CineVivo), again with an economical Haskell-like notation.
+The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows video files to b e projected temporally and geometrically, targeting similar functionality to that of [CineVivo](https://github.com/essteban/CineVivo), again with an economical Haskell-like notation. Additional functions that enable the audio of the video and add text on top of the video (or without any relationship with the video) have been implemented.  
 
 ## Playing Videos
 
-"video.extension" --videos play as a string <br />
+"myVideo.extension" --videos play as a string <br />
 "videoURL" --you can add the URL to play videos <br />
+video "video.extension" -- function in which the explicit declaration of the type of signal ouput is declared <br />
 "" --empty state
+
+### Videos with Audio
+
+vol 0.5 $ "myVideo.extension" -- videos play with unmuted audio 
 
 ## Image
 
@@ -26,6 +31,17 @@ circleMask [m] $ -- 0 is no mask, 0-0.99 makes the mask appear from biggest to s
 circleMask' [m] [w] [h] $ -- similar to circleMask but with two more parameters that move the center of the circleMask
 sqrMask [m] $ -- 0 is no mask, 0-0.99 makes the mask appear from biggest to smallest (it grows/decrease from the centre)
 rectMask [t] [r] [b] [l] $ -- accepts four parameters: top right bottom left, which are the amount of reduction in each side
+z [n] -- changes the depth of the video being reproduced
+
+## Text
+
+text "This is not a text" -- the string represents the text that will be displayed in the canvas
+font "fontType" -- fonts available depending on browser characteristics
+fontSize [n] -- a font size
+strike -- strikes the text with a white line
+bold -- the weight of the font becomes heavier
+italic -- the style of the font changes to italic
+z [n] -- changes the depth of the text, z 0 is the top layer 
 
 ## ramp
 

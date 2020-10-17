@@ -420,6 +420,12 @@ ramp' renderTime startTime endTime startVal endVal -- delete what is not needed
         in startVal + percOfProcessAtRender
 
 
+fadeIn:: UTCTime -> Signal Rational
+fadeIn cycles t vl rTime eTime aTime = ramp cycles 0 1 t vl rTime eTime aTime
+
+fadeOut:: UTCTime -> Signal Rational
+fadeOut cycles t vl rTime eTime aTime = ramp cycles 1 0 t vl rTime eTime aTime
+
 --------- Helper Functions ------------
 
 -- gets percentage and modulates the result to a new scale. Example:

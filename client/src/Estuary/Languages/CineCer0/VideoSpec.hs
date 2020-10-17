@@ -13,7 +13,7 @@ import Data.Tempo
 import Estuary.Languages.CineCer0.Signal
 
 --------- change String to Text throughout the pipeline!!!!!
-data Colour = Colour String | ColourRGB (Double, Double, Double) | ColourHSV (Double, Double, Double)
+data Colour = Colour String | ColourRGB (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSV (Signal Rational) (Signal Rational) (Signal Rational)
 
 -- layer: right is video left is text!!!!!
 data LayerSpec = LayerSpec {
