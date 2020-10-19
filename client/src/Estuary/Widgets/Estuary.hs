@@ -262,3 +262,11 @@ commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
   res <- audioResourceFromMeta $ AudioMeta url 0
   return $ \x -> x { audioMap = append bankName res (audioMap x)}
 commandToContextChangeIO _ = Nothing
+
+
+-- this is part of current refactor - definitions above are not
+ensembleRequestToRender :: MonadWidget t m => MVar [EnsembleEvent] -> Event t EnsembleEvent -> m ()
+ensembleRequestToRender mv rqs = performEvent_ $ ffor rqs $ \r -> do
+  x <- takeMVar mv
+  putMVar $ x ++ [rqs]
+  return ()

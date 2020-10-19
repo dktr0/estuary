@@ -23,14 +23,15 @@ import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
 import Estuary.Types.Term
 
--- 1. we need to be able to access/read these things when writing widgets...
+-- 1. we need to be able to access/read these things when defining widgets...
 type WidgetEnvironment t = (Dynamic t Settings, Dynamic t NetworkStatus, EnsembleC, Dynamic t RenderInfo)
 
 -- 2. and we need to be able to collect all of the following effects in each frame of UI interaction...
 type WidgetEffects t = (Event t (Settings -> Settings), Event t [Hint])
 
--- 3. and we'll need to build widgets in some monad m provided by reflex, so we
--- bring these three things together using monad transformers, as the new monad (E t m)
+-- 3. and we'll need to build widgets in some monad m provided by reflex-dom,
+-- with some reflex FRP timeline t, so we bring these three things together
+-- using monad transformers, as the new monad (W t m):
 
 type W t m = StateT (WidgetEffects t) (ReaderT (WidgetEnvironment t) m)
 

@@ -16,9 +16,7 @@ import TextShow
 import Control.Applicative
 import Reflex
 
-import Estuary.Types.Response
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.EnsembleResponse
+import Estuary.Types.EnsembleEvent
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.View.Parser
@@ -28,7 +26,6 @@ import Estuary.Types.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Types.Participant
-
 import Estuary.Types.Chat
 
 -- each field of the EnsembleC record is Dynamic t a, so that any of them can
@@ -36,56 +33,113 @@ import Estuary.Types.Chat
 
 data EnsembleC t = EnsembleC {
   ensembleName :: Dynamic t Text,
+  userHandle :: Dynamic t Text, -- how the user appears to others in the ensemble; "" == anonymous
+  location :: Dynamic t Text, -- the user's location (cached for re-authentication scenarios)
+  password :: Dynamic t Text, -- the participant password (cached for re-authentication scenarios)
   tempo :: Dynamic t Tempo,
   zones :: Dynamic t (IntMap.IntMap Definition), -- refactor later to make individual zones Dynamic
   views :: Dynamic t (Map.Map Text View),
   chats :: Dynamic t [Chat],
+  view :: Dynamic t (Either View Text), -- Rights are from preset views, Lefts are local views
+  ensembleAudioMap :: Dynamic t AudioMap,
   participants :: Dynamic t (Map.Map Text Participant),
   anonymousParticipants :: Dynamic t Int
-  ensembleAudioMap :: Dynamic t AudioMap,
-  userHandle :: Dynamic t Text, -- how the user appears to others in the ensemble; "" == anonymous
-  location :: Dynamic t Text, -- the user's location (cached for re-authentication scenarios)
-  password :: Dynamic t Text, -- the participant password (cached for re-authentication scenarios)
-  view :: Dynamic t (Either View Text) -- Rights are from preset views, Lefts are local views
 }
 
-emptyEnsembleC :: UTCTime -> EnsembleC t
-emptyEnsembleC t = EnsembleC {
-  ensembleName = constDyn "",
-  tempo = constDyn $ Tempo { time=t, count=0.0, freq=0.5 },
-  zones = constDyn IntMap.empty,
-  views = constDyn $ Map.empty,
-  chats = constDyn [],
-  participants = constDyn Map.empty,
-  anonymousParticipants = constDyn 0,
-  ensembleAudioMap = constDyn Map.empty,
-  userHandle = constDyn "",
-  location = constDyn "",
-  password = constDyn "",
-  view = constDyn $ Right "default"
+eventsToEnsembleC :: MonadWidget t m => Event t EnsembleEvent -> m EnsembleC
+eventsToEnsembleC rqs = do
+  ensembleName' <- holdDyn "" $ fmapMaybe ensembleNameF rqs
+  userHandle' <- holdDyn "" $ fmapMaybe userHandleF rqs
+  location' <- holdDyn "" $ fmapMaybe locationF rqs
+  password' <- holdDyn "" $ fmapMaybe passwordF rqs
+  tempo' <- holdDyn (Tempo { time=t, count=0.0, freq=0.5 }) $ fmapMaybe tempoF rqs
+  zones' <- foldDyn (.) IntMap.empty $ fmapMaybe zonesF rqs
+  views' <- foldDyn (.) Map.empty $ fmapMaybe viewsF rqs
+  chats' <- foldDyn (.) [] $ fmapMaybe chatsF rqs
+  view' <- holdDyn (Right "default") $ fmapMaybe viewF rqs
+  ensembleAudioMapIO <- performEvent $ fmap liftIO $ fmapMaybe ensembleAudioMapF rqs
+  ensembleAudioMap' <- foldDyn (.) Map.empty $ ensembleAudioMapIO
+  participants' <- foldDyn (.) Map.empty $ fmapMaybe participantsF rqs
+  anonymousParticipants' <- holdDyn 0 $ fmapMaybe anonymousParticipantsF rqs
+  return $ EnsembleC {
+    ensembleName = ensembleName',
+    userHandle = userHandle',
+    location = location',
+    password = password',
+    tempo = tempo',
+    zones = zones',
+    views = views',
+    chats = chats',
+    view = view',
+    ensembleAudioMap = ensembleAudioMap',
+    participants = participants',
+    anonymousParticipants = anonymousParticipants'
   }
 
+ensembleNameF :: EnsembleEvent -> Maybe Text
+ensembleNameF (JoinEvent x _ _ _) = Just x
+ensembleNameF LeaveEvent = Just ""
+ensembleNameF _ = Nothing
 
--- ** WORKING below here, continuing to refactor on the basis of the above
+userHandleF :: EnsembleEvent -> Maybe Text
+userHandleF (JoinEvent _ x _ _) = Just x
+userHandleF LeaveEvent = Just ""
+userHandleF _ = Nothing
 
-joinEnsembleC :: Text -> Text -> Text -> Text -> EnsembleC -> EnsembleC
-joinEnsembleC eName uName loc pwd es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, Estuary.Types.EnsembleC.location = loc, Estuary.Types.EnsembleC.password = pwd, view = Right "default" }
+locationF :: EnsembleEvent -> Maybe Text
+locationF (JoinEvent _ _ x _) = Just x
+locationF LeaveEvent = Just ""
+locationF _ = Nothing
 
-leaveEnsembleC :: EnsembleC -> EnsembleC
-leaveEnsembleC x = x {
-  ensemble = leaveEnsemble (ensemble x),
-  userHandle = "",
-  Estuary.Types.EnsembleC.location = "",
-  Estuary.Types.EnsembleC.password = ""
-  }
+passwordF  :: EnsembleEvent -> Maybe Text
+passwordF (JoinEvent _ _ _ x) = Just x
+passwordF LeaveEvent = Just ""
+passwordF _ = Nothing
 
--- if a specific named view is in the ensemble's map of views we get that
--- or if not but a view with that names is in Estuary's presets we get that
--- so ensembles can have a different default view than solo mode simply by
--- defining a view at the key "default"
+tempoF :: EnsembleEvent -> Maybe Tempo
+tempoF (TempoEvent x) = Just x
+tempoF _ = Nothing
 
-inAnEnsemble :: EnsembleC -> Bool
-inAnEnsemble e = ensembleName (ensemble e) /= ""
+zonesF :: EnsembleEvent -> Maybe (IntMap.IntMap Definition -> IntMap.IntMap Definition)
+zonesF (ZoneEvent k v) = Just (IntMap.insert k v)
+zonesF ClearZones = Just (const $ IntMap.empty)
+zonesF LeaveEvent = Just (const $ IntMap.empty)
+zonesF _ = Nothing
+
+viewsF :: EnsembleEvent -> Maybe (Map.Map Text View -> Map.Map Text View)
+viewsF (ViewsEvent k v) = Just (Map.insert k v)
+viewsF LeaveEvent = Just (const $ Map.empty)
+viewsF _ = Nothing
+
+chatsF :: EnsembleEvent -> Maybe ([Chat] -> [Chat])
+chatsF (ChatEvent x) = Just (\y -> y ++ [x])
+chatsF LeaveEvent = Just (const [])
+chatsF _ = Nothing
+
+viewF :: EnsembleEvent -> Maybe (Either View Text)
+viewF (ViewEvent x) = Just x
+viewF _ = Nothing
+
+ensembleAudioMapF :: EnsembleEvent -> Maybe (IO (AudioMap -> AudioMap))
+ensembleAudioMapF (InsertAudioResource url bankName n) = Just $ return $ Map.insert (bankName,n) url
+ensembleAudioMapF (DeleteAudioResource bankName n) = Just $ return $ Map.delete (bankName,n)
+ensembleAudioMapF (AppendAudioResource url bankName) = Just $ do
+  aMeta <- audioResourceFromMeta $ AudioMeta url 0
+  return $ ResourceMap.append bankName aMeta
+ensembleAudioMapF _ = Nothing
+
+participantsF :: EnsembleEvent -> Maybe (Map.Map Text Participant -> Map.Map Text Participant)
+participantsF (ParticipantJoins p) = Just $ Map.insert (name p) p
+participantsF (ParticipantUpdate p) = Just $ Map.insert (name p) p
+participantsF (ParticipantLeaves n) = Just $ Map.delete n
+participantsF _ = Nothing
+
+anonymousParticipantsF :: EnsembleEvent -> Maybe Int
+anonymousParticipantsF (AnonymousParticipants n) = Just n
+anonymousParticipantsF _ = Nothing
+
+
+-- *** WORKING BELOW HERE figuring out what stays, what goes, what gets refactored...
 
 lookupView :: Text -> Ensemble -> Maybe View
 lookupView t e = Map.lookup t (views e) <|> Map.lookup t presetViews
@@ -117,72 +171,3 @@ replaceStandardView t v e = e {
   ensemble = writeView t v (ensemble e),
   view = Right t
   }
-
-commandToHint :: EnsembleC -> Terminal.Command -> Maybe Hint
-commandToHint _ (Terminal.LocalView _) = Just $ LogMessage "local view changed"
-commandToHint _ (Terminal.PresetView x) = Just $ LogMessage $ "preset view " <> x <> " selected"
-commandToHint _ (Terminal.PublishView x) = Just $ LogMessage $ "active view published as " <> x
-commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ nameOfActiveView es
-commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ ensemble es
-commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
-commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
-commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $ T.pack $ show $ tempo $ ensemble es
-commandToHint _ _ = Nothing
-
-commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
-commandToStateChange (Terminal.LocalView v) es = selectLocalView v es
-commandToStateChange (Terminal.PresetView t) es = selectPresetView t es
-commandToStateChange (Terminal.PublishView t) es = replaceStandardView t (activeView es) es
-commandToStateChange _ es = es
-
-requestToStateChange :: EnsembleRequest -> EnsembleC -> EnsembleC
-requestToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es
-requestToStateChange (WriteZone n v) es = modifyEnsemble (writeZone n v) es
-requestToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
-requestToStateChange _ es = es
--- note: WriteChat and WriteStatus don't directly affect the EnsembleC and are thus
--- not matched here. Instead, the server responds to these requests to all participants
--- and in this way the information "comes back down" from the server.
-
-ensembleResponseToStateChange :: EnsembleResponse -> EnsembleC -> EnsembleC
-ensembleResponseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) es
-ensembleResponseToStateChange (ZoneRcvd n v) es = modifyEnsemble (writeZone n v) es
-ensembleResponseToStateChange (ViewRcvd t v) es = modifyEnsemble (writeView t v) es
-ensembleResponseToStateChange (ChatRcvd c) es = modifyEnsemble (appendChat c) es
-ensembleResponseToStateChange (ParticipantJoins x) es = modifyEnsemble (writeParticipant (name x) x) es
-ensembleResponseToStateChange (ParticipantUpdate x) es = modifyEnsemble (writeParticipant (name x) x) es
-ensembleResponseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
-ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
-ensembleResponseToStateChange _ es = es
-
-responseToStateChange :: Response -> EnsembleC -> EnsembleC
-responseToStateChange (JoinedEnsemble eName uName loc pwd) es = joinEnsembleC eName uName loc pwd es
-responseToStateChange _ es = es
-
-commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe (IO EnsembleRequest)
-commandToEnsembleRequest es (Terminal.PublishView x) = Just $ return (WriteView x (activeView es))
-commandToEnsembleRequest es (Terminal.Chat x) = Just $ return (WriteChat x)
-commandToEnsembleRequest es Terminal.AncientTempo = Just $ return (WriteTempo x)
-  where x = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
-commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ do
-  x' <- changeTempoNow (realToFrac x) (tempo $ ensemble es)
-  return (WriteTempo x')
-commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ do
-  x' <- changeTempoNow (realToFrac x / 240) (tempo $ ensemble es)
-  return (WriteTempo x')
-commandToEnsembleRequest _ _ = Nothing
-
-responseToMessage :: Response -> Maybe Text
-responseToMessage (ResponseError e) = Just $ "error: " <> e
-responseToMessage (ResponseOK m) = Just m
-responseToMessage (EnsembleResponse (ChatRcvd c)) = Just $ showChatMessage c
-responseToMessage (EnsembleResponse (ParticipantJoins x)) = Just $ name x <> " has joined the ensemble"
-responseToMessage (EnsembleResponse (ParticipantLeaves n)) = Just $ n <> " has left the ensemble"
--- the cases below are for debugging only and can be commented out when not debugging:
--- responseToMessage (TempoRcvd _) = Just $ "received new tempo"
--- responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showtl n
--- responseToMessage (ViewRcvd n _) = Just $ "received view " <> n
--- responseToMessage (ParticipantUpdate n _) = Just $ "received ParticipantUpdate about " <> n
--- responseToMessage (AnonymousParticipants n) = Just $ "now there are " <> showtl n <> " anonymous participants"
--- don't comment out the case below, of course!
-responseToMessage _ = Nothing
