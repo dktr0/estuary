@@ -12,6 +12,7 @@ import GHCJS.DOM.Types
 import Sound.Punctual.GL
 import Data.Tempo
 
+import Estuary.Types.EnsembleEvent
 import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
 import Estuary.Types.NoteEvent
@@ -57,7 +58,8 @@ data RenderState = RenderState {
   canvasElement :: HTMLCanvasElement,
   hydraCanvas :: HTMLCanvasElement,
   videoDivCache :: Maybe HTMLDivElement,
-  tempoCache :: Tempo
+  tempoCache :: Tempo,
+  ensembleEventsM :: MVar [EnsembleEvent]
   }
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState

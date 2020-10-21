@@ -44,22 +44,11 @@ import qualified Sound.TimeNot.Parsers as TimeNot
 import qualified Sound.TimeNot.Render as TimeNot
 import qualified Sound.Seis8s.Parser as Seis8s
 
-import qualified Estuary.Languages.Hydra.Types as Hydra
-import qualified Estuary.Languages.Hydra.Parser as Hydra
-import qualified Estuary.Languages.Hydra.Render as Hydra
-import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
-import qualified Estuary.Languages.CineCer0.Spec as CineCer0
-import qualified Estuary.Languages.CineCer0.Parser as CineCer0
-import Estuary.Types.Ensemble
-import Estuary.Types.EnsembleC
-import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Tidal.Types
 import Estuary.Tidal.ParamPatternable
 import Estuary.Types.Live
-import Estuary.Languages.TidalParsers
-import Estuary.Languages.TextReplacement
 import qualified Estuary.Render.WebDirt as WebDirt
 import qualified Estuary.Render.SuperDirt as SuperDirt
 import Estuary.Types.NoteEvent
@@ -68,6 +57,16 @@ import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
+
+import qualified Estuary.Languages.Hydra.Types as Hydra
+import qualified Estuary.Languages.Hydra.Parser as Hydra
+import qualified Estuary.Languages.Hydra.Render as Hydra
+import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
+import qualified Estuary.Languages.CineCer0.Spec as CineCer0
+import qualified Estuary.Languages.CineCer0.Parser as CineCer0
+import Estuary.Languages.TidalParsers
+import Estuary.Languages.TextReplacement
+
 
 type Renderer = StateT RenderState IO ()
 
@@ -95,6 +94,46 @@ rewindThreshold = 1.0
 
 earlyWakeUp :: NominalDiffTime
 earlyWakeUp = 0.002
+
+processEnsembleEvents :: Renderer
+processEnsembleEvents = do
+  eevsM <- ensembleEventsM <$> get
+  eevs <- takeMVar eevsM
+  putMVar eevsM []
+  mapM_ processEnsembleEvent eevs
+
+processEnsembleEvent :: EnsembleEvent -> Renderer
+processEnsembleEvent (TempoEvent t) = modify' $ \s -> s { tempo = t }
+processEnsembleEvent (ZoneEvent n d) = do
+  -- there are several scenarios to account for when we receive a ZoneEvent:
+  -- (1) new definition where there wasn't one previously (parse)
+  -- (2) new definition of same type/language (parse again)
+  -- (3) changed definition of new type/language (clear state/nodes/etc before parsing again)
+  cache <- cachedDefs <$> get
+  let prevDef = IntMap.lookup n cache -- Maybe Definition
+  when ( ??? ) $ do -- clear state/nodes/etc if was previously a definition with a different notation
+    -- *** TODO
+  -- parse/process the new definition as necessary
+
+
+  -- *** WORKING HERE ***
+
+processEnsembleEvent ClearZones = clearZones
+processEnsembleEvent (JoinEvent _ _ _ _) = clearZones
+processEnsembleEvent LeaveEvent = clearZones
+processEnsembleEvent _ = return ()
+
+clearZones :: Renderer
+clearZones = do
+  -- *** WORKING HERE ***
+
+InsertAudioResource Text Text Int | -- "url" [bankName] [n]
+DeleteAudioResource Text Int | -- [bankName] [n]
+AppendAudioResource Text Text | -- "url" [bankName]
+deriving (Eq,Generic)
+
+
+
 
 pushNoteEvents :: [NoteEvent] -> Renderer
 pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
