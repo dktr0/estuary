@@ -1543,9 +1543,7 @@ hr.dashed {
 .rouletteButtons {
 	width: max-content;
 	border-radius: 5px;
-/* 	border: 1px solid; */
-/* 	cursor: pointer; */
-
+    margin-right: 1%;
 }
 
 .lineUpButton {
@@ -1553,6 +1551,7 @@ hr.dashed {
 }
 
 .rouletteContainer{
+	display: flex;
 	overflow-y: auto;
 
 }
@@ -1574,3 +1573,8 @@ hr.dashed {
 
 .rouletteContainer::-webkit-scrollbar-corner{
 	background-color: transparent;
+}
+
+.attrsRouletteButtonHead {
+	border: 1px solid var(--primary-color);
+}
