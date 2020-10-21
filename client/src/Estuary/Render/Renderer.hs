@@ -111,7 +111,11 @@ processEnsembleEvent (ZoneEvent n d) = do
   -- (3) changed definition of new type/language (clear state/nodes/etc before parsing again)
   cache <- cachedDefs <$> get
   let prevDef = IntMap.lookup n cache -- Maybe Definition
-  when ( ??? ) $ do -- clear state/nodes/etc if was previously a definition with a different notation
+  let needToClear = case prevDef of
+    Just prevDef' ->
+      -- *** TODO ***
+    Nothing ->
+  when needToClear $ do -- clear state/nodes/etc if was previously a definition with a different notation
     -- *** TODO
   -- parse/process the new definition as necessary
 
