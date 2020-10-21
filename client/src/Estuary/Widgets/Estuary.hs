@@ -264,9 +264,29 @@ commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
 commandToContextChangeIO _ = Nothing
 
 
--- this is part of current refactor - definitions above are not
-ensembleRequestToRender :: MonadWidget t m => MVar [EnsembleEvent] -> Event t EnsembleEvent -> m ()
-ensembleRequestToRender mv rqs = performEvent_ $ ffor rqs $ \r -> do
+-- definitions below are part of current refactor - definitions above are not
+ensembleEventsToRender :: MonadWidget t m => MVar [EnsembleEvent] -> Event t [EnsembleEvent] -> m ()
+ensembleEventsToRender mv eevs = performEvent_ $ ffor eevs $ \r -> do
   x <- takeMVar mv
-  putMVar $ x ++ [rqs]
+  putMVar $ x ++ eevs
   return ()
+
+logEnsembleEvents :: MonadWidget t m => Event t [EnsembleEvent] -> W t m ()
+logEnsembleEvents evs = hints $ ffilter (/=[]) $ fmap (catMaybes . fmap ensembleEventToLogMessage) evs
+
+ensembleEventToLogMessage :: EnsembleEvent -> Maybe Hint
+ensembleEventToLogMessage (TempoEvent t) = Just $ LogMessage "tempo changed"
+ensembleEventToLogMessage ClearZones = Just $ LogMessage "all zones cleared"
+ensembleEventToLogMessage (ViewsEvent n _) = Just $ LogMessage $ "view " <> n <> " published"
+ensembleEventToLogMessage (ChatEvent c) = Just $ LogMessage $ chatSender c <> ": " <> chatText c
+ensembleEventToLogMessage (JoinEvent n "" _ _) = Just $ LogMessage $ "joined ensemble " <> n <> " anonymously"
+ensembleEventToLogMessage (JoinEvent n h _ _) = Just $ LogMessage $ "joined ensemble " <> n <> " as " <> h
+ensembleEventToLogMessage LeaveEvent = Just $ LogMessage $ "left ensemble"
+ensembleEventToLogMessage (ParticipantJoins p) = Just $ LogMessage $ name p <> " joins ensemble"
+ensembleEventToLogMessage (ParticipantLeaves n) = Just $ LogMessage $ name p <> " leaves ensemble"
+ensembleEventToLogMessage _ = Nothing
+
+responseToHint :: Response -> Maybe Text
+responseToHint (ResponseError e) = Just $ LogMessage $ "error: " <> e
+responseToHint (ResponseOK m) = Just $ LogMessage m
+responseToHint _ = Nothing

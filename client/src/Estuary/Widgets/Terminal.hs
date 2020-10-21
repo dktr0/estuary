@@ -26,137 +26,129 @@ import Estuary.Types.Hint
 import Estuary.Widgets.Editor
 import Estuary.Widgets.EnsembleStatus
 
-terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> W t m (Event t Terminal.Command)
-terminalWidget deltasDown hintsDown = divClass "terminal code-font" $ mdo
-  commands <- divClass "chat" $ mdo
-    (inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
+terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> W t m ()
+terminalWidget deltasDown hintsDown = divClass "terminal code-font" $ do
+  divClass "chat" $ mdo
+    inputWidget <- divClass "terminalHeader code-font primary-color" $ do
       divClass "webSocketButtons" $ term Term.TerminalChat >>= dynText
       let resetText = fmap (const "") terminalInput
       let attrs = constDyn $ fromList [("class","primary-color code-font"),("style","width: 100%")]
       inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
-      return (inputWidget')
+      return inputWidget'
     let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
     let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [enterPressed]
     let parsedInput = fmap Terminal.parseCommand terminalInput
-    let commands = fmapMaybe (either (const Nothing) Just) parsedInput
     let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) parsedInput
-
-    let hintMsgs = ffilter (/= []) $ fmap hintsToMessages hints
-
+    let hintMsgs = ffilter (/= []) $ fmap (fmapMaybe hintToMessage) hintsDown
     -- parse responses from server in order to display log/chat messages
     let responseMsgs = fmap (Data.Maybe.mapMaybe responseToMessage) deltasDown
     let streamIdMsgs = fmap (\x -> ["new Peer id: " <> x]) streamId
     let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs,streamIdMsgs]
     mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
     divClass "chatMessageContainer" $ simpleList mostRecent $ \v -> divClass "chatMessage code-font primary-color" $ dynText v
-
-    pp <- liftIO $ newPeerProtocol
-    startStreamingReflex pp $ ffilter (== Terminal.StartStreaming) commands
-    streamId <- peerProtocolIdReflex pp $ ffilter (== Terminal.StreamId) commands
-    return commands
-
+    --
+    performCommands $ fmapMaybe (either (const Nothing) Just) parsedInput
   divClass "ensembleStatus" $ ensembleStatusWidget
+  return ()
 
-  return commands
-
-
--- these two new functions don't belong in this module
--- they should probably go in Estuary.Widgets.Estuary?
-
-logEnsembleEvents :: MonadWidget t m => Event t [EnsembleEvent] -> W t m ()
-logEnsembleEvents evs = hints $ ffilter (/=[]) $ fmap (catMaybes . fmap ensembleEventToLogMessage) evs
-
-ensembleEventToLogMessage :: EnsembleEvent -> Maybe Hint
-ensembleEventToLogMessage (TempoEvent t) = Just $ LogMessage "tempo changed"
-ensembleEventToLogMessage ClearZones = Just $ LogMessage "all zones cleared"
-ensembleEventToLogMessage (ViewsEvent n _) = Just $ LogMessage $ "view " <> n <> " published"
-ensembleEventToLogMessage (ChatEvent c) = Just $ LogMessage $ chatSender c <> ": " <> chatText c
-ensembleEventToLogMessage (JoinEvent n "" _ _) = Just $ LogMessage $ "joined ensemble " <> n <> " anonymously"
-ensembleEventToLogMessage (JoinEvent n h _ _) = Just $ LogMessage $ "joined ensemble " <> n <> " as " <> h
-ensembleEventToLogMessage LeaveEvent = Just $ LogMessage $ "left ensemble"
-ensembleEventToLogMessage (ParticipantJoins p) = Just $ LogMessage $ name p <> " joins ensemble"
-ensembleEventToLogMessage (ParticipantLeaves n) = Just $ LogMessage $ name p <> " leaves ensemble"
-ensembleEventToLogMessage _ = Nothing
-
--- ** WORKING BELOW HERE ***
--- create a system for translating terminal commands into EnsembleEvents
--- in some cases we need to sample Dynamic information about the ensemble to do this
-
-commandsToEnsembleEvents :: MonadWidget t m => Event t Terminal.Command -> W t m (Event t EnsembleEvent)
-commandsToEnsembleEvents cmdEvents = do
-
-  -- use tuples to put together dynamic information? hope that means it only gets sampled once though...
-  let publishViewsEvents = attachDyn (current ...) $ fmapMaybe f cmdEvents
-    where
-      f d (Terminal.PublishView x) = ...
-      f _ _ = Nothing
-
-
-
-commandToEnsembleEvent :: (     ) -> Terminal.Command -> Maybe EnsembleEvent]
-commandToEnsembleEvent (Terminal.LocalView x) = Just $ Left x
-commandToEnsembleEvent (Terminal.PresetView x) = Just $ Right x
-commandToEnsembleEvent _ = Nothing
-commandsToEnsembleEvents :: MonadWidget t m =>
-  EnsembleC -> Event t Terminal.Command -> m (Event t [EnsembleEvent])
-commandsToEnsembleEvents ensC cmdEvents = do
-
-commandToEnsembleEvent :: Terminal.Command -> Maybe EnsembleEvent
-commandToEnsembleEvent (Terminal.LocalView x) = Just $ Left x
-commandToEnsembleEvent (Terminal.PresetView x) = Just $ Right x
-commandToEnsembleEvent (Terminal.PublishView x) =
- ... need to access current active view in order to do this...
- ViewsEvent Text View | -- a named view is published
-commandToEnsembleEvent _ = Nothing
-
-commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
-commandToStateChange (Terminal.LocalView v) es = selectLocalView v es
-commandToStateChange (Terminal.PresetView t) es = selectPresetView t es
-commandToStateChange (Terminal.PublishView t) es = replaceStandardView t (activeView es) es
-commandToStateChange _ es = es
-
--- ??? commandsToHints :: MonadWidget t m => Event t Terminal.Command -> W t m ()
-
--- this needs to be reworked but all the cases are commands that don't generate EnsembleEvents
--- but which do generate Hints, in all cases by various sampling operations on the EnsembleC's fields...
-commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ nameOfActiveView es
-commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ ensemble es
-commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
-commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
-commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $ T.pack $ show $ tempo $ ensemble es
-commandToHint _ _ = Nothing
-
-commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe (IO EnsembleRequest)
-commandToEnsembleRequest es (Terminal.PublishView x) = Just $ return (WriteView x (activeView es))
-commandToEnsembleRequest es (Terminal.Chat x) = Just $ return (WriteChat x)
-commandToEnsembleRequest es Terminal.AncientTempo = Just $ return (WriteTempo x)
-  where x = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
-commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ do
-  x' <- changeTempoNow (realToFrac x) (tempo $ ensemble es)
-  return (WriteTempo x')
-commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ do
-  x' <- changeTempoNow (realToFrac x / 240) (tempo $ ensemble es)
-  return (WriteTempo x')
-commandToEnsembleRequest _ _ = Nothing
-
-responseToMessage :: Response -> Maybe Text
-responseToMessage (ResponseError e) = Just $ "error: " <> e
-responseToMessage (ResponseOK m) = Just m
-responseToMessage (EnsembleResponse (ChatRcvd c)) = Just $ showChatMessage c
-responseToMessage (EnsembleResponse (ParticipantJoins x)) = Just $ name x <> " has joined the ensemble"
-responseToMessage (EnsembleResponse (ParticipantLeaves n)) = Just $ n <> " has left the ensemble"
-responseToMessage _ = Nothing
-
-
-hintsToMessages :: [Hint] -> [Text]
-hintsToMessages hs = fmapMaybe hintToMessage hs
 
 hintToMessage :: Hint -> Maybe Text
 hintToMessage (LogMessage x) = Just x
 hintToMessage _ = Nothing
 
-startStreamingReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m ()
-startStreamingReflex pp e = performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
 
-peerProtocolIdReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m (Event t Text)
-peerProtocolIdReflex pp e = performEvent $ fmap (liftIO . const (peerProtocolId pp)) e
+-- given Events from the terminal, perform them as IO actions that might signal a Hint, an
+-- EnsembleEvent, and/or a Request
+performCommands :: MonadWidget t m => Event t Terminal.Command -> W t m ()
+performCommands cmdEvent = do
+  pp <- liftIO $ newPeerProtocol
+  ensC <- ensembleC
+  let dynInfo = (\v vs t h -> (v,vs,t,h)) <$> view ensC <*> views ensC <*> tempo ensC <*> userHandle ensC
+  x <- performEvent $ fmap liftIO $ attachWithMaybe (performCommand pp) (current dynInfo) cmdEvent
+  hint $ fmapMaybe ( ) x
+  ensembleEvent $ fmapMaybe ( ) x
+  request $ fmapMaybe ( ) x
+
+
+-- quadruple is current view, map of views, tempo, user handle in ensemble
+performCommand :: PeerProtocol -> (Either View Text,Map.Map Text View,Tempo,Text) -> Terminal.Command -> IO (Maybe Hint, Maybe EnsembleEvent, Maybe Request)
+
+performCommand _ _ (Terminal.LocalView x) =
+  let eev = ViewEvent (Left x)
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ _ (Terminal.PresetView x) = do
+  let eev = ViewEvent (Right x)
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ (v,vs,_,_) (Terminal.Publishview n) = do
+  let eev = ViewsEvent n (activeView v vs)
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ (v,_,_,_) Terminal.ActiveView = do
+  let h = LogMessage $ nameOfActiveView v
+  return (Just h,Nothing,Nothing)
+
+performCommand _ (_,vs,_,_) Terminal.ListViews = do
+  let h = LogMessage $ listViews vs
+  return (Just h,Nothing,Nothing)
+
+performCommand _ (v,vs,_,_) Terminal.DumpView = do
+  let h = LogMessage $ dumpView $ activeView v vs
+  return (Just h,Nothing,Nothing)
+
+performCommand _ (_,_,_,h) (Terminal.Chat x) = do
+  t <- getCurrentTime
+  let eev = ChatEvent (Chat t h x)
+  return (Nothing,Just eev,Nothing)
+
+performCommand pp _ Terminal.StartStreaming = do
+  startStreaming pp
+  return (Nothing,Nothing,Nothing)
+
+performCommand pp _ Terminal.StreamId = do
+  x <- peerProtocolId pp
+  let h = LogMessage x
+  return (Just h,Nothing,Nothing)
+
+performCommand pp _ (Terminal.Delay x) = do
+  let h = SetGlobalDelayTime x
+  return (Just h,Nothing,Nothing)
+
+performCommand _ _ (Terminal.DeleteThisEnsemble pwd) = do
+  let eev = DeleteThisEnsemble pwd
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ _ (Terminal.DeleteEnsemble ensName pwd) = do
+  let rq = DeleteEnsemble ensName pwd
+  return (Nothing,Nothing,Just rq)
+
+performCommand _ _ Terminal.AncientTempo = do
+  let eev = TempoEvent $ Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ (_,_,t,_) Terminal.ShowTempo = do
+  let h = LogMessage $ T.pack $ show t
+  return (Just h,Nothing,Nothing)
+
+performCommand _ (_,_,t,_) (Terminal.SetCPS x) = do
+  x' <- changeTempoNow (realToFrac x) t
+  let eev = TempoEvent x'
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ (_,_,t,_) (Terminal.SetBPM x) = do
+  x' <- changeTempoNow (realToFrac x / 240) t
+  let eev = TempoEvent x'
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ _ (Terminal.InsertAudioResource url bankName n) = do
+  let eev = InsertAudioResource url bankName n
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ _ (Terminal.DeleteAudioResource bankName n) = do
+  let eev = DeleteAudioResource bankName n
+  return (Nothing,Just eev,Nothing)
+
+performCommand _ _ (Terminal.AppendAudioResource url bankName) = do
+  let eev = AppendAudioResource url bankName
+  return (Nothing,Just eev,Nothing)

@@ -28,7 +28,8 @@ data EnsembleEvent =
   ParticipantJoins Participant |
   ParticipantUpdate Participant |
   ParticipantLeaves Text |
-  AnonymousParticipants Int
+  AnonymousParticipants Int |
+  DeleteThisEnsemble
   deriving (Eq,Generic)
 
 

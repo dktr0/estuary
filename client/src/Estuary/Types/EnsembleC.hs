@@ -46,8 +46,8 @@ data EnsembleC t = EnsembleC {
   anonymousParticipants :: Dynamic t Int
 }
 
-eventsToEnsembleC :: MonadWidget t m => Event t EnsembleEvent -> m EnsembleC
-eventsToEnsembleC rqs = do
+ensembleEventsToEnsembleC :: MonadWidget t m => Event t EnsembleEvent -> m EnsembleC
+ensembleEventsToEnsembleC rqs = do
   ensembleName' <- holdDyn "" $ fmapMaybe ensembleNameF rqs
   userHandle' <- holdDyn "" $ fmapMaybe userHandleF rqs
   location' <- holdDyn "" $ fmapMaybe locationF rqs
@@ -138,31 +138,25 @@ anonymousParticipantsF :: EnsembleEvent -> Maybe Int
 anonymousParticipantsF (AnonymousParticipants n) = Just n
 anonymousParticipantsF _ = Nothing
 
+-- note: is used after refactor
+lookupView :: Text -> Map.Map Text View -> Maybe View
+lookupView t vs = Map.lookup t vs <|> Map.lookup t presetViews
 
--- *** WORKING BELOW HERE figuring out what stays, what goes, what gets refactored...
+-- note: is used after refactor
+listViews :: Map.Map Text View -> [Text]
+listViews xs = Map.keys $ Map.union (views e) presetViews
 
-lookupView :: Text -> Ensemble -> Maybe View
-lookupView t e = Map.lookup t (views e) <|> Map.lookup t presetViews
+-- note: is used after refactor
+activeView :: Either View Text -> Map.Map Text View -> View
+activeView v vs = either id f v
+  where f x = maybe EmptyView id $ lookupView x vs
 
-listViews :: Ensemble -> [Text]
-listViews e = Map.keys $ Map.union (views e) presetViews
+-- note: is used after refactor
+nameOfActiveView :: Either View Text -> Text
+nameOfActiveView x = either (const "(local view)") id x
 
-modifyEnsemble :: (Ensemble -> Ensemble) -> EnsembleC -> EnsembleC
-modifyEnsemble f e = e { ensemble = f (ensemble e) }
 
-activeView :: EnsembleC -> View
-activeView e = either id f (view e)
-  where f x = maybe EmptyView id $ lookupView x (ensemble e)
-
-nameOfActiveView :: EnsembleC -> Text
-nameOfActiveView e = either (const "(local view)") id $ view e
-
-selectPresetView :: Text -> EnsembleC -> EnsembleC
-selectPresetView t e = e { view = Right t }
-
-selectLocalView :: View -> EnsembleC -> EnsembleC
-selectLocalView v e = e { view = Left v }
-
+-- ??? not sure if this is used after the refactor *** START HERE ***
 -- replaceStandardView selects a standard view while also redefining it
 -- according to the provided View argument. (To be used when a custom view is
 -- republished as a standard view in an ensemble.)

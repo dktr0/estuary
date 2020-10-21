@@ -2,8 +2,8 @@ module Estuary.Widgets.W where
 
 -- In this module, we define a monadic type (W t m) that represents the greater majority
 -- of widgets in the Estuary project. Such widgets have access to various kinds of information
--- from different places, and propagate changes to settings as well as Hint-s upwards as necessary
--- alongside returning some value.
+-- from different places, and propagate changes to settings, Hint-s, EnsembleEvent-s, and Request-s
+-- upwards as necessary, alongside returning some value.
 
 -- If we have a widget-producing action and we make it in the (W t m) monad, instead of in the more
 -- general "reflex" monad (m) we will be able to do all the normal things we can do in the more general
@@ -27,7 +27,7 @@ import Estuary.Types.Term
 type WidgetEnvironment t = (Dynamic t Settings, Dynamic t NetworkStatus, EnsembleC, Dynamic t RenderInfo)
 
 -- 2. and we need to be able to collect all of the following effects in each frame of UI interaction...
-type WidgetEffects t = (Event t (Settings -> Settings), Event t [Hint])
+type WidgetEffects t = (Event t (Settings -> Settings), Event t [Hint], Event t [EnsembleEvent], Event t [Request])
 
 -- 3. and we'll need to build widgets in some monad m provided by reflex-dom,
 -- with some reflex FRP timeline t, so we bring these three things together
@@ -41,14 +41,14 @@ runW :: MonadWidget t m =>
   EnsembleC ->
   Dynamic t RenderInfo ->
   W t m a ->
-  m (a,Event t (Settings -> Settings),Event t [Hint])
+  m (a,Event t (Settings -> Settings),Event t [Hint],Event t [EnsembleEvent],Event t [Request])
 runW s ns ec ri x = do
-  (a,(s',hs)) <- runReaderT (runStateT x (never,never)) (s,ns,ec,ri)
-  return (a,s',hs)
+  (a,(s',hs,eevs,rqs)) <- runReaderT (runStateT x (never,never,never,never)) (s,ns,ec,ri)
+  return (a,s',hs,eevs,rqs)
 
 
 -- now on the basis of the above, we can define functions for reading the environment,
--- issuing hints and settings changes,
+-- setting/signalling settings changes, hints, EnsembleEvent-s, and Request-s, etc
 
 -- read the current settings (including current language, theme, render settings, etc)
 settings :: W t m (Dynamic t Settings)
@@ -74,40 +74,47 @@ renderInfo = do
   (_,_,_,x) <- ask
   return x
 
--- Issue a single hint
-hint :: Event t Hint -> W t m ()
-hint x = do
-  (s,hs) <- get
-  put $ (s, mergeWith (++) [pure x,hs])
-
--- Issue multiple simultaneous hints
-hints :: Event t [Hint] -> W t m ()
-hints x = do
-  (s,hs) <- get
-  put $ (s, mergeWith )
-
--- Issue a change to client Settings
+-- set/signal a change to client Settings
 changeSettings :: Event t (Settings -> Settings) -> W t m ()
 changeSettings x = do
-  (s,hs) <- get
-  put (mergeWith (.) [x,s],hs)
+  (s,hs,eevs,rqs) <- get
+  put (mergeWith (.) [x,s],hs,eevs,rqs)
+
+-- set/signal a Hint
+hint :: Event t Hint -> W t m ()
+hint x = do
+  (s,hs,eevs,rqs) <- get
+  put $ (s, mergeWith (++) [pure x,hs],eevs,rqs)
+
+-- set/signal an EnsembleEvent
+ensembleEvent :: Event t EnsembleEvent -> W t m ()
+ensembleEvent x = do
+  (s,hs,eevs,rqs) <- get
+  put $ (s,hs,mergeWith (++) [pure x,eevs],rqs)
+
+-- set/signal a Request
+request :: Event t Request -> W t m ()
+request x = do
+  (s,hs,eevs,rqs) <- get
+  put $ (s,hs,eevs,mergeWith (++) [pure x,rqs])
+
 
 -- Translate a term appropriately into dynamic text
--- Note that it doesn't build the text in the DOM - for that, combine with dynText
+-- Note that it doesn't build the text in the DOM - for that, combine with eg. dynText
 term :: Term -> W t m (Dynamic t Text)
 term t = do
   l <- language <$> settings
   return $ translate t <$> l
 
 -- Translate a TranslatableText (eg. paragraph) into dynamic text
--- Note that it doesn't build the text in the DOM - for that, combine with dynText
+-- Note that it doesn't build the text in the DOM - for that, combine with eg. dynText
 translatableText :: TranslatableText -> W t m (Dynamic t Text)
 translatableText t = do
   l <- language <$> settings
   return $ translateText t <$> l
 
 -- Translate a dynamic TranslatableText into dynamic text
--- Note that it doesn't build the text in the DOM - for that, combine with dynText
+-- Note that it doesn't build the text in the DOM - for that, combine with eg. dynText
 dynTranslatableText :: Dynamic t TranslatableText -> W t m (Dynamic t Text)
 dynTranslatableText t = do
   l <- language <$> settings
