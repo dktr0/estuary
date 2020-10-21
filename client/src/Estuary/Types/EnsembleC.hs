@@ -14,9 +14,12 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
 import Control.Applicative
-import Reflex
+import Control.Monad.IO.Class
+import Reflex hiding (count)
+import Reflex.Dom hiding (count)
 
 import Estuary.Types.EnsembleEvent
+import Estuary.Types.ResourceMap as ResourceMap
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.View.Parser
@@ -27,6 +30,8 @@ import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Types.Participant
 import Estuary.Types.Chat
+import Estuary.Types.AudioMeta
+import Estuary.Types.AudioResource
 
 -- each field of the EnsembleC record is Dynamic t a, so that any of them can
 -- change independently without triggering computation related to the others.
@@ -46,25 +51,26 @@ data EnsembleC t = EnsembleC {
   anonymousParticipants :: Dynamic t Int
 }
 
-ensembleEventsToEnsembleC :: MonadWidget t m => Event t EnsembleEvent -> m EnsembleC
+ensembleEventsToEnsembleC :: MonadWidget t m => Event t EnsembleEvent -> m (EnsembleC t)
 ensembleEventsToEnsembleC rqs = do
+  t <- liftIO $ getCurrentTime
   ensembleName' <- holdDyn "" $ fmapMaybe ensembleNameF rqs
   userHandle' <- holdDyn "" $ fmapMaybe userHandleF rqs
   location' <- holdDyn "" $ fmapMaybe locationF rqs
   password' <- holdDyn "" $ fmapMaybe passwordF rqs
   tempo' <- holdDyn (Tempo { time=t, count=0.0, freq=0.5 }) $ fmapMaybe tempoF rqs
-  zones' <- foldDyn (.) IntMap.empty $ fmapMaybe zonesF rqs
-  views' <- foldDyn (.) Map.empty $ fmapMaybe viewsF rqs
-  chats' <- foldDyn (.) [] $ fmapMaybe chatsF rqs
+  zones' <- foldDyn ($) IntMap.empty $ fmapMaybe zonesF rqs
+  views' <- foldDyn ($) Map.empty $ fmapMaybe viewsF rqs
+  chats' <- foldDyn ($) [] $ fmapMaybe chatsF rqs
   view' <- holdDyn (Right "default") $ fmapMaybe viewF rqs
   ensembleAudioMapIO <- performEvent $ fmap liftIO $ fmapMaybe ensembleAudioMapF rqs
-  ensembleAudioMap' <- foldDyn (.) Map.empty $ ensembleAudioMapIO
-  participants' <- foldDyn (.) Map.empty $ fmapMaybe participantsF rqs
+  ensembleAudioMap' <- foldDyn ($) Map.empty $ ensembleAudioMapIO
+  participants' <- foldDyn ($) Map.empty $ fmapMaybe participantsF rqs
   anonymousParticipants' <- holdDyn 0 $ fmapMaybe anonymousParticipantsF rqs
   return $ EnsembleC {
     ensembleName = ensembleName',
     userHandle = userHandle',
-    location = location',
+    Estuary.Types.EnsembleC.location = location',
     password = password',
     tempo = tempo',
     zones = zones',
@@ -118,10 +124,13 @@ chatsF _ = Nothing
 
 viewF :: EnsembleEvent -> Maybe (Either View Text)
 viewF (ViewEvent x) = Just x
+viewF (ViewsEvent k _) = Just $ Right k
 viewF _ = Nothing
 
 ensembleAudioMapF :: EnsembleEvent -> Maybe (IO (AudioMap -> AudioMap))
-ensembleAudioMapF (InsertAudioResource url bankName n) = Just $ return $ Map.insert (bankName,n) url
+ensembleAudioMapF (InsertAudioResource url bankName n) = Just $ do
+  aMeta <- audioResourceFromMeta $ AudioMeta url 0
+  return $ Map.insert (bankName,n) aMeta
 ensembleAudioMapF (DeleteAudioResource bankName n) = Just $ return $ Map.delete (bankName,n)
 ensembleAudioMapF (AppendAudioResource url bankName) = Just $ do
   aMeta <- audioResourceFromMeta $ AudioMeta url 0
@@ -138,30 +147,15 @@ anonymousParticipantsF :: EnsembleEvent -> Maybe Int
 anonymousParticipantsF (AnonymousParticipants n) = Just n
 anonymousParticipantsF _ = Nothing
 
--- note: is used after refactor
 lookupView :: Text -> Map.Map Text View -> Maybe View
 lookupView t vs = Map.lookup t vs <|> Map.lookup t presetViews
 
--- note: is used after refactor
 listViews :: Map.Map Text View -> [Text]
-listViews xs = Map.keys $ Map.union (views e) presetViews
+listViews vs = Map.keys $ Map.union vs presetViews
 
--- note: is used after refactor
 activeView :: Either View Text -> Map.Map Text View -> View
 activeView v vs = either id f v
   where f x = maybe EmptyView id $ lookupView x vs
 
--- note: is used after refactor
 nameOfActiveView :: Either View Text -> Text
 nameOfActiveView x = either (const "(local view)") id x
-
-
--- ??? not sure if this is used after the refactor *** START HERE ***
--- replaceStandardView selects a standard view while also redefining it
--- according to the provided View argument. (To be used when a custom view is
--- republished as a standard view in an ensemble.)
-replaceStandardView :: Text -> View -> EnsembleC -> EnsembleC
-replaceStandardView t v e = e {
-  ensemble = writeView t v (ensemble e),
-  view = Right t
-  }

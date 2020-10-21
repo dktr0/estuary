@@ -1,6 +1,6 @@
-module Estuary.Render.ImmutableResources
+module Estuary.Render.ImmutableResources where
 
-import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
+import GHCJS.DOM.Types hiding (Node)
 import Sound.MusicW (Node)
 
 import Estuary.Render.WebDirt
@@ -16,5 +16,5 @@ data ImmutableResources = ImmutableResources {
   theVideoDiv :: Maybe JSVal
   }
 
-out :: ImmutableRenderContext -> Node
-out (ImmutableRenderContext (_,_,_,x,_) _ _ _) = x
+out :: ImmutableResources -> Node
+out (ImmutableResources (_,_,_,x,_) _ _ _ _ _) = x

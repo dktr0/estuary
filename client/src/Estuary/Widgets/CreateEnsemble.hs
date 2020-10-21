@@ -9,16 +9,15 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Data.Map
 
-import Estuary.Types.Context
 import Estuary.Types.Response
 import Estuary.Types.Request
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 
 createEnsembleWidget :: MonadWidget t m => Event t [Response]
-  -> Editor t m (Event t (), Event t Request)
+  -> W t m (Event t ())
 createEnsembleWidget rs = el "div" $ do
 
   el "div" $ term Term.CreateNewEnsemble >>= dynText
@@ -74,7 +73,7 @@ createEnsembleWidget rs = el "div" $ do
   let draftRequest = CreateEnsemble <$> cpwd <*> ename <*> hpwd <*> ppwd <*> exptime
   let createEnsemble = tagPromptlyDyn draftRequest confirm
   leaveEnsemble <- (LeaveEnsemble <$) <$> getPostBuild
-  let serverRequests = leftmost [createEnsemble,leaveEnsemble]
   let ensembleCreated = () <$ fmapMaybe justResponseOK rs
   let navigateAway = leftmost [cancel,() <$ ensembleCreated]
-  return (navigateAway, serverRequests)
+  request $ leftmost [createEnsemble,leaveEnsemble]
+  return navigateAway

@@ -8,14 +8,12 @@ import Data.Map
 import Data.Text
 import Data.List (nub)
 
-import Estuary.Widgets.Editor
-import Estuary.Types.Context
+import Estuary.Widgets.W
 import Estuary.Types.ResourceMap
 
-audioMapWidget :: MonadWidget t m => Editor t m ()
+audioMapWidget :: MonadWidget t m => W t m ()
 audioMapWidget = elClass "div" "reference" $ do
-  ctx <- context
-  aMap <- holdUniqDyn $ fmap audioMap ctx
+  aMap <- audioMap <$> ensembleC
   simpleList (fmap (nub . (fmap fst) . keys) aMap) builder
   return ()
 

@@ -8,11 +8,10 @@ import Data.Map
 import qualified Data.Text as T
 import Data.Time
 
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.TranslatableText
 import Estuary.Reflex.Utility
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 
 -- compiledAnnouncements contains "compiled-in" news and announcements, which are part
 -- of the client and call attention to new features, changes, etc. These are

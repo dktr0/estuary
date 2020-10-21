@@ -15,7 +15,7 @@ import Estuary.Types.Hint
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility
 import Estuary.Types.Variable
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 
 
 type Sequence = Map Int (Text, [Bool])
@@ -23,12 +23,8 @@ type Sequence = Map Int (Text, [Bool])
 attachIndex :: [a] -> [(Int,a)]
 attachIndex = zip [0..]
 
-sequencer :: MonadWidget t m => Dynamic t Sequence -> Editor t m (Variable t Sequence)
-sequencer x = variableWidget x sequencer'
-
-sequencer' :: MonadWidget t m
-  => Sequence -> Event t Sequence -> m (Event t Sequence)
-sequencer' iMap update = elClass "table" "sequencer" $ mdo
+sequencer :: MonadWidget t m => Dynamic t Sequence -> W t m (Variable t Sequence)
+sequencer x = variableWidget x $ \iMap update -> mdo
   let seqLen = maximum $ fmap (length . snd) $ elems iMap
   let serverDeletes = fmap (Nothing <$) $ attachWith M.difference (current values) update -- for deleted rows
   let updateEvs = mergeWith union [fmap (fmap Just) update, serverDeletes]

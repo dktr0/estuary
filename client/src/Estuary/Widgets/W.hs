@@ -100,11 +100,14 @@ request x = do
 
 
 -- Translate a term appropriately into dynamic text
--- Note that it doesn't build the text in the DOM - for that, combine with eg. dynText
-term :: Term -> W t m (Dynamic t Text)
-term t = do
+-- Note that it doesn't build the text in the DOM - for that, use term (below) instead
+translateTerm :: Term -> W t m (Dynamic t Text)
+translateTerm t = do
   l <- language <$> settings
   return $ translate t <$> l
+
+term :: Term -> W t m ()
+term t = translateTerm t >>= dynText
 
 -- Translate a TranslatableText (eg. paragraph) into dynamic text
 -- Note that it doesn't build the text in the DOM - for that, combine with eg. dynText

@@ -1,4 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Types.NetworkStatus where
+
+import Data.Text
+import Data.Time
+import Estuary.Types.Language
+import Estuary.Types.TranslatableText
+import Data.Map
 
 data NetworkStatus = NetworkStatus {
   wsStatus :: Text,
@@ -13,6 +21,6 @@ defaultNetworkStatus = NetworkStatus {
   wsStatus = "",
   serverLatency = 0,
   clientCount = 0,
-  aboutThisServer = Map.fromList [(English,"")], -- non-empty in order to suppress "?"
-  announcements = Map.empty
+  aboutThisServer = fromList [(English,"")], -- non-empty in order to suppress "?"
+  announcements = Data.Map.empty
 }

@@ -9,15 +9,14 @@ import qualified Data.Text as T
 import TextShow
 import Control.Monad
 
-import Estuary.Types.Context
 import Estuary.Types.RenderInfo
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Hint
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.Generic
 import Estuary.Reflex.Utility (dynButton, invisibleButton)
 
-footer :: MonadWidget t m => Event t [Hint] -> Editor t m (Event t ())
+footer :: MonadWidget t m => Event t [Hint] -> W t m (Event t ())
 footer hints = divClass "footer code-font" $ mdo
   toggleTerminalButton <- divClass "footer-area" $ invisibleButton
   let statsShortcut = ffilter (elem ToggleStats) hints

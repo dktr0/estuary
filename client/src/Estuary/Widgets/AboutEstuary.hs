@@ -5,11 +5,10 @@ module Estuary.Widgets.AboutEstuary (aboutEstuary) where
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Reflex.Utility
-import Estuary.Widgets.Editor
-import Data.Map.Strict
+import Estuary.Widgets.W
+import Data.Map
 
 aboutEstuary :: MonadWidget t m => Editor t m ()
 aboutEstuary = divClass "aboutEstuaryParagraph ui-font background" $ do

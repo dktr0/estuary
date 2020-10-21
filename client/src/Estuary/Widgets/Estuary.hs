@@ -247,22 +247,6 @@ foreign import javascript safe
   "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
   js_setThemeHref :: Text -> IO ()
 
-commandToRequest :: Terminal.Command -> Maybe Request
-commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
-commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
-commandToRequest _ = Nothing
-
-commandToContextChangeIO :: Terminal.Command -> Maybe (IO ContextChange)
-commandToContextChangeIO (Terminal.InsertAudioResource url bankName n) = Just $ do
-  res <- audioResourceFromMeta $ AudioMeta url 0
-  return $ \x -> x { audioMap = insert (bankName,n) res (audioMap x)}
-commandToContextChangeIO (Terminal.DeleteAudioResource bankName n) = Just $ do
-  return $ \x -> x { audioMap = delete (bankName,n) (audioMap x)}
-commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
-  res <- audioResourceFromMeta $ AudioMeta url 0
-  return $ \x -> x { audioMap = append bankName res (audioMap x)}
-commandToContextChangeIO _ = Nothing
-
 
 -- definitions below are part of current refactor - definitions above are not
 ensembleEventsToRender :: MonadWidget t m => MVar [EnsembleEvent] -> Event t [EnsembleEvent] -> m ()

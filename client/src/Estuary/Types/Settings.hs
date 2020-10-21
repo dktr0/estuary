@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Types.Settings where
 
 import Data.Text

@@ -19,7 +19,6 @@ import GHCJS.DOM.GlobalEventHandlers (change)
 import Data.List (nub, elemIndex)
 
 import Estuary.Types.Term
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.TranslatableText
 

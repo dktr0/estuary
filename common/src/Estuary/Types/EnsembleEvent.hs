@@ -11,6 +11,7 @@ import Estuary.Types.View
 import Estuary.Types.Definition
 import Estuary.Types.Tempo
 import Estuary.Types.Chat
+import Estuary.Types.Participant
 
 data EnsembleEvent =
   TempoEvent Tempo |
@@ -31,7 +32,6 @@ data EnsembleEvent =
   AnonymousParticipants Int |
   DeleteThisEnsemble
   deriving (Eq,Generic)
-
 
 instance ToJSON EnsembleEvent where
   toEncoding = genericToEncoding defaultOptions
