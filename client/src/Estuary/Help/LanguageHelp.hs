@@ -17,6 +17,8 @@ import Estuary.Help.LaCalle
 import Estuary.Help.Sucixxx
 import Estuary.Help.Togo
 import Estuary.Help.PunctualAudio
+import Estuary.Help.Hydra
+import Estuary.Help.CineCer0
 import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
 import Estuary.Types.TextNotation

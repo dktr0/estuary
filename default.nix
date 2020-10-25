@@ -164,9 +164,9 @@ in
          dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "07irlask1xdsyj3942ccs46adpbmvsy1ajk780qbzm6pbk7zxkkh";
-          rev = "ddc3400d2e95bd27e43c0f50b4179dbc8e2ea98e";
-        }) {});
+          sha256 = "0j09hybq9ga2whxmdk6cywyahvp27cwp4v9chpxqa2cnxvignc3b";
+          rev = "1036d474e53e6615a67b9e95b33da0f30bf2a386";
+          }) {});
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";

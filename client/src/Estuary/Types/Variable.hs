@@ -12,7 +12,7 @@ import Control.Monad
 -- where we need to keep track of both local edits, and the value from all changes.
 
 data Variable t a = Variable {
-  currentValue :: Dynamic t a ,
+  currentValue :: Dynamic t a,
   localEdits :: Event t a
   }
 
