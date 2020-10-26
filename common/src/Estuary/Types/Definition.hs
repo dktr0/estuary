@@ -43,6 +43,28 @@ definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
 
+-- note: assumes both definitions are results of definitionForRendering (above)
+definitionChanged :: Definition -> Definition -> Bool
+definitionChanged (TextProgram x) (TextProgram y) = textProgramChanged x y
+definitionChanged (Sequence x) (Sequence y) = x /= y
+definitionChanged (TidalStructure x) (TidalStructure y) = True -- structure edits likely to be changes
+definitionChanged _ _ = False
+
+definitionNotationChanged :: Definition -> Definition -> Bool
+definitionNotationChanged (TextProgram x) (TextProgram y) = textProgramNotationChanged x y
+definitionNotationChanged (Sequence x) (Sequence y) = False
+definitionNotationChanged (TidalStructure x) (TidalStructure y) = False
+definitionNotationChanged _ _ = True
+
+-- just looks at evaluation time to determine if a text program has changed for rendering purposes
+textProgramChanged :: TextProgram -> TextProgram -> Bool
+textProgramChanged (Live (_,_,x) L4) (Live (_,_,y) L4) = x /= y
+textProgramChanged _ _ = error "textProgramChanged must have been called without definitionForRendering"
+
+textProgramNotationChanged :: TextProgram -> TextProgram -> Bool
+textProgramNotationChanged (Live (x,_,_) L4) (Live (y,_,_) L4) = x /= y
+textProgramNotationChanged _ _ = error "textProgramNotationChanged must have been called without definitionForRendering"
+
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
 maybeTidalStructure _ = Nothing

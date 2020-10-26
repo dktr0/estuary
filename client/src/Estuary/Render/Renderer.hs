@@ -95,48 +95,65 @@ rewindThreshold = 1.0
 earlyWakeUp :: NominalDiffTime
 earlyWakeUp = 0.002
 
-processEnsembleEvents :: Renderer
-processEnsembleEvents = do
+processEnsembleEvents :: ImmutableResources -> Renderer
+processEnsembleEvents ir = do
   eevsM <- ensembleEventsM <$> get
   eevs <- takeMVar eevsM
   putMVar eevsM []
-  mapM_ processEnsembleEvent eevs
+  mapM_ (processEnsembleEvent ir) eevs
 
-processEnsembleEvent :: EnsembleEvent -> Renderer
-processEnsembleEvent (TempoEvent t) = modify' $ \s -> s { tempo = t }
-processEnsembleEvent (ZoneEvent n d) = do
-  -- there are several scenarios to account for when we receive a ZoneEvent:
-  -- (1) new definition where there wasn't one previously (parse)
-  -- (2) new definition of same type/language (parse again)
-  -- (3) changed definition of new type/language (clear state/nodes/etc before parsing again)
-  cache <- cachedDefs <$> get
-  let prevDef = IntMap.lookup n cache -- Maybe Definition
-  let needToClear = case prevDef of
-    Just prevDef' ->
-      -- *** TODO ***
-    Nothing ->
-  when needToClear $ do -- clear state/nodes/etc if was previously a definition with a different notation
-    -- *** TODO
-  -- parse/process the new definition as necessary
-
-
-  -- *** WORKING HERE ***
-
+processEnsembleEvent :: ImmutableResources -> EnsembleEvent -> Renderer
+processEnsembleEvent _ (TempoEvent t) = modify' $ \s -> s { tempo = t }
+processEnsembleEvent ir (ZoneEvent z d) = do
+  let d' = definitionForRendering d
+  prevDef <- (IntMap.lookup z . cachedDefs) <$> get
+  case prevDef of
+    Nothing -> do
+      renderZoneChanged ir z d'
+      modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
+    Just dPrev -> do
+      case definitionChanged dPrev d' of
+        True -> do
+          when (definitionNotationChanged dPrev d') $ clearZone z dPrev
+          renderZoneChanged ir z d'
+          modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
+        False -> return ()
 processEnsembleEvent ClearZones = clearZones
-processEnsembleEvent (JoinEvent _ _ _ _) = clearZones
 processEnsembleEvent LeaveEvent = clearZones
 processEnsembleEvent _ = return ()
 
+-- *** TODO: audiomap should be shared resource by client and renderer, so MVar (RW by client, R by render)
+
 clearZones :: Renderer
 clearZones = do
-  -- *** WORKING HERE ***
+  s <- get
+  IntMap.traverseWithKey clearZone $ cachedDefs s
+  modify' $ \x -> x { cachedDefs = IntMap.empty }
 
-InsertAudioResource Text Text Int | -- "url" [bankName] [n]
-DeleteAudioResource Text Int | -- [bankName] [n]
-AppendAudioResource Text Text | -- "url" [bankName]
-deriving (Eq,Generic)
+clearZone :: Int -> Definition -> Renderer
+clearZone z (TextProgram x) = do
+  clearTextProgram z $ forRendering x
+  modify' $ \s -> s { cachedDefs = IntMap.delete z (cachedDefs s) }
+clearZone z (Sequence _) = do
+  modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }
+  modify' $ \s -> s { cachedDefs = IntMap.delete z (cachedDefs s) }
+clearZone z (TidalStructure _) = do
+  modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }
+  modify' $ \s -> s { cachedDefs = IntMap.delete z (cachedDefs s) }
+clearZone z _ = modify' $ \s -> s { cachedDefs = IntMap.delete z (cachedDefs s) }
 
+clearTextProgram :: Int -> TextProgram -> Renderer
+clearTextProgram z (TidalTextNotation _,_,_) =
+  modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }
+clearTextProgram z (Punctual,_,_) = *** ???
+clearTextProgram z (CineCer0,_,_) = *** ???
+clearTextProgram z (TimeNot,_,_) =
+  modify' $ \s -> s { timeNots = IntMap.delete z (timeNots s) }
+clearTextProgram z (Seis8s,_,_) =
+  modify' $ \s -> s { seis8ses = IntMap.delete z (seis8ses s) }
+clearTextProgram z (Hydra,_,_) = *** ???
 
+-- *** ^--- working above here, need to implement clear zones of visual languages properly
 
 
 pushNoteEvents :: [NoteEvent] -> Renderer
@@ -362,25 +379,24 @@ renderHydra tNow z = do
     Just hydra -> liftIO $ Hydra.tick hydra 16.6667
     Nothing -> return ()
 
-renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
-renderZoneChanged irc c z (TidalStructure x) = do
+-- temp note: already refactored
+renderZoneChanged :: ImmutableResources -> Int -> Definition -> Renderer
+renderZoneChanged _ z (TidalStructure x) = do
   let newParamPattern = toParamPattern x
-  s <- get
-  modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged irc c z (TextProgram x) = do
-  renderTextProgramChanged irc c z $ forRendering x
-renderZoneChanged irc c z (Sequence xs) = do
+  modify' $ \y -> y { paramPatterns = insert z newParamPattern (paramPatterns y) }
+renderZoneChanged ir z (TextProgram x) = renderTextProgramChanged ir z $ forRendering x
+renderZoneChanged _ z (Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
-  s <- get
-  modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged _ _ _ _ = return ()
+  modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns x) }
+renderZoneChanged _ _ _ = return ()
 
-renderZoneAlways :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
-renderZoneAlways irc c z (TidalStructure _) = renderControlPattern irc c z
-renderZoneAlways irc c z (TextProgram x) = do
+-- temp note: already refactored
+renderZoneAlways :: ImmutableResources -> Int -> Definition -> Renderer
+renderZoneAlways ir z (TidalStructure _) = renderControlPattern ir c z
+renderZoneAlways ir z (TextProgram x) = do
   let (_,_,evalTime) = forRendering x
-  renderTextProgramAlways irc c z evalTime
-renderZoneAlways irc c z (Sequence _) = renderControlPattern irc c z
+  renderTextProgramAlways ir z evalTime
+renderZoneAlways ir z (Sequence _) = renderControlPattern ir z
 renderZoneAlways _ _ _ _ = return ()
 
 renderTextProgramChanged :: ImmutableRenderContext -> Context -> Int -> TextProgram -> Renderer
