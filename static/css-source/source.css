@@ -21,7 +21,6 @@ body {
 	overflow: hidden;
 }
 
-
 /* styles the body, input, foreground text color */
 body, .primary-color {
 	 color: var( --primary-color);
@@ -558,7 +557,7 @@ display: block;
 /*contains the tempo and coding textareas  */
 
 .textInputToEndOfLine  {
-	height:100%;
+	height: 100%;
 	width: 100%;
 	box-sizing:border-box;
     background-color: transparent;
@@ -566,6 +565,11 @@ display: block;
   	resize: none;
   	border:none;
   }
+
+.evalFlash {
+  color: var(--background-color);
+  background-color: var(--primary-color);
+}
 
 /*ex. the div that 'Sound' is written in, in ICLCFixed)*/
 .singlePatternDiv-label{
