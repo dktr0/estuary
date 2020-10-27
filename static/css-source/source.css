@@ -1547,17 +1547,31 @@ hr.dashed {
 .rouletteButtons {
 	width: max-content;
 	border-radius: 5px;
-/* 	border: 1px solid; */
-/* 	cursor: pointer; */
-
+  margin-right: 1%;
+  padding-left: 0.5%;
+  padding-right: 0.5%;
 }
 
 .lineUpButton {
  	width: max-content;
+  padding-left: 0.5%;
+  padding-right: 0.5%;
+}
+
+.rouletteWidgetContainer {
+	overflow: auto;
+}
+
+.rouletteWidgetContainer::-webkit-scrollbar {
+    width: 0px;
+    background: transparent; /* make scrollbar transparent */
 }
 
 .rouletteContainer{
+	display: flex;
 	overflow-y: auto;
+	margin-top: 0.25%;
+	margin-bottom: 0.5%;
 
 }
 
@@ -1593,4 +1607,11 @@ hr.dashed {
 
 .infoRef{
   margin-bottom: 1em;
+}
+
+.attrsRouletteButtonHead {
+/* 	border: 1px solid var(--primary-color); */
+padding-left: 0.5%;
+padding-right: 0.5%;
+box-shadow: inset 0 0 3px var(--primary-color);
 }

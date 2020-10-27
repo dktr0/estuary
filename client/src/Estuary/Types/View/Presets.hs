@@ -286,10 +286,8 @@ presetViews = fromList [
          (Views [TempoView,EnsembleStatusView])
         ]),
 
-      ("roulette",GridView 2 2 [
-        BorderDiv (Views [LabelView 0,TextView 1 0]),
-        BorderDiv (Views [LabelView 2,TextView 3 0]),
-        BorderDiv (Views [LabelView 4, RouletteView 5]),
-        BorderDiv (Views [LabelView 6, RouletteView 7])
+      ("roulette",GridView 2 1 [
+        BorderDiv (Views [RouletteView 0 0 True, TextView 1 0]),
+        BorderDiv (Views [RouletteView 2 0 True, TextView 3 0])
         ])
       ]

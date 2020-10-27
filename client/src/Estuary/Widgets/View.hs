@@ -58,7 +58,7 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 -- viewWidget er (RouletteView z rows) = rouletteWidget
-viewWidget er (RouletteView z) = zoneWidget z [] maybeRoulette Roulette er rouletteWidget
+viewWidget er (RouletteView z rows wrappingBool) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows wrappingBool)
 
 viewWidget er TempoView = do
   ctx <- context
