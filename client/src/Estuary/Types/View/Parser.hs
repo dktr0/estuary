@@ -26,10 +26,15 @@ dumpView (SequenceView z) = "sequence:" <> showInt z
 dumpView (BorderDiv v) = "border { " <> dumpView v <> "} "
 dumpView TempoView = "tempo"
 dumpView EnsembleStatusView = "ensembleStatus"
-dumpView (RouletteView x) = "roulette:" <> showInt x
+dumpView (RouletteView x rows wrappingBool) = "roulette:" <> showInt x <> " " <> showInt rows <> " " <> showBool wrappingBool
+dumpView AudioMapView = "audiomapview"
 
 showInt :: Int -> Text
 showInt x = showtParen (x < 0) (showt x)
+
+showBool :: Bool -> Text
+showBool True = "True"
+showBool False = "False"
 
 viewsParser :: Parser View
 viewsParser = do
@@ -58,6 +63,7 @@ viewParser = do
     try ensembleStatusView,
     try tempo,
     try rouletteView,
+    try audiomapview,
     textView
     ]
   return v
@@ -70,13 +76,21 @@ sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
 ensembleStatusView = reserved "ensembleStatus" >> return EnsembleStatusView
 tempo = reserved "tempo" >> return TempoView
 textView = reserved "text" >> reservedOp ":" >> (TextView <$> int <*> int)
-rouletteView = reserved "roulette" >> reservedOp ":" >> (RouletteView <$> int)
+rouletteView = reserved "roulette" >> reservedOp ":" >> (RouletteView <$> int <*> int <*> stringToBool)
+audiomapview = reserved "audiomap" >> return AudioMapView
 
 int :: Parser Int
 int = choice [
   parens $ (fromIntegral <$> integer),
   fromIntegral <$> integer
   ]
+
+stringToBool :: Parser Bool
+stringToBool = choice [
+  (string "True" >> return True),
+  (string "False" >> return False)
+  ]
+
 
 tokenParser :: P.GenTokenParser Text () Identity
 tokenParser = P.makeTokenParser $ P.LanguageDef {

@@ -21,6 +21,9 @@ import Estuary.Widgets.Editor
 
 compiledAnnouncements :: Map Day [TranslatableText]
 compiledAnnouncements = fromList [
+  (read "2020-09-27",[ fromList [
+    (English,"Estuary now uses version 1.6.2 of Tidal (and MiniTidal now supports scale, toScale, arpeggiate, arp, weave, weaveWith, ghost, inside, outside, and inv).")
+    ]]),
   (read "2020-06-19",[ fromList [
     (English,"Configuration settings like turning Canvas on/off, selecting audio dynamics presets, etc are now accessed by clicking the ? button on the top right, then clicking on the settings tab. The settings can be hidden again by clicking on the ? again.")
     ]]),

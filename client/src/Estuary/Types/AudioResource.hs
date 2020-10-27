@@ -10,6 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Sound.MusicW.AudioContext
+import Control.Monad (when)
 
 import Estuary.Types.AudioMeta
 import Estuary.Types.Loadable
@@ -17,8 +18,11 @@ import Estuary.Types.Loadable
 data AudioResource = AudioResource {
   audioMeta :: AudioMeta,
   audioLoadStatus :: IORef LoadStatus,
-  audioJSVal :: IORef JSVal
+  audioJSVal :: JSVal
   }
+
+instance Eq AudioResource where
+  x == y = audioMeta x == audioMeta y
 
 instance Show AudioResource where
   show = show . audioMeta
@@ -26,24 +30,25 @@ instance Show AudioResource where
 audioResourceFromMeta :: AudioMeta -> IO AudioResource
 audioResourceFromMeta x = do
   y <- newIORef NotLoaded
-  z <- newIORef nullRef
+  j <- newAudioJSVal
   return $ AudioResource {
     audioMeta = x,
     audioLoadStatus = y,
-    audioJSVal = z
+    audioJSVal = j
   }
 
+foreign import javascript unsafe
+  "{}"
+  newAudioJSVal :: IO JSVal
+
 instance Loadable AudioResource where
+
+  loadStatus x = readIORef $ audioLoadStatus x
+
   load x = do
     s <- readIORef $ audioLoadStatus x
-    case s of
-      Loaded -> do
-        j <- readIORef $ audioJSVal x
-        return $ Right j
-      NotLoaded -> do
-        loadAudioResource x
-        return $ Left s
-      _ -> return $ Left s
+    when (s == NotLoaded) $ loadAudioResource x
+    return $ audioJSVal x
 
 loadAudioResource :: AudioResource -> IO ()
 loadAudioResource x = do
@@ -57,7 +62,7 @@ loadAudioResource x = do
       r <- arraybufferXMLHttpRequest url
       cbLoad <- asyncCallback $ do
         cbSuccess <- asyncCallback1 $ \y -> do
-          writeIORef (audioJSVal x) y
+          _setAudioBuffer (audioJSVal x) y
           writeIORef (audioLoadStatus x) Loaded
           T.putStrLn $ "loaded " <> url
         cbError <- asyncCallback1 $ \y -> do
@@ -76,6 +81,9 @@ loadAudioResource x = do
       send r
     _ -> return ()
 
+foreign import javascript unsafe
+  "$1.buffer = $2;"
+  _setAudioBuffer :: JSVal -> JSVal -> IO ()
 
 newtype XMLHttpRequest = XMLHttpRequest JSVal
 

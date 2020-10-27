@@ -80,7 +80,10 @@ estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MV
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  (cvsElement,glCtx) <- canvasWidget ctx -- canvas for Punctual
+  cvsElement <- canvasWidget (-2) ctx -- canvas for Punctual
+  glCtx <- liftIO $ newGLContext cvsElement
+  hCanvas <- canvasWidget (-10) ctx -- canvas for Hydra
+
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
@@ -120,9 +123,9 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  -- audioMapEv <- loadAudioMap
+  audioMapEv <- loadAudioMap
   terminalContextChangeIO <- performEvent $ fmap liftIO $ fmapMaybe commandToContextChangeIO command
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- audioMapEv, -} wsCtxChange, sidebarChange,terminalContextChangeIO]
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, audioMapEv, wsCtxChange, sidebarChange,terminalContextChangeIO]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -139,7 +142,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let requests'' = fmap (:[]) $ commandRequests
   let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
 
-  liftIO $ forkRenderThreads irc ctxM cvsElement glCtx riM
+  liftIO $ forkRenderThreads irc ctxM cvsElement glCtx hCanvas riM
   return ()
 
 hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
@@ -166,17 +169,14 @@ cinecer0Widget ctxM ctx = do
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
-canvasWidget :: MonadWidget t m => Dynamic t Context -> m (HTMLCanvasElement,GLContext)
-canvasWidget ctx = do
+canvasWidget :: MonadWidget t m => Int -> Dynamic t Context -> m HTMLCanvasElement
+canvasWidget zIndex ctx = do
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
-  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -2;" <> x <> ";")]
+  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: " <> showt zIndex <> ";" <> x <> ";")]
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
   let attrs = (<>) <$> baseAttrs <*> resMap
-  canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
-  glc <- liftIO $ newGLContext canvas
-  return (canvas,glc)
-
+  liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
 pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
@@ -192,14 +192,12 @@ loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
 loadAudioMap = do
   postBuild <- getPostBuild
   performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
-    putStrLn "loadAudioMap..."
     loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
       case maybeMap of
         Nothing -> putStrLn "loadAudioMap couldn't load sample map"
         Just map -> do
           putStrLn "loadAudioMap (estuary) succeeded"
           map' <- sampleMapToAudioMap map
-          putStrLn $ show map'
           triggerEv $ setAudioMap map'
 
 

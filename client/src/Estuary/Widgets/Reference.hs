@@ -15,6 +15,8 @@ import Estuary.Help.LanguageHelp
 import Estuary.Help.MiniTidal
 import Estuary.Help.PunctualAudio
 import Estuary.Help.TerminalViewCommands
+import Estuary.Help.Hydra
+import Estuary.Help.CineCer0
 import Estuary.Types.Request
 import Estuary.Widgets.Editor
 import Estuary.Reflex.Router
@@ -25,7 +27,8 @@ data Reference =
   MainList |
   MiniTidal |
   Punctual |
-  CineZer0 |
+  CineCer0 |
+  Hydra |
   TerminalViewCommands
   deriving (Generic, FromJSVal, ToJSVal)
 
@@ -44,8 +47,9 @@ referenceWidget MainList = do
   navEv1 <- el "ul" $ do
     miniTidal <- el "li" $ goTo MiniTidal "MiniTidal"
     punctual <- el "li" $ goTo Punctual "Punctual"
-    cinezero <- el "li" $ goTo CineZer0 "CineZer0"
-    return $ leftmost [miniTidal, punctual, cinezero]
+    cineCero <- el "li" $ goTo CineCer0 "CineCer0"
+    hydra <- el "li" $ goTo Hydra "Hydra"
+    return $ leftmost [miniTidal, punctual, cineCero, hydra]
   el "h3" $ text "View System"
   navEv2 <- el "ul" $ do
     terminalViewCommands <- el "li" $ goTo TerminalViewCommands "Terminal View Commands"
@@ -65,10 +69,16 @@ referenceWidget Punctual = do
   punctualAudioHelpFile
   return navEv
 
-referenceWidget CineZer0 = do
+referenceWidget CineCer0 = do
   navEv <- goTo MainList "Home"
-  el "h3" $ text "CineZer0 Reference"
-  el "p" $ text "Coming soon"
+  el "h3" $ text "CineCer0 Reference"
+  cineCer0Help
+  return navEv
+
+referenceWidget Hydra = do
+  navEv <- goTo MainList "Home"
+  el "h3" $ text "Hydra Reference"
+  hydraHelp
   return navEv
 
 referenceWidget TerminalViewCommands = do
