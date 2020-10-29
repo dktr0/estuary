@@ -33,6 +33,7 @@ data RenderState = RenderState {
   renderStart :: !UTCTime,
   renderPeriod :: !NominalDiffTime,
   renderEnd :: !UTCTime,
+  tempo :: Tempo,
   cachedDefs :: !DefinitionMap,
 --  cachedCanvasElement :: !(Maybe HTMLCanvasElement),
   paramPatterns :: !(IntMap Tidal.ControlPattern),
@@ -57,9 +58,7 @@ data RenderState = RenderState {
   glContext :: GLContext,
   canvasElement :: HTMLCanvasElement,
   hydraCanvas :: HTMLCanvasElement,
-  videoDivCache :: Maybe HTMLDivElement,
-  tempoCache :: Tempo,
-  ensembleEventsM :: MVar [EnsembleEvent]
+  videoDivCache :: Maybe HTMLDivElement
   }
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
@@ -72,6 +71,7 @@ initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
     renderStart = t0System,
     renderPeriod = 0,
     renderEnd = t0System,
+    tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
     cachedDefs = empty,
 --    cachedCanvasElement = Nothing,
     paramPatterns = empty,
@@ -96,6 +96,5 @@ initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
     glContext = glCtx,
     canvasElement = cvsElement,
     hydraCanvas = hCanvas,
-    videoDivCache = Nothing,
-    tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 }
+    videoDivCache = Nothing
   }
