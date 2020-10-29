@@ -71,8 +71,8 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo 
 
   -- determine whether we currently display "eval flash" or not
   evalTimeDyn <- holdUniqDyn $ fmap ((\(_,_,x)->x) . forRendering) $ currentValue cv
-  let flashOn = traceEvent "flashOn" $ fmap (const True) $ updated evalTimeDyn -- Event t Bool, fires every time evalTime changes
-  flashOff <- liftM (traceEvent "flashOff" . fmap (const False)) $ delay 0.1 flashOn -- Event t Bool, fires 0.1 seconds later
+  let flashOn = True <$ updated evalTimeDyn -- Event t Bool, fires every time evalTime changes
+  flashOff <- liftM (False <$) $ delay 0.1 flashOn -- Event t Bool, fires 0.1 seconds later
   evalFlash <- holdDyn False $ leftmost [flashOff,flashOn] -- Dynamic t Bool
 
   --
