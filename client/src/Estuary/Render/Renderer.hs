@@ -294,9 +294,8 @@ updatePunctualResolutionAndBrightness ctx = do
 renderPunctualWebGL :: UTCTime -> Int -> Renderer
 renderPunctualWebGL tNow z = do
   s <- get
-  let tNow' = utcTimeToAudioSeconds (wakeTimeSystem s,wakeTimeAudio s) tNow
   newWebGL <- liftIO $
-    Punctual.drawPunctualWebGL (glContext s) tNow' z (punctualWebGL s)
+    Punctual.drawPunctualWebGL (glContext s) (tempoCache s) tNow z (punctualWebGL s)
     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
   modify' $ \x -> x { punctualWebGL = newWebGL }
 
@@ -365,7 +364,7 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
-renderBaseProgramChanged irc c z (Right (Punctual,x,_)) = parsePunctualNotation' irc c z x
+renderBaseProgramChanged irc c z (Right (Punctual,x,eTime)) = parsePunctualNotation' irc c z x eTime
 
 renderBaseProgramChanged irc c z (Right (Hydra,x,_)) = parseHydra irc c z x
 
@@ -414,11 +413,10 @@ parsePunctualNotation irc c z p t = do
   let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { info = (info s) { errors = newErrors }}
 
-parsePunctualNotation' :: ImmutableRenderContext -> Context -> Int -> Text -> Renderer
-parsePunctualNotation' irc c z t = do
+parsePunctualNotation' :: ImmutableRenderContext -> Context -> Int -> Text -> UTCTime -> Renderer
+parsePunctualNotation' irc c z t eTime = do
   s <- get
-  let evalTime = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ renderStart s -- :: AudioTime/Double
-  parseResult <- liftIO $ try $ return $! Punctual.parse evalTime t
+  parseResult <- liftIO $ try $ return $! Punctual.parse eTime t
   parseResult' <- case parseResult of
     Right (Right punctualProgram) -> do
       punctualProgramChanged irc c z punctualProgram
@@ -454,18 +452,18 @@ punctualProgramChanged irc c z p = do
   let (mainBusIn,_,_,_,_) = mainBus irc
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
-  let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2) z (punctuals s)
+  let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 (Punctual.evalTime p)) z (punctuals s)
   let tempo' = tempo $ ensemble $ ensembleC c
   let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ origin tempo'
   let cps' = freq tempo'
   newPunctualW <- liftIO $ do
-    runAudioContextIO ac $ Punctual.updatePunctualW prevPunctualW (beat0,realToFrac cps') p
+    runAudioContextIO ac $ Punctual.updatePunctualW prevPunctualW (tempoCache s) p
     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return prevPunctualW)
   modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
   -- B. update Punctual WebGL state in response to new, syntactically correct program
   pWebGL <- gets punctualWebGL
   newWebGL <- liftIO $
-    Punctual.evaluatePunctualWebGL (glContext s) (beat0,realToFrac cps') z p pWebGL
+    Punctual.evaluatePunctualWebGL (glContext s) (tempoCache s) z p pWebGL
     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return pWebGL)
   modify' $ \x -> x { punctualWebGL = newWebGL }
 

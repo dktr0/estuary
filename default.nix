@@ -161,12 +161,12 @@ in
           }) {});
 
         punctual = # dontHaddock (self.callCabal2nix "punctual" ../punctual {});
-         dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
+         dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0j09hybq9ga2whxmdk6cywyahvp27cwp4v9chpxqa2cnxvignc3b";
-          rev = "1036d474e53e6615a67b9e95b33da0f30bf2a386";
-          }) {});
+          sha256 = "1g3rvc00b3zzmdhmm7jjyifsccl2a736p3zk6j0i1arvffcnhq3g";
+          rev = "637c7e85e308420fad38ee8cce7b5ef7c4c5c1f2";
+          }) {}));
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
