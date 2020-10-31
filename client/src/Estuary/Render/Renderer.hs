@@ -71,6 +71,9 @@ import Estuary.Render.DynamicsMode
 
 type Renderer = StateT RenderState IO ()
 
+runRenderer :: Renderer -> RenderState -> IO RenderState
+runRenderer r rs = (execStateT r rs) `catch` (\e -> putStrLn "runRenderer" >> putStrLn (show (e :: SomeException)) >> return rs)
+
 clockRatioThreshold :: Double
 clockRatioThreshold = 0.8
 
@@ -548,7 +551,7 @@ mainRenderThread :: ImmutableRenderContext -> MVar Context -> MVar RenderInfo ->
 mainRenderThread irc ctxM riM rsM = do
   ctx <- readMVar ctxM
   rs <- takeMVar rsM
-  rs' <- execStateT (render irc ctx) rs
+  rs' <- runRenderer (render irc ctx) rs
   let rs'' = rs' {
     animationOn = canvasOn ctx,
     tempoCache = tempo $ ensemble $ ensembleC ctx,
@@ -556,7 +559,7 @@ mainRenderThread irc ctxM riM rsM = do
     }
   putMVar rsM rs''
   swapMVar riM (info rs'') -- copy RenderInfo from state into MVar for instant reading elsewhere
-  _ <- execStateT sleepIfNecessary rs''
+  _ <- runRenderer sleepIfNecessary rs''
   mainRenderThread irc ctxM riM rsM
 
 animationThread :: ImmutableRenderContext -> MVar Context -> MVar RenderState -> IO ()
@@ -564,6 +567,6 @@ animationThread irc ctxM rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
   rs <- readMVar rsM
   when (animationOn rs) $ do
     rs' <- takeMVar rsM
-    rs'' <- execStateT renderAnimation rs'
+    rs'' <- runRenderer renderAnimation rs'
     putMVar rsM rs''
   animationThread irc ctxM rsM
