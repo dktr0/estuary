@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-} {-# LANGUAGE RecursiveDo #-}
 
-module Estuary.Widgets.RouletteWidget where
+module Estuary.Widgets.Roulette where
 
 import Reflex
 import Reflex.Dom
@@ -29,9 +29,8 @@ import Control.Monad
 import qualified Estuary.Types.Term as Term
 
 getHead :: [Text] -> [Text]
-getHead xs
-  |xs == [] = []
-  |otherwise = [xs !! 0]
+getHead [] = []
+getHead xs = [head xs]
 
 
 rouletteWidget :: MonadWidget t m => Int -> Bool -> Dynamic t Roulette -> Editor t m (Variable t Roulette)
@@ -90,15 +89,12 @@ currentlyLinedUp uHandle roulette
   |uHandle == "" = True
   |otherwise = False
 
--- rouletteButton :: MonadWidget t m =>  Map Text Text -> Dynamic t (Bool, Text) -> m (Event t (Roulette -> Roulette))
-rouletteButton :: MonadWidget t m =>  Map Text Text -> Dynamic t Text -> m (Event t (Roulette -> Roulette))
+rouletteButton :: MonadWidget t m => Map Text Text -> Dynamic t Text -> m (Event t (Roulette -> Roulette))
 rouletteButton attrs label = do
-  label' <- sample $ current label-- Text
-  let r = removeHandleFromList $ label' -- <> "     " <> "x"  -- Dynamic t (Roulette -> Roulette)
   (element, _) <- elAttr' "div" attrs $ dynText $ label <> (constDyn "ⓧ")
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
-  let roulette = r <$ clickEv
-  return roulette
+  return $ attachWith (\x _ -> removeHandleFromList x) (current label) clickEv
+
 
 attrsRouletteButton :: Text -> Map Text Text
 attrsRouletteButton uhandle

@@ -29,7 +29,7 @@ import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
-import Estuary.Widgets.RouletteWidget
+import Estuary.Widgets.Roulette
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Widgets.Tempo
 import Estuary.Types.EnsembleRequest
