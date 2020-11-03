@@ -6,7 +6,7 @@ module Estuary.Types.Participant where
 -- For each ensemble, this list is maintained by the server
 -- and broadcast to the clients in that ensemble periodically
 -- (together with a count of anonymous participants)
- 
+
 import Data.Text
 import Data.Time
 import GHC.Generics
@@ -23,7 +23,7 @@ data Participant = Participant {
   latency :: NominalDiffTime,
   browser :: Text,
   ipAddress :: Text
-  } deriving (Eq,Generic)
+  } deriving (Eq,Generic,Show)
 
 instance ToJSON Participant where
   toEncoding = genericToEncoding defaultOptions
