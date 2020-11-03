@@ -61,7 +61,7 @@ instance FromJSON Ensemble where
       participants = Map.empty,
       anonymousParticipants = 0
     }
-  parseJSON invalid = prependFailure "parsing Ensemble failed, " $ typeMismatch "Object" invalid
+  parseJSON invalid = modifyFailure ("parsing Ensemble failed, " ++) $ typeMismatch "Object" invalid
 
 emptyEnsemble :: UTCTime -> Ensemble
 emptyEnsemble t = Ensemble {
