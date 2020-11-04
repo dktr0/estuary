@@ -287,7 +287,7 @@ presetViews = fromList [
         ]),
 
       ("roulette",GridView 2 1 [
-        BorderDiv (Views [RouletteView 0 3, TextView 1 0]),
+        BorderDiv (Views [RouletteView 0 0, TextView 1 0]),
         BorderDiv (Views [RouletteView 2 0, TextView 3 0])
         ])
       ]
