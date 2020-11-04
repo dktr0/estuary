@@ -39,7 +39,7 @@ rouletteWidget rows delta = do
   let attrsRouletteWidgetContainer = case rows of 0 -> constDyn $ ("class" =: "rouletteWidgetContainer  primary-color code-font")
                                                   _ -> constDyn $ ("class" =: "rouletteWidgetContainer  primary-color code-font" <> "style" =: ("height: " <> (T.pack (show rows') <> "em;"))) --  <> (wrappingRoulette wrappingBool)))
 
-  let attrsRouletteContainer = case rows of 0 -> constDyn $ ("class" =: "rouletteContainer"  <> "style" =: "flex-wrap: nowrap;")
+  let attrsRouletteContainer = case rows of 0 -> constDyn $ ("class" =: "rouletteContainer"  <> "style" =: "flex-wrap: wrap;")
                                             _ -> constDyn $ ("class" =: "rouletteContainer" <> "style" =: "flex-wrap: wrap;")
 
   elDynAttr "div" attrsRouletteWidgetContainer $ do
