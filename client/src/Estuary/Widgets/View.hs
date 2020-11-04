@@ -36,6 +36,7 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
+import Estuary.Widgets.StopWatch
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
@@ -57,8 +58,9 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget
 
--- viewWidget er (RouletteView z rows) = rouletteWidget
 viewWidget er (RouletteView z rows wrappingBool) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows wrappingBool)
+
+viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget
 
 viewWidget er TempoView = do
   ctx <- context

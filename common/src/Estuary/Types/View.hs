@@ -24,8 +24,9 @@ data View =
   Example TextNotation Text | -- a clickable text-code example
   EnsembleStatusView |
   TempoView |
-  RouletteView Int Int Bool|
-  AudioMapView
+  RouletteView Int Int Bool |
+  AudioMapView |
+  StopWatchView Int
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where
