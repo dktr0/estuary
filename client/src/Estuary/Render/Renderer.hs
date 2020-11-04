@@ -365,30 +365,27 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: RenderEnvironment -> HTMLCanvasElement -> Punctual.GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO ()
-forkRenderThreads re cvsElement glCtx hCanvas riM = do
-  t0Audio <- liftAudioIO $ audioTime
-  t0System <- getCurrentTime
-  irs <- initialRenderState (mic irc) (out irc) cvsElement glCtx hCanvas t0System t0Audio
-  rsM <- newMVar irs
-  void $ forkIO $ mainRenderThread irc ctxM riM rsM
-  void $ forkIO $ animationThread irc ctxM rsM
+forkRenderThreads :: RenderEnvironment -> IO ()
+forkRenderThreads rEnv = do
+  irs <- initialRenderState rEnv
+  rsMVar <- newMVar irs
+  void $ forkIO $ mainRenderThread rEnv rsMVar
+  void $ forkIO $ animationThread rEnv rsMVar
 
 mainRenderThread :: RenderEnvironment -> MVar RenderState -> IO ()
-mainRenderThread re rsM = do
-  rs <- takeMVar rsM
-  rs' <- execR re rs render
-  let rs'' = rs' { videoDivCache = videoDivElement ctx } -- *** ??? should be moved to RenderEnvironment
-  putMVar rsM rs''
-  swapMVar riM (info rs'') -- copy RenderInfo from state into MVar for instant reading elsewhere
-  _ <- execR re rs'' sleepIfNecessary
-  mainRenderThread re rsM
+mainRenderThread rEnv rsMVar = do
+  rs <- takeMVar rsMVar
+  rs' <- execR rEnv rs render
+  putMVar rsMVar rs'
+  -- swapMVar riM (info rs') -- ??? possibly not necessary after refactor...
+  _ <- execR rEnv rs' sleepIfNecessary
+  mainRenderThread rEnv rsMVar
 
 animationThread :: RenderEnvironment -> MVar RenderState -> IO ()
-animationThread re rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
-  rs <- readMVar rsM
-  when (animationOn rs) $ do
-    rs' <- takeMVar rsM
-    rs'' <- execStateT animate rs'
-    putMVar rsM rs''
-  animationThread irc ctxM rsM
+animationThread rEnv rsMVar = void $ inAnimationFrame ContinueAsync $ \_ -> do
+  animationOn <- canvasOn <$> readMVar (settings rEnv)
+  when animationOn $ do
+    rs <- takeMVar rsMVar
+    rs' <- execR eEnv rs' animate
+    putMVar rsMVar rs'
+  animationThread rEnv rsMVar

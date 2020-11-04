@@ -1,20 +1,17 @@
 module Estuary.Types.RenderState where
 
-import Data.Time.Clock
+import Data.Time
+import Data.Tempo
 import Data.IntMap.Strict
+import Sound.MusicW.AudioContext
+import Sound.MusicW.Node as MusicW
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
-import qualified Sound.Punctual.Resolution as Punctual
-import Sound.MusicW.AudioContext
-import Sound.MusicW.Node as MusicW
-import GHCJS.DOM.Types
 import Sound.Punctual.GL
-import Data.Tempo
 
-import Estuary.Types.EnsembleEvent
 import Estuary.Types.Definition
-import Estuary.Types.RenderInfo
+import Estuary.Types.RenderEnvironment
 import Estuary.Types.NoteEvent
 import Estuary.Types.MovingAverage
 import Estuary.Types.TextNotation
@@ -25,17 +22,28 @@ import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
 
-
 data RenderState = RenderState {
-  animationOn :: Bool,
+
+  -- the prevailing tempo and live coding programs to render
+  tempo :: Tempo,
+  defs :: !DefinitionMap,
+
+  -- fundamental time parameters of the current render
   wakeTimeAudio :: !Double,
   wakeTimeSystem :: !UTCTime,
+  wakeTimeAnimation :: !UTCTime,
   renderStart :: !UTCTime,
-  renderPeriod :: !NominalDiffTime,
   renderEnd :: !UTCTime,
-  tempo :: Tempo,
-  cachedDefs :: !DefinitionMap,
---  cachedCanvasElement :: !(Maybe HTMLCanvasElement),
+  renderPeriod :: !NominalDiffTime,
+
+  -- statistics re: render time demands
+  renderTime :: !MovingAverage,
+  animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
+  animationTime :: !MovingAverage, -- time between frame start and end of drawing operations
+  zoneRenderTimes :: !(IntMap MovingAverage),
+  zoneAnimationTimes :: !(IntMap MovingAverage),
+
+  -- state and intermediate results for various languages
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
   tidalEvents :: ![(UTCTime,Tidal.ControlMap)],
@@ -46,34 +54,29 @@ data RenderState = RenderState {
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
   timeNots :: IntMap TimeNot.Program,
   seis8ses :: IntMap Seis8s.Program,
-  hydras :: IntMap Hydra.Hydra,
-  evaluationTimes :: IntMap UTCTime, -- this is probably temporary
-  renderTime :: !MovingAverage,
-  wakeTimeAnimation :: !UTCTime,
-  animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
-  animationTime :: !MovingAverage, -- time between frame start and end of drawing operations
-  zoneRenderTimes :: !(IntMap MovingAverage),
-  zoneAnimationTimes :: !(IntMap MovingAverage),
-  info :: !RenderInfo,
-  glContext :: GLContext,
-  canvasElement :: HTMLCanvasElement,
-  hydraCanvas :: HTMLCanvasElement,
-  videoDivCache :: Maybe HTMLDivElement
+  hydras :: IntMap Hydra.Hydra
   }
 
-initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
-initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
-  pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) Punctual.HD 1.0 glCtx
+initialRenderState :: RenderEnvironment -> IO RenderState
+initialRenderState rEnv t0System t0Audio = do
+  wakeTimeAudio' <- liftAudioIO $ audioTime
+  wakeTimeSystem' <- getCurrentTime
+  glCtx <- newGLContext $ punctualCanvas rEnv
+  pWebGL <- Punctual.newPunctualWebGL (Just $ mic rEnv) (Just $ out rEnv) Punctual.HD 1.0 glCtx
   return $ RenderState {
-    animationOn = False,
-    wakeTimeSystem = t0System,
-    wakeTimeAudio = t0Audio,
-    renderStart = t0System,
+    tempo = Tempo { freq = 0.5, time = wakeTimeSystem', count = 0 },
+    defs = empty,
+    wakeTimeAudio = wakeTimeAudio',
+    wakeTimeSystem = wakeTimeSystem',
+    wakeTimeAnimation = wakeTimeSystem',
+    renderStart = wakeTimeSystem',
+    renderEnd = wakeTimeSystem',
     renderPeriod = 0,
-    renderEnd = t0System,
-    tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
-    cachedDefs = empty,
---    cachedCanvasElement = Nothing,
+    renderTime = newAverage 20,
+    animationDelta = newAverage 20,
+    animationTime = newAverage 20,
+    zoneRenderTimes = empty,
+    zoneAnimationTimes = empty,
     paramPatterns = empty,
     noteEvents = [],
     tidalEvents = [],
@@ -84,17 +87,5 @@ initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
     cineCer0States = empty,
     timeNots = empty,
     seis8ses = empty,
-    hydras = empty,
-    evaluationTimes = empty,
-    renderTime = newAverage 20,
-    wakeTimeAnimation = t0System,
-    animationDelta = newAverage 20,
-    animationTime = newAverage 20,
-    zoneRenderTimes = empty,
-    zoneAnimationTimes = empty,
-    info = emptyRenderInfo,
-    glContext = glCtx,
-    canvasElement = cvsElement,
-    hydraCanvas = hCanvas,
-    videoDivCache = Nothing
-  }
+    hydras = empty
+    }

@@ -59,9 +59,10 @@ import Estuary.Types.ResourceMap
 import Estuary.Types.AudioResource
 import Estuary.Types.AudioMeta
 
-keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
-keyboardHintsCatcher irc ctxM riM = mdo
-  (theElement,_) <- elClass' "div" "" $ estuaryWidget irc ctxM riM keyboardHints
+
+keyboardHintsCatcher :: MonadWidget t m => m ()
+keyboardHintsCatcher incREnv = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget incREnv keyboardHints
   let e = _el_element theElement
   e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
     y <- getKeyEvent
@@ -76,14 +77,18 @@ keyEventToHint x
   | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just ToggleStats
 keyEventToHint _ = Nothing
 
-estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
-estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
-  cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  cvsElement <- canvasWidget (-2) ctx -- canvas for Punctual
-  glCtx <- liftIO $ newGLContext cvsElement
-  hCanvas <- canvasWidget (-10) ctx -- canvas for Hydra
 
+estuaryWidget :: MonadWidget t m => Event t [Hint] -> m ()
+estuaryWidget keyboardHints = divClass "estuary" $ mdo
+
+  c0div <- cinecer0Widget stgs -- div for CineCer0
+  pCanvas <- canvasWidget (-2) stgs -- canvas for Punctual
+  hCanvas <- canvasWidget (-10) stgs -- canvas for Hydra
+  rEnv <- liftIO $ newRenderEnvironment c0div pCanvas hCanvas
+  liftIO $ forkRenderThreads rEnv
+
+  -- *** TODO: continue refactoring below this line ***
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
@@ -157,19 +162,17 @@ hintsToResponses = catMaybes . fmap f
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
     f _ = Nothing
 
-cinecer0Widget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
-cinecer0Widget ctxM ctx = do
-  ic0 <- liftIO $ takeMVar ctxM
-  canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
+
+cinecer0Widget :: MonadWidget t m => Dynamic t Settings -> m HTMLDivElement
+cinecer0Widget stgs = do
+  canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> fmap canvasOn stgs
   let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -1;" <> x <> ";")]
-  res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
+  res <- fmap pixels <$> fmap resolution stgs
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
   let attrs = (<>) <$> baseAttrs <*> resMap
-  videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
-  let ic = ic0 { videoDivElement = Just videoDiv }
-  liftIO $ putMVar ctxM ic
+  liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
 
-canvasWidget :: MonadWidget t m => Int -> Dynamic t Context -> m HTMLCanvasElement
+canvasWidget :: MonadWidget t m => Int -> Dynamic t Settings -> m HTMLCanvasElement
 canvasWidget zIndex ctx = do
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
   let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: " <> showt zIndex <> ";" <> x <> ";")]
@@ -177,6 +180,7 @@ canvasWidget zIndex ctx = do
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
   let attrs = (<>) <$> baseAttrs <*> resMap
   liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
+
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
 pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)

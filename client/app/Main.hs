@@ -13,15 +13,8 @@ import System.IO
 
 import Sound.MusicW
 
-import Estuary.Render.WebDirt
-import Estuary.Render.SuperDirt
 import Estuary.Protocol.Peer
-import Estuary.Types.Context
 import Estuary.Widgets.Estuary
-import Estuary.Widgets.Navigation(Navigation(..))
-import Estuary.Types.RenderInfo
-import Estuary.Types.RenderState
-import Estuary.Render.Renderer
 import Estuary.Render.DynamicsMode
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
@@ -46,27 +39,6 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  ac <- getGlobalAudioContextPlayback
-  addWorklets ac
-
-  mainBusNodes@(mainBusIn,_,_,_,_) <- initializeMainBus
-  wd <- liftAudioIO $ newWebDirt mainBusIn
-  initializeWebAudio wd
-  sd <- newSuperDirt
-  theMic <- liftAudioIO $ createMicrophone
-  let immutableRenderContext = ImmutableRenderContext {
-    mainBus = mainBusNodes,
-    webDirt = wd,
-    superDirt = sd,
-    mic = theMic
-    }
-
-  nowUtc <- getCurrentTime
-  nowAudio <- liftAudioIO $ audioTime
-  context <- newMVar $ initialContext nowUtc
-  renderInfo <- newMVar $ emptyRenderInfo
-  -- forkRenderThreads immutableRenderContext context renderInfo
-
   cb <- syncCallback1' $ \dest -> do
     node <- changeDestination mainBusNodes $
       if dest `js_eq` pToJSVal ("stream" :: JSString) then
@@ -76,10 +48,7 @@ main = do
     return $ pToJSVal node
   js_registerSetEstuaryAudioDestination cb
 
-  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher immutableRenderContext context renderInfo
-
-  -- Signal the splash page that estuary is loaded.
-  -- js_setIconStateLoaded
+  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher
 
   -- Resume the audio context after interaction.
   js_waitForClickBody
@@ -100,6 +69,7 @@ visuallyCrash e =
         ]
   in js_confirmReload $ toJSString $ intercalate "\n" lines
 
+
 foreign import javascript unsafe
   "if (window.confirm($1)) {        \
   \  window.___forcedReload = true; \
@@ -107,9 +77,11 @@ foreign import javascript unsafe
   \}"
   js_confirmReload :: JSVal -> IO ()
 
+
 foreign import javascript interruptible
   "document.body.addEventListener('click', $c, {once: true});"
   js_waitForClickBody :: IO ()
+
 
 foreign import javascript safe
   "window.addEventListener('beforeunload', function (e) { \
@@ -120,13 +92,16 @@ foreign import javascript safe
   \});"
   warnBeforeGoingBackInBrowser :: IO ()
 
+
 foreign import javascript safe
   "document.querySelector('#estuary-root')"
   js_estuaryMountPoint :: IO JSVal
 
+
 foreign import javascript safe
   "EstuaryIcon.state = 'loaded';"
   js_setIconStateLoaded :: IO ()
+
 
 foreign import javascript unsafe
   "window.___setEstuaryAudioDestination = $1"
