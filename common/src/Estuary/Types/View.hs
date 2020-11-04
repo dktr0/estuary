@@ -24,7 +24,7 @@ data View =
   Example TextNotation Text | -- a clickable text-code example
   EnsembleStatusView |
   TempoView |
-  RouletteView Int Int Bool|
+  RouletteView Int Int|
   AudioMapView
   deriving (Show,Eq,Generic)
 

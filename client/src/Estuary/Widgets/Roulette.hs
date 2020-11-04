@@ -33,13 +33,13 @@ getHead [] = []
 getHead xs = [head xs]
 
 
-rouletteWidget :: MonadWidget t m => Int -> Bool -> Dynamic t Roulette -> Editor t m (Variable t Roulette)
-rouletteWidget rows wrappingBool delta = do
+rouletteWidget :: MonadWidget t m => Int -> Dynamic t Roulette -> Editor t m (Variable t Roulette)
+rouletteWidget rows delta = do
   let rows' = 1 + rows
-  let attrsRouletteWidgetContainer = case rows of 0 -> constDyn $ ("class" =: "rouletteWidgetContainer  primary-color code-font") --  <> "style" =: (wrappingRoulette wrappingBool))
+  let attrsRouletteWidgetContainer = case rows of 0 -> constDyn $ ("class" =: "rouletteWidgetContainer  primary-color code-font")
                                                   _ -> constDyn $ ("class" =: "rouletteWidgetContainer  primary-color code-font" <> "style" =: ("height: " <> (T.pack (show rows') <> "em;"))) --  <> (wrappingRoulette wrappingBool)))
 
-  let attrsRouletteContainer = case rows of 0 -> constDyn $ ("class" =: "rouletteContainer"  <> "style" =: (wrappingRoulette wrappingBool))
+  let attrsRouletteContainer = case rows of 0 -> constDyn $ ("class" =: "rouletteContainer"  <> "style" =: "flex-wrap: nowrap;")
                                             _ -> constDyn $ ("class" =: "rouletteContainer" <> "style" =: "flex-wrap: wrap;")
 
   elDynAttr "div" attrsRouletteWidgetContainer $ do
@@ -55,13 +55,10 @@ rouletteWidget' delta = mdo
     let currentValUnion =  liftM2 (++) currentValHead  currentValTail
 
     -- roulette buttons/ not on a different colour, underlining or circling or subtle. Inverse colors, inverse the background and the font.
-    let attrsRouletteButton' = attrsRouletteButton uHandle
-    listOfRouletteButtonsHead <- simpleList currentValHead (rouletteButton attrsRouletteButtonHead)  -- m (Dynamic [Event t (Roulette -> Roulette)])
-    listOfRouletteButtonsTail <- simpleList currentValTail (rouletteButton attrsRouletteButtonTail) -- m (Dynamic [Event t (Roulette -> Roulette)])
+    listOfRouletteButtonsHead <- simpleList currentValHead (rouletteButton $ attrsRouletteButtonHead uHandle)  -- m (Dynamic [Event t (Roulette -> Roulette)])
+    listOfRouletteButtonsTail <- simpleList currentValTail (rouletteButton $ attrsRouletteButtonTail uHandle) -- m (Dynamic [Event t (Roulette -> Roulette)])
     let listOfRouletteButtons = liftM2 (++) listOfRouletteButtonsHead listOfRouletteButtonsTail
     let deleteEv = switchDyn $ fmap leftmost listOfRouletteButtons
-    -- let attrsRouletteButton' = attrsRouletteButton uHandle'(true,sometext)   --  Map Text Text
-    -- listOfRouletteButtons <- simpleList currentValTail (rouletteButton attrsRouletteButton') -- m (Dynamic [Event t (Roulette -> Roulette)])
 
     -- lineup button
     let dynAttrs = attrsLineUpButton <$> fmap (currentlyLinedUp uHandle) currentVal
@@ -73,14 +70,6 @@ rouletteWidget' delta = mdo
     x <- returnVariable delta newValue
     currentVal <- holdUniqDyn $ currentValue x
     return x
-
--- controls if the content of the rows wrap
-wrappingRoulette :: Bool -> Text
-wrappingRoulette b = wrap b
-  where
-    wrap False  = "display: flex; flex-wrap: nowrap;"
-    wrap True = "display: flex; flex-wrap: wrap;"
-
 
 -- Dynamic t a (comes from the server, and only is the initial value and it also represents the udpates) -> Event t a (come from local user actions) -> Variable t Roulette
 currentlyLinedUp :: Text -> [Text] -> Bool
@@ -96,29 +85,22 @@ rouletteButton attrs label = do
   return $ attachWith (\x _ -> removeHandleFromList x) (current label) clickEv
 
 
-attrsRouletteButton :: Text -> Map Text Text
-attrsRouletteButton uhandle
-  | uhandle == "" = "class" =: "rouletteButtons ui-buttons code-font" <> "style" =: "cursor: not-allowed; pointer-events: none;"
-  | otherwise = "class" =: "rouletteButtons ui-buttons code-font"
+-- attrsRouletteButton :: Text -> Map Text Text
+-- attrsRouletteButton uhandle
+--   | uhandle == "" = "class" =: "rouletteButtons ui-buttons code-font" <> "style" =: "cursor: not-allowed; pointer-events: none;"
+--   | otherwise = "class" =: "rouletteButtons ui-buttons code-font"
 
--- merge
--- 1. finish class of buttons background
--- 2. finish sizing
--- work: 1hr (figuring out how to modify the list) + 20 min css
+attrsRouletteButtonHead :: Text -> Map Text Text
+attrsRouletteButtonHead uhandle
+  | uhandle == "" = "class" =: "rouletteButtons ui-buttons code-font attrsRouletteButtonHead" <> "style" =: "cursor: not-allowed; pointer-events: none;"
+  | otherwise = "class" =: "rouletteButtons ui-buttons code-font attrsRouletteButtonHead"
 
-attrsRouletteButtonHead :: Map Text Text
-attrsRouletteButtonHead = "class" =: "rouletteButtons ui-buttons attrsRouletteButtonHead"
 
-attrsRouletteButtonTail :: Map Text Text
-attrsRouletteButtonTail = "class" =: "rouletteButtons ui-buttons attrsRouletteButtonTail"
+attrsRouletteButtonTail :: Text ->  Map Text Text
+attrsRouletteButtonTail uhandle
+  | uhandle == "" = "class" =: "rouletteButtons ui-buttons code-font attrsRouletteButtonTail" <> "style" =: "cursor: not-allowed; pointer-events: none;"
+  | otherwise = "class" =: "rouletteButtons ui-buttons code-font attrsRouletteButtonTail"
 
--- attrsRouletteButton :: Text -> Roulette -> Map Text Text
--- attrsRouletteButton uhandle xs
---   |uhandle == (head xs) = "class" =: "rouletteButtons ui-buttons code-font" <> "style" =: "cursor: not-allowed; pointer-events: none; color: white"
---   |otherwise = "class" =: "rouletteButtons ui-buttons code-font"
-
- -- m (Dynamic [Event t (Roulette -> Roulette)])
--- z :: MonadWidget t m =>
 
 lineUpButton ::  MonadWidget t m => Dynamic t (Map Text Text) -> Text -> (Roulette -> Roulette) -> m (Event t (Roulette -> Roulette))
 lineUpButton attrs label r = do
@@ -137,7 +119,6 @@ attrsLineUpButton b = "class" =: "lineUpButton ui-buttons other-borders code-fon
     colour False =  "color:var(--primary-color)"
     colour True =  "color: var(--secondary-color)"
 
-
 rouletteToRoulette :: Dynamic t Roulette -> Dynamic t Roulette
 rouletteToRoulette xs = xs
 
@@ -149,8 +130,7 @@ addHandleToList uHandle roulette
 --addHandleToList "luis" -- Roulette -> Roulette -- check if the name is in the list already and add if not.
 -- Both of these func should be pure funcs.
 
--- e.g. deleteHandleFromL :: Text -> Roulette -> Roulette
--- deleteHandleFromL -- fail silently , i.e. return the existing list
-
+-- e.g. removeHandleFromList :: Text -> Roulette -> Roulette
+-- deleteHandlremoveHandleFromListeFromL -- fail silently , i.e. return the existing list
 removeHandleFromList :: Text -> Roulette -> Roulette
 removeHandleFromList handle xs = Prelude.filter (\e -> e/=handle) xs
