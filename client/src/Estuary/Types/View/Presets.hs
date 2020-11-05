@@ -286,8 +286,10 @@ presetViews = fromList [
          (Views [TempoView,EnsembleStatusView])
         ]),
 
+-- the second number of the RouletteView will modify the height of the view. It is set to ems, it is recommended to use numbers above 2 to avoid the roulette buttons to be cutoff. If set to 0, the roulette view will expand automatically and the text will wrap.
+
       ("roulette",GridView 2 1 [
-        BorderDiv (Views [RouletteView 0 0 True, TextView 1 0]),
-        BorderDiv (Views [RouletteView 2 0 True, TextView 3 0])
+        BorderDiv (Views [RouletteView 0 2, TextView 1 0]),
+        BorderDiv (Views [RouletteView 2 2, TextView 3 0])
         ])
       ]
