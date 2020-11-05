@@ -42,8 +42,25 @@ viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t 
 
 viewWidget er EmptyView = return never
 
-viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
+viewWidget er (Views xs) = divClass "views" $ liftM leftmost $ mapM (viewWidget er) xs
 
+viewWidget er (Div c v) = divClass c $ viewWidget er v
+
+viewWidget er (BorderDiv v) = viewWidget er (Div "borderDiv" v)
+
+viewWidget er (Paragraph v) = viewWidget er (Div "paragraph code-font" v)
+
+viewWidget er (Link url v) = elAttr "a" ("href" =: url) $ viewWidget er v
+
+viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> divClass "gridChild" $ viewWidget er v) vs
+  where
+    viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
+    defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
+    setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
+    setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
+    setColumnsAndRows  = setNumColumns <> setNumRows
+
+viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
@@ -70,27 +87,11 @@ viewWidget er TempoView = do
   tempoE <- tempoWidget tempoDelta
   return $ fmap WriteTempo tempoE
 
-viewWidget er (Paragraph t) = divClass "paragraph code-font" $ translatableText t >> return never
-
-viewWidget er (Example n t) = do
+viewWidget _ (Example n t) = do
   b <- clickableDiv "example code-font" $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
   hint $ fmap (\et -> ZoneHint 1 (TextProgram (Live (n,t,et) L3))) bTime
   return never
-
-viewWidget er (ViewDiv c v) = divClass c $ viewWidget er v
-
-viewWidget er (BorderDiv v) = divClass "borderDiv" $ viewWidget er v
-
-viewWidget er (Views xs) = divClass "views" $ liftM leftmost $ mapM (viewWidget er) xs
-
-viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> divClass "gridChild" $ viewWidget er v) vs
-  where
-    viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
-    defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
-    setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
-    setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
-    setColumnsAndRows  = setNumColumns <> setNumRows
 
 viewWidget _ AudioMapView = do
   audioMapWidget
