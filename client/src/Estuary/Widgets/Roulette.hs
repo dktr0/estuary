@@ -81,7 +81,7 @@ currentlyLinedUp uHandle roulette
 rouletteButton :: MonadWidget t m => Map Text Text -> Dynamic t Text -> m (Event t (Roulette -> Roulette))
 rouletteButton attrs label = do
   (element, _) <- elAttr' "div" attrs $ dynText $ label <> (constDyn "ⓧ")
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ attachWith (\x _ -> removeHandleFromList x) (current label) clickEv
 
 
@@ -105,7 +105,7 @@ attrsRouletteButtonTail uhandle
 lineUpButton ::  MonadWidget t m => Dynamic t (Map Text Text) -> Text -> (Roulette -> Roulette) -> m (Event t (Roulette -> Roulette))
 lineUpButton attrs label r = do
   (element, _) <- elDynAttr' "div" attrs $ text label
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   let roulette = r <$ clickEv
   return roulette
 

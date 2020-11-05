@@ -37,7 +37,7 @@ body::-webkit-scrollbar-track {
 }
 
 body::-webkit-scrollbar-thumb {
-  background: var(--primary-color);;
+  background: var(--primary-color);
   border-radius: 10px;
 }
 
@@ -45,6 +45,9 @@ body::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
 
+a {
+  color: var(--primary-color);
+}
 
 /*styles the canvas and svg display */
 .canvas-or-svg-display {
@@ -351,13 +354,6 @@ body::-webkit-scrollbar-corner{
 
 .announcement {
   margin-bottom: 0.5em;
-}
-
-/*contains the about text (source)*/
-.aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	padding: 0.5em;
 }
 
 .webSocketButtons {/*contains the "send" button and "terminal/chat" label (source)*/

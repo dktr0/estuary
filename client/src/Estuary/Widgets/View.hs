@@ -3,7 +3,7 @@
 module Estuary.Widgets.View where
 
 import Reflex
-import Reflex.Dom
+import Reflex.Dom hiding (Link)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -19,7 +19,7 @@ import Estuary.Types.View
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.Context
-import Estuary.Tidal.Types
+import Estuary.Tidal.Types (TransformedPattern(..))
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 import Estuary.Types.RenderInfo
@@ -42,15 +42,19 @@ viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t 
 
 viewWidget er EmptyView = return never
 
-viewWidget er (Views xs) = divClass "views" $ liftM leftmost $ mapM (viewWidget er) xs
+viewWidget er (Div c vs) = divClass c $ liftM leftmost $ mapM (viewWidget er) vs
 
-viewWidget er (Div c v) = divClass c $ viewWidget er v
+viewWidget er (Views vs) = viewWidget er (Div "views" vs)
 
-viewWidget er (BorderDiv v) = viewWidget er (Div "borderDiv" v)
+viewWidget er (BorderDiv vs) = viewWidget er (Div "borderDiv" vs)
 
-viewWidget er (Paragraph v) = viewWidget er (Div "paragraph code-font" v)
+viewWidget er (Paragraph vs) = viewWidget er (Div "paragraph code-font" vs)
 
-viewWidget er (Link url v) = elAttr "a" ("href" =: url) $ viewWidget er v
+viewWidget er (Link url vs) = elAttr "a" ("href" =: url) $ viewWidget er (Views vs)
+
+viewWidget er (BulletPoints vs) = el "ul" $ do
+  rs <- forM vs $ \v -> el "li" $ viewWidget er v
+  return $ leftmost rs
 
 viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> divClass "gridChild" $ viewWidget er v) vs
   where
@@ -60,11 +64,13 @@ viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> 
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
     setColumnsAndRows  = setNumColumns <> setNumRows
 
+viewWidget _ (Text t) = translatableText t >>= dynText >> return never
+
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
-viewWidget er (TextView z rows) = do
+viewWidget er (CodeView z rows) = do
   whenever <- liftIO $ getCurrentTime
   ri <- renderInfo
   let errorDyn = fmap (IntMap.lookup z . errors) ri
