@@ -64,10 +64,22 @@ textWidget rows flash i delta = do
 textNotationParsers :: [TextNotation]
 textNotationParsers = [Punctual, CineCer0, TimeNot, Seis8s, Hydra {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)
 
+holdUniq :: (MonadWidget t m, Eq a) => a -> Event t a -> m (Event t a)
+holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
+
 
 textProgramEditor :: forall t m. MonadWidget t m => Int -> Dynamic t (Maybe Text)
   -> Dynamic t (Live TextProgram) -> Editor t m (Variable t (Live TextProgram))
 textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
+
+  -- translate deltasDown into initial value and events that reflect remote changes that will affect local GUI
+  i <- sample $ current deltasDown
+  let initialParser = (\(x,_,_) -> x) $ forEditing i
+  let initialText = (\(_,x,_) -> x) $ forEditing i
+  let deltaFuture = fmap forEditing $ updated deltasDown
+  parserDelta <- holdUniq initialParser $ fmap (\(x,_,_) -> x) deltaFuture
+  textDelta <- holdUniq initialText $ fmap (\(_,x,_) -> x) deltaFuture
+  errorText' <- holdUniqDyn errorText
 
   -- determine whether we currently display "eval flash" or not
   evalTimeDyn <- holdUniqDyn $ fmap ((\(_,_,x)->x) . forRendering) $ currentValue cv
@@ -75,54 +87,38 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo 
   flashOff <- liftM (False <$) $ delay 0.1 flashOn -- Event t Bool, fires 0.1 seconds later
   evalFlash <- holdDyn False $ leftmost [flashOff,flashOn] -- Dynamic t Bool
 
-  --
-  i <- sample $ current deltasDown
-  let delta = updated deltasDown
-  let deltaFuture = fmap forEditing delta
-  let parserFuture = fmap (\(x,_,_) -> x) deltaFuture
-  let textFuture = fmap (\(_,x,_) -> x) deltaFuture
-  let initialParser = (\(x,_,_) -> x) $ forEditing i
-  let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
+  -- GUI elements: language selection menu, eval button, error display, and text area (textWidget)
+  (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
+    let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
+    d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
+    evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
+    widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
+    return (_dropdown_change d,evalButton')
+  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget rows evalFlash initialText textDelta
+  evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
 
-  (d,evalButton) <- divClass "fullWidthDiv" $ do
-    d' <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserFuture
-    evalButton' <- divClass "textInputLabel" $ do
-      x <- dynButton "\x25B6"
-      return x
-    e' <- holdUniqDyn errorText
-    let y = fmap (maybe (return ()) syntaxErrorWidget) $ updated e'
-    widgetHold (return ()) y
-    return (d',evalButton')
-
-  (edit,eval) <- divClass "labelAndTextPattern" $ do
-    let parserValue = _dropdown_value d -- Dynamic t TidalParser
-    let parserEvent = _dropdown_change d
-    let initialText = (\(_,x,_) -> x) $ forEditing i
-    (textValue,textEvent,shiftEnter) <- textWidget rows evalFlash initialText textFuture
-    languageToDisplayHelp <- (holdDyn initialParser $ updated parserValue) >>= holdUniqDyn
-
-    let evalEvent = leftmost [evalButton,shiftEnter]
-    let initialEvalTime = (\(_,_,x) -> x) $ forRendering i
-    localEvalTime <- performEvent $ fmap (liftIO . const getCurrentTime) evalEvent
-    let remoteEvalTime = fmap ( (\(_,_,x) -> x) . forRendering) delta
-    evalTimeValue <- holdDyn initialEvalTime $ leftmost [localEvalTime,remoteEvalTime]
-
-    let v' = (\x y z -> (x,y,z)) <$> parserValue <*> textValue <*> evalTimeValue
-    let editEvent = tagPromptlyDyn v' $ leftmost [() <$ parserEvent,() <$ textEvent]
-    let evalEvent' = attachPromptlyDynWith (\(x,y,_) z -> (x,y,z)) v' localEvalTime
-    return (editEvent,evalEvent')
-  let deltaPast = fmap forRendering delta
-  pastValue <- holdDyn (forRendering i) $ leftmost [deltaPast,eval]
-  futureValue <- holdDyn (forEditing i) $ leftmost [deltaFuture,edit]
-  let value = f <$> pastValue <*> futureValue
-  let deltaUpEdit = tagPromptlyDyn value edit
-  let deltaUpEval = tagPromptlyDyn value eval
-  let deltaUp = leftmost [deltaUpEdit,deltaUpEval]
-  cv <- returnVariable deltasDown deltaUp
+  -- produce a Variable by combining current value of Variable (that already includes deltas down from elsewhere)
+  -- with the results of local edits to that variable
+  let c = current $ currentValue cv
+  let parserEdit' = attachWith applyParserEdit c parserEdit
+  let textEdit' = attachWith applyTextEdit c textEdit
+  let evalEdit' = attachWith applyEvalEdit c evalEdit
+  let localEdits = leftmost [parserEdit',textEdit',evalEdit']
+  cv <- returnVariable deltasDown localEdits
   return cv
-  where
-    f p x | p == x = Live p L3 -- *** TODO: this looks like it is a general pattern that should be with Live definitions
-          | otherwise = Edited p x
+
+
+applyParserEdit :: Live TextProgram -> TextNotation -> Live TextProgram
+applyParserEdit (Live (x,y,z) _) x' = Edited (x,y,z) (x',y,z)
+applyParserEdit (Edited (x,y,z) (_,y',z')) x' = Edited (x,y,z) (x',y',z')
+
+applyTextEdit :: Live TextProgram -> Text -> Live TextProgram
+applyTextEdit (Live (x,y,z) _) y' = Edited (x,y,z) (x,y',z)
+applyTextEdit (Edited (x,y,z) (x',_,z')) y' = Edited (x,y,z) (x',y',z')
+
+applyEvalEdit :: Live TextProgram -> UTCTime -> Live TextProgram
+applyEvalEdit (Live (x,y,_) _) z = Live (x,y,z) L3
+applyEvalEdit (Edited _ (x,y,_)) z = Live (x,y,z) L3
 
 
 labelEditor :: MonadWidget t m => Dynamic t Text -> Editor t m (Variable t Text)
