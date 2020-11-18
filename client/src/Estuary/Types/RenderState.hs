@@ -27,6 +27,7 @@ import qualified Estuary.Languages.Hydra.Render as Hydra
 
 data RenderState = RenderState {
   animationOn :: Bool,
+  animationFpsLimit :: Maybe NominalDiffTime,
   wakeTimeAudio :: !Double,
   wakeTimeSystem :: !UTCTime,
   renderStart :: !UTCTime,

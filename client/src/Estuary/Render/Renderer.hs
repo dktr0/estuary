@@ -244,27 +244,31 @@ renderZone irc c z d = do
 renderAnimation :: Renderer
 renderAnimation = do
   t1 <- liftIO $ getCurrentTime
-  defs <- gets cachedDefs
-  traverseWithKey (renderZoneAnimation t1) defs
-  s <- get
-  newWebGL <- liftIO $
-     Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
-     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
-  t2 <- liftIO $ getCurrentTime
-  let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 (wakeTimeAnimation s))
-  let newAnimationTime = updateAverage (animationTime s) (realToFrac $ diffUTCTime t2 t1)
-  let newAnimationFPS = round $ 1 / getAverage newAnimationDelta
-  let newAnimationLoad = round $ getAverage newAnimationTime * 1000
-  modify' $ \x -> x {
-    punctualWebGL = newWebGL,
-    wakeTimeAnimation = t1,
-    animationDelta = newAnimationDelta,
-    animationTime = newAnimationTime,
-    info = (info x) {
-      animationFPS = newAnimationFPS,
-      animationLoad = newAnimationLoad
+  wta <- gets wakeTimeAnimation
+  fpsl <- gets animationFpsLimit
+  let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
+  when okToRender $ do
+    defs <- gets cachedDefs
+    traverseWithKey (renderZoneAnimation t1) defs
+    s  <- get
+    newWebGL <- liftIO $
+       Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
+       `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
+    t2 <- liftIO $ getCurrentTime
+    let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 wta)
+    let newAnimationTime = updateAverage (animationTime s) (realToFrac $ diffUTCTime t2 t1)
+    let newAnimationFPS = round $ 1 / getAverage newAnimationDelta
+    let newAnimationLoad = round $ getAverage newAnimationTime * 1000
+    modify' $ \x -> x {
+      punctualWebGL = newWebGL,
+      wakeTimeAnimation = t1,
+      animationDelta = newAnimationDelta,
+      animationTime = newAnimationTime,
+      info = (info x) {
+        animationFPS = newAnimationFPS,
+        animationLoad = newAnimationLoad
+        }
       }
-    }
 
 renderZoneAnimation :: UTCTime -> Int -> Definition -> Renderer
 renderZoneAnimation tNow z (TextProgram x) = do
@@ -316,6 +320,8 @@ renderCineCer0 tNow z = do
 renderHydra :: UTCTime -> Int -> Renderer
 renderHydra tNow z = do
   s <- get
+  let wta = wakeTimeAnimation s
+  let elapsed = realToFrac $ diffUTCTime tNow wta * 1000
   let x = IntMap.lookup z $ hydras s
   case x of
     Just hydra -> liftIO $ Hydra.tick hydra 16.6667
@@ -545,7 +551,7 @@ forkRenderThreads irc ctxM cvsElement glCtx hCanvas riM = do
   irs <- initialRenderState (mic irc) (out irc) cvsElement glCtx hCanvas t0System t0Audio
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread irc ctxM riM rsM
-  void $ forkIO $ animationThread irc ctxM rsM
+  void $ forkIO $ animationThread irc rsM
 
 mainRenderThread :: ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
 mainRenderThread irc ctxM riM rsM = do
@@ -554,6 +560,7 @@ mainRenderThread irc ctxM riM rsM = do
   rs' <- runRenderer (render irc ctx) rs
   let rs'' = rs' {
     animationOn = canvasOn ctx,
+    animationFpsLimit = fpsLimit ctx,
     tempoCache = tempo $ ensemble $ ensembleC ctx,
     videoDivCache = videoDivElement ctx
     }
@@ -562,11 +569,11 @@ mainRenderThread irc ctxM riM rsM = do
   _ <- runRenderer sleepIfNecessary rs''
   mainRenderThread irc ctxM riM rsM
 
-animationThread :: ImmutableRenderContext -> MVar Context -> MVar RenderState -> IO ()
-animationThread irc ctxM rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
+animationThread :: ImmutableRenderContext -> MVar RenderState -> IO ()
+animationThread irc rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
   rs <- readMVar rsM
   when (animationOn rs) $ do
     rs' <- takeMVar rsM
     rs'' <- runRenderer renderAnimation rs'
     putMVar rsM rs''
-  animationThread irc ctxM rsM
+  animationThread irc rsM
