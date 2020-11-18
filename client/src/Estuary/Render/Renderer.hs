@@ -248,8 +248,8 @@ renderAnimation = do
   traverseWithKey (renderZoneAnimation t1) defs
   s <- get
   newWebGL <- liftIO $
-    Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
-    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
+     Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
+     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
   t2 <- liftIO $ getCurrentTime
   let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 (wakeTimeAnimation s))
   let newAnimationTime = updateAverage (animationTime s) (realToFrac $ diffUTCTime t2 t1)
