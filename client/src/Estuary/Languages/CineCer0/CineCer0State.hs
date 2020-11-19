@@ -47,7 +47,7 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "var text = document.createElement('div'); text.innerText = $1; $r=text;"
   makeText :: Text -> IO TextLayer
-foreign import javascript unsafe 
+foreign import javascript unsafe
   "$2.appendChild($1);"
   appendText :: TextLayer -> HTMLDivElement -> IO ()
   -- remove js funcs might become remove Layer
@@ -116,12 +116,12 @@ addText j os = do
 
 layerToString:: Either String String -> Text
 layerToString (Right x) = T.pack $ x
-layerToString (Left x) = T.pack $ x 
+layerToString (Left x) = T.pack $ x
 
 
 getLayerString:: Either String String -> String
 getLayerString (Right x) = x
-getLayerString (Left x) = x 
+getLayerString (Left x) = x
 
 ifEmptyLayer:: Either String String -> Bool
 ifEmptyLayer (Right x) = x == ""
@@ -177,9 +177,9 @@ setTextStyle tx x = do
 updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
  let j = textLayer tx
- let txw = sw 
+ let txw = sw
  let txh = sh
- 
+
  if (txw /= 0 && txh /= 0) then do
   let aTime = anchorTime s t eTime
   let lengthOfLayer = 1
@@ -207,13 +207,13 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let centreY = ((posY s t lengthOfLayer rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
   let leftX = centreX - (actualWidth * 0.5)
   let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
-  
+
   let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised coloured sized z'
   putStrLn $ T.unpack $ txStyle
   setTextStyle tx $ txStyle
 
   else return tx
-    -- solve the width /height issues first, after that, first test with 
+    -- solve the width /height issues first, after that, first test with
     -- default font size, font family, etc.
 
 
@@ -344,7 +344,7 @@ data CineCer0State = CineCer0State {
   previousTextSpecs :: IntMap LayerSpec
   }
 
-  
+
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
   container = j,
@@ -359,11 +359,20 @@ textOrVideo layerSpecMap = partition (\x -> layerParti (layer x)) layerSpecMap
 
 layerParti:: Either String String -> Bool
 layerParti (Right x)= True
-layerParti (Left x) = False 
+layerParti (Left x) = False
+
+
+-- used when a CineCer0 program has been removed from the situation
+-- (the CineCer0State record is no longer usable after this action and should be discarded)
+deleteCineCer0State :: CineCer0State -> IO ()
+deleteCineCer0State st = do
+  mapM_ ((removeVideo $ container st) . videoLayer) $ videos st
+  mapM_ ((removeText $ container st) . textLayer) $ texts st
+
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t rTime spec st = logExceptions st $ do
-  let objSpecs = layerSpecMap spec  
+  let objSpecs = layerSpecMap spec
   let vSpecs = fst $ textOrVideo objSpecs
   let txSpecs = snd $ textOrVideo objSpecs
   let eTime = evalTime spec
@@ -373,8 +382,8 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap LayerSpec
   let toAddv = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newVideoSpecs -- operation on Layers -- :: IntMap LayerSpec
   addedVideos <- mapM (\x -> addVideo (container st) x) toAddv -- :: IntMap CineCer0Video
-  -- add text 
-  let newTextSpecs = difference txSpecs (texts st) -- :: IntMap LayerSpec (this changes to LayerSpec, aslo in line 278) 
+  -- add text
+  let newTextSpecs = difference txSpecs (texts st) -- :: IntMap LayerSpec (this changes to LayerSpec, aslo in line 278)
   let toAddtx = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newTextSpecs
   addedTexts <- mapM (\x -> addText (container st) x) toAddtx
   -- change videos
@@ -387,7 +396,7 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let toChangeTx = fmapMaybe id continuingTextSpecs -- :: IntMap LayerSpec
   let toChangeTx' = intersectionWith (\a b -> (a,b)) toChangeTx $ texts st -- IntMap (LayerSpec,CineCer0Text)
   mapM_ (\(x,cTx) -> changeTextSource (textLayer cTx) $ T.pack (getLayerString (layer x))) toChangeTx'
-  -- delete LayerSpecs 
+  -- delete LayerSpecs
   -- delete videos
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> (ifEmptyLayer $ layer x) == True) vSpecs -- :: IntMap CineCer0Video
@@ -399,14 +408,14 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let textsWithEmptySource = intersection (texts st) $ IntMap.filter (\x -> (ifEmptyLayer $ layer x) == True) txSpecs -- :: IntMap CineCer0Video
   let toDeleteTx = union textsWithRemovedSpecs textsWithEmptySource
   mapM (\x -> removeText (container st) (textLayer x)) toDeleteTx
-  let textsThereBefore = difference (texts st) toDeleteTx -- :: IntMap CineCer0Video 
+  let textsThereBefore = difference (texts st) toDeleteTx -- :: IntMap CineCer0Video
   -- update cached states
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
   continuingVideos' <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos -- :: IntMap CineCer0Video
   let continuingTexts = union textsThereBefore addedTexts
   continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
   return $ st { videos = continuingVideos', previousLayerSpecs = txSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
-  
+
 logExceptions :: a -> IO a -> IO a
 logExceptions a x = x `catch` (\e -> do
   putStrLn $ "EXCEPTION (CineCer0): " ++ show (e :: SomeException)

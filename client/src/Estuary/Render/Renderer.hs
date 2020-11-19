@@ -197,7 +197,9 @@ render irc c = do
   -- if there is no reason not to traverse/render zones, then do so
   -- using renderStart and renderEnd from the state as the window to render
   when (not wait && not rewind) $ do
-    traverseWithKey (renderZone irc c) (zones $ ensemble $ ensembleC c)
+    let newDefs = zones $ ensemble $ ensembleC c
+    clearDeletedZones newDefs
+    traverseWithKey (renderZone irc c) newDefs
     flushEvents irc c
     updatePunctualResolutionAndBrightness c
     -- calculate how much time this render cycle took and update load measurements
@@ -211,7 +213,6 @@ render irc c = do
     traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s -- *** SHOULDN'T BE HERE
     traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s -- *** SHOULDN'T BE HERE
     return ()
-  -- sleepIfNecessary
 
 setZoneError :: Int -> Text -> Renderer
 setZoneError z t = do
@@ -234,6 +235,7 @@ renderZone irc c z d = do
   let prevDef = IntMap.lookup z $ cachedDefs s
   let d' = definitionForRendering d
   when (prevDef /= (Just d')) $ do
+    maybeClearChangedZone z prevDef d'
     renderZoneChanged irc c z d'
     modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
   renderZoneAlways irc c z d'
@@ -241,6 +243,61 @@ renderZone irc c z d = do
   let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
   let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
   modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
+
+
+clearDeletedZones :: IntMap.IntMap Definition -> Renderer
+clearDeletedZones newDefs = do
+  prevDefs <- gets cachedDefs
+  IntMap.traverseWithKey clearZone $ IntMap.difference prevDefs newDefs
+  return ()
+
+maybeClearChangedZone :: Int -> Maybe Definition -> Definition -> Renderer
+maybeClearChangedZone _ Nothing y = return ()
+maybeClearChangedZone z (Just x) y
+  | defsSameRender x y = return ()
+  | otherwise = clearZone z x
+
+defsSameRender :: Definition -> Definition -> Bool
+defsSameRender (TextProgram x) (TextProgram y) = textProgramsSameRender (forRendering x) (forRendering y)
+defsSameRender (Sequence _) (Sequence _) = True
+defsSameRender (TidalStructure _) (TidalStructure _) = True
+defsSameRender _ _ = False
+
+textProgramsSameRender :: (TextNotation,Text,UTCTime) -> (TextNotation,Text,UTCTime) -> Bool
+textProgramsSameRender (x,_,_) (y,_,_) = x==y
+
+clearZone :: Int -> Definition -> Renderer
+clearZone z (TidalStructure _) = clearParamPattern z
+clearZone z (TextProgram x) = clearTextProgram z $ forRendering x
+clearZone z (Sequence _) = clearParamPattern z
+clearZone _ _ = return ()
+
+clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> Renderer
+clearTextProgram z (Punctual,_,_) = do
+  s <- get
+  case (IntMap.lookup z $ punctuals s) of
+    Just x -> liftAudioIO $ Punctual.deletePunctualW x
+    Nothing -> return ()
+  newPunctualWebGL <- liftIO $ Punctual.deletePunctualWebGL (glContext s) z $ punctualWebGL s
+  modify' $ \x -> x {
+    punctuals = IntMap.delete z $ punctuals x,
+    punctualWebGL = newPunctualWebGL
+  }
+clearTextProgram z (CineCer0,_,_) = do
+  s <- get
+  case (IntMap.lookup z $ cineCer0States s) of
+    Just x -> liftIO $ CineCer0.deleteCineCer0State x
+    Nothing -> return ()
+  modify' $ \x -> x {
+    cineCer0Specs = IntMap.delete z $ cineCer0Specs x,
+    cineCer0States = IntMap.delete z $ cineCer0States x
+    }
+clearTextProgram z (Hydra,_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
+clearTextProgram _ _ = return ()
+
+clearParamPattern :: Int -> Renderer
+clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }
+
 
 renderAnimation :: Renderer
 renderAnimation = do
