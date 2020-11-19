@@ -109,10 +109,11 @@ pushTidalEvents xs = modify' $ \x -> x { tidalEvents = tidalEvents x ++ xs }
 flushEvents :: ImmutableRenderContext -> Context -> Renderer
 flushEvents irc c = do
   s <- get
+  let unsafe = unsafeMode c
   when (webDirtOn c) $ liftIO $ do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
-    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal (audioMap c) cDiff) $ noteEvents s
-    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal (audioMap c) cDiff) $ tidalEvents s
+    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (audioMap c) cDiff) $ noteEvents s
+    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (audioMap c) cDiff) $ tidalEvents s
     mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents'
   when (superDirtOn c) $ liftIO $ do
     noteEvents' <- mapM (SuperDirt.noteEventToSuperDirtJSVal (audioMap c)) $ noteEvents s

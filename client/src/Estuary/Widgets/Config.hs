@@ -104,9 +104,21 @@ configWidget ctx ri = do
 
   elClass "hr" "dashed" $  text ""
 
+  unsafeModeEv <- divClass "config-option primary-color ui-font" $ do
+    text "Unsafe Mode:"
+    unsafeInput <- elClass "label" "switch" $ do
+      x <- checkbox False def
+      elClass "span" "slider round" (return x)
+    el "div" $ dynText =<< (translatableText $ fromList [
+      (English,"Activating unsafe mode may make additional functionality available at the risk of catastrophic performance problems. Use at own risk.")
+      ])
+    return $ fmap (\x -> \c -> c { unsafeMode = x }) $ _checkbox_change unsafeInput
+
+  elClass "hr" "dashed" $ return ()
+
   viewEditorChange <- divClass "config-option primary-color ui-font" $ do
     el "h3" $ text "View Editor"
     (result,_) <- runEditor ctx ri $ viewEditor ctx
     return result
 
-  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange, fpsLimitChangeEv]
+  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange, fpsLimitChangeEv, unsafeModeEv]

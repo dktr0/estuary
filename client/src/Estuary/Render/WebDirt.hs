@@ -78,11 +78,14 @@ foreign import javascript unsafe
   "$1.sampleHint($2)"
   sampleHint :: WebDirt -> JSVal -> IO ()
 
+makeNoteEventSafe :: Map.Map Text Datum -> Map.Map Text Datum
+makeNoteEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
-noteEventToWebDirtJSVal :: AudioMap -> (UTCTime,Double) -> NoteEvent -> IO (Maybe JSVal)
-noteEventToWebDirtJSVal aMap cDiff (utc,m) = do
-  let s = Map.lookup "s" m
-  let n = Map.lookup "n" m
+noteEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> NoteEvent -> IO (Maybe JSVal)
+noteEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
+  let mSafe = if unsafe then m else makeNoteEventSafe m
+  let s = Map.lookup "s" mSafe
+  let n = Map.lookup "n" mSafe
   case datumsToLocation s n of
     Nothing -> return Nothing
     Just loc -> do
@@ -90,14 +93,18 @@ noteEventToWebDirtJSVal aMap cDiff (utc,m) = do
       case res of
         Right res' -> do
           let t' = utcTimeToAudioSeconds cDiff utc
-          let m' = Map.insert "buffer" res' $ fmap datumToJSVal m -- :: Map Text JSVal
+          let m' = Map.insert "buffer" res' $ fmap datumToJSVal mSafe -- :: Map Text JSVal
           Just <$> mapTextJSValToJSVal (t',m')
         Left _ -> return Nothing
 
-tidalEventToWebDirtJSVal :: AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ControlMap) -> IO (Maybe JSVal)
-tidalEventToWebDirtJSVal aMap cDiff (utc,m) = do
-  let s = Map.lookup "s" m
-  let n = Map.lookup "n" m
+makeTidalEventSafe :: Tidal.ControlMap -> Tidal.ControlMap
+makeTidalEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
+
+tidalEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ControlMap) -> IO (Maybe JSVal)
+tidalEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
+  let mSafe = if unsafe then m else makeTidalEventSafe m
+  let s = Map.lookup "s" mSafe
+  let n = Map.lookup "n" mSafe
   case valuesToLocation s n of
     Nothing -> return Nothing
     Just loc -> do
@@ -105,7 +112,7 @@ tidalEventToWebDirtJSVal aMap cDiff (utc,m) = do
       case res of
         Right res' -> do
           let t' = utcTimeToAudioSeconds cDiff utc
-          let m' = Map.insert "buffer" res' $ fmap valueToJSVal m -- :: Map Text JSVal
+          let m' = Map.insert "buffer" res' $ fmap valueToJSVal mSafe -- :: Map Text JSVal
           Just <$> mapStringJSValToJSVal (t',m')
         Left _ -> return Nothing
 
