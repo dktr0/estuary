@@ -166,7 +166,6 @@ setVideoVol v x = do
     videoVolume j x
     return $ v { previousVol = x }
 
-
 setTextStyle :: CineCer0Text -> Text -> IO CineCer0Text
 setTextStyle tx x = do
   if previousStyleTx tx == x then return tx
@@ -187,7 +186,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let striked = generateStrike (strike s t lengthOfLayer rTime eTime aTime)
   let bolded = generateBold (bold s t lengthOfLayer rTime eTime aTime)
   let italicised = generateItalic (italic s t lengthOfLayer rTime eTime aTime)
-  let coloured = T.pack $ generateColour (colour s t lengthOfLayer rTime eTime aTime)
+  let coloured = T.pack $ generateColours (colour s) t lengthOfLayer rTime eTime aTime
   let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
@@ -247,6 +246,9 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     let normVol = if (volume s t lengthOfVideo rTime eTime aTime) > 1 then 1 else (volume s t lengthOfVideo rTime eTime aTime)
     v'' <- setVideoVol v' $ realToFrac normVol
 
+    -- z index
+    let z' = generateZIndex (z s t lengthOfVideo rTime eTime aTime)
+
     -- update style (size, position, opacity, etc)
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let blur' = blur s t lengthOfVideo rTime eTime aTime
@@ -256,7 +258,7 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     let mask' = ((Cinecer0.mask s) t lengthOfVideo rTime eTime aTime)
-    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask'
+    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask' z'
 
   else return v
 
@@ -288,8 +290,8 @@ generateFilter :: Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -
 generateFilter Nothing Nothing Nothing Nothing Nothing Nothing = ""
 generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl <> generateBrightness br <> generateContrast c <> generateGrayscale g <> generateSaturate s <>";"
 
-videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
-videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m
+videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
+videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m <> z
 
 
 generateZIndex :: Int -> Text
@@ -298,10 +300,27 @@ generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
 generateFontSize :: Double -> Text
 generateFontSize size = "; font-size: " <> T.pack (show size) <> "%"
 
-generateColour :: Colour -> String
-generateColour (Colour clr) = "; color: " <> clr <> ";"
-generateColour (ColourRGB (r,g,b)) = "; color: rgb(" <> (show r) <> "," <> (show g) <> "," <> (show b) <> ");"
-generateColour (ColourHSV (h,s,l)) = "; color: hsl(" <> (show h) <> "," <> (show s) <> "," <> (show l) <> ");"
+generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> String  -- this string needs to be a text!!!!
+generateColours (Colour str) t ll rT eT aT = "; color: " <> string <> ";"  
+  where string = (str t ll rT eT aT) 
+generateColours (ColourRGB r g b) t ll rT eT aT = "; color: rgb(" <> (show red) <> "," <> (show green) <> "," <> (show blue) <> ");"
+  where red = realToFrac (r t ll rT eT aT) :: Double
+        green = realToFrac (g t ll rT eT aT) :: Double
+        blue = realToFrac (b t ll rT eT aT) :: Double
+generateColours (ColourHSL h s l) t ll rT eT aT = "; color: hsl(" <> (show hue) <> "," <> (show saturation) <> "% ," <> (show lightness) <> "% );"
+  where hue = realToFrac (h t ll rT eT aT) :: Double
+        saturation = realToFrac (s t ll rT eT aT) :: Double
+        lightness = realToFrac (l t ll rT eT aT) :: Double
+generateColours (ColourRGBA r g b a) t ll rT eT aT = "; color: rgba(" <> (show red) <> "," <> (show green) <> "," <> (show blue) <> "," <> show alpha <> ");"
+  where red = realToFrac (r t ll rT eT aT) :: Double
+        green = realToFrac (g t ll rT eT aT) :: Double
+        blue = realToFrac (b t ll rT eT aT) :: Double
+        alpha = realToFrac (a t ll rT eT aT) :: Double
+generateColours (ColourHSLA h s l a) t ll rT eT aT = "; color: hsla(" <> (show hue) <> "," <> (show saturation) <> "% ," <> (show lightness) <> "% ," <> show alpha <> ");"
+  where hue = realToFrac (h t ll rT eT aT) :: Double
+        saturation = realToFrac (s t ll rT eT aT) :: Double
+        lightness = realToFrac (l t ll rT eT aT) :: Double
+        alpha = realToFrac (a t ll rT eT aT) :: Double
 
 generateStrike :: Bool -> Text
 generateStrike (True) = "; text-decoration: line-through;"
@@ -316,7 +335,7 @@ generateItalic (True) = "; font-style: italic;"
 generateItalic (False) = ""
 
 textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> "; object-fit: fill;"
+textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> "; object-fit: fill; text-align: center; justify-content: center; align-items: center;"
 
 -- control Z index !!!
 
@@ -405,7 +424,7 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   continuingVideos' <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos -- :: IntMap CineCer0Video
   let continuingTexts = union textsThereBefore addedTexts
   continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
-  return $ st { videos = continuingVideos', previousLayerSpecs = txSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
+  return $ st { videos = continuingVideos', previousLayerSpecs = vSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
   
 logExceptions :: a -> IO a -> IO a
 logExceptions a x = x `catch` (\e -> do

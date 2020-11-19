@@ -85,6 +85,9 @@ sigInt = constantSignal <$> int
 sigStr :: H (Signal String)
 sigStr = constantSignal <$> string
 
+--sigClr :: H (Signal Colour)
+--sigClr = constantSignal <$> Colour
+
 sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
@@ -161,7 +164,7 @@ sigInt_vs_vs =
 
 sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
 sigStr_vs_vs =
-  setColour <$ reserved "colour" -- this is wrong, the type is actually Colour not String
+  setColourStr <$ reserved "colour" <|> 
   setFontFamily <$ reserved "font"
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
@@ -173,13 +176,15 @@ sigRat_sigRat_vs_vs =
 sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_vs_vs =
   circleMask' <$ reserved "circleMask'" <|>
-  setRGB <$ reserved "colour" <|>
-  setHSV <$ reserved "colour'" <|>
+  setRGB <$ reserved "rgb" <|>
+  setHSL <$ reserved "hsl" <|>
   sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_sigRat_vs_vs =
-  rectMask <$ reserved "rectMask"
+  rectMask <$ reserved "rectMask" <|>
+  setRGBA <$ reserved "rgb'" <|>
+  setHSLA <$ reserved "hsl'"
 
 -- ////
 
