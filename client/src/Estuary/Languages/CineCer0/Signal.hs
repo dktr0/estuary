@@ -421,10 +421,16 @@ ramp' renderTime startTime endTime startVal endVal -- delete what is not needed
 
 
 fadeIn:: NominalDiffTime -> Signal Rational
-fadeIn cycles t vl rTime eTime aTime = ramp cycles 0 1 t vl rTime eTime aTime
+fadeIn dur t vl rTime eTime aTime = ramp dur 0 1 t vl rTime eTime aTime
 
 fadeOut:: NominalDiffTime -> Signal Rational
-fadeOut cycles t vl rTime eTime aTime = ramp cycles 1 0 t vl rTime eTime aTime
+fadeOut dur t vl rTime eTime aTime = ramp dur 1 0 t vl rTime eTime aTime
+
+fadeIn2:: NominalDiffTime -> Signal (Maybe Rational)
+fadeIn2 dur t vl rTime eTime aTime = ramp2 dur 0 1 t vl rTime eTime aTime
+
+fadeOut2:: NominalDiffTime -> Signal (Maybe Rational)
+fadeOut2 dur t vl rTime eTime aTime = ramp2 dur 1 0 t vl rTime eTime aTime
 
 --------- Helper Functions ------------
 

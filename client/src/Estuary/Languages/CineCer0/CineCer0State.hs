@@ -142,7 +142,7 @@ setVideoRateAndPosition v vLength (Just r) (Just p) = do
       let diff3 = abs (p + vLength - currentPos)
       let diff = min (min diff1 diff2) diff3
       if diff > 0.050 then do
-        -- putStrLn $ "currentPos=" ++ show currentPos ++ "  target="++show p ++ "  diff=" ++ show (currentPos - p)
+        -- putStrLn $ "currentPos=" ++ show currentPos ++ "  target="++show p ++ "  diff=" ++ show (currentPos - p) -- debugging postition
         setVideoPlaybackPosition j (p+(0.15*r))
         return $ v { positionLock = 12 } -- wait 12 frames before setting position again
       else return v
@@ -186,13 +186,10 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let striked = generateStrike (strike s t lengthOfLayer rTime eTime aTime)
   let bolded = generateBold (bold s t lengthOfLayer rTime eTime aTime)
   let italicised = generateItalic (italic s t lengthOfLayer rTime eTime aTime)
-  let coloured = T.pack $ generateColours (colour s) t lengthOfLayer rTime eTime aTime
+  let coloured = generateColours (colour s) t lengthOfLayer rTime eTime aTime
   let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
-
---  let striked = generateStrike strike
-  -- putStrLn $ show tx
 
   let aspectRatio = txw/txh
   let heightIfFitsWidth = sw / aspectRatio
@@ -208,12 +205,10 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
   
   let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised coloured sized z'
-  putStrLn $ T.unpack $ txStyle
+  -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
 
   else return tx
-    -- solve the width /height issues first, after that, first test with 
-    -- default font size, font family, etc.
 
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Video -> IO CineCer0Video
@@ -300,26 +295,26 @@ generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
 generateFontSize :: Double -> Text
 generateFontSize size = "; font-size: " <> T.pack (show size) <> "%"
 
-generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> String  -- this string needs to be a text!!!!
-generateColours (Colour str) t ll rT eT aT = "; color: " <> string <> ";"  
+generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text  -- this string needs to be a text!!!!
+generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"  
   where string = (str t ll rT eT aT) 
-generateColours (ColourRGB r g b) t ll rT eT aT = "; color: rgb(" <> (show red) <> "," <> (show green) <> "," <> (show blue) <> ");"
-  where red = realToFrac (r t ll rT eT aT) :: Double
-        green = realToFrac (g t ll rT eT aT) :: Double
-        blue = realToFrac (b t ll rT eT aT) :: Double
-generateColours (ColourHSL h s l) t ll rT eT aT = "; color: hsl(" <> (show hue) <> "," <> (show saturation) <> "% ," <> (show lightness) <> "% );"
-  where hue = realToFrac (h t ll rT eT aT) :: Double
-        saturation = realToFrac (s t ll rT eT aT) :: Double
-        lightness = realToFrac (l t ll rT eT aT) :: Double
-generateColours (ColourRGBA r g b a) t ll rT eT aT = "; color: rgba(" <> (show red) <> "," <> (show green) <> "," <> (show blue) <> "," <> show alpha <> ");"
-  where red = realToFrac (r t ll rT eT aT) :: Double
-        green = realToFrac (g t ll rT eT aT) :: Double
-        blue = realToFrac (b t ll rT eT aT) :: Double
+generateColours (ColourRGB r g b) t ll rT eT aT = "; color: rgb(" <> (showt red) <> "," <> (showt green) <> "," <> (showt blue) <> ");"
+  where red = realToFrac ((r * 255) t ll rT eT aT) :: Double
+        green = realToFrac ((g * 255) t ll rT eT aT) :: Double
+        blue = realToFrac ((b * 255) t ll rT eT aT) :: Double
+generateColours (ColourHSL h s l) t ll rT eT aT = "; color: hsl(" <> (showt hue) <> "," <> (showt saturation) <> "% ," <> (showt lightness) <> "% );"
+  where hue = realToFrac ((h * 360) t ll rT eT aT) :: Double
+        saturation = realToFrac ((s * 100) t ll rT eT aT) :: Double
+        lightness = realToFrac ((l * 100) t ll rT eT aT) :: Double
+generateColours (ColourRGBA r g b a) t ll rT eT aT = "; color: rgba(" <> (showt red) <> "," <> (showt green) <> "," <> (showt blue) <> "," <> (showt alpha) <> ");"
+  where red = realToFrac ((r * 255) t ll rT eT aT) :: Double
+        green = realToFrac ((g * 255) t ll rT eT aT) :: Double
+        blue = realToFrac ((b * 255) t ll rT eT aT) :: Double
         alpha = realToFrac (a t ll rT eT aT) :: Double
-generateColours (ColourHSLA h s l a) t ll rT eT aT = "; color: hsla(" <> (show hue) <> "," <> (show saturation) <> "% ," <> (show lightness) <> "% ," <> show alpha <> ");"
-  where hue = realToFrac (h t ll rT eT aT) :: Double
-        saturation = realToFrac (s t ll rT eT aT) :: Double
-        lightness = realToFrac (l t ll rT eT aT) :: Double
+generateColours (ColourHSLA h s l a) t ll rT eT aT = "; color: hsla(" <> (showt hue) <> "," <> (showt saturation) <> "% ," <> (showt lightness) <> "% ," <> (showt alpha) <> ");"
+  where hue = realToFrac ((h * 360) t ll rT eT aT) :: Double
+        saturation = realToFrac ((s * 100) t ll rT eT aT) :: Double
+        lightness = realToFrac ((l * 100) t ll rT eT aT) :: Double
         alpha = realToFrac (a t ll rT eT aT) :: Double
 
 generateStrike :: Bool -> Text
@@ -337,21 +332,12 @@ generateItalic (False) = ""
 textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
 textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> "; object-fit: fill; text-align: center; justify-content: center; align-items: center;"
 
--- control Z index !!!
-
 -- these two might become only one!
 
 onlyChangedLayerSources :: LayerSpec -> LayerSpec -> Maybe LayerSpec
 onlyChangedLayerSources nSpec oSpec
   | (layer nSpec /= layer oSpec) = Just nSpec
   | (layer nSpec == layer oSpec) = Nothing
-
-  -- this will have to go also
--- onlyChangedTextSources :: LayerSpec -> LayerSpec -> Maybe LayerSpec
--- onlyChangedTextSources nSpec oSpec
---   | (layer nSpec /= layer oSpec) = Just nSpec
---   | (layer nSpec == layer oSpec) = Nothing
-
 
 -- A CineCer0State represents the entire state corresponding to a CineCer0 program
 -- (each statement separated by ; in the program is one element within various )
@@ -362,7 +348,6 @@ data CineCer0State = CineCer0State {
   texts :: IntMap CineCer0Text,
   previousTextSpecs :: IntMap LayerSpec
   }
-
   
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {

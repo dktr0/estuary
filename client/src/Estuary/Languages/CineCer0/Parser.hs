@@ -68,6 +68,7 @@ ndt = fromRational <$> rationalOrInteger
 sigMayRat :: H (Signal (Maybe Rational))
 sigMayRat =
   rat_sigMayRat <*> rationalOrInteger <|>
+  ndt_sigMayRat <*> ndt <|>
   (constantSignal . Just) <$> rationalOrInteger
 
 rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
@@ -85,12 +86,10 @@ sigInt = constantSignal <$> int
 sigStr :: H (Signal String)
 sigStr = constantSignal <$> string
 
---sigClr :: H (Signal Colour)
---sigClr = constantSignal <$> Colour
-
 sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
+  ndt_sigRat <*> ndt <|>
   constantSignal <$> rationalOrInteger
 
 rat_sigRat :: H (Rational -> Signal Rational)
@@ -105,8 +104,16 @@ ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 -- new fade in (syntax sugar funcs)
 ndt_sigRat :: H (NominalDiffTime -> Signal Rational)
 ndt_sigRat = 
-  (reserved "fadeIn" >> return fadeIn) <|>
-  (reserved "fadeOut" >> return fadeOut)
+  fadeIn <$ reserved "fadeIn" <|>
+  fadeOut <$ reserved "fadeOut"
+
+ndt_sigMayRat :: H (NominalDiffTime -> Signal (Maybe Rational))
+ndt_sigMayRat =
+  fadeIn2 <$ reserved "fadeIn" <|>
+  fadeOut2 <$ reserved "fadeOut" 
+
+--  (reserved "fadeIn" >> return fadeIn) <|>
+--  (reserved "fadeOut" >> return fadeOut)
 
 
 -- //////////////
