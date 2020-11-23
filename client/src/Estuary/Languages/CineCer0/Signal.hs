@@ -387,11 +387,38 @@ playNow_Rate startPos rate t vlen render eval anchor = Just rate
 
 ------ Manually changes the opacity of a video ------
 
-opacityChanger:: Rational -> Signal Rational
-opacityChanger arg t len rend eval anchor = arg
-
 -- Dynamic Functions
 -- durVal is the amount of time the process takes place
+
+
+func:: [Float] -> [Float] -> Float -> (Int, (Float,Float))
+func timeMarks vals renderT =
+    let before = filter (renderT >) timeMarks
+        after = filter (renderT <) timeMarks
+        vInds = ((length before)-1, length before)
+        vals' = (vals !! (fst vInds), vals !! (snd vInds))
+    in (fst vInds, vals')
+
+------ Envelope in processss!!!!
+
+-- envelope:: [NominalDiffTime] -> [Rational] -> Signal Rational
+-- envelope durs points = \t vl renderTime evalTime anchorTime ->
+--     let startTime = anchorTime :: UTCTime
+--         durVals = map (\durVal -> durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)) durs
+--         endTime = addUTCTime (sum durVals) anchorTime
+--     in ramps renderTime startTime endTime durVals points
+
+-- ramps:: UTCTime -> UTCTime -> UTCTime -> Rational -> Rational -> Signal Rational
+-- ramps renderTime startTime endTime durs points 
+--     | startTime >= renderTime = head points -- start val
+--     | endTime <= renderTime = last points  -- end val
+--     | otherwise =                            -- durs: [1]   0.4 vals: [0.6, 0.3]
+--         let timeMarks = scanl (+) 0 durs     -- [0,1]                               -- [0,1.5,4.5,6.5,7.5,10.0]  -- durs [1.5,3,2,1,2.5] -- rTime 3.2 -- vals [0,0.8,0.4,0.9,0.5,1.0]
+--             before = filter (renderTime >) timeMarks     -- [0]                   -- [0,1.5]
+--             after = filter (renderTime <=) timeMarks     -- [1]                   -- [4.5,6.5,7.5,10.0]
+--             vInds = ((length before)-1, length before)   -- (0,1)                   -- (1,2)
+--             vals = (points !! (fst vInds), points !! (snd vInds)) -- (0.6,0.3)                         -- (0.8,0.4)  -- dur: 3 startTime: utc + 1.5
+--             ramp' = ramp (fst vInds) (addUTCTime (sum before) startTime) (addUTCTime (last timeMarks) startTime) (fst vals) (snd vals)
 
 ramp2 :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
 ramp2 durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
@@ -431,6 +458,8 @@ fadeIn2 dur t vl rTime eTime aTime = ramp2 dur 0 1 t vl rTime eTime aTime
 
 fadeOut2:: NominalDiffTime -> Signal (Maybe Rational)
 fadeOut2 dur t vl rTime eTime aTime = ramp2 dur 1 0 t vl rTime eTime aTime
+
+
 
 --------- Helper Functions ------------
 

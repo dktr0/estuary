@@ -1,6 +1,6 @@
 # Cinecer0 Reference
 
-The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows video files to b e projected temporally and geometrically, targeting similar functionality to that of [CineVivo](https://github.com/essteban/CineVivo), again with an economical Haskell-like notation. Additional functions that enable the audio of the video and add text on top of the video (or without any relationship with the video) have been implemented.  
+The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows video files to be projected temporally and geometrically, targeting similar functionality to that of [CineVivo](https://github.com/essteban/CineVivo), again with an economical Haskell-like notation. Additional functions that enable the audio of the video and allow the player to add text on top of the video (or without any relationship with the video) have been implemented.  
 
 ## Playing Videos
 
@@ -37,6 +37,11 @@ z [n] -- changes the depth of the video being reproduced
 
 text "This is not a text" -- the string represents the text that will be displayed in the canvas
 font "fontType" -- fonts available depending on browser characteristics
+colour "colour" -- adds colour by name or by hexacolor (all colour funcs will be applied to the text)
+rgb [r] [g] [b] -- adds colour by rgb, normalised from 0 to 1
+rgb' [r] [g] [b] [a] -- adds colour by rgb and alpha
+hsl [h] [s] [l] -- adds colour by hue, saturation and lightness, parameters are normalised from 0 to 1
+hsl' [h] [s] [l] [a] -- adds colours by hsl and alpha
 fontSize [n] -- a font size
 strike -- strikes the text with a white line
 bold -- the weight of the font becomes heavier
@@ -45,10 +50,14 @@ z [n] -- changes the depth of the text, z 0 is the top layer
 
 ## ramp
 
-(ramp [Cicles] [Initial_Value] [End_Value]) <br />
+(ramp [Dur_In_Cycles] [Initial_Value] [End_Value]) <br />
 
 ramp can be use in style functions. Example <br />
 width (ramp x y z) <br />
+
+fadeIn [Dur_In_Cycles] 
+
+fadeOut [Dur_In_Cycles]
 
 ## quant
 
@@ -58,7 +67,6 @@ quant function has two values. Cycle multiplier aligns the anchor time with mult
 
 quant can be use with any style functions with or without a ramp. Example: <br />
 opacity (ramp x y z) $ quant x y <br />
-
 
 ## Time Functions
 
