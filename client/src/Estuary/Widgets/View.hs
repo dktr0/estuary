@@ -112,7 +112,9 @@ zoneWidget z defaultA f g ensResponses anEditorWidget = do
   iCtx <- sample $ current ctx
   let iDef = IntMap.findWithDefault (g defaultA) z $ zones $ ensemble $ ensembleC iCtx
   let iValue = maybe defaultA id $ f iDef
-  let deltas = fmapMaybe (join . fmap f . listToMaybe . reverse . justEditsInZone z) ensResponses -- :: Event t a
-  dynUpdates <- holdDyn iValue deltas
+  let resetValue = g defaultA
+  let deltas = fmapMaybe (lastEditOrResetInZone resetValue z) ensResponses
+  let deltas' = fmapMaybe f deltas
+  dynUpdates <- holdDyn iValue deltas'
   variableFromWidget <- anEditorWidget dynUpdates
   return $ (WriteZone z . g) <$> localEdits variableFromWidget

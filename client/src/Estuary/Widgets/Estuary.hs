@@ -89,6 +89,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
+  let responsesFromEnsembleRequests = fmap ((:[]) . EnsembleResponse) $ fmapMaybe ensembleRequestsToResponses commandEnsembleRequests
+  let deltasDownAlt = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints,responsesFromEnsembleRequests]
   let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
 
   let ensembleCDyn = fmap ensembleC ctx
@@ -98,7 +100,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
-    (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDown
+    (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDownAlt
     (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
@@ -113,12 +115,10 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
   let commandRequests = fmapMaybe commandToRequest command
 
-  -- map from EnsembleRequests (eg. edits) and Commands (ie. from the terminal) to
-
   -- changes to EnsembleC within Context, and to Context
   let commandChange = fmap commandToStateChange command
   let ensembleRequestChange = fmap requestToStateChange ensembleRequests
-  let ensembleResponses = fmap justEnsembleResponses deltasDown
+  let ensembleResponses = fmapMaybe justEnsembleResponses deltasDown
   let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
