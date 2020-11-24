@@ -107,6 +107,10 @@ commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ 
 commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
 commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
 commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $ T.pack $ show $ tempo $ ensemble es
+commandToHint _ Terminal.ResetZones = Just $ LogMessage "zones reset"
+commandToHint _ Terminal.ResetViews = Just $ LogMessage "views reset"
+commandToHint _ Terminal.ResetTempo = Just $ LogMessage "tempo reset"
+commandToHint _ Terminal.Reset = Just $ LogMessage "(full) reset"
 commandToHint _ _ = Nothing
 
 commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
@@ -119,6 +123,14 @@ requestToStateChange :: EnsembleRequest -> EnsembleC -> EnsembleC
 requestToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es
 requestToStateChange (WriteZone n v) es = modifyEnsemble (writeZone n v) es
 requestToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
+requestToStateChange ResetZonesRequest es =
+  modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
+requestToStateChange ResetViewsRequest es =
+  modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "default" es
+requestToStateChange (ResetTempoRequest t) es =
+  modifyEnsemble (writeTempo t) es
+requestToStateChange (ResetRequest t) es =
+  modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
 requestToStateChange _ es = es
 -- note: WriteChat and WriteStatus don't directly affect the EnsembleC and are thus
 -- not matched here. Instead, the server responds to these requests to all participants
@@ -133,6 +145,14 @@ ensembleResponseToStateChange (ParticipantJoins x) es = modifyEnsemble (writePar
 ensembleResponseToStateChange (ParticipantUpdate x) es = modifyEnsemble (writeParticipant (name x) x) es
 ensembleResponseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
 ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
+ensembleResponseToStateChange ResetZonesResponse es =
+  modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
+ensembleResponseToStateChange ResetViewsResponse es =
+  modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "default" es
+ensembleResponseToStateChange (ResetTempoResponse t) es =
+  modifyEnsemble (writeTempo t) es
+ensembleResponseToStateChange (ResetResponse t) es =
+  modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
 ensembleResponseToStateChange _ es = es
 
 responseToStateChange :: Response -> EnsembleC -> EnsembleC
@@ -150,6 +170,14 @@ commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ do
 commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ do
   x' <- changeTempoNow (realToFrac x / 240) (tempo $ ensemble es)
   return (WriteTempo x')
+commandToEnsembleRequest _ Terminal.ResetZones = Just $ return ResetZonesRequest
+commandToEnsembleRequest _ Terminal.ResetViews = Just $ return ResetViewsRequest
+commandToEnsembleRequest _ Terminal.ResetTempo = Just $ do
+  t <- getCurrentTime
+  return $ ResetTempoRequest $ Tempo { freq = 0.5, time = t, count = 0 }
+commandToEnsembleRequest _ Terminal.Reset = Just $ do
+  t <- getCurrentTime
+  return $ ResetRequest $ Tempo { freq = 0.5, time = t, count = 0 }
 commandToEnsembleRequest _ _ = Nothing
 
 responseToMessage :: Response -> Maybe Text
@@ -158,11 +186,21 @@ responseToMessage (ResponseOK m) = Just m
 responseToMessage (EnsembleResponse (ChatRcvd c)) = Just $ showChatMessage c
 responseToMessage (EnsembleResponse (ParticipantJoins x)) = Just $ name x <> " has joined the ensemble"
 responseToMessage (EnsembleResponse (ParticipantLeaves n)) = Just $ n <> " has left the ensemble"
+responseToMessage (EnsembleResponse (TempoRcvd _)) = Just $ "received new tempo"
+responseToMessage (EnsembleResponse ResetZonesResponse) = Just $ "received ResetZones"
+responseToMessage (EnsembleResponse ResetViewsResponse) = Just $ "received ResetViews"
+responseToMessage (EnsembleResponse (ResetTempoResponse _)) = Just $ "received ResetTempo"
+responseToMessage (EnsembleResponse (ResetResponse _)) = Just $ "received Reset (resetting zones and tempo)"
+responseToMessage (EnsembleResponse (AnonymousParticipants n)) = Just $ showt n <> " anonymous participants"
 -- the cases below are for debugging only and can be commented out when not debugging:
--- responseToMessage (TempoRcvd _) = Just $ "received new tempo"
--- responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showtl n
+-- responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showt n
 -- responseToMessage (ViewRcvd n _) = Just $ "received view " <> n
 -- responseToMessage (ParticipantUpdate n _) = Just $ "received ParticipantUpdate about " <> n
--- responseToMessage (AnonymousParticipants n) = Just $ "now there are " <> showtl n <> " anonymous participants"
 -- don't comment out the case below, of course!
 responseToMessage _ = Nothing
+
+-- a hack for the sole purpose of supporting resets ahead of the big refactor completing
+ensembleRequestsToResponses :: EnsembleRequest -> Maybe EnsembleResponse
+ensembleRequestsToResponses ResetZonesRequest = Just ResetZonesResponse
+ensembleRequestsToResponses (ResetRequest t) = Just (ResetResponse t)
+ensembleRequestsToResponses _ = Nothing

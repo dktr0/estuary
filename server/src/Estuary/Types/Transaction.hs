@@ -140,6 +140,24 @@ writeZone now ctvar zone def = do
     e <- readTVar etvar
     E.writeZone e now zone def
 
+resetZones :: UTCTime -> TVar Client -> Transaction ()
+resetZones now ctvar = do
+  c <- liftSTM $ readTVar ctvar
+  etvar <- justOrError (memberOfEnsemble c) "client not part of ensemble"
+  when (not $ authenticatedInEnsemble c) $ throwError "client not authenticated in ensemble"
+  liftSTM $ do
+    e <- readTVar etvar
+    E.resetZones e now
+
+resetViews :: UTCTime -> TVar Client -> Transaction ()
+resetViews now ctvar = do
+  c <- liftSTM $ readTVar ctvar
+  etvar <- justOrError (memberOfEnsemble c) "client not part of ensemble"
+  when (not $ authenticatedInEnsemble c) $ throwError "client not authenticated in ensemble"
+  liftSTM $ do
+    e <- readTVar etvar
+    E.resetViews e now 
+
 
 writeView :: UTCTime -> TVar Client -> Text -> View -> Transaction ()
 writeView now ctvar vName v = do

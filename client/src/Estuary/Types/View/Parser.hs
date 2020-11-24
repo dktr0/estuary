@@ -15,27 +15,58 @@ import Control.Monad.Identity (Identity)
 import Estuary.Types.View
 
 dumpView :: View -> Text
-dumpView (Views xs) = "[" <> (T.intercalate "," $ fmap dumpView xs) <> "]"
-dumpView (GridView cols rows vs) = showInt cols <> "x" <> showInt  rows <>  " [" <> vs' <> "]"
-  where vs' = T.intercalate ","  $ fmap dumpView vs
-dumpView (ViewDiv css v) = "{ " <> css <> " " <> dumpView v <> " }"
-dumpView (StructureView x) = "structure:" <> showInt x
-dumpView (LabelView x) = "label:" <> showInt x
-dumpView (TextView x y) = "text:" <> showInt x <> " " <> showInt y
-dumpView (SequenceView z) = "sequence:" <> showInt z
-dumpView (BorderDiv v) = "border { " <> dumpView v <> "} "
-dumpView TempoView = "tempo"
+dumpView EmptyView = "empty"
+dumpView (Div css vs) = "div \"" <> css <> "\"" <> dumpViews vs
+dumpView (Views vs) = dumpViews vs
+dumpView (Paragraph vs) = "paragraph " <> dumpViews vs
+dumpView (BorderDiv vs) = "border " <> dumpViews vs
+dumpView (Link url vs) = "link \"" <> url <> "\" " <> dumpViews vs
+dumpView (BulletPoints vs) = "bulletpoints " <> dumpViews vs
+dumpView (GridView cols rows vs) = showInt cols <> "x" <> showInt rows <> " " <> dumpViews vs
+-- dumpView (Text t) = ...
+dumpView (LabelView x) = "label " <> showInt x
+dumpView (StructureView x) = "structure " <> showInt x
+dumpView (CodeView x y) = "code " <> showInt x <> " " <> showInt y
+dumpView (SequenceView z) = "sequence " <> showInt z
+-- dumpView (Example tn txt) = ...
 dumpView EnsembleStatusView = "ensembleStatus"
-dumpView (RouletteView x) = "roulette:" <> showInt x
-dumpView AudioMapView = "audiomapview"
+dumpView TempoView = "tempo"
+dumpView (RouletteView x rows) = "roulette" <> showInt x <> " " <> showInt rows
+dumpView AudioMapView = "audiomap"
+dumpView (StopWatchView z) = "stopwatch" <> showInt z
+dumpView _ = " "
+
+dumpViews :: [View] -> Text
+dumpViews vs = "[" <> (T.intercalate "," $ fmap dumpView vs) <> "]"
 
 showInt :: Int -> Text
 showInt x = showtParen (x < 0) (showt x)
 
-viewsParser :: Parser View
-viewsParser = do
-  vs <- brackets $ commaSep viewParser
-  return $ Views vs
+viewParser :: Parser View
+viewParser = choice [
+  try $ EmptyView <$ reserved "empty",
+  try $ reserved "div" >> (Div <$> (T.pack <$> stringLiteral) <*> viewsParser),
+  try $ Views <$> viewsParser,
+  try $ reserved "paragraph" >> (Paragraph <$> viewsParser),
+  try $ reserved "border" >> (BorderDiv <$> viewsParser),
+  try $ reserved "link" >> (Link <$> (T.pack <$> stringLiteral) <*> viewsParser),
+  try $ reserved "bulletpoints" >> (BulletPoints <$> viewsParser),
+  try gridViewParser,
+  -- currently not parsing Text
+  try $ reserved "label" >> (LabelView <$> int),
+  try $ reserved "structure" >> (StructureView <$> int),
+  try $ reserved "code" >> (CodeView <$> int <*> int),
+  try $ reserved "sequence" >> (SequenceView <$> int),
+  -- currently not parsing Example...
+  try $ reserved "ensembleStatus" >> return EnsembleStatusView,
+  try $ reserved "tempo" >> return TempoView,
+  try $ reserved "roulette" >> (RouletteView <$> int <*> int),
+  try $ reserved "audiomap" >> return AudioMapView,
+  try $ reserved "stopwatch" >> (StopWatchView <$> int)
+  ]
+
+viewsParser :: Parser [View]
+viewsParser = brackets $ commaSep viewParser
 
 gridViewParser :: Parser View
 gridViewParser = do
@@ -43,37 +74,8 @@ gridViewParser = do
   lexeme (oneOf "xX")
   whiteSpace
   rows <- int
-  vs <- brackets $ commaSep viewParser
+  vs <- viewsParser
   return $ GridView columns rows vs
-
-viewParser :: Parser View
-viewParser = do
-  v <- choice [
-    try gridViewParser,
-    try viewsParser,
-    try viewDiv,
-    try borderDiv,
-    try labelView,
-    try structureView,
-    try sequenceView,
-    try ensembleStatusView,
-    try tempo,
-    try rouletteView,
-    try audiomapview,
-    textView
-    ]
-  return v
-
-viewDiv = braces $ (ViewDiv <$> (T.pack <$> identifier) <*> viewsParser)
-borderDiv = reserved "border" >> (braces $ (BorderDiv <$> viewsParser))
-labelView = reserved "label" >> reservedOp ":" >> (LabelView <$> int)
-structureView = reserved "structure" >> reservedOp ":" >> (StructureView <$> int)
-sequenceView = reserved "sequence" >> reservedOp ":" >> (SequenceView <$> int)
-ensembleStatusView = reserved "ensembleStatus" >> return EnsembleStatusView
-tempo = reserved "tempo" >> return TempoView
-textView = reserved "text" >> reservedOp ":" >> (TextView <$> int <*> int)
-rouletteView = reserved "roulette" >> reservedOp ":" >> (RouletteView <$> int)
-audiomapview = reserved "audiomap" >> return AudioMapView
 
 int :: Parser Int
 int = choice [

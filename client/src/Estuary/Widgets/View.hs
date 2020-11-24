@@ -3,7 +3,7 @@
 module Estuary.Widgets.View where
 
 import Reflex
-import Reflex.Dom
+import Reflex.Dom hiding (Link)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -19,7 +19,7 @@ import Estuary.Types.View
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.Context
-import Estuary.Tidal.Types
+import Estuary.Tidal.Types (TransformedPattern(..))
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 import Estuary.Types.RenderInfo
@@ -29,24 +29,48 @@ import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
-import Estuary.Widgets.RouletteWidget
+import Estuary.Widgets.Roulette
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Widgets.Tempo
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
+import Estuary.Widgets.StopWatch
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
 viewWidget er EmptyView = return never
 
-viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
+viewWidget er (Div c vs) = divClass c $ liftM leftmost $ mapM (viewWidget er) vs
 
+viewWidget er (Views vs) = viewWidget er (Div "views" vs)
+
+viewWidget er (BorderDiv vs) = viewWidget er (Div "borderDiv" vs)
+
+viewWidget er (Paragraph vs) = viewWidget er (Div "paragraph code-font" vs)
+
+viewWidget er (Link url vs) = elAttr "a" ("href" =: url) $ viewWidget er (Views vs)
+
+viewWidget er (BulletPoints vs) = el "ul" $ do
+  rs <- forM vs $ \v -> el "li" $ viewWidget er v
+  return $ leftmost rs
+
+viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> divClass "gridChild" $ viewWidget er v) vs
+  where
+    viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
+    defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
+    setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
+    setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
+    setColumnsAndRows  = setNumColumns <> setNumRows
+
+viewWidget _ (Text t) = translatableText t >>= dynText >> return never
+
+viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
-viewWidget er (TextView z rows) = do
+viewWidget er (CodeView z rows) = do
   whenever <- liftIO $ getCurrentTime
   ri <- renderInfo
   let errorDyn = fmap (IntMap.lookup z . errors) ri
@@ -57,8 +81,9 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 
 viewWidget er EnsembleStatusView = ensembleStatusWidget
 
--- viewWidget er (RouletteView z rows) = rouletteWidget
-viewWidget er (RouletteView z) = zoneWidget z [] maybeRoulette Roulette er rouletteWidget
+viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
+
+viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget
 
 viewWidget er TempoView = do
   ctx <- context
@@ -68,27 +93,11 @@ viewWidget er TempoView = do
   tempoE <- tempoWidget tempoDelta
   return $ fmap WriteTempo tempoE
 
-viewWidget er (Paragraph t) = divClass "paragraph code-font" $ translatableText t >> return never
-
-viewWidget er (Example n t) = do
+viewWidget _ (Example n t) = do
   b <- clickableDiv "example code-font" $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
   hint $ fmap (\et -> ZoneHint 1 (TextProgram (Live (n,t,et) L3))) bTime
   return never
-
-viewWidget er (ViewDiv c v) = divClass c $ viewWidget er v
-
-viewWidget er (BorderDiv v) = divClass "borderDiv" $ viewWidget er v
-
-viewWidget er (Views xs) = divClass "views" $ liftM leftmost $ mapM (viewWidget er) xs
-
-viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> divClass "gridChild" $ viewWidget er v) vs
-  where
-    viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
-    defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
-    setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
-    setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
-    setColumnsAndRows  = setNumColumns <> setNumRows
 
 viewWidget _ AudioMapView = do
   audioMapWidget
@@ -103,7 +112,9 @@ zoneWidget z defaultA f g ensResponses anEditorWidget = do
   iCtx <- sample $ current ctx
   let iDef = IntMap.findWithDefault (g defaultA) z $ zones $ ensemble $ ensembleC iCtx
   let iValue = maybe defaultA id $ f iDef
-  let deltas = fmapMaybe (join . fmap f . listToMaybe . reverse . justEditsInZone z) ensResponses -- :: Event t a
-  dynUpdates <- holdDyn iValue deltas
+  let resetValue = g defaultA
+  let deltas = fmapMaybe (lastEditOrResetInZone resetValue z) ensResponses
+  let deltas' = fmapMaybe f deltas
+  dynUpdates <- holdDyn iValue deltas'
   variableFromWidget <- anEditorWidget dynUpdates
   return $ (WriteZone z . g) <$> localEdits variableFromWidget

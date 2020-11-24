@@ -31,7 +31,7 @@ tempoWidget tempoDyn = do
   v <- variableWidget tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
     let initialText = showt (freq a)
     let updatedText = fmap (showt . freq) eventA
-    (tValue,_,tEval) <- textWidget 1 initialText updatedText
+    (tValue,_,tEval) <- textWidget 1 (constDyn False) initialText updatedText
     b <- dynButton =<< term Term.NewTempo
     let evalEvent = tagPromptlyDyn tValue $ leftmost [b,tEval]
     let cpsEvent = fmapMaybe ((readMaybe :: String -> Maybe Rational) . T.unpack) evalEvent

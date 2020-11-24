@@ -91,13 +91,13 @@ page wsDown TutorialList = splitPageWithAnnouncements $ do
   return (nav, (leaveEnsemble, never))
 
 page wsDown (TutorialNav "TidalCyclesBasics") = do
-  let ensResponses = fmap justEnsembleResponses wsDown
+  let ensResponses = fmapMaybe justEnsembleResponses wsDown
   ensReq <- runTutorial tidalCyclesBasics ensResponses
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never,(leaveEnsemble,ensReq))
 
 page wsDown (TutorialNav "Punctual") = do
-  let ensResponses = fmap justEnsembleResponses wsDown
+  let ensResponses = fmapMaybe justEnsembleResponses wsDown
   ensReq <- runTutorial punctualTutorial ensResponses
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never,(leaveEnsemble,ensReq))
@@ -160,14 +160,14 @@ page wsDown (JoinEnsemblePage ensembleName) = splitPageWithAnnouncements $ do
   return (navEvents, (serverRequests, never))
 
 page rs (EnsemblePage ensembleName) = do
-  let ensResponses = fmap justEnsembleResponses rs
+  let ensResponses = fmapMaybe justEnsembleResponses rs
   ensReq <- ensembleView ensResponses
   return (never,(never,ensReq))
 
-page _ Solo = do
-  ensReq <- ensembleView never
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,ensReq))
+page rs Solo = do
+  let ensResponses = traceEvent "ensResponses" $ fmapMaybe justEnsembleResponses rs
+  ensReq <- ensembleView ensResponses
+  return (never,(never,ensReq))
 
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)

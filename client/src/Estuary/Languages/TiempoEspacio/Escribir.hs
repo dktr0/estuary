@@ -181,7 +181,7 @@ adjective = do
 
 noun :: Parser Tidal.ControlPattern
 noun = choice [
-  ((reserved "sonido" <|> reserved "sonidos") >> return Tidal.up) <*> option 0 parentsdoublePattern,
+  ((reserved "sonido" <|> reserved "sonidos") >> return Tidal.up) <*> (fmap Tidal.Note <$> option 0 parentsdoublePattern),
   ((reserved "forma" <|> reserved "formas") >> return Tidal.gain) <*> option 1 parentsdoublePattern,
   ((reserved "textura" <|> reserved "texturas") >> return Tidal.pan) <*> option 0.5 parentsdoublePattern,
   (reserved "EGGPLANT" >> return Tidal.delay) <*> option 0 parentsdoublePattern,
