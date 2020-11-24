@@ -68,6 +68,7 @@ ndt = fromRational <$> rationalOrInteger
 sigMayRat :: H (Signal (Maybe Rational))
 sigMayRat =
   rat_sigMayRat <*> rationalOrInteger <|>
+  ndt_sigMayRat <*> ndt <|>
   (constantSignal . Just) <$> rationalOrInteger
 
 rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
@@ -88,6 +89,7 @@ sigStr = constantSignal <$> string
 sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
+  ndt_sigRat <*> ndt <|>
   constantSignal <$> rationalOrInteger
 
 rat_sigRat :: H (Rational -> Signal Rational)
@@ -98,6 +100,21 @@ rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
+
+-- new fade in (syntax sugar funcs)
+ndt_sigRat :: H (NominalDiffTime -> Signal Rational)
+ndt_sigRat = 
+  fadeIn <$ reserved "fadeIn" <|>
+  fadeOut <$ reserved "fadeOut"
+
+ndt_sigMayRat :: H (NominalDiffTime -> Signal (Maybe Rational))
+ndt_sigMayRat =
+  fadeIn2 <$ reserved "fadeIn" <|>
+  fadeOut2 <$ reserved "fadeOut" 
+
+--  (reserved "fadeIn" >> return fadeIn) <|>
+--  (reserved "fadeOut" >> return fadeOut)
+
 
 -- //////////////
 
@@ -154,6 +171,7 @@ sigInt_vs_vs =
 
 sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
 sigStr_vs_vs =
+  setColourStr <$ reserved "colour" <|> 
   setFontFamily <$ reserved "font"
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
@@ -165,11 +183,15 @@ sigRat_sigRat_vs_vs =
 sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_vs_vs =
   circleMask' <$ reserved "circleMask'" <|>
+  setRGB <$ reserved "rgb" <|>
+  setHSL <$ reserved "hsl" <|>
   sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_sigRat_vs_vs =
-  rectMask <$ reserved "rectMask"
+  rectMask <$ reserved "rectMask" <|>
+  setRGBA <$ reserved "rgb'" <|>
+  setHSLA <$ reserved "hsl'"
 
 -- ////
 
