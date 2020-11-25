@@ -101,7 +101,7 @@ aboutEstuary = viewWidget never $ Views [
         (English,"Ongoing development and maintenance of Estuary by the Estuary development team, coordinated by David Ogborn, with members who have included Jamie Beverley, Alejandro Franco Briones, Alex MacLean, Luis Navarro del Angel, Matthew Paine, Spencer Park, and Jessica Rodriguez.")
         ],
       Text $ fromList [
-        (English,"Estuary was born as part of research project supported by Canada's Social Sciences and Humanities Research Council (SSHRC): \"Projectional interfaces for musical live coding\" (principal investigator: David Ogborn, co-applicant: Jacques Carette, collaborators: Alex McLean and Eldad Tsabary)")
+        (English,"Estuary was born as part of research project supported by Canada's Social Sciences and Humanities Research Council (SSHRC): \"Projectional interfaces for musical live coding\" (2015-17, principal investigator: David Ogborn, co-applicant: Jacques Carette, collaborators: Alex McLean and Eldad Tsabary)")
         ],
       Text $ fromList [
         (English,"Estuary development continues as part of a second SSHRC-funded research project: \"Platforms  and  practices  for networked, language-neutral live coding\" (2018-23, principal investigator: David Ogborn, co-applicant: Eldad Tsabary, collaborator: Shelly Knotts)")
