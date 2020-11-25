@@ -165,7 +165,7 @@ page rs (EnsemblePage ensembleName) = do
   return (never,(never,ensReq))
 
 page rs Solo = do
-  let ensResponses = traceEvent "ensResponses" $ fmapMaybe justEnsembleResponses rs
+  let ensResponses = fmapMaybe justEnsembleResponses rs
   ensReq <- ensembleView ensResponses
   return (never,(never,ensReq))
 

@@ -95,7 +95,7 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo 
     evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
     widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
     return (_dropdown_change d,evalButton')
-  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget rows evalFlash initialText $ traceEvent "textDelta" textDelta
+  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
 
   -- produce a Variable by combining current value of Variable (that already includes deltas down from elsewhere)

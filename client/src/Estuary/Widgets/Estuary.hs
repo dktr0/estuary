@@ -218,10 +218,7 @@ performContext irc cMvar cDyn = do
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
 updateContext :: MVar Context -> Context -> IO ()
-updateContext mv x = do
-  -- T.putStrLn "context updated"
-  swapMVar mv x
-  return ()
+updateContext mv x = swapMVar mv x >> return ()
 
 updateDynamicsModes :: MonadWidget t m => ImmutableRenderContext -> Dynamic t Context -> m ()
 updateDynamicsModes irc ctx = do

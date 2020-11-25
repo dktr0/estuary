@@ -63,7 +63,7 @@ a {
 /* for the Paragraph element in the view system, which is primarily used in tutorials for explanatory text */
 .paragraph {
 	padding: 0.15em;
-   	overflow-y: auto;
+   	overflow-y: none;
    	text-align: justify;
 }
 

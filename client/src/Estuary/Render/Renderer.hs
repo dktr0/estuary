@@ -427,7 +427,6 @@ renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
   s <- get
   parseResult <- liftIO $ (return $! force (tidalParser x y)) `catch` (return . Left . (show :: SomeException -> String))
   let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
-  liftIO $ either (putStrLn) (const $ return ()) parseResult -- print new errors to console
   let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
   modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
 
@@ -453,9 +452,7 @@ renderBaseProgramChanged irc c z (Right (TimeNot,x,eTime)) = do
       clearZoneError z
       s <- get
       modify' $ \x -> x { timeNots = insert z p (timeNots s) }
-    (Left e) -> do
-      liftIO $ putStrLn (show e)
-      setZoneError z (T.pack $ show e)
+    (Left e) -> setZoneError z (T.pack $ show e)
 
 renderBaseProgramChanged irc c z (Right (Seis8s,x,eTime)) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
@@ -464,9 +461,7 @@ renderBaseProgramChanged irc c z (Right (Seis8s,x,eTime)) = do
       clearZoneError z
       s <- get
       modify' $ \x -> x { seis8ses = insert z p (seis8ses s) }
-    Left e -> do
-      liftIO $ putStrLn (show e)
-      setZoneError z (T.pack $ show e)
+    Left e -> setZoneError z (T.pack $ show e)
 
 renderBaseProgramChanged irc c z _ = setZoneError z "renderBaseProgramChanged: no match for base language"
 
