@@ -14,7 +14,7 @@ data Source =
   Shape [Parameters] | -- shape() -- shape(2.0)
   Voronoi [Parameters] | -- voronoi() -- voronoi(10,0.5,0.1)
   OutputAsSource Output |
-  --Src Source | -- not yet implemented screen/camera/video/images
+  Src Input | -- right now just for screen and computer's camera
   Brightness [Parameters] Source |
   Contrast [Parameters] Source |
   Colorama [Parameters] Source |
@@ -54,15 +54,26 @@ data Source =
   Mask Source [Parameters] Source
   deriving (Show)
 
+data Input =
+  S0 |
+  S1 |
+  S2 |
+  S3 |
+  OutputasInput Output
+  deriving (Show)
+
 data Output =
   O0 |
   O1 |
   O2 |
-  O3
+  O3 |
+  All
   deriving (Show)
 
 data Statement =
+  InitScreen Input | --s0.InitScreen()
+  InitCam Input | --s0.InitCam()
   Out Source Output |
-  Render Output |
+  Render (Maybe Output) |
   Speed Parameters -- i.e. speed = 1.5
   deriving (Show)

@@ -26,7 +26,13 @@ hydra = do
   return xs
 
 statement :: Parser Statement
-statement = choice [ outStatement, renderStatement]
+statement = try $ choice [
+  outStatement <|>
+  renderStatement <|>
+  inputStatement "initScreen" InitScreen <|>
+  inputStatement "initCam" InitCam <|>
+  speedStatement
+  ]
 
 outStatement :: Parser Statement
 outStatement = do
@@ -42,10 +48,38 @@ output = try $ parens $ choice [
   whiteSpace >> return O0
   ]
 
+--render() -- render(o1)
 renderStatement :: Parser Statement
-renderStatement =
-  Render <$> (reserved "render" >> output) <|>
-  speedStatement
+renderStatement = do
+  reserved "render"
+  p <- parens $ outputForRender
+  case p of
+    All -> return $ Render Nothing
+    x -> return $ Render (Just x)
+
+outputForRender :: Parser Output
+outputForRender = try $ choice [
+  outputNoDefault,
+  whiteSpace >> return All
+  ]
+
+-- s0.initScreen()  -- s1.initCam()
+-- need to update hydra file but it can also work with s0.initVideo() s0.initImage()
+inputStatement :: String -> (Input -> Statement) -> Parser Statement
+inputStatement x z = do
+  i <- input
+  reservedOp "."
+  reserved x
+  _ <- parens $ commaSep parameters
+  return $ z i
+
+input :: Parser Input
+input = try $ choice [
+  reserved "s0" >> return S0,
+  reserved "s1" >> return S1,
+  reserved "s2" >> return S2,
+  reserved "s3" >> return S3
+  ]
 
 speedStatement :: Parser Statement -- speed=0.5 or speed = 0.5
 speedStatement = do
@@ -201,7 +235,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
     "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
     "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
     "add", "mult", "blend", "diff", "layer", "mask",
-    "o0","o1","o2","o3"
+    "o0","o1","o2","o3", "s0", "s1", "s2", "s3"
     ],
   P.reservedOpNames = [".", "="],
   P.caseSensitive = False
