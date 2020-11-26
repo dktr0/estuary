@@ -59,6 +59,8 @@ instance PFromJSVal JSSource where pFromJSVal = JSSource
 
 sourceToJS :: Hydra -> Source -> JSSource
 sourceToJS h (OutputAsSource x) = outputToJSSource h x
+sourceToJS h (InputAsSource x) = inputToJSSource h x
+sourceToJS h (Src x) = _src h (sourceToJS h x)
 sourceToJS h (Osc []) = _osc0 h
 sourceToJS h (Osc (x:[])) = _osc1 h (parametersToJS x)
 sourceToJS h (Osc (x:y:[])) = _osc2 h (parametersToJS x) (parametersToJS y)
@@ -189,6 +191,8 @@ sourceToJS h (Mask y (a:[]) x) = _mask1 (sourceToJS h x) (sourceToJS h y) (param
 sourceToJS h (Mask y (a:b:_) x) = _mask2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
 
 
+-- h.synth.src(h.s[0]).out()
+foreign import javascript safe "$1.synth.src($2)" _src :: Hydra -> JSSource -> JSSource
 foreign import javascript safe "$1.synth.osc()" _osc0 :: Hydra -> JSSource
 foreign import javascript safe "$1.synth.osc($2)" _osc1 :: Hydra -> JSParameters -> JSSource
 foreign import javascript safe "$1.synth.osc($2,$3)" _osc2 :: Hydra -> JSParameters -> JSParameters -> JSSource
@@ -333,6 +337,7 @@ foreign import javascript safe "$1.synth.src($1.o[1])" _oToJSs1 :: Hydra -> JSSo
 foreign import javascript safe "$1.synth.src($1.o[2])" _oToJSs2 :: Hydra -> JSSource
 foreign import javascript safe "$1.synth.src($1.o[3])" _oToJSs3 :: Hydra -> JSSource
 
+
 outputToJS :: Hydra -> Output -> JSVal
 outputToJS h O0 = _oToJSo0 h
 outputToJS h O1 = _oToJSo1 h
@@ -347,6 +352,19 @@ foreign import javascript safe "$1.o[3]" _oToJSo3 :: Hydra -> JSVal
 newtype JSInput = JSInput JSVal
 instance PToJSVal JSInput where pToJSVal (JSInput x) = x
 instance PFromJSVal JSInput where pFromJSVal = JSInput
+
+--h.synth.src(h.o[0]).out(h.o[0])
+--h.synth.src(h.s[0]).out()
+inputToJSSource :: Hydra -> Input -> JSSource
+inputToJSSource h S0 = _iToJSs0 h
+inputToJSSource h S1 = _iToJSs1 h
+inputToJSSource h S2 = _iToJSs2 h
+inputToJSSource h S3 = _iToJSs3 h
+
+foreign import javascript safe "$1.s[0]" _iToJSs0 :: Hydra -> JSSource
+foreign import javascript safe "$1.s[2]" _iToJSs1 :: Hydra -> JSSource
+foreign import javascript safe "$1.s[3]" _iToJSs2 :: Hydra -> JSSource
+foreign import javascript safe "$1.s[4]" _iToJSs3 :: Hydra -> JSSource
 
 inputToJS :: Hydra -> Input -> JSInput
 inputToJS h S0 = _iToJS0 h
@@ -364,8 +382,8 @@ evaluateStatement :: Hydra -> Statement -> IO ()
 evaluateStatement h (Out s o) = _out (sourceToJS h s) (outputToJS h o)
 evaluateStatement h (Speed x) = _speed h (parametersToJS x)
 evaluateStatement h (Render o) = _render h (maybeOutputToJS h o)
-evaluateStatement h (InitScreen i) = _initScreen h (inputToJS h i)
--- evaluateStatement h (InitCam i) = _initCam h (inputToJS h i)
+evaluateStatement h (InitScreen i) = _initScreen (inputToJS h i)
+evaluateStatement h (InitCam i) = _initCam (inputToJS h i)
 
 maybeOutputToJS :: Hydra -> Maybe Output -> JSVal
 maybeOutputToJS h Nothing = nullRef
@@ -385,9 +403,10 @@ foreign import javascript safe
 
 --h.synth.s0.initScreen()
 foreign import javascript safe
-  "$1.initScreen();" --- check thisss
+  "$1.initScreen();"
   _initScreen :: JSInput -> IO ()
 
--- foreign import javascript safe
---   "$1.synth.$2.initCam();"
---   _initCam :: Hydra -> JSInput -> IO ()
+--h.synth.s0.initCam()
+foreign import javascript safe
+  "$1.initCam();"
+  _initCam :: JSInput -> IO ()

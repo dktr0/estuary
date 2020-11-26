@@ -27,11 +27,11 @@ hydra = do
 
 statement :: Parser Statement
 statement = try $ choice [
-  outStatement <|>
-  renderStatement <|>
-  inputStatement "initScreen" InitScreen <|>
-  inputStatement "initCam" InitCam <|>
-  speedStatement
+  try outStatement,
+  try renderStatement,
+  try $ inputStatement "initCam" InitCam,
+  try $ inputStatement "initScreen" InitScreen,
+  try speedStatement
   ]
 
 outStatement :: Parser Statement
@@ -96,7 +96,8 @@ source = do
     functionWithParameters "gradient" Gradient,
     functionWithParameters "noise" Noise,
     functionWithParameters "shape" Shape,
-    functionWithParameters "voronoi" Voronoi
+    functionWithParameters "voronoi" Voronoi,
+    srcFunction
     ]
   fs <- many $ choice [ -- ...to which zero or more transformations [Source -> Source] are applied.
     methodWithParameters "brightness" Brightness,
@@ -138,6 +139,26 @@ source = do
     methodWithSourceAndParameters "mask" Mask
     ]
   return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
+
+
+-- src(s0).out() or src(o2).out()
+srcFunction :: Parser Source
+srcFunction = do
+  reserved "src"
+  s <- parens $ srcFunctionArgument
+  return $ Src s
+
+srcFunctionArgument :: Parser Source
+srcFunctionArgument = try $ choice [
+  inputAsSource, --s0,s1,s2,s3
+  outputAsSource --o0,o1,o2,o3
+  ]
+
+inputAsSource :: Parser Source
+inputAsSource = do
+  s <- input
+  return $ InputAsSource s
+
 
 sourceAsArgument :: Parser Source
 sourceAsArgument = try $ choice [
