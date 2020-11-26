@@ -184,7 +184,7 @@ gerundio = do
 
 noun :: Parser Tidal.ControlPattern
 noun = choice [
-  ((reserved "sound" <|> reserved "sounds") >> return Tidal.up) <*> option 0 parentsdoublePattern,
+  ((reserved "sound" <|> reserved "sounds") >> return Tidal.up) <*> (fmap Tidal.Note <$> option 0 parentsdoublePattern),
   ((reserved "light" <|> reserved "lights") >> return Tidal.gain) <*> option 1 parentsdoublePattern,
   ((reserved "door" <|> reserved "doors") >> return Tidal.pan) <*> option 0.5 parentsdoublePattern,
   ((reserved "time" <|> reserved "times") >> return Tidal.delay) <*> option 0 parentsdoublePattern,

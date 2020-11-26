@@ -13,7 +13,7 @@ import Data.Tempo
 import Estuary.Languages.CineCer0.Signal
 
 --------- change String to Text throughout the pipeline!!!!!
-data Colour = Colour String | ColourRGB (Double, Double, Double) | ColourHSV (Double, Double, Double)
+data Colour = Colour (Signal String) | ColourRGB (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSL (Signal Rational) (Signal Rational) (Signal Rational) | ColourRGBA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSLA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational)
 
 -- layer: right is video left is text!!!!!
 data LayerSpec = LayerSpec {
@@ -29,7 +29,7 @@ data LayerSpec = LayerSpec {
 
   fontFamily :: Signal String,
   fontSize :: Signal Rational,
-  colour :: Signal Colour,
+  colour :: Colour,
   strike :: Signal Bool,
   bold :: Signal Bool,
   italic :: Signal Bool,
@@ -64,8 +64,8 @@ emptyLayerSpec = LayerSpec {
   volume = constantSignal 0.0,
 
   fontFamily = constantSignal "sans-serif",
-  fontSize = constantSignal 100,
-  colour = constantSignal $ Colour "White",
+  fontSize = constantSignal 200,
+  colour = Colour (constantSignal "White"),
   strike = constantSignal False,
   bold = constantSignal False,
   italic = constantSignal False,
@@ -168,8 +168,20 @@ setBold tx = tx { bold = constantSignal True}
 setItalic :: LayerSpec -> LayerSpec
 setItalic tx = tx { italic = constantSignal True}
 
-setColour :: Signal Colour -> LayerSpec -> LayerSpec
-setColour clr tx = tx { colour = clr}
+setColourStr :: Signal String -> LayerSpec -> LayerSpec
+setColourStr clr tx = tx { colour = Colour clr }
+
+setRGB :: Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
+setRGB r g b tx = tx { colour = ColourRGB r g b}
+
+setHSL :: Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
+setHSL h s v tx = tx { colour = ColourHSL h s v}
+
+setRGBA :: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
+setRGBA r g b a tx = tx { colour = ColourRGBA r g b a}
+
+setHSLA :: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
+setHSLA h s l a tx = tx { colour = ColourHSLA h s l a}
 
 -- Filters
 

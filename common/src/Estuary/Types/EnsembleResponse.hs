@@ -22,13 +22,28 @@ data EnsembleResponse =
   ParticipantJoins Participant |
   ParticipantUpdate Participant |
   ParticipantLeaves Text |
-  AnonymousParticipants Int
-  deriving (Generic)
+  AnonymousParticipants Int |
+  ResetZonesResponse |
+  ResetViewsResponse |
+  ResetTempoResponse Tempo |
+  ResetResponse Tempo
+  deriving (Generic,Show)
 
 instance ToJSON EnsembleResponse where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON EnsembleResponse
 
+lastEditOrResetInZone :: Definition -> Int -> [EnsembleResponse] -> Maybe Definition
+lastEditOrResetInZone resetValue z = g . mapMaybe f
+  where
+    f (ZoneRcvd z2 x) | z==z2 = Just x
+    f ResetZonesResponse = Just resetValue
+    f (ResetResponse _) = Just resetValue
+    f _ = Nothing
+    g [] = Nothing
+    g xs = Just $ last xs
+
+-- deprecated: maybe not used any more?
 justEditsInZone :: Int -> [EnsembleResponse] -> [Definition]
 justEditsInZone z1 = mapMaybe f
   where

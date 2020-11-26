@@ -50,7 +50,7 @@ data Term =
   FPS |
   FPSDescription |
   IPaddress |
-  IPaddressDescription
+  IPaddressDescription 
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -219,6 +219,5 @@ translate IPaddress Español = "dirección IP"
 
 translate IPaddressDescription English = "The IP addresses of the participants"
 translate IPaddressDescription Español = "Las direcciones IP de l@s participantes"
-
 
 translate x _ = translate x English

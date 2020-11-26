@@ -83,6 +83,16 @@ writeZone e now n d = do
 readZones :: EnsembleS -> STM (IntMap.IntMap Definition)
 readZones e = readTVar (zones e) >>= mapM readTVar
 
+resetZones :: EnsembleS -> UTCTime -> STM ()
+resetZones e now = do
+  writeTVar (zones e) IntMap.empty
+  writeTVar (lastActionTime e) now
+
+resetViews :: EnsembleS -> UTCTime -> STM ()
+resetViews e now = do
+  writeTVar (views e) Map.empty
+  writeTVar (lastActionTime e) now
+
 writeView :: EnsembleS -> UTCTime -> Text -> View -> STM ()
 writeView e now n v = do
   vs <- readTVar (views e)

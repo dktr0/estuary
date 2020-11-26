@@ -48,7 +48,7 @@ viewEditor ctx = mdo
   let incomingView = updated $ fmap dumpView currentView
   initialView <- sample $ current currentView
   let initialText = dumpView initialView
-  (textValue,_,shiftEnter) <- textWidget 5 initialText incomingView
+  (textValue,_,shiftEnter) <- textWidget 5 (constDyn False) initialText incomingView
   let runViewEvent = leftmost [runViewButton, shiftEnter]
   let evaledText = tag (current textValue) runViewEvent
   let parsedInput = fmap (parse viewParser "") evaledText

@@ -386,3 +386,68 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteTempo t) = do
       sendThisClient ctvar (ResponseOK $ "setting tempo succeeded")
       sendEnsembleNoOrigin cHandle e $ EnsembleResponse $ TempoRcvd t
       postLog cHandle $ "WriteTempo in " <> E.ensembleName e
+
+processEnsembleRequest db ss ws cHandle ctvar ResetZonesRequest = do
+  now <- getCurrentTime
+  x <- runTransaction ss $ do
+    resetZones now ctvar
+    updateLastEdit ctvar now
+    getClientEnsemble ctvar
+  case x of
+    Left err -> do
+      let m = "*ResetZonesRequest* " <> err
+      sendThisClient ctvar (ResponseError m)
+      postLog cHandle m
+    Right e -> do
+      sendThisClient ctvar (ResponseOK $ "resetzones succeeded")
+      sendEnsembleNoOrigin cHandle e $ EnsembleResponse $ ResetZonesResponse
+      postLog cHandle $ "ResetZones in " <> E.ensembleName e
+
+processEnsembleRequest db ss ws cHandle ctvar ResetViewsRequest = do
+  now <- getCurrentTime
+  x <- runTransaction ss $ do
+    resetViews now ctvar
+    updateLastEdit ctvar now
+    getClientEnsemble ctvar
+  case x of
+    Left err -> do
+      let m = "*ResetViewsRequest* " <> err
+      sendThisClient ctvar (ResponseError m)
+      postLog cHandle m
+    Right e -> do
+      sendThisClient ctvar (ResponseOK $ "resetviews succeeded")
+      sendEnsembleNoOrigin cHandle e $ EnsembleResponse $ ResetViewsResponse
+      postLog cHandle $ "ResetViews in " <> E.ensembleName e
+
+processEnsembleRequest db ss ws cHandle ctvar (ResetTempoRequest t) = do
+  now <- getCurrentTime
+  x <- runTransaction ss $ do
+    writeTempo now ctvar t
+    updateLastEdit ctvar now
+    getClientEnsemble ctvar
+  case x of
+    Left err -> do
+      let m = "*ResetTempoRequest* " <> err
+      sendThisClient ctvar (ResponseError m)
+      postLog cHandle m
+    Right e -> do
+      sendThisClient ctvar (ResponseOK $ "resettempo succeeded")
+      sendEnsembleNoOrigin cHandle e $ EnsembleResponse $ ResetTempoResponse t
+      postLog cHandle $ "ResetTempo in " <> E.ensembleName e
+
+processEnsembleRequest db ss ws cHandle ctvar (ResetRequest t) = do
+  now <- getCurrentTime
+  x <- runTransaction ss $ do
+    resetZones now ctvar
+    writeTempo now ctvar t
+    updateLastEdit ctvar now
+    getClientEnsemble ctvar
+  case x of
+    Left err -> do
+      let m = "*ResetRequest* " <> err
+      sendThisClient ctvar (ResponseError m)
+      postLog cHandle m
+    Right e -> do
+      sendThisClient ctvar (ResponseOK $ "reset succeeded")
+      sendEnsembleNoOrigin cHandle e $ EnsembleResponse $ ResetResponse t
+      postLog cHandle $ "Reset in " <> E.ensembleName e

@@ -18,6 +18,7 @@ dependencies:
   - aeson
   - tempi
   - parsec
+  - witherable
 
 extra-source-files:
   - package.yaml

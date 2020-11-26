@@ -21,7 +21,6 @@ body {
 	overflow: hidden;
 }
 
-
 /* styles the body, input, foreground text color */
 body, .primary-color {
 	 color: var( --primary-color);
@@ -38,7 +37,7 @@ body::-webkit-scrollbar-track {
 }
 
 body::-webkit-scrollbar-thumb {
-  background: var(--primary-color);;
+  background: var(--primary-color);
   border-radius: 10px;
 }
 
@@ -46,6 +45,9 @@ body::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
 
+a {
+  color: var(--primary-color);
+}
 
 /*styles the canvas and svg display */
 .canvas-or-svg-display {
@@ -61,7 +63,7 @@ body::-webkit-scrollbar-corner{
 /* for the Paragraph element in the view system, which is primarily used in tutorials for explanatory text */
 .paragraph {
 	padding: 0.15em;
-   	overflow-y: auto;
+   	overflow-y: none;
    	text-align: justify;
 }
 
@@ -354,13 +356,6 @@ body::-webkit-scrollbar-corner{
   margin-bottom: 0.5em;
 }
 
-/*contains the about text (source)*/
-.aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	padding: 0.5em;
-}
-
 .webSocketButtons {/*contains the "send" button and "terminal/chat" label (source)*/
 	display: inline;
 	margin-right: 5px;
@@ -558,7 +553,7 @@ display: block;
 /*contains the tempo and coding textareas  */
 
 .textInputToEndOfLine  {
-	height:100%;
+	height: 100%;
 	width: 100%;
 	box-sizing:border-box;
     background-color: transparent;
@@ -566,6 +561,11 @@ display: block;
   	resize: none;
   	border:none;
   }
+
+.evalFlash {
+  color: var(--background-color);
+  background-color: var(--primary-color);
+}
 
 /*ex. the div that 'Sound' is written in, in ICLCFixed)*/
 .singlePatternDiv-label{
@@ -1543,17 +1543,31 @@ hr.dashed {
 .rouletteButtons {
 	width: max-content;
 	border-radius: 5px;
-/* 	border: 1px solid; */
-/* 	cursor: pointer; */
-
+  margin-right: 1%;
+  padding-left: 0.5%;
+  padding-right: 0.5%;
 }
 
 .lineUpButton {
  	width: max-content;
+  padding-left: 0.5%;
+  padding-right: 0.5%;
+}
+
+.rouletteWidgetContainer {
+	overflow: auto;
+}
+
+.rouletteWidgetContainer::-webkit-scrollbar {
+    width: 0px;
+    background: transparent; /* make scrollbar transparent */
 }
 
 .rouletteContainer{
+	display: flex;
 	overflow-y: auto;
+	margin-top: 0.25%;
+	margin-bottom: 0.5%;
 
 }
 
@@ -1589,4 +1603,11 @@ hr.dashed {
 
 .infoRef{
   margin-bottom: 1em;
+}
+
+.attrsRouletteButtonHead {
+/* 	border: 1px solid var(--primary-color); */
+padding-left: 0.5%;
+padding-right: 0.5%;
+box-shadow: inset 0 0 3px var(--primary-color);
 }
