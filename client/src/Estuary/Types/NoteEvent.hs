@@ -22,7 +22,11 @@ datumToJSVal (ASCII_String x) = pToJSVal $ decodeUtf8 x
 datumToJSVal _ = nullRef
 
 valueToJSVal :: Tidal.Value -> JSVal
-valueToJSVal (Tidal.VI x _) = pToJSVal x
-valueToJSVal (Tidal.VF x _) = pToJSVal x
 valueToJSVal (Tidal.VS x _) = pToJSVal x
+valueToJSVal (Tidal.VF x _) = pToJSVal x
+valueToJSVal (Tidal.VN x _) = pToJSVal (Tidal.unNote x)
+valueToJSVal (Tidal.VR x _) = pToJSVal (realToFrac x :: Double)
+valueToJSVal (Tidal.VI x _) = pToJSVal x
+valueToJSVal (Tidal.VB x _) = pToJSVal (if x then pToJSVal (1::Int) else pToJSVal (0::Int))
+-- Tidal also has constructor Tidal.VX [Word8] _ for OSC blobs, but that has no obvious application yet in Estuary
 valueToJSVal _ = nullRef

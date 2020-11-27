@@ -17,6 +17,8 @@ import Data.Text (Text)
 import Control.Applicative
 import GHC.Generics
 import Data.Aeson
+import Data.Aeson.Types
+import Data.Witherable as Witherable
 
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
@@ -32,11 +34,34 @@ data Ensemble = Ensemble {
   chats :: [Chat],
   participants :: Map.Map Text Participant,
   anonymousParticipants :: Int
-  } deriving (Generic)
+  } deriving (Generic,Show)
 
 instance ToJSON Ensemble where
   toEncoding = genericToEncoding defaultOptions
-instance FromJSON Ensemble
+
+instance FromJSON Ensemble where
+  parseJSON (Object o) = do
+    ensembleName' <- o .: "ensembleName"
+    tempo' <- o .: "tempo"
+    -- parse map of zones, silently omitting any that fail to parse (in order to allow evolution of Definition type)
+    zones' <- o .:? "zones" .!= IntMap.empty -- IntMap Value
+    zones'' <- mapM (\v -> (Just <$> parseJSON v) <|> return Nothing) zones' -- IntMap (Maybe Definition)
+    let zones''' = Witherable.catMaybes zones'' -- IntMap Definition
+    -- parse map of views, silently omitting any that fail to parse (in order to allow evolution of View type)
+    views' <- o .:? "views" .!= Map.empty -- Map Text Value
+    views'' <- mapM (\v -> (Just <$> parseJSON v) <|> return Nothing) views' -- Map Text (Maybe View)
+    let views''' = Witherable.catMaybes views'' -- Map Text View
+    chats' <- o .:? "chats" .!= []
+    return $ Ensemble {
+      ensembleName = ensembleName',
+      tempo = tempo',
+      zones = zones''',
+      views = views''',
+      chats = chats',
+      participants = Map.empty,
+      anonymousParticipants = 0
+    }
+  parseJSON invalid = modifyFailure ("parsing Ensemble failed, " ++) $ typeMismatch "Object" invalid
 
 emptyEnsemble :: UTCTime -> Ensemble
 emptyEnsemble t = Ensemble {

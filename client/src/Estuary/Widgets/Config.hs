@@ -31,7 +31,7 @@ configWidget ctx ri = do
       ])
     return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
 
-  elClass "hr" "dashed" $  text ""
+  elClass "hr" "dashed" $ return ()
 
   resolutionChangeEv <- divClass "config-option primary-color ui-font" $ do
     term Term.Resolution >>= dynText
@@ -44,7 +44,18 @@ configWidget ctx ri = do
       ])
     return $ fmap (\x c -> c { resolution = x }) resChange
 
-  elClass "hr" "dashed" $  text ""
+  elClass "hr" "dashed" $ return ()
+
+  fpsLimitChangeEv <- divClass "config-option primary-color ui-font" $ do
+    text "FPS:"
+    let fpsMap = fromList [(Just 0.030,"30"),(Just 0.060,"15"),(Just 0.015,"60"),(Nothing,"unlimited")]
+    fpsChange <- _dropdown_change <$> dropdown (Just 0.030) (constDyn fpsMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
+    el "div" $ dynText =<< (translatableText $ fromList [
+      (English,"By default, visuals are limited to rendering at ~30 FPS. It is possible to set other limits and to have no limits on frame rate. Higher frame rates and unlimited frame rates may increase demands on the computer's CPU and GPU.")
+      ])
+    return $ fmap (\x c -> c { fpsLimit = x }) fpsChange
+
+  elClass "hr" "dashed" $ return ()
 
   brightnessChangeEv <- divClass "config-option primary-color ui-font" $ do
     term Term.Brightness >>= dynText
@@ -93,9 +104,21 @@ configWidget ctx ri = do
 
   elClass "hr" "dashed" $  text ""
 
+  unsafeModeEv <- divClass "config-option primary-color ui-font" $ do
+    text "Unsafe Mode:"
+    unsafeInput <- elClass "label" "switch" $ do
+      x <- checkbox False def
+      elClass "span" "slider round" (return x)
+    el "div" $ dynText =<< (translatableText $ fromList [
+      (English,"Activating unsafe mode may make additional functionality available at the risk of catastrophic performance problems. Use at own risk.")
+      ])
+    return $ fmap (\x -> \c -> c { unsafeMode = x }) $ _checkbox_change unsafeInput
+
+  elClass "hr" "dashed" $ return ()
+
   viewEditorChange <- divClass "config-option primary-color ui-font" $ do
     el "h3" $ text "View Editor"
     (result,_) <- runEditor ctx ri $ viewEditor ctx
     return result
 
-  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange]
+  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange, fpsLimitChangeEv, unsafeModeEv]

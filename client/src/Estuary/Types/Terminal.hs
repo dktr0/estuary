@@ -32,7 +32,11 @@ data Command =
   SetBPM Double |
   InsertAudioResource Text Text Int | -- "url" [bankName] [n]
   DeleteAudioResource Text Int | -- [bankName] [n]
-  AppendAudioResource Text Text -- "url" [bankName]
+  AppendAudioResource Text Text | -- "url" [bankName]
+  ResetZones |
+  ResetViews |
+  ResetTempo |
+  Reset -- same effect as ResetZones + ResetTempo (doesn't reset views)
   deriving (Show,Eq)
 
 parseCommand :: Text -> Either ParseError Command
@@ -64,7 +68,11 @@ terminalCommand = symbol "!" >> choice [
   (reserved "setbpm" >> return SetBPM) <*> double,
   (reserved "insertaudioresource" >> return InsertAudioResource) <*> textLiteral <*> identifierText <*> int,
   (reserved "deleteaudioresource" >> return DeleteAudioResource) <*> identifierText <*> int,
-  (reserved "appendaudioresource" >> return AppendAudioResource) <*> textLiteral <*> identifierText
+  (reserved "appendaudioresource" >> return AppendAudioResource) <*> textLiteral <*> identifierText,
+  reserved "resetzones" >> return ResetZones,
+  reserved "resetviews" >> return ResetViews,
+  reserved "resettempo" >> return ResetTempo,
+  reserved "reset" >> return Reset
   ]
 
 identifierText :: Parser Text

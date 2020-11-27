@@ -27,6 +27,7 @@ import qualified Estuary.Languages.Hydra.Render as Hydra
 
 data RenderState = RenderState {
   animationOn :: Bool,
+  animationFpsLimit :: Maybe NominalDiffTime,
   wakeTimeAudio :: !Double,
   wakeTimeSystem :: !UTCTime,
   renderStart :: !UTCTime,
@@ -65,6 +66,7 @@ initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) Punctual.HD 1.0 glCtx
   return $ RenderState {
     animationOn = False,
+    animationFpsLimit = Just 0.030, 
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
     renderStart = t0System,

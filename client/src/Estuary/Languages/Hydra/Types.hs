@@ -7,14 +7,15 @@ data Parameters =
   deriving (Show)
 
 data Source =
-  Osc [Parameters] | -- osc() -- osc(0.3) -- osc(0.3,0.5) -- osc(0,10,0.5) -- osc([0.4,0.5],1.0,0.2)
-  Solid [Parameters] | -- solid() -- solid(0.5) -- solid(0.2,[0.1,0.2,0.3]) -- solid(1,0.5,1) -- solid(1,0.5,0.2,0.7)
-  Gradient [Parameters] | -- gradient() -- gradient(0.4)
-  Noise [Parameters] | -- noise() -- noise([5,10]) -- noise(0.5,0.7)
-  Shape [Parameters] | -- shape() -- shape(2.0)
-  Voronoi [Parameters] | -- voronoi() -- voronoi(10,0.5,0.1)
+  Osc [Parameters] |
+  Solid [Parameters] |
+  Gradient [Parameters] |
+  Noise [Parameters] |
+  Shape [Parameters] |
+  Voronoi [Parameters] |
   OutputAsSource Output |
-  --Src Source | -- not yet implemented screen/camera/video/images
+  Src Source |
+  InputAsSource Input |
   Brightness [Parameters] Source |
   Contrast [Parameters] Source |
   Colorama [Parameters] Source |
@@ -54,15 +55,27 @@ data Source =
   Mask Source [Parameters] Source
   deriving (Show)
 
+data Input =
+  S0 |
+  S1 |
+  S2 |
+  S3 |
+  OutputasInput Output
+  deriving (Show)
+
 data Output =
   O0 |
   O1 |
   O2 |
-  O3
+  O3 |
+  All
   deriving (Show)
 
 data Statement =
-  Out Source Output |
-  Render Output |
-  Speed Parameters -- i.e. speed = 1.5
+  InitScreen Input | --s0.InitScreen()
+  InitCam Input | --s0.InitCam()
+  --InitVideo Input String | --s0.initVideo(url)
+  Out Source Output | --solid().out()
+  Render (Maybe Output) | --render(o2)
+  Speed Parameters -- speed = 1.5
   deriving (Show)
