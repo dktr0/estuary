@@ -401,8 +401,8 @@ sine freq = \t vl rT eT aT ->
     in realToFrac (sin (radian posInRad)) :: Rational
 
 range :: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational 
-range min max freq t vl rTime eTime aTime = 
-    add + (sine freq t vl rTime eTime aTime) * mult
+range min max input t vl rTime eTime aTime = 
+    add + ((input t vl rTime eTime aTime) * mult)
     where mult = ((max t vl rTime eTime aTime) - (min t vl rTime eTime aTime))/2
           add = mult + (min t vl rTime eTime aTime)
 
