@@ -385,19 +385,36 @@ playNow_Rate startPos rate t vlen render eval anchor = Just rate
 -- defaultOpacity :: Signal Rational
 -- defaultOpacity = \_ _ _ _ -> 100
 
------- Manually changes the opacity of a video ------
+-----  Sin
 
--- Dynamic Functions
--- durVal is the amount of time the process takes place
+-- this radian func was taken from the internet, makes it easier for me to think sines
+radian:: Rational -> Float
+radian t = (realToFrac t :: Float) * 2 * pi /360
+
+sine:: Signal Rational -> Signal Rational
+sine freq = \t vl rT eT aT -> 
+    let reciprocal = 1 / (freq t vl rT eT aT)
+        elapsed = (realToFrac (diffUTCTime rT (time t)) :: Rational)  -- 34.5 30 = 4.5
+        pos = elapsed / reciprocal
+        pos' = (pos) - (realToFrac (floor pos) :: Rational)
+        posInRad = pos' * 360
+    in realToFrac (sin (radian posInRad)) :: Rational
+
+range :: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational 
+range min max input t vl rTime eTime aTime = 
+    add + ((input t vl rTime eTime aTime) * mult)
+    where mult = ((max t vl rTime eTime aTime) - (min t vl rTime eTime aTime))/2
+          add = mult + (min t vl rTime eTime aTime)
 
 
-func:: [Float] -> [Float] -> Float -> (Int, (Float,Float))
-func timeMarks vals renderT =
-    let before = filter (renderT >) timeMarks
-        after = filter (renderT <) timeMarks
-        vInds = ((length before)-1, length before)
-        vals' = (vals !! (fst vInds), vals !! (snd vInds))
-    in (fst vInds, vals')
+
+-- func:: [Float] -> [Float] -> Float -> (Int, (Float,Float))
+-- func timeMarks vals renderT =
+--     let before = filter (renderT >) timeMarks
+--         after = filter (renderT <) timeMarks
+--         vInds = ((length before)-1, length before)
+--         vals' = (vals !! (fst vInds), vals !! (snd vInds))
+--     in (fst vInds, vals')
 
 ------ Envelope in processss!!!!
 

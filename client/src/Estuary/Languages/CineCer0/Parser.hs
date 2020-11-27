@@ -90,6 +90,7 @@ sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
   ndt_sigRat <*> ndt <|>
+  sigRat_sigRat <*> sigRat <|>
   constantSignal <$> rationalOrInteger
 
 rat_sigRat :: H (Rational -> Signal Rational)
@@ -112,9 +113,20 @@ ndt_sigMayRat =
   fadeIn2 <$ reserved "fadeIn" <|>
   fadeOut2 <$ reserved "fadeOut" 
 
---  (reserved "fadeIn" >> return fadeIn) <|>
---  (reserved "fadeOut" >> return fadeOut)
+---- sine
 
+sigRat_sigRat:: H (Signal Rational -> Signal Rational)
+sigRat_sigRat =
+  sine <$ reserved "sin" <|>
+  sigRat_sigRat_sigRat <*> sigRat
+
+sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational)
+sigRat_sigRat_sigRat =
+  sigRat_sigRat_sigRat_sigRat <*> sigRat
+
+sigRat_sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational)
+sigRat_sigRat_sigRat_sigRat =
+  range <$ reserved "range"
 
 -- //////////////
 
@@ -185,13 +197,15 @@ sigRat_sigRat_sigRat_vs_vs =
   circleMask' <$ reserved "circleMask'" <|>
   setRGB <$ reserved "rgb" <|>
   setHSL <$ reserved "hsl" <|>
+  setHSL <$ reserved "hsv" <|>
   sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_sigRat_vs_vs =
   rectMask <$ reserved "rectMask" <|>
-  setRGBA <$ reserved "rgb'" <|>
-  setHSLA <$ reserved "hsl'"
+  setRGBA <$ reserved "rgba" <|>
+  setHSLA <$ reserved "hsla" <|>
+  setHSLA <$ reserved "hsva"
 
 -- ////
 
