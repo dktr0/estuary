@@ -14,6 +14,7 @@ applyTextReplacement (TidalTextNotation MiniTidal,x,t) = Right (TidalTextNotatio
 applyTextReplacement (Punctual,x,t) = Right (Punctual,x,t)
 applyTextReplacement (CineCer0,x,t) = Right (CineCer0,x,t)
 applyTextReplacement (TimeNot,x,t) = Right (TimeNot,x,t)
+applyTextReplacement (Hydra,x,t) = Right (Hydra,x,t)
 
 -- 2. for text replacement languages, we recursively apply this function to the output
 -- of their parsers. For example:

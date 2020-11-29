@@ -110,9 +110,9 @@ keyValueParser = do
   x <- choice [
     (reserved "n" >> reservedOp "=" >> return Tidal.n) <*> doublePatternParser,
     (reserved "shape" >> reservedOp "=" >> return Tidal.shape) <*> doublePatternParser,
-    (reserved "up" >> reservedOp "=" >> return Tidal.up) <*> doublePatternParser,
-    (reserved "note" >> reservedOp "=" >> return Tidal.note) <*> doublePatternParser,
-    (reserved "coarse" >> reservedOp "=" >> return Tidal.coarse) <*> intPatternParser,
+    (reserved "up" >> reservedOp "=" >> return Tidal.up) <*> notePatternParser,
+    (reserved "note" >> reservedOp "=" >> return Tidal.note) <*> notePatternParser,
+    (reserved "coarse" >> reservedOp "=" >> return Tidal.coarse) <*> doublePatternParser,
     (reserved "cut" >> reservedOp "=" >> return Tidal.cut) <*> intPatternParser,
     (reserved "speed" >> reservedOp "=" >> return Tidal.speed) <*> doublePatternParser,
     (reserved "pan" >> reservedOp "=" >> return Tidal.pan) <*> doublePatternParser,
@@ -140,6 +140,9 @@ intPatternParser = fromIntegral <$> integer
 
 doublePatternParser :: Parser (Pattern Double)
 doublePatternParser = pure <$> double
+
+notePatternParser :: Parser (Pattern Tidal.Note)
+notePatternParser = (pure . Tidal.Note) <$> double
 
 stringPatternParser :: Parser (Pattern String)
 stringPatternParser = pure <$> identifier

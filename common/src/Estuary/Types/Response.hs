@@ -28,10 +28,12 @@ instance ToJSON Response where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Response
 
-justEnsembleResponses :: [Response] -> [EnsembleResponse]
-justEnsembleResponses = mapMaybe f
+justEnsembleResponses :: [Response] -> Maybe [EnsembleResponse]
+justEnsembleResponses = g . mapMaybe f
   where f (EnsembleResponse x) = Just x
         f _ = Nothing
+        g [] = Nothing
+        g xs = Just xs
 
 justEnsembleList :: [Response] -> Maybe [Text]
 justEnsembleList = lastOrNothing . mapMaybe f

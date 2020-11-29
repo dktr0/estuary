@@ -45,11 +45,14 @@ More advanced customization is available through CSS classes within this documen
 
 /* styles the user-interface buttons */
 .ui-buttons {
-  color:var(--background-color);
-  background-color:var(--secondary-color);
+  color:var(--primary-color);
+  background-color: transparent;
   cursor:pointer;
 }
 
+.ui-buttons:hover {
+  background-color: var(--secondary-color);
+}
 /* styles the dropdown */
 .ui-dropdownMenus{
 	background-color: transparent;

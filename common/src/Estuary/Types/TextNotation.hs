@@ -12,7 +12,8 @@ data TextNotation =
   Punctual |
   CineCer0 |
   TimeNot |
-  Seis8s
+  Seis8s |
+  Hydra
   -- Ver |
   -- Oir
   deriving (Read,Eq,Ord,Show,Generic)

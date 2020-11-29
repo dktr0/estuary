@@ -1,67 +1,81 @@
 module Estuary.Languages.Hydra.Types where
 
+data Parameters =
+  Parameters [Double] | -- [0.2,0.4] -- [0.3,0.4,1.0]
+  Fast [Double] Parameters | -- [].fast(1.5)
+  Smooth [Double] Parameters -- [].smooth(1.5) -- [].fast().smooth()
+  deriving (Show)
+
 data Source =
-  ConstantInt Int |
-  ConstantDouble Double |
-  List [Source] |
-  --Fast List (Maybe Source) |
-  --Speed Source | -- find a new place, it doesn't go here speed = 1.5
-  --Bpm [Source] | -- audio
-  Osc (Maybe Source) (Maybe Source) (Maybe Source) |
-  Solid (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  Gradient (Maybe Source) |
-  Noise (Maybe Source) (Maybe Source) |
-  Shape (Maybe Source) (Maybe Source) (Maybe Source) |
-  Voronoi (Maybe Source) (Maybe Source) (Maybe Source) |
-  --Scr Source | -- screen/camera as input
-  Brightness Source (Maybe Source) |
-  Contrast Source (Maybe Source) |
-  Color Source (Maybe Source) (Maybe Source) (Maybe Source) |
-  Colorama Source (Maybe Source) |
-  Invert Source (Maybe Source) |
-  Luma Source (Maybe Source) (Maybe Source) |
-  Posterize Source (Maybe Source) (Maybe Source) |
-  Saturate Source (Maybe Source) |
-  Shift Source (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  Thresh Source (Maybe Source) (Maybe Source) |
-  Kaleid Source (Maybe Source) |
-  Pixelate Source (Maybe Source) (Maybe Source) |
-  Repeat Source (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  RepeatX Source (Maybe Source) (Maybe Source) |
-  RepeatY Source (Maybe Source) (Maybe Source) |
-  Rotate Source (Maybe Source) (Maybe Source) |
-  Scale Source (Maybe Source) (Maybe Source) (Maybe Source) |
-  Scroll Source (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  ScrollX Source (Maybe Source) (Maybe Source) |
-  ScrollY Source (Maybe Source) (Maybe Source) |
-  Add Source Source (Maybe Source) |
-  Mult Source Source (Maybe Source) |
-  Blend Source Source (Maybe Source) |
+  Osc [Parameters] |
+  Solid [Parameters] |
+  Gradient [Parameters] |
+  Noise [Parameters] |
+  Shape [Parameters] |
+  Voronoi [Parameters] |
+  OutputAsSource Output |
+  Src Source |
+  InputAsSource Input |
+  Brightness [Parameters] Source |
+  Contrast [Parameters] Source |
+  Colorama [Parameters] Source |
+  Color [Parameters] Source |
+  Invert [Parameters] Source |
+  Luma [Parameters] Source |
+  Posterize [Parameters] Source |
+  Saturate [Parameters] Source |
+  Shift [Parameters] Source |
+  Thresh [Parameters] Source |
+  Kaleid [Parameters] Source |
+  Pixelate [Parameters] Source |
+  Repeat [Parameters] Source |
+  RepeatX [Parameters] Source |
+  RepeatY [Parameters] Source |
+  Rotate [Parameters] Source |
+  Scale [Parameters] Source |
+  Scroll [Parameters] Source |
+  ScrollX [Parameters] Source |
+  ScrollY [Parameters] Source |
+  Modulate Source [Parameters] Source |
+  ModulateHue Source [Parameters] Source |
+  ModulateKaleid Source [Parameters] Source |
+  ModulatePixelate Source [Parameters] Source |
+  ModulateRepeat Source [Parameters] Source |
+  ModulateRepeatX Source [Parameters] Source |
+  ModulateRepeatY Source [Parameters] Source |
+  ModulateRotate Source [Parameters] Source |
+  ModulateScale Source [Parameters] Source |
+  ModulateScrollX Source [Parameters] Source |
+  ModulateScrollY Source [Parameters] Source |
+  Add Source [Parameters] Source |
+  Mult Source [Parameters] Source |
+  Blend Source [Parameters] Source |
   Diff Source Source |
   Layer Source Source |
-  Mask Source Source (Maybe Source) (Maybe Source) |
-  Modulate Source (Maybe Source) |
-  ModulateHue Source (Maybe Source) |
-  ModulateKaleid Source (Maybe Source) |
-  ModulatePixelate Source (Maybe Source) (Maybe Source) |
-  ModulateRepeat Source (Maybe Source) (Maybe Source) (Maybe Source) (Maybe Source) |
-  ModulateRepeatX Source (Maybe Source) (Maybe Source) |
-  ModulateRepeatY Source (Maybe Source) (Maybe Source) |
-  ModulateRotate Source (Maybe Source) (Maybe Source) |
-  ModulateScale Source (Maybe Source) (Maybe Source) |
-  ModulateScrollX Source (Maybe Source) (Maybe Source) |
-  ModulateScrollY Source (Maybe Source) (Maybe Source)
+  Mask Source [Parameters] Source
+  deriving (Show)
+
+data Input =
+  S0 |
+  S1 |
+  S2 |
+  S3 |
+  OutputasInput Output
   deriving (Show)
 
 data Output =
   O0 |
   O1 |
   O2 |
-  O3
+  O3 |
+  All
   deriving (Show)
 
-
 data Statement =
-  Out Source Output |
-  Render Output
+  InitScreen Input | --s0.InitScreen()
+  InitCam Input | --s0.InitCam()
+  --InitVideo Input String | --s0.initVideo(url)
+  Out Source Output | --solid().out()
+  Render (Maybe Output) | --render(o2)
+  Speed Parameters -- speed = 1.5
   deriving (Show)

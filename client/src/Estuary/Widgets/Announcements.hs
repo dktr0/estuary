@@ -21,6 +21,15 @@ import Estuary.Widgets.Editor
 
 compiledAnnouncements :: Map Day [TranslatableText]
 compiledAnnouncements = fromList [
+  (read "2020-12-03",[ fromList [
+    (English,"Estuary turns five! The 5th anniversary of the first commit to the Estuary code base will be celebrated with a day of performances, workshops, and talks, hosted by the Networked Imagination Laboratory. Full details at nil.mcmaster.ca soon!")
+    ]]),
+  (read "2020-11-19",[ fromList [
+    (English,"Estuary now includes framerate-limiting by default on generative visuals, which reduces CPU usage measurably in most cases. The limit can be changed or removed in Settings (click the ? button in the top right). MiniTidal now has support for juxcut, juxBy, jux4, jux', juxcut', id and the composition operator (.).")
+    ]]),
+  (read "2020-09-27",[ fromList [
+    (English,"Estuary now uses version 1.6.2 of Tidal (and MiniTidal now supports scale, toScale, arpeggiate, arp, weave, weaveWith, ghost, inside, outside, and inv).")
+    ]]),
   (read "2020-06-19",[ fromList [
     (English,"Configuration settings like turning Canvas on/off, selecting audio dynamics presets, etc are now accessed by clicking the ? button on the top right, then clicking on the settings tab. The settings can be hidden again by clicking on the ? again.")
     ]]),

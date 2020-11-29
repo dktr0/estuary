@@ -11,7 +11,7 @@ data Chat = Chat {
   chatTime :: UTCTime,
   chatSender :: Text,
   chatText :: Text
-  } deriving (Eq,Generic)
+  } deriving (Eq,Generic,Show)
 
 instance Ord Chat where
   compare x y = compare (chatTime x) (chatTime y)

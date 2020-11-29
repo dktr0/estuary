@@ -170,7 +170,7 @@ silencio = reserved "silencio" >> return "~"
 -- //////
 
 adjective' :: Parser Tidal.ControlPattern
-adjective' = ((reserved "vívidas" <|> reserved "vívidos" <|> reserved "vívida" <|> reserved "vívido" <|> reserved "presurosas" <|> reserved "presurosos" <|> reserved "presurosa" <|> reserved "presuroso" <|> reserved "ansiosas" <|> reserved "ansiosos" <|> reserved "ansiosa" <|> reserved "ansioso") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
+adjective' = ((reserved "vívidas" <|> reserved "vívidos" <|> reserved "vívida" <|> reserved "vívido" <|> reserved "presurosas" <|> reserved "presurosos" <|> reserved "presurosa" <|> reserved "presuroso" <|> reserved "ansiosas" <|> reserved "ansiosos" <|> reserved "ansiosa" <|> reserved "ansioso") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand . pure)
 
 adjective :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 adjective = do
@@ -181,7 +181,7 @@ adjective = do
 
 noun :: Parser Tidal.ControlPattern
 noun = choice [
-  ((reserved "sonido" <|> reserved "sonidos") >> return Tidal.up) <*> option 0 parentsdoublePattern,
+  ((reserved "sonido" <|> reserved "sonidos") >> return Tidal.up) <*> (fmap Tidal.Note <$> option 0 parentsdoublePattern),
   ((reserved "forma" <|> reserved "formas") >> return Tidal.gain) <*> option 1 parentsdoublePattern,
   ((reserved "textura" <|> reserved "texturas") >> return Tidal.pan) <*> option 0.5 parentsdoublePattern,
   (reserved "EGGPLANT" >> return Tidal.delay) <*> option 0 parentsdoublePattern,

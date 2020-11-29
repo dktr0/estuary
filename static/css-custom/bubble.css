@@ -53,6 +53,9 @@ More advanced customization is available through CSS classes within this documen
   cursor:pointer;
 }
 
+.ui-buttons:hover {
+  background-color: var(--secondary-color);
+}
 /* styles the dropdown */
 .ui-dropdownMenus{
 	background-color: transparent;

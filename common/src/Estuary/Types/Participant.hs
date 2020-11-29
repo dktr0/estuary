@@ -23,7 +23,7 @@ data Participant = Participant {
   latency :: NominalDiffTime,
   browser :: Text,
   ipAddress :: Text
-  } deriving (Eq,Generic)
+  } deriving (Eq,Generic,Show)
 
 instance ToJSON Participant where
   toEncoding = genericToEncoding defaultOptions

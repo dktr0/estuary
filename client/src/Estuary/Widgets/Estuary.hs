@@ -5,7 +5,7 @@ module Estuary.Widgets.Estuary where
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault)
+import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault,append)
 import Reflex.Dom.Contrib.KeyEvent
 import Reflex.Dom.Old
 import Data.Time
@@ -55,6 +55,9 @@ import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Sidebar
+import Estuary.Types.ResourceMap
+import Estuary.Types.AudioResource
+import Estuary.Types.AudioMeta
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -77,12 +80,17 @@ estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MV
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  glCtx <- canvasWidget ctx -- canvas for Punctual
+  cvsElement <- canvasWidget (-2) ctx -- canvas for Punctual
+  glCtx <- liftIO $ newGLContext cvsElement
+  hCanvas <- canvasWidget (-10) ctx -- canvas for Hydra
+
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
   performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
+  let responsesFromEnsembleRequests = fmap ((:[]) . EnsembleResponse) $ fmapMaybe ensembleRequestsToResponses commandEnsembleRequests
+  let deltasDownAlt = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints,responsesFromEnsembleRequests]
   let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
 
   let ensembleCDyn = fmap ensembleC ctx
@@ -92,8 +100,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
-    (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDown
-    (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget
+    (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDownAlt
+    (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
@@ -107,18 +115,17 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
   let commandRequests = fmapMaybe commandToRequest command
 
-  -- map from EnsembleRequests (eg. edits) and Commands (ie. from the terminal) to
-
   -- changes to EnsembleC within Context, and to Context
   let commandChange = fmap commandToStateChange command
   let ensembleRequestChange = fmap requestToStateChange ensembleRequests
-  let ensembleResponses = fmap justEnsembleResponses deltasDown
+  let ensembleResponses = fmapMaybe justEnsembleResponses deltasDown
   let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  -- samplesLoadedEv <- loadSampleMap
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, {- samplesLoadedEv, -} wsCtxChange, sidebarChange]
+  audioMapEv <- loadAudioMap
+  terminalContextChangeIO <- performEvent $ fmap liftIO $ fmapMaybe commandToContextChangeIO command
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, audioMapEv, wsCtxChange, sidebarChange,terminalContextChangeIO]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -135,7 +142,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let requests'' = fmap (:[]) $ commandRequests
   let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
 
-  liftIO $ forkRenderThreads irc ctxM glCtx riM
+  liftIO $ forkRenderThreads irc ctxM cvsElement glCtx hCanvas riM
   return ()
 
 hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
@@ -162,17 +169,14 @@ cinecer0Widget ctxM ctx = do
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
-canvasWidget :: MonadWidget t m => Dynamic t Context -> m GLContext
-canvasWidget ctx = do
+canvasWidget :: MonadWidget t m => Int -> Dynamic t Context -> m HTMLCanvasElement
+canvasWidget zIndex ctx = do
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
-  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -2;" <> x <> ";")]
+  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: " <> showt zIndex <> ";" <> x <> ";")]
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
   let attrs = (<>) <$> baseAttrs <*> resMap
-  canvas <- liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
-  glc <- liftIO $ newGLContext canvas
-  return glc
-
+  liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
 pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
@@ -183,18 +187,18 @@ pollRenderInfo riM = do
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 
-{-
--- load the sample map and issue an appropriate ContextChange event when finished
--- (if there is a better way to trigger an event from an async callback then this should be updated to reflect that)
-loadSampleMap :: MonadWidget t m => m (Event t ContextChange)
-loadSampleMap = do
+
+loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
+loadAudioMap = do
   postBuild <- getPostBuild
   performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
     loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
       case maybeMap of
-        Nothing -> return () -- Couldn't load the map
-        Just map -> triggerEv $ setSampleMap map
--}
+        Nothing -> putStrLn "loadAudioMap couldn't load sample map"
+        Just map -> do
+          putStrLn "loadAudioMap (estuary) succeeded"
+          map' <- sampleMapToAudioMap map
+          triggerEv $ setAudioMap map'
 
 
 -- whenever the Dynamic representation of the Context changes, translate that
@@ -214,10 +218,7 @@ performContext irc cMvar cDyn = do
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
 updateContext :: MVar Context -> Context -> IO ()
-updateContext mv x = do
-  -- T.putStrLn "context updated"
-  swapMVar mv x
-  return ()
+updateContext mv x = swapMVar mv x >> return ()
 
 updateDynamicsModes :: MonadWidget t m => ImmutableRenderContext -> Dynamic t Context -> m ()
 updateDynamicsModes irc ctx = do
@@ -247,3 +248,14 @@ commandToRequest :: Terminal.Command -> Maybe Request
 commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
 commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
 commandToRequest _ = Nothing
+
+commandToContextChangeIO :: Terminal.Command -> Maybe (IO ContextChange)
+commandToContextChangeIO (Terminal.InsertAudioResource url bankName n) = Just $ do
+  res <- audioResourceFromMeta $ AudioMeta url 0
+  return $ \x -> x { audioMap = insert (bankName,n) res (audioMap x)}
+commandToContextChangeIO (Terminal.DeleteAudioResource bankName n) = Just $ do
+  return $ \x -> x { audioMap = delete (bankName,n) (audioMap x)}
+commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
+  res <- audioResourceFromMeta $ AudioMeta url 0
+  return $ \x -> x { audioMap = append bankName res (audioMap x)}
+commandToContextChangeIO _ = Nothing

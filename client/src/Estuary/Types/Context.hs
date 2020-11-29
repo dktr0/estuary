@@ -16,13 +16,14 @@ import Estuary.Types.TranslatableText
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
-import Estuary.Types.Resources
+-- import Estuary.Types.Resources
 import Estuary.Types.Samples
 import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.EnsembleC
+import Estuary.Types.ResourceMap
 import Estuary.Render.DynamicsMode
 import Estuary.Render.LocalResources
 import Estuary.Protocol.Peer
@@ -48,11 +49,13 @@ data Context = Context {
   superDirtOn :: Bool,
   canvasOn :: Bool,
   theme :: Text,
+  unsafeMode :: Bool,
   resolution :: Punctual.Resolution,
   brightness :: Double,
+  fpsLimit :: Maybe NominalDiffTime,
   dynamicsMode :: DynamicsMode,
   language :: Language,
---  samples :: SampleMap,
+  audioMap :: AudioMap,
 --  localResourceServers :: LocalResourceServers,
 --  privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
 --  resources :: Resources, -- ^ The effective resource set.
@@ -71,13 +74,15 @@ initialContext nowUtc = Context {
   dynamicsMode = DefaultDynamics,
   language = English,
   theme = "../css-custom/classic.css",
+  unsafeMode = False,
   resolution = Punctual.HD,
   brightness = 1.0,
+  fpsLimit = Just 0.030,
   ensembleC = emptyEnsembleC nowUtc,
 --  localResourceServers = emptyLocalResourceServers,
 --  privateResources = emptyResources,
 --  resources = emptyResources,
---  samples = emptySampleMap,
+  audioMap = emptyResourceMap,
   webDirtOn = True,
   superDirtOn = False,
   canvasOn = True,
@@ -102,8 +107,8 @@ setClientCount x c = c { clientCount = x }
 modifyEnsembleC :: (EnsembleC -> EnsembleC) -> ContextChange
 modifyEnsembleC f c = c { ensembleC = f (ensembleC c) }
 
--- setSampleMap :: SampleMap -> ContextChange
--- setSampleMap x c = c { samples = x}
+setAudioMap :: AudioMap -> ContextChange
+setAudioMap x c = c { audioMap = x}
 
 -- TODO the resource sets should be lenses so they can be more properly passed around
 {-

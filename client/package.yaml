@@ -63,6 +63,8 @@ dependencies:
   - deepseq
   - microspec
   - tempi
+  - split
+  - witherable
 
 library:
   source-dirs:

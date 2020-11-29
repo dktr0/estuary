@@ -40,7 +40,6 @@ punctualAudioHelpFile = divClass "languageHelpContainer" $ divClass "languageHel
 -- about
 about :: MonadWidget t m => m ()
 about = do
-  divClass "about primary-color code-font" $ text "PunctualAudio reference"
   divClass "about primary-color code-font" $ text "Punctual is a language for live coding audio and visuals. It allows you to build and change networks of signal processors (oscillators, filters, etc) on the fly. Punctual was created by David Ogborn, building on top of the MusicW synthesis library (by David Ogborn, Spencer Park, Jamie Beverley, and others). Conceptually, Punctual extends the work of Julian Rohrhuber and others on SuperCollider's JITlib notations."
 
 exampleText :: Text -> Text

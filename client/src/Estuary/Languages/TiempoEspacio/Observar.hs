@@ -187,7 +187,7 @@ silencio = reserved "silencio" >> return "~"
 -- ////////////////
 
 adjective' :: Parser Tidal.ControlPattern
-adjective' = ((reserved "blanco" <|> reserved "blancos" <|> reserved "blanca" <|> reserved "blancas" <|> reserved "opaco" <|> reserved "opacos" <|> reserved "opaca" <|> reserved "opacas" <|> reserved "gris" <|> reserved "grises" <|> reserved "brillante" <|> reserved "brillantes") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand)
+adjective' = ((reserved "blanco" <|> reserved "blancos" <|> reserved "blanca" <|> reserved "blancas" <|> reserved "opaco" <|> reserved "opacos" <|> reserved "opaca" <|> reserved "opacas" <|> reserved "gris" <|> reserved "grises" <|> reserved "brillante" <|> reserved "brillantes") >> return Tidal.n) <*> option (Tidal.irand 0) (int' >>= return . Tidal.irand . pure)
 
 adjective :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)
 adjective = do
@@ -198,7 +198,7 @@ adjective = do
 
 noun :: Parser Tidal.ControlPattern
 noun = choice [
-  (reserved "recuerdos" >> return Tidal.up) <*> option 0 parentsdoublePattern,
+  (reserved "recuerdos" >> return Tidal.up) <*> (fmap Tidal.Note <$> option 0 parentsdoublePattern),
   ((reserved "sueño" <|> reserved "sueños") >> return Tidal.gain) <*> option 1 parentsdoublePattern,
   ((reserved "flor" <|> reserved "flores") >> return Tidal.pan) <*> option 0.5 parentsdoublePattern,
   ((reserved "luz" <|> reserved "luces") >> return Tidal.delay) <*> option 0 parentsdoublePattern,
@@ -234,7 +234,7 @@ animales = do
 -- ////////////////
 
 fakeAdjective :: Parser (Pattern Double)
-fakeAdjective = (reserved "negro" <|> reserved "negros" <|> reserved "negra" <|> reserved "negras" <|> reserved "obscuro" <|> reserved "obscuros" <|> reserved "obscura" <|> reserved "obscuras") >> option (Tidal.irand 0) (intOrNegativeInt >>= return . Tidal.irand)
+fakeAdjective = (reserved "negro" <|> reserved "negros" <|> reserved "negra" <|> reserved "negras" <|> reserved "obscuro" <|> reserved "obscuros" <|> reserved "obscura" <|> reserved "obscuras") >> option (Tidal.irand 0) (intOrNegativeInt >>= return . Tidal.irand . pure)
 
 
 -- ////////////////

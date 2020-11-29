@@ -18,9 +18,8 @@ body {
  	height: 100%;
 	margin: 0;
 	background: var(--background-color);
-	overflow: auto;
+	overflow: hidden;
 }
-
 
 /* styles the body, input, foreground text color */
 body, .primary-color {
@@ -38,14 +37,17 @@ body::-webkit-scrollbar-track {
 }
 
 body::-webkit-scrollbar-thumb {
-  background: var(--primary-color);;
+  background: var(--primary-color);
   border-radius: 10px;
 }
 
-.body::-webkit-scrollbar-corner{
+body::-webkit-scrollbar-corner{
 	background-color: transparent;
 }
 
+a {
+  color: var(--primary-color);
+}
 
 /*styles the canvas and svg display */
 .canvas-or-svg-display {
@@ -61,7 +63,7 @@ body::-webkit-scrollbar-thumb {
 /* for the Paragraph element in the view system, which is primarily used in tutorials for explanatory text */
 .paragraph {
 	padding: 0.15em;
-   	overflow-y: auto;
+   	overflow-y: none;
    	text-align: justify;
 }
 
@@ -109,14 +111,11 @@ body::-webkit-scrollbar-thumb {
 	display: flex;
 	height: 100%;
 	width: 100%;
-	padding-right: 1em;
 	box-sizing: border-box;
 
 }
 
 .languageHelp {
-  overflow:scroll;
-  padding-right: 1.8em;
   height:100%;
 }
 
@@ -202,6 +201,7 @@ body::-webkit-scrollbar-thumb {
 	padding-right: 15px;
   justify-content: space-between;
   height: 18px;
+
 }
 
 .btn {
@@ -356,13 +356,6 @@ body::-webkit-scrollbar-thumb {
   margin-bottom: 0.5em;
 }
 
-/*contains the about text (source)*/
-.aboutEstuaryParagraph {
-	text-justify: auto;
-	text-overflow: auto;
-	padding: 0.5em;
-}
-
 .webSocketButtons {/*contains the "send" button and "terminal/chat" label (source)*/
 	display: inline;
 	margin-right: 5px;
@@ -376,6 +369,7 @@ body::-webkit-scrollbar-thumb {
 .chatMessageContainer {
 	overflow: auto;
 	height: 7em;
+	margin-left: 3px;
 }
 
 .chatMessage {
@@ -559,7 +553,7 @@ display: block;
 /*contains the tempo and coding textareas  */
 
 .textInputToEndOfLine  {
-	height:100%;
+	height: 100%;
 	width: 100%;
 	box-sizing:border-box;
     background-color: transparent;
@@ -567,6 +561,11 @@ display: block;
   	resize: none;
   	border:none;
   }
+
+.evalFlash {
+  color: var(--background-color);
+  background-color: var(--primary-color);
+}
 
 /*ex. the div that 'Sound' is written in, in ICLCFixed)*/
 .singlePatternDiv-label{
@@ -868,9 +867,13 @@ table, tr, td {border: none;}
 
 .terminal{
 	flex: 1 1 auto;
-	padding-left: 0.7em;
+/* 	padding-left: 0.95em;
+	padding-right: 0.5em; */
+	padding-left: 15px;
+	padding-right: 6px;
 	overflow:hidden;
   border-top: 1px solid;
+  box-sizing:border-box;
 }
 
 .terminalHeader {
@@ -881,7 +884,7 @@ table, tr, td {border: none;}
 }
 
 .terminalInput {
-	flex-grow: 1;
+	flex-grow: 0.97;
 	border:none;
 }
 
@@ -898,7 +901,9 @@ table, tr, td {border: none;}
 
 .chat {
   display: inline-block;
-  width: 50%;
+  width: 49.5%;
+      border: 1px solid var(--secondary-color);
+/* background-color: green; */
 }
 
 .joinButton {
@@ -944,24 +949,18 @@ cursor: pointer;
 
 }
 
-.ensembleStatus {
-  display: inline-block;
-  width: 50%;
-  vertical-align: top;
-  height: 8.2em;
-}
-
 /*
 --------------------------------------------------------------------
 							help files
 --------------------------------------------------------------------
 */
-.helpWrapper {display:flex;}
+.helpWrapper {
+  display: flex;
+  margin-bottom: 0.5em;
+}
 
 .about {
-	border:none;
-	text-align: center;
-	margin-bottom: 1%;
+  margin-bottom: 4%;
 }
 
 .exampleText, .referenceText {
@@ -1099,10 +1098,20 @@ display: inline-flex;
 
 /* ///////////status Widget/////////// */
 
+.ensembleStatus {
+  display: inline-block;
+  width: 49.5%;
+  border: 1px solid var(--secondary-color);
+  vertical-align: top;
+  height: 8.5em;
+}
+
+
 .ensembleStatusWidget {
 	height: 100%;
-    border: 1px solid var(--primary-color);
-    border-radius: 5px;
+	width: 100%;
+/*     border: 1px solid var(--primary-color); */
+/*     border-radius: 5px; */
     margin-top: 0.35%;
    	overflow: hidden;
    	margin-right: 0.7em;
@@ -1111,18 +1120,8 @@ display: inline-flex;
 .statusWidgetScrollableContainer {
 overflow:hidden;
 overflow-y: auto;
-height: 6.5em;
-}
-
-.statusWidgetInfoContainer {
-	margin-left:1%;
-	margin-right: 1%;
-}
-
-.tableContainer {
-	display: flex;
-	flex-direction: row;
-	flex-wrap: nowrap;
+height: 8em;
+width: 100%;
 }
 
 .statusWidgetScrollableContainer::-webkit-scrollbar  {
@@ -1144,68 +1143,121 @@ height: 6.5em;
 	background-color: transparent;
 }
 
-.ensemble-name-container {
-	margin-bottom: 1%;
-	border-bottom: 1px solid var(--primary-color);
-	border-radius: 5px;
+
+.infoContainer {
+	width: 100%;
 }
 
-.ensemble-name {
-    margin-left: 1%;
-}
-
-.tableContainer table {
-
-
-  table-layout:auto;
-  flex-grow: 1;
-  order:0;
+.tableContainer table  {
   border-collapse: collapse;
+  width: 100%;
+  cursor: pointer;
+  margin-left: 3px;
 }
 
-.tableContainerButtonDiv {
-/* 	order: 1; */
-    min-width: 10px;
-    cursor:pointer;
-
+.rowContainer {
+	display: flex;
+	flex-wrap: nowrap;
+	width: 48vw;
 }
 
-.infoClass {
-		height:100%;
+.rowSubContainer {
+ display: flex;
+ flex-wrap: nowrap;
 }
 
-.statusWidgetFPSAndLatency {
-    flex-grow: 1;
-    padding-top: 1.3%;
-    box-sizing:content-box;
+.rowHeaderContainer {
+	width: 48vw;
+	display: flex;
+	flex-wrap: nowrap;
+	font-weight:bold;
+	margin-bottom: 2px;
+	}
 
-}
 
 .statusWidgetNameAndLocation {
-		margin-bottom: 1%;
-		width: 10%;
+	margin-bottom: 2px;
+	width: 21vw;
+}
+
+
+.statusWidgetNameAndLocationText{
+    width: 21vw;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+	text-align:left;
+	}
+
+.statusWidgetName {
+    width: 15vw;
+	text-align:left;
+    overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+
+.statusWidgetActivity   {
+	width: 5vw;
+	text-align:center;
 
 }
+
+.statusWidgetStatusInput {
+    width: 21vw;
+	text-align: center;
+}
+
 
 .statusWidgetStatusInput input {
 	box-sizing: border-box;
 	color: var(--primary-color);
 	background-color: transparent;
 	border: none;
-	width:99%;
+	width: 97%;
     border-radius: 5px;
-    padding-left: 2%;
+    margin-left: 10px
+}
+
+.statusWidgetLatency, .statusWidgetLoad {
+   width: 8vw;
+   text-align: center;
+    overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+
+.statusWidgetFPS {
+   width: 8vw;
+   text-align: center;
+    overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+.statusWidgetIP {
+   width: 15vw;
+   text-align: center;
+    overflow:hidden;
+	text-overflow:ellipsis;
+	white-space: nowrap;
+}
+
+.statusWidgetLabel {
 
 }
 
-.statusWidgetActivity {
-	width:1%;
+.otherInfo {
+ width: 100%;
+ text-align:center;
 }
 
 .statusWidgetAnonymousPart {
-   order: 3;
    width: 100%;
-   margin-top:0.5%;
+   margin-left: 3px;
+
 }
 
 
@@ -1281,11 +1333,12 @@ height: 6.5em;
   margin-left: -60px;
 }
 
+/*tooltip scrollable table  */
 .tooltip-scrollable-table .tooltiptext-scrollable-table::after {
   content: "";
   position: absolute;
   bottom: 100%;
-  left: 0.5vh;
+  left: 1.5vh;
   border-width: 5px;
   border-style: solid;
   border-color: transparent transparent var(--secondary-color) transparent;
@@ -1296,6 +1349,42 @@ height: 6.5em;
   visibility: visible;
 }
 
+/* tooltip satus labels */
+ .tooltiptextStatusLabels {
+  visibility: hidden;
+  white-space:normal;
+  font-weight: lighter;
+  display:flex;
+  min-width:15vw;
+  max-width: 15vw;
+  width:max-content;
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: relative;
+  z-index: 1;
+  top: 150%;
+  left: 50%;
+  margin-left: -60px;
+}
+
+.tooltiptextStatusLabels::after {
+  position: absolute;
+  bottom: 100%;
+  left: 12vh;
+/*   margin-left: -5px; */
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent var(--secondary-color) transparent;
+}
+
+.tooltip:hover .tooltiptextStatusLabels {
+  visibility: visible;
+}
+
+/*Syntax error */
 
 .syntaxIssue {
   color: var(--transient-color);
@@ -1421,4 +1510,104 @@ hr.dashed {
   padding: 2px;
   font-family: estuaryFont;
   cursor: pointer;
+}
+
+.opaque {
+  background: var(--background-color);
+}
+
+.reference {
+  margin: 10px;
+}
+
+.reference-title {
+  font-size: 16pt;
+  font-family: estuaryFont;
+}
+
+.reference-description {
+  padding-top: 8px;
+  font-size: 0.8em;
+}
+
+.reference-link {
+  cursor: pointer;
+}
+
+.reference-link:hover {
+  text-decoration: underline;
+}
+
+/* roulette css */
+
+.rouletteButtons {
+	width: max-content;
+	border-radius: 5px;
+  margin-right: 1%;
+  padding-left: 0.5%;
+  padding-right: 0.5%;
+}
+
+.lineUpButton {
+ 	width: max-content;
+  padding-left: 0.5%;
+  padding-right: 0.5%;
+}
+
+.rouletteWidgetContainer {
+	overflow: auto;
+}
+
+.rouletteWidgetContainer::-webkit-scrollbar {
+    width: 0px;
+    background: transparent; /* make scrollbar transparent */
+}
+
+.rouletteContainer{
+	display: flex;
+	overflow-y: auto;
+	margin-top: 0.25%;
+	margin-bottom: 0.5%;
+
+}
+
+.rouletteContainer::-webkit-scrollbar  {
+    width: 0.5%;
+    height: 0px;
+}
+
+.rouletteContainer::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px var(--primary-color);
+  border-radius: 10px;
+}
+
+.rouletteContainer::-webkit-scrollbar-thumb {
+  background: var(--primary-color);;
+  border-radius: 10px;
+}
+
+.rouletteContainer::-webkit-scrollbar-corner{
+	background-color: transparent;
+}
+
+.ieRef{
+  overflow-wrap: break-word;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.9em;
+  border: none;
+  padding: 0.125em;
+  width: 100%;
+  border-radius: 5px;
+  box-shadow: 0px 0.25px 4px 0.025px grey;
+}
+
+.infoRef{
+  margin-bottom: 1em;
+}
+
+.attrsRouletteButtonHead {
+/* 	border: 1px solid var(--primary-color); */
+padding-left: 0.5%;
+padding-right: 0.5%;
+box-shadow: inset 0 0 3px var(--primary-color);
 }

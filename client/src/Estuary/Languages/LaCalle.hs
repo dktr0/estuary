@@ -100,7 +100,7 @@ verb'' :: Parser Tidal.ControlPattern
 verb'' = choice [
          (reserved "corto" >> return Tidal.end) <*> option 1 doublePattern,
          (reserved "salir" >> return Tidal.begin) <*> option 0 doublePattern,
-         (reserved "acompáñame" >> return Tidal.up) <*> option 0 doublePattern,
+         (reserved "acompáñame" >> return Tidal.up) <*> (fmap Tidal.Note <$> option 0 doublePattern),
          (reserved "alucina" >> return Tidal.loop) <*> option 0 doublePattern,
          (reserved "gané" >> return Tidal.pan) <*> option 0 (return Tidal.rand),
          (reserved "quito" >> return Tidal.pan) <*> option 0 (return $ Tidal.rand*10),
@@ -110,7 +110,7 @@ verb'' = choice [
          (reserved "está" >> return Tidal.gain) <*> option 0.75 doublePattern,
          (reserved "estoy" >> return Tidal.resonance) <*> option 0.5 doublePattern,
          (reserved "sírvame" >> return Tidal.crush) <*> option 0 doublePattern,
-         (reserved "fué" >> return Tidal.coarse) <*> option 0 intPattern
+         (reserved "fué" >> return Tidal.coarse) <*> option 0 doublePattern
                  ]
 
 verb''' :: Parser (Tidal.ControlPattern -> Tidal.ControlPattern)

@@ -3,7 +3,7 @@
 module Estuary.Languages.CineCer0.Signal where
 
 import Data.Time
-import Estuary.Types.Tempo
+import Data.Tempo
 
 
  --              Tempo    Video Length      render T   eval T    anchor t
@@ -62,7 +62,7 @@ quantAnchor cycleMult offset t eval =
       off = realToFrac $ (offset*(1/(freq t))) / 1
     in addUTCTime (anchor + off) $ time t -- as UTCTime
 
-    -- from the outcome I need to substract the count added to the 
+    -- from the outcome I need to substract the count added to the
 
 cycsToSecs:: Tempo -> Rational -> NominalDiffTime
 cycsToSecs t x = realToFrac (x * (1/ freq t))
@@ -385,13 +385,57 @@ playNow_Rate startPos rate t vlen render eval anchor = Just rate
 -- defaultOpacity :: Signal Rational
 -- defaultOpacity = \_ _ _ _ -> 100
 
------- Manually changes the opacity of a video ------
+-----  Sin
 
-opacityChanger:: Rational -> Signal Rational
-opacityChanger arg t len rend eval anchor = arg
+-- this radian func was taken from the internet, makes it easier for me to think sines
+radian:: Rational -> Float
+radian t = (realToFrac t :: Float) * 2 * pi /360
 
--- Dynamic Functions
--- durVal is the amount of time the process takes place
+sine:: Signal Rational -> Signal Rational
+sine freq = \t vl rT eT aT -> 
+    let reciprocal = 1 / (freq t vl rT eT aT)
+        elapsed = (realToFrac (diffUTCTime rT (time t)) :: Rational)  -- 34.5 30 = 4.5
+        pos = elapsed / reciprocal
+        pos' = (pos) - (realToFrac (floor pos) :: Rational)
+        posInRad = pos' * 360
+    in realToFrac (sin (radian posInRad)) :: Rational
+
+range :: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational 
+range min max input t vl rTime eTime aTime = 
+    add + ((input t vl rTime eTime aTime) * mult)
+    where mult = ((max t vl rTime eTime aTime) - (min t vl rTime eTime aTime))/2
+          add = mult + (min t vl rTime eTime aTime)
+
+
+
+-- func:: [Float] -> [Float] -> Float -> (Int, (Float,Float))
+-- func timeMarks vals renderT =
+--     let before = filter (renderT >) timeMarks
+--         after = filter (renderT <) timeMarks
+--         vInds = ((length before)-1, length before)
+--         vals' = (vals !! (fst vInds), vals !! (snd vInds))
+--     in (fst vInds, vals')
+
+------ Envelope in processss!!!!
+
+-- envelope:: [NominalDiffTime] -> [Rational] -> Signal Rational
+-- envelope durs points = \t vl renderTime evalTime anchorTime ->
+--     let startTime = anchorTime :: UTCTime
+--         durVals = map (\durVal -> durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)) durs
+--         endTime = addUTCTime (sum durVals) anchorTime
+--     in ramps renderTime startTime endTime durVals points
+
+-- ramps:: UTCTime -> UTCTime -> UTCTime -> Rational -> Rational -> Signal Rational
+-- ramps renderTime startTime endTime durs points 
+--     | startTime >= renderTime = head points -- start val
+--     | endTime <= renderTime = last points  -- end val
+--     | otherwise =                            -- durs: [1]   0.4 vals: [0.6, 0.3]
+--         let timeMarks = scanl (+) 0 durs     -- [0,1]                               -- [0,1.5,4.5,6.5,7.5,10.0]  -- durs [1.5,3,2,1,2.5] -- rTime 3.2 -- vals [0,0.8,0.4,0.9,0.5,1.0]
+--             before = filter (renderTime >) timeMarks     -- [0]                   -- [0,1.5]
+--             after = filter (renderTime <=) timeMarks     -- [1]                   -- [4.5,6.5,7.5,10.0]
+--             vInds = ((length before)-1, length before)   -- (0,1)                   -- (1,2)
+--             vals = (points !! (fst vInds), points !! (snd vInds)) -- (0.6,0.3)                         -- (0.8,0.4)  -- dur: 3 startTime: utc + 1.5
+--             ramp' = ramp (fst vInds) (addUTCTime (sum before) startTime) (addUTCTime (last timeMarks) startTime) (fst vals) (snd vals)
 
 ramp2 :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
 ramp2 durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
@@ -418,6 +462,20 @@ ramp' renderTime startTime endTime startVal endVal -- delete what is not needed
             momentAtRender = realToFrac (diffUTCTime renderTime startTime) :: Rational -- assuming render is half way through the process: 1.5 out of 3.0
             percOfProcessAtRender = getPercentage momentAtRender processInterval segmentVal
         in startVal + percOfProcessAtRender
+
+
+fadeIn:: NominalDiffTime -> Signal Rational
+fadeIn dur t vl rTime eTime aTime = ramp dur 0 1 t vl rTime eTime aTime
+
+fadeOut:: NominalDiffTime -> Signal Rational
+fadeOut dur t vl rTime eTime aTime = ramp dur 1 0 t vl rTime eTime aTime
+
+fadeIn2:: NominalDiffTime -> Signal (Maybe Rational)
+fadeIn2 dur t vl rTime eTime aTime = ramp2 dur 0 1 t vl rTime eTime aTime
+
+fadeOut2:: NominalDiffTime -> Signal (Maybe Rational)
+fadeOut2 dur t vl rTime eTime aTime = ramp2 dur 1 0 t vl rTime eTime aTime
+
 
 
 --------- Helper Functions ------------
