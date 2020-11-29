@@ -68,11 +68,11 @@ aboutEstuary = viewWidget never $ Views [
         ],
       Text $ fromList [
         (English,"text localization to an expanding set of natural languages"),
-        (Español,"localización de texto a un conjunto creciente de lenguajes naturales.")
+        (Español,"localización de texto hacia un conjunto creciente de lenguajes naturales")
         ],
       Text $ fromList [
         (English,"visual customization via themes (described by CSS)"),
-        (Español,"personalización visual a través de temas (descritos por CSS).")
+        (Español,"personalización visual a través de temas (descritos por CSS)")
         ]
       ]
     ],
@@ -80,27 +80,27 @@ aboutEstuary = viewWidget never $ Views [
   Paragraph [
     Text $ fromList [
       (English,"Some places where further help/discussion/resources/etc about Estuary are available include:"),
-      (Español, "Algunos lugares donde hay más ayuda/discusión/recursos/etc sobre Estuary disponible son:")
+      (Español, "Algunos lugares donde hay más ayuda/discusión/recursos/etc sobre Estuary son:")
       ],
     BulletPoints [
       Views [ Text $ fromList [
         (English,"The Estuary Google group at "),
-        (Español, "The Estuary Google group at ")
+        (Español, "El grupo de Google de Estuary Google ")
         ],
         link "https://groups.google.com/forum/#!forum/estuary"],
       Views [ Text $ fromList [
         (English,"The Estuary Facebook page at "),
-        (Español, "La página de Facebook de Estuary disponible en ")
+        (Español, "La página de Facebook de Estuary, disponible a través de ")
         ],
         link "https://www.facebook.com/estuaryPlatform"],
       Views [ Text $ fromList [
         (English,"The #Estuary channel at "),
-        (Español, "El canal de #Estuary channel disponible en "),
+        (Español, "El canal de #Estuary channel, disponible a través de ")
         ],
         link "https://chat.toplap.org"],
       Views [ Text $ fromList [
         (English,"Bug reports and similar issues can be filed at "),
-        (Español, "Los reportes de errores y problemas similares se pueden presentar en ")
+        (Español, "Los reportes de errores y problemas similares se pueden eviar a través de ")
         ],
         link "https://github.com/dktr0/Estuary/issues"]
       ]
@@ -109,12 +109,12 @@ aboutEstuary = viewWidget never $ Views [
   Paragraph [
     Text $ fromList [
       (English,"The development of Estuary is the result of ongoing work by many individuals, with the benefit of generous public and institutional support. Key contributions to work on the Estuary platform itself include:"),
-      (Español, "El desarrollo de Estuary es el resultado del trabajo continuo de muchas personas y con el beneficio de un generoso apoyo público e institucional. Algunas contribuciones clave en la propia plataforma de Estuary incluyen:")
+      (Español, "El desarrollo de Estuary es el resultado del trabajo continuo de muchas personas, así como del beneficio de un generoso apoyo público e institucional. Algunas contribuciones clave para la propia plataforma de Estuary incluyen:")
       ],
     BulletPoints [
       Text $ fromList [
         (English,"Ongoing development and maintenance of Estuary by the Estuary development team, coordinated by David Ogborn, with members who have included Jamie Beverley, Alejandro Franco Briones, Alex MacLean, Luis Navarro del Angel, Matthew Paine, Spencer Park, and Jessica Rodriguez."),
-        (Español, "Desarrollo y mantenimiento continuo de Estuary por el equipo de desarrollo de Estuary, coordinado por David Ogborn, con miembros que incluyen a Jamie Beverley, Alejandro Franco Briones, Alex MacLean, Luis Navarro del Angel, Matthew Paine, Spencer Park y Jessica Rodriguez . ")
+        (Español, "Desarrollo y mantenimiento continuo de Estuary por el equipo de desarrollo de Estuary, coordinado por David Ogborn, con miembres que incluyen a Jamie Beverley, Alejandro Franco Briones, Alex MacLean, Luis Navarro del Angel, Matthew Paine, Spencer Park y Jessica Rodriguez . ")
         ],
       Text $ fromList [
         (English,"Estuary was born as part of research project supported by Canada's Social Sciences and Humanities Research Council (SSHRC): \"Projectional interfaces for musical live coding\" (2015-17, principal investigator: David Ogborn, co-applicant: Jacques Carette, collaborators: Alex McLean and Eldad Tsabary)"),
@@ -122,11 +122,11 @@ aboutEstuary = viewWidget never $ Views [
         ],
       Text $ fromList [
         (English,"Estuary development continues as part of a second SSHRC-funded research project: \"Platforms  and  practices  for networked, language-neutral live coding\" (2018-23, principal investigator: David Ogborn, co-applicant: Eldad Tsabary, collaborator: Shelly Knotts)"),
-        (Español, "El desarrollo de Estuary continúa como parte de un segundo proyecto de investigación financiado por SSHRC: \" Plataformas y prácticas para codificación en vivo en red y sin lenguaje \"(2018-23, investigador principal: David Ogborn, co-solicitante: Eldad Tsabary , colaboradora: Shelly Knotts) ")
+        (Español, "El desarrollo de Estuary continúa actualmente como parte de un segundo proyecto de investigación financiado por SSHRC: \" Plataformas y prácticas para codificación en vivo en red y sin lenguaje \"(2018-23, investigador principal: David Ogborn, co-solicitante: Eldad Tsabary , colaboradora: Shelly Knotts) ")
         ],
       Text $ fromList [
         (English,"Most Estuary development happens in and around the Networked Imagination Laboratory, a research space at McMaster University created with support from the Canada Foundation for Innovation, Ontario's Ministry of Research and Innovation, and McMaster's Faculty of Humanities."),
-        (Español, "La mayor parte del desarrollo de Estuary ocurre dentro y alrededor del Laboratorio de Imaginación en Red, un espacio de investigación en la Universidad McMaster creado con el apoyo de la Fundación de Canadá para la Innovación, el Ministerio de Investigación e Innovación de Ontario y la Facultad de Humanidades de McMaster").
+        (Español, "La mayor parte del desarrollo de Estuary ocurre dentro y alrededor del Networked Imagination Laboratory, un espacio de investigación en la Universidad McMaster creado con el apoyo de la Fundación de Canadá para la Innovación, el Ministerio de Investigación e Innovación de Ontario y la Facultad de Humanidades de McMaster")
         ],
       Text $ fromList [
         (English,"Estuary's codebase builds upon the work of many others. Special thanks to the creators/maintainers of the tools used to build Estuary: GHCJS and the Reflex FRP platform!"),
