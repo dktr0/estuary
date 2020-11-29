@@ -15,17 +15,23 @@ import Estuary.Reflex.Utility
 import Estuary.Types.Context
 import Estuary.Types.EnsembleC
 import Estuary.Types.View.Parser
+import Language.Haskellish as LH
+import qualified Language.Haskell.Exts as Exts
+
+
 import Estuary.Types.View
 import Estuary.Widgets.Text
 import Estuary.Widgets.Editor
 
-viewParseResultToText :: Either ParseError View -> Text
+-- viewParseResultToText :: Either String ParseError -> Text
+viewParseResultToText :: Either String View -> Text
 viewParseResultToText v = do
   case v of
     Left errMsg -> "Error"
     Right view -> ""
 
-viewToContextChange :: Either ParseError View -> Maybe ContextChange
+-- viewToContextChange :: Either String ParseError -> Maybe ContextChange
+viewToContextChange :: Either String View -> Maybe ContextChange
 viewToContextChange v = do
   case v of
     Left _ -> Nothing
@@ -51,7 +57,7 @@ viewEditor ctx = mdo
   (textValue,_,shiftEnter) <- textWidget 5 (constDyn False) initialText incomingView
   let runViewEvent = leftmost [runViewButton, shiftEnter]
   let evaledText = tag (current textValue) runViewEvent
-  let parsedInput = fmap (parse viewParser "") evaledText
+  let parsedInput = fmap parseViewParser evaledText -- fmap (parse viewParser "") evaledText
   let viewParseResult = fmap viewParseResultToText parsedInput
   let viewCtxChange = fmapMaybe viewToContextChange parsedInput
 
@@ -61,3 +67,10 @@ viewEditor ctx = mdo
   -- buttonWithClass "Publish"
 
   return viewCtxChange
+
+
+parseViewParser :: T.Text -> Either String View -- Text -> Either ParseError Command
+parseViewParser s = (f . Exts.parseExp) $ T.unpack s
+    where
+      f (Exts.ParseOk x) = fmap fst $ runHaskellish viewParser () x -- Either String a
+      f (Exts.ParseFailed l s) = Left s

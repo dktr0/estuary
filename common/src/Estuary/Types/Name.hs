@@ -1,10 +1,13 @@
 module Estuary.Types.Name where
 
+
+-- import Language.Haskellish as LH
 import Data.Text as T
 import Data.Char
 import Text.Parsec
 import Text.Parsec.Text
 
+-- type H = Haskellish ()
 type Name = Text
 type Password = Text
 
