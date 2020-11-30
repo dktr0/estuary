@@ -67,5 +67,5 @@ clientToParticipant c = Participant {
   animationLoad = clientAnimationLoad c,
   latency = clientLatency c,
   browser = browserInfo c,
-  ipAddress = T.pack $ show $ ipAddr c
+  ipAddress = ""
   }
