@@ -88,6 +88,7 @@ data CineCer0Text = CineCer0Text {
   previousStyleTx :: Text
   }
 
+
 addVideo :: HTMLDivElement -> LayerSpec -> IO CineCer0Video
 addVideo j os = do
   let url = layerToString $ layer os
@@ -111,8 +112,6 @@ addText j os = do
     positionLockTx = 0,
     previousStyleTx = ""
   }
-
-
 
 layerToString:: Either String String -> Text
 layerToString (Right x) = T.pack $ x
@@ -175,9 +174,10 @@ setTextStyle tx x = do
 
 updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
- let j = textLayer tx
+ let j = textLayer tx 
  let txw = sw
  let txh = sh
+ -- putStrLn $ show (T.split (== ' ') $ layerToString (layer s))
 
  if (txw /= 0 && txh /= 0) then do
   let aTime = anchorTime s t eTime
@@ -388,7 +388,13 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   addedVideos <- mapM (\x -> addVideo (container st) x) toAddv -- :: IntMap CineCer0Video
   -- add text
   let newTextSpecs = difference txSpecs (texts st) -- :: IntMap LayerSpec (this changes to LayerSpec, aslo in line 278)
-  let toAddtx = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newTextSpecs
+  let toAddtx = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newTextSpecs -- answer false to is the layer empty?
+
+
+  -- function to process text in time -- :: Tempo -> rTime -> evalTime -> st
+ -- let toAddSubTx = func t rTime eTime textSpecs
+-- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not. 
+  
   addedTexts <- mapM (\x -> addText (container st) x) toAddtx
   -- change videos
   let continuingLayerSpecs = intersectionWith onlyChangedLayerSources vSpecs (previousLayerSpecs st) -- :: IntMap (Maybe LayerSpec)
