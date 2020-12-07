@@ -69,6 +69,8 @@ sigMayRat :: H (Signal (Maybe Rational))
 sigMayRat =
   rat_sigMayRat <*> rationalOrInteger <|>
   ndt_sigMayRat <*> ndt <|>
+  sigRat_sigMayRat <*> sigRat <|>
+--  sigMayRat_sigMayRat <*> sigMayRat <|>
   (constantSignal . Just) <$> rationalOrInteger
 
 rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
@@ -78,7 +80,7 @@ rat_rat_sigMayRat :: H (Rational -> Rational -> Signal (Maybe Rational))
 rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
 
 ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
-ndt_rat_rat_sigMayRat = ramp2 <$ reserved "ramp"
+ndt_rat_rat_sigMayRat = rampMaybe <$ reserved "ramp"
 
 sigInt :: H (Signal Int)
 sigInt = constantSignal <$> int
@@ -127,6 +129,34 @@ sigRat_sigRat_sigRat =
 sigRat_sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational)
 sigRat_sigRat_sigRat_sigRat =
   range <$ reserved "range"
+
+--  maybe sine
+
+sigRat_sigMayRat:: H (Signal Rational -> Signal (Maybe Rational))
+sigRat_sigMayRat =
+  sineMaybe <$ reserved "sin" <|>
+  sigRat_sigRat_sigMayRat <*> sigRat
+
+-- sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational))
+-- sigMayRat_sigMayRat =
+--   sineMaybe <$ reserved "sin" <|>
+--   sigMayRat_sigMayRat_sigMayRat <*> sigMayRat
+
+sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal (Maybe Rational))
+sigRat_sigRat_sigMayRat =
+  sigRat_sigRat_sigRat_sigMayRat <*> sigRat
+
+-- sigMayRat_sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational))
+-- sigMayRat_sigMayRat_sigMayRat =
+--   sigMayRat_sigMayRat_sigMayRat_sigMayRat <*> sigMayRat
+
+sigRat_sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational))
+sigRat_sigRat_sigRat_sigMayRat =
+  rangeMaybe <$ reserved "range"
+
+-- sigMayRat_sigMayRat_sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational))
+-- sigMayRat_sigMayRat_sigMayRat_sigMayRat =
+--   rangeMaybe <$ reserved "range"
 
 -- //////////////
 
