@@ -5,6 +5,9 @@ module Estuary.Types.Terminal (Command(..),parseCommand) where
 
 import Language.Haskellish as LH
 import qualified Language.Haskell.Exts as Exts
+import qualified Text.Parsec as Pc
+import qualified Text.Parsec.Text as Tx
+import qualified Text.ParserCombinators.Parsec.Token as P
 import Control.Applicative
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -19,7 +22,7 @@ import Estuary.Types.Name
 import Estuary.Types.View
 import Estuary.Types.View.Parser
 
-type H = Haskellish ()
+-- type H = Haskellish ()
 
 data Command =
   LocalView View | -- change the active view to a local view that is not shared/stored anywhere
@@ -40,32 +43,25 @@ data Command =
   SetBPM Double |
   InsertAudioResource Text Text Int | -- "url" [bankName] [n]
   DeleteAudioResource Text Int | -- [bankName] [n]
-  AppendAudioResource Text Text -- "url" [bankName]
+  AppendAudioResource Text Text | -- "url" [bankName]
+  ResetZones |
+  ResetViews |
+  ResetTempo |
+  Reset -- same effect as ResetZones + ResetTempo (doesn't reset views)
   deriving (Show,Eq)
 
+parseCommand :: T.Text -> Either String Command
+parseCommand s
+  | (s' == "") || (T.head s' /= '!') = Right $ Chat s
+  | otherwise = parseTerminalCommand $ removeExclamation s' -- removeExclamation would be better
+    where s' =  T.strip s
 
-parseCommand ::  T.Text -> Either String Command -- Text -> Either ParseError Command
-parseCommand s = (f . Exts.parseExp)  $ removeExclamation $ T.unpack s
+parseTerminalCommand ::  T.Text -> Either String Command -- Text -> Either ParseError Command
+parseTerminalCommand s = (f . Exts.parseExp) $ T.unpack s
     where
-      f (Exts.ParseOk x) = fmap fst $ runHaskellish terminal () x -- Either String (a, st) -- monad -- Either String a
+      f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x -- Either String (a, st) -- monad -- Either String a
       f (Exts.ParseFailed l s) = Left s
 
-
-terminal :: H Command
-terminal = terminalCommand
-
--- chatP = many1 anyChar >>= return . Chat . T.pack
-
-chatParser :: H Command
-chatParser = chatFunc <$ (reserved "test")
-
-chatFunc :: Command
-chatFunc = Chat "hola"
-
-removeExclamation :: String -> String
-removeExclamation x
-  |head x == '!' = drop 1 x
-  |otherwise = x
 
 terminalCommand :: H Command
 terminalCommand =
@@ -78,10 +74,8 @@ terminalCommand =
   <|> startStreaming
   <|> streamId
   <|> delay
-  -- (reserved "deletethisensemble" >> return DeleteThisEnsemble) <*> nameOrPassword,
-  -- <|> deletethisensembleParser
-  -- (reserved "deleteensemble" >> return DeleteEnsemble) <*> nameOrPassword <*> nameOrPassword,
-  -- <|> deleteensembleParser
+  <|> deletethisensembleParser
+  <|> deleteensembleParser
   <|> ancientTempoParser
   <|> showTempoParser
   <|> setCPSParser
@@ -89,6 +83,37 @@ terminalCommand =
   <|> insertAudioResourceParser
   <|> deleteAudioResourceParser
   <|> appendAudioResourceParser
+  <|> resetzonesParser
+  <|> resetviewsParser
+  <|> resettempoParser
+  <|> resetParser
+
+resetzonesParser :: H Command
+resetzonesParser = resetzonesFunc <$ (reserved "resetzones")
+
+resetzonesFunc :: Command
+resetzonesFunc = ResetZones
+
+--  reset views
+resetviewsParser :: H Command
+resetviewsParser = resetviewsFunc <$ (reserved "resetviews")
+
+resetviewsFunc :: Command
+resetviewsFunc = ResetViews
+
+-- reset tempo
+resettempoParser :: H Command
+resettempoParser = resettempoFunc <$ (reserved "resettempo")
+
+resettempoFunc :: Command
+resettempoFunc = ResetTempo
+
+-- reset
+resetParser :: H Command
+resetParser = resetFunc <$ (reserved "reset")
+
+resetFunc :: Command
+resetFunc = Reset
 
 -- select a presetview
 presetView :: H Command
@@ -100,13 +125,7 @@ presetView' = presetViewFunc <$ (reserved "presetview")
 presetViewFunc :: Text -> Command
 presetViewFunc x = PresetView x
 
-identifierText :: H Text
-identifierText = do
-  s <- identifier
-  return $ T.pack s
-
   -- publish a view
-
 publishView :: H Command
 publishView = publishView' <*> identifierText
 
@@ -172,27 +191,27 @@ delayFunc :: Double -> Command
 delayFunc x = Delay x
 
 -- delete current ensemble
--- deletethisensembleParser :: H Command
--- deletethisensembleParser = deletethisensembleParser' <*> nameOrPassword
+deletethisensembleParser :: H Command
+deletethisensembleParser = deletethisensembleParser' <*> nameOrPassword
 
--- deletethisensembleParser' :: H (Text -> Command)
--- deletethisensembleParser' = deletethisensembleFunc <$ reserved "deletethisensemble"
+deletethisensembleParser' :: H (Text -> Command)
+deletethisensembleParser' = deletethisensembleFunc <$ reserved "deletethisensemble"
 
--- deletethisensembleFunc :: Text -> Command
--- deletethisensembleFunc x =  DeleteThisEnsemble x
+deletethisensembleFunc :: Text -> Command
+deletethisensembleFunc x =  DeleteThisEnsemble x
 
 -- delete ensemble
--- deleteensembleParser :: H Command
--- deleteensembleParser = deleteensembleParser' <*> nameOrPassword
---
--- deleteensembleParser' :: H (Text -> Command)
--- deleteensembleParser' = deleteensembleParser'' <*> nameOrPassword
---
--- deleteensembleParser'' :: H (Text -> Text -> Command)
--- deleteensembleParser'' = deleteensembleFunc <$ reserved "deleteensemble"
---
--- deleteensembleFunc :: Text -> Text ->  Command
--- deleteensembleFunc x y =  DeleteEnsemble x y
+deleteensembleParser :: H Command
+deleteensembleParser = deleteensembleParser' <*> nameOrPassword
+
+deleteensembleParser' :: H (Text -> Command)
+deleteensembleParser' = deleteensembleParser'' <*> nameOrPassword
+
+deleteensembleParser'' :: H (Text -> Text -> Command)
+deleteensembleParser'' = deleteensembleFunc <$ reserved "deleteensemble"
+
+deleteensembleFunc :: Text -> Text ->  Command
+deleteensembleFunc x y =  DeleteEnsemble x y
 
 -- ancient tempo
 ancientTempoParser :: H Command
@@ -209,7 +228,6 @@ showTempoFunc :: Command
 showTempoFunc = ShowTempo
 
 -- set cps
-
 setCPSParser :: H Command
 setCPSParser = setCPSParser' <*> double
 
@@ -247,7 +265,6 @@ insertAudioResourceFunc :: Text -> Text -> Int -> Command
 insertAudioResourceFunc x y z = InsertAudioResource x y z
 
 
---
 -- delete audio resource
 
 deleteAudioResourceParser :: H Command
@@ -277,15 +294,44 @@ appendAudioResourceFunc :: Text -> Text -> Command
 appendAudioResourceFunc x y = AppendAudioResource x y
 
 
-
-
+-- helper funcs
 int :: H Int
 int = fromIntegral <$> integer
 
 double :: H Double
 double = fromRational <$> rationalOrInteger
 
-textLiteral :: H Text
-textLiteral = do
-  s <- string
+-- textLiteral :: H Text
+-- textLiteral = do
+--   s <- LH.string
+--   return $ T.pack s
+
+
+
+identifierText :: H Text
+identifierText = do
+  s <- identifier
   return $ T.pack s
+
+removeExclamation :: Text -> Text
+removeExclamation x
+  |T.head x == '!' = T.drop 1 x
+  |otherwise = x
+
+-- tokenParser :: P.GenTokenParser Text () Identity
+-- tokenParser = P.makeTokenParser $ P.LanguageDef {
+--   P.identStart = Pc.letter <|> Pc.char '_',
+--   P.identLetter = Pc.alphaNum <|> Pc.char '_',
+--   P.opStart = Pc.oneOf "+*:@<>~=%",
+--   P.opLetter = Pc.oneOf "+*:@<>~=%",
+--   P.reservedNames = [
+--     -- "localview","presetview","publishview","activeview","listviews",
+--     -- "dumpview","startstreaming","streamid","delay","deletethisensemble",
+--     -- "deleteensemble","ancienttempo","showtempo","setcps","setbpm",
+--     -- "insertaudioresource","deleteaudioresource","appendaudioresource"
+--     ],
+--   P.reservedOpNames = [],
+--   P.caseSensitive = False
+--   }
+--
+-- whiteSpace = P.whiteSpace tokenParser

@@ -1,13 +1,19 @@
 module Estuary.Types.Name where
 
 
--- import Language.Haskellish as LH
+import Language.Haskellish as LH
 import Data.Text as T
 import Data.Char
-import Text.Parsec
-import Text.Parsec.Text
+import Control.Monad.Error
 
--- type H = Haskellish ()
+
+
+
+-- import Text.Parsec
+-- import Text.Parsec.Text
+
+type H = Haskellish ()
+
 type Name = Text
 type Password = Text
 
@@ -18,8 +24,15 @@ type Password = Text
 nameIsLegal :: Text -> Bool
 nameIsLegal x = not (T.any isControl x || T.any isSpace x )
 
-nameOrPassword :: Parser Text
+
+nameOrPassword :: H Text
 nameOrPassword = do
-  x <- pack <$> many1 (satisfy (\x -> not (isControl x) && not (isSpace x)))
-  spaces
-  return x
+  x <- textLiteral
+  if nameIsLegal x then return x else throwError "names/passwords cannot contain spaces or control characters"
+
+
+-- helper funcs
+textLiteral :: H Text
+textLiteral = do
+  s <- LH.string
+  return $ T.pack s

@@ -252,3 +252,8 @@ textLiteral :: H T.Text
 textLiteral = do
   s <- string
   return $ T.pack s
+
+identifierText :: H T.Text
+identifierText = do
+  s <- identifier
+  return $ T.pack s

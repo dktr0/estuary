@@ -20,6 +20,7 @@ dependencies:
   - parsec
   - witherable
   - haskellish
+  - mtl
 
 extra-source-files:
   - package.yaml
