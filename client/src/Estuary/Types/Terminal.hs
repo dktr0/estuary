@@ -301,13 +301,6 @@ int = fromIntegral <$> integer
 double :: H Double
 double = fromRational <$> rationalOrInteger
 
--- textLiteral :: H Text
--- textLiteral = do
---   s <- LH.string
---   return $ T.pack s
-
-
-
 identifierText :: H Text
 identifierText = do
   s <- identifier
@@ -317,21 +310,3 @@ removeExclamation :: Text -> Text
 removeExclamation x
   |T.head x == '!' = T.drop 1 x
   |otherwise = x
-
--- tokenParser :: P.GenTokenParser Text () Identity
--- tokenParser = P.makeTokenParser $ P.LanguageDef {
---   P.identStart = Pc.letter <|> Pc.char '_',
---   P.identLetter = Pc.alphaNum <|> Pc.char '_',
---   P.opStart = Pc.oneOf "+*:@<>~=%",
---   P.opLetter = Pc.oneOf "+*:@<>~=%",
---   P.reservedNames = [
---     -- "localview","presetview","publishview","activeview","listviews",
---     -- "dumpview","startstreaming","streamid","delay","deletethisensemble",
---     -- "deleteensemble","ancienttempo","showtempo","setcps","setbpm",
---     -- "insertaudioresource","deleteaudioresource","appendaudioresource"
---     ],
---   P.reservedOpNames = [],
---   P.caseSensitive = False
---   }
---
--- whiteSpace = P.whiteSpace tokenParser

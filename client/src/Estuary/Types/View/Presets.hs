@@ -24,7 +24,7 @@ presetViews :: Map Text View
 
 presetViews = fromList [
 
-      ("default",  GridView 2 3  [
+      ("def",  GridView 2 3  [
        (Views [LabelView 1, CodeView 2 0]),
        (Views [LabelView 3, CodeView 4 0]),
        (Views [LabelView 5, CodeView 6 0]),
