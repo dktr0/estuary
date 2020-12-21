@@ -68,6 +68,9 @@ ndt = fromRational <$> rationalOrInteger
 sigMayRat :: H (Signal (Maybe Rational))
 sigMayRat =
   rat_sigMayRat <*> rationalOrInteger <|>
+  ndt_sigMayRat <*> ndt <|>
+  sigRat_sigMayRat <*> sigRat <|>
+--  sigMayRat_sigMayRat <*> sigMayRat <|>
   (constantSignal . Just) <$> rationalOrInteger
 
 rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
@@ -77,7 +80,7 @@ rat_rat_sigMayRat :: H (Rational -> Rational -> Signal (Maybe Rational))
 rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
 
 ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
-ndt_rat_rat_sigMayRat = ramp2 <$ reserved "ramp"
+ndt_rat_rat_sigMayRat = rampMaybe <$ reserved "ramp"
 
 sigInt :: H (Signal Int)
 sigInt = constantSignal <$> int
@@ -88,6 +91,8 @@ sigStr = constantSignal <$> string
 sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
+  ndt_sigRat <*> ndt <|>
+  sigRat_sigRat <*> sigRat <|>
   constantSignal <$> rationalOrInteger
 
 rat_sigRat :: H (Rational -> Signal Rational)
@@ -98,6 +103,60 @@ rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
+
+-- new fade in (syntax sugar funcs)
+ndt_sigRat :: H (NominalDiffTime -> Signal Rational)
+ndt_sigRat = 
+  fadeIn <$ reserved "fadeIn" <|>
+  fadeOut <$ reserved "fadeOut"
+
+ndt_sigMayRat :: H (NominalDiffTime -> Signal (Maybe Rational))
+ndt_sigMayRat =
+  fadeIn2 <$ reserved "fadeIn" <|>
+  fadeOut2 <$ reserved "fadeOut" 
+
+---- sine
+
+sigRat_sigRat:: H (Signal Rational -> Signal Rational)
+sigRat_sigRat =
+  sine <$ reserved "sin" <|>
+  sigRat_sigRat_sigRat <*> sigRat
+
+sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational)
+sigRat_sigRat_sigRat =
+  sigRat_sigRat_sigRat_sigRat <*> sigRat
+
+sigRat_sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational)
+sigRat_sigRat_sigRat_sigRat =
+  range <$ reserved "range"
+
+--  maybe sine
+
+sigRat_sigMayRat:: H (Signal Rational -> Signal (Maybe Rational))
+sigRat_sigMayRat =
+  sineMaybe <$ reserved "sin" <|>
+  sigRat_sigRat_sigMayRat <*> sigRat
+
+-- sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational))
+-- sigMayRat_sigMayRat =
+--   sineMaybe <$ reserved "sin" <|>
+--   sigMayRat_sigMayRat_sigMayRat <*> sigMayRat
+
+sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal (Maybe Rational))
+sigRat_sigRat_sigMayRat =
+  sigRat_sigRat_sigRat_sigMayRat <*> sigRat
+
+-- sigMayRat_sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational))
+-- sigMayRat_sigMayRat_sigMayRat =
+--   sigMayRat_sigMayRat_sigMayRat_sigMayRat <*> sigMayRat
+
+sigRat_sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational))
+sigRat_sigRat_sigRat_sigMayRat =
+  rangeMaybe <$ reserved "range"
+
+-- sigMayRat_sigMayRat_sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational))
+-- sigMayRat_sigMayRat_sigMayRat_sigMayRat =
+--   rangeMaybe <$ reserved "range"
 
 -- //////////////
 
@@ -154,6 +213,7 @@ sigInt_vs_vs =
 
 sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
 sigStr_vs_vs =
+  setColourStr <$ reserved "colour" <|> 
   setFontFamily <$ reserved "font"
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
@@ -165,11 +225,17 @@ sigRat_sigRat_vs_vs =
 sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_vs_vs =
   circleMask' <$ reserved "circleMask'" <|>
+  setRGB <$ reserved "rgb" <|>
+  setHSL <$ reserved "hsl" <|>
+  setHSL <$ reserved "hsv" <|>
   sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_sigRat_sigRat_vs_vs =
-  rectMask <$ reserved "rectMask"
+  rectMask <$ reserved "rectMask" <|>
+  setRGBA <$ reserved "rgba" <|>
+  setHSLA <$ reserved "hsla" <|>
+  setHSLA <$ reserved "hsva"
 
 -- ////
 

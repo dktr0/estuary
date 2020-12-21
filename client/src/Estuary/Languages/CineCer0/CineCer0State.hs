@@ -88,6 +88,7 @@ data CineCer0Text = CineCer0Text {
   previousStyleTx :: Text
   }
 
+
 addVideo :: HTMLDivElement -> LayerSpec -> IO CineCer0Video
 addVideo j os = do
   let url = layerToString $ layer os
@@ -111,8 +112,6 @@ addText j os = do
     positionLockTx = 0,
     previousStyleTx = ""
   }
-
-
 
 layerToString:: Either String String -> Text
 layerToString (Right x) = T.pack $ x
@@ -142,7 +141,7 @@ setVideoRateAndPosition v vLength (Just r) (Just p) = do
       let diff3 = abs (p + vLength - currentPos)
       let diff = min (min diff1 diff2) diff3
       if diff > 0.050 then do
-        -- putStrLn $ "currentPos=" ++ show currentPos ++ "  target="++show p ++ "  diff=" ++ show (currentPos - p)
+        -- putStrLn $ "currentPos=" ++ show currentPos ++ "  target="++show p ++ "  diff=" ++ show (currentPos - p) -- debugging postition
         setVideoPlaybackPosition j (p+(0.15*r))
         return $ v { positionLock = 12 } -- wait 12 frames before setting position again
       else return v
@@ -166,7 +165,6 @@ setVideoVol v x = do
     videoVolume j x
     return $ v { previousVol = x }
 
-
 setTextStyle :: CineCer0Text -> Text -> IO CineCer0Text
 setTextStyle tx x = do
   if previousStyleTx tx == x then return tx
@@ -176,9 +174,10 @@ setTextStyle tx x = do
 
 updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
- let j = textLayer tx
+ let j = textLayer tx 
  let txw = sw
  let txh = sh
+ -- putStrLn $ show (T.split (== ' ') $ layerToString (layer s))
 
  if (txw /= 0 && txh /= 0) then do
   let aTime = anchorTime s t eTime
@@ -187,13 +186,10 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let striked = generateStrike (strike s t lengthOfLayer rTime eTime aTime)
   let bolded = generateBold (bold s t lengthOfLayer rTime eTime aTime)
   let italicised = generateItalic (italic s t lengthOfLayer rTime eTime aTime)
-  let coloured = T.pack $ generateColour (colour s t lengthOfLayer rTime eTime aTime)
+  let coloured = generateColours (colour s) t lengthOfLayer rTime eTime aTime
   let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
-
---  let striked = generateStrike strike
-  -- putStrLn $ show tx
 
   let aspectRatio = txw/txh
   let heightIfFitsWidth = sw / aspectRatio
@@ -209,13 +205,10 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
 
   let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised coloured sized z'
-  putStrLn $ T.unpack $ txStyle
+  -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
 
   else return tx
-    -- solve the width /height issues first, after that, first test with
-    -- default font size, font family, etc.
-
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Video -> IO CineCer0Video
 updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
@@ -247,6 +240,9 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     let normVol = if (volume s t lengthOfVideo rTime eTime aTime) > 1 then 1 else (volume s t lengthOfVideo rTime eTime aTime)
     v'' <- setVideoVol v' $ realToFrac normVol
 
+    -- z index
+    let z' = generateZIndex (z s t lengthOfVideo rTime eTime aTime)
+
     -- update style (size, position, opacity, etc)
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let blur' = blur s t lengthOfVideo rTime eTime aTime
@@ -256,7 +252,7 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     let mask' = ((Cinecer0.mask s) t lengthOfVideo rTime eTime aTime)
-    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask'
+    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask' z'
 
   else return v
 
@@ -288,8 +284,8 @@ generateFilter :: Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -
 generateFilter Nothing Nothing Nothing Nothing Nothing Nothing = ""
 generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl <> generateBrightness br <> generateContrast c <> generateGrayscale g <> generateSaturate s <>";"
 
-videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
-videoStyle x y w h f m = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m
+videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
+videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m <> z
 
 
 generateZIndex :: Int -> Text
@@ -298,10 +294,27 @@ generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
 generateFontSize :: Double -> Text
 generateFontSize size = "; font-size: " <> T.pack (show size) <> "%"
 
-generateColour :: Colour -> String
-generateColour (Colour clr) = "; color: " <> clr <> ";"
-generateColour (ColourRGB (r,g,b)) = "; color: rgb(" <> (show r) <> "," <> (show g) <> "," <> (show b) <> ");"
-generateColour (ColourHSV (h,s,l)) = "; color: hsl(" <> (show h) <> "," <> (show s) <> "," <> (show l) <> ");"
+generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text  -- this string needs to be a text!!!!
+generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"  
+  where string = (str t ll rT eT aT) 
+generateColours (ColourRGB r g b) t ll rT eT aT = "; color: rgb(" <> (showt red) <> "," <> (showt green) <> "," <> (showt blue) <> ");"
+  where red = realToFrac ((r * 255) t ll rT eT aT) :: Double
+        green = realToFrac ((g * 255) t ll rT eT aT) :: Double
+        blue = realToFrac ((b * 255) t ll rT eT aT) :: Double
+generateColours (ColourHSL h s l) t ll rT eT aT = "; color: hsl(" <> (showt hue) <> "," <> (showt saturation) <> "% ," <> (showt lightness) <> "% );"
+  where hue = realToFrac ((h * 360) t ll rT eT aT) :: Double
+        saturation = realToFrac ((s * 100) t ll rT eT aT) :: Double
+        lightness = realToFrac ((l * 100) t ll rT eT aT) :: Double
+generateColours (ColourRGBA r g b a) t ll rT eT aT = "; color: rgba(" <> (showt red) <> "," <> (showt green) <> "," <> (showt blue) <> "," <> (showt alpha) <> ");"
+  where red = realToFrac ((r * 255) t ll rT eT aT) :: Double
+        green = realToFrac ((g * 255) t ll rT eT aT) :: Double
+        blue = realToFrac ((b * 255) t ll rT eT aT) :: Double
+        alpha = realToFrac (a t ll rT eT aT) :: Double
+generateColours (ColourHSLA h s l a) t ll rT eT aT = "; color: hsla(" <> (showt hue) <> "," <> (showt saturation) <> "% ," <> (showt lightness) <> "% ," <> (showt alpha) <> ");"
+  where hue = realToFrac ((h * 360) t ll rT eT aT) :: Double
+        saturation = realToFrac ((s * 100) t ll rT eT aT) :: Double
+        lightness = realToFrac ((l * 100) t ll rT eT aT) :: Double
+        alpha = realToFrac (a t ll rT eT aT) :: Double
 
 generateStrike :: Bool -> Text
 generateStrike (True) = "; text-decoration: line-through;"
@@ -316,9 +329,7 @@ generateItalic (True) = "; font-style: italic;"
 generateItalic (False) = ""
 
 textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> "; object-fit: fill;"
-
--- control Z index !!!
+textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> "; object-fit: fill; text-align: center; justify-content: center; align-items: center;"
 
 -- these two might become only one!
 
@@ -326,13 +337,6 @@ onlyChangedLayerSources :: LayerSpec -> LayerSpec -> Maybe LayerSpec
 onlyChangedLayerSources nSpec oSpec
   | (layer nSpec /= layer oSpec) = Just nSpec
   | (layer nSpec == layer oSpec) = Nothing
-
-  -- this will have to go also
--- onlyChangedTextSources :: LayerSpec -> LayerSpec -> Maybe LayerSpec
--- onlyChangedTextSources nSpec oSpec
---   | (layer nSpec /= layer oSpec) = Just nSpec
---   | (layer nSpec == layer oSpec) = Nothing
-
 
 -- A CineCer0State represents the entire state corresponding to a CineCer0 program
 -- (each statement separated by ; in the program is one element within various )
@@ -384,7 +388,13 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   addedVideos <- mapM (\x -> addVideo (container st) x) toAddv -- :: IntMap CineCer0Video
   -- add text
   let newTextSpecs = difference txSpecs (texts st) -- :: IntMap LayerSpec (this changes to LayerSpec, aslo in line 278)
-  let toAddtx = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newTextSpecs
+  let toAddtx = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newTextSpecs -- answer false to is the layer empty?
+
+
+  -- function to process text in time -- :: Tempo -> rTime -> evalTime -> st
+ -- let toAddSubTx = func t rTime eTime textSpecs
+-- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not. 
+  
   addedTexts <- mapM (\x -> addText (container st) x) toAddtx
   -- change videos
   let continuingLayerSpecs = intersectionWith onlyChangedLayerSources vSpecs (previousLayerSpecs st) -- :: IntMap (Maybe LayerSpec)
@@ -414,8 +424,9 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   continuingVideos' <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos -- :: IntMap CineCer0Video
   let continuingTexts = union textsThereBefore addedTexts
   continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
-  return $ st { videos = continuingVideos', previousLayerSpecs = txSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
-
+  return $ st { videos = continuingVideos', previousLayerSpecs = vSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
+  
+  
 logExceptions :: a -> IO a -> IO a
 logExceptions a x = x `catch` (\e -> do
   putStrLn $ "EXCEPTION (CineCer0): " ++ show (e :: SomeException)

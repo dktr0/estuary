@@ -373,9 +373,6 @@ playNow_Rate startPos rate t vlen render eval anchor = Just rate
 
 -- Geometry
 
-
-
-
 -- Image
 
 
@@ -385,20 +382,104 @@ playNow_Rate startPos rate t vlen render eval anchor = Just rate
 -- defaultOpacity :: Signal Rational
 -- defaultOpacity = \_ _ _ _ -> 100
 
------- Manually changes the opacity of a video ------
+-----  Sin
 
-opacityChanger:: Rational -> Signal Rational
-opacityChanger arg t len rend eval anchor = arg
+-- helpers to transform Signal
 
--- Dynamic Functions
--- durVal is the amount of time the process takes place
+sigMayToSig:: Signal (Maybe Rational) -> Signal Rational
+sigMayToSig x = \t vl rT eT aT -> mayToRat (x t vl rT eT aT)
 
-ramp2 :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
-ramp2 durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
-  let startTime = anchorTime :: UTCTime -- place holder, add quant later
-      durVal' = durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)
-      endTime = addUTCTime durVal' anchorTime
-  in Just $ ramp' renderTime startTime endTime startVal endVal
+mayToRat:: Maybe Rational -> Rational
+mayToRat (Just x) = x
+
+-- this radian func was taken from the internet, makes it easier for me to think sines
+radian:: Rational -> Float
+radian t = (realToFrac t :: Float) * 2 * pi /360
+
+-- sineMaybe:: Signal (Maybe Rational) -> Signal (Maybe Rational)
+-- sineMaybe freq t vl rT eT aT = Just $ sine (sigMayToSig freq) t vl rT eT aT   
+
+sineMaybe:: Signal Rational -> Signal (Maybe Rational)
+sineMaybe freq t vl rT eT aT = Just $ sine (freq) t vl rT eT aT
+
+sine:: Signal Rational -> Signal Rational
+sine freq = \t vl rT eT aT -> 
+    let reciprocal = 1 / (freq t vl rT eT aT)
+        elapsed = (realToFrac (diffUTCTime rT (time t)) :: Rational)  
+        pos = elapsed / reciprocal
+        pos' = (pos) - (realToFrac (floor pos) :: Rational)
+        posInRad = pos' * 360
+    in realToFrac (sin (radian posInRad)) :: Rational
+
+-- rangeMaybe:: Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational)
+-- rangeMaybe min max input t vl rTime eTime aTime = Just $ range (sigMayToSig min) (sigMayToSig max) (sigMayToSig input) t vl rTime eTime aTime
+
+rangeMaybe:: Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational)
+rangeMaybe min max input t vl rTime eTime aTime = Just $ range (min) (max) (input) t vl rTime eTime aTime
+
+range:: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational 
+range min max input t vl rTime eTime aTime = 
+    add + ((input t vl rTime eTime aTime) * mult)
+    where mult = ((max t vl rTime eTime aTime) - (min t vl rTime eTime aTime))/2
+          add = mult + (min t vl rTime eTime aTime)
+
+
+-- these two funcs wont work since the type is broken
+
+-- sine2:: Signal (Maybe Rational) -> Signal (Maybe Rational)
+-- sine2 freq =  \t vl rT eT aT -> 
+--     let reciprocal = 1 / (freq t vl rT eT aT)
+--         elapsed = (realToFrac (diffUTCTime rT (time t)) :: Rational)  
+--         pos = elapsed / reciprocal
+--         pos' = (pos) - (realToFrac (floor pos) :: Rational)
+--         posInRad = pos' * 360
+--     in Just $ (realToFrac (sin (radian posInRad)) :: Rational)
+-- sine2 Nothing = Nothing
+
+-- range2:: Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational)
+-- range2 min max input t vl rTime eTime aTime =  Just (add + ((input t vl rTime eTime aTime) * mult))
+--     where mult = ((max t vl rTime eTime aTime) - (min t vl rTime eTime aTime))/2
+--           add = mult + (min t vl rTime eTime aTime)
+-- range2 _ _ _ = Nothing
+
+-- func:: [Float] -> [Float] -> Float -> (Int, (Float,Float))
+-- func timeMarks vals renderT =
+--     let before = filter (renderT >) timeMarks
+--         after = filter (renderT <) timeMarks
+--         vInds = ((length before)-1, length before)
+--         vals' = (vals !! (fst vInds), vals !! (snd vInds))
+--     in (fst vInds, vals')
+
+------ Envelope in processss!!!!
+
+-- envelope:: [NominalDiffTime] -> [Rational] -> Signal Rational
+-- envelope durs points = \t vl renderTime evalTime anchorTime ->
+--     let startTime = anchorTime :: UTCTime
+--         durVals = map (\durVal -> durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)) durs
+--         endTime = addUTCTime (sum durVals) anchorTime
+--     in ramps renderTime startTime endTime durVals points
+
+-- ramps:: UTCTime -> UTCTime -> UTCTime -> Rational -> Rational -> Signal Rational
+-- ramps renderTime startTime endTime durs points 
+--     | startTime >= renderTime = head points -- start val
+--     | endTime <= renderTime = last points  -- end val
+--     | otherwise =                            -- durs: [1]   0.4 vals: [0.6, 0.3]
+--         let timeMarks = scanl (+) 0 durs     -- [0,1]                               -- [0,1.5,4.5,6.5,7.5,10.0]  -- durs [1.5,3,2,1,2.5] -- rTime 3.2 -- vals [0,0.8,0.4,0.9,0.5,1.0]
+--             before = filter (renderTime >) timeMarks     -- [0]                   -- [0,1.5]
+--             after = filter (renderTime <=) timeMarks     -- [1]                   -- [4.5,6.5,7.5,10.0]
+--             vInds = ((length before)-1, length before)   -- (0,1)                   -- (1,2)
+--             vals = (points !! (fst vInds), points !! (snd vInds)) -- (0.6,0.3)                         -- (0.8,0.4)  -- dur: 3 startTime: utc + 1.5
+--             ramp' = ramp (fst vInds) (addUTCTime (sum before) startTime) (addUTCTime (last timeMarks) startTime) (fst vals) (snd vals)
+
+-- ramp2 :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
+-- ramp2 durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
+--   let startTime = anchorTime :: UTCTime -- place holder, add quant later
+--       durVal' = durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)
+--       endTime = addUTCTime durVal' anchorTime
+--   in Just $ ramp' renderTime startTime endTime startVal endVal
+
+rampMaybe :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
+rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime 
 
 ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
@@ -419,6 +500,24 @@ ramp' renderTime startTime endTime startVal endVal -- delete what is not needed
             percOfProcessAtRender = getPercentage momentAtRender processInterval segmentVal
         in startVal + percOfProcessAtRender
 
+
+fadeIn:: NominalDiffTime -> Signal Rational
+fadeIn dur t vl rTime eTime aTime = ramp dur 0 1 t vl rTime eTime aTime
+
+fadeOut:: NominalDiffTime -> Signal Rational
+fadeOut dur t vl rTime eTime aTime = ramp dur 1 0 t vl rTime eTime aTime
+
+fadeIn2:: NominalDiffTime -> Signal (Maybe Rational)
+fadeIn2 dur t vl rTime eTime aTime = rampMaybe dur 0 1 t vl rTime eTime aTime
+
+fadeOut2:: NominalDiffTime -> Signal (Maybe Rational)
+fadeOut2 dur t vl rTime eTime aTime = rampMaybe dur 1 0 t vl rTime eTime aTime
+
+
+-- clock project
+
+-- clock:: UTCTime -> UTCTime -> UTCTime -> Text
+-- clock renderT evalT anchorT =
 
 --------- Helper Functions ------------
 

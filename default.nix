@@ -164,8 +164,8 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "punctual";
-           sha256 = "1xxv6n6gfgmw880bydgdyjkp3wafcanhlq8c6qjwxxd1w38vgjnb";
-          rev = "e7450d5cd688bfd01ee03849b69ca3bc43bfd890";
+           sha256 = "10bn7bxa84ss0sdnrgdbxif784p442ncvmxhp0r3q5936pjg0wp6";
+           rev = "7289dd50cf0b7f8a1a1a3daf799b6ffeacd75c1b";
          }) {}));
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
@@ -186,9 +186,8 @@ in
         tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "01fzpgh59nzn2z369lnc1nibnpa584s7migpywvj1k8vj7wbhc0x";
-          rev = "424877c570002dd1ac3be0f232204a21e1387bd5";
-          fetchSubmodules = true;
+          sha256 = "0fx7km09f70y7f5wmqs3j126jgryzxp66vbkvri6kcimxja36914";
+          rev = "8de2f9f6cdb661bece46b384b126e5e97b7dbc78";          fetchSubmodules = true;
           }) "" {}));
 
         tidal-parse = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
@@ -196,9 +195,8 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "01fzpgh59nzn2z369lnc1nibnpa584s7migpywvj1k8vj7wbhc0x";
-            rev = "424877c570002dd1ac3be0f232204a21e1387bd5";
-            fetchSubmodules = true;
+            sha256 = "0fx7km09f70y7f5wmqs3j126jgryzxp66vbkvri6kcimxja36914";
+            rev = "8de2f9f6cdb661bece46b384b126e5e97b7dbc78";            fetchSubmodules = true;
               })
             "--subpath tidal-parse" {}));
 
@@ -224,8 +222,8 @@ in
           dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "seis8s";
-           sha256 = "0g1ilwd1wikgf5lckk0nrgg6xdrachgj8b7779a8v2rdh3gki5g3";
-           rev = "4e48e02b95e46c0377db95b6829912f81faac8c6";
+           sha256 = "0fyiiqya4rfq9h8q17rarv06vizd967jxc353kznadj93asi4his";
+           rev = "a3f9ea35b9037df3f8405dc66c20b19f92b1a675";
          }) {});
       };
     in

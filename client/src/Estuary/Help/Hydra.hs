@@ -45,11 +45,16 @@ notWorkingFunctionsHydra = el "div" $ do
     ])
   el "ul" $ do
     el "li" $ dynText =<< (translatableText $ fromList [
-      (English,"External source-input functions (video, image, screen, camera), i.e."),
-      (Español,"Funciones para entradas de fuentes externas (video, imagen, captura de pantalla, cámara), ej.")
+      (English,"External video and image source-input functions, i.e."),
+      (Español,"Funciones para entradas de fuentes externas para video e imagen, ej.")
       ])
-    el "div" $ elClass "div" "ieRef" $ text "s0.initScreen()"
-    el "div" $ elClass "div" "ieRef" $ text "scr(s0)"
+    el "div" $ elClass "div" "ieRef" $ text "s0.initVideo()"
+    el "div" $ elClass "div" "ieRef" $ text "s0.initImage()"
+    el "li" $ dynText =<< (translatableText $ fromList [
+      (English,"Output (o0,o1,o2,o3) as a parameter in src(), i.e."),
+      (Español,"Salidas (o0,o1,o2,o3) como parametro en src(), ej.")
+      ])
+    el "div" $ elClass "div" "ieRef" $ text "src.(o1).out()"
     el "li" $ dynText =<< (translatableText $ fromList [
       (English,"Anonymous functions as parameters, i.e."),
       (Español,"Funciones anónimas como parámetros, ej.")
@@ -62,7 +67,3 @@ notWorkingFunctionsHydra = el "div" $ do
       ])
     el "div" $ elClass "div" "ieRef" $ text "a.show()"
     el "div" $ elClass "div" "ieRef" $ text "()=>a.fft[1]"
-    el "li" $ dynText =<< (translatableText $ fromList [
-      (English,"Division of screen into 4 when rendering the four different outputs, i.e."),
-      (Español,"División de la pantalla en 4 cuando se renderizan los cuatro diferentes salidas, ej.")
-      ])

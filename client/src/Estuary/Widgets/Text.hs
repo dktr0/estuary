@@ -77,8 +77,9 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo 
   let initialParser = (\(x,_,_) -> x) $ forEditing i
   let initialText = (\(_,x,_) -> x) $ forEditing i
   let deltaFuture = fmap forEditing $ updated deltasDown
-  parserDelta <- holdUniq initialParser $ fmap (\(x,_,_) -> x) deltaFuture
-  textDelta <- holdUniq initialText $ fmap (\(_,x,_) -> x) deltaFuture
+
+  let parserDelta = attachWithMaybe (\(x,_,_) (y,_,_) -> if x==y then Nothing else Just y) (fmap forEditing $ current $ currentValue cv) deltaFuture
+  let textDelta = attachWithMaybe (\(_,x,_) (_,y,_) -> if x==y then Nothing else Just y) (fmap forEditing $ current $ currentValue cv) deltaFuture
   errorText' <- holdUniqDyn errorText
 
   -- determine whether we currently display "eval flash" or not

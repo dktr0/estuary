@@ -16,7 +16,11 @@ data EnsembleRequest =
   WriteZone Int Definition |
   WriteView Text View |
   WriteChat Text |
-  WriteStatus Text
+  WriteStatus Text |
+  ResetZonesRequest |
+  ResetViewsRequest |
+  ResetTempoRequest Tempo |
+  ResetRequest Tempo
   deriving (Eq,Generic)
 
 instance ToJSON EnsembleRequest where
