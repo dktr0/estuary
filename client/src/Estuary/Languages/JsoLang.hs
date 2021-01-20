@@ -6,6 +6,7 @@ import GHCJS.Types
 import GHCJS.Marshal.Pure
 import GHCJS.Nullable
 import Data.Text
+import Control.Exception
 
 newtype JsoLang = JsoLang JSVal
 
@@ -14,10 +15,17 @@ instance PToJSVal JsoLang where pToJSVal (JsoLang x) = x
 instance PFromJSVal JsoLang where pFromJSVal = JsoLang
 
 foreign import javascript safe
-  "eval(\"{parse:function(input){\" + $1 + \"}}\")"
-  create :: Text -> IO JsoLang
-  -- but really this needs to be safer, more along the lines of parse below
-  -- ie. IO (Either Text JsoLang)
+  "new Function('input',$1)"
+  _create :: Text -> IO (Nullable JsoLang)
+
+create :: Text -> IO (Either Text JsoLang)
+create x = do
+  (do
+    y <- nullableToMaybe <$> _create x
+    case y of
+      Just j -> return $ Right j
+      Nothing -> return $ Left "strange error: evaluating parser returned null"
+   ) `catch` (\e -> return $ Left $ pack $ show (e :: SomeException))
 
 parse :: JsoLang -> Text -> IO (Either Text Text)
 parse jsoLang input = do
@@ -32,7 +40,7 @@ parse jsoLang input = do
         Nothing -> return $ Left "jsolang: .parse did not return a valid object"
 
 foreign import javascript safe
-  "$1.parse($2)"
+  "$1($2)"
   _parse :: JsoLang -> Text -> IO JSVal
 
 foreign import javascript safe

@@ -13,7 +13,9 @@ data TextNotation =
   CineCer0 |
   TimeNot |
   Seis8s |
-  Hydra
+  Hydra |
+  JsoParser |
+  JsoLang
   -- Ver |
   -- Oir
   deriving (Read,Eq,Ord,Show,Generic)
