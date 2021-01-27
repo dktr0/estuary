@@ -55,11 +55,13 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
+import Estuary.Types.TidalParser
 import Estuary.Tidal.Types
 import Estuary.Tidal.ParamPatternable
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
 import Estuary.Languages.TextReplacement
+import qualified Estuary.Languages.JsoLang as JsoLang
 import qualified Estuary.Render.WebDirt as WebDirt
 import qualified Estuary.Render.SuperDirt as SuperDirt
 import Estuary.Types.NoteEvent
@@ -463,6 +465,27 @@ renderBaseProgramChanged irc c z (Right (Seis8s,x,eTime)) = do
       modify' $ \x -> x { seis8ses = insert z p (seis8ses s) }
     Left e -> setZoneError z (T.pack $ show e)
 
+renderBaseProgramChanged irc c z (Right (JsoParser,x,eTime)) = do
+  parseResult <- liftIO $ JsoLang.create x
+  case parseResult of
+    Right j -> do
+      clearZoneError z
+      s <- get
+      modify' $ \x -> x { jsoLang = Just j }
+    Left e -> setZoneError z (T.pack $ show e)
+
+renderBaseProgramChanged irc c z (Right (JsoLang,x,eTime)) = do
+  maybeJsoLang <- jsoLang <$> get
+  case maybeJsoLang of
+    Just j -> do
+      parseResult <- liftIO $ JsoLang.parse j x
+      case parseResult of
+        Right x' -> do
+          -- liftIO $ T.putStrLn x'
+          renderBaseProgramChanged irc c z (Right (TidalTextNotation MiniTidal,x',eTime))
+        Left e -> setZoneError z e
+    Nothing -> setZoneError z "no valid JsoLang exists"
+
 renderBaseProgramChanged irc c z _ = setZoneError z "renderBaseProgramChanged: no match for base language"
 
 parsePunctualNotation :: ImmutableRenderContext -> Context -> Int -> (Text -> Either ParseError Punctual.Program) -> Text -> Renderer
@@ -536,6 +559,7 @@ renderTextProgramAlways irc c z eTime = do
   renderBaseProgramAlways irc c z eTime $ baseNotation
 
 renderBaseProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Maybe TextNotation -> Renderer
+renderBaseProgramAlways irc c z _ (Just JsoLang) = renderControlPattern irc c z
 renderBaseProgramAlways irc c z _ (Just (TidalTextNotation _)) = renderControlPattern irc c z
 renderBaseProgramAlways irc c z _ (Just TimeNot) = do
   s <- get
