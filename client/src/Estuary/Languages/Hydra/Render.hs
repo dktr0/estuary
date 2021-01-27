@@ -384,6 +384,12 @@ evaluateStatement h (Speed x) = _speed h (parametersToJS x)
 evaluateStatement h (Render o) = _render h (maybeOutputToJS h o)
 evaluateStatement h (InitScreen i) = _initScreen (inputToJS h i)
 evaluateStatement h (InitCam i) = _initCam (inputToJS h i)
+-- evaluateStatement h (InitVideo i s) = _initVideo (inputToJS h i) string???
+
+--h.synth.s0.initVideo("https://github.com/jac307/memoriasSamples/blob/master/videoSamples/agua.mov?raw=true")
+-- foreign import javascript safe
+--   "$1.initVideo($2);"
+--   _initVideo :: JSInput -> JSString? -> IO()
 
 maybeOutputToJS :: Hydra -> Maybe Output -> JSVal
 maybeOutputToJS h Nothing = nullRef

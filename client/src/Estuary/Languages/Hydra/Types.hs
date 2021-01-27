@@ -74,8 +74,10 @@ data Output =
 data Statement =
   InitScreen Input | --s0.InitScreen()
   InitCam Input | --s0.InitCam()
-  --InitVideo Input String | --s0.initVideo(url)
+  InitVideo Input String | --s0.initVideo(url) -- should be Text
   Out Source Output | --solid().out()
   Render (Maybe Output) | --render(o2)
   Speed Parameters -- speed = 1.5
+  -- setResolution()
   deriving (Show)
+  -- add setResolution()

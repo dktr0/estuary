@@ -31,6 +31,7 @@ statement = try $ choice [
   try renderStatement,
   try $ inputStatement "initCam" InitCam,
   try $ inputStatement "initScreen" InitScreen,
+  try $ inputStatementString "initVideo" InitVideo,
   try speedStatement
   ]
 
@@ -64,7 +65,6 @@ outputForRender = try $ choice [
   ]
 
 -- s0.initScreen()  -- s1.initCam()
--- need to update hydra file but it can also work with s0.initVideo() s0.initImage()
 inputStatement :: String -> (Input -> Statement) -> Parser Statement
 inputStatement x z = do
   i <- input
@@ -72,6 +72,21 @@ inputStatement x z = do
   reserved x
   _ <- parens $ commaSep parameters
   return $ z i
+
+-- s0.initVideo(url) s0.initImage(url)
+inputStatementString :: String -> (Input -> String -> Statement) -> Parser Statement
+inputStatementString x z = do
+  i <- input
+  reservedOp "."
+  reserved x
+  s <- parens stringLiteral
+  return $ z i s
+
+  -- check https://hackage.haskell.org/package/text-1.2.4.0/docs/Data-Text.html
+  -- to convert Text to String and vice versa
+  -- @Jessica A. Rodriguez JSString is okay - there are functions to convert String to JSString (I forget what they are called off the top of my head but you'll probably find them if you search Estuary's codebase for occurrences of JSString). Alternately, I think if instead of using String you represent things with Text wherever possible (it's not possible everywhere because of pre-existing APIs, but it is possible in our representations, for example) then you can use Text instead of JSString in JavaScript FFI definitions (like _initVideo above)
+-- 2:59
+-- (as I understand it Text is secretly actually a JSString anyway, when we are using Reflex FRP)
 
 input :: Parser Input
 input = try $ choice [
@@ -256,7 +271,7 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
     "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
     "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
     "add", "mult", "blend", "diff", "layer", "mask",
-    "o0","o1","o2","o3", "s0", "s1", "s2", "s3"
+    "o0","o1","o2","o3", "s0", "s1", "s2", "s3", "initScreen", "initCam", "initVideo"
     ],
   P.reservedOpNames = [".", "="],
   P.caseSensitive = False
