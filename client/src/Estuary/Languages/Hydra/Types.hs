@@ -1,5 +1,7 @@
 module Estuary.Languages.Hydra.Types where
 
+import Data.Text (Text)
+
 data Parameters =
   Parameters [Double] | -- [0.2,0.4] -- [0.3,0.4,1.0]
   Fast [Double] Parameters | -- [].fast(1.5)
@@ -74,10 +76,10 @@ data Output =
 data Statement =
   InitScreen Input | --s0.InitScreen()
   InitCam Input | --s0.InitCam()
-  InitVideo Input String | --s0.initVideo(url) -- should be Text
+  InitVideo Input Text | --s0.initVideo(url)
+  InitImage Input Text | --s0.initImage(url)
   Out Source Output | --solid().out()
   Render (Maybe Output) | --render(o2)
   Speed Parameters -- speed = 1.5
-  -- setResolution()
+  --SetResolution Parameters Parameters -- setResolution(w,h)
   deriving (Show)
-  -- add setResolution()

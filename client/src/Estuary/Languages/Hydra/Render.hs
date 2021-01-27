@@ -2,6 +2,8 @@
 
 module Estuary.Languages.Hydra.Render (Hydra(..),newHydra,setResolution,evaluate,tick) where
 
+import Data.Text (Text)
+import qualified Data.Text as T
 import GHCJS.Types
 import GHCJS.DOM.Types (HTMLCanvasElement)
 import GHCJS.Marshal.Pure
@@ -337,7 +339,6 @@ foreign import javascript safe "$1.synth.src($1.o[1])" _oToJSs1 :: Hydra -> JSSo
 foreign import javascript safe "$1.synth.src($1.o[2])" _oToJSs2 :: Hydra -> JSSource
 foreign import javascript safe "$1.synth.src($1.o[3])" _oToJSs3 :: Hydra -> JSSource
 
-
 outputToJS :: Hydra -> Output -> JSVal
 outputToJS h O0 = _oToJSo0 h
 outputToJS h O1 = _oToJSo1 h
@@ -384,12 +385,8 @@ evaluateStatement h (Speed x) = _speed h (parametersToJS x)
 evaluateStatement h (Render o) = _render h (maybeOutputToJS h o)
 evaluateStatement h (InitScreen i) = _initScreen (inputToJS h i)
 evaluateStatement h (InitCam i) = _initCam (inputToJS h i)
--- evaluateStatement h (InitVideo i s) = _initVideo (inputToJS h i) string???
-
---h.synth.s0.initVideo("https://github.com/jac307/memoriasSamples/blob/master/videoSamples/agua.mov?raw=true")
--- foreign import javascript safe
---   "$1.initVideo($2);"
---   _initVideo :: JSInput -> JSString? -> IO()
+evaluateStatement h (InitVideo i s) = _initVideo (inputToJS h i) s
+evaluateStatement h (InitImage i s) = _initImage (inputToJS h i) s
 
 maybeOutputToJS :: Hydra -> Maybe Output -> JSVal
 maybeOutputToJS h Nothing = nullRef
@@ -416,3 +413,12 @@ foreign import javascript safe
 foreign import javascript safe
   "$1.initCam();"
   _initCam :: JSInput -> IO ()
+
+--h.synth.s0.initVideo("https://github.com/jac307/memoriasSamples/blob/master/videoSamples/agua.mov?raw=true")
+foreign import javascript safe
+  "$1.initVideo($2);"
+  _initVideo :: JSInput -> Text -> IO()
+
+foreign import javascript safe
+  "$1.initImage($2);"
+  _initImage :: JSInput -> Text -> IO()
