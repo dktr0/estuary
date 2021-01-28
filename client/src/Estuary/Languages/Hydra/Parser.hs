@@ -31,6 +31,8 @@ statement = try $ choice [
   try renderStatement,
   try $ inputStatement "initCam" InitCam,
   try $ inputStatement "initScreen" InitScreen,
+  try $ inputStatementString "initVideo" InitVideo,
+  try $ inputStatementString "initImage" InitImage,
   try speedStatement
   ]
 
@@ -64,7 +66,6 @@ outputForRender = try $ choice [
   ]
 
 -- s0.initScreen()  -- s1.initCam()
--- need to update hydra file but it can also work with s0.initVideo() s0.initImage()
 inputStatement :: String -> (Input -> Statement) -> Parser Statement
 inputStatement x z = do
   i <- input
@@ -72,6 +73,15 @@ inputStatement x z = do
   reserved x
   _ <- parens $ commaSep parameters
   return $ z i
+
+-- s0.initVideo(url) s0.initImage(url)
+inputStatementString :: String -> (Input -> Text -> Statement) -> Parser Statement
+inputStatementString x z = do
+  i <- input
+  reservedOp "."
+  reserved x
+  s <- parens stringLiteral
+  return $ z i (T.pack s)
 
 input :: Parser Input
 input = try $ choice [
@@ -150,8 +160,8 @@ srcFunction = do
 
 srcFunctionArgument :: Parser Source
 srcFunctionArgument = try $ choice [
-  inputAsSource, --s0,s1,s2,s3
-  outputAsSource --o0,o1,o2,o3
+  try $ inputAsSource, --s0,s1,s2,s3
+  try $ outputAsSource --o0,o1,o2,o3
   ]
 
 inputAsSource :: Parser Source
@@ -230,7 +240,6 @@ methodForLists methodName constructor = try $ do
   p <- parens $ commaSep double
   return $ constructor p
 
-
 double :: Parser Double
 double = choice [
   symbol "-" >> double >>= return . (* (-1)),
@@ -256,11 +265,12 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
     "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
     "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
     "add", "mult", "blend", "diff", "layer", "mask",
-    "o0","o1","o2","o3", "s0", "s1", "s2", "s3"
+    "o0","o1","o2","o3", "s0", "s1", "s2", "s3", "initScreen", "initCam", "initVideo", "initImage"
     ],
   P.reservedOpNames = [".", "="],
   P.caseSensitive = False
   }
+
 
 identifier = P.identifier tokenParser
 reserved = P.reserved tokenParser
