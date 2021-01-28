@@ -35,6 +35,12 @@ examplesHydra = el "div" $ do
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "shape([3,4,5,6].smooth()).repeat(20).kaleid().modulateScale(o0,0.2,0.5).out()"
     el "li" $ elClass "div" "ieRef" $ text "osc(10, -5, [0.4,0.9].smooth()).modulateRotate(o0, [1.5,2.5,3.5].fast(3).smooth()).out(o0)"
+  dynText =<< (translatableText $ fromList [
+    (English,"Write ; (semicolon) to separate different evaluation lines:"),
+    (Español,"Escribe ; (punto y coma) para separar diferentes lineas de evaluación:")
+    ])
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text "s0.initVideo(\"videos/hogweed.mov\"); src(s0).out()"
 
 
 notWorkingFunctionsHydra :: MonadWidget t m => Editor t m ()
@@ -45,16 +51,9 @@ notWorkingFunctionsHydra = el "div" $ do
     ])
   el "ul" $ do
     el "li" $ dynText =<< (translatableText $ fromList [
-      (English,"External video and image source-input functions, i.e."),
-      (Español,"Funciones para entradas de fuentes externas para video e imagen, ej.")
+      (English,"setResolution function"),
+      (Español,"Función setResolution")
       ])
-    el "div" $ elClass "div" "ieRef" $ text "s0.initVideo()"
-    el "div" $ elClass "div" "ieRef" $ text "s0.initImage()"
-    el "li" $ dynText =<< (translatableText $ fromList [
-      (English,"Output (o0,o1,o2,o3) as a parameter in src(), i.e."),
-      (Español,"Salidas (o0,o1,o2,o3) como parametro en src(), ej.")
-      ])
-    el "div" $ elClass "div" "ieRef" $ text "src.(o1).out()"
     el "li" $ dynText =<< (translatableText $ fromList [
       (English,"Anonymous functions as parameters, i.e."),
       (Español,"Funciones anónimas como parámetros, ej.")
