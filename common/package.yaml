@@ -19,6 +19,7 @@ dependencies:
   - tempi
   - parsec
   - witherable
+  - mtl
 
 extra-source-files:
   - package.yaml

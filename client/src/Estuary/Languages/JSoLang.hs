@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Languages.JsoLang (JsoLang, create, parse) where
+module Estuary.Languages.JSoLang (JSoLang, create, parse) where
 
 import GHCJS.Types
 import GHCJS.Marshal.Pure
@@ -8,17 +8,17 @@ import GHCJS.Nullable
 import Data.Text
 import Control.Exception
 
-newtype JsoLang = JsoLang JSVal
+newtype JSoLang = JSoLang JSVal
 
-instance PToJSVal JsoLang where pToJSVal (JsoLang x) = x
+instance PToJSVal JSoLang where pToJSVal (JSoLang x) = x
 
-instance PFromJSVal JsoLang where pFromJSVal = JsoLang
+instance PFromJSVal JSoLang where pFromJSVal = JSoLang
 
 foreign import javascript safe
   "new Function('input',$1)"
-  _create :: Text -> IO (Nullable JsoLang)
+  _create :: Text -> IO (Nullable JSoLang)
 
-create :: Text -> IO (Either Text JsoLang)
+create :: Text -> IO (Either Text JSoLang)
 create x = do
   (do
     y <- nullableToMaybe <$> _create x
@@ -27,7 +27,7 @@ create x = do
       Nothing -> return $ Left "strange error: evaluating parser returned null"
    ) `catch` (\e -> return $ Left $ pack $ show (e :: SomeException))
 
-parse :: JsoLang -> Text -> IO (Either Text Text)
+parse :: JSoLang -> Text -> IO (Either Text Text)
 parse jsoLang input = do
   x <- _parse jsoLang input
   ok <- nullableToMaybe <$> _ok x
@@ -41,7 +41,7 @@ parse jsoLang input = do
 
 foreign import javascript safe
   "$1($2)"
-  _parse :: JsoLang -> Text -> IO JSVal
+  _parse :: JSoLang -> Text -> IO JSVal
 
 foreign import javascript safe
   "$1.error"

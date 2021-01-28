@@ -60,8 +60,7 @@ import Estuary.Tidal.Types
 import Estuary.Tidal.ParamPatternable
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
-import Estuary.Languages.TextReplacement
-import qualified Estuary.Languages.JsoLang as JsoLang
+import qualified Estuary.Languages.JSoLang as JSoLang
 import qualified Estuary.Render.WebDirt as WebDirt
 import qualified Estuary.Render.SuperDirt as SuperDirt
 import Estuary.Types.NoteEvent
@@ -408,102 +407,104 @@ renderZoneAlways irc c z (TextProgram x) = do
 renderZoneAlways irc c z (Sequence _) = renderControlPattern irc c z
 renderZoneAlways _ _ _ _ = return ()
 
+setBaseNotation :: Int -> TextNotation -> Renderer
+setBaseNotation z n = modify' $ \x -> x { baseNotations = insert z n $ baseNotations x}
+
+setEvaluationTime :: Int -> UTCTime -> Renderer
+setEvaluationTime z n = modify' $ \x -> x { evaluationTimes = insert z n $ evaluationTimes x}
+
 renderTextProgramChanged :: ImmutableRenderContext -> Context -> Int -> TextProgram -> Renderer
-renderTextProgramChanged irc c z prog = do
-  let x = applyTextReplacement prog
-  renderBaseProgramChanged irc c z x
-  case x of
-    (Right x') -> do
-      let (n,_,eTime) = x'
-      s <- get
-      let oldBaseNotations = baseNotations s
-      let oldEvaluationTimes = evaluationTimes s
-      modify' $ \y -> y { baseNotations = insert z n oldBaseNotations, evaluationTimes = insert z eTime oldEvaluationTimes }
-    (Left _) -> return ()
 
-renderBaseProgramChanged :: ImmutableRenderContext -> Context -> Int -> Either ParseError TextProgram -> Renderer
+renderTextProgramChanged irc c z (UnspecifiedNotation,x,eTime) = do
+  ns <- (Map.keys . jsoLangs) <$> get
+  case determineTextNotation x ns of
+    Left err -> do
+      setZoneError z (T.pack $ show err)
+      setBaseNotation z UnspecifiedNotation
+    Right (x',n) -> do
+      case n of
+        UnspecifiedNotation -> do
+          setZoneError z "no base notation specified"
+          setBaseNotation z UnspecifiedNotation
+        _-> renderTextProgramChanged irc c z (n,x',eTime)
 
-renderBaseProgramChanged irc c z (Left e) = setZoneError z (T.pack $ show e)
-
-renderBaseProgramChanged irc c z (Right (TidalTextNotation x,y,_)) = do
+renderTextProgramChanged irc c z (TidalTextNotation x,y,eTime) = do
   s <- get
   parseResult <- liftIO $ (return $! force (tidalParser x y)) `catch` (return . Left . (show :: SomeException -> String))
-  let newParamPatterns = either (const $ paramPatterns s) (\p -> insert z p (paramPatterns s)) parseResult
-  let newErrors = either (\e -> insert z (T.pack e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
-  modify' $ \x -> x { paramPatterns = newParamPatterns, info = (info s) { errors = newErrors} }
+  case parseResult of
+    Right p -> do
+      clearZoneError z
+      setBaseNotation z (TidalTextNotation x)
+      setEvaluationTime z eTime
+      modify' $ \xx -> xx { paramPatterns = insert z p $ paramPatterns xx }
+    Left err -> setZoneError z $ T.pack err
 
-renderBaseProgramChanged irc c z (Right (Punctual,x,eTime)) = parsePunctualNotation' irc c z x eTime
+renderTextProgramChanged irc c z (Punctual,x,eTime) = parsePunctualNotation irc c z x eTime
 
-renderBaseProgramChanged irc c z (Right (Hydra,x,_)) = parseHydra irc c z x
+renderTextProgramChanged irc c z (Hydra,x,_) = parseHydra irc c z x
 
-renderBaseProgramChanged irc c z (Right (CineCer0,x,eTime)) = do
+renderTextProgramChanged irc c z (CineCer0,x,eTime) = do
   let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack x -- Either String CineCer0Spec
-  when (isRight parseResult) $ do
-    let spec :: CineCer0.Spec = fromRight (CineCer0.emptySpec eTime) parseResult
-    s <- get
-    modify' $ \x -> x { cineCer0Specs = insert z spec (cineCer0Specs s) }
-    clearZoneError z
-  when (isLeft parseResult) $ do
-    let err = fromLeft "" parseResult
-    setZoneError z (T.pack err)
+  case parseResult of
+    Right spec -> do
+      clearZoneError z
+      setBaseNotation z CineCer0
+      setEvaluationTime z eTime
+      modify' $ \xx -> xx { cineCer0Specs = insert z spec $ cineCer0Specs xx }
+    Left err -> setZoneError z (T.pack err)
 
-renderBaseProgramChanged irc c z (Right (TimeNot,x,eTime)) = do
+renderTextProgramChanged irc c z (TimeNot,x,eTime) = do
   let parseResult = TimeNot.runCanonParser $ T.unpack x
   case parseResult of
-    (Right p) -> do
+    Right p -> do
       clearZoneError z
-      s <- get
-      modify' $ \x -> x { timeNots = insert z p (timeNots s) }
-    (Left e) -> setZoneError z (T.pack $ show e)
+      setBaseNotation z TimeNot
+      setEvaluationTime z eTime
+      modify' $ \xx -> xx { timeNots = insert z p (timeNots xx) }
+    Left e -> setZoneError z (T.pack $ show e)
 
-renderBaseProgramChanged irc c z (Right (Seis8s,x,eTime)) = do
+renderTextProgramChanged irc c z (Seis8s,x,eTime) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
   case parseResult of
     Right p -> do
       clearZoneError z
-      s <- get
-      modify' $ \x -> x { seis8ses = insert z p (seis8ses s) }
+      setBaseNotation z Seis8s
+      setEvaluationTime z eTime
+      modify' $ \xx -> xx { seis8ses = insert z p $ seis8ses xx }
     Left e -> setZoneError z (T.pack $ show e)
 
-renderBaseProgramChanged irc c z (Right (JsoParser,x,eTime)) = do
-  parseResult <- liftIO $ JsoLang.create x
+renderTextProgramChanged irc c z (JSoLang x,y,eTime) = do
+  parseResult <- liftIO $ JSoLang.create y
   case parseResult of
     Right j -> do
       clearZoneError z
-      s <- get
-      modify' $ \x -> x { jsoLang = Just j }
+      setBaseNotation z (JSoLang x)
+      setEvaluationTime z eTime
+      modify' $ \xx -> xx { jsoLangs = Map.insert x j $ jsoLangs xx }
     Left e -> setZoneError z (T.pack $ show e)
 
-renderBaseProgramChanged irc c z (Right (JsoLang,x,eTime)) = do
-  maybeJsoLang <- jsoLang <$> get
-  case maybeJsoLang of
+renderTextProgramChanged irc c z (EphemeralNotation x,y,eTime) = do
+  maybeJSoLang <- (Map.lookup x . jsoLangs) <$> get
+  case maybeJSoLang of
     Just j -> do
-      parseResult <- liftIO $ JsoLang.parse j x
+      parseResult <- liftIO $ JSoLang.parse j y
       case parseResult of
         Right x' -> do
           -- liftIO $ T.putStrLn x'
-          renderBaseProgramChanged irc c z (Right (TidalTextNotation MiniTidal,x',eTime))
+          renderTextProgramChanged irc c z (UnspecifiedNotation,x',eTime)
         Left e -> setZoneError z e
-    Nothing -> setZoneError z "no valid JsoLang exists"
+    Nothing -> setZoneError z $ "no JSoLang called " <> y <> " exists"
 
-renderBaseProgramChanged irc c z _ = setZoneError z "renderBaseProgramChanged: no match for base language"
+renderTextProgramChanged irc c z _ = setZoneError z "renderTextProgramChanged: no match for base notation"
 
-parsePunctualNotation :: ImmutableRenderContext -> Context -> Int -> (Text -> Either ParseError Punctual.Program) -> Text -> Renderer
-parsePunctualNotation irc c z p t = do
-  s <- get
-  let parseResult = p t
-  case parseResult of
-    Right punctualProgram -> punctualProgramChanged irc c z punctualProgram
-    Left _ -> return ()
-  let newErrors = either (\e -> insert z (T.pack $ show e) (errors (info s))) (const $ delete z (errors (info s))) parseResult
-  modify' $ \x -> x { info = (info s) { errors = newErrors }}
-
-parsePunctualNotation' :: ImmutableRenderContext -> Context -> Int -> Text -> UTCTime -> Renderer
-parsePunctualNotation' irc c z t eTime = do
+parsePunctualNotation :: ImmutableRenderContext -> Context -> Int -> Text -> UTCTime -> Renderer
+parsePunctualNotation irc c z t eTime = do
   s <- get
   parseResult <- liftIO $ try $ return $! Punctual.parse eTime t
   parseResult' <- case parseResult of
     Right (Right punctualProgram) -> do
+      setBaseNotation z Punctual
+      setEvaluationTime z eTime
       punctualProgramChanged irc c z punctualProgram
       return (Right punctualProgram)
     Right (Left parseErr) -> return (Left $ T.pack $ show parseErr)
@@ -518,6 +519,8 @@ parseHydra irc c z t = do
  case parseResult of
    Right (Right stmts) -> do
      clearZoneError z
+     setBaseNotation z Punctual
+     -- setEvaluationTime z eTime ???
      let x = IntMap.lookup z $ hydras s
      hydra <- case x of
        Just h -> return h
@@ -559,7 +562,6 @@ renderTextProgramAlways irc c z eTime = do
   renderBaseProgramAlways irc c z eTime $ baseNotation
 
 renderBaseProgramAlways :: ImmutableRenderContext -> Context -> Int -> UTCTime -> Maybe TextNotation -> Renderer
-renderBaseProgramAlways irc c z _ (Just JsoLang) = renderControlPattern irc c z
 renderBaseProgramAlways irc c z _ (Just (TidalTextNotation _)) = renderControlPattern irc c z
 renderBaseProgramAlways irc c z _ (Just TimeNot) = do
   s <- get
