@@ -30,6 +30,7 @@ import Text.Parsec (ParseError)
 import qualified Data.ByteString as B
 import GHCJS.DOM.Types (HTMLCanvasElement)
 import Data.Witherable
+import Data.Char
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Punctual.Program as Punctual
@@ -424,8 +425,13 @@ renderTextProgramChanged irc c z (UnspecifiedNotation,x,eTime) = do
     Right (x',n) -> do
       case n of
         UnspecifiedNotation -> do
-          setZoneError z "no base notation specified"
-          setBaseNotation z UnspecifiedNotation
+          case T.filter (\c -> not (isControl c) && not (isSpace c)) x' of
+            "" -> do -- notation is unspecified but
+              clearZoneError z
+              setBaseNotation z UnspecifiedNotation
+            _ -> do
+              setZoneError z "no base notation specified"
+              setBaseNotation z UnspecifiedNotation
         _-> renderTextProgramChanged irc c z (n,x',eTime)
 
 renderTextProgramChanged irc c z (TidalTextNotation x,y,eTime) = do
