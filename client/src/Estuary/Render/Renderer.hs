@@ -308,8 +308,8 @@ renderAnimation = do
   fpsl <- gets animationFpsLimit
   let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
   when okToRender $ do
-    defs <- gets cachedDefs
-    traverseWithKey (renderZoneAnimation t1) defs
+    ns <- baseNotations <$> get
+    traverseWithKey (renderZoneAnimation t1) ns
     s  <- get
     newWebGL <- liftIO $
        Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
@@ -330,22 +330,21 @@ renderAnimation = do
         }
       }
 
-renderZoneAnimation :: UTCTime -> Int -> Definition -> Renderer
-renderZoneAnimation tNow z (TextProgram x) = do
+renderZoneAnimation :: UTCTime -> Int -> TextNotation -> Renderer
+renderZoneAnimation tNow z n = do
   t1 <- liftIO $ getCurrentTime
-  renderZoneAnimationTextProgram tNow z $ forRendering x
+  renderZoneAnimationTextProgram tNow z n
   t2 <- liftIO $ getCurrentTime
-  s <- get
-  let prevZoneAnimationTimes = findWithDefault (newAverage 20) z $ zoneAnimationTimes s
+  prevTimes <- zoneAnimationTimes <$> get
+  let prevZoneAnimationTimes = findWithDefault (newAverage 20) z prevTimes
   let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
-  modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes (zoneAnimationTimes s) }
+  modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes prevTimes }
   return ()
-renderZoneAnimation  _ _ _ = return ()
 
-renderZoneAnimationTextProgram :: UTCTime -> Int -> TextProgram -> Renderer
-renderZoneAnimationTextProgram tNow z (Punctual,x,eTime) = renderPunctualWebGL tNow z
-renderZoneAnimationTextProgram tNow z (CineCer0,x,eTime) = renderCineCer0 tNow z
-renderZoneAnimationTextProgram tNow z (Hydra,x,eTime) = renderHydra tNow z
+renderZoneAnimationTextProgram :: UTCTime -> Int -> TextNotation -> Renderer
+renderZoneAnimationTextProgram tNow z Punctual = renderPunctualWebGL tNow z
+renderZoneAnimationTextProgram tNow z CineCer0 = renderCineCer0 tNow z
+renderZoneAnimationTextProgram tNow z Hydra = renderHydra tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
 updatePunctualResolutionAndBrightness :: Context -> Renderer
@@ -384,7 +383,7 @@ renderHydra tNow z = do
   let elapsed = realToFrac $ diffUTCTime tNow wta * 1000
   let x = IntMap.lookup z $ hydras s
   case x of
-    Just hydra -> liftIO $ Hydra.tick hydra 16.6667
+    Just hydra -> liftIO $ Hydra.tick hydra elapsed
     Nothing -> return ()
 
 renderZoneChanged :: ImmutableRenderContext -> Context -> Int -> Definition -> Renderer
@@ -525,7 +524,7 @@ parseHydra irc c z t = do
  case parseResult of
    Right (Right stmts) -> do
      clearZoneError z
-     setBaseNotation z Punctual
+     setBaseNotation z Hydra
      -- setEvaluationTime z eTime ???
      let x = IntMap.lookup z $ hydras s
      hydra <- case x of
