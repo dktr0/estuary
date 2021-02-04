@@ -417,6 +417,7 @@ renderTextProgramChanged :: ImmutableRenderContext -> Context -> Int -> TextProg
 
 renderTextProgramChanged irc c z (UnspecifiedNotation,x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
+  liftIO $ T.putStrLn $ T.pack $ show ns
   case determineTextNotation x ns of
     Left err -> do
       setZoneError z (T.pack $ show err)
@@ -479,13 +480,14 @@ renderTextProgramChanged irc c z (Seis8s,x,eTime) = do
     Left e -> setZoneError z (T.pack $ show e)
 
 renderTextProgramChanged irc c z (JSoLang x,y,eTime) = do
-  parseResult <- liftIO $ JSoLang.create y
+  parseResult <- liftIO $ JSoLang.define y
   case parseResult of
     Right j -> do
       clearZoneError z
       setBaseNotation z (JSoLang x)
       setEvaluationTime z eTime
       modify' $ \xx -> xx { jsoLangs = Map.insert x j $ jsoLangs xx }
+      liftIO $ T.putStrLn $ "defined JSoLang " <> x
     Left e -> setZoneError z (T.pack $ show e)
 
 renderTextProgramChanged irc c z (EphemeralNotation x,y,eTime) = do
@@ -495,10 +497,11 @@ renderTextProgramChanged irc c z (EphemeralNotation x,y,eTime) = do
       parseResult <- liftIO $ JSoLang.parse j y
       case parseResult of
         Right x' -> do
-          -- liftIO $ T.putStrLn x'
+          liftIO $ T.putStrLn $ "result of parsing " <> x <> ":"
+          liftIO $ T.putStrLn x'
           renderTextProgramChanged irc c z (UnspecifiedNotation,x',eTime)
         Left e -> setZoneError z e
-    Nothing -> setZoneError z $ "no JSoLang called " <> y <> " exists"
+    Nothing -> setZoneError z $ "no ephemeral notation called " <> y <> " exists"
 
 renderTextProgramChanged irc c z _ = setZoneError z "renderTextProgramChanged: no match for base notation"
 
