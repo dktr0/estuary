@@ -1,6 +1,7 @@
 module Estuary.Types.RenderState where
 
 import Data.Time.Clock
+import qualified Data.Map as Map
 import Data.IntMap.Strict
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
@@ -8,7 +9,8 @@ import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Resolution as Punctual
 import Sound.MusicW.AudioContext
 import Sound.MusicW.Node as MusicW
-import GHCJS.DOM.Types
+import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
+import Data.Text (Text)
 import Sound.Punctual.GL
 import Data.Tempo
 
@@ -23,7 +25,7 @@ import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
-
+import Estuary.Languages.JSoLang
 
 data RenderState = RenderState {
   animationOn :: Bool,
@@ -58,7 +60,8 @@ data RenderState = RenderState {
   canvasElement :: HTMLCanvasElement,
   hydraCanvas :: HTMLCanvasElement,
   videoDivCache :: Maybe HTMLDivElement,
-  tempoCache :: Tempo
+  tempoCache :: Tempo,
+  jsoLangs :: Map.Map Text JSoLang
   }
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
@@ -66,7 +69,7 @@ initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) Punctual.HD 1.0 glCtx
   return $ RenderState {
     animationOn = False,
-    animationFpsLimit = Just 0.030, 
+    animationFpsLimit = Just 0.030,
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
     renderStart = t0System,
@@ -97,5 +100,6 @@ initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
     canvasElement = cvsElement,
     hydraCanvas = hCanvas,
     videoDivCache = Nothing,
-    tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 }
+    tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
+    jsoLangs = Map.empty
   }

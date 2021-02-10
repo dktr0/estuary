@@ -161,6 +161,7 @@ function loadJavascriptDependencies() {
     "WebDirt/Graph.js",
     "WebDirt/SampleBank.js",
     "hydra-synth.js",
+    "peg-0.10.0.min.js",
     #ifdef PRODUCTION
     "all.min.js"
     #else

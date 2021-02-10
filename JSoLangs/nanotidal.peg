@@ -1,0 +1,12 @@
+##JSoLang nanotidal
+
+// a simple JSoLang that puts the provided text inside
+// a Tidal sample pattern, ie. s "provided text"
+// any newlines after any initial whitespace are replaced
+// with spaces
+
+main = (" " / "\n" / "\r" / "\t")* p:pattern { return "##tidal\n" + p }
+
+pattern = x:char+ { return "s \"" + x.join("") + "\"" }
+
+char = x:. { if(x=="\n") return " "; else return x; }
