@@ -108,7 +108,7 @@ keysValuesParser = option id $ do
 keyValueParser :: Parser (ControlPattern -> ControlPattern)
 keyValueParser = do
   x <- choice [
-    (reserved "n" >> reservedOp "=" >> return Tidal.n) <*> doublePatternParser,
+    (reserved "n" >> reservedOp "=" >> return Tidal.n) <*> notePatternParser,
     (reserved "shape" >> reservedOp "=" >> return Tidal.shape) <*> doublePatternParser,
     (reserved "up" >> reservedOp "=" >> return Tidal.up) <*> notePatternParser,
     (reserved "note" >> reservedOp "=" >> return Tidal.note) <*> notePatternParser,

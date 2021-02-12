@@ -21,6 +21,12 @@ import Estuary.Widgets.Editor
 
 compiledAnnouncements :: Map Day [TranslatableText]
 compiledAnnouncements = fromList [
+  (read "2021-02-12",[ fromList [
+    (English,"Estuary now uses version 1.7.1 of Tidal (and MiniTidal now supports silent, stitch, stripe, fix, unfix, contrast, chooseBy, wchoose, wchooseBy, trigger, ur, layer, interlace).")
+    ]]),
+  (read "2020-12-23",[ fromList [
+    (English,"There is now a Discord server that is the main place for help, discussion, etc about Estuary. All welcome! Sign-up at the following link (note that it's recommended to make an account on discord.com first): https://discord.gg/snvFzkPtFr")
+    ]]),
   (read "2020-12-03",[ fromList [
     (English,"Estuary turns five! The 5th anniversary of the first commit to the Estuary code base will be celebrated with a day of performances, workshops, and talks, hosted by the Networked Imagination Laboratory. Full details at nil.mcmaster.ca soon!")
     ]]),

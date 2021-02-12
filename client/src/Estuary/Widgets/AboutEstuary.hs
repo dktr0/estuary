@@ -84,20 +84,9 @@ aboutEstuary = viewWidget never $ Views [
       ],
     BulletPoints [
       Views [ Text $ fromList [
-        (English,"The Estuary Google group at "),
-        (Español, "El grupo de Google de Estuary Google ")
+        (English,"The Estuary Discord server - all welcome! Sign-up at the following link (note that it's recommended to make an account on discord.com first):")
         ],
-        link "https://groups.google.com/forum/#!forum/estuary"],
-      Views [ Text $ fromList [
-        (English,"The Estuary Facebook page at "),
-        (Español, "La página de Facebook de Estuary, disponible a través de ")
-        ],
-        link "https://www.facebook.com/estuaryPlatform"],
-      Views [ Text $ fromList [
-        (English,"The #Estuary channel at "),
-        (Español, "El canal de #Estuary channel, disponible a través de ")
-        ],
-        link "https://chat.toplap.org"],
+        link "https://discord.gg/snvFzkPtFr"],
       Views [ Text $ fromList [
         (English,"Bug reports and similar issues can be filed at "),
         (Español, "Los reportes de errores y problemas similares se pueden eviar a través de ")

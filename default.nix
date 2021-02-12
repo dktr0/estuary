@@ -183,22 +183,26 @@ in
         }) {});
 
         # needs jailbreak for dependency microspec >=0.2.0.1
-        tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions "tidal"
+        tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
+        #  "tidal" ../Tidal "" {}));
+          "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0fx7km09f70y7f5wmqs3j126jgryzxp66vbkvri6kcimxja36914";
-          rev = "8de2f9f6cdb661bece46b384b126e5e97b7dbc78";          fetchSubmodules = true;
-          }) "" {}));
+          sha256 = "1r6f6kqvqkspm5p2j0dwknh201hdgh6l2ls3m13n4mmj11hfqiz1";
+          rev = "8ce92406577694324933f1c9105fa5fb4fd08ad7";
+          fetchSubmodules = true;
+        }) "" {}));
 
         tidal-parse = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
-        #    "tidal-parse" ../tidal/tidal-parse "" {}));
+        #  "tidal-parse" ../Tidal/tidal-parse "" {}));
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0fx7km09f70y7f5wmqs3j126jgryzxp66vbkvri6kcimxja36914";
-            rev = "8de2f9f6cdb661bece46b384b126e5e97b7dbc78";            fetchSubmodules = true;
-              })
-            "--subpath tidal-parse" {}));
+            sha256 = "1r6f6kqvqkspm5p2j0dwknh201hdgh6l2ls3m13n4mmj11hfqiz1";
+            rev = "8ce92406577694324933f1c9105fa5fb4fd08ad7";
+            fetchSubmodules = true;
+        })
+        "--subpath tidal-parse" {}));
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
@@ -206,8 +210,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "1lrw14v4n5cdk7b8la9z4bc9sh8n0496hb4s7fcbm6g7p5m8qc0j";
-           rev = "bd5daf365086a4b3a75af9ad9c0b6dedf687f48a";
+           sha256 = "1qawp6irlwv44njdkal6pb66cznf4q2xjkwi1vgnjfvcb4nqxlwq";
+           rev = "ce5a518073a3282a4022c03c4b97ad03cf584578";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
