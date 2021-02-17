@@ -210,8 +210,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "1qawp6irlwv44njdkal6pb66cznf4q2xjkwi1vgnjfvcb4nqxlwq";
-           rev = "ce5a518073a3282a4022c03c4b97ad03cf584578";
+           sha256 = "0z4a2snqy7m8apfb3dawjjzbbkwk6llaaykxgc1wd3001rgxxg1b";
+           rev = "fb6c02a31f96e460866731ee058fbadcecabd7b7";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
