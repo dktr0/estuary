@@ -39,7 +39,7 @@ data RenderState = RenderState {
 --  cachedCanvasElement :: !(Maybe HTMLCanvasElement),
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
-  tidalEvents :: ![(UTCTime,Tidal.ControlMap)],
+  tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap Punctual.PunctualW),
   punctualWebGL :: Punctual.PunctualWebGL,

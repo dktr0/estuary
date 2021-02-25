@@ -36,7 +36,7 @@ noteEventToSuperDirtJSVal aMap (utc,m) = do
   let t = realToFrac $ utcTimeToPOSIXSeconds utc
   mapTextJSValToJSVal (t,fmap datumToJSVal m)
 
-tidalEventToSuperDirtJSVal :: AudioMap -> (UTCTime, Tidal.ControlMap) -> IO JSVal
+tidalEventToSuperDirtJSVal :: AudioMap -> (UTCTime, Tidal.ValueMap) -> IO JSVal
 tidalEventToSuperDirtJSVal aMap (utc,m) = do
   let t = realToFrac $ utcTimeToPOSIXSeconds utc
   mapStringJSValToJSVal (t,fmap valueToJSVal m)

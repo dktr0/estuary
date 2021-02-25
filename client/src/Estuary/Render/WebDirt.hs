@@ -97,10 +97,10 @@ noteEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
           Just <$> mapTextJSValToJSVal (t',m')
         Left _ -> return Nothing
 
-makeTidalEventSafe :: Tidal.ControlMap -> Tidal.ControlMap
+makeTidalEventSafe :: Tidal.ValueMap -> Tidal.ValueMap
 makeTidalEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
-tidalEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ControlMap) -> IO (Maybe JSVal)
+tidalEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ValueMap) -> IO (Maybe JSVal)
 tidalEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
   let mSafe = if unsafe then m else makeTidalEventSafe m
   let s = Map.lookup "s" mSafe

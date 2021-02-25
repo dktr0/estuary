@@ -104,7 +104,7 @@ earlyWakeUp = 0.002
 pushNoteEvents :: [NoteEvent] -> Renderer
 pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
-pushTidalEvents :: [(UTCTime,Tidal.ControlMap)] -> Renderer
+pushTidalEvents :: [(UTCTime,Tidal.ValueMap)] -> Renderer
 pushTidalEvents xs = modify' $ \x -> x { tidalEvents = tidalEvents x ++ xs }
 
 -- flush events for SuperDirt and WebDirt
@@ -124,7 +124,7 @@ flushEvents irc c = do
   modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
   return ()
 
-renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
+renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
 renderTidalPattern start range t p = events''
   where
     start' = (realToFrac $ diffUTCTime start (time t)) * freq t + count t -- start time in cycles since beginning of tempo
