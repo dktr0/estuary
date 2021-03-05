@@ -548,7 +548,7 @@ punctualProgramChanged irc c z p = do
   let (mainBusIn,_,_,_,_) = mainBus irc
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
-  let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 (Punctual.evalTime p)) z (punctuals s)
+  let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac (mic irc) mainBusIn 2 (Punctual.evalTime p)) z (punctuals s)
   let tempo' = tempo $ ensemble $ ensembleC c
   let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ origin tempo'
   let cps' = freq tempo'
