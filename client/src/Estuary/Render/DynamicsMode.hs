@@ -22,28 +22,29 @@ instance Show DynamicsMode where
 maxDelayTime :: Double
 maxDelayTime = 10
 
-initializeMainBus :: IO (Node,Node,Node,Node,Node)
+initializeMainBus :: IO (Node,Node,Node,Node,Node,Node)
 initializeMainBus = liftAudioIO $ do
     acDestination <- createDestination
-    ((v,w,x,y,z),s) <- playSynthNow acDestination $ do
-      v <- audioIn
+    ((u,v,w,x,y,z),s) <- playSynthNow acDestination $ do
+      u <- audioIn -- WebDirt output node
+      v <- gain 1.0 u -- general input to main bus (already connected to )
       w <- delay maxDelayTime v
       x <- gain (dbamp (-10)) w
       y <- compressor (-20) 3 4 0.050 0.100 x -- args are: threshold knee ratio attack release input
       z <- gain 1.0 y
       audioOut z
-      return (v,w,x,y,z)
+      return (u,v,w,x,y,z)
+    u' <- nodeRefToNode u s
     v' <- nodeRefToNode v s
     w' <- nodeRefToNode w s
     setValue w' DelayTime 0.0
     x' <- nodeRefToNode x s
     y' <- nodeRefToNode y s
     z' <- nodeRefToNode z s
-    return (v',w',x',y',z')
+    return (u',v',w',x',y',z')
 
-
-changeDynamicsMode :: (Node,Node,Node,Node,Node) -> DynamicsMode -> IO ()
-changeDynamicsMode (input,del,preGain,comp,postGain) DefaultDynamics = liftAudioIO $ do
+changeDynamicsMode :: (Node,Node,Node,Node,Node,Node) -> DynamicsMode -> IO ()
+changeDynamicsMode (wdOutput,input,del,preGain,comp,postGain) DefaultDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to default dynamics"
   setValue preGain Gain (dbamp (-10))
   setValue comp Threshold (-20)
@@ -54,7 +55,7 @@ changeDynamicsMode (input,del,preGain,comp,postGain) DefaultDynamics = liftAudio
   setValue postGain Gain 1.0
   return ()
 
-changeDynamicsMode (input,del,preGain,comp,postGain) LoudDynamics = liftAudioIO $ do
+changeDynamicsMode (wdOutput,input,del,preGain,comp,postGain) LoudDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to loud dynamics"
   setValue preGain Gain 1.0
   setValue comp Threshold (-10)
@@ -65,7 +66,7 @@ changeDynamicsMode (input,del,preGain,comp,postGain) LoudDynamics = liftAudioIO 
   setValue postGain Gain 1.0
   return ()
 
-changeDynamicsMode (input,del,preGain,comp,postGain) WideDynamics = liftAudioIO $ do
+changeDynamicsMode (wdOutput,input,del,preGain,comp,postGain) WideDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to wide dynamics"
   setValue preGain Gain 1.0
   setValue comp Threshold 0.0
@@ -76,15 +77,15 @@ changeDynamicsMode (input,del,preGain,comp,postGain) WideDynamics = liftAudioIO 
   setValue postGain Gain (dbamp (-20))
   return ()
 
-changeDestination :: (Node, Node, Node, Node, Node) -> (forall m. AudioIO m => m Node) -> IO Node
-changeDestination (_, _, _, _, postGain) destCreator = liftAudioIO $ do
+changeDestination :: (Node, Node, Node, Node, Node, Node) -> (forall m. AudioIO m => m Node) -> IO Node
+changeDestination (_, _, _, _, _, postGain) destCreator = liftAudioIO $ do
   newDest <- destCreator
   liftIO $ disconnectAll postGain -- *** TO FIX/INVESTIGATE: will this break analysis system?
   connectNodes postGain newDest
   return newDest
 
-changeDelay :: (Node,Node,Node,Node,Node) -> AudioTime -> IO ()
-changeDelay (input,del,preGain,comp,postGain) newDelayTime | newDelayTime > maxDelayTime = putStrLn "delay time greater than maxDelayTime"
+changeDelay :: (Node,Node,Node,Node,Node,Node) -> AudioTime -> IO ()
+changeDelay (wdOutput,input,del,preGain,comp,postGain) newDelayTime | newDelayTime > maxDelayTime = putStrLn "delay time greater than maxDelayTime"
                                                            | otherwise = liftAudioIO $ do
   setValue del DelayTime newDelayTime
   return ()

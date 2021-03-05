@@ -49,16 +49,16 @@ main = do
   ac <- getGlobalAudioContextPlayback
   addWorklets ac
 
-  mainBusNodes@(mainBusIn,_,_,_,_) <- initializeMainBus
-  wd <- liftAudioIO $ newWebDirt mainBusIn
+  mainBusNodes@(wdOutput,mainBusIn,_,_,_,_) <- initializeMainBus
+  wd <- liftAudioIO $ newWebDirt wdOutput
   initializeWebAudio wd
   sd <- newSuperDirt
-  theMic <- liftAudioIO $ createMicrophone
+  -- theMic <- liftAudioIO $ createMicrophone -- TEMPORARY
   let immutableRenderContext = ImmutableRenderContext {
     mainBus = mainBusNodes,
     webDirt = wd,
     superDirt = sd,
-    mic = theMic
+    mic = wdOutput
     }
 
   nowUtc <- getCurrentTime

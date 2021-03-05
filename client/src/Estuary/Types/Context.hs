@@ -33,14 +33,14 @@ import qualified Sound.Punctual.Resolution as Punctual
 
 -- things the render engine needs, but the UI doesn't need, and which never change
 data ImmutableRenderContext = ImmutableRenderContext {
-  mainBus :: (Node,Node,Node,Node,Node), -- ^ main bus input, delay, pregain, compressor, postgain
+  mainBus :: (Node,Node,Node,Node,Node,Node), -- ^ main bus input, delay, pregain, compressor, postgain
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
   mic :: Node
   }
 
 out :: ImmutableRenderContext -> Node
-out (ImmutableRenderContext (_,_,_,x,_) _ _ _) = x
+out (ImmutableRenderContext (_,_,_,_,x,_) _ _ _) = x
 
 data Context = Context {
   aboutThisServer :: TranslatableText,

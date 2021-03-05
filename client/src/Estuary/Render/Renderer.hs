@@ -545,7 +545,7 @@ punctualProgramChanged :: ImmutableRenderContext -> Context -> Int -> Punctual.P
 punctualProgramChanged irc c z p = do
   s <- get
   -- A. update PunctualW (audio state) in response to new, syntactically correct program
-  let (mainBusIn,_,_,_,_) = mainBus irc
+  let (wdOutput,mainBusIn,_,_,_,_) = mainBus irc
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
   let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac (mic irc) mainBusIn 2 (Punctual.evalTime p)) z (punctuals s)
