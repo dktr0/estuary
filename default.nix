@@ -171,8 +171,8 @@ in
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "15hil1i5d089ahdp9jnwrykigcv7sdm93mlaj4laxwa49amjl4n0";
-          rev = "a765aaab02541072960184151c9f35f7a8c35328";
+          sha256 = "0xl4kjkibhr5sv2h96yn6n1ishs6a09a6bwgm4mjx8k96x6xvqw6";
+          rev = "bc6ddf6306f7354a5b418496cc9e6853ece8bb53";
           }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {

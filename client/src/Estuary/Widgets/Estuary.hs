@@ -208,6 +208,7 @@ performContext irc cMvar cDyn = do
   iCtx <- sample $ current cDyn
   performEvent_ $ fmap (liftIO . updateContext cMvar) $ updated cDyn -- transfer whole Context for render/animation threads
   updateDynamicsModes irc cDyn -- when dynamics modes change, make it so
+  updatePunctualAudioInputMode irc cDyn
   -- when the theme changes,
   t <- holdUniqDyn $ fmap theme cDyn -- Dynamic t String
   let t' = updated t -- Event t String
@@ -222,10 +223,13 @@ updateContext mv x = swapMVar mv x >> return ()
 
 updateDynamicsModes :: MonadWidget t m => ImmutableRenderContext -> Dynamic t Context -> m ()
 updateDynamicsModes irc ctx = do
-  let nodes = mainBus irc
   dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap dynamicsMode ctx
-  performEvent_ $ fmap (liftIO . changeDynamicsMode nodes) dynamicsModeChanged
+  performEvent_ $ fmap (liftIO . changeDynamicsMode (mainBus irc)) dynamicsModeChanged
 
+updatePunctualAudioInputMode :: MonadWidget t m => ImmutableRenderContext -> Dynamic t Context -> m ()
+updatePunctualAudioInputMode irc ctx = do
+  punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap punctualAudioInputMode ctx
+  performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (mainBus irc)) punctualAudioInputChanged
 
 performDelayHints :: MonadWidget t m => ImmutableRenderContext -> Event t [Hint] -> m ()
 performDelayHints irc hs = do

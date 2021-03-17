@@ -35,7 +35,7 @@ dependencies:
   - tidal
   - tidal-parse
   - punctual
-  - musicw
+  - musicw >= 0.3.8
   - hosc
   - containers
   - safe

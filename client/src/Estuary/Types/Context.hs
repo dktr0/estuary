@@ -33,14 +33,10 @@ import qualified Sound.Punctual.Resolution as Punctual
 
 -- things the render engine needs, but the UI doesn't need, and which never change
 data ImmutableRenderContext = ImmutableRenderContext {
-  mainBus :: (Node,Node,Node,Node,Node,Node), -- ^ main bus input, delay, pregain, compressor, postgain
+  mainBus :: MainBus,
   webDirt :: WebDirt,
-  superDirt :: SuperDirt,
-  mic :: Node
+  superDirt :: SuperDirt
   }
-
-out :: ImmutableRenderContext -> Node
-out (ImmutableRenderContext (_,_,_,_,x,_) _ _ _) = x
 
 data Context = Context {
   aboutThisServer :: TranslatableText,
@@ -54,6 +50,7 @@ data Context = Context {
   brightness :: Double,
   fpsLimit :: Maybe NominalDiffTime,
   dynamicsMode :: DynamicsMode,
+  punctualAudioInputMode :: PunctualAudioInputMode,
   language :: Language,
   audioMap :: AudioMap,
 --  localResourceServers :: LocalResourceServers,
@@ -72,6 +69,7 @@ initialContext nowUtc = Context {
   aboutThisServer = Map.fromList [(English,"")], -- non-empty in order to suppress "?"
   announcements = Map.empty,
   dynamicsMode = DefaultDynamics,
+  punctualAudioInputMode = MicToPunctual,
   language = English,
   theme = "../css-custom/classic.css",
   unsafeMode = False,

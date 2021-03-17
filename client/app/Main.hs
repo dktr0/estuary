@@ -49,26 +49,23 @@ main = do
   ac <- getGlobalAudioContextPlayback
   addWorklets ac
 
-  mainBusNodes@(wdOutput,mainBusIn,_,_,_,_) <- initializeMainBus
-  wd <- liftAudioIO $ newWebDirt wdOutput
+  mb <- initializeMainBus
+  wd <- liftAudioIO $ newWebDirt (webDirtOutput mb)
   initializeWebAudio wd
   sd <- newSuperDirt
-  -- theMic <- liftAudioIO $ createMicrophone -- TEMPORARY
   let immutableRenderContext = ImmutableRenderContext {
-    mainBus = mainBusNodes,
+    mainBus = mb,
     webDirt = wd,
-    superDirt = sd,
-    mic = wdOutput
+    superDirt = sd
     }
 
   nowUtc <- getCurrentTime
   nowAudio <- liftAudioIO $ audioTime
   context <- newMVar $ initialContext nowUtc
   renderInfo <- newMVar $ emptyRenderInfo
-  -- forkRenderThreads immutableRenderContext context renderInfo
 
   cb <- syncCallback1' $ \dest -> do
-    node <- changeDestination mainBusNodes $
+    node <- changeDestination mb $
       if dest `js_eq` pToJSVal ("stream" :: JSString) then
         getSharedMediaStreamDestination
       else
