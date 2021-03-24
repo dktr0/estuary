@@ -1,0 +1,17 @@
+##JSoLang simple-text-replacement
+
+// an example JSoLang that takes provided text
+// and applies some number of rules to replace text
+// with alternate text. Basic idea: repeatedly try
+// to match specific rules that return something
+// different than the text they match, and whenever
+// that fails simply match and return the next character
+
+main = x:allRules* { return "##tidal\n" + x.join("") }
+allRules = bassdrum / clap / anyCharacter
+anyCharacter = .
+
+// specific replacement rules, the i makes the find operation
+// case insensitive
+bassdrum = "bassdrum"i { return "bd" }
+clap = "clap"i { return "cp" }
