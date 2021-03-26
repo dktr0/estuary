@@ -160,8 +160,8 @@ srcFunction = do
 
 srcFunctionArgument :: Parser Source
 srcFunctionArgument = try $ choice [
-  try $ inputAsSource, --s0,s1,s2,s3
-  try $ outputAsSource --o0,o1,o2,o3
+  try inputAsSource, --s0,s1,s2,s3
+  try outputAsSource --o0,o1,o2,o3
   ]
 
 inputAsSource :: Parser Source
@@ -172,8 +172,8 @@ inputAsSource = do
 
 sourceAsArgument :: Parser Source
 sourceAsArgument = try $ choice [
-  outputAsSource, --o0,o1,o2,o3
-  source -- osc()
+  try outputAsSource, --o0,o1,o2,o3
+  try source -- osc()
   ]
 
 outputAsSource :: Parser Source
