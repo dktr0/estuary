@@ -164,8 +164,8 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "punctual";
-           sha256 = "179q3csl74wxldcjjb9dmvmh6mcvqpk5ghz7a7l0135czi8d1c0i";
-           rev = "c7d739e776345138ed3c5c38d65d495cdbcbdf6d";
+           sha256 = "067p5n3nnp061cvlplpjimdn8wrcj1hr0j9d247g5pc1sxxz4m30";
+           rev = "32eefbded9c4a5f71591cc05fbb56eeb890a9db1";
          }) {}));
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
