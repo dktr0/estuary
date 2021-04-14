@@ -2,23 +2,34 @@ module Estuary.Types.Loadable where
 
 import GHCJS.Types
 import Data.Text
+import Data.Map
+import Data.IORef
 
--- Instances of the class Loadable represent resources that can be asynchronously loaded
--- by the client (eg. turned into a JSVal that can be used in rendering). load will:
--- a) return the corresponding JSVal if it is already available
--- b) trigger asynchronous loading and return NotLoaded if it hadn't been requested before
--- c) return Loading if loading is still in progress
--- d) return LoadError and a text message if there was an error loading this resource
--- The default idea is that attempts to load a Loadable value that returns an error will
--- not trigger any reattempts at loading, but this could change in the future.
+-- Instances of the class Loadable represent resources that are initiated/allocated
+-- by starting an asynchronous URL request, and can report/keep track of the status
+-- of that asynchronous request (LoadStatus).
 
 class Loadable a where
-  -- load :: a -> IO (Either LoadStatus JSVal)
+  newLoadable :: Text -> IO () -> IO a   -- arguments are URL and a callback when loading succeeds
   loadStatus :: a -> IO LoadStatus
-  load :: a -> IO JSVal
 
 data LoadStatus =
   NotLoaded |
   Loading |
   Loaded |
   LoadError Text deriving (Eq,Show)
+
+type LoadMap a = IORef (Map Text a)
+
+newLoadMap :: IO (LoadMap a)
+newLoadMap = newIORef Data.Map.empty
+
+load :: Loadable a => LoadMap a -> Text -> IO () -> IO a
+load m url cb = do
+  m' <- readIORef m
+  case Data.Map.lookup url m' of
+    Nothing -> do
+      x <- newLoadable url cb
+      writeIORef m $ Data.Map.insert url x m'
+      return x
+    Just x -> return x

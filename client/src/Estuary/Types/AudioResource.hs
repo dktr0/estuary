@@ -14,12 +14,15 @@ import Control.Monad (when)
 
 import Estuary.Types.AudioMeta
 import Estuary.Types.Loadable
+import Estuary.Render.XMLHttpRequest
 
 data AudioResource = AudioResource {
   audioMeta :: AudioMeta,
   audioLoadStatus :: IORef LoadStatus,
   audioJSVal :: JSVal
   }
+
+instance PToJSVal AudioResource where pToJSVal = audioJSVal
 
 instance Eq AudioResource where
   x == y = audioMeta x == audioMeta y
@@ -42,13 +45,11 @@ foreign import javascript unsafe
   newAudioJSVal :: IO JSVal
 
 instance Loadable AudioResource where
-
   loadStatus x = readIORef $ audioLoadStatus x
-
-  load x = do
-    s <- readIORef $ audioLoadStatus x
-    when (s == NotLoaded) $ loadAudioResource x
-    return $ audioJSVal x
+  newLoadable url _ = do
+    x <- audioResourceFromMeta (AudioMeta url 0)
+    loadAudioResource x
+    return x
 
 loadAudioResource :: AudioResource -> IO ()
 loadAudioResource x = do
@@ -57,23 +58,23 @@ loadAudioResource x = do
     NotLoaded -> do
       let url = audioURL $ audioMeta x
       writeIORef (audioLoadStatus x) Loading
-      T.putStrLn $ "loading " <> url
+      T.putStrLn $ "loading AudioResource " <> url
       let url = audioURL $ audioMeta x
       r <- arraybufferXMLHttpRequest url
-      cbLoad <- asyncCallback $ do
+      cbLoad <- asyncCallback1 $ \_ -> do
         cbSuccess <- asyncCallback1 $ \y -> do
           _setAudioBuffer (audioJSVal x) y
           writeIORef (audioLoadStatus x) Loaded
-          T.putStrLn $ "loaded " <> url
+          T.putStrLn $ "loaded AudioResource " <> url
         cbError <- asyncCallback1 $ \y -> do
           writeIORef (audioLoadStatus x) (LoadError "decoding error")
-          T.putStrLn $ "error decoding " <> url
+          T.putStrLn $ "error decoding AudioResource " <> url
         ac <- getGlobalAudioContext
         decodeAudioData ac r cbSuccess cbError
         return ()
       onLoad r cbLoad
       cbError <- asyncCallback $ do
-        let e = "error loading " <> url
+        let e = "error loading AudioResource " <> url
         writeIORef (audioLoadStatus x) $ LoadError e
         T.putStrLn e
         return ()
@@ -81,32 +82,10 @@ loadAudioResource x = do
       send r
     _ -> return ()
 
-foreign import javascript unsafe
-  "$1.buffer = $2;"
-  _setAudioBuffer :: JSVal -> JSVal -> IO ()
-
-newtype XMLHttpRequest = XMLHttpRequest JSVal
-
-instance PFromJSVal XMLHttpRequest where pFromJSVal x = XMLHttpRequest x
-
-instance PToJSVal XMLHttpRequest where pToJSVal (XMLHttpRequest x) = x
-
-foreign import javascript safe
-  "$r = new XMLHttpRequest(); $r.open('GET',$1,true); $r.responseType='arraybuffer';"
-  arraybufferXMLHttpRequest :: Text -> IO XMLHttpRequest
-
-foreign import javascript safe
-  "$1.onload = $2;"
-  onLoad :: XMLHttpRequest -> Callback (IO ()) -> IO ()
-
-foreign import javascript safe
-  "$1.onerror = $2;"
-  onError :: XMLHttpRequest -> Callback (IO ()) -> IO ()
-
-foreign import javascript safe
-  "$1.send();"
-  send :: XMLHttpRequest -> IO ()
-
 foreign import javascript safe
   "$1.decodeAudioData($2.response,$3,$4)"
   decodeAudioData :: AudioContext -> XMLHttpRequest -> Callback (JSVal -> IO()) -> Callback (JSVal -> IO()) -> IO ()
+
+foreign import javascript unsafe
+  "$1.buffer = $2;"
+  _setAudioBuffer :: JSVal -> JSVal -> IO ()
