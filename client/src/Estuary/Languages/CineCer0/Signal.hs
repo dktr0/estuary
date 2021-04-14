@@ -54,7 +54,7 @@ quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
 quantAnchor cycleMult offset t eval =
   let ec = (timeToCount t eval) - (count t) -- elapsed cycles from reference point in time to evaltime
       currentCycle = fromIntegral (floor ec):: Rational
-      align = if ec - currentCycle > 0.5 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
+      align = if ec - currentCycle > 0.95 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
       toQuant = currentCycle + align -- as integer to go through the quantomatic
       quanted = quantomatic cycleMult toQuant
       anchor = cycsToSecs t quanted -- into seconds (as NDT)
