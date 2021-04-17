@@ -21,11 +21,17 @@ funcionsCineCer0 = el "div" $ do
     (Español,"Funciones")
     ])
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"Videos are played by adings the URL inside quotation marks:"),
+    (English,"Videos are played by adding an URL inside quotation marks:"),
     (Español,"Para reproducir videos se debe añadir la URL dentro de comillas:")
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "\"videos/hogweed.mov\""
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"In a more declarative style:"),
+    (Español,"En un estilo más declarativo:")
+    ])
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text "video \"videos/hogweed.mov\""
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"Transforming image:"),
     (Español,"Transformar la imagen:")
@@ -77,3 +83,47 @@ funcionsCineCer0 = el "div" $ do
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text " sqrMask 0.5 $ $ \"videos/hogweed.mov\""
     el "li" $ elClass "div" "ieRef" $ text " rectMask 0 0.5 0 0.5 $ \"videos/hogweed.mov\""
+  -- Text
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Text fucntions:"),
+    (Español,"Funciones de texto:")
+    ])
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Text: font String, fontSize Float, colour String (accepts colour conventions like white, black, etc. and HEX), rgb Float Float Float (rgba with a 4th Float for alpha), hsv Float Float Float (hsva with a 4th Float for alpha, synonym: hsl), strike, bold and italic"),
+    (Español,"Text: fontFamily String, fontSize Float, colour String (accepta nombres convencionales de colores en inglés como white, black, etc. y HEX), rgb Float Float Float (rgba añade un cuarto argumento para alpha), hsv Float Float Float (hsva añade un cuarto argumento para alpha, sinónimo: hsl), strike, bold and italic")
+    ])
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text " text \"volviéndolo a grabaren las manos epilépticas del mar\""
+    el "li" $ elClass "div" "ieRef" $ text " size 0.25 $ colour \"aqua\" $ strike $ bold $ italic $ text \"Siempre como 1 de esas lunas imprevistas\""
+    el "li" $ elClass "div" "ieRef" $ text " size 0.5 $ rgba 0.8 0.5 0 0.5 $ fontSize 400 $ text \"que provocaron el infartote los subways descuidados\""
+    el "li" $ elClass "div" "ieRef" $ text " hsv 0.33 0.1 0.3 $ font \"Times New Romans\" $ size 0.25 $ text \"Ayer: hoy & mañana –de repente–\""
+  -- Audio
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Audio: vol Float; sets volume where 1 is full volume for the video. Video's audio is raw and not processed by Estuary's engine (compression or routing will not work on it)"),
+    (Español,"Audio: vol Float; control de volume donde 1 es volumen máximo. El audio del video es directo y noe stá siendo procesado por Estuary (compresión o ruteo no funcionan)")
+    ])
+  -- Time functions
+  -- chronometric time
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Chronometric fucntions:"),
+    (Español,"Funciones cronométricas:")
+    ])
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"quant MultCycle Offset, ramp Dur P1 P2, sine Freq, range Min Max Signal"),
+    (Español,"quant MultCycle Offset, ramp Dur P1 P2, sine Freq, range Min Max Signal")
+    ])
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English, "Functions that change the program once in time:"),
+    (Español, "Funciones que modifican el programa una sola vez en el tiempo:")
+    ])
+  --quant
+  el "ul" $ do 
+    el "li" $ elClass "div" "ieRef" $ text " text \"volviéndolo a grabaren las manos epilépticas del mar\""
+
+  --ramp
+
+  --sine
+
+  --range
+
+  -- Duration
