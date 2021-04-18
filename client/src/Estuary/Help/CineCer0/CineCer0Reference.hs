@@ -59,7 +59,7 @@ funcionsCineCer0 = el "div" $ do
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "setCoord 0.0 (-0.3) $ setSize 0.5 $ \"videos/hogweed.mov\""
-    el "li" $ elClass "div" "ieRef" $ text "setCoord 0.0 0.3 (setSize 0.5 (\"videos/hogweed.mov\"))"
+    el "li" $ elClass "div" "ieRef" $ text "setCoord 0.0 0.3 $setSize 0.5 $ \"videos/hogweed.mov\""
   -- FILTERS
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"_Filters: setOpacity [o] (from 0 =full to 1 =none); setBlur [bl] (0 =none, 1++ =more); setBrightness [br] (0-0.99 =less, 1++ =more); setContrast [c] (0-0.99 =less, 1++ =more); setGrayscale [g] (from 0 =none to 1 =full); setSaturate [s] (0-0.99 =less, 1++ =more)"),
@@ -83,47 +83,92 @@ funcionsCineCer0 = el "div" $ do
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text " sqrMask 0.5 $ $ \"videos/hogweed.mov\""
     el "li" $ elClass "div" "ieRef" $ text " rectMask 0 0.5 0 0.5 $ \"videos/hogweed.mov\""
+    -- Audio
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Audio: vol Val; sets volume where 1 is full volume for the video. Video's audio is raw and not processed by Estuary's engine (compression or routing will not work on it)"),
+    (Español,"Audio: vol Val; control de volume donde 1 es volumen máximo. El audio del video es directo y noe stá siendo procesado por Estuary (compresión o ruteo no funcionan)")
+    ])
+  el "ul" $ do 
+    el "li" $ elClass "div" "ieRef" $ text "vol 0.3 $ \"videos/lamplight.mp4\""
   -- Text
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"Text fucntions:"),
-    (Español,"Funciones de texto:")
+    (English,"\n Text fucntions:"),
+    (Español,"\n Funciones de texto:")
     ])
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"Text: font String, fontSize Float, colour String (accepts colour conventions like white, black, etc. and HEX), rgb Float Float Float (rgba with a 4th Float for alpha), hsv Float Float Float (hsva with a 4th Float for alpha, synonym: hsl), strike, bold and italic"),
-    (Español,"Text: fontFamily String, fontSize Float, colour String (accepta nombres convencionales de colores en inglés como white, black, etc. y HEX), rgb Float Float Float (rgba añade un cuarto argumento para alpha), hsv Float Float Float (hsva añade un cuarto argumento para alpha, sinónimo: hsl), strike, bold and italic")
+    (English,"Text: font \"FontName\", fontSize Val, colour \"colourName\" (accepts colour conventions like white, black, etc. and HEX), rgb Red Green Blue (rgba with a 4th value for alpha), hsv Hue Saturation Value (hsva with a 4th value for alpha, synonym: hsl), strike, bold and italic"),
+    (Español,"Text: fontFamily \"NombreFont\", fontSize Val, colour \"NombreColor\" (accepta nombres convencionales de colores en inglés como white, black, etc. y HEX), rgb Rojo Verde Azul (rgba añade un cuarto valor para alpha), hsv Hue Saturación Valor (hsva añade un cuarto argumento para alpha, sinónimo: hsl), strike, bold e italic")
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text " text \"volviéndolo a grabaren las manos epilépticas del mar\""
     el "li" $ elClass "div" "ieRef" $ text " size 0.25 $ colour \"aqua\" $ strike $ bold $ italic $ text \"Siempre como 1 de esas lunas imprevistas\""
     el "li" $ elClass "div" "ieRef" $ text " size 0.5 $ rgba 0.8 0.5 0 0.5 $ fontSize 400 $ text \"que provocaron el infartote los subways descuidados\""
     el "li" $ elClass "div" "ieRef" $ text " hsv 0.33 0.1 0.3 $ font \"Times New Romans\" $ size 0.25 $ text \"Ayer: hoy & mañana –de repente–\""
-  -- Audio
-  el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"Audio: vol Float; sets volume where 1 is full volume for the video. Video's audio is raw and not processed by Estuary's engine (compression or routing will not work on it)"),
-    (Español,"Audio: vol Float; control de volume donde 1 es volumen máximo. El audio del video es directo y noe stá siendo procesado por Estuary (compresión o ruteo no funcionan)")
-    ])
   -- Time functions
-  -- chronometric time
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"Chronometric fucntions:"),
-    (Español,"Funciones cronométricas:")
+    (English,"- Time functions -"),
+    (Español,"- Funciones de tiempo -")
     ])
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"quant MultCycle Offset, ramp Dur P1 P2, sine Freq, range Min Max Signal"),
-    (Español,"quant MultCycle Offset, ramp Dur P1 P2, sine Freq, range Min Max Signal")
+    (English,"Functions that trigger and modify events in time:"),
+    (Español,"Funciones que activan o modifican eventos en el tiempo:")
     ])
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English, "Functions that change the program once in time:"),
+    (English, "Change the program once in time:"),
     (Español, "Funciones que modifican el programa una sola vez en el tiempo:")
+    ])
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"quant MultCycle Offset (buggy for the moment :( ), ramp Dur P1 P2"),
+    (Español,"quant MultCycle Offset (tiene bugs por el momento :( ), ramp Dur P1 P2")
     ])
   --quant
   el "ul" $ do 
-    el "li" $ elClass "div" "ieRef" $ text " text \"volviéndolo a grabaren las manos epilépticas del mar\""
-
+    el "li" $ elClass "div" "ieRef" $ text "quant 4 0 $ hsv 0.33 0.1 1 $ font \"Times New Romans\" $ size 0.25 $ text \"Ayer: hoy & mañana –de repente\""
   --ramp
-
+  el "ul" $ do 
+    el "li" $ elClass "div" "ieRef" $ text "setSize (ramp 3 0 0.5) $ \"videos/hogweed.mov\""
+    --
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English, "Change the program periodically:"),
+    (Español, "Funciones que modifican el programa de manera periódica:")
+    ])
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"sine Freq, range Min Max Signal"),
+    (Español,"sine Freq, range Min Max Signal")
+    ])
   --sine
-
+  el "ul" $ do 
+    el "li" $ elClass "div" "ieRef" $ text "setPosY (sin 0.1) $ setSize 0.5 $ \"videos/hogweed.mov\""
   --range
-
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Modify the amplitude of the signal with range:"),
+    (Español,"Es posible modificar la amplitud de la señal con range:")
+    ])
+  el "ul" $ do 
+    el "li" $ elClass "div" "ieRef" $ text "setBlur (range 0 20 $ sin 0.1) $ size 0.5 $ \"videos/hogweed.mov\""
   -- Duration
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Functions that modify the rate and position of the video reproduction: every Dur Offset, snap Offset, snapMetre Offset"),
+    (Español,"Funciones que modifican la velocidad y posición de reproducción del video: ever Dur Offset, snap Offset, snapMetre Offset")
+    ])
+  -- every
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Function every stretches/compresses the video's speed to adapt to a duration in cycles. The offset aligns the start of the video with the start of the cycle if it is 0."),
+    (Español,"La función every elonga/comprime la velocida de reproducción del video para ajustarse a una duración dada en ciclos. El offser alinea el primer cuadro del video con el inicio del ciclo si su valor es 0.")
+    ])
+  el "ul" $ do 
+    el "li" $ elClass "div" "ieRef" $ text "every 3 0 $ \"videos/hogweed.mov\""
+  -- snap
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Function snap adjusts the duration of the video to the closest number of cycles. The offset aligns the start of the video with the start of the cycle if it is 0."),
+    (Español,"La función snap ajusta la duración del video al número de ciclso más cercano. El offser alinea el primer cuadro del video con el inicio del ciclo si su valor es 0.")
+    ])
+  el "ul" $ do 
+    el "li" $ elClass "div" "ieRef" $ text "snap 0 $ \"videos/lamplight.mp4\""
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"The function snapMetre is similar to snap but adjusts the duration of the video to 2,4,8,16,32, etc. cycles, useful for 'music'-related explorations"),
+    (Español,"La función snapMetre es similar a snap solo que esta ajusta la duración del video a 2,4,8,16,32, etc. ciclos, útil para exploraciones relacionadas con 'ideas musicales'.")
+    ])
+  el "ul" $ do 
+    el "li" $ elClass "div" "ieRef" $ text "snapMetre 0 $ \"videos/lamplight.mp4\""
+
