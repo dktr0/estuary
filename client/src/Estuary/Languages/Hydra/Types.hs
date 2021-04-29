@@ -16,7 +16,7 @@ data Source =
   Shape [Parameters] |
   Voronoi [Parameters] |
   OutputAsSource Output |
-  Src Source |
+  Src Source | -- IMP!!! MUST ACCEPT A PARAMETER
   InputAsSource Input |
   Brightness [Parameters] Source |
   Contrast [Parameters] Source |
@@ -24,6 +24,7 @@ data Source =
   Color [Parameters] Source |
   Invert [Parameters] Source |
   Luma [Parameters] Source |
+  -- Hue
   Posterize [Parameters] Source |
   Saturate [Parameters] Source |
   Shift [Parameters] Source |
@@ -52,7 +53,7 @@ data Source =
   Add Source [Parameters] Source |
   Mult Source [Parameters] Source |
   Blend Source [Parameters] Source |
-  Diff Source Source |
+  Diff Source Source | -- IMP!!! MUST ACCEPT A PARAMETER
   Layer Source Source |
   Mask Source [Parameters] Source
   deriving (Show)
