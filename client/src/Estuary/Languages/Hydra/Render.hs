@@ -62,7 +62,8 @@ instance PFromJSVal JSSource where pFromJSVal = JSSource
 sourceToJS :: Hydra -> Source -> JSSource
 sourceToJS h (OutputAsSource x) = outputToJSSource h x
 sourceToJS h (InputAsSource x) = inputToJSSource h x
-sourceToJS h (Src x) = _src h (sourceToJS h x)
+sourceToJS h (Src x []) = _src0 h (sourceToJS h x)
+sourceToJS h (Src x (y:[])) = _src1 h (sourceToJS h x) (parametersToJS y)
 sourceToJS h (Osc []) = _osc0 h
 sourceToJS h (Osc (x:[])) = _osc1 h (parametersToJS x)
 sourceToJS h (Osc (x:y:[])) = _osc2 h (parametersToJS x) (parametersToJS y)
@@ -101,6 +102,8 @@ sourceToJS h (Invert (x:_) s) = _invert1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (Luma [] s) = _luma0 (sourceToJS h s)
 sourceToJS h (Luma (x:[]) s) = _luma1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (Luma (x:y:_) s) = _luma2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
+sourceToJS h (Hue [] s) = _hue0 (sourceToJS h s)
+sourceToJS h (Hue (x:_) s) = _hue1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (Posterize [] s) = _posterize0 (sourceToJS h s)
 sourceToJS h (Posterize (x:[]) s) = _posterize1 (sourceToJS h s) (parametersToJS x)
 sourceToJS h (Posterize (x:y:_) s) = _posterize2 (sourceToJS h s) (parametersToJS x) (parametersToJS y)
@@ -186,15 +189,18 @@ sourceToJS h (Mult y [] x) = _mult0 (sourceToJS h x) (sourceToJS h y)
 sourceToJS h (Mult y (a:_) x) = _mult1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
 sourceToJS h (Blend y [] x) = _blend0 (sourceToJS h x) (sourceToJS h y)
 sourceToJS h (Blend y (a:_) x) = _blend1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
-sourceToJS h (Diff y x) = _diff0 (sourceToJS h x) (sourceToJS h y)
-sourceToJS h (Layer y x) = _layer0 (sourceToJS h x) (sourceToJS h y)
 sourceToJS h (Mask y [] x) = _mask0 (sourceToJS h x) (sourceToJS h y)
 sourceToJS h (Mask y (a:[]) x) = _mask1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
 sourceToJS h (Mask y (a:b:_) x) = _mask2 (sourceToJS h x) (sourceToJS h y) (parametersToJS a) (parametersToJS b)
+sourceToJS h (Diff y [] x) = _diff0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Diff y (a:_) x) = _diff1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
+sourceToJS h (Layer y [] x) = _layer0 (sourceToJS h x) (sourceToJS h y)
+sourceToJS h (Layer y (a:_) x) = _layer1 (sourceToJS h x) (sourceToJS h y) (parametersToJS a)
 
 
 -- h.synth.src(h.s[0]).out()
-foreign import javascript safe "$1.synth.src($2)" _src :: Hydra -> JSSource -> JSSource
+foreign import javascript safe "$1.synth.src($2)" _src0 :: Hydra -> JSSource -> JSSource
+foreign import javascript safe "$1.synth.src($2,$3)" _src1 :: Hydra -> JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.synth.osc()" _osc0 :: Hydra -> JSSource
 foreign import javascript safe "$1.synth.osc($2)" _osc1 :: Hydra -> JSParameters -> JSSource
 foreign import javascript safe "$1.synth.osc($2,$3)" _osc2 :: Hydra -> JSParameters -> JSParameters -> JSSource
@@ -233,6 +239,8 @@ foreign import javascript safe "$1.invert($2)" _invert1 :: JSSource -> JSParamet
 foreign import javascript safe "$1.luma()" _luma0 :: JSSource -> JSSource
 foreign import javascript safe "$1.luma($2)" _luma1 :: JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.luma($2,$3)" _luma2 :: JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.hue()" _hue0 :: JSSource -> JSSource
+foreign import javascript safe "$1.hue($2)" _hue1 :: JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.posterize()" _posterize0 :: JSSource -> JSSource
 foreign import javascript safe "$1.posterize($2)" _posterize1 :: JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.posterize($2,$3)" _posterize2 :: JSSource -> JSParameters -> JSParameters -> JSSource
@@ -318,11 +326,14 @@ foreign import javascript safe "$1.mult($2)" _mult0 :: JSSource -> JSSource -> J
 foreign import javascript safe "$1.mult($2,$3)" _mult1 :: JSSource -> JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.blend($2)" _blend0 :: JSSource -> JSSource -> JSSource
 foreign import javascript safe "$1.blend($2,$3)" _blend1 :: JSSource -> JSSource -> JSParameters -> JSSource
-foreign import javascript safe "$1.diff($2)" _diff0 :: JSSource -> JSSource -> JSSource
-foreign import javascript safe "$1.layer($2)" _layer0 :: JSSource -> JSSource -> JSSource
 foreign import javascript safe "$1.mask($2)" _mask0 :: JSSource -> JSSource -> JSSource
 foreign import javascript safe "$1.mask($2,$3)" _mask1 :: JSSource -> JSSource -> JSParameters -> JSSource
 foreign import javascript safe "$1.mask($2,$3,$4)" _mask2 :: JSSource -> JSSource -> JSParameters -> JSParameters -> JSSource
+foreign import javascript safe "$1.diff($2)" _diff0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.diff($2,$3)" _diff1 :: JSSource -> JSSource -> JSParameters -> JSSource
+foreign import javascript safe "$1.layer($2)" _layer0 :: JSSource -> JSSource -> JSSource
+foreign import javascript safe "$1.layer($2,$3)" _layer1 :: JSSource -> JSSource -> JSParameters -> JSSource
+
 
 newtype JSOutput = JSOutput JSVal
 instance PToJSVal JSOutput where pToJSVal (JSOutput x) = x
@@ -382,9 +393,14 @@ foreign import javascript safe "$1.s[4]" _iToJS3 :: Hydra -> JSInput
 evaluateStatement :: Hydra -> Statement -> IO ()
 evaluateStatement h (Out s o) = _out (sourceToJS h s) (outputToJS h o)
 evaluateStatement h (Speed x) = _speed h (parametersToJS x)
+evaluateStatement h (SetResolution []) = _setRes0 h
+evaluateStatement h (SetResolution (x:[])) = _setRes1 h (parametersToJS x)
+evaluateStatement h (SetResolution (x:y:[])) = _setRes2 h (parametersToJS x) (parametersToJS y)
 evaluateStatement h (Render o) = _render h (maybeOutputToJS h o)
-evaluateStatement h (InitScreen i) = _initScreen (inputToJS h i)
-evaluateStatement h (InitCam i) = _initCam (inputToJS h i)
+evaluateStatement h (InitScreen i []) = _initScreen0 (inputToJS h i)
+evaluateStatement h (InitScreen i (p:_)) = _initScreen1 (inputToJS h i) (parametersToJS p)
+evaluateStatement h (InitCam i []) = _initCam0 (inputToJS h i)
+evaluateStatement h (InitCam i (p:_)) = _initCam1 (inputToJS h i) (parametersToJS p)
 evaluateStatement h (InitVideo i s) = _initVideo (inputToJS h i) s
 evaluateStatement h (InitImage i s) = _initImage (inputToJS h i) s
 
@@ -404,15 +420,37 @@ foreign import javascript safe
   "$1.synth.speed=$2;"
   _speed :: Hydra -> JSParameters -> IO ()
 
+foreign import javascript safe
+  "$1.synth.setResolution();"
+  _setRes0 :: Hydra -> IO ()
+
+foreign import javascript safe
+  "$1.synth.setResolution($2);"
+  _setRes1 :: Hydra -> JSParameters -> IO ()
+
+foreign import javascript safe
+  "$1.synth.setResolution($2,$3);"
+  _setRes2 :: Hydra -> JSParameters -> JSParameters -> IO ()
+
 --h.synth.s0.initScreen()
 foreign import javascript safe
   "$1.initScreen();"
-  _initScreen :: JSInput -> IO ()
+  _initScreen0 :: JSInput -> IO ()
+
+--h.synth.s0.initScreen(1)
+foreign import javascript safe
+  "$1.initScreen($2);"
+  _initScreen1 :: JSInput -> JSParameters -> IO ()
 
 --h.synth.s0.initCam()
 foreign import javascript safe
   "$1.initCam();"
-  _initCam :: JSInput -> IO ()
+  _initCam0 :: JSInput -> IO ()
+
+--h.synth.s0.initCam(1)
+foreign import javascript safe
+  "$1.initCam($2);"
+  _initCam1 :: JSInput -> JSParameters -> IO ()
 
 --h.synth.s0.initVideo("https://github.com/jac307/memoriasSamples/blob/master/videoSamples/agua.mov?raw=true")
 foreign import javascript safe

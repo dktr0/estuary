@@ -51,12 +51,8 @@ notWorkingFunctionsHydra = el "div" $ do
     ])
   el "ul" $ do
     el "li" $ dynText =<< (translatableText $ fromList [
-      (English,"setResolution function"),
-      (Español,"Función setResolution")
-      ])
-    el "li" $ dynText =<< (translatableText $ fromList [
-      (English,"Anonymous functions as parameters, i.e."),
-      (Español,"Funciones anónimas como parámetros, ej.")
+      (English,"Anonymous (global) functions, i.e."),
+      (Español,"Funciones anónimas (globales), ej.")
       ])
     el "div" $ elClass "div" "ieRef" $ text "() => mouse.x"
     el "div" $ elClass "div" "ieRef" $ text "({time}) => time%360"

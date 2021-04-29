@@ -10,6 +10,16 @@ list of doubles = [] <br />
 ## Statements
 -- Each statement is divided by a semicolon <br />
 speed = double -- default: 1 <br />
+setResolution(double,double) <br />
+
+## Imports
+
+s0,s1,s2,s3
+
+initScreen(#) // default: 0 <br />
+initCam(#)n // default: 0 <br />
+initVideo("url") <br />
+initImage("url") <br />
 
 ## Sources
 
@@ -19,11 +29,12 @@ gradient(speed) // default: 0.0 <br />
 noise(scale, offset) // defaults: 10.0, 0.1 <br />
 shape(sides, radius, smoothing) // defaults: 3.0, 0.3, 0.01 <br />
 voronoi(scale, speed, blending) // defaults: 5.0, 0.3, 0.3 <br />
+src() <br /> // options: (any output) o0, o1, o2, o3 or (any imports) s0, s1, s2, s3 <br />
 
 
 ## Outputs
-.out(buffer) // osc: o0, o1, o2, o3 // src: s0, s1, s2, s3 <br />
-render(buffer) // default: o0 <br />
+.out(buffer) // default: o0 // other options: o1, o2, o3 <br />
+render(buffer) // default: all // other options: o1, o2, o3 <br />
 
 
 ## Transformers
@@ -33,6 +44,7 @@ render(buffer) // default: o0 <br />
 .colorama(amount) // default: 0.005 -- shifts HSV values <br />
 .invert(amount) // default:1.0 <br />
 .luma(threshold, tolerance) // defaults: 0.5, 0.1 <br />
+.hue(amount) // default: 0.4 <br />
 .posterize(bins, gamma) // defaults: 3.0, 0.6 <br />
 .saturate(amount) // default: 2.0 <br />
 .shift(r, g, b, a) // defaults: 0.5 for all <br />
