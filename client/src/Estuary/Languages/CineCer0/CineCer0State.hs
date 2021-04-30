@@ -102,6 +102,12 @@ addVideo j os = do
     previousVol = 0
   }
 
+-- addInvisibleText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
+-- addInvisibleText j ls = do
+--   cct <- addText j ls
+--   let inv = invisibleText cct 
+--   return inv
+
 addText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
 addText j os = do
   let texto = layerToString $ layer os
@@ -112,6 +118,11 @@ addText j os = do
     positionLockTx = 0,
     previousStyleTx = ""
   }
+
+-- invisibleText :: CineCer0Text -> IO CineCer0Text
+-- invisibleText tx = do 
+--     _setTextStyle (textLayer tx) "visibility: hidden;"
+--     return $ tx { previousStyleTx = "" }
 
 layerToString:: Either String String -> Text
 layerToString (Right x) = T.pack $ x
@@ -178,7 +189,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
  tw <- textWidth j
  th <- textHeight j
 
- if (tw /= 0) then (putStrLn "WIIIDTHHHH!!!!") else (putStrLn "no width yet")
+-- if (tw /= 0) then (putStrLn "WIIIDTHHHH!!!!") else (putStrLn "no width yet")
 
  -- putStrLn $ show (T.split (== ' ') $ layerToString (layer s))
  -- putStrLn $ (show $ tw) <> " width" 
@@ -187,9 +198,9 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
  -- putStrLn $ (show $ sh) <> " div height"
  -- putStrLn $ (show $ xPos) <> " calculated x pos"
 
- if (sw /= 0 && sh /= 0) then do
+ if (tw /= 0 && th /= 0) then do
   let aTime = anchorTime s t eTime
-  let lengthOfLayer = 1
+  let lengthOfLayer = 1  -- think about how to get a length for a text
   let txFont = (fontFamily s t lengthOfLayer rTime eTime aTime)
   let striked = generateStrike (strike s t lengthOfLayer rTime eTime aTime)
   let bolded = generateBold (bold s t lengthOfLayer rTime eTime aTime)
@@ -215,6 +226,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   --let topY = yPos
   let x = realToFrac $ (posX s t lengthOfLayer rTime eTime aTime)
   let y = realToFrac $ (posY s t lengthOfLayer rTime eTime aTime)
+
    -- calculate xPos
   let xPos' = sw - tw 
   let xPos  = xPos' * (0.5 + (x*0.5))
@@ -227,7 +239,6 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised coloured sized z'
   -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
-
   else return tx
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Video -> IO CineCer0Video
@@ -308,7 +319,7 @@ generateFilter Nothing Nothing Nothing Nothing Nothing Nothing = ""
 generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl <> generateBrightness br <> generateContrast c <> generateGrayscale g <> generateSaturate s <>";"
 
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
-videoStyle x y w h f m z = "left: " <> showt (x) <> "px; top: " <> showt (y) <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
+videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
 
 
 generateZIndex :: Int -> Text
@@ -352,7 +363,7 @@ generateItalic (True) = "; font-style: italic;"
 generateItalic (False) = ""
 
 textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h ff stk bld itc clr sz z = "position: absolute;" <> "left: " <> showt x <> "px; top: " <> showt y <> "px; border: 1px solid #cccccc; text-align: center;" <> "font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> ";"
+textStyle x y w h ff stk bld itc clr sz z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px; border: 1px solid #cccccc; text-align: center;" <> "font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> ";"
 
 
 -- textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
