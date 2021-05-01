@@ -205,6 +205,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let striked = generateStrike (strike s t lengthOfLayer rTime eTime aTime)
   let bolded = generateBold (bold s t lengthOfLayer rTime eTime aTime)
   let italicised = generateItalic (italic s t lengthOfLayer rTime eTime aTime)
+  let bordered = generateBorder (border s t lengthOfLayer rTime eTime aTime)
   let coloured = generateColours (colour s) t lengthOfLayer rTime eTime aTime
   let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
 
@@ -236,7 +237,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let yPos  = yPos' * (0.5 + (y*(-0.5)))
   let topY = yPos
 
-  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised coloured sized z'
+  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised bordered coloured sized z'
   -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
   else return tx
@@ -362,8 +363,12 @@ generateItalic :: Bool -> Text
 generateItalic (True) = "; font-style: italic;"
 generateItalic (False) = ""
 
-textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h ff stk bld itc clr sz z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px; border: 1px solid #cccccc; text-align: center;" <> "font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> ";"
+generateBorder :: Bool -> Text
+generateBorder (True) = "; border: 1px solid #cccccc;"
+generateBorder (False) = ""
+
+textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
+textStyle x y w h ff stk bld itc brd clr sz z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt ff <> stk <> bld <> itc <> brd <> clr <> sz <> z <> ";"
 
 
 -- textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
