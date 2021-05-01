@@ -327,7 +327,7 @@ generateZIndex :: Int -> Text
 generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
 
 generateFontSize :: Double -> Text
-generateFontSize size = "; font-size: " <> T.pack (show size) <> "px;"
+generateFontSize size = "; font-size: " <> T.pack (show (size)) <> "em;"
 
 generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text  -- this string needs to be a text!!!!
 generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"  

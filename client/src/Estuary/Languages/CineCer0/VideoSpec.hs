@@ -65,7 +65,7 @@ emptyLayerSpec = LayerSpec {
   volume = constantSignal 0.0,
 
   fontFamily = constantSignal "sans-serif",
-  fontSize = constantSignal 100,
+  fontSize = constantSignal 1,
   colour = Colour (constantSignal "White"),
   strike = constantSignal False,
   bold = constantSignal False,
