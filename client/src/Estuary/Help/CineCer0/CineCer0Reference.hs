@@ -92,7 +92,7 @@ funcionsCineCer0 = el "div" $ do
     el "li" $ elClass "div" "ieRef" $ text "vol 0.3 $ \"videos/lamplight.mp4\""
   -- Text
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"\n Text fucntions:"),
+    (English,"\n Text functions:"),
     (Español,"\n Funciones de texto:")
     ])
   el "div" $ dynText =<< (translatableText $ fromList [

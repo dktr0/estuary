@@ -54,15 +54,15 @@ foreign import javascript unsafe
 foreign import javascript unsafe "$1.removeChild($2)" removeVideo :: HTMLDivElement -> VideoLayer -> IO ()
 foreign import javascript unsafe "$1.removeChild($2)" removeText :: HTMLDivElement -> TextLayer -> IO ()
 foreign import javascript unsafe "$1.style = $2;" _setVideoStyle :: VideoLayer -> Text -> IO ()
-foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> Text -> IO () 
 foreign import javascript unsafe "$1.muted = $2;" muteVideo :: VideoLayer -> Bool -> IO ()
 foreign import javascript unsafe "$1.volume = $2" videoVolume :: VideoLayer -> Double -> IO ()
 foreign import javascript unsafe "$1.pause(); $1.src = $2; $1.load(); $1.play();" changeVideoSource :: VideoLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.textContent = $2;" changeTextSource :: TextLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.videoWidth" videoWidth :: VideoLayer -> IO Double
 foreign import javascript unsafe "$1.videoHeight" videoHeight :: VideoLayer -> IO Double
-foreign import javascript unsafe "$1.width" textWidth :: TextLayer -> IO Double
-foreign import javascript unsafe "$1.height" textHeight :: TextLayer -> IO Double
+foreign import javascript unsafe "$1.offsetWidth" textWidth :: TextLayer -> IO Double
+foreign import javascript unsafe "$1.offsetHeight" textHeight :: TextLayer -> IO Double
 
 foreign import javascript unsafe "$1.playbackRate" getVideoPlaybackRate :: VideoLayer -> IO Double
 foreign import javascript safe "$1.playbackRate = $2;" setVideoPlaybackRate :: VideoLayer -> Double -> IO ()
@@ -102,6 +102,12 @@ addVideo j os = do
     previousVol = 0
   }
 
+-- addInvisibleText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
+-- addInvisibleText j ls = do
+--   cct <- addText j ls
+--   let inv = invisibleText cct 
+--   return inv
+
 addText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
 addText j os = do
   let texto = layerToString $ layer os
@@ -112,6 +118,11 @@ addText j os = do
     positionLockTx = 0,
     previousStyleTx = ""
   }
+
+-- invisibleText :: CineCer0Text -> IO CineCer0Text
+-- invisibleText tx = do 
+--     _setTextStyle (textLayer tx) "visibility: hidden;"
+--     return $ tx { previousStyleTx = "" }
 
 layerToString:: Either String String -> Text
 layerToString (Right x) = T.pack $ x
@@ -175,23 +186,32 @@ setTextStyle tx x = do
 updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
  let j = textLayer tx 
- let txw = sw
- let txh = sh
- -- putStrLn $ show (T.split (== ' ') $ layerToString (layer s))
+ tw <- textWidth j
+ th <- textHeight j
 
- if (txw /= 0 && txh /= 0) then do
+-- if (tw /= 0) then (putStrLn "WIIIDTHHHH!!!!") else (putStrLn "no width yet")
+
+ -- putStrLn $ show (T.split (== ' ') $ layerToString (layer s))
+ -- putStrLn $ (show $ tw) <> " width" 
+ -- putStrLn $ (show $ th) <> " height"
+ -- putStrLn $ (show $ sw) <> " div width"
+ -- putStrLn $ (show $ sh) <> " div height"
+ -- putStrLn $ (show $ xPos) <> " calculated x pos"
+
+ if (tw /= 0 && th /= 0) then do
   let aTime = anchorTime s t eTime
-  let lengthOfLayer = 1
+  let lengthOfLayer = 1  -- think about how to get a length for a text
   let txFont = (fontFamily s t lengthOfLayer rTime eTime aTime)
   let striked = generateStrike (strike s t lengthOfLayer rTime eTime aTime)
   let bolded = generateBold (bold s t lengthOfLayer rTime eTime aTime)
   let italicised = generateItalic (italic s t lengthOfLayer rTime eTime aTime)
+  let bordered = generateBorder (border s t lengthOfLayer rTime eTime aTime)
   let coloured = generateColours (colour s) t lengthOfLayer rTime eTime aTime
   let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
 
-  let aspectRatio = txw/txh
+  let aspectRatio = sw/sh
   let heightIfFitsWidth = sw / aspectRatio
   let widthIfFitsHeight = sh * aspectRatio
   let fitByWidth = heightIfFitsWidth <= sh
@@ -201,13 +221,25 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let actualHeight = (height s t lengthOfLayer rTime eTime aTime) * realToFrac fitHeight
   let centreX = ((posX s t lengthOfLayer rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
   let centreY = ((posY s t lengthOfLayer rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
-  let leftX = centreX - (actualWidth * 0.5)
-  let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
+  --let leftX = centreX - (actualWidth * 0.5)
+  --let leftX = xPos
+  --let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
+  --let topY = yPos
+  let x = realToFrac $ (posX s t lengthOfLayer rTime eTime aTime)
+  let y = realToFrac $ (posY s t lengthOfLayer rTime eTime aTime)
 
-  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised coloured sized z'
+   -- calculate xPos
+  let xPos' = sw - tw 
+  let xPos  = xPos' * (0.5 + (x*0.5))
+  let leftX = xPos
+ -- calculate yPos
+  let yPos' = sh - th
+  let yPos  = yPos' * (0.5 + (y*(-0.5)))
+  let topY = yPos
+
+  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised bordered coloured sized z'
   -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
-
   else return tx
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Video -> IO CineCer0Video
@@ -215,6 +247,9 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
   let j = videoLayer v
   vw <- videoWidth j
   vh <- videoHeight j
+
+--  putStrLn $ show $ vw
+
   if (vw /= 0 && vh /= 0) then do
     lengthOfVideo <- realToFrac <$> getLengthOfVideo j
     let aspectRatio = vw/vh
@@ -285,14 +320,14 @@ generateFilter Nothing Nothing Nothing Nothing Nothing Nothing = ""
 generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl <> generateBrightness br <> generateContrast c <> generateGrayscale g <> generateSaturate s <>";"
 
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
-videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; object-fit: fill;" <> f <> m <> z
+videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
 
 
 generateZIndex :: Int -> Text
 generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
 
 generateFontSize :: Double -> Text
-generateFontSize size = "; font-size: " <> T.pack (show size) <> "%"
+generateFontSize size = "; font-size: " <> T.pack (show (size)) <> "em;"
 
 generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text  -- this string needs to be a text!!!!
 generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"  
@@ -328,8 +363,17 @@ generateItalic :: Bool -> Text
 generateItalic (True) = "; font-style: italic;"
 generateItalic (False) = ""
 
-textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt w <> "px; height:" <> showt h <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> "; object-fit: fill; text-align: center; justify-content: center; align-items: center;"
+generateBorder :: Bool -> Text
+generateBorder (True) = "; border: 1px solid #cccccc;"
+generateBorder (False) = ""
+
+textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
+textStyle x y w h ff stk bld itc brd clr sz z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt ff <> stk <> bld <> itc <> brd <> clr <> sz <> z <> ";"
+
+
+-- textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
+-- textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; border: 1px solid #cccccc; position: absolute; translate(-50%, -50%); text-align: center; width: " <> showt (w) <> "px; height:" <> showt (h) <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> ";"
+
 
 -- these two might become only one!
 
