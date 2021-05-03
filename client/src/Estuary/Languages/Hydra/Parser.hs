@@ -29,11 +29,12 @@ statement :: Parser Statement
 statement = try $ choice [
   try outStatement,
   try renderStatement,
-  try $ inputStatement "initCam" InitCam,
-  try $ inputStatement "initScreen" InitScreen,
+  try $ inputStatementParameters "initCam" InitCam,
+  try $ inputStatementParameters "initScreen" InitScreen,
   try $ inputStatementString "initVideo" InitVideo,
   try $ inputStatementString "initImage" InitImage,
-  try speedStatement
+  try speedStatement,
+  try setResolutionStatement
   ]
 
 outStatement :: Parser Statement
@@ -65,14 +66,15 @@ outputForRender = try $ choice [
   whiteSpace >> return All
   ]
 
--- s0.initScreen()  -- s1.initCam()
-inputStatement :: String -> (Input -> Statement) -> Parser Statement
-inputStatement x z = do
+-- s1.initCam() or s1.initCam(1), s0.initScreen()
+inputStatementParameters :: String -> (Input -> [Parameters] -> Statement) -> Parser Statement
+inputStatementParameters x z = do
   i <- input
   reservedOp "."
   reserved x
-  _ <- parens $ commaSep parameters
-  return $ z i
+  let param = (Parameters . return) <$> double
+  p <- parens $ commaSep param
+  return $ z i p
 
 -- s0.initVideo(url) s0.initImage(url)
 inputStatementString :: String -> (Input -> Text -> Statement) -> Parser Statement
@@ -98,6 +100,14 @@ speedStatement = do
   p <- (Parameters . return) <$> double
   return $ Speed p
 
+setResolutionStatement :: Parser Statement -- setResolution(w,h)
+setResolutionStatement = do
+  reserved "setResolution"
+  let param = (Parameters . return) <$> double
+  p <- parens $ commaSep param
+  return $ SetResolution p
+
+
 source :: Parser Source
 source = do
   x <- choice [ -- a source is a single "atomic" Source...
@@ -116,6 +126,7 @@ source = do
     methodWithParameters "color" Color,
     methodWithParameters "invert" Invert,
     methodWithParameters "luma" Luma,
+    methodWithParameters "hue" Hue,
     methodWithParameters "posterize" Posterize,
     methodWithParameters "saturate" Saturate,
     methodWithParameters "shift" Shift,
@@ -130,8 +141,6 @@ source = do
     methodWithParameters "scroll" Scroll,
     methodWithParameters "scrollX" ScrollX,
     methodWithParameters "scrollY" ScrollY,
-    methodWithSource "diff" Diff, -- don't work
-    methodWithSource "layer" Layer, -- don't work
     methodWithSourceAndParameters "modulate" Modulate,
     methodWithSourceAndParameters "modulateHue" ModulateHue,
     methodWithSourceAndParameters "modulateKaleid" ModulateKaleid,
@@ -146,17 +155,24 @@ source = do
     methodWithSourceAndParameters "add" Add,
     methodWithSourceAndParameters "mult" Mult,
     methodWithSourceAndParameters "blend" Blend,
-    methodWithSourceAndParameters "mask" Mask
+    methodWithSourceAndParameters "mask" Mask,
+    methodWithSourceAndParameters "diff" Diff,
+    methodWithSourceAndParameters "layer" Layer
     ]
   return $ (foldl (.) id $ reverse fs) x -- compose the transformations into a single transformation and apply to source
 
 
--- src(s0).out() or src(o2).out()
+-- src(s0) or src(o2,1)
 srcFunction :: Parser Source
 srcFunction = do
   reserved "src"
-  s <- parens $ srcFunctionArgument
-  return $ Src s
+  (s,ps) <- parens $ do
+    s <- srcFunctionArgument
+    let param = (Parameters . return) <$> double
+    ps <- (comma >> commaSep param) <|> return []
+    return (s,ps)
+  return $ Src s ps
+
 
 srcFunctionArgument :: Parser Source
 srcFunctionArgument = try $ choice [
@@ -243,9 +259,18 @@ methodForLists methodName constructor = try $ do
 double :: Parser Double
 double = choice [
   symbol "-" >> double >>= return . (* (-1)),
+  symbol "-" >> doubleWithoutPrecedingZero >>= return . (*(-1)),
+  try doubleWithoutPrecedingZero,
   try float,
   try $ fromIntegral <$> integer
   ]
+
+doubleWithoutPrecedingZero :: Parser Double
+doubleWithoutPrecedingZero = do
+  symbol "."
+  p <- fromIntegral <$> integer
+  return $ read ("0." ++ show p)
+
 
 ---------
 
@@ -260,9 +285,9 @@ tokenParser = P.makeTokenParser $ P.LanguageDef {
   P.opStart = oneOf ".",
   P.opLetter = oneOf ".",
   P.reservedNames = [
-    "out","render", "fast", "smooth", "speed",
+    "out","render", "fast", "smooth", "speed", "setResolution",
     "osc","solid","gradient","noise","shape","voronoi",
-    "brightness", "contrast", "colorama", "color", "invert", "luma", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
+    "brightness", "contrast", "colorama", "color", "invert", "luma", "hue", "posterize", "saturate", "shift", "thresh", "kaleid", "pixelate", "repeat", "repeatX", "repeatY", "rotate", "scale", "scroll", "scrollX", "scrollY",
     "modulate", "modulateHue", "modulateKaleid", "modulatePixelate", "modulateRepeat", "modulateRepeatX", "modulateRepeatY", "modulateRotate", "modulateScale", "modulateScrollX", "modulateScrollY",
     "add", "mult", "blend", "diff", "layer", "mask",
     "o0","o1","o2","o3", "s0", "s1", "s2", "s3", "initScreen", "initCam", "initVideo", "initImage"
