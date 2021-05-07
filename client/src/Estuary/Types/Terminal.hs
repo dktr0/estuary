@@ -68,7 +68,7 @@ parseTerminalCommand s = do
             Right x -> Right $ errorOrCommand'
     errorOrCommand
 
-
+ 
 terminalCommand :: H Command
 terminalCommand =
       localView

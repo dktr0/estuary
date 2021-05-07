@@ -56,7 +56,7 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
     return commands
 
   divClass "ensembleStatus" $ ensembleStatusWidget
-
+ 
   return commands
 
 hintsToMessages :: [Hint] -> [Text]
