@@ -56,13 +56,17 @@ parseCommand s
   | otherwise = parseTerminalCommand $ removeExclamation s' -- removeExclamation would be better
     where s' =  T.strip s
 
+
+termC
+
 parseTerminalCommand ::  T.Text -> Either ParseError Command
 parseTerminalCommand s = do
     let s' = T.unpack s
-    f (Exts.parseExp s')
-      where
-        f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x
-        f (Exts.ParseFailed l x) = Left $ show l ++ x
+    parse termC "(unknown)"
+    -- f (Exts.parseExp s')
+    --   where
+    --     f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x
+    --     f (Exts.ParseFailed l x) = Left $ show l ++ x
     -- errorOrCommand <- case (Exts.parseExp s') of
     --     Exts.ParseFailed l x -> Left $ Exts.parse x --  Left $ "(unknown): " ++ "unexpected " ++ s' -- this error only triggers whern symbols are given to the parser
     --     Exts.ParseOk x -> Right $  Exts.fromParseResult $ Exts.ParseOk x
