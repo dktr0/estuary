@@ -64,11 +64,11 @@ parseTerminalCommand s = do
         Exts.ParseOk x -> do
           let errorOrCommand' = fmap fst $ runHaskellish terminalCommand () x
           case errorOrCommand' of
-            Left x -> Left $ "(unknown): " ++ "unexpected " ++ s' -- this error only triggers when strings that are not commands are written
+            Left x -> return x -- Left $ "(unknown): " ++ "unexpected " ++ x -- this error only triggers when strings that are not commands are written
             Right x -> Right $ errorOrCommand'
     errorOrCommand
 
- 
+
 terminalCommand :: H Command
 terminalCommand =
       localView
