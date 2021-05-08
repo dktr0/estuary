@@ -50,48 +50,26 @@ data Command =
   Reset -- same effect as ResetZones + ResetTempo (doesn't reset views)
   deriving (Show,Eq)
 
--- parseCommand :: T.Text -> Either String Command
-parseCommand s = parseTerminalCommand s
-  -- | (s' == "") || (T.head s' /= '!') = Right $ Chat s
-  -- | otherwise = parseTerminalCommand $ removeExclamation s' -- removeExclamation would be better
-    -- where s' =  T.strip s
+parseCommand :: T.Text -> Either String Command
+parseCommand s
+  | (s' == "") || (T.head s' /= '!') = Right $ Chat s
+  | otherwise = parseTerminalCommand $ removeExclamation s' -- removeExclamation would be better
+    where s' =  T.strip s
 
-
--- fromParseResult :: ParseResult a -> a
-parseTerminalCommand ::  T.Text -> Either Pc.ParseError Command
-parseTerminalCommand s = f . Pc.parse $ T.unpack s
+parseTerminalCommand ::  T.Text -> Either String Command
+parseTerminalCommand s = f . Exts.parseExp $ T.unpack s
       where
-        f (Left err) = show err
-        f (Right x ) = fmap fst $ runHaskellish terminalCommand () x
-        -- f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x -- Either String (a, st)
-        -- f (Exts.ParseFailed l "unknown") = Left $ Pc.parse show
-
-    -- let s' = T.unpack s
-    -- (Exts.parseExp s')
-      -- where
-        -- f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x
-        -- f (Exts.ParseFailed l x) = Pc.errorPos $ Left x
-    -- errorOrCommand <- case (Exts.parseExp s') of
-    --     Exts.ParseFailed l x -> Left $ Exts.parse x --  Left $ "(unknown): " ++ "unexpected " ++ s' -- this error only triggers whern symbols are given to the parser
-    --     Exts.ParseOk x -> Right $  Exts.fromParseResult $ Exts.ParseOk x
-    --      -- do
-    --      --  let errorOrCommand' = fmap fst $ runHaskellish terminalCommand () x
-    --      --  case errorOrCommand' of
-    --      --  -- errorOrCommand' <- case (Exts.parseExp s'') of
-    --      --    Left x -> Left $ Exts.parse x
-    --      --    Right x -> Right $ x -- $ Exts.parse errorOrCommand'
-    --      --  -- errorOrCommand'
-    -- errorOrCommand
-            -- Left x -> Left $ show $ Exts.ParseFailed l x -- Left $ "(unknown): " ++ "unexpected " ++ x -- this error only triggers when strings that are not commands are written
-            -- Right x -> Right $ errorOrCommand'
-
-
+        f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x -- Either String (a, st)
+        f (Exts.ParseFailed _ s) = Left s
 
 terminalCommand :: H Command
 terminalCommand =
       localView
   <|> presetView
+  <|> presetViewTextLiteral
   <|> publishView
+  <|> publishViewTextLiteral
+  <|> publishDefaultView
   <|> activeView
   <|> listViews
   <|> dumpViewParser
@@ -149,6 +127,17 @@ presetView' = presetViewFunc <$ (reserved "presetview")
 presetViewFunc :: Text -> Command
 presetViewFunc x = PresetView x
 
+
+-- select a presetview allows textLiteral
+presetViewTextLiteral :: H Command
+presetViewTextLiteral = presetViewTextLiteral' <*> textLiteral
+
+presetViewTextLiteral' :: H (Text -> Command)
+presetViewTextLiteral' = presetViewTextLiteralFunc <$ (reserved "presetview")
+
+presetViewTextLiteralFunc :: Text -> Command
+presetViewTextLiteralFunc x = PresetView x
+
   -- publish a view
 publishView :: H Command
 publishView = publishView' <*> identifierText
@@ -158,6 +147,25 @@ publishView' = publishViewFunc <$ reserved "publishview"
 
 publishViewFunc :: Text -> Command
 publishViewFunc x = PublishView x
+
+-- publish a view with a textLiteral
+publishViewTextLiteral :: H Command
+publishViewTextLiteral = publishViewTextLiteral' <*> textLiteral
+
+publishViewTextLiteral' :: H (Text -> Command)
+publishViewTextLiteral' = publishViewTextLiteralFunc <$ reserved "publishview"
+
+publishViewTextLiteralFunc :: Text -> Command
+publishViewTextLiteralFunc x
+  | x == "default" =  PublishView "def"
+  | otherwise = PublishView x
+
+-- publishdefaultview
+publishDefaultView :: H Command
+publishDefaultView = publishDefaultViewFunc <$ reserved "publishdefaultview"
+
+publishDefaultViewFunc :: Command
+publishDefaultViewFunc = PublishView "def"
 
 -- print the active view
 activeView :: H Command
