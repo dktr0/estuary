@@ -4,6 +4,7 @@ module Estuary.Render.DynamicsMode where
 import Sound.MusicW
 import GHCJS.DOM.Types (JSVal)
 import Control.Monad.IO.Class (liftIO)
+import Control.Exception
 
 data DynamicsMode =
   DefaultDynamics | -- Gentle compression, with pre-compression levels reduced a bit, should be close to SuperDirt dynamics
@@ -19,72 +20,146 @@ instance Show DynamicsMode where
   show LoudDynamics = "Loud"
   show WideDynamics = "Wide"
 
+data PunctualAudioInputMode =
+  MicToPunctual |
+  WebDirtToPunctualMonitor |
+  WebDirtToPunctualNoMonitor
+  deriving (Eq,Ord)
+
+punctualAudioInputModes :: [PunctualAudioInputMode]
+punctualAudioInputModes = [MicToPunctual,WebDirtToPunctualMonitor,WebDirtToPunctualNoMonitor]
+
+instance Show PunctualAudioInputMode where
+  show MicToPunctual = "Microphone"
+  show WebDirtToPunctualMonitor = "WebDirt to Punctual and output"
+  show WebDirtToPunctualNoMonitor = "WebDirt to Punctual only"
+
 maxDelayTime :: Double
 maxDelayTime = 10
 
-initializeMainBus :: IO (Node,Node,Node,Node,Node)
+data MainBus = MainBus {
+  microphoneInput :: Node,
+  webDirtOutput :: Node,
+  punctualInput :: Node,
+  mainBusInput :: Node,
+  mainBusDelay :: Node,
+  compressorPreGain :: Node,
+  mainBusCompressor :: Node,
+  compressorPostGain :: Node
+  }
+
+initializeMainBus :: IO MainBus
 initializeMainBus = liftAudioIO $ do
-    acDestination <- createDestination
-    ((v,w,x,y,z),s) <- playSynthNow acDestination $ do
-      v <- audioIn
-      w <- delay maxDelayTime v
-      x <- gain (dbamp (-10)) w
-      y <- compressor (-20) 3 4 0.050 0.100 x -- args are: threshold knee ratio attack release input
-      z <- gain 1.0 y
-      audioOut z
-      return (v,w,x,y,z)
-    v' <- nodeRefToNode v s
-    w' <- nodeRefToNode w s
-    setValue w' DelayTime 0.0
-    x' <- nodeRefToNode x s
-    y' <- nodeRefToNode y s
-    z' <- nodeRefToNode z s
-    return (v',w',x',y',z')
+  -- 1. create web audio nodes
+  microphoneInput' <- createMicrophone
+  webDirtOutput' <- createGain 1.0
+  punctualInput' <- createGain 1.0
+  mainBusInput' <- createGain 1.0
+  mainBusDelay' <- createDelay maxDelayTime
+  setValue mainBusDelay' DelayTime 0
+  compressorPreGain' <- createGain 1.0
+  mainBusCompressor' <- createCompressor (-20) 3 4 0.050 0.100
+  compressorPostGain' <- createGain 1.0
+  dest <- createDestination
+  -- 2. establish most connections between nodes (from mainBusInput onwards, before that is handled by changePunctualAudioInputMode later)
+  connectNodes mainBusInput' mainBusDelay'
+  connectNodes mainBusDelay' compressorPreGain'
+  connectNodes compressorPreGain' mainBusCompressor'
+  connectNodes mainBusCompressor' compressorPostGain'
+  connectNodes compressorPostGain' dest
+  -- 3. create a MainBus record to keep track of nodes
+  let mb = MainBus {
+    microphoneInput = microphoneInput',
+    webDirtOutput = webDirtOutput',
+    punctualInput = punctualInput',
+    mainBusInput = mainBusInput',
+    mainBusDelay = mainBusDelay',
+    compressorPreGain = compressorPreGain',
+    mainBusCompressor = mainBusCompressor',
+    compressorPostGain = compressorPostGain'
+    }
+  -- 4. apply parameters/connections for dynamics mode and Punctual audio input mode
+  liftIO $ changeDynamicsMode mb DefaultDynamics
+  liftIO $ changePunctualAudioInputMode mb MicToPunctual
+  return mb
 
 
-changeDynamicsMode :: (Node,Node,Node,Node,Node) -> DynamicsMode -> IO ()
-changeDynamicsMode (input,del,preGain,comp,postGain) DefaultDynamics = liftAudioIO $ do
+changeDynamicsMode :: MainBus -> DynamicsMode -> IO ()
+changeDynamicsMode mb DefaultDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to default dynamics"
-  setValue preGain Gain (dbamp (-10))
+  setValue (compressorPreGain mb) Gain (dbamp (-10))
+  let comp = mainBusCompressor mb
   setValue comp Threshold (-20)
   setValue comp Knee 3
   setValue comp CompressionRatio 2
   setValue comp Attack 0.050
   setValue comp Release 0.100
-  setValue postGain Gain 1.0
+  setValue (compressorPostGain mb) Gain 1.0
   return ()
 
-changeDynamicsMode (input,del,preGain,comp,postGain) LoudDynamics = liftAudioIO $ do
+changeDynamicsMode mb LoudDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to loud dynamics"
-  setValue preGain Gain 1.0
+  setValue (compressorPreGain mb) Gain 1.0
+  let comp = mainBusCompressor mb
   setValue comp Threshold (-10)
   setValue comp Knee 3
   setValue comp CompressionRatio 4
   setValue comp Attack 0.050
   setValue comp Release 0.100
-  setValue postGain Gain 1.0
+  setValue (compressorPostGain mb) Gain 1.0
   return ()
 
-changeDynamicsMode (input,del,preGain,comp,postGain) WideDynamics = liftAudioIO $ do
+changeDynamicsMode mb WideDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to wide dynamics"
-  setValue preGain Gain 1.0
+  setValue (compressorPreGain mb) Gain 1.0
+  let comp = mainBusCompressor mb
   setValue comp Threshold 0.0
   setValue comp Knee 0.0
   setValue comp CompressionRatio 1.0
   setValue comp Attack 0.050
   setValue comp Release 0.100
-  setValue postGain Gain (dbamp (-20))
+  setValue (compressorPostGain mb) Gain (dbamp (-20))
   return ()
 
-changeDestination :: (Node, Node, Node, Node, Node) -> (forall m. AudioIO m => m Node) -> IO Node
-changeDestination (_, _, _, _, postGain) destCreator = liftAudioIO $ do
+
+changePunctualAudioInputMode :: MainBus -> PunctualAudioInputMode -> IO ()
+changePunctualAudioInputMode mb MicToPunctual = liftAudioIO $ do
+  liftIO $ do
+    putStrLn "routing microphone to punctual input"
+    disconnectAudioIO mb
+  connectNodes (microphoneInput mb) (punctualInput mb)
+  connectNodes (webDirtOutput mb) (mainBusInput mb)
+
+changePunctualAudioInputMode mb WebDirtToPunctualMonitor = liftAudioIO $ do
+  liftIO $ do
+    putStrLn "routing WebDirt output to punctual input and to monitor output"
+    disconnectAudioIO mb
+  connectNodes (webDirtOutput mb) (punctualInput mb)
+  connectNodes (webDirtOutput mb) (mainBusInput mb)
+
+changePunctualAudioInputMode mb WebDirtToPunctualNoMonitor = liftAudioIO $ do
+  liftIO $ do
+    putStrLn "routing WebDirt output to punctual input only (no monitoring)"
+    disconnectAudioIO mb
+  connectNodes (webDirtOutput mb) (punctualInput mb)
+
+disconnectAudioIO :: MainBus -> IO ()
+disconnectAudioIO mb = liftAudioIO $ do
+  disconnectAll (microphoneInput mb)
+  disconnectAll (webDirtOutput mb)
+
+
+changeDestination :: MainBus -> (forall m. AudioIO m => m Node) -> IO Node
+changeDestination mb destCreator = liftAudioIO $ do
   newDest <- destCreator
-  liftIO $ disconnectAll postGain -- *** TO FIX/INVESTIGATE: will this break analysis system?
-  connectNodes postGain newDest
+  liftIO $ disconnectAll (compressorPostGain mb) -- *** TO FIX/INVESTIGATE: will this break analysis system?
+  connectNodes (compressorPostGain mb) newDest
   return newDest
 
-changeDelay :: (Node,Node,Node,Node,Node) -> AudioTime -> IO ()
-changeDelay (input,del,preGain,comp,postGain) newDelayTime | newDelayTime > maxDelayTime = putStrLn "delay time greater than maxDelayTime"
-                                                           | otherwise = liftAudioIO $ do
-  setValue del DelayTime newDelayTime
-  return ()
+
+changeDelay :: MainBus -> AudioTime -> IO ()
+changeDelay mb newDelayTime
+  | newDelayTime > maxDelayTime = putStrLn "delay time greater than maxDelayTime"
+  | otherwise = liftAudioIO $ do
+    setValue (mainBusDelay mb) DelayTime newDelayTime
+    return ()

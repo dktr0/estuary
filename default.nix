@@ -164,15 +164,15 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "punctual";
-           sha256 = "10bn7bxa84ss0sdnrgdbxif784p442ncvmxhp0r3q5936pjg0wp6";
-           rev = "7289dd50cf0b7f8a1a1a3daf799b6ffeacd75c1b";
+           sha256 = "04jgrm0kqjmv5lzdrg9h6kap15ldmgy4jylg66s7lbg28g7dr5sk";
+           rev = "300345fb919c2a300a50105fa3e7b2663244a5d7";
          }) {}));
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "1x0ca7ad2gs6nqbnmlpfaj049pzjn8rd2ijmlywfaihw16y4fk82";
-          rev = "7ba08641af537ef0521a95a69b373d47f6263366";
+          sha256 = "0xl4kjkibhr5sv2h96yn6n1ishs6a09a6bwgm4mjx8k96x6xvqw6";
+          rev = "bc6ddf6306f7354a5b418496cc9e6853ece8bb53";
           }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
@@ -183,22 +183,26 @@ in
         }) {});
 
         # needs jailbreak for dependency microspec >=0.2.0.1
-        tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions "tidal"
+        tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
+        #  "tidal" ../Tidal "" {}));
+          "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0fx7km09f70y7f5wmqs3j126jgryzxp66vbkvri6kcimxja36914";
-          rev = "8de2f9f6cdb661bece46b384b126e5e97b7dbc78";          fetchSubmodules = true;
-          }) "" {}));
+          sha256 = "0wkzz7sdd0v972vxx6zji53h2hyrw60gwccvypqfwlrw4ai7zqla";
+          rev = "026965426b5a334ce2b734f44120ad79365203e4";
+          fetchSubmodules = true;
+        }) "" {}));
 
         tidal-parse = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
-        #    "tidal-parse" ../tidal/tidal-parse "" {}));
+        #  "tidal-parse" ../Tidal/tidal-parse "" {}));
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0fx7km09f70y7f5wmqs3j126jgryzxp66vbkvri6kcimxja36914";
-            rev = "8de2f9f6cdb661bece46b384b126e5e97b7dbc78";            fetchSubmodules = true;
-              })
-            "--subpath tidal-parse" {}));
+            sha256 = "0wkzz7sdd0v972vxx6zji53h2hyrw60gwccvypqfwlrw4ai7zqla";
+            rev = "026965426b5a334ce2b734f44120ad79365203e4";
+            fetchSubmodules = true;
+        })
+        "--subpath tidal-parse" {}));
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
@@ -206,8 +210,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "1lrw14v4n5cdk7b8la9z4bc9sh8n0496hb4s7fcbm6g7p5m8qc0j";
-           rev = "bd5daf365086a4b3a75af9ad9c0b6dedf687f48a";
+           sha256 = "0z4a2snqy7m8apfb3dawjjzbbkwk6llaaykxgc1wd3001rgxxg1b";
+           rev = "fb6c02a31f96e460866731ee058fbadcecabd7b7";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});

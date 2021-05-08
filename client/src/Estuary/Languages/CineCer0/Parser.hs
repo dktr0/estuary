@@ -169,7 +169,8 @@ vs_vs =
   sigInt_vs_vs <*> sigInt <|>
   (reserved "strike" >> return setStrike) <|>
   (reserved "bold" >> return setBold) <|>
-  (reserved "italic" >> return setItalic)
+  (reserved "italic" >> return setItalic) <|>
+  (reserved "border" >> return setBorder)
   -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)

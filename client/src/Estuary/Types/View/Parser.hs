@@ -41,9 +41,9 @@ dumpView (SequenceView z) = "sequence " <> showInt z
 -- dumpView (Example tn txt) = ...
 dumpView EnsembleStatusView = "ensembleStatus"
 dumpView TempoView = "tempo"
-dumpView (RouletteView x rows) = "roulette" <> showInt x <> " " <> showInt rows
+dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
 dumpView AudioMapView = "audiomap"
-dumpView (StopWatchView z) = "stopwatch" <> showInt z
+dumpView (StopWatchView z) = "stopwatch " <> showInt z
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text

@@ -12,6 +12,6 @@ in
     src = builtins.fetchGit {
       url = "https://github.com/ojack/hydra-synth.git";
       rev = "c5124ab0d2a5a5c9fb7d0f1211673598bb69f684";
-      ref = "master";
+      ref = "main";
     };
   }

@@ -16,7 +16,7 @@ data Source =
   Shape [Parameters] |
   Voronoi [Parameters] |
   OutputAsSource Output |
-  Src Source |
+  Src Source [Parameters] |
   InputAsSource Input |
   Brightness [Parameters] Source |
   Contrast [Parameters] Source |
@@ -24,6 +24,7 @@ data Source =
   Color [Parameters] Source |
   Invert [Parameters] Source |
   Luma [Parameters] Source |
+  Hue [Parameters] Source |
   Posterize [Parameters] Source |
   Saturate [Parameters] Source |
   Shift [Parameters] Source |
@@ -52,8 +53,8 @@ data Source =
   Add Source [Parameters] Source |
   Mult Source [Parameters] Source |
   Blend Source [Parameters] Source |
-  Diff Source Source |
-  Layer Source Source |
+  Diff Source [Parameters] Source |
+  Layer Source [Parameters] Source |
   Mask Source [Parameters] Source
   deriving (Show)
 
@@ -74,12 +75,12 @@ data Output =
   deriving (Show)
 
 data Statement =
-  InitScreen Input | --s0.InitScreen()
-  InitCam Input | --s0.InitCam()
+  InitScreen Input [Parameters] | --s0.InitScreen()
+  InitCam Input [Parameters] | --s0.InitCam(), s0.InitCam(1)
   InitVideo Input Text | --s0.initVideo(url)
   InitImage Input Text | --s0.initImage(url)
   Out Source Output | --solid().out()
   Render (Maybe Output) | --render(o2)
-  Speed Parameters -- speed = 1.5
-  --SetResolution Parameters Parameters -- setResolution(w,h)
+  Speed Parameters | -- speed = 1.5
+  SetResolution [Parameters] -- setResolution(w,h)
   deriving (Show)

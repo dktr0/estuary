@@ -92,6 +92,17 @@ configWidget ctx ri = do
 
   elClass "hr" "dashed" $  text ""
 
+  punctualAudioInputModeEv <- divClass "config-option primary-color ui-font" $ do
+    text "Punctual Audio Input: "
+    let paimMap = fromList $ zip punctualAudioInputModes (fmap (T.pack . show) punctualAudioInputModes)
+    paimChange <- _dropdown_change <$> dropdown MicToPunctual (constDyn paimMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" <> "style" =: "background-color: transparent"))
+    el "div" $ dynText =<< (translatableText $ fromList [
+      (English,"Control of how microphone/WebDirt audio is routed to Punctual.")
+      ])
+    return $ fmap (\x c -> c { punctualAudioInputMode = x }) paimChange -- context -> context
+
+  elClass "hr" "dashed" $  text ""
+
   superDirtEnabledEv <- divClass "config-option primary-color ui-font" $ do
     text "SuperDirt: "
     sdInput <- elClass "label" "switch" $ do
@@ -121,4 +132,4 @@ configWidget ctx ri = do
     (result,_) <- runEditor ctx ri $ viewEditor ctx
     return result
 
-  return $ mergeWith (.) [canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange, fpsLimitChangeEv, unsafeModeEv]
+  return $ mergeWith (.) [punctualAudioInputModeEv,canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange, fpsLimitChangeEv, unsafeModeEv]

@@ -104,7 +104,7 @@ earlyWakeUp = 0.002
 pushNoteEvents :: [NoteEvent] -> Renderer
 pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
-pushTidalEvents :: [(UTCTime,Tidal.ControlMap)] -> Renderer
+pushTidalEvents :: [(UTCTime,Tidal.ValueMap)] -> Renderer
 pushTidalEvents xs = modify' $ \x -> x { tidalEvents = tidalEvents x ++ xs }
 
 -- flush events for SuperDirt and WebDirt
@@ -124,7 +124,7 @@ flushEvents irc c = do
   modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
   return ()
 
-renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ControlMap)]
+renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
 renderTidalPattern start range t p = events''
   where
     start' = (realToFrac $ diffUTCTime start (time t)) * freq t + count t -- start time in cycles since beginning of tempo
@@ -545,10 +545,11 @@ punctualProgramChanged :: ImmutableRenderContext -> Context -> Int -> Punctual.P
 punctualProgramChanged irc c z p = do
   s <- get
   -- A. update PunctualW (audio state) in response to new, syntactically correct program
-  let (mainBusIn,_,_,_,_) = mainBus irc
+  let pIn = punctualInput $ mainBus irc
+  let pOut = mainBusInput $ mainBus irc
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
-  let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac mainBusIn 2 (Punctual.evalTime p)) z (punctuals s)
+  let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac pIn pOut 2 (Punctual.evalTime p)) z (punctuals s)
   let tempo' = tempo $ ensemble $ ensembleC c
   let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ origin tempo'
   let cps' = freq tempo'
@@ -635,7 +636,9 @@ forkRenderThreads :: ImmutableRenderContext -> MVar Context -> HTMLCanvasElement
 forkRenderThreads irc ctxM cvsElement glCtx hCanvas riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
-  irs <- initialRenderState (mic irc) (out irc) cvsElement glCtx hCanvas t0System t0Audio
+  let pIn = punctualInput $ mainBus irc
+  let pOut = mainBusInput $ mainBus irc
+  irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread irc ctxM riM rsM
   void $ forkIO $ animationThread irc rsM

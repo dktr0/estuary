@@ -33,6 +33,7 @@ data LayerSpec = LayerSpec {
   strike :: Signal Bool,
   bold :: Signal Bool,
   italic :: Signal Bool,
+  border :: Signal Bool,
 
   posX :: Signal Rational,
   posY :: Signal Rational,
@@ -64,11 +65,12 @@ emptyLayerSpec = LayerSpec {
   volume = constantSignal 0.0,
 
   fontFamily = constantSignal "sans-serif",
-  fontSize = constantSignal 200,
+  fontSize = constantSignal 1,
   colour = Colour (constantSignal "White"),
   strike = constantSignal False,
   bold = constantSignal False,
   italic = constantSignal False,
+  border = constantSignal False,
 
   posX = constantSignal 0.0,
   posY = constantSignal 0.0,
@@ -167,6 +169,9 @@ setBold tx = tx { bold = constantSignal True}
 
 setItalic :: LayerSpec -> LayerSpec
 setItalic tx = tx { italic = constantSignal True}
+
+setBorder :: LayerSpec -> LayerSpec
+setBorder tx = tx { border = constantSignal True}
 
 setColourStr :: Signal String -> LayerSpec -> LayerSpec
 setColourStr clr tx = tx { colour = Colour clr }

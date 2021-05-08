@@ -97,10 +97,10 @@ noteEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
           Just <$> mapTextJSValToJSVal (t',m')
         Left _ -> return Nothing
 
-makeTidalEventSafe :: Tidal.ControlMap -> Tidal.ControlMap
+makeTidalEventSafe :: Tidal.ValueMap -> Tidal.ValueMap
 makeTidalEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
-tidalEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ControlMap) -> IO (Maybe JSVal)
+tidalEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ValueMap) -> IO (Maybe JSVal)
 tidalEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
   let mSafe = if unsafe then m else makeTidalEventSafe m
   let s = Map.lookup "s" mSafe
@@ -137,7 +137,8 @@ datumsToLocation (Just (ASCII_String x)) (Just (Int32 y)) = Just (decodeUtf8 x,f
 datumsToLocation _ _ = Nothing
 
 valuesToLocation :: Maybe Tidal.Value -> Maybe Tidal.Value -> Maybe Location
-valuesToLocation (Just (Tidal.VS x _)) Nothing = Just (T.pack x,0)
-valuesToLocation (Just (Tidal.VS x _)) (Just (Tidal.VF y _)) = Just (T.pack x,floor y)
-valuesToLocation (Just (Tidal.VS x _)) (Just (Tidal.VI y _)) = Just (T.pack x,y)
+valuesToLocation (Just (Tidal.VS x)) Nothing = Just (T.pack x,0)
+valuesToLocation (Just (Tidal.VS x)) (Just (Tidal.VF y)) = Just (T.pack x,floor y)
+valuesToLocation (Just (Tidal.VS x)) (Just (Tidal.VI y)) = Just (T.pack x,y)
+valuesToLocation (Just (Tidal.VS x)) (Just (Tidal.VN y)) = Just (T.pack x,floor $ Tidal.unNote y)
 valuesToLocation _ _ = Nothing

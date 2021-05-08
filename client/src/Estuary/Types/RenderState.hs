@@ -36,10 +36,9 @@ data RenderState = RenderState {
   renderPeriod :: !NominalDiffTime,
   renderEnd :: !UTCTime,
   cachedDefs :: !DefinitionMap,
---  cachedCanvasElement :: !(Maybe HTMLCanvasElement),
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
-  tidalEvents :: ![(UTCTime,Tidal.ControlMap)],
+  tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap Punctual.PunctualW),
   punctualWebGL :: Punctual.PunctualWebGL,
@@ -65,8 +64,8 @@ data RenderState = RenderState {
   }
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
-initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
-  pWebGL <- Punctual.newPunctualWebGL (Just mic) (Just out) Punctual.HD 1.0 glCtx
+initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
+  pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 glCtx
   return $ RenderState {
     animationOn = False,
     animationFpsLimit = Just 0.030,
@@ -76,7 +75,6 @@ initialRenderState mic out cvsElement glCtx hCanvas t0System t0Audio = do
     renderPeriod = 0,
     renderEnd = t0System,
     cachedDefs = empty,
---    cachedCanvasElement = Nothing,
     paramPatterns = empty,
     noteEvents = [],
     tidalEvents = [],
