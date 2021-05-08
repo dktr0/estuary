@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Types.Terminal (Command(..),parseCommand) where
+module Estuary.Types.Terminal (Command(..), parseCommand) where
 
 
 import Language.Haskellish as LH
@@ -50,23 +50,27 @@ data Command =
   Reset -- same effect as ResetZones + ResetTempo (doesn't reset views)
   deriving (Show,Eq)
 
-parseCommand :: T.Text -> Either String Command
-parseCommand s
-  | (s' == "") || (T.head s' /= '!') = Right $ Chat s
-  | otherwise = parseTerminalCommand $ removeExclamation s' -- removeExclamation would be better
-    where s' =  T.strip s
+-- parseCommand :: T.Text -> Either String Command
+parseCommand s = parseTerminalCommand s
+  -- | (s' == "") || (T.head s' /= '!') = Right $ Chat s
+  -- | otherwise = parseTerminalCommand $ removeExclamation s' -- removeExclamation would be better
+    -- where s' =  T.strip s
 
 
-termC
+-- fromParseResult :: ParseResult a -> a
+parseTerminalCommand ::  T.Text -> Either Pc.ParseError Command
+parseTerminalCommand s = f . Pc.parse $ T.unpack s
+      where
+        f (Left err) = show err
+        f (Right x ) = fmap fst $ runHaskellish terminalCommand () x
+        -- f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x -- Either String (a, st)
+        -- f (Exts.ParseFailed l "unknown") = Left $ Pc.parse show
 
-parseTerminalCommand ::  T.Text -> Either ParseError Command
-parseTerminalCommand s = do
-    let s' = T.unpack s
-    parse termC "(unknown)"
-    -- f (Exts.parseExp s')
-    --   where
-    --     f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x
-    --     f (Exts.ParseFailed l x) = Left $ show l ++ x
+    -- let s' = T.unpack s
+    -- (Exts.parseExp s')
+      -- where
+        -- f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x
+        -- f (Exts.ParseFailed l x) = Pc.errorPos $ Left x
     -- errorOrCommand <- case (Exts.parseExp s') of
     --     Exts.ParseFailed l x -> Left $ Exts.parse x --  Left $ "(unknown): " ++ "unexpected " ++ s' -- this error only triggers whern symbols are given to the parser
     --     Exts.ParseOk x -> Right $  Exts.fromParseResult $ Exts.ParseOk x
