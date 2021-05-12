@@ -208,6 +208,8 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let bordered = generateBorder (border s t lengthOfLayer rTime eTime aTime)
   let coloured = generateColours (colour s) t lengthOfLayer rTime eTime aTime
   let sized = generateFontSize (realToFrac $ (height s t lengthOfLayer rTime eTime aTime))
+  let stretched = generateFontStretch (realToFrac $ (width s t lengthOfLayer rTime eTime aTime))
+
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
 
@@ -237,7 +239,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let yPos  = yPos' * (0.5 + (y*(-0.5)))
   let topY = yPos
 
-  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised bordered coloured sized z'
+  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised bordered coloured sized stretched z'
   -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
   else return tx
@@ -329,6 +331,10 @@ generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
 generateFontSize :: Double -> Text
 generateFontSize size = "; font-size: " <> T.pack (show (size)) <> "em;"
 
+generateFontStretch :: Double -> Text
+generateFontStretch stretch' = "; font-stretch: " <> T.pack (show (stretch)) <> "%;"
+    where stretch = stretch'*100;
+
 generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text  -- this string needs to be a text!!!!
 generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"  
   where string = (str t ll rT eT aT) 
@@ -367,8 +373,8 @@ generateBorder :: Bool -> Text
 generateBorder (True) = "; border: 1px solid #cccccc;"
 generateBorder (False) = ""
 
-textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h ff stk bld itc brd clr sz z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt ff <> stk <> bld <> itc <> brd <> clr <> sz <> z <> ";"
+textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
+textStyle x y w h fontfam stk bld itc border colour size stretch z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt fontfam <> stk <> bld <> itc <> border <> colour <> size  <> stretch <> z <> ";"
 
 
 -- textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
