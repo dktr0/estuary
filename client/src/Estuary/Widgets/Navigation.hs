@@ -45,6 +45,7 @@ import Estuary.Widgets.AboutEstuary
 import Estuary.Widgets.CreateEnsemble
 import Estuary.Tutorials.TidalCyclesBasics
 import Estuary.Tutorials.Punctual
+import Estuary.Tutorials.CineCer0
 import Estuary.Widgets.Announcements
 
 data Navigation =
@@ -86,7 +87,8 @@ page wsDown TutorialList = splitPageWithAnnouncements $ do
   divClass "ui-font primary-color" $ text "Select a tutorial:"
   navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ divClass "tutorialButton" $ button "TidalCycles"
   navPunctualTutorial <- liftM (TutorialNav "Punctual" <$) $ divClass "tutorialButton" $ button "Punctual"
-  let nav = leftmost [navTidalCyclesBasics,navPunctualTutorial]
+  navCineCer0 <- liftM (TutorialNav "CineCer0" <$) $ divClass "tutorialButton" $ button "CineCer0"
+  let nav = leftmost [navTidalCyclesBasics,navPunctualTutorial,navCineCer0]
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (nav, (leaveEnsemble, never))
 
@@ -99,6 +101,12 @@ page wsDown (TutorialNav "TidalCyclesBasics") = do
 page wsDown (TutorialNav "Punctual") = do
   let ensResponses = fmapMaybe justEnsembleResponses wsDown
   ensReq <- runTutorial punctualTutorial ensResponses
+  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
+  return (never,(leaveEnsemble,ensReq))
+
+page wsDown (TutorialNav "CineCer0") = do
+  let ensResponses = fmapMaybe justEnsembleResponses wsDown
+  ensReq <- runTutorial cineCer0Tutorial ensResponses
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   return (never,(leaveEnsemble,ensReq))
 
