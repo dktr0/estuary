@@ -66,6 +66,7 @@ a {
    	overflow-y: none;
    	text-align: justify;
     width: 100%;
+    margin-top: 0.5em;
 }
 
 .paragraph::-webkit-scrollbar  {
