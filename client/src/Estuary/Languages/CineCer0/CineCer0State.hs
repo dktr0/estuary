@@ -207,7 +207,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let italicised = generateItalic (italic s t lengthOfLayer rTime eTime aTime)
   let bordered = generateBorder (border s t lengthOfLayer rTime eTime aTime)
   let coloured = generateColours (colour s) t lengthOfLayer rTime eTime aTime
-  let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
+  let sized = generateFontSize (realToFrac $ (height s t lengthOfLayer rTime eTime aTime))
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
 

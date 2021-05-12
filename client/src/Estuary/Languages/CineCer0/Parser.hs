@@ -205,7 +205,6 @@ sigRat_vs_vs =
   circleMask <$ reserved "circleMask" <|>
   sqrMask <$ reserved "sqrMask" <|>
   setVolume <$ reserved "vol" <|>
-  setFontSize <$ reserved "fontSize" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
 sigInt_vs_vs :: H (Signal Int -> LayerSpec -> LayerSpec)
