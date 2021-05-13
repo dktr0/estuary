@@ -11,7 +11,7 @@ video "video.extension" -- function in which the explicit declaration of the typ
 
 ### Videos with Audio
 
-vol 0.5 $ "myVideo.extension" -- videos play with unmuted audio 
+vol 0.5 $ "myVideo.extension" -- videos play with unmuted audio
 
 ## Image
 
@@ -35,18 +35,18 @@ z [n] -- changes the depth of the video being reproduced
 
 ## Text
 
-text "This is not a text" -- the string represents the text that will be displayed in the canvas
-font "fontType" -- fonts available depending on browser characteristics
-colour "colour" -- adds colour by name or by hexacolor (all colour funcs will be applied to the text)
-rgb [r] [g] [b] -- adds colour by rgb, normalised from 0 to 1
-rgb' [r] [g] [b] [a] -- adds colour by rgb and alpha
-hsl [h] [s] [l] -- adds colour by hue, saturation and lightness, parameters are normalised from 0 to 1
-hsl' [h] [s] [l] [a] -- adds colours by hsl and alpha
-fontSize [n] -- a font size
-strike -- strikes the text with a white line
-bold -- the weight of the font becomes heavier
-italic -- the style of the font changes to italic
-z [n] -- changes the depth of the text, z 0 is the top layer 
+text "This is not a text" -- the string represents the text that will be displayed in the canvas <br />
+font "fontType" -- fonts available depending on browser characteristics <br />
+colour "colour" -- adds colour by name or by hexacolor (all colour funcs will be applied to the text) <br />
+rgb [r] [g] [b] -- adds colour by rgb, normalised from 0 to 1 <br />
+rgb' [r] [g] [b] [a] -- adds colour by rgb and alpha <br />
+hsl [h] [s] [l] -- adds colour by hue, saturation and lightness, parameters are normalised from 0 to 1 <br />
+hsl' [h] [s] [l] [a] -- adds colours by hsl and alpha <br />
+fontSize [n] -- a font size <br />
+strike -- strikes the text with a white line <br />
+bold -- the weight of the font becomes heavier <br />
+italic -- the style of the font changes to italic <br />
+z [n] -- changes the depth of the text, z 0 is the top layer  <br />
 
 ## ramp
 
@@ -55,7 +55,7 @@ z [n] -- changes the depth of the text, z 0 is the top layer
 ramp can be use in style functions. Example <br />
 width (ramp x y z) <br />
 
-fadeIn [Dur_In_Cycles] 
+fadeIn [Dur_In_Cycles]
 
 fadeOut [Dur_In_Cycles]
 
