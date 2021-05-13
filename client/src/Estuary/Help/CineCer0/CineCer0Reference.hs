@@ -96,14 +96,14 @@ funcionsCineCer0 = el "div" $ do
     (Español,"\n Funciones de texto:")
     ])
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"Text: font \"FontName\", fontSize Val, colour \"colourName\" (accepts colour conventions like white, black, etc. and HEX), rgb Red Green Blue (rgba with a 4th value for alpha), hsv Hue Saturation Value (hsva with a 4th value for alpha, synonym: hsl), strike, bold and italic"),
-    (Español,"Text: fontFamily \"NombreFont\", fontSize Val, colour \"NombreColor\" (accepta nombres convencionales de colores en inglés como white, black, etc. y HEX), rgb Rojo Verde Azul (rgba añade un cuarto valor para alpha), hsv Hue Saturación Valor (hsva añade un cuarto argumento para alpha, sinónimo: hsl), strike, bold e italic")
+    (English,"Text: font \"FontName\", colour \"colourName\" (accepts colour conventions like white, black, etc. and HEX), rgb Red Green Blue (rgba with a 4th value for alpha), hsv Hue Saturation Value (hsva with a 4th value for alpha, synonym: hsl), strike, bold and italic"),
+    (Español,"Text: fontFamily \"NombreFont\", colour \"NombreColor\" (accepta nombres convencionales de colores en inglés como white, black, etc. y HEX), rgb Rojo Verde Azul (rgba añade un cuarto valor para alpha), hsv Hue Saturación Valor (hsva añade un cuarto argumento para alpha, sinónimo: hsl), strike, bold e italic")
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text " text \"volviéndolo a grabaren las manos epilépticas del mar\""
-    el "li" $ elClass "div" "ieRef" $ text " size 0.25 $ colour \"aqua\" $ strike $ bold $ italic $ text \"Siempre como 1 de esas lunas imprevistas\""
-    el "li" $ elClass "div" "ieRef" $ text " size 0.5 $ rgba 0.8 0.5 0 0.5 $ fontSize 400 $ text \"que provocaron el infartote los subways descuidados\""
-    el "li" $ elClass "div" "ieRef" $ text " hsv 0.33 0.1 0.3 $ font \"Times New Romans\" $ size 0.25 $ text \"Ayer: hoy & mañana –de repente–\""
+    el "li" $ elClass "div" "ieRef" $ text " size 5 $ colour \"aqua\" $ strike $ bold $ italic $ text \"Siempre como 1 de esas lunas imprevistas\""
+    el "li" $ elClass "div" "ieRef" $ text " size 3 $ rgba 0.8 0.5 0 0.5 $ text \"que provocaron el infartote los subways descuidados\""
+    el "li" $ elClass "div" "ieRef" $ text " hsv 0.33 0.1 0.3 $ font \"Times New Romans\" $ size 4 $ text \"Ayer: hoy & mañana –de repente–\""
   -- Time functions
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"- Time functions -"),
