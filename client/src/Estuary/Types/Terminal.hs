@@ -12,6 +12,7 @@ import Control.Applicative
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Char as C
+import Data.Maybe
 
 -- import Text.Parsec
 -- import Text.Parsec.Text
@@ -50,25 +51,22 @@ data Command =
   Reset -- same effect as ResetZones + ResetTempo (doesn't reset views)
   deriving (Show,Eq)
 
-parseCommand :: T.Text -> Either String Command
+parseCommand :: T.Text -> Either (Span, Text) Command
 parseCommand s
   | (s' == "") || (T.head s' /= '!') = Right $ Chat s
-  | otherwise = parseTerminalCommand $ removeExclamation s' -- removeExclamation would be better
+  | otherwise = parseTerminalCommand $ removeExclamation s'
     where s' =  T.strip s
 
-parseTerminalCommand ::  T.Text -> Either String Command
-parseTerminalCommand s = f . Exts.parseExp $ T.unpack s
-      where
-        f (Exts.ParseOk x) = fmap fst $ runHaskellish terminalCommand () x -- Either String (a, st)
-        f (Exts.ParseFailed _ s) = Left s
+parseTerminalCommand ::  T.Text -> Either (Span, Text) Command
+parseTerminalCommand s
+   |all C.isSpace (T.unpack s) = Left $ (((1,1), (1,1)) , "expected command after '!' ")
+   |otherwise = fmap fst $ parseAndRun terminalCommand () s
 
 terminalCommand :: H Command
 terminalCommand =
-      localView
-  <|> presetView
-  <|> presetViewTextLiteral
+   presetView
+  <|> localView
   <|> publishView
-  <|> publishViewTextLiteral
   <|> publishDefaultView
   <|> activeView
   <|> listViews
@@ -89,6 +87,91 @@ terminalCommand =
   <|> resetviewsParser
   <|> resettempoParser
   <|> resetParser
+  <|> commandErrors
+
+commandErrors :: H Command
+commandErrors = wrongCommandNoArg
+  <|> wrongCommandWOneTextArg
+  <|> wrongCommandWOneArgDouble
+  <|> wrongCommandWTwoTextArgs
+  <|> wrongCommandWTextAndDouble
+  <|> wrongCommandWTextTextAndDouble
+
+
+-- wrong command + text Text Int
+wrongCommandWTextTextAndDouble :: H Command
+wrongCommandWTextTextAndDouble = do
+  z <- (wrongCommandWTextTextAndDouble' <*> double)
+  fatal $ "!" <> z <> " is an unrecognised command."
+
+wrongCommandWTextTextAndDouble' :: H (Double -> Text)
+wrongCommandWTextTextAndDouble' = wrongCommandWTextTextAndDouble'' <*> (identifierText <|> textLiteral)
+
+wrongCommandWTextTextAndDouble'' :: H (Text -> Double -> Text)
+wrongCommandWTextTextAndDouble'' = wrongCommandWTextTextAndDouble''' <*> (identifierText <|> textLiteral)
+
+wrongCommandWTextTextAndDouble''' :: H (Text -> Text -> Double -> Text)
+wrongCommandWTextTextAndDouble''' = do
+    x <- (identifierText <|> textLiteral)
+    return $ \y z w -> x
+
+-- wrong command + text  Int
+wrongCommandWTextAndDouble :: H Command
+wrongCommandWTextAndDouble = do
+  z <- (wrongCommandWTextAndDouble' <*> double)
+  fatal $ "!" <> z <> " is an unrecognised command."
+
+wrongCommandWTextAndDouble' :: H (Double -> Text)
+wrongCommandWTextAndDouble' = wrongCommandWTextAndDouble'' <*> (identifierText <|> textLiteral)
+
+wrongCommandWTextAndDouble'' :: H (Text -> Double -> Text)
+wrongCommandWTextAndDouble'' = do
+    x <- (identifierText <|> textLiteral)
+    return $ \y z -> x
+
+-- wrong command + text  text
+wrongCommandWTwoTextArgs :: H Command
+wrongCommandWTwoTextArgs = do
+  z <- (wrongCommandWTwoTextArgs' <*> (identifierText <|> textLiteral))
+  fatal $ "!" <> z <> " is an unrecognised command."
+
+wrongCommandWTwoTextArgs' :: H (Text -> Text)
+wrongCommandWTwoTextArgs' = wrongCommandWTwoTextArgs'' <*> (identifierText <|> textLiteral)
+
+wrongCommandWTwoTextArgs'' :: H (Text -> Text -> Text)
+wrongCommandWTwoTextArgs'' = do
+    x <- (identifierText <|> textLiteral)
+    return $ \y z -> x
+
+-- wrong command + double or int
+wrongCommandWOneArgDouble :: H Command
+wrongCommandWOneArgDouble = do
+  z <- (wrongCommandWOneArgDouble' <*> double)
+  fatal $ "!" <> z <> " is an unrecognised command."
+
+wrongCommandWOneArgDouble' :: H (Double -> Text)
+wrongCommandWOneArgDouble' = do
+    x <- (identifierText <|> textLiteral)
+    return $ \y -> x
+
+-- wrong command + text
+wrongCommandWOneTextArg :: H Command
+wrongCommandWOneTextArg = do
+  z <- (wrongCommandWOneTextArg' <*> (identifierText <|> textLiteral))
+  fatal $ "!" <> z <> " is an unrecognised command."
+
+wrongCommandWOneTextArg' :: H (Text -> Text)
+wrongCommandWOneTextArg' = do
+    x <- (identifierText <|> textLiteral )
+    return $ \y -> x
+
+--
+wrongCommandNoArg :: H Command
+wrongCommandNoArg = do
+    x <- (identifierText <|> textLiteral)
+    fatal $ "!" <> x <> " is an unrecognised command."
+
+
 
 resetzonesParser :: H Command
 resetzonesParser = resetzonesFunc <$ (reserved "resetzones")
@@ -119,50 +202,31 @@ resetFunc = Reset
 
 -- select a presetview
 presetView :: H Command
-presetView = presetView' <*> identifierText
+presetView = (presetView' <*!> (textLiteral  <|> identifierText)) <|>
+             (reserved "presetview" >> fatal "Missing argument. !presetview expects a view name.")
 
 presetView' :: H (Text -> Command)
-presetView' = presetViewFunc <$ (reserved "presetview")
+presetView' = presetViewFunc <$ reserved "presetview"
 
 presetViewFunc :: Text -> Command
 presetViewFunc x = PresetView x
 
-
--- select a presetview allows textLiteral
-presetViewTextLiteral :: H Command
-presetViewTextLiteral = presetViewTextLiteral' <*> textLiteral
-
-presetViewTextLiteral' :: H (Text -> Command)
-presetViewTextLiteral' = presetViewTextLiteralFunc <$ (reserved "presetview")
-
-presetViewTextLiteralFunc :: Text -> Command
-presetViewTextLiteralFunc x = PresetView x
-
   -- publish a view
 publishView :: H Command
-publishView = publishView' <*> identifierText
+publishView = (publishView' <*!> (textLiteral <|> identifierText))  <|>
+              (reserved "publishview" >> fatal "Missing argument. !publishview expects a view name.")
 
 publishView' :: H (Text -> Command)
 publishView' = publishViewFunc <$ reserved "publishview"
 
 publishViewFunc :: Text -> Command
-publishViewFunc x = PublishView x
-
--- publish a view with a textLiteral
-publishViewTextLiteral :: H Command
-publishViewTextLiteral = publishViewTextLiteral' <*> textLiteral
-
-publishViewTextLiteral' :: H (Text -> Command)
-publishViewTextLiteral' = publishViewTextLiteralFunc <$ reserved "publishview"
-
-publishViewTextLiteralFunc :: Text -> Command
-publishViewTextLiteralFunc x
+publishViewFunc x
   | x == "default" =  PublishView "def"
   | otherwise = PublishView x
 
 -- publishdefaultview
 publishDefaultView :: H Command
-publishDefaultView = publishDefaultViewFunc <$ reserved "publishdefaultview"
+publishDefaultView = (publishDefaultViewFunc <$ reserved "publishdefaultview")
 
 publishDefaultViewFunc :: Command
 publishDefaultViewFunc = PublishView "def"
@@ -176,7 +240,8 @@ activeViewFunc = ActiveView
 
 -- select a local view
 localView :: H Command
-localView = localView' <*> viewParser
+localView = (localView' <*!> viewParser) <|>
+            (reserved "localview" >> fatal "Missing argument. !localview expects a view definition.")
 
 localView' :: H (View -> Command)
 localView' = localViewFunc <$ reserved "localview"
@@ -214,7 +279,9 @@ streamIdFunc = StreamId
 
 -- delay
 delay :: H Command
-delay = delay' <*> double
+delay = (delay' <*!> double) <|>
+        (reserved "delay" >> fatal "Missing argument. !delay expects delay time (i.e. double).")
+
 
 delay' :: H (Double -> Command)
 delay' = delayFunc <$ reserved "delay"
@@ -224,7 +291,9 @@ delayFunc x = Delay x
 
 -- delete current ensemble
 deletethisensembleParser :: H Command
-deletethisensembleParser = deletethisensembleParser' <*> nameOrPassword
+deletethisensembleParser = (deletethisensembleParser' <*!> nameOrPassword) <|>
+     (reserved "deletethisensemble" >> fatal "Missing argument. !deletethisensemble expects a host password .")
+
 
 deletethisensembleParser' :: H (Text -> Command)
 deletethisensembleParser' = deletethisensembleFunc <$ reserved "deletethisensemble"
@@ -234,7 +303,8 @@ deletethisensembleFunc x =  DeleteThisEnsemble x
 
 -- delete ensemble
 deleteensembleParser :: H Command
-deleteensembleParser = deleteensembleParser' <*> nameOrPassword
+deleteensembleParser = (deleteensembleParser' <*!> nameOrPassword) <|>
+    (reserved "deleteensemble" >> fatal "Missing argument. !deleteensemble expects an ensemble name AND a moderator password.")
 
 deleteensembleParser' :: H (Text -> Command)
 deleteensembleParser' = deleteensembleParser'' <*> nameOrPassword
@@ -254,14 +324,15 @@ ancientTempoFunc = AncientTempo
 
  -- ancient tempo
 showTempoParser :: H Command
-showTempoParser = showTempoFunc <$ reserved "deshowtempolay"
+showTempoParser = showTempoFunc <$ reserved "showtempo"
 
 showTempoFunc :: Command
 showTempoFunc = ShowTempo
 
 -- set cps
 setCPSParser :: H Command
-setCPSParser = setCPSParser' <*> double
+setCPSParser = (setCPSParser' <*!> double) <|>
+   (reserved "setcps" >> fatal "Missing argument. !setcps expects a number.")
 
 setCPSParser' :: H (Double -> Command)
 setCPSParser' = setCPSFunc <$ reserved "setcps"
@@ -272,7 +343,9 @@ setCPSFunc x = SetCPS x
 --  set bpm
 
 setBPMParser :: H Command
-setBPMParser = setBPMParser' <*> double
+setBPMParser = (setBPMParser' <*!> double) <|>
+  (reserved "setbpm" >> fatal "Missing argument. !setbpm expects a number.")
+
 
 setBPMParser' :: H (Double -> Command)
 setBPMParser' = setBPMFunc <$ reserved "setbpm"
@@ -282,13 +355,17 @@ setBPMFunc x = SetBPM x
 
 -- insert audio resource
 insertAudioResourceParser :: H Command
-insertAudioResourceParser = insertAudioResourceParser' <*> int
+insertAudioResourceParser = (insertAudioResourceParser' <*!> int) <|>
+  (reserved "insertaudioresource" >> fatal "Missing arguments. !insertaudioresource expects three parameters: url, bankName and n.")
 
 insertAudioResourceParser' :: H (Int -> Command)
-insertAudioResourceParser' = insertAudioResourceParser'' <*> identifierText
+insertAudioResourceParser' = (insertAudioResourceParser'' <*!> identifierText) <|>
+  (reserved "insertaudioresource" >> fatal "Missing arguments. !insertaudioresource expects three parameters: url, bankName and n.")
 
 insertAudioResourceParser'' :: H (Text -> Int -> Command)
-insertAudioResourceParser'' = insertAudioResourceParser''' <*> textLiteral
+insertAudioResourceParser'' = (insertAudioResourceParser''' <*!> textLiteral) <|>
+  (reserved "insertaudioresource" >> fatal "Missing arguments. !insertaudioresource expects three parameters: url, bankName and n.")
+
 
 insertAudioResourceParser''' :: H (Text -> Text -> Int -> Command)
 insertAudioResourceParser''' = insertAudioResourceFunc <$ reserved "insertaudioresource"
@@ -298,12 +375,13 @@ insertAudioResourceFunc x y z = InsertAudioResource x y z
 
 
 -- delete audio resource
-
 deleteAudioResourceParser :: H Command
-deleteAudioResourceParser = deleteAudioResourceParser' <*> int
+deleteAudioResourceParser = (deleteAudioResourceParser' <*!> int) <|>
+  (reserved "deleteaudioresource" >> fatal "Missing argument(s). !deleteaudioresource expects two parameters: bankName and n.")
 
 deleteAudioResourceParser' :: H (Int -> Command)
-deleteAudioResourceParser' = deleteAudioResourceParser'' <*> identifierText
+deleteAudioResourceParser' = (deleteAudioResourceParser'' <*!> identifierText) <|>
+  (reserved "deleteaudioresource" >> fatal "Missing argument(s). !deleteaudioresource expects two parameters: bankName and n.")
 
 deleteAudioResourceParser'' :: H (Text -> Int -> Command)
 deleteAudioResourceParser'' = deleteAudioResourceFunc <$ reserved "deleteaudioresource"
@@ -314,10 +392,12 @@ deleteAudioResourceFunc x y = DeleteAudioResource x y
 -- append audio source
 
 appendAudioResourceParser :: H Command
-appendAudioResourceParser = appendAudioResourceParser' <*> identifierText
+appendAudioResourceParser = (appendAudioResourceParser' <*!> identifierText) <|>
+  (reserved "appendaudioresource" >> fatal "Missing arguments. !appendaudioresource expects two parameters:  url and bankName")
 
 appendAudioResourceParser' :: H (Text -> Command)
-appendAudioResourceParser' = appendAudioResourceParser'' <*> textLiteral
+appendAudioResourceParser' = (appendAudioResourceParser'' <*!> textLiteral) <|>
+  (reserved "appendaudioresource" >> fatal "Missing arguments. !appendaudioresource expects two parameters:  url and bankName")
 
 appendAudioResourceParser'' :: H (Text -> Text -> Command)
 appendAudioResourceParser'' = appendAudioResourceFunc <$ reserved "appendaudioresource"
@@ -332,6 +412,14 @@ int = fromIntegral <$> integer
 
 double :: H Double
 double = fromRational <$> rationalOrInteger
+
+identifierTextWH :: H Text
+identifierTextWH =
+    identifierText <|>
+  (do
+   x <- int
+   nonFatal $ (T.pack $ show x) <> " is not a valid view"
+ ) -- <?> "expecting view"
 
 identifierText :: H Text
 identifierText = do

@@ -28,7 +28,7 @@ nameIsLegal x = not (T.any isControl x || T.any isSpace x )
 nameOrPassword :: H Text
 nameOrPassword = do
   x <- textLiteral
-  if nameIsLegal x then return x else throwError "names/passwords cannot contain spaces or control characters"
+  if nameIsLegal x then return x else return x -- else throwError "names/passwords cannot contain spaces or control characters"
 
 
 -- helper funcs
