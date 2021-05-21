@@ -19,6 +19,7 @@ dependencies:
   - tempi
   - parsec
   - witherable
+  - haskellish
   - mtl
 
 extra-source-files:
