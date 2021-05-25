@@ -10,13 +10,6 @@ import qualified Data.Text as T
 
 import Estuary.Types.View
 
--- presetViewsWDefinedColumnsAndRows :: View
--- presetViewsWDefinedColumnsAndRows =  divClass "test" emptyView
-
--- presetViewsWDefinedColumnsAndRows' :: View
--- presetViewsWDefinedColumnsAndRows' =  elAttr "div" ("class" =: "subGrid-container" <> "style" =: (setColumnsAndRows 2 3) ) emptyView
-
-
 presetViews :: Map Text View
 
 -- note: if an ensemble publishes a view called 'default', that view rather than this one,
@@ -24,7 +17,7 @@ presetViews :: Map Text View
 
 presetViews = fromList [
 
-      ("default",  GridView 2 3  [
+       ("def",  GridView 2 3  [
        (Views [LabelView 1, CodeView 2 0]),
        (Views [LabelView 3, CodeView 4 0]),
        (Views [LabelView 5, CodeView 6 0]),
@@ -32,7 +25,6 @@ presetViews = fromList [
        (Views [LabelView 9, CodeView 10 0]),
        (Views [LabelView 11, CodeView 12 0])
       ]),
-
 
       ("fulltexteditor", GridView 1 1 [
       BorderDiv [LabelView 0,CodeView 1 0]
