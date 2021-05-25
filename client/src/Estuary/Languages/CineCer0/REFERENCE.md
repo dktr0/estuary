@@ -36,13 +36,13 @@ z [n] -- changes the depth of the video being reproduced
 ## Text
 
 text "This is not a text" -- the string represents the text that will be displayed in the canvas <br />
+fontSize [n] --change the size of the text, grows from 1 <br />
 font "fontType" -- fonts available depending on browser characteristics <br />
 colour "colour" -- adds colour by name or by hexacolor (all colour funcs will be applied to the text) <br />
 rgb [r] [g] [b] -- adds colour by rgb, normalised from 0 to 1 <br />
 rgb' [r] [g] [b] [a] -- adds colour by rgb and alpha <br />
 hsl [h] [s] [l] -- adds colour by hue, saturation and lightness, parameters are normalised from 0 to 1 <br />
 hsl' [h] [s] [l] [a] -- adds colours by hsl and alpha <br />
-fontSize [n] -- a font size <br />
 strike -- strikes the text with a white line <br />
 bold -- the weight of the font becomes heavier <br />
 italic -- the style of the font changes to italic <br />
