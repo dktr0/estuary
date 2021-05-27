@@ -42,7 +42,7 @@ cineCer0Tutorial = Tutorial {
               (English,"In the first example, a video with audio and in a shape of a circle appears."),
               (Español,"En el primer ejemplo, un video con audio y con la forma de un círclo aparecerá con un tamaño modificado.")
             ]],
-            Example CineCer0 "circleMask 0.5 $ vol 0.5 $ \"https://github.com/jac307/videoTextures/blob/master/walter/horoscopo/leo.mov?raw=true\"",
+            Example CineCer0 "circleMask 0.5 $ vol 0.5 $ \"https://github.com/jac307/videoTextures/blob/master/otros/river.mov?raw=true\"",
             Paragraph [ Text $ Map.fromList[
               (English,"In the second example, a text appears; the size has been modified, as well as the position."),
               (Español,"En el segundo ejemplo, un texto aparece, éste tiene tanto el tamaño como la posición modificados.")
@@ -216,8 +216,8 @@ cineCer0Tutorial = Tutorial {
               (English,"By default, the audio gain of a video is set to \"0\". If your video has audio, \"vol #\" is the function to modify the gain. Values can go up to \"1\", which is the natural audio gain of the video."),
               (Español,"Por defecto, la ganancia de sonido de un video es \"0\". Si tu video tiene audio, \"vol #\" es la función para modificar su ganancia. Los valores puede ir hasta \"1\", que sería la ganancia natural del video.")
             ]],
-            Example CineCer0 "vol 0.3 $ \"https://github.com/jac307/videoTextures/blob/master/walter/amor.mov?raw=true\"",
-            Example CineCer0 "vol 0.7 $ \"https://github.com/jac307/videoTextures/blob/master/walter/horoscopo/leo.mov?raw=true\""
+            Example CineCer0 "vol 0.3 $ \"https://github.com/jac307/videoTextures/blob/master/otros/street.mov?raw=true\"",
+            Example CineCer0 "vol 0.7 $ \"https://github.com/jac307/videoTextures/blob/master/otros/colombia.mov?raw=true\""
         ],
         CodeView 1 0
       ]
@@ -381,7 +381,7 @@ cineCer0Tutorial = Tutorial {
             ]],
             Example CineCer0 "setContrast 1.1 $ setBrightness 1.2 $ setSize 0.6 $ \"https://upload.wikimedia.org/wikipedia/commons/transcoded/0/02/Bobbing_downy_woodpecker_at_Prospect_Park.webm/Bobbing_downy_woodpecker_at_Prospect_Park.webm.480p.vp9.webm\"",
             Example CineCer0 "setSaturate 12 $ setSize 0.5 $ setCoord 0 (-0.5) $ \"https://upload.wikimedia.org/wikipedia/commons/transcoded/5/54/04-European_Robin-nX-1.webm/04-European_Robin-nX-1.webm.480p.webm\"",
-            Example CineCer0 "setBrightness 0.5 $ setGrayscale 1 $ setSize 0.8 $ setPosX 0.3 $ vol 0.3 $ \"https://github.com/jac307/videoTextures/blob/master/walter/amor.mov?raw=true\""
+            Example CineCer0 "setBrightness 0.5 $ setGrayscale 1 $ setSize 0.8 $ setPosX 0.3 $ vol 0.3 $ \"https://github.com/jac307/videoTextures/blob/master/otros/street.mov?raw=true\""
         ],
         CodeView 1 0
       ]
@@ -643,7 +643,7 @@ cineCer0Tutorial = Tutorial {
               (English,"In this example, 10 cicles is the duration of the animation, vol=0 is the initial value, and vol=1 is the end value:"),
               (Español,"En este ejemplo, 10 ciclos es la duración de la animación, vol=0 es el valor inicial, vol=1 es el valor final:")
             ]],
-            Example CineCer0 "vol (ramp 10 0 1) $ \"https://github.com/jac307/videoTextures/blob/master/walter/horoscopo/leo.mov?raw=true\"",
+            Example CineCer0 "vol (ramp 10 0 1) $ \"https://github.com/jac307/videoTextures/blob/master/otros/colombia.mov?raw=true\"",
             Paragraph [ Text $ Map.fromList[
               (English,"In the second example, \"ramp\" is applied to two parametros: the value of red and the value of blue:"),
               (Español,"En el segundo ejemplo, se aplica \"ramp\" a dos parametros: el valor de rojo y el valor de azul:")
@@ -671,7 +671,7 @@ cineCer0Tutorial = Tutorial {
               (Español,"Modifica el valor periódicamente dependiendo de la frequencia.")
             ]],
             Example CineCer0 "setCoord (sin 1) (-0.5) $ fontSize 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
-            Example CineCer0 "setPosY (sin 0.1) $ setSize 0.5 $ \"https://github.com/jac307/videoTextures/blob/master/walter/horoscopo/cancer.mov?raw=true\""
+            Example CineCer0 "setPosY (sin 0.1) $ setSize 0.5 $ \"https://github.com/jac307/videoTextures/blob/master/otros/street.mov?raw=true\""
         ],
         CodeView 1 0
       ]
