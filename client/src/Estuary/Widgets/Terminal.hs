@@ -20,6 +20,7 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Types.EnsembleC
 import Estuary.Types.Context
 import Estuary.Reflex.Utility
+import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Hint
@@ -51,12 +52,13 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
     divClass "chatMessageContainer" $ simpleList mostRecent $ \v -> divClass "chatMessage code-font primary-color" $ dynText v
 
     pp <- liftIO $ newPeerProtocol
-    startStreamingReflex pp $ ffilter (== Terminal.StartStreaming) commands
+    mb <- mainBus <$> immutableRenderContext
+    performCommands pp mb commands
     streamId <- peerProtocolIdReflex pp $ ffilter (== Terminal.StreamId) commands
     return commands
 
   divClass "ensembleStatus" $ ensembleStatusWidget
- 
+
   return commands
 
 hintsToMessages :: [Hint] -> [Text]
@@ -66,8 +68,15 @@ hintToMessage :: Hint -> Maybe Text
 hintToMessage (LogMessage x) = Just x
 hintToMessage _ = Nothing
 
-startStreamingReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m ()
-startStreamingReflex pp e = performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
+performCommands :: MonadWidget t m => PeerProtocol -> MainBus -> Event t Terminal.Command -> m ()
+performCommands pp mb x = performEvent_ $ fmap (liftIO . doCommands pp mb) x
+
+doCommands :: PeerProtocol -> MainBus -> Terminal.Command -> IO ()
+doCommands _ mb (Terminal.MonitorInput x) = changeMonitorInput mb x
+doCommands pp _ Terminal.StartStreaming = startStreaming pp
+
+-- startStreamingReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m ()
+-- startStreamingReflex pp e = performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
 
 peerProtocolIdReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m (Event t Text)
 peerProtocolIdReflex pp e = performEvent $ fmap (liftIO . const (peerProtocolId pp)) e

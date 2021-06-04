@@ -129,7 +129,6 @@ configWidget ctx ri = do
 
   viewEditorChange <- divClass "config-option primary-color ui-font" $ do
     el "h3" $ text "View Editor"
-    (result,_) <- runEditor ctx ri $ viewEditor ctx
-    return result
+    viewEditor
 
   return $ mergeWith (.) [punctualAudioInputModeEv,canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange, fpsLimitChangeEv, unsafeModeEv]

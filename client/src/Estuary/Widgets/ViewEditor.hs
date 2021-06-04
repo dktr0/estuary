@@ -40,8 +40,9 @@ viewToContextChange v = do
 buildError :: MonadWidget t m => Text -> Editor t m ()
 buildError x = if x == "" then return () else syntaxErrorWidget x
 
-viewEditor :: MonadWidget t m => Dynamic t Context -> Editor t m (Event t ContextChange)
-viewEditor ctx = mdo
+viewEditor :: MonadWidget t m => Editor t m (Event t ContextChange)
+viewEditor = mdo
+  ctx <- context
 
   -- let viewList = fromList [(1, "default"), (2, "cybernetic"), (3, "blackbox"), (4, "memorias")]
   -- viewChange <- _dropdown_change <$> dropdown 1.0 (constDyn viewList) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))

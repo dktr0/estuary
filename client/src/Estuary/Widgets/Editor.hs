@@ -13,6 +13,7 @@ import Reflex
 import Reflex.Dom
 import Control.Monad.Reader
 import Data.Text
+import Data.Tuple.All
 
 import Estuary.Types.Context
 import Estuary.Types.RenderInfo
@@ -20,21 +21,26 @@ import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
 import Estuary.Types.Term
 
-type Editor t m = EventWriterT t [Hint] (ReaderT (Dynamic t Context,Dynamic t RenderInfo) m)
+type Editor t m = EventWriterT t [Hint] (ReaderT (ImmutableRenderContext,Dynamic t Context,Dynamic t RenderInfo) m)
 
 -- We only need to use runEditor if we are embedding an Editor in a different kind of widget.
-runEditor :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Editor t m a -> m (a,Event t [Hint])
-runEditor ctx ri e = runReaderT (runEventWriterT e) (ctx,ri)
+runEditor :: MonadWidget t m => ImmutableRenderContext -> Dynamic t Context -> Dynamic t RenderInfo -> Editor t m a -> m (a,Event t [Hint])
+runEditor irCtx ctx ri e = runReaderT (runEventWriterT e) (irCtx,ctx,ri)
+
+
+-- Get the immutable render context.
+immutableRenderContext :: MonadWidget t m => Editor t m ImmutableRenderContext
+immutableRenderContext = lift $ asks sel1
 
 
 -- Get the dynamic context.
 context :: MonadWidget t m => Editor t m (Dynamic t Context)
-context = lift $ asks fst
+context = lift $ asks sel2
 
 
 -- Get the dynamic information from the render engine.
 renderInfo :: MonadWidget t m => Editor t m (Dynamic t RenderInfo)
-renderInfo = lift $ asks snd
+renderInfo = lift $ asks sel3
 
 
 -- Issue a single hint
