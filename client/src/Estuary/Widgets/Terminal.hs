@@ -74,9 +74,7 @@ performCommands pp mb x = performEvent_ $ fmap (liftIO . doCommands pp mb) x
 doCommands :: PeerProtocol -> MainBus -> Terminal.Command -> IO ()
 doCommands _ mb (Terminal.MonitorInput x) = changeMonitorInput mb x
 doCommands pp _ Terminal.StartStreaming = startStreaming pp
-
--- startStreamingReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m ()
--- startStreamingReflex pp e = performEvent_ $ fmap (liftIO . const (startStreaming pp)) e
+doCommands _ _ _ = return ()
 
 peerProtocolIdReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m (Event t Text)
 peerProtocolIdReflex pp e = performEvent $ fmap (liftIO . const (peerProtocolId pp)) e
