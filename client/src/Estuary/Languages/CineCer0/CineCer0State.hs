@@ -54,7 +54,7 @@ foreign import javascript unsafe
 foreign import javascript unsafe "$1.removeChild($2)" removeVideo :: HTMLDivElement -> VideoLayer -> IO ()
 foreign import javascript unsafe "$1.removeChild($2)" removeText :: HTMLDivElement -> TextLayer -> IO ()
 foreign import javascript unsafe "$1.style = $2;" _setVideoStyle :: VideoLayer -> Text -> IO ()
-foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> Text -> IO () 
+foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.muted = $2;" muteVideo :: VideoLayer -> Bool -> IO ()
 foreign import javascript unsafe "$1.volume = $2" videoVolume :: VideoLayer -> Double -> IO ()
 foreign import javascript unsafe "$1.pause(); $1.src = $2; $1.load(); $1.play();" changeVideoSource :: VideoLayer -> Text -> IO ()
@@ -105,7 +105,7 @@ addVideo j os = do
 -- addInvisibleText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
 -- addInvisibleText j ls = do
 --   cct <- addText j ls
---   let inv = invisibleText cct 
+--   let inv = invisibleText cct
 --   return inv
 
 addText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
@@ -120,7 +120,7 @@ addText j os = do
   }
 
 -- invisibleText :: CineCer0Text -> IO CineCer0Text
--- invisibleText tx = do 
+-- invisibleText tx = do
 --     _setTextStyle (textLayer tx) "visibility: hidden;"
 --     return $ tx { previousStyleTx = "" }
 
@@ -185,14 +185,14 @@ setTextStyle tx x = do
 
 updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
- let j = textLayer tx 
+ let j = textLayer tx
  tw <- textWidth j
  th <- textHeight j
 
 -- if (tw /= 0) then (putStrLn "WIIIDTHHHH!!!!") else (putStrLn "no width yet")
 
  -- putStrLn $ show (T.split (== ' ') $ layerToString (layer s))
- -- putStrLn $ (show $ tw) <> " width" 
+ -- putStrLn $ (show $ tw) <> " width"
  -- putStrLn $ (show $ th) <> " height"
  -- putStrLn $ (show $ sw) <> " div width"
  -- putStrLn $ (show $ sh) <> " div height"
@@ -208,7 +208,6 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let bordered = generateBorder (border s t lengthOfLayer rTime eTime aTime)
   let coloured = generateColours (colour s) t lengthOfLayer rTime eTime aTime
   let sized = generateFontSize (realToFrac $ (height s t lengthOfLayer rTime eTime aTime))
-  let stretched = generateFontStretch (realToFrac $ (width s t lengthOfLayer rTime eTime aTime))
 
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
@@ -231,7 +230,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let y = realToFrac $ (posY s t lengthOfLayer rTime eTime aTime)
 
    -- calculate xPos
-  let xPos' = sw - tw 
+  let xPos' = sw - tw
   let xPos  = xPos' * (0.5 + (x*0.5))
   let leftX = xPos
  -- calculate yPos
@@ -239,7 +238,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let yPos  = yPos' * (0.5 + (y*(-0.5)))
   let topY = yPos
 
-  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised bordered coloured sized stretched z'
+  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised bordered coloured sized z'
   -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
   else return tx
@@ -331,13 +330,9 @@ generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
 generateFontSize :: Double -> Text
 generateFontSize size = "; font-size: " <> T.pack (show (size)) <> "em;"
 
-generateFontStretch :: Double -> Text
-generateFontStretch stretch' = "; font-stretch: " <> T.pack (show (stretch)) <> "%;"
-    where stretch = stretch'*100;
-
 generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text  -- this string needs to be a text!!!!
-generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"  
-  where string = (str t ll rT eT aT) 
+generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"
+  where string = (str t ll rT eT aT)
 generateColours (ColourRGB r g b) t ll rT eT aT = "; color: rgb(" <> (showt red) <> "," <> (showt green) <> "," <> (showt blue) <> ");"
   where red = realToFrac ((r * 255) t ll rT eT aT) :: Double
         green = realToFrac ((g * 255) t ll rT eT aT) :: Double
@@ -373,8 +368,8 @@ generateBorder :: Bool -> Text
 generateBorder (True) = "; border: 1px solid #cccccc;"
 generateBorder (False) = ""
 
-textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h fontfam stk bld itc border colour size stretch z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt fontfam <> stk <> bld <> itc <> border <> colour <> size  <> stretch <> z <> ";"
+textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
+textStyle x y w h fontfam stk bld itc border colour size z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt fontfam <> stk <> bld <> itc <> border <> colour <> size <> z <> ";"
 
 
 -- textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
@@ -443,8 +438,8 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
 
   -- function to process text in time -- :: Tempo -> rTime -> evalTime -> st
  -- let toAddSubTx = func t rTime eTime textSpecs
--- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not. 
-  
+-- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not.
+
   addedTexts <- mapM (\x -> addText (container st) x) toAddtx
   -- change videos
   let continuingLayerSpecs = intersectionWith onlyChangedLayerSources vSpecs (previousLayerSpecs st) -- :: IntMap (Maybe LayerSpec)
@@ -475,8 +470,8 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let continuingTexts = union textsThereBefore addedTexts
   continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
   return $ st { videos = continuingVideos', previousLayerSpecs = vSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
-  
-  
+
+
 logExceptions :: a -> IO a -> IO a
 logExceptions a x = x `catch` (\e -> do
   putStrLn $ "EXCEPTION (CineCer0): " ++ show (e :: SomeException)
