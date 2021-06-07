@@ -52,20 +52,14 @@ defaultAnchor t eval = quantAnchor 1 0 t eval
 -- calculates the anchorTime
 quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
 quantAnchor cycleMult offset t eval =
-  let ec = (timeToCount t eval) - (count t) -- elapsed cycles from reference point in time to evaltime
+  let ec = (timeToCount t eval)
       currentCycle = fromIntegral (floor ec):: Rational
-      align = if ec - currentCycle > 0.95 then 2 else 1 -- align with minimal evalTime / cognitionResponse interval (right now hardcoded to 0.95 of the cycle, I will provide something better if this works)
-      toQuant = currentCycle + align -- as integer to go through the quantomatic
+      align = if ec - currentCycle > 0.95 then 2 else 1
+      toQuant = currentCycle + align
       quanted = quantomatic cycleMult toQuant
-      anchor = cycsToSecs t quanted -- into seconds (as NDT)
-      -- offset should be in percentage of cycle!
       off = realToFrac $ (offset*(1/(freq t))) / 1
-    in addUTCTime (anchor + off) $ time t -- as UTCTime
+  in countToTime t (quanted + off) -- as UTCTime
 
-    -- from the outcome I need to substract the count added to the
-
-cycsToSecs:: Tempo -> Rational -> NominalDiffTime
-cycsToSecs t x = realToFrac (x * (1/ freq t))
 
 -- this function gets the next bar that aligns with the quant multiplier value
 quantomatic:: Rational -> Rational -> Rational
@@ -397,15 +391,15 @@ radian:: Rational -> Float
 radian t = (realToFrac t :: Float) * 2 * pi /360
 
 -- sineMaybe:: Signal (Maybe Rational) -> Signal (Maybe Rational)
--- sineMaybe freq t vl rT eT aT = Just $ sine (sigMayToSig freq) t vl rT eT aT   
+-- sineMaybe freq t vl rT eT aT = Just $ sine (sigMayToSig freq) t vl rT eT aT
 
 sineMaybe:: Signal Rational -> Signal (Maybe Rational)
 sineMaybe freq t vl rT eT aT = Just $ sine (freq) t vl rT eT aT
 
 sine:: Signal Rational -> Signal Rational
-sine freq = \t vl rT eT aT -> 
+sine freq = \t vl rT eT aT ->
     let reciprocal = 1 / (freq t vl rT eT aT)
-        elapsed = (realToFrac (diffUTCTime rT (time t)) :: Rational)  
+        elapsed = (realToFrac (diffUTCTime rT (time t)) :: Rational)
         pos = elapsed / reciprocal
         pos' = (pos) - (realToFrac (floor pos) :: Rational)
         posInRad = pos' * 360
@@ -417,8 +411,8 @@ sine freq = \t vl rT eT aT ->
 rangeMaybe:: Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational)
 rangeMaybe min max input t vl rTime eTime aTime = Just $ range (min) (max) (input) t vl rTime eTime aTime
 
-range:: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational 
-range min max input t vl rTime eTime aTime = 
+range:: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational
+range min max input t vl rTime eTime aTime =
     add + ((input t vl rTime eTime aTime) * mult)
     where mult = ((max t vl rTime eTime aTime) - (min t vl rTime eTime aTime))/2
           add = mult + (min t vl rTime eTime aTime)
@@ -427,9 +421,9 @@ range min max input t vl rTime eTime aTime =
 -- these two funcs wont work since the type is broken
 
 -- sine2:: Signal (Maybe Rational) -> Signal (Maybe Rational)
--- sine2 freq =  \t vl rT eT aT -> 
+-- sine2 freq =  \t vl rT eT aT ->
 --     let reciprocal = 1 / (freq t vl rT eT aT)
---         elapsed = (realToFrac (diffUTCTime rT (time t)) :: Rational)  
+--         elapsed = (realToFrac (diffUTCTime rT (time t)) :: Rational)
 --         pos = elapsed / reciprocal
 --         pos' = (pos) - (realToFrac (floor pos) :: Rational)
 --         posInRad = pos' * 360
@@ -460,7 +454,7 @@ range min max input t vl rTime eTime aTime =
 --     in ramps renderTime startTime endTime durVals points
 
 -- ramps:: UTCTime -> UTCTime -> UTCTime -> Rational -> Rational -> Signal Rational
--- ramps renderTime startTime endTime durs points 
+-- ramps renderTime startTime endTime durs points
 --     | startTime >= renderTime = head points -- start val
 --     | endTime <= renderTime = last points  -- end val
 --     | otherwise =                            -- durs: [1]   0.4 vals: [0.6, 0.3]
@@ -479,7 +473,7 @@ range min max input t vl rTime eTime aTime =
 --   in Just $ ramp' renderTime startTime endTime startVal endVal
 
 rampMaybe :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
-rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime 
+rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime
 
 ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->

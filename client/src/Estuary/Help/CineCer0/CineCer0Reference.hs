@@ -97,7 +97,7 @@ funcionsCineCer0 = el "div" $ do
     ])
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"Text: font \"FontName\", colour \"colourName\" (accepts colour conventions like white, black, etc. and HEX), rgb Red Green Blue (rgba with a 4th value for alpha), hsv Hue Saturation Value (hsva with a 4th value for alpha, synonym: hsl), strike, bold and italic"),
-    (Español,"Text: fontFamily \"NombreFont\", colour \"NombreColor\" (accepta nombres convencionales de colores en inglés como white, black, etc. y HEX), rgb Rojo Verde Azul (rgba añade un cuarto valor para alpha), hsv Hue Saturación Valor (hsva añade un cuarto argumento para alpha, sinónimo: hsl), strike, bold e italic")
+    (Español,"Text: font \"NombreFont\", colour \"NombreColor\" (accepta nombres convencionales de colores en inglés como white, black, etc. y HEX), rgb Rojo Verde Azul (rgba añade un cuarto valor para alpha), hsv Hue Saturación Valor (hsva añade un cuarto argumento para alpha, sinónimo: hsl), strike, bold e italic")
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text " text \"volviéndolo a grabaren las manos epilépticas del mar\""
