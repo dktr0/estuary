@@ -89,6 +89,11 @@ constantSignal' (Just x) = \_ _ _ _ _ -> (Just x)
 applyRate:: Rational -> Signal (Maybe Rational)
 applyRate rate t length render eval anchor = Just rate
 
+-------
+
+freeRun:: Signal (Maybe NominalDiffTime) 
+freeRun t vl render eval anchor = Nothing
+
 
 ------ Play at Natural Rate and without alteration ------
 

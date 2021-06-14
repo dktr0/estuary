@@ -170,7 +170,8 @@ vs_vs =
   (reserved "strike" >> return setStrike) <|>
   (reserved "bold" >> return setBold) <|>
   (reserved "italic" >> return setItalic) <|>
-  (reserved "border" >> return setBorder)
+  (reserved "border" >> return setBorder) <|>
+  (reserved "freerun" >> return freerun)
   -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)

@@ -283,6 +283,11 @@ setVolume vol v = v { volume = vol }
 quant:: Rational -> Rational -> LayerSpec -> LayerSpec
 quant nc offset vs = vs { anchorTime = quantAnchor nc offset }
 
+freerun :: LayerSpec -> LayerSpec
+freerun vs = vs {
+  playbackPosition = freeRun
+}
+
 playNatural :: Rational -> LayerSpec -> LayerSpec
 playNatural n vs = vs {
   playbackPosition = playNatural_Pos n,
