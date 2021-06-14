@@ -96,20 +96,20 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleCDyn = fmap ensembleC ctx
 
   -- four GUI components: header, main (navigation), terminal, footer
-  (headerChange,headerHints) <- runEditor ctx rInfo header
+  (headerChange,headerHints) <- runEditor irc ctx rInfo header
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
-    (navRequests,pageHints) <- runEditor ctx rInfo $ navigation deltasDownAlt
-    (ctxChange,sidebarHints) <- runEditor ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
+    (navRequests,pageHints) <- runEditor irc ctx rInfo $ navigation deltasDownAlt
+    (ctxChange,sidebarHints) <- runEditor irc ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle True terminalEvent
   (command,_) <- hideableWidget' terminalVisible $ do
-    runEditor ctx rInfo $ terminalWidget deltasDown hints
-  (terminalButton,_) <- runEditor ctx rInfo $ footer hints
+    runEditor irc ctx rInfo $ terminalWidget deltasDown hints
+  (terminalButton,_) <- runEditor irc ctx rInfo $ footer hints
   let commandEnsembleRequestsIO = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   commandEnsembleRequests <- performEvent $ fmap liftIO commandEnsembleRequestsIO
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]

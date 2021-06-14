@@ -45,11 +45,11 @@ emptyEnsembleC t = EnsembleC {
   userHandle = "",
   Estuary.Types.EnsembleC.location = "",
   Estuary.Types.EnsembleC.password = "",
-  view = Right "default"
+  view = Right "def"
   }
 
 joinEnsembleC :: Text -> Text -> Text -> Text -> EnsembleC -> EnsembleC
-joinEnsembleC eName uName loc pwd es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, Estuary.Types.EnsembleC.location = loc, Estuary.Types.EnsembleC.password = pwd, view = Right "default" }
+joinEnsembleC eName uName loc pwd es = modifyEnsemble (\x -> x { ensembleName = eName } ) $ es {  userHandle = uName, Estuary.Types.EnsembleC.location = loc, Estuary.Types.EnsembleC.password = pwd, view = Right "def" }
 
 leaveEnsembleC :: EnsembleC -> EnsembleC
 leaveEnsembleC x = x {
@@ -134,7 +134,7 @@ requestToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
 requestToStateChange ResetZonesRequest es =
   modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
 requestToStateChange ResetViewsRequest es =
-  modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "default" es
+  modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
 requestToStateChange (ResetTempoRequest t) es =
   modifyEnsemble (writeTempo t) es
 requestToStateChange (ResetRequest t) es =
@@ -156,7 +156,7 @@ ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (wri
 ensembleResponseToStateChange ResetZonesResponse es =
   modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
 ensembleResponseToStateChange ResetViewsResponse es =
-  modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "default" es
+  modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
 ensembleResponseToStateChange (ResetTempoResponse t) es =
   modifyEnsemble (writeTempo t) es
 ensembleResponseToStateChange (ResetResponse t) es =

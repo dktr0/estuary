@@ -65,6 +65,8 @@ dependencies:
   - tempi
   - split
   - witherable
+  - tuple
+
 
 library:
   source-dirs:

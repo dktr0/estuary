@@ -5,6 +5,7 @@ import Sound.MusicW
 import GHCJS.DOM.Types (JSVal)
 import Control.Monad.IO.Class (liftIO)
 import Control.Exception
+import Control.Monad
 
 data DynamicsMode =
   DefaultDynamics | -- Gentle compression, with pre-compression levels reduced a bit, should be close to SuperDirt dynamics
@@ -45,7 +46,8 @@ data MainBus = MainBus {
   mainBusDelay :: Node,
   compressorPreGain :: Node,
   mainBusCompressor :: Node,
-  compressorPostGain :: Node
+  compressorPostGain :: Node,
+  monitorInputGain :: Node
   }
 
 initializeMainBus :: IO MainBus
@@ -60,6 +62,7 @@ initializeMainBus = liftAudioIO $ do
   compressorPreGain' <- createGain 1.0
   mainBusCompressor' <- createCompressor (-20) 3 4 0.050 0.100
   compressorPostGain' <- createGain 1.0
+  monitorInputGain' <- createGain 0
   dest <- createDestination
   -- 2. establish most connections between nodes (from mainBusInput onwards, before that is handled by changePunctualAudioInputMode later)
   connectNodes mainBusInput' mainBusDelay'
@@ -67,6 +70,8 @@ initializeMainBus = liftAudioIO $ do
   connectNodes compressorPreGain' mainBusCompressor'
   connectNodes mainBusCompressor' compressorPostGain'
   connectNodes compressorPostGain' dest
+  connectNodes microphoneInput' monitorInputGain'
+  connectNodes monitorInputGain' compressorPreGain'
   -- 3. create a MainBus record to keep track of nodes
   let mb = MainBus {
     microphoneInput = microphoneInput',
@@ -76,7 +81,8 @@ initializeMainBus = liftAudioIO $ do
     mainBusDelay = mainBusDelay',
     compressorPreGain = compressorPreGain',
     mainBusCompressor = mainBusCompressor',
-    compressorPostGain = compressorPostGain'
+    compressorPostGain = compressorPostGain',
+    monitorInputGain = monitorInputGain'
     }
   -- 4. apply parameters/connections for dynamics mode and Punctual audio input mode
   liftIO $ changeDynamicsMode mb DefaultDynamics
@@ -146,6 +152,7 @@ changePunctualAudioInputMode mb WebDirtToPunctualNoMonitor = liftAudioIO $ do
 disconnectAudioIO :: MainBus -> IO ()
 disconnectAudioIO mb = liftAudioIO $ do
   disconnectAll (microphoneInput mb)
+  connectNodes (microphoneInput mb) (monitorInputGain mb)
   disconnectAll (webDirtOutput mb)
 
 
@@ -163,3 +170,12 @@ changeDelay mb newDelayTime
   | otherwise = liftAudioIO $ do
     setValue (mainBusDelay mb) DelayTime newDelayTime
     return ()
+
+
+changeMonitorInput :: MainBus -> Maybe Double -> IO ()
+changeMonitorInput mb Nothing = do
+  putStrLn "input monitoring off"
+  void $ liftAudioIO $ setValue (monitorInputGain mb) Gain 0
+changeMonitorInput mb (Just x) = do
+  putStrLn $ "changing gain on input monitoring to " ++ show x ++ " dB"
+  void $ liftAudioIO $ setValue (monitorInputGain mb) Gain (dbamp x)
