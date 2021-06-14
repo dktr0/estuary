@@ -10,7 +10,7 @@ import Data.IORef
 -- of that asynchronous request (LoadStatus).
 
 class Loadable a where
-  newLoadable :: Text -> IO () -> IO a   -- arguments are URL and a callback when loading succeeds
+  newLoadable :: Text -> (a -> IO ()) -> IO a   -- arguments are URL and a callback when loading succeeds
   loadStatus :: a -> IO LoadStatus
 
 data LoadStatus =
@@ -19,12 +19,16 @@ data LoadStatus =
   Loaded |
   LoadError Text deriving (Eq,Show)
 
+
+-- LoadMap a represents an updatable map from text URLs to asynchronous resources (instances of Loadable)
+-- for example, a LoadMap can be used to acquire and cache audio files resources from the web.
+
 type LoadMap a = IORef (Map Text a)
 
 newLoadMap :: IO (LoadMap a)
 newLoadMap = newIORef Data.Map.empty
 
-load :: Loadable a => LoadMap a -> Text -> IO () -> IO a
+load :: Loadable a => LoadMap a -> Text -> (a -> IO ()) -> IO a
 load m url cb = do
   m' <- readIORef m
   case Data.Map.lookup url m' of

@@ -25,7 +25,7 @@ foreign import javascript safe
   arraybufferXMLHttpRequest :: Text -> IO XMLHttpRequest
 
 foreign import javascript safe
-  "$1.onload = $2($1.response);"
+  "$1.onload = function() { $2($1.response); }"
   onLoad :: XMLHttpRequest -> Callback (JSVal -> IO ()) -> IO ()
 
 foreign import javascript safe

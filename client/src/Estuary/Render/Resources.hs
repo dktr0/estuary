@@ -10,9 +10,7 @@ import Estuary.Types.Loadable
 import Estuary.Types.AudioResource
 
 
-
-
-
+{-
 data Resources = Resources {
   _resourceOps :: MVar (Seq ResourceOp),
   resourceLists :: LoadMap ResourceList,
@@ -70,6 +68,7 @@ accessAudioResource r l = do
         otherwise -> return $ Right x
         -- ie. if loadStatus returns Loading we still return the resource, because it might be ready soon
 
+-}
 {-
 
 *** TODO: adapt this to new representations - should be sampleMapToResourceList?

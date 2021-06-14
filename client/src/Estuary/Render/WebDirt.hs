@@ -24,6 +24,7 @@ import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Types.AudioMeta
 import Estuary.Types.AudioResource
+import Estuary.Types.ResourceMap -- temporary? possibly removed during/after this refactor?
 import Estuary.Render.Resources
 import Estuary.Types.Loadable
 import Estuary.Types.NoteEvent

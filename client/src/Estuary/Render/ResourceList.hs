@@ -6,6 +6,14 @@ module Estuary.Render.ResourceList where
 -- acquired by asychronous download, with a record of the
 -- URL from which it was retrieved (for resolution of relative URLs)
 
+{- an example of a resource list JSON file (note that the property names MUST be in quotation marks):
+[
+{ "url": "bd.wav", "type": "audio", "bank": "bd", "n": 0},
+{ "url": "cp.wav", "type": "audio", "bank": "cp", "n": 0},
+{ "url": "flower.MOV", "type": "video", "bank": "flower", "n": 0}
+]
+-}
+
 import Data.Text as T
 import Data.Text.IO as T
 import Data.IORef
@@ -37,6 +45,11 @@ instance FromJSON ResourceMeta where
       resourceLocation = (b,n)
     }
 
+showResourceList :: ResourceList -> IO String
+showResourceList x = do
+  y <- readIORef $ resourceMetas x
+  return $ (T.unpack $ resourceListURL x) ++ " " ++ show y
+
 typeTextToResourceType :: Text -> ResourceType
 typeTextToResourceType "video" = Video
 typeTextToResourceType "image" = Image
@@ -49,6 +62,12 @@ instance Loadable ResourceList where
     rm <- newIORef []
     T.putStrLn $ "loading ResourceList " <> url
     rq <- jsonXMLHttpRequest url
+
+    let rList = ResourceList {
+      resourceListURL = url,
+      resourceListLoadStatus = ls,
+      resourceMetas = rm
+    }
 
     loadCb <- asyncCallback1 $ \j -> do
       if isNull j || isUndefined j then do
@@ -64,9 +83,9 @@ instance Loadable ResourceList where
             T.putStrLn $ "*ERROR* " <> msg
           Success x -> do
             writeIORef ls Loaded
-            writeIORef rm x 
+            writeIORef rm x
             T.putStrLn $ "loaded ResourceList " <> url
-            successCb
+            successCb rList
     onLoad rq loadCb
 
     cbError <- asyncCallback $ do
@@ -77,10 +96,6 @@ instance Loadable ResourceList where
 
     send rq
 
-    return $ ResourceList {
-      resourceListURL = url,
-      resourceListLoadStatus = ls,
-      resourceMetas = rm
-    }
+    return rList
 
   loadStatus x = readIORef $ resourceListLoadStatus x

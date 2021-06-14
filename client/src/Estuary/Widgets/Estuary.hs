@@ -58,6 +58,8 @@ import Estuary.Widgets.Sidebar
 import Estuary.Types.ResourceMap
 import Estuary.Types.AudioResource
 import Estuary.Types.AudioMeta
+import Estuary.Types.Loadable
+import Estuary.Render.ResourceList
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -191,6 +193,11 @@ pollRenderInfo riM = do
 loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
 loadAudioMap = do
   postBuild <- getPostBuild
+  -- new/testing:
+  performEvent_ $ ffor postBuild $ \_ -> liftIO $ do
+    rList <- (newLoadable "resourceListTest.json" (\x -> showResourceList x >>= putStrLn) :: IO ResourceList)
+    return ()
+  -- old:
   performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
     loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
       case maybeMap of
