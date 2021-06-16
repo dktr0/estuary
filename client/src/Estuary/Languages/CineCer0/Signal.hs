@@ -278,7 +278,23 @@ playChop_Rate' startPos cycles sh t vlen render eval anchor = Just 1
 ------------- Gives a chop start and end position and adjust the rate to any given cycles ------
 -------- the UBER chop ---------
 
--- Similar to the one above but it takes a start and an end position, bot normalised from 0 to 1
+-- Similar to the one above but it takes a start and an end position, normalised from 0 to 1
+
+-- chop 0.25 0.75 3 0 myTempo 13 render eval anchor
+-- new chop!!!
+playChop_Pos::  Rational -> Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
+playChop_Pos startPos endPos cycles sh t vlen render eval anchor =
+    let lenInCycles = vlen * (freq t)
+        start = lenInCycles * startPos
+        end = lenInCycles * endPos
+        dur = end - start
+        pos = ((timeToCount t render) - sh) / dur
+        posCycle = fromIntegral (floor pos) :: Rational
+        position' = pos - posCycle
+        position = start + (position' * dur)
+        positionInNDT = position * (1/(freq t))
+    in Just (realToFrac positionInNDT)
+
 
 playChop_Pos:: Rational -> Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
 playChop_Pos startPos endPos cycles sh t vlen render eval anchor =
@@ -564,6 +580,13 @@ myUTCTest = UTCTime today 30
 myUTCTest2 = UTCTime today 60
 
 myTempo = Tempo { freq= 0.5, time= myUTCTest, count= 10.3}
+
+myEval = myUTCTest2
+
+myRender = UTCTime today 61.5
+
+myAnchor = quantAnchor 1 0 myTempo eval
+
 
 -- test functions for ramps
 
