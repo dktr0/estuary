@@ -330,8 +330,14 @@ playChopSecs k l m n vs = vs {
   playbackRate = playChopSecs_Rate k l m n
   }
 
-playNow :: NominalDiffTime -> Rational -> LayerSpec -> LayerSpec
-playNow m n vs = vs {
-  playbackPosition = playNow_Pos m n,
-  playbackRate = playNow_Rate m n
-  }
+playRate :: Rational -> Rational -> LayerSpec -> LayerSpec
+playRate m n vs = vs {
+  playbackPosition = rate_Pos m n,
+  playbackRate = rate_Rate m n
+}
+
+-- playNow :: NominalDiffTime -> Rational -> LayerSpec -> LayerSpec
+-- playNow m n vs = vs {
+--   playbackPosition = playNow_Pos m n,
+--   playbackRate = playNow_Rate m n
+--   }

@@ -245,15 +245,16 @@ rat_vs_vs =
   playNatural <$ reserved "natural" <|>
   playSnap <$ reserved "snap" <|>
   playSnapMetre <$ reserved "snapMetre" <|>
-  rat_rat_vs_vs <*> rationalOrInteger <|>
-  ndt_rat_vs_vs <*> ndt
+  rat_rat_vs_vs <*> rationalOrInteger -- <|>
+ -- ndt_rat_vs_vs <*> ndt
 
 rat_rat_vs_vs :: H (Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
   ndt_rat_rat_vs_vs <*> ndt <|>
-  quant <$ reserved "quant"
+  quant <$ reserved "quant" <|>
+  playRate <$ reserved "rate"
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_rat_vs_vs =
@@ -264,9 +265,9 @@ rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> Laye
 rat_rat_rat_rat_vs_vs =
   playChop <$ reserved "chop"
 
-ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> LayerSpec -> LayerSpec)
-ndt_rat_vs_vs =
-  playNow <$ reserved "now"
+-- ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> LayerSpec -> LayerSpec)
+-- ndt_rat_vs_vs =
+--   playNow <$ reserved "now"
 
 ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
 ndt_rat_rat_vs_vs =

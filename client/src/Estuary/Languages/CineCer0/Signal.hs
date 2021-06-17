@@ -274,7 +274,6 @@ playChop_Pos' startPos cycles sh t vlen render eval anchor =
 playChop_Rate':: Rational -> Rational -> Rational -> Signal (Maybe Rational)
 playChop_Rate' startPos cycles sh t vlen render eval anchor = Just 1
 
-
 ------------- Gives a chop start and end position and adjust the rate to any given cycles ------
 -------- the UBER chop ---------
 
@@ -283,121 +282,84 @@ playChop_Rate' startPos cycles sh t vlen render eval anchor = Just 1
 -- chop 0.25 0.75 3 0 myTempo 13 render eval anchor
 -- new chop!!!
 playChop_Pos::  Rational -> Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playChop_Pos startPos endPos cycles sh t vlen render eval anchor =
-    let lenInCycles = vlen * (freq t)
+playChop_Pos startPos endPos cycles sh t vlen render eval anchor 
+    | startPos == endPos = Just (vlen * (realToFrac startPos :: NominalDiffTime))
+    | (freq t) == 0 = Just (realToFrac startPos*vlen)
+    | otherwise =
+    let lenInCycles = (realToFrac vlen :: Rational) * (freq t)
         start = lenInCycles * startPos
         end = lenInCycles * endPos
-        dur = end - start
-        pos = ((timeToCount t render) - sh) / dur
+        interval = end - start
+        pos = ((timeToCount t render) - sh) / interval
         posCycle = fromIntegral (floor pos) :: Rational
         position' = pos - posCycle
-        position = start + (position' * dur)
+        position = start + (position' * interval)
         positionInNDT = position * (1/(freq t))
     in Just (realToFrac positionInNDT)
 
-
-playChop_Pos:: Rational -> Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playChop_Pos startPos endPos cycles sh t vlen render eval anchor =
-    let cp = (freq t)
-        cpsDur = 1/cp
-        vl = realToFrac vlen :: Rational
-        start = reglaDeTres 1 startPos vl
-        end = reglaDeTres 1 endPos vl
-        interval = end - start
-        intCyc = interval / cpsDur
-        rounded = fromIntegral (round intCyc) :: Rational
-        inSecs = rounded * cpsDur
-        ec = (timeToCount t render)
-        ecOff = ec - sh
-        ecFloored = fromIntegral (floor ecOff) :: Rational
-        ecRender = ecOff - ecFloored
-        pos = reglaDeTres 1 ecRender interval
-        pos' = start + pos
-    in Just (realToFrac pos')
-
-
-playChop_Rate:: Rational -> Rational -> Rational -> Rational -> Signal (Maybe Rational)
-playChop_Rate startPos endPos cycles sh t vlen render eval anchor
+playChop_Rate::  Rational -> Rational -> Rational -> Rational -> Signal (Maybe Rational)
+playChop_Rate startPos endPos cycles sh t vlen render eval anchor 
     | startPos == endPos = Just 0
+    | (freq t) == 0 = Just 0
     | otherwise =
-    let cps = (freq t)
-        cpsDur = 1/cps
-        vl = realToFrac vlen :: Rational
-        start = reglaDeTres 1 startPos vl
-        end = reglaDeTres 1 endPos vl
-        interval = end - start
-        cPerLen = interval/cpsDur
-        rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
-        newVl = rounded / cps -- new length in seconds
-        rate = interval / newVl
-        addNeg = if start > end then rate * (-1) else rate
-    in  Just (realToFrac addNeg)
+    let lenInCycles = (realToFrac vlen :: Rational) * (freq t)
+        dur = (lenInCycles * endPos) - (lenInCycles * startPos)
+        rate' = dur / cycles
+        rate = rate' * (signum rate')
+    in Just (realToFrac rate)
 
 -------- the UBER chop with start and end position in seconds instead of 0 to 1 ---------
 
 -- Similar to the one above but the start and end position are not percentages, but seconds
-
-playChopSecs_Pos:: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playChopSecs_Pos startPos endPos cycles sh t vlen render eval anchor =
-    let cps = (freq t)
-        cpsDur = 1/cps
-        vl = realToFrac vlen :: Rational
-        start = cycleSecs startPos vlen
-        end = cycleSecs endPos vlen
-        interval = end - start
-        intCyc = interval / cpsDur
-        rounded = fromIntegral (round intCyc) :: Rational
-        inSecs = rounded * cpsDur
-        ec = (timeToCount t render)
-        ecOff = ec - sh
-        ecFloored = fromIntegral (floor ecOff) :: Rational
-        ecRender = ecOff - ecFloored
-        pos = reglaDeTres 1 ecRender interval
-        pos' = start + pos
-    in Just (realToFrac pos')
-
-
-playChopSecs_Rate:: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
-playChopSecs_Rate startPos endPos cycles sh t vlen render eval anchor
-    | startPos == endPos = Just 0
+-- chop 7 10 4 0 myTempo 13 render eval anchor
+playChopSecs_Pos::  NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
+playChopSecs_Pos startPos endPos cycles sh t vlen render eval anchor 
+    | startPos == endPos = Just (vlen * (realToFrac startPos :: NominalDiffTime))
+    | (freq t) == 0 = Just (realToFrac startPos*vlen)
     | otherwise =
-    let cps = (freq t)
-        cpsDur = 1/cps
-        vl = realToFrac vlen :: Rational
-        start = cycleSecs startPos vlen
-        end = cycleSecs startPos vlen
-        interval = end - start
-        cPerLen = interval/cpsDur
-        rounded = fromIntegral (round cPerLen) :: Rational -- new length in cycles
-        newVl = rounded / cps -- new length in seconds
-        rate = interval / newVl
-        addNeg = if start > end then rate * (-1) else rate
-    in  Just (realToFrac addNeg)
+    let lenInCycles = (realToFrac vlen :: Rational) * (freq t) -- 6.5
+        start = (realToFrac startPos :: Rational) * (freq t) -- 3.5
+        end = (realToFrac endPos :: Rational) * (freq t) -- 5
+        interval = end - start -- 1.5
+        pos = ((timeToCount t render) - sh) / interval -- 17.866667
+        posCycle = fromIntegral (floor pos) :: Rational -- 17
+        position' = pos - posCycle     -- 0.866667
+        position = start + (position' * interval)  -- 3.5 + (0.86667 * 1.5) = 4.800005
+        positionInNDT = position * (1/(freq t)) -- is this the same as position / (freq t)
+    in Just (realToFrac positionInNDT)
 
-------- playNow  -- Starts the video with the evaluation time
-
--- this function is useless :D
--- giving a start position in seconds
-
-           --  startPos        -- rate
-playNow_Pos:: NominalDiffTime -> Rational -> Signal (Maybe NominalDiffTime)
-playNow_Pos startPos rate t vlen render eval anchor = Just $ (realToFrac (cycleSecs startPos vlen))
-
-playNow_Rate:: NominalDiffTime -> Rational -> Signal (Maybe Rational)
-playNow_Rate startPos rate t vlen render eval anchor = Just rate
-
--- Geometry
-
--- Image
+playChopSecs_Rate::  NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
+playChopSecs_Rate startPos endPos cycles sh t vlen render eval anchor 
+    | startPos == endPos = Just 0
+    | (freq t) == 0 = Just 0
+    | otherwise =
+        let lenInCycles = (realToFrac vlen :: Rational) * (freq t)
+            dur = ((realToFrac endPos ::Rational) * (freq t)) - ((realToFrac startPos :: Rational) * (freq t)) -- 1.5
+            rate' = dur / cycles      -- 1.5/4
+            rate = rate' * (signum rate')
+        in Just (realToFrac rate)
 
 
----- Opacity
+------- rate!! NEW
 
--- sets a default opacity for new videos --
--- defaultOpacity :: Signal Rational
--- defaultOpacity = \_ _ _ _ -> 100
+-- rate 2 0 myTempo 13 render eval anchor
+rate_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
+rate_Pos rate sh t vlen render eval anchor =   -- align anchor time with 0 of video - sh
+    let lenInCycles = (realToFrac vlen :: Rational) * (freq t) -- 6.5
+        lenWithRate = lenInCycles / rate -- 6.5/2 = 3.25 
+        elapsed = ((timeToCount t render) - sh) - (timeToCount t anchor) -- 61.5 - 61
+        pos = elapsed / lenWithRate
+        posInCycle = fromIntegral (floor pos) :: Rational
+        pos' = pos - posInCycle
+        positionInNDT = pos' * (1/(freq t))
+    in Just (realToFrac positionInNDT)
 
------  Sin
+
+rate_Rate:: Rational -> Rational -> Signal (Maybe Rational)
+rate_Rate rate sh t vlen render eval anchor = Just rate
+
+-- Helper to transform cycles to seconds
+
 
 -- helpers to transform Signal
 
@@ -411,9 +373,6 @@ mayToRat (Just x) = x
 radian:: Rational -> Float
 radian t = (realToFrac t :: Float) * 2 * pi /360
 
--- sineMaybe:: Signal (Maybe Rational) -> Signal (Maybe Rational)
--- sineMaybe freq t vl rT eT aT = Just $ sine (sigMayToSig freq) t vl rT eT aT
-
 sineMaybe:: Signal Rational -> Signal (Maybe Rational)
 sineMaybe freq t vl rT eT aT = Just $ sine (freq) t vl rT eT aT
 
@@ -425,9 +384,6 @@ sine freq = \t vl rT eT aT ->
         pos' = (pos) - (realToFrac (floor pos) :: Rational)
         posInRad = pos' * 360
     in realToFrac (sin (radian posInRad)) :: Rational
-
--- rangeMaybe:: Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational)
--- rangeMaybe min max input t vl rTime eTime aTime = Just $ range (sigMayToSig min) (sigMayToSig max) (sigMayToSig input) t vl rTime eTime aTime
 
 rangeMaybe:: Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational)
 rangeMaybe min max input t vl rTime eTime aTime = Just $ range (min) (max) (input) t vl rTime eTime aTime
@@ -585,7 +541,7 @@ myEval = myUTCTest2
 
 myRender = UTCTime today 61.5
 
-myAnchor = quantAnchor 1 0 myTempo eval
+myAnchor = quantAnchor 1 0 myTempo myEval
 
 
 -- test functions for ramps
