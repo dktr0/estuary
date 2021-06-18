@@ -53,26 +53,11 @@ defaultAnchor t eval = quantAnchor 1 0 t eval
 quantAnchor:: Rational -> Rational -> Tempo -> UTCTime -> UTCTime
 quantAnchor cycleMult offset t eval =
   let ec = (timeToCount t eval)
-      currentCycle = fromIntegral (floor ec):: Rational
+      currentCycle = fromIntegral (floor ec):: Rational 
       align = if ec - currentCycle > 0.95 then 2 else 1
       toQuant = currentCycle + align
-      quanted = quantomatic cycleMult toQuant
-      off = realToFrac $ (offset*(1/(freq t))) / 1
-  in countToTime t (quanted + off) -- as UTCTime
-
-
--- this function gets the next bar that aligns with the quant multiplier value
-quantomatic:: Rational -> Rational -> Rational
-quantomatic cycleMult nextBeat = quanted
-  where quanted = if remIsZero nextBeat cycleMult then nextBeat else quantomatic cycleMult (nextBeat + 1)
-
-  -- substitutes mod operation for one that would detect the remainder of a division when it is 0
-remIsZero:: Rational -> Rational -> Bool
-remIsZero nextBeat cycleMultiplier =
-  let divi = nextBeat / cycleMultiplier
-      floored = realToFrac (floor divi) :: Rational
-      remainder = divi - floored
-  in if remainder == 0 then True else False
+      quanted = nextBeat cycleMult offset toQuant
+  in countToTime t (quanted) 
 
 constantSignal' :: Maybe a -> Signal (Maybe a)
 constantSignal' Nothing = \_ _ _ _ _ -> Nothing
@@ -286,16 +271,17 @@ playChop_Pos startPos endPos cycles sh t vlen render eval anchor
     | startPos == endPos = Just (vlen * (realToFrac startPos :: NominalDiffTime))
     | (freq t) == 0 = Just (realToFrac startPos*vlen)
     | otherwise =
-    let lenInCycles = (realToFrac vlen :: Rational) * (freq t)
-        start = lenInCycles * startPos
-        end = lenInCycles * endPos
-        interval = end - start
-        pos = ((timeToCount t render) - sh) / interval
-        posCycle = fromIntegral (floor pos) :: Rational
-        position' = pos - posCycle
-        position = start + (position' * interval)
-        positionInNDT = position * (1/(freq t))
-    in Just (realToFrac positionInNDT)
+        let lenInCycles = (realToFrac vlen :: Rational) * (freq t)
+            start = lenInCycles * startPos
+            end = lenInCycles * endPos
+            n = cycles -- 2
+            ec = (timeToCount t render) -- 30.7
+            ecOf = ec - sh   -- 30.7
+            floored = floor (ecOf/n)       -- 30.7 /2 = 15 
+            nlb = (fromIntegral floored :: Rational)*n -- 15 * 2 = 30
+            pos= start +((end - start) * ((ecOf-nlb)/n)) -- 0 + (0.5 - 0) * (0.35)
+        in Just (realToFrac (pos/(freq t)))
+
 
 playChop_Rate::  Rational -> Rational -> Rational -> Rational -> Signal (Maybe Rational)
 playChop_Rate startPos endPos cycles sh t vlen render eval anchor 
@@ -359,6 +345,8 @@ rate_Rate:: Rational -> Rational -> Signal (Maybe Rational)
 rate_Rate rate sh t vlen render eval anchor = Just rate
 
 -- Helper to transform cycles to seconds
+
+
 
 
 -- helpers to transform Signal

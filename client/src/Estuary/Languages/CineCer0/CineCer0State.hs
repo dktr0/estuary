@@ -369,7 +369,7 @@ generateBorder (True) = "; border: 1px solid #cccccc;"
 generateBorder (False) = ""
 
 textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h fontfam stk bld itc border colour size z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt fontfam <> stk <> bld <> itc <> border <> colour <> size <> z <> ";"
+textStyle x y w h fontfam stk bld itc border colour size z = "position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt fontfam <> stk <> bld <> itc <> border <> colour <> size <> z <> ";"
 
 
 -- textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
