@@ -15,7 +15,14 @@ import Estuary.Languages.CineCer0.Signal
 --------- change String to Text throughout the pipeline!!!!!
 data Colour = Colour (Signal String) | ColourRGB (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSL (Signal Rational) (Signal Rational) (Signal Rational) | ColourRGBA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSLA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational)
 
+-- instance Eq Colour where
+--   (==) (Colour a) (Colour b) = True
+--   (==) (ColourRGB a b c) (ColourRGB a' b' c') = True
+--   (==) _ _ = False
+
 -- layer: right is video left is text!!!!!
+
+
 data LayerSpec = LayerSpec {
   layer :: Either String String,  ----- both are synonims of Text
   z :: Signal Int,
@@ -23,7 +30,7 @@ data LayerSpec = LayerSpec {
   anchorTime :: (Tempo -> UTCTime -> UTCTime),
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
-  
+
   mute :: Signal Bool,
   volume :: Signal Rational,
 
