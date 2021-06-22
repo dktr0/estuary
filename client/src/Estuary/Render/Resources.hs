@@ -1,20 +1,27 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Render.Resources where
 
 import Control.Concurrent
-import Data.Sequence
-import Data.Text
+import Control.Monad
+import Data.Sequence as Seq
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Estuary.Types.ResourceOp
+import Estuary.Types.ResourceMeta
+import Estuary.Types.ResourceType
+import Estuary.Types.Location
 import Estuary.Types.LocMap as LocMap
 import Estuary.Types.Loadable
 import Estuary.Types.AudioResource
+import Estuary.Render.ResourceList
 
 
-{-
 data Resources = Resources {
   _resourceOps :: MVar (Seq ResourceOp),
   resourceLists :: LoadMap ResourceList,
-  audioMap :: MVar (LocMap Text),
+  maps :: MVar (LocMap Text,LocMap Text,LocMap Text), -- audio image video
   audioResources :: LoadMap AudioResource
   }
 
@@ -22,11 +29,13 @@ data Resources = Resources {
 newResources :: IO Resources
 newResources = do
   _resourceOps' <- newMVar Seq.empty
-  audioMap' <- newMVar LocMap.empty
+  resourceLists' <- newLoadMap
+  maps' <- newMVar (LocMap.empty,LocMap.empty,LocMap.empty)
   audioResources' <- newLoadMap
   return $ Resources {
     _resourceOps = _resourceOps',
-    audioMap = audioMap',
+    resourceLists = resourceLists',
+    maps = maps',
     audioResources = audioResources'
   }
 
@@ -34,41 +43,75 @@ newResources = do
 addResourceOp :: Resources -> ResourceOp -> IO ()
 addResourceOp r op = do
   opsSeq <- takeMVar $ _resourceOps r
-  ... *** working here ***
+  let newOpsSeq = opsSeq |> op
+  updateMaps r newOpsSeq
+  putMVar (_resourceOps r) newOpsSeq
+
 
 deleteResourceOp :: Resources -> Int -> IO ()
 deleteResourceOp r x = do
   opsSeq <- takeMVar $ _resourceOps r
-  ... ???
-  putMVar (_resourceOps r) $ Seq.deleteAt x opsSeq
+  let newOpsSeq = Seq.deleteAt x opsSeq
+  updateMaps r newOpsSeq
+  putMVar (_resourceOps r) newOpsSeq
+
+
+clearResourceOps :: Resources -> IO ()
+clearResourceOps r = setResourceOps r Seq.empty
+
 
 setResourceOps :: Resources -> Seq ResourceOp -> IO ()
 setResourceOps r x = do
-  ... ???
+  _ <- takeMVar $ _resourceOps r
+  updateMaps r x
+  putMVar (_resourceOps r) x
 
 
-resourceOps :: Resources -> IO (Seq ResourceOp)
-resourceOps r = readMVar $ _resourceOps r
+updateMaps :: Resources -> Seq ResourceOp -> IO ()
+updateMaps r opsSeq = do
+  _ <- takeMVar $ maps r
+  let emptyMaps = (LocMap.empty,LocMap.empty,LocMap.empty)
+  newMaps <- foldM (resourceOpIO r) emptyMaps opsSeq
+  putMVar (maps r) newMaps
+
+
+updateMapsCallback :: Resources -> IO ()
+updateMapsCallback r = do
+  opsSeq <- takeMVar $ _resourceOps r
+  updateMaps r opsSeq
+  putMVar (_resourceOps r) opsSeq
+
+
+resourceOpIO :: Resources -> (LocMap Text,LocMap Text,LocMap Text) -> ResourceOp -> IO (LocMap Text,LocMap Text,LocMap Text)
+resourceOpIO r maps (InsertResourceMeta x) = return $ insertResourceMeta maps x
+resourceOpIO r maps (ResourceListURL url) = do
+  resList <- load (resourceLists r) url (const $ updateMapsCallback r)
+  rMetas <- resourceMetas resList
+  return $ Prelude.foldl insertResourceMeta maps rMetas
+
+
+insertResourceMeta :: (LocMap Text,LocMap Text,LocMap Text) -> ResourceMeta -> (LocMap Text,LocMap Text,LocMap Text)
+insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Audio loc) = (LocMap.insert loc url aMap,iMap,vMap)
+insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Image loc) = (aMap,LocMap.insert loc url iMap,vMap)
+insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Video loc) = (aMap,iMap,LocMap.insert loc url vMap)
 
 
 -- accessAudioResource replaces previous 'access' from Estuary.Types.ResourceMap
--- access :: Loadable a => Location -> ResourceMap a -> IO (Either LoadStatus JSVal)
+-- which looked like this: access :: Loadable a => Location -> ResourceMap a -> IO (Either LoadStatus JSVal)
 
 accessAudioResource :: Resources -> Location -> IO (Either LoadStatus AudioResource)
-accessAudioResource r l = do
-  am <- readMVar $ audioMap r
-  let l' = adjustedLocation l am
-  case LocationMap.lookup l' am of
-    Nothing -> return (Left $ LoadError $ "no resource at location " <> T.pack (show l))
+accessAudioResource r loc = do
+  (aMap,_,_) <- readMVar $ maps r
+  case LocMap.lookup loc aMap of
     Just url -> do
-      x <- load (audioResources r) url
-      ls <- loadStatus x
-      case ls of
-        LoadError e -> return $ Left $ LoadError e
-        otherwise -> return $ Right x
-        -- ie. if loadStatus returns Loading we still return the resource, because it might be ready soon
+      aRes <- load (audioResources r) url (const $ return ())
+      lStatus <- loadStatus aRes
+      case lStatus of
+        Loaded -> return $ Right aRes
+        otherwise -> return $ Left lStatus
+    Nothing -> return (Left $ LoadError $ "no resource at location " <> T.pack (show loc))
 
--}
+
 {-
 
 *** TODO: adapt this to new representations - should be sampleMapToResourceList?

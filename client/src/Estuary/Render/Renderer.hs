@@ -114,12 +114,12 @@ flushEvents irc c = do
   let unsafe = unsafeMode c
   when (webDirtOn c) $ liftIO $ do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
-    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (audioMap c) cDiff) $ noteEvents s
-    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (audioMap c) cDiff) $ tidalEvents s
+    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources irc) cDiff) $ noteEvents s
+    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (resources irc) cDiff) $ tidalEvents s
     mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents'
   when (superDirtOn c) $ liftIO $ do
-    noteEvents' <- mapM (SuperDirt.noteEventToSuperDirtJSVal (audioMap c)) $ noteEvents s
-    tidalEvents' <- mapM (SuperDirt.tidalEventToSuperDirtJSVal (audioMap c)) $ tidalEvents s
+    noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
+    tidalEvents' <- mapM SuperDirt.tidalEventToSuperDirtJSVal $ tidalEvents s
     mapM_ (SuperDirt.playSample (superDirt irc)) $ noteEvents' ++ tidalEvents'
   modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
   return ()

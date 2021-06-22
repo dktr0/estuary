@@ -26,6 +26,7 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.ResourceMap
 import Estuary.Render.DynamicsMode
 import Estuary.Render.LocalResources
+import Estuary.Render.Resources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 import Sound.Punctual.GL (GLContext)
@@ -35,7 +36,8 @@ import qualified Sound.Punctual.Resolution as Punctual
 data ImmutableRenderContext = ImmutableRenderContext {
   mainBus :: MainBus,
   webDirt :: WebDirt,
-  superDirt :: SuperDirt
+  superDirt :: SuperDirt,
+  resources :: Resources
   }
 
 data Context = Context {

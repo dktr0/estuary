@@ -82,38 +82,38 @@ foreign import javascript unsafe
 makeNoteEventSafe :: Map.Map Text Datum -> Map.Map Text Datum
 makeNoteEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
-noteEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> NoteEvent -> IO (Maybe JSVal)
-noteEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
+noteEventToWebDirtJSVal :: Bool -> Resources -> (UTCTime,Double) -> NoteEvent -> IO (Maybe JSVal)
+noteEventToWebDirtJSVal unsafe r cDiff (utc,m) = do
   let mSafe = if unsafe then m else makeNoteEventSafe m
   let s = Map.lookup "s" mSafe
   let n = Map.lookup "n" mSafe
   case datumsToLocation s n of
     Nothing -> return Nothing
     Just loc -> do
-      res <- access loc aMap
+      res <- accessAudioResource r loc
       case res of
         Right res' -> do
           let t' = utcTimeToAudioSeconds cDiff utc
-          let m' = Map.insert "buffer" res' $ fmap datumToJSVal mSafe -- :: Map Text JSVal
+          let m' = Map.insert "buffer" (pToJSVal res') $ fmap datumToJSVal mSafe -- :: Map Text JSVal
           Just <$> mapTextJSValToJSVal (t',m')
         Left _ -> return Nothing
 
 makeTidalEventSafe :: Tidal.ValueMap -> Tidal.ValueMap
 makeTidalEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
-tidalEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ValueMap) -> IO (Maybe JSVal)
-tidalEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
+tidalEventToWebDirtJSVal :: Bool -> Resources -> (UTCTime,Double) -> (UTCTime, Tidal.ValueMap) -> IO (Maybe JSVal)
+tidalEventToWebDirtJSVal unsafe r cDiff (utc,m) = do
   let mSafe = if unsafe then m else makeTidalEventSafe m
   let s = Map.lookup "s" mSafe
   let n = Map.lookup "n" mSafe
   case valuesToLocation s n of
     Nothing -> return Nothing
     Just loc -> do
-      res <- access loc aMap
+      res <- accessAudioResource r loc
       case res of
         Right res' -> do
           let t' = utcTimeToAudioSeconds cDiff utc
-          let m' = Map.insert "buffer" res' $ fmap valueToJSVal mSafe -- :: Map Text JSVal
+          let m' = Map.insert "buffer" (pToJSVal res') $ fmap valueToJSVal mSafe -- :: Map Text JSVal
           Just <$> mapStringJSValToJSVal (t',m')
         Left _ -> return Nothing
 

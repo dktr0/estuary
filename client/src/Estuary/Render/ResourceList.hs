@@ -30,8 +30,15 @@ import Estuary.Render.XMLHttpRequest
 data ResourceList = ResourceList {
   resourceListURL :: Text,
   resourceListLoadStatus :: IORef LoadStatus,
-  resourceMetas :: IORef [ResourceMeta]
+  resourceMetas_ :: IORef [ResourceMeta]
   }
+
+resourceMetas :: ResourceList -> IO [ResourceMeta]
+resourceMetas x = do
+  ls <- readIORef $ resourceListLoadStatus x
+  case ls of
+    Loaded -> readIORef $ resourceMetas_ x
+    otherwise -> return []
 
 instance FromJSON ResourceMeta where
   parseJSON (Object v) = do
@@ -47,7 +54,7 @@ instance FromJSON ResourceMeta where
 
 showResourceList :: ResourceList -> IO String
 showResourceList x = do
-  y <- readIORef $ resourceMetas x
+  y <- readIORef $ resourceMetas_ x
   return $ (T.unpack $ resourceListURL x) ++ " " ++ show y
 
 typeTextToResourceType :: Text -> ResourceType
@@ -66,7 +73,7 @@ instance Loadable ResourceList where
     let rList = ResourceList {
       resourceListURL = url,
       resourceListLoadStatus = ls,
-      resourceMetas = rm
+      resourceMetas_ = rm
     }
 
     loadCb <- asyncCallback1 $ \j -> do

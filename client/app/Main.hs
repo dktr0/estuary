@@ -23,6 +23,7 @@ import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Render.Renderer
 import Estuary.Render.DynamicsMode
+import Estuary.Render.Resources
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
@@ -53,10 +54,12 @@ main = do
   wd <- liftAudioIO $ newWebDirt (webDirtOutput mb)
   initializeWebAudio wd
   sd <- newSuperDirt
+  resources' <- newResources
   let immutableRenderContext = ImmutableRenderContext {
     mainBus = mb,
     webDirt = wd,
-    superDirt = sd
+    superDirt = sd,
+    resources = resources'
     }
 
   nowUtc <- getCurrentTime

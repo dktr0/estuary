@@ -1,3 +1,3 @@
 module Estuary.Types.ResourceType where
 
-data ResourceType = Audio | Image | Video deriving (Show)
+data ResourceType = Audio | Image | Video deriving (Show, Eq)
