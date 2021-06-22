@@ -88,7 +88,7 @@ funcionsCineCer0 = el "div" $ do
     (English,"Audio: vol Val; sets volume where 1 is full volume for the video. Video's audio is raw and not processed by Estuary's engine (compression or routing will not work on it)"),
     (Español,"Audio: vol Val; control de volume donde 1 es volumen máximo. El audio del video es directo y noe stá siendo procesado por Estuary (compresión o ruteo no funcionan)")
     ])
-  el "ul" $ do 
+  el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "vol 0.3 $ \"videos/lamplight.mp4\""
   -- Text
   el "div" $ dynText =<< (translatableText $ fromList [
@@ -122,10 +122,10 @@ funcionsCineCer0 = el "div" $ do
     (Español,"quant MultCycle Offset (tiene bugs por el momento :( ), ramp Dur P1 P2")
     ])
   --quant
-  el "ul" $ do 
+  el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "quant 4 0 $ hsv 0.33 0.1 1 $ font \"Times New Romans\" $ size 0.25 $ text \"Ayer: hoy & mañana –de repente\""
   --ramp
-  el "ul" $ do 
+  el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "setSize (ramp 3 0 0.5) $ \"videos/hogweed.mov\""
     --
   el "div" $ dynText =<< (translatableText $ fromList [
@@ -137,14 +137,14 @@ funcionsCineCer0 = el "div" $ do
     (Español,"sine Freq, range Min Max Signal")
     ])
   --sine
-  el "ul" $ do 
+  el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "setPosY (sin 0.1) $ setSize 0.5 $ \"videos/hogweed.mov\""
   --range
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"Modify the amplitude of the signal with range:"),
     (Español,"Es posible modificar la amplitud de la señal con range:")
     ])
-  el "ul" $ do 
+  el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "setBlur (range 0 20 $ sin 0.1) $ size 0.5 $ \"videos/hogweed.mov\""
   -- Duration
   el "div" $ dynText =<< (translatableText $ fromList [
@@ -156,19 +156,18 @@ funcionsCineCer0 = el "div" $ do
     (English,"Function every stretches/compresses the video's speed to adapt to a duration in cycles. The offset aligns the start of the video with the start of the cycle if it is 0."),
     (Español,"La función every elonga/comprime la velocida de reproducción del video para ajustarse a una duración dada en ciclos. El offser alinea el primer cuadro del video con el inicio del ciclo si su valor es 0.")
     ])
-  el "ul" $ do 
+  el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "every 3 0 $ \"videos/hogweed.mov\""
   -- snap
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"Function snap adjusts the duration of the video to the closest number of cycles. The offset aligns the start of the video with the start of the cycle if it is 0."),
     (Español,"La función snap ajusta la duración del video al número de ciclso más cercano. El offser alinea el primer cuadro del video con el inicio del ciclo si su valor es 0.")
     ])
-  el "ul" $ do 
+  el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "snap 0 $ \"videos/lamplight.mp4\""
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"The function snapMetre is similar to snap but adjusts the duration of the video to 2,4,8,16,32, etc. cycles, useful for 'music'-related explorations"),
     (Español,"La función snapMetre es similar a snap solo que esta ajusta la duración del video a 2,4,8,16,32, etc. ciclos, útil para exploraciones relacionadas con 'ideas musicales'.")
     ])
-  el "ul" $ do 
+  el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "snapMetre 0 $ \"videos/lamplight.mp4\""
-

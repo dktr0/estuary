@@ -36,6 +36,7 @@ data Command =
   StartStreaming | -- start RTP streaming of Estuary audio
   StreamId | -- display the id assigned to RTP streaming of Estuary audio
   Delay Double | -- delay estuary's audio output by the specified time in seconds
+  MonitorInput (Maybe Double) | -- send audio input straight to audio output, at specified level in dB (nothing=off)
   DeleteThisEnsemble Password | -- delete the current ensemble from the server (with host password)
   DeleteEnsemble Name Password | -- delete the ensemble specified by first argument from the server (with moderator password)
   AncientTempo | -- for testing, sets active tempo to one anchored years in the past
@@ -74,6 +75,7 @@ terminalCommand =
   <|> startStreaming
   <|> streamId
   <|> delay
+  <|> monitorInput
   <|> deletethisensembleParser
   <|> deleteensembleParser
   <|> ancientTempoParser
@@ -288,6 +290,25 @@ delay' = delayFunc <$ reserved "delay"
 
 delayFunc :: Double -> Command
 delayFunc x = Delay x
+
+
+-- monitorInput
+
+monitorInput :: H Command
+monitorInput =
+  monitorInputOn <|>
+  monitorInputOff <|>
+  (reserved "monitorinput" >> fatal "Missing argument. !monitorinput expects off or a level in decibels.")
+
+monitorInputOn :: H Command
+monitorInputOn = do
+  (_,x) <- functionApplication (reserved "monitorinput") rationalOrInteger
+  return $ MonitorInput (Just $ realToFrac x)
+
+monitorInputOff :: H Command
+monitorInputOff = do
+  _ <- functionApplication (reserved "monitorinput") (reserved "off")
+  return $ MonitorInput Nothing
 
 -- delete current ensemble
 deletethisensembleParser :: H Command
