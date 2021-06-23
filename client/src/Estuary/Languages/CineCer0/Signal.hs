@@ -142,28 +142,23 @@ playEvery_Rate c sh t vl render eval anchor =
 -- this functions only accept from the player one argument: shift
 
 playRound_Pos:: Rational -> Signal (Maybe NominalDiffTime)
-playRound_Pos sh t vlen render eval anchor =
-    let vl = realToFrac vlen :: Rational
-        ec = (timeToCount t render)
-        ecSh = ec - sh
-
-        oldVLInC = vl / (1/(freq t)) -- 6.25
-        newVLInC = fromIntegral (round oldVLInC) :: Rational  --6
-        newVLInSecs = newVLInC * (1/(freq t)) -- 12 secs -- NEW length of video
-
-        rSegment = ecSh / newVLInC -- 30.5 / 12 = 5.083333333 -- rounded segment
-        posInSegment = rSegment - (fromIntegral (floor rSegment) :: Rational) -- 0.083333333
-        scaled = posInSegment*vl
-    in Just (realToFrac scaled :: NominalDiffTime)
+playRound_Pos sh t vlen render eval anchor 
+    | (freq t) == 0 = Nothing -- double check if this is adequate behaviour
+    | otherwise =
+    let lenInCycles = (realToFrac vlen :: Rational) * (freq t) 
+        ec = (timeToCount t render) 
+        ecSh = ec - sh 
+        newVL = fromIntegral (round lenInCycles) :: Rational 
+        pos' = ecSh / newVL 
+        posPerc = pos' - (fromIntegral (floor pos') :: Rational) 
+        pos = posPerc * lenInCycles 
+    in Just (realToFrac (pos/(freq t))) 
 
 playRound_Rate:: Rational -> Signal (Maybe Rational)
 playRound_Rate sh t vlen render eval anchor =
-    let vl = realToFrac vlen :: Rational -- 12.5
-        cps = (freq t)   -- 0.5
-        dur = 1/cps   -- 2 secs
-        oldVLInC = vl/dur  -- 12.5/2
-        newVLInC = fromIntegral (round oldVLInC) :: Rational -- 6.0
-        newVl = newVLInC * dur -- 6.0 * 2.0 -- 12.0
+    let lenInCycles = (realToFrac vlen :: Rational) * (freq t) 
+        newVL = fromIntegral (round lenInCycles) :: Rational -- 6.0
+        newVl = (newVL/(freq t)) -- 6.0 / 0.5 -- 12.0
         rate = vl / newVl --old video length in secs / new video length in secs
     in Just rate
 
