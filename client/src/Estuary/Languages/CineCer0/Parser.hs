@@ -106,14 +106,14 @@ ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
 -- new fade in (syntax sugar funcs)
 ndt_sigRat :: H (NominalDiffTime -> Signal Rational)
-ndt_sigRat = 
+ndt_sigRat =
   fadeIn <$ reserved "fadeIn" <|>
   fadeOut <$ reserved "fadeOut"
 
 ndt_sigMayRat :: H (NominalDiffTime -> Signal (Maybe Rational))
 ndt_sigMayRat =
   fadeIn2 <$ reserved "fadeIn" <|>
-  fadeOut2 <$ reserved "fadeOut" 
+  fadeOut2 <$ reserved "fadeOut"
 
 ---- sine
 
@@ -214,7 +214,7 @@ sigInt_vs_vs =
 
 sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
 sigStr_vs_vs =
-  setColourStr <$ reserved "colour" <|> 
+  setColourStr <$ reserved "colour" <|>
   setFontFamily <$ reserved "font"
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
