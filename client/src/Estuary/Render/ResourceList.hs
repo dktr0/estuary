@@ -8,8 +8,9 @@ module Estuary.Render.ResourceList where
 
 {- an example of a resource list JSON file (note that the property names MUST be in quotation marks):
 [
-{ "url": "bd.wav", "type": "audio", "bank": "bd", "n": 0},
-{ "url": "cp.wav", "type": "audio", "bank": "cp", "n": 0},
+{ "url": "samples/bd/BT0A0A7.wav", "type": "audio", "bank": "bd", "n": 0},
+{ "url": "samples/cp/HANDCLP0.wav", "type": "audio", "bank": "cp", "n": 0},
+{ "url": "samples/cp/HANDCLPA.wav", "type": "audio", "bank": "cp", "n": 1},
 { "url": "flower.MOV", "type": "video", "bank": "flower", "n": 0}
 ]
 -}

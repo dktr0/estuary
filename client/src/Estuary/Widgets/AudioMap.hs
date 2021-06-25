@@ -16,12 +16,10 @@ import Estuary.Types.AudioResource
 audioMapWidget :: MonadWidget t m => Editor t m ()
 audioMapWidget = elClass "div" "reference" $ do
   ctx <- context
-  aMap <- holdUniqDyn $ fmap audioMap ctx
-
+  -- aMap <- holdUniqDyn $ fmap audioMap ctx
     -- ???? audiomap is not in context anymore but in ImmutableRenderContext (resources field)
     -- so how do we handle this ???
-
-  simpleList (reduceAudioMap <$> aMap) builder
+  -- simpleList (reduceAudioMap <$> aMap) builder
   return ()
 
 reduceAudioMap :: Map (Text,Int) AudioResource -> [(Text,Int)]

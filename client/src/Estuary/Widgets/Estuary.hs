@@ -55,7 +55,6 @@ import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Sidebar
-import Estuary.Types.ResourceMap
 import Estuary.Types.AudioResource
 import Estuary.Types.AudioMeta
 import Estuary.Types.Loadable
@@ -125,9 +124,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  audioMapEv <- loadAudioMap
   terminalContextChangeIO <- performEvent $ fmap liftIO $ fmapMaybe commandToContextChangeIO command
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, audioMapEv, wsCtxChange, sidebarChange,terminalContextChangeIO]
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange,terminalContextChangeIO]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -190,24 +188,6 @@ pollRenderInfo riM = do
   holdDyn riInitial newInfo
 
 
-loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
-loadAudioMap = do
-  postBuild <- getPostBuild
-  -- new/testing:
-  -- performEvent_ $ ffor postBuild $ \_ -> liftIO $ do
-  --  rList <- (newLoadable "resourceListTest.json" (\x -> showResourceList x >>= putStrLn) :: IO ResourceList)
-  --  return ()
-  -- old:
-  performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
-    loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
-      case maybeMap of
-        Nothing -> putStrLn "loadAudioMap couldn't load sample map"
-        Just map -> do
-          putStrLn "loadAudioMap (estuary) succeeded"
-          map' <- sampleMapToAudioMap map
-          triggerEv $ setAudioMap map'
-
-
 -- whenever the Dynamic representation of the Context changes, translate that
 -- into various
 performContext :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> Dynamic t Context -> m ()
@@ -261,6 +241,7 @@ commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eNam
 commandToRequest _ = Nothing
 
 commandToContextChangeIO :: Terminal.Command -> Maybe (IO ContextChange)
+{- *** STILL TO REFACTOR - removed for now
 commandToContextChangeIO (Terminal.InsertAudioResource url bankName n) = Just $ do
   res <- audioResourceFromMeta $ AudioMeta url 0
   return $ \x -> x { audioMap = insert (bankName,n) res (audioMap x)}
@@ -268,5 +249,5 @@ commandToContextChangeIO (Terminal.DeleteAudioResource bankName n) = Just $ do
   return $ \x -> x { audioMap = delete (bankName,n) (audioMap x)}
 commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
   res <- audioResourceFromMeta $ AudioMeta url 0
-  return $ \x -> x { audioMap = append bankName res (audioMap x)}
+  return $ \x -> x { audioMap = append bankName res (audioMap x)} -}
 commandToContextChangeIO _ = Nothing
