@@ -10,7 +10,6 @@ import qualified Sound.Tidal.Context as Tidal
 
 -- import Estuary.Types.Tempo
 import Estuary.Render.WebDirt hiding (playSample)
-import Estuary.Types.ResourceMap
 import Estuary.Types.NoteEvent
 
 newtype SuperDirt = SuperDirt JSVal

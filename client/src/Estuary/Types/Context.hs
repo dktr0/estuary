@@ -16,16 +16,13 @@ import Estuary.Types.TranslatableText
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
--- import Estuary.Types.Resources
 import Estuary.Types.Samples
 import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.EnsembleC
-import Estuary.Types.ResourceMap
 import Estuary.Render.DynamicsMode
-import Estuary.Render.LocalResources
 import Estuary.Render.Resources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
@@ -54,10 +51,6 @@ data Context = Context {
   dynamicsMode :: DynamicsMode,
   punctualAudioInputMode :: PunctualAudioInputMode,
   language :: Language,
-  audioMap :: AudioMap,
---  localResourceServers :: LocalResourceServers,
---  privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
---  resources :: Resources, -- ^ The effective resource set.
   ensembleC :: EnsembleC,
   wsStatus :: Text,
   serverLatency :: NominalDiffTime,
@@ -79,10 +72,6 @@ initialContext nowUtc = Context {
   brightness = 1.0,
   fpsLimit = Just 0.030,
   ensembleC = emptyEnsembleC nowUtc,
---  localResourceServers = emptyLocalResourceServers,
---  privateResources = emptyResources,
---  resources = emptyResources,
-  audioMap = emptyResourceMap,
   webDirtOn = True,
   superDirtOn = False,
   canvasOn = True,
@@ -106,24 +95,3 @@ setClientCount x c = c { clientCount = x }
 
 modifyEnsembleC :: (EnsembleC -> EnsembleC) -> ContextChange
 modifyEnsembleC f c = c { ensembleC = f (ensembleC c) }
-
-setAudioMap :: AudioMap -> ContextChange
-setAudioMap x c = c { audioMap = x}
-
--- TODO the resource sets should be lenses so they can be more properly passed around
-{-
-addPrivateResource :: (LocalResourceServers -> LocalResourceServer m)
-    -> (LocalResourceServers -> LocalResourceServer m -> LocalResourceServers)
-    -> (Resources -> ResourceMap m)
-    -> (Resources -> ResourceMap m -> Resources)
-    -> Text
-    -> Blob
-    -> Resource m
-    -> ContextChange
-addPrivateResource getServer setServer getResourceMap setResourceMap group blob resource c = c {
-  localResourceServers = setServer (localResourceServers c) $
-    uploadLocal group (resourceFileName resource) blob (getServer $ localResourceServers c),
-  privateResources = setResourceMap (privateResources c) $
-    insertResource group resource (getResourceMap $ privateResources c)
-}
--}
