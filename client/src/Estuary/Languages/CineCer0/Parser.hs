@@ -68,7 +68,7 @@ ndt = fromRational <$> rationalOrInteger
 sigMayRat :: H (Signal (Maybe Rational))
 sigMayRat =
   rat_sigMayRat <*> rationalOrInteger <|>
-  ndt_sigMayRat <*> ndt <|>
+ -- ndt_sigMayRat <*> ndt <|>
   sigRat_sigMayRat <*> sigRat <|>
 --  sigMayRat_sigMayRat <*> sigMayRat <|>
   (constantSignal . Just) <$> rationalOrInteger
@@ -91,7 +91,7 @@ sigStr = constantSignal <$> string
 sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
-  ndt_sigRat <*> ndt <|>
+ -- ndt_sigRat <*> ndt <|>
   sigRat_sigRat <*> sigRat <|>
   constantSignal <$> rationalOrInteger
 
@@ -104,22 +104,14 @@ rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
--- new fade in (syntax sugar funcs)
-ndt_sigRat :: H (NominalDiffTime -> Signal Rational)
-ndt_sigRat = 
-  fadeIn <$ reserved "fadeIn" <|>
-  fadeOut <$ reserved "fadeOut"
-
-ndt_sigMayRat :: H (NominalDiffTime -> Signal (Maybe Rational))
-ndt_sigMayRat =
-  fadeIn2 <$ reserved "fadeIn" <|>
-  fadeOut2 <$ reserved "fadeOut" 
-
 ---- sine
 
 sigRat_sigRat:: H (Signal Rational -> Signal Rational)
 sigRat_sigRat =
+  fadeIn <$ reserved "fadeIn" <|>
+  fadeOut <$ reserved "fadeOut" <|>
   sine <$ reserved "sin" <|>
+  secsToPercen <$ reserved "secs" <|>
   sigRat_sigRat_sigRat <*> sigRat
 
 sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational)
@@ -134,6 +126,8 @@ sigRat_sigRat_sigRat_sigRat =
 
 sigRat_sigMayRat:: H (Signal Rational -> Signal (Maybe Rational))
 sigRat_sigMayRat =
+  fadeIn2 <$ reserved "fadeIn" <|>
+  fadeOut2 <$ reserved "fadeOut" <|>
   sineMaybe <$ reserved "sin" <|>
   sigRat_sigRat_sigMayRat <*> sigRat
 
@@ -252,13 +246,12 @@ rat_rat_vs_vs :: H (Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
-  ndt_rat_rat_vs_vs <*> ndt <|>
+  -- ndt_rat_rat_vs_vs <*> ndt <|>
   quant <$ reserved "quant" <|>
   playRate <$ reserved "rate"
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_rat_vs_vs =
-  playChop' <$ reserved "chop'" <|>
   rat_rat_rat_rat_vs_vs <*> rationalOrInteger
 
 rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
@@ -269,9 +262,10 @@ rat_rat_rat_rat_vs_vs =
 -- ndt_rat_vs_vs =
 --   playNow <$ reserved "now"
 
-ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
-ndt_rat_rat_vs_vs =
-  ndt_ndt_rat_rat_vs_vs <*> ndt
+-- ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
+-- ndt_rat_rat_vs_vs =
+--   ndt_ndt_rat_rat_vs_vs <*> ndt
 
-ndt_ndt_rat_rat_vs_vs :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
-ndt_ndt_rat_rat_vs_vs = playChopSecs <$ reserved "chopSecs" -- time function
+-- ndt_ndt_rat_rat_vs_vs :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
+-- ndt_ndt_rat_rat_vs_vs = 
+--   ndt_ndt_ndt_rat_rat_vs_vs <*> ndt
