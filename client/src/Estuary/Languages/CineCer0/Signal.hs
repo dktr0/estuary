@@ -21,12 +21,12 @@ instance Monad Signal where
 -}
 
 instance Num a => Num (Signal a) where
-    x + y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) + (y t dur renderTime evalTime anchTime)
-    x * y = \t dur renderTime evalTime anchTime -> (x t dur renderTime evalTime anchTime) * (y t dur renderTime evalTime anchTime)
-    negate x = \t dur renderTime evalTime anchTime -> negate (x t dur renderTime evalTime anchTime)
-    abs x = \t dur renderTime evalTime anchTime -> abs (x t dur renderTime evalTime anchTime)
-    signum x = \t dur renderTime evalTime anchTime -> signum (x t dur renderTime evalTime anchTime)
-    fromInteger x = \t dur renderTime evalTime anchTime -> fromInteger x
+    x + y = \t (dur,sh) renderTime evalTime anchTime -> (x t (dur,sh) renderTime evalTime anchTime) + (y t (dur,sh) renderTime evalTime anchTime)
+    x * y = \t (dur,sh) renderTime evalTime anchTime -> (x t (dur,sh) renderTime evalTime anchTime) * (y t (dur,sh) renderTime evalTime anchTime)
+    negate x = \t (dur,sh) renderTime evalTime anchTime -> negate (x t (dur,sh) renderTime evalTime anchTime)
+    abs x = \t (dur,sh) renderTime evalTime anchTime -> abs (x t (dur,sh) renderTime evalTime anchTime)
+    signum x = \t (dur,sh) renderTime evalTime anchTime -> signum (x t (dur,sh) renderTime evalTime anchTime)
+    fromInteger x = \t (dur,sh) renderTime evalTime anchTime -> fromInteger x
 
 
 ------
@@ -68,7 +68,7 @@ constantSignal' (Just x) = \_ _ _ _ _ -> (Just x)
 -------
 
 freeRun:: Signal (Maybe NominalDiffTime) 
-freeRun t vl render eval anchor = Nothing
+freeRun t (vl,sh) render eval anchor = Nothing
 
 
 ------ Play at Natural Rate and without alteration ------
@@ -81,8 +81,8 @@ freeRun t vl render eval anchor = Nothing
 -- with the video at its 50% (6:00 secs)
 -- ??? the code suggests that the shift is multiples of cycles of the tempo rather than video length ???
 
-playNatural_Pos:: Rational -> Signal (Maybe NominalDiffTime)
-playNatural_Pos sh t vlen render eval anchor =
+playNatural_Pos:: Signal (Maybe NominalDiffTime)
+playNatural_Pos t (vlen,sh) render eval anchor =
     let lenInCycles = (realToFrac vlen :: Rational) * (freq t) 
         ec = (timeToCount t render) --  30
         ecOf = ec - sh
@@ -91,8 +91,8 @@ playNatural_Pos sh t vlen render eval anchor =
         pos = posPerc * lenInCycles -- 4
     in Just $ realToFrac (pos/(freq t)) -- 8 
 
-playNatural_Rate :: Rational-> Signal (Maybe Rational)
-playNatural_Rate sh t vl render eval anchor = Just 1
+playNatural_Rate :: Signal (Maybe Rational)
+playNatural_Rate t (vl,sh) render eval anchor = Just 1
 
 ------ Makes a video shorter or longer acording to given # of cycles ------
 
@@ -104,8 +104,8 @@ playNatural_Rate sh t vl render eval anchor = Just 1
 -- the args for this func are cycle and shift
 
 -- gets the onset time of the video in playEvery
-playEvery_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playEvery_Pos c sh t vl render eval anchor =
+playEvery_Pos:: Rational -> Signal (Maybe NominalDiffTime)
+playEvery_Pos c t (vl,sh) render eval anchor =
     let n = c -- 4
         ec = (timeToCount t render) -- 30 cycles (60 secs if each cycle is 2 secs long)
         ecOf = ec - sh
@@ -116,8 +116,8 @@ playEvery_Pos c sh t vl render eval anchor =
 
 -- gets the rate time for the video in playEvery
 
-playEvery_Rate:: Rational -> Rational -> Signal (Maybe Rational)
-playEvery_Rate c sh t vl render eval anchor =
+playEvery_Rate:: Rational -> Signal (Maybe Rational)
+playEvery_Rate c t (vl,sh) render eval anchor =
     let vLen = realToFrac vl :: Rational
         n = c
         freq' = freq t
@@ -132,8 +132,8 @@ playEvery_Rate c sh t vl render eval anchor =
 -- In this example, 5 cycles will hold the whole video.
 -- this functions only accept from the player one argument: shift
 
-playRound_Pos:: Rational -> Signal (Maybe NominalDiffTime)
-playRound_Pos sh t vlen render eval anchor 
+playRound_Pos:: Signal (Maybe NominalDiffTime)
+playRound_Pos t (vlen,sh) render eval anchor 
     | (freq t) == 0 = Nothing -- double check if this is adequate behaviour
     | otherwise =
     let lenInCycles = (realToFrac vlen :: Rational) * (freq t) 
@@ -145,8 +145,8 @@ playRound_Pos sh t vlen render eval anchor
         pos = posPerc * lenInCycles 
     in Just (realToFrac (pos/(freq t))) 
 
-playRound_Rate:: Rational -> Signal (Maybe Rational)
-playRound_Rate sh t vlen render eval anchor =
+playRound_Rate:: Signal (Maybe Rational)
+playRound_Rate t (vlen,sh) render eval anchor =
     let vl = realToFrac vlen :: Rational
         lenInCycles = (realToFrac vlen :: Rational) * (freq t) 
         newVL = fromIntegral (round lenInCycles) :: Rational -- 6.0
@@ -162,8 +162,8 @@ playRound_Rate sh t vlen render eval anchor =
 -- this functions only accept from the player one argument: shift
 
 ---- round the duration of the video to a power of 2 so it can align with the notion of metre
-playRoundMetre_Pos:: Rational -> Signal (Maybe NominalDiffTime)
-playRoundMetre_Pos sh t vlen render eval anchor
+playRoundMetre_Pos:: Signal (Maybe NominalDiffTime)
+playRoundMetre_Pos t (vlen,sh) render eval anchor
     | (freq t) == 0 = Nothing -- double check if this is adequate behaviour
     | otherwise =
     let lenInCycles = (realToFrac vlen :: Rational) * (freq t) 
@@ -177,8 +177,8 @@ playRoundMetre_Pos sh t vlen render eval anchor
     in Just (realToFrac (pos/(freq t))) 
 
 
-playRoundMetre_Rate:: Rational -> Signal (Maybe Rational)
-playRoundMetre_Rate sh t vlen render eval anchor 
+playRoundMetre_Rate:: Signal (Maybe Rational)
+playRoundMetre_Rate t (vlen,sh) render eval anchor 
     | (freq t) == 0 = Just 0
     | otherwise =
     let vl = realToFrac vlen :: Rational
@@ -214,8 +214,8 @@ getCeilFloor n ln
 
 -- chop 0.75 0.25 3 0 myTempo 13 render eval anchor
 -- new chop!!!
-playChop_Pos::  Rational -> Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playChop_Pos startPos endPos cycles sh t vlen render eval anchor 
+playChop_Pos::  Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
+playChop_Pos startPos endPos cycles t (vlen,sh) render eval anchor 
     | startPos == endPos = Just (vlen * (realToFrac startPos :: NominalDiffTime))
     | (freq t) == 0 = Just (realToFrac startPos*vlen)
     | otherwise =
@@ -239,8 +239,8 @@ intraLoopChop startPos endPos =
       ep = if (sp > ep') then (ep' + 1) else ep' -- 1.25
   in (sp, ep) -- (0.75,1.25)
 
-playChop_Rate::  Rational -> Rational -> Rational -> Rational -> Signal (Maybe Rational)
-playChop_Rate startPos endPos cycles sh t vlen render eval anchor 
+playChop_Rate::  Rational -> Rational -> Rational -> Signal (Maybe Rational)
+playChop_Rate startPos endPos cycles t (vlen,sh) render eval anchor 
     | startPos == endPos = Just 0
     | (freq t) == 0 = Just 0
     | otherwise =
@@ -254,8 +254,8 @@ playChop_Rate startPos endPos cycles sh t vlen render eval anchor
 
 -- vl= 12.5 ;; secs= 3.3;
 secsToPercen:: Signal Rational -> Signal Rational
-secsToPercen secs' t vl r e a = 
-    let secs = secs' t vl r e a
+secsToPercen secs' t (vl,sh) r e a = 
+    let secs = secs' t (vl,sh) r e a
         vlen = realToFrac vl :: Rational
         timeInPercen = (secs / vlen) - (fromIntegral (floor (secs / vlen)) :: Rational)
     in timeInPercen
@@ -263,11 +263,11 @@ secsToPercen secs' t vl r e a =
 ------- rate!! NEW
 
 -- rate 2 0 myTempo 13 render eval anchor
-rate_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
-rate_Pos rate sh t vlen render eval anchor =   Nothing
+rate_Pos:: Rational -> Signal (Maybe NominalDiffTime)
+rate_Pos rate t (vlen,sh) render eval anchor =   Nothing
 
-rate_Rate:: Rational -> Rational -> Signal (Maybe Rational)
-rate_Rate rate sh t vlen render eval anchor = Just rate
+rate_Rate:: Rational -> Signal (Maybe Rational)
+rate_Rate rate t (vlen,sh) render eval anchor = Just rate
 
 
 

@@ -165,7 +165,10 @@ vs_vs =
   (reserved "bold" >> return setBold) <|>
   (reserved "italic" >> return setItalic) <|>
   (reserved "border" >> return setBorder) <|>
-  (reserved "freerun" >> return freerun)
+  (reserved "freerun" >> return freerun) <|>
+  playNatural <$ reserved "natural" <|>
+  playSnap <$ reserved "snap" <|>
+  playSnapMetre <$ reserved "snapMetre"
   -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)
@@ -236,27 +239,30 @@ sigRat_sigRat_sigRat_sigRat_vs_vs =
 
 rat_vs_vs :: H (Rational -> LayerSpec -> LayerSpec)
 rat_vs_vs =
-  playNatural <$ reserved "natural" <|>
-  playSnap <$ reserved "snap" <|>
-  playSnapMetre <$ reserved "snapMetre" <|>
+--  playNatural <$ reserved "natural" <|>
+--  playSnap <$ reserved "snap" <|>
+--  playSnapMetre <$ reserved "snapMetre" <|>
+  playEvery <$ reserved "every" <|>
+  playRate <$ reserved "rate" <|>
   rat_rat_vs_vs <*> rationalOrInteger -- <|>
  -- ndt_rat_vs_vs <*> ndt
 
 rat_rat_vs_vs :: H (Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_vs_vs =
-  playEvery <$ reserved "every" <|>
+ -- playEvery <$ reserved "every" <|>
   rat_rat_rat_vs_vs <*> rationalOrInteger <|>
   -- ndt_rat_rat_vs_vs <*> ndt <|>
-  quant <$ reserved "quant" <|>
-  playRate <$ reserved "rate"
+  quant <$ reserved "quant" -- <|>
+  -- playRate <$ reserved "rate"
 
 rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_rat_vs_vs =
-  rat_rat_rat_rat_vs_vs <*> rationalOrInteger
-
-rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
-rat_rat_rat_rat_vs_vs =
+ -- rat_rat_rat_rat_vs_vs <*> rationalOrInteger <|>
   playChop <$ reserved "chop"
+
+-- rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
+-- rat_rat_rat_rat_vs_vs =
+--   playChop <$ reserved "chop"
 
 -- ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> LayerSpec -> LayerSpec)
 -- ndt_rat_vs_vs =
