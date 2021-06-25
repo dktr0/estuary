@@ -8,6 +8,7 @@ import Control.Monad
 
 import Data.Sequence as Seq
 import Estuary.Types.Tutorial
+import Estuary.Types.Language
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.EnsembleRequest
 import Estuary.Widgets.Editor
@@ -23,8 +24,8 @@ runTutorial t responsesDown = divClass "tutorialContainer" $ do
     cp <- holdDyn 0 pageNavEvents
     let prevPage = fmap (\x -> max (x-1) 0) cp
     let nextPage = fmap (\x -> min (x+1) (nPages-1)) cp
-    navPrev <- liftM (tag $ current prevPage)  $ divClass "prevNextButtons" $ do button "prev" -- *** TODO: should be translated + active/inactive text, disactivated when on first page
-    navNext <- liftM (tag $ current nextPage) $ divClass "prevNextButtons" $ do button "next" -- *** TODO: should be translated + active/inactive
+    navPrev <- liftM (tag $ current prevPage) $ divClass "prevNextButtons" $ do button "←" -- *** TODO: should be translated + active/inactive text, disactivated when on first page
+    navNext <- liftM (tag $ current nextPage) $ divClass "prevNextButtons" $ do button "→" -- *** TODO: should be translated + active/inactive
     let pageNavEvents = leftmost [navPrev,navNext]
     return cp
   let initialPage = runTutorialPage (index (tutorialPages t) 0) responsesDown
