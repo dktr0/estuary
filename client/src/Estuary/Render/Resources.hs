@@ -42,6 +42,7 @@ newResources = do
 
 addResourceOp :: Resources -> ResourceOp -> IO ()
 addResourceOp r op = do
+  putStrLn $ "addResourceOp: " ++ show op
   opsSeq <- takeMVar $ _resourceOps r
   let newOpsSeq = opsSeq |> op
   updateMaps r newOpsSeq
@@ -50,6 +51,7 @@ addResourceOp r op = do
 
 deleteResourceOp :: Resources -> Int -> IO ()
 deleteResourceOp r x = do
+  putStrLn $ "deleteResourceOp: " ++ show x
   opsSeq <- takeMVar $ _resourceOps r
   let newOpsSeq = Seq.deleteAt x opsSeq
   updateMaps r newOpsSeq
@@ -57,7 +59,9 @@ deleteResourceOp r x = do
 
 
 clearResourceOps :: Resources -> IO ()
-clearResourceOps r = setResourceOps r Seq.empty
+clearResourceOps r = do
+  putStrLn "clearResourceOps"
+  setResourceOps r Seq.empty
 
 
 setResourceOps :: Resources -> Seq ResourceOp -> IO ()
@@ -72,6 +76,7 @@ updateMaps r opsSeq = do
   _ <- takeMVar $ maps r
   let emptyMaps = (LocMap.empty,LocMap.empty,LocMap.empty)
   newMaps <- foldM (resourceOpIO r) emptyMaps opsSeq
+  putStrLn $ "updateMaps: " ++ show newMaps
   putMVar (maps r) newMaps
 
 
@@ -110,17 +115,3 @@ accessAudioResource r loc = do
         Loaded -> return $ Right aRes
         otherwise -> return $ Left lStatus
     Nothing -> return (Left $ LoadError $ "no resource at location " <> T.pack (show loc))
-
-
-{-
-
-*** TODO: adapt this to new representations - should be sampleMapToResourceList?
-
-sampleMapToAudioMap :: SampleMap -> IO AudioMap
-sampleMapToAudioMap sm = mapM audioResourceFromMeta c
-  where
-    a = fmap ((zip [0..]) . toList) $ unSampleMap sm -- :: Map Text [(Int,Text)]
-    b = concat $ Map.elems $ Map.mapWithKey (\x ys -> fmap (\(y,url) -> ((x,y),url)) ys) a
-    c = fmap (\url -> AudioMeta ("samples/" <> url) 0.0) $ Map.fromList b
-
--}

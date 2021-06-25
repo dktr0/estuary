@@ -6,6 +6,8 @@ import Data.IORef
 import GHCJS.Types
 import GHCJS.Marshal.Pure
 import GHCJS.Foreign.Callback
+import Language.Javascript.JSaddle.Value
+import Language.Javascript.JSaddle.Object
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -30,26 +32,22 @@ instance Eq AudioResource where
 instance Show AudioResource where
   show = show . audioMeta
 
-audioResourceFromMeta :: AudioMeta -> IO AudioResource
-audioResourceFromMeta x = do
-  y <- newIORef NotLoaded
-  j <- newAudioJSVal
-  return $ AudioResource {
-    audioMeta = x,
-    audioLoadStatus = y,
-    audioJSVal = j
-  }
-
-foreign import javascript unsafe
-  "{}"
-  newAudioJSVal :: IO JSVal
-
 instance Loadable AudioResource where
   loadStatus x = readIORef $ audioLoadStatus x
   newLoadable url _ = do
     x <- audioResourceFromMeta (AudioMeta url 0)
     loadAudioResource x
     return x
+
+audioResourceFromMeta :: AudioMeta -> IO AudioResource
+audioResourceFromMeta x = do
+  y <- newIORef NotLoaded
+  j <- obj >>= toJSVal
+  return $ AudioResource {
+    audioMeta = x,
+    audioLoadStatus = y,
+    audioJSVal = j
+  }
 
 loadAudioResource :: AudioResource -> IO ()
 loadAudioResource x = do
@@ -61,7 +59,7 @@ loadAudioResource x = do
       T.putStrLn $ "loading AudioResource " <> url
       let url = audioURL $ audioMeta x
       r <- arraybufferXMLHttpRequest url
-      cbLoad <- asyncCallback1 $ \_ -> do
+      onLoad r $ \_ -> do
         cbSuccess <- asyncCallback1 $ \y -> do
           _setAudioBuffer (audioJSVal x) y
           writeIORef (audioLoadStatus x) Loaded
@@ -72,13 +70,11 @@ loadAudioResource x = do
         ac <- getGlobalAudioContext
         decodeAudioData ac r cbSuccess cbError
         return ()
-      onLoad r cbLoad
-      cbError <- asyncCallback $ do
+      onError r $ do
         let e = "error loading AudioResource " <> url
         writeIORef (audioLoadStatus x) $ LoadError e
         T.putStrLn e
         return ()
-      onError r cbError
       send r
     _ -> return ()
 

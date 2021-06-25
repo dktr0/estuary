@@ -76,7 +76,7 @@ instance Loadable ResourceList where
       resourceMetas_ = rm
     }
 
-    loadCb <- asyncCallback1 $ \j -> do
+    onLoad rq $ \j -> do
       if isNull j || isUndefined j then do
         let msg = "null/undefined ResourceList at " <> url
         writeIORef ls $ LoadError msg
@@ -93,13 +93,11 @@ instance Loadable ResourceList where
             writeIORef rm x
             T.putStrLn $ "loaded ResourceList " <> url
             successCb rList
-    onLoad rq loadCb
 
-    cbError <- asyncCallback $ do
+    onError rq $ do
       let msg = "error loading " <> url
       writeIORef ls $ LoadError msg
       T.putStrLn msg
-    onError rq cbError
 
     send rq
 

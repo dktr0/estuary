@@ -24,6 +24,7 @@ import Estuary.Types.RenderState
 import Estuary.Render.Renderer
 import Estuary.Render.DynamicsMode
 import Estuary.Render.Resources
+import Estuary.Types.ResourceOp
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
@@ -55,6 +56,8 @@ main = do
   initializeWebAudio wd
   sd <- newSuperDirt
   resources' <- newResources
+  addResourceOp resources' $ ResourceListURL "resourceListTest.json"
+
   let immutableRenderContext = ImmutableRenderContext {
     mainBus = mb,
     webDirt = wd,

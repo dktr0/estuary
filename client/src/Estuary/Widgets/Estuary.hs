@@ -194,9 +194,9 @@ loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
 loadAudioMap = do
   postBuild <- getPostBuild
   -- new/testing:
-  performEvent_ $ ffor postBuild $ \_ -> liftIO $ do
-    rList <- (newLoadable "resourceListTest.json" (\x -> showResourceList x >>= putStrLn) :: IO ResourceList)
-    return ()
+  -- performEvent_ $ ffor postBuild $ \_ -> liftIO $ do
+  --  rList <- (newLoadable "resourceListTest.json" (\x -> showResourceList x >>= putStrLn) :: IO ResourceList)
+  --  return ()
   -- old:
   performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
     loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do

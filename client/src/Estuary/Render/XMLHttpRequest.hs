@@ -26,15 +26,30 @@ foreign import javascript safe
 
 foreign import javascript safe
   "$1.onload = function() { $2($1.response); }"
-  onLoad :: XMLHttpRequest -> Callback (JSVal -> IO ()) -> IO ()
+  _onLoad :: XMLHttpRequest -> Callback (JSVal -> IO ()) -> IO ()
+
+onLoad :: XMLHttpRequest -> (JSVal -> IO ()) -> IO ()
+onLoad xhr cb = do
+  cb' <- asyncCallback1 cb
+  _onLoad xhr cb'
 
 foreign import javascript safe
   "$1.onerror = $2;"
-  onError :: XMLHttpRequest -> Callback (IO ()) -> IO ()
+  _onError :: XMLHttpRequest -> Callback (IO ()) -> IO ()
+
+onError :: XMLHttpRequest -> IO () -> IO ()
+onError xhr cb = do
+  cb' <- asyncCallback cb
+  _onError xhr cb'
 
 foreign import javascript safe
   "$1.onabort = $2;"
-  onAbort :: XMLHttpRequest -> Callback (IO ()) -> IO ()
+  _onAbort :: XMLHttpRequest -> Callback (IO ()) -> IO ()
+
+onAbort :: XMLHttpRequest -> IO () -> IO ()
+onAbort xhr cb = do
+  cb' <- asyncCallback cb
+  _onAbort xhr cb'
 
 foreign import javascript safe
   "$1.send();"
