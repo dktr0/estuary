@@ -23,7 +23,6 @@ data LayerSpec = LayerSpec {
   anchorTime :: (Tempo -> UTCTime -> UTCTime), -- vid reproduction
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
-  shift :: Signal Rational,
   
   mute :: Signal Bool,  -- sound
   volume :: Signal Rational,
@@ -59,9 +58,8 @@ emptyLayerSpec = LayerSpec {
   z = constantSignal 0,
 
   anchorTime = defaultAnchor,
-  playbackPosition = playNatural_Pos,
-  playbackRate = playNatural_Rate,
-  shift = constantSignal 0,
+  playbackPosition = playNatural_Pos 0.0,
+  playbackRate = playNatural_Rate 0.0,
 
   mute = constantSignal True,
   volume = constantSignal 0.0,
@@ -278,12 +276,7 @@ setUnmute v = v { mute = constantSignal False}
 setVolume:: Signal Rational -> LayerSpec -> LayerSpec
 setVolume vol v = v { volume = vol }
 
--- position 
-
-setShift:: Rational -> LayerSpec -> LayerSpec
-setShift sh vs = vs { shift = constantSignal sh}
-
-
+--
 -- Time Functions --
 
 -- anchorTime:: -- parser
@@ -295,38 +288,38 @@ freerun vs = vs {
   playbackPosition = freeRun
 }
 
-playNatural :: LayerSpec -> LayerSpec
-playNatural vs = vs {
-  playbackPosition = playNatural_Pos,
-  playbackRate = playNatural_Rate
+playNatural :: Rational -> LayerSpec -> LayerSpec
+playNatural n vs = vs {
+  playbackPosition = playNatural_Pos n,
+  playbackRate = playNatural_Rate n
 }
 
-playSnap :: LayerSpec -> LayerSpec
-playSnap vs = vs {
-  playbackPosition = playRound_Pos,
-  playbackRate = playRound_Rate
+playSnap :: Rational -> LayerSpec -> LayerSpec
+playSnap n vs = vs {
+  playbackPosition = playRound_Pos n,
+  playbackRate = playRound_Rate n
   }
 
-playSnapMetre :: LayerSpec -> LayerSpec
-playSnapMetre vs = vs {
-  playbackPosition = playRoundMetre_Pos,
-  playbackRate = playRoundMetre_Rate
+playSnapMetre :: Rational -> LayerSpec -> LayerSpec
+playSnapMetre n vs = vs {
+  playbackPosition = playRoundMetre_Pos n,
+  playbackRate = playRoundMetre_Rate n
   }
 
-playEvery :: Rational -> LayerSpec -> LayerSpec
-playEvery m vs = vs {
-  playbackPosition = playEvery_Pos m,
-  playbackRate = playEvery_Rate m
+playEvery :: Rational -> Rational -> LayerSpec -> LayerSpec
+playEvery m n vs = vs {
+  playbackPosition = playEvery_Pos m n,
+  playbackRate = playEvery_Rate m n
   }
 
-playChop :: Rational -> Rational -> Rational -> LayerSpec -> LayerSpec
-playChop k l m vs = vs {
-  playbackPosition = playChop_Pos k l m,
-  playbackRate = playChop_Rate k l m
+playChop :: Rational -> Rational -> Rational -> Rational -> LayerSpec -> LayerSpec
+playChop k l m n vs = vs {
+  playbackPosition = playChop_Pos k l m n,
+  playbackRate = playChop_Rate k l m n
 }
 
-playRate :: Rational -> LayerSpec -> LayerSpec
-playRate m vs = vs {
-  playbackPosition = rate_Pos m,
-  playbackRate = rate_Rate m
+playRate :: Rational -> Rational -> LayerSpec -> LayerSpec
+playRate m n vs = vs {
+  playbackPosition = rate_Pos m n,
+  playbackRate = rate_Rate m n
 }

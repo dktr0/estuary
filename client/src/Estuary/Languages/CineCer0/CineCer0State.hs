@@ -253,6 +253,7 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
 
   if (vw /= 0 && vh /= 0) then do
     lengthOfVideo <- realToFrac <$> getLengthOfVideo j
+
     let aspectRatio = vw/vh
     let heightIfFitsWidth = sw / aspectRatio
     let widthIfFitsHeight = sh * aspectRatio
