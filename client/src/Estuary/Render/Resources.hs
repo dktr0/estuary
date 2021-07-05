@@ -88,26 +88,34 @@ updateMapsCallback r = do
 
 
 resourceOpIO :: Resources -> (LocMap Text,LocMap Text,LocMap Text) -> ResourceOp -> IO (LocMap Text,LocMap Text,LocMap Text)
-resourceOpIO r maps (InsertResourceMeta x) = return $ insertResourceMeta maps x
+resourceOpIO r maps (InsertResource t url loc) = return $ insertResource maps t url loc
+resourceOpIO r maps (AppendResource t url bankName) = return $ appendResource maps t url bankName
 resourceOpIO r maps (DeleteResource t loc) = return $ deleteResource maps t loc
 resourceOpIO r maps (ResourceListURL url) = do
   resList <- load (resourceLists r) url (const $ updateMapsCallback r)
   rMetas <- resourceMetas resList
   return $ Prelude.foldl insertResourceMeta maps rMetas
 
-
 insertResourceMeta :: (LocMap Text,LocMap Text,LocMap Text) -> ResourceMeta -> (LocMap Text,LocMap Text,LocMap Text)
 insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Audio loc) = (LocMap.insert loc url aMap,iMap,vMap)
 insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Image loc) = (aMap,LocMap.insert loc url iMap,vMap)
 insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Video loc) = (aMap,iMap,LocMap.insert loc url vMap)
+
+insertResource :: (LocMap Text,LocMap Text,LocMap Text) -> ResourceType -> Text -> Location -> (LocMap Text,LocMap Text,LocMap Text)
+insertResource (aMap,iMap,vMap) Audio url loc = (LocMap.insert loc url aMap,iMap,vMap)
+insertResource (aMap,iMap,vMap) Image url loc = (aMap,LocMap.insert loc url iMap,vMap)
+insertResource (aMap,iMap,vMap) Video url loc = (aMap,iMap,LocMap.insert loc url vMap)
+
+appendResource :: (LocMap Text,LocMap Text,LocMap Text) -> ResourceType -> Text -> Text -> (LocMap Text,LocMap Text,LocMap Text)
+appendResource (aMap,iMap,vMap) Audio url bankName = (LocMap.append bankName url aMap,iMap,vMap)
+appendResource (aMap,iMap,vMap) Image url bankName = (aMap,LocMap.append bankName url iMap,vMap)
+appendResource (aMap,iMap,vMap) Video url bankName = (aMap,iMap,LocMap.append bankName url vMap)
 
 deleteResource :: (LocMap Text,LocMap Text,LocMap Text) -> ResourceType -> Location -> (LocMap Text,LocMap Text,LocMap Text)
 deleteResource (aMap,iMap,vMap) Audio loc = (LocMap.delete loc aMap,iMap,vMap)
 deleteResource (aMap,iMap,vMap) Image loc = (aMap,LocMap.delete loc iMap,vMap)
 deleteResource (aMap,iMap,vMap) Video loc = (aMap,iMap,LocMap.delete loc vMap)
 
--- accessAudioResource replaces previous 'access' from Estuary.Types.ResourceMap
--- which looked like this: access :: Loadable a => Location -> ResourceMap a -> IO (Either LoadStatus JSVal)
 
 accessAudioResource :: Resources -> Location -> IO (Either LoadStatus AudioResource)
 accessAudioResource r loc = do

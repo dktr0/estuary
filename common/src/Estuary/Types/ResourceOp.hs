@@ -6,7 +6,8 @@ import Estuary.Types.ResourceType
 import Estuary.Types.Location
 
 data ResourceOp =
-  InsertResourceMeta ResourceMeta |
+  InsertResource ResourceType Text Location | -- Text is URL
+  AppendResource ResourceType Text Text | -- first Text is URL, second Text is bankName
   DeleteResource ResourceType Location |
   ResourceListURL Text
   deriving (Show)

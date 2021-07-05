@@ -245,11 +245,7 @@ commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eNam
 commandToRequest _ = Nothing
 
 commandToIO :: Resources -> Terminal.Command -> IO ()
-commandToIO r (Terminal.InsertAudioResource url bankName n) = addResourceOp r $ InsertResourceMeta $ ResourceMeta {
-  resourceURL = url,
-  resourceType = Audio,
-  resourceLocation = (bankName,n)
-  }
+commandToIO r (Terminal.InsertAudioResource url bankName n) = addResourceOp r $ InsertResource Audio url (bankName,n)
+commandToIO r (Terminal.AppendAudioResource url bankName) = addResourceOp r $ AppendResource Audio url bankName
 commandToIO r (Terminal.DeleteAudioResource bankName n) = addResourceOp r $ DeleteResource Audio (bankName,n)
-commandToIO r (Terminal.AppendAudioResource url bankName) = return () -- *** TODO ***
 commandToIO _ _ = return ()
