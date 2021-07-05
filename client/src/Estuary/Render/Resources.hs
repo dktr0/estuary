@@ -89,6 +89,7 @@ updateMapsCallback r = do
 
 resourceOpIO :: Resources -> (LocMap Text,LocMap Text,LocMap Text) -> ResourceOp -> IO (LocMap Text,LocMap Text,LocMap Text)
 resourceOpIO r maps (InsertResourceMeta x) = return $ insertResourceMeta maps x
+resourceOpIO r maps (DeleteResource t loc) = return $ deleteResource maps t loc
 resourceOpIO r maps (ResourceListURL url) = do
   resList <- load (resourceLists r) url (const $ updateMapsCallback r)
   rMetas <- resourceMetas resList
@@ -100,6 +101,10 @@ insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Audio loc) = (LocMap.inser
 insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Image loc) = (aMap,LocMap.insert loc url iMap,vMap)
 insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Video loc) = (aMap,iMap,LocMap.insert loc url vMap)
 
+deleteResource :: (LocMap Text,LocMap Text,LocMap Text) -> ResourceType -> Location -> (LocMap Text,LocMap Text,LocMap Text)
+deleteResource (aMap,iMap,vMap) Audio loc = (LocMap.delete loc aMap,iMap,vMap)
+deleteResource (aMap,iMap,vMap) Image loc = (aMap,LocMap.delete loc iMap,vMap)
+deleteResource (aMap,iMap,vMap) Video loc = (aMap,iMap,LocMap.delete loc vMap)
 
 -- accessAudioResource replaces previous 'access' from Estuary.Types.ResourceMap
 -- which looked like this: access :: Loadable a => Location -> ResourceMap a -> IO (Either LoadStatus JSVal)

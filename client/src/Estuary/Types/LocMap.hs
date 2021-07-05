@@ -47,3 +47,11 @@ insert (bankName,n) a m = Map.insert bankName newBank m
   where
     bank = Map.findWithDefault IntMap.empty bankName m
     newBank = IntMap.insert n a bank
+
+
+-- delete takes a location and deletes the item at that location
+delete :: Location -> LocMap a -> LocMap a
+delete (bankName,n) m = Map.insert bankName newBank m
+  where
+    bank = Map.findWithDefault IntMap.empty bankName m
+    newBank = IntMap.delete n bank

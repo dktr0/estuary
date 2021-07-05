@@ -250,6 +250,6 @@ commandToIO r (Terminal.InsertAudioResource url bankName n) = addResourceOp r $ 
   resourceType = Audio,
   resourceLocation = (bankName,n)
   }
+commandToIO r (Terminal.DeleteAudioResource bankName n) = addResourceOp r $ DeleteResource Audio (bankName,n)
 commandToIO r (Terminal.AppendAudioResource url bankName) = return () -- *** TODO ***
-commandToIO r (Terminal.DeleteAudioResource bankName n) = return () -- *** TODO ***
 commandToIO _ _ = return ()
