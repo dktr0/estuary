@@ -1,7 +1,6 @@
 module Estuary.Types.ResourceOp where
 
 import Data.Text
-import Estuary.Types.ResourceMeta
 import Estuary.Types.ResourceType
 import Estuary.Types.Location
 
