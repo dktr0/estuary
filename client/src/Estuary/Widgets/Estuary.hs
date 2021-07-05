@@ -59,6 +59,10 @@ import Estuary.Types.AudioResource
 import Estuary.Types.AudioMeta
 import Estuary.Types.Loadable
 import Estuary.Render.ResourceList
+import Estuary.Render.Resources
+import Estuary.Types.ResourceMeta
+import Estuary.Types.ResourceType
+import Estuary.Types.ResourceOp
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -124,8 +128,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  terminalContextChangeIO <- performEvent $ fmap liftIO $ fmapMaybe commandToContextChangeIO command
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange,terminalContextChangeIO]
+  performEvent_ $ fmap (liftIO . commandToIO (resources irc)) command
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -240,14 +244,12 @@ commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pw
 commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
 commandToRequest _ = Nothing
 
-commandToContextChangeIO :: Terminal.Command -> Maybe (IO ContextChange)
-{- *** STILL TO REFACTOR - removed for now
-commandToContextChangeIO (Terminal.InsertAudioResource url bankName n) = Just $ do
-  res <- audioResourceFromMeta $ AudioMeta url 0
-  return $ \x -> x { audioMap = insert (bankName,n) res (audioMap x)}
-commandToContextChangeIO (Terminal.DeleteAudioResource bankName n) = Just $ do
-  return $ \x -> x { audioMap = delete (bankName,n) (audioMap x)}
-commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
-  res <- audioResourceFromMeta $ AudioMeta url 0
-  return $ \x -> x { audioMap = append bankName res (audioMap x)} -}
-commandToContextChangeIO _ = Nothing
+commandToIO :: Resources -> Terminal.Command -> IO ()
+commandToIO r (Terminal.InsertAudioResource url bankName n) = addResourceOp r $ InsertResourceMeta $ ResourceMeta {
+  resourceURL = url,
+  resourceType = Audio,
+  resourceLocation = (bankName,n)
+  }
+commandToIO r (Terminal.AppendAudioResource url bankName) = return () -- *** TODO ***
+commandToIO r (Terminal.DeleteAudioResource bankName n) = return () -- *** TODO ***
+commandToIO _ _ = return ()
