@@ -56,7 +56,7 @@ main = do
   initializeWebAudio wd
   sd <- newSuperDirt
   resources' <- newResources
-  addResourceOp resources' $ ResourceListURL "resourceListTest.json" -- ultimately, this will point to default initial resource list to load
+  addResourceOp resources' $ ResourceListURL "samples/resources.json"
 
   let immutableRenderContext = ImmutableRenderContext {
     mainBus = mb,

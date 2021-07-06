@@ -89,9 +89,9 @@ instance Loadable ResourceList where
             let msg = "error decoding ResourceList at " <> url <> " : " <> T.pack e
             writeIORef ls $ LoadError msg
             T.putStrLn $ "*ERROR* " <> msg
-          Success x -> do
+          Success xs -> do
+            writeIORef rm $ adjustResourceURLs url xs
             writeIORef ls Loaded
-            writeIORef rm x
             T.putStrLn $ "loaded ResourceList " <> url
             successCb rList
 
@@ -105,3 +105,15 @@ instance Loadable ResourceList where
     return rList
 
   loadStatus x = readIORef $ resourceListLoadStatus x
+
+
+-- adjustResourceURLs is used (above) to adjust the URL field in the record for each resource
+-- so that it includes everything in the "parent" resource lists URL up to but not including
+-- the filename of that resource list. In this way, the URL fields in resource list JSON files
+-- can be (and must be) relative to the location of the resource list JSON file itself.
+
+adjustResourceURLs :: Text -> [ResourceMeta] -> [ResourceMeta]
+adjustResourceURLs baseURL = fmap f
+  where
+    baseURL' = T.dropWhileEnd (/= '/') baseURL
+    f (ResourceMeta url t loc) = ResourceMeta (baseURL' <> url) t loc
