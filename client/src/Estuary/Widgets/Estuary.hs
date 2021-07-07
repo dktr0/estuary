@@ -248,4 +248,6 @@ commandToIO :: Resources -> Terminal.Command -> IO ()
 commandToIO r (Terminal.InsertAudioResource url bankName n) = addResourceOp r $ InsertResource Audio url (bankName,n)
 commandToIO r (Terminal.AppendAudioResource url bankName) = addResourceOp r $ AppendResource Audio url bankName
 commandToIO r (Terminal.DeleteAudioResource bankName n) = addResourceOp r $ DeleteResource Audio (bankName,n)
+commandToIO r (Terminal.ResList url) = addResourceOp r $ ResourceListURL url
+commandToIO r Terminal.ClearResources = clearResourceOps r
 commandToIO _ _ = return ()

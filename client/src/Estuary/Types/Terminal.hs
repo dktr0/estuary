@@ -46,6 +46,8 @@ data Command =
   InsertAudioResource Text Text Int | -- "url" [bankName] [n]
   DeleteAudioResource Text Int | -- [bankName] [n]
   AppendAudioResource Text Text | -- "url" [bankName]
+  ResList Text | -- "url"
+  ClearResources |
   ResetZones |
   ResetViews |
   ResetTempo |
@@ -85,6 +87,8 @@ terminalCommand =
   <|> insertAudioResourceParser
   <|> deleteAudioResourceParser
   <|> appendAudioResourceParser
+  <|> resListParser
+  <|> clearResourcesParser
   <|> resetzonesParser
   <|> resetviewsParser
   <|> resettempoParser
@@ -425,6 +429,20 @@ appendAudioResourceParser'' = appendAudioResourceFunc <$ reserved "appendaudiore
 
 appendAudioResourceFunc :: Text -> Text -> Command
 appendAudioResourceFunc x y = AppendAudioResource x y
+
+
+-- resList
+
+resListParser :: H Command
+resListParser =
+  ((reserved "reslist" >> return ResList) <*> textLiteral) <|>
+  (reserved "reslist" >> fatal "!reslist requires a URL argument")
+
+
+-- clearResources
+
+clearResourcesParser :: H Command
+clearResourcesParser = reserved "clearresources" >> return ClearResources
 
 
 -- helper funcs
