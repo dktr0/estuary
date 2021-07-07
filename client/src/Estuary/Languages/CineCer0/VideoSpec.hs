@@ -312,10 +312,16 @@ playEvery m n vs = vs {
   playbackRate = playEvery_Rate m n
   }
 
-playChop :: Rational -> Rational -> Rational -> Rational -> LayerSpec -> LayerSpec
-playChop k l m n vs = vs {
-  playbackPosition = playChop_Pos k l m n,
-  playbackRate = playChop_Rate k l m n
+playChop :: Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
+playChop l m n vs = vs {
+  playbackPosition = playChop_Pos l m n,
+  playbackRate = playChop_Rate l m n
+}
+
+playChop' :: Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
+playChop' m n vs = vs {
+  playbackPosition = playChop_Pos' m n,
+  playbackRate = playChop_Rate' m n
 }
 
 playRate :: Rational -> Rational -> LayerSpec -> LayerSpec

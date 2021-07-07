@@ -103,6 +103,7 @@ playNatural_Rate sh t vl render eval anchor = Just 1
 -- will align with the begining of a cycle.
 -- the args for this func are cycle and shift
 
+
 -- gets the onset time of the video in playEvery
 playEvery_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
 playEvery_Pos sh c t vl render eval anchor =
@@ -212,20 +213,35 @@ getCeilFloor n ln
 
 -- Similar to the one above but it takes a start and an end position, normalised from 0 to 1
 
--- chop 0.75 0.25 3 0 myTempo 13 render eval anchor
--- new chop!!!
-playChop_Pos::  Rational -> Rational -> Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playChop_Pos startPos endPos cycles sh t vlen render eval anchor 
-    | startPos == endPos = Just (vlen * (realToFrac startPos :: NominalDiffTime))
-    | (freq t) == 0 = Just (realToFrac startPos*vlen)
+playChop_Pos'::  Signal Rational -> Signal Rational -> Signal (Maybe NominalDiffTime)
+playChop_Pos' startPos' endPos' t vlen render eval anchor = 
+  let startPos = startPos' t vlen render eval anchor
+      endPos = endPos' t vlen render eval anchor
+      lenInCycles = (realToFrac vlen :: Rational) * (freq t) -- 6.5
+      (s,e) = intraLoopChop startPos endPos
+      start = lenInCycles * s  -- 6.5 * 0.75
+      end = lenInCycles * e   -- 6.5 * 1.25
+      cycles = end - start
+  in playChop_Pos startPos' endPos' (constantSignal cycles) t vlen render eval anchor
+
+playChop_Rate':: Signal Rational -> Signal Rational -> Signal (Maybe Rational)
+playChop_Rate' startPos endPos t vlen render eval anchor 
+    | startPos t vlen render eval anchor  == endPos t vlen render eval anchor = Just 0
+    | (freq t) == 0 = Just 0
+    | otherwise = Just 1
+
+playChop_Pos::  Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe NominalDiffTime)
+playChop_Pos startPos endPos cycles t vlen render eval anchor 
+    | startPos t vlen render eval anchor  == endPos t vlen render eval anchor = Just (vlen * (realToFrac (startPos t vlen render eval anchor) :: NominalDiffTime))
+    | (freq t) == 0 = Just (realToFrac (startPos t vlen render eval anchor)*vlen)
     | otherwise =
         let lenInCycles = (realToFrac vlen :: Rational) * (freq t) -- 6.5
-            (s,e) = intraLoopChop startPos endPos
+            (s,e) = intraLoopChop (startPos t vlen render eval anchor) (endPos t vlen render eval anchor)
             start = lenInCycles * s  -- 6.5 * 0.75
             end = lenInCycles * e   -- 6.5 * 1.25
-            n = cycles -- 2
+            n = (cycles t vlen render eval anchor) -- 2
             ec = (timeToCount t render) -- 30.7
-            ecOf = ec - sh   -- 30.7
+            ecOf = ec --  - sh   --  shift value used to be here
             floored = floor (ecOf/n)       -- 30.7 /2 = 15 
             nlb = (fromIntegral floored :: Rational)*n -- 15 * 2 = 30
             pos' = start +((end - start) * ((ecOf-nlb)/n)) -- 0.75 + (1.25 - 0.75) * (0.35)
@@ -239,14 +255,14 @@ intraLoopChop startPos endPos =
       ep = if (sp > ep') then (ep' + 1) else ep' -- 1.25
   in (sp, ep) -- (0.75,1.25)
 
-playChop_Rate::  Rational -> Rational -> Rational -> Rational -> Signal (Maybe Rational)
-playChop_Rate startPos endPos cycles sh t vlen render eval anchor 
-    | startPos == endPos = Just 0
+playChop_Rate::  Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational)
+playChop_Rate startPos endPos cycles t vlen render eval anchor 
+    | startPos t vlen render eval anchor  == endPos t vlen render eval anchor = Just 0
     | (freq t) == 0 = Just 0
     | otherwise =
     let lenInCycles = (realToFrac vlen :: Rational) * (freq t)
-        dur = (lenInCycles * endPos) - (lenInCycles * startPos)
-        rate' = dur / cycles
+        dur = (lenInCycles * (endPos t vlen render eval anchor)) - (lenInCycles * (startPos t vlen render eval anchor))
+        rate' = dur / (cycles t vlen render eval anchor)
         rate = rate' * (signum rate')
     in Just (realToFrac rate)
 
@@ -260,7 +276,7 @@ secsToPercen secs' t vl r e a =
         timeInPercen = (secs / vlen) - (fromIntegral (floor (secs / vlen)) :: Rational)
     in timeInPercen
 
-------- rate!! NEW
+
 
 -- rate 2 0 myTempo 13 render eval anchor
 rate_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
@@ -270,8 +286,13 @@ rate_Rate:: Rational -> Rational -> Signal (Maybe Rational)
 rate_Rate rate sh t vlen render eval anchor = Just rate
 
 
-
 -- helpers to transform Signal
+
+multi:: Signal Rational -> Signal Rational -> Signal Rational
+multi a b = a * b
+
+multi':: Signal Rational -> Signal Rational -> Signal (Maybe Rational)
+multi' a b t vl rTime eTime aTime = Just $ multi a b t vl rTime eTime aTime
 
 sigMayToSig:: Signal (Maybe Rational) -> Signal Rational
 sigMayToSig x = \t vl rT eT aT -> mayToRat (x t vl rT eT aT)
@@ -305,30 +326,14 @@ range min max input t vl rTime eTime aTime =
           add = mult + (min t vl rTime eTime aTime)
 
 
------- Envelope in processss!!!!
-
--- envelope:: [NominalDiffTime] -> [Rational] -> Signal Rational
--- envelope durs points = \t vl renderTime evalTime anchorTime ->
---     let startTime = anchorTime :: UTCTime
---         durVals = map (\durVal -> durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)) durs
---         endTime = addUTCTime (sum durVals) anchorTime
---     in ramps renderTime startTime endTime durVals points
-
--- ramps:: UTCTime -> UTCTime -> UTCTime -> Rational -> Rational -> Signal Rational
--- ramps renderTime startTime endTime durs points
---     | startTime >= renderTime = head points -- start val
---     | endTime <= renderTime = last points  -- end val
---     | otherwise =                            -- durs: [1]   0.4 vals: [0.6, 0.3]
---         let timeMarks = scanl (+) 0 durs     -- [0,1]                               -- [0,1.5,4.5,6.5,7.5,10.0]  -- durs [1.5,3,2,1,2.5] -- rTime 3.2 -- vals [0,0.8,0.4,0.9,0.5,1.0]
---             before = filter (renderTime >) timeMarks     -- [0]                   -- [0,1.5]
---             after = filter (renderTime <=) timeMarks     -- [1]                   -- [4.5,6.5,7.5,10.0]
---             vInds = ((length before)-1, length before)   -- (0,1)                   -- (1,2)
---             vals = (points !! (fst vInds), points !! (snd vInds)) -- (0.6,0.3)                         -- (0.8,0.4)  -- dur: 3 startTime: utc + 1.5
---             ramp' = ramp (fst vInds) (addUTCTime (sum before) startTime) (addUTCTime (last timeMarks) startTime) (fst vals) (snd vals)
-
-
 rampMaybe :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
 rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime
+
+-- ramps:: [NominalDiffTime] -> [Rational] -> Signal Rational
+-- -- ramps durs [] t vl r e a = "This should be an error"
+-- ramps [] vals t vl r e a = last vals
+-- ramps durs vals t vl r e a = if endOfDur > r then ramp (head durs) (head vals) (head $ tail vals) t vl r e a else ramps (tail durs) (tail vals) t vl r e endOfDur
+--     where endOfDur = addUTCTime (realToFrac $ head durs) a -- anchor time plus duration of previous ramp
 
 ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
@@ -367,10 +372,6 @@ fadeOut2 dur t vl rT eT aT = rampMaybe dur' 0 1 t vl rT eT aT
     where dur' = realToFrac (dur t vl rT eT aT) :: NominalDiffTime
 
 
--- clock project
-
--- clock:: UTCTime -> UTCTime -> UTCTime -> Text
--- clock renderT evalT anchorT =
 
 --------- Helper Functions ------------
 
