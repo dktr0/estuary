@@ -42,11 +42,8 @@ newWebDirt n = do
   liftIO $ js_newWebDirt ctx n
 
 foreign import javascript unsafe
-  "$r = new WebDirt('samples/sampleMap.json','samples',0,null,0.010,$1,$2)"
+  "$r = new WebDirt({ latency: 0, maxLateness: 0.010, audioContext: $1, destination: $2 });"
   js_newWebDirt :: AudioContext -> Node -> IO WebDirt
-  -- 0 is additional delay/latency added to all events sent to WebDirt
-  -- 0.010 is maximum lateness after which WebDirt silently drops sample events
-  -- JSVal is web audio node provided as a sink/destination for all synths
 
 foreign import javascript unsafe
   "$1.initializeWebAudio()"
