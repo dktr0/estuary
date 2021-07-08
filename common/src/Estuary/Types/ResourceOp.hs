@@ -5,6 +5,7 @@ module Estuary.Types.ResourceOp where
 import Data.Text
 import GHC.Generics
 import Data.Aeson
+import Data.Sequence
 
 import Estuary.Types.ResourceType
 import Estuary.Types.Location
@@ -20,5 +21,5 @@ instance ToJSON ResourceOp where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON ResourceOp
 
-defaultResourceOps :: [ResourceOp]
-defaultResourceOps = [ResourceListURL "samples/resources.json"]
+defaultResourceOps :: Seq ResourceOp
+defaultResourceOps = Data.Sequence.singleton $ ResourceListURL "samples/resources.json"

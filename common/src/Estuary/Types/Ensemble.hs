@@ -19,6 +19,7 @@ import GHC.Generics
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Witherable as Witherable
+import Data.Sequence
 
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
@@ -32,7 +33,7 @@ data Ensemble = Ensemble {
   tempo :: Tempo,
   zones :: IntMap.IntMap Definition,
   views :: Map.Map Text View,
-  resourceOps :: [ResourceOp],
+  resourceOps :: Seq ResourceOp,
   chats :: [Chat],
   participants :: Map.Map Text Participant,
   anonymousParticipants :: Int
@@ -54,7 +55,7 @@ instance FromJSON Ensemble where
     views'' <- mapM (\v -> (Just <$> parseJSON v) <|> return Nothing) views' -- Map Text (Maybe View)
     let views''' = Witherable.catMaybes views'' -- Map Text View
     -- parse list of resourceOps, silently omitting any that fail to parse (in order to allow evolution of ResourceOp type)
-    resourceOps' <- o .:? "resourceOps" .!= []
+    resourceOps' <- o .:? "resourceOps" .!= Data.Sequence.empty
     resourceOps'' <- mapM (\v -> (Just <$> parseJSON v) <|> return Nothing) resourceOps'
     let resourceOps''' = Witherable.catMaybes resourceOps'' -- [ResourceOp]
     chats' <- o .:? "chats" .!= []

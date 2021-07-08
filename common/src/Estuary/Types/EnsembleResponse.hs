@@ -7,6 +7,7 @@ import Data.Text (Text)
 import Data.Maybe (mapMaybe,listToMaybe)
 import GHC.Generics
 import Data.Aeson
+import Data.Sequence
 
 import Estuary.Types.View
 import Estuary.Types.Tempo
@@ -28,7 +29,7 @@ data EnsembleResponse =
   ResetViewsResponse |
   ResetTempoResponse Tempo |
   ResetResponse Tempo |
-  ResourceOps [ResourceOp]
+  ResourceOps (Seq ResourceOp)
   deriving (Generic,Show)
 
 instance ToJSON EnsembleResponse where
@@ -63,6 +64,6 @@ justViews = mapMaybe f
         f _ = Nothing
 
 lastTempoChange :: [EnsembleResponse] -> Maybe Tempo
-lastTempoChange = listToMaybe . reverse . mapMaybe f
+lastTempoChange = listToMaybe . Prelude.reverse . mapMaybe f
   where f (TempoRcvd theTempo) = Just theTempo
         f _ = Nothing
