@@ -7,23 +7,24 @@ import Control.Applicative
 import Data.Time
 import Data.Text
 import TextShow
-
 import Data.Tempo
+import Data.Text (Text)
 
 import Estuary.Languages.CineCer0.Signal
 
 --------- change String to Text throughout the pipeline!!!!!
 data Colour = Colour (Signal String) | ColourRGB (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSL (Signal Rational) (Signal Rational) (Signal Rational) | ColourRGBA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSLA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational)
 
--- layer: right is video left is text!!!!!
+data Source = VideoSource Text | ImageSource Text | TextSource Text deriving (Show, Eq)
+
 data LayerSpec = LayerSpec {
-  layer :: Either String String,  ----- both are synonims of Text
+  source :: Source,
   z :: Signal Int,
 
   anchorTime :: (Tempo -> UTCTime -> UTCTime),
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
-  
+
   mute :: Signal Bool,
   volume :: Signal Rational,
 
@@ -50,11 +51,11 @@ data LayerSpec = LayerSpec {
   }
 
 instance Show LayerSpec where
-  show s = show $ layer s
+  show s = show $ source s
 
 emptyLayerSpec :: LayerSpec
 emptyLayerSpec = LayerSpec {
-  layer = Right "",
+  source = VideoSource "",
   z = constantSignal 0,
 
   anchorTime = defaultAnchor,
@@ -85,21 +86,21 @@ emptyLayerSpec = LayerSpec {
   mask = emptyText
 }
 
-stringToLayerSpec :: String -> LayerSpec
-stringToLayerSpec x = emptyLayerSpec { layer = Right x }
+videoToLayerSpec :: Text -> LayerSpec
+videoToLayerSpec x = emptyLayerSpec { source = VideoSource x}
 
-textToLayerSpec :: String -> LayerSpec
-textToLayerSpec x = emptyLayerSpec { layer = Left x }
+imageToLayerSpec :: Text -> LayerSpec
+imageToLayerSpec x = emptyLayerSpec { source = ImageSource x}
 
-videoToLayerSpec :: String -> LayerSpec
-videoToLayerSpec x = emptyLayerSpec { layer = Right x }
+textToLayerSpec :: Text -> LayerSpec
+textToLayerSpec x = emptyLayerSpec { source = TextSource x}
 
 -- it should be just five arguments _ _ _ _ _
 emptyText :: Signal Text
 emptyText _ _ _ _ _ = Data.Text.empty
 
 --
--- Style Functions --
+-- Geometric Functions --
 
 setPosX :: Signal Rational -> LayerSpec -> LayerSpec
 setPosX s v = v { posX = s }
@@ -154,10 +155,12 @@ shiftSize s vs = vs {
 setZIndex :: Signal Int -> LayerSpec -> LayerSpec
 setZIndex n tx = tx { z = n }
 
+--
+-- Text-only Functions --
+
 setFontFamily :: Signal String -> LayerSpec -> LayerSpec
 setFontFamily s tx = tx { fontFamily = s }
 
--- maybe not
 setFontSize :: Signal Rational -> LayerSpec -> LayerSpec
 setFontSize s tx = tx { fontSize = s }
 
@@ -188,7 +191,8 @@ setRGBA r g b a tx = tx { colour = ColourRGBA r g b a}
 setHSLA :: Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
 setHSLA h s l a tx = tx { colour = ColourHSLA h s l a}
 
--- Filters
+--
+-- Video-styling Functions --
 
 setOpacity :: Signal (Maybe Rational) -> LayerSpec -> LayerSpec
 setOpacity s v = v { opacity = s }
@@ -239,7 +243,8 @@ shiftSaturate s v = v {
   }
 
 
--- Masks
+--
+-- Masks for Video Functions --
 
 circleMask :: Signal Rational -> LayerSpec -> LayerSpec
 circleMask s vs = vs {
@@ -265,7 +270,8 @@ rectMask m n s t vs = vs {
   mask = \ a b c d e -> "clip-path: inset(" <> (showt (realToFrac (((m a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((n a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((s a b c d e)*100) :: Rational) :: Double)) <> "% " <> (showt (realToFrac (((t a b c d e)*100) :: Rational) :: Double)) <> "%);"
   }
 
--- audio --  keep it simple just mute, unmute and volume
+--
+-- Audio --
 
 setMute :: LayerSpec -> LayerSpec
 setMute v = v { mute = constantSignal True }

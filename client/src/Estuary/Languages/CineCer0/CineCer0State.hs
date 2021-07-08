@@ -22,15 +22,15 @@ import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.Signal
 
 
--- A JSVideo is just a DOM 'video' element (a wrapped JSVal handle to an Layer in the browser).
--- Because it is an instance of PToJSVal and PFromJSVal we can define Javascript FFI functions
--- with JSVideo values as arguments, to query and set the status/activity of the video.
-
 newtype VideoLayer = VideoLayer { videoJSVal :: JSVal }
+newtype ImageLayer = ImageLayer { imageJSVal :: JSVal }
 newtype TextLayer = TextLayer { textJSVal :: JSVal }
 
 instance PToJSVal VideoLayer where pToJSVal (VideoLayer x) = x
 instance PFromJSVal VideoLayer where pFromJSVal = VideoLayer
+
+instance PToJSVal ImageLayer where pToJSVal (ImageLayer x) = x
+instance PFromJSVal ImageLayer where pFromJSVal = ImageLayer
 
 instance PToJSVal TextLayer where pToJSVal (TextLayer x) = x
 instance PFromJSVal TextLayer where pFromJSVal = TextLayer
@@ -45,35 +45,39 @@ foreign import javascript unsafe
   "$2.appendChild($1); $1.play();"
   appendVideo :: VideoLayer -> HTMLDivElement -> IO ()
 foreign import javascript unsafe
+  "var image = document.createElement('image'); video.setAttribute('src',$1); $r=image;"
+  makeImage :: Text -> IO ImageLayer
+foreign import javascript unsafe
+  "$2.appendChild($1);"
+  appendImage :: ImageLayer -> HTMLDivElement -> IO ()
+foreign import javascript unsafe
   "var text = document.createElement('div'); text.innerText = $1; $r=text;"
   makeText :: Text -> IO TextLayer
 foreign import javascript unsafe
   "$2.appendChild($1);"
   appendText :: TextLayer -> HTMLDivElement -> IO ()
-  -- remove js funcs might become remove Layer
 foreign import javascript unsafe "$1.removeChild($2)" removeVideo :: HTMLDivElement -> VideoLayer -> IO ()
-foreign import javascript unsafe "$1.removeChild($2)" removeText :: HTMLDivElement -> TextLayer -> IO ()
 foreign import javascript unsafe "$1.style = $2;" _setVideoStyle :: VideoLayer -> Text -> IO ()
-foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> Text -> IO () 
 foreign import javascript unsafe "$1.muted = $2;" muteVideo :: VideoLayer -> Bool -> IO ()
 foreign import javascript unsafe "$1.volume = $2" videoVolume :: VideoLayer -> Double -> IO ()
 foreign import javascript unsafe "$1.pause(); $1.src = $2; $1.load(); $1.play();" changeVideoSource :: VideoLayer -> Text -> IO ()
-foreign import javascript unsafe "$1.textContent = $2;" changeTextSource :: TextLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.videoWidth" videoWidth :: VideoLayer -> IO Double
 foreign import javascript unsafe "$1.videoHeight" videoHeight :: VideoLayer -> IO Double
-foreign import javascript unsafe "$1.offsetWidth" textWidth :: TextLayer -> IO Double
-foreign import javascript unsafe "$1.offsetHeight" textHeight :: TextLayer -> IO Double
-
 foreign import javascript unsafe "$1.playbackRate" getVideoPlaybackRate :: VideoLayer -> IO Double
 foreign import javascript safe "$1.playbackRate = $2;" setVideoPlaybackRate :: VideoLayer -> Double -> IO ()
 foreign import javascript unsafe "$1.currentTime" getVideoPlaybackPosition :: VideoLayer -> IO Double
 foreign import javascript unsafe "$1.currentTime = $2;" setVideoPlaybackPosition :: VideoLayer -> Double -> IO ()
 foreign import javascript unsafe "$1.duration" getLengthOfVideo :: VideoLayer -> IO Double
-
-
--- A CineCer0Video is a JSVideo (the DOM element) together with some other things we need to keep
--- track of from frame to frame, such as what the style was in the previous frame and whether it is
--- too soon (or not) to set the playback position again.
+foreign import javascript unsafe "$1.removeChild($2)" removeImage :: HTMLDivElement -> ImageLayer -> IO ()
+foreign import javascript unsafe "$1.style = $2;" _setImageStyle ::ImageLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.src = $2; $1.load();" changeImageSource :: ImageLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.imageWidth" imageWidth :: ImageLayer -> IO Double
+foreign import javascript unsafe "$1.imageHeight" imageHeight :: ImageLayer -> IO Double
+foreign import javascript unsafe "$1.removeChild($2)" removeText :: HTMLDivElement -> TextLayer -> IO ()
+foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.textContent = $2;" changeTextSource :: TextLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.offsetWidth" textWidth :: TextLayer -> IO Double
+foreign import javascript unsafe "$1.offsetHeight" textHeight :: TextLayer -> IO Double
 
 data CineCer0Video = CineCer0Video {
   videoLayer :: VideoLayer,
@@ -82,16 +86,21 @@ data CineCer0Video = CineCer0Video {
   previousVol :: Double
   }
 
+data CineCer0Image = CineCer0Image {
+  imageLayer :: ImageLayer,
+  positionLockImg :: Int,
+  previousStyleImg :: Text
+  }
+
 data CineCer0Text = CineCer0Text {
   textLayer :: TextLayer,
   positionLockTx :: Int,
   previousStyleTx :: Text
   }
 
-
 addVideo :: HTMLDivElement -> LayerSpec -> IO CineCer0Video
 addVideo j os = do
-  let url = layerToString $ layer os
+  let url = sourceToText $ source os
   x <- makeVideo url
   muteVideo x True
   appendVideo x j
@@ -102,15 +111,20 @@ addVideo j os = do
     previousVol = 0
   }
 
--- addInvisibleText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
--- addInvisibleText j ls = do
---   cct <- addText j ls
---   let inv = invisibleText cct 
---   return inv
+addImage :: HTMLDivElement -> LayerSpec -> IO CineCer0Image
+addImage j os = do
+  let url = sourceToText $ source os
+  x <- makeImage url
+  appendImage x j
+  return $ CineCer0Image {
+    imageLayer = x,
+    positionLockImg = 0,
+    previousStyleImg = ""
+ }
 
 addText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
 addText j os = do
-  let texto = layerToString $ layer os
+  let texto = sourceToText $ source os
   x <- makeText texto
   appendText x j
   return $ CineCer0Text {
@@ -119,23 +133,23 @@ addText j os = do
     previousStyleTx = ""
   }
 
+sourceToText :: Source -> Text
+sourceToText (VideoSource x) = x
+sourceToText (ImageSource x) = x
+sourceToText (TextSource x) = x
+
+
+-- addInvisibleText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
+-- addInvisibleText j ls = do
+--   cct <- addText j ls
+--   let inv = invisibleText cct
+--   return inv
+--
 -- invisibleText :: CineCer0Text -> IO CineCer0Text
--- invisibleText tx = do 
+-- invisibleText tx = do
 --     _setTextStyle (textLayer tx) "visibility: hidden;"
 --     return $ tx { previousStyleTx = "" }
 
-layerToString:: Either String String -> Text
-layerToString (Right x) = T.pack $ x
-layerToString (Left x) = T.pack $ x
-
-
-getLayerString:: Either String String -> String
-getLayerString (Right x) = x
-getLayerString (Left x) = x
-
-ifEmptyLayer:: Either String String -> Bool
-ifEmptyLayer (Right x) = x == ""
-ifEmptyLayer (Left x) = x == ""
 
 setVideoRateAndPosition :: CineCer0Video -> Double -> Maybe Double -> Maybe Double -> IO CineCer0Video
 setVideoRateAndPosition v vLength (Just r) (Just p) = do
@@ -176,6 +190,13 @@ setVideoVol v x = do
     videoVolume j x
     return $ v { previousVol = x }
 
+-- setImageStyle :: CineCer0Image -> Text -> IO CineCer0Image
+-- setImageStyle img x = do
+--   if previousStyleImg tx == x then return tx
+--   else do
+--     _setImageStyle (imageLayer tx) x
+--     return $ tx { preciousStyleImg = x }
+
 setTextStyle :: CineCer0Text -> Text -> IO CineCer0Text
 setTextStyle tx x = do
   if previousStyleTx tx == x then return tx
@@ -185,14 +206,14 @@ setTextStyle tx x = do
 
 updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
- let j = textLayer tx 
+ let j = textLayer tx
  tw <- textWidth j
  th <- textHeight j
 
 -- if (tw /= 0) then (putStrLn "WIIIDTHHHH!!!!") else (putStrLn "no width yet")
 
  -- putStrLn $ show (T.split (== ' ') $ layerToString (layer s))
- -- putStrLn $ (show $ tw) <> " width" 
+ -- putStrLn $ (show $ tw) <> " width"
  -- putStrLn $ (show $ th) <> " height"
  -- putStrLn $ (show $ sw) <> " div width"
  -- putStrLn $ (show $ sh) <> " div height"
@@ -229,7 +250,7 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let y = realToFrac $ (posY s t lengthOfLayer rTime eTime aTime)
 
    -- calculate xPos
-  let xPos' = sw - tw 
+  let xPos' = sw - tw
   let xPos  = xPos' * (0.5 + (x*0.5))
   let leftX = xPos
  -- calculate yPos
@@ -322,6 +343,8 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
 videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
 
+-- imageStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
+-- imageStyle x y w h f z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> z
 
 generateZIndex :: Int -> Text
 generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
@@ -330,8 +353,8 @@ generateFontSize :: Double -> Text
 generateFontSize size = "; font-size: " <> T.pack (show (size)) <> "em;"
 
 generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text  -- this string needs to be a text!!!!
-generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"  
-  where string = (str t ll rT eT aT) 
+generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"
+  where string = (str t ll rT eT aT)
 generateColours (ColourRGB r g b) t ll rT eT aT = "; color: rgb(" <> (showt red) <> "," <> (showt green) <> "," <> (showt blue) <> ");"
   where red = realToFrac ((r * 255) t ll rT eT aT) :: Double
         green = realToFrac ((g * 255) t ll rT eT aT) :: Double
@@ -370,96 +393,124 @@ generateBorder (False) = ""
 textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
 textStyle x y w h ff stk bld itc brd clr sz z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt ff <> stk <> bld <> itc <> brd <> clr <> sz <> z <> ";"
 
-
 -- textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
 -- textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; border: 1px solid #cccccc; position: absolute; translate(-50%, -50%); text-align: center; width: " <> showt (w) <> "px; height:" <> showt (h) <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> ";"
-
-
 -- these two might become only one!
 
 onlyChangedLayerSources :: LayerSpec -> LayerSpec -> Maybe LayerSpec
 onlyChangedLayerSources nSpec oSpec
-  | (layer nSpec /= layer oSpec) = Just nSpec
-  | (layer nSpec == layer oSpec) = Nothing
+  | (source nSpec /= source oSpec) = Just nSpec
+  | (source nSpec == source oSpec) = Nothing
 
--- A CineCer0State represents the entire state corresponding to a CineCer0 program
--- (each statement separated by ; in the program is one element within various )
 data CineCer0State = CineCer0State {
   container :: HTMLDivElement,
   videos :: IntMap CineCer0Video,
+  images :: IntMap CineCer0Image,
   previousLayerSpecs :: IntMap LayerSpec,
   texts :: IntMap CineCer0Text,
   previousTextSpecs :: IntMap LayerSpec
   }
 
-
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
   container = j,
   videos = empty,
+  images = empty,
   previousLayerSpecs = empty,
   texts = empty,
   previousTextSpecs = empty
   }
 
-textOrVideo:: IntMap LayerSpec -> (IntMap LayerSpec, IntMap LayerSpec)
-textOrVideo layerSpecMap = partition (\x -> layerParti (layer x)) layerSpecMap
+--
+--   textOrVideo:: IntMap LayerSpec -> (IntMap LayerSpec, IntMap LayerSpec)
+--   textOrVideo layerSpecMap = partition (\x -> layerParti (layer x)) layerSpecMap
+--
 
-layerParti:: Either String String -> Bool
-layerParti (Right x)= True
-layerParti (Left x) = False
+-- getTypeOfSource :: IntMap LayerSpec -> IntMap LayerSpec
+-- getTypeOfSource layerSpecMap = fmap (\x -> isVideo (source x)) layerSpecMap
+
+isVideo :: IntMap LayerSpec -> IntMap LayerSpec
+isVideo layerSpecMap = IntMap.filter (\x -> getVideo (source x) == True) layerSpecMap
+
+getVideo :: Source -> Bool
+getVideo (VideoSource x) = True
+getVideo _ = False
+
+isText :: IntMap LayerSpec -> IntMap LayerSpec
+isText layerSpecMap = IntMap.filter (\x -> getText (source x) == True) layerSpecMap
+
+getText :: Source -> Bool
+getText (TextSource x) = True
+getText _ = False
+--
+-- IntMap.filter (\x -> ifEmptyLayer (source x) == False) newVideoSpecs
+
+-- you need to extract the source from the LayerSpec and then call functions designed to confirm if that source is a particular type of source, ie. further boolean tests of the type Source -> Bool.
+
+-- you don't need 'filterSource' - if you have a boolean test (eg. isVideo :: LayerSpec -> Bool) then the "built-in" filtering functions over structures are sufficient. The IntMap module already has a 'filter' function that takes a boolean test (most collections in Haskell will have such a function - often literally called 'filter' - the Filterable typeclass defined in the Witherable module is a very generalized - and thus very useful/reusable - form of this
 
 
--- used when a CineCer0 program has been removed from the situation
--- (the CineCer0State record is no longer usable after this action and should be discarded)
+
+getLayerText :: Source -> Text
+getLayerText (VideoSource x) = x
+getLayerText (TextSource x) = x
+
+ifEmptyLayer :: Source -> Bool
+ifEmptyLayer (VideoSource x) = x == ""
+ifEmptyLayer (TextSource x) = x == ""
+
+
 deleteCineCer0State :: CineCer0State -> IO ()
 deleteCineCer0State st = do
   mapM_ ((removeVideo $ container st) . videoLayer) $ videos st
+  mapM_ ((removeImage $ container st) . imageLayer) $ images st
   mapM_ ((removeText $ container st) . textLayer) $ texts st
+
+-- filter :: (a -> Bool) -> f a -> f a
 
 
 updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0State
 updateCineCer0State t rTime spec st = logExceptions st $ do
   let objSpecs = layerSpecMap spec
-  let vSpecs = fst $ textOrVideo objSpecs
-  let txSpecs = snd $ textOrVideo objSpecs
+  let vSpecs = isVideo objSpecs
+  let txSpecs = isText objSpecs
   let eTime = evalTime spec
   divWidth <- offsetWidth $ container st
   divHeight <- offsetHeight $ container st
   -- add videos
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap LayerSpec
-  let toAddv = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newVideoSpecs -- operation on Layers -- :: IntMap LayerSpec
+  let toAddv = IntMap.filter (\x -> ifEmptyLayer (source x) == False) newVideoSpecs -- operation on Layers -- :: IntMap LayerSpec
   addedVideos <- mapM (\x -> addVideo (container st) x) toAddv -- :: IntMap CineCer0Video
   -- add text
   let newTextSpecs = difference txSpecs (texts st) -- :: IntMap LayerSpec (this changes to LayerSpec, aslo in line 278)
-  let toAddtx = IntMap.filter (\x -> ifEmptyLayer (layer x) == False) newTextSpecs -- answer false to is the layer empty?
+  let toAddtx = IntMap.filter (\x -> ifEmptyLayer (source x) == False) newTextSpecs -- answer false to is the source empty?
 
 
   -- function to process text in time -- :: Tempo -> rTime -> evalTime -> st
  -- let toAddSubTx = func t rTime eTime textSpecs
--- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not. 
-  
+-- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not.
+
   addedTexts <- mapM (\x -> addText (container st) x) toAddtx
   -- change videos
   let continuingLayerSpecs = intersectionWith onlyChangedLayerSources vSpecs (previousLayerSpecs st) -- :: IntMap (Maybe LayerSpec)
   let toChangeV = fmapMaybe id continuingLayerSpecs -- :: IntMap LayerSpec
   let toChangeV' = intersectionWith (\a b -> (a,b)) toChangeV $ videos st -- IntMap (LayerSpec,CineCer0Video)
-  mapM_ (\(x,cv) -> changeVideoSource (videoLayer cv) $ T.pack (getLayerString (layer x))) toChangeV'
+  mapM_ (\(x,cv) -> changeVideoSource (videoLayer cv) $ (getLayerText (source x))) toChangeV'
   -- change texts
   let continuingTextSpecs = intersectionWith onlyChangedLayerSources txSpecs (previousTextSpecs st)
   let toChangeTx = fmapMaybe id continuingTextSpecs -- :: IntMap LayerSpec
   let toChangeTx' = intersectionWith (\a b -> (a,b)) toChangeTx $ texts st -- IntMap (LayerSpec,CineCer0Text)
-  mapM_ (\(x,cTx) -> changeTextSource (textLayer cTx) $ T.pack (getLayerString (layer x))) toChangeTx'
+  mapM_ (\(x,cTx) -> changeTextSource (textLayer cTx) $ (getLayerText (source x))) toChangeTx'
   -- delete LayerSpecs
   -- delete videos
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
-  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> (ifEmptyLayer $ layer x) == True) vSpecs -- :: IntMap CineCer0Video
+  let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> (ifEmptyLayer $ source x) == True) vSpecs -- :: IntMap CineCer0Video
   let toDeleteV = union videosWithRemovedSpecs videosWithEmptySource
   mapM (\x -> removeVideo (container st) (videoLayer x)) toDeleteV
   let videosThereBefore = difference (videos st) toDeleteV -- :: IntMap CineCer0Video
   -- delete text
   let textsWithRemovedSpecs = difference (texts st) txSpecs -- IntMap CineCer0Text
-  let textsWithEmptySource = intersection (texts st) $ IntMap.filter (\x -> (ifEmptyLayer $ layer x) == True) txSpecs -- :: IntMap CineCer0Video
+  let textsWithEmptySource = intersection (texts st) $ IntMap.filter (\x -> (ifEmptyLayer $ source x) == True) txSpecs -- :: IntMap CineCer0Video
   let toDeleteTx = union textsWithRemovedSpecs textsWithEmptySource
   mapM (\x -> removeText (container st) (textLayer x)) toDeleteTx
   let textsThereBefore = difference (texts st) toDeleteTx -- :: IntMap CineCer0Video
@@ -469,8 +520,8 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let continuingTexts = union textsThereBefore addedTexts
   continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
   return $ st { videos = continuingVideos', previousLayerSpecs = vSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
-  
-  
+
+
 logExceptions :: a -> IO a -> IO a
 logExceptions a x = x `catch` (\e -> do
   putStrLn $ "EXCEPTION (CineCer0): " ++ show (e :: SomeException)

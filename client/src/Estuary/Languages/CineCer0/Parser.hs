@@ -9,6 +9,7 @@ import Data.Bifunctor
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes)
+import Data.Text (Text, pack)
 
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
@@ -46,14 +47,13 @@ maybeLayerSpec = _0Arg $
 layerSpec :: H LayerSpec
 layerSpec = _0Arg $
   (vs_vs <*> layerSpec) <|>
-  (layerSpecFunc <*> string) <|>
-  (fmap stringToLayerSpec string)
+  (layerSpecFunc <*> text)
 
-layerSpecFunc :: H (String -> LayerSpec)
+layerSpecFunc :: H (Text -> LayerSpec)
 layerSpecFunc =
   textToLayerSpec <$ reserved "text" <|>
+  imageToLayerSpec <$ reserved "image" <|>
   videoToLayerSpec <$ reserved "video"
-
 
 -- //////////////
 
@@ -62,6 +62,9 @@ int = fromIntegral <$> integer
 
 ndt :: H NominalDiffTime
 ndt = fromRational <$> rationalOrInteger
+
+text :: H Text
+text = pack <$> string
 
 -- //////////////
 
@@ -106,14 +109,14 @@ ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
 -- new fade in (syntax sugar funcs)
 ndt_sigRat :: H (NominalDiffTime -> Signal Rational)
-ndt_sigRat = 
+ndt_sigRat =
   fadeIn <$ reserved "fadeIn" <|>
   fadeOut <$ reserved "fadeOut"
 
 ndt_sigMayRat :: H (NominalDiffTime -> Signal (Maybe Rational))
 ndt_sigMayRat =
   fadeIn2 <$ reserved "fadeIn" <|>
-  fadeOut2 <$ reserved "fadeOut" 
+  fadeOut2 <$ reserved "fadeOut"
 
 ---- sine
 
@@ -214,7 +217,7 @@ sigInt_vs_vs =
 
 sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
 sigStr_vs_vs =
-  setColourStr <$ reserved "colour" <|> 
+  setColourStr <$ reserved "colour" <|>
   setFontFamily <$ reserved "font"
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
