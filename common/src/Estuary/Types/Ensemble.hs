@@ -25,12 +25,14 @@ import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.Chat
 import Estuary.Types.Participant
+import Estuary.Types.ResourceOp
 
 data Ensemble = Ensemble {
   ensembleName :: Text,
   tempo :: Tempo,
   zones :: IntMap.IntMap Definition,
   views :: Map.Map Text View,
+  resourceOps :: [ResourceOp],
   chats :: [Chat],
   participants :: Map.Map Text Participant,
   anonymousParticipants :: Int
@@ -51,12 +53,17 @@ instance FromJSON Ensemble where
     views' <- o .:? "views" .!= Map.empty -- Map Text Value
     views'' <- mapM (\v -> (Just <$> parseJSON v) <|> return Nothing) views' -- Map Text (Maybe View)
     let views''' = Witherable.catMaybes views'' -- Map Text View
+    -- parse list of resourceOps, silently omitting any that fail to parse (in order to allow evolution of ResourceOp type)
+    resourceOps' <- o .:? "resourceOps" .!= []
+    resourceOps'' <- mapM (\v -> (Just <$> parseJSON v) <|> return Nothing) resourceOps'
+    let resourceOps''' = Witherable.catMaybes resourceOps'' -- [ResourceOp]
     chats' <- o .:? "chats" .!= []
     return $ Ensemble {
       ensembleName = ensembleName',
       tempo = tempo',
       zones = zones''',
       views = views''',
+      resourceOps = resourceOps''',
       chats = chats',
       participants = Map.empty,
       anonymousParticipants = 0
@@ -69,6 +76,7 @@ emptyEnsemble t = Ensemble {
   tempo = Tempo { time=t, count=0.0, freq=0.5 },
   zones = IntMap.empty,
   views = Map.empty,
+  resourceOps = defaultResourceOps,
   chats = [],
   participants = Map.empty,
   anonymousParticipants = 0
@@ -77,7 +85,8 @@ emptyEnsemble t = Ensemble {
 leaveEnsemble :: Ensemble -> Ensemble
 leaveEnsemble x = x {
   ensembleName = "",
-  zones = IntMap.empty
+  zones = IntMap.empty,
+  resourceOps = defaultResourceOps
   }
 
 writeEnsembleName :: Text -> Ensemble -> Ensemble

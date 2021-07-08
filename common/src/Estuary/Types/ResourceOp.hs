@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Estuary.Types.ResourceOp where
 
@@ -19,3 +19,6 @@ data ResourceOp =
 instance ToJSON ResourceOp where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON ResourceOp
+
+defaultResourceOps :: [ResourceOp]
+defaultResourceOps = [ResourceListURL "samples/resources.json"]
