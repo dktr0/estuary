@@ -12,3 +12,7 @@ translateText :: TranslatableText -> Language -> Text
 translateText t l
   | Data.Map.null t = "?"
   | otherwise = findWithDefault (head $ elems t) l t
+
+
+english :: Text -> TranslatableText
+english x = Data.Map.fromList [(English, x)]

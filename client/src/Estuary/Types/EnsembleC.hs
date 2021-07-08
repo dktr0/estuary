@@ -191,7 +191,7 @@ responseToMessage (EnsembleResponse ResetZonesResponse) = Just $ "received Reset
 responseToMessage (EnsembleResponse ResetViewsResponse) = Just $ "received ResetViews"
 responseToMessage (EnsembleResponse (ResetTempoResponse _)) = Just $ "received ResetTempo"
 responseToMessage (EnsembleResponse (ResetResponse _)) = Just $ "received Reset (resetting zones and tempo)"
-responseToMessage (EnsembleResponse (AnonymousParticipants n)) = Just $ showt n <> " anonymous participants"
+responseToMessage (EnsembleResponse (AnonymousParticipants n)) = Just $ showt n <>  " anonymous participants"
 -- the cases below are for debugging only and can be commented out when not debugging:
 -- responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showt n
 -- responseToMessage (ViewRcvd n _) = Just $ "received view " <> n
