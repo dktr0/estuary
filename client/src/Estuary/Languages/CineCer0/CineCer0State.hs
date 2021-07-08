@@ -190,12 +190,12 @@ setVideoVol v x = do
     videoVolume j x
     return $ v { previousVol = x }
 
--- setImageStyle :: CineCer0Image -> Text -> IO CineCer0Image
--- setImageStyle img x = do
---   if previousStyleImg tx == x then return tx
---   else do
---     _setImageStyle (imageLayer tx) x
---     return $ tx { preciousStyleImg = x }
+setImageStyle :: CineCer0Image -> Text -> IO CineCer0Image
+setImageStyle img x = do
+  if previousStyleImg img == x then return img
+  else do
+    _setImageStyle (imageLayer img) x
+    return $ img { previousStyleImg = x }
 
 setTextStyle :: CineCer0Text -> Text -> IO CineCer0Text
 setTextStyle tx x = do
@@ -204,7 +204,95 @@ setTextStyle tx x = do
     _setTextStyle (textLayer tx) x
     return $ tx { previousStyleTx = x }
 
-updateContinuingText:: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
+updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Video -> IO CineCer0Video
+updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
+  let j = videoLayer v
+  vw <- videoWidth j
+  vh <- videoHeight j
+
+--  putStrLn $ show $ vw
+
+  if (vw /= 0 && vh /= 0) then do
+    lengthOfVideo <- realToFrac <$> getLengthOfVideo j
+    let aspectRatio = vw/vh
+    let heightIfFitsWidth = sw / aspectRatio
+    let widthIfFitsHeight = sh * aspectRatio
+    let fitByWidth = heightIfFitsWidth <= sh
+    let fitWidth = if fitByWidth then sw else widthIfFitsHeight
+    let fitHeight = if fitByWidth then heightIfFitsWidth else sh
+    let aTime = anchorTime s t eTime
+    let actualWidth = (width s t lengthOfVideo rTime eTime aTime) * realToFrac fitWidth
+    let actualHeight = (height s t lengthOfVideo rTime eTime aTime) * realToFrac fitHeight
+    let centreX = ((posX s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
+    let centreY = ((posY s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
+    let leftX = centreX - (actualWidth * 0.5)
+    let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
+
+    -- update playback rate and position
+    let rate = fmap realToFrac $ playbackRate s t lengthOfVideo rTime eTime aTime
+    let pos = fmap realToFrac $ playbackPosition s t lengthOfVideo rTime eTime aTime
+    v' <- setVideoRateAndPosition v (realToFrac lengthOfVideo) rate pos
+
+    -- update audio (volume and mute)
+    let normVol = if (volume s t lengthOfVideo rTime eTime aTime) > 1 then 1 else (volume s t lengthOfVideo rTime eTime aTime)
+    v'' <- setVideoVol v' $ realToFrac normVol
+
+    -- z index
+    let z' = generateZIndex (z s t lengthOfVideo rTime eTime aTime)
+
+    -- update style (size, position, opacity, etc)
+    let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let blur' = blur s t lengthOfVideo rTime eTime aTime
+    let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let contrast' = (*) <$> (contrast s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
+    let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
+    let mask' = ((Cinecer0.mask s) t lengthOfVideo rTime eTime aTime)
+    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask' z'
+  else return v
+
+-- WORKING HERE !!!!!!!!!!!!!!!!!!
+
+updateContinuingImage :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Image -> IO CineCer0Image
+updateContinuingImage t eTime rTime (sw,sh) s img = logExceptions img $ do
+  let j = imageLayer img
+  iw <- imageWidth j
+  ih <- imageHeight j
+
+  if (iw /= 0 && ih /= 0) then do
+    let lengthOfLayer = 1
+    let aspectRatio = iw/ih
+    let heightIfFitsWidth = sw / aspectRatio
+    let widthIfFitsHeight = sh * aspectRatio
+    let fitByWidth = heightIfFitsWidth <= sh
+    let fitWidth = if fitByWidth then sw else widthIfFitsHeight
+    let fitHeight = if fitByWidth then heightIfFitsWidth else sh
+    let aTime = anchorTime s t eTime
+    let actualWidth = (width s t lengthOfLayer rTime eTime aTime) * realToFrac fitWidth
+    let actualHeight = (height s t lengthOfLayer rTime eTime aTime) * realToFrac fitHeight
+    let centreX = ((posX s t lengthOfLayer rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
+    let centreY = ((posY s t lengthOfLayer rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
+    let leftX = centreX - (actualWidth * 0.5)
+    let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
+
+    let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
+
+    let opacity' = (*) <$> (opacity s) t lengthOfLayer rTime eTime aTime <*> Just 100
+    let blur' = blur s t lengthOfLayer rTime eTime aTime
+    let brightness' = (*) <$> (brightness s) t lengthOfLayer rTime eTime aTime <*> Just 100
+    let contrast' = (*) <$> (contrast s) t lengthOfLayer rTime eTime aTime <*> Just 100
+    let grayscale' = (*) <$> (grayscale s) t lengthOfLayer rTime eTime aTime <*> Just 100
+    let saturate' = (*) <$> (saturate s) t lengthOfLayer rTime eTime aTime <*> Just 100
+    let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
+    let mask' = ((Cinecer0.mask s) t lengthOfLayer rTime eTime aTime)
+    let imgStyle = imageStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask' z'
+    setImageStyle img $ imgStyle
+  else return img
+
+-- WORKING HERE !!!!!!!!!!!!!!!!!!
+
+updateContinuingText :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
  let j = textLayer tx
  tw <- textWidth j
@@ -258,59 +346,13 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let yPos  = yPos' * (0.5 + (y*(-0.5)))
   let topY = yPos
 
-  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (T.pack txFont) striked bolded italicised bordered coloured sized z'
+  let txStyle = textStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) (txFont) striked bolded italicised bordered coloured sized z'
   -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
   else return tx
 
-updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Video -> IO CineCer0Video
-updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
-  let j = videoLayer v
-  vw <- videoWidth j
-  vh <- videoHeight j
 
---  putStrLn $ show $ vw
 
-  if (vw /= 0 && vh /= 0) then do
-    lengthOfVideo <- realToFrac <$> getLengthOfVideo j
-    let aspectRatio = vw/vh
-    let heightIfFitsWidth = sw / aspectRatio
-    let widthIfFitsHeight = sh * aspectRatio
-    let fitByWidth = heightIfFitsWidth <= sh
-    let fitWidth = if fitByWidth then sw else widthIfFitsHeight
-    let fitHeight = if fitByWidth then heightIfFitsWidth else sh
-    let aTime = anchorTime s t eTime
-    let actualWidth = (width s t lengthOfVideo rTime eTime aTime) * realToFrac fitWidth
-    let actualHeight = (height s t lengthOfVideo rTime eTime aTime) * realToFrac fitHeight
-    let centreX = ((posX s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
-    let centreY = ((posY s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
-    let leftX = centreX - (actualWidth * 0.5)
-    let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
-
-    -- update playback rate and position
-    let rate = fmap realToFrac $ playbackRate s t lengthOfVideo rTime eTime aTime
-    let pos = fmap realToFrac $ playbackPosition s t lengthOfVideo rTime eTime aTime
-    v' <- setVideoRateAndPosition v (realToFrac lengthOfVideo) rate pos
-
-    -- update audio (volume and mute)
-    let normVol = if (volume s t lengthOfVideo rTime eTime aTime) > 1 then 1 else (volume s t lengthOfVideo rTime eTime aTime)
-    v'' <- setVideoVol v' $ realToFrac normVol
-
-    -- z index
-    let z' = generateZIndex (z s t lengthOfVideo rTime eTime aTime)
-
-    -- update style (size, position, opacity, etc)
-    let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
-    let blur' = blur s t lengthOfVideo rTime eTime aTime
-    let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime aTime <*> Just 100
-    let contrast' = (*) <$> (contrast s) t lengthOfVideo rTime eTime aTime <*> Just 100
-    let grayscale' = (*) <$> (grayscale s) t lengthOfVideo rTime eTime aTime <*> Just 100
-    let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
-    let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
-    let mask' = ((Cinecer0.mask s) t lengthOfVideo rTime eTime aTime)
-    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask' z'
-
-  else return v
 
 generateOpacity :: Maybe Double -> Text
 generateOpacity (Just o) = "opacity(" <> showt o <> "%)"
@@ -343,8 +385,8 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
 videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
 
--- imageStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
--- imageStyle x y w h f z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> z
+imageStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
+imageStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
 
 generateZIndex :: Int -> Text
 generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
@@ -352,8 +394,8 @@ generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"
 generateFontSize :: Double -> Text
 generateFontSize size = "; font-size: " <> T.pack (show (size)) <> "em;"
 
-generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text  -- this string needs to be a text!!!!
-generateColours (Colour str) t ll rT eT aT = "; color: " <> T.pack (string) <> ";"
+generateColours:: Colour -> Tempo -> NominalDiffTime -> UTCTime -> UTCTime -> UTCTime -> Text
+generateColours (Colour str) t ll rT eT aT = "; color: " <> string <> ";"
   where string = (str t ll rT eT aT)
 generateColours (ColourRGB r g b) t ll rT eT aT = "; color: rgb(" <> (showt red) <> "," <> (showt green) <> "," <> (showt blue) <> ");"
   where red = realToFrac ((r * 255) t ll rT eT aT) :: Double
@@ -405,8 +447,9 @@ onlyChangedLayerSources nSpec oSpec
 data CineCer0State = CineCer0State {
   container :: HTMLDivElement,
   videos :: IntMap CineCer0Video,
-  images :: IntMap CineCer0Image,
   previousLayerSpecs :: IntMap LayerSpec,
+  images :: IntMap CineCer0Image,
+  previousImageSpecs :: IntMap LayerSpec,
   texts :: IntMap CineCer0Text,
   previousTextSpecs :: IntMap LayerSpec
   }
@@ -415,48 +458,42 @@ emptyCineCer0State :: HTMLDivElement -> CineCer0State
 emptyCineCer0State j = CineCer0State {
   container = j,
   videos = empty,
-  images = empty,
   previousLayerSpecs = empty,
+  images = empty,
+  previousImageSpecs = empty,
   texts = empty,
   previousTextSpecs = empty
   }
 
---
---   textOrVideo:: IntMap LayerSpec -> (IntMap LayerSpec, IntMap LayerSpec)
---   textOrVideo layerSpecMap = partition (\x -> layerParti (layer x)) layerSpecMap
---
-
--- getTypeOfSource :: IntMap LayerSpec -> IntMap LayerSpec
--- getTypeOfSource layerSpecMap = fmap (\x -> isVideo (source x)) layerSpecMap
-
 isVideo :: IntMap LayerSpec -> IntMap LayerSpec
 isVideo layerSpecMap = IntMap.filter (\x -> getVideo (source x) == True) layerSpecMap
+
+isImage :: IntMap LayerSpec -> IntMap LayerSpec
+isImage layerSpecMap = IntMap.filter (\x -> getImage (source x) == True) layerSpecMap
+
+isText :: IntMap LayerSpec -> IntMap LayerSpec
+isText layerSpecMap = IntMap.filter (\x -> getText (source x) == True) layerSpecMap
 
 getVideo :: Source -> Bool
 getVideo (VideoSource x) = True
 getVideo _ = False
 
-isText :: IntMap LayerSpec -> IntMap LayerSpec
-isText layerSpecMap = IntMap.filter (\x -> getText (source x) == True) layerSpecMap
+getImage :: Source -> Bool
+getImage (ImageSource x) = True
+getImage _ = False
 
 getText :: Source -> Bool
 getText (TextSource x) = True
 getText _ = False
---
--- IntMap.filter (\x -> ifEmptyLayer (source x) == False) newVideoSpecs
-
--- you need to extract the source from the LayerSpec and then call functions designed to confirm if that source is a particular type of source, ie. further boolean tests of the type Source -> Bool.
-
--- you don't need 'filterSource' - if you have a boolean test (eg. isVideo :: LayerSpec -> Bool) then the "built-in" filtering functions over structures are sufficient. The IntMap module already has a 'filter' function that takes a boolean test (most collections in Haskell will have such a function - often literally called 'filter' - the Filterable typeclass defined in the Witherable module is a very generalized - and thus very useful/reusable - form of this
-
-
 
 getLayerText :: Source -> Text
 getLayerText (VideoSource x) = x
+getLayerText (ImageSource x) = x
 getLayerText (TextSource x) = x
 
 ifEmptyLayer :: Source -> Bool
 ifEmptyLayer (VideoSource x) = x == ""
+ifEmptyLayer (ImageSource x) = x == ""
 ifEmptyLayer (TextSource x) = x == ""
 
 
@@ -473,53 +510,75 @@ updateCineCer0State :: Tempo -> UTCTime -> Spec -> CineCer0State -> IO CineCer0S
 updateCineCer0State t rTime spec st = logExceptions st $ do
   let objSpecs = layerSpecMap spec
   let vSpecs = isVideo objSpecs
+  let imgSpecs = isImage objSpecs
   let txSpecs = isText objSpecs
   let eTime = evalTime spec
   divWidth <- offsetWidth $ container st
   divHeight <- offsetHeight $ container st
+
   -- add videos
   let newVideoSpecs = difference vSpecs (videos st) -- :: IntMap LayerSpec
   let toAddv = IntMap.filter (\x -> ifEmptyLayer (source x) == False) newVideoSpecs -- operation on Layers -- :: IntMap LayerSpec
   addedVideos <- mapM (\x -> addVideo (container st) x) toAddv -- :: IntMap CineCer0Video
+  -- add image
+  let newImageSpecs = difference imgSpecs (images st) -- :: IntMap LayerSpec
+  let toAddimg = IntMap.filter (\x -> ifEmptyLayer (source x) == False) newImageSpecs
+  addedImages <- mapM (\x -> addImage (container st) x) toAddimg
   -- add text
-  let newTextSpecs = difference txSpecs (texts st) -- :: IntMap LayerSpec (this changes to LayerSpec, aslo in line 278)
+  let newTextSpecs = difference txSpecs (texts st) -- :: IntMap LayerSpec
   let toAddtx = IntMap.filter (\x -> ifEmptyLayer (source x) == False) newTextSpecs -- answer false to is the source empty?
-
-
   -- function to process text in time -- :: Tempo -> rTime -> evalTime -> st
- -- let toAddSubTx = func t rTime eTime textSpecs
--- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not.
-
+  -- let toAddSubTx = func t rTime eTime textSpecs
+  -- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not.
   addedTexts <- mapM (\x -> addText (container st) x) toAddtx
+
   -- change videos
   let continuingLayerSpecs = intersectionWith onlyChangedLayerSources vSpecs (previousLayerSpecs st) -- :: IntMap (Maybe LayerSpec)
   let toChangeV = fmapMaybe id continuingLayerSpecs -- :: IntMap LayerSpec
   let toChangeV' = intersectionWith (\a b -> (a,b)) toChangeV $ videos st -- IntMap (LayerSpec,CineCer0Video)
   mapM_ (\(x,cv) -> changeVideoSource (videoLayer cv) $ (getLayerText (source x))) toChangeV'
+  -- change images
+  let continuingImageSpecs = intersectionWith onlyChangedLayerSources imgSpecs (previousImageSpecs st)
+  let toChangeImg = fmapMaybe id continuingImageSpecs -- :: IntMap LayerSpec
+  let toChangeImg' = intersectionWith (\a b -> (a,b)) toChangeImg $ images st -- IntMap (LayerSpec,CineCer0Image)
+  mapM_ (\(x,cImg) -> changeImageSource (imageLayer cImg) $ (getLayerText (source x))) toChangeImg'
   -- change texts
   let continuingTextSpecs = intersectionWith onlyChangedLayerSources txSpecs (previousTextSpecs st)
   let toChangeTx = fmapMaybe id continuingTextSpecs -- :: IntMap LayerSpec
   let toChangeTx' = intersectionWith (\a b -> (a,b)) toChangeTx $ texts st -- IntMap (LayerSpec,CineCer0Text)
   mapM_ (\(x,cTx) -> changeTextSource (textLayer cTx) $ (getLayerText (source x))) toChangeTx'
-  -- delete LayerSpecs
+
   -- delete videos
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
   let videosWithEmptySource = intersection (videos st) $ IntMap.filter (\x -> (ifEmptyLayer $ source x) == True) vSpecs -- :: IntMap CineCer0Video
   let toDeleteV = union videosWithRemovedSpecs videosWithEmptySource
   mapM (\x -> removeVideo (container st) (videoLayer x)) toDeleteV
   let videosThereBefore = difference (videos st) toDeleteV -- :: IntMap CineCer0Video
+  -- delete image
+  let imagesWithRemovedSpecs = difference (images st) imgSpecs -- IntMap CineCer0Image
+  let imagesWithEmptySource = intersection (images st) $ IntMap.filter (\x -> (ifEmptyLayer $ source x) == True) imgSpecs -- :: IntMap CineCer0Video
+  let toDeleteImg = union imagesWithRemovedSpecs imagesWithEmptySource
+  mapM (\x -> removeImage (container st) (imageLayer x)) toDeleteImg
+  let imagesThereBefore = difference (images st) toDeleteImg -- :: IntMap CineCer0Image
   -- delete text
   let textsWithRemovedSpecs = difference (texts st) txSpecs -- IntMap CineCer0Text
   let textsWithEmptySource = intersection (texts st) $ IntMap.filter (\x -> (ifEmptyLayer $ source x) == True) txSpecs -- :: IntMap CineCer0Video
   let toDeleteTx = union textsWithRemovedSpecs textsWithEmptySource
   mapM (\x -> removeText (container st) (textLayer x)) toDeleteTx
-  let textsThereBefore = difference (texts st) toDeleteTx -- :: IntMap CineCer0Video
+  let textsThereBefore = difference (texts st) toDeleteTx -- :: IntMap CineCer0Text
+
   -- update cached states
+  -- video
   let continuingVideos = union videosThereBefore addedVideos -- :: IntMap CineCer0Video
   continuingVideos' <- sequence $ intersectionWith (updateContinuingVideo t eTime rTime (divWidth,divHeight)) vSpecs continuingVideos -- :: IntMap CineCer0Video
+  -- image
+  let continuingImages = union imagesThereBefore addedImages -- :: IntMap CineCer0Image
+  continuingImages' <- sequence $ intersectionWith (updateContinuingImage t eTime rTime (divWidth,divHeight)) imgSpecs continuingImages
+  -- text
   let continuingTexts = union textsThereBefore addedTexts
   continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
-  return $ st { videos = continuingVideos', previousLayerSpecs = vSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
+
+  return $ st { videos = continuingVideos', previousLayerSpecs = vSpecs, images = continuingImages', previousImageSpecs = imgSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
 
 
 logExceptions :: a -> IO a -> IO a

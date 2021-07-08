@@ -12,8 +12,7 @@ import Data.Text (Text)
 
 import Estuary.Languages.CineCer0.Signal
 
---------- change String to Text throughout the pipeline!!!!!
-data Colour = Colour (Signal String) | ColourRGB (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSL (Signal Rational) (Signal Rational) (Signal Rational) | ColourRGBA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSLA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational)
+data Colour = Colour (Signal Text) | ColourRGB (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSL (Signal Rational) (Signal Rational) (Signal Rational) | ColourRGBA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSLA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational)
 
 -- instance Eq Colour where
 --   (==) (Colour a) (Colour b) = True
@@ -33,7 +32,7 @@ data LayerSpec = LayerSpec {
   mute :: Signal Bool,
   volume :: Signal Rational,
 
-  fontFamily :: Signal String,
+  fontFamily :: Signal Text,
   fontSize :: Signal Rational,
   colour :: Colour,
   strike :: Signal Bool,
@@ -163,7 +162,7 @@ setZIndex n tx = tx { z = n }
 --
 -- Text-only Functions --
 
-setFontFamily :: Signal String -> LayerSpec -> LayerSpec
+setFontFamily :: Signal Text -> LayerSpec -> LayerSpec
 setFontFamily s tx = tx { fontFamily = s }
 
 setFontSize :: Signal Rational -> LayerSpec -> LayerSpec
@@ -181,7 +180,7 @@ setItalic tx = tx { italic = constantSignal True}
 setBorder :: LayerSpec -> LayerSpec
 setBorder tx = tx { border = constantSignal True}
 
-setColourStr :: Signal String -> LayerSpec -> LayerSpec
+setColourStr :: Signal Text -> LayerSpec -> LayerSpec
 setColourStr clr tx = tx { colour = Colour clr }
 
 setRGB :: Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec

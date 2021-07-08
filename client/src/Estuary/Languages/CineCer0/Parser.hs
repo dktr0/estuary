@@ -88,8 +88,8 @@ ndt_rat_rat_sigMayRat = rampMaybe <$ reserved "ramp"
 sigInt :: H (Signal Int)
 sigInt = constantSignal <$> int
 
-sigStr :: H (Signal String)
-sigStr = constantSignal <$> string
+sigText :: H (Signal Text)
+sigText = constantSignal <$> text
 
 sigRat :: H (Signal Rational)
 sigRat =
@@ -168,7 +168,7 @@ vs_vs =
   sigRat_vs_vs <*> sigRat <|>
   sigMayRat_vs_vs <*> sigMayRat <|>
   rat_vs_vs <*> rationalOrInteger <|>
-  sigStr_vs_vs <*> sigStr <|>
+  sigText_vs_vs <*> sigText <|>
   sigInt_vs_vs <*> sigInt <|>
   (reserved "strike" >> return setStrike) <|>
   (reserved "bold" >> return setBold) <|>
@@ -215,8 +215,8 @@ sigInt_vs_vs :: H (Signal Int -> LayerSpec -> LayerSpec)
 sigInt_vs_vs =
   setZIndex <$ reserved "z"
 
-sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
-sigStr_vs_vs =
+sigText_vs_vs :: H (Signal Text -> LayerSpec -> LayerSpec)
+sigText_vs_vs =
   setColourStr <$ reserved "colour" <|>
   setFontFamily <$ reserved "font"
 
