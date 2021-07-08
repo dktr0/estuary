@@ -13,6 +13,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.Definition
 import Estuary.Types.Participant
 import Estuary.Types.Chat
+import Estuary.Types.ResourceOp
 
 data EnsembleResponse =
   TempoRcvd Tempo |
@@ -26,7 +27,8 @@ data EnsembleResponse =
   ResetZonesResponse |
   ResetViewsResponse |
   ResetTempoResponse Tempo |
-  ResetResponse Tempo
+  ResetResponse Tempo |
+  ResourceOps [ResourceOp]
   deriving (Generic,Show)
 
 instance ToJSON EnsembleResponse where

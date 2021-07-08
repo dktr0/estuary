@@ -10,6 +10,7 @@ import Data.Aeson
 import Estuary.Types.View
 import Estuary.Types.Definition
 import Estuary.Types.Tempo
+import Estuary.Types.ResourceOp
 
 data EnsembleRequest =
   WriteTempo Tempo |
@@ -20,8 +21,9 @@ data EnsembleRequest =
   ResetZonesRequest |
   ResetViewsRequest |
   ResetTempoRequest Tempo |
-  ResetRequest Tempo
-  deriving (Eq,Generic)
+  ResetRequest Tempo |
+  SetResourceOps [ResourceOp]
+  deriving (Generic)
 
 instance ToJSON EnsembleRequest where
   toEncoding = genericToEncoding defaultOptions

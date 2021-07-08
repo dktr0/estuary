@@ -1,3 +1,12 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Estuary.Types.ResourceType where
 
-data ResourceType = Audio | Image | Video deriving (Show, Eq)
+import GHC.Generics
+import Data.Aeson
+
+data ResourceType = Audio | Image | Video deriving (Show, Eq, Generic)
+
+instance ToJSON ResourceType where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON ResourceType
