@@ -15,6 +15,11 @@ import Estuary.Languages.CineCer0.Signal
 --------- change String to Text throughout the pipeline!!!!!
 data Colour = Colour (Signal String) | ColourRGB (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSL (Signal Rational) (Signal Rational) (Signal Rational) | ColourRGBA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational) | ColourHSLA (Signal Rational) (Signal Rational) (Signal Rational) (Signal Rational)
 
+-- instance Eq Colour where
+--   (==) (Colour a) (Colour b) = True
+--   (==) (ColourRGB a b c) (ColourRGB a' b' c') = True
+--   (==) _ _ = False
+
 data Source = VideoSource Text | ImageSource Text | TextSource Text deriving (Show, Eq)
 
 data LayerSpec = LayerSpec {
