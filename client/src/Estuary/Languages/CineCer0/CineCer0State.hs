@@ -38,24 +38,28 @@ instance PFromJSVal TextLayer where pFromJSVal = TextLayer
 
 foreign import javascript unsafe "$1.offsetWidth" offsetWidth :: HTMLDivElement -> IO Double
 foreign import javascript unsafe "$1.offsetHeight" offsetHeight :: HTMLDivElement -> IO Double
+-- video
 foreign import javascript unsafe
   "var video = document.createElement('video'); video.setAttribute('src',$1); $r=video; video.loop = true;"
   makeVideo :: Text -> IO VideoLayer
 foreign import javascript unsafe
   "$2.appendChild($1); $1.play();"
   appendVideo :: VideoLayer -> HTMLDivElement -> IO ()
+-- image
 foreign import javascript unsafe
-  "var image = document.createElement('image'); video.setAttribute('src',$1); $r=image;"
+  "var image = document.createElement('img'); image.src = $1; $r=image;"
   makeImage :: Text -> IO ImageLayer
 foreign import javascript unsafe
   "$2.appendChild($1);"
   appendImage :: ImageLayer -> HTMLDivElement -> IO ()
+-- text
 foreign import javascript unsafe
-  "var text = document.createElement('div'); text.innerText = $1; $r=text;"
+  "var text = document.createElement('div'); text.innerText  = $1; $r=text;"
   makeText :: Text -> IO TextLayer
 foreign import javascript unsafe
   "$2.appendChild($1);"
   appendText :: TextLayer -> HTMLDivElement -> IO ()
+-- video
 foreign import javascript unsafe "$1.removeChild($2)" removeVideo :: HTMLDivElement -> VideoLayer -> IO ()
 foreign import javascript unsafe "$1.style = $2;" _setVideoStyle :: VideoLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.muted = $2;" muteVideo :: VideoLayer -> Bool -> IO ()
@@ -68,11 +72,13 @@ foreign import javascript safe "$1.playbackRate = $2;" setVideoPlaybackRate :: V
 foreign import javascript unsafe "$1.currentTime" getVideoPlaybackPosition :: VideoLayer -> IO Double
 foreign import javascript unsafe "$1.currentTime = $2;" setVideoPlaybackPosition :: VideoLayer -> Double -> IO ()
 foreign import javascript unsafe "$1.duration" getLengthOfVideo :: VideoLayer -> IO Double
+-- image
 foreign import javascript unsafe "$1.removeChild($2)" removeImage :: HTMLDivElement -> ImageLayer -> IO ()
-foreign import javascript unsafe "$1.style = $2;" _setImageStyle ::ImageLayer -> Text -> IO ()
-foreign import javascript unsafe "$1.src = $2; $1.load();" changeImageSource :: ImageLayer -> Text -> IO ()
-foreign import javascript unsafe "$1.imageWidth" imageWidth :: ImageLayer -> IO Double
-foreign import javascript unsafe "$1.imageHeight" imageHeight :: ImageLayer -> IO Double
+foreign import javascript unsafe "$1.style = $2;" _setImageStyle :: ImageLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.src = $2;" changeImageSource :: ImageLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.width" imageWidth :: ImageLayer -> IO Double
+foreign import javascript unsafe "$1.height" imageHeight :: ImageLayer -> IO Double
+-- text
 foreign import javascript unsafe "$1.removeChild($2)" removeText :: HTMLDivElement -> TextLayer -> IO ()
 foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.textContent = $2;" changeTextSource :: TextLayer -> Text -> IO ()
@@ -259,6 +265,8 @@ updateContinuingImage t eTime rTime (sw,sh) s img = logExceptions img $ do
   let j = imageLayer img
   iw <- imageWidth j
   ih <- imageHeight j
+  putStrLn $ show $ iw
+  putStrLn $ show $ ih
 
   if (iw /= 0 && ih /= 0) then do
     let lengthOfLayer = 1
