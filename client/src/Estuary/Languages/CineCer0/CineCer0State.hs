@@ -22,7 +22,8 @@ import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.Signal
 
 
-newtype VideoLayer = VideoLayer { videoJSVal :: JSVal }
+newtype VideoLayer = VideoLayer { videoJSVal :: JSVal }--list :: Haskellish st a -> Haskellish st [a] 
+
 newtype ImageLayer = ImageLayer { imageJSVal :: JSVal }
 newtype TextLayer = TextLayer { textJSVal :: JSVal }
 
@@ -313,7 +314,8 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let italicised = generateItalic (italic s t lengthOfLayer rTime eTime aTime)
   let bordered = generateBorder (border s t lengthOfLayer rTime eTime aTime)
   let coloured = generateColours (colour s) t lengthOfLayer rTime eTime aTime
-  let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
+  let sized = generateFontSize (realToFrac $ (height s t lengthOfLayer rTime eTime aTime))
+
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
   let aspectRatio = sw/sh
@@ -430,7 +432,7 @@ generateBorder (True) = "; border: 1px solid #cccccc;"
 generateBorder (False) = ""
 
 textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
-textStyle x y w h ff stk bld itc brd clr sz z = "visibility: visible; position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt ff <> stk <> bld <> itc <> brd <> clr <> sz <> z <> ";"
+textStyle x y w h fontfam stk bld itc border colour size z = "position: absolute;" <> "left: " <> showt (x-1) <> "px; top: " <> showt y <> "px;" <> "text-align: center;" <> "font-family:" <> showt fontfam <> stk <> bld <> itc <> border <> colour <> size <> z <> ";"
 
 -- textStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text
 -- textStyle x y w h ff stk bld itc clr sz z = "left: " <> showt x <> "px; top: " <> showt y <> "px; border: 1px solid #cccccc; position: absolute; translate(-50%, -50%); text-align: center; width: " <> showt (w) <> "px; height:" <> showt (h) <> "px; font-family:" <> showt ff <> stk <> bld <> itc <> clr <> sz <> z <> ";"

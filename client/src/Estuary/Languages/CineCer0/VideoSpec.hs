@@ -25,7 +25,7 @@ data LayerSpec = LayerSpec {
   source :: Source,
   z :: Signal Int,
 
-  anchorTime :: (Tempo -> UTCTime -> UTCTime),
+  anchorTime :: (Tempo -> UTCTime -> UTCTime), -- vid reproduction
   playbackPosition :: Signal (Maybe NominalDiffTime),
   playbackRate :: Signal (Maybe Rational),
 
@@ -40,13 +40,13 @@ data LayerSpec = LayerSpec {
   italic :: Signal Bool,
   border :: Signal Bool,
 
-  posX :: Signal Rational,
+  posX :: Signal Rational,  -- geom
   posY :: Signal Rational,
   width :: Signal Rational,
   height :: Signal Rational,
   rotate :: Signal Int,
 
-  opacity :: Signal (Maybe Rational),
+  opacity :: Signal (Maybe Rational), -- video style
   blur :: Signal (Maybe Rational),
   brightness :: Signal (Maybe Rational),
   contrast :: Signal (Maybe Rational),
@@ -299,6 +299,11 @@ setVolume vol v = v { volume = vol }
 quant:: Rational -> Rational -> LayerSpec -> LayerSpec
 quant nc offset vs = vs { anchorTime = quantAnchor nc offset }
 
+freerun :: LayerSpec -> LayerSpec
+freerun vs = vs {
+  playbackPosition = freeRun
+}
+
 playNatural :: Rational -> LayerSpec -> LayerSpec
 playNatural n vs = vs {
   playbackPosition = playNatural_Pos n,
@@ -323,26 +328,20 @@ playEvery m n vs = vs {
   playbackRate = playEvery_Rate m n
   }
 
-playChop' :: Rational -> Rational -> Rational -> LayerSpec -> LayerSpec
-playChop' l m n vs = vs {
-  playbackPosition = playChop_Pos' l m n,
-  playbackRate = playChop_Rate' l m n
-  }
-
-playChop :: Rational -> Rational -> Rational -> Rational -> LayerSpec -> LayerSpec
-playChop k l m n vs = vs {
-  playbackPosition = playChop_Pos k l m n,
-  playbackRate = playChop_Rate k l m n
+playChop :: Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
+playChop l m n vs = vs {
+  playbackPosition = playChop_Pos l m n,
+  playbackRate = playChop_Rate l m n
 }
 
-playChopSecs :: NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec
-playChopSecs k l m n vs = vs {
-  playbackPosition = playChopSecs_Pos k l m n,
-  playbackRate = playChopSecs_Rate k l m n
-  }
+playChop' :: Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec
+playChop' m n vs = vs {
+  playbackPosition = playChop_Pos' m n,
+  playbackRate = playChop_Rate' m n
+}
 
-playNow :: NominalDiffTime -> Rational -> LayerSpec -> LayerSpec
-playNow m n vs = vs {
-  playbackPosition = playNow_Pos m n,
-  playbackRate = playNow_Rate m n
-  }
+playRate :: Rational -> LayerSpec -> LayerSpec
+playRate n vs = vs {
+  playbackPosition = rate_Pos n,
+  playbackRate = rate_Rate n
+}

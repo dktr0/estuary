@@ -98,6 +98,14 @@ replaceStandardView t v e = e {
   view = Right t
   }
 
+readableTempo:: Tempo -> Text
+readableTempo tempo =
+  let f = realToFrac (freq tempo) :: Double
+      t = (time tempo)
+      c = realToFrac (count tempo) :: Double
+  in "Freq: " <> showt f <> "Time: " <> (T.pack $ show t) <> "Count: " <> showt c
+
+
 commandToHint :: EnsembleC -> Terminal.Command -> Maybe Hint
 commandToHint _ (Terminal.LocalView _) = Just $ LogMessage "local view changed"
 commandToHint _ (Terminal.PresetView x) = Just $ LogMessage $ "preset view " <> x <> " selected"
@@ -106,7 +114,7 @@ commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ nameOfActiveView es
 commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ ensemble es
 commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
 commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
-commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $ T.pack $ show $ tempo $ ensemble es
+commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $ readableTempo $ tempo $ ensemble es
 commandToHint _ Terminal.ResetZones = Just $ LogMessage "zones reset"
 commandToHint _ Terminal.ResetViews = Just $ LogMessage "views reset"
 commandToHint _ Terminal.ResetTempo = Just $ LogMessage "tempo reset"
