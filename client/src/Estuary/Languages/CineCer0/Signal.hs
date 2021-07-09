@@ -329,11 +329,12 @@ range min max input t vl rTime eTime aTime =
 rampMaybe :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
 rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime
 
--- ramps:: [NominalDiffTime] -> [Rational] -> Signal Rational
--- -- ramps durs [] t vl r e a = "This should be an error"
--- ramps [] vals t vl r e a = last vals
--- ramps durs vals t vl r e a = if endOfDur > r then ramp (head durs) (head vals) (head $ tail vals) t vl r e a else ramps (tail durs) (tail vals) t vl r e endOfDur
---     where endOfDur = addUTCTime (realToFrac $ head durs) a -- anchor time plus duration of previous ramp
+ramps:: [NominalDiffTime] -> [Rational] -> Signal Rational
+ramps durs [] t vl r e a = error "Durations should be one less than values"
+ramps [] vals t vl r e a = last vals
+ramps durs vals t vl r e a = if endOfDur > r then ramp (head durs) (head vals) (head $ tail vals) t vl r e a else ramps (tail durs) (tail vals) t vl r e endOfDur
+    where endOfDur = addUTCTime x a -- anchor time plus duration of previous ramp
+          x = (head durs) / (realToFrac (freq t) :: NominalDiffTime)
 
 ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
