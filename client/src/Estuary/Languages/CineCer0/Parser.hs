@@ -104,6 +104,20 @@ rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
+--list :: Haskellish st a -> Haskellish st [a] 
+
+rats :: H [Rational]
+rats = list $ rationalOrInteger
+
+ndts :: H [NominalDiffTime]
+ndts = list $ fromRational <$> rationalOrInteger
+
+rats_sigRat :: H ([Rational] -> Signal Rational)
+rats_sigRat = ndts_rats_sigRat <*> ndts
+
+ndts_rats_sigRat :: H ([NominalDiffTime] -> [Rational] -> Signal Rational)
+ndts_rats_sigRat = ramps <$ reserved "ramps"
+
 ---- sine
 
 sigRat_sigRat:: H (Signal Rational -> Signal Rational)
@@ -158,7 +172,7 @@ vs_vs =
   (reserved "bold" >> return setBold) <|>
   (reserved "italic" >> return setItalic) <|>
   (reserved "border" >> return setBorder) <|>
-  (reserved "freerun" >> return freerun)
+  (reserved "freeRun" >> return freerun)
   -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)
@@ -234,13 +248,13 @@ rat_vs_vs =
  playNatural <$ reserved "natural" <|>
  playSnap <$ reserved "snap" <|>
  playSnapMetre <$ reserved "snapMetre" <|>
-  rat_rat_vs_vs <*> rationalOrInteger -- <|>
+ playRate <$ reserved "rate" <|>
+ rat_rat_vs_vs <*> rationalOrInteger -- <|>
  -- ndt_rat_vs_vs <*> ndt
 
 rat_rat_vs_vs :: H (Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
-  playRate <$ reserved "rate" <|>
   quant <$ reserved "quant"
 --  rat_rat_rat_vs_vs <*> rationalOrInteger <|>
 --  ndt_rat_rat_vs_vs <*> ndt <|>

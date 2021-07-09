@@ -279,11 +279,11 @@ secsToPercen secs' t vl r e a =
 
 
 -- rate 2 0 myTempo 13 render eval anchor
-rate_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
-rate_Pos rate sh t vlen render eval anchor =   Nothing
+rate_Pos:: Rational -> Signal (Maybe NominalDiffTime)
+rate_Pos rate t vlen render eval anchor =   Nothing
 
-rate_Rate:: Rational -> Rational -> Signal (Maybe Rational)
-rate_Rate rate sh t vlen render eval anchor = Just rate
+rate_Rate:: Rational -> Signal (Maybe Rational)
+rate_Rate rate t vlen render eval anchor = Just rate
 
 
 -- helpers to transform Signal

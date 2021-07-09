@@ -324,8 +324,8 @@ playChop' m n vs = vs {
   playbackRate = playChop_Rate' m n
 }
 
-playRate :: Rational -> Rational -> LayerSpec -> LayerSpec
-playRate m n vs = vs {
-  playbackPosition = rate_Pos m n,
-  playbackRate = rate_Rate m n
+playRate :: Rational -> LayerSpec -> LayerSpec
+playRate n vs = vs {
+  playbackPosition = rate_Pos n,
+  playbackRate = rate_Rate n
 }

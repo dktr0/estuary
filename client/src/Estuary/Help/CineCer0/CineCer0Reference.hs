@@ -118,15 +118,18 @@ funcionsCineCer0 = el "div" $ do
     (Español, "Funciones que modifican el programa una sola vez en el tiempo:")
     ])
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"quant MultCycle Offset (buggy for the moment :( ), ramp Dur P1 P2"),
-    (Español,"quant MultCycle Offset (tiene bugs por el momento :( ), ramp Dur P1 P2")
+    (English,"quant MultCycle Offset, ramp Dur P1 P2, fadeIn Dur, fadeOut Dur"),
+    (Español,"quant MultCycle Offset, ramp Dur P1 P2, fadeIn Dur, fadeOut Dur")
     ])
   --quant
   el "ul" $ do
-    el "li" $ elClass "div" "ieRef" $ text "quant 4 0 $ hsv 0.33 0.1 1 $ font \"Times New Romans\" $ size 0.25 $ text \"Ayer: hoy & mañana –de repente\""
+    el "li" $ elClass "div" "ieRef" $ text "quant 4 0 $ hsv 0.33 0.1 1 $ font \"Times New Romans\" $ size 5 $ text \"Ayer: hoy & mañana –de repente\""
   --ramp
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "setSize (ramp 3 0 0.5) $ \"videos/hogweed.mov\""
+  --fadeIn and fadeOut
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text "size 0.5 $ opacity (0.5 * (fadeIn 2)) $ \"videos/hogweed.mov\" -- change fadeIn for fadeOut :) "
     --
   el "div" $ dynText =<< (translatableText $ fromList [
     (English, "Change the program periodically:"),
@@ -148,8 +151,8 @@ funcionsCineCer0 = el "div" $ do
     el "li" $ elClass "div" "ieRef" $ text "setBlur (range 0 20 $ sin 0.1) $ size 0.5 $ \"videos/hogweed.mov\""
   -- Duration
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"Functions that modify the rate and position of the video reproduction: every Dur Offset, snap Offset, snapMetre Offset"),
-    (Español,"Funciones que modifican la velocidad y posición de reproducción del video: ever Dur Offset, snap Offset, snapMetre Offset")
+    (English,"Functions that modify the rate and position of the video reproduction: every Dur Offset, snap Offset, snapMetre Offset, seg StartPos EndPos Cycles, freeSeg StartPos EndPos, freeRun and rate RateVal."),
+    (Español,"Funciones que modifican la velocidad y posición de reproducción del video: every Dur Offset, snap Offset, snapMetre Offset, seg StartPos EndPos Cycles, freeSeg StartPos EndPos, freeRun and rate RateVal.")
     ])
   -- every
   el "div" $ dynText =<< (translatableText $ fromList [
@@ -161,13 +164,43 @@ funcionsCineCer0 = el "div" $ do
   -- snap
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"Function snap adjusts the duration of the video to the closest number of cycles. The offset aligns the start of the video with the start of the cycle if it is 0."),
-    (Español,"La función snap ajusta la duración del video al número de ciclso más cercano. El offser alinea el primer cuadro del video con el inicio del ciclo si su valor es 0.")
+    (Español,"La función snap ajusta la duración del video al número de ciclos más cercano. El offset alinea el primer cuadro del video con el inicio del ciclo si su valor es 0.")
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "snap 0 $ \"videos/lamplight.mp4\""
+   -- snapMetre 
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"The function snapMetre is similar to snap but adjusts the duration of the video to 2,4,8,16,32, etc. cycles, useful for 'music'-related explorations"),
     (Español,"La función snapMetre es similar a snap solo que esta ajusta la duración del video a 2,4,8,16,32, etc. ciclos, útil para exploraciones relacionadas con 'ideas musicales'.")
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "snapMetre 0 $ \"videos/lamplight.mp4\""
+  -- seg
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"Function seg reproduces a segment of the video (start to end in percentage) and the rate of the video segment is adjusted to the duration indicated in cycles as third argument."),
+    (Español,"seg reproduce solamente el segmento del video (tiempo de in inicio y fin en porcentaje) indicado y la velocidad de reproduccion la determina la duracion en ciclos indicada en el tercer argumento.")
+    ])
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text "seg 0.25 0.75 1 $ \"videos/lamplight.mp4\""
+  -- freeSeg
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"freeSeg is similar to seg but the duration of the segment is determined by the natural rate."),
+    (Español,"freeSeg es similar a seg pero la duracion del segmento esta determinada por la velocidad de reproduccion natural del video.")
+    ])
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text "seg 0.25 0.75 $ \"videos/lamplight.mp4\""
+    -- need an example for (secs X)
+  -- freeRun
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"freeR$un allows the video to play freely without adjusting its position or rate."),
+    (Español,"freeRun permite la reproduccion del video libre sin ajustar la posicion o la velocidad.")
+    ])
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text "freeRun $ \"videos/lamplight.mp4\""
+  -- rate
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"rate allows to control directly the rate of the video."),
+    (Español,"rate permite ajusta la velocidad de reproduccion del video libremente. ")
+    ])
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text "rate 2 $ \"videos/lamplight.mp4\""
