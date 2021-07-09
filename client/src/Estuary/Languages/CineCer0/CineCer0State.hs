@@ -216,8 +216,6 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
   vw <- videoWidth j
   vh <- videoHeight j
 
---  putStrLn $ show $ vw
-
   if (vw /= 0 && vh /= 0) then do
     lengthOfVideo <- realToFrac <$> getLengthOfVideo j
     let aspectRatio = vw/vh
@@ -233,20 +231,15 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     let centreY = ((posY s t lengthOfVideo rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
-
     -- update playback rate and position
     let rate = fmap realToFrac $ playbackRate s t lengthOfVideo rTime eTime aTime
     let pos = fmap realToFrac $ playbackPosition s t lengthOfVideo rTime eTime aTime
     v' <- setVideoRateAndPosition v (realToFrac lengthOfVideo) rate pos
-
     -- update audio (volume and mute)
     let normVol = if (volume s t lengthOfVideo rTime eTime aTime) > 1 then 1 else (volume s t lengthOfVideo rTime eTime aTime)
     v'' <- setVideoVol v' $ realToFrac normVol
 
-    -- z index
     let z' = generateZIndex (z s t lengthOfVideo rTime eTime aTime)
-
-    -- update style (size, position, opacity, etc)
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let blur' = blur s t lengthOfVideo rTime eTime aTime
     let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime aTime <*> Just 100
@@ -255,21 +248,19 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     let saturate' = (*) <$> (saturate s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     let mask' = ((Cinecer0.mask s) t lengthOfVideo rTime eTime aTime)
+
     setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask' z'
   else return v
 
--- WORKING HERE !!!!!!!!!!!!!!!!!!
 
 updateContinuingImage :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Image -> IO CineCer0Image
 updateContinuingImage t eTime rTime (sw,sh) s img = logExceptions img $ do
   let j = imageLayer img
   iw <- imageWidth j
   ih <- imageHeight j
-  putStrLn $ show $ iw
-  putStrLn $ show $ ih
 
   if (iw /= 0 && ih /= 0) then do
-    let lengthOfLayer = 1
+    let lengthOfImage = 1
     let aspectRatio = iw/ih
     let heightIfFitsWidth = sw / aspectRatio
     let widthIfFitsHeight = sh * aspectRatio
@@ -277,44 +268,42 @@ updateContinuingImage t eTime rTime (sw,sh) s img = logExceptions img $ do
     let fitWidth = if fitByWidth then sw else widthIfFitsHeight
     let fitHeight = if fitByWidth then heightIfFitsWidth else sh
     let aTime = anchorTime s t eTime
-    let actualWidth = (width s t lengthOfLayer rTime eTime aTime) * realToFrac fitWidth
-    let actualHeight = (height s t lengthOfLayer rTime eTime aTime) * realToFrac fitHeight
-    let centreX = ((posX s t lengthOfLayer rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
-    let centreY = ((posY s t lengthOfLayer rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
+    let actualWidth = (width s t lengthOfImage rTime eTime aTime) * realToFrac fitWidth
+    let actualHeight = (height s t lengthOfImage rTime eTime aTime) * realToFrac fitHeight
+    let centreX = ((posX s t lengthOfImage rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
+    let centreY = ((posY s t lengthOfImage rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
     let leftX = centreX - (actualWidth * 0.5)
     let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
 
-    let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
-
-    let opacity' = (*) <$> (opacity s) t lengthOfLayer rTime eTime aTime <*> Just 100
-    let blur' = blur s t lengthOfLayer rTime eTime aTime
-    let brightness' = (*) <$> (brightness s) t lengthOfLayer rTime eTime aTime <*> Just 100
-    let contrast' = (*) <$> (contrast s) t lengthOfLayer rTime eTime aTime <*> Just 100
-    let grayscale' = (*) <$> (grayscale s) t lengthOfLayer rTime eTime aTime <*> Just 100
-    let saturate' = (*) <$> (saturate s) t lengthOfLayer rTime eTime aTime <*> Just 100
+    let z' = generateZIndex (z s t lengthOfImage rTime eTime aTime)
+    let r' = rotate s t lengthOfImage rTime eTime aTime
+    let rotateText = generateRotate r'
+    let opacity' = (*) <$> (opacity s) t lengthOfImage rTime eTime aTime <*> Just 100
+    let blur' = blur s t lengthOfImage rTime eTime aTime
+    let brightness' = (*) <$> (brightness s) t lengthOfImage rTime eTime aTime <*> Just 100
+    let contrast' = (*) <$> (contrast s) t lengthOfImage rTime eTime aTime <*> Just 100
+    let grayscale' = (*) <$> (grayscale s) t lengthOfImage rTime eTime aTime <*> Just 100
+    let saturate' = (*) <$> (saturate s) t lengthOfImage rTime eTime aTime <*> Just 100
     let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
-    let mask' = ((Cinecer0.mask s) t lengthOfLayer rTime eTime aTime)
-    let imgStyle = imageStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask' z'
+    let mask' = ((Cinecer0.mask s) t lengthOfImage rTime eTime aTime)
+
+    let imgStyle = imageStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText rotateText mask' z'
     setImageStyle img $ imgStyle
   else return img
 
--- WORKING HERE !!!!!!!!!!!!!!!!!!
 
 updateContinuingText :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Text -> IO CineCer0Text
 updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
  let j = textLayer tx
  tw <- textWidth j
  th <- textHeight j
-
 -- if (tw /= 0) then (putStrLn "WIIIDTHHHH!!!!") else (putStrLn "no width yet")
-
  -- putStrLn $ show (T.split (== ' ') $ layerToString (layer s))
  -- putStrLn $ (show $ tw) <> " width"
  -- putStrLn $ (show $ th) <> " height"
  -- putStrLn $ (show $ sw) <> " div width"
  -- putStrLn $ (show $ sh) <> " div height"
  -- putStrLn $ (show $ xPos) <> " calculated x pos"
-
  if (tw /= 0 && th /= 0) then do
   let aTime = anchorTime s t eTime
   let lengthOfLayer = 1  -- think about how to get a length for a text
@@ -327,7 +316,6 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   let sized = generateFontSize (realToFrac $ (fontSize s t lengthOfLayer rTime eTime aTime))
 
   let z' = generateZIndex (z s t lengthOfLayer rTime eTime aTime)
-
   let aspectRatio = sw/sh
   let heightIfFitsWidth = sw / aspectRatio
   let widthIfFitsHeight = sh * aspectRatio
@@ -344,7 +332,6 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   --let topY = yPos
   let x = realToFrac $ (posX s t lengthOfLayer rTime eTime aTime)
   let y = realToFrac $ (posY s t lengthOfLayer rTime eTime aTime)
-
    -- calculate xPos
   let xPos' = sw - tw
   let xPos  = xPos' * (0.5 + (x*0.5))
@@ -358,7 +345,6 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   -- putStrLn $ T.unpack $ txStyle -- debugging line
   setTextStyle tx $ txStyle
   else return tx
-
 
 
 
@@ -390,11 +376,14 @@ generateFilter :: Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -
 generateFilter Nothing Nothing Nothing Nothing Nothing Nothing = ""
 generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl <> generateBrightness br <> generateContrast c <> generateGrayscale g <> generateSaturate s <>";"
 
+generateRotate :: Int -> Text
+generateRotate r = "; transform: rotate(" <> showt r <> "deg);"
+
 videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
 videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
 
-imageStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
-imageStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
+imageStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text
+imageStyle x y w h f r m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> r <> m <> z
 
 generateZIndex :: Int -> Text
 generateZIndex n = "; z-index: " <> T.pack (show n) <> ";"

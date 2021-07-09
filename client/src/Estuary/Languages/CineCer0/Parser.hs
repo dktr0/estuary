@@ -213,6 +213,7 @@ sigRat_vs_vs =
 
 sigInt_vs_vs :: H (Signal Int -> LayerSpec -> LayerSpec)
 sigInt_vs_vs =
+  setRotate <$ reserved "setRotate" <|>
   setZIndex <$ reserved "z"
 
 sigText_vs_vs :: H (Signal Text -> LayerSpec -> LayerSpec)
