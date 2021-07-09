@@ -9,6 +9,7 @@ import Data.Bifunctor
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes)
+import Data.Text (Text, pack)
 
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
@@ -46,14 +47,13 @@ maybeLayerSpec = _0Arg $
 layerSpec :: H LayerSpec
 layerSpec = _0Arg $
   (vs_vs <*> layerSpec) <|>
-  (layerSpecFunc <*> string) <|>
-  (fmap stringToLayerSpec string)
+  (layerSpecFunc <*> text)
 
-layerSpecFunc :: H (String -> LayerSpec)
+layerSpecFunc :: H (Text -> LayerSpec)
 layerSpecFunc =
   textToLayerSpec <$ reserved "text" <|>
+  imageToLayerSpec <$ reserved "image" <|>
   videoToLayerSpec <$ reserved "video"
-
 
 -- //////////////
 
@@ -62,6 +62,9 @@ int = fromIntegral <$> integer
 
 ndt :: H NominalDiffTime
 ndt = fromRational <$> rationalOrInteger
+
+text :: H Text
+text = pack <$> string
 
 -- //////////////
 
@@ -85,8 +88,8 @@ ndt_rat_rat_sigMayRat = rampMaybe <$ reserved "ramp"
 sigInt :: H (Signal Int)
 sigInt = constantSignal <$> int
 
-sigStr :: H (Signal String)
-sigStr = constantSignal <$> string
+sigText :: H (Signal Text)
+sigText = constantSignal <$> text
 
 sigRat :: H (Signal Rational)
 sigRat =
@@ -165,7 +168,7 @@ vs_vs =
   sigRat_vs_vs <*> sigRat <|>
   sigMayRat_vs_vs <*> sigMayRat <|>
   rat_vs_vs <*> rationalOrInteger <|>
-  sigStr_vs_vs <*> sigStr <|>
+  sigText_vs_vs <*> sigText <|>
   sigInt_vs_vs <*> sigInt <|>
   (reserved "strike" >> return setStrike) <|>
   (reserved "bold" >> return setBold) <|>
@@ -210,10 +213,11 @@ sigRat_vs_vs =
 
 sigInt_vs_vs :: H (Signal Int -> LayerSpec -> LayerSpec)
 sigInt_vs_vs =
+  setRotate <$ reserved "setRotate" <|>
   setZIndex <$ reserved "z"
 
-sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
-sigStr_vs_vs =
+sigText_vs_vs :: H (Signal Text -> LayerSpec -> LayerSpec)
+sigText_vs_vs =
   setColourStr <$ reserved "colour" <|>
   setFontFamily <$ reserved "font"
 
