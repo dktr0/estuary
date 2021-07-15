@@ -240,6 +240,8 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     v'' <- setVideoVol v' $ realToFrac normVol
 
     let z' = generateZIndex (z s t lengthOfVideo rTime eTime aTime)
+    let r' = rotate s t lengthOfVideo rTime eTime aTime
+    let rotateText = generateRotate r'
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let blur' = blur s t lengthOfVideo rTime eTime aTime
     let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime aTime <*> Just 100
@@ -249,7 +251,7 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
     let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
     let mask' = ((Cinecer0.mask s) t lengthOfVideo rTime eTime aTime)
 
-    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText mask' z'
+    setVideoStyle v'' $ videoStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText rotateText mask' z'
   else return v
 
 
@@ -379,8 +381,8 @@ generateFilter o bl br c g s = "filter:" <> generateOpacity o <> generateBlur bl
 generateRotate :: Int -> Text
 generateRotate r = "; transform: rotate(" <> showt r <> "deg);"
 
-videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text
-videoStyle x y w h f m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> m <> z
+videoStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text
+videoStyle x y w h f r m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> r <> m <> z
 
 imageStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text
 imageStyle x y w h f r m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> f <> r <> m <> z
