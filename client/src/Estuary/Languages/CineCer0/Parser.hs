@@ -207,6 +207,8 @@ sigRat_vs_vs =
   shiftHeight <$ reserved "height" <|>
   setSize <$ reserved "setSize" <|>
   shiftSize <$ reserved "size" <|>
+  setRotate <$ reserved "setRotate" <|>
+  shiftRotate <$ reserved "rotate" <|>
   circleMask <$ reserved "circleMask" <|>
   sqrMask <$ reserved "sqrMask" <|>
   setVolume <$ reserved "vol" <|>
@@ -214,8 +216,6 @@ sigRat_vs_vs =
 
 sigInt_vs_vs :: H (Signal Int -> LayerSpec -> LayerSpec)
 sigInt_vs_vs =
-  setRotate <$ reserved "setRotate" <|>
-  shiftRotate <$ reserved "rotate" <|>
   setZIndex <$ reserved "z"
 
 sigText_vs_vs :: H (Signal Text -> LayerSpec -> LayerSpec)

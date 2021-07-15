@@ -22,7 +22,7 @@ import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.Signal
 
 
-newtype VideoLayer = VideoLayer { videoJSVal :: JSVal }--list :: Haskellish st a -> Haskellish st [a] 
+newtype VideoLayer = VideoLayer { videoJSVal :: JSVal }--list :: Haskellish st a -> Haskellish st [a]
 
 newtype ImageLayer = ImageLayer { imageJSVal :: JSVal }
 newtype TextLayer = TextLayer { textJSVal :: JSVal }
@@ -242,7 +242,7 @@ updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
 
     let z' = generateZIndex (z s t lengthOfVideo rTime eTime aTime)
     let r' = rotate s t lengthOfVideo rTime eTime aTime
-    let rotateText = generateRotate r'
+    let rotateText = generateRotate (ceiling r')
     let opacity' = (*) <$> (opacity s) t lengthOfVideo rTime eTime aTime <*> Just 100
     let blur' = blur s t lengthOfVideo rTime eTime aTime
     let brightness' = (*) <$> (brightness s) t lengthOfVideo rTime eTime aTime <*> Just 100
@@ -280,7 +280,7 @@ updateContinuingImage t eTime rTime (sw,sh) s img = logExceptions img $ do
 
     let z' = generateZIndex (z s t lengthOfImage rTime eTime aTime)
     let r' = rotate s t lengthOfImage rTime eTime aTime
-    let rotateText = generateRotate r'
+    let rotateText = generateRotate (ceiling r')
     let opacity' = (*) <$> (opacity s) t lengthOfImage rTime eTime aTime <*> Just 100
     let blur' = blur s t lengthOfImage rTime eTime aTime
     let brightness' = (*) <$> (brightness s) t lengthOfImage rTime eTime aTime <*> Just 100
