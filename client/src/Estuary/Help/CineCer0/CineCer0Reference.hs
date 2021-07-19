@@ -54,8 +54,8 @@ funcionsCineCer0 = el "div" $ do
     el "li" $ elClass "div" "ieRef" $ text "setCoord 0.0 (-0.5) $ image \"images/cootes/chamomile.jpg\""
     -- ROTATION
     el "div" $ dynText =<< (translatableText $ fromList [
-      (English,"_Rotation: setRotate [d] (just working on Images); parameter in degrees"),
-      (Español,"_Rotación: setRotate [d] (únicamente funciona en Imágenes); parametro en grados")
+      (English,"_Rotation: setRotate [d]; parameter in degrees"),
+      (Español,"_Rotación: setRotate [d]; parametro en grados")
       ])
     el "ul" $ do
       el "li" $ elClass "div" "ieRef" $ text "setRotate 50 $ image \"images/cootes/chamomile.jpg\""

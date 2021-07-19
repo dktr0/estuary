@@ -107,7 +107,7 @@ rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
---list :: Haskellish st a -> Haskellish st [a] 
+--list :: Haskellish st a -> Haskellish st [a]
 
 -- rats :: H [Rational]
 -- rats = list $ rationalOrInteger
@@ -136,7 +136,7 @@ sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational)
 sigRat_sigRat_sigRat =
   reserved "*" >> return multi <|>
   sigRat_sigRat_sigRat_sigRat <*> sigRat
-  
+
 
 sigRat_sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational)
 sigRat_sigRat_sigRat_sigRat =
@@ -176,7 +176,7 @@ vs_vs =
   (reserved "italic" >> return setItalic) <|>
   (reserved "border" >> return setBorder) <|>
   (reserved "freeRun" >> return freerun)
-  -- <|>
+ -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)
 
@@ -207,6 +207,8 @@ sigRat_vs_vs =
   shiftHeight <$ reserved "height" <|>
   setSize <$ reserved "setSize" <|>
   shiftSize <$ reserved "size" <|>
+  setRotate <$ reserved "setRotate" <|>
+  shiftRotate <$ reserved "rotate" <|>
   circleMask <$ reserved "circleMask" <|>
   sqrMask <$ reserved "sqrMask" <|>
   setVolume <$ reserved "vol" <|>
@@ -214,7 +216,6 @@ sigRat_vs_vs =
 
 sigInt_vs_vs :: H (Signal Int -> LayerSpec -> LayerSpec)
 sigInt_vs_vs =
-  setRotate <$ reserved "setRotate" <|>
   setZIndex <$ reserved "z"
 
 sigText_vs_vs :: H (Signal Text -> LayerSpec -> LayerSpec)
@@ -262,5 +263,3 @@ rat_rat_vs_vs =
   quant <$ reserved "quant"
 --  rat_rat_rat_vs_vs <*> rationalOrInteger <|>
 --  ndt_rat_rat_vs_vs <*> ndt <|>
- 
-

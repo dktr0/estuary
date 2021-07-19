@@ -44,7 +44,7 @@ data LayerSpec = LayerSpec {
   posY :: Signal Rational,
   width :: Signal Rational,
   height :: Signal Rational,
-  rotate :: Signal Int,
+  rotate :: Signal Rational,
 
   opacity :: Signal (Maybe Rational), -- video style
   blur :: Signal (Maybe Rational),
@@ -159,8 +159,13 @@ shiftSize s vs = vs {
   height = s * height vs
 }
 
-setRotate :: Signal Int -> LayerSpec -> LayerSpec
+setRotate :: Signal Rational -> LayerSpec -> LayerSpec
 setRotate s v = v { rotate = s }
+
+shiftRotate :: Signal Rational -> LayerSpec -> LayerSpec
+shiftRotate s v = v {
+  rotate = s * rotate v
+  }
 
 setZIndex :: Signal Int -> LayerSpec -> LayerSpec
 setZIndex n tx = tx { z = n }
