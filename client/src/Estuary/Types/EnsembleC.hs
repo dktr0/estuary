@@ -14,10 +14,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
 import Control.Applicative
+import Data.Sequence as Seq
 
 import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
+import Estuary.Types.ResourceType
+import Estuary.Types.ResourceOp
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.View.Parser
@@ -178,6 +181,23 @@ commandToEnsembleRequest _ Terminal.ResetTempo = Just $ do
 commandToEnsembleRequest _ Terminal.Reset = Just $ do
   t <- getCurrentTime
   return $ ResetRequest $ Tempo { freq = 0.5, time = t, count = 0 }
+commandToEnsembleRequest es (Terminal.InsertAudioResource url bankName n) = Just $ do
+  let rs = resourceOps $ ensemble es
+  let rs' = rs |> InsertResource Audio url (bankName,n)
+  return $ WriteResourceOps rs'
+commandToEnsembleRequest es (Terminal.DeleteAudioResource bankName n) = Just $ do
+  let rs = resourceOps $ ensemble es
+  let rs' = rs |> DeleteResource Audio (bankName,n)
+  return $ WriteResourceOps rs'
+commandToEnsembleRequest es (Terminal.AppendAudioResource url bankName) = Just $ do
+  let rs = resourceOps $ ensemble es
+  let rs' = rs |> AppendResource Audio url bankName
+  return $ WriteResourceOps rs'
+commandToEnsembleRequest es (Terminal.ResList url) = Just $ do
+  let rs = resourceOps $ ensemble es
+  let rs' = rs |> ResourceListURL url
+  return $ WriteResourceOps rs'
+commandToEnsembleRequest es Terminal.ClearResources = Just $ return $ WriteResourceOps Seq.empty
 commandToEnsembleRequest _ _ = Nothing
 
 responseToMessage :: Response -> Maybe Text
