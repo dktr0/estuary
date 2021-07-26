@@ -14,6 +14,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
 import Control.Applicative
+import Control.Monad.IO.Class
 import Data.Sequence as Seq
 
 import Estuary.Types.Response
@@ -30,6 +31,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Types.Participant
+import Estuary.Render.Resources
 
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
@@ -148,15 +150,16 @@ ensembleResponseToStateChange (ParticipantJoins x) es = modifyEnsemble (writePar
 ensembleResponseToStateChange (ParticipantUpdate x) es = modifyEnsemble (writeParticipant (name x) x) es
 ensembleResponseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
 ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
-ensembleResponseToStateChange ResetZonesResponse es =
-  modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
-ensembleResponseToStateChange ResetViewsResponse es =
-  modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
-ensembleResponseToStateChange (ResetTempoResponse t) es =
-  modifyEnsemble (writeTempo t) es
-ensembleResponseToStateChange (ResetResponse t) es =
-  modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
+ensembleResponseToStateChange ResetZonesResponse es = modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
+ensembleResponseToStateChange ResetViewsResponse es = modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
+ensembleResponseToStateChange (ResetTempoResponse t) es = modifyEnsemble (writeTempo t) es
+ensembleResponseToStateChange (ResetResponse t) es = modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
+ensembleResponseToStateChange (ResourceOps s) es = modifyEnsemble (\e -> e { resourceOps = s} ) es
 ensembleResponseToStateChange _ es = es
+
+ensembleResponseIO :: MonadIO m => Resources -> EnsembleResponse -> m ()
+ensembleResponseIO rs (ResourceOps s) = setResourceOps rs s
+ensembleResponseIO _ _ = return ()
 
 responseToStateChange :: Response -> EnsembleC -> EnsembleC
 responseToStateChange (JoinedEnsemble eName uName loc pwd) es = joinEnsembleC eName uName loc pwd es

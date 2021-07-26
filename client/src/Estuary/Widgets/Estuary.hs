@@ -117,7 +117,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   (terminalButton,_) <- runEditor irc ctx rInfo $ footer hints
   let commandEnsembleRequestsIO = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   commandEnsembleRequests <- performEvent $ fmap liftIO commandEnsembleRequestsIO
-  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
+  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
   let commandRequests = fmapMaybe commandToRequest command
 
   -- changes to EnsembleC within Context, and to Context
@@ -126,6 +126,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponses = fmapMaybe justEnsembleResponses deltasDown
   let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
+  performEvent_ $ fmap (mapM_ (ensembleResponseIO $ resources irc)) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   performEvent_ $ fmap (liftIO . commandToIO (resources irc)) command
@@ -245,9 +246,11 @@ commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eNam
 commandToRequest _ = Nothing
 
 commandToIO :: Resources -> Terminal.Command -> IO ()
+{- commenting these paths out, this should happen differently now
 commandToIO r (Terminal.InsertAudioResource url bankName n) = addResourceOp r $ InsertResource Audio url (bankName,n)
 commandToIO r (Terminal.AppendAudioResource url bankName) = addResourceOp r $ AppendResource Audio url bankName
 commandToIO r (Terminal.DeleteAudioResource bankName n) = addResourceOp r $ DeleteResource Audio (bankName,n)
 commandToIO r (Terminal.ResList url) = addResourceOp r $ ResourceListURL url
 commandToIO r Terminal.ClearResources = clearResourceOps r
+-}
 commandToIO _ _ = return ()

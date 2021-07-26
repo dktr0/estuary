@@ -4,6 +4,7 @@ module Estuary.Render.Resources where
 
 import Control.Concurrent
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.Sequence as Seq
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -26,8 +27,8 @@ data Resources = Resources {
   }
 
 
-newResources :: IO Resources
-newResources = do
+newResources :: MonadIO m => m Resources
+newResources = liftIO $ do
   _resourceOps' <- newMVar Seq.empty
   resourceLists' <- newLoadMap
   maps' <- newMVar (LocMap.empty,LocMap.empty,LocMap.empty)
@@ -40,8 +41,8 @@ newResources = do
   }
 
 
-addResourceOp :: Resources -> ResourceOp -> IO ()
-addResourceOp r op = do
+addResourceOp :: MonadIO m => Resources -> ResourceOp -> m ()
+addResourceOp r op = liftIO $ do
   putStrLn $ "addResourceOp: " ++ show op
   opsSeq <- takeMVar $ _resourceOps r
   let newOpsSeq = opsSeq |> op
@@ -49,8 +50,8 @@ addResourceOp r op = do
   putMVar (_resourceOps r) newOpsSeq
 
 
-deleteResourceOp :: Resources -> Int -> IO ()
-deleteResourceOp r x = do
+deleteResourceOp :: MonadIO m => Resources -> Int -> m ()
+deleteResourceOp r x = liftIO $ do
   putStrLn $ "deleteResourceOp: " ++ show x
   opsSeq <- takeMVar $ _resourceOps r
   let newOpsSeq = Seq.deleteAt x opsSeq
@@ -58,21 +59,21 @@ deleteResourceOp r x = do
   putMVar (_resourceOps r) newOpsSeq
 
 
-clearResourceOps :: Resources -> IO ()
-clearResourceOps r = do
+clearResourceOps :: MonadIO m => Resources -> m ()
+clearResourceOps r = liftIO $ do
   putStrLn "clearResourceOps"
   setResourceOps r Seq.empty
 
 
-setResourceOps :: Resources -> Seq ResourceOp -> IO ()
-setResourceOps r x = do
+setResourceOps :: MonadIO m => Resources -> Seq ResourceOp -> m ()
+setResourceOps r x = liftIO $ do
   _ <- takeMVar $ _resourceOps r
   updateMaps r x
   putMVar (_resourceOps r) x
 
 
-updateMaps :: Resources -> Seq ResourceOp -> IO ()
-updateMaps r opsSeq = do
+updateMaps :: MonadIO m => Resources -> Seq ResourceOp -> m ()
+updateMaps r opsSeq = liftIO $ do
   _ <- takeMVar $ maps r
   let emptyMaps = (LocMap.empty,LocMap.empty,LocMap.empty)
   newMaps <- foldM (resourceOpIO r) emptyMaps opsSeq
@@ -87,11 +88,11 @@ updateMapsCallback r = do
   putMVar (_resourceOps r) opsSeq
 
 
-resourceOpIO :: Resources -> (LocMap Text,LocMap Text,LocMap Text) -> ResourceOp -> IO (LocMap Text,LocMap Text,LocMap Text)
+resourceOpIO :: MonadIO m => Resources -> (LocMap Text,LocMap Text,LocMap Text) -> ResourceOp -> m (LocMap Text,LocMap Text,LocMap Text)
 resourceOpIO r maps (InsertResource t url loc) = return $ insertResource maps t url loc
 resourceOpIO r maps (AppendResource t url bankName) = return $ appendResource maps t url bankName
 resourceOpIO r maps (DeleteResource t loc) = return $ deleteResource maps t loc
-resourceOpIO r maps (ResourceListURL url) = do
+resourceOpIO r maps (ResourceListURL url) = liftIO $ do
   resList <- load (resourceLists r) url (const $ updateMapsCallback r)
   rMetas <- resourceMetas resList
   return $ Prelude.foldl insertResourceMeta maps rMetas
@@ -117,8 +118,8 @@ deleteResource (aMap,iMap,vMap) Image loc = (aMap,LocMap.delete loc iMap,vMap)
 deleteResource (aMap,iMap,vMap) Video loc = (aMap,iMap,LocMap.delete loc vMap)
 
 
-accessAudioResource :: Resources -> Location -> IO (Either LoadStatus AudioResource)
-accessAudioResource r loc = do
+accessAudioResource :: MonadIO m => Resources -> Location -> m (Either LoadStatus AudioResource)
+accessAudioResource r loc = liftIO $ do
   (aMap,_,_) <- readMVar $ maps r
   case LocMap.lookup loc aMap of
     Just url -> do
