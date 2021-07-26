@@ -31,7 +31,8 @@ data View =
   TempoView |
   RouletteView Int Int |
   AudioMapView |
-  StopWatchView Int
+  StopWatchView Int |
+  StopWatchViewExp Int
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where
