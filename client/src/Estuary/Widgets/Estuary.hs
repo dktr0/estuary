@@ -80,7 +80,9 @@ keyEventToHint _ = Nothing
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
+
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
+
   punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
   cvsElement <- canvasWidget punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
@@ -164,26 +166,21 @@ cinecer0Widget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 cinecer0Widget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
-  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -1;" <> x <> ";")]
+  dynZIndex <- holdUniqDyn $ fmap cineCer0ZIndex ctx
+  let dynZIndex' = fmap (T.pack . show) dynZIndex
+  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
-  let attrs = (<>) <$> baseAttrs <*> resMap
+  let attrs = (<>) <$> dynAttrs <*> resMap
   videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
-
-
 
 canvasWidget :: MonadWidget t m => Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
 canvasWidget dynZIndex ctx = do
   canvasVisible <- fmap (("visibility: " <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
   let dynZIndex' = fmap (T.pack . show) dynZIndex -- :: Dynamic t Text
   let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
-  -- ----------- same way to write the above
-  -- let attrsClass = fmap (Data.Map.singleton "class") $ (constDyn "canvas-or-svg-display") -- :: Dynamic t (Map Text Text)
-  -- let attrsStyle = fmap (Data.Map.singleton "style") $ (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";") -- :: Dynamic t (Map Text Text)
-  -- let dynAttrs = mconcat [attrsClass,attrsStyle] -- :: Dynamic t (Map Text Text)
-  -- ----------- erase later
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res -- :: Dynamic t (Map Text Text)
   let attrs = (<>) <$> dynAttrs <*> resMap

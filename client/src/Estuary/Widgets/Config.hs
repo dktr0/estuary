@@ -73,25 +73,36 @@ configWidget ctx ri = do
 
   elClass "hr" "dashed" $  text ""
 
+  cineCer0ZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
+    text "CineCer0 z-index: "
+    zIndexInput <- elClass "h4" "Numeric Field with initial value" $ do
+      tInt <- textInput $ def & textInputConfig_inputType .~ "number"
+                              & textInputConfig_initialValue .~ "-1"
+                              & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font")
+      return $ _textInput_value tInt -- :: Dynamic t Text
+    return $ fmap (\x -> \c -> c { cineCer0ZIndex = x }) (fmap (\x -> (read $ T.unpack $ x :: Int)) zIndexInput) -- :: Dynamic t (Context -> Context)
+
   punctualZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
     text "Punctual z-index: "
     zIndexInput <- elClass "h4" "Numeric Field with initial value" $ do
       tInt <- textInput $ def & textInputConfig_inputType .~ "number"
                               & textInputConfig_initialValue .~ "-2"
+                              & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font")
       return $ _textInput_value tInt -- :: Dynamic t Text
-    el "div" $ dynText =<< (translatableText $ fromList [
-      (English,"Some description"),
-      (Español, "Alguna descripción")
-      ])
     return $ fmap (\x -> \c -> c { punctualZIndex = x }) (fmap (\x -> (read $ T.unpack $ x :: Int)) zIndexInput) -- :: Dynamic t (Context -> Context)
 
-    -- error that I am getting:
-    -- Couldn't match expected type ‘Event t (Context -> Context)’
-    --             with actual type ‘Dynamic t (Context -> Context)’
-
-    --not sure how to make this function:
-    -- intInput :: MonadWidget t m => Text -> Int -> m (Dynamic t Int)
-    -- intInput t i = ?
+  hydraZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
+    text "Hydra z-index: "
+    zIndexInput <- elClass "h4" "Numeric Field with initial value" $ do
+      tInt <- textInput $ def & textInputConfig_inputType .~ "number"
+                              & textInputConfig_initialValue .~ "-20"
+                              & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font")
+      return $ _textInput_value tInt -- :: Dynamic t Text
+    el "div" $ dynText =<< (translatableText $ fromList [
+      (English,"Something about the z-index"),
+      (Español, "Algo sobre el z-index")
+        ])
+    return $ fmap (\x -> \c -> c { hydraZIndex = x }) (fmap (\x -> (read $ T.unpack $ x :: Int)) zIndexInput) -- :: Dynamic t (Context -> Context)
 
   elClass "hr" "dashed" $ return ()
 
@@ -166,4 +177,4 @@ configWidget ctx ri = do
       ])
     viewEditor
 
-  return $ mergeWith (.) [punctualAudioInputModeEv,canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, punctualZIndexChangeEv, viewEditorChange, fpsLimitChangeEv, unsafeModeEv]
+  return $ mergeWith (.) [punctualAudioInputModeEv,canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, (updated cineCer0ZIndexChangeEv), (updated punctualZIndexChangeEv), (updated hydraZIndexChangeEv), viewEditorChange, fpsLimitChangeEv, unsafeModeEv]
