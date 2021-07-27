@@ -165,23 +165,23 @@ responseToStateChange :: Response -> EnsembleC -> EnsembleC
 responseToStateChange (JoinedEnsemble eName uName loc pwd) es = joinEnsembleC eName uName loc pwd es
 responseToStateChange _ es = es
 
-commandToEnsembleRequest :: EnsembleC -> Terminal.Command -> Maybe (IO EnsembleRequest)
+commandToEnsembleRequest :: MonadIO m => EnsembleC -> Terminal.Command -> Maybe (m EnsembleRequest)
 commandToEnsembleRequest es (Terminal.PublishView x) = Just $ return (WriteView x (activeView es))
 commandToEnsembleRequest es (Terminal.Chat x) = Just $ return (WriteChat x)
 commandToEnsembleRequest es Terminal.AncientTempo = Just $ return (WriteTempo x)
   where x = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
-commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ do
+commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ liftIO $ do
   x' <- changeTempoNow (realToFrac x) (tempo $ ensemble es)
   return (WriteTempo x')
-commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ do
+commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ liftIO $ do
   x' <- changeTempoNow (realToFrac x / 240) (tempo $ ensemble es)
   return (WriteTempo x')
 commandToEnsembleRequest _ Terminal.ResetZones = Just $ return ResetZonesRequest
 commandToEnsembleRequest _ Terminal.ResetViews = Just $ return ResetViewsRequest
-commandToEnsembleRequest _ Terminal.ResetTempo = Just $ do
+commandToEnsembleRequest _ Terminal.ResetTempo = Just $ liftIO $ do
   t <- getCurrentTime
   return $ ResetTempoRequest $ Tempo { freq = 0.5, time = t, count = 0 }
-commandToEnsembleRequest _ Terminal.Reset = Just $ do
+commandToEnsembleRequest _ Terminal.Reset = Just $ liftIO $ do
   t <- getCurrentTime
   return $ ResetRequest $ Tempo { freq = 0.5, time = t, count = 0 }
 commandToEnsembleRequest es (Terminal.InsertAudioResource url bankName n) = Just $ do

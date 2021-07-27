@@ -115,8 +115,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   (command,_) <- hideableWidget' terminalVisible $ do
     runEditor irc ctx rInfo $ terminalWidget deltasDown hints
   (terminalButton,_) <- runEditor irc ctx rInfo $ footer hints
-  let commandEnsembleRequestsIO = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
-  commandEnsembleRequests <- performEvent $ fmap liftIO commandEnsembleRequestsIO
+  commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
   let commandRequests = fmapMaybe commandToRequest command
 
