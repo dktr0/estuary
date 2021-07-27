@@ -326,9 +326,6 @@ range min max input t vl rTime eTime aTime =
           add = mult + (min t vl rTime eTime aTime)
 
 
-rampMaybe :: Rational -> Rational -> Rational -> Signal (Maybe Rational)
-rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime
-
 trimCycleRamps:: [Rational] -> [Rational] -> Signal Rational
 trimCycleRamps durs vals
   | length durs >= length vals = 
@@ -336,6 +333,8 @@ trimCycleRamps durs vals
     in ramps (take limit durs) vals
   | otherwise = ramps (take (length vals - 1) $ cycle durs) vals
 
+rampsMaybe :: [Rational] -> [Rational] -> Signal (Maybe Rational)
+rampsMaybe durs vals = \t vl rTime eTime aTime -> Just $ ramps' durs vals t vl rTime eTime aTime
 
 ramps':: [Rational] -> [Rational] -> Signal Rational
 ramps' durs vals 
@@ -347,6 +346,9 @@ ramps [] vals t vl r e a = last vals
 ramps durs vals t vl r e a = if endOfDur > r then ramp (head durs) (head vals) (head $ tail vals) t vl r e a else ramps (tail durs) (tail vals) t vl r e endOfDur
     where endOfDur = addUTCTime (realToFrac x :: NominalDiffTime) a -- anchor time plus duration of previous ramp
           x = (head durs) / (realToFrac (freq t) :: Rational)
+
+rampMaybe :: Rational -> Rational -> Rational -> Signal (Maybe Rational)
+rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime
 
 ramp :: Rational -> Rational -> Rational -> Signal Rational
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
