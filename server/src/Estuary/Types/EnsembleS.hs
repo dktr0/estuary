@@ -46,7 +46,7 @@ newEnsembleS eName now opwd jpwd expTime = do
     }
   zonesTvar <- newTVar IntMap.empty
   viewsTvar <- newTVar Map.empty
-  resourceOpsTvar <- newTVar Data.Sequence.empty
+  resourceOpsTvar <- newTVar defaultResourceOps
   connectionsTvar <- newTVar IntMap.empty
   namedConnectionsTvar <- newTVar IntMap.empty
   anonymousConnectionsTvar <- newTVar 0
