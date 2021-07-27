@@ -23,7 +23,7 @@ vol 0.5 $ "myVideo.extension" -- videos play with unmuted audio
 
 setWidth [w] $ -- 1 = natural video width <br/>
 setHeight [h] $ -- 1 = natural video height <br />
-setSize [wh] $ <br /> --one parameter will affect both width and heigh proportionally
+setSize [wh] $ --one parameter will affect both width and heigh proportionally <br />
 setRotate [d] $ <br /> -- parameter in degrees
 setOpacity [o] $ -- from 0 - 1 (no opacity) <br />
 setBlur [bl] $ -- 0 = no blur (1++ = more) <br />
