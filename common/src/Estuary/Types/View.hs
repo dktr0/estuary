@@ -32,11 +32,7 @@ data View =
   RouletteView Int Int |
   AudioMapView |
   StopWatchView Int |
-<<<<<<< HEAD
-  StopWatchViewExp Int
-=======
   StopWatchExplorationsView Int
->>>>>>> e428728ba4b2f8fd6ddb69c55c97d618759c404b
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where
