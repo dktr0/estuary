@@ -128,18 +128,19 @@ requestToStateChange :: EnsembleRequest -> EnsembleC -> EnsembleC
 requestToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es
 requestToStateChange (WriteZone n v) es = modifyEnsemble (writeZone n v) es
 requestToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
-requestToStateChange ResetZonesRequest es =
-  modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
-requestToStateChange ResetViewsRequest es =
-  modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
-requestToStateChange (ResetTempoRequest t) es =
-  modifyEnsemble (writeTempo t) es
-requestToStateChange (ResetRequest t) es =
-  modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
+requestToStateChange ResetZonesRequest es = modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
+requestToStateChange ResetViewsRequest es = modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
+requestToStateChange (ResetTempoRequest t) es = modifyEnsemble (writeTempo t) es
+requestToStateChange (ResetRequest t) es = modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
+requestToStateChange (WriteResourceOps s) es = modifyEnsemble (\e -> e { resourceOps = s } ) es
 requestToStateChange _ es = es
 -- note: WriteChat and WriteStatus don't directly affect the EnsembleC and are thus
 -- not matched here. Instead, the server responds to these requests to all participants
 -- and in this way the information "comes back down" from the server.
+
+ensembleRequestIO :: MonadIO m => Resources -> EnsembleRequest -> m ()
+ensembleRequestIO rs (WriteResourceOps s) = setResourceOps rs s
+ensembleRequestIO _ _ = return ()
 
 ensembleResponseToStateChange :: EnsembleResponse -> EnsembleC -> EnsembleC
 ensembleResponseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) es

@@ -117,6 +117,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   (terminalButton,_) <- runEditor irc ctx rInfo $ footer hints
   commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
+  performEvent_ $ fmap (ensembleRequestIO $ resources irc) ensembleRequests
   let commandRequests = fmapMaybe commandToRequest command
 
   -- changes to EnsembleC within Context, and to Context
