@@ -24,8 +24,8 @@ stopWatchWidget' :: MonadWidget t m => Dynamic t StopWatch -> Editor t m (Variab
 stopWatchWidget' deltasDown = mdo
 
   -- 1. Translate button presses into localChanges (Event t StopWatch)
-  -- x <- dynButton $ fmap snd textUpdates -- :: m (Event t ())
-  x <- button "hola"  -- :: m (Event t ()) 
+  x <- dynButton $ fmap snd textUpdates -- :: m (Event t ())
+  -- x <- button "hola"  -- :: m (Event t ()) 
   let y = tag (current $ currentValue v) x
   localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
 
@@ -34,7 +34,7 @@ stopWatchWidget' deltasDown = mdo
   initialStopWatch <- sample $ current deltasDown
   let initialText = fst $ stopWatchToText initialStopWatch widgetBuildTime
   tick <- tickLossy 0.050 widgetBuildTime -- :: Event t UTCTime
-  let textUpdates = attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick
+  let textUpdates = attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick -- :: Event t c
   holdDyn initialText (fmap fst textUpdates) >>= dynText
 
   v <- returnVariable deltasDown localChanges
