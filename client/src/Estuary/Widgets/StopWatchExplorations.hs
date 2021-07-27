@@ -22,9 +22,9 @@ import Estuary.Reflex.Utility
 
 stopWatchWidget' :: MonadWidget t m => Dynamic t StopWatch -> Editor t m (Variable t StopWatch)
 stopWatchWidget' deltasDown = mdo
-
+  dynSnd <- holdDyn "moo" $ fmap snd textUpdates 
   -- 1. Translate button presses into localChanges (Event t StopWatch)
-  x <- dynButton $ fmap snd textUpdates -- :: m (Event t ())
+  x <- dynButton $ dynSnd 
   -- x <- button "hola"  -- :: m (Event t ()) 
   let y = tag (current $ currentValue v) x
   localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
