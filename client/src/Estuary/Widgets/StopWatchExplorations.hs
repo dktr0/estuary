@@ -14,12 +14,7 @@ import Control.Monad.IO.Class
 import Estuary.Widgets.Editor
 import Estuary.Types.Variable
 import Estuary.Types.Definition
-
-import Estuary.Types.Context
-import Estuary.Types.Language
 import Estuary.Reflex.Utility
-import Estuary.Widgets.Editor
-import Data.Map.Strict
 
 
 -- from Estuary.Types.Definition.hs:
@@ -29,10 +24,8 @@ stopWatchWidget' :: MonadWidget t m => Dynamic t StopWatch -> Editor t m (Variab
 stopWatchWidget' deltasDown = mdo
 
   -- 1. Translate button presses into localChanges (Event t StopWatch)
-  x <- button $ dynText =<< (translatableText $ fromList [
-    (English,"Button"),
-    (Español,"Boton")
-    ])
+  x <- dynButton $ fmap snd textUpdates -- :: m (Event t ())
+  -- x <- button "hola"  -- :: m (Event t ()) 
   let y = tag (current $ currentValue v) x
   localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
 
@@ -43,13 +36,11 @@ stopWatchWidget' deltasDown = mdo
   tick <- tickLossy 0.050 widgetBuildTime -- :: Event t UTCTime
   let textUpdates = attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick
   holdDyn initialText textUpdates >>= dynText
-
-  v <- returnVariable deltasDown localChanges
+  let initialText = fst $ stopWatchToText initialStopWatch widgetBuildTime
   return v
 
 
 stopWatchToNextState :: StopWatch -> IO StopWatch
--- this function is used to transition between the three states of the stopwatch
 -- as this sometimes requires checking the current time, the computation is in IO
 -- A. If stop watch is stopped at 0:00 then it starts:
 stopWatchToNextState (Left Nothing) = do
@@ -63,10 +54,17 @@ stopWatchToNextState (Right startTime) = do
 stopWatchToNextState (Left (Just _)) = return (Left Nothing)
 
 
-stopWatchToText :: StopWatch -> UTCTime -> Text
-stopWatchToText (Left Nothing) _ = diffTimeToText 0
-stopWatchToText (Right startTime) now = diffTimeToText $ diffUTCTime now startTime
-stopWatchToText (Left (Just ndt)) _ = diffTimeToText ndt
+stopWatchToText :: StopWatch -> UTCTime -> (Text, Text)
+stopWatchToText (Left Nothing) _ = (diffTimeToText 0, "start")
+stopWatchToText (Right startTime) now = (diffTimeToText $ diffUTCTime now startTime, "stop")
+stopWatchToText (Left (Just ndt)) _ = (diffTimeToText ndt, "clear)")
 
 diffTimeToText :: NominalDiffTime -> Text
 diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> showt (floor x `mod` 60 :: Int)
+
+
+countDown:: Rational -> UTCTime -> Text
+countDown tMinus anchor = 
+  let endPoint = addUTCTime (realToFrac tMinus) anchor 
+      count = diffUTCTime endPoint anchor
+  in diffTimeToText count

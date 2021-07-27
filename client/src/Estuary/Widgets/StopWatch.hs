@@ -38,6 +38,7 @@ stopWatchWidget deltasDown = mdo
   v <- returnVariable deltasDown localChanges
   return v
 
+-- attachWith :: Reflex t => (a -> b -> c) -> Behavior t a -> Event t b -> Event t c 
 
 stopWatchToNextState :: StopWatch -> IO StopWatch
 -- this function is used to transition between the three states of the stopwatch
