@@ -27,6 +27,9 @@ import Estuary.Types.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Types.Participant
+import Estuary.Types.TranslatableText
+import Estuary.Types.Language
+
 
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
@@ -107,18 +110,18 @@ readableTempo tempo =
 
 
 commandToHint :: EnsembleC -> Terminal.Command -> Maybe Hint
-commandToHint _ (Terminal.LocalView _) = Just $ LogMessage "local view changed"
-commandToHint _ (Terminal.PresetView x) = Just $ LogMessage $ "preset view " <> x <> " selected"
-commandToHint _ (Terminal.PublishView x) = Just $ LogMessage $ "active view published as " <> x
-commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ nameOfActiveView es
-commandToHint es (Terminal.ListViews) = Just $ LogMessage $ showt $ listViews $ ensemble es
-commandToHint es (Terminal.DumpView) = Just $ LogMessage $ dumpView (activeView es)
+commandToHint _ (Terminal.LocalView _) = Just $ LogMessage $ (Map.fromList [(English,  "local view changed"), (Español, "La vista local ha cambiado")])
+commandToHint _ (Terminal.PresetView x) = Just $ LogMessage $ (Map.fromList [(English,  "preset view " <> x <> " selected"), (Español, "vista predeterminada " <> x <> " seleccionada")])
+commandToHint _ (Terminal.PublishView x) = Just $ LogMessage $ (Map.fromList [(English, "active view published as " <> x), (Español, "vista activa publicada como " <> x)])
+commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ (english $ nameOfActiveView es)
+commandToHint es (Terminal.ListViews) = Just $ LogMessage $  (english $ showt $ listViews $ ensemble es)
+commandToHint es (Terminal.DumpView) = Just $ LogMessage $  (english $ dumpView (activeView es))
 commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
-commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $ readableTempo $ tempo $ ensemble es
-commandToHint _ Terminal.ResetZones = Just $ LogMessage "zones reset"
-commandToHint _ Terminal.ResetViews = Just $ LogMessage "views reset"
-commandToHint _ Terminal.ResetTempo = Just $ LogMessage "tempo reset"
-commandToHint _ Terminal.Reset = Just $ LogMessage "(full) reset"
+commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $  (english $ readableTempo $ tempo $ ensemble es)
+commandToHint _ Terminal.ResetZones = Just $ LogMessage  (Map.fromList [(English, "zones reset"), (Español, "zonas reiniciadas")])
+commandToHint _ Terminal.ResetViews = Just $ LogMessage  (Map.fromList [(English, "views reset"), (Español, "vistas reiniciadas")])
+commandToHint _ Terminal.ResetTempo = Just $ LogMessage  (Map.fromList [(English, "tempo reset"), (Español, "tempo reiniciado")])
+commandToHint _ Terminal.Reset = Just $ LogMessage (Map.fromList [(English, "(full) reset"), (Español, "reinicio (completo)")])
 commandToHint _ _ = Nothing
 
 commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC

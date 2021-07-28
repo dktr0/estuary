@@ -6,10 +6,12 @@ import Data.Maybe (mapMaybe)
 import Estuary.Types.Tempo
 import Estuary.Utility
 import Estuary.Types.Definition
+import Estuary.Types.TranslatableText
+
 
 data Hint =
   SampleHint Text |
-  LogMessage Text |
+  LogMessage TranslatableText |
   SetGlobalDelayTime Double |
   SilenceHint |
   ZoneHint Int Definition |
