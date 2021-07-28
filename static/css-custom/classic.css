@@ -58,10 +58,24 @@ More advanced customization is available through CSS classes within this documen
 
 .ui-dropdownMenus{
 	background-color: transparent;
-
 }
 
 .ui-dropdownMenus:focus {
+  background-color: var(--background-color) !important;
+}
+
+/* styles the input boxes */
+
+.ui-inputMenus{
+  background-color: transparent;
+  width: 3em;
+}
+
+.ui-inputMenus::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.ui-inputMenus:focus {
   background-color: var(--background-color) !important;
 }
 

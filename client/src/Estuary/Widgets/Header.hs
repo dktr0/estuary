@@ -29,7 +29,7 @@ header = divClass "header primary-color primary-borders" $ mdo
     divClass "config-toolbar" $ do
 
       themeChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
-        let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/dark.css", "Dark" ),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale"), ("../css-custom/bubble.css","Bubble"), ("../css-custom/memorias.css","Memorias")]
+        let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/dark.css", "Dark" ),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale"), ("../css-custom/bubble.css","Bubble"), ("../css-custom/minimalist.css","Minimalist")]
         term Term.Theme >>= dynText
         styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" )) -- Event t String
         return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
