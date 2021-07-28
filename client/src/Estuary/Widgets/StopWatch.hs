@@ -16,10 +16,11 @@ import Estuary.Types.Variable
 import Estuary.Types.Definition
 
 
+
 -- from Estuary.Types.Definition.hs:
 --   type StopWatch = Either (Maybe NominalDiffTime) UTCTime
 
-stopWatchWidget :: MonadWidget t m => Dynamic t StopWatch -> Editor t m (Variable t StopWatch)
+stopWatchWidget :: MonadWidget t m => Dynamic t Counter -> Editor t m (Variable t Counter)
 stopWatchWidget deltasDown = mdo
 
   -- 1. Translate button presses into localChanges (Event t StopWatch)
@@ -40,7 +41,7 @@ stopWatchWidget deltasDown = mdo
 
 -- attachWith :: Reflex t => (a -> b -> c) -> Behavior t a -> Event t b -> Event t c 
 
-stopWatchToNextState :: StopWatch -> IO StopWatch
+stopWatchToNextState :: Counter -> IO Counter
 -- this function is used to transition between the three states of the stopwatch
 -- as this sometimes requires checking the current time, the computation is in IO
 -- A. If stop watch is stopped at 0:00 then it starts:
@@ -55,7 +56,7 @@ stopWatchToNextState (Right startTime) = do
 stopWatchToNextState (Left (Just _)) = return (Left Nothing)
 
 
-stopWatchToText :: StopWatch -> UTCTime -> Text
+stopWatchToText :: Counter -> UTCTime -> Text
 stopWatchToText (Left Nothing) _ = diffTimeToText 0
 stopWatchToText (Right startTime) now = diffTimeToText $ diffUTCTime now startTime
 stopWatchToText (Left (Just ndt)) _ = diffTimeToText ndt

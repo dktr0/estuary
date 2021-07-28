@@ -18,7 +18,7 @@ type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
-type StopWatch = Either (Maybe NominalDiffTime) UTCTime
+type Counter = Either (Maybe NominalDiffTime) UTCTime
 
 data Definition =
   TextProgram (Live TextProgram) |
@@ -26,7 +26,9 @@ data Definition =
   TidalStructure TransformedPattern |
   LabelText Text |
   Roulette Roulette |
-  StopWatch StopWatch
+  Counter Counter
+ -- StopWatch Counter |
+ -- CountDown Counter     -- this needs to be sorted at some point !!!!!!
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -80,6 +82,6 @@ maybeRoulette _ = Nothing
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
 
-maybeStopWatch :: Definition -> Maybe StopWatch
-maybeStopWatch (StopWatch x) = Just x
-maybeStopWatch _ = Nothing
+maybeCounter :: Definition -> Maybe Counter
+maybeCounter (Counter x) = Just x
+maybeCounter _ = Nothing

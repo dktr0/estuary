@@ -84,9 +84,9 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
 
-viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget
+viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeCounter Counter er stopWatchWidget
 
-viewWidget er (StopWatchExplorationsView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget'
+viewWidget er (StopWatchExplorationsView z) = zoneWidget z (Left Nothing) maybeCounter Counter er countDownWidget
 
 viewWidget er TempoView = do
   ctx <- context
