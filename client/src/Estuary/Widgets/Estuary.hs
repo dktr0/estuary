@@ -8,6 +8,7 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault,append)
 import Reflex.Dom.Contrib.KeyEvent
 import Reflex.Dom.Old
+import Reflex.Dynamic
 import Data.Time
 import Data.Map
 import Data.Maybe
@@ -79,10 +80,14 @@ keyEventToHint _ = Nothing
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
+
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  cvsElement <- canvasWidget (-2) ctx -- canvas for Punctual
+
+  punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
+  cvsElement <- canvasWidget punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
-  hCanvas <- canvasWidget (-10) ctx -- canvas for Hydra
+  hydraZIndex' <- holdUniqDyn $ fmap hydraZIndex ctx
+  hCanvas <- canvasWidget hydraZIndex' ctx -- canvas for Hydra
 
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
@@ -161,22 +166,26 @@ cinecer0Widget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 cinecer0Widget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
-  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -1;" <> x <> ";")]
+  dynZIndex <- holdUniqDyn $ fmap cineCer0ZIndex ctx
+  let dynZIndex' = fmap (T.pack . show) dynZIndex
+  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
-  let attrs = (<>) <$> baseAttrs <*> resMap
+  let attrs = (<>) <$> dynAttrs <*> resMap
   videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
-canvasWidget :: MonadWidget t m => Int -> Dynamic t Context -> m HTMLCanvasElement
-canvasWidget zIndex ctx = do
-  canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
-  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: " <> showt zIndex <> ";" <> x <> ";")]
+canvasWidget :: MonadWidget t m => Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
+canvasWidget dynZIndex ctx = do
+  canvasVisible <- fmap (("visibility: " <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
+  let dynZIndex' = fmap (T.pack . show) dynZIndex -- :: Dynamic t Text
+  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
-  let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
-  let attrs = (<>) <$> baseAttrs <*> resMap
+  let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res -- :: Dynamic t (Map Text Text)
+  let attrs = (<>) <$> dynAttrs <*> resMap
   liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
+
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
 pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
