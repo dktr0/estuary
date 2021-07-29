@@ -218,26 +218,6 @@ presetViews = fromList [
        (Views [LabelView 62,CodeView 63 0])
       ]),
 
-      ("blackBox",GridView 1 1 [
-         BorderDiv [LabelView 0,CodeView 1 0],
-         BorderDiv [LabelView 2,CodeView 3 0]
-         ]),
-
-      ("memorias",GridView 3 2 [
-         BorderDiv [LabelView 0,CodeView 1 0],
-         BorderDiv [LabelView 2,CodeView 3 0],
-         BorderDiv [LabelView 4,CodeView 5 0],
-         BorderDiv [LabelView 6,CodeView 7 0],
-         BorderDiv [LabelView 8,CodeView 9 0],
-         BorderDiv [LabelView 10,CodeView 11 0]
-         ]),
-
-      ("memorias2",GridView 3 1 [
-         BorderDiv [LabelView 0,CodeView 1 0],
-         BorderDiv [LabelView 2,CodeView 3 0],
-         BorderDiv [LabelView 4,CodeView 5 0]
-         ]),
-
 -- the second number of the RouletteView will modify the height of the view. It is expressed in ems, it is recommended to use numbers above 2 to avoid the roulette buttons being cutoff. If set to 0, the roulette view will expand automatically and the text will wrap.
 
       ("roulette",GridView 2 1 [

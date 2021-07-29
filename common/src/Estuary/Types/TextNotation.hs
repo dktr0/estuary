@@ -64,9 +64,6 @@ pragmaToTextNotation "lacalle" _ _ = Just $ TidalTextNotation LaCalle
 pragmaToTextNotation "sucixxx" _ _ = Just $ TidalTextNotation Sucixxx
 pragmaToTextNotation "togo" _ _ = Just $ TidalTextNotation Togo
 pragmaToTextNotation "blackbox" _ _ = Just $ TidalTextNotation BlackBox
-pragmaToTextNotation "escribir" _ _ = Just $ TidalTextNotation Escribir
-pragmaToTextNotation "observar" _ _ = Just $ TidalTextNotation Observar
-pragmaToTextNotation "leer" _ _ = Just $ TidalTextNotation Leer
 pragmaToTextNotation x _ ns =
   case elem x ns of
     True -> Just $ EphemeralNotation x

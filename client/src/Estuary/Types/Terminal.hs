@@ -178,7 +178,7 @@ wrongCommandNoArg = do
     fatal $ "!" <> x <> " is an unrecognised command."
 
 
-
+-- reset zones
 resetzonesParser :: H Command
 resetzonesParser = resetzonesFunc <$ (reserved "resetzones")
 
@@ -329,7 +329,7 @@ deletethisensembleFunc x =  DeleteThisEnsemble x
 -- delete ensemble
 deleteensembleParser :: H Command
 deleteensembleParser = (deleteensembleParser' <*!> nameOrPassword) <|>
-    (reserved "deleteensemble" >> fatal "Missing argument. !deleteensemble expects an ensemble name AND a moderator password.")
+    (reserved "deleteensemble" >> fatal "Missing argument. !deleteensemble expects an ensemble name and a moderator password.")
 
 deleteensembleParser' :: H (Text -> Command)
 deleteensembleParser' = deleteensembleParser'' <*> nameOrPassword

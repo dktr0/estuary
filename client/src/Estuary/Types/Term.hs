@@ -50,10 +50,15 @@ data Term =
   FPS |
   FPSDescription |
   IPaddress |
-  IPaddressDescription 
+  IPaddressDescription |
+  TerminalViewCommands
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
+translate TerminalViewCommands Français = "Estuary (un symbiote de codage en ligne)"
+translate TerminalViewCommands English = "Estuary (a live coding symbiont)"
+translate TerminalViewCommands Español = "Estuary (una simbionte live coding)"
+
 translate EstuaryDescription Français = "Estuary (un symbiote de codage en ligne)"
 translate EstuaryDescription English = "Estuary (a live coding symbiont)"
 translate EstuaryDescription Español = "Estuary (una simbionte live coding)"

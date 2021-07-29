@@ -2,25 +2,29 @@
 
 The CineCer0 mini-language (pronounced “sin–ay–ser-oh”) language allows video files to be projected temporally and geometrically, targeting similar functionality to that of [CineVivo](https://github.com/essteban/CineVivo), again with an economical Haskell-like notation. Additional functions that enable the audio of the video and allow the player to add text on top of the video (or without any relationship with the video) have been implemented.  
 
-## Playing Videos
+## Playing Videos, Images, or Text
 
-"myVideo.extension" --videos play as a string <br />
-"videoURL" --you can add the URL to play videos <br />
-video "video.extension" -- function in which the explicit declaration of the type of signal ouput is declared <br />
+video "myVideo.extension" or image "myImage.extension"  --videos/images play as a string <br />
+video "videoURL" <br />
+image "imageURL" <br />
+text "This is not a text" -- the string represents the text that will be displayed in the canvas <br />
 "" --empty state
 
-### Videos with Audio
-
-vol 0.5 $ "myVideo.extension" -- videos play with unmuted audio
-
-## Image
-
-setWidth [w] $ -- 1 = natural video width <br/>
-setHeight [h] $ -- 1 = natural video height <br />
-setSize [wh] $ <br /> --one parameter will affect both width and heigh proportionally
+## Position on Videos, Images, or Text
 setPosX [x] $ -- from left (-1) to right 1 <br />
 setPosY [y] $ -- from bottom (-1) to top 1 <br />
 setCoord [x] [y] $ <br />
+
+## Videos with Audio
+
+vol 0.5 $ "myVideo.extension" -- videos play with unmuted audio
+
+## Video/Image functions
+
+setWidth [w] $ -- 1 = natural video width <br/>
+setHeight [h] $ -- 1 = natural video height <br />
+setSize [wh] $ --one parameter will affect both width and heigh proportionally <br />
+setRotate [d] $ <br /> -- parameter in degrees
 setOpacity [o] $ -- from 0 - 1 (no opacity) <br />
 setBlur [bl] $ -- 0 = no blur (1++ = more) <br />
 setBrightness [br] $ --  0-0.9 = less, 1++ = more <br />
@@ -33,9 +37,8 @@ sqrMask [m] $ -- 0 is no mask, 0-0.99 makes the mask appear from biggest to smal
 rectMask [t] [r] [b] [l] $ -- accepts four parameters: top right bottom left, which are the amount of reduction in each side
 z [n] -- changes the depth of the video being reproduced
 
-## Text
+## Text Function
 
-text "This is not a text" -- the string represents the text that will be displayed in the canvas <br />
 fontSize [n] --change the size of the text, grows from 1 <br />
 font "fontType" -- fonts available depending on browser characteristics <br />
 colour "colour" -- adds colour by name or by hexacolor (all colour funcs will be applied to the text) <br />
@@ -68,7 +71,7 @@ quant function has two values. Cycle multiplier aligns the anchor time with mult
 quant can be use with any style functions with or without a ramp. Example: <br />
 opacity (ramp x y z) $ quant x y <br />
 
-## Time Functions
+## Time Functions (for Videos)
 
 natural [shift] $ -- aligns the starting time of the video with the first beat of the first measure <br />
 

@@ -9,6 +9,7 @@ import Data.Bifunctor
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes)
+import Data.Text (Text, pack)
 
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
@@ -46,14 +47,13 @@ maybeLayerSpec = _0Arg $
 layerSpec :: H LayerSpec
 layerSpec = _0Arg $
   (vs_vs <*> layerSpec) <|>
-  (layerSpecFunc <*> string) <|>
-  (fmap stringToLayerSpec string)
+  (layerSpecFunc <*> text)
 
-layerSpecFunc :: H (String -> LayerSpec)
+layerSpecFunc :: H (Text -> LayerSpec)
 layerSpecFunc =
   textToLayerSpec <$ reserved "text" <|>
+  imageToLayerSpec <$ reserved "image" <|>
   videoToLayerSpec <$ reserved "video"
-
 
 -- //////////////
 
@@ -63,12 +63,15 @@ int = fromIntegral <$> integer
 ndt :: H NominalDiffTime
 ndt = fromRational <$> rationalOrInteger
 
+text :: H Text
+text = pack <$> string
+
 -- //////////////
 
 sigMayRat :: H (Signal (Maybe Rational))
 sigMayRat =
   rat_sigMayRat <*> rationalOrInteger <|>
-  ndt_sigMayRat <*> ndt <|>
+ -- ndt_sigMayRat <*> ndt <|>
   sigRat_sigMayRat <*> sigRat <|>
 --  sigMayRat_sigMayRat <*> sigMayRat <|>
   (constantSignal . Just) <$> rationalOrInteger
@@ -85,13 +88,13 @@ ndt_rat_rat_sigMayRat = rampMaybe <$ reserved "ramp"
 sigInt :: H (Signal Int)
 sigInt = constantSignal <$> int
 
-sigStr :: H (Signal String)
-sigStr = constantSignal <$> string
+sigText :: H (Signal Text)
+sigText = constantSignal <$> text
 
 sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
-  ndt_sigRat <*> ndt <|>
+ -- ndt_sigRat <*> ndt <|>
   sigRat_sigRat <*> sigRat <|>
   constantSignal <$> rationalOrInteger
 
@@ -104,27 +107,36 @@ rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
 ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
 ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
 
--- new fade in (syntax sugar funcs)
-ndt_sigRat :: H (NominalDiffTime -> Signal Rational)
-ndt_sigRat = 
-  fadeIn <$ reserved "fadeIn" <|>
-  fadeOut <$ reserved "fadeOut"
+--list :: Haskellish st a -> Haskellish st [a]
 
-ndt_sigMayRat :: H (NominalDiffTime -> Signal (Maybe Rational))
-ndt_sigMayRat =
-  fadeIn2 <$ reserved "fadeIn" <|>
-  fadeOut2 <$ reserved "fadeOut" 
+-- rats :: H [Rational]
+-- rats = list $ rationalOrInteger
+
+-- ndts :: H [NominalDiffTime]
+-- ndts = list $ fromRational <$> rationalOrInteger
+
+-- rats_sigRat :: H ([Rational] -> Signal Rational)
+-- rats_sigRat = ndts_rats_sigRat <*> ndts
+
+-- ndts_rats_sigRat :: H ([NominalDiffTime] -> [Rational] -> Signal Rational)
+-- ndts_rats_sigRat = ramps <$ reserved "ramps"
 
 ---- sine
 
 sigRat_sigRat:: H (Signal Rational -> Signal Rational)
 sigRat_sigRat =
+  fadeIn <$ reserved "fadeIn" <|>
+  fadeOut <$ reserved "fadeOut" <|>
   sine <$ reserved "sin" <|>
+  secsToPercen <$ reserved "secs" <|>
   sigRat_sigRat_sigRat <*> sigRat
+
 
 sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational)
 sigRat_sigRat_sigRat =
+  reserved "*" >> return multi <|>
   sigRat_sigRat_sigRat_sigRat <*> sigRat
+
 
 sigRat_sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational)
 sigRat_sigRat_sigRat_sigRat =
@@ -134,29 +146,21 @@ sigRat_sigRat_sigRat_sigRat =
 
 sigRat_sigMayRat:: H (Signal Rational -> Signal (Maybe Rational))
 sigRat_sigMayRat =
+  fadeIn2 <$ reserved "fadeIn" <|>
+  fadeOut2 <$ reserved "fadeOut" <|>
   sineMaybe <$ reserved "sin" <|>
   sigRat_sigRat_sigMayRat <*> sigRat
 
--- sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational))
--- sigMayRat_sigMayRat =
---   sineMaybe <$ reserved "sin" <|>
---   sigMayRat_sigMayRat_sigMayRat <*> sigMayRat
 
 sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal (Maybe Rational))
 sigRat_sigRat_sigMayRat =
+  reserved "*" >> return multi' <|>
   sigRat_sigRat_sigRat_sigMayRat <*> sigRat
-
--- sigMayRat_sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational))
--- sigMayRat_sigMayRat_sigMayRat =
---   sigMayRat_sigMayRat_sigMayRat_sigMayRat <*> sigMayRat
 
 sigRat_sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational))
 sigRat_sigRat_sigRat_sigMayRat =
   rangeMaybe <$ reserved "range"
 
--- sigMayRat_sigMayRat_sigMayRat_sigMayRat:: H (Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational) -> Signal (Maybe Rational))
--- sigMayRat_sigMayRat_sigMayRat_sigMayRat =
---   rangeMaybe <$ reserved "range"
 
 -- //////////////
 
@@ -165,13 +169,14 @@ vs_vs =
   sigRat_vs_vs <*> sigRat <|>
   sigMayRat_vs_vs <*> sigMayRat <|>
   rat_vs_vs <*> rationalOrInteger <|>
-  sigStr_vs_vs <*> sigStr <|>
+  sigText_vs_vs <*> sigText <|>
   sigInt_vs_vs <*> sigInt <|>
   (reserved "strike" >> return setStrike) <|>
   (reserved "bold" >> return setBold) <|>
   (reserved "italic" >> return setItalic) <|>
-  (reserved "border" >> return setBorder)
-  -- <|>
+  (reserved "border" >> return setBorder) <|>
+  (reserved "freeRun" >> return freerun)
+ -- <|>
  -- (reserved "mute" >> return setMute) <|>
  -- (reserved "unmute" >> return setUnmute)
 
@@ -202,25 +207,27 @@ sigRat_vs_vs =
   shiftHeight <$ reserved "height" <|>
   setSize <$ reserved "setSize" <|>
   shiftSize <$ reserved "size" <|>
+  setRotate <$ reserved "setRotate" <|>
+  shiftRotate <$ reserved "rotate" <|>
   circleMask <$ reserved "circleMask" <|>
   sqrMask <$ reserved "sqrMask" <|>
   setVolume <$ reserved "vol" <|>
-  setFontSize <$ reserved "fontSize" <|>
   sigRat_sigRat_vs_vs <*> sigRat
 
 sigInt_vs_vs :: H (Signal Int -> LayerSpec -> LayerSpec)
 sigInt_vs_vs =
   setZIndex <$ reserved "z"
 
-sigStr_vs_vs :: H (Signal String -> LayerSpec -> LayerSpec)
-sigStr_vs_vs =
-  setColourStr <$ reserved "colour" <|> 
+sigText_vs_vs :: H (Signal Text -> LayerSpec -> LayerSpec)
+sigText_vs_vs =
+  setColourStr <$ reserved "colour" <|>
   setFontFamily <$ reserved "font"
 
 sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
 sigRat_sigRat_vs_vs =
   setCoord <$ reserved "setCoord" <|>
   shiftCoord <$ reserved "coord" <|>
+  playChop' <$ reserved "freeSeg" <|>
   sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
@@ -229,6 +236,7 @@ sigRat_sigRat_sigRat_vs_vs =
   setRGB <$ reserved "rgb" <|>
   setHSL <$ reserved "hsl" <|>
   setHSL <$ reserved "hsv" <|>
+  playChop <$ reserved "seg" <|>
   sigRat_sigRat_sigRat_sigRat_vs_vs <*> sigRat
 
 sigRat_sigRat_sigRat_sigRat_vs_vs :: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational -> LayerSpec -> LayerSpec)
@@ -242,35 +250,16 @@ sigRat_sigRat_sigRat_sigRat_vs_vs =
 
 rat_vs_vs :: H (Rational -> LayerSpec -> LayerSpec)
 rat_vs_vs =
-  playNatural <$ reserved "natural" <|>
-  playSnap <$ reserved "snap" <|>
-  playSnapMetre <$ reserved "snapMetre" <|>
-  rat_rat_vs_vs <*> rationalOrInteger <|>
-  ndt_rat_vs_vs <*> ndt
+ playNatural <$ reserved "natural" <|>
+ playSnap <$ reserved "snap" <|>
+ playSnapMetre <$ reserved "snapMetre" <|>
+ playRate <$ reserved "rate" <|>
+ rat_rat_vs_vs <*> rationalOrInteger -- <|>
+ -- ndt_rat_vs_vs <*> ndt
 
 rat_rat_vs_vs :: H (Rational -> Rational -> LayerSpec -> LayerSpec)
 rat_rat_vs_vs =
   playEvery <$ reserved "every" <|>
-  rat_rat_rat_vs_vs <*> rationalOrInteger <|>
-  ndt_rat_rat_vs_vs <*> ndt <|>
   quant <$ reserved "quant"
-
-rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
-rat_rat_rat_vs_vs =
-  playChop' <$ reserved "chop'" <|>
-  rat_rat_rat_rat_vs_vs <*> rationalOrInteger
-
-rat_rat_rat_rat_vs_vs :: H (Rational -> Rational -> Rational -> Rational -> LayerSpec -> LayerSpec)
-rat_rat_rat_rat_vs_vs =
-  playChop <$ reserved "chop"
-
-ndt_rat_vs_vs :: H (NominalDiffTime -> Rational -> LayerSpec -> LayerSpec)
-ndt_rat_vs_vs =
-  playNow <$ reserved "now"
-
-ndt_rat_rat_vs_vs :: H (NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
-ndt_rat_rat_vs_vs =
-  ndt_ndt_rat_rat_vs_vs <*> ndt
-
-ndt_ndt_rat_rat_vs_vs :: H (NominalDiffTime -> NominalDiffTime -> Rational -> Rational -> LayerSpec -> LayerSpec)
-ndt_ndt_rat_rat_vs_vs = playChopSecs <$ reserved "chopSecs" -- time function
+--  rat_rat_rat_vs_vs <*> rationalOrInteger <|>
+--  ndt_rat_rat_vs_vs <*> ndt <|>

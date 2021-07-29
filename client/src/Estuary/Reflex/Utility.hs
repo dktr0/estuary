@@ -29,6 +29,10 @@ dyn' x = do
   initialWidget <- sample $ current x
   widgetHold initialWidget $ updated x -- m (Dynamic t a)
 
+-- for dinamic attributes
+dynAttr :: Reflex t => Text -> Dynamic t Text -> Dynamic t (Map Text Text)
+dynAttr k = fmap (Data.Map.singleton k)
+
 -- a temporary button with class for the reference files
 buttonWithClass' :: MonadWidget t m => Text -> m (Event t ())
 buttonWithClass' s = do
@@ -60,7 +64,6 @@ dynButtonWSettableClass c s = dynE (buttonWithSettableClass <$> c <*> s)
 -- dynButtonWSettableClass' :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> Dynamic t (m (Event t a))
 -- dynButtonWSettableClass' c s = buttonWithSettableClass <$> c <*> s
 --
-
 
 --Button with dynamic label.
 dynButton :: MonadWidget t m => Dynamic t Text -> m (Event t ())
