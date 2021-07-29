@@ -41,7 +41,6 @@ import Estuary.Types.Response
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Context
 import Estuary.Types.Hint
-import Estuary.Types.Samples
 import Estuary.Types.Tempo
 import Estuary.Reflex.Utility
 import Estuary.Types.RenderInfo

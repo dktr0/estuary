@@ -16,7 +16,6 @@ import Estuary.Types.TranslatableText
 import Estuary.Tidal.Types
 import Estuary.Types.Language
 import Estuary.Types.Definition
-import Estuary.Types.Samples
 import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Types.RenderState
