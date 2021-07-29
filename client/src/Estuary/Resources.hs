@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Render.Resources where
+module Estuary.Resources where
 
 import Control.Concurrent
 import Control.Monad
@@ -13,10 +13,10 @@ import Estuary.Types.ResourceOp
 import Estuary.Types.ResourceMeta
 import Estuary.Types.ResourceType
 import Estuary.Types.Location
-import Estuary.Types.LocMap as LocMap
-import Estuary.Types.Loadable
-import Estuary.Types.AudioResource
-import Estuary.Render.ResourceList
+import Estuary.Resources.LocMap as LocMap
+import Estuary.Resources.Loadable
+import Estuary.Resources.AudioResource
+import Estuary.Resources.ResourceList
 
 
 data Resources = Resources {

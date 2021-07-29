@@ -11,7 +11,7 @@ import Data.List (nub)
 
 import Estuary.Widgets.Editor
 import Estuary.Types.Context
-import Estuary.Types.AudioResource
+import Estuary.Resources.AudioResource
 
 audioMapWidget :: MonadWidget t m => Editor t m ()
 audioMapWidget = elClass "div" "reference" $ do

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Render.ResourceList where
+module Estuary.Resources.ResourceList where
 
 -- a ResourceList is a list of resource URLs and metadata
 -- acquired by asychronous download, with a record of the
@@ -23,10 +23,10 @@ import GHCJS.Types
 import GHCJS.Foreign.Callback
 import GHCJS.Marshal (fromJSValUnchecked)
 
-import Estuary.Types.Loadable
 import Estuary.Types.ResourceMeta
 import Estuary.Types.ResourceType
-import Estuary.Render.XMLHttpRequest
+import Estuary.Resources.XMLHttpRequest
+import Estuary.Resources.Loadable
 
 data ResourceList = ResourceList {
   resourceListURL :: Text,

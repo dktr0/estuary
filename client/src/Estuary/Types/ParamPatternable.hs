@@ -1,4 +1,4 @@
-module Estuary.Tidal.ParamPatternable where
+module Estuary.Types.ParamPatternable where
 
 import qualified Sound.Tidal.Context as Tidal
 import Estuary.Tidal.Types
@@ -17,7 +17,7 @@ class ParamPatternable a where
 -- throws exceptions. When using this parser in the service of our
 -- structure editor we want neither of this - just silent failure.
 parseBP' :: (Tidal.Enumerable a, Tidal.Parseable a) => String -> Tidal.Pattern a
-parseBP' = (either (const Tidal.silence)  id). Tidal.parseBP 
+parseBP' = (either (const Tidal.silence)  id). Tidal.parseBP
 
 instance ParamPatternable SpecificPattern where
   toParamPattern (Accelerate x) = Tidal.accelerate $ parseBP' $ show x

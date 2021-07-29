@@ -7,7 +7,7 @@ import Text.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Sound.Tidal.Context (Pattern,ControlPattern)
 import qualified Sound.Tidal.Context as Tidal
-import Estuary.Tidal.ParamPatternable (parseBP')
+import Estuary.Types.ParamPatternable (parseBP')
 import Data.List
 
 --laCalle

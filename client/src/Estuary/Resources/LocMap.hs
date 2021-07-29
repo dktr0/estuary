@@ -1,4 +1,10 @@
-module Estuary.Types.LocMap where
+module Estuary.Resources.LocMap where
+
+-- A LocMap is a Map-like structure specialized for the case where the keys/indices are Location-s ie. (Text,Int)
+-- This allows lookup and append operations to be defined that take account of common expectations around sample banks
+-- (eg. that the Int part of a Location is subject to "wraparound", and that we might want to append samples to the
+-- "end" of an existing samplebank).
+
 
 import Data.Map as Map
 import Data.IntMap as IntMap
@@ -7,11 +13,6 @@ import Data.Maybe
 import Data.List (find)
 
 import Estuary.Types.Location
-
--- A LocMap is a Map-like structure specialized for the case where the keys/indices are Location-s ie. (Text,Int)
--- This allows lookup and append operations to be defined that take account of common expectations around sample banks
--- (eg. that the Int part of a Location is subject to "wraparound", and that we might want to append samples to the
--- "end" of an existing samplebank).
 
 type LocMap a = Map Text (IntMap a)
 

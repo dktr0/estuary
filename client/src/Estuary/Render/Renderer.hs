@@ -58,7 +58,7 @@ import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 import Estuary.Tidal.Types
-import Estuary.Tidal.ParamPatternable
+import Estuary.Types.ParamPatternable
 import Estuary.Types.Live
 import Estuary.Languages.TidalParsers
 import qualified Estuary.Languages.JSoLang as JSoLang

@@ -56,11 +56,11 @@ import Estuary.Widgets.Generic
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Sidebar
-import Estuary.Types.AudioResource
+import Estuary.Resources.AudioResource
 import Estuary.Types.AudioMeta
-import Estuary.Types.Loadable
-import Estuary.Render.ResourceList
-import Estuary.Render.Resources
+import Estuary.Resources.Loadable
+import Estuary.Resources.ResourceList
+import Estuary.Resources
 import Estuary.Types.ResourceMeta
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp

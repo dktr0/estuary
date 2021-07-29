@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Types.AudioResource where
+module Estuary.Resources.AudioResource where
+
+-- An AudioResource is a type representing an audio file that is asynchronously loaded given some URL.
+-- (ie. it is an instance of Loadable from Estuary.Resources.Loadable)
+
 
 import Data.IORef
 import GHCJS.Types
@@ -15,8 +19,8 @@ import Sound.MusicW.AudioContext
 import Control.Monad (when)
 
 import Estuary.Types.AudioMeta
-import Estuary.Types.Loadable
-import Estuary.Render.XMLHttpRequest
+import Estuary.Resources.Loadable
+import Estuary.Resources.XMLHttpRequest
 
 data AudioResource = AudioResource {
   audioMeta :: AudioMeta,

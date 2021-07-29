@@ -23,7 +23,7 @@ import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.EnsembleC
 import Estuary.Render.DynamicsMode
-import Estuary.Render.Resources
+import Estuary.Resources
 import Estuary.Protocol.Peer
 import Sound.MusicW (Node)
 import Sound.Punctual.GL (GLContext)

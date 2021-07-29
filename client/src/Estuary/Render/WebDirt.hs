@@ -24,9 +24,9 @@ import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Types.Location
 import Estuary.Types.AudioMeta
-import Estuary.Types.AudioResource
-import Estuary.Render.Resources
-import Estuary.Types.Loadable
+import Estuary.Resources.AudioResource
+import Estuary.Resources
+import Estuary.Resources.Loadable
 import Estuary.Types.NoteEvent
 import qualified Sound.Tidal.Context as Tidal
 

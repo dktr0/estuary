@@ -1,13 +1,15 @@
-module Estuary.Types.Loadable where
+module Estuary.Resources.Loadable where
+
+-- Instances of the class Loadable represent resources that are initiated/allocated
+-- by starting an asynchronous URL request, and can report/keep track of the status
+-- of that asynchronous request (LoadStatus).
+
 
 import GHCJS.Types
 import Data.Text
 import Data.Map
 import Data.IORef
 
--- Instances of the class Loadable represent resources that are initiated/allocated
--- by starting an asynchronous URL request, and can report/keep track of the status
--- of that asynchronous request (LoadStatus).
 
 class Loadable a where
   newLoadable :: Text -> (a -> IO ()) -> IO a   -- arguments are URL and a callback when loading succeeds

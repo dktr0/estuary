@@ -31,7 +31,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Types.Participant
-import Estuary.Render.Resources
+import Estuary.Resources
 import Estuary.Types.TranslatableText
 import Estuary.Types.Language
 import Estuary.Types.Ensemble

@@ -1,4 +1,9 @@
-module Estuary.Render.XMLHttpRequest where
+module Estuary.Resources.XMLHttpRequest where
+
+-- An XMLHttpRequest is a simple typed wrapper for a JSVal that is an XMLHttpRequest.
+-- Functions are provided for creating three kinds of XMLHttpRequest, providing
+-- callbacks for the onLoad, onError, and onAbort events, and sending the request.
+
 
 import Data.Text
 import GHCJS.Types

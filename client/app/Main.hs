@@ -23,7 +23,7 @@ import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Render.Renderer
 import Estuary.Render.DynamicsMode
-import Estuary.Render.Resources
+import Estuary.Resources
 import Estuary.Types.ResourceOp
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
