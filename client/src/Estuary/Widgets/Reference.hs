@@ -11,7 +11,7 @@ import GHCJS.Marshal
 import Data.Text (Text)
 import qualified Data.Map.Strict as Map
 
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import Estuary.Help.LanguageHelp
 import Estuary.Help.MiniTidal
 import Estuary.Help.PunctualAudio
@@ -21,8 +21,7 @@ import Estuary.Help.CineCer0.CineCer0
 import Estuary.Help.CineCer0.CineCer0Reference
 import Estuary.Types.Request
 import Estuary.Widgets.Editor
-import Estuary.Reflex.Router
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Router
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.TranslatableText
 import Estuary.Types.Language

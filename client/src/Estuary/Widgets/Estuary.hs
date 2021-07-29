@@ -42,7 +42,7 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Types.Context
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Types.RenderInfo
 import Estuary.Render.DynamicsMode
 import Estuary.Widgets.Header
@@ -51,7 +51,7 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
 import Estuary.Widgets.Terminal
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Sidebar

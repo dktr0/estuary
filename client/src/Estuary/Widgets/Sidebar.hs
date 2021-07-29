@@ -6,7 +6,7 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 
 import Estuary.Widgets.Editor
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.Reference
 import Estuary.Widgets.Config
 import Estuary.Types.Context

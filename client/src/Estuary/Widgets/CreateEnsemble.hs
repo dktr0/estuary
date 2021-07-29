@@ -14,8 +14,8 @@ import qualified Data.Map.Strict as Map
 import Estuary.Types.Context
 import Estuary.Types.Response
 import Estuary.Types.Request
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
 import Estuary.Widgets.Editor
 import Estuary.Types.Language

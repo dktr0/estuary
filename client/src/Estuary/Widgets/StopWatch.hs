@@ -11,8 +11,8 @@ import TextShow
 import Control.Monad
 import Control.Monad.IO.Class
 
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.Editor
-import Estuary.Types.Variable
 import Estuary.Types.Definition
 
 

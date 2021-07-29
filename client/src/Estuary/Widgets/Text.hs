@@ -15,11 +15,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time
 
+import Estuary.Widgets.Reflex
 import Estuary.Tidal.Types
-import Estuary.Reflex.Container
 import Estuary.Widgets.GeneralPattern
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Definition
 import Estuary.Types.Hint
@@ -28,12 +27,10 @@ import Estuary.Languages.TidalParsers
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 import Estuary.Help.LanguageHelp
-import Estuary.Reflex.Utility
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Widgets.Editor
 import Estuary.Types.Context
-import Estuary.Types.Variable
 
 textWidgetClass :: Bool -> Map Text Text
 textWidgetClass True = "class" =: "evalFlash textInputToEndOfLine code-font"

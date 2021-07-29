@@ -8,7 +8,7 @@ import qualified Data.Text as T
 import Data.Map.Strict
 
 import Estuary.Widgets.Editor
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.ViewEditor
 import Estuary.Types.Context
 import Estuary.Types.Language

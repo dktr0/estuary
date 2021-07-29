@@ -14,8 +14,8 @@ import Estuary.Types.RenderInfo
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Hint
 import Estuary.Widgets.Editor
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Utility (dynButton, invisibleButton)
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.Reflex (dynButton, invisibleButton)
 
 footer :: MonadWidget t m => Event t [Hint] -> Editor t m (Event t ())
 footer hints = divClass "footer code-font" $ mdo

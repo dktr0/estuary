@@ -22,7 +22,7 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.EnsembleC
 import Estuary.Types.Context
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal

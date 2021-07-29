@@ -16,7 +16,7 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.Editor
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
 
 ensembleStatusWidget :: MonadWidget t m => Editor t m (Event t EnsembleRequest)

@@ -16,8 +16,9 @@ import Reflex.Dom hiding (Request,Response)
 import Text.Read
 import Control.Monad.IO.Class
 
-import Estuary.Reflex.Router
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.Editor
+import Estuary.Widgets.Router
 import Estuary.Types.RenderInfo
 import Estuary.Tidal.Types
 import Estuary.Types.Context
@@ -35,11 +36,9 @@ import Estuary.Types.View
 import Estuary.Types.Tutorial
 import Estuary.Widgets.Ensemble
 import Estuary.Widgets.EstuaryIcon
-import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.View
-import Estuary.Widgets.Editor
 import Estuary.Widgets.Tutorial
 import Estuary.Widgets.AboutEstuary
 import Estuary.Widgets.CreateEnsemble

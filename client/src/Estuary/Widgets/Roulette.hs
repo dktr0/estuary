@@ -20,9 +20,8 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.Editor
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import Estuary.Types.Definition
-import Estuary.Types.Variable
 import Estuary.Widgets.Text
 import Control.Monad
 

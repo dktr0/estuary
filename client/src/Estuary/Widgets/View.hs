@@ -24,8 +24,7 @@ import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 import Estuary.Types.RenderInfo
 import Estuary.Widgets.Editor
-import Estuary.Widgets.Generic
-import Estuary.Types.Variable
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer

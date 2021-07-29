@@ -14,11 +14,9 @@ import qualified Data.Text as T
 
 import Estuary.Types.Hint
 import Estuary.Types.Live
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Container
+import Estuary.Widgets.Reflex
 import qualified Estuary.Widgets.GeneralPattern as G
 import Estuary.Tidal.Types
-import Estuary.Reflex.Utility
 
 
 specificContainer :: MonadWidget t m => SpecificPattern -> Event t () -> m (Dynamic t (SpecificPattern, Event t (), Event t Hint))

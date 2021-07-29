@@ -12,9 +12,9 @@ import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.Hint
 import qualified Estuary.Types.Term as Term
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.Editor
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 
 header :: MonadWidget t m => Editor t m (Event t ContextChange)
 header = divClass "header primary-color primary-borders" $ mdo

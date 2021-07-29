@@ -11,7 +11,7 @@ import Data.Time
 import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.TranslatableText
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.Editor
 
 -- compiledAnnouncements contains "compiled-in" news and announcements, which are part

@@ -11,7 +11,7 @@ import qualified Data.Text as T
 import Control.Monad(liftM)
 import Text.Parsec
 
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Types.Context
 import Estuary.Types.EnsembleC
 import Estuary.Types.View.Parser

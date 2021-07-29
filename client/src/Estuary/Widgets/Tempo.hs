@@ -18,13 +18,12 @@ import Estuary.Types.Tempo
 import Estuary.Types.Context
 import Estuary.Types.EnsembleResponse
 import Estuary.Widgets.Text
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Widgets.Editor
-import Estuary.Types.Variable
 
 tempoWidget :: MonadWidget t m => Dynamic t Tempo -> Editor t m (Event t Tempo)
 tempoWidget tempoDyn = do

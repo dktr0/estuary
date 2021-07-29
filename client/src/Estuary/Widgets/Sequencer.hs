@@ -12,9 +12,8 @@ import qualified Data.Text as T
 import Safe.Foldable (maximumMay)
 import Text.Read (readMaybe)
 import Estuary.Types.Hint
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Utility
-import Estuary.Types.Variable
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.Editor
 
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE RecursiveDo, ScopedTypeVariables #-}
 
-module Estuary.Reflex.Router(
+module Estuary.Widgets.Router(
   router,
   router',
   getInitialState

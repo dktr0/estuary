@@ -14,13 +14,10 @@ import Data.Maybe (fromJust)
 import Text.Read
 
 import Estuary.Tidal.Types
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Container
+import Estuary.Widgets.Reflex
 import qualified Estuary.Widgets.SpecificPattern as Sp
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Hint
-import Estuary.Types.Variable
 import Estuary.Widgets.Editor
 
 structureEditor :: MonadWidget t m =>

@@ -8,7 +8,7 @@ import Data.Map
 
 import Estuary.Types.Context
 import Estuary.Types.Language
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.Editor
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.View

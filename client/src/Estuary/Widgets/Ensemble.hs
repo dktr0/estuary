@@ -13,7 +13,8 @@ import qualified Data.IntMap.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.Editor
 import Estuary.Types.Context
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -26,8 +27,6 @@ import Estuary.Types.Hint
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.View
-import Estuary.Types.Variable
-import Estuary.Widgets.Editor
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 
