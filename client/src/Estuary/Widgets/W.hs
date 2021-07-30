@@ -62,7 +62,7 @@ renderInfo :: Monad m => W t m (Dynamic t RenderInfo)
 renderInfo = lift $ asks _renderInfo
 
 
--- Get an event
+-- Get a dynamically-updated map of the current maps of "fixed" resources (audiofiles, images, videos)
 resourceMaps :: Monad m => W t m (Dynamic t ResourceMaps)
 resourceMaps = lift $ asks _resourceMaps
 
