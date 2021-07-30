@@ -17,12 +17,12 @@ import Estuary.Types.Request
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Types.Language
 
 
 createEnsembleWidget :: MonadWidget t m => Event t [Response]
-  -> Editor t m (Event t (), Event t Request)
+  -> W t m (Event t (), Event t Request)
 createEnsembleWidget rs = el "div" $ do
 
   el "div" $ term Term.CreateNewEnsemble >>= dynText

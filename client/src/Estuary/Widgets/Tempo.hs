@@ -23,9 +23,9 @@ import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 
-tempoWidget :: MonadWidget t m => Dynamic t Tempo -> Editor t m (Event t Tempo)
+tempoWidget :: MonadWidget t m => Dynamic t Tempo -> W t m (Event t Tempo)
 tempoWidget tempoDyn = do
   v <- variableWidget tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
     let initialText = showt (freq a)

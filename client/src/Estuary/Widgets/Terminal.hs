@@ -27,13 +27,13 @@ import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Hint
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.TranslatableText
 
 import Estuary.Types.Language
 
-terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> Editor t m (Event t Terminal.Command)
+terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> W t m (Event t Terminal.Command)
 terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
   commands <- divClass "chat" $ mdo
     (inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
@@ -56,7 +56,7 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
 
     mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
     divClass "chatMessageContainer" $ simpleList mostRecent $ \v -> do
-      v' <- dynTranslatableText v -- Editor t m (Dynamic t Text)
+      v' <- dynTranslatableText v -- W t m (Dynamic t Text)
       divClass "chatMessage code-font primary-color" $ dynText v' -- m()
 
     pp <- liftIO $ newPeerProtocol

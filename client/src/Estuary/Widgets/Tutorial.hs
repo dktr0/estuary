@@ -11,11 +11,11 @@ import Estuary.Types.Tutorial
 import Estuary.Types.Language
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.EnsembleRequest
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.View
 
 runTutorial :: MonadWidget t m => Tutorial -> Event t [EnsembleResponse]
-  -> Editor t m (Event t EnsembleRequest)
+  -> W t m (Event t EnsembleRequest)
 runTutorial t responsesDown = divClass "tutorialContainer" $ do
   divClass "tutorialTitle code-font" $ do
     translatableText (tutorialTitle t) >>= dynText
@@ -34,7 +34,7 @@ runTutorial t responsesDown = divClass "tutorialContainer" $ do
   return $ switchDyn thePage
 
 runTutorialPage :: MonadWidget t m => TutorialPage -> Event t [EnsembleResponse]
-  -> Editor t m (Event t EnsembleRequest)
+  -> W t m (Event t EnsembleRequest)
 runTutorialPage p responsesDown = do
   divClass "tutorialPageTitle code-font" $ do
     translatableText (tutorialPageTitle p) >>= dynText

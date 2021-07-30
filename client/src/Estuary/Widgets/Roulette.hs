@@ -19,7 +19,7 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import Estuary.Types.Definition
 import Estuary.Widgets.Text
@@ -32,7 +32,7 @@ getHead [] = []
 getHead xs = [head xs]
 
 
-rouletteWidget :: MonadWidget t m => Int -> Dynamic t Roulette -> Editor t m (Variable t Roulette)
+rouletteWidget :: MonadWidget t m => Int -> Dynamic t Roulette -> W t m (Variable t Roulette)
 rouletteWidget rows delta = do
   let rows' = 1 + rows
   let attrsRouletteWidgetContainer = case rows of 0 -> constDyn $ ("class" =: "rouletteWidgetContainer  primary-color code-font")
@@ -44,7 +44,7 @@ rouletteWidget rows delta = do
   elDynAttr "div" attrsRouletteWidgetContainer $ do
       elDynAttr "div" attrsRouletteContainer $ rouletteWidget' delta
 
-rouletteWidget' :: MonadWidget t m => Dynamic t Roulette -> Editor t m (Variable t Roulette)
+rouletteWidget' :: MonadWidget t m => Dynamic t Roulette -> W t m (Variable t Roulette)
 rouletteWidget' delta = mdo
     ctx <- context
     uHandle <- sample $ current $ fmap (userHandle . ensembleC) ctx -- Text

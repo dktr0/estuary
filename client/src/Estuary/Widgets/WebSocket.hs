@@ -23,7 +23,7 @@ import Estuary.Types.Hint
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.TranslatableText
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 
 
 estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->

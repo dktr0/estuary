@@ -8,7 +8,7 @@ import Reflex
 import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Reflex
 import Estuary.Types.Language
@@ -17,7 +17,7 @@ import Estuary.Types.Definition
 import qualified Estuary.Types.Term as Term
 
 
-terminalViewCommandsHelpFile :: MonadWidget t m => Editor t m ()
+terminalViewCommandsHelpFile :: MonadWidget t m => W t m ()
 terminalViewCommandsHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
   about
   functionRef "!localview"
@@ -28,7 +28,7 @@ terminalViewCommandsHelpFile = divClass "languageHelpContainer" $ divClass "lang
   functionRef "!dumpview"
   return ()
 
-about :: MonadWidget t m => Editor t m ()
+about :: MonadWidget t m => W t m ()
 about = do
   divClass "about primary-color code-font" $ dynText =<< (translatableText (Map.fromList [(English, "A flexible view system is provided in order to create layouts for a wide range of purposes."), (Español, "Se proporciona un sistema de visualización flexible para crear diseños (layouts) para una amplia gama de propósitos.")]))
 
@@ -57,7 +57,7 @@ referenceTextSpanish "!activeview" =  "Devuelve el nombre de la vista/layout act
 referenceTextSpanish "!listviews" = "Muestra todas las vistas/layouts preestablecidas."
 referenceTextSpanish "!dumpview" = "Devuelve el diseño de la vista/layout actual."
 --
-functionRef :: MonadWidget t m => Text -> Editor t m ()
+functionRef :: MonadWidget t m => Text -> W t m ()
 functionRef x = divClass "helpWrapper" $ do
   switchToReference <- buttonWithClass' x
   exampleVisible <- toggle True switchToReference

@@ -9,11 +9,11 @@ import Data.Text
 import TextShow
 import Data.List (nub)
 
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Types.Context
 import Estuary.Resources.AudioResource
 
-audioMapWidget :: MonadWidget t m => Editor t m ()
+audioMapWidget :: MonadWidget t m => W t m ()
 audioMapWidget = elClass "div" "reference" $ do
   ctx <- context
   -- aMap <- holdUniqDyn $ fmap audioMap ctx
