@@ -6,6 +6,8 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import qualified Data.Text as T
 import Data.Map.Strict
+import Text.Read(readMaybe)
+import Data.Maybe
 
 import Estuary.Widgets.Editor
 import Estuary.Widgets.Reflex
@@ -80,7 +82,9 @@ configWidget ctx ri = do
                               & textInputConfig_initialValue .~ "-1"
                               & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
       return $ _textInput_value tInt -- :: Dynamic t Text
-    return $ fmap (\x -> \c -> c { cineCer0ZIndex = x }) (fmap (\x -> (read $ T.unpack $ x :: Int)) zIndexInput) -- :: Dynamic t (Context -> Context)
+    return $ fmap (\x -> \c -> c { cineCer0ZIndex = x }) (fmap (\x -> if isJust (readMaybe (T.unpack x)::Maybe Int) then (read (T.unpack x)::Int) else (-1)) zIndexInput) -- :: Dynamic t (Context -> Context)
+
+    --(fmap (\(x) -> fromJust (readMaybe $ (T.unpack x) :: Maybe Int)) zIndexInput) -- :: Dynamic t (Context -> Context)
 
   punctualZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
     zIndexInput <- elClass "div" "Numeric Field with initial value" $ do
@@ -89,7 +93,7 @@ configWidget ctx ri = do
                               & textInputConfig_initialValue .~ "-2"
                               & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
       return $ _textInput_value tInt -- :: Dynamic t Text
-    return $ fmap (\x -> \c -> c { punctualZIndex = x }) (fmap (\x -> (read $ T.unpack $ x :: Int)) zIndexInput) -- :: Dynamic t (Context -> Context)
+    return $ fmap (\x -> \c -> c { punctualZIndex = x }) (fmap (\x -> if isJust (readMaybe (T.unpack x)::Maybe Int) then (read (T.unpack x)::Int) else (-2)) zIndexInput) -- :: Dynamic t (Context -> Context)
 
   hydraZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
     zIndexInput <- elClass "div" "Numeric Field with initial value" $ do
@@ -98,7 +102,7 @@ configWidget ctx ri = do
                               & textInputConfig_initialValue .~ "-20"
                               & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
       return $ _textInput_value tInt -- :: Dynamic t Text
-    return $ fmap (\x -> \c -> c { hydraZIndex = x }) (fmap (\x -> (read $ T.unpack $ x :: Int)) zIndexInput) -- :: Dynamic t (Context -> Context)
+    return $ fmap (\x -> \c -> c { hydraZIndex = x }) (fmap (\x -> if isJust (readMaybe (T.unpack x)::Maybe Int) then (read (T.unpack x)::Int) else (-10)) zIndexInput) -- :: Dynamic t (Context -> Context)
 
   zIndexInfo <- divClass "config-option primary-color ui-font" $ do
     el "div" $ dynText =<< (translatableText $ fromList [
