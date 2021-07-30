@@ -171,7 +171,7 @@ cinecer0Widget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
   dynZIndex <- holdUniqDyn $ fmap cineCer0ZIndex ctx
-  let dynZIndex' = fmap (T.pack . show) (dynZIndex)
+  let dynZIndex' = fmap (T.pack . show) dynZIndex
   let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
