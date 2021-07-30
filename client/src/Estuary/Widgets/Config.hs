@@ -84,8 +84,6 @@ configWidget ctx ri = do
       return $ _textInput_value tInt -- :: Dynamic t Text
     return $ fmap (\x -> \c -> c { cineCer0ZIndex = x }) (fmap (\x -> if isJust (readMaybe (T.unpack x)::Maybe Int) then (read (T.unpack x)::Int) else (-1)) zIndexInput) -- :: Dynamic t (Context -> Context)
 
-    --(fmap (\(x) -> fromJust (readMaybe $ (T.unpack x) :: Maybe Int)) zIndexInput) -- :: Dynamic t (Context -> Context)
-
   punctualZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
     zIndexInput <- elClass "div" "Numeric Field with initial value" $ do
       text "Punctual z-index: "
