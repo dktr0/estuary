@@ -18,6 +18,7 @@ import Estuary.Types.RenderInfo
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
 import Estuary.Types.Term
+import Estuary.Resources
 
 
 -- If we have widget-producing actions and we make them in the (W t m) monad
@@ -29,7 +30,8 @@ type W t m = EventWriterT t [Hint] (ReaderT (WidgetEnvironment t) m)
 data WidgetEnvironment t = WidgetEnvironment {
   _immutableRenderContext :: ImmutableRenderContext,
   _context :: Dynamic t Context,
-  _renderInfo :: Dynamic t RenderInfo
+  _renderInfo :: Dynamic t RenderInfo,
+  _resourceMaps :: Dynamic t ResourceMaps
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -58,6 +60,11 @@ context = lift $ asks _context
 -- Get the dynamic information from the render engine.
 renderInfo :: Monad m => W t m (Dynamic t RenderInfo)
 renderInfo = lift $ asks _renderInfo
+
+
+-- Get an event
+resourceMaps :: Monad m => W t m (Dynamic t ResourceMaps)
+resourceMaps = lift $ asks _resourceMaps
 
 
 -- Issue a single hint

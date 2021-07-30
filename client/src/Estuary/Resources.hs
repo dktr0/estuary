@@ -8,6 +8,7 @@ import Control.Monad.IO.Class
 import Data.Sequence as Seq
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.IORef
 
 import Estuary.Types.ResourceOp
 import Estuary.Types.ResourceMeta
@@ -18,26 +19,44 @@ import Estuary.Resources.Loadable
 import Estuary.Resources.AudioResource
 import Estuary.Resources.ResourceList
 
+type ResourceMaps = (LocMap Text,LocMap Text,LocMap Text) -- audio image video
+
+emptyResourceMaps :: ResourceMaps
+emptyResourceMaps = (LocMap.empty,LocMap.empty,LocMap.empty)
 
 data Resources = Resources {
   _resourceOps :: MVar (Seq ResourceOp),
   resourceLists :: LoadMap ResourceList,
-  maps :: MVar (LocMap Text,LocMap Text,LocMap Text), -- audio image video
-  audioResources :: LoadMap AudioResource
+  maps :: MVar ResourceMaps,
+  audioResources :: LoadMap AudioResource,
+  _updatedCallback :: IORef (Maybe (ResourceMaps -> IO ()))
   }
+
+
+setResourcesUpdatedCallback :: MonadIO m => Resources -> (ResourceMaps -> IO ()) -> m ()
+setResourcesUpdatedCallback r cb = liftIO $ writeIORef (_updatedCallback r) $ Just cb
+
+updatedCallback :: MonadIO m => Resources -> m ()
+updatedCallback r = liftIO $ do
+  x <- readIORef $ _updatedCallback r
+  case x of
+    Just cb -> (readMVar $ maps r) >>= cb
+    Nothing -> return ()
 
 
 newResources :: MonadIO m => m Resources
 newResources = liftIO $ do
   _resourceOps' <- newMVar Seq.empty
   resourceLists' <- newLoadMap
-  maps' <- newMVar (LocMap.empty,LocMap.empty,LocMap.empty)
+  maps' <- newMVar emptyResourceMaps
   audioResources' <- newLoadMap
+  _updatedCallback' <- newIORef Nothing
   return $ Resources {
     _resourceOps = _resourceOps',
     resourceLists = resourceLists',
     maps = maps',
-    audioResources = audioResources'
+    audioResources = audioResources',
+    _updatedCallback = _updatedCallback'
   }
 
 
@@ -79,6 +98,7 @@ updateMaps r opsSeq = liftIO $ do
   newMaps <- foldM (resourceOpIO r) emptyMaps opsSeq
   putStrLn $ "updateMaps: " ++ show newMaps
   putMVar (maps r) newMaps
+  updatedCallback r
 
 
 updateMapsCallback :: Resources -> IO ()

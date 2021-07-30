@@ -105,11 +105,17 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   let ensembleCDyn = fmap ensembleC ctx
 
+  -- resourceMaps :: Dynamic t ResourceMaps, updated by callback events from the Resources system
+  (resourceMapsEvent,resourceMapsCallback) <- newTriggerEvent
+  setResourcesUpdatedCallback (resources irc) resourceMapsCallback
+  resourceMaps <- holdDyn emptyResourceMaps resourceMapsEvent
+
   -- four GUI components: header, main (navigation), terminal, footer
   let wEnv = WidgetEnvironment {
     _immutableRenderContext = irc,
     _context = ctx,
-    _renderInfo = rInfo
+    _renderInfo = rInfo,
+    _resourceMaps = resourceMaps
     }
   (headerChange,headerHints) <- runW wEnv header
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
