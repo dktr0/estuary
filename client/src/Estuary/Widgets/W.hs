@@ -34,45 +34,45 @@ data WidgetEnvironment t = WidgetEnvironment {
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
 -- only be necessary at the very top of Estuary's widget hierarchy.)
-runW :: MonadWidget t m => WidgetEnvironment t -> W t m a -> m (a,Event t [Hint])
+runW :: (Reflex t, Monad m) => WidgetEnvironment t -> W t m a -> m (a,Event t [Hint])
 runW wEnv e = runReaderT (runEventWriterT e) wEnv
 
 
 -- Get the entire environment provided to the widget. Note that it should normally
 -- be preferable to use the functions below to directly get specific elements from
 -- the environment. This definition is provided "just in case" it should be useful...
-widgetEnvironment :: MonadWidget t m => W t m (WidgetEnvironment t)
+widgetEnvironment :: Monad m => W t m (WidgetEnvironment t)
 widgetEnvironment = lift ask
 
 
 -- Get the immutable render context.
-immutableRenderContext :: MonadWidget t m => W t m ImmutableRenderContext
+immutableRenderContext :: Monad m => W t m ImmutableRenderContext
 immutableRenderContext = lift $ asks _immutableRenderContext
 
 
 -- Get the dynamic context.
-context :: MonadWidget t m => W t m (Dynamic t Context)
+context :: Monad m => W t m (Dynamic t Context)
 context = lift $ asks _context
 
 
 -- Get the dynamic information from the render engine.
-renderInfo :: MonadWidget t m => W t m (Dynamic t RenderInfo)
+renderInfo :: Monad m => W t m (Dynamic t RenderInfo)
 renderInfo = lift $ asks _renderInfo
 
 
 -- Issue a single hint
-hint :: MonadWidget t m => Event t Hint -> W t m ()
+hint :: (Reflex t, Monad m) => Event t Hint -> W t m ()
 hint = tellEvent . fmap (:[])
 
 
 -- Issue multiple simultaneous hints
-hints :: MonadWidget t m => Event t [Hint] -> W t m ()
+hints :: (Reflex t, Monad m) => Event t [Hint] -> W t m ()
 hints = tellEvent
 
 
 -- Translate a term appropriately into dynamic text
 -- Note that it doesn't build the text in the DOM - for that, combine with dynText
-term :: MonadWidget t m => Term -> W t m (Dynamic t Text)
+term :: (Reflex t, Monad m, MonadHold t m, MonadFix m) => Term -> W t m (Dynamic t Text)
 term t = do
   c <- context
   l <- holdUniqDyn $ fmap language c
@@ -81,7 +81,7 @@ term t = do
 
 -- Translate a TranslatableText (eg. paragraph) into dynamic text
 -- Note that it doesn't build the text in the DOM - for that, combine with dynText
-translatableText :: MonadWidget t m => TranslatableText -> W t m (Dynamic t Text)
+translatableText :: (Reflex t, Monad m, MonadHold t m, MonadFix m) => TranslatableText -> W t m (Dynamic t Text)
 translatableText t = do
   c <- context
   l <- holdUniqDyn $ fmap language c
@@ -90,7 +90,7 @@ translatableText t = do
 
 -- Translate a dynamic TranslatableText into dynamic text
 -- Note that it doesn't build the text in the DOM - for that, combine with dynText
-dynTranslatableText :: MonadWidget t m => Dynamic t TranslatableText -> W t m (Dynamic t Text)
+dynTranslatableText :: (Reflex t, Monad m, MonadHold t m, MonadFix m) => Dynamic t TranslatableText -> W t m (Dynamic t Text)
 dynTranslatableText t = do
   c <- context
   l <- holdUniqDyn $ fmap language c
@@ -148,7 +148,7 @@ instance (Reflex t, Semigroup a) => Semigroup (Variable t a) where
 instance (Reflex t, Monoid a) => Monoid (Variable t a) where
   mempty = Variable (constDyn mempty) never
 
-variableWidget :: MonadWidget t m => Dynamic t a -> (a -> Event t a -> m (Event t a)) -> m (Variable t a)
+variableWidget :: (Reflex t, Monad m, MonadSample t m, MonadHold t m) => Dynamic t a -> (a -> Event t a -> m (Event t a)) -> m (Variable t a)
 variableWidget delta widget = do
   i <- sample $ current delta
   x <- widget i $ updated delta
