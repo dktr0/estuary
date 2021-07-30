@@ -86,10 +86,11 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
 
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-
   punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
   cvsElement <- canvasWidget punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
+  improvizZIndex' <- holdUniqDyn $ fmap improvizZIndex ctx
+  iCanvas <- canvasWidget improvizZIndex' ctx -- canvas for Improviz
   hydraZIndex' <- holdUniqDyn $ fmap hydraZIndex ctx
   hCanvas <- canvasWidget hydraZIndex' ctx -- canvas for Hydra
 
