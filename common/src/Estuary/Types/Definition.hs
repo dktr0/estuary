@@ -20,13 +20,25 @@ type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
 type Counter = Either (Maybe NominalDiffTime) UTCTime
 
+
+-- un reloj que either (tiempo acumulado) o NOW + Target
+data Clock = TimerUp (Either (Maybe NominalDiffTime) UTCTime) | 
+             TimerDown (Either (Maybe NominalDiffTime) (UTCTime)) NominalDiffTime
+  deriving (Eq,Show,Generic)
+
+instance ToJSON Clock where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Clock
+
 data Definition =
   TextProgram (Live TextProgram) |
   Sequence Sequence |
   TidalStructure TransformedPattern |
   LabelText Text |
   Roulette Roulette |
-  Counter Counter
+  CountDown Clock |
+  StopWatch' Clock |
+  StopWatch Counter
  -- StopWatch Counter |
  -- CountDown Counter     -- this needs to be sorted at some point !!!!!!
   deriving (Eq,Show,Generic)
@@ -83,5 +95,9 @@ justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
 
 maybeCounter :: Definition -> Maybe Counter
-maybeCounter (Counter x) = Just x
-maybeCounter _ = Nothing
+maybeCounter (StopWatch x) = Just x
+
+maybeClock :: Definition -> Maybe Clock
+maybeClock (CountDown  x) = Just x
+maybeClock (StopWatch' x) = Just x
+maybeClock _ = Nothing

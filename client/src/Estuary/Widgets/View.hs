@@ -84,9 +84,13 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
 
-viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeCounter Counter er stopWatchWidget
+-- this is wrong, fix it
 
-viewWidget er (StopWatchExplorationsView z) = zoneWidget z (Left Nothing) maybeCounter Counter er countDownWidget
+viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeCounter StopWatch er stopWatchWidget
+
+viewWidget er (CountDownExplorationsView z x) = zoneWidget z (TimerDown (Left Nothing) (realToFrac x)) maybeClock CountDown er (countDownWidget x)
+
+viewWidget er (StopWatchExplorationsView z) = zoneWidget z (TimerUp (Left Nothing)) maybeClock StopWatch' er stopWatchWidget'
 
 viewWidget er TempoView = do
   ctx <- context

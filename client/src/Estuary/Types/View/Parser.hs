@@ -24,6 +24,8 @@ import Estuary.Types.View
 
 type H = Haskellish ()
 
+-- add Clock and the proper constructors
+
 dumpView :: View -> T.Text
 dumpView EmptyView = "empty"
 dumpView (Div css vs) = "div \"" <> css <> "\"" <> dumpViews vs
@@ -44,7 +46,8 @@ dumpView TempoView = "tempo"
 dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
 dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
-dumpView (StopWatchExplorationsView z) = "reloj " <> showInt z
+dumpView (StopWatchExplorationsView z) = "crono " <> showInt z
+dumpView (CountDownExplorationsView z x) = "cuenta " <> showInt z <> showInt x
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -70,17 +73,31 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|>  audioMapView
           <|>  stopwatchParser
           <|>  stopwatchXParser
+          <|>  countDownXParser
 
+
+--
+countDownXParser :: H View
+countDownXParser = countDownXParser' <*> int
+
+countDownXParser' :: H (Int -> View)
+countDownXParser' = countDownXParser'' <*> int
+
+countDownXParser'' :: H (Int -> Int -> View)
+countDownXParser'' = countDownXFunc <$ reserved "cuenta"
+
+countDownXFunc :: Int -> Int -> View
+countDownXFunc z x = CountDownExplorationsView z x
 
 --
 stopwatchXParser :: H View
 stopwatchXParser = stopwatchXParser' <*> int
 
 stopwatchXParser' :: H (Int -> View)
-stopwatchXParser' = stopwatchXFunc <$ reserved "reloj"
+stopwatchXParser' = stopwatchXFunc <$ reserved "crono"
 
 stopwatchXFunc :: Int -> View
-stopwatchXFunc x = StopWatchExplorationsView x
+stopwatchXFunc z = StopWatchExplorationsView z
 
 --
 stopwatchParser :: H View
