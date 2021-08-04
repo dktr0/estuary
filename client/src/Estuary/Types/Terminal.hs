@@ -43,11 +43,12 @@ data Command =
   ShowTempo | -- for testing, displays current tempo in terminal
   SetCPS Double |
   SetBPM Double |
-  InsertAudioResource Text Text Int | -- "url" [bankName] [n]
-  DeleteAudioResource Text Int | -- [bankName] [n]
-  AppendAudioResource Text Text | -- "url" [bankName]
+  InsertSound Text Text Int | -- "url" [bankName] [n]
+  DeleteSound Text Int | -- [bankName] [n]
+  AppendSound Text Text | -- "url" [bankName]
   ResList Text | -- "url"
   ClearResources |
+  ResourceOps |
   ResetZones |
   ResetViews |
   ResetTempo |
@@ -392,7 +393,7 @@ insertAudioResourceParser'' = (insertAudioResourceParser''' <*!> textLiteral) <|
   (insertAudioResourceParser''' >> fatal "Missing arguments. !insertaudio expects three parameters: url, bankName and n.")
 
 insertAudioResourceParser''' :: H (Text -> Text -> Int -> Command)
-insertAudioResourceParser''' = reserved "insertaudio" >> return InsertAudioResource
+insertAudioResourceParser''' = reserved "insertsound" >> return InsertSound
 
 
 
@@ -407,7 +408,7 @@ deleteAudioResourceParser' = (deleteAudioResourceParser'' <*!> identifierText) <
   (deleteAudioResourceParser''  >> fatal "Missing argument(s). !deleteaudioresource expects two parameters: bankName and n.")
 
 deleteAudioResourceParser'' :: H (Text -> Int -> Command)
-deleteAudioResourceParser'' = DeleteAudioResource <$ reserved "deleteaudio"
+deleteAudioResourceParser'' = DeleteSound <$ reserved "deletesound"
 
 
 -- append audio source
@@ -421,7 +422,7 @@ appendAudioResourceParser' = (appendAudioResourceParser'' <*!> textLiteral) <|>
   (appendAudioResourceParser'' >> fatal "Missing arguments. !appendaudioresource expects two parameters:  url and bankName")
 
 appendAudioResourceParser'' :: H (Text -> Text -> Command)
-appendAudioResourceParser'' = AppendAudioResource <$ reserved "appendaudio"
+appendAudioResourceParser'' = AppendSound <$ reserved "appendsound"
 
 
 -- resList

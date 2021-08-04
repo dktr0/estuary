@@ -194,15 +194,15 @@ commandToEnsembleRequest _ Terminal.ResetTempo = Just $ liftIO $ do
 commandToEnsembleRequest _ Terminal.Reset = Just $ liftIO $ do
   t <- getCurrentTime
   return $ ResetRequest $ Tempo { freq = 0.5, time = t, count = 0 }
-commandToEnsembleRequest es (Terminal.InsertAudioResource url bankName n) = Just $ do
+commandToEnsembleRequest es (Terminal.InsertSound url bankName n) = Just $ do
   let rs = resourceOps $ ensemble es
   let rs' = rs |> InsertResource Audio url (bankName,n)
   return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.DeleteAudioResource bankName n) = Just $ do
+commandToEnsembleRequest es (Terminal.DeleteSound bankName n) = Just $ do
   let rs = resourceOps $ ensemble es
   let rs' = rs |> DeleteResource Audio (bankName,n)
   return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.AppendAudioResource url bankName) = Just $ do
+commandToEnsembleRequest es (Terminal.AppendSound url bankName) = Just $ do
   let rs = resourceOps $ ensemble es
   let rs' = rs |> AppendResource Audio url bankName
   return $ WriteResourceOps rs'
