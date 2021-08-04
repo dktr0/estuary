@@ -145,7 +145,6 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   performEvent_ $ fmap (mapM_ (ensembleResponseIO $ resources irc)) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  performEvent_ $ fmap (liftIO . commandToIO (resources irc)) command
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange]
 
   -- hints
@@ -264,13 +263,3 @@ commandToRequest :: Terminal.Command -> Maybe Request
 commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
 commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
 commandToRequest _ = Nothing
-
-commandToIO :: Resources -> Terminal.Command -> IO ()
-{- commenting these paths out, this should happen differently now
-commandToIO r (Terminal.InsertAudioResource url bankName n) = addResourceOp r $ InsertResource Audio url (bankName,n)
-commandToIO r (Terminal.AppendAudioResource url bankName) = addResourceOp r $ AppendResource Audio url bankName
-commandToIO r (Terminal.DeleteAudioResource bankName n) = addResourceOp r $ DeleteResource Audio (bankName,n)
-commandToIO r (Terminal.ResList url) = addResourceOp r $ ResourceListURL url
-commandToIO r Terminal.ClearResources = clearResourceOps r
--}
-commandToIO _ _ = return ()
