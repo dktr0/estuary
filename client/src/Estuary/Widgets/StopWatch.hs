@@ -20,11 +20,7 @@ import Estuary.Types.Definition
 -- from Estuary.Types.Definition.hs:
 --   type StopWatch = Either (Maybe NominalDiffTime) UTCTime
 
-<<<<<<< HEAD
-stopWatchWidget :: MonadWidget t m => Dynamic t Counter -> Editor t m (Variable t Counter)
-=======
-stopWatchWidget :: MonadWidget t m => Dynamic t StopWatch -> W t m (Variable t StopWatch)
->>>>>>> 0c405ecdab8ebaef8d8ccc485c78389bd921fbb7
+stopWatchWidget :: MonadWidget t m => Dynamic t Counter -> W t m (Variable t Counter)
 stopWatchWidget deltasDown = mdo
 
   -- 1. Translate button presses into localChanges (Event t StopWatch)
