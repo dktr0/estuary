@@ -66,11 +66,15 @@ ndt = fromRational <$> rationalOrInteger
 text :: H Text
 text = pack <$> string
 
+rats :: H [Rational]
+rats = list $ rationalOrInteger --list :: Haskellish st a -> Haskellish st [a]
+
 -- //////////////
 
 sigMayRat :: H (Signal (Maybe Rational))
 sigMayRat =
   rat_sigMayRat <*> rationalOrInteger <|>
+  rats_sigMayRat <*> rats <|>
  -- ndt_sigMayRat <*> ndt <|>
   sigRat_sigMayRat <*> sigRat <|>
 --  sigMayRat_sigMayRat <*> sigMayRat <|>
@@ -80,10 +84,16 @@ rat_sigMayRat :: H (Rational -> Signal (Maybe Rational))
 rat_sigMayRat = rat_rat_sigMayRat <*> rationalOrInteger
 
 rat_rat_sigMayRat :: H (Rational -> Rational -> Signal (Maybe Rational))
-rat_rat_sigMayRat = ndt_rat_rat_sigMayRat <*> ndt
+rat_rat_sigMayRat = rat_rat_rat_sigMayRat <*> rationalOrInteger
 
-ndt_rat_rat_sigMayRat :: H (NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational))
-ndt_rat_rat_sigMayRat = rampMaybe <$ reserved "ramp"
+rat_rat_rat_sigMayRat :: H (Rational -> Rational -> Rational -> Signal (Maybe Rational))
+rat_rat_rat_sigMayRat = rampMaybe <$ reserved "ramp"
+
+rats_sigMayRat :: H ([Rational] -> Signal (Maybe Rational))
+rats_sigMayRat = rats_rats_sigMayRat <*> rats
+
+rats_rats_sigMayRat :: H ([Rational] -> [Rational] -> Signal (Maybe Rational))
+rats_rats_sigMayRat = rampsMaybe <$ reserved "ramps"
 
 sigInt :: H (Signal Int)
 sigInt = constantSignal <$> int
@@ -94,6 +104,7 @@ sigText = constantSignal <$> text
 sigRat :: H (Signal Rational)
 sigRat =
   rat_sigRat <*> rationalOrInteger <|>
+  rats_sigRat <*> rats <|>
  -- ndt_sigRat <*> ndt <|>
   sigRat_sigRat <*> sigRat <|>
   constantSignal <$> rationalOrInteger
@@ -102,24 +113,16 @@ rat_sigRat :: H (Rational -> Signal Rational)
 rat_sigRat = rat_rat_sigRat <*> rationalOrInteger
 
 rat_rat_sigRat :: H (Rational -> Rational -> Signal Rational)
-rat_rat_sigRat = ndt_rat_rat_sigRat <*> ndt
+rat_rat_sigRat = rat_rat_rat_sigRat <*> rationalOrInteger
 
-ndt_rat_rat_sigRat :: H (NominalDiffTime -> Rational -> Rational -> Signal Rational)
-ndt_rat_rat_sigRat = ramp <$ reserved "ramp"
+rat_rat_rat_sigRat :: H (Rational -> Rational -> Rational -> Signal Rational)
+rat_rat_rat_sigRat = ramp <$ reserved "ramp"
 
---list :: Haskellish st a -> Haskellish st [a]
+rats_sigRat :: H ([Rational] -> Signal Rational)
+rats_sigRat = rats_rats_sigRat <*> rats
 
--- rats :: H [Rational]
--- rats = list $ rationalOrInteger
-
--- ndts :: H [NominalDiffTime]
--- ndts = list $ fromRational <$> rationalOrInteger
-
--- rats_sigRat :: H ([Rational] -> Signal Rational)
--- rats_sigRat = ndts_rats_sigRat <*> ndts
-
--- ndts_rats_sigRat :: H ([NominalDiffTime] -> [Rational] -> Signal Rational)
--- ndts_rats_sigRat = ramps <$ reserved "ramps"
+rats_rats_sigRat :: H ([Rational] -> [Rational] -> Signal Rational)
+rats_rats_sigRat = ramps' <$ reserved "ramps"
 
 ---- sine
 

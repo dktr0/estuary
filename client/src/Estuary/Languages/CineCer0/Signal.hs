@@ -326,21 +326,35 @@ range min max input t vl rTime eTime aTime =
           add = mult + (min t vl rTime eTime aTime)
 
 
-rampMaybe :: NominalDiffTime -> Rational -> Rational -> Signal (Maybe Rational)
-rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime
+trimCycleRamps:: [Rational] -> [Rational] -> Signal Rational
+trimCycleRamps durs vals
+  | length durs >= length vals = 
+    let  limit = (length vals) -1
+    in ramps (take limit durs) vals
+  | otherwise = ramps (take (length vals - 1) $ cycle durs) vals
 
-ramps:: [NominalDiffTime] -> [Rational] -> Signal Rational
-ramps durs [] t vl r e a = error "Durations should be one less than values"
+rampsMaybe :: [Rational] -> [Rational] -> Signal (Maybe Rational)
+rampsMaybe durs vals = \t vl rTime eTime aTime -> Just $ ramps' durs vals t vl rTime eTime aTime
+
+ramps':: [Rational] -> [Rational] -> Signal Rational
+ramps' durs vals 
+  | length vals - length durs /= 1 = trimCycleRamps durs vals
+  | otherwise = ramps durs vals 
+
+ramps:: [Rational] -> [Rational] -> Signal Rational
 ramps [] vals t vl r e a = last vals
 ramps durs vals t vl r e a = if endOfDur > r then ramp (head durs) (head vals) (head $ tail vals) t vl r e a else ramps (tail durs) (tail vals) t vl r e endOfDur
-    where endOfDur = addUTCTime x a -- anchor time plus duration of previous ramp
-          x = (head durs) / (realToFrac (freq t) :: NominalDiffTime)
+    where endOfDur = addUTCTime (realToFrac x :: NominalDiffTime) a -- anchor time plus duration of previous ramp
+          x = (head durs) / (realToFrac (freq t) :: Rational)
 
-ramp :: NominalDiffTime -> Rational -> Rational -> Signal Rational
+rampMaybe :: Rational -> Rational -> Rational -> Signal (Maybe Rational)
+rampMaybe durVal startVal endVal = \t vl rTime eTime aTime -> Just $ ramp durVal startVal endVal t vl rTime eTime aTime
+
+ramp :: Rational -> Rational -> Rational -> Signal Rational
 ramp durVal startVal endVal = \t vl renderTime evalTime anchorTime ->
   let startTime = anchorTime :: UTCTime -- place holder, add quant later
-      durVal' = durVal * (realToFrac (1/(freq t)) :: NominalDiffTime)
-      endTime = addUTCTime durVal' anchorTime
+      durVal' = durVal * (realToFrac (1/(freq t)) :: Rational)
+      endTime = addUTCTime (realToFrac durVal' :: NominalDiffTime) anchorTime
   in ramp' renderTime startTime endTime startVal endVal
 
 -- Ramper with new features !!! ------ Creates a ramp given the rendering time (now)
@@ -358,19 +372,19 @@ ramp' renderTime startTime endTime startVal endVal -- delete what is not needed
 
 fadeIn:: Signal Rational -> Signal Rational
 fadeIn dur t vl rT eT aT = ramp dur' 0 1 t vl rT eT aT
-    where dur' = realToFrac (dur t vl rT eT aT) :: NominalDiffTime
+    where dur' = realToFrac (dur t vl rT eT aT) :: Rational
 
 fadeOut:: Signal Rational -> Signal Rational
 fadeOut dur t vl rT eT aT = ramp dur' 1 0 t vl rT eT aT
-    where dur' = realToFrac (dur t vl rT eT aT) :: NominalDiffTime
+    where dur' = realToFrac (dur t vl rT eT aT) :: Rational
 
 fadeIn2:: Signal Rational -> Signal (Maybe Rational)
 fadeIn2 dur t vl rT eT aT = rampMaybe dur' 0 1 t vl rT eT aT
-    where dur' = realToFrac (dur t vl rT eT aT) :: NominalDiffTime
+    where dur' = realToFrac (dur t vl rT eT aT) :: Rational
 
 fadeOut2:: Signal Rational -> Signal (Maybe Rational)
 fadeOut2 dur t vl rT eT aT = rampMaybe dur' 0 1 t vl rT eT aT
-    where dur' = realToFrac (dur t vl rT eT aT) :: NominalDiffTime
+    where dur' = realToFrac (dur t vl rT eT aT) :: Rational
 
 
 
