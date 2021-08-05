@@ -65,8 +65,8 @@ dependencies:
   - tempi
   - split
   - witherable
+  - jsaddle
   - tuple
-
 
 library:
   source-dirs:

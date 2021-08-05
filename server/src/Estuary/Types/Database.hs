@@ -59,12 +59,14 @@ ensembleStoEnsembleD x = do
   t <- atomically $ readTempo x
   zs <- atomically $ readZones x
   vs <- atomically $ readViews x
+  rs <- atomically $ readResourceOps x
   lat <- atomically $ readTVar $ Estuary.Types.EnsembleS.lastActionTime x
   let e = Ensemble.Ensemble {
     Ensemble.ensembleName = Estuary.Types.EnsembleS.ensembleName x,
     Ensemble.tempo = t,
     Ensemble.zones = zs,
     Ensemble.views = vs,
+    Ensemble.resourceOps = rs,
     Ensemble.chats = [],
     Ensemble.participants = Map.empty,
     Ensemble.anonymousParticipants = 0
@@ -85,6 +87,7 @@ ensembleDtoEnsembleS x = do
   zs' <- atomically (mapM newTVar zs >>= newTVar)
   let vs = Ensemble.views (ensemble x)
   vs' <- atomically (mapM newTVar vs >>= newTVar)
+  rs' <- atomically $ newTVar (Ensemble.resourceOps (ensemble x))
   lat <- atomically $ newTVar $ Estuary.Types.Database.lastActionTime x
   connectionsTvar <- atomically $ newTVar IntMap.empty
   namedConnectionsTvar <- atomically $ newTVar IntMap.empty
@@ -101,7 +104,8 @@ ensembleDtoEnsembleS x = do
     Estuary.Types.EnsembleS.lastActionTime = lat,
     tempo = t,
     zones = zs',
-    views = vs'
+    views = vs',
+    resourceOps = rs'
   }
 
 writeEnsemble :: Connection -> EnsembleS -> IO ()

@@ -6,15 +6,15 @@ import Reflex.Dom hiding (Request,Response)
 
 import Estuary.Types.Context
 import Estuary.Types.Language
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Editor
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.W
 import Data.Map.Strict
 
-cineCer0Reference :: MonadWidget t m => Editor t m ()
+cineCer0Reference :: MonadWidget t m => W t m ()
 cineCer0Reference = el "div" $ do
   funcionsCineCer0
 
-funcionsCineCer0 :: MonadWidget t m => Editor t m ()
+funcionsCineCer0 :: MonadWidget t m => W t m ()
 funcionsCineCer0 = el "div" $ do
   dynText =<< (translatableText $ fromList [
     (English,"Functions"),
@@ -54,8 +54,8 @@ funcionsCineCer0 = el "div" $ do
     el "li" $ elClass "div" "ieRef" $ text "setCoord 0.0 (-0.5) $ image \"images/cootes/chamomile.jpg\""
     -- ROTATION
     el "div" $ dynText =<< (translatableText $ fromList [
-      (English,"_Rotation: setRotate [d] (just working on Images); parameter in degrees"),
-      (Español,"_Rotación: setRotate [d] (únicamente funciona en Imágenes); parametro en grados")
+      (English,"_Rotation: setRotate [d]; parameter in degrees"),
+      (Español,"_Rotación: setRotate [d]; parametro en grados")
       ])
     el "ul" $ do
       el "li" $ elClass "div" "ieRef" $ text "setRotate 50 $ image \"images/cootes/chamomile.jpg\""

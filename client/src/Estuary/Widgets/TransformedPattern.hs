@@ -14,24 +14,21 @@ import Data.Maybe (fromJust)
 import Text.Read
 
 import Estuary.Tidal.Types
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Container
+import Estuary.Widgets.Reflex
 import qualified Estuary.Widgets.SpecificPattern as Sp
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Hint
-import Estuary.Types.Variable
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 
 structureEditor :: MonadWidget t m =>
-  Dynamic t TransformedPattern -> Editor t m (Variable t TransformedPattern)
+  Dynamic t TransformedPattern -> W t m (Variable t TransformedPattern)
 structureEditor x = variableWidget x topLevelTransformedPatternWidget
 
 
 topLevelTransformedPatternWidget :: MonadWidget t m
   => TransformedPattern
   -> Event t TransformedPattern
-  -> Editor t m (Event t TransformedPattern)
+  -> W t m (Event t TransformedPattern)
 topLevelTransformedPatternWidget i delta = do
   let updates = fmap midLevelTransformedPatternWidget delta
   w <- widgetHold (midLevelTransformedPatternWidget i) updates

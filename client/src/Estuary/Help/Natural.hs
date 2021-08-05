@@ -5,9 +5,9 @@ import Reflex
 import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import Data.Map
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 
 
 --render multiple sub-help files

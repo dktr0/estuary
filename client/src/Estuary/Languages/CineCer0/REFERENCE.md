@@ -15,9 +15,6 @@ setPosX [x] $ -- from left (-1) to right 1 <br />
 setPosY [y] $ -- from bottom (-1) to top 1 <br />
 setCoord [x] [y] $ <br />
 
-## Rotate Images
-setRotate [d] $ <br />
-
 ## Videos with Audio
 
 vol 0.5 $ "myVideo.extension" -- videos play with unmuted audio
@@ -26,7 +23,8 @@ vol 0.5 $ "myVideo.extension" -- videos play with unmuted audio
 
 setWidth [w] $ -- 1 = natural video width <br/>
 setHeight [h] $ -- 1 = natural video height <br />
-setSize [wh] $ <br /> --one parameter will affect both width and heigh proportionally
+setSize [wh] $ --one parameter will affect both width and heigh proportionally <br />
+setRotate [d] $ <br /> -- parameter in degrees
 setOpacity [o] $ -- from 0 - 1 (no opacity) <br />
 setBlur [bl] $ -- 0 = no blur (1++ = more) <br />
 setBrightness [br] $ --  0-0.9 = less, 1++ = more <br />

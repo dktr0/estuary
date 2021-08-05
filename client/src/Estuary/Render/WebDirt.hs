@@ -22,10 +22,11 @@ import Data.Text.Encoding
 
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
+import Estuary.Types.Location
 import Estuary.Types.AudioMeta
-import Estuary.Types.AudioResource
-import Estuary.Types.ResourceMap
-import Estuary.Types.Loadable
+import Estuary.Resources.AudioResource
+import Estuary.Resources
+import Estuary.Resources.Loadable
 import Estuary.Types.NoteEvent
 import qualified Sound.Tidal.Context as Tidal
 
@@ -41,11 +42,8 @@ newWebDirt n = do
   liftIO $ js_newWebDirt ctx n
 
 foreign import javascript unsafe
-  "$r = new WebDirt('samples/sampleMap.json','samples',0,null,0.010,$1,$2)"
+  "$r = new WebDirt({ latency: 0, maxLateness: 0.010, audioContext: $1, destination: $2 });"
   js_newWebDirt :: AudioContext -> Node -> IO WebDirt
-  -- 0 is additional delay/latency added to all events sent to WebDirt
-  -- 0.010 is maximum lateness after which WebDirt silently drops sample events
-  -- JSVal is web audio node provided as a sink/destination for all synths
 
 foreign import javascript unsafe
   "$1.initializeWebAudio()"
@@ -81,38 +79,38 @@ foreign import javascript unsafe
 makeNoteEventSafe :: Map.Map Text Datum -> Map.Map Text Datum
 makeNoteEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
-noteEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> NoteEvent -> IO (Maybe JSVal)
-noteEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
+noteEventToWebDirtJSVal :: Bool -> Resources -> (UTCTime,Double) -> NoteEvent -> IO (Maybe JSVal)
+noteEventToWebDirtJSVal unsafe r cDiff (utc,m) = do
   let mSafe = if unsafe then m else makeNoteEventSafe m
   let s = Map.lookup "s" mSafe
   let n = Map.lookup "n" mSafe
   case datumsToLocation s n of
     Nothing -> return Nothing
     Just loc -> do
-      res <- access loc aMap
+      res <- accessAudioResource r loc
       case res of
         Right res' -> do
           let t' = utcTimeToAudioSeconds cDiff utc
-          let m' = Map.insert "buffer" res' $ fmap datumToJSVal mSafe -- :: Map Text JSVal
+          let m' = Map.insert "buffer" (pToJSVal res') $ fmap datumToJSVal mSafe -- :: Map Text JSVal
           Just <$> mapTextJSValToJSVal (t',m')
         Left _ -> return Nothing
 
 makeTidalEventSafe :: Tidal.ValueMap -> Tidal.ValueMap
 makeTidalEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
-tidalEventToWebDirtJSVal :: Bool -> AudioMap -> (UTCTime,Double) -> (UTCTime, Tidal.ValueMap) -> IO (Maybe JSVal)
-tidalEventToWebDirtJSVal unsafe aMap cDiff (utc,m) = do
+tidalEventToWebDirtJSVal :: Bool -> Resources -> (UTCTime,Double) -> (UTCTime, Tidal.ValueMap) -> IO (Maybe JSVal)
+tidalEventToWebDirtJSVal unsafe r cDiff (utc,m) = do
   let mSafe = if unsafe then m else makeTidalEventSafe m
   let s = Map.lookup "s" mSafe
   let n = Map.lookup "n" mSafe
   case valuesToLocation s n of
     Nothing -> return Nothing
     Just loc -> do
-      res <- access loc aMap
+      res <- accessAudioResource r loc
       case res of
         Right res' -> do
           let t' = utcTimeToAudioSeconds cDiff utc
-          let m' = Map.insert "buffer" res' $ fmap valueToJSVal mSafe -- :: Map Text JSVal
+          let m' = Map.insert "buffer" (pToJSVal res') $ fmap valueToJSVal mSafe -- :: Map Text JSVal
           Just <$> mapStringJSValToJSVal (t',m')
         Left _ -> return Nothing
 

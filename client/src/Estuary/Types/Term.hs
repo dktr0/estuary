@@ -29,7 +29,7 @@ data Term =
   Peak |
   About|
   NewTempo|
-  Eval |
+  EvalTerm |
   JoiningEnsemble |
   EnsembleUserName |
   EnsembleLocation |
@@ -150,9 +150,9 @@ translate NewTempo Français = "Établir un nouveau tempo"
 translate NewTempo English = "Set new tempo"
 translate NewTempo Español = "Establecer Nuevo tempo"
 
-translate Eval Français = "Eval"
-translate Eval English = "Eval"
-translate Eval Español = "Eval"
+translate EvalTerm Français = "Eval"
+translate EvalTerm English = "Eval"
+translate EvalTerm Español = "Eval"
 
 translate JoiningEnsemble Français = "Joindre l'ensemble"
 translate JoiningEnsemble English = "Joining ensemble"

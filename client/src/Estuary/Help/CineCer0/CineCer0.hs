@@ -6,17 +6,17 @@ import Reflex.Dom hiding (Request,Response)
 
 import Estuary.Types.Context
 import Estuary.Types.Language
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Editor
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.W
 import Data.Map.Strict
 
-cineCer0Help :: MonadWidget t m => Editor t m ()
+cineCer0Help :: MonadWidget t m => W t m ()
 cineCer0Help = el "div" $ do
   aboutCineCer0
   examplesCineCer0
 
 
-aboutCineCer0 :: MonadWidget t m => Editor t m ()
+aboutCineCer0 :: MonadWidget t m => W t m ()
 aboutCineCer0 = el "div" $ do
   dynText =<< (translatableText $ fromList [
     (English,"CineCer0 (pronounced \"sin–ay–ser-oh\") is a language for displaying and transforming videos and text in the browser. It can be used, for example, in the performance of live coded cinema, kinetic typography, VJ-ing, etc. Originally inspired by the CineVivo project, and created specifically for the Estuary platform during the SSHRC-funded research project \"Platforms and practices for networked, language- neutral live coding\". CineCer0 features an economical Haskell-like notation and a strongly declarative syntax."),
@@ -24,7 +24,7 @@ aboutCineCer0 = el "div" $ do
     ])
 
 
-examplesCineCer0 :: MonadWidget t m => Editor t m ()
+examplesCineCer0 :: MonadWidget t m => W t m ()
 examplesCineCer0 = el "div" $ do
   dynText =<< (translatableText $ fromList [
     (English,"Examples:"),

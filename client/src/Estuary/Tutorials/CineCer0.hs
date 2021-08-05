@@ -243,11 +243,11 @@ cineCer0Tutorial = Tutorial {
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
-    --Image Rotate
+    --Video and Image Rotate
     (TutorialPage {
       tutorialPageTitle = Map.fromList [
-        (English,"Image: rotation"),
-        (Español,"Imagen: rotación")
+        (English,"Video/Image: rotation"),
+        (Español,"Video/Imagen: rotación")
       ],
       tutorialPageView = GridView 1 2 [
         Views [

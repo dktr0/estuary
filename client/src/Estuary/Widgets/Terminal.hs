@@ -10,6 +10,9 @@ import Data.Maybe
 import Data.Map.Strict (fromList)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Control.Monad
+
+
 
 import Estuary.Protocol.Peer
 import Estuary.Types.Definition
@@ -19,15 +22,18 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.EnsembleC
 import Estuary.Types.Context
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Hint
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.EnsembleStatus
+import Estuary.Types.TranslatableText
 
-terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> Editor t m (Event t Terminal.Command)
+import Estuary.Types.Language
+
+terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> W t m (Event t Terminal.Command)
 terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
   commands <- divClass "chat" $ mdo
     (inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
@@ -40,16 +46,18 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
     let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [enterPressed]
     let parsedInput = fmap Terminal.parseCommand terminalInput
     let commands = fmapMaybe (either (const Nothing) Just) parsedInput
-    let errorMsgs = fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) parsedInput
-
-    let hintMsgs = ffilter (/= []) $ fmap hintsToMessages hints
-
+    let errorMsgs = fmap (fmap english) $ fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) parsedInput -- [Event t Text]
+    let hintMsgs' = fmap hintsToMessages hints -- Event t [TranslatableText]
+    let hintMsgs = ffilter (/= []) hintMsgs' --
     -- parse responses from server in order to display log/chat messages
-    let responseMsgs = fmap (Data.Maybe.mapMaybe responseToMessage) deltasDown
-    let streamIdMsgs = fmap (\x -> ["new Peer id: " <> x]) streamId
-    let messages = mergeWith (++) [responseMsgs,errorMsgs,hintMsgs,streamIdMsgs]
+    let responseMsgs = fmap (\x -> fmap english (Data.Maybe.mapMaybe responseToMessage x)) deltasDown -- [Event t Text]
+    let streamIdMsgs = fmap (\x -> fmap english ["new Peer id: " <> x]) streamId -- Event t [TranslatableText]
+    let messages = mergeWith (++)  [responseMsgs, errorMsgs, hintMsgs, streamIdMsgs]
+
     mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
-    divClass "chatMessageContainer" $ simpleList mostRecent $ \v -> divClass "chatMessage code-font primary-color" $ dynText v
+    divClass "chatMessageContainer" $ simpleList mostRecent $ \v -> do
+      v' <- dynTranslatableText v -- W t m (Dynamic t Text)
+      divClass "chatMessage code-font primary-color" $ dynText v' -- m()
 
     pp <- liftIO $ newPeerProtocol
     mb <- mainBus <$> immutableRenderContext
@@ -61,11 +69,12 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
 
   return commands
 
-hintsToMessages :: [Hint] -> [Text]
-hintsToMessages hs = fmapMaybe hintToMessage hs
 
-hintToMessage :: Hint -> Maybe Text
-hintToMessage (LogMessage x) = Just x
+hintsToMessages :: [Hint] -> [TranslatableText] -- [TranslatableText]
+hintsToMessages hs = fmapMaybe hintToMessage hs -- [x ..]
+
+hintToMessage :: Hint -> Maybe TranslatableText --TranslatableText-- Map Language Text
+hintToMessage (LogMessage x) = Just x -- translatableText $ Data.Map.fromList [(English, x)]
 hintToMessage _ = Nothing
 
 performCommands :: MonadWidget t m => PeerProtocol -> MainBus -> Event t Terminal.Command -> m ()

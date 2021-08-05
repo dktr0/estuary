@@ -16,8 +16,9 @@ import Reflex.Dom hiding (Request,Response)
 import Text.Read
 import Control.Monad.IO.Class
 
-import Estuary.Reflex.Router
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.W
+import Estuary.Widgets.Router
 import Estuary.Types.RenderInfo
 import Estuary.Tidal.Types
 import Estuary.Types.Context
@@ -35,11 +36,9 @@ import Estuary.Types.View
 import Estuary.Types.Tutorial
 import Estuary.Widgets.Ensemble
 import Estuary.Widgets.EstuaryIcon
-import Estuary.Widgets.Generic
 import Estuary.Widgets.Text
 import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.View
-import Estuary.Widgets.Editor
 import Estuary.Widgets.Tutorial
 import Estuary.Widgets.AboutEstuary
 import Estuary.Widgets.CreateEnsemble
@@ -61,7 +60,7 @@ data Navigation =
   deriving (Generic, FromJSVal, ToJSVal)
 
 
-navigation :: MonadWidget t m => Event t [Response] -> Editor t m (Event t Request, Event t EnsembleRequest)
+navigation :: MonadWidget t m => Event t [Response] -> W t m (Event t Request, Event t EnsembleRequest)
 navigation wsDown = do
   x <- router Splash never $ page wsDown
   let y = fmap snd x
@@ -71,7 +70,7 @@ navigation wsDown = do
 
 
 page :: MonadWidget t m => Event t [Response] -> Navigation
-  -> Editor t m (Event t Navigation, (Event t Request, Event t EnsembleRequest))
+  -> W t m (Event t Navigation, (Event t Request, Event t EnsembleRequest))
 
 page wsDown Splash = do
   navEv <- splitPageWithAnnouncements $ divClass "splash-container" $ do
@@ -184,7 +183,7 @@ joinButton x = do
   return $ tag (current x) b
 
 
-panel :: MonadWidget t m => Text -> Navigation -> Term.Term -> Editor t m () -> Editor t m (Event t Navigation)
+panel :: MonadWidget t m => Text -> Navigation -> Term.Term -> W t m () -> W t m (Event t Navigation)
 panel c targetPage title icon = divClass c $ do
   liftM (targetPage <$) $ dynButtonWithChild "splash-panel" $ do
     divClass "splash-title-container" $ divClass "splash-title" $ term title >>= dynText

@@ -3,7 +3,7 @@ module Estuary.Languages.Sucixxx (sucixxx) where
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number
 import qualified Sound.Tidal.Context as Tidal
-import Estuary.Tidal.ParamPatternable (parseBP')
+import Estuary.Types.ParamPatternable (parseBP')
 
 -- suci xxx
 --por Chakala, Dani, Carolina y Juana

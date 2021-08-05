@@ -5,8 +5,8 @@ import Reflex
 import Reflex.Dom
 import Data.Text
 import GHCJS.DOM.EventM
-import Estuary.Widgets.Generic
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.Reflex
 
 sabortsHelpFile :: MonadWidget t m => m ()
 sabortsHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do

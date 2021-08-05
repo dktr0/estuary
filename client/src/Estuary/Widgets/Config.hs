@@ -6,9 +6,11 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import qualified Data.Text as T
 import Data.Map.Strict
+import Text.Read(readMaybe)
+import Data.Maybe
 
-import Estuary.Widgets.Editor
-import Estuary.Widgets.Generic
+import Estuary.Widgets.W
+import Estuary.Widgets.Reflex
 import Estuary.Widgets.ViewEditor
 import Estuary.Types.Context
 import Estuary.Types.Language
@@ -18,7 +20,7 @@ import Estuary.Types.RenderInfo
 
 import qualified Sound.Punctual.Resolution as Punctual
 
-configWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Editor t m (Event t ContextChange)
+configWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> W t m (Event t ContextChange)
 configWidget ctx ri = do
 
   canvasEnabledEv <- divClass "config-option primary-color ui-font" $ do
@@ -72,6 +74,51 @@ configWidget ctx ri = do
     return $ fmap (\x c -> c { brightness = x }) brightnessChange
 
   elClass "hr" "dashed" $  text ""
+
+  cineCer0ZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
+    zIndexInput <- elClass "div" "Numeric Field with initial value" $ do
+      text "CineCer0 z-index: "
+      tInt <- textInput $ def & textInputConfig_inputType .~ "number"
+                              & textInputConfig_initialValue .~ "-1"
+                              & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+      return $ _textInput_value tInt -- :: Dynamic t Text
+    return $ fmap (\x -> \c -> c { cineCer0ZIndex = x }) (fmap (\x -> if isJust (readMaybe (T.unpack x)::Maybe Int) then (read (T.unpack x)::Int) else (-1)) zIndexInput) -- :: Dynamic t (Context -> Context)
+
+  punctualZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
+    zIndexInput <- elClass "div" "Numeric Field with initial value" $ do
+      text "Punctual z-index: "
+      tInt <- textInput $ def & textInputConfig_inputType .~ "number"
+                              & textInputConfig_initialValue .~ "-2"
+                              & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+      return $ _textInput_value tInt -- :: Dynamic t Text
+    return $ fmap (\x -> \c -> c { punctualZIndex = x }) (fmap (\x -> if isJust (readMaybe (T.unpack x)::Maybe Int) then (read (T.unpack x)::Int) else (-2)) zIndexInput) -- :: Dynamic t (Context -> Context)
+
+  improvizZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
+    zIndexInput <- elClass "div" "Numeric Field with initial value" $ do
+      text "Improviz z-index: "
+      tInt <- textInput $ def & textInputConfig_inputType .~ "number"
+                              & textInputConfig_initialValue .~ "-3"
+                              & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+      return $ _textInput_value tInt -- :: Dynamic t Text
+    return $ fmap (\x -> \c -> c { improvizZIndex = x }) (fmap (\x -> if isJust (readMaybe (T.unpack x)::Maybe Int) then (read (T.unpack x)::Int) else (-3)) zIndexInput) -- :: Dynamic t (Context -> Context)
+
+  hydraZIndexChangeEv <- divClass "config-option primary-color ui-font" $ do
+    zIndexInput <- elClass "div" "Numeric Field with initial value" $ do
+      text "Hydra z-index: "
+      tInt <- textInput $ def & textInputConfig_inputType .~ "number"
+                              & textInputConfig_initialValue .~ "-20"
+                              & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+      return $ _textInput_value tInt -- :: Dynamic t Text
+    return $ fmap (\x -> \c -> c { hydraZIndex = x }) (fmap (\x -> if isJust (readMaybe (T.unpack x)::Maybe Int) then (read (T.unpack x)::Int) else (-10)) zIndexInput) -- :: Dynamic t (Context -> Context)
+
+  zIndexInfo <- divClass "config-option primary-color ui-font" $ do
+    el "div" $ dynText =<< (translatableText $ fromList [
+      (English, "Z-index controls the vertical stacking order of visual renders (highest number = top layer). By default, CineCer0 is on the top, followed by Punctual, Improviz and, on the bottom, Hydra."),
+      (Español, "El z-index controla el apilado vertical de capas visuales (el valor más alto = capa superior). Por defecto, CineCer0 se ubica en la capa superior seguido por Punctual e Improviz, en la capa inferior de visualiza Hydra.")
+      ])
+
+  elClass "hr" "dashed" $ return ()
+
 
   webDirtEnabledEv <- divClass "config-option primary-color ui-font" $ do
     text "WebDirt: "
@@ -143,4 +190,4 @@ configWidget ctx ri = do
       ])
     viewEditor
 
-  return $ mergeWith (.) [punctualAudioInputModeEv,canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, viewEditorChange, fpsLimitChangeEv, unsafeModeEv]
+  return $ mergeWith (.) [punctualAudioInputModeEv,canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, (updated cineCer0ZIndexChangeEv), (updated punctualZIndexChangeEv), (updated improvizZIndexChangeEv), (updated hydraZIndexChangeEv), viewEditorChange, fpsLimitChangeEv, unsafeModeEv]

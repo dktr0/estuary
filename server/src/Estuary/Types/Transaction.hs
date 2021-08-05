@@ -20,6 +20,7 @@ import Control.Concurrent
 import Control.Concurrent.STM hiding (atomically,readTVarIO)
 import TextShow
 import Data.Time
+import Data.Sequence
 
 import Estuary.Types.ServerState
 import qualified Estuary.Types.EnsembleS as E
@@ -35,6 +36,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.Participant
 import Estuary.Types.Name
 import Estuary.AtomicallyTimed
+import Estuary.Types.ResourceOp
 
 type Transaction = ReaderT ServerState (ExceptT Text STM)
 
@@ -156,7 +158,7 @@ resetViews now ctvar = do
   when (not $ authenticatedInEnsemble c) $ throwError "client not authenticated in ensemble"
   liftSTM $ do
     e <- readTVar etvar
-    E.resetViews e now 
+    E.resetViews e now
 
 
 writeView :: UTCTime -> TVar Client -> Text -> View -> Transaction ()
@@ -178,6 +180,14 @@ writeTempo now ctvar t = do
     e <- readTVar etvar
     E.writeTempo e now t
 
+writeResourceOps :: UTCTime -> TVar Client -> Seq ResourceOp -> Transaction ()
+writeResourceOps now ctvar ops = do
+  c <- liftSTM $ readTVar ctvar
+  etvar <- justOrError (memberOfEnsemble c) "client not part of ensemble"
+  when (not $ authenticatedInEnsemble c) $ throwError "client not authenticated in ensemble"
+  liftSTM $ do
+    e <- readTVar etvar
+    E.writeResourceOps e now ops
 
 handleTakenInEnsemble :: Text -> Text -> Transaction Bool
 handleTakenInEnsemble uName eName = do
@@ -272,6 +282,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
   t <- liftSTM $ E.readTempo e
   zs <- liftSTM $ E.readZones e
   vs <- liftSTM $ E.readViews e
+  rs <- liftSTM $ E.readResourceOps e
   self <- liftSTM $ readTVar ctvar
   e' <- liftSTM $ readTVar etvar -- deliberate reread
   ss <- ask
@@ -284,6 +295,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
     respond $ EnsembleResponse $ TempoRcvd t
     mapM_ respond $ fmap EnsembleResponse $ IntMap.mapWithKey ZoneRcvd zs
     mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd vs
+    respond $ EnsembleResponse $ ResourceOps rs
 
     -- send new participant information about existing participants
     ps <- getNamedParticipants ss e'

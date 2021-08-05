@@ -22,6 +22,8 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.Hint
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
+import Estuary.Types.TranslatableText
+import Estuary.Widgets.W
 
 
 estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
@@ -40,11 +42,12 @@ estuaryWebSocket ctx rInfo toSend = mdo
   let response = fmapMaybe id $ ws^.webSocket_recv
 
   -- respond to websocket open, error, and close events
-  let wsOpenHint = LogMessage "websocket opened" <$ ws^.webSocket_open
-  let wsErrorHint = LogMessage "websocket error" <$ ws^.webSocket_error
-  let wsCloseHint = LogMessage "websocket closed" <$ ws^.webSocket_close
+  let wsOpenHint = LogMessage <$> (english "websocket opened" <$ (ws^.webSocket_open))
+  let wsErrorHint = LogMessage <$> (english "websocket error" <$ ws^.webSocket_error)
+  let wsCloseHint = LogMessage <$> (english "websocket closed" <$ ws^.webSocket_close)
   let wsHints = leftmost [wsOpenHint,wsErrorHint,wsCloseHint]
   let rejoinEvent = fmap pure $ attachWithMaybe maybeRejoinEnsemble (current ctx) $ ws^.webSocket_open
+
 
   -- after widget is built, query and report browser info to server
   postBuild <- getPostBuild
