@@ -11,21 +11,20 @@ import TextShow
 import Control.Monad
 import Control.Monad.IO.Class
 
-import Estuary.Widgets.Editor
-import Estuary.Types.Variable
+import Estuary.Widgets.W
+import Estuary.Widgets.Reflex
 import Estuary.Types.Definition
-import Estuary.Reflex.Utility
 
 
 -- from Estuary.Types.Definition.hs:
 --   type StopWatch = Either (Maybe NominalDiffTime) UTCTime
 
-stopWatchWidget' :: MonadWidget t m => Dynamic t StopWatch -> Editor t m (Variable t StopWatch)
+stopWatchWidget' :: MonadWidget t m => Dynamic t StopWatch -> W t m (Variable t StopWatch)
 stopWatchWidget' deltasDown = mdo
 
   -- 1. Translate button presses into localChanges (Event t StopWatch)
   -- x <- dynButton $ fmap snd textUpdates -- :: m (Event t ())
-  x <- button "hola"  -- :: m (Event t ()) 
+  x <- button "hola"  -- :: m (Event t ())
   let y = tag (current $ currentValue v) x
   localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
 
@@ -65,7 +64,7 @@ diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> showt (floor x `mod
 
 
 countDown:: Rational -> UTCTime -> Text
-countDown tMinus anchor = 
-  let endPoint = addUTCTime (realToFrac tMinus) anchor 
+countDown tMinus anchor =
+  let endPoint = addUTCTime (realToFrac tMinus) anchor
       count = diffUTCTime endPoint anchor
   in diffTimeToText count
