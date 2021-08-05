@@ -39,8 +39,6 @@ data Definition =
   CountDown Clock |
   StopWatch' Clock |
   StopWatch Counter
- -- StopWatch Counter |
- -- CountDown Counter     -- this needs to be sorted at some point !!!!!!
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
