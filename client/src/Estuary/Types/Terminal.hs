@@ -48,7 +48,8 @@ data Command =
   AppendSound Text Text | -- "url" [bankName]
   ResList Text | -- "url"
   ClearResources |
-  ResourceOps |
+  DefaultResources |
+  ShowResources |
   ResetZones |
   ResetViews |
   ResetTempo |
@@ -90,6 +91,8 @@ terminalCommand =
   <|> appendAudioResourceParser
   <|> resListParser
   <|> clearResourcesParser
+  <|> defaultResourcesParser
+  <|> showResourcesParser
   <|> resetzonesParser
   <|> resetviewsParser
   <|> resettempoParser
@@ -438,6 +441,17 @@ resListParser =
 clearResourcesParser :: H Command
 clearResourcesParser = reserved "clearresources" >> return ClearResources
 
+
+-- defaultResources
+
+defaultResourcesParser :: H Command
+defaultResourcesParser = reserved "defaultresources" >> return DefaultResources
+
+
+-- showResources
+
+showResourcesParser :: H Command
+showResourcesParser = reserved "showresources" >> return ShowResources
 
 -- helper funcs
 int :: H Int

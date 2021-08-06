@@ -67,7 +67,7 @@ text :: H Text
 text = pack <$> string
 
 rats :: H [Rational]
-rats = list $ rationalOrInteger --list :: Haskellish st a -> Haskellish st [a] 
+rats = list $ rationalOrInteger --list :: Haskellish st a -> Haskellish st [a]
 
 -- //////////////
 

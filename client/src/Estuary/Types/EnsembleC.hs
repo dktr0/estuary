@@ -125,6 +125,7 @@ commandToHint _ Terminal.ResetZones = Just $ LogMessage  (Map.fromList [(English
 commandToHint _ Terminal.ResetViews = Just $ LogMessage  (Map.fromList [(English, "views reset"), (Español, "vistas reiniciadas")])
 commandToHint _ Terminal.ResetTempo = Just $ LogMessage  (Map.fromList [(English, "tempo reset"), (Español, "tempo reiniciado")])
 commandToHint _ Terminal.Reset = Just $ LogMessage (Map.fromList [(English, "(full) reset"), (Español, "reinicio (completo)")])
+commandToHint es Terminal.ShowResources = Just $ LogMessage $ english $ showResourceOps $ resourceOps $ ensemble es
 commandToHint _ _ = Nothing
 
 commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
@@ -211,6 +212,7 @@ commandToEnsembleRequest es (Terminal.ResList url) = Just $ do
   let rs' = rs |> ResourceListURL url
   return $ WriteResourceOps rs'
 commandToEnsembleRequest es Terminal.ClearResources = Just $ return $ WriteResourceOps Seq.empty
+commandToEnsembleRequest es Terminal.DefaultResources = Just $ return $ WriteResourceOps defaultResourceOps
 commandToEnsembleRequest _ _ = Nothing
 
 responseToMessage :: Response -> Maybe Text

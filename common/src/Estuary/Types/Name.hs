@@ -7,11 +7,6 @@ import Data.Char
 import Control.Monad.Error
 
 
-
-
--- import Text.Parsec
--- import Text.Parsec.Text
-
 type H = Haskellish ()
 
 type Name = Text

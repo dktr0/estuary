@@ -7,4 +7,5 @@ packages:
 - '../common'
 
 extra-deps:
-- tempi-1.0.0.0
+- tempi-1.0.2.0
+- haskellish-0.2.4.3

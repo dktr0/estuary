@@ -55,7 +55,7 @@ instance FromJSON Ensemble where
     views'' <- mapM (\v -> (Just <$> parseJSON v) <|> return Nothing) views' -- Map Text (Maybe View)
     let views''' = Witherable.catMaybes views'' -- Map Text View
     -- parse list of resourceOps, silently omitting any that fail to parse (in order to allow evolution of ResourceOp type)
-    resourceOps' <- o .:? "resourceOps" .!= Data.Sequence.empty
+    resourceOps' <- o .:? "resourceOps" .!= (toJSON <$> defaultResourceOps)
     resourceOps'' <- mapM (\v -> (Just <$> parseJSON v) <|> return Nothing) resourceOps'
     let resourceOps''' = Witherable.catMaybes resourceOps'' -- [ResourceOp]
     chats' <- o .:? "chats" .!= []
