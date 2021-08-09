@@ -47,13 +47,14 @@ maybeLayerSpec = _0Arg $
 layerSpec :: H LayerSpec
 layerSpec = _0Arg $
   (vs_vs <*> layerSpec) <|>
+  fmap videoToLayerSpec text <|>
   (layerSpecFunc <*> text)
 
 layerSpecFunc :: H (Text -> LayerSpec)
 layerSpecFunc =
-  textToLayerSpec <$ reserved "text" <|>
+  videoToLayerSpec <$ reserved "video" <|>
   imageToLayerSpec <$ reserved "image" <|>
-  videoToLayerSpec <$ reserved "video"
+  textToLayerSpec <$ reserved "text"
 
 -- //////////////
 
