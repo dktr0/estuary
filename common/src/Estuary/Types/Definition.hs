@@ -28,7 +28,6 @@ data Clock = TimerUp (Either (Maybe NominalDiffTime) UTCTime) |
 
 data TimerDownState = 
   Stopped Int |  -- target     
-  Clear Int |
   Running Int UTCTime -- target and start time
   deriving (Eq,Show,Generic)
 
