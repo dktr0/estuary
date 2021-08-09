@@ -957,6 +957,20 @@ cursor: pointer;
 
 }
 
+.countDown {
+	display: flex;
+	border: none;
+}
+
+.countDown textarea{
+	position: relative;
+	border: none;
+	max-width:13em;
+    text-align: center;
+    width: fit-content;
+
+}
+
 /*
 --------------------------------------------------------------------
 							help files
