@@ -9,12 +9,12 @@ import Data.Map
 import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Widgets.Reflex
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.View
 import Estuary.Widgets.View
 
-aboutEstuary :: MonadWidget t m => Editor t m (Event t EnsembleRequest)
+aboutEstuary :: MonadWidget t m => W t m (Event t EnsembleRequest)
 aboutEstuary = viewWidget never $ Views [
 
   Paragraph [

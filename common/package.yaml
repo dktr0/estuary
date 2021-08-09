@@ -21,6 +21,7 @@ dependencies:
   - witherable
   - haskellish
   - mtl
+  - text-show
 
 extra-source-files:
   - package.yaml

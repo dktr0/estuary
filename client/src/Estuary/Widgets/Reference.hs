@@ -20,7 +20,7 @@ import Estuary.Help.Hydra
 import Estuary.Help.CineCer0.CineCer0
 import Estuary.Help.CineCer0.CineCer0Reference
 import Estuary.Types.Request
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.Router
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.TranslatableText
@@ -38,13 +38,13 @@ data Reference =
   TerminalViewCommands
   deriving (Generic, FromJSVal, ToJSVal)
 
-navigation :: MonadWidget t m => Editor t m (Event t Reference)
+navigation :: MonadWidget t m => W t m (Event t Reference)
 navigation = do
   x <- router' MainList never $ referenceWidget
   let a = switchDyn x
   return a
 
-referenceWidget :: MonadWidget t m => Reference -> Editor t m (Event t Reference)
+referenceWidget :: MonadWidget t m => Reference -> W t m (Event t Reference)
 
 referenceWidget MainList = do
   divClass "reference-title" $ text "estuary"
@@ -108,6 +108,6 @@ referenceWidget TerminalViewCommands = do
   terminalViewCommandsHelpFile
   return navEv
 
-goTo :: MonadWidget t m => Reference -> TranslatableText -> Editor t m (Event t Reference)
+goTo :: MonadWidget t m => Reference -> TranslatableText -> W t m (Event t Reference)
 goTo targetPage title = do
   liftM (targetPage <$) $ dynButtonWithChild "reference-link" $ dynText =<< (translatableText title)

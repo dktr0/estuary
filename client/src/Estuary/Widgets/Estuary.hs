@@ -53,7 +53,7 @@ import Estuary.Render.Renderer
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Terminal as Terminal
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.Sidebar
 import Estuary.Resources.AudioResource
 import Estuary.Types.AudioMeta
@@ -105,21 +105,32 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   let ensembleCDyn = fmap ensembleC ctx
 
+  -- resourceMaps :: Dynamic t ResourceMaps, updated by callback events from the Resources system
+  (resourceMapsEvent,resourceMapsCallback) <- newTriggerEvent
+  setResourcesUpdatedCallback (resources irc) resourceMapsCallback
+  resourceMaps <- holdDyn emptyResourceMaps resourceMapsEvent
+
   -- four GUI components: header, main (navigation), terminal, footer
-  (headerChange,headerHints) <- runEditor irc ctx rInfo header
+  let wEnv = WidgetEnvironment {
+    _immutableRenderContext = irc,
+    _context = ctx,
+    _renderInfo = rInfo,
+    _resourceMaps = resourceMaps
+    }
+  (headerChange,headerHints) <- runW wEnv header
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
-    (navRequests,pageHints) <- runEditor irc ctx rInfo $ navigation deltasDownAlt
-    (ctxChange,sidebarHints) <- runEditor irc ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
+    (navRequests,pageHints) <- runW wEnv $ navigation deltasDownAlt
+    (ctxChange,sidebarHints) <- runW wEnv $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle True terminalEvent
   (command,_) <- hideableWidget' terminalVisible $ do
-    runEditor irc ctx rInfo $ terminalWidget deltasDown hints
-  (terminalButton,_) <- runEditor irc ctx rInfo $ footer hints
+    runW wEnv $ terminalWidget deltasDown hints
+  (terminalButton,_) <- runW wEnv $ footer hints
   commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
   performEvent_ $ fmap (ensembleRequestIO $ resources irc) ensembleRequests
@@ -134,7 +145,6 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   performEvent_ $ fmap (mapM_ (ensembleResponseIO $ resources irc)) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  performEvent_ $ fmap (liftIO . commandToIO (resources irc)) command
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange]
 
   -- hints
@@ -253,13 +263,3 @@ commandToRequest :: Terminal.Command -> Maybe Request
 commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
 commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
 commandToRequest _ = Nothing
-
-commandToIO :: Resources -> Terminal.Command -> IO ()
-{- commenting these paths out, this should happen differently now
-commandToIO r (Terminal.InsertAudioResource url bankName n) = addResourceOp r $ InsertResource Audio url (bankName,n)
-commandToIO r (Terminal.AppendAudioResource url bankName) = addResourceOp r $ AppendResource Audio url bankName
-commandToIO r (Terminal.DeleteAudioResource bankName n) = addResourceOp r $ DeleteResource Audio (bankName,n)
-commandToIO r (Terminal.ResList url) = addResourceOp r $ ResourceListURL url
-commandToIO r Terminal.ClearResources = clearResourceOps r
--}
-commandToIO _ _ = return ()

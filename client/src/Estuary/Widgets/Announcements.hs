@@ -12,7 +12,7 @@ import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.TranslatableText
 import Estuary.Widgets.Reflex
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 
 -- compiledAnnouncements contains "compiled-in" news and announcements, which are part
 -- of the client and call attention to new features, changes, etc. These are
@@ -51,14 +51,14 @@ compiledAnnouncements = fromList [
   ]
 
 
-splitPageWithAnnouncements :: MonadWidget t m => Editor t m a -> Editor t m a
+splitPageWithAnnouncements :: MonadWidget t m => W t m a -> W t m a
 splitPageWithAnnouncements child = divClass "pageSplitter" $ do
   r <- divClass "halfPage" $ child
   divClass "halfPage" announcementsWidget
   return r
 
 
-announcementsWidget :: MonadWidget t m => Editor t m ()
+announcementsWidget :: MonadWidget t m => W t m ()
 announcementsWidget = divClass "announcements" $ do
 
   divClass "announcement" $ do
@@ -81,7 +81,7 @@ announcementsWidget = divClass "announcements" $ do
 
   return ()
 
-individualAnnouncement :: MonadWidget t m => Dynamic t (Day,TranslatableText) -> Editor t m ()
+individualAnnouncement :: MonadWidget t m => Dynamic t (Day,TranslatableText) -> W t m ()
 individualAnnouncement x = divClass "announcement" $ do
   dynText $ fmap (T.pack . show . fst) x
   text ": "

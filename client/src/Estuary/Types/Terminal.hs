@@ -43,11 +43,13 @@ data Command =
   ShowTempo | -- for testing, displays current tempo in terminal
   SetCPS Double |
   SetBPM Double |
-  InsertAudioResource Text Text Int | -- "url" [bankName] [n]
-  DeleteAudioResource Text Int | -- [bankName] [n]
-  AppendAudioResource Text Text | -- "url" [bankName]
+  InsertSound Text Text Int | -- "url" [bankName] [n]
+  DeleteSound Text Int | -- [bankName] [n]
+  AppendSound Text Text | -- "url" [bankName]
   ResList Text | -- "url"
   ClearResources |
+  DefaultResources |
+  ShowResources |
   ResetZones |
   ResetViews |
   ResetTempo |
@@ -89,6 +91,8 @@ terminalCommand =
   <|> appendAudioResourceParser
   <|> resListParser
   <|> clearResourcesParser
+  <|> defaultResourcesParser
+  <|> showResourcesParser
   <|> resetzonesParser
   <|> resetviewsParser
   <|> resettempoParser
@@ -381,54 +385,47 @@ setBPMFunc x = SetBPM x
 -- insert audio resource
 insertAudioResourceParser :: H Command
 insertAudioResourceParser = (insertAudioResourceParser' <*!> int) <|>
-  (reserved "insertaudioresource" >> fatal "Missing arguments. !insertaudioresource expects three parameters: url, bankName and n.")
+  (insertAudioResourceParser''' >> fatal "Missing arguments. !insertaudio expects three parameters: url, bankName and n.")
 
 insertAudioResourceParser' :: H (Int -> Command)
 insertAudioResourceParser' = (insertAudioResourceParser'' <*!> identifierText) <|>
-  (reserved "insertaudioresource" >> fatal "Missing arguments. !insertaudioresource expects three parameters: url, bankName and n.")
+  (insertAudioResourceParser''' >> fatal "Missing arguments. !insertaudio expects three parameters: url, bankName and n.")
 
 insertAudioResourceParser'' :: H (Text -> Int -> Command)
 insertAudioResourceParser'' = (insertAudioResourceParser''' <*!> textLiteral) <|>
-  (reserved "insertaudioresource" >> fatal "Missing arguments. !insertaudioresource expects three parameters: url, bankName and n.")
-
+  (insertAudioResourceParser''' >> fatal "Missing arguments. !insertaudio expects three parameters: url, bankName and n.")
 
 insertAudioResourceParser''' :: H (Text -> Text -> Int -> Command)
-insertAudioResourceParser''' = insertAudioResourceFunc <$ reserved "insertaudioresource"
+insertAudioResourceParser''' = reserved "insertsound" >> return InsertSound
 
-insertAudioResourceFunc :: Text -> Text -> Int -> Command
-insertAudioResourceFunc x y z = InsertAudioResource x y z
+
 
 
 -- delete audio resource
 deleteAudioResourceParser :: H Command
 deleteAudioResourceParser = (deleteAudioResourceParser' <*!> int) <|>
-  (reserved "deleteaudioresource" >> fatal "Missing argument(s). !deleteaudioresource expects two parameters: bankName and n.")
+  (deleteAudioResourceParser'' >> fatal "Missing argument(s). !deleteaudioresource expects two parameters: bankName and n.")
 
 deleteAudioResourceParser' :: H (Int -> Command)
 deleteAudioResourceParser' = (deleteAudioResourceParser'' <*!> identifierText) <|>
-  (reserved "deleteaudioresource" >> fatal "Missing argument(s). !deleteaudioresource expects two parameters: bankName and n.")
+  (deleteAudioResourceParser''  >> fatal "Missing argument(s). !deleteaudioresource expects two parameters: bankName and n.")
 
 deleteAudioResourceParser'' :: H (Text -> Int -> Command)
-deleteAudioResourceParser'' = deleteAudioResourceFunc <$ reserved "deleteaudioresource"
+deleteAudioResourceParser'' = DeleteSound <$ reserved "deletesound"
 
-deleteAudioResourceFunc :: Text -> Int -> Command
-deleteAudioResourceFunc x y = DeleteAudioResource x y
 
 -- append audio source
 
 appendAudioResourceParser :: H Command
 appendAudioResourceParser = (appendAudioResourceParser' <*!> identifierText) <|>
-  (reserved "appendaudioresource" >> fatal "Missing arguments. !appendaudioresource expects two parameters:  url and bankName")
+  (appendAudioResourceParser'' >> fatal "Missing arguments. !appendaudioresource expects two parameters:  url and bankName")
 
 appendAudioResourceParser' :: H (Text -> Command)
 appendAudioResourceParser' = (appendAudioResourceParser'' <*!> textLiteral) <|>
-  (reserved "appendaudioresource" >> fatal "Missing arguments. !appendaudioresource expects two parameters:  url and bankName")
+  (appendAudioResourceParser'' >> fatal "Missing arguments. !appendaudioresource expects two parameters:  url and bankName")
 
 appendAudioResourceParser'' :: H (Text -> Text -> Command)
-appendAudioResourceParser'' = appendAudioResourceFunc <$ reserved "appendaudioresource"
-
-appendAudioResourceFunc :: Text -> Text -> Command
-appendAudioResourceFunc x y = AppendAudioResource x y
+appendAudioResourceParser'' = AppendSound <$ reserved "appendsound"
 
 
 -- resList
@@ -444,6 +441,17 @@ resListParser =
 clearResourcesParser :: H Command
 clearResourcesParser = reserved "clearresources" >> return ClearResources
 
+
+-- defaultResources
+
+defaultResourcesParser :: H Command
+defaultResourcesParser = reserved "defaultresources" >> return DefaultResources
+
+
+-- showResources
+
+showResourcesParser :: H Command
+showResourcesParser = reserved "showresources" >> return ShowResources
 
 -- helper funcs
 int :: H Int

@@ -9,7 +9,7 @@ import Data.Map.Strict
 import Text.Read(readMaybe)
 import Data.Maybe
 
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.ViewEditor
 import Estuary.Types.Context
@@ -20,7 +20,7 @@ import Estuary.Types.RenderInfo
 
 import qualified Sound.Punctual.Resolution as Punctual
 
-configWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Editor t m (Event t ContextChange)
+configWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> W t m (Event t ContextChange)
 configWidget ctx ri = do
 
   canvasEnabledEv <- divClass "config-option primary-color ui-font" $ do

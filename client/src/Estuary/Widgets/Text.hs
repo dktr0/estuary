@@ -29,7 +29,7 @@ import Estuary.Types.TextNotation
 import Estuary.Help.LanguageHelp
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Types.Context
 
 textWidgetClass :: Bool -> Map Text Text
@@ -66,7 +66,7 @@ holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
 
 
 textProgramEditor :: forall t m. MonadWidget t m => Int -> Dynamic t (Maybe Text)
-  -> Dynamic t (Live TextProgram) -> Editor t m (Variable t (Live TextProgram))
+  -> Dynamic t (Live TextProgram) -> W t m (Variable t (Live TextProgram))
 textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
 
   -- translate deltasDown into initial value and events that reflect remote changes that will affect local GUI
@@ -119,7 +119,7 @@ applyEvalEdit (Live (x,y,_) _) z = Live (x,y,z) L3
 applyEvalEdit (Edited _ (x,y,_)) z = Live (x,y,z) L3
 
 
-labelEditor :: MonadWidget t m => Dynamic t Text -> Editor t m (Variable t Text)
+labelEditor :: MonadWidget t m => Dynamic t Text -> W t m (Variable t Text)
 labelEditor delta = do
   let attrs = constDyn $ ("class" =: "name-tag-textarea code-font primary-color")
   y <- divClass "labelWidgetDiv" $ do
@@ -127,7 +127,7 @@ labelEditor delta = do
     textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   returnVariable delta $ _textInput_input y
 
-syntaxErrorWidget :: MonadWidget t m => Text -> Editor t m ()
+syntaxErrorWidget :: MonadWidget t m => Text -> W t m ()
 syntaxErrorWidget t = do
   s <- term Term.Syntax
   let wb = elClass "div" "syntaxIssue" $ dynText s
