@@ -47,7 +47,7 @@ dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
 dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
 dumpView (StopWatchExplorationsView z) = "crono " <> showInt z
-dumpView (CountDownExplorationsView z x) = "cuenta " <> showInt z <> showInt x
+dumpView (CountDownExplorationsView z) = "cuenta " <> showInt z
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -81,13 +81,10 @@ countDownXParser :: H View
 countDownXParser = countDownXParser' <*> int
 
 countDownXParser' :: H (Int -> View)
-countDownXParser' = countDownXParser'' <*> int
+countDownXParser' = countDownXFunc <$ reserved "cuenta"
 
-countDownXParser'' :: H (Int -> Int -> View)
-countDownXParser'' = countDownXFunc <$ reserved "cuenta"
-
-countDownXFunc :: Int -> Int -> View
-countDownXFunc z x = CountDownExplorationsView z x
+countDownXFunc :: Int -> View
+countDownXFunc z = CountDownExplorationsView z
 
 --
 stopwatchXParser :: H View

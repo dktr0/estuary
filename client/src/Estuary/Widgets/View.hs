@@ -87,7 +87,7 @@ viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er 
 
 viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeCounter StopWatch er stopWatchWidget
 
-viewWidget er (CountDownExplorationsView z x) = zoneWidget z (TimerDown (Left Nothing) (realToFrac x)) maybeClock CountDown er (countDownWidget x)
+viewWidget er (CountDownExplorationsView z) = zoneWidget z (Stopped 60) maybeTimerDownState CountDown er countDownWidget
 
 viewWidget er (StopWatchExplorationsView z) = zoneWidget z (TimerUp (Left Nothing)) maybeClock StopWatch' er stopWatchWidget'
 

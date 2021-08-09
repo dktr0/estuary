@@ -65,32 +65,16 @@ stopWatchToNextState (TimerUp (Right startTime)) = do
 -- C. If stop watch is stopped at x:yy then it goes back to 0:
 stopWatchToNextState (TimerUp (Left (Just _))) = return (TimerUp (Left Nothing))
 
-countDownToNextState :: Clock -> IO Clock
-countDownToNextState (TimerUp _) = return (TimerUp (Left Nothing))
--- A. If countdown is stopped at 0:00 then it starts:
-countDownToNextState (TimerDown (Left Nothing) tMinus) = do
+countDownToNextState :: TimerDownState -> IO TimerDownState
+countDownToNextState (Stopped tar) = do
   now <- getCurrentTime
-  return $ (TimerDown (Right now) tMinus)
--- B. If countdown is counting then it stops:
-countDownToNextState (TimerDown (Right startTime) tMinus) = do
-  now <- getCurrentTime
-  let x = tMinus - (diffUTCTime now startTime)  -- 30 - (7 - 0)
-  return (TimerDown (Left (Just x)) tMinus)
--- C. If stop watch is stopped at x:yy then it goes back to 0:
-countDownToNextState (TimerDown (Left (Just _)) tMinus) = return (TimerDown (Left Nothing) tMinus)
+  return (Running tar now)
+countDownToNextState (Running tar y) = do
+  return (Stopped tar)
 
-
-assambleClock:: Rational -> Clock -> Clock 
-assambleClock target (TimerDown (Left Nothing) _) = (TimerDown (Left Nothing) (realToFrac target))
-assambleClock target (TimerDown (Right startTime) _) = (TimerDown (Right startTime) (realToFrac target))
-assambleClock target (TimerDown (Left x) _) = (TimerDown (Left x) (realToFrac target))
-
--- data CountState = Stopped Int | Running Int UTCTime deriving (Eq,Show,Generic)
-
--- countDownToNextState :: CountState -> IO CountState
--- countDownToNextState (Stopped target) = do 
---   now <- getCurrentTime 
---   let x = target - (diffUTCTime now )
+assambleCountDown :: Int -> TimerDownState-> TimerDownState
+assambleCountDown target (Stopped x) = (Stopped target) -- if count is stopped then it can assamble a new target
+assambleCountDown target (Running x y) = (Running target y) -- if count is running no new target can be made
 
 --- transform clocks to display text -------
 
@@ -104,49 +88,36 @@ diffTimeToText :: NominalDiffTime -> Text
 diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> showt (floor x `mod` 60 :: Int)
 
 
-countDownToText:: Clock -> UTCTime -> (Text, Text)
-countDownToText (TimerUp _) _ = ((diffTimeToText 0), "problems")
-countDownToText (TimerDown (Right startT) tMinus) now = 
-  let target = addUTCTime 30 startT -- startTime + countdown
-      count = diffUTCTime target now
-  in if count > 0 then (diffTimeToText count,"stop") else (diffTimeToText 0, "stop")
-countDownToText (TimerDown (Left Nothing) 30) _ = (diffTimeToText 30, "start")
-countDownToText (TimerDown (Left (Just ndt)) 30) _ = (diffTimeToText 666, "clear")
+countDownToText:: TimerDownState -> UTCTime -> (Text,Text)
+countDownToText (Stopped x) now = (diffTimeToText (realToFrac x),"Run")
+countDownToText (Running x y) now = (diffTimeToText xx, "Stop") -- aqui va el (target+starttoime) - now
+                                 where xx = (diffUTCTime (addUTCTime (realToFrac x) y) now)
 
 
--- funca:: Clock -> Text
+countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
+countDownWidget deltasDown =  divClass "ensembleTempo ui-font primary-color" $  mdo
 
--- TimerDown (Either (Maybe NominalDiffTime) (UTCTime)) NominalDiffTime
-
-countDownWidget :: MonadWidget t m => Int -> Dynamic t Clock -> W t m (Variable t Clock)
-countDownWidget nada deltasDown =  divClass "ensembleTempo ui-font primary-color" $  mdo
-
-  let initialText = "t minus what?"
+  let initialText = "input time"
   let updatedText = fmap (showt) targetTimeEvent
   (value,edits,eval) <- textWidget 1 (constDyn False) initialText updatedText
-  butt <- button "start counting"
+  -- butt <- button "start counting"
+  butt <- dynButton $ dynSnd 
   let evalEvent = tagPromptlyDyn value $ leftmost [butt,eval]
-  let targetTimeEvent = fmapMaybe ((readMaybe :: String -> Maybe Rational) . T.unpack) evalEvent -- Event t  Rational
-  timeDyn <- holdDyn 0 targetTimeEvent
+  let targetTimeEvent = fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) evalEvent 
+  timeDyn <- holdDyn 60 targetTimeEvent
 
---  x <- button $ "t - 30"  -- :: m (Event t ()) 
-  let y = tag (current $ currentValue v) $ traceEvent "boton" butt -- current:: Dyn -> Behaviour -- behaviour and event, event fires, gets the val of the beha -- tag samples the behaviour at a particular time -- curr val at button pressed
-  let yy = traceEvent "value" $ attachWith (assambleClock) (current timeDyn) (y)
+  let y = tag (current $ currentValue v) $ traceEvent "boton" butt 
+  let yy = traceEvent "value" $ attachWith (assambleCountDown) (current timeDyn) (y)
   localChanges <- fmap (traceEvent "localChanges") $ performEvent $ fmap (liftIO . countDownToNextState) yy
-  -- $ fmap (assambleClock targetTimeEvent) y -- Event t StopW map through IO (that is why performEvent) so :: Event t 
-
-  -- 2. Calculate and display text
-  widgetBuildTime <- liftIO $ getCurrentTime  -- :: UTC (happens when widget is built)
-  initialStopWatch <- sample $ current deltasDown     -- Behaviour t ?? (only happens when widget is built)
-
-
-  let initialTime = fst $ countDownToText initialStopWatch widgetBuildTime -- calculated once :: Text
-  tick <- tickLossy 1.00 widgetBuildTime -- :: tickInfo (next line is UTC)
-  let textUpdates = traceEvent "textUpdates" $ attachWith countDownToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick -- :: Event t c
+  widgetBuildTime <- liftIO $ getCurrentTime  
+  initialCount <- sample $ current deltasDown
+  let initialTime = fst $ countDownToText initialCount widgetBuildTime
+  tick <- tickLossy 1.0 widgetBuildTime 
+  let textUpdates = traceEvent "textUpdates" $ attachWith countDownToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
   holdDyn initialTime (fmap fst textUpdates) >>= dynText
 
   dynSnd <- holdDyn "moo" $ fmap snd textUpdates -- transform Event t to Dynamic t (notice the <-, still in the IO monad (is that correct?)) and from (Tx,Tx) -> Tx
-  v <- returnVariable deltasDown localChanges  -- delta remote edits, -- must be Editor t m (variable t StopWatch)
+  v <- returnVariable deltasDown localChanges
   return v
 
 

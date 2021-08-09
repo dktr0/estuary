@@ -32,7 +32,7 @@ data View =
   RouletteView Int Int |
   AudioMapView |
   StopWatchView Int |
-  CountDownExplorationsView Int Int | 
+  CountDownExplorationsView Int | 
   StopWatchExplorationsView Int
   deriving (Show,Eq,Generic)
 

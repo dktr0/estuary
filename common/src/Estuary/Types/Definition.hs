@@ -26,7 +26,17 @@ data Clock = TimerUp (Either (Maybe NominalDiffTime) UTCTime) |
              TimerDown (Either (Maybe NominalDiffTime) (UTCTime)) NominalDiffTime
   deriving (Eq,Show,Generic)
 
+data TimerDownState = 
+  Stopped Int |  -- target     
+  Clear Int |
+  Running Int UTCTime -- target and start time
+  deriving (Eq,Show,Generic)
+
 instance ToJSON Clock where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON TimerDownState
+
+instance ToJSON TimerDownState where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Clock
 
@@ -36,7 +46,8 @@ data Definition =
   TidalStructure TransformedPattern |
   LabelText Text |
   Roulette Roulette |
-  CountDown Clock |
+  CountDown TimerDownState |
+  CountDown' Clock |
   StopWatch' Clock |
   StopWatch Counter
   deriving (Eq,Show,Generic)
@@ -96,6 +107,10 @@ maybeCounter :: Definition -> Maybe Counter
 maybeCounter (StopWatch x) = Just x
 
 maybeClock :: Definition -> Maybe Clock
-maybeClock (CountDown  x) = Just x
+maybeClock (CountDown'  x) = Just x
 maybeClock (StopWatch' x) = Just x
 maybeClock _ = Nothing
+
+maybeTimerDownState:: Definition -> Maybe TimerDownState
+maybeTimerDownState (CountDown x) = Just x
+maybeTimerDownState _ = Nothing
