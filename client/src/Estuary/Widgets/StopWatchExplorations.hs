@@ -19,7 +19,7 @@ import Estuary.Widgets.Text
 
 
 
-stopWatchWidget' :: MonadWidget t m => Dynamic t Clock -> W t m (Variable t Clock)
+stopWatchWidget' :: MonadWidget t m => Dynamic t TimerUpState -> W t m (Variable t TimerUpState)
 stopWatchWidget' deltasDown = mdo
   -- 1. Translate button presses into localChanges (Event t StopWatch)
   x <- dynButton $ dynSnd -- Event t Text
@@ -46,22 +46,22 @@ stopWatchWidget' deltasDown = mdo
 
 ------ State calculations ----
 
-stopWatchToNextState :: Clock -> IO Clock
-stopWatchToNextState (TimerUp (Left Nothing)) = do
+stopWatchToNextState :: TimerUpState -> IO TimerUpState
+stopWatchToNextState Cleared = do
   now <- getCurrentTime
-  return (TimerUp (Right now))
+  return (Running now)
 -- B. If stop watch is counting then it stops:
-stopWatchToNextState (TimerUp (Right startTime)) = do
+stopWatchToNextState (Running startTime) = do
   now <- getCurrentTime
-  return (TimerUp (Left $ Just $ diffUTCTime now startTime))
+  return (Stopped (diffUTCTime now startTime))
 -- C. If stop watch is stopped at x:yy then it goes back to 0:
-stopWatchToNextState (TimerUp (Left (Just _))) = return (TimerUp (Left Nothing))
+stopWatchToNextState (Stopped _) = return (Cleared)
 
 
-stopWatchToText :: Clock -> UTCTime -> (Text, Text)
-stopWatchToText (TimerUp (Left Nothing)) _ = (diffTimeToText 0, "start")
-stopWatchToText (TimerUp (Right startTime)) now = (diffTimeToText $ diffUTCTime now startTime, "stop")
-stopWatchToText (TimerUp (Left (Just ndt))) _ = (diffTimeToText ndt, "clear")
+stopWatchToText :: TimerUpState -> UTCTime -> (Text, Text)
+stopWatchToText Cleared _ = (diffTimeToText 0, "start")
+stopWatchToText (Running startTime) now = (diffTimeToText $ diffUTCTime now startTime, "stop")
+stopWatchToText (Stopped ndt) _ = (diffTimeToText ndt, "clear")
 
 
 
@@ -71,6 +71,14 @@ stopWatchToText (TimerUp (Left (Just ndt))) _ = (diffTimeToText ndt, "clear")
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
 countDownWidget deltasDown =  divClass "countDown ui-font primary-color" $  mdo
 
+  widgetBuildTime <- liftIO $ getCurrentTime  
+  initialCount <- sample $ current deltasDown
+  let initialTime = countDownToDisplay initialCount widgetBuildTime
+  tick <- tickLossy 1.0 widgetBuildTime 
+  let textUpdates = traceEvent "textUpdates" $ attachWith countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
+  holdDyn initialTime textUpdates >>= dynText
+  let bText = countDownToButtonText <$> currentValue v
+  
   let initialText = "inital count is 60, change it here"
   let updatedText = fmap (showt) targetTimeEvent
   (valTxBx,edits,_) <- textWidget 1 (constDyn False) initialText updatedText
@@ -78,40 +86,32 @@ countDownWidget deltasDown =  divClass "countDown ui-font primary-color" $  mdo
   timeDyn <- holdDyn 60 targetTimeEvent
 
   butt <- button "el botoncillo"
-  -- butt <- dynButton $ dynSnd 
+  -- butt <- dynButton $ bText 
   let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
 
   let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent
   localChanges <- performEvent $ attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed
-
-  widgetBuildTime <- liftIO $ getCurrentTime  
-  initialCount <- sample $ current deltasDown
-  let initialTime = countDownToDisplay initialCount widgetBuildTime
-  tick <- tickLossy 1.0 widgetBuildTime 
-  let textUpdates = traceEvent "textUpdates" $ attachPromptlyDynWith countDownToDisplay (currentValue v) $ fmap _tickInfo_lastUTC tick 
-  holdDyn initialTime textUpdates >>= dynText
-
---  dynSnd <- holdDyn "welcome to the extinction widget" $ countDownToButtonText (current $ currentValue v) -- transform Event t to Dynamic t (notice the <-, still in the IO monad (is that correct?)) and from (Tx,Tx) -> Tx
+ 
   v <- returnVariable deltasDown localChanges
   return v
 
-
+-----  u have to fix the dynamic text for the button!!!!!
 
 countDownButtonStateChange :: MonadIO m => Int -> TimerDownState -> m TimerDownState
-countDownButtonStateChange newTar (Stopped tar) = do
+countDownButtonStateChange newTar (Holding tar) = do
   now <- liftIO getCurrentTime
-  return (Running newTar now)
-countDownButtonStateChange newTar (Running tar y) = do
-  return (Stopped newTar)
+  return (Falling newTar now)
+countDownButtonStateChange newTar (Falling tar y) = do
+  return (Holding newTar)
 
 countDownToDisplay:: TimerDownState -> UTCTime -> Text
-countDownToDisplay (Stopped x) now = diffTimeToText (realToFrac x)
-countDownToDisplay (Running x y) now = if xx < 0 then diffTimeToText 0 else diffTimeToText xx 
+countDownToDisplay (Holding x) now = diffTimeToText (realToFrac x)
+countDownToDisplay (Falling x y) now = if xx < 0 then diffTimeToText 0 else diffTimeToText xx 
                                  where xx = (diffUTCTime (addUTCTime (realToFrac x) y) now)
 
 countDownToButtonText:: TimerDownState -> Text
-countDownToButtonText (Stopped _) = "Run"
-countDownToButtonText (Running _ _) = "Stop"
+countDownToButtonText (Holding _) = "Start"
+countDownToButtonText (Falling _ _) = "Stop"
 
 
 -- general helpers

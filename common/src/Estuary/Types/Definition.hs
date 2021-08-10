@@ -20,24 +20,25 @@ type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
 type Counter = Either (Maybe NominalDiffTime) UTCTime
 
-
--- un reloj que either (tiempo acumulado) o NOW + Target
-data Clock = TimerUp (Either (Maybe NominalDiffTime) UTCTime) | 
-             TimerDown (Either (Maybe NominalDiffTime) (UTCTime)) NominalDiffTime
-  deriving (Eq,Show,Generic)
-
 data TimerDownState = 
-  Stopped Int |  -- target     
-  Running Int UTCTime -- target and start time
+  Holding Int |  -- target     
+  Falling Int UTCTime -- target and start time
   deriving (Eq,Show,Generic)
 
-instance ToJSON Clock where
+data TimerUpState =
+  Cleared |
+  Running UTCTime |
+  Stopped NominalDiffTime
+  deriving (Eq, Show, Generic)
+
+
+instance ToJSON TimerUpState where
   toEncoding = genericToEncoding defaultOptions
-instance FromJSON TimerDownState
+instance FromJSON TimerUpState
 
 instance ToJSON TimerDownState where
   toEncoding = genericToEncoding defaultOptions
-instance FromJSON Clock
+instance FromJSON TimerDownState
 
 data Definition =
   TextProgram (Live TextProgram) |
@@ -46,8 +47,7 @@ data Definition =
   LabelText Text |
   Roulette Roulette |
   CountDown TimerDownState |
-  CountDown' Clock |
-  StopWatch' Clock |
+  StopWatch' TimerUpState |
   StopWatch Counter
   deriving (Eq,Show,Generic)
 
@@ -105,10 +105,9 @@ justRoulettes = mapMaybe maybeRoulette
 maybeCounter :: Definition -> Maybe Counter
 maybeCounter (StopWatch x) = Just x
 
-maybeClock :: Definition -> Maybe Clock
-maybeClock (CountDown'  x) = Just x
-maybeClock (StopWatch' x) = Just x
-maybeClock _ = Nothing
+maybeTimerUpState:: Definition -> Maybe TimerUpState
+maybeTimerUpState (StopWatch' x) = Just x
+maybeTimerUpState _ = Nothing
 
 maybeTimerDownState:: Definition -> Maybe TimerDownState
 maybeTimerDownState (CountDown x) = Just x
