@@ -128,6 +128,9 @@ variable deltasDown editsUp = do
 returnVariable :: (Monad m, Reflex t, MonadSample t m, MonadHold t m) => Dynamic t a -> Event t a -> m (Variable t a)
 returnVariable = variable -- deprecated synonym for variable (above)
 
+initialValue :: (Monad m, Reflex t, MonadSample t m) => Variable t a -> m a
+initialValue = sample . current . currentValue
+
 instance Reflex t => Functor (Variable t) where
   fmap f (Variable d e) = Variable (fmap f d) (fmap f e)
 
