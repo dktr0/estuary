@@ -68,25 +68,31 @@ stopWatchToText (Stopped ndt) _ = (diffTimeToText ndt, "clear")
 -------- Countdown widget and its helpers
 
 
+--- if the state is holding then make the box editable
+---- if the state is falling make it uneditable by displaying textUpdates
+
+-- textOrCount:: TimerDownState -> Text -> Text
+
+
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
 countDownWidget deltasDown =  divClass "countDown ui-font primary-color" $  mdo
 
   widgetBuildTime <- liftIO $ getCurrentTime  
   initialCount <- sample $ current deltasDown
   let initialTime = countDownToDisplay initialCount widgetBuildTime
-  tick <- tickLossy 1.0 widgetBuildTime 
+  tick <- tickLossy 0.01 widgetBuildTime 
   let textUpdates = traceEvent "textUpdates" $ attachWith countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
-  holdDyn initialTime textUpdates >>= dynText
+  -- holdDyn initialTime textUpdates >>= dynText -- if state is faslling then do this
   let bText = countDownToButtonText <$> currentValue v
   
-  let initialText = "inital count is 60, change it here"
-  let updatedText = fmap (showt) targetTimeEvent
-  (valTxBx,edits,_) <- textWidget 1 (constDyn False) initialText updatedText
+  let initialText = "initial count is 60, change it here"
+  let updatedText = fmap (showt) textUpdates  -- if the state is holding then it might be target time event
+  (valTxBx,edits,_) <- textWidget 1 (constDyn False) initialText updatedText -- instead of updated text a function that recieves state and spits this or that...
   let targetTimeEvent = fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent 
   timeDyn <- holdDyn 60 targetTimeEvent
 
-  butt <- button "el botoncillo"
-  -- butt <- dynButton $ bText 
+  -- butt <- button "el botoncillo"
+  butt <- dynButton $ bText 
   let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
 
   let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent

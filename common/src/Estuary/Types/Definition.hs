@@ -31,7 +31,6 @@ data TimerUpState =
   Stopped NominalDiffTime
   deriving (Eq, Show, Generic)
 
-
 instance ToJSON TimerUpState where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON TimerUpState
@@ -66,6 +65,9 @@ definitionForRendering (Sequence x) = Sequence x
 definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
+definitionForRendering (CountDown x) = CountDown x
+definitionForRendering (StopWatch' x) = StopWatch' x
+definitionForRendering (StopWatch x) = StopWatch x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -104,6 +106,7 @@ justRoulettes = mapMaybe maybeRoulette
 
 maybeCounter :: Definition -> Maybe Counter
 maybeCounter (StopWatch x) = Just x
+maybeCounter _ = Nothing
 
 maybeTimerUpState:: Definition -> Maybe TimerUpState
 maybeTimerUpState (StopWatch' x) = Just x
