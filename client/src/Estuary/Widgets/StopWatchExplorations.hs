@@ -21,28 +21,20 @@ import Estuary.Widgets.Text
 
 stopWatchWidget' :: MonadWidget t m => Dynamic t TimerUpState -> W t m (Variable t TimerUpState)
 stopWatchWidget' deltasDown = mdo
-  -- 1. Translate button presses into localChanges (Event t StopWatch)
-  x <- dynButton $ dynSnd -- Event t Text
-  -- x <- button "hola"  -- :: m (Event t ()) 
-  let y = tag (current $ currentValue v) $ traceEvent "x" x -- current:: Dyn -> Behaviour -- behaviour and event, event fires, gets the val of the beha -- tag samples the behaviour at a particular time -- curr val at button pressed
-  -- localChanges <- performEvent $ fmap (liftIO . countToNextState) $ traceEvent "y" y -- Event t StopW map through IO (that is why performEvent) so :: Event t 
-  localChanges <- fmap (traceEvent "localChanges") $ performEvent $ fmap (liftIO . stopWatchToNextState) y
+  -- 1. Translate button presses into localChanges
+  let bText = stopWatchToButtonText <$> currentValue v
+  x <- dynButton $ bText 
+  let y = tag (current $ currentValue v) x 
+  localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
   -- 2. Calculate and display text
   widgetBuildTime <- liftIO $ getCurrentTime  -- :: UTC (happens when widget is built)
   initialStopWatch <- sample $ current deltasDown     -- Behaviour t ?? (only happens when widget is built)
-  let initialText = fst $ stopWatchToText initialStopWatch widgetBuildTime -- calculated once :: Text
+  let initialText = stopWatchToText initialStopWatch widgetBuildTime -- calculated once :: Text
+  tick <- tickLossy 0.01 widgetBuildTime -- :: tickInfo (next line is UTC)
+  let textUpdates = attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
+  holdDyn initialText textUpdates >>= dynText
   v <- returnVariable deltasDown localChanges
-  tick <- tickLossy 1 widgetBuildTime -- :: tickInfo (next line is UTC)
-  -- let textUpdates = attachWith stopWatchToText vTemp $ fmap _tickInfo_lastUTC tick -- :: Event t c
-  let textUpdates = traceEvent "textUpdates" $ attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
-  holdDyn initialText (fmap fst textUpdates) >>= dynText
-
-  dynSnd <- holdDyn "stopwatch!" $ fmap snd textUpdates -- transform Event t to Dynamic t (notice the <-, still in the IO monad (is that correct?)) and from (Tx,Tx) -> Tx
-  -- v <- returnVariable deltasDown localChanges  -- delta remote edits, -- must be Editor t m (variable t StopWatch)
-  fakeDeltasDown <- holdDyn (initialStopWatch) never
-  
-  -- vTemp <- current <$> holdDyn initialStopWatch localChanges
-  returnVariable deltasDown never
+  return v
 
 ------ State calculations ----
 
@@ -58,11 +50,15 @@ stopWatchToNextState (Running startTime) = do
 stopWatchToNextState (Stopped _) = return (Cleared)
 
 
-stopWatchToText :: TimerUpState -> UTCTime -> (Text, Text)
-stopWatchToText Cleared _ = (diffTimeToText 0, "start")
-stopWatchToText (Running startTime) now = (diffTimeToText $ diffUTCTime now startTime, "stop")
-stopWatchToText (Stopped ndt) _ = (diffTimeToText ndt, "clear")
+stopWatchToText :: TimerUpState -> UTCTime -> Text
+stopWatchToText Cleared _ = diffTimeToText 0
+stopWatchToText (Running startTime) now = diffTimeToText $ diffUTCTime now startTime
+stopWatchToText (Stopped ndt) _ = diffTimeToText ndt
 
+stopWatchToButtonText:: TimerUpState -> Text
+stopWatchToButtonText Cleared = "Start"
+stopWatchToButtonText (Running _) = "Stop"
+stopWatchToButtonText (Stopped _) = "Clear"
 
 
 -------- Countdown widget and its helpers
@@ -71,37 +67,40 @@ stopWatchToText (Stopped ndt) _ = (diffTimeToText ndt, "clear")
 --- if the state is holding then make the box editable
 ---- if the state is falling make it uneditable by displaying textUpdates
 
--- textOrCount:: TimerDownState -> Text -> Text
+
+
+-- textOrCount:: TimerDownState -> Text
+-- textOrCount (Holding _) fallingState holdingState = holdingState
+-- textOrCount (Falling _ _) fallingState holdingState = fallingState
 
 
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
 countDownWidget deltasDown =  divClass "countDown ui-font primary-color" $  mdo
 
+  let initialText = "initial count is 60, change it here"
+  let updatedText = fmap (showt) targetTimeEvent  -- if the state is holding then it might be target time event
+
+  (valTxBx,edits,_) <- textWidget 1 (constDyn False) initialText updatedText -- instead of updated text a function that recieves state and spits this or that...
+
+  let targetTimeEvent = fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent 
+  timeDyn <- holdDyn 60 targetTimeEvent
+
+  let bText = countDownToButtonText <$> currentValue v
+  butt <- dynButton $ bText 
+  let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
+  let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent
+  localChanges <- performEvent $ attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed
   widgetBuildTime <- liftIO $ getCurrentTime  
   initialCount <- sample $ current deltasDown
   let initialTime = countDownToDisplay initialCount widgetBuildTime
   tick <- tickLossy 0.01 widgetBuildTime 
   let textUpdates = traceEvent "textUpdates" $ attachWith countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
-  -- holdDyn initialTime textUpdates >>= dynText -- if state is faslling then do this
-  let bText = countDownToButtonText <$> currentValue v
-  
-  let initialText = "initial count is 60, change it here"
-  let updatedText = fmap (showt) textUpdates  -- if the state is holding then it might be target time event
-  (valTxBx,edits,_) <- textWidget 1 (constDyn False) initialText updatedText -- instead of updated text a function that recieves state and spits this or that...
-  let targetTimeEvent = fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent 
-  timeDyn <- holdDyn 60 targetTimeEvent
-
-  -- butt <- button "el botoncillo"
-  butt <- dynButton $ bText 
-  let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
-
-  let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent
-  localChanges <- performEvent $ attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed
- 
+  let sandUpdates = attachWith sandClock (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
+  -- holdDyn initialTime textUpdates >>= dynText -- if state is falling then do this
+  holdDyn initialTime sandUpdates >>= dynText -- if state is falling then do this
   v <- returnVariable deltasDown localChanges
   return v
 
------  u have to fix the dynamic text for the button!!!!!
 
 countDownButtonStateChange :: MonadIO m => Int -> TimerDownState -> m TimerDownState
 countDownButtonStateChange newTar (Holding tar) = do
@@ -118,6 +117,22 @@ countDownToDisplay (Falling x y) now = if xx < 0 then diffTimeToText 0 else diff
 countDownToButtonText:: TimerDownState -> Text
 countDownToButtonText (Holding _) = "Start"
 countDownToButtonText (Falling _ _) = "Stop"
+
+
+-- function to calculate in percentage the countdown
+
+sandClock :: TimerDownState -> UTCTime -> Text 
+sandClock (Holding _) _ = ""
+sandClock (Falling target startTime) now = if xx < 0 then timeToSand 0 else timeToSand (forGrains target xx) 
+                                 where xx = (diffUTCTime (addUTCTime (realToFrac target) startTime) now)
+
+forGrains:: Int -> NominalDiffTime -> Int
+forGrains target grains = if target == 0 then 0 else round $ (grains / (realToFrac target)) * 200
+
+timeToSand :: Int -> Text
+timeToSand grains = showt $ concat $ replicate grains "."
+
+
 
 
 -- general helpers

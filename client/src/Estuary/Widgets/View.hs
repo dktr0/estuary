@@ -83,7 +83,6 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
 
--- this is wrong, fix it
 
 viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeCounter StopWatch er stopWatchWidget
 
