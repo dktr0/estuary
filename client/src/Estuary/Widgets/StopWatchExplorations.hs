@@ -75,7 +75,7 @@ stopWatchToButtonText (Stopped _) = "Clear"
 
 
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
-countDownWidget deltasDown =  divClass "countDown ui-font" $  mdo
+countDownWidget deltasDown =  divClass "countDown" $  mdo
 
   let initialText = "initial count is 60, change it here"
   let updatedText = fmap (showt) targetTimeEvent  -- Event t Text
@@ -85,7 +85,6 @@ countDownWidget deltasDown =  divClass "countDown ui-font" $  mdo
   textos <- holdDyn initialText $ leftmost [updatedText, textUpdates]
 
   (valTxBx,_) <- textWithLockWidget 1 "color: white" editable textos
-
 
   let bText = countDownToButtonText <$> currentValue v
   butt <- dynButton $ bText 
@@ -104,7 +103,9 @@ countDownWidget deltasDown =  divClass "countDown ui-font" $  mdo
   let textUpdates = traceEvent "textUpdates" $ attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick -- Maybe Text
   let sandUpdates = attachWithMaybe sandClock (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
   -- holdDyn initialTime textUpdates >>= dynText -- if state is falling then do this
-  -- holdDyn "" sandUpdates >>= dynText -- if state is falling then do this
+  coso <- holdDyn "" sandUpdates -- >>= dynText -- if state is falling then do this
+
+  sandClockWidget coso
 
   v <- returnVariable deltasDown localChanges
   return v
@@ -144,7 +145,22 @@ countToPercent target grains = if target == 0 then 0 else round $ (grains / (rea
 timeToSand :: Int -> Text
 timeToSand grains = showt $ concat $ replicate grains "."
 
+------ ambitious sandclock widget ----
 
+-- a este hay q meterle un dynam ikc q sale con holdDyn "" sandUpdates
+
+sandClockWidget :: MonadWidget t m => Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
+sandClockWidget delta = do
+  i <- sample $ current delta
+  let class' = constDyn $ "class" =: "textInputToEndOfLine code-font"
+  let rows' = constDyn $ textWidgetRows 20
+  let readon = constDyn $ "readonly" =: ""
+  let style = constDyn $ "style" =: ("height: auto; background-color: #003BDE; clip-path: polygon(50% 0, 100% 100%, 0 100%);")
+  let attrs = mconcat [class',rows',readon,style]
+  x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
+  let edits = _textArea_input x
+  let value = _textArea_value x
+  return (value,edits)
 
 
 -- general helpers

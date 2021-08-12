@@ -76,10 +76,6 @@ textWithLockWidget rows colour editable delta = do
   return (value,edits)
 
 
-
-
-
-
 textNotationParsers :: [TextNotation]
 textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s, Hydra {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)
 
