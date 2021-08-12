@@ -82,7 +82,9 @@ countDownWidget deltasDown =  divClass "countDown ui-font" $  mdo
 
   let editable = editableText <$> currentValue v
 
-  (valTxBx,_) <- textWithLockWidget 1 "color: white" editable initialText $ leftmost [updatedText, textUpdates] 
+  textos <- holdDyn initialText $ leftmost [updatedText, textUpdates]
+
+  (valTxBx,_) <- textWithLockWidget 1 "color: white" editable textos
 
 
   let bText = countDownToButtonText <$> currentValue v

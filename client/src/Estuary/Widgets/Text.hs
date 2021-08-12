@@ -60,15 +60,17 @@ textWidget rows flash i delta = do
 lockText:: Bool -> Map Text Text
 lockText False = Data.Map.empty
 lockText True = "readonly" =: ""
+
                                      --  Rows  Colour     EditableOrNot
-textWithLockWidget :: MonadWidget t m => Int -> Text -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text)
-textWithLockWidget rows colour editable i delta = do
+textWithLockWidget :: MonadWidget t m => Int -> Text -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
+textWithLockWidget rows colour editable delta = do
+  i <- sample $ current delta
   let class' = constDyn $ "class" =: "textInputToEndOfLine code-font"
   let rows' = constDyn $ textWidgetRows rows
   let readon = lockText <$> editable
   let style = constDyn $ "style" =: ("height: auto;" <> colour)
   let attrs = mconcat [class',rows', readon,style]
-  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
+  x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let edits = _textArea_input x
   let value = _textArea_value x
   return (value,edits)
