@@ -45,6 +45,7 @@ dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
 dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
 dumpView (StopWatchExplorationsView z) = "reloj " <> showInt z
+dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -70,6 +71,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|>  audioMapView
           <|>  stopwatchParser
           <|>  stopwatchXParser
+          <|>  notePadParser
 
 
 --
@@ -91,6 +93,16 @@ stopwatchParser' = stopwatchFunc <$ reserved "stopwatch"
 
 stopwatchFunc :: Int -> View
 stopwatchFunc x = StopWatchView x
+
+--
+notePadParser :: H View
+notePadParser = notePadParser' <*> int
+
+notePadParser' :: H (Int -> View)
+notePadParser' = notePadFunc <$ reserved "notepad"
+
+notePadFunc :: Int -> View
+notePadFunc x = NotePadView x
 
 --
 sequenceParser :: H View

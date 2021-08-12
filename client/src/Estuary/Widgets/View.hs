@@ -12,6 +12,7 @@ import Control.Monad.IO.Class
 import Data.Maybe
 import TextShow
 import Data.Time
+import qualified Data.Sequence as Seq
 
 import Estuary.Types.Live
 import Estuary.Types.Definition
@@ -37,6 +38,7 @@ import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatch
 import Estuary.Widgets.StopWatchExplorations
+import Estuary.Widgets.Notepad
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
 
@@ -86,6 +88,8 @@ viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er 
 viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget
 
 viewWidget er (StopWatchExplorationsView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget'
+
+viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("","")]) maybeNotePad NotePad er notePadWidget
 
 viewWidget er TempoView = do
   ctx <- context

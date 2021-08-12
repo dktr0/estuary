@@ -9,6 +9,7 @@ import Data.Text (Text)
 import GHC.Generics
 import Data.Aeson
 import Data.Time
+import Data.Sequence
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
@@ -19,6 +20,8 @@ type TextProgram = (TextNotation,Text,UTCTime)
 type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
 type StopWatch = Either (Maybe NominalDiffTime) UTCTime
+type NotePad = (Int,Seq NotePage)
+type NotePage = (Text,Text)
 
 data Definition =
   TextProgram (Live TextProgram) |
@@ -26,7 +29,8 @@ data Definition =
   TidalStructure TransformedPattern |
   LabelText Text |
   Roulette Roulette |
-  StopWatch StopWatch
+  StopWatch StopWatch |
+  NotePad NotePad
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -44,6 +48,7 @@ definitionForRendering (Sequence x) = Sequence x
 definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
+definitionForRendering (NotePad x) = NotePad x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -83,3 +88,7 @@ justRoulettes = mapMaybe maybeRoulette
 maybeStopWatch :: Definition -> Maybe StopWatch
 maybeStopWatch (StopWatch x) = Just x
 maybeStopWatch _ = Nothing
+
+maybeNotePad :: Definition -> Maybe NotePad
+maybeNotePad (NotePad x) = Just x
+maybeNotePad _ = Nothing
