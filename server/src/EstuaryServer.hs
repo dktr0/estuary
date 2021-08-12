@@ -387,6 +387,21 @@ processEnsembleRequest db ss ws cHandle ctvar (WriteTempo t) = do
       sendEnsembleNoOrigin cHandle e $ EnsembleResponse $ TempoRcvd t
       postLog cHandle $ "WriteTempo in " <> E.ensembleName e
 
+processEnsembleRequest db ss ws cHandle ctvar (WriteResourceOps ops) = do
+  now <- getCurrentTime
+  x <- runTransaction ss $ do
+    writeResourceOps now ctvar ops
+    updateLastEdit ctvar now
+    getClientEnsemble ctvar
+  case x of
+    Left err -> do
+      let m = "*WriteResourceOps* " <> err
+      sendThisClient ctvar (ResponseError m)
+      postLog cHandle m
+    Right e -> do
+      sendEnsembleNoOrigin cHandle e $ EnsembleResponse $ ResourceOps ops
+      postLog cHandle $ "WriteResourceOps in " <> E.ensembleName e
+
 processEnsembleRequest db ss ws cHandle ctvar ResetZonesRequest = do
   now <- getCurrentTime
   x <- runTransaction ss $ do

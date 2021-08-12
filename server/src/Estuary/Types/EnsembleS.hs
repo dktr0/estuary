@@ -12,12 +12,14 @@ import Data.IntMap as IntMap
 import qualified Network.WebSockets as WS
 import Control.Monad
 import Data.Maybe
+import Data.Sequence
 
 import Estuary.Types.Tempo
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.AtomicallyTimed
 import Estuary.Types.Response
+import Estuary.Types.ResourceOp
 
 data EnsembleS = EnsembleS {
   ensembleName :: Text,
@@ -29,6 +31,7 @@ data EnsembleS = EnsembleS {
   tempo :: TVar Tempo,
   zones :: TVar (IntMap.IntMap (TVar Definition)),
   views :: TVar (Map.Map Text (TVar View)),
+  resourceOps :: TVar (Seq ResourceOp),
   connections :: TVar (IntMap.IntMap (TChan (Int,Response))),
   namedConnections :: TVar (IntMap.IntMap Text),
   anonymousConnections :: TVar Int
@@ -43,6 +46,7 @@ newEnsembleS eName now opwd jpwd expTime = do
     }
   zonesTvar <- newTVar IntMap.empty
   viewsTvar <- newTVar Map.empty
+  resourceOpsTvar <- newTVar defaultResourceOps
   connectionsTvar <- newTVar IntMap.empty
   namedConnectionsTvar <- newTVar IntMap.empty
   anonymousConnectionsTvar <- newTVar 0
@@ -57,6 +61,7 @@ newEnsembleS eName now opwd jpwd expTime = do
     tempo = tempoTvar,
     zones = zonesTvar,
     views = viewsTvar,
+    resourceOps = resourceOpsTvar,
     connections = connectionsTvar,
     namedConnections = namedConnectionsTvar,
     anonymousConnections = anonymousConnectionsTvar
@@ -105,6 +110,14 @@ writeView e now n v = do
 
 readViews :: EnsembleS -> STM (Map.Map Text View)
 readViews e = readTVar (views e) >>= mapM readTVar
+
+writeResourceOps :: EnsembleS -> UTCTime -> Seq ResourceOp -> STM ()
+writeResourceOps e now ops = do
+  writeTVar (resourceOps e) ops
+  writeTVar (lastActionTime e) now
+
+readResourceOps :: EnsembleS -> STM (Seq ResourceOp)
+readResourceOps e = readTVar (resourceOps e)
 
 -- Int argument is ClientHandle
 addNamedConnection :: Int -> Text -> TChan (Int,Response) -> EnsembleS -> STM ()

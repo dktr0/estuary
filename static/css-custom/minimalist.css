@@ -1,6 +1,6 @@
 /*
 --------------------------------------------------------------------
-Welcome to the 'bubble' theme template: For quick Estuary's interface customization, modify the colors below.
+Welcome to the 'minimalist' theme template: For quick Estuary's interface customization, modify the colors below.
 More advanced customization is available through CSS classes within this document.
 --------------------------------------------------------------------
 */
@@ -8,8 +8,8 @@ More advanced customization is available through CSS classes within this documen
 @import url('https://fonts.googleapis.com/css?family=Dosis&display=swap');
 
 @font-face {
-  font-family: 'Dosis', sans-serif;
-  font-style: normal;
+  font-family: 'Dosis', verdana, sans-serif;
+  font-style: light;
   font-weight: 400;
   src: url('https://fonts.googleapis.com/css?family=Dosis');
 }
@@ -25,10 +25,10 @@ More advanced customization is available through CSS classes within this documen
   --primary-color: white;
 
 /* sets the background color of buttons and other borders */
-  --secondary-color: rgb(102, 102, 102);
+  --secondary-color: white;
 
 /* sets the color of things that appear temporarily */
-  --transient-color: rgb(21, 192, 169);
+  --transient-color: white;
 }
 
 /*
@@ -52,22 +52,39 @@ More advanced customization is available through CSS classes within this documen
 
 /* styles the user interface-buttons */
 .ui-buttons {
-  color:var(--primary-color);
+  color: var(--primary-color);
   background-color: transparent;
   cursor:pointer;
 }
 
 .ui-buttons:hover {
-  background-color: var(--secondary-color);
+  background-color: transparent;
 }
+
 .ui-dropdownMenus{
 	background-color: transparent;
 
 }
 
 .ui-dropdownMenus:focus {
-  background-color: var(--background-color) !important;
+  background-color: transparent;
 }
+
+/* styles the input boxes */
+
+.ui-inputMenus{
+  background-color: transparent;
+  width: 3em;
+}
+
+.ui-inputMenus::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.ui-inputMenus:focus {
+  background-color: transparent;
+}
+
 /*styles the primary borders (e.g.  from dropdown menus) */
 .primary-borders {
 	border-radius: 5px;

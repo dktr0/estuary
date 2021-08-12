@@ -8,6 +8,7 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault,append)
 import Reflex.Dom.Contrib.KeyEvent
 import Reflex.Dom.Old
+import Reflex.Dynamic
 import Data.Time
 import Data.Map
 import Data.Maybe
@@ -40,9 +41,8 @@ import Estuary.Types.Response
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Context
 import Estuary.Types.Hint
-import Estuary.Types.Samples
 import Estuary.Types.Tempo
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Types.RenderInfo
 import Estuary.Render.DynamicsMode
 import Estuary.Widgets.Header
@@ -51,13 +51,18 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
 import Estuary.Widgets.Terminal
-import Estuary.Widgets.Generic
+import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Terminal as Terminal
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 import Estuary.Widgets.Sidebar
-import Estuary.Types.ResourceMap
-import Estuary.Types.AudioResource
+import Estuary.Resources.AudioResource
 import Estuary.Types.AudioMeta
+import Estuary.Resources.Loadable
+import Estuary.Resources.ResourceList
+import Estuary.Resources
+import Estuary.Types.ResourceMeta
+import Estuary.Types.ResourceType
+import Estuary.Types.ResourceOp
 
 keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher irc ctxM riM = mdo
@@ -79,10 +84,15 @@ keyEventToHint _ = Nothing
 estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
+
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  cvsElement <- canvasWidget (-2) ctx -- canvas for Punctual
+  punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
+  cvsElement <- canvasWidget punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
-  hCanvas <- canvasWidget (-10) ctx -- canvas for Hydra
+  improvizZIndex' <- holdUniqDyn $ fmap improvizZIndex ctx
+  iCanvas <- canvasWidget improvizZIndex' ctx -- canvas for Improviz
+  hydraZIndex' <- holdUniqDyn $ fmap hydraZIndex ctx
+  hCanvas <- canvasWidget hydraZIndex' ctx -- canvas for Hydra
 
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
@@ -95,24 +105,35 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   let ensembleCDyn = fmap ensembleC ctx
 
+  -- resourceMaps :: Dynamic t ResourceMaps, updated by callback events from the Resources system
+  (resourceMapsEvent,resourceMapsCallback) <- newTriggerEvent
+  setResourcesUpdatedCallback (resources irc) resourceMapsCallback
+  resourceMaps <- holdDyn emptyResourceMaps resourceMapsEvent
+
   -- four GUI components: header, main (navigation), terminal, footer
-  (headerChange,headerHints) <- runEditor irc ctx rInfo header
+  let wEnv = WidgetEnvironment {
+    _immutableRenderContext = irc,
+    _context = ctx,
+    _renderInfo = rInfo,
+    _resourceMaps = resourceMaps
+    }
+  (headerChange,headerHints) <- runW wEnv header
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = ffilter (elem ToggleSidebar) hints
     sidebarVisible <- toggle False sidebarToggle
-    (navRequests,pageHints) <- runEditor irc ctx rInfo $ navigation deltasDownAlt
-    (ctxChange,sidebarHints) <- runEditor irc ctx rInfo $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
+    (navRequests,pageHints) <- runW wEnv $ navigation deltasDownAlt
+    (ctxChange,sidebarHints) <- runW wEnv $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
   let terminalShortcut = ffilter (elem ToggleTerminal) hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle True terminalEvent
   (command,_) <- hideableWidget' terminalVisible $ do
-    runEditor irc ctx rInfo $ terminalWidget deltasDown hints
-  (terminalButton,_) <- runEditor irc ctx rInfo $ footer hints
-  let commandEnsembleRequestsIO = attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
-  commandEnsembleRequests <- performEvent $ fmap liftIO commandEnsembleRequestsIO
-  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage,ensembleRequestsFromHints]
+    runW wEnv $ terminalWidget deltasDown hints
+  (terminalButton,_) <- runW wEnv $ footer hints
+  commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
+  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
+  performEvent_ $ fmap (ensembleRequestIO $ resources irc) ensembleRequests
   let commandRequests = fmapMaybe commandToRequest command
 
   -- changes to EnsembleC within Context, and to Context
@@ -121,11 +142,10 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponses = fmapMaybe justEnsembleResponses deltasDown
   let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
+  performEvent_ $ fmap (mapM_ (ensembleResponseIO $ resources irc)) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  audioMapEv <- loadAudioMap
-  terminalContextChangeIO <- performEvent $ fmap liftIO $ fmapMaybe commandToContextChangeIO command
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, audioMapEv, wsCtxChange, sidebarChange,terminalContextChangeIO]
+  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -161,22 +181,26 @@ cinecer0Widget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
 cinecer0Widget ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
   canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
-  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: -1;" <> x <> ";")]
+  dynZIndex <- holdUniqDyn $ fmap cineCer0ZIndex ctx
+  let dynZIndex' = fmap (T.pack . show) dynZIndex
+  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
-  let attrs = (<>) <$> baseAttrs <*> resMap
+  let attrs = (<>) <$> dynAttrs <*> resMap
   videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
-canvasWidget :: MonadWidget t m => Int -> Dynamic t Context -> m HTMLCanvasElement
-canvasWidget zIndex ctx = do
-  canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
-  let baseAttrs = ffor canvasVisible $ \x -> fromList [("class","canvas-or-svg-display"),("style","z-index: " <> showt zIndex <> ";" <> x <> ";")]
+canvasWidget :: MonadWidget t m => Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
+canvasWidget dynZIndex ctx = do
+  canvasVisible <- fmap (("visibility: " <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
+  let dynZIndex' = fmap (T.pack . show) dynZIndex -- :: Dynamic t Text
+  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
-  let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
-  let attrs = (<>) <$> baseAttrs <*> resMap
+  let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res -- :: Dynamic t (Map Text Text)
+  let attrs = (<>) <$> dynAttrs <*> resMap
   liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
+
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
 pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
@@ -186,19 +210,6 @@ pollRenderInfo riM = do
   ticks <- tickLossy (1.02::NominalDiffTime) now
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
-
-
-loadAudioMap :: MonadWidget t m => m (Event t ContextChange)
-loadAudioMap = do
-  postBuild <- getPostBuild
-  performEventAsync $ ffor postBuild $ \_ triggerEv -> liftIO $ do
-    loadSampleMapAsync defaultSampleMapURL $ \maybeMap -> do
-      case maybeMap of
-        Nothing -> putStrLn "loadAudioMap couldn't load sample map"
-        Just map -> do
-          putStrLn "loadAudioMap (estuary) succeeded"
-          map' <- sampleMapToAudioMap map
-          triggerEv $ setAudioMap map'
 
 
 -- whenever the Dynamic representation of the Context changes, translate that
@@ -252,14 +263,3 @@ commandToRequest :: Terminal.Command -> Maybe Request
 commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
 commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
 commandToRequest _ = Nothing
-
-commandToContextChangeIO :: Terminal.Command -> Maybe (IO ContextChange)
-commandToContextChangeIO (Terminal.InsertAudioResource url bankName n) = Just $ do
-  res <- audioResourceFromMeta $ AudioMeta url 0
-  return $ \x -> x { audioMap = insert (bankName,n) res (audioMap x)}
-commandToContextChangeIO (Terminal.DeleteAudioResource bankName n) = Just $ do
-  return $ \x -> x { audioMap = delete (bankName,n) (audioMap x)}
-commandToContextChangeIO (Terminal.AppendAudioResource url bankName) = Just $ do
-  res <- audioResourceFromMeta $ AudioMeta url 0
-  return $ \x -> x { audioMap = append bankName res (audioMap x)}
-commandToContextChangeIO _ = Nothing

@@ -10,7 +10,6 @@ import qualified Sound.Tidal.Context as Tidal
 
 -- import Estuary.Types.Tempo
 import Estuary.Render.WebDirt hiding (playSample)
-import Estuary.Types.ResourceMap
 import Estuary.Types.NoteEvent
 
 newtype SuperDirt = SuperDirt JSVal
@@ -31,12 +30,12 @@ foreign import javascript unsafe
   "try { $1.playSample($2) } catch(e) { console.log(e)} "
   playSample :: SuperDirt -> JSVal -> IO ()
 
-noteEventToSuperDirtJSVal :: AudioMap -> NoteEvent -> IO JSVal
-noteEventToSuperDirtJSVal aMap (utc,m) = do
+noteEventToSuperDirtJSVal :: NoteEvent -> IO JSVal
+noteEventToSuperDirtJSVal (utc,m) = do
   let t = realToFrac $ utcTimeToPOSIXSeconds utc
   mapTextJSValToJSVal (t,fmap datumToJSVal m)
 
-tidalEventToSuperDirtJSVal :: AudioMap -> (UTCTime, Tidal.ValueMap) -> IO JSVal
-tidalEventToSuperDirtJSVal aMap (utc,m) = do
+tidalEventToSuperDirtJSVal :: (UTCTime, Tidal.ValueMap) -> IO JSVal
+tidalEventToSuperDirtJSVal (utc,m) = do
   let t = realToFrac $ utcTimeToPOSIXSeconds utc
   mapStringJSValToJSVal (t,fmap valueToJSVal m)

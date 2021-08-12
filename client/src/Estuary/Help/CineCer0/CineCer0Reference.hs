@@ -6,15 +6,15 @@ import Reflex.Dom hiding (Request,Response)
 
 import Estuary.Types.Context
 import Estuary.Types.Language
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Editor
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.W
 import Data.Map.Strict
 
-cineCer0Reference :: MonadWidget t m => Editor t m ()
+cineCer0Reference :: MonadWidget t m => W t m ()
 cineCer0Reference = el "div" $ do
   funcionsCineCer0
 
-funcionsCineCer0 :: MonadWidget t m => Editor t m ()
+funcionsCineCer0 :: MonadWidget t m => W t m ()
 funcionsCineCer0 = el "div" $ do
   dynText =<< (translatableText $ fromList [
     (English,"Functions"),

@@ -4,7 +4,7 @@ import Text.ParserCombinators.Parsec
 import Data.List (intercalate)
 import Data.Bool (bool)
 import qualified Sound.Tidal.Context as Tidal
-import Estuary.Tidal.ParamPatternable (parseBP')
+import Estuary.Types.ParamPatternable (parseBP')
 
 
 cqenzeControlPattern :: String -> Either ParseError Tidal.ControlPattern

@@ -11,7 +11,7 @@ import qualified Data.Text as T
 import Control.Monad(liftM)
 import Text.Parsec
 
-import Estuary.Reflex.Utility
+import Estuary.Widgets.Reflex
 import Estuary.Types.Context
 import Estuary.Types.EnsembleC
 import Estuary.Types.View.Parser
@@ -21,7 +21,7 @@ import qualified Language.Haskell.Exts as Exts
 
 import Estuary.Types.View
 import Estuary.Widgets.Text
-import Estuary.Widgets.Editor
+import Estuary.Widgets.W
 
 -- viewParseResultToText :: Either String ParseError -> Text
 viewParseResultToText :: Either String View -> Text
@@ -37,10 +37,10 @@ viewToContextChange v = do
     Left _ -> Nothing
     Right view -> Just $ modifyEnsembleC $ selectLocalView view
 
-buildError :: MonadWidget t m => Text -> Editor t m ()
+buildError :: MonadWidget t m => Text -> W t m ()
 buildError x = if x == "" then return () else syntaxErrorWidget x
 
-viewEditor :: MonadWidget t m => Editor t m (Event t ContextChange)
+viewEditor :: MonadWidget t m => W t m (Event t ContextChange)
 viewEditor = mdo
   ctx <- context
 

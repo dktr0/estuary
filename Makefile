@@ -11,7 +11,6 @@ CP_RECURSIVE=cp -Rf
 WEBDIRT = $(shell nix-store -r $(shell nix-instantiate webdirt.nix))
 HYDRA = $(shell nix-store -r $(shell nix-instantiate hydra-synth.nix))
 PEGJS = $(shell nix-store -r $(shell nix-instantiate pegjs.nix))
-MAKESAMPLEMAP = $(shell nix-store -r $(shell nix-instantiate webdirt.nix))/makeSampleMap.sh
 
 # the hack below is necessary because cabal on OS x seems to build in a
 # subdirectory name ...../x86_64-osx/... rather than the name in $system
@@ -171,16 +170,16 @@ downloadDirtSamples:
 	cd static/Dirt-Samples && cp -Rf * ../samples/
 	rm -rf static/Dirt-Samples/
 	@[ -d static/samples/bd ] || (echo "Error: make downloadDirtSamples did NOT work!" && exit 1)
-	@ echo "Dirt samples downloaded."
+	@ echo " Dirt samples downloaded."
 
-makeSampleMap:
-	@ echo "makeSampleMap:"
+generateDefaultAudioResources:
+	@ echo "generateDefaultAudioResources:"
 	@[ -d static/samples ] || (echo Directory static/samples does not exist. Have you provided a sample library, for example, by running 'make downloadDirtSamples'? && exit 1)
-	cd static/samples && bash $(MAKESAMPLEMAP) . > sampleMap.json
-	@[ -f static/samples/sampleMap.json ] || (echo "Error: make makeSampleMap did NOT work!" && exit 1)
-	@ echo "Sample map made."
+	cd static/samples && bash ../../generateAudioResources.sh . > resources.json
+	@[ -f static/samples/resources.json ] || (echo "Error: generateDefaultAudioResources did NOT work!" && exit 1)
+	@ echo " JSON default audio resources file generated."
 
-fullBuild: downloadDirtSamples makeSampleMap nixBuild cleanStage nixStageClient nixStageServer stageStaticAssets stageSamples
+fullBuild: downloadDirtSamples generateDefaultAudioResources nixBuild cleanStage nixStageClient nixStageServer stageStaticAssets stageSamples
 
 clean:
 	-rm -rf staging
@@ -193,7 +192,7 @@ runDevServer: STAGING_ROOT=$(DEV_STAGING_ROOT)
 runDevServer: stageStaticAssets stageSamples cabalBuildServer cabalStageServer
 	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer moderator community +RTS -N -RTS
 
-runServer: nixBuild stageStaticAssets makeSampleMap stageSamples nixStageClient nixStageServer
+runServer: nixBuild stageStaticAssets generateDefaultAudioResources stageSamples nixStageClient nixStageServer
 	cd ./$(STAGING_ROOT) && sudo ./EstuaryServer moderator community +RTS -N -RTS
 
 selfCertificates:

@@ -29,7 +29,7 @@ import Estuary.Types.Definition
 import Estuary.Types.Terminal
 import Estuary.Types.Tempo
 
-import Estuary.Reflex.Router
+import Estuary.Widgets.Reflex.Router
 import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Renderer

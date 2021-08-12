@@ -44,7 +44,9 @@ dumpView TempoView = "tempo"
 dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
 dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
+dumpView (StopWatchExplorationsView z) = "reloj " <> showInt z
 dumpView (RehearsalTimeView x) = "rehearsalTime" <> showInt x
+
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -69,6 +71,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|>  rouletteViewView -- localview (grid 2 2 [roulette 0 0,roulette 1 0,roulette 2 0,roulette 3 0])
           <|>  audioMapView
           <|>  stopwatchParser
+          <|>  stopwatchXParser
           <|>  rehearsalTime
 
 
@@ -81,6 +84,17 @@ rehearsalTime' = rehearsalTimeFunc <$ reserved "rehearsaltime"
 
 rehearsalTimeFunc :: Int -> View
 rehearsalTimeFunc x = RehearsalTimeView x
+
+
+--
+stopwatchXParser :: H View
+stopwatchXParser = stopwatchXParser' <*> int
+
+stopwatchXParser' :: H (Int -> View)
+stopwatchXParser' = stopwatchXFunc <$ reserved "reloj"
+
+stopwatchXFunc :: Int -> View
+stopwatchXFunc x = StopWatchExplorationsView x
 
 --
 stopwatchParser :: H View

@@ -11,15 +11,15 @@ import TextShow
 import Control.Monad
 import Control.Monad.IO.Class
 
-import Estuary.Widgets.Editor
-import Estuary.Types.Variable
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.W
 import Estuary.Types.Definition
 
 
 -- from Estuary.Types.Definition.hs:
 --   type StopWatch = Either (Maybe NominalDiffTime) UTCTime
 
-stopWatchWidget :: MonadWidget t m => Dynamic t StopWatch -> Editor t m (Variable t StopWatch)
+stopWatchWidget :: MonadWidget t m => Dynamic t StopWatch -> W t m (Variable t StopWatch)
 stopWatchWidget deltasDown = mdo
 
   -- 1. Translate button presses into localChanges (Event t StopWatch)
@@ -38,6 +38,7 @@ stopWatchWidget deltasDown = mdo
   v <- returnVariable deltasDown localChanges
   return v
 
+-- attachWith :: Reflex t => (a -> b -> c) -> Behavior t a -> Event t b -> Event t c 
 
 stopWatchToNextState :: StopWatch -> IO StopWatch
 -- this function is used to transition between the three states of the stopwatch

@@ -6,19 +6,19 @@ import Reflex.Dom hiding (Request,Response)
 
 import Estuary.Types.Context
 import Estuary.Types.Language
-import Estuary.Reflex.Utility
-import Estuary.Widgets.Editor
+import Estuary.Widgets.Reflex
+import Estuary.Widgets.W
 import Data.Map.Strict
 
 
-hydraHelp :: MonadWidget t m => Editor t m ()
+hydraHelp :: MonadWidget t m => W t m ()
 hydraHelp = el "div" $ do
   aboutHydra
   examplesHydra
   notWorkingFunctionsHydra
 
 
-aboutHydra :: MonadWidget t m => Editor t m ()
+aboutHydra :: MonadWidget t m => W t m ()
 aboutHydra = elClass "div" "infoRef" $ do
   dynText =<< (translatableText $ fromList [
     (English,"Hydra is a live coding platform for visual synthesis based on analog video synthesizers. Hydra is an open-source project developed by Olivia Jack. You can access a standalone version of Hydra (separate from Estuary) as well as further documentation and examples here: https://hydra.ojack.xyz/."),
@@ -26,7 +26,7 @@ aboutHydra = elClass "div" "infoRef" $ do
     ])
 
 
-examplesHydra :: MonadWidget t m => Editor t m ()
+examplesHydra :: MonadWidget t m => W t m ()
 examplesHydra = el "div" $ do
   dynText =<< (translatableText $ fromList [
     (English,"Examples:"),
@@ -43,7 +43,7 @@ examplesHydra = el "div" $ do
     el "li" $ elClass "div" "ieRef" $ text "s0.initVideo(\"videos/hogweed.mov\"); src(s0).out()"
 
 
-notWorkingFunctionsHydra :: MonadWidget t m => Editor t m ()
+notWorkingFunctionsHydra :: MonadWidget t m => W t m ()
 notWorkingFunctionsHydra = el "div" $ do
   dynText =<< (translatableText $ fromList [
     (English,"Estuary currently has partial access to Hydra functionality. The idioms below are currently unavailable (although all will eventually be available within Estuary)."),
