@@ -1619,3 +1619,11 @@ padding-left: 0.5%;
 padding-right: 0.5%;
 box-shadow: inset 0 0 3px var(--primary-color);
 }
+
+.schedulerContainer{
+	display: flex;
+}
+
+.calendarContainerAttrs {
+	height: 100%;
+}

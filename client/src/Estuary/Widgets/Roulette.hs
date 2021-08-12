@@ -65,8 +65,8 @@ rouletteWidget' delta = mdo
     lineupEv <- lineUpButton dynAttrs "+" (addHandleToList uHandle) -- (Event t (Roulette -> Roulette)
 
     -- let currentVal = constDyn ["luis", "jessica", "jamie"]-- <- holdUniqDyn $ currentValue x -- Dynamic t [Text]
-    let editEvs = mergeWith (.) [deleteEv,lineupEv]
-    let newValue = attachWith (flip ($)) (current currentVal) editEvs
+    let editEvs = mergeWith (.) [deleteEv,lineupEv] -- Event a
+    let newValue = attachWith (flip ($)) (current currentVal) editEvs --Event c
     x <- returnVariable delta newValue
     currentVal <- holdUniqDyn $ currentValue x
     return x

@@ -13,12 +13,14 @@ import Data.Time
 import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
+import Estuary.Types.ZonedTime
 
 type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
 type StopWatch = Either (Maybe NominalDiffTime) UTCTime
+type RehearsalTime = (Text, ZonedTime)
 
 data Definition =
   TextProgram (Live TextProgram) |
@@ -26,7 +28,9 @@ data Definition =
   TidalStructure TransformedPattern |
   LabelText Text |
   Roulette Roulette |
-  StopWatch StopWatch
+  StopWatch StopWatch |
+  RehearsalTime RehearsalTime
+
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -44,6 +48,8 @@ definitionForRendering (Sequence x) = Sequence x
 definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
+definitionForRendering (RehearsalTime x) = RehearsalTime x
+
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -83,3 +89,10 @@ justRoulettes = mapMaybe maybeRoulette
 maybeStopWatch :: Definition -> Maybe StopWatch
 maybeStopWatch (StopWatch x) = Just x
 maybeStopWatch _ = Nothing
+
+maybeRehearsalTime :: Definition -> Maybe RehearsalTime
+maybeRehearsalTime (RehearsalTime x) = Just x
+maybeRehearsalTime _ = Nothing
+
+justRehearsalTime :: [Definition] -> [RehearsalTime]
+justRehearsalTime = mapMaybe maybeRehearsalTime

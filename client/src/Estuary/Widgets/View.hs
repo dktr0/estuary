@@ -37,6 +37,7 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatch
+import Estuary.Widgets.Scheduler
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> Editor t m (Event t EnsembleRequest)
 
@@ -82,6 +83,8 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
+
+viewWidget er (RehearsalTimeView z) = zoneWidget z ("some details", ZonedTime (fromGregorian 2021 05 27) (timeOfDayToTime (TimeOfDay 15 30 0.5))) maybeRehearsalTime RehearsalTime er rehearsalSchedulerWidget 
 
 viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget
 

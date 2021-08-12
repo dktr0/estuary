@@ -7,6 +7,8 @@ import qualified Data.Text as T
 import GHC.Generics
 import Data.Aeson
 import Data.Map
+import Data.Time
+
 
 import Estuary.Types.TranslatableText
 import Estuary.Types.TextNotation
@@ -31,7 +33,8 @@ data View =
   TempoView |
   RouletteView Int Int |
   AudioMapView |
-  StopWatchView Int
+  StopWatchView Int |
+  RehearsalTimeView Int 
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

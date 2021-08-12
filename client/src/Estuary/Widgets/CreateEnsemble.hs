@@ -56,7 +56,7 @@ createEnsembleWidget rs = el "div" $ do
     term Term.EnsembleExpiry >>= dynText
     let expMap = fromList [
                    (Just 3600, "1 hr"),
-                   (Just 86400,"1 day"),
+                   (Just 86400, "1 day"),
                    (Just 604800,"1 week"),
                    (Just 2678400,"1 month (31 days)")
                    ]
