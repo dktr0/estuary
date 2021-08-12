@@ -75,32 +75,42 @@ stopWatchToButtonText (Stopped _) = "Clear"
 
 
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
-countDownWidget deltasDown =  divClass "countDown ui-font primary-color" $  mdo
+countDownWidget deltasDown =  divClass "countDown ui-font" $  mdo
 
   let initialText = "initial count is 60, change it here"
-  let updatedText = fmap (showt) targetTimeEvent  -- if the state is holding then it might be target time event
+  let updatedText = fmap (showt) targetTimeEvent  -- Event t Text
 
-  (valTxBx,edits,_) <- textWidget 1 (constDyn False) initialText updatedText -- instead of updated text a function that recieves state and spits this or that...
+  let editable = editableText <$> currentValue v
 
-  let targetTimeEvent = fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent 
-  timeDyn <- holdDyn 60 targetTimeEvent
+  (valTxBx,_) <- textWithLockWidget 1 "color: white" editable initialText $ leftmost [updatedText, textUpdates] 
+
 
   let bText = countDownToButtonText <$> currentValue v
   butt <- dynButton $ bText 
   let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
-  let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent
+
+  let stateWhenButtonPressed = tagPromptlyDyn (currentValue v) buttonPressedEvent
   localChanges <- performEvent $ attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed
+
+  let targetTimeEvent = fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent 
+  timeDyn <- holdDyn 60 targetTimeEvent
+
   widgetBuildTime <- liftIO $ getCurrentTime  
   initialCount <- sample $ current deltasDown
   let initialTime = countDownToDisplay initialCount widgetBuildTime
   tick <- tickLossy 0.01 widgetBuildTime 
-  let textUpdates = traceEvent "textUpdates" $ attachWith countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
-  let sandUpdates = attachWith sandClock (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
+  let textUpdates = traceEvent "textUpdates" $ attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick -- Maybe Text
+  let sandUpdates = attachWithMaybe sandClock (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
   -- holdDyn initialTime textUpdates >>= dynText -- if state is falling then do this
-  holdDyn initialTime sandUpdates >>= dynText -- if state is falling then do this
+  -- holdDyn "" sandUpdates >>= dynText -- if state is falling then do this
+
   v <- returnVariable deltasDown localChanges
   return v
 
+
+editableText:: TimerDownState -> Bool
+editableText (Holding _) = False
+editableText (Falling _ _) = True
 
 countDownButtonStateChange :: MonadIO m => Int -> TimerDownState -> m TimerDownState
 countDownButtonStateChange newTar (Holding tar) = do
@@ -109,9 +119,9 @@ countDownButtonStateChange newTar (Holding tar) = do
 countDownButtonStateChange newTar (Falling tar y) = do
   return (Holding newTar)
 
-countDownToDisplay:: TimerDownState -> UTCTime -> Text
-countDownToDisplay (Holding x) now = diffTimeToText (realToFrac x)
-countDownToDisplay (Falling x y) now = if xx < 0 then diffTimeToText 0 else diffTimeToText xx 
+countDownToDisplay:: TimerDownState -> UTCTime -> Maybe Text
+countDownToDisplay (Holding _) _ = Nothing
+countDownToDisplay (Falling x y) now = if xx < 0 then Just $ diffTimeToText 0 else Just $ diffTimeToText xx 
                                  where xx = (diffUTCTime (addUTCTime (realToFrac x) y) now)
 
 countDownToButtonText:: TimerDownState -> Text
@@ -121,13 +131,13 @@ countDownToButtonText (Falling _ _) = "Stop"
 
 -- function to calculate in percentage the countdown
 
-sandClock :: TimerDownState -> UTCTime -> Text 
-sandClock (Holding _) _ = ""
-sandClock (Falling target startTime) now = if xx < 0 then timeToSand 0 else timeToSand (forGrains target xx) 
+sandClock :: TimerDownState -> UTCTime -> Maybe Text 
+sandClock (Holding _) _ = Nothing
+sandClock (Falling target startTime) now = if xx < 0 then Just $ timeToSand 0 else Just $ timeToSand (countToPercent target xx) 
                                  where xx = (diffUTCTime (addUTCTime (realToFrac target) startTime) now)
 
-forGrains:: Int -> NominalDiffTime -> Int
-forGrains target grains = if target == 0 then 0 else round $ (grains / (realToFrac target)) * 200
+countToPercent:: Int -> NominalDiffTime -> Int
+countToPercent target grains = if target == 0 then 0 else round $ (grains / (realToFrac target)) * 200
 
 timeToSand :: Int -> Text
 timeToSand grains = showt $ concat $ replicate grains "."
