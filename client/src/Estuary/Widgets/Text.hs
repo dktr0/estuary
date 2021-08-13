@@ -68,7 +68,7 @@ textWithLockWidget rows colour editable delta = do
   let class' = constDyn $ "class" =: "textInputToEndOfLine code-font"
   let rows' = constDyn $ textWidgetRows rows
   let readon = lockText <$> editable
-  let style = constDyn $ "style" =: ("height: auto;" <> colour)
+  let style = constDyn $ "style" =: ("height: auto; font-size:2em; " <> colour)
   let attrs = mconcat [class',rows', readon,style]
   x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let edits = _textArea_input x

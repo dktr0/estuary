@@ -565,6 +565,17 @@ display: block;
   	border:none;
   }
 
+  .invertedTriangle  {
+	height: 100%;
+	width: 100%;
+	box-sizing:border-box;
+    background-color: transparent;
+	overflow: hidden;
+  	resize: none;
+  	border:1px; 
+  }
+
+
 .evalFlash {
   color: var(--background-color);
   background-color: var(--primary-color);
@@ -957,12 +968,28 @@ cursor: pointer;
 
 }
 
+/* recently added by AFB, experimentas for widget creation */
+
 .countDown {
 	display: flex;
 	border: none;
 }
 
 .countDown textarea{
+	position: relative;
+	border: none;
+	max-width:13em;
+    text-align: center;
+    width: fit-content;
+}
+
+.stopwatch {
+	display: flex;
+	border: none;
+	color: white;
+}
+
+.stopwatch textarea{
 	position: relative;
 	border: none;
 	max-width:13em;
