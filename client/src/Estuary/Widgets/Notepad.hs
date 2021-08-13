@@ -17,10 +17,11 @@ import Estuary.Widgets.Reflex
 
 notePadWidget :: MonadWidget t m => Dynamic t NotePad -> W t m (Variable t NotePad)
 notePadWidget delta = divClass "fullWidthDiv" $ mdo
-  let pageNum = fmap fst delta
-  let notes = fmap snd delta -- []
+  let changes = currentValue v
+  let pageNum = fmap fst changes
+  let notes = fmap snd changes -- []
   let noteTupple = Seq.index <$> notes <*> pageNum -- (t,c)
-  (titleEv,contentEv) <- titleContentWidget (fmap fst noteTupple) (fmap snd noteTupple)
+  (titleEv,contentEv) <- titleContentWidget (fmap fst noteTupple) (fmap snd noteTupple) -- :: (Event t Text, Event t Text)
   let setNoteTitle' = fmap setNoteTitle titleEv -- :: m (Event t (Notepad -> Notepad))
   let setNoteContent' = fmap setNoteContent contentEv -- :: m (Event t (Notepad -> Notepad))
   -- add note
@@ -41,13 +42,16 @@ notePadWidget delta = divClass "fullWidthDiv" $ mdo
   v <- variable delta localUpdates
   return v
 
+-- & textAreaConfig_setValue .~ changes
 
 titleContentWidget :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> m (Event t Text,Event t Text)
 titleContentWidget t c = divClass "tutorialPageTitle code-font" $ do
-  t <- textInput $ def & attributes .~ constDyn ("class" =: "name-tag-textarea code-font primary-color")
-  let title = _textInput_input t -- :: Event t Text
-  c <- textArea $ def & attributes .~ constDyn ("class" =: "name-tag-textarea code-font primary-color primary-borders")
-  let content = updated $ _textArea_value c -- :: Event t Text
+  x <- textInput $ def & textInputConfig_setValue .~ (updated t)
+                       & attributes .~ constDyn ("class" =: "name-tag-textarea code-font primary-color")
+  let title = _textInput_input x -- :: Event t Text
+  y <- textArea $ def & textAreaConfig_setValue .~ (updated c)
+                      & attributes .~ constDyn ("class" =: "name-tag-textarea code-font primary-color primary-borders")
+  let content = _textArea_input y
   return $ (title,content)
 
 ---------------------------------------------------------------------
@@ -76,8 +80,8 @@ addNote notepad = do
 
 eraseNote :: NotePad -> NotePad
 eraseNote notepad
-  | Prelude.length notepad > 1 = (fst notepad, deleteAt (fst notepad) (snd notepad))
-  | otherwise = notepad
+  | Prelude.length (snd notepad) <= 1 = notepad
+  | otherwise = (fst notepad, deleteAt (fst notepad) (snd notepad))
 
 
 -- FUNCTIONS THAT CHANGES/UPDATES THE TITLE AND CONTENT OF A NOTEPAGE
