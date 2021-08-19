@@ -26,6 +26,11 @@ body, .primary-color {
 	 color: var( --primary-color);
 }
 
+.exp-color {
+	color: var( --experiment-color);
+}
+
+
 body::-webkit-scrollbar  {
     width: 0.5%;
     height: 0px;
@@ -38,15 +43,6 @@ body::-webkit-scrollbar-track {
 
 body::-webkit-scrollbar-thumb {
   background: var(--primary-color);
-  border-radius: 10px;
-}
-
-body::-webkit-scrollbar-corner{
-	background-color: transparent;
-}
-
-a {
-  color: var(--primary-color);
 }
 
 /*styles the canvas and svg display */
@@ -565,16 +561,10 @@ display: block;
   	border:none;
   }
 
-  .invertedTriangle  {
-	height: 100%;
-	width: 100%;
-	box-sizing:border-box;
-    background-color: transparent;
-	overflow: hidden;
-  	resize: none;
-  	border:1px; 
-  }
-
+.human-to-human-comm {
+  color: var(--experiment-color);
+  font-size: 2em;
+}
 
 .evalFlash {
   color: var(--background-color);
@@ -986,7 +976,6 @@ cursor: pointer;
 .stopwatch {
 	display: flex;
 	border: none;
-	color: white;
 }
 
 .stopwatch textarea{

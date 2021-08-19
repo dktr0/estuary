@@ -57,24 +57,32 @@ textWidget rows flash i delta = do
   return (value,edits,evalEvent)
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
-lockText:: Bool -> Map Text Text
-lockText False = Data.Map.empty
-lockText True = "readonly" =: ""
-
                                      --  Rows  Colour     EditableOrNot
-textWithLockWidget :: MonadWidget t m => Int -> Text -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
-textWithLockWidget rows colour editable delta = do
+textWithLockWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
+textWithLockWidget rows editable delta = do
   i <- sample $ current delta
-  let class' = constDyn $ "class" =: "textInputToEndOfLine code-font"
+--  let class' = constDyn $ "class" =: "exp-color textInputToEndOfLine code-font"
+  let class' = fmap textWithLockWidgetClass editable
   let rows' = constDyn $ textWidgetRows rows
   let readon = lockText <$> editable
-  let style = constDyn $ "style" =: ("height: auto; font-size:2em; " <> colour)
-  let attrs = mconcat [class',rows', readon,style]
+  let style = constDyn $ styleFunc
+--  let style = constDyn $ "style" =: ("height: auto; font-size:2em; " <> (temporaryFuncColour <$> colour))
+  let attrs = mconcat [class',rows', readon, style]
   x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let edits = _textArea_input x
   let value = _textArea_value x
   return (value,edits)
 
+styleFunc:: Map Text Text  
+styleFunc = "style" =: "height: auto; font-size: 2em;"
+
+lockText:: Bool -> Map Text Text
+lockText False = Data.Map.empty
+lockText True = "readonly" =: ""
+
+textWithLockWidgetClass :: Bool -> Map Text Text
+textWithLockWidgetClass True = "class" =: "human-to-human-comm textInputToEndOfLine code-font"
+textWithLockWidgetClass False = "class" =: "primary-color textInputToEndOfLine code-font"
 
 textNotationParsers :: [TextNotation]
 textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s, Hydra {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)

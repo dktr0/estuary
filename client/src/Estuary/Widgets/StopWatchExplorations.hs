@@ -42,8 +42,8 @@ stopWatchWidget' deltasDown =  divClass "stopwatch" $  mdo
 
 visualiseStopwatchWidget :: MonadWidget t m => Dynamic t Text -> W t m ()
 visualiseStopwatchWidget delta = do
-  let class' = constDyn $ "class" =: "stopwatch"
-  let style = constDyn $ "style" =: ("height: auto; font-size:2em; color: white; margin: 1px;")
+  let class' = constDyn $ "class" =: "human-to-human-comm code-font"
+  let style = constDyn $ "style" =: "height: auto;"
   let attrs = mconcat [class',style]
   elDynAttr "stopwatch" (attrs) $ dynText delta
   return ()
@@ -83,7 +83,7 @@ countDownWidget deltasDown =  divClass "countDown" $  mdo
   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
   let editable = editableText <$> currentValue v
   textos <- holdDyn initialText $ leftmost [updatedText, textUpdates]
-  (valTxBx,_) <- textWithLockWidget 1 "color: white" editable textos
+  (valTxBx,_) <- textWithLockWidget 1 editable textos
   let bText = countDownToButtonText <$> currentValue v
   butt <- dynButton $ bText 
   let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
@@ -135,6 +135,11 @@ countDownToButtonText (Holding _) = "Start"
 countDownToButtonText (Falling _ _) = "Stop"
 
 
+
+
+
+
+
 -- function to calculate in percentage the countdown
 
 sandClock :: TimerDownState -> UTCTime -> Maybe Text 
@@ -172,7 +177,7 @@ sandClockWidget delta = do
 
 visualiseSVGWidget :: MonadWidget t m => Dynamic t Text -> W t m ()
 visualiseSVGWidget delta = do
-  let class' = constDyn $ "class" =: "stopwatch"
+  let class' = constDyn $ "class" =: "svg"
   let style = constDyn $ "style" =: ("height: auto; font-size:2em; color: white; margin: 1px;")
   let attrs = mconcat [class',style]
   elDynAttr "svg" attrs $ el "circle" $ blank   -- $ dynText delta
