@@ -566,6 +566,10 @@ display: block;
   font-size: 2em;
 }
 
+.mySVG {
+  color: var(--experiment-color);
+}
+
 .evalFlash {
   color: var(--background-color);
   background-color: var(--primary-color);

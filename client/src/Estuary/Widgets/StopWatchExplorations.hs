@@ -45,7 +45,7 @@ visualiseStopwatchWidget delta = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
   let style = constDyn $ "style" =: "height: auto;"
   let attrs = mconcat [class',style]
-  elDynAttr "stopwatch" (attrs) $ dynText delta
+  elDynAttr "stopwatch" attrs $ dynText delta
   return ()
 
 ------ State calculations ----
@@ -144,11 +144,9 @@ countDownToButtonText (Falling _ _) = "Stop"
 
 sandClock :: TimerDownState -> UTCTime -> Maybe Text 
 sandClock (Holding _) _ = Nothing
-sandClock (Falling target startTime) now = if xx < 0 then Just $ timeToSand 0 else Just $ timeToSand (countToPercent target xx) 
+sandClock (Falling target startTime) now = if xx < 0 then Just $ timeToSand 0 else Just $ timeToSand (countToPercent 100 target xx) 
                                  where xx = (diffUTCTime (addUTCTime (realToFrac target) startTime) now)
 
-countToPercent:: Int -> NominalDiffTime -> Int
-countToPercent target grains = if target == 0 then 0 else round $ (grains / (realToFrac target)) * 500
 
 timeToSand :: Int -> Text
 timeToSand grains = showt $ concat $ replicate grains "."
@@ -174,14 +172,27 @@ sandClockWidget delta = do
 
 -- elClass :: forall t m a. MonadWidget t m => String -> String -> m a -> m a 
 
-
 visualiseSVGWidget :: MonadWidget t m => Dynamic t Text -> W t m ()
 visualiseSVGWidget delta = do
-  let class' = constDyn $ "class" =: "svg"
-  let style = constDyn $ "style" =: ("height: auto; font-size:2em; color: white; margin: 1px;")
-  let attrs = mconcat [class',style]
-  elDynAttr "svg" attrs $ el "circle" $ blank   -- $ dynText delta
+  let class' = constDyn $ "class" =: "mySVG"
+  let width = constDyn $ "width" =: "150"
+  let height = constDyn $ "height" =: "100"
+  let style = constDyn $ "style" =: ("height: auto; color: white;")
+  let attrs = mconcat [class',width,height, style]
+  -- polygon attributes
+  let x = constDyn $ "x" =: "50"
+  let y = constDyn $ "y" =: "25"
+  let width' = constDyn $ "width" =: "50"
+  let height' = constDyn $ "height" =: "50"
+  let stroke' = constDyn $ "stroke" =: "blue"
+  let attrsRec = mconcat [class',stroke',x,y,width',height']
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRec $ return () -- $ dynText delta
   return ()
+
+
+
+
 
 -- <svg width="100" height="100">
 --   <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
@@ -191,3 +202,6 @@ visualiseSVGWidget delta = do
 
 diffTimeToText :: NominalDiffTime -> Text
 diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> showt (floor x `mod` 60 :: Int)
+
+countToPercent:: Int -> Int -> NominalDiffTime -> Int
+countToPercent newSize target grains = if target == 0 then 0 else round $ (grains / (realToFrac target)) * (realToFrac newSize)
