@@ -84,6 +84,7 @@ textWithLockWidgetClass :: Bool -> Map Text Text
 textWithLockWidgetClass True = "class" =: "human-to-human-comm textInputToEndOfLine code-font"
 textWithLockWidgetClass False = "class" =: "primary-color textInputToEndOfLine code-font"
 
+
 textNotationParsers :: [TextNotation]
 textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s, Hydra {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)
 

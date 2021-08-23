@@ -11,6 +11,7 @@ import Text.Read
 import TextShow
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.Map
 
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.W
@@ -104,11 +105,13 @@ countDownWidget deltasDown =  divClass "countDown" $  mdo
 --- sandclock experiments
   let sandUpdates = attachWithMaybe sandClock (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
   -- holdDyn initialTime textUpdates >>= dynText -- if state is falling then do this
-  coso <- holdDyn "" sandUpdates -- >>= dynText -- if state is falling then do this
-
+  -- coso <- holdDyn "" sandUpdates -- >>= dynText -- if state is falling then do this
 --  sandClockWidget coso
 
-  visualiseSVGWidget coso
+  let sandUpdates' = attachWithMaybe clockForSVGs (current $ currentValue v) $ fmap _tickInfo_lastUTC tick
+  coso' <- holdDyn 0 sandUpdates'
+
+  visualiseSVGWidget coso'
 
   v <- returnVariable deltasDown localChanges
   return v
@@ -137,7 +140,10 @@ countDownToButtonText (Falling _ _) = "Stop"
 
 
 
-
+clockForSVGs:: TimerDownState -> UTCTime -> Maybe Int 
+clockForSVGs (Holding _) _ = Nothing
+clockForSVGs (Falling target startTime) now = if xx < 0 then Just $ 0 else Just $ countToPercent 100 target xx
+                                 where xx = (diffUTCTime (addUTCTime (realToFrac target) startTime) now)
 
 
 -- function to calculate in percentage the countdown
@@ -168,35 +174,88 @@ sandClockWidget delta = do
   let value = _textArea_value x
   return (value,edits)
 
--- el :: forall t m a. MonadWidget t m => String -> m a -> m a
+points :: [(Int,Int)] -> Map Text Text
+points [] = Data.Map.empty
+points x = "points" =: (coordToText x)
 
--- elClass :: forall t m a. MonadWidget t m => String -> String -> m a -> m a 
+coordToText:: [(Int,Int)] -> Text
+coordToText p = Prelude.foldl (\ x y -> x <> " " <> (ptsToCoord y)) "" p
 
-visualiseSVGWidget :: MonadWidget t m => Dynamic t Text -> W t m ()
+ptsToCoord:: (Int,Int) -> Text
+ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)
+
+dynY:: (Int,Int) -> Map Text Text
+dynY (_,y) = "y" =: (showt y) 
+
+dynHei:: (Int,Int) -> Map Text Text
+dynHei (h,_) = "height" =: (showt h)
+
+visualiseSVGWidget :: MonadWidget t m => Dynamic t Int -> W t m ()
 visualiseSVGWidget delta = do
+  hy <- countToUp 50 0 <$> delta
   let class' = constDyn $ "class" =: "mySVG"
-  let width = constDyn $ "width" =: "150"
+  let width = constDyn $ "width" =: "100"
   let height = constDyn $ "height" =: "100"
   let style = constDyn $ "style" =: ("height: auto; color: white;")
   let attrs = mconcat [class',width,height, style]
-  -- polygon attributes
-  let x = constDyn $ "x" =: "50"
-  let y = constDyn $ "y" =: "25"
-  let width' = constDyn $ "width" =: "50"
-  let height' = constDyn $ "height" =: "50"
-  let stroke' = constDyn $ "stroke" =: "blue"
-  let attrsRec = mconcat [class',stroke',x,y,width',height']
 
-  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRec $ return () -- $ dynText delta
+  -- sand falling --<rect mask="url(#myMask)" x="0" y="0" width="100" height="50" fill="blue" />
+  let x = constDyn $ "x" =: "0"
+--  let y = constDyn $ "y" =: "0"
+  let y = dynY hy
+  let width' = constDyn $ "width" =: "100"
+--  let height' = constDyn $ "height" =: "50"
+  let height' = dynHei hy
+  let strokeUp = constDyn $ "fill" =: "yellow"
+  let mask' = constDyn $ "mask" =: "url(#myMask)"
+  let attrsUp = mconcat [mask',class',strokeUp,x,y,width',height']
+  -- mask="url(#myMask)"
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    -- creatMask first
+    sandClockMask
+    -- shape of clock
+--    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "polygon" attrsPol $ return () 
+    -- sand Up
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsUp $ return () 
+    -- sand down
+  
   return ()
 
+countToUp:: Rational -> Rational -> Int -> (Int,Int)
+countToUp defH defY percent = 
+  let actualH = round $ defH * (realToFrac percent) -- int
+      actualY = round $ (defY + (defH * (realToFrac percent))) 
+  in (actualH, actualY)
 
 
+sandClockMask:: MonadWidget t m => W t m ()
+sandClockMask = do
+  let class' = constDyn $ "class" =: "human-to-human-comm textInputToEndOfLine code-font"
+  -- rect mask
+  let x = constDyn $ "x" =: "0"
+  let y = constDyn $ "y" =: "0"
+  let width' = constDyn $ "width" =: "100"
+  let height' = constDyn $ "height" =: "100"
+  let fill' = constDyn $ "fill" =: "black"
+  let attrsRect = mconcat [class', x,y,width',height',fill']
+  -- clock shape attributes
+  let points' = constDyn $ points [(5,95),(95,95),(45,45),(5,5),(95,5)]
+  let stroke' = constDyn $ "stroke" =: "white"
+  let fill'' = constDyn $ "fill" =: "white"
+  let attrsClock = mconcat [class',stroke',points',fill'']
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "mask" (constDyn $ "id" =: "myMask") $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return () 
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "polygon" attrsClock $ return () 
+    return ()
+  return ()
+    
 
+-- <mask id="myMask">  
+-- <rect x="0" y="0" width="100" height="100" fill="black" />
+-- <polygon points="5,95 95,95 45,45 5,5 95,5" style="fill:white;stroke:white;stroke-width:1" />
+-- </mask>
 
--- <svg width="100" height="100">
---   <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
--- </svg>
 
 -- general helpers
 
