@@ -24,8 +24,6 @@ import Estuary.Types.View
 
 type H = Haskellish ()
 
--- add Clock and the proper constructors
-
 dumpView :: View -> T.Text
 dumpView EmptyView = "empty"
 dumpView (Div css vs) = "div \"" <> css <> "\"" <> dumpViews vs
@@ -46,8 +44,8 @@ dumpView TempoView = "tempo"
 dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
 dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
-dumpView (StopWatchExplorationsView z) = "crono " <> showInt z
-dumpView (CountDownExplorationsView z) = "cuenta " <> showInt z
+dumpView (CountDownView z) = "countDown " <> showInt z
+dumpView (SandClockView z) = "sandClock " <> showInt z
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -72,29 +70,29 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|>  rouletteViewView -- localview (grid 2 2 [roulette 0 0,roulette 1 0,roulette 2 0,roulette 3 0])
           <|>  audioMapView
           <|>  stopwatchParser
-          <|>  stopwatchXParser
-          <|>  countDownXParser
+          <|>  countDownParser
+          <|>  sandClockParser
 
 
 --
-countDownXParser :: H View
-countDownXParser = countDownXParser' <*> int
+sandClockParser :: H View
+sandClockParser = sandClockParser' <*> int
 
-countDownXParser' :: H (Int -> View)
-countDownXParser' = countDownXFunc <$ reserved "cuenta"
+sandClockParser' :: H (Int -> View)
+sandClockParser' = sandClockFunc <$ reserved "sandClock"
 
-countDownXFunc :: Int -> View
-countDownXFunc z = CountDownExplorationsView z
+sandClockFunc :: Int -> View
+sandClockFunc z = SandClockView z
 
 --
-stopwatchXParser :: H View
-stopwatchXParser = stopwatchXParser' <*> int
+countDownParser :: H View
+countDownParser = countDownParser' <*> int
 
-stopwatchXParser' :: H (Int -> View)
-stopwatchXParser' = stopwatchXFunc <$ reserved "crono"
+countDownParser' :: H (Int -> View)
+countDownParser' = countDownFunc <$ reserved "countDown"
 
-stopwatchXFunc :: Int -> View
-stopwatchXFunc z = StopWatchExplorationsView z
+countDownFunc :: Int -> View
+countDownFunc z = CountDownView z
 
 --
 stopwatchParser :: H View
@@ -104,7 +102,7 @@ stopwatchParser' :: H (Int -> View)
 stopwatchParser' = stopwatchFunc <$ reserved "stopwatch"
 
 stopwatchFunc :: Int -> View
-stopwatchFunc x = StopWatchView x
+stopwatchFunc z = StopWatchView z
 
 --
 sequenceParser :: H View

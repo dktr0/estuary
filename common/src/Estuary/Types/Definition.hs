@@ -18,7 +18,6 @@ type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
-type Counter = Either (Maybe NominalDiffTime) UTCTime
 
 data TimerDownState = 
   Holding Int |  -- target     
@@ -46,8 +45,8 @@ data Definition =
   LabelText Text |
   Roulette Roulette |
   CountDown TimerDownState |
-  StopWatch' TimerUpState |
-  StopWatch Counter
+  SandClock TimerDownState |
+  StopWatch TimerUpState
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -66,7 +65,7 @@ definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
 definitionForRendering (CountDown x) = CountDown x
-definitionForRendering (StopWatch' x) = StopWatch' x
+definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
@@ -104,14 +103,11 @@ maybeRoulette _ = Nothing
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
 
-maybeCounter :: Definition -> Maybe Counter
-maybeCounter (StopWatch x) = Just x
-maybeCounter _ = Nothing
-
 maybeTimerUpState:: Definition -> Maybe TimerUpState
-maybeTimerUpState (StopWatch' x) = Just x
+maybeTimerUpState (StopWatch x) = Just x
 maybeTimerUpState _ = Nothing
 
 maybeTimerDownState:: Definition -> Maybe TimerDownState
 maybeTimerDownState (CountDown x) = Just x
+maybeTimerDownState (SandClock x) = Just x
 maybeTimerDownState _ = Nothing
