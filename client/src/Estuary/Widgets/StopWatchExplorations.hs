@@ -143,8 +143,6 @@ sandClockWidget deltasDown =  divClass "countDown" $  mdo
   return v
 
 
-
-
 editableText:: TimerDownState -> Bool
 editableText (Holding _) = False
 editableText (Falling _ _) = True
@@ -177,12 +175,12 @@ clockForSVGs (Falling target startTime) now = if xx < 0 then Just $ 0 else Just 
 -- not in iuse
 sandClock :: TimerDownState -> UTCTime -> Maybe Text 
 sandClock (Holding _) _ = Nothing
-sandClock (Falling target startTime) now = if xx < 0 then Just $ timeToSand 0 else Just $ timeToSand (countToPercent 100 target xx) 
+sandClock (Falling target startTime) now = if xx < 0 then Just $ timeToDots 0 else Just $ timeToDots (countToPercent 100 target xx) 
                                  where xx = (diffUTCTime (addUTCTime (realToFrac target) startTime) now)
 
 -- not in use
-timeToSand :: Int -> Text
-timeToSand grains = showt $ concat $ replicate grains "."
+timeToDots :: Int -> Text
+timeToDots grains = showt $ concat $ replicate grains "."
 
 ------ ambitious sandclock widget ----
 
@@ -199,7 +197,7 @@ visualiseSVGWidget delta = do
   let height = constDyn $ "height" =: "100"
   let style = constDyn $ "style" =: ("height: auto; color: white;")
   let attrs = mconcat [class',width,height, style]
-  -- sand falling --<rect mask="url(#myMask)" x="0" y="0" width="100" height="50" fill="blue" />
+  -- sand falling 
   let x = constDyn $ "x" =: "0"
   let width' = constDyn $ "width" =: "100"
   let strokeFall = constDyn $ "fill" =: "yellow"
