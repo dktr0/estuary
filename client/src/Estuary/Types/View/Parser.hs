@@ -46,6 +46,7 @@ dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
 dumpView (CountDownView z) = "countDown " <> showInt z
 dumpView (SandClockView z) = "sandClock " <> showInt z
+dumpView (SeeTimeView z) = "seeTime " <> showInt z
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -72,7 +73,17 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|>  stopwatchParser
           <|>  countDownParser
           <|>  sandClockParser
+          <|>  seeTimeParser
 
+-- 
+seeTimeParser :: H View
+seeTimeParser = seeTimeParser' <*> int
+
+seeTimeParser' :: H (Int -> View)
+seeTimeParser' = seeTimeFunc <$ reserved "seeTime"
+
+seeTimeFunc :: Int -> View
+seeTimeFunc z = SeeTimeView z
 
 --
 sandClockParser :: H View

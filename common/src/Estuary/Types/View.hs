@@ -33,7 +33,8 @@ data View =
   AudioMapView |
   CountDownView Int | 
   SandClockView Int |
-  StopWatchView Int
+  StopWatchView Int |
+  SeeTimeView Int
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

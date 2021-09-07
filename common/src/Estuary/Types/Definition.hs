@@ -13,6 +13,7 @@ import Data.Time
 import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
+import Estuary.Types.Tempo
 
 type TextProgram = (TextNotation,Text,UTCTime)
 
@@ -46,7 +47,8 @@ data Definition =
   Roulette Roulette |
   CountDown TimerDownState |
   SandClock TimerDownState |
-  StopWatch TimerUpState
+  StopWatch TimerUpState |
+  SeeTime Tempo
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -67,6 +69,7 @@ definitionForRendering (Roulette x) = Roulette x
 definitionForRendering (CountDown x) = CountDown x
 definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
+definitionForRendering (SeeTime x) = SeeTime x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -111,3 +114,7 @@ maybeTimerDownState:: Definition -> Maybe TimerDownState
 maybeTimerDownState (CountDown x) = Just x
 maybeTimerDownState (SandClock x) = Just x
 maybeTimerDownState _ = Nothing
+
+maybeSeeTime:: Definition -> Maybe Tempo
+maybeSeeTime (SeeTime x) = Just x
+maybeSeeTime _ = Nothing
