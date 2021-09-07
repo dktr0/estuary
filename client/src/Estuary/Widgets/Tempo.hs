@@ -51,10 +51,15 @@ visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
 
   dynTempo <- holdDyn 0 elapsedBeatsRunning
 
-  out <- visualiseTempo dynTempo
+  out <- visualiseCycles dynTempo
 
   v <- variable delta never
   return v
+
+getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
+getElapsedBeats t now = do
+  let x = timeToCount t now 
+  return x
 
 visualiseCycles :: MonadWidget t m => Dynamic t Rational -> W t m ()
 visualiseCycles delta = do
@@ -93,19 +98,48 @@ beatToRotation:: Rational -> Map Text Text
 beatToRotation r = "transform" =: ("rotate(" <> (showt radio) <> ")")
   where radio = fromIntegral (round $ radio' * 360) :: Double
         radio' = r - (realToFrac $ floor r)
+ 
 
--- <svg viewBox="-6 -6 12 12" class="dial" id="foobar">
--- 	<circle cx="0" cy="0" r="1" stroke="green" stroke-width="0.1" fill="yellow" />
--- 	<line x1="0" y1="0" x2="0" y2="-1" stroke="#2e3436" stroke-width="0.0078125px" transform="rotate(  360)"/>
+visualiseMetre :: MonadWidget t m => Dynamic t Rational -> W t m ()
+visualiseMetre delta = do
+  let class' = constDyn $ "class" =: "human-to-human-comm code-font"
+  let style = constDyn $ "style" =: "height: auto;"
+  let vB = constDyn $ "viewBox" =: "0 0 100 100"
+  let w' = constDyn $ "width" =: "100"
+  let h' = constDyn $ "height" =: "100"
+  let attrs = mconcat [class',w',h',style,vB]
+
+  let (x,y) = (constDyn $ "x" =: "0", constDyn $ "y" =: "40")
+  let (w,h) = (constDyn $ "width" =: "100", constDyn $ "height" =: "30",)
+  let stroke = constDyn $ "stroke" =: "white"
+  let strokeWidth = constDyn $ "stroke-width" =: "0.05"
+  let attrsRect = mconcat [cx,cy,r,stroke,strokeWidth]
+
+  let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
+  let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1")
+  let transform = beatToRotation <$> delta 
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform]
+
+  let attrsLine' = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
+
+ -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    -- create circular dial
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrsRect $ return () 
+    -- manecilla
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
+    -- mark
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsSegs $ return () 
+  return ()
+
+-- <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+--   <defs>
+
+
+--     <pattern id="Pattern" x="0" y="0" width=".25" height="1">
+--       <rect x="0" y="0" width="50" height="100" stroke="black" fill="skyblue"/>
+--     </pattern>
+--   </defs>
+
+--   <rect fill="url(#Pattern)" stroke="black" width="200" height="100"/>
 -- </svg>
-
-
-getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
-getElapsedBeats t now = do
-  let x = timeToCount t now 
--- here is where I draw the thing
-
-  return x 
-
--- tempoMetre:: Tempo -> Rational -> Tempo
--- tempoMetre
