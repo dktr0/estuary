@@ -43,6 +43,9 @@ tempoWidget tempoDyn = do
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t Tempo -> W t m (Variable t Tempo)
 visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
+
+
+
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   widgetBuildTime <- liftIO $ getCurrentTime
@@ -51,7 +54,7 @@ visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
 
   dynTempo <- holdDyn 0 elapsedBeatsRunning
 
-  out <- visualiseMetre dynTempo
+  out <- visualiseCycles dynTempo
 
   v <- variable delta never
   return v
@@ -74,16 +77,15 @@ visualiseCycles delta = do
 
   let (cx,cy) = (constDyn $ "cx" =: "0", constDyn $ "cy" =: "0")
   let r = constDyn $ "r" =: "1"
-  let stroke = constDyn $ "stroke" =: "white"
-  let strokeWidth = constDyn $ "stroke-width" =: "0.05; filter: blur(%50)" -- little experiment with blur
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let strokeWidth = constDyn $ "stroke-width" =: "0.05" 
   let attrsCircle = mconcat [cx,cy,r,stroke,strokeWidth]
 
   let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1")
   let transform = beatToRotation <$> delta 
-  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform]
 
-  let attrsLine' = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform]
 
  -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
@@ -92,8 +94,9 @@ visualiseCycles delta = do
     -- manecilla
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
     -- mark
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine' $ return () 
+    generatePieSegments 1
   return ()
+
 
 
 beatToRotation:: Rational -> Map Text Text
@@ -113,7 +116,7 @@ visualiseMetre delta = do
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100"
   let h' = constDyn $ "height" =: "100"
-  let stroke = constDyn $ "stroke" =: "white"
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05;" 
 
   let attrs = mconcat [class',w',h',style,vB]
@@ -148,7 +151,7 @@ generateSegment x = do
   let x2 = generateAttr "x2" <$> x
   let y1 = constDyn $ "y1" =: "0"
   let y2 = constDyn $ "y2" =: "100"
-  let stroke = constDyn $ "stroke" =: "white"
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05;"
   let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
@@ -158,14 +161,23 @@ generateAttr :: Text -> Rational -> Map Text Text
 generateAttr atr x = atr =: (showt (realToFrac x :: Double))
 
 
--- <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
---   <defs>
+generatePieSegments:: MonadWidget t m => Rational ->  m ()
+generatePieSegments nLines = do
+  let segmentsSize = 360 / nLines 
+      lineList = constDyn $ Prelude.take (floor nLines) $ iterate (+ segmentsSize) 0
+  x <- simpleList lineList (generatePieSegment)
+  return ()
+  
+generatePieSegment:: MonadWidget t m => Dynamic t Rational ->  m ()
+generatePieSegment x = do
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let strokeWidth = constDyn $ "stroke-width" =: "0.05"
+  let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
+  let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1")
+  let transform = (\x -> "transform" =: ("rotate(" <> (showt (realToFrac x :: Double)) <> ")")) <$> x
 
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform]
 
---     <pattern id="Pattern" x="0" y="0" width=".25" height="1">
---       <rect x="0" y="0" width="50" height="100" stroke="black" fill="skyblue"/>
---     </pattern>
---   </defs>
-
---   <rect fill="url(#Pattern)" stroke="black" width="200" height="100"/>
--- </svg>
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
+  
+  return ()

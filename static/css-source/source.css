@@ -562,12 +562,16 @@ display: block;
   }
 
 .human-to-human-comm {
-  color: var(--experiment-color);
-  font-size: 2em;
+  color: var(--primary-color);
+  font-size: 1em;
 }
 
+.invisible-color {
+	color: rgba(0,0,0,0);
+  }
+
 .mySVG {
-  color: var(--experiment-color);
+  color: var(--primary-color);
 }
 
 .evalFlash {

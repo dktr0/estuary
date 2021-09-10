@@ -110,7 +110,7 @@ sandClockWidget deltasDown =  divClass "countDown" $  mdo
   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
   let editable = editableText <$> currentValue v
   textos <- holdDyn initialText $ leftmost [updatedText, textUpdates]
-  (valTxBx,_) <- textWithLockWidget 1 editable textos
+  (valTxBx,_) <- textToInvisible 1 editable textos
   let bText = countDownToButtonText <$> currentValue v
   butt <- dynButton $ bText 
   let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
@@ -200,14 +200,14 @@ visualiseSVGWidget delta = do
   -- sand falling 
   let x = constDyn $ "x" =: "0"
   let width' = constDyn $ "width" =: "100"
-  let strokeFall = constDyn $ "fill" =: "yellow"
+  let strokeFall = constDyn $ "fill" =: "var(--primary-color)"
   let mask' = constDyn $ "mask" =: "url(#myMask)"
   let attrsFall = mconcat [mask',class',strokeFall,x,yFall,width',heightFall]
 
   -- sand holder
   let x = constDyn $ "x" =: "0"
   let widthHold = constDyn $ "width" =: "100"
-  let strokeHold = constDyn $ "fill" =: "yellow"
+  let strokeHold = constDyn $ "fill" =: "var(--primary-color)"
   let attrsHold = mconcat [mask',class',strokeHold,x,yHold,widthHold,heightHold]
 
 
