@@ -25,6 +25,7 @@ import Estuary.Types.Language
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Widgets.W
+import Estuary.Types.Definition
 
 tempoWidget :: MonadWidget t m => Dynamic t Tempo -> W t m (Event t Tempo)
 tempoWidget tempoDyn = do
@@ -39,24 +40,36 @@ tempoWidget tempoDyn = do
     return edits
   return $ localEdits v
 
--- context :: Monad m => W t m (Dynamic t Context)
 
-visualiseTempoWidget:: MonadWidget t m => Dynamic t Tempo -> W t m (Variable t Tempo)
+selectVisualiser:: MonadWidget t m => Dynamic t Rational -> TimeVision -> W t m ()
+selectVisualiser beat Cyclic = visualiseCycles beat 
+selectVisualiser beat Metric = visualiseMetre beat
+selectVisualiser beat _ = visualiseCycles beat
+
+visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
 visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
 
+--   segments <- get segments from slider
 
+  d <- delta 
+
+  let visMap =  fromList [(Cyclic, "Cyclic"),(Metric, "Metric")] 
+  visChange <- _dropdown_change <$> dropdown d (constDyn visMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
+  visualiser <- holdDyn d visChange
 
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   widgetBuildTime <- liftIO $ getCurrentTime
   tick <- tickLossy 0.01 widgetBuildTime
-  elapsedBeatsRunning <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
+  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
 
-  dynTempo <- holdDyn 0 elapsedBeatsRunning
+  dynBeat <- holdDyn 0 beatPosition
 
-  out <- visualiseCycles dynTempo
+  selectVisualiser dynBeat <$> visualiser -- this doesnt work :(
 
-  v <- variable delta never
+--  visualiseCycles dynBeat
+
+  v <- variable delta visChange -- just changedx this do not forget
   return v
 
 getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational

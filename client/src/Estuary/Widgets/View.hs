@@ -90,9 +90,7 @@ viewWidget er (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState 
 
 viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch er stopWatchWidget
 
-viewWidget er (SeeTimeView z) = do
-  ahorita <- liftIO $ getCurrentTime
-  zoneWidget z (Tempo {freq= 0.5, time=ahorita, Estuary.Types.Tempo.count=0}) maybeSeeTime SeeTime er visualiseTempoWidget
+viewWidget er (SeeTimeView z) = zoneWidget z Cyclic maybeSeeTime SeeTime er visualiseTempoWidget
 
 viewWidget er TempoView = do
   ctx <- context
