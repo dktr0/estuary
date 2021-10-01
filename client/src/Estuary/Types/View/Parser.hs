@@ -44,7 +44,9 @@ dumpView TempoView = "tempo"
 dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
 dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
-dumpView (StopWatchExplorationsView z) = "reloj " <> showInt z
+dumpView (CountDownView z) = "countDown " <> showInt z
+dumpView (SandClockView z) = "sandClock " <> showInt z
+dumpView (SeeTimeView z) = "seeTime " <> showInt z
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -69,18 +71,39 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|>  rouletteViewView -- localview (grid 2 2 [roulette 0 0,roulette 1 0,roulette 2 0,roulette 3 0])
           <|>  audioMapView
           <|>  stopwatchParser
-          <|>  stopwatchXParser
+          <|>  countDownParser
+          <|>  sandClockParser
+          <|>  seeTimeParser
 
+-- 
+seeTimeParser :: H View
+seeTimeParser = seeTimeParser' <*> int
+
+seeTimeParser' :: H (Int -> View)
+seeTimeParser' = seeTimeFunc <$ reserved "seeTime"
+
+seeTimeFunc :: Int -> View
+seeTimeFunc z = SeeTimeView z
 
 --
-stopwatchXParser :: H View
-stopwatchXParser = stopwatchXParser' <*> int
+sandClockParser :: H View
+sandClockParser = sandClockParser' <*> int
 
-stopwatchXParser' :: H (Int -> View)
-stopwatchXParser' = stopwatchXFunc <$ reserved "reloj"
+sandClockParser' :: H (Int -> View)
+sandClockParser' = sandClockFunc <$ reserved "sandClock"
 
-stopwatchXFunc :: Int -> View
-stopwatchXFunc x = StopWatchExplorationsView x
+sandClockFunc :: Int -> View
+sandClockFunc z = SandClockView z
+
+--
+countDownParser :: H View
+countDownParser = countDownParser' <*> int
+
+countDownParser' :: H (Int -> View)
+countDownParser' = countDownFunc <$ reserved "countDown"
+
+countDownFunc :: Int -> View
+countDownFunc z = CountDownView z
 
 --
 stopwatchParser :: H View
@@ -90,7 +113,7 @@ stopwatchParser' :: H (Int -> View)
 stopwatchParser' = stopwatchFunc <$ reserved "stopwatch"
 
 stopwatchFunc :: Int -> View
-stopwatchFunc x = StopWatchView x
+stopwatchFunc z = StopWatchView z
 
 --
 sequenceParser :: H View

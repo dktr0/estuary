@@ -32,4 +32,4 @@ examplesCineCer0 = el "div" $ do
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "every 30 1 $ circleMask 0.5 $ setSize 0.8 $ \"videos/hogweed.mov\""
-    el "li" $ elClass "div" "ieRef" $ text "rgb 1 0 1 $ fontSize 600 $ setPosY (-0.6) $ text \"This is a text\""
+    el "li" $ elClass "div" "ieRef" $ text "rgb 1 0 1 $ size 6 $ setPosY (-0.6) $ text \"This is a text\""

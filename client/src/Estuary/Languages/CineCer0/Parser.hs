@@ -15,6 +15,17 @@ import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.Signal
 
+
+-- testing individual parsers ---
+testNonShowable :: Haskellish () a -> Text -> Either (Span,Text) Text
+testNonShowable p x = b
+  where
+    a = parseAndRun p () x
+    b = case a of 
+      Left y -> Left y
+      Right _ -> Right $ Data.Text.pack "Right!"
+
+
 type H = Haskellish ()
 
 cineCer0 :: UTCTime -> String -> Either String Spec
@@ -133,17 +144,19 @@ sigRat_sigRat =
   fadeOut <$ reserved "fadeOut" <|>
   sine <$ reserved "sin" <|>
   secsToPercen <$ reserved "secs" <|>
-  sigRat_sigRat_sigRat <*> sigRat
+  sigRat_sigRat_sigRat <*> sigRat 
 
 
 sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational)
 sigRat_sigRat_sigRat =
-  reserved "*" >> return multi <|>
-  sigRat_sigRat_sigRat_sigRat <*> sigRat
+ -- reserved "por" >> return multi <|>
+  (multi <$ reserved "*") <|>
+  (sigRat_sigRat_sigRat_sigRat <*> sigRat)
 
 
 sigRat_sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational)
-sigRat_sigRat_sigRat_sigRat =
+sigRat_sigRat_sigRat_sigRat = 
+ -- reserved "range" >> return range
   range <$ reserved "range"
 
 --  maybe sine
@@ -158,12 +171,14 @@ sigRat_sigMayRat =
 
 sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal (Maybe Rational))
 sigRat_sigRat_sigMayRat =
-  reserved "*" >> return multi' <|>
-  sigRat_sigRat_sigRat_sigMayRat <*> sigRat
+  (multi' <$ reserved "*") <|>
+--  reserved "por" >> return multi' <|>
+  (sigRat_sigRat_sigRat_sigMayRat <*> sigRat)
 
 sigRat_sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational))
-sigRat_sigRat_sigRat_sigMayRat =
-  rangeMaybe <$ reserved "range"
+sigRat_sigRat_sigRat_sigMayRat = 
+ -- reserved "range" >> return rangeMaybe
+   rangeMaybe <$ reserved "range" 
 
 
 -- //////////////
@@ -257,7 +272,7 @@ rat_vs_vs =
  playNatural <$ reserved "natural" <|>
  playSnap <$ reserved "snap" <|>
  playSnapMetre <$ reserved "snapMetre" <|>
- playRate <$ reserved "rate" <|>
+ -- playRate <$ reserved "rate" <|>
  rat_rat_vs_vs <*> rationalOrInteger -- <|>
  -- ndt_rat_vs_vs <*> ndt
 

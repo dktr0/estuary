@@ -13,12 +13,31 @@ import Data.Time
 import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
+import Estuary.Types.Tempo
 
 type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
-type StopWatch = Either (Maybe NominalDiffTime) UTCTime
+
+data TimerDownState = 
+  Holding Int |  -- target     
+  Falling Int UTCTime -- target and start time
+  deriving (Eq,Show,Generic)
+
+data TimerUpState =
+  Cleared |
+  Running UTCTime |
+  Stopped NominalDiffTime
+  deriving (Eq, Show, Generic)
+
+instance ToJSON TimerUpState where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON TimerUpState
+
+instance ToJSON TimerDownState where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON TimerDownState
 
 data Definition =
   TextProgram (Live TextProgram) |
@@ -26,7 +45,10 @@ data Definition =
   TidalStructure TransformedPattern |
   LabelText Text |
   Roulette Roulette |
-  StopWatch StopWatch
+  CountDown TimerDownState |
+  SandClock TimerDownState |
+  StopWatch TimerUpState |
+  SeeTime Tempo
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -44,6 +66,10 @@ definitionForRendering (Sequence x) = Sequence x
 definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
+definitionForRendering (CountDown x) = CountDown x
+definitionForRendering (SandClock x) = SandClock x
+definitionForRendering (StopWatch x) = StopWatch x
+definitionForRendering (SeeTime x) = SeeTime x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -80,6 +106,15 @@ maybeRoulette _ = Nothing
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
 
-maybeStopWatch :: Definition -> Maybe StopWatch
-maybeStopWatch (StopWatch x) = Just x
-maybeStopWatch _ = Nothing
+maybeTimerUpState:: Definition -> Maybe TimerUpState
+maybeTimerUpState (StopWatch x) = Just x
+maybeTimerUpState _ = Nothing
+
+maybeTimerDownState:: Definition -> Maybe TimerDownState
+maybeTimerDownState (CountDown x) = Just x
+maybeTimerDownState (SandClock x) = Just x
+maybeTimerDownState _ = Nothing
+
+maybeSeeTime:: Definition -> Maybe Tempo
+maybeSeeTime (SeeTime x) = Just x
+maybeSeeTime _ = Nothing
