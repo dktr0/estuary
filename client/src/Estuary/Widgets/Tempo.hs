@@ -41,10 +41,19 @@ tempoWidget tempoDyn = do
   return $ localEdits v
 
 
-selectVisualiser:: MonadWidget t m => Dynamic t Rational -> TimeVision -> W t m TimeVision
-selectVisualiser beat Cyclic = visualiseCycles beat 
-selectVisualiser beat Metric = visualiseMetre beat
-selectVisualiser beat _ = visualiseCycles beat
+-- selectVisualiser:: MonadWidget t m => Dynamic t Rational -> TimeVision -> W t m TimeVision
+-- selectVisualiser beat Cyclic = visualiseCycles beat 
+-- selectVisualiser beat Metric = visualiseMetre beat
+-- selectVisualiser beat _ = visualiseCycles beat
+
+--someFunction :: FullValueOfWidget -> Dynamic t FullValueOfWidget -> m (Variable t FullValueofWidget)
+selectVisualiser :: TimeVision -> Dynamic t TimeVision -> m (Variable t TimeVision)
+selectVisualiser Cyclic delta = do 
+  visualiseCycles 1
+  localCh <- performEvent
+  return variable delta ???
+selectVisualiser Metric delta = visualiseMetre 4
+
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
 visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
@@ -65,8 +74,7 @@ visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
 
   dynBeat <- holdDyn 0 beatPosition
 
---  selectVisualiser dynBeat visualiser -- this doesnt work :(
-
+  let ma = fmap selectVisualiser delta
 --  visualiseCycles dynBeat
   visualiseRing dynBeat
 
