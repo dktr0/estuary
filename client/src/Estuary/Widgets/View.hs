@@ -24,6 +24,7 @@ import Estuary.Tidal.Types (TransformedPattern(..))
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 import Estuary.Types.RenderInfo
+import Estuary.Types.Tempo
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Text
@@ -36,9 +37,9 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
-import Estuary.Widgets.StopWatch
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
+
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
 
@@ -85,9 +86,15 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
 
-viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget
+viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 
-viewWidget er (StopWatchExplorationsView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget'
+viewWidget er (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er sandClockWidget
+
+viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch er stopWatchWidget
+
+viewWidget er (SeeTimeView z) = do
+  ahorita <- liftIO $ getCurrentTime
+  zoneWidget z (Tempo {freq= 0.5, time=ahorita, Estuary.Types.Tempo.count=0}) maybeSeeTime SeeTime er visualiseTempoWidget
 
 viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("","")]) maybeNotePad NotePad er notePadWidget
 

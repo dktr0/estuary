@@ -31,8 +31,10 @@ data View =
   TempoView |
   RouletteView Int Int |
   AudioMapView |
+  CountDownView Int |
+  SandClockView Int |
   StopWatchView Int |
-  StopWatchExplorationsView Int |
+  SeeTimeView Int |
   NotePadView Int
   deriving (Show,Eq,Generic)
 
