@@ -728,7 +728,7 @@ cineCer0Tutorial = Tutorial {
               (English,"\"range # #\" accepts two parameters: Value_1 Value_2. It modifies the amplitude of the signal."),
               (Español,"\"range # #\" acepta dos parámetros: Valor_1 Valor_2. Modifica la amplitud de una señal.")
             ]],
-            Example CineCer0 "setCoord (range (-1.4) 1.4 $ sin 1) (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
+            Example CineCer0 "setCoord (range (-1.4) 1.4 $ sin 0.2) (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
             Example CineCer0 "circleMask (range 1 0.5 $ sin 0.1) $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/hogweed.mov?raw=true\""
         ],
         CodeView 1 0
