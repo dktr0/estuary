@@ -35,12 +35,12 @@ cineCer0Tutorial = Tutorial {
               (Español,"CineCer0 es un lenguaje para reproducir y transformar video e imágenes así como renderizar y transformar texto en el navegador. Puede ser usado, por ejemplo, para performance de live cinema con programación al vuelo, animación tipográfica, VJ-ing, etc.")
             ]],
             Paragraph [ Text $ Map.fromList[
-              (English,"In this tutorial, we will review CineCer0 functions step-by-step. On each page, you will find executable examples. You can evaluate and modify them on the fly. These are two examples of the possibilities of CineCer0:"),
-              (Español,"En este tutorial revisaremos las funciones de CineCer0 paso a paso. En cada página encontrarán ejemplos ejcutables. Pueden evaluarlos y modificarlos. Estos son dos ejemplos de las posibilidades de CineCer0:")
+              (English,"We will review CineCer0 functions step-by-step. On each page, you will find executable examples. You can evaluate and modify them on the fly."),
+              (Español,"Revisaremos las funciones de CineCer0 paso a paso. En cada página encontrarán ejemplos ejcutables. Pueden evaluarlos y modificarlos.")
             ]],
             Example CineCer0 "circleMask 0.5 $ vol 0.5 $ video \"https://github.com/jac307/videoTextures/blob/master/otros/river.mov?raw=true\"",
-            Example CineCer0 "setSize 0.8 $ image \"https://upload.wikimedia.org/wikipedia/commons/8/85/5AU_OB_Van.jpg\"",
-            Example CineCer0 "fontSize 10 $ setPosY (-0.8) $ text \"I am a river\""
+            Example CineCer0 "setSize 0.8 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/European_honey_bee_extracts_nectar.jpg/640px-European_honey_bee_extracts_nectar.jpg\"",
+            Example CineCer0 "size 10 $ setPosY (-0.8) $ text \"I am a river\""
         ],
         CodeView 1 0
       ]
@@ -76,8 +76,8 @@ cineCer0Tutorial = Tutorial {
     --importing image
     (TutorialPage {
       tutorialPageTitle = Map.fromList [
-        (English,"Play Video"),
-        (Español,"Reproducir Video")
+        (English,"Play Image"),
+        (Español,"Reproducir Imagen")
       ],
       tutorialPageView = GridView 1 2 [
         Views [
@@ -117,7 +117,7 @@ cineCer0Tutorial = Tutorial {
               (Español,"El string de texto que se evalúa pueden ser corto o largo. Más adelante veremos cómo modificar la apariencia (posición, tamaño, color, tipo de fuente, etc). Para borrar el texto: borra todo y evalua la caja de código vacía. Para cambiar el texto: reemplazalo y evalúa de nuevo.")
             ]],
             Example CineCer0 "text \"Hello word\"",
-            Example CineCer0 "text \"Lorem ipsum dolor sit amet, consectetur adipiscing elit.\""
+            Example CineCer0 "text \"This is my text - Este es mi texto\""
         ],
         CodeView 1 0
       ]
@@ -165,9 +165,8 @@ cineCer0Tutorial = Tutorial {
               (English,"Functions to change size: \"setWidth #\", \"setHeight #\", and \"setSize #\" --requires just one value (affects proportionally width and height). Values bellow \"1\" make the video smaller (can down up to \"0\"). Values above \"1\" makes the video bigger."),
               (Español,"Funciones para cambiar tamaño: \"setWidth #\", \"setHeight #\", y \"setSize #\" --requiere únicamente de un valor (afecta proporcionalmente ancho y alto). Los valores por debajo de \"1\" hacen el video más pequeño (puede reducirse hasta \"0\"). Los valores arriba de \"1\" hacen el video más grande.")
             ]],
-            Example CineCer0 "setWidth 0.2 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Monarch-at-cerro-pelon.jpg/800px-Monarch-at-cerro-pelon.jpg\"",
             Example CineCer0 "setHeight 4.1 $ video \"https://upload.wikimedia.org/wikipedia/commons/9/9a/Time_Lapse_of_New_York_City.ogv\"",
-            Example CineCer0 "setSize 0.8 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Cootes_Paradise_branches.jpg/800px-Cootes_Paradise_branches.jpg\""
+            Example CineCer0 "setSize 0.8 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Tricyrtis_hirta_-_blossom_side_%28aka%29.jpg/640px-Tricyrtis_hirta_-_blossom_side_%28aka%29.jpg\""
         ],
         CodeView 1 0
       ]
@@ -185,13 +184,13 @@ cineCer0Tutorial = Tutorial {
               (English,"By default, the value of font-size is \"1\". This is equivalent to the normal size of the editor's text in a session of Estuary"),
               (Español,"Por defecto, el valor de tamaño de la fuente es \"1\". Ésto equivale al tamaño del texto de los editores de una sesión de Estuary")
             ]],
-            Example CineCer0 "setPosX 0.8 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
+            Example CineCer0 "text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
             Paragraph [ Text $ Map.fromList[
               (English,"Function to change font-size: \"fontSize 10 #\". Values bellow \"1\" make the text smaller (can down up to \"0\"). Values above \"1\" makes the text bigger."),
               (Español,"Función para cambiar el tamño de fuente: \"fontSize 10 #\". Los valores por debajo de \"1\" hacen el texto más pequeño (puede reducirse hasta \"0\"). Los valores arriba de \"1\" hacen el texto más grande.")
             ]],
-            Example CineCer0 "fontSize 15 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
-            Example CineCer0 "fontSize 40 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\""
+            Example CineCer0 "size 15 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
+            Example CineCer0 "size 40 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\""
         ],
         CodeView 1 0
       ]
@@ -218,7 +217,7 @@ cineCer0Tutorial = Tutorial {
               (English,"In this example, the coordinates (in axis X,Y) and the font-size are combined to modify the appearance of text:"),
               (Español,"En este ejemplo, las coordenadas (en los ejes X,Y) y el tamaño de fuente son combinadas para modificar la apariencia del texto:")
             ]],
-            Example CineCer0 "setCoord 0 (-0.5) $ fontSize 2.5 $ text \"Mentira es la palabra. La palabra mentira,\""
+            Example CineCer0 "setCoord 0 (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira,\""
         ],
         CodeView 1 0
       ]
@@ -255,9 +254,9 @@ cineCer0Tutorial = Tutorial {
               (English,"\"setRotate #\" -- Default value: \"0\", value on degrees."),
               (Español,"\"setRotate #\" -- Valor por default: \"0\", valor en grados.")
             ]],
-            Example CineCer0 "image \"https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Cootes_Paradise_branches.jpg/800px-Cootes_Paradise_branches.jpg\"",
-            Example CineCer0 "setRotate 50 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Cootes_Paradise_branches.jpg/800px-Cootes_Paradise_branches.jpg\"",
-            Example CineCer0 "setRotate 180 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Cootes_Paradise_branches.jpg/800px-Cootes_Paradise_branches.jpg\""
+            Example CineCer0 "image \"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Leaf_epidermis.jpg/640px-Leaf_epidermis.jpg\"",
+            Example CineCer0 "setRotate 50 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Leaf_epidermis.jpg/640px-Leaf_epidermis.jpg\"",
+            Example CineCer0 "setRotate 180 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Leaf_epidermis.jpg/640px-Leaf_epidermis.jpg\""
         ],
         CodeView 1 0
       ]
@@ -275,13 +274,13 @@ cineCer0Tutorial = Tutorial {
               (English,"\"setOpacity #\" -- Default value: \"1\"."),
               (Español,"\"setOpacity #\" -- Valor por default: \"1\".")
             ]],
-            Example CineCer0 "video \"https://github.com/jac307/memoriasSamples/blob/master/videoSamples/cellos.mov?raw=true\"",
+            Example CineCer0 "video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/puertas.mov?raw=true\"",
             Paragraph [ Text $ Map.fromList[
               (English,"Modifying the value of opacity changes how opaque (visible) is a video. The value goes from \"1\" (totally visible) to \"0\" (invisible), everything in the middle will produce a transparency. In the following examples the opacity is modify. Since the background is black, you will notice a change in the intensity of the video."),
               (Español,"Cuando se modifica el valor de la opacidad, se cambia que tan opaco (visible) es el video (con relación a su fondo). El valor va de \"1\" (totalmente visible) to \"0\" (invisible), cualquier cosa en el medio producirá una transparencia. En los siguientes ejemplos se modifica la opacidad. Ya que el fondo es negro, notarás un cambio en la intensidad del video.")
             ]],
-            Example CineCer0 "setOpacity 0.6 $ video \"https://github.com/jac307/memoriasSamples/blob/master/videoSamples/cellos.mov?raw=true\"",
-            Example CineCer0 "setOpacity 0.2 $ video \"https://github.com/jac307/memoriasSamples/blob/master/videoSamples/cellos.mov?raw=true\""
+            Example CineCer0 "setOpacity 0.7 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/puertas.mov?raw=true\"",
+            Example CineCer0 "setOpacity 0.2 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/puertas.mov?raw=true\""
         ],
         CodeView 1 0
       ]
@@ -395,13 +394,13 @@ cineCer0Tutorial = Tutorial {
               (English,"\"setGrayscale #\" -- Default value: \"0\"."),
               (Español,"\"setGrayscale #\" -- Valor por default: \"0\".")
             ]],
-            Example CineCer0 "video \"https://github.com/jac307/memoriasSamples/blob/master/videoSamples/recuerdos.mov?raw=true\"",
+            Example CineCer0 "video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/recuerdos.mov?raw=true\"",
             Paragraph [ Text $ Map.fromList[
               (English,"The value goes from \"0\" to \"1\", affecting the colours to convert the video into full grayscale."),
               (Español,"Los valores van de \"0\" to \"1\", afectando los colores para convertir el video completamente escala de grises.")
             ]],
-            Example CineCer0 "setGrayscale 0.5 $ video \"https://github.com/jac307/memoriasSamples/blob/master/videoSamples/recuerdos.mov?raw=true\"",
-            Example CineCer0 "setGrayscale 1 $ video \"https://github.com/jac307/memoriasSamples/blob/master/videoSamples/recuerdos.mov?raw=true\""
+            Example CineCer0 "setGrayscale 0.5 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/recuerdos.mov?raw=true\"",
+            Example CineCer0 "setGrayscale 1 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/recuerdos.mov?raw=true\""
         ],
         CodeView 1 0
       ]
@@ -439,13 +438,13 @@ cineCer0Tutorial = Tutorial {
               (English,"\"colour name\" -- Default color: \"white\""),
               (Español,"\"colour name\" -- Color por defecto: \"white\"")
             ]],
-            Example CineCer0 "fontSize 4 $ setPosY (-0.4) $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
+            Example CineCer0 "size 4 $ setPosY (-0.4) $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
             Paragraph [ Text $ Map.fromList[
               (English,"This function accepts some words (inside \"\") in English assigned to colours like \"red\" or \"magenta\". Also accepts hex-colour codes."),
               (Español,"Esta función acepta palabras (dentro de \"\") en Inglés que describen colores como \"red\" o \"magenta\". También acepta códigos de colores hexa.")
             ]],
-            Example CineCer0 "colour \"magenta\" $ setPosY (-0.4) $ fontSize 4 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
-            Example CineCer0 "colour \"#ff8000\" $ setPosY (-0.4) $ fontSize 4 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\""
+            Example CineCer0 "colour \"magenta\" $ setPosY (-0.4) $ size 4 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
+            Example CineCer0 "colour \"#ff8000\" $ setPosY (-0.4) $ size 4 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\""
         ],
         CodeView 1 0
       ]
@@ -463,13 +462,13 @@ cineCer0Tutorial = Tutorial {
               (English,"\"rgb # # #\" -- Default values: \"1 1 1\" = white"),
               (Español,"\"rgb # # #\" -- Valores por defecto: \"1 1 1\" = white")
             ]],
-            Example CineCer0 "fontSize 4 $ setPosY (-0.4) $ setPosY (-0.4) $ text \"un ganglio de luz que se ha vuelto loco\"",
+            Example CineCer0 "size 4 $ setPosY (-0.4) $ setPosY (-0.4) $ text \"un ganglio de luz que se ha vuelto loco\"",
             Paragraph [ Text $ Map.fromList[
               (English,"This function works with the RGB colour system, setting the value of each channel: Red, Green, and Blue. It goes from \"0\" = no colour, to \"1\" = full colour."),
               (Español,"Esta función trabaja con el sistema de color RGB, indicando el valor de cada canal: Red=rojo, Green=verde y Blue=azul. Va de \"0\" = sin color, a \"1\" = todo el color.")
             ]],
-            Example CineCer0 "rgb 0.7 0 0.9 $ fontSize 4 $ setPosY (-0.4) $ text \"un ganglio de luz que se ha vuelto loco\"",
-            Example CineCer0 "rgb 0 0 1 $ fontSize 4 $ setPosY (-0.4) $ text \"un ganglio de luz que se ha vuelto loco\""
+            Example CineCer0 "rgb 0.7 0 0.9 $ size 4 $ setPosY (-0.4) $ text \"un ganglio de luz que se ha vuelto loco\"",
+            Example CineCer0 "rgb 0 0 1 $ size 4 $ setPosY (-0.4) $ text \"un ganglio de luz que se ha vuelto loco\""
         ],
         CodeView 1 0
       ]
@@ -487,13 +486,13 @@ cineCer0Tutorial = Tutorial {
               (English,"\"hsl # # #\" -- Default values: \"1 1 1\" = white"),
               (Español,"\"hsl # # #\" -- Valores por defecto: \"1 1 1\" = white")
             ]],
-            Example CineCer0 "fontSize 4 $ setPosY (-0.4) $ text \"Pourquoi un chapeau ferait-il peur?\"",
+            Example CineCer0 "size 4 $ setPosY (-0.4) $ text \"Pourquoi un chapeau ferait-il peur?\"",
             Paragraph [ Text $ Map.fromList[
               (English,"Based on the colour wheel, this function works with the HSL colour system, setting the value of each channel: Hue (indicates the colour variation between red, green, and blue), Saturation, and Lightness. Each value goes from \"0\" to \"1\"."),
               (Español,"Basada en el círculo cromático, esta función trabaja con el sistema de color HSL, indicando el valor de: Hue=matiz (indica el color respecto a la combinación de rojo, verde y azul), Saturation=saturación y Lightness=brillo. Cada valor va de \"0\" a \"1\".")
             ]],
-            Example CineCer0 "hsl 1 1 0.7 $ fontSize 4 $ setPosY (-0.4) $ text \"Pourquoi un chapeau ferait-il peur?\"",
-            Example CineCer0 "hsl 0 0.3 0.7 $ fontSize 4 $ setPosY (-0.4) $ text \"Pourquoi un chapeau ferait-il peur?\""
+            Example CineCer0 "hsl 1 1 0.7 $ size 4 $ setPosY (-0.4) $ text \"Pourquoi un chapeau ferait-il peur?\"",
+            Example CineCer0 "hsl 0 0.3 0.7 $ size 4 $ setPosY (-0.4) $ text \"Pourquoi un chapeau ferait-il peur?\""
         ],
         CodeView 1 0
       ]
@@ -511,13 +510,13 @@ cineCer0Tutorial = Tutorial {
               (English,"\"font name\" -- Default font: same as browser"),
               (Español,"\"font name\" -- Fuente por default: same as browser")
             ]],
-            Example CineCer0 "fontSize 4 $ setPosY (-0.4) $ text \"He walked across stepping carefully among the wounded\"",
+            Example CineCer0 "size 4 $ setPosY (-0.4) $ text \"He walked across stepping carefully among the wounded\"",
             Paragraph [ Text $ Map.fromList[
               (English,"This function accepts a \"string\" of the name of the font. The availability of fonts depends on different systems and browser configurations."),
               (Español,"Esta función acepta un \"string\" (línea-de-texto) con el nombre de la fuente. La disponibilidad de las fuentes depende de cada sistema y las configuraciones del browser")
             ]],
-            Example CineCer0 "font \"Arial\" $ fontSize 4 $ setPosY (-0.4) $ text \"He walked across stepping carefully among the wounded\"",
-            Example CineCer0 "font \"Impact\" $ fontSize 4 $ setPosY (-0.4) $ text \"He walked across stepping carefully among the wounded\""
+            Example CineCer0 "font \"Arial\" $ size 4 $ setPosY (-0.4) $ text \"He walked across stepping carefully among the wounded\"",
+            Example CineCer0 "font \"Impact\" $ size 4 $ setPosY (-0.4) $ text \"He walked across stepping carefully among the wounded\""
         ],
         CodeView 1 0
       ]
@@ -535,15 +534,15 @@ cineCer0Tutorial = Tutorial {
               (English,"By default, all of these options are dissabled:"),
               (Español,"Por defecto, todas estas opciones están deshabilitadas:")
             ]],
-            Example CineCer0 "fontSize 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
+            Example CineCer0 "size 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
             Paragraph [ Text $ Map.fromList[
               (English,"."),
               (Español,"Las funciones \"bold\" (negritas), \"italic\" (italicas), \"strike\" (tachado), y/o \"border\" (encuadrado), solamente producen efectos en el texto.")
             ]],
-            Example CineCer0 "bold $ fontSize 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
-            Example CineCer0 "italic $ fontSize 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
-            Example CineCer0 "strike $ fontSize 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
-            Example CineCer0 "border $ fontSize 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\""
+            Example CineCer0 "bold $ size 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
+            Example CineCer0 "italic $ size 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
+            Example CineCer0 "strike $ size 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
+            Example CineCer0 "border $ size 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\""
         ],
         CodeView 1 0
       ]
@@ -561,9 +560,9 @@ cineCer0Tutorial = Tutorial {
               (English,"Examples with multiple functions affecting a the visualization of a text:"),
               (Español,"Ejemplos con múltiples funciones afectando la visualización de un text:")
             ]],
-            Example CineCer0 "font \"Didot\" $ colour \"#ff60a8\" $ fontSize 3 $ setPosY (-0.6) $ italic $ text \"Hay besos que calcinan y que hieren, hay besos que arrebatan los sentidos\"",
-            Example CineCer0 "bold $ hsl 0.1 1 0.5 $ fontSize 5 $ text \"That lofty monarch, Monarch Mind\"",
-            Example CineCer0 "font \"Georgia\" $ border $ fontSize 3 $ setCoord 0.6 (-0.5) $ text \"sobald ich die Melone aufschneide\""
+            Example CineCer0 "font \"Didot\" $ colour \"#ff60a8\" $ size 3 $ setPosY (-0.6) $ italic $ text \"Hay besos que calcinan y que hieren, hay besos que arrebatan los sentidos\"",
+            Example CineCer0 "bold $ hsl 0.1 1 0.5 $ size 5 $ text \"That lofty monarch, Monarch Mind\"",
+            Example CineCer0 "font \"Georgia\" $ border $ size 3 $ setCoord 0.6 (-0.5) $ text \"sobald ich die Melone aufschneide\""
         ],
         CodeView 1 0
       ]
@@ -641,7 +640,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "rectMask 0.5 0 0 0 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/spencer-creek.mov?raw=true\"",
             Example CineCer0 "rectMask 0 0.3 0 0 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/spencer-creek.mov?raw=true\"",
             Example CineCer0 "rectMask 0 0 0.1 0 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/spencer-creek.mov?raw=true\"",
-            Example CineCer0 "rectMask 0 0 0 0.98 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/spencer-creek.mov?raw=true\""
+            Example CineCer0 "rectMask 0 0 0 0.9 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/spencer-creek.mov?raw=true\""
         ],
         CodeView 1 0
       ]
@@ -683,12 +682,12 @@ cineCer0Tutorial = Tutorial {
               (English,"In this example, 10 cicles is the duration of the animation, vol=0 is the initial value, and vol=1 is the end value:"),
               (Español,"En este ejemplo, 10 ciclos es la duración de la animación, vol=0 es el valor inicial, vol=1 es el valor final:")
             ]],
-            Example CineCer0 "vol (ramp 10 0 1) $ video \"https://github.com/jac307/videoTextures/blob/master/otros/colombia.mov?raw=true\"",
+            Example CineCer0 "setSaturate (ramp 10 0 5) $ video \"https://github.com/jac307/videoTextures/blob/master/otros/colombia.mov?raw=true\"",
             Paragraph [ Text $ Map.fromList[
               (English,"In the second example, \"ramp\" is applied to two parametros: the value of red and the value of blue:"),
               (Español,"En el segundo ejemplo, se aplica \"ramp\" a dos parametros: el valor de rojo y el valor de azul:")
             ]],
-            Example CineCer0 "rgb (ramp 10 0 1) 0 (ramp 10 1 0) $ fontSize 4 $ text \"Pourquoi un chapeau ferait-il peur?\""
+            Example CineCer0 "rgb (ramp 10 0 1) 0 (ramp 10 1 0) $ size 4 $ text \"Pourquoi un chapeau ferait-il peur?\""
         ],
         CodeView 1 0
       ]
@@ -710,8 +709,8 @@ cineCer0Tutorial = Tutorial {
               (English,"Modify the value periodically depending on the frequency."),
               (Español,"Modifica el valor periódicamente dependiendo de la frequencia.")
             ]],
-            Example CineCer0 "setCoord (sin 1) (-0.5) $ fontSize 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
-            Example CineCer0 "setPosY (sin 0.1) $ setSize 0.5 $ video \"https://github.com/jac307/videoTextures/blob/master/otros/street.mov?raw=true\""
+            Example CineCer0 "setCoord (sin 1) (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
+            Example CineCer0 "setPosY (sin 0.1) $ size 0.5 $ video \"https://github.com/jac307/videoTextures/blob/master/otros/street.mov?raw=true\""
         ],
         CodeView 1 0
       ]
@@ -729,7 +728,7 @@ cineCer0Tutorial = Tutorial {
               (English,"\"range # #\" accepts two parameters: Value_1 Value_2. It modifies the amplitude of the signal."),
               (Español,"\"range # #\" acepta dos parámetros: Valor_1 Valor_2. Modifica la amplitud de una señal.")
             ]],
-            Example CineCer0 "setCoord (range (-1.4) 1.4 $ sin 1) (-0.5) $ fontSize 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
+            Example CineCer0 "setCoord (range (-1.4) 1.4 $ sin 1) (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
             Example CineCer0 "circleMask (range 1 0.5 $ sin 0.1) $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/hogweed.mov?raw=true\""
         ],
         CodeView 1 0
@@ -748,8 +747,8 @@ cineCer0Tutorial = Tutorial {
               (English,"Multiple statements are divided by semicolon (\";\")."),
               (Español,"Las Declaraciones múltiples están divididas por punto y coma (\";\").")
             ]],
-            Example CineCer0 "rectMask 0.3 0 0.3 0 $ setSize 1.3 $ video \"https://github.com/jac307/memoriasSamples/blob/master/videoSamples/instrumentos.mov?raw=true\"; rgb 0.2 0 0.2 $ italic $ fontSize 4 $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
-            Example CineCer0 "brightness 0.8 $ size 2 $ video \"https://github.com/jac307/videoTextures/blob/master/mariposa/10.mov?raw=true\"; opacity (range 0 1 $ sin 0.3) $ size 2 $ brightness 0.8 $ video \"https://github.com/jac307/videoTextures/blob/master/mariposa/20.mov?raw=true\"; font \"Didot\" $ colour \"#ff60a8\" $ fontSize 5 $ setPosY (-0.6) $ italic $ text \"and then, there is water\""
+            Example CineCer0 "rectMask 0.3 0 0.3 0 $ setSize 1.3 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/instrumentos.mov?raw=true\"; rgb 0.2 0 0.2 $ italic $ size 4 $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
+            Example CineCer0 "brightness 0.8 $ size 2 $ video \"https://github.com/jac307/videoTextures/blob/master/mariposa/10.mov?raw=true\"; opacity 0.5 $ size 2 $ brightness 0.8 $ video \"https://github.com/jac307/videoTextures/blob/master/mariposa/20.mov?raw=true\"; font \"Didot\" $ colour \"#ff60a8\" $ size 5 $ setPosY (-0.6) $ italic $ text \"and then, there is water\""
         ],
         CodeView 1 0
       ]
