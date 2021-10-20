@@ -9,6 +9,7 @@ import Data.Text (Text)
 import GHC.Generics
 import Data.Aeson
 import Data.Time
+import Data.Sequence
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
@@ -19,9 +20,11 @@ type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
+type NotePad = (Int,Seq NotePage)
+type NotePage = (Text,Text)
 
-data TimerDownState = 
-  Holding Int |  -- target     
+data TimerDownState =
+  Holding Int |  -- target
   Falling Int UTCTime -- target and start time
   deriving (Eq,Show,Generic)
 
@@ -48,7 +51,8 @@ data Definition =
   CountDown TimerDownState |
   SandClock TimerDownState |
   StopWatch TimerUpState |
-  SeeTime Tempo
+  SeeTime Tempo |
+  NotePad NotePad
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -70,6 +74,7 @@ definitionForRendering (CountDown x) = CountDown x
 definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
+definitionForRendering (NotePad x) = NotePad x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -118,3 +123,7 @@ maybeTimerDownState _ = Nothing
 maybeSeeTime:: Definition -> Maybe Tempo
 maybeSeeTime (SeeTime x) = Just x
 maybeSeeTime _ = Nothing
+
+maybeNotePad :: Definition -> Maybe NotePad
+maybeNotePad (NotePad x) = Just x
+maybeNotePad _ = Nothing

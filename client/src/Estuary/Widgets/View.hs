@@ -12,6 +12,7 @@ import Control.Monad.IO.Class
 import Data.Maybe
 import TextShow
 import Data.Time
+import qualified Data.Sequence as Seq
 
 import Estuary.Types.Live
 import Estuary.Types.Definition
@@ -37,6 +38,7 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
+import Estuary.Widgets.Notepad
 
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
@@ -93,6 +95,8 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 viewWidget er (SeeTimeView z) = do
   ahorita <- liftIO $ getCurrentTime
   zoneWidget z (Tempo {freq= 0.5, time=ahorita, Estuary.Types.Tempo.count=0}) maybeSeeTime SeeTime er visualiseTempoWidget
+
+viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("","")]) maybeNotePad NotePad er notePadWidget
 
 viewWidget er TempoView = do
   ctx <- context

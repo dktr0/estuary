@@ -39,7 +39,7 @@ z [n] -- changes the depth of the video being reproduced
 
 ## Text Function
 
-fontSize [n] --change the size of the text, grows from 1 <br />
+size [n] --change the size of the text, grows from 1 <br />
 font "fontType" -- fonts available depending on browser characteristics <br />
 colour "colour" -- adds colour by name or by hexacolor (all colour funcs will be applied to the text) <br />
 rgb [r] [g] [b] -- adds colour by rgb, normalised from 0 to 1 <br />

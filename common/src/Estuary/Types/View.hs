@@ -31,10 +31,11 @@ data View =
   TempoView |
   RouletteView Int Int |
   AudioMapView |
-  CountDownView Int | 
+  CountDownView Int |
   SandClockView Int |
   StopWatchView Int |
-  SeeTimeView Int
+  SeeTimeView Int |
+  NotePadView Int
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

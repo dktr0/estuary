@@ -245,5 +245,3 @@ presetViews = fromList [
       BorderDiv [CountDownView 0]
       ])
       ]
-
-      

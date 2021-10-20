@@ -47,6 +47,7 @@ dumpView (StopWatchView z) = "stopwatch " <> showInt z
 dumpView (CountDownView z) = "countDown " <> showInt z
 dumpView (SandClockView z) = "sandClock " <> showInt z
 dumpView (SeeTimeView z) = "seeTime " <> showInt z
+dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -74,8 +75,9 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|>  countDownParser
           <|>  sandClockParser
           <|>  seeTimeParser
+          <|>  notePadParser
 
--- 
+--
 seeTimeParser :: H View
 seeTimeParser = seeTimeParser' <*> int
 
@@ -114,6 +116,16 @@ stopwatchParser' = stopwatchFunc <$ reserved "stopwatch"
 
 stopwatchFunc :: Int -> View
 stopwatchFunc z = StopWatchView z
+
+--
+notePadParser :: H View
+notePadParser = notePadParser' <*> int
+
+notePadParser' :: H (Int -> View)
+notePadParser' = notePadFunc <$ reserved "notepad"
+
+notePadFunc :: Int -> View
+notePadFunc x = NotePadView x
 
 --
 sequenceParser :: H View
