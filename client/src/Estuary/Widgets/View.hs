@@ -116,6 +116,11 @@ viewWidget _ AudioMapView = do
   audioMapWidget
   return never
 
+viewWidget _ (IFrame url) = do
+  let attrs = Map.singleton "src" url
+  elAttr "iframe" attrs $ return ()
+  return never
+
 zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
   -> (Dynamic t a -> W t m (Variable t a))

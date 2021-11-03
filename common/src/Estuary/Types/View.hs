@@ -35,7 +35,8 @@ data View =
   SandClockView Int |
   StopWatchView Int |
   SeeTimeView Int |
-  NotePadView Int
+  NotePadView Int |
+  IFrame Text -- embedded web page
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where
