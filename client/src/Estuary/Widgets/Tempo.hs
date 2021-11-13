@@ -46,13 +46,14 @@ tempoWidget tempoDyn = do
 -- selectVisualiser beat Metric = visualiseMetre beat
 -- selectVisualiser beat _ = visualiseCycles beat
 
+-- dyn :: (DomBuilder t m, PostBuild t m) => Dynamic t (m a) -> m (Event   t    a)
+
 --someFunction :: FullValueOfWidget -> Dynamic t FullValueOfWidget -> m (Variable t FullValueofWidget)
 selectVisualiser :: TimeVision -> Dynamic t TimeVision -> m (Variable t TimeVision)
 selectVisualiser Cyclic delta = do 
-  visualiseCycles 1
-  localCh <- performEvent
-  return variable delta ???
-selectVisualiser Metric delta = visualiseMetre 4
+  localCh <- dyn $ visualiseCycles 1
+  return $ variable delta localCh
+-- selectVisualiser Metric delta = visualiseMetre 4
 
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
