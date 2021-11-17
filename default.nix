@@ -188,8 +188,8 @@ in
           "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0wkzz7sdd0v972vxx6zji53h2hyrw60gwccvypqfwlrw4ai7zqla";
-          rev = "026965426b5a334ce2b734f44120ad79365203e4";
+          sha256 = "0bavksbzz991rkp63z31s311yvkj8i4f7nvqygm1r0gqvpd233v1";
+          rev = "fe276b1a77dfcde5cf2135a0c8b166f66530021d";
           fetchSubmodules = true;
         }) "" {}));
 
@@ -198,8 +198,8 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0wkzz7sdd0v972vxx6zji53h2hyrw60gwccvypqfwlrw4ai7zqla";
-            rev = "026965426b5a334ce2b734f44120ad79365203e4";
+            sha256 = "0bavksbzz991rkp63z31s311yvkj8i4f7nvqygm1r0gqvpd233v1";
+            rev = "fe276b1a77dfcde5cf2135a0c8b166f66530021d";
             fetchSubmodules = true;
         })
         "--subpath tidal-parse" {}));
