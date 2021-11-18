@@ -21,6 +21,9 @@ import Estuary.Widgets.W
 
 compiledAnnouncements :: Map Day [TranslatableText]
 compiledAnnouncements = fromList [
+  (read "2021-11-18",[ fromList [
+    (English,"Estuary now uses version 1.7.8 of Tidal, and MiniTidal now supports stutter, quantise, rangex, wedge, timeCat/timecat, chunk', lindenmayer, step, step', steps, spreadf, spreadChoose/spreadr, selectF, striateBy, perlinWith, perlin2, perlin2With, <>, and stutWith")
+    ]]),
   (read "2021-02-12",[ fromList [
     (English,"Estuary now uses version 1.7.1 of Tidal (and MiniTidal now supports silent, stitch, stripe, fix, unfix, contrast, chooseBy, wchoose, wchooseBy, trigger, ur, layer, interlace).")
     ]]),
