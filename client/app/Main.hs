@@ -57,12 +57,14 @@ main = do
   sd <- newSuperDirt
   resources' <- newResources
   addResourceOp resources' $ ResourceListURL "samples/resources.json"
+  ccMap' <- newCCMap
 
   let immutableRenderContext = ImmutableRenderContext {
     mainBus = mb,
     webDirt = wd,
     superDirt = sd,
-    resources = resources'
+    resources = resources',
+    ccMap = ccMap'
     }
 
   nowUtc <- getCurrentTime
