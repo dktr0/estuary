@@ -124,12 +124,13 @@ flushEvents irc c = do
   modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
   return ()
 
-renderTidalPattern :: UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
-renderTidalPattern start range t p = events''
+renderTidalPattern :: Tidal.ValueMap -> UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
+renderTidalPattern vMap start range t p = events''
   where
     start' = (realToFrac $ diffUTCTime start (time t)) * freq t + count t -- start time in cycles since beginning of tempo
     end = realToFrac range * freq t + start' -- end time in cycles since beginning of tempo
-    events = Tidal.queryArc p (Tidal.Arc (toRational start') (toRational end)) -- events with t in cycles
+    a = Tidal.Arc (toRational start') (toRational end)
+    events = Tidal.query p $ Tidal.State a vMap
     events' = Prelude.filter Tidal.eventHasOnset events
     events'' = f <$> events'
     f e = (utcTime,Tidal.value e)
@@ -199,6 +200,7 @@ render irc c = do
   -- if there is no reason not to traverse/render zones, then do so
   -- using renderStart and renderEnd from the state as the window to render
   when (not wait && not rewind) $ do
+    updateTidalValueMap irc
     let newDefs = zones $ ensemble $ ensembleC c
     clearDeletedZones newDefs
     traverseWithKey (renderZone irc c) newDefs
@@ -601,16 +603,21 @@ renderControlPattern :: ImmutableRenderContext -> Context -> Int -> Renderer
 renderControlPattern irc c z = when (webDirtOn c || superDirtOn c) $ do
   s <- get
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
+  let vMap = valueMap s
   case controlPattern of
     Just controlPattern' -> do
       let lt = renderStart s
       let rp = renderPeriod s
       let tempo' = tempo $ ensemble $ ensembleC c
-      newEvents <- liftIO $ (return $! force $ renderTidalPattern lt rp tempo' controlPattern')
+      newEvents <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp tempo' controlPattern')
         `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
       pushTidalEvents newEvents
     Nothing -> return ()
 
+updateTidalValueMap :: ImmutableRenderContext -> Renderer
+updateTidalValueMap irc = do
+  m <- liftIO $ readMVar $ ccMap irc
+  modify' $ \x -> x { valueMap = fmap Tidal.toValue $ Map.mapKeys T.unpack m}
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> Renderer
 calculateZoneRenderTimes z zrt = do
