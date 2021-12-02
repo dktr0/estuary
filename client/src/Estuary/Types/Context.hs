@@ -25,7 +25,7 @@ import Estuary.Types.EnsembleC
 import Estuary.Render.DynamicsMode
 import Estuary.Resources
 import Estuary.Protocol.Peer
-import Sound.MusicW (Node)
+import Sound.MusicW (Node,AudioContext)
 import Sound.Punctual.GL (GLContext)
 import qualified Sound.Punctual.Resolution as Punctual
 

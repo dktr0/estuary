@@ -12,6 +12,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Monad
 import TextShow
+import Sound.MusicW.AudioContext
 
 
 import Estuary.Protocol.Peer
@@ -91,6 +92,16 @@ doCommands _ irc (Terminal.ShowCC n) = do
   return $ Just $ case x of
     Just x' -> "CC" <> showt n <> " = " <> showt x'
     Nothing -> "CC" <> showt n <> " not set"
+doCommands _ _ Terminal.MaxAudioOutputs = liftAudioIO $ do
+  n <- maxChannelCount
+  return $ Just $ "maxAudioOutputs = " <> showt n
+doCommands _ _ Terminal.AudioOutputs = liftAudioIO $ do
+  n <- channelCount
+  return $ Just $ "audioOutputs = " <> showt n
+doCommands _ irc (Terminal.SetAudioOutputs n) = do
+  setAudioOutputs (mainBus irc) n
+  n' <- liftAudioIO $ channelCount
+  return $ Just $ "audioOutputs = " <> showt n'
 doCommands _ _ _ = return Nothing
 
 peerProtocolIdReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m (Event t Text)

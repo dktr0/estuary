@@ -6,6 +6,7 @@ import GHCJS.DOM.Types (JSVal)
 import Control.Monad.IO.Class (liftIO)
 import Control.Exception
 import Control.Monad
+import Control.Concurrent.MVar
 
 data DynamicsMode =
   DefaultDynamics | -- Gentle compression, with pre-compression levels reduced a bit, should be close to SuperDirt dynamics
@@ -47,7 +48,8 @@ data MainBus = MainBus {
   compressorPreGain :: Node,
   mainBusCompressor :: Node,
   compressorPostGain :: Node,
-  monitorInputGain :: Node
+  monitorInputGain :: Node,
+  audioOutputs :: MVar Int
   }
 
 initializeMainBus :: IO MainBus
@@ -73,6 +75,8 @@ initializeMainBus = liftAudioIO $ do
   connectNodes microphoneInput' monitorInputGain'
   connectNodes monitorInputGain' compressorPreGain'
   -- 3. create a MainBus record to keep track of nodes
+  audioOutputs' <- liftIO $ newMVar 2
+  setChannelCount 2
   let mb = MainBus {
     microphoneInput = microphoneInput',
     webDirtOutput = webDirtOutput',
@@ -82,7 +86,8 @@ initializeMainBus = liftAudioIO $ do
     compressorPreGain = compressorPreGain',
     mainBusCompressor = mainBusCompressor',
     compressorPostGain = compressorPostGain',
-    monitorInputGain = monitorInputGain'
+    monitorInputGain = monitorInputGain',
+    audioOutputs = audioOutputs'
     }
   -- 4. apply parameters/connections for dynamics mode and Punctual audio input mode
   liftIO $ changeDynamicsMode mb DefaultDynamics
@@ -179,3 +184,13 @@ changeMonitorInput mb Nothing = do
 changeMonitorInput mb (Just x) = do
   putStrLn $ "changing gain on input monitoring to " ++ show x ++ " dB"
   void $ liftAudioIO $ setValue (monitorInputGain mb) Gain (dbamp x)
+
+
+setAudioOutputs :: MainBus -> Int -> IO ()
+setAudioOutputs mb n = do
+  m <- liftAudioIO $ maxChannelCount
+  let n' = if n < 2 then 2 else n
+  let n'' = if n' > m then m else n'
+  liftAudioIO $ setChannelCount n''
+  takeMVar (audioOutputs mb)
+  putMVar (audioOutputs mb) n''
