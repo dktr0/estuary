@@ -55,7 +55,10 @@ data Command =
   ResetTempo |
   Reset | -- same effect as ResetZones + ResetTempo (doesn't reset views)
   SetCC Int Double | -- set a MIDI continuous-controller value (range of Double is 0-1)
-  ShowCC Int -- show a MIDI continuous-controller value in the terminal
+  ShowCC Int | -- show a MIDI continuous-controller value in the terminal
+  MaxAudioOutputs | -- query max number of audio output channels according to browser
+  SetAudioOutputs Int | -- attempt to set a specific number of audio output channels
+  AudioOutputs -- query current number of output audio channels
   deriving (Show,Eq)
 
 parseCommand :: T.Text -> Either (Span, Text) Command
@@ -101,6 +104,7 @@ terminalCommand =
   <|> resetParser
   <|> setCCParser
   <|> showCCParser
+  <|> audioOutputsEtcParsers
   <|> commandErrors
 
 commandErrors :: H Command
@@ -207,6 +211,14 @@ showCCParser :: H Command
 showCCParser =
   ((ShowCC <$ reserved "showCC") <*> int) <|>
   (reserved "showCC" >> fatal "Missing argument. !showCC expects an Int (channel).")
+
+
+audioOutputsEtcParsers :: H Command
+audioOutputsEtcParsers =
+  (MaxAudioOutputs <$ reserved "maxAudioOutputs") <|>
+  (AudioOutputs <$ reserved "audioOutputs") <|>
+  ((SetAudioOutputs <$ reserved "setAudioOutputs") <*> int) <|>
+  (reserved "setAudioOutputs" >> fatal "Missing argument. !setAudioOutputs expects an Int argument.")
 
 
 -- select a presetview
