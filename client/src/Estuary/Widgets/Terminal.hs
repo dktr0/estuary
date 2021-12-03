@@ -99,7 +99,7 @@ doCommands _ _ Terminal.AudioOutputs = liftAudioIO $ do
   n <- channelCount
   return $ Just $ "audioOutputs = " <> showt n
 doCommands _ irc (Terminal.SetAudioOutputs n) = do
-  setAudioOutputs (mainBus irc) n
+  setAudioOutputs (webDirt irc) (mainBus irc) n
   n' <- liftAudioIO $ channelCount
   return $ Just $ "audioOutputs = " <> showt n'
 doCommands _ _ _ = return Nothing

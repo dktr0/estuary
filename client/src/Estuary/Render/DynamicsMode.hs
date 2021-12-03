@@ -7,6 +7,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Exception
 import Control.Monad
 import Control.Concurrent.MVar
+import Estuary.Render.WebDirt
 
 data DynamicsMode =
   DefaultDynamics | -- Gentle compression, with pre-compression levels reduced a bit, should be close to SuperDirt dynamics
@@ -186,11 +187,12 @@ changeMonitorInput mb (Just x) = do
   void $ liftAudioIO $ setValue (monitorInputGain mb) Gain (dbamp x)
 
 
-setAudioOutputs :: MainBus -> Int -> IO ()
-setAudioOutputs mb n = do
+setAudioOutputs :: WebDirt -> MainBus -> Int -> IO ()
+setAudioOutputs wd mb n = do
   m <- liftAudioIO $ maxChannelCount
   let n' = if n < 2 then 2 else n
   let n'' = if n' > m then m else n'
   liftAudioIO $ setChannelCount n''
+  setWebDirtAudioOutputs wd n''
   takeMVar (audioOutputs mb)
   putMVar (audioOutputs mb) n''
