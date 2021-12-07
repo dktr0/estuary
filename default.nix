@@ -164,8 +164,8 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "punctual";
-           sha256 = "04jgrm0kqjmv5lzdrg9h6kap15ldmgy4jylg66s7lbg28g7dr5sk";
-           rev = "300345fb919c2a300a50105fa3e7b2663244a5d7";
+           sha256 = "0j14znpf9z7vb8z16s0zidzch2v37ikmd056j41d0xs8j2mmiwyg";
+           rev = "5b0a917b8f58dcf6233068e780e5ee059da4cbfb";
          }) {}));
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
@@ -210,8 +210,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "0z4a2snqy7m8apfb3dawjjzbbkwk6llaaykxgc1wd3001rgxxg1b";
-           rev = "fb6c02a31f96e460866731ee058fbadcecabd7b7";
+           sha256 = "0w04qg2jmjgrkxrjc9ddads606fvsbain9bf2k1d0spk41ckayyb";
+           rev = "3bc2dd4133843751a3ae4a3e88063d7d99f18f81";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
@@ -223,12 +223,12 @@ in
         }) {});
 
         seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
-          dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
+          doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "seis8s";
            sha256 = "0fyiiqya4rfq9h8q17rarv06vizd967jxc353kznadj93asi4his";
            rev = "a3f9ea35b9037df3f8405dc66c20b19f92b1a675";
-         }) {});
+         }) {}));
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [

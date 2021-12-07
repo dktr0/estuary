@@ -70,7 +70,7 @@ parseCommand s
 parseTerminalCommand ::  T.Text -> Either (Span, Text) Command
 parseTerminalCommand s
    |all C.isSpace (T.unpack s) = Left $ (((1,1), (1,1)) , "expected command after '!' ")
-   |otherwise = fmap fst $ parseAndRun terminalCommand () s
+   |otherwise = fmap fst $ parseAndRun terminalCommand () (T.unpack s)
 
 terminalCommand :: H Command
 terminalCommand =
