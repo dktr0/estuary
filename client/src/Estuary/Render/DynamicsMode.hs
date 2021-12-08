@@ -50,10 +50,13 @@ data MainBus = MainBus {
   mainBusInput :: MVar Node,
   mainBusDelay :: MVar Node,
   compressorPreGain :: MVar Node,
-  mainBusCompressor :: MVar Node,
+  compressorSplitter :: MVar Node,
+  compressors :: MVar [Node],
+  compressorMerger :: MVar Node,
   compressorPostGain :: MVar Node,
   monitorInputGain :: MVar Node,
-  audioOutputs :: MVar Int
+  audioOutputs :: MVar Int,
+  mainBusDynamicsMode :: MVar DynamicsMode
   }
 
 getWebDirtOutput :: MainBus -> IO Node
@@ -75,15 +78,15 @@ initializeMainBus = liftAudioIO $ do
   mainBusDelay' <- createDelay maxDelayTime
   setValue mainBusDelay' DelayTime 0
   compressorPreGain' <- createGain 1.0
-  mainBusCompressor' <- createCompressor (-20) 3 4 0.050 0.100
+  (compressorSplitter',compressors',compressorMerger') <- createCompressorFan 2
   compressorPostGain' <- createGain 1.0
   monitorInputGain' <- createGain 0
   dest <- createDestination
   -- 2. establish most connections between nodes (from mainBusInput onwards, before that is handled by changePunctualAudioInputMode later)
   connectNodes mainBusInput' mainBusDelay'
   connectNodes mainBusDelay' compressorPreGain'
-  connectNodes compressorPreGain' mainBusCompressor'
-  connectNodes mainBusCompressor' compressorPostGain'
+  connectNodes compressorPreGain' compressorSplitter'
+  connectNodes compressorMerger' compressorPostGain'
   connectNodes compressorPostGain' dest
   connectNodes microphoneInput' monitorInputGain'
   connectNodes monitorInputGain' compressorPreGain'
@@ -94,10 +97,13 @@ initializeMainBus = liftAudioIO $ do
   mainBusInput'' <- liftIO $ newMVar mainBusInput'
   mainBusDelay'' <- liftIO $ newMVar mainBusDelay'
   compressorPreGain'' <- liftIO $ newMVar compressorPreGain'
-  mainBusCompressor'' <- liftIO $ newMVar mainBusCompressor'
+  compressorSplitter'' <- liftIO $ newMVar compressorSplitter'
+  compressors'' <- liftIO $ newMVar compressors'
+  compressorMerger'' <- liftIO $ newMVar compressorMerger'
   compressorPostGain'' <- liftIO $ newMVar compressorPostGain'
   monitorInputGain'' <- liftIO $ newMVar monitorInputGain'
   audioOutputs' <- liftIO $ newMVar 2
+  dynamicsMode' <- liftIO $ newMVar DefaultDynamics
   setChannelCount 2
   let mb = MainBus {
     microphoneInput = microphoneInput'',
@@ -106,10 +112,13 @@ initializeMainBus = liftAudioIO $ do
     mainBusInput = mainBusInput'',
     mainBusDelay = mainBusDelay'',
     compressorPreGain = compressorPreGain'',
-    mainBusCompressor = mainBusCompressor'',
+    compressorSplitter = compressorSplitter'',
+    compressors = compressors'',
+    compressorMerger = compressorMerger'',
     compressorPostGain = compressorPostGain'',
     monitorInputGain = monitorInputGain'',
-    audioOutputs = audioOutputs'
+    audioOutputs = audioOutputs',
+    mainBusDynamicsMode = dynamicsMode'
     }
   -- 4. apply parameters/connections for dynamics mode and Punctual audio input mode
   liftIO $ changeDynamicsMode mb DefaultDynamics
@@ -125,56 +134,88 @@ exposeMainBus mb = do
   x2 <- readMVar $ mainBusInput mb
   x3 <- readMVar $ mainBusDelay mb
   x4 <- readMVar $ compressorPreGain mb
-  x5 <- readMVar $ mainBusCompressor mb
-  x6 <- readMVar $ compressorPostGain mb
-  _exposeMainBus x1 x2 x3 x4 x5 x6
+  x5 <- readMVar $ compressorPostGain mb
+  _exposeMainBus x1 x2 x3 x4 x5
 
 foreign import javascript unsafe
-  "webDirtOutput = $1; mainBusInput = $2; mainBusDelay = $3; compressorPreGain = $4; mainBusCompressor = $5; compressorPostGain = $6;"
-  _exposeMainBus :: Node -> Node -> Node -> Node -> Node -> Node -> IO ()
+  "webDirtOutput = $1; mainBusInput = $2; mainBusDelay = $3; compressorPreGain = $4; compressorPostGain = $5;"
+  _exposeMainBus :: Node -> Node -> Node -> Node -> Node -> IO ()
 
+
+createCompressorFan :: AudioIO m => Int -> m (Node,[Node],Node)
+createCompressorFan nChnls = do
+  splitter <- createChannelSplitter nChnls
+  merger <- createChannelMerger nChnls
+  comps <- sequence $ (flip fmap) [0..(nChnls-1)] $ \n -> do
+    c <- createCompressor (-20) 3 4 0.050 0.100
+    connectNodes' splitter n c 0
+    connectNodes' c 0 merger n
+    return c
+  return (splitter,comps,merger)
+
+disconnectCompressorFan :: Node -> [Node] -> Node -> IO ()
+disconnectCompressorFan splitter comps merger = mapM_ disconnectAll $ splitter : merger : comps
+
+recreateCompressorFan :: MainBus -> Int -> IO ()
+recreateCompressorFan mb nChnls = do
+  -- disconnect previous compressor splitter, fan, and merger
+  splitter <- readMVar $ compressorSplitter mb
+  comps <- readMVar $ compressors mb
+  merger <- readMVar $ compressorMerger mb
+  disconnectCompressorFan splitter comps merger
+  -- create new compressor splitter, fan, and merger for given number of channels
+  (newSplitter,newComps,newMerger) <- liftAudioIO $ createCompressorFan nChnls
+  swapMVar (compressorSplitter mb) newSplitter
+  swapMVar (compressors mb) newComps
+  swapMVar (compressorMerger mb) newMerger
+  -- connect new splitter and merger to rest of output system
+  compressorPreGain' <- readMVar $ compressorPreGain mb
+  compressorPostGain' <- readMVar $ compressorPostGain mb
+  connectNodes compressorPreGain' newSplitter
+  connectNodes newMerger compressorPostGain'
+  -- set dynamics mode to stored value
+  dynMode <- readMVar (mainBusDynamicsMode mb)
+  changeDynamicsMode mb dynMode
+
+setValueCompressorFan :: AudioIO m => MVar [Node] -> Double -> Double -> Double -> Double -> Double -> m ()
+setValueCompressorFan mv thr knee ratio att rel = do
+  nodes <- liftIO $ readMVar mv
+  forM_ nodes $ \n -> do
+    setValue n Threshold thr
+    setValue n Knee knee
+    setValue n CompressionRatio ratio
+    setValue n Attack att
+    setValue n Release rel
 
 changeDynamicsMode :: MainBus -> DynamicsMode -> IO ()
 changeDynamicsMode mb DefaultDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to default dynamics"
   preGain <- liftIO $ readMVar $ compressorPreGain mb
-  comp <- liftIO $ readMVar $ mainBusCompressor mb
   postGain <- liftIO $ readMVar $ compressorPostGain mb
   setValue preGain Gain (dbamp (-10))
-  setValue comp Threshold (-20)
-  setValue comp Knee 3
-  setValue comp CompressionRatio 2
-  setValue comp Attack 0.050
-  setValue comp Release 0.100
+  setValueCompressorFan (compressors mb) (-20) 3 2 0.050 0.1
   setValue postGain Gain 1.0
+  liftIO $ swapMVar (mainBusDynamicsMode mb) DefaultDynamics
   return ()
 
 changeDynamicsMode mb LoudDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to loud dynamics"
   preGain <- liftIO $ readMVar $ compressorPreGain mb
-  comp <- liftIO $ readMVar $ mainBusCompressor mb
   postGain <- liftIO $ readMVar $ compressorPostGain mb
   setValue preGain Gain 1.0
-  setValue comp Threshold (-10)
-  setValue comp Knee 3
-  setValue comp CompressionRatio 4
-  setValue comp Attack 0.050
-  setValue comp Release 0.100
+  setValueCompressorFan (compressors mb) (-10) 3 4 0.050 0.1
   setValue postGain Gain 1.0
+  liftIO $ swapMVar (mainBusDynamicsMode mb) LoudDynamics
   return ()
 
 changeDynamicsMode mb WideDynamics = liftAudioIO $ do
   liftIO $ putStrLn "changing to wide dynamics"
   preGain <- liftIO $ readMVar $ compressorPreGain mb
-  comp <- liftIO $ readMVar $ mainBusCompressor mb
   postGain <- liftIO $ readMVar $ compressorPostGain mb
   setValue preGain Gain 1.0
-  setValue comp Threshold 0.0
-  setValue comp Knee 0.0
-  setValue comp CompressionRatio 1.0
-  setValue comp Attack 0.050
-  setValue comp Release 0.100
+  setValueCompressorFan (compressors mb) 0 0 1 0.050 0.1
   setValue postGain Gain (dbamp (-20))
+  liftIO $ swapMVar (mainBusDynamicsMode mb) WideDynamics
   return ()
 
 
@@ -254,8 +295,8 @@ setAudioOutputs wd mb n = do
   setNodeChannelCount (mainBusInput mb) n''
   setNodeChannelCount (mainBusDelay mb) n''
   setNodeChannelCount (compressorPreGain mb) n''
-  -- setNodeChannelCount (mainBusCompressor mb) n''
   setNodeChannelCount (compressorPostGain mb) n''
+  recreateCompressorFan mb n''
   takeMVar (audioOutputs mb)
   putMVar (audioOutputs mb) n''
 
