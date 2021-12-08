@@ -117,7 +117,7 @@ viewWidget _ AudioMapView = do
   return never
 
 viewWidget _ (IFrame url) = do
-  let attrs = Map.fromList [("src",url), ("style","height:100%")]
+  let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
   elAttr "iframe" attrs $ return ()
   return never
 

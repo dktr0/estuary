@@ -547,8 +547,8 @@ punctualProgramChanged :: ImmutableRenderContext -> Context -> Int -> Punctual.P
 punctualProgramChanged irc c z p = do
   s <- get
   -- A. update PunctualW (audio state) in response to new, syntactically correct program
-  let pIn = punctualInput $ mainBus irc
-  let pOut = mainBusInput $ mainBus irc
+  pIn <- liftIO $ getPunctualInput $ mainBus irc
+  pOut <- liftIO $ getMainBusInput $ mainBus irc
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
   let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac pIn pOut 2 (Punctual.evalTime p)) z (punctuals s)
@@ -643,8 +643,8 @@ forkRenderThreads :: ImmutableRenderContext -> MVar Context -> HTMLCanvasElement
 forkRenderThreads irc ctxM cvsElement glCtx hCanvas riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
-  let pIn = punctualInput $ mainBus irc
-  let pOut = mainBusInput $ mainBus irc
+  pIn <- getPunctualInput $ mainBus irc
+  pOut <- getMainBusInput $ mainBus irc
   irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio
   rsM <- newMVar irs
   void $ forkIO $ mainRenderThread irc ctxM riM rsM

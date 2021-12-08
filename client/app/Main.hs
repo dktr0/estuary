@@ -52,7 +52,8 @@ main = do
   addWorklets ac
 
   mb <- initializeMainBus
-  wd <- liftAudioIO $ newWebDirt (webDirtOutput mb)
+  wdOutput <- getWebDirtOutput mb
+  wd <- liftAudioIO $ newWebDirt wdOutput
   initializeWebAudio wd
   sd <- newSuperDirt
   resources' <- newResources
