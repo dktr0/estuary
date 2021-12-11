@@ -68,6 +68,9 @@ getPunctualInput mb = readMVar $ punctualInput mb
 getMainBusInput :: MainBus -> IO Node
 getMainBusInput mb = readMVar $ mainBusInput mb
 
+getAudioOutputs :: MainBus -> IO Int
+getAudioOutputs mb = readMVar $ audioOutputs mb
+
 initializeMainBus :: IO MainBus
 initializeMainBus = liftAudioIO $ do
   -- 1. create web audio nodes

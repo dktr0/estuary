@@ -551,7 +551,8 @@ punctualProgramChanged irc c z p = do
   pOut <- liftIO $ getMainBusInput $ mainBus irc
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
-  let prevPunctualW = findWithDefault (Punctual.emptyPunctualW ac pIn pOut 2 (Punctual.evalTime p)) z (punctuals s)
+  nchnls <- liftIO $ getAudioOutputs $ mainBus irc
+  let prevPunctualW = Punctual.setPunctualWChannels nchnls $ findWithDefault (Punctual.emptyPunctualW ac pIn pOut nchnls (Punctual.evalTime p)) z (punctuals s)
   let tempo' = tempo $ ensemble $ ensembleC c
   let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ origin tempo'
   let cps' = freq tempo'

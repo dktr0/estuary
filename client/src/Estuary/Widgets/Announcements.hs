@@ -21,6 +21,9 @@ import Estuary.Widgets.W
 
 compiledAnnouncements :: Map Day [TranslatableText]
 compiledAnnouncements = fromList [
+  (read "2021-12-11",[ fromList [
+    (English,"Estuary now supports multichannel audio output. Use !maxAudioOutputs at the terminal to query channels available in the browser, !audioOutputs to query currently used channels, and !setAudioOutputs [someNumber] to switch to a specific number of audio outputs.")
+    ]]),
   (read "2021-11-18",[ fromList [
     (English,"Estuary now uses version 1.7.8 of Tidal, and MiniTidal now supports stutter, quantise, rangex, wedge, timeCat/timecat, chunk', lindenmayer, step, step', steps, spreadf, spreadChoose/spreadr, selectF, striateBy, perlinWith, perlin2, perlin2With, <>, and stutWith")
     ]]),
