@@ -224,10 +224,10 @@ in
 
         seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
           dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
-           owner = "luisnavarrodelangel";
-           repo = "seis8s";
-           sha256 = "0fyiiqya4rfq9h8q17rarv06vizd967jxc353kznadj93asi4his";
-           rev = "a3f9ea35b9037df3f8405dc66c20b19f92b1a675";
+          owner = "luisnavarrodelangel";
+          repo = "seis8s";
+          sha256 = "0fyiiqya4rfq9h8q17rarv06vizd967jxc353kznadj93asi4his";
+          rev = "a3f9ea35b9037df3f8405dc66c20b19f92b1a675";
          }) {});
       };
     in

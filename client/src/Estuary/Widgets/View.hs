@@ -85,7 +85,11 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
 
-viewWidget er (RehearsalTimeView z) = zoneWidget z ("some details", ZonedTime (fromGregorian 2021 05 27) (timeOfDayToTime (TimeOfDay 15 30 0.5))) maybeRehearsalTime RehearsalTime er rehearsalSchedulerWidget
+viewWidget er (RehearsalTimeView z) = do
+  today <- liftIO getZonedTime
+  zoneWidget z ("add details of your rehearsal", today) maybeRehearsalTime RehearsalTime er rehearsalTimeWidget
+
+  -- zoneWidget z ("some details", (ZonedTime (LocalTime (fromGregorian 2021 05 27) (TimeOfDay 15 30 0.5)) (TimeZone (-4) True "EDT"))) maybeRehearsalTime RehearsalTime er rehearsalTimeWidget
 
 viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget
 

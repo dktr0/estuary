@@ -1620,10 +1620,126 @@ padding-right: 0.5%;
 box-shadow: inset 0 0 3px var(--primary-color);
 }
 
-.schedulerContainer{
+
+
+/* rehearsal widget */
+
+.selectYear, .selectMonth {
+  display: flex;
+  margin: auto;
+}
+
+.monthAndYear {
+  display: flex;
+}
+
+.dayNumbers {
+	width: 20vw;
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+
+}
+
+.dayNumbers div {
+	border: none;
+    box-shadow: inset 0 0 1px var(--primary-color);
+    border-radius: 5px;
+}
+
+
+
+.rehearsalTimeWidget {
+	display:flex;
+	flex-wrap: wrap;
+}
+
+
+.descriptionWidget {
+    width: 100%;
+}
+
+
+.descriptionWidgetInput {
+    width: 100%;
+    box-sizing:border-box;
+    color: var(--primary-color);
+    border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+    border-radius: 5px;
+}
+
+.thisComputerLocalTimeWidget {
+	width: 100%;
+
+}
+.dateWidget {
+	    cursor: pointer;
+        z-index: 999;
+}
+
+.calendarContainer {
+	text-align:center;
+	border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+    border-radius: 5px;
+}
+
+.calendarContainer th {
+	width: 80px;
+}
+.timeWidget {
+	width: 10%;
+}
+
+.zoneWidget {
+	width: 60%;
+
+}
+
+.timeWidgetInput {
+	width: 30%;
+	color: var(--primary-color);
+    border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+    border-radius: 5px;
+}
+
+.timeWidget input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.selectedDate {
+    border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+    border-radius: 5px;
+    padding: 1px;
+/*     padding-left: 2px; */
+/*     padding-right: 6px; */
+    margin-right: 0.1em;
+
+ }
+
+.confirm-close-buttons {
 	display: flex;
 }
 
-.calendarContainerAttrs {
-	height: 100%;
+.confirm-close-buttons div {
+	width: 50%;
+	}
+
+.dateLabel:hover {
+	background-color: var(--secondary-color)
 }
+
+.dateLabel:active {
+    background-color:var(--primary-color);
+    color: var(--background-color);
+}
+
+.timeZoneWidget {
+	display:flex;
+	flex-wrap: wrap;
+	margin-right: 1.5em;
+	}
