@@ -33,8 +33,12 @@ data View =
   TempoView |
   RouletteView Int Int |
   AudioMapView |
+  CountDownView Int |
+  SandClockView Int |
   StopWatchView Int |
-  StopWatchExplorationsView Int |
+  SeeTimeView Int |
+  NotePadView Int |
+  IFrame Text | -- embedded web page
   RehearsalTimeView Int
 
   deriving (Show,Eq,Generic)

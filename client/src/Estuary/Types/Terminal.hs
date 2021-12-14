@@ -53,7 +53,12 @@ data Command =
   ResetZones |
   ResetViews |
   ResetTempo |
-  Reset -- same effect as ResetZones + ResetTempo (doesn't reset views)
+  Reset | -- same effect as ResetZones + ResetTempo (doesn't reset views)
+  SetCC Int Double | -- set a MIDI continuous-controller value (range of Double is 0-1)
+  ShowCC Int | -- show a MIDI continuous-controller value in the terminal
+  MaxAudioOutputs | -- query max number of audio output channels according to browser
+  SetAudioOutputs Int | -- attempt to set a specific number of audio output channels
+  AudioOutputs -- query current number of output audio channels
   deriving (Show,Eq)
 
 parseCommand :: T.Text -> Either (Span, Text) Command
@@ -65,7 +70,7 @@ parseCommand s
 parseTerminalCommand ::  T.Text -> Either (Span, Text) Command
 parseTerminalCommand s
    |all C.isSpace (T.unpack s) = Left $ (((1,1), (1,1)) , "expected command after '!' ")
-   |otherwise = fmap fst $ parseAndRun terminalCommand () s
+   |otherwise = fmap fst $ parseAndRun terminalCommand () (T.unpack s)
 
 terminalCommand :: H Command
 terminalCommand =
@@ -97,6 +102,9 @@ terminalCommand =
   <|> resetviewsParser
   <|> resettempoParser
   <|> resetParser
+  <|> setCCParser
+  <|> showCCParser
+  <|> audioOutputsEtcParsers
   <|> commandErrors
 
 commandErrors :: H Command
@@ -182,33 +190,36 @@ wrongCommandNoArg = do
     fatal $ "!" <> x <> " is an unrecognised command."
 
 
--- reset zones
 resetzonesParser :: H Command
-resetzonesParser = resetzonesFunc <$ (reserved "resetzones")
+resetzonesParser = ResetZones <$ (reserved "resetzones")
 
-resetzonesFunc :: Command
-resetzonesFunc = ResetZones
-
---  reset views
 resetviewsParser :: H Command
-resetviewsParser = resetviewsFunc <$ (reserved "resetviews")
+resetviewsParser = ResetViews <$ (reserved "resetviews")
 
-resetviewsFunc :: Command
-resetviewsFunc = ResetViews
-
--- reset tempo
 resettempoParser :: H Command
-resettempoParser = resettempoFunc <$ (reserved "resettempo")
+resettempoParser = ResetTempo <$ (reserved "resettempo")
 
-resettempoFunc :: Command
-resettempoFunc = ResetTempo
-
--- reset
 resetParser :: H Command
-resetParser = resetFunc <$ (reserved "reset")
+resetParser = Reset <$ (reserved "reset")
 
-resetFunc :: Command
-resetFunc = Reset
+setCCParser :: H Command
+setCCParser =
+  ((SetCC <$ reserved "setCC") <*> int <*> double) <|>
+  (reserved "setCC" >> fatal "Missing arguments. !setCC expects an Int (channel) and Double (value).")
+
+showCCParser :: H Command
+showCCParser =
+  ((ShowCC <$ reserved "showCC") <*> int) <|>
+  (reserved "showCC" >> fatal "Missing argument. !showCC expects an Int (channel).")
+
+
+audioOutputsEtcParsers :: H Command
+audioOutputsEtcParsers =
+  (MaxAudioOutputs <$ reserved "maxAudioOutputs") <|>
+  (AudioOutputs <$ reserved "audioOutputs") <|>
+  ((SetAudioOutputs <$ reserved "setAudioOutputs") <*> int) <|>
+  (reserved "setAudioOutputs" >> fatal "Missing argument. !setAudioOutputs expects an Int argument.")
+
 
 -- select a presetview
 presetView :: H Command
@@ -216,10 +227,7 @@ presetView = (presetView' <*!> (textLiteral  <|> identifierText)) <|>
              (reserved "presetview" >> fatal "Missing argument. !presetview expects a view name.")
 
 presetView' :: H (Text -> Command)
-presetView' = presetViewFunc <$ reserved "presetview"
-
-presetViewFunc :: Text -> Command
-presetViewFunc x = PresetView x
+presetView' = PresetView <$ reserved "presetview"
 
   -- publish a view
 publishView :: H Command
@@ -236,17 +244,11 @@ publishViewFunc x
 
 -- publishdefaultview
 publishDefaultView :: H Command
-publishDefaultView = (publishDefaultViewFunc <$ reserved "publishdefaultview")
-
-publishDefaultViewFunc :: Command
-publishDefaultViewFunc = PublishView "def"
+publishDefaultView = (PublishView "def" <$ reserved "publishdefaultview")
 
 -- print the active view
 activeView :: H Command
-activeView = activeViewFunc <$ reserved  "activeview"
-
-activeViewFunc :: Command
-activeViewFunc = ActiveView
+activeView = ActiveView <$ reserved  "activeview"
 
 -- select a local view
 localView :: H Command
@@ -254,50 +256,32 @@ localView = (localView' <*!> viewParser) <|>
             (reserved "localview" >> fatal "Missing argument. !localview expects a view definition.")
 
 localView' :: H (View -> Command)
-localView' = localViewFunc <$ reserved "localview"
-
-localViewFunc :: View -> Command
-localViewFunc vx = LocalView vx
+localView' = LocalView <$ reserved "localview"
 
 -- print a list of the views
 listViews :: H Command
-listViews = listViewsFunc <$ reserved "listviews"
-
-listViewsFunc :: Command
-listViewsFunc = ListViews
+listViews = ListViews <$ reserved "listviews"
 
 -- dump view
 dumpViewParser :: H Command
-dumpViewParser = dumpViewFunc <$ reserved "dumpview"
-
-dumpViewFunc :: Command
-dumpViewFunc = DumpView
+dumpViewParser = DumpView <$ reserved "dumpview"
 
 -- start streaming
 startStreaming :: H Command
-startStreaming = startStreamingFunc <$ reserved "startstreaming"
-
-startStreamingFunc :: Command
-startStreamingFunc = StartStreaming
+startStreaming = StartStreaming <$ reserved "startstreaming"
 
 --  streamId
 streamId :: H Command
-streamId = streamIdFunc <$ reserved "streamid"
-
-streamIdFunc :: Command
-streamIdFunc = StreamId
+streamId = StreamId <$ reserved "streamid"
 
 -- delay
 delay :: H Command
 delay = (delay' <*!> double) <|>
         (reserved "delay" >> fatal "Missing argument. !delay expects delay time (i.e. double).")
 
-
 delay' :: H (Double -> Command)
-delay' = delayFunc <$ reserved "delay"
+delay' = Delay <$ reserved "delay"
 
-delayFunc :: Double -> Command
-delayFunc x = Delay x
 
 
 -- monitorInput
@@ -325,10 +309,7 @@ deletethisensembleParser = (deletethisensembleParser' <*!> nameOrPassword) <|>
 
 
 deletethisensembleParser' :: H (Text -> Command)
-deletethisensembleParser' = deletethisensembleFunc <$ reserved "deletethisensemble"
-
-deletethisensembleFunc :: Text -> Command
-deletethisensembleFunc x =  DeleteThisEnsemble x
+deletethisensembleParser' = DeleteThisEnsemble <$ reserved "deletethisensemble"
 
 -- delete ensemble
 deleteensembleParser :: H Command
@@ -339,24 +320,15 @@ deleteensembleParser' :: H (Text -> Command)
 deleteensembleParser' = deleteensembleParser'' <*> nameOrPassword
 
 deleteensembleParser'' :: H (Text -> Text -> Command)
-deleteensembleParser'' = deleteensembleFunc <$ reserved "deleteensemble"
-
-deleteensembleFunc :: Text -> Text ->  Command
-deleteensembleFunc x y =  DeleteEnsemble x y
+deleteensembleParser'' = DeleteEnsemble <$ reserved "deleteensemble"
 
 -- ancient tempo
 ancientTempoParser :: H Command
-ancientTempoParser = ancientTempoFunc <$ reserved "ancienttempo"
-
-ancientTempoFunc :: Command
-ancientTempoFunc = AncientTempo
+ancientTempoParser = AncientTempo <$ reserved "ancienttempo"
 
  -- ancient tempo
 showTempoParser :: H Command
-showTempoParser = showTempoFunc <$ reserved "showtempo"
-
-showTempoFunc :: Command
-showTempoFunc = ShowTempo
+showTempoParser = ShowTempo <$ reserved "showtempo"
 
 -- set cps
 setCPSParser :: H Command
@@ -364,10 +336,8 @@ setCPSParser = (setCPSParser' <*!> double) <|>
    (reserved "setcps" >> fatal "Missing argument. !setcps expects a number.")
 
 setCPSParser' :: H (Double -> Command)
-setCPSParser' = setCPSFunc <$ reserved "setcps"
+setCPSParser' = SetCPS <$ reserved "setcps"
 
-setCPSFunc :: Double -> Command
-setCPSFunc x = SetCPS x
 
 --  set bpm
 
@@ -375,12 +345,9 @@ setBPMParser :: H Command
 setBPMParser = (setBPMParser' <*!> double) <|>
   (reserved "setbpm" >> fatal "Missing argument. !setbpm expects a number.")
 
-
 setBPMParser' :: H (Double -> Command)
-setBPMParser' = setBPMFunc <$ reserved "setbpm"
+setBPMParser' = SetBPM <$ reserved "setbpm"
 
-setBPMFunc :: Double -> Command
-setBPMFunc x = SetBPM x
 
 -- insert audio resource
 insertAudioResourceParser :: H Command

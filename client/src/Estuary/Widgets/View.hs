@@ -12,6 +12,7 @@ import Control.Monad.IO.Class
 import Data.Maybe
 import TextShow
 import Data.Time
+import qualified Data.Sequence as Seq
 
 import Estuary.Types.Live
 import Estuary.Types.Definition
@@ -23,6 +24,7 @@ import Estuary.Tidal.Types (TransformedPattern(..))
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
 import Estuary.Types.RenderInfo
+import Estuary.Types.Tempo
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Text
@@ -35,9 +37,10 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
-import Estuary.Widgets.StopWatch
 import Estuary.Widgets.StopWatchExplorations
+import Estuary.Widgets.Notepad
 import Estuary.Widgets.Scheduler
+
 
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
@@ -89,11 +92,17 @@ viewWidget er (RehearsalTimeView z) = do
   today <- liftIO getZonedTime
   zoneWidget z ("add details of your rehearsal", today) maybeRehearsalTime RehearsalTime er rehearsalTimeWidget
 
-  -- zoneWidget z ("some details", (ZonedTime (LocalTime (fromGregorian 2021 05 27) (TimeOfDay 15 30 0.5)) (TimeZone (-4) True "EDT"))) maybeRehearsalTime RehearsalTime er rehearsalTimeWidget
+viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 
-viewWidget er (StopWatchView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget
+viewWidget er (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er sandClockWidget
 
-viewWidget er (StopWatchExplorationsView z) = zoneWidget z (Left Nothing) maybeStopWatch StopWatch er stopWatchWidget'
+viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch er stopWatchWidget
+
+viewWidget er (SeeTimeView z) = do
+  ahorita <- liftIO $ getCurrentTime
+  zoneWidget z (Tempo {freq= 0.5, time=ahorita, Estuary.Types.Tempo.count=0}) maybeSeeTime SeeTime er visualiseTempoWidget
+
+viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("","")]) maybeNotePad NotePad er notePadWidget
 
 viewWidget er TempoView = do
   ctx <- context
@@ -111,6 +120,11 @@ viewWidget _ (Example n t) = do
 
 viewWidget _ AudioMapView = do
   audioMapWidget
+  return never
+
+viewWidget _ (IFrame url) = do
+  let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
+  elAttr "iframe" attrs $ return ()
   return never
 
 zoneWidget :: (MonadWidget t m, Eq a)

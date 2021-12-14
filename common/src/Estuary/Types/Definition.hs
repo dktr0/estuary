@@ -9,18 +9,41 @@ import Data.Text (Text)
 import GHC.Generics
 import Data.Aeson
 import Data.Time
+import Data.Sequence
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
+import Estuary.Types.Tempo
 import Estuary.Types.ZonedTime
 
 type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
-type StopWatch = Either (Maybe NominalDiffTime) UTCTime
 type RehearsalTime = (Text, ZonedTime)
+
+type NotePad = (Int,Seq NotePage)
+type NotePage = (Text,Text)
+
+data TimerDownState =
+  Holding Int |  -- target
+  Falling Int UTCTime -- target and start time
+  deriving (Eq,Show,Generic)
+
+data TimerUpState =
+  Cleared |
+  Running UTCTime |
+  Stopped NominalDiffTime
+  deriving (Eq, Show, Generic)
+
+instance ToJSON TimerUpState where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON TimerUpState
+
+instance ToJSON TimerDownState where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON TimerDownState
 
 data Definition =
   TextProgram (Live TextProgram) |
@@ -28,9 +51,12 @@ data Definition =
   TidalStructure TransformedPattern |
   LabelText Text |
   Roulette Roulette |
-  StopWatch StopWatch |
+  CountDown TimerDownState |
+  SandClock TimerDownState |
+  StopWatch TimerUpState |
+  SeeTime Tempo |
+  NotePad NotePad |
   RehearsalTime RehearsalTime
-
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -49,7 +75,11 @@ definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
 definitionForRendering (RehearsalTime x) = RehearsalTime x
-
+definitionForRendering (CountDown x) = CountDown x
+definitionForRendering (SandClock x) = SandClock x
+definitionForRendering (StopWatch x) = StopWatch x
+definitionForRendering (SeeTime x) = SeeTime x
+definitionForRendering (NotePad x) = NotePad x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -86,13 +116,26 @@ maybeRoulette _ = Nothing
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
 
-maybeStopWatch :: Definition -> Maybe StopWatch
-maybeStopWatch (StopWatch x) = Just x
-maybeStopWatch _ = Nothing
-
 maybeRehearsalTime :: Definition -> Maybe RehearsalTime
 maybeRehearsalTime (RehearsalTime x) = Just x
 maybeRehearsalTime _ = Nothing
 
 justRehearsalTime :: [Definition] -> [RehearsalTime]
 justRehearsalTime = mapMaybe maybeRehearsalTime
+
+maybeTimerUpState:: Definition -> Maybe TimerUpState
+maybeTimerUpState (StopWatch x) = Just x
+maybeTimerUpState _ = Nothing
+
+maybeTimerDownState:: Definition -> Maybe TimerDownState
+maybeTimerDownState (CountDown x) = Just x
+maybeTimerDownState (SandClock x) = Just x
+maybeTimerDownState _ = Nothing
+
+maybeSeeTime:: Definition -> Maybe Tempo
+maybeSeeTime (SeeTime x) = Just x
+maybeSeeTime _ = Nothing
+
+maybeNotePad :: Definition -> Maybe NotePad
+maybeNotePad (NotePad x) = Just x
+maybeNotePad _ = Nothing

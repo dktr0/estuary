@@ -224,5 +224,25 @@ presetViews = fromList [
       ("roulette",GridView 2 1 [
         BorderDiv [RouletteView 0 2, CodeView 1 0],
         BorderDiv [RouletteView 2 2, CodeView 3 0]
-        ])
+        ]),
+
+      ("tempoAndCode", GridView 2 1  [
+      BorderDiv [LabelView 0,CodeView 1 0],
+      BorderDiv [SeeTimeView 0]
+      ]),
+
+      ("sandClockAndCode", GridView 2 1  [
+      BorderDiv [LabelView 0,CodeView 1 0],
+      BorderDiv [SandClockView 0]
+      ]),
+
+      ("countDownAndCode", GridView 2 1  [
+      BorderDiv [LabelView 0,CodeView 1 0],
+      BorderDiv [CountDownView 0]
+      ]),
+
+      ("stopWatchDownAndCode", GridView 2 1  [
+      BorderDiv [LabelView 0,CodeView 1 0],
+      BorderDiv [CountDownView 0]
+      ])
       ]

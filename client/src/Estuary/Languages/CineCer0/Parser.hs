@@ -9,43 +9,33 @@ import Data.Bifunctor
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes)
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
+import Data.Char (isSpace)
 
 import Estuary.Languages.CineCer0.VideoSpec
 import Estuary.Languages.CineCer0.Spec
 import Estuary.Languages.CineCer0.Signal
 
+
 type H = Haskellish ()
 
 cineCer0 :: UTCTime -> String -> Either String Spec
-cineCer0 eTime x = do
-  let sourceAsList = "[" ++ (intercalate "," $ fmap (++ " _0") $ splitOn ";" x) ++ "\n]"
-  sourceAsExp <- case parseExp sourceAsList of
-    ParseFailed l e -> Left e
-    ParseOk e -> Right e
-  (theSpec,_) <- runHaskellish (spec eTime) () sourceAsExp
-  return theSpec
-
--- borrowing a trick from Punctual to resolve an issue with comments and newlines...
--- the "redundant" argument _0 applied to something just yields that same thing
-_0Arg :: H a -> H a
-_0Arg p = p <|> fmap fst (functionApplication p $ reserved "_0")
+cineCer0 eTime x = bimap formatErr fst $ parseAndRun (spec eTime) () $ "[" ++ intercalate "," x'' ++ "\n]"
+  where
+    x' = splitOn ";" $ removeComments x
+    x'' = Prelude.filter (\y -> length (dropWhile isSpace y) > 0) x'
+    formatErr (s,t) = show s ++ " " ++ unpack t
 
 spec :: UTCTime -> H Spec
 spec eTime = do
-  os <- fmap (fromList . zip [0..] . catMaybes) $ list maybeLayerSpec
+  os <- fmap (fromList . zip [0..]) $ list layerSpec
   return $ Spec {
     evalTime = eTime,
     layerSpecMap = os
   }
 
-maybeLayerSpec :: H (Maybe LayerSpec)
-maybeLayerSpec = _0Arg $
-  (Just <$> layerSpec) <|>
-  Nothing <$ reserved "_0"
-
 layerSpec :: H LayerSpec
-layerSpec = _0Arg $
+layerSpec =
   (vs_vs <*> layerSpec) <|>
   fmap videoToLayerSpec text <|>
   (layerSpecFunc <*> text)
@@ -138,12 +128,14 @@ sigRat_sigRat =
 
 sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational)
 sigRat_sigRat_sigRat =
-  reserved "*" >> return multi <|>
-  sigRat_sigRat_sigRat_sigRat <*> sigRat
+ -- reserved "por" >> return multi <|>
+  (multi <$ reserved "*") <|>
+  (sigRat_sigRat_sigRat_sigRat <*> sigRat)
 
 
 sigRat_sigRat_sigRat_sigRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal Rational)
 sigRat_sigRat_sigRat_sigRat =
+ -- reserved "range" >> return range
   range <$ reserved "range"
 
 --  maybe sine
@@ -158,12 +150,14 @@ sigRat_sigMayRat =
 
 sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal (Maybe Rational))
 sigRat_sigRat_sigMayRat =
-  reserved "*" >> return multi' <|>
-  sigRat_sigRat_sigRat_sigMayRat <*> sigRat
+  (multi' <$ reserved "*") <|>
+--  reserved "por" >> return multi' <|>
+  (sigRat_sigRat_sigRat_sigMayRat <*> sigRat)
 
 sigRat_sigRat_sigRat_sigMayRat:: H (Signal Rational -> Signal Rational -> Signal Rational -> Signal (Maybe Rational))
 sigRat_sigRat_sigRat_sigMayRat =
-  rangeMaybe <$ reserved "range"
+ -- reserved "range" >> return rangeMaybe
+   rangeMaybe <$ reserved "range"
 
 
 -- //////////////
@@ -257,7 +251,7 @@ rat_vs_vs =
  playNatural <$ reserved "natural" <|>
  playSnap <$ reserved "snap" <|>
  playSnapMetre <$ reserved "snapMetre" <|>
- playRate <$ reserved "rate" <|>
+ -- playRate <$ reserved "rate" <|>
  rat_rat_vs_vs <*> rationalOrInteger -- <|>
  -- ndt_rat_vs_vs <*> ndt
 

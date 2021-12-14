@@ -11,6 +11,7 @@ import GHCJS.DOM.Blob
 import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
 import Data.Text (Text)
 import qualified Data.Text as T
+import TextShow
 
 import Estuary.Types.TranslatableText
 import Estuary.Tidal.Types
@@ -24,16 +25,32 @@ import Estuary.Types.EnsembleC
 import Estuary.Render.DynamicsMode
 import Estuary.Resources
 import Estuary.Protocol.Peer
-import Sound.MusicW (Node)
+import Sound.MusicW (Node,AudioContext)
 import Sound.Punctual.GL (GLContext)
 import qualified Sound.Punctual.Resolution as Punctual
+
+
+type CCMap = MVar (Map Text Double)
+
+newCCMap :: IO CCMap
+newCCMap = newMVar Map.empty
+
+setCC :: Int -> Double -> ImmutableRenderContext -> IO ()
+setCC n v irc = modifyMVar_ (ccMap irc) $ \m -> return $ Map.insert (showt n) v m
+
+getCC :: Int -> ImmutableRenderContext -> IO (Maybe Double)
+getCC n irc = do
+  m <- readMVar $ ccMap irc
+  return $ Map.lookup (showt n) m
+
 
 -- things the render engine needs, but the UI doesn't need, and which never change
 data ImmutableRenderContext = ImmutableRenderContext {
   mainBus :: MainBus,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
-  resources :: Resources
+  resources :: Resources,
+  ccMap :: CCMap
   }
 
 data Context = Context {

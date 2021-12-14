@@ -130,13 +130,13 @@ funcionsCineCer0 = el "div" $ do
     ])
   --quant
   el "ul" $ do
-    el "li" $ elClass "div" "ieRef" $ text "quant 4 0 $ hsv 0.33 0.1 1 $ font \"Times New Romans\" $ size 5 $ text \"Ayer: hoy & mañana –de repente\""
+    el "li" $ elClass "div" "ieRef" $ text "quant 4 0 $ hsv (ramp 0.5 0 0.66) 0.5 0.6 $ font \"Times New Romans\" $ size 5 $ text \"Ayer: hoy & mañana –de repente\" -- in the next beat multiple of 4 the change will take place, test it with this miniTidal code: every 4 (#speed \"-0.5\") $ s \"cp\"" 
   --ramp
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "setSize (ramp 3 0 0.5) $ video \"videos/hogweed.mov\""
   --fadeIn and fadeOut
   el "ul" $ do
-    el "li" $ elClass "div" "ieRef" $ text "size 0.5 $ opacity (0.5 * (fadeIn 2)) $ video \"videos/hogweed.mov\" -- change fadeIn for fadeOut :) "
+    el "li" $ elClass "div" "ieRef" $ text "size 0.5 $ opacity (0.75 * (fadeIn 1)) $ video \"v.mp4\" -- change fadeIn for fadeOut :)"
     --
   el "div" $ dynText =<< (translatableText $ fromList [
     (English, "Change the program periodically:"),
@@ -180,33 +180,39 @@ funcionsCineCer0 = el "div" $ do
     (Español,"La función snapMetre es similar a snap solo que esta ajusta la duración del video a 2,4,8,16,32, etc. ciclos, útil para exploraciones relacionadas con 'ideas musicales'.")
     ])
   el "ul" $ do
-    el "li" $ elClass "div" "ieRef" $ text "snapMetre 0 $ \"videos/lamplight.mp4\""
+    el "li" $ elClass "div" "ieRef" $ text "snapMetre 0 $ video \"videos/lamplight.mp4\""
   -- seg
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"Function seg reproduces a segment of the video (start to end in percentage) and the rate of the video segment is adjusted to the duration indicated in cycles as third argument."),
     (Español,"seg reproduce solamente el segmento del video (tiempo de in inicio y fin en porcentaje) indicado y la velocidad de reproduccion la determina la duracion en ciclos indicada en el tercer argumento.")
     ])
   el "ul" $ do
-    el "li" $ elClass "div" "ieRef" $ text "seg 0.25 0.75 1 $ video \"videos/lamplight.mp4\""
+    el "li" $ elClass "div" "ieRef" $ text "seg 0.25 0.75 2 $ video \"videos/lamplight.mp4\""
+  el "div" $ dynText =<< (translatableText $ fromList [
+    (English,"The function secs allows you to provide a position to start/end a segment in seconds rather than percentage."),
+    (Español,"La funcion secs permite establecer la posicion para inciar/terminar un segmento del video en segundos en lugar de porcentaje.")
+    ])
+  el "ul" $ do
+    el "li" $ elClass "div" "ieRef" $ text "seg (secs 0) (secs 1) 2 $ video \"videos/lamplight.mp4\""
   -- freeSeg
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"freeSeg is similar to seg but the duration of the segment is determined by the natural rate."),
     (Español,"freeSeg es similar a seg pero la duracion del segmento esta determinada por la velocidad de reproduccion natural del video.")
     ])
   el "ul" $ do
-    el "li" $ elClass "div" "ieRef" $ text "seg 0.25 0.75 $ video \"videos/lamplight.mp4\""
+    el "li" $ elClass "div" "ieRef" $ text "freeSeg 0.25 0.75 $ video \"videos/lamplight.mp4\""
     -- need an example for (secs X)
   -- freeRun
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"freeR$un allows the video to play freely without adjusting its position or rate."),
+    (English,"freeRun allows the video to play freely without adjusting its position or rate."),
     (Español,"freeRun permite la reproduccion del video libre sin ajustar la posicion o la velocidad.")
     ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "freeRun $ video \"videos/lamplight.mp4\""
   -- rate
   el "div" $ dynText =<< (translatableText $ fromList [
-    (English,"rate allows to control directly the rate of the video."),
-    (Español,"rate permite ajusta la velocidad de reproduccion del video libremente. ")
+    (English,"COMING SOON rate allows to control directly the rate of the video."),
+    (Español,"PRONTO DISPONIBLE rate permite ajusta la velocidad de reproduccion del video libremente. ")
     ])
   el "ul" $ do
-    el "li" $ elClass "div" "ieRef" $ text "rate 2 $ video \"videos/lamplight.mp4\""
+    el "li" $ elClass "div" "ieRef" $ text "-- rate 2 $ video \"videos/lamplight.mp4\""

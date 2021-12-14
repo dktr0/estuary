@@ -52,17 +52,20 @@ main = do
   addWorklets ac
 
   mb <- initializeMainBus
-  wd <- liftAudioIO $ newWebDirt (webDirtOutput mb)
+  wdOutput <- getWebDirtOutput mb
+  wd <- liftAudioIO $ newWebDirt wdOutput
   initializeWebAudio wd
   sd <- newSuperDirt
   resources' <- newResources
   addResourceOp resources' $ ResourceListURL "samples/resources.json"
+  ccMap' <- newCCMap
 
   let immutableRenderContext = ImmutableRenderContext {
     mainBus = mb,
     webDirt = wd,
     superDirt = sd,
-    resources = resources'
+    resources = resources',
+    ccMap = ccMap'
     }
 
   nowUtc <- getCurrentTime

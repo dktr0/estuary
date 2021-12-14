@@ -10,6 +10,7 @@ More advanced customization is available through CSS classes within this documen
 /* sets the background color */
   --background-color: black;
 
+                  /*Colour informing on computation-related processes*/
 /* set the color of all text and typically some borders*/
   --primary-color: rgb(98, 221, 115);
 
@@ -18,6 +19,12 @@ More advanced customization is available through CSS classes within this documen
 
 /* sets the color of things that appear temporarily */
   --transient-color: orange;
+
+                    /*Colour establishing human-to-human communication*/
+/* sets the color of things that are meant as text  */
+  --experiment-color: rgb(180,155,250);
+  
+  /* hsl(260,30,70);  */
 }
 
 /*

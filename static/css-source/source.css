@@ -26,6 +26,11 @@ body, .primary-color {
 	 color: var( --primary-color);
 }
 
+.exp-color {
+	color: var( --experiment-color);
+}
+
+
 body::-webkit-scrollbar  {
     width: 0.5%;
     height: 0px;
@@ -38,15 +43,6 @@ body::-webkit-scrollbar-track {
 
 body::-webkit-scrollbar-thumb {
   background: var(--primary-color);
-  border-radius: 10px;
-}
-
-body::-webkit-scrollbar-corner{
-	background-color: transparent;
-}
-
-a {
-  color: var(--primary-color);
 }
 
 /*styles the canvas and svg display */
@@ -565,6 +561,19 @@ display: block;
   	border:none;
   }
 
+.human-to-human-comm {
+  color: var(--primary-color);
+  font-size: 1em;
+}
+
+.invisible-color {
+	color: rgba(0,0,0,0);
+  }
+
+.mySVG {
+  color: var(--primary-color);
+}
+
 .evalFlash {
   color: var(--background-color);
   background-color: var(--primary-color);
@@ -955,6 +964,34 @@ cursor: pointer;
     text-align: center;
     width: fit-content;
 
+}
+
+/* recently added by AFB, experimentas for widget creation */
+
+.countDown {
+	display: flex;
+	border: none;
+}
+
+.countDown textarea{
+	position: relative;
+	border: none;
+	max-width:13em;
+    text-align: center;
+    width: fit-content;
+}
+
+.stopwatch {
+	display: flex;
+	border: none;
+}
+
+.stopwatch textarea{
+	position: relative;
+	border: none;
+	max-width:13em;
+    text-align: center;
+    width: fit-content;
 }
 
 /*
