@@ -49,6 +49,7 @@ dumpView (SandClockView z) = "sandClock " <> showInt z
 dumpView (SeeTimeView z) = "seeTime " <> showInt z
 dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
+dumpView (RehearsalTimeView x) = "rehearsalTime" <> showInt x
 dumpView _ = " "
 
 dumpViews :: [View] -> T.Text
@@ -79,6 +80,14 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> notePadParser
           <|> iFrameParser
 
+rehearsalTime :: H View
+rehearsalTime = rehearsalTime' <*> int
+
+rehearsalTime' :: H (Int -> View)
+rehearsalTime' = rehearsalTimeFunc <$ reserved "rehearsaltime"
+
+rehearsalTimeFunc :: Int -> View
+rehearsalTimeFunc x = RehearsalTimeView x
 --
 seeTimeParser :: H View
 seeTimeParser = seeTimeParser' <*> int

@@ -15,6 +15,7 @@ presetViews :: Map Text View
 -- note: if an ensemble publishes a view called 'default', that view rather than this one,
 -- will effectively be the default view in that ensemble.
 
+
 presetViews = fromList [
 
        ("def",  GridView 2 3  [

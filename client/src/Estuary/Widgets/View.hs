@@ -39,6 +39,8 @@ import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
+import Estuary.Widgets.Scheduler
+
 
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
@@ -85,6 +87,10 @@ viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequenc
 viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
+
+viewWidget er (RehearsalTimeView z) = do
+  today <- liftIO getZonedTime
+  zoneWidget z ("add details of your rehearsal", today) maybeRehearsalTime RehearsalTime er rehearsalTimeWidget
 
 viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 
