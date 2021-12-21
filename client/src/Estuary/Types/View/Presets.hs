@@ -31,10 +31,7 @@ presetViews = fromList [
       BorderDiv [LabelView 0,CodeView 1 0]
       ]),
 
-      ("twocolumns", GridView 2 1  [
-      BorderDiv [LabelView 0,CodeView 1 0],
-      BorderDiv [LabelView 2,CodeView 3 0]
-      ]),
+      ("twocolumns", GridView 2 1  [ CodeView 0 0, CodeView 1 0] ),
 
       ("twobytwo", GridView 2 2 [
       BorderDiv [LabelView 0,CodeView 1 0],

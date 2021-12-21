@@ -89,7 +89,7 @@ textWithLockWidget rows editable delta = do
   let value = _textArea_value x
   return (value,edits)
 
-styleFunc:: Map Text Text  
+styleFunc:: Map Text Text
 styleFunc = "style" =: "height: auto; font-size: 1em;"
 
 lockText:: Bool -> Map Text Text
@@ -133,12 +133,17 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo 
   evalFlash <- holdDyn False $ leftmost [flashOff,flashOn] -- Dynamic t Bool
 
   -- GUI elements: language selection menu, eval button, error display, and text area (textWidget)
-  (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
+  {- (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
     d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
     evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
     widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
-    return (_dropdown_change d,evalButton')
+    return (_dropdown_change d,evalButton') -}
+  -- temporary: solstice branch
+  let evalButton = never
+  let parserEdit = never
+  -- END: solstice branch
+  
   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
 
