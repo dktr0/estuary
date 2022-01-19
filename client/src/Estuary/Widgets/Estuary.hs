@@ -63,10 +63,11 @@ import Estuary.Resources
 import Estuary.Types.ResourceMeta
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
+import Estuary.Render.R
 
-keyboardHintsCatcher :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> m ()
-keyboardHintsCatcher irc ctxM riM = mdo
-  (theElement,_) <- elClass' "div" "" $ estuaryWidget irc ctxM riM keyboardHints
+keyboardHintsCatcher :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
+keyboardHintsCatcher ctxM riM = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget ctxM riM keyboardHints
   let e = _el_element theElement
   e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
     y <- getKeyEvent
@@ -81,9 +82,9 @@ keyEventToHint x
   | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just ToggleStats
 keyEventToHint _ = Nothing
 
-estuaryWidget :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
-estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
-
+estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
+estuaryWidget ctxM riM keyboardHints = divClass "estuary" $ mdo
+  rEnv <- liftIO $ forkRenderThreads ctxM cvsElement glCtx hCanvas riM
 
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
@@ -96,7 +97,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
-  performContext irc ctxM ctx -- perform all IO actions consequent to Context changing
+  performContext rEnv ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
   let responsesFromEnsembleRequests = fmap ((:[]) . EnsembleResponse) $ fmapMaybe ensembleRequestsToResponses commandEnsembleRequests
@@ -107,12 +108,12 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   -- resourceMaps :: Dynamic t ResourceMaps, updated by callback events from the Resources system
   (resourceMapsEvent,resourceMapsCallback) <- newTriggerEvent
-  setResourcesUpdatedCallback (resources irc) resourceMapsCallback
+  setResourcesUpdatedCallback (resources rEnv) resourceMapsCallback
   resourceMaps <- holdDyn emptyResourceMaps resourceMapsEvent
 
   -- four GUI components: header, main (navigation), terminal, footer
   let wEnv = WidgetEnvironment {
-    _immutableRenderContext = irc,
+    _renderEnvironment = rEnv,
     _context = ctx,
     _renderInfo = rInfo,
     _resourceMaps = resourceMaps
@@ -133,7 +134,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   (terminalButton,_) <- runW wEnv $ footer hints
   commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
-  performEvent_ $ fmap (ensembleRequestIO $ resources irc) ensembleRequests
+  performEvent_ $ fmap (ensembleRequestIO $ resources rEnv) ensembleRequests
   let commandRequests = fmapMaybe commandToRequest command
 
   -- changes to EnsembleC within Context, and to Context
@@ -142,7 +143,7 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponses = fmapMaybe justEnsembleResponses deltasDown
   let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
-  performEvent_ $ fmap (mapM_ (ensembleResponseIO $ resources irc)) ensembleResponses
+  performEvent_ $ fmap (mapM_ (ensembleResponseIO $ resources rEnv)) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange]
@@ -152,8 +153,8 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
-  performHints (webDirt irc) hints
-  performDelayHints irc hints
+  performHints (webDirt rEnv) hints
+  performDelayHints rEnv hints
 
   -- requests up to server
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
@@ -162,7 +163,6 @@ estuaryWidget irc ctxM riM keyboardHints = divClass "estuary" $ mdo
   let requests'' = fmap (:[]) $ commandRequests
   let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
 
-  liftIO $ forkRenderThreads irc ctxM cvsElement glCtx hCanvas riM
   return ()
 
 hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
@@ -214,37 +214,37 @@ pollRenderInfo riM = do
 
 -- whenever the Dynamic representation of the Context changes, translate that
 -- into various
-performContext :: MonadWidget t m => ImmutableRenderContext -> MVar Context -> Dynamic t Context -> m ()
-performContext irc cMvar cDyn = do
+performContext :: MonadWidget t m => RenderEnvironment -> MVar Context -> Dynamic t Context -> m ()
+performContext rEnv cMvar cDyn = do
   iCtx <- sample $ current cDyn
   performEvent_ $ fmap (liftIO . updateContext cMvar) $ updated cDyn -- transfer whole Context for render/animation threads
-  updateDynamicsModes irc cDyn -- when dynamics modes change, make it so
-  updatePunctualAudioInputMode irc cDyn
+  updateDynamicsModes rEnv cDyn -- when dynamics modes change, make it so
+  updatePunctualAudioInputMode rEnv cDyn
   -- when the theme changes,
   t <- holdUniqDyn $ fmap theme cDyn -- Dynamic t String
   let t' = updated t -- Event t String
   changeTheme t'
   -- when the superDirt flag changes, make it so
-  let sd = superDirt irc
+  let sd = superDirt rEnv
   sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
 updateContext :: MVar Context -> Context -> IO ()
 updateContext mv x = swapMVar mv x >> return ()
 
-updateDynamicsModes :: MonadWidget t m => ImmutableRenderContext -> Dynamic t Context -> m ()
-updateDynamicsModes irc ctx = do
+updateDynamicsModes :: MonadWidget t m => RenderEnvironment -> Dynamic t Context -> m ()
+updateDynamicsModes rEnv ctx = do
   dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap dynamicsMode ctx
-  performEvent_ $ fmap (liftIO . changeDynamicsMode (mainBus irc)) dynamicsModeChanged
+  performEvent_ $ fmap (liftIO . changeDynamicsMode (mainBus rEnv)) dynamicsModeChanged
 
-updatePunctualAudioInputMode :: MonadWidget t m => ImmutableRenderContext -> Dynamic t Context -> m ()
-updatePunctualAudioInputMode irc ctx = do
+updatePunctualAudioInputMode :: MonadWidget t m => RenderEnvironment -> Dynamic t Context -> m ()
+updatePunctualAudioInputMode rEnv ctx = do
   punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap punctualAudioInputMode ctx
-  performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (mainBus irc)) punctualAudioInputChanged
+  performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (mainBus rEnv)) punctualAudioInputChanged
 
-performDelayHints :: MonadWidget t m => ImmutableRenderContext -> Event t [Hint] -> m ()
-performDelayHints irc hs = do
-  let nodes = mainBus irc
+performDelayHints :: MonadWidget t m => RenderEnvironment -> Event t [Hint] -> m ()
+performDelayHints rEnv hs = do
+  let nodes = mainBus rEnv
   let newDelayTime = fmapMaybe justGlobalDelayTime hs
   performEvent_ $ fmap (liftIO . changeDelay nodes) newDelayTime
   where

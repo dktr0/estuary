@@ -14,6 +14,7 @@ import Control.Monad.Reader
 import Data.Text
 
 import Estuary.Types.Context
+import Estuary.Render.R
 import Estuary.Types.RenderInfo
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
@@ -28,7 +29,7 @@ import Estuary.Resources
 type W t m = EventWriterT t [Hint] (ReaderT (WidgetEnvironment t) m)
 
 data WidgetEnvironment t = WidgetEnvironment {
-  _immutableRenderContext :: ImmutableRenderContext,
+  _renderEnvironment :: RenderEnvironment,
   _context :: Dynamic t Context,
   _renderInfo :: Dynamic t RenderInfo,
   _resourceMaps :: Dynamic t ResourceMaps
@@ -48,8 +49,8 @@ widgetEnvironment = lift ask
 
 
 -- Get the immutable render context.
-immutableRenderContext :: Monad m => W t m ImmutableRenderContext
-immutableRenderContext = lift $ asks _immutableRenderContext
+renderEnvironment :: Monad m => W t m RenderEnvironment
+renderEnvironment = lift $ asks _renderEnvironment
 
 
 -- Get the dynamic context.
