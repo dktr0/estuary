@@ -16,6 +16,7 @@ import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
+import Estuary.Types.Hint
 import Estuary.Types.RenderInfo
 
 import qualified Sound.Punctual.Resolution as Punctual
@@ -23,7 +24,7 @@ import qualified Sound.Punctual.Resolution as Punctual
 configWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> W t m (Event t ContextChange)
 configWidget ctx ri = do
 
-  canvasEnabledEv <- divClass "config-option primary-color ui-font" $ do
+  divClass "config-option primary-color ui-font" $ do
     text "Canvas: "
     canvasInput <- elClass "label" "switch" $ do
       x <- checkbox True def
@@ -32,7 +33,7 @@ configWidget ctx ri = do
       (English,"Enable the canvas to display visual results."),
       (Español, "Habilita el lienzo (canvas) para mostrar los visuales.")
       ])
-    return $ fmap (\x -> \c -> c { canvasOn = x }) $ _checkbox_change canvasInput
+    hint $ fmap CanvasActive $ _checkbox_change canvasInput
 
   elClass "hr" "dashed" $ return ()
 
@@ -190,4 +191,4 @@ configWidget ctx ri = do
       ])
     viewEditor
 
-  return $ mergeWith (.) [punctualAudioInputModeEv,canvasEnabledEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, (updated cineCer0ZIndexChangeEv), (updated punctualZIndexChangeEv), (updated improvizZIndexChangeEv), (updated hydraZIndexChangeEv), viewEditorChange, fpsLimitChangeEv, unsafeModeEv]
+  return $ mergeWith (.) [punctualAudioInputModeEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, (updated cineCer0ZIndexChangeEv), (updated punctualZIndexChangeEv), (updated improvizZIndexChangeEv), (updated hydraZIndexChangeEv), viewEditorChange, fpsLimitChangeEv, unsafeModeEv]

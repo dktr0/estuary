@@ -18,7 +18,8 @@ data Hint =
   ToggleTerminal |
   ToggleSidebar |
   ToggleStats |
-  ToggleHeader
+  ToggleHeader |
+  CanvasActive Bool 
   deriving (Eq,Show)
 
 justGlobalDelayTime :: [Hint] -> Maybe Double

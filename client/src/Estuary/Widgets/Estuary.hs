@@ -85,18 +85,20 @@ keyEventToHint _ = Nothing
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget ctxM riM keyboardHints = divClass "estuary" $ mdo
 
-  cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
+
+  canvasVisible <- holdDyn True $ fmapMaybe hintsToCanvasVisibility hints
+  cinecer0Widget canvasVisible ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
-  cvsElement <- canvasWidget punctualZIndex' ctx -- canvas for Punctual
+  cvsElement <- canvasWidget canvasVisible punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
   improvizZIndex' <- holdUniqDyn $ fmap improvizZIndex ctx
-  iCanvas <- canvasWidget improvizZIndex' ctx -- canvas for Improviz
+  iCanvas <- canvasWidget canvasVisible improvizZIndex' ctx -- canvas for Improviz
   hydraZIndex' <- holdUniqDyn $ fmap hydraZIndex ctx
-  hCanvas <- canvasWidget hydraZIndex' ctx -- canvas for Hydra
+  hCanvas <- canvasWidget canvasVisible hydraZIndex' ctx -- canvas for Hydra
 
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
-  
+
   rEnv <- liftIO $ forkRenderThreads ctxM cvsElement glCtx hCanvas riM
 
   performContext rEnv ctxM ctx -- perform all IO actions consequent to Context changing
@@ -179,10 +181,16 @@ hintsToResponses = catMaybes . fmap f
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
     f _ = Nothing
 
-cinecer0Widget :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
-cinecer0Widget ctxM ctx = do
+hintsToCanvasVisibility :: [Hint] -> Maybe Bool
+hintsToCanvasVisibility = listToMaybe . reverse . catMaybes . fmap f
+  where
+    f (CanvasActive x) = Just x
+    f _ = Nothing
+
+cinecer0Widget :: MonadWidget t m => Dynamic t Bool -> MVar Context -> Dynamic t Context -> m ()
+cinecer0Widget isCanvasVisible ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
-  canvasVisible <- fmap (("visibility:" <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
+  let canvasVisible = fmap (("visibility:" <>)  . bool "hidden" "visible") isCanvasVisible
   dynZIndex <- holdUniqDyn $ fmap cineCer0ZIndex ctx
   let dynZIndex' = fmap (T.pack . show) dynZIndex
   let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
@@ -193,9 +201,9 @@ cinecer0Widget ctxM ctx = do
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
-canvasWidget :: MonadWidget t m => Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
-canvasWidget dynZIndex ctx = do
-  canvasVisible <- fmap (("visibility: " <>)  . bool "hidden" "visible") <$> (holdUniqDyn $ fmap canvasOn ctx)
+canvasWidget :: MonadWidget t m => Dynamic t Bool -> Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
+canvasWidget isCanvasVisible dynZIndex ctx = do
+  let canvasVisible = fmap (("visibility: " <>)  . bool "hidden" "visible") isCanvasVisible
   let dynZIndex' = fmap (T.pack . show) dynZIndex -- :: Dynamic t Text
   let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
   res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
