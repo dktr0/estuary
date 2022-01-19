@@ -84,7 +84,6 @@ keyEventToHint _ = Nothing
 
 estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget ctxM riM keyboardHints = divClass "estuary" $ mdo
-  rEnv <- liftIO $ forkRenderThreads ctxM cvsElement glCtx hCanvas riM
 
   cinecer0Widget ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
@@ -97,6 +96,9 @@ estuaryWidget ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
+  
+  rEnv <- liftIO $ forkRenderThreads ctxM cvsElement glCtx hCanvas riM
+
   performContext rEnv ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
