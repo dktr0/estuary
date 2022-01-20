@@ -24,6 +24,7 @@ import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Resources
 import Estuary.Types.ResourceOp
+import Estuary.Types.UriOptions as Uri
 
 
 data RenderEnvironment = RenderEnvironment {
@@ -35,8 +36,8 @@ data RenderEnvironment = RenderEnvironment {
   animationOn :: IORef Bool
   }
 
-initialRenderEnvironment :: IO RenderEnvironment
-initialRenderEnvironment = do
+initialRenderEnvironment :: Uri.UriOptions -> IO RenderEnvironment
+initialRenderEnvironment uriOptions = do
   ac <- getGlobalAudioContextPlayback
   addWorklets ac
   mb <- initializeMainBus
@@ -47,7 +48,7 @@ initialRenderEnvironment = do
   resources' <- newResources
   addResourceOp resources' $ ResourceListURL "samples/resources.json"
   ccMap' <- newIORef Map.empty
-  animationOn' <- newIORef True
+  animationOn' <- newIORef $ Uri.canvas uriOptions
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,

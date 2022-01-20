@@ -64,10 +64,11 @@ import Estuary.Types.ResourceMeta
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
 import Estuary.Render.R
+import Estuary.Types.UriOptions as Uri
 
-keyboardHintsCatcher :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
-keyboardHintsCatcher ctxM riM = mdo
-  (theElement,_) <- elClass' "div" "" $ estuaryWidget ctxM riM keyboardHints
+keyboardHintsCatcher :: MonadWidget t m => Uri.UriOptions -> MVar Context -> MVar RenderInfo -> m ()
+keyboardHintsCatcher uriOptions ctxM riM = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget uriOptions ctxM riM keyboardHints
   let e = _el_element theElement
   e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
     y <- getKeyEvent
@@ -82,11 +83,10 @@ keyEventToHint x
   | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just ToggleStats
 keyEventToHint _ = Nothing
 
-estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
-estuaryWidget ctxM riM keyboardHints = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => Uri.UriOptions -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
+estuaryWidget uriOptions ctxM riM keyboardHints = divClass "estuary" $ mdo
 
-
-  canvasVisible <- holdDyn True $ fmapMaybe hintsToCanvasVisibility hints
+  canvasVisible <- holdDyn (Uri.canvas uriOptions) $ fmapMaybe hintsToCanvasVisibility hints
   cinecer0Widget canvasVisible ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
   cvsElement <- canvasWidget canvasVisible punctualZIndex' ctx -- canvas for Punctual
@@ -99,7 +99,7 @@ estuaryWidget ctxM riM keyboardHints = divClass "estuary" $ mdo
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
 
-  rEnv <- liftIO $ forkRenderThreads ctxM cvsElement glCtx hCanvas riM
+  rEnv <- liftIO $ forkRenderThreads uriOptions ctxM cvsElement glCtx hCanvas riM
 
   performContext rEnv ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)

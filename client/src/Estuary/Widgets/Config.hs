@@ -27,7 +27,8 @@ configWidget ctx ri = do
   divClass "config-option primary-color ui-font" $ do
     text "Canvas: "
     canvasInput <- elClass "label" "switch" $ do
-      x <- checkbox True def
+      iVal <- canvasOn
+      x <- checkbox iVal def
       elClass "span" "slider round" (return x)
     el "div" $ dynText =<< (translatableText $ fromList [
       (English,"Enable the canvas to display visual results."),

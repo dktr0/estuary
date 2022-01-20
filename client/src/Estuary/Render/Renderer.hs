@@ -73,6 +73,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
 import Estuary.Render.R
+import Estuary.Types.UriOptions as Uri
 
 
 clockRatioThreshold :: Double
@@ -620,9 +621,9 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
-forkRenderThreads ctxM cvsElement glCtx hCanvas riM = do
-  rEnv <- initialRenderEnvironment
+forkRenderThreads :: Uri.UriOptions -> MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
+forkRenderThreads uriOptions ctxM cvsElement glCtx hCanvas riM = do
+  rEnv <- initialRenderEnvironment uriOptions
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv

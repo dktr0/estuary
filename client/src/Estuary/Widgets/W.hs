@@ -12,6 +12,7 @@ import Reflex
 import Reflex.Dom
 import Control.Monad.Reader
 import Data.Text
+import Data.IORef
 
 import Estuary.Types.Context
 import Estuary.Render.R
@@ -76,6 +77,13 @@ hint = tellEvent . fmap (:[])
 -- Issue multiple simultaneous hints
 hints :: (Reflex t, Monad m) => Event t [Hint] -> W t m ()
 hints = tellEvent
+
+
+canvasOn :: MonadIO m => W t m Bool
+canvasOn = (animationOn <$> renderEnvironment) >>= liftIO . readIORef
+-- TODO: it would be better to add UriOptions to the W environment, then read from that instead of from the renderEnvironment
+-- similarly in the R monad, the UriOptions should be part of that, with a definition like this provided to read from that...
+-- possibly there could be a UriOptions typeclass, and both W and R could be instances of it
 
 
 -- Translate a term appropriately into dynamic text
