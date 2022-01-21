@@ -1685,7 +1685,7 @@ box-shadow: inset 0 0 3px var(--primary-color);
 
 
 
-.rehearsalTimeWidget {
+.calendarEventWidget {
 	display:flex;
 	flex-wrap: wrap;
 }
