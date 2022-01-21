@@ -59,11 +59,6 @@ pragmaToTextNotation "timenot" _ _ = Just TimeNot
 pragmaToTextNotation "seis8s" _ _ = Just Seis8s
 pragmaToTextNotation "hydra" _ _ = Just Hydra
 pragmaToTextNotation "jsolang" x _ = Just $ JSoLang x
-pragmaToTextNotation "cqenze" _ _ = Just $ TidalTextNotation CQenze
-pragmaToTextNotation "lacalle" _ _ = Just $ TidalTextNotation LaCalle
-pragmaToTextNotation "sucixxx" _ _ = Just $ TidalTextNotation Sucixxx
-pragmaToTextNotation "togo" _ _ = Just $ TidalTextNotation Togo
-pragmaToTextNotation "blackbox" _ _ = Just $ TidalTextNotation BlackBox
 pragmaToTextNotation x _ ns =
   case elem x ns of
     True -> Just $ EphemeralNotation x

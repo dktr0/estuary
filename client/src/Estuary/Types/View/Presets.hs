@@ -19,7 +19,7 @@ presetViews :: Map Text View
 presetViews = fromList [
 
        ("def",  GridView 2 3  [
-       (Views [LabelView 1, CodeView 2 0]),
+       (Views [LabelView 1, CalendarEventView 2]),
        (Views [LabelView 3, CodeView 4 0]),
        (Views [LabelView 5, CodeView 6 0]),
        (Views [LabelView 7, CodeView 8 0]),
