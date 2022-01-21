@@ -74,7 +74,7 @@ settings = lift $ asks Estuary.Widgets.W._settings
 changeSettings :: (Reflex t, Monad m) => Event t (Settings.Settings -> Settings.Settings) -> W t m ()
 changeSettings x = hint $ fmap ChangeSettings x
 
--- Get specific settings from within the Dynamic Settings record...
+-- Get and set specific client settings...
 
 canvasOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
 canvasOn = settings >>= return . fmap Settings.canvasOn
@@ -104,7 +104,7 @@ setUnsafeModeOn x = changeSettings $ fmap (\b s -> s { Settings.unsafeModeOn = b
 checkboxW :: MonadWidget t m => Dynamic t Bool -> m (Event t Bool)
 checkboxW x = do
   iVal <- sample $ current x
-  b <- checkbox iVal def -- NOT DONE YET!!!
+  b <- checkbox iVal def -- *** NOT DONE YET!!! *** needs to respond to updates of x!!!
   return $ _checkbox_change b
 
 -- Issue a single hint

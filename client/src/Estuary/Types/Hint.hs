@@ -17,10 +17,10 @@ data Hint =
   SetGlobalDelayTime Double |
   SilenceHint |
   ZoneHint Int Definition |
-  ToggleTerminal |
-  ToggleSidebar |
-  ToggleStats |
-  ToggleHeader |
+  ToggleTerminal | -- can be implemented as a Setting (ie. with ChangeSettings)
+  ToggleSidebar | -- can be implemented as a Setting (ie. with ChangeSettings)
+  ToggleStats | -- can be implemented as a Setting (ie. with ChangeSettings)
+  ToggleHeader | -- can be implemented as a Setting (ie. with ChangeSettings)
   ChangeSettings (Settings -> Settings)
 
 justGlobalDelayTime :: [Hint] -> Maybe Double
