@@ -31,6 +31,7 @@ import Estuary.Types.Hint
 import Estuary.Widgets.W
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.TranslatableText
+import Estuary.Render.R
 
 import Estuary.Types.Language
 
@@ -61,7 +62,7 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
       divClass "chatMessage code-font primary-color" $ dynText v' -- m()
 
     pp <- liftIO $ newPeerProtocol
-    irc <- immutableRenderContext
+    irc <- renderEnvironment
     commandHints <- performCommands pp irc commands
     streamId <- peerProtocolIdReflex pp $ ffilter (== Terminal.StreamId) commands
     return commands
@@ -78,12 +79,12 @@ hintToMessage :: Hint -> Maybe TranslatableText --TranslatableText-- Map Languag
 hintToMessage (LogMessage x) = Just x -- translatableText $ Data.Map.fromList [(English, x)]
 hintToMessage _ = Nothing
 
-performCommands :: MonadWidget t m => PeerProtocol -> ImmutableRenderContext -> Event t Terminal.Command -> m (Event t Hint)
-performCommands pp irc x = do
-  y <- performEvent $ fmap (liftIO . doCommands pp irc) x
+performCommands :: MonadWidget t m => PeerProtocol -> RenderEnvironment -> Event t Terminal.Command -> m (Event t Hint)
+performCommands pp rEnv x = do
+  y <- performEvent $ fmap (liftIO . doCommands pp rEnv) x
   return $ fmap (LogMessage . english) $ fmapMaybe id y
 
-doCommands :: PeerProtocol -> ImmutableRenderContext -> Terminal.Command -> IO (Maybe Text)
+doCommands :: PeerProtocol -> RenderEnvironment -> Terminal.Command -> IO (Maybe Text)
 doCommands _ irc (Terminal.MonitorInput x) = changeMonitorInput (mainBus irc) x >> return Nothing
 doCommands pp _ Terminal.StartStreaming = startStreaming pp >> return Nothing
 doCommands _ irc (Terminal.SetCC n v) = setCC n v irc >> return Nothing

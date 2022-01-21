@@ -13,6 +13,7 @@ import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
 import Data.Text (Text)
 import Sound.Punctual.GL
 import Data.Tempo
+import Data.IORef
 
 import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
@@ -27,8 +28,8 @@ import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
 
+
 data RenderState = RenderState {
-  animationOn :: Bool,
   animationFpsLimit :: Maybe NominalDiffTime,
   wakeTimeAudio :: !Double,
   wakeTimeSystem :: !UTCTime,
@@ -71,7 +72,6 @@ initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLConte
 initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 glCtx
   return $ RenderState {
-    animationOn = False,
     animationFpsLimit = Just 0.030,
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,

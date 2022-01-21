@@ -67,6 +67,7 @@ dependencies:
   - witherable
   - jsaddle
   - tuple
+  - network-uri
 
 library:
   source-dirs:

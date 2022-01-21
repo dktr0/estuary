@@ -10,11 +10,10 @@ import Control.Exception
 import Control.Monad(liftM)
 import Control.Monad.IO.Class(liftIO)
 import System.IO
-
 import Sound.MusicW
+import qualified Data.Text as T
 
-import Estuary.Render.WebDirt
-import Estuary.Render.SuperDirt
+
 import Estuary.Protocol.Peer
 import Estuary.Types.Context
 import Estuary.Widgets.Estuary
@@ -22,9 +21,8 @@ import Estuary.Widgets.Navigation(Navigation(..))
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Render.Renderer
-import Estuary.Render.DynamicsMode
-import Estuary.Resources
-import Estuary.Types.ResourceOp
+import Estuary.Render.R
+import Estuary.Client.Settings
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
@@ -48,41 +46,14 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  ac <- getGlobalAudioContextPlayback
-  addWorklets ac
-
-  mb <- initializeMainBus
-  wdOutput <- getWebDirtOutput mb
-  wd <- liftAudioIO $ newWebDirt wdOutput
-  initializeWebAudio wd
-  sd <- newSuperDirt
-  resources' <- newResources
-  addResourceOp resources' $ ResourceListURL "samples/resources.json"
-  ccMap' <- newCCMap
-
-  let immutableRenderContext = ImmutableRenderContext {
-    mainBus = mb,
-    webDirt = wd,
-    superDirt = sd,
-    resources = resources',
-    ccMap = ccMap'
-    }
-
   nowUtc <- getCurrentTime
-  nowAudio <- liftAudioIO $ audioTime
   context <- newMVar $ initialContext nowUtc
   renderInfo <- newMVar $ emptyRenderInfo
 
-  cb <- syncCallback1' $ \dest -> do
-    node <- changeDestination mb $
-      if dest `js_eq` pToJSVal ("stream" :: JSString) then
-        getSharedMediaStreamDestination
-      else
-        createDestination
-    return $ pToJSVal node
-  js_registerSetEstuaryAudioDestination cb
-
-  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher immutableRenderContext context renderInfo
+  settings <- getSettingsFromURI
+  putStrLn $ show settings
+  rEnv <- initialRenderEnvironment settings
+  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings context renderInfo
 
   -- Signal the splash page that estuary is loaded.
   -- js_setIconStateLoaded
