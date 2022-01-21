@@ -58,18 +58,16 @@ initialRenderEnvironment = do
     animationOn = animationOn'
   }
 
-
--- type CCMap = MVar (Map Text Double)
-
--- TODO: will rework as operation in R monad
 setCC :: Int -> Double -> RenderEnvironment -> IO ()
 setCC n v rEnv = modifyIORef' (ccMap rEnv) $ Map.insert (showt n) v
 
--- TODO: will rework as operation in R monad
 getCC :: Int -> RenderEnvironment -> IO (Maybe Double)
 getCC n irc = do
   m <- readIORef $ ccMap irc
   return $ Map.lookup (showt n) m
+
+setAnimationOn :: RenderEnvironment -> Bool -> IO ()
+setAnimationOn re = writeIORef (animationOn re)
 
 
 
