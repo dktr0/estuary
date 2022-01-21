@@ -20,7 +20,7 @@ import Estuary.Widgets.Reflex (dynButton, invisibleButton)
 footer :: MonadWidget t m => Event t [Hint] -> W t m (Event t ())
 footer hints = divClass "footer code-font" $ mdo
   toggleTerminalButton <- divClass "footer-area" $ invisibleButton
-  let statsShortcut = ffilter (elem ToggleStats) hints
+  let statsShortcut = fmapMaybe justToggleStats hints
   let statsEvent = leftmost [() <$ statsShortcut, statsButton]
   statsVisible <- toggle True statsEvent
   statsButton <- clickableDiv "footer-area" $ do

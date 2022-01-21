@@ -33,8 +33,6 @@ import qualified Sound.Punctual.Resolution as Punctual
 data Context = Context {
   aboutThisServer :: TranslatableText,
   announcements :: Map Day [TranslatableText],
-  webDirtOn :: Bool,
-  superDirtOn :: Bool,
   cineCer0ZIndex :: Int,
   punctualZIndex :: Int,
   improvizZIndex :: Int,
@@ -68,8 +66,6 @@ initialContext nowUtc = Context {
   brightness = 1.0,
   fpsLimit = Just 0.030,
   ensembleC = emptyEnsembleC nowUtc,
-  webDirtOn = True,
-  superDirtOn = False,
   cineCer0ZIndex = -1,
   punctualZIndex = -2,
   improvizZIndex = -3,

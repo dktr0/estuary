@@ -26,15 +26,13 @@ configWidget ctx ri = do
 
   divClass "config-option primary-color ui-font" $ do
     text "Canvas: "
-    canvasInput <- elClass "label" "switch" $ do
-      iVal <- canvasOn
-      x <- checkbox iVal def
-      elClass "span" "slider round" (return x)
+    elClass "label" "switch" $ do
+      canvasOn >>= checkboxW >>= setCanvasOn
+      elClass "span" "slider round" $ return ()
     el "div" $ dynText =<< (translatableText $ fromList [
       (English,"Enable the canvas to display visual results."),
       (Español, "Habilita el lienzo (canvas) para mostrar los visuales.")
       ])
-    hint $ fmap CanvasActive $ _checkbox_change canvasInput
 
   elClass "hr" "dashed" $ return ()
 
@@ -124,14 +122,13 @@ configWidget ctx ri = do
 
   webDirtEnabledEv <- divClass "config-option primary-color ui-font" $ do
     text "WebDirt: "
-    wdInput <-elClass "label" "switch" $ do
-      x <- checkbox True def
-      elClass "span" "slider round" (return x)
+    elClass "label" "switch" $ do
+      webDirtOn >>= checkboxW >>= setWebDirtOn
+      elClass "span" "slider round" $ return ()
     el "div" $ dynText =<< (translatableText $ fromList [
       (English,"WebDirt is the default, built-in rendering engine for sample events in Estuary. It uses the Web Audio API to play samples and thus requires no additional software to be installed."),
       (Español, "WebDirt es el motor de renderizado predeterminado para eventos relacionados con las muestras de audio (sample events) en Estuary. Utiliza la API de Web Audio para reproducir muestras y, por lo tanto, no requiere la instalación de software adicional.")
       ])
-    return $ fmap (\x -> (\c -> c { webDirtOn = x } )) $ _checkbox_change wdInput
 
   elClass "hr" "dashed" $  text ""
 
@@ -161,27 +158,25 @@ configWidget ctx ri = do
 
   superDirtEnabledEv <- divClass "config-option primary-color ui-font" $ do
     text "SuperDirt: "
-    sdInput <- elClass "label" "switch" $ do
-      x <- checkbox False def
-      elClass "span" "slider round" (return x)
+    elClass "label" "switch" $ do
+      superDirtOn >>= checkboxW >>= setSuperDirtOn
+      elClass "span" "slider round" $ return ()
     el "div" $ dynText =<< (translatableText $ fromList [
       (English,"When enabled, sample events are sent out of the browser to be processed by other software. Requires the installation and use of additional software (eg. SuperDirt and the \"superDirtSocket\")."),
       (Español, "Cuando está habilitado, los eventos de muestra se envían fuera del navegador para ser procesados por otro software. Requiere la instalación y el uso de software adicional (por ejemplo, SuperDirt y \"superDirtSocket \").")
       ])
-    return $ fmap (\x -> (\c -> c { superDirtOn = x } )) $ _checkbox_change sdInput
 
   elClass "hr" "dashed" $  text ""
 
   unsafeModeEv <- divClass "config-option primary-color ui-font" $ do
     text "Unsafe Mode:"
-    unsafeInput <- elClass "label" "switch" $ do
-      x <- checkbox False def
-      elClass "span" "slider round" (return x)
+    elClass "label" "switch" $ do
+      unsafeModeOn >>= checkboxW >>= setUnsafeModeOn
+      elClass "span" "slider round" $ return ()
     el "div" $ dynText =<< (translatableText $ fromList [
       (English,"Activating unsafe mode may make additional functionality available at the risk of catastrophic performance problems. Use at own risk."),
       (Español, "La activación del 'unsafe mode' (modo no seguro) puede habilitar funcionalidades adicionales disponibles, siempre a riesgo de problemas de rendimiento catastróficos. Úselo bajo su propia responsabilidad.")
       ])
-    return $ fmap (\x -> \c -> c { unsafeMode = x }) $ _checkbox_change unsafeInput
 
   elClass "hr" "dashed" $ return ()
 
@@ -192,4 +187,4 @@ configWidget ctx ri = do
       ])
     viewEditor
 
-  return $ mergeWith (.) [punctualAudioInputModeEv, superDirtEnabledEv, webDirtEnabledEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, (updated cineCer0ZIndexChangeEv), (updated punctualZIndexChangeEv), (updated improvizZIndexChangeEv), (updated hydraZIndexChangeEv), viewEditorChange, fpsLimitChangeEv, unsafeModeEv]
+  return $ mergeWith (.) [punctualAudioInputModeEv, dynamicsModeEv, resolutionChangeEv, brightnessChangeEv, (updated cineCer0ZIndexChangeEv), (updated punctualZIndexChangeEv), (updated improvizZIndexChangeEv), (updated hydraZIndexChangeEv), viewEditorChange, fpsLimitChangeEv]

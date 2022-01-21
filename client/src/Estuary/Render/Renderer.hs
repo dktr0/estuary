@@ -73,7 +73,7 @@ import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
 import Estuary.Render.R
-import Estuary.Types.UriOptions as Uri
+import qualified Estuary.Client.Settings as Settings
 
 
 clockRatioThreshold :: Double
@@ -103,17 +103,19 @@ earlyWakeUp = 0.002
 
 
 -- flush events for SuperDirt and WebDirt
-flushEvents :: Context -> R ()
-flushEvents c = do
+flushEvents :: R ()
+flushEvents = do
   irc <- ask
   s <- get
-  let unsafe = unsafeMode c
-  when (webDirtOn c) $ liftIO $ do
+  unsafe <- unsafeModeOn
+  wdOn <- webDirtOn
+  sdOn <- superDirtOn
+  when wdOn $ liftIO $ do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
     noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources irc) cDiff) $ noteEvents s
     tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (resources irc) cDiff) $ tidalEvents s
     mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents'
-  when (superDirtOn c) $ liftIO $ do
+  when sdOn $ liftIO $ do
     noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
     tidalEvents' <- mapM SuperDirt.tidalEventToSuperDirtJSVal $ tidalEvents s
     mapM_ (SuperDirt.playSample (superDirt irc)) $ noteEvents' ++ tidalEvents'
@@ -201,7 +203,7 @@ render c = do
     let newDefs = zones $ ensemble $ ensembleC c
     clearDeletedZones newDefs
     traverseWithKey (renderZone c) newDefs
-    flushEvents c
+    flushEvents
     updatePunctualResolutionAndBrightness c
     -- calculate how much time this render cycle took and update load measurements
     t2System <- liftIO $ getCurrentTime
@@ -579,21 +581,23 @@ renderBaseProgramAlways c z _ (Just Seis8s) = do
     Nothing -> return ()
 renderBaseProgramAlways _ _ _ _ = return ()
 
-
 renderControlPattern :: Context -> Int -> R ()
-renderControlPattern c z = when (webDirtOn c || superDirtOn c) $ do
-  s <- get
-  let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
-  let vMap = valueMap s
-  case controlPattern of
-    Just controlPattern' -> do
-      let lt = renderStart s
-      let rp = renderPeriod s
-      let tempo' = tempo $ ensemble $ ensembleC c
-      newEvents <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp tempo' controlPattern')
-        `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
-      pushTidalEvents newEvents
-    Nothing -> return ()
+renderControlPattern c z = do
+  wdOn <- webDirtOn
+  sdOn <- superDirtOn
+  when (wdOn || sdOn) $ do
+    s <- get
+    let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
+    let vMap = valueMap s
+    case controlPattern of
+      Just controlPattern' -> do
+        let lt = renderStart s
+        let rp = renderPeriod s
+        let tempo' = tempo $ ensemble $ ensembleC c
+        newEvents <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp tempo' controlPattern')
+          `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
+        pushTidalEvents newEvents
+      Nothing -> return ()
 
 updateTidalValueMap :: R ()
 updateTidalValueMap = do
@@ -621,9 +625,8 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: Uri.UriOptions -> MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
-forkRenderThreads uriOptions ctxM cvsElement glCtx hCanvas riM = do
-  rEnv <- initialRenderEnvironment uriOptions
+forkRenderThreads :: RenderEnvironment -> Settings.Settings -> MVar Context -> HTMLCanvasElement -> Punctual.GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
+forkRenderThreads rEnv s ctxM cvsElement glCtx hCanvas riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv
@@ -657,7 +660,7 @@ mainRenderThread rEnv ctxM riM rsM = do
 animationThread :: RenderEnvironment -> MVar RenderState -> IO ()
 animationThread rEnv rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
   rs <- readMVar rsM
-  animOn <- readIORef $ animationOn rEnv
+  animOn <- Settings.canvasOn <$> (readIORef $ _settings rEnv)
   when animOn $ do
     rs' <- takeMVar rsM
     rs'' <- runR renderAnimation rEnv rs'

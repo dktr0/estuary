@@ -21,6 +21,7 @@ import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
 import Estuary.Types.Term
 import Estuary.Resources
+import qualified Estuary.Client.Settings as Settings
 
 
 -- If we have widget-producing actions and we make them in the (W t m) monad
@@ -33,7 +34,8 @@ data WidgetEnvironment t = WidgetEnvironment {
   _renderEnvironment :: RenderEnvironment,
   _context :: Dynamic t Context,
   _renderInfo :: Dynamic t RenderInfo,
-  _resourceMaps :: Dynamic t ResourceMaps
+  _resourceMaps :: Dynamic t ResourceMaps,
+  _settings :: Dynamic t Settings.Settings
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -53,37 +55,65 @@ widgetEnvironment = lift ask
 renderEnvironment :: Monad m => W t m RenderEnvironment
 renderEnvironment = lift $ asks _renderEnvironment
 
-
 -- Get the dynamic context.
 context :: Monad m => W t m (Dynamic t Context)
 context = lift $ asks _context
-
 
 -- Get the dynamic information from the render engine.
 renderInfo :: Monad m => W t m (Dynamic t RenderInfo)
 renderInfo = lift $ asks _renderInfo
 
-
 -- Get a dynamically-updated map of the current maps of "fixed" resources (audiofiles, images, videos)
 resourceMaps :: Monad m => W t m (Dynamic t ResourceMaps)
 resourceMaps = lift $ asks _resourceMaps
 
+-- Get and change the Dynamic Settings record
+settings :: Monad m => W t m (Dynamic t Settings.Settings)
+settings = lift $ asks Estuary.Widgets.W._settings
+
+changeSettings :: (Reflex t, Monad m) => Event t (Settings.Settings -> Settings.Settings) -> W t m ()
+changeSettings x = hint $ fmap ChangeSettings x
+
+-- Get specific settings from within the Dynamic Settings record...
+
+canvasOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+canvasOn = settings >>= return . fmap Settings.canvasOn
+
+setCanvasOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setCanvasOn x = changeSettings $ fmap (\b s -> s { Settings.canvasOn = b } ) x
+
+webDirtOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+webDirtOn = settings >>= return . fmap Settings.webDirtOn
+
+setWebDirtOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setWebDirtOn x = changeSettings $ fmap (\b s -> s { Settings.webDirtOn = b } ) x
+
+superDirtOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+superDirtOn = settings >>= return . fmap Settings.superDirtOn
+
+setSuperDirtOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setSuperDirtOn x = changeSettings $ fmap (\b s -> s { Settings.superDirtOn = b } ) x
+
+unsafeModeOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+unsafeModeOn = settings >>= return . fmap Settings.unsafeModeOn
+
+setUnsafeModeOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setUnsafeModeOn x = changeSettings $ fmap (\b s -> s { Settings.unsafeModeOn = b } ) x
+
+
+checkboxW :: MonadWidget t m => Dynamic t Bool -> m (Event t Bool)
+checkboxW x = do
+  iVal <- sample $ current x
+  b <- checkbox iVal def -- NOT DONE YET!!!
+  return $ _checkbox_change b
 
 -- Issue a single hint
 hint :: (Reflex t, Monad m) => Event t Hint -> W t m ()
-hint = tellEvent . fmap (:[])
-
+hint = tellEvent . fmap pure
 
 -- Issue multiple simultaneous hints
 hints :: (Reflex t, Monad m) => Event t [Hint] -> W t m ()
 hints = tellEvent
-
-
-canvasOn :: MonadIO m => W t m Bool
-canvasOn = (animationOn <$> renderEnvironment) >>= liftIO . readIORef
--- TODO: it would be better to add UriOptions to the W environment, then read from that instead of from the renderEnvironment
--- similarly in the R monad, the UriOptions should be part of that, with a definition like this provided to read from that...
--- possibly there could be a UriOptions typeclass, and both W and R could be instances of it
 
 
 -- Translate a term appropriately into dynamic text

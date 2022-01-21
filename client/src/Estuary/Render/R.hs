@@ -24,7 +24,7 @@ import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Resources
 import Estuary.Types.ResourceOp
-import Estuary.Types.UriOptions as Uri
+import Estuary.Client.Settings as Settings
 
 
 data RenderEnvironment = RenderEnvironment {
@@ -33,11 +33,11 @@ data RenderEnvironment = RenderEnvironment {
   superDirt :: SuperDirt,
   resources :: Resources,
   ccMap :: IORef (Map.Map Text Double),
-  animationOn :: IORef Bool
+  _settings :: IORef Settings
   }
 
-initialRenderEnvironment :: Uri.UriOptions -> IO RenderEnvironment
-initialRenderEnvironment uriOptions = do
+initialRenderEnvironment :: Settings -> IO RenderEnvironment
+initialRenderEnvironment s = do
   ac <- getGlobalAudioContextPlayback
   addWorklets ac
   mb <- initializeMainBus
@@ -48,7 +48,7 @@ initialRenderEnvironment uriOptions = do
   resources' <- newResources
   addResourceOp resources' $ ResourceListURL "samples/resources.json"
   ccMap' <- newIORef Map.empty
-  animationOn' <- newIORef $ Uri.canvas uriOptions
+  settings' <- newIORef s
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,
@@ -56,7 +56,7 @@ initialRenderEnvironment uriOptions = do
     superDirt = sd,
     resources = resources',
     ccMap = ccMap',
-    animationOn = animationOn'
+    _settings = settings'
   }
 
 setCC :: Int -> Double -> RenderEnvironment -> IO ()
@@ -66,10 +66,6 @@ getCC :: Int -> RenderEnvironment -> IO (Maybe Double)
 getCC n irc = do
   m <- readIORef $ ccMap irc
   return $ Map.lookup (showt n) m
-
-setAnimationOn :: RenderEnvironment -> Bool -> IO ()
-setAnimationOn re = writeIORef (animationOn re)
-
 
 
 type R = ReaderT RenderEnvironment (StateT RenderState IO)
@@ -105,3 +101,22 @@ setBaseNotation z n = modify' $ \x -> x { baseNotations = IntMap.insert z n $ ba
 
 setEvaluationTime :: Int -> UTCTime -> R ()
 setEvaluationTime z n = modify' $ \x -> x { evaluationTimes = IntMap.insert z n $ evaluationTimes x}
+
+
+-- updating Settings (eg. in response to user action in widgets)
+-- and accessing them from within the R monad
+
+updateSettings :: RenderEnvironment -> Settings -> IO ()
+updateSettings re = writeIORef (_settings re)
+
+canvasOn :: R Bool
+canvasOn = asks _settings >>= liftIO . readIORef >>= return . Settings.canvasOn
+
+webDirtOn :: R Bool
+webDirtOn = asks _settings >>= liftIO . readIORef >>= return . Settings.webDirtOn
+
+superDirtOn :: R Bool
+superDirtOn = asks _settings >>= liftIO . readIORef >>= return . Settings.superDirtOn
+
+unsafeModeOn :: R Bool
+unsafeModeOn = asks _settings >>= liftIO . readIORef >>= return . Settings.unsafeModeOn

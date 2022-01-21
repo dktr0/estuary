@@ -63,12 +63,12 @@ import Estuary.Resources
 import Estuary.Types.ResourceMeta
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
-import Estuary.Render.R
-import Estuary.Types.UriOptions as Uri
+import qualified Estuary.Render.R as R
+import Estuary.Client.Settings as Settings
 
-keyboardHintsCatcher :: MonadWidget t m => Uri.UriOptions -> MVar Context -> MVar RenderInfo -> m ()
-keyboardHintsCatcher uriOptions ctxM riM = mdo
-  (theElement,_) <- elClass' "div" "" $ estuaryWidget uriOptions ctxM riM keyboardHints
+keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
+keyboardHintsCatcher rEnv settings ctxM riM = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardHints
   let e = _el_element theElement
   e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
     y <- getKeyEvent
@@ -83,10 +83,19 @@ keyEventToHint x
   | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just ToggleStats
 keyEventToHint _ = Nothing
 
-estuaryWidget :: MonadWidget t m => Uri.UriOptions -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
-estuaryWidget uriOptions ctxM riM keyboardHints = divClass "estuary" $ mdo
+settingsForWidgets :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t [Hint] -> m (Dynamic t Settings)
+settingsForWidgets rEnv iSettings hints = do
+  let settingsChange = fmapMaybe hintsToSettingsChange hints
+  settings <- foldDyn ($) iSettings settingsChange
+  performEvent_ $ fmap (liftIO . R.updateSettings rEnv) $ updated settings
+  return settings
 
-  canvasVisible <- holdDyn (Uri.canvas uriOptions) $ fmapMaybe hintsToCanvasVisibility hints
+
+estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
+estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
+
+  settings <- settingsForWidgets rEnv iSettings hints
+  let canvasVisible = Settings.canvasOn <$> settings
   cinecer0Widget canvasVisible ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
   cvsElement <- canvasWidget canvasVisible punctualZIndex' ctx -- canvas for Punctual
@@ -99,7 +108,7 @@ estuaryWidget uriOptions ctxM riM keyboardHints = divClass "estuary" $ mdo
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
 
-  rEnv <- liftIO $ forkRenderThreads uriOptions ctxM cvsElement glCtx hCanvas riM
+  liftIO $ forkRenderThreads rEnv iSettings ctxM cvsElement glCtx hCanvas riM
 
   performContext rEnv ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
@@ -112,7 +121,7 @@ estuaryWidget uriOptions ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   -- resourceMaps :: Dynamic t ResourceMaps, updated by callback events from the Resources system
   (resourceMapsEvent,resourceMapsCallback) <- newTriggerEvent
-  setResourcesUpdatedCallback (resources rEnv) resourceMapsCallback
+  setResourcesUpdatedCallback (R.resources rEnv) resourceMapsCallback
   resourceMaps <- holdDyn emptyResourceMaps resourceMapsEvent
 
   -- four GUI components: header, main (navigation), terminal, footer
@@ -120,17 +129,18 @@ estuaryWidget uriOptions ctxM riM keyboardHints = divClass "estuary" $ mdo
     _renderEnvironment = rEnv,
     _context = ctx,
     _renderInfo = rInfo,
-    _resourceMaps = resourceMaps
+    _resourceMaps = resourceMaps,
+    _settings = settings
     }
   (headerChange,headerHints) <- runW wEnv header
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
-    let sidebarToggle = ffilter (elem ToggleSidebar) hints
+    let sidebarToggle = fmapMaybe justToggleSidebar hints
     sidebarVisible <- toggle False sidebarToggle
     (navRequests,pageHints) <- runW wEnv $ navigation deltasDownAlt
     (ctxChange,sidebarHints) <- runW wEnv $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
-  let terminalShortcut = ffilter (elem ToggleTerminal) hints
+  let terminalShortcut = fmapMaybe justToggleTerminal hints
   let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
   terminalVisible <- toggle True terminalEvent
   (command,_) <- hideableWidget' terminalVisible $ do
@@ -138,7 +148,7 @@ estuaryWidget uriOptions ctxM riM keyboardHints = divClass "estuary" $ mdo
   (terminalButton,_) <- runW wEnv $ footer hints
   commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
-  performEvent_ $ fmap (ensembleRequestIO $ resources rEnv) ensembleRequests
+  performEvent_ $ fmap (ensembleRequestIO $ R.resources rEnv) ensembleRequests
   let commandRequests = fmapMaybe commandToRequest command
 
   -- changes to EnsembleC within Context, and to Context
@@ -147,7 +157,7 @@ estuaryWidget uriOptions ctxM riM keyboardHints = divClass "estuary" $ mdo
   let ensembleResponses = fmapMaybe justEnsembleResponses deltasDown
   let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
   let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
-  performEvent_ $ fmap (mapM_ (ensembleResponseIO $ resources rEnv)) ensembleResponses
+  performEvent_ $ fmap (mapM_ (ensembleResponseIO $ R.resources rEnv)) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
   let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange]
@@ -157,7 +167,7 @@ estuaryWidget uriOptions ctxM riM keyboardHints = divClass "estuary" $ mdo
   let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
-  performHints (webDirt rEnv) hints
+  performHints (R.webDirt rEnv) hints
   performDelayHints rEnv hints
 
   -- requests up to server
@@ -181,11 +191,14 @@ hintsToResponses = catMaybes . fmap f
     f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
     f _ = Nothing
 
-hintsToCanvasVisibility :: [Hint] -> Maybe Bool
-hintsToCanvasVisibility = listToMaybe . reverse . catMaybes . fmap f
+hintsToSettingsChange :: [Hint] -> Maybe (Settings -> Settings)
+hintsToSettingsChange = g . catMaybes . fmap f
   where
-    f (CanvasActive x) = Just x
+    f (ChangeSettings x) = Just x
     f _ = Nothing
+    g [] = Nothing
+    g (x:[]) = Just x
+    g xs = Just $ foldl1 (.) xs
 
 cinecer0Widget :: MonadWidget t m => Dynamic t Bool -> MVar Context -> Dynamic t Context -> m ()
 cinecer0Widget isCanvasVisible ctxM ctx = do
@@ -224,7 +237,7 @@ pollRenderInfo riM = do
 
 -- whenever the Dynamic representation of the Context changes, translate that
 -- into various
-performContext :: MonadWidget t m => RenderEnvironment -> MVar Context -> Dynamic t Context -> m ()
+performContext :: MonadWidget t m => R.RenderEnvironment -> MVar Context -> Dynamic t Context -> m ()
 performContext rEnv cMvar cDyn = do
   iCtx <- sample $ current cDyn
   performEvent_ $ fmap (liftIO . updateContext cMvar) $ updated cDyn -- transfer whole Context for render/animation threads
@@ -235,26 +248,27 @@ performContext rEnv cMvar cDyn = do
   let t' = updated t -- Event t String
   changeTheme t'
   -- when the superDirt flag changes, make it so
-  let sd = superDirt rEnv
-  sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
-  performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
+  -- TODO: this is broken, needs to be re-implemented but within render engine
+  -- let sd = superDirt rEnv
+  -- sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
+  -- performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
 updateContext :: MVar Context -> Context -> IO ()
 updateContext mv x = swapMVar mv x >> return ()
 
-updateDynamicsModes :: MonadWidget t m => RenderEnvironment -> Dynamic t Context -> m ()
+updateDynamicsModes :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Context -> m ()
 updateDynamicsModes rEnv ctx = do
   dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap dynamicsMode ctx
-  performEvent_ $ fmap (liftIO . changeDynamicsMode (mainBus rEnv)) dynamicsModeChanged
+  performEvent_ $ fmap (liftIO . changeDynamicsMode (R.mainBus rEnv)) dynamicsModeChanged
 
-updatePunctualAudioInputMode :: MonadWidget t m => RenderEnvironment -> Dynamic t Context -> m ()
+updatePunctualAudioInputMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Context -> m ()
 updatePunctualAudioInputMode rEnv ctx = do
   punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap punctualAudioInputMode ctx
-  performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (mainBus rEnv)) punctualAudioInputChanged
+  performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (R.mainBus rEnv)) punctualAudioInputChanged
 
-performDelayHints :: MonadWidget t m => RenderEnvironment -> Event t [Hint] -> m ()
+performDelayHints :: MonadWidget t m => R.RenderEnvironment -> Event t [Hint] -> m ()
 performDelayHints rEnv hs = do
-  let nodes = mainBus rEnv
+  let nodes = R.mainBus rEnv
   let newDelayTime = fmapMaybe justGlobalDelayTime hs
   performEvent_ $ fmap (liftIO . changeDelay nodes) newDelayTime
   where

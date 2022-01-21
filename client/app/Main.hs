@@ -21,7 +21,8 @@ import Estuary.Widgets.Navigation(Navigation(..))
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Render.Renderer
-import Estuary.Types.UriOptions
+import Estuary.Render.R
+import Estuary.Client.Settings
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
@@ -49,9 +50,10 @@ main = do
   context <- newMVar $ initialContext nowUtc
   renderInfo <- newMVar $ emptyRenderInfo
 
-  uriOptions <- getUriOptions
-  putStrLn $ show uriOptions
-  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher uriOptions context renderInfo
+  settings <- getSettingsFromURI
+  putStrLn $ show settings
+  rEnv <- initialRenderEnvironment settings
+  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings context renderInfo
 
   -- Signal the splash page that estuary is loaded.
   -- js_setIconStateLoaded
