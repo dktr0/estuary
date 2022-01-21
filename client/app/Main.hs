@@ -11,6 +11,7 @@ import Control.Monad(liftM)
 import Control.Monad.IO.Class(liftIO)
 import System.IO
 import Sound.MusicW
+import qualified Data.Text as T
 
 
 import Estuary.Protocol.Peer
@@ -20,6 +21,7 @@ import Estuary.Widgets.Navigation(Navigation(..))
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
 import Estuary.Render.Renderer
+import Estuary.Types.UriOptions
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
@@ -47,7 +49,9 @@ main = do
   context <- newMVar $ initialContext nowUtc
   renderInfo <- newMVar $ emptyRenderInfo
 
-  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher context renderInfo
+  uriOptions <- getUriOptions
+  putStrLn $ show uriOptions
+  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher uriOptions context renderInfo
 
   -- Signal the splash page that estuary is loaded.
   -- js_setIconStateLoaded
