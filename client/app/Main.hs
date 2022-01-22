@@ -51,7 +51,7 @@ main = do
   renderInfo <- newMVar $ emptyRenderInfo
 
   settings <- getSettingsFromURI
-  putStrLn $ show settings
+  -- putStrLn $ show settings
   rEnv <- initialRenderEnvironment settings
   mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings context renderInfo
 

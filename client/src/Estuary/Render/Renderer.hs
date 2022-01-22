@@ -72,6 +72,7 @@ import Estuary.Types.RenderState
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
+import Estuary.Render.MainBus
 import Estuary.Render.R
 import qualified Estuary.Client.Settings as Settings
 
@@ -204,7 +205,7 @@ render c = do
     clearDeletedZones newDefs
     traverseWithKey (renderZone c) newDefs
     flushEvents
-    updatePunctualResolutionAndBrightness c
+    updatePunctualResolutionAndBrightness
     -- calculate how much time this render cycle took and update load measurements
     t2System <- liftIO $ getCurrentTime
     t2Audio <- liftAudioIO $ audioTime
@@ -293,7 +294,7 @@ renderAnimation :: R ()
 renderAnimation = do
   t1 <- liftIO $ getCurrentTime
   wta <- gets wakeTimeAnimation
-  fpsl <- gets animationFpsLimit
+  fpsl <- fpsLimit
   let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
   when okToRender $ do
     ns <- baseNotations <$> get
@@ -335,13 +336,14 @@ renderZoneAnimationTextProgram tNow z CineCer0 = renderCineCer0 tNow z
 renderZoneAnimationTextProgram tNow z Hydra = renderHydra tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
-updatePunctualResolutionAndBrightness :: Context -> R ()
-updatePunctualResolutionAndBrightness ctx = do
+updatePunctualResolutionAndBrightness :: R ()
+updatePunctualResolutionAndBrightness = do
   s <- get
-  newWebGL <- liftIO $
-    do
-      x <- Punctual.setResolution (glContext s) (resolution ctx) (punctualWebGL s)
-      Punctual.setBrightness (brightness ctx) x
+  res <- resolution
+  b <- brightness
+  newWebGL <- liftIO $ do
+    x <- Punctual.setResolution (glContext s) res (punctualWebGL s)
+    Punctual.setBrightness b x
     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
   modify' $ \x -> x { punctualWebGL = newWebGL }
 
@@ -648,7 +650,6 @@ mainRenderThread rEnv ctxM riM rsM = do
   rs <- takeMVar rsM
   rs' <- runR (render ctx) rEnv rs
   let rs'' = rs' {
-    animationFpsLimit = fpsLimit ctx,
     tempoCache = tempo $ ensemble $ ensembleC ctx,
     videoDivCache = videoDivElement ctx
     }

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Widgets.W where
 
 -- In this module, we define a type that represents the greater majority of widgets
@@ -11,11 +13,18 @@ module Estuary.Widgets.W where
 import Reflex
 import Reflex.Dom
 import Control.Monad.Reader
-import Data.Text
+import Data.Text as T
 import Data.IORef
+import Data.Time
+import Data.Map
+import Text.Read (readMaybe)
 
+import qualified Sound.Punctual.Resolution as Punctual
+
+import Estuary.Types.Language
 import Estuary.Types.Context
-import Estuary.Render.R
+import qualified Estuary.Render.R as R
+import Estuary.Render.DynamicsMode
 import Estuary.Types.RenderInfo
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
@@ -31,7 +40,7 @@ import qualified Estuary.Client.Settings as Settings
 type W t m = EventWriterT t [Hint] (ReaderT (WidgetEnvironment t) m)
 
 data WidgetEnvironment t = WidgetEnvironment {
-  _renderEnvironment :: RenderEnvironment,
+  _renderEnvironment :: R.RenderEnvironment,
   _context :: Dynamic t Context,
   _renderInfo :: Dynamic t RenderInfo,
   _resourceMaps :: Dynamic t ResourceMaps,
@@ -52,7 +61,7 @@ widgetEnvironment = lift ask
 
 
 -- Get the immutable render context.
-renderEnvironment :: Monad m => W t m RenderEnvironment
+renderEnvironment :: Monad m => W t m R.RenderEnvironment
 renderEnvironment = lift $ asks _renderEnvironment
 
 -- Get the dynamic context.
@@ -71,41 +80,143 @@ resourceMaps = lift $ asks _resourceMaps
 settings :: Monad m => W t m (Dynamic t Settings.Settings)
 settings = lift $ asks Estuary.Widgets.W._settings
 
-changeSettings :: (Reflex t, Monad m) => Event t (Settings.Settings -> Settings.Settings) -> W t m ()
-changeSettings x = hint $ fmap ChangeSettings x
-
 -- Get and set specific client settings...
 
+setSetting :: (Reflex t, Monad m) => Event t (Settings.Settings -> Settings.Settings) -> W t m ()
+setSetting x = hint $ fmap ChangeSettings x
+
+askSetting :: (Reflex t, Monad m) => (Settings.Settings -> a) -> W t m (Dynamic t a)
+askSetting f = settings >>= return . fmap f
+
+language :: (Reflex t, Monad m) => W t m (Dynamic t Language)
+language = askSetting Settings.language
+
+setLanguage :: (Reflex t, Monad m) => Event t Language -> W t m ()
+setLanguage x = setSetting $ fmap (\b s -> s { Settings.language = b } ) x
+
+theme :: (Reflex t, Monad m) => W t m (Dynamic t Text)
+theme = askSetting Settings.theme
+
+setTheme :: (Reflex t, Monad m) => Event t Text -> W t m ()
+setTheme x = setSetting $ fmap (\b s -> s { Settings.theme = b } ) x
+
 canvasOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
-canvasOn = settings >>= return . fmap Settings.canvasOn
+canvasOn = askSetting Settings.canvasOn
 
 setCanvasOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
-setCanvasOn x = changeSettings $ fmap (\b s -> s { Settings.canvasOn = b } ) x
+setCanvasOn x = setSetting $ fmap (\b s -> s { Settings.canvasOn = b } ) x
+
+resolution :: (Reflex t, Monad m) => W t m (Dynamic t Punctual.Resolution)
+resolution = askSetting Settings.resolution
+
+setResolution :: (Reflex t, Monad m) => Event t Punctual.Resolution -> W t m ()
+setResolution x = setSetting $ fmap (\b s -> s { Settings.resolution = b } ) x
+
+brightness :: (Reflex t, Monad m) => W t m (Dynamic t Double)
+brightness = askSetting Settings.brightness
+
+setBrightness :: (Reflex t, Monad m) => Event t Double -> W t m ()
+setBrightness x = setSetting $ fmap (\b s -> s { Settings.brightness = b } ) x
+
+fpsLimit :: (Reflex t, Monad m) => W t m (Dynamic t (Maybe NominalDiffTime))
+fpsLimit = askSetting Settings.fpsLimit
+
+setFpsLimit :: (Reflex t, Monad m) => Event t (Maybe NominalDiffTime) -> W t m ()
+setFpsLimit x = setSetting $ fmap (\b s -> s { Settings.fpsLimit = b } ) x
+
+cineCer0ZIndex :: (Reflex t, Monad m) => W t m (Dynamic t Int)
+cineCer0ZIndex = askSetting Settings.cineCer0ZIndex
+
+setCineCer0ZIndex :: (Reflex t, Monad m) => Event t Int -> W t m ()
+setCineCer0ZIndex x = setSetting $ fmap (\b s -> s { Settings.cineCer0ZIndex = b } ) x
+
+punctualZIndex :: (Reflex t, Monad m) => W t m (Dynamic t Int)
+punctualZIndex = askSetting Settings.punctualZIndex
+
+setPunctualZIndex :: (Reflex t, Monad m) => Event t Int -> W t m ()
+setPunctualZIndex x = setSetting $ fmap (\b s -> s { Settings.punctualZIndex = b } ) x
+
+improvizZIndex :: (Reflex t, Monad m) => W t m (Dynamic t Int)
+improvizZIndex = askSetting Settings.improvizZIndex
+
+setImprovizZIndex :: (Reflex t, Monad m) => Event t Int -> W t m ()
+setImprovizZIndex x = setSetting $ fmap (\b s -> s { Settings.improvizZIndex = b } ) x
+
+hydraZIndex :: (Reflex t, Monad m) => W t m (Dynamic t Int)
+hydraZIndex = askSetting Settings.hydraZIndex
+
+setHydraZIndex :: (Reflex t, Monad m) => Event t Int -> W t m ()
+setHydraZIndex x = setSetting $ fmap (\b s -> s { Settings.hydraZIndex = b } ) x
 
 webDirtOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
-webDirtOn = settings >>= return . fmap Settings.webDirtOn
+webDirtOn = askSetting Settings.webDirtOn
 
 setWebDirtOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
-setWebDirtOn x = changeSettings $ fmap (\b s -> s { Settings.webDirtOn = b } ) x
-
-superDirtOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
-superDirtOn = settings >>= return . fmap Settings.superDirtOn
-
-setSuperDirtOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
-setSuperDirtOn x = changeSettings $ fmap (\b s -> s { Settings.superDirtOn = b } ) x
+setWebDirtOn x = setSetting $ fmap (\b s -> s { Settings.webDirtOn = b } ) x
 
 unsafeModeOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
-unsafeModeOn = settings >>= return . fmap Settings.unsafeModeOn
+unsafeModeOn = askSetting Settings.unsafeModeOn
 
 setUnsafeModeOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
-setUnsafeModeOn x = changeSettings $ fmap (\b s -> s { Settings.unsafeModeOn = b } ) x
+setUnsafeModeOn x = setSetting $ fmap (\b s -> s { Settings.unsafeModeOn = b } ) x
 
+superDirtOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+superDirtOn = askSetting Settings.superDirtOn
+
+setSuperDirtOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setSuperDirtOn x = setSetting $ fmap (\b s -> s { Settings.superDirtOn = b } ) x
+
+dynamicsMode :: (Reflex t, Monad m) => W t m (Dynamic t DynamicsMode)
+dynamicsMode = askSetting Settings.dynamicsMode
+
+setDynamicsMode :: (Reflex t, Monad m) => Event t DynamicsMode -> W t m ()
+setDynamicsMode x = setSetting $ fmap (\b s -> s { Settings.dynamicsMode = b } ) x
+
+globalAudioDelay :: (Reflex t, Monad m) => W t m (Dynamic t Double)
+globalAudioDelay = askSetting Settings.globalAudioDelay
+
+setGlobalAudioDelay :: (Reflex t, Monad m) => Event t Double -> W t m ()
+setGlobalAudioDelay x = setSetting $ fmap (\b s -> s { Settings.globalAudioDelay = b } ) x
+
+punctualAudioInputMode :: (Reflex t, Monad m) => W t m (Dynamic t PunctualAudioInputMode)
+punctualAudioInputMode = askSetting Settings.punctualAudioInputMode
+
+setPunctualAudioInputMode :: (Reflex t, Monad m) => Event t PunctualAudioInputMode -> W t m ()
+setPunctualAudioInputMode x = setSetting $ fmap (\b s -> s { Settings.punctualAudioInputMode = b } ) x
+
+
+-- A basic checkbox widget that is updated from elsewhere (eg. collaborative editing)
+-- and which issues events when it is changed by local input only.
 
 checkboxW :: MonadWidget t m => Dynamic t Bool -> m (Event t Bool)
 checkboxW x = do
-  iVal <- sample $ current x
-  b <- checkbox iVal def -- *** NOT DONE YET!!! *** needs to respond to updates of x!!!
-  return $ _checkbox_change b
+  i <- sample $ current x
+  let xEvents = updated x
+  _checkbox_change <$> checkbox i (def & checkboxConfig_setValue .~ xEvents)
+
+
+-- A basic dropdown menu that is updated from elsewhere (eg. collaborative editing)
+-- and which issues events when it is changed by local input only.
+
+dropdownW :: (MonadWidget t m, Ord k) => Map k Text -> Dynamic t k -> m (Event t k)
+dropdownW m x = divClass "config-entry display-inline-block primary-color ui-font" $ do
+  let m' = constDyn m
+  i <- sample $ current x
+  let xEvents = updated x
+  _dropdown_change <$> dropdown i m' (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" ) & dropdownConfig_setValue .~ xEvents)
+
+-- A text input area that is updated from elsewhere (eg. collaborative editing),
+-- issues events in response to valid local input only
+
+intTextInputW :: MonadWidget t m => Dynamic t Int -> m (Event t Int)
+intTextInputW x = do
+  i <- sample $ current x
+  let xEvents = updated x
+  w <- textInput $ def & textInputConfig_inputType .~ "number"
+                       & textInputConfig_initialValue .~ T.pack (show i)
+                       & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+  return $ fmapMaybe (readMaybe . T.unpack) $ _textInput_input w
+
 
 -- Issue a single hint
 hint :: (Reflex t, Monad m) => Event t Hint -> W t m ()
@@ -120,8 +231,7 @@ hints = tellEvent
 -- Note that it doesn't build the text in the DOM - for that, combine with dynText
 term :: (Reflex t, Monad m, MonadHold t m, MonadFix m) => Term -> W t m (Dynamic t Text)
 term t = do
-  c <- context
-  l <- holdUniqDyn $ fmap language c
+  l <- language
   return $ translate t <$> l
 
 
@@ -129,8 +239,7 @@ term t = do
 -- Note that it doesn't build the text in the DOM - for that, combine with dynText
 translatableText :: (Reflex t, Monad m, MonadHold t m, MonadFix m) => TranslatableText -> W t m (Dynamic t Text)
 translatableText t = do
-  c <- context
-  l <- holdUniqDyn $ fmap language c
+  l <- language
   return $ translateText t <$> l
 
 
@@ -138,8 +247,7 @@ translatableText t = do
 -- Note that it doesn't build the text in the DOM - for that, combine with dynText
 dynTranslatableText :: (Reflex t, Monad m, MonadHold t m, MonadFix m) => Dynamic t TranslatableText -> W t m (Dynamic t Text)
 dynTranslatableText t = do
-  c <- context
-  l <- holdUniqDyn $ fmap language c
+  l <- language
   return $ translateText <$> t <*> l
 
 

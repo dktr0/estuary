@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Client.Settings
   (
   Settings(..),
@@ -5,27 +7,67 @@ module Estuary.Client.Settings
   ) where
 
 import GHCJS.DOM
-import GHCJS.DOM.Types hiding (JSString)
+import GHCJS.DOM.Types hiding (JSString,Text)
 import GHCJS.DOM.Window as Window
 import Reflex.Dom.Location
 import Network.URI
 import Text.Parsec
 import Control.Monad.Identity
+import Data.Time
+import Data.Text
+
+import qualified Sound.Punctual.Resolution as Punctual
+
+import Estuary.Types.Language
+import Estuary.Render.DynamicsMode
+
 import Control.Monad.IO.Class (liftIO)
 
 data Settings = Settings {
+
+  language :: Language,
+  theme :: Text,
+
   canvasOn :: Bool,
+  resolution :: Punctual.Resolution,
+  brightness :: Double,
+  fpsLimit :: Maybe NominalDiffTime,
+  cineCer0ZIndex :: Int,
+  punctualZIndex :: Int,
+  improvizZIndex :: Int,
+  hydraZIndex :: Int,
+
   webDirtOn :: Bool,
+  unsafeModeOn :: Bool,
   superDirtOn :: Bool,
-  unsafeModeOn :: Bool
-  } deriving (Show)
+  dynamicsMode :: DynamicsMode,
+  globalAudioDelay :: Double,
+  punctualAudioInputMode :: PunctualAudioInputMode
+
+  }
+
 
 defaultSettings :: Settings
 defaultSettings = Settings {
+
+  language = English,
+  theme = "../css-custom/classic.css",
+
   canvasOn = True,
+  resolution = Punctual.HD,
+  brightness = 1.0,
+  fpsLimit = Just 0.030,
+  cineCer0ZIndex = -1,
+  punctualZIndex = -2,
+  improvizZIndex = -3,
+  hydraZIndex = -10,
+
   webDirtOn = True,
+  unsafeModeOn = False,
   superDirtOn = False,
-  unsafeModeOn = False
+  dynamicsMode = DefaultDynamics,
+  globalAudioDelay = 0.0,
+  punctualAudioInputMode = MicToPunctual
   }
 
 getSettingsFromURI :: MonadJSM m => m Settings

@@ -30,7 +30,6 @@ import Estuary.Languages.JSoLang
 
 
 data RenderState = RenderState {
-  animationFpsLimit :: Maybe NominalDiffTime,
   wakeTimeAudio :: !Double,
   wakeTimeSystem :: !UTCTime,
   renderStart :: !UTCTime,
@@ -72,7 +71,6 @@ initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLConte
 initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 hCanvas glCtx
   return $ RenderState {
-    animationFpsLimit = Just 0.030,
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
     renderStart = t0System,

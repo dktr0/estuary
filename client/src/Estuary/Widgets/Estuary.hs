@@ -53,7 +53,6 @@ import Estuary.Render.Renderer
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Terminal as Terminal
-import Estuary.Widgets.W
 import Estuary.Widgets.Sidebar
 import Estuary.Resources.AudioResource
 import Estuary.Types.AudioMeta
@@ -63,7 +62,9 @@ import Estuary.Resources
 import Estuary.Types.ResourceMeta
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
-import qualified Estuary.Render.R as R
+import Estuary.Widgets.W as W
+import Estuary.Render.R as R
+import Estuary.Render.MainBus
 import Estuary.Client.Settings as Settings
 
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
@@ -94,23 +95,21 @@ settingsForWidgets rEnv iSettings hints = do
 estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
 
-  settings <- settingsForWidgets rEnv iSettings hints
-  let canvasVisible = Settings.canvasOn <$> settings
-  cinecer0Widget canvasVisible ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  punctualZIndex' <- holdUniqDyn $ fmap punctualZIndex ctx
-  cvsElement <- canvasWidget canvasVisible punctualZIndex' ctx -- canvas for Punctual
+  cinecer0Widget settings ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
+  punctualZIndex' <- holdUniqDyn $ fmap Settings.punctualZIndex settings
+  cvsElement <- canvasWidget settings punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
-  improvizZIndex' <- holdUniqDyn $ fmap improvizZIndex ctx
-  iCanvas <- canvasWidget canvasVisible improvizZIndex' ctx -- canvas for Improviz
-  hydraZIndex' <- holdUniqDyn $ fmap hydraZIndex ctx
-  hCanvas <- canvasWidget canvasVisible hydraZIndex' ctx -- canvas for Hydra
+  improvizZIndex' <- holdUniqDyn $ fmap Settings.improvizZIndex settings
+  iCanvas <- canvasWidget settings improvizZIndex' ctx -- canvas for Improviz
+  hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
+  hCanvas <- canvasWidget settings hydraZIndex' ctx -- canvas for Hydra
 
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
 
   liftIO $ forkRenderThreads rEnv iSettings ctxM cvsElement glCtx hCanvas riM
 
-  performContext rEnv ctxM ctx -- perform all IO actions consequent to Context changing
+  performContext ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
   let responsesFromEnsembleRequests = fmap ((:[]) . EnsembleResponse) $ fmapMaybe ensembleRequestsToResponses commandEnsembleRequests
@@ -130,9 +129,9 @@ estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
     _context = ctx,
     _renderInfo = rInfo,
     _resourceMaps = resourceMaps,
-    _settings = settings
+    W._settings = settings
     }
-  (headerChange,headerHints) <- runW wEnv header
+  (_,headerHints) <- runW wEnv header
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = fmapMaybe justToggleSidebar hints
     sidebarVisible <- toggle False sidebarToggle
@@ -160,7 +159,7 @@ estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
   performEvent_ $ fmap (mapM_ (ensembleResponseIO $ R.resources rEnv)) ensembleResponses
   let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
   let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  let contextChange = mergeWith (.) [ensembleChange, headerChange, ccChange, wsCtxChange, sidebarChange]
+  let contextChange = mergeWith (.) [ensembleChange, ccChange, wsCtxChange, sidebarChange]
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
@@ -169,6 +168,10 @@ estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (R.webDirt rEnv) hints
   performDelayHints rEnv hints
+  settings <- settingsForWidgets rEnv iSettings hints
+  performDynamicsMode rEnv settings
+  performPunctualAudioInputMode rEnv settings
+  performTheme settings
 
   -- requests up to server
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
@@ -200,26 +203,28 @@ hintsToSettingsChange = g . catMaybes . fmap f
     g (x:[]) = Just x
     g xs = Just $ foldl1 (.) xs
 
-cinecer0Widget :: MonadWidget t m => Dynamic t Bool -> MVar Context -> Dynamic t Context -> m ()
-cinecer0Widget isCanvasVisible ctxM ctx = do
+cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> MVar Context -> Dynamic t Context -> m ()
+cinecer0Widget settings ctxM ctx = do
   ic0 <- liftIO $ takeMVar ctxM
-  let canvasVisible = fmap (("visibility:" <>)  . bool "hidden" "visible") isCanvasVisible
-  dynZIndex <- holdUniqDyn $ fmap cineCer0ZIndex ctx
+  let canvasVisible = Settings.canvasOn <$> settings
+  let canvasVisible' = fmap (("visibility:" <>)  . bool "hidden" "visible") canvasVisible
+  dynZIndex <- holdUniqDyn $ fmap Settings.cineCer0ZIndex settings
   let dynZIndex' = fmap (T.pack . show) dynZIndex
-  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
-  res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
+  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible' <> constDyn ";")] -- :: Dynamic t (Map Text Text)
+  res <- fmap pixels <$> (holdUniqDyn $ fmap Settings.resolution settings)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
   let attrs = (<>) <$> dynAttrs <*> resMap
   videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
   let ic = ic0 { videoDivElement = Just videoDiv }
   liftIO $ putMVar ctxM ic
 
-canvasWidget :: MonadWidget t m => Dynamic t Bool -> Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
-canvasWidget isCanvasVisible dynZIndex ctx = do
-  let canvasVisible = fmap (("visibility: " <>)  . bool "hidden" "visible") isCanvasVisible
+canvasWidget :: MonadWidget t m => Dynamic t Settings -> Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
+canvasWidget settings dynZIndex ctx = do
+  let canvasVisible = Settings.canvasOn <$> settings
+  let canvasVisible' = fmap (("visibility:" <>)  . bool "hidden" "visible") canvasVisible
   let dynZIndex' = fmap (T.pack . show) dynZIndex -- :: Dynamic t Text
-  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible <> constDyn ";")] -- :: Dynamic t (Map Text Text)
-  res <- fmap pixels <$> (holdUniqDyn $ fmap resolution ctx)
+  let dynAttrs = mconcat [dynAttr "class" (constDyn "canvas-or-svg-display"), dynAttr "style" (constDyn "z-index: " <> dynZIndex' <> constDyn ";" <> canvasVisible' <> constDyn ";")] -- :: Dynamic t (Map Text Text)
+  res <- fmap pixels <$> (holdUniqDyn $ fmap Settings.resolution settings)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res -- :: Dynamic t (Map Text Text)
   let attrs = (<>) <$> dynAttrs <*> resMap
   liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
@@ -235,37 +240,37 @@ pollRenderInfo riM = do
   holdDyn riInitial newInfo
 
 
--- whenever the Dynamic representation of the Context changes, translate that
--- into various
-performContext :: MonadWidget t m => R.RenderEnvironment -> MVar Context -> Dynamic t Context -> m ()
-performContext rEnv cMvar cDyn = do
+performContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
+performContext cMvar cDyn = do
   iCtx <- sample $ current cDyn
-  performEvent_ $ fmap (liftIO . updateContext cMvar) $ updated cDyn -- transfer whole Context for render/animation threads
-  updateDynamicsModes rEnv cDyn -- when dynamics modes change, make it so
-  updatePunctualAudioInputMode rEnv cDyn
-  -- when the theme changes,
-  t <- holdUniqDyn $ fmap theme cDyn -- Dynamic t String
-  let t' = updated t -- Event t String
-  changeTheme t'
+  performEvent_ $ fmap (liftIO . (\x -> swapMVar cMvar x >> return ())) $ updated cDyn -- transfer whole Context for render/animation threads
+
   -- when the superDirt flag changes, make it so
-  -- TODO: this is broken, needs to be re-implemented but within render engine
+  -- TODO: this is broken, needs to be re-implemented!!!
   -- let sd = superDirt rEnv
   -- sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
   -- performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
-updateContext :: MVar Context -> Context -> IO ()
-updateContext mv x = swapMVar mv x >> return ()
+performTheme :: MonadWidget t m => Dynamic t Settings -> m ()
+performTheme settings = do
+  themeChanged <- liftM updated $ holdUniqDyn $ fmap Settings.theme settings
+  performEvent_ $ fmap (liftIO . js_setThemeHref) themeChanged
 
-updateDynamicsModes :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Context -> m ()
-updateDynamicsModes rEnv ctx = do
-  dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap dynamicsMode ctx
+foreign import javascript safe
+  "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
+  js_setThemeHref :: Text -> IO ()
+
+performDynamicsMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performDynamicsMode rEnv settings = do
+  dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap Settings.dynamicsMode settings
   performEvent_ $ fmap (liftIO . changeDynamicsMode (R.mainBus rEnv)) dynamicsModeChanged
 
-updatePunctualAudioInputMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Context -> m ()
-updatePunctualAudioInputMode rEnv ctx = do
-  punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap punctualAudioInputMode ctx
+performPunctualAudioInputMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performPunctualAudioInputMode rEnv settings = do
+  punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap Settings.punctualAudioInputMode settings
   performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (R.mainBus rEnv)) punctualAudioInputChanged
 
+-- TODO: this still needs to be refactored to use new Settings type, not Hint directly
 performDelayHints :: MonadWidget t m => R.RenderEnvironment -> Event t [Hint] -> m ()
 performDelayHints rEnv hs = do
   let nodes = R.mainBus rEnv
@@ -275,13 +280,6 @@ performDelayHints rEnv hs = do
     f (SetGlobalDelayTime x) = Just x
     f _ = Nothing
 
-
-changeTheme :: MonadWidget t m => Event t Text -> m ()
-changeTheme newStyle = performEvent_ $ fmap (liftIO . js_setThemeHref) newStyle
-
-foreign import javascript safe
-  "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
-  js_setThemeHref :: Text -> IO ()
 
 commandToRequest :: Terminal.Command -> Maybe Request
 commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
