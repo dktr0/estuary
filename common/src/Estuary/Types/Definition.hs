@@ -21,10 +21,30 @@ type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
-type RehearsalTime = (Text, ZonedTime)
-
 type NotePad = (Int,Seq NotePage)
 type NotePage = (Text,Text)
+
+data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
+data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Maybe Recurrence } deriving  (Eq, Show, Generic)
+data Recurrence = Recurrence { periodicity :: Periodicity, endDate :: ZonedTime} deriving  (Eq, Show, Generic)
+data Periodicity = Daily | Weekly | Monthly | Yearly deriving  (Eq, Show, Generic)
+
+instance ToJSON CalendarEvent where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON CalendarEvent
+
+instance ToJSON CalendarTime where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON CalendarTime
+
+instance ToJSON Recurrence where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Recurrence
+
+instance ToJSON Periodicity where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Periodicity
+
 
 data TimerDownState =
   Holding Int |  -- target
@@ -56,7 +76,7 @@ data Definition =
   StopWatch TimerUpState |
   SeeTime Tempo |
   NotePad NotePad |
-  RehearsalTime RehearsalTime
+  CalendarEv CalendarEvent
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -74,7 +94,7 @@ definitionForRendering (Sequence x) = Sequence x
 definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
-definitionForRendering (RehearsalTime x) = RehearsalTime x
+definitionForRendering (CalendarEv x)  = CalendarEv x
 definitionForRendering (CountDown x) = CountDown x
 definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
@@ -116,12 +136,12 @@ maybeRoulette _ = Nothing
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
 
-maybeRehearsalTime :: Definition -> Maybe RehearsalTime
-maybeRehearsalTime (RehearsalTime x) = Just x
-maybeRehearsalTime _ = Nothing
+maybeCalendarEvent :: Definition -> Maybe CalendarEvent
+maybeCalendarEvent (CalendarEv x) = Just x
+maybeCalendarEvent _ = Nothing
 
-justRehearsalTime :: [Definition] -> [RehearsalTime]
-justRehearsalTime = mapMaybe maybeRehearsalTime
+justCalendarEvent :: [Definition] -> [CalendarEvent]
+justCalendarEvent = mapMaybe maybeCalendarEvent
 
 maybeTimerUpState:: Definition -> Maybe TimerUpState
 maybeTimerUpState (StopWatch x) = Just x

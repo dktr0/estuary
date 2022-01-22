@@ -12,10 +12,6 @@ import GHCJS.DOM.EventM -- just used for our test, maybe delete-able later
 
 import Estuary.Help.NoHelpFile
 import Estuary.Help.MiniTidal
-import Estuary.Help.CQenze
-import Estuary.Help.LaCalle
-import Estuary.Help.Sucixxx
-import Estuary.Help.Togo
 import Estuary.Help.PunctualAudio
 import Estuary.Help.Hydra
 import Estuary.Help.CineCer0.CineCer0
@@ -25,10 +21,6 @@ import Estuary.Languages.TidalParsers
 import Estuary.Types.TextNotation
 
 parserToHelp :: (MonadWidget t m) => TextNotation -> m ()
-parserToHelp (TidalTextNotation CQenze) = cqenzeHelpFile
-parserToHelp (TidalTextNotation Sucixxx) = sucixxxHelpFile
 parserToHelp (TidalTextNotation MiniTidal) = miniTidalHelpFile
-parserToHelp (TidalTextNotation LaCalle) = laCalleHelpFile
-parserToHelp (TidalTextNotation Togo) = togoHelpFile
 parserToHelp Punctual = punctualAudioHelpFile
 parserToHelp _ = noHelpFile

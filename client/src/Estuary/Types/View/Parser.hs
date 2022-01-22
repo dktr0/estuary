@@ -49,7 +49,8 @@ dumpView (SandClockView z) = "sandClock " <> showInt z
 dumpView (SeeTimeView z) = "seeTime " <> showInt z
 dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
-dumpView (RehearsalTimeView x) = "rehearsalTime" <> showInt x
+dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
+
 dumpView _ = " "
 
 dumpViews :: [View] -> T.Text
@@ -79,15 +80,17 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> seeTimeParser
           <|> notePadParser
           <|> iFrameParser
+          <|> calendarEventParser
 
-rehearsalTime :: H View
-rehearsalTime = rehearsalTime' <*> int
+--
+calendarEventParser :: H View
+calendarEventParser = calendarEventParser' <*> int
 
-rehearsalTime' :: H (Int -> View)
-rehearsalTime' = rehearsalTimeFunc <$ reserved "rehearsaltime"
+calendarEventParser' :: H (Int -> View)
+calendarEventParser' = calendarEventFunc <$ reserved "calendarevent"
 
-rehearsalTimeFunc :: Int -> View
-rehearsalTimeFunc x = RehearsalTimeView x
+calendarEventFunc :: Int -> View
+calendarEventFunc x = CalendarEventView x
 --
 seeTimeParser :: H View
 seeTimeParser = seeTimeParser' <*> int
