@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 module Estuary.Widgets.W where
 
@@ -16,7 +16,7 @@ import Control.Monad.Reader
 import Data.Text as T
 import Data.IORef
 import Data.Time
-import Data.Map
+import Data.Map as Map
 import Text.Read (readMaybe)
 
 import qualified Sound.Punctual.Resolution as Punctual
@@ -85,100 +85,100 @@ settings = lift $ asks Estuary.Widgets.W._settings
 setSetting :: (Reflex t, Monad m) => Event t (Settings.Settings -> Settings.Settings) -> W t m ()
 setSetting x = hint $ fmap ChangeSettings x
 
-askSetting :: (Reflex t, Monad m) => (Settings.Settings -> a) -> W t m (Dynamic t a)
-askSetting f = settings >>= return . fmap f
+askSetting :: (Reflex t, MonadFix m, MonadHold t m, Eq a) => (Settings.Settings -> a) -> W t m (Dynamic t a)
+askSetting f = settings >>= holdUniqDyn . fmap f
 
-language :: (Reflex t, Monad m) => W t m (Dynamic t Language)
+language :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Language)
 language = askSetting Settings.language
 
 setLanguage :: (Reflex t, Monad m) => Event t Language -> W t m ()
 setLanguage x = setSetting $ fmap (\b s -> s { Settings.language = b } ) x
 
-theme :: (Reflex t, Monad m) => W t m (Dynamic t Text)
+theme :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
 theme = askSetting Settings.theme
 
 setTheme :: (Reflex t, Monad m) => Event t Text -> W t m ()
 setTheme x = setSetting $ fmap (\b s -> s { Settings.theme = b } ) x
 
-canvasOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+canvasOn :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
 canvasOn = askSetting Settings.canvasOn
 
 setCanvasOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
 setCanvasOn x = setSetting $ fmap (\b s -> s { Settings.canvasOn = b } ) x
 
-resolution :: (Reflex t, Monad m) => W t m (Dynamic t Punctual.Resolution)
+resolution :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Punctual.Resolution)
 resolution = askSetting Settings.resolution
 
 setResolution :: (Reflex t, Monad m) => Event t Punctual.Resolution -> W t m ()
 setResolution x = setSetting $ fmap (\b s -> s { Settings.resolution = b } ) x
 
-brightness :: (Reflex t, Monad m) => W t m (Dynamic t Double)
+brightness :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Double)
 brightness = askSetting Settings.brightness
 
 setBrightness :: (Reflex t, Monad m) => Event t Double -> W t m ()
 setBrightness x = setSetting $ fmap (\b s -> s { Settings.brightness = b } ) x
 
-fpsLimit :: (Reflex t, Monad m) => W t m (Dynamic t (Maybe NominalDiffTime))
+fpsLimit :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (Maybe NominalDiffTime))
 fpsLimit = askSetting Settings.fpsLimit
 
 setFpsLimit :: (Reflex t, Monad m) => Event t (Maybe NominalDiffTime) -> W t m ()
 setFpsLimit x = setSetting $ fmap (\b s -> s { Settings.fpsLimit = b } ) x
 
-cineCer0ZIndex :: (Reflex t, Monad m) => W t m (Dynamic t Int)
+cineCer0ZIndex :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
 cineCer0ZIndex = askSetting Settings.cineCer0ZIndex
 
 setCineCer0ZIndex :: (Reflex t, Monad m) => Event t Int -> W t m ()
 setCineCer0ZIndex x = setSetting $ fmap (\b s -> s { Settings.cineCer0ZIndex = b } ) x
 
-punctualZIndex :: (Reflex t, Monad m) => W t m (Dynamic t Int)
+punctualZIndex :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
 punctualZIndex = askSetting Settings.punctualZIndex
 
 setPunctualZIndex :: (Reflex t, Monad m) => Event t Int -> W t m ()
 setPunctualZIndex x = setSetting $ fmap (\b s -> s { Settings.punctualZIndex = b } ) x
 
-improvizZIndex :: (Reflex t, Monad m) => W t m (Dynamic t Int)
+improvizZIndex :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
 improvizZIndex = askSetting Settings.improvizZIndex
 
 setImprovizZIndex :: (Reflex t, Monad m) => Event t Int -> W t m ()
 setImprovizZIndex x = setSetting $ fmap (\b s -> s { Settings.improvizZIndex = b } ) x
 
-hydraZIndex :: (Reflex t, Monad m) => W t m (Dynamic t Int)
+hydraZIndex :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
 hydraZIndex = askSetting Settings.hydraZIndex
 
 setHydraZIndex :: (Reflex t, Monad m) => Event t Int -> W t m ()
 setHydraZIndex x = setSetting $ fmap (\b s -> s { Settings.hydraZIndex = b } ) x
 
-webDirtOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+webDirtOn :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
 webDirtOn = askSetting Settings.webDirtOn
 
 setWebDirtOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
 setWebDirtOn x = setSetting $ fmap (\b s -> s { Settings.webDirtOn = b } ) x
 
-unsafeModeOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+unsafeModeOn :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
 unsafeModeOn = askSetting Settings.unsafeModeOn
 
 setUnsafeModeOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
 setUnsafeModeOn x = setSetting $ fmap (\b s -> s { Settings.unsafeModeOn = b } ) x
 
-superDirtOn :: (Reflex t, Monad m) => W t m (Dynamic t Bool)
+superDirtOn :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
 superDirtOn = askSetting Settings.superDirtOn
 
 setSuperDirtOn :: (Reflex t, Monad m) => Event t Bool -> W t m ()
 setSuperDirtOn x = setSetting $ fmap (\b s -> s { Settings.superDirtOn = b } ) x
 
-dynamicsMode :: (Reflex t, Monad m) => W t m (Dynamic t DynamicsMode)
+dynamicsMode :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t DynamicsMode)
 dynamicsMode = askSetting Settings.dynamicsMode
 
 setDynamicsMode :: (Reflex t, Monad m) => Event t DynamicsMode -> W t m ()
 setDynamicsMode x = setSetting $ fmap (\b s -> s { Settings.dynamicsMode = b } ) x
 
-globalAudioDelay :: (Reflex t, Monad m) => W t m (Dynamic t Double)
+globalAudioDelay :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Double)
 globalAudioDelay = askSetting Settings.globalAudioDelay
 
 setGlobalAudioDelay :: (Reflex t, Monad m) => Event t Double -> W t m ()
 setGlobalAudioDelay x = setSetting $ fmap (\b s -> s { Settings.globalAudioDelay = b } ) x
 
-punctualAudioInputMode :: (Reflex t, Monad m) => W t m (Dynamic t PunctualAudioInputMode)
+punctualAudioInputMode :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t PunctualAudioInputMode)
 punctualAudioInputMode = askSetting Settings.punctualAudioInputMode
 
 setPunctualAudioInputMode :: (Reflex t, Monad m) => Event t PunctualAudioInputMode -> W t m ()
@@ -197,13 +197,16 @@ checkboxW x = do
 
 -- A basic dropdown menu that is updated from elsewhere (eg. collaborative editing)
 -- and which issues events when it is changed by local input only.
+-- *** Note: currently introduces some kind of cyclic dataflow problem when used with hints/W monad - still DEBUGGING
 
 dropdownW :: (MonadWidget t m, Ord k) => Map k Text -> Dynamic t k -> m (Event t k)
 dropdownW m x = divClass "config-entry display-inline-block primary-color ui-font" $ do
   let m' = constDyn m
   i <- sample $ current x
   let xEvents = updated x
-  _dropdown_change <$> dropdown i m' (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" ) & dropdownConfig_setValue .~ xEvents)
+  y <- _dropdown_change <$> dropdown i m' (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" ) & dropdownConfig_setValue .~ xEvents)
+  return $ gate (current $ constDyn False) y
+
 
 -- A text input area that is updated from elsewhere (eg. collaborative editing),
 -- issues events in response to valid local input only
@@ -216,6 +219,14 @@ intTextInputW x = do
                        & textInputConfig_initialValue .~ T.pack (show i)
                        & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
   return $ fmapMaybe (readMaybe . T.unpack) $ _textInput_input w
+
+textInputW :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
+textInputW x = do
+  i <- sample $ current x
+  let xEvents = updated x
+  w <- textInput $ def & textInputConfig_initialValue .~ i
+                       & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+  return $ _textInput_input w
 
 
 -- Issue a single hint

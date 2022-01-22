@@ -86,7 +86,7 @@ keyEventToHint _ = Nothing
 
 settingsForWidgets :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t [Hint] -> m (Dynamic t Settings)
 settingsForWidgets rEnv iSettings hints = do
-  let settingsChange = fmapMaybe hintsToSettingsChange hints
+  let settingsChange = traceEventWith (const "settings change") $ fmapMaybe hintsToSettingsChange hints
   settings <- foldDyn ($) iSettings settingsChange
   performEvent_ $ fmap (liftIO . R.updateSettings rEnv) $ updated settings
   return settings
@@ -94,6 +94,8 @@ settingsForWidgets rEnv iSettings hints = do
 
 estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
 estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
+
+  settings <- settingsForWidgets rEnv iSettings hints
 
   cinecer0Widget settings ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   punctualZIndex' <- holdUniqDyn $ fmap Settings.punctualZIndex settings
@@ -131,7 +133,9 @@ estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
     _resourceMaps = resourceMaps,
     W._settings = settings
     }
+
   (_,headerHints) <- runW wEnv header
+
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     let sidebarToggle = fmapMaybe justToggleSidebar hints
     sidebarVisible <- toggle False sidebarToggle
@@ -163,12 +167,12 @@ estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
+  -- let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints -}] -- Event t [Hint]
+  let hints = headerHints
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (R.webDirt rEnv) hints
   performDelayHints rEnv hints
-  settings <- settingsForWidgets rEnv iSettings hints
   performDynamicsMode rEnv settings
   performPunctualAudioInputMode rEnv settings
   performTheme settings

@@ -31,16 +31,12 @@ header = divClass "header primary-color primary-borders" $ mdo
       divClass "config-entry display-inline-block primary-color ui-font" $ do
         term Term.Theme >>= dynText
         let styleMap = fromList [("../css-custom/classic.css", "Classic"),("../css-custom/dark.css", "Dark" ),("../css-custom/inverse.css","Inverse"),("../css-custom/grayscale.css","Grayscale"),("../css-custom/bubble.css","Bubble"),("../css-custom/minimalist.css","Minimalist")]
-        t <- theme
-        styleChange <- dropdownW styleMap t
-        setTheme styleChange
+        theme >>= dropdownW styleMap >>= setTheme
 
       divClass "config-entry display-inline-block primary-color ui-font" $ do
         term Term.Language >>= dynText
         let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
-        l <- language
-        langChange <- dropdownW langMap l
-        setLanguage langChange
+        language >>= dropdownW langMap >>= setLanguage
 
       sidebarButtonEvent <- divClass "config-entry display-inline-block primary-color ui-font" $ dynButton "?"
       hint $ fmap (const ToggleSidebar) sidebarButtonEvent
