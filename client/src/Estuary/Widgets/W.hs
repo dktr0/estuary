@@ -204,8 +204,9 @@ dropdownW m x = divClass "config-entry display-inline-block primary-color ui-fon
   let m' = constDyn m
   i <- sample $ current x
   let xEvents = updated x
-  y <- _dropdown_change <$> dropdown i m' (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" ) & dropdownConfig_setValue .~ xEvents)
-  return $ gate (current $ constDyn False) y
+  d <- dropdown i m' (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" ) & dropdownConfig_setValue .~ xEvents)
+  return $ _dropdown_change d
+  -- return $ gate (current $ constDyn False) y
 
 
 -- A text input area that is updated from elsewhere (eg. collaborative editing),

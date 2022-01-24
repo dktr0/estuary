@@ -86,7 +86,7 @@ keyEventToHint _ = Nothing
 
 settingsForWidgets :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t [Hint] -> m (Dynamic t Settings)
 settingsForWidgets rEnv iSettings hints = do
-  let settingsChange = traceEventWith (const "settings change") $ fmapMaybe hintsToSettingsChange hints
+  settingsChange <- delay 0.025 $ fmapMaybe hintsToSettingsChange hints
   settings <- foldDyn ($) iSettings settingsChange
   performEvent_ $ fmap (liftIO . R.updateSettings rEnv) $ updated settings
   return settings
@@ -167,8 +167,7 @@ estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  -- let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints -}] -- Event t [Hint]
-  let hints = headerHints
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (R.webDirt rEnv) hints

@@ -19,13 +19,22 @@ presetViews :: Map Text View
 presetViews = fromList [
 
        ("def",  GridView 2 3  [
-       (Views [LabelView 1, CalendarEventView 2]),
+       (Views [LabelView 1, CodeView 2 0]),
        (Views [LabelView 3, CodeView 4 0]),
        (Views [LabelView 5, CodeView 6 0]),
        (Views [LabelView 7, CodeView 8 0]),
        (Views [LabelView 9, CodeView 10 0]),
        (Views [LabelView 11, CodeView 12 0])
       ]),
+
+      ("test",  GridView 2 3  [
+      (Views [LabelView 1, CalendarEventView 2]),
+      (Views [LabelView 3, CodeView 4 0]),
+      (Views [LabelView 5, CodeView 6 0]),
+      (Views [LabelView 7, CodeView 8 0]),
+      (Views [LabelView 9, CodeView 10 0]),
+      (Views [LabelView 11, CodeView 12 0])
+     ]),
 
       ("fulltexteditor", GridView 1 1 [
       BorderDiv [LabelView 0,CodeView 1 0]
