@@ -1,9 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, JavaScriptFFI #-}
 
 module Estuary.Client.Settings
   (
   Settings(..),
-  getSettingsFromURI
+  getSettingsFromURI,
+  setThemeIO
   ) where
 
 import GHCJS.DOM
@@ -15,6 +16,7 @@ import Text.Parsec
 import Control.Monad.Identity
 import Data.Time
 import Data.Text
+import Data.Function ((&))
 
 import qualified Sound.Punctual.Resolution as Punctual
 
@@ -99,34 +101,61 @@ type UriOption = Settings -> Settings
 settings :: P Settings
 settings = do
   string "?"
-  justOneOption <- canvasP <|> webDirtP <|> superDirtP
-  return $ justOneOption defaultSettings
+  xs <- sepBy uriOption (char '&')
+  return $ Prelude.foldl (&) defaultSettings xs
 
 
-canvasP :: P UriOption
-canvasP = do
-  string "canvas="
+uriOption :: P UriOption
+uriOption = choice [
+  try languageP,
+  try themeP,
+  try $ onOrOffP "canvas" (\x y -> y { canvasOn = x }),
+  try $ onOrOffP "webDirt" (\x y -> y { webDirtOn = x }),
+  try $ onOrOffP "superDirt" (\x y -> y { superDirtOn = x }),
+  try $ onOrOffP "unsafeMode" (\x y -> y { unsafeModeOn = x }),
+  try $ onOrOffP "terminal" (\x y -> y { terminalVisible = x }),
+  try $ onOrOffP "sideBar" (\x y -> y { sideBarVisible = x }),
+  try $ onOrOffP "stats" (\x y -> y { statsVisible = x }),
+  try $ onOrOffP "header" (\x y -> y { headerVisible = x })
+  ]
+
+-- note: responding to ISO 639-1 or ISO 639-2 language codes
+languageP :: P UriOption
+languageP = do
+  string "language="
+  x <- choice [
+    try $ string "en" >> return English,
+    try $ string "eng" >> return English,
+    try $ string "es" >> return Español,
+    try $ string "spa" >> return Español,
+    try $ string "fr" >> return Français,
+    try $ string "fre" >> return Français,
+    try $ string "fra" >> return Français
+    ]
+  return $ \y -> y { language = x }
+
+themeP :: P UriOption
+themeP = do
+  string "theme="
+  t <- pathP
+  return $ \y -> y { theme = pack t }
+
+pathP :: P String
+pathP = manyTill anyChar sepAhead
+
+-- a parser that succeeds if eof or & is the next character, without consuming any characters
+sepAhead :: P ()
+sepAhead = (try $ lookAhead eof) <|> (try $ lookAhead $ char '&' >> return ())
+
+onOrOffP :: String -> (Bool -> UriOption) -> P UriOption
+onOrOffP pName pSetter = do
+  string $ pName ++ "="
   x <- onOrOff
-  return $ \y -> y { canvasOn = x }
-
-webDirtP :: P UriOption
-webDirtP = do
-  string "webDirt="
-  x <- onOrOff
-  return $ \y -> y { webDirtOn = x }
-
-superDirtP :: P UriOption
-superDirtP = do
-  string "superDirt="
-  x <- onOrOff
-  return $ \y -> y { superDirtOn = x }
-
-unsafeModeP :: P UriOption
-unsafeModeP = do
-  string "unsafeMode="
-  x <- onOrOff
-  return $ \y -> y { unsafeModeOn = x }
-
+  return $ pSetter x
 
 onOrOff :: P Bool
 onOrOff = try (string "on" >> return True) <|> (string "off" >> return False)
+
+foreign import javascript safe
+  "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
+  setThemeIO :: Text -> IO ()

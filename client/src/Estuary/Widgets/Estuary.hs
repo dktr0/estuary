@@ -267,11 +267,7 @@ performContext cMvar cDyn = do
 performTheme :: MonadWidget t m => Dynamic t Settings -> m ()
 performTheme settings = do
   themeChanged <- liftM updated $ holdUniqDyn $ fmap Settings.theme settings
-  performEvent_ $ fmap (liftIO . js_setThemeHref) themeChanged
-
-foreign import javascript safe
-  "document.getElementById('estuary-current-theme').setAttribute('href', $1);"
-  js_setThemeHref :: Text -> IO ()
+  performEvent_ $ fmap (liftIO . Settings.setThemeIO) themeChanged
 
 performDynamicsMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performDynamicsMode rEnv settings = do
