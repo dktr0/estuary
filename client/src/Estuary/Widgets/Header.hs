@@ -19,13 +19,13 @@ import Estuary.Widgets.Reflex
 header :: MonadWidget t m => W t m ()
 header = divClass "header primary-color primary-borders" $ mdo
 
-  let headerEvent = leftmost [() <$ headerButton]
-  headerVisible <- toggle True headerEvent
-  headerButton <- clickableDiv "header-area" $ do
-    hideableWidget' headerVisible $ do
-      divClass "header-title" $ text "estuary"
+  hv <- headerVisible
 
-  hideableWidget' headerVisible $ do
+  headerButton <- clickableDiv "header-area" $
+    hideableWidget' hv $ divClass "header-title" $ text "estuary"
+  toggleHeaderVisible headerButton
+
+  hideableWidget' hv $ do
     divClass "config-toolbar" $ do
 
       divClass "config-entry display-inline-block primary-color ui-font" $ do
@@ -38,5 +38,5 @@ header = divClass "header primary-color primary-borders" $ mdo
         let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
         language >>= dropdownW langMap >>= setLanguage
 
-      sidebarButtonEvent <- divClass "config-entry display-inline-block primary-color ui-font" $ dynButton "?"
-      hint $ fmap (const ToggleSidebar) sidebarButtonEvent
+      sideBarButton <- divClass "config-entry display-inline-block primary-color ui-font" $ dynButton "?"
+      toggleSideBarVisible sideBarButton

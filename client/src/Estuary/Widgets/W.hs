@@ -100,6 +100,30 @@ theme = askSetting Settings.theme
 setTheme :: (Reflex t, Monad m) => Event t Text -> W t m ()
 setTheme x = setSetting $ fmap (\b s -> s { Settings.theme = b } ) x
 
+terminalVisible :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
+terminalVisible = askSetting Settings.terminalVisible
+
+setTerminalVisible :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setTerminalVisible x = setSetting $ fmap (\b s -> s { Settings.terminalVisible = b } ) x
+
+sideBarVisible :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
+sideBarVisible = askSetting Settings.sideBarVisible
+
+setSideBarVisible :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setSideBarVisible x = setSetting $ fmap (\b s -> s { Settings.sideBarVisible = b } ) x
+
+statsVisible :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
+statsVisible = askSetting Settings.statsVisible
+
+setStatsVisible :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setStatsVisible x = setSetting $ fmap (\b s -> s { Settings.statsVisible = b } ) x
+
+headerVisible :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
+headerVisible = askSetting Settings.headerVisible
+
+setHeaderVisible :: (Reflex t, Monad m) => Event t Bool -> W t m ()
+setHeaderVisible x = setSetting $ fmap (\b s -> s { Settings.headerVisible = b } ) x
+
 canvasOn :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
 canvasOn = askSetting Settings.canvasOn
 
@@ -183,6 +207,29 @@ punctualAudioInputMode = askSetting Settings.punctualAudioInputMode
 
 setPunctualAudioInputMode :: (Reflex t, Monad m) => Event t PunctualAudioInputMode -> W t m ()
 setPunctualAudioInputMode x = setSetting $ fmap (\b s -> s { Settings.punctualAudioInputMode = b } ) x
+
+
+-- some Bool Settings can be toggled
+
+toggleHeaderVisible :: (Reflex t, MonadFix m, MonadHold t m) => Event t a -> W t m ()
+toggleHeaderVisible x = do
+  y <- current <$> headerVisible
+  setHeaderVisible $ attachWith (\a _ -> not a) y x
+
+toggleSideBarVisible :: (Reflex t, MonadFix m, MonadHold t m) => Event t a -> W t m ()
+toggleSideBarVisible x = do
+  y <- current <$> sideBarVisible
+  setSideBarVisible $ attachWith (\a _ -> not a) y x
+
+toggleStatsVisible :: (Reflex t, MonadFix m, MonadHold t m) => Event t a -> W t m ()
+toggleStatsVisible x = do
+  y <- current <$> statsVisible
+  setStatsVisible $ attachWith (\a _ -> not a) y x
+
+toggleTerminalVisible :: (Reflex t, MonadFix m, MonadHold t m) => Event t a -> W t m ()
+toggleTerminalVisible x = do
+  y <- current <$> terminalVisible
+  setTerminalVisible $ attachWith (\a _ -> not a) y x
 
 
 -- A basic checkbox widget that is updated from elsewhere (eg. collaborative editing)

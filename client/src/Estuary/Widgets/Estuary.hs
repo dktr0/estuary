@@ -69,20 +69,27 @@ import Estuary.Client.Settings as Settings
 
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher rEnv settings ctxM riM = mdo
-  (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardHints
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardShortcut
   let e = _el_element theElement
   e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
     y <- getKeyEvent
     if (isJust $ keyEventToHint y) then (preventDefault >> return (keyEventToHint y)) else return Nothing
-  let e'' = fmapMaybe id e'
-  let keyboardHints = fmap (:[]) $ e''
+  let keyboardShortcut = fmapMaybe id e'
   return ()
 
-keyEventToHint :: KeyEvent -> Maybe Hint
+
+-- uhoh: not sure if keyboard short cuts are working, or even what keys are represented by 24 and 12!...
+keyEventToHint :: KeyEvent -> Maybe Int
 keyEventToHint x
-  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 24) = Just ToggleTerminal
-  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just ToggleStats
+  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 24) = Just 24 -- toggle terminal
+  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just 12 -- toggle statistics
 keyEventToHint _ = Nothing
+
+keyboardHintsW :: MonadWidget t m => Event t Int -> W t m ()
+keyboardHintsW x = do
+  toggleTerminalVisible $ ffilter (==24) x
+  toggleStatsVisible $ ffilter (==12) x
+
 
 settingsForWidgets :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t [Hint] -> m (Dynamic t Settings)
 settingsForWidgets rEnv iSettings hints = do
@@ -92,8 +99,8 @@ settingsForWidgets rEnv iSettings hints = do
   return settings
 
 
-estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> Event t [Hint] -> m ()
-estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> Event t Int -> m ()
+estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ mdo
 
   settings <- settingsForWidgets rEnv iSettings hints
 
@@ -134,21 +141,24 @@ estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
     W._settings = settings
     }
 
+  (_,keyboardHints) <- runW wEnv $ keyboardHintsW keyboardShortcut
+
   (_,headerHints) <- runW wEnv header
 
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
-    let sidebarToggle = fmapMaybe justToggleSidebar hints
-    sidebarVisible <- toggle False sidebarToggle
     (navRequests,pageHints) <- runW wEnv $ navigation deltasDownAlt
-    (ctxChange,sidebarHints) <- runW wEnv $ hideableWidget sidebarVisible "sidebar" $ sidebarWidget ctx rInfo
+    (ctxChange,sidebarHints) <- runW wEnv $ do
+      sv <- W.sideBarVisible
+      hideableWidget sv "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
-  let terminalShortcut = fmapMaybe justToggleTerminal hints
-  let terminalEvent = leftmost [() <$ terminalShortcut, terminalButton]
-  terminalVisible <- toggle True terminalEvent
-  (command,_) <- hideableWidget' terminalVisible $ do
-    runW wEnv $ terminalWidget deltasDown hints
-  (terminalButton,_) <- runW wEnv $ footer hints
+
+  (command,_) <- runW wEnv $ do
+    tv <- W.terminalVisible
+    hideableWidget' tv $ terminalWidget deltasDown hints
+
+  (_,footerHints) <- runW wEnv footer
+
   commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
   let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
   performEvent_ $ fmap (ensembleRequestIO $ R.resources rEnv) ensembleRequests
@@ -167,7 +177,7 @@ estuaryWidget rEnv iSettings ctxM riM keyboardHints = divClass "estuary" $ mdo
 
   -- hints
   let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
+  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, footerHints, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
   let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
   let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
   performHints (R.webDirt rEnv) hints

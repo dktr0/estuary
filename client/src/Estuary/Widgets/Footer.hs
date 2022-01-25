@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Estuary.Widgets.Footer where
 
@@ -17,14 +17,15 @@ import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Reflex (dynButton, invisibleButton)
 
-footer :: MonadWidget t m => Event t [Hint] -> W t m (Event t ())
-footer hints = divClass "footer code-font" $ mdo
+footer :: MonadWidget t m => W t m ()
+footer = divClass "footer code-font" $ do
+
   toggleTerminalButton <- divClass "footer-area" $ invisibleButton
-  let statsShortcut = fmapMaybe justToggleStats hints
-  let statsEvent = leftmost [() <$ statsShortcut, statsButton]
-  statsVisible <- toggle True statsEvent
+  toggleTerminalVisible toggleTerminalButton
+
+  sv <- statsVisible
   statsButton <- clickableDiv "footer-area" $ do
-    hideableWidget' statsVisible $ do
+    hideableWidget' sv $ do
       ctx <- context
       ri <- renderInfo
       cc <- fmap (fmap showt) $ holdUniqDyn $ fmap clientCount ctx
@@ -45,4 +46,4 @@ footer hints = divClass "footer code-font" $ mdo
       text "FPS ("
       (fmap (fmap (showt :: Int -> Text)) $ holdUniqDyn $ fmap animationLoad ri) >>= dynText
       text "ms)"
-  return toggleTerminalButton
+  toggleStatsVisible statsButton

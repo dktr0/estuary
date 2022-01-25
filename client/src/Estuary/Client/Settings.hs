@@ -25,9 +25,15 @@ import Control.Monad.IO.Class (liftIO)
 
 data Settings = Settings {
 
+  -- settings affecting appearance/behaviour of UI
   language :: Language,
   theme :: Text,
+  terminalVisible :: Bool,
+  sideBarVisible :: Bool,
+  statsVisible :: Bool,
+  headerVisible :: Bool,
 
+  -- settings affecting rendering of visuals
   canvasOn :: Bool,
   resolution :: Punctual.Resolution,
   brightness :: Double,
@@ -37,6 +43,7 @@ data Settings = Settings {
   improvizZIndex :: Int,
   hydraZIndex :: Int,
 
+  -- settings affecting rendering of audio
   webDirtOn :: Bool,
   unsafeModeOn :: Bool,
   superDirtOn :: Bool,
@@ -52,6 +59,10 @@ defaultSettings = Settings {
 
   language = English,
   theme = "../css-custom/classic.css",
+  terminalVisible = True,
+  sideBarVisible = False,
+  statsVisible = True,
+  headerVisible = True,
 
   canvasOn = True,
   resolution = Punctual.HD,
