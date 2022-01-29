@@ -253,5 +253,15 @@ presetViews = fromList [
       ("stopWatchDownAndCode", GridView 2 1  [
       BorderDiv [LabelView 0,CodeView 1 0],
       BorderDiv [CountDownView 0]
+      ]),
+
+      ("notepad", GridView 1 1 [
+      BorderDiv [NotePadView 0]
+      ]),
+
+      ("notepadAndCode", GridView 1 2 [
+      BorderDiv [NotePadView 0],
+      BorderDiv [LabelView 0,CodeView 1 0]
       ])
+
       ]
