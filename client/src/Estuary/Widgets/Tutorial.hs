@@ -19,7 +19,7 @@ runTutorial :: MonadWidget t m => Tutorial -> Event t [EnsembleResponse]
 runTutorial t responsesDown = divClass "tutorialContainer" $ do
   divClass "tutorialTitle code-font" $ do
     translatableText (tutorialTitle t) >>= dynText
-  curPage <- mdo
+  curPage <- divClass "rowOfButtons" $ mdo
     let nPages = Seq.length $ tutorialPages t
     cp <- holdDyn 0 pageNavEvents
     let prevPage = fmap (\x -> max (x-1) 0) cp
