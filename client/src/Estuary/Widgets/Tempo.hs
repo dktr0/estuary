@@ -66,12 +66,6 @@ visualiserNextState (Metric) = return $ Cyclic
 
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
 selectVisualiser (Cyclic) = do
-  -- let visMap =  fromList [(Cyclic, "Cyclic"),(Metric, "Metric"), (Ring, "Ring")] 
-  -- visChange <- _dropdown_change <$> dropdown (Cyclic) (constDyn visMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font")) -- Event t TimeVision
-  -- let bText = "change"
-  -- x <- button bText 
-  -- let y = tag (current $ currentValue v) x 
-  -- localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
   let x = constDyn $ Metric
 
   c <- context
@@ -84,9 +78,6 @@ selectVisualiser (Cyclic) = do
   return $ fmap (\x -> x) $ updated x 
 
 selectVisualiser (Metric) = do
-  -- let visMap =  fromList [(Cyclic, "Cyclic"),(Metric, "Metric")] 
-  -- visChange <- _dropdown_change <$> dropdown (Metric) (constDyn visMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font")) -- Event t TimeVision
-
   let x = constDyn $ Cyclic
 
   c <- context
@@ -98,6 +89,8 @@ selectVisualiser (Metric) = do
   visualiseMetre beat -- segments-- W t m TimeVision
   return $ fmap (\x -> x) $ updated x
 
+
+
 getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
 getElapsedBeats t now = do
   let x = timeToCount t now 
@@ -106,21 +99,15 @@ getElapsedBeats t now = do
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
 visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
-
-
   x <- button $ "change" 
-  let y = tag (current $ delta) x 
-  localChanges <- performEvent $ fmap (liftIO . visualiserNextState) y
-
+  let y = tag (current $ delta) x -- here does not change
+  localChanges <- performEvent $ fmap (liftIO . visualiserNextState) $ traceEvent "boton" $ y
   initialValue <- sample $ current delta
   let initialWidget = selectVisualiser initialValue
-
   let remoteOrLocalEdits = leftmost [updated delta, localEdits', localChanges]
-  let updatedWidgets = fmap selectVisualiser remoteOrLocalEdits
-
-  -- widgetHold initialWidget updatedWidgets
+  let updatedWidgets = fmap selectVisualiser remoteOrLocalEdits -- type? dynamic or event??
   localEdits <- widgetHold initialWidget updatedWidgets -- m (Dynamic t (Event t T)) -- this does not need localEdits <-
-  let localEdits' = traceEvent "esamare" $ switchDyn localEdits -- this line seems unecessary
+  let localEdits' = switchDyn localEdits -- this line seems unecessary -- switchdyn digs up the event inside the dynamic
   variable delta $ localEdits'
 
 
