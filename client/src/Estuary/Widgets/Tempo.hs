@@ -48,12 +48,11 @@ tempoWidget tempoDyn = do
 
 -- dyn :: (DomBuilder t m, PostBuild t m) => Dynamic t (m a) -> m (Event   t    a)
 
---someFunction :: FullValueOfWidget -> Dynamic t FullValueOfWidget -> m (Variable t FullValueofWidget)
-selectVisualiser :: TimeVision -> Dynamic t TimeVision -> m (Variable t TimeVision)
-selectVisualiser Cyclic delta = do 
-  localCh <- dyn $ visualiseCycles 1
-  return $ variable delta localCh
--- selectVisualiser Metric delta = visualiseMetre 4
+selectVisualiser :: TimeVision -> m (Event t TimeVision)
+selectVisualiser Cyclic = do
+  visualiseCycles 1
+  return Cyclic
+
 
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
@@ -75,12 +74,17 @@ visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
 
   dynBeat <- holdDyn 0 beatPosition
 
-  let ma = fmap selectVisualiser delta
+  let allEdits = leftmost [x,updated delta]
+  x <- widgetHold (fmap selectVisualiser $ Cyclic) $ fmap selectVisualiser allEdits
+
+
+
+--  let ma = fmap selectVisualiser delta
 --  visualiseCycles dynBeat
-  visualiseRing dynBeat
+--  visualiseRing dynBeat
 
 
-  v <- variable delta visChange -- just changedx this do not forget
+  v <- variable delta $ switchDyn x
   return v
 
 getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
@@ -90,7 +94,7 @@ getElapsedBeats t now = do
 
 
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
-visualiseCycles :: MonadWidget t m => Dynamic t Rational -> W t m TimeVision
+visualiseCycles :: MonadWidget t m => Dynamic t Rational -> m ()
 visualiseCycles delta = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
   let style = constDyn $ "style" =: "height: auto;"
@@ -119,7 +123,7 @@ visualiseCycles delta = do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
     -- mark
     generatePieSegments 1
-  return Cyclic
+  return ()
 
 
 
