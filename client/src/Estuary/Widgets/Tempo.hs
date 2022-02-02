@@ -40,57 +40,76 @@ tempoWidget tempoDyn = do
     return edits
   return $ localEdits v
 
+visualiserNextState :: TimeVision -> IO TimeVision
+visualiserNextState (Cyclic) = return $ Metric
+visualiserNextState (Metric) = return $ Cyclic
 
--- selectVisualiser:: MonadWidget t m => Dynamic t Rational -> TimeVision -> W t m TimeVision
--- selectVisualiser beat Cyclic = visualiseCycles beat 
--- selectVisualiser beat Metric = visualiseMetre beat
--- selectVisualiser beat _ = visualiseCycles beat
+-- visualiserNextState :: TimeVision -> IO TimeVision
+-- visualiserNextState (Cyclic 0) = return $ Cyclic 1
+-- visualiserNextState (Cyclic 1) = return $ Cyclic 2
+-- visualiserNextState (Cyclic 2) = return $ Cyclic 3
+-- visualiserNextState (Cyclic 3) = return $ Cyclic 4
+-- visualiserNextState (Cyclic 4) = return $ Cyclic 5
+-- visualiserNextState (Cyclic 5) = return $ Cyclic 6
+-- visualiserNextState (Cyclic 6) = return $ Cyclic 7
+-- visualiserNextState (Cyclic 7) = return $ Cyclic 8
+-- visualiserNextState (Cyclic 8) = return $ Metric 1
+-- visualiserNextState (Metric 1) = return $ Metric 2
+-- visualiserNextState (Metric 2) = return $ Metric 3
+-- visualiserNextState (Metric 3) = return $ Metric 4
+-- visualiserNextState (Metric 4) = return $ Metric 5
+-- visualiserNextState (Metric 5) = return $ Metric 6
+-- visualiserNextState (Metric 6) = return $ Metric 7
+-- visualiserNextState (Metric 7) = return $ Metric 8
+-- visualiserNextState (Metric 8) = return $ Cyclic 0
 
--- dyn :: (DomBuilder t m, PostBuild t m) => Dynamic t (m a) -> m (Event   t    a)
 
-selectVisualiser :: TimeVision -> m (Event t TimeVision)
-selectVisualiser Cyclic = do
-  visualiseCycles 1
-  return Cyclic
-
-
-
-visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
-visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
-
---   segments <- get segments from slider
-
---  d <- delta 
-
-  let visMap =  fromList [(Cyclic, "Cyclic"),(Metric, "Metric")] 
-  visChange <- _dropdown_change <$> dropdown Cyclic (constDyn visMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
-  visualiser <- holdDyn Cyclic visChange
+selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
+selectVisualiser (Cyclic) = do
+  let x = constDyn $ Metric
 
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   widgetBuildTime <- liftIO $ getCurrentTime
   tick <- tickLossy 0.01 widgetBuildTime
   beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
+  beat <- holdDyn 0 beatPosition
+  visualiseCycles beat -- $ segmento -- W t m TimeVision
+  return $ fmap (\x -> x) $ updated x 
 
-  dynBeat <- holdDyn 0 beatPosition
+selectVisualiser (Metric) = do
+  let x = constDyn $ Cyclic
 
-  let allEdits = leftmost [x,updated delta]
-  x <- widgetHold (fmap selectVisualiser $ Cyclic) $ fmap selectVisualiser allEdits
+  c <- context
+  let currentTempo = fmap (tempo . ensemble . ensembleC) c
+  widgetBuildTime <- liftIO $ getCurrentTime
+  tick <- tickLossy 0.01 widgetBuildTime
+  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
+  beat <- holdDyn 0 beatPosition
+  visualiseMetre beat -- segments-- W t m TimeVision
+  return $ fmap (\x -> x) $ updated x
 
 
-
---  let ma = fmap selectVisualiser delta
---  visualiseCycles dynBeat
---  visualiseRing dynBeat
-
-
-  v <- variable delta $ switchDyn x
-  return v
 
 getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
 getElapsedBeats t now = do
   let x = timeToCount t now 
-  return x
+  return x  
+
+
+visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
+visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
+  x <- button $ "change" 
+  let y = tag (current $ delta) x -- here does not change
+  localChanges <- performEvent $ fmap (liftIO . visualiserNextState) $ traceEvent "boton" $ y
+  initialValue <- sample $ current delta
+  let initialWidget = selectVisualiser initialValue
+  let remoteOrLocalEdits = leftmost [updated delta, localEdits', localChanges]
+  let updatedWidgets = fmap selectVisualiser remoteOrLocalEdits -- type? dynamic or event??
+  localEdits <- widgetHold initialWidget updatedWidgets -- m (Dynamic t (Event t T)) -- this does not need localEdits <-
+  let localEdits' = switchDyn localEdits -- this line seems unecessary -- switchdyn digs up the event inside the dynamic
+  variable delta $ localEdits'
+
 
 
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
@@ -122,8 +141,8 @@ visualiseCycles delta = do
     -- manecilla
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
     -- mark
-    generatePieSegments 1
-  return ()
+    generatePieSegments 0
+  return Cyclic
 
 
 
