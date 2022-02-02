@@ -40,8 +40,9 @@ tempoWidget tempoDyn = do
     return edits
   return $ localEdits v
 
+ -- confirmed this is working, when returning the same constructor as input, it never changes 
 visualiserNextState :: TimeVision -> IO TimeVision
-visualiserNextState (Cyclic) = return $ Metric
+visualiserNextState (Cyclic) = return $ Metric 
 visualiserNextState (Metric) = return $ Cyclic
 
 -- visualiserNextState :: TimeVision -> IO TimeVision
@@ -75,7 +76,7 @@ selectVisualiser (Cyclic) = do
   beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
   beat <- holdDyn 0 beatPosition
   visualiseCycles beat -- $ segmento -- W t m TimeVision
-  return $ fmap (\x -> x) $ updated x 
+  return $ fmap (\x -> x) $ updated x -- not sure if this is ok........
 
 selectVisualiser (Metric) = do
   let x = constDyn $ Cyclic
@@ -99,8 +100,9 @@ getElapsedBeats t now = do
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
 visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
+  v <- variable delta $ localEdits'
   x <- button $ "change" 
-  let y = tag (current $ delta) x -- here does not change
+  let y = tag (current $ currentValue v) x -- here does not change
   localChanges <- performEvent $ fmap (liftIO . visualiserNextState) $ traceEvent "boton" $ y
   initialValue <- sample $ current delta
   let initialWidget = selectVisualiser initialValue
@@ -108,7 +110,7 @@ visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
   let updatedWidgets = fmap selectVisualiser remoteOrLocalEdits -- type? dynamic or event??
   localEdits <- widgetHold initialWidget updatedWidgets -- m (Dynamic t (Event t T)) -- this does not need localEdits <-
   let localEdits' = switchDyn localEdits -- this line seems unecessary -- switchdyn digs up the event inside the dynamic
-  variable delta $ localEdits'
+  return v
 
 
 
@@ -142,7 +144,7 @@ visualiseCycles delta = do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
     -- mark
     generatePieSegments 0
-  return Cyclic
+  return ()
 
 
 
@@ -161,7 +163,7 @@ beatToSegment nSegments beat = "stroke-dashoffset" =: (showt percen)
   where percen = fromIntegral (round $ percen' * 100) :: Double
         percen' = beat - (realToFrac $ floor beat)
 
-visualiseMetre :: MonadWidget t m => Dynamic t Rational -> W t m TimeVision
+visualiseMetre :: MonadWidget t m => Dynamic t Rational -> m ()
 visualiseMetre delta = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
   let style = constDyn $ "style" =: "height: auto;"
@@ -185,7 +187,7 @@ visualiseMetre delta = do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
     -- mark
     generateSegments 100 4
-  return Metric
+  return ()
 
 
 -- simpleList :: MonadWidget t m => Dynamic t [v] -> (Dynamic t v -> m a) -> m (Dynamic t [a]) 
