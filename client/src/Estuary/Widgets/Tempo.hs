@@ -86,6 +86,17 @@ metreTracer subDivisions = do
   visualiseMetre beat subDivisions -- segments-- W t m TimeVision
   return ()
 
+ringTracer:: MonadWidget t m => Rational -> W t m ()
+ringTracer segments = do
+  c <- context
+  let currentTempo = fmap (tempo . ensemble . ensembleC) c
+  widgetBuildTime <- liftIO $ getCurrentTime
+  tick <- tickLossy 0.01 widgetBuildTime
+  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
+  beat <- holdDyn 0 beatPosition
+  visualiseRing beat segments
+  return ()
+
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
 selectVisualiser (Cyclic) = do
   cycleTracer 0 -- here I will add the second part of the type TimeVision: Cyclic 0
@@ -95,8 +106,12 @@ selectVisualiser (Cyclic) = do
 selectVisualiser (Metric) = do
   metreTracer 4
   buttonEvent <- button $ "change" 
-  return $ fmap (const Cyclic) buttonEvent
+  return $ fmap (const Ring) buttonEvent
 
+selectVisualiser (Ring) = do
+  ringTracer 4
+  buttonEvent <- button $ "change" 
+  return $ fmap (const Cyclic) buttonEvent
 
 
 
@@ -163,10 +178,7 @@ beatToPercentage atr beat = atr =: (showt percen)
   where percen = fromIntegral (round $ percen' * 100) :: Double
         percen' = beat - (realToFrac $ floor beat)
 
-beatToSegment:: Rational -> Rational -> Map Text Text
-beatToSegment nSegments beat = "stroke-dashoffset" =: (showt percen)
-  where percen = fromIntegral (round $ percen' * 100) :: Double
-        percen' = beat - (realToFrac $ floor beat)
+
 
 visualiseMetre :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseMetre delta subDivisions = do
@@ -185,8 +197,6 @@ visualiseMetre delta subDivisions = do
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "100")
   let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
 
-
- -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     -- manecilla
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
@@ -239,8 +249,8 @@ generatePieSegment x = do
   return ()
 
 
-visualiseRing :: MonadWidget t m => Dynamic t Rational -> W t m ()
-visualiseRing delta = do
+visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> W t m ()
+visualiseRing delta segments = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
   let style = constDyn $ "style" =: "height: auto;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
@@ -255,7 +265,7 @@ visualiseRing delta = do
   let cy = constDyn $  "cy" =: "50"
   let r = constDyn $ "r" =: "30"
   let dashArray = constDyn $ "stroke-dasharray" =: "25 75" 
-  let offset = beatToSegment 4 <$> delta
+  let offset = beatToRingSegment segments <$> delta
 
 
   let currentBeatAttrs = mconcat [class',cx,cy,r,fill,stroke,strokeWidth,dashArray,offset]
@@ -263,9 +273,10 @@ visualiseRing delta = do
  -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     ring
-    generateRingSegments 4
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" currentBeatAttrs $ return ()
+    generateRingSegments segments
   return ()
+
 
 
 ring:: MonadWidget t m => W t m ()
@@ -304,7 +315,17 @@ generateRingSegment x = do
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrs $ return ()
   return ()
 
+beatToRingSegment:: Rational -> Rational -> Map Text Text
+beatToRingSegment nSegments beat = whichSegment nSegments percen 
+  where percen = fromIntegral (round $ percen' * 100) :: Rational
+        percen' = beat - (realToFrac $ floor beat)
 
+whichSegment:: Rational -> Rational -> Map Text Text
+whichSegment nSegments beatInPercent = 
+  let segmentSize = 100 / nSegments
+      segList = Prelude.take (floor nSegments) $ iterate (+ segmentSize) 0
+      segment = Prelude.last $ Prelude.filter (<= beatInPercent) segList
+  in "stroke-dashoffset" =: (showt $ (realToFrac (floor segment) :: Double))
 
 --   <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="black" stroke-width="3" stroke-dasharray="25 75" stroke-dashoffset="0"></circle>
 --   <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="black" stroke-width="3" stroke-dasharray="25 75" stroke-dashoffset="25"></circle>
