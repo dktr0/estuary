@@ -31,6 +31,11 @@ data TimerUpState =
   Stopped NominalDiffTime
   deriving (Eq, Show, Generic)
 
+data Tunning = EdxTunning Int Int deriving (Show, Eq, Generic)  -- agregar CPSScale cuando este lista
+
+instance ToJSON Tunning where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Tunning
 
 --data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
 data TimeVision = Cyclic | Metric | Weather | Ring | Depth deriving (Show,Eq,Ord,Generic)
@@ -56,7 +61,8 @@ data Definition =
   CountDown TimerDownState |
   SandClock TimerDownState |
   StopWatch TimerUpState |
-  SeeTime TimeVision
+  SeeTime TimeVision |
+  TunningDef Tunning 
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -78,6 +84,7 @@ definitionForRendering (CountDown x) = CountDown x
 definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
+definitionForRendering (TunningDef x) = TunningDef x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -126,3 +133,7 @@ maybeTimerDownState _ = Nothing
 maybeSeeTime:: Definition -> Maybe TimeVision
 maybeSeeTime (SeeTime x) = Just x
 maybeSeeTime _ = Nothing
+
+maybeTunning:: Definition -> Maybe Tunning
+maybeTunning (TunningDef x) = Just x
+maybeTunning _ = Nothing

@@ -258,13 +258,14 @@ visualiseRing delta segments = do
   let h' = constDyn $ "height" =: "100"
   let attrs = mconcat [class',w',h',style,vB]
 
+  let radius = 30 :: Float
   let stroke = constDyn $ "stroke" =: "var(--secondary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "6"
   let fill = constDyn $ "fill" =: "transparent"
   let cx = constDyn $  "cx" =: "50" 
   let cy = constDyn $  "cy" =: "50"
-  let r = constDyn $ "r" =: "30"
-  let dashArray = constDyn $ "stroke-dasharray" =: "25 75" 
+  let r = constDyn $ "r" =: (showt radius)
+  let dashArray = constDyn $ "stroke-dasharray" =: showt (radius * pi * 2) 
   let offset = beatToRingSegment segments <$> delta
 
 
@@ -315,8 +316,8 @@ generateRingSegment x = do
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrs $ return ()
   return ()
 
-beatToRingSegment:: Rational -> Rational -> Map Text Text
-beatToRingSegment nSegments beat = whichSegment nSegments percen 
+beatToRingSegment:: Rational -> Rational -> Float -> Map Text Text
+beatToRingSegment nSegments beat r = whichSegment nSegments percen 
   where percen = fromIntegral (round $ percen' * 100) :: Rational
         percen' = beat - (realToFrac $ floor beat)
 

@@ -47,6 +47,7 @@ dumpView (StopWatchView z) = "stopwatch " <> showInt z
 dumpView (CountDownView z) = "countDown " <> showInt z
 dumpView (SandClockView z) = "sandClock " <> showInt z
 dumpView (SeeTimeView z) = "timeVision " <> showInt z
+dumpView (TunningView z) = "tunning " <> showInt z
 dumpView _ = " "
 --
 dumpViews :: [View] -> T.Text
@@ -74,6 +75,18 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|>  countDownParser
           <|>  sandClockParser
           <|>  seeTimeParser
+          <|>  tunningParser
+
+--
+tunningParser :: H View 
+tunningParser = tunningParser' <*> int
+
+tunningParser' :: H (Int -> View)
+tunningParser' = tunningFunc <$ reserved "tunning"
+
+tunningFunc :: Int -> View
+tunningFunc z = TunningView z
+
 
 -- 
 seeTimeParser :: H View

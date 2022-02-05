@@ -37,6 +37,7 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
+import Estuary.Widgets.TunningEstErv
 
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
@@ -91,6 +92,8 @@ viewWidget er (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState 
 viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch er stopWatchWidget
 
 viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic) maybeSeeTime SeeTime er visualiseTempoWidget
+
+viewWidget er (TunningView z) = zoneWidget z (EdxTunning 33 2) maybeTunning TunningDef er edxScaleWidget
 
 viewWidget er TempoView = do
   ctx <- context

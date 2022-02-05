@@ -34,7 +34,8 @@ data View =
   CountDownView Int | 
   SandClockView Int |
   StopWatchView Int |
-  SeeTimeView Int
+  SeeTimeView Int |
+  TunningView Int
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where
