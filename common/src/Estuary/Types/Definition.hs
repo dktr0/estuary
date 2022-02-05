@@ -38,7 +38,7 @@ instance ToJSON Tunning where
 instance FromJSON Tunning
 
 --data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
-data TimeVision = Cyclic | Metric | Weather | Ring | Depth deriving (Show,Eq,Ord,Generic)
+data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
 
 instance ToJSON TimeVision where
   toEncoding = genericToEncoding defaultOptions

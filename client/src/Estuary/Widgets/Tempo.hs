@@ -39,30 +39,7 @@ tempoWidget tempoDyn = do
     edits <- performEvent $ fmap liftIO $ attachPromptlyDynWith (flip changeTempoNow) tempoDyn cpsEvent -- *** attachPromptlyDynWith here might not be right!!!
     return edits
   return $ localEdits v
-
- -- confirmed this is working, when returning the same constructor as input, it never changes 
-visualiserNextState :: TimeVision -> IO TimeVision
-visualiserNextState (Cyclic) = return $ Metric 
-visualiserNextState (Metric) = return $ Cyclic
-
--- visualiserNextState :: TimeVision -> IO TimeVision
--- visualiserNextState (Cyclic 0) = return $ Cyclic 1
--- visualiserNextState (Cyclic 1) = return $ Cyclic 2
--- visualiserNextState (Cyclic 2) = return $ Cyclic 3
--- visualiserNextState (Cyclic 3) = return $ Cyclic 4
--- visualiserNextState (Cyclic 4) = return $ Cyclic 5
--- visualiserNextState (Cyclic 5) = return $ Cyclic 6
--- visualiserNextState (Cyclic 6) = return $ Cyclic 7
--- visualiserNextState (Cyclic 7) = return $ Cyclic 8
--- visualiserNextState (Cyclic 8) = return $ Metric 1
--- visualiserNextState (Metric 1) = return $ Metric 2
--- visualiserNextState (Metric 2) = return $ Metric 3
--- visualiserNextState (Metric 3) = return $ Metric 4
--- visualiserNextState (Metric 4) = return $ Metric 5
--- visualiserNextState (Metric 5) = return $ Metric 6
--- visualiserNextState (Metric 6) = return $ Metric 7
--- visualiserNextState (Metric 7) = return $ Metric 8
--- visualiserNextState (Metric 8) = return $ Cyclic 0
+------
 
 cycleTracer:: MonadWidget t m => Rational ->  W t m ()
 cycleTracer segments = do
@@ -97,29 +74,12 @@ ringTracer segments = do
   visualiseRing beat segments
   return ()
 
-selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
-selectVisualiser (Cyclic) = do
-  cycleTracer 0 -- here I will add the second part of the type TimeVision: Cyclic 0
-  buttonEvent <- button $ "change" 
-  return $ fmap (const Metric) buttonEvent
-
-selectVisualiser (Metric) = do
-  metreTracer 4
-  buttonEvent <- button $ "change" 
-  return $ fmap (const Ring) buttonEvent
-
-selectVisualiser (Ring) = do
-  ringTracer 4
-  buttonEvent <- button $ "change" 
-  return $ fmap (const Cyclic) buttonEvent
-
-
+-- select visualiser at the bottom
 
 getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
 getElapsedBeats t now = do
   let x = timeToCount t now 
   return x  
-
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
 visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
@@ -131,8 +91,6 @@ visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
   localEdits <- widgetHold initialWidget updatedWidgets -- m (Dynamic t (Event t T)) -- this does not need localEdits <-
   let localEdits' = switchDyn localEdits -- this line seems unecessary -- switchdyn digs up the event inside the dynamic
   return v
-
-
 
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
 visualiseCycles :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
@@ -249,7 +207,7 @@ generatePieSegment x = do
   return ()
 
 
-visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> W t m ()
+visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseRing delta segments = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
   let style = constDyn $ "style" =: "height: auto;"
@@ -260,34 +218,32 @@ visualiseRing delta segments = do
 
   let radius = 30 :: Float
   let stroke = constDyn $ "stroke" =: "var(--secondary-color)"
-  let strokeWidth = constDyn $ "stroke-width" =: "6"
+  let strokeWidth = constDyn $ "stroke-width" =: "8"
   let fill = constDyn $ "fill" =: "transparent"
   let cx = constDyn $  "cx" =: "50" 
   let cy = constDyn $  "cy" =: "50"
+  let transformar = constDyn $ "transform" =: "rotate(180 50 50)"
   let r = constDyn $ "r" =: (showt radius)
-  let dashArray = constDyn $ "stroke-dasharray" =: showt (radius * pi * 2) 
-  let offset = beatToRingSegment segments <$> delta
+  let dashArray = constDyn $ "stroke-dasharray" =: ((showt ((radius * pi * 2)/(realToFrac segments :: Float)*(realToFrac (segments - 1) ::Float))) <> " " <> (showt ((radius * pi * 2)/(realToFrac segments :: Float))))
+  let offset = beatToRingSegment radius segments <$> delta
 
-
-  let currentBeatAttrs = mconcat [class',cx,cy,r,fill,stroke,strokeWidth,dashArray,offset]
+  let currentBeatAttrs = mconcat [class',cx,cy,r,fill,stroke,strokeWidth,dashArray,offset,transformar]
 
  -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     ring
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" currentBeatAttrs $ return ()
-    generateRingSegments segments
+  --  generateRingSegments segments
   return ()
 
-
-
-ring:: MonadWidget t m => W t m ()
+ring:: MonadWidget t m => m ()
 ring = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
   let cx = constDyn $  "cx" =: "50" 
   let cy = constDyn $  "cy" =: "50"
   let r = constDyn $ "r" =: "30"
   let fill = constDyn $ "fill" =: "transparent"
-  let (stroke,strokew) = (constDyn $ "stroke" =: "var(--primary-color)",constDyn $ "stroke-width" =: "7")
+  let (stroke,strokew) = (constDyn $ "stroke" =: "var(--primary-color)",constDyn $ "stroke-width" =: "14")
   let ringAttrs = mconcat [class',cx,cy,r,fill,stroke,strokew]
   let holeAttrs = mconcat [class',cx,cy,r,fill]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" ringAttrs $ return ()
@@ -316,17 +272,18 @@ generateRingSegment x = do
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrs $ return ()
   return ()
 
-beatToRingSegment:: Rational -> Rational -> Float -> Map Text Text
-beatToRingSegment nSegments beat r = whichSegment nSegments percen 
+beatToRingSegment:: Float -> Rational -> Rational -> Map Text Text
+beatToRingSegment r nSegments beat = whichSegment r nSegments percen
   where percen = fromIntegral (round $ percen' * 100) :: Rational
         percen' = beat - (realToFrac $ floor beat)
 
-whichSegment:: Rational -> Rational -> Map Text Text
-whichSegment nSegments beatInPercent = 
+whichSegment:: Float -> Rational -> Rational -> Map Text Text
+whichSegment r nSegments beatInPercent = 
   let segmentSize = 100 / nSegments
       segList = Prelude.take (floor nSegments) $ iterate (+ segmentSize) 0
-      segment = Prelude.last $ Prelude.filter (<= beatInPercent) segList
-  in "stroke-dashoffset" =: (showt $ (realToFrac (floor segment) :: Double))
+      segment' = Prelude.last $ Prelude.filter (<= beatInPercent) segList
+      segment = ((realToFrac segment' :: Float) * (r * pi * 2) * 0.01)
+  in "stroke-dashoffset" =: (showt $ (realToFrac segment :: Double))
 
 --   <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="black" stroke-width="3" stroke-dasharray="25 75" stroke-dashoffset="0"></circle>
 --   <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="black" stroke-width="3" stroke-dasharray="25 75" stroke-dashoffset="25"></circle>
@@ -338,3 +295,79 @@ whichSegment nSegments beatInPercent =
 --   <circle class="donut-hole" cx="21" cy="21" r="15.91549430918954" fill="#fff"></circle>
 --   <circle class="donut-ring" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="green" stroke-width="4"></circle>
 -- </svg>
+
+--- select visualiser
+
+selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
+selectVisualiser (Cyclic 0) = divClass "human-to-human-comm code-font" $ do
+  cycleTracer 0 
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Cyclic 1)) buttonEvent
+selectVisualiser (Cyclic 1) = do
+  cycleTracer 1 
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Cyclic 2)) buttonEvent
+selectVisualiser (Cyclic 2) = do
+  cycleTracer 2 
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Cyclic 3)) buttonEvent
+selectVisualiser (Cyclic 3) = do
+  cycleTracer 3 
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Cyclic 4)) buttonEvent
+selectVisualiser (Cyclic 4) = do
+  cycleTracer 4 
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Metric 2)) buttonEvent
+selectVisualiser (Metric 2) = do
+  metreTracer 2
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Metric 3)) buttonEvent
+selectVisualiser (Metric 3) = do-- here I will add the second part of the type TimeVision: Cyclic 0
+  metreTracer 3
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Metric 4)) buttonEvent
+selectVisualiser (Metric 4) = do
+  metreTracer 4
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Metric 5)) buttonEvent
+selectVisualiser (Metric 5) = do
+  metreTracer 5
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Metric 6)) buttonEvent
+selectVisualiser (Metric 6) = do
+  metreTracer 6
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Metric 7)) buttonEvent
+selectVisualiser (Metric 7) = do
+  metreTracer 7
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Metric 8)) buttonEvent
+selectVisualiser (Metric 8) = do
+  metreTracer 8
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Ring 3)) buttonEvent
+selectVisualiser (Ring 3) = do  ------- OJO ----- if ring is 0 produces a crash in the system!!!!!
+  ringTracer 3
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Ring 4)) buttonEvent
+selectVisualiser (Ring 4) = do
+  ringTracer 4
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Ring 5)) buttonEvent
+selectVisualiser (Ring 5) = do
+  ringTracer 5
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Ring 6)) buttonEvent
+selectVisualiser (Ring 6) = do
+  ringTracer 6
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Ring 7)) buttonEvent
+selectVisualiser (Ring 7) = do
+  ringTracer 7
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Ring 8)) buttonEvent
+selectVisualiser (Ring 8) = do
+  ringTracer 8
+  buttonEvent <- button $ "change" 
+  return $ fmap (const (Cyclic 0)) buttonEvent
