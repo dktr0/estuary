@@ -91,7 +91,7 @@ viewWidget er (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState 
 
 viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch er stopWatchWidget
 
-viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic) maybeSeeTime SeeTime er visualiseTempoWidget
+viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
 viewWidget er (TunningView z) = zoneWidget z (EdxTunning 33 2) maybeTunning TunningDef er edxScaleWidget
 

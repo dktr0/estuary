@@ -566,6 +566,11 @@ display: block;
   font-size: 1em;
 }
 
+.tempo-visualiser {
+	color: var(--primary-color);
+	font-size: 1em;
+  }
+
 .invisible-color {
 	color: rgba(0,0,0,0);
   }
