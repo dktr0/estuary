@@ -37,6 +37,7 @@ data View =
   SandClockView Int |
   StopWatchView Int |
   SeeTimeView Int |
+  TuningView Int |
   NotePadView Int |
   IFrame Text | -- embedded web page
   CalendarEventView Int

@@ -566,6 +566,11 @@ display: block;
   font-size: 1em;
 }
 
+.tempo-visualiser {
+	color: var(--primary-color);
+	font-size: 1em;
+  }
+
 .invisible-color {
 	color: rgba(0,0,0,0);
   }
@@ -1000,6 +1005,19 @@ cursor: pointer;
 }
 
 .stopwatch textarea{
+	position: relative;
+	border: none;
+	max-width:13em;
+    text-align: center;
+    width: fit-content;
+}
+
+.time-visualiser {
+	display: flex;
+	border: none;
+}
+
+.time-visualiser textarea{
 	position: relative;
 	border: none;
 	max-width:13em;

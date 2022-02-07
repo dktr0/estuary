@@ -38,6 +38,7 @@ import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
+import Estuary.Widgets.TunningEstErv
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
 
@@ -98,9 +99,9 @@ viewWidget er (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState 
 
 viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch er stopWatchWidget
 
-viewWidget er (SeeTimeView z) = do
-  ahorita <- liftIO $ getCurrentTime
-  zoneWidget z (Tempo {freq= 0.5, time=ahorita, Estuary.Types.Tempo.count=0}) maybeSeeTime SeeTime er visualiseTempoWidget
+viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
+
+viewWidget er (TuningView z) = zoneWidget z (EdxTuning 33 2) maybeTuning TuningDef er edxScaleWidget
 
 viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("","")]) maybeNotePad NotePad er notePadWidget
 

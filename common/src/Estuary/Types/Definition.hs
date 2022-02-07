@@ -57,6 +57,19 @@ data TimerUpState =
   Stopped NominalDiffTime
   deriving (Eq, Show, Generic)
 
+data Tuning = EdxTuning Int Int deriving (Show, Eq, Generic)  -- agregar CPSScale cuando este lista
+
+instance ToJSON Tuning where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Tuning
+
+--data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
+data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
+
+instance ToJSON TimeVision where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON TimeVision
+
 instance ToJSON TimerUpState where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON TimerUpState
@@ -74,7 +87,8 @@ data Definition =
   CountDown TimerDownState |
   SandClock TimerDownState |
   StopWatch TimerUpState |
-  SeeTime Tempo |
+  SeeTime TimeVision |
+  TuningDef Tuning |
   NotePad NotePad |
   CalendarEv CalendarEvent
   deriving (Eq,Show,Generic)
@@ -99,6 +113,7 @@ definitionForRendering (CountDown x) = CountDown x
 definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
+definitionForRendering (TuningDef x) = TuningDef x
 definitionForRendering (NotePad x) = NotePad x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
@@ -152,9 +167,13 @@ maybeTimerDownState (CountDown x) = Just x
 maybeTimerDownState (SandClock x) = Just x
 maybeTimerDownState _ = Nothing
 
-maybeSeeTime:: Definition -> Maybe Tempo
+maybeSeeTime:: Definition -> Maybe TimeVision
 maybeSeeTime (SeeTime x) = Just x
 maybeSeeTime _ = Nothing
+
+maybeTuning:: Definition -> Maybe Tuning
+maybeTuning (TuningDef x) = Just x
+maybeTuning _ = Nothing
 
 maybeNotePad :: Definition -> Maybe NotePad
 maybeNotePad (NotePad x) = Just x

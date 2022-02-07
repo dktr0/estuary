@@ -73,6 +73,28 @@ textToInvisible rows invisible delta = do
   let value = _textArea_value x
   return (value,edits)
 
+
+textWithLockAndClipBoardWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
+textWithLockAndClipBoardWidget rows editable delta = do
+  i <- sample $ current delta
+--  let class' = constDyn $ "class" =: "exp-color textInputToEndOfLine code-font"
+  let class' = fmap textWithLockWidgetClass editable
+  let rows' = constDyn $ textWidgetRows rows
+  let readon = lockText <$> editable
+  let style = constDyn $ styleFunc
+--  let style = constDyn $ "style" =: ("height: auto; font-size:2em; " <> (temporaryFuncColour <$> colour))
+  let attrs = mconcat [class',rows', readon, style]
+  x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
+  let edits = _textArea_input x -- Event t String
+  let value = _textArea_value x -- Dynamic t String
+
+  butt <- button "to ClipBoard"
+  let xx = tag (current $ value) butt
+  ----- to clipboard ------
+
+  return (value,edits)
+
+
                                      --  Rows  Colour     EditableOrNot
 textWithLockWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
 textWithLockWidget rows editable delta = do
