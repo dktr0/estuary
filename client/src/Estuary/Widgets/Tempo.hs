@@ -299,7 +299,7 @@ whichSegment r nSegments beatInPercent =
 --- select visualiser
 
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
-selectVisualiser (Cyclic 0) = divClass "human-to-human-comm code-font" $ do
+selectVisualiser (Cyclic 0) = divClass "time-visualiser" $ do
   cycleTracer 0 
   buttonEvent <- button $ "change" 
   return $ fmap (const (Cyclic 1)) buttonEvent

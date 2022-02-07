@@ -999,6 +999,19 @@ cursor: pointer;
     width: fit-content;
 }
 
+.time-visualiser {
+	display: flex;
+	border: none;
+}
+
+.time-visualiser textarea{
+	position: relative;
+	border: none;
+	max-width:13em;
+    text-align: center;
+    width: fit-content;
+}
+
 /*
 --------------------------------------------------------------------
 							help files
