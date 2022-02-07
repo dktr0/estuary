@@ -190,7 +190,8 @@ funcionsCineCer0 = el "div" $ do
     el "li" $ elClass "div" "ieRef" $ text "seg 0.25 0.75 2 $ video \"videos/lamplight.mp4\""
   el "div" $ dynText =<< (translatableText $ fromList [
     (English,"The function secs allows you to provide a position to start/end a segment in seconds rather than percentage."),
-    (Español,"La funcion secs permite establecer la posicion para inciar/terminar un segmento del video en segundos en lugar de porcentaje.")])
+    (Español,"La funcion secs permite establecer la posicion para inciar/terminar un segmento del video en segundos en lugar de porcentaje.")
+    ])
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "seg (secs 0) (secs 1) 2 $ video \"videos/lamplight.mp4\""
   -- freeSeg

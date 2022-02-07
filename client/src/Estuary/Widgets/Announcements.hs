@@ -21,6 +21,15 @@ import Estuary.Widgets.W
 
 compiledAnnouncements :: Map Day [TranslatableText]
 compiledAnnouncements = fromList [
+  (read "2022-01-21",[ fromList [
+    (English,"Estuary now contains version 0.4.0 of Punctual, with support for video files as textures, optimized fragment shader generation, combinatorial semantics in many operations with multi-channel signals, and numerous other changes.")
+    ]]),
+  (read "2021-12-11",[ fromList [
+    (English,"Estuary now supports multichannel audio output. Use !maxAudioOutputs at the terminal to query channels available in the browser, !audioOutputs to query currently used channels, and !setAudioOutputs [someNumber] to switch to a specific number of audio outputs.")
+    ]]),
+  (read "2021-11-18",[ fromList [
+    (English,"Estuary now uses version 1.7.8 of Tidal, and MiniTidal now supports stutter, quantise, rangex, wedge, timeCat/timecat, chunk', lindenmayer, step, step', steps, spreadf, spreadChoose/spreadr, selectF, striateBy, perlinWith, perlin2, perlin2With, <>, and stutWith")
+    ]]),
   (read "2021-02-12",[ fromList [
     (English,"Estuary now uses version 1.7.1 of Tidal (and MiniTidal now supports silent, stitch, stripe, fix, unfix, contrast, chooseBy, wchoose, wchooseBy, trigger, ur, layer, interlace).")
     ]]),

@@ -7,6 +7,8 @@ import qualified Data.Text as T
 import GHC.Generics
 import Data.Aeson
 import Data.Map
+import Data.Time
+
 
 import Estuary.Types.TranslatableText
 import Estuary.Types.TextNotation
@@ -31,11 +33,15 @@ data View =
   TempoView |
   RouletteView Int Int |
   AudioMapView |
-  CountDownView Int | 
+  CountDownView Int |
   SandClockView Int |
   StopWatchView Int |
   SeeTimeView Int |
-  TunningView Int
+  TuningView Int |
+  NotePadView Int |
+  IFrame Text | -- embedded web page
+  CalendarEventView Int
+
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

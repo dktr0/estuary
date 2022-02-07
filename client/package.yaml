@@ -35,7 +35,7 @@ dependencies:
   - tidal
   - tidal-parse
   - punctual
-  - musicw >= 0.3.8
+  - musicw >= 0.3.9
   - hosc
   - containers
   - safe
@@ -67,6 +67,7 @@ dependencies:
   - witherable
   - jsaddle
   - tuple
+  - network-uri
 
 library:
   source-dirs:

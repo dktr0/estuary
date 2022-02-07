@@ -710,10 +710,13 @@ ______________________________
 	flex-direction: column;
 	height: 100%;
   width: 100%;
+  overflow: hidden;
+  background-color: transparent;
 }
 
 .tutorialView {
   overflow-y: scroll;
+  overflow-x: scroll;
 }
 
 .tutorialButton{
@@ -742,8 +745,18 @@ ______________________________
 	font-weight: bold;
 	margin-bottom: 0.5em;
 }
+
+.rowOfButtons{
+  display: flex;
+  flex-direction: row;
+  height: 15%;
+  width: 100%;
+  background-color: transparent;
+}
+
 .prevNextButtons{
-	width: 10%;
+	width: 6%;
+  text-align: center;
 }
 
 .prevNextButtons button {
@@ -751,7 +764,7 @@ ______________________________
 	 color: var(--primary-color);
 	 border-radius: 5px;
 	 margin-bottom: 0.5em;
-     border: 1px solid var(--secondary-color);
+   border: 1px solid var(--secondary-color);
 }
 
 
@@ -1673,4 +1686,154 @@ hr.dashed {
 padding-left: 0.5%;
 padding-right: 0.5%;
 box-shadow: inset 0 0 3px var(--primary-color);
+}
+
+
+
+/* rehearsal widget */
+
+.selectYear, .selectMonth {
+  display: flex;
+  margin: auto;
+}
+
+.monthAndYear {
+  display: flex;
+}
+
+.dayNumbers {
+	width: 20vw;
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+
+}
+
+.dayNumbers div {
+	border: none;
+    box-shadow: inset 0 0 1px var(--primary-color);
+    border-radius: 5px;
+}
+
+
+
+.calendarEventWidget {
+	display:flex;
+	flex-wrap: wrap;
+}
+
+
+.descriptionWidget {
+    width: 100%;
+}
+
+
+.descriptionWidgetInput {
+    width: 100%;
+    box-sizing:border-box;
+    color: var(--primary-color);
+    border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+    border-radius: 5px;
+}
+
+.thisComputerLocalTimeWidget {
+	width: 100%;
+
+}
+.dateWidget {
+	    cursor: pointer;
+        z-index: 999;
+}
+
+.calendarContainer {
+	text-align:center;
+	border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+    border-radius: 5px;
+}
+
+.calendarContainer th {
+	width: 80px;
+}
+.timeWidget {
+	width: 10%;
+}
+
+.zoneWidget {
+	width: 60%;
+
+}
+
+.timeWidgetInput {
+	width: 30%;
+	color: var(--primary-color);
+    border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+    border-radius: 5px;
+}
+
+.timeWidget input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.selectedDate {
+    border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+    border-radius: 5px;
+    padding: 1px;
+/*     padding-left: 2px; */
+/*     padding-right: 6px; */
+    margin-right: 0.1em;
+
+ }
+
+.confirm-close-buttons {
+	display: flex;
+}
+
+.confirm-close-buttons div {
+	width: 50%;
+	}
+
+.dateLabel:hover {
+	background-color: var(--secondary-color)
+}
+
+.dateLabel:active {
+    background-color:var(--primary-color);
+    color: var(--background-color);
+}
+
+.timeZoneWidget {
+	display:flex;
+	flex-wrap: wrap;
+	margin-right: 1.5em;
+	}
+
+/* Notepad style */
+
+.notepadContainers{
+	display: flex;
+	flex-direction: column;
+	height: 95%;
+  width: 100%;
+  overflow: hidden;
+  background-color: transparent;
+}
+
+.notepage-title {
+	width: 100%;
+  font-weight: bold;
+	border: none;
+	background-color: transparent;
+}
+
+.notepage-content {
+	display: flex;
+	height: 100%;
+  width: 100%;
+	border: none;
+	background-color: transparent;
 }

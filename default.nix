@@ -160,19 +160,19 @@ in
             rev =  "c6c88bd9003afc0c69a651f4156a34e6593044bf";
           }) {});
 
-        punctual = # dontCheck (dontHaddock (self.callCabal2nix "punctual" ../punctual {}));
+        punctual = # dontCheck (dontHaddock (self.callCabal2nix "punctual" ../Punctual {}));
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
-           owner = "dktr0";
-           repo = "punctual";
-           sha256 = "04jgrm0kqjmv5lzdrg9h6kap15ldmgy4jylg66s7lbg28g7dr5sk";
-           rev = "300345fb919c2a300a50105fa3e7b2663244a5d7";
-         }) {}));
+          owner = "dktr0";
+          repo = "punctual";
+          sha256 = "180z11v3jqc3355apcv5y6db1fg10z6ghj0pkahmkrfkl0lhq9gx";
+          rev = "3c18722448a54523ed1dd1f93b5488b9e5b4dd28";
+        }) {}));
 
         musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "0xl4kjkibhr5sv2h96yn6n1ishs6a09a6bwgm4mjx8k96x6xvqw6";
-          rev = "bc6ddf6306f7354a5b418496cc9e6853ece8bb53";
+          sha256 = "0j5xxy3ry4nwl5bamhrkalgnz8g77bs7ck965mfciyc4k9b66x5i";
+          rev = "4adc14978f5466829f744bb8b4217ef2d26b31fa";
           }) {});
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
@@ -188,8 +188,8 @@ in
           "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0wkzz7sdd0v972vxx6zji53h2hyrw60gwccvypqfwlrw4ai7zqla";
-          rev = "026965426b5a334ce2b734f44120ad79365203e4";
+          sha256 = "1fx0la5i793fayrm073fkcsi2hmb42adfgc1nvdbivkkfl83w8ld";
+          rev = "fbcd38a3e28ca160f023128690d6eee1da595b93";
           fetchSubmodules = true;
         }) "" {}));
 
@@ -198,8 +198,8 @@ in
             "tidal-parse"
             ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0wkzz7sdd0v972vxx6zji53h2hyrw60gwccvypqfwlrw4ai7zqla";
-            rev = "026965426b5a334ce2b734f44120ad79365203e4";
+            sha256 = "1fx0la5i793fayrm073fkcsi2hmb42adfgc1nvdbivkkfl83w8ld";
+            rev = "fbcd38a3e28ca160f023128690d6eee1da595b93";
             fetchSubmodules = true;
         })
         "--subpath tidal-parse" {}));
@@ -210,8 +210,8 @@ in
         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "0z4a2snqy7m8apfb3dawjjzbbkwk6llaaykxgc1wd3001rgxxg1b";
-           rev = "fb6c02a31f96e460866731ee058fbadcecabd7b7";
+           sha256 = "0w04qg2jmjgrkxrjc9ddads606fvsbain9bf2k1d0spk41ckayyb";
+           rev = "3bc2dd4133843751a3ae4a3e88063d7d99f18f81";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
@@ -223,12 +223,12 @@ in
         }) {});
 
         seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
-          dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
+          doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "seis8s";
            sha256 = "0fyiiqya4rfq9h8q17rarv06vizd967jxc353kznadj93asi4his";
            rev = "a3f9ea35b9037df3f8405dc66c20b19f92b1a675";
-         }) {});
+         }) {}));
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [

@@ -46,10 +46,14 @@ dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
 dumpView (CountDownView z) = "countDown " <> showInt z
 dumpView (SandClockView z) = "sandClock " <> showInt z
-dumpView (SeeTimeView z) = "timeVision " <> showInt z
-dumpView (TunningView z) = "tunning " <> showInt z
+dumpView (SeeTimeView z) = "seeTime " <> showInt z
+dumpView (TuningView z) = "tunning " <> showInt z
+dumpView (NotePadView z) = "notepad " <> showInt z
+dumpView (IFrame url) = "iFrame \"" <> url <> "\""
+dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
+
 dumpView _ = " "
---
+
 dumpViews :: [View] -> T.Text
 dumpViews vs = "[" <> (T.intercalate "," $ fmap dumpView vs) <> "]"
 
@@ -62,33 +66,43 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> linkView
           <|> bulletpointsParser
           <|> gridViewParser
-          <|>  labelParser  -- localview (grid 1 1  [border [label 0,code 1 0]])
-          <|>  structureParser
-          <|>  codeViewView  -- localview (grid 1 1 [border [label 0,code 1 0]])
-          <|>  sequenceParser
+          <|> labelParser  -- localview (grid 1 1  [border [label 0,code 1 0]])
+          <|> structureParser
+          <|> codeViewView  -- localview (grid 1 1 [border [label 0,code 1 0]])
+          <|> sequenceParser
           -- currently not parsing Example...
-          <|>  ensembleStatusView
-          <|>  tempoView
-          <|>  rouletteViewView -- localview (grid 2 2 [roulette 0 0,roulette 1 0,roulette 2 0,roulette 3 0])
-          <|>  audioMapView
-          <|>  stopwatchParser
-          <|>  countDownParser
-          <|>  sandClockParser
-          <|>  seeTimeParser
-          <|>  tunningParser
+          <|> ensembleStatusView
+          <|> tempoView
+          <|> rouletteViewView -- localview (grid 2 2 [roulette 0 0,roulette 1 0,roulette 2 0,roulette 3 0])
+          <|> audioMapView
+          <|> stopwatchParser
+          <|> countDownParser
+          <|> sandClockParser
+          <|> tuningParser
+          <|> seeTimeParser
+          <|> notePadParser
+          <|> iFrameParser
+          <|> calendarEventParser
 
 --
-tunningParser :: H View 
-tunningParser = tunningParser' <*> int
+calendarEventParser :: H View
+calendarEventParser = calendarEventParser' <*> int
 
-tunningParser' :: H (Int -> View)
-tunningParser' = tunningFunc <$ reserved "tunning"
+calendarEventParser' :: H (Int -> View)
+calendarEventParser' = calendarEventFunc <$ reserved "calendarevent"
 
-tunningFunc :: Int -> View
-tunningFunc z = TunningView z
+calendarEventFunc :: Int -> View
+calendarEventFunc x = CalendarEventView x
+--
+tuningParser :: H View
+tuningParser = tuningParser' <*> int
 
+tuningParser' :: H (Int -> View)
+tuningParser' = tuningFunc <$ reserved "tuning"
 
--- 
+tuningFunc :: Int -> View
+tuningFunc z = TuningView z
+--
 seeTimeParser :: H View
 seeTimeParser = seeTimeParser' <*> int
 
@@ -127,6 +141,16 @@ stopwatchParser' = stopwatchFunc <$ reserved "stopwatch"
 
 stopwatchFunc :: Int -> View
 stopwatchFunc z = StopWatchView z
+
+--
+notePadParser :: H View
+notePadParser = notePadParser' <*> int
+
+notePadParser' :: H (Int -> View)
+notePadParser' = notePadFunc <$ reserved "notepad"
+
+notePadFunc :: Int -> View
+notePadFunc x = NotePadView x
 
 --
 sequenceParser :: H View
@@ -288,6 +312,10 @@ audioMapView = audioMapViewFunc <$ (reserved "audiomap")
 
 audioMapViewFunc :: View
 audioMapViewFunc = AudioMapView
+
+iFrameParser :: H View
+iFrameParser = (reserved "iFrame" >> return IFrame) <*> textLiteral
+
 
 -- helper funcs
 int :: H Int

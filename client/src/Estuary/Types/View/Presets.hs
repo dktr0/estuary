@@ -15,6 +15,7 @@ presetViews :: Map Text View
 -- note: if an ensemble publishes a view called 'default', that view rather than this one,
 -- will effectively be the default view in that ensemble.
 
+
 presetViews = fromList [
 
        ("def",  GridView 2 3  [
@@ -25,6 +26,15 @@ presetViews = fromList [
        (Views [LabelView 9, CodeView 10 0]),
        (Views [LabelView 11, CodeView 12 0])
       ]),
+
+      ("test",  GridView 2 3  [
+      (Views [LabelView 1, CalendarEventView 2]),
+      (Views [LabelView 3, CodeView 4 0]),
+      (Views [LabelView 5, CodeView 6 0]),
+      (Views [LabelView 7, CodeView 8 0]),
+      (Views [LabelView 9, CodeView 10 0]),
+      (Views [LabelView 11, CodeView 12 0])
+     ]),
 
       ("fulltexteditor", GridView 1 1 [
       BorderDiv [LabelView 0,CodeView 1 0]
@@ -243,7 +253,15 @@ presetViews = fromList [
       ("stopWatchDownAndCode", GridView 2 1  [
       BorderDiv [LabelView 0,CodeView 1 0],
       BorderDiv [CountDownView 0]
-      ])
-      ]
+      ]),
 
-      
+      ("notepad", GridView 1 1 [
+      BorderDiv [NotePadView 0]
+      ]),
+
+      ("notepadAndCode", GridView 1 2 [
+      BorderDiv [NotePadView 0],
+      BorderDiv [LabelView 0,CodeView 1 0]
+      ])
+
+      ]

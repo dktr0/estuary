@@ -1,3 +1,5 @@
+-- TODO: this should be moved/renamed as Estuary.Client.Hint
+
 module Estuary.Types.Hint where
 
 import Data.Text (Text)
@@ -7,7 +9,7 @@ import Estuary.Types.Tempo
 import Estuary.Utility
 import Estuary.Types.Definition
 import Estuary.Types.TranslatableText
-
+import Estuary.Client.Settings
 
 data Hint =
   SampleHint Text |
@@ -15,11 +17,7 @@ data Hint =
   SetGlobalDelayTime Double |
   SilenceHint |
   ZoneHint Int Definition |
-  ToggleTerminal |
-  ToggleSidebar |
-  ToggleStats |
-  ToggleHeader
-  deriving (Eq,Show)
+  ChangeSettings (Settings -> Settings)
 
 justGlobalDelayTime :: [Hint] -> Maybe Double
 justGlobalDelayTime = lastOrNothing . mapMaybe f

@@ -12,6 +12,7 @@ import Control.Monad.IO.Class
 import Data.Maybe
 import TextShow
 import Data.Time
+import qualified Data.Sequence as Seq
 
 import Estuary.Types.Live
 import Estuary.Types.Definition
@@ -38,6 +39,9 @@ import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.TunningEstErv
+import Estuary.Widgets.Notepad
+import Estuary.Widgets.CalendarEvent
+
 
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
@@ -85,6 +89,10 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
 
+viewWidget er (CalendarEventView z) = do
+  today <- liftIO getZonedTime
+  zoneWidget z (CalendarEvent "add details for your event" (CalendarTime today Nothing)) maybeCalendarEvent CalendarEv er calendarEventWidget
+
 viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 
 viewWidget er (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er sandClockWidget
@@ -93,7 +101,9 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 
 viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
-viewWidget er (TunningView z) = zoneWidget z (EdxTunning 33 2) maybeTunning TunningDef er edxScaleWidget
+viewWidget er (TuningView z) = zoneWidget z (EdxTuning 33 2) maybeTuning TuningDef er edxScaleWidget
+
+viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("","")]) maybeNotePad NotePad er notePadWidget
 
 viewWidget er TempoView = do
   ctx <- context
@@ -111,6 +121,11 @@ viewWidget _ (Example n t) = do
 
 viewWidget _ AudioMapView = do
   audioMapWidget
+  return never
+
+viewWidget _ (IFrame url) = do
+  let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
+  elAttr "iframe" attrs $ return ()
   return never
 
 zoneWidget :: (MonadWidget t m, Eq a)

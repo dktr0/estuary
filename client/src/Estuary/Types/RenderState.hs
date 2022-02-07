@@ -13,6 +13,7 @@ import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
 import Data.Text (Text)
 import Sound.Punctual.GL
 import Data.Tempo
+import Data.IORef
 
 import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
@@ -27,9 +28,8 @@ import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
 
+
 data RenderState = RenderState {
-  animationOn :: Bool,
-  animationFpsLimit :: Maybe NominalDiffTime,
   wakeTimeAudio :: !Double,
   wakeTimeSystem :: !UTCTime,
   renderStart :: !UTCTime,
@@ -60,15 +60,17 @@ data RenderState = RenderState {
   hydraCanvas :: HTMLCanvasElement,
   videoDivCache :: Maybe HTMLDivElement,
   tempoCache :: Tempo,
-  jsoLangs :: Map.Map Text JSoLang
+  jsoLangs :: Map.Map Text JSoLang,
+  valueMap :: Tidal.ValueMap
   }
+
+-- Map.mapKeys T.unpack -- Map Text a -> Map String a
+-- fmap Tidal.toValue ... -- Map a Double -> Map a Value
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
-  pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 glCtx
+  pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 hCanvas glCtx
   return $ RenderState {
-    animationOn = False,
-    animationFpsLimit = Just 0.030,
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
     renderStart = t0System,
@@ -99,5 +101,6 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
     hydraCanvas = hCanvas,
     videoDivCache = Nothing,
     tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
-    jsoLangs = Map.empty
+    jsoLangs = Map.empty,
+    valueMap = Map.empty
   }

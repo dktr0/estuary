@@ -22,7 +22,7 @@ import Estuary.Widgets.Text
                               --numNotas --period
 -- data Tunning = EdxTunning Rational Rational deriving (Show, Eq)  -- agregar CPSScale cuando este lista
 
-edxScaleWidget:: MonadWidget t m => Dynamic t Tunning -> W t m (Variable t Tunning)
+edxScaleWidget:: MonadWidget t m => Dynamic t Tuning -> W t m (Variable t Tuning)
 edxScaleWidget delta = divClass "tunning" $ mdo
 
     let initialEDText = "equal division number goes here"
@@ -58,9 +58,9 @@ showOutput edx p = showt (edx + p)
 combineitor:: Int -> Int -> (Int,Int)
 combineitor x y = (x,y)
 
-calculateTunning :: MonadIO m => (Int,Int) -> Tunning -> m Tunning
-calculateTunning newTar (EdxTunning x p) = return $ EdxTunning (fst newTar) (snd newTar) -- here is where the calculations take place
-calculateTunning newTar _ = return $ EdxTunning 0 0
+calculateTunning :: MonadIO m => (Int,Int) -> Tuning -> m Tuning
+calculateTunning newTar (EdxTuning x p) = return $ EdxTuning (fst newTar) (snd newTar) -- here is where the calculations take place
+calculateTunning newTar _ = return $ EdxTuning 0 0
 
 -- cpsWidget::
 

@@ -16,30 +16,27 @@ import Estuary.Widgets.Reflex
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 
-header :: MonadWidget t m => W t m (Event t ContextChange)
+header :: MonadWidget t m => W t m ()
 header = divClass "header primary-color primary-borders" $ mdo
 
-  let headerEvent = leftmost [() <$ headerButton]
-  headerVisible <- toggle True headerEvent
-  headerButton <- clickableDiv "header-area" $ do
-    hideableWidget' headerVisible $ do
-      divClass "header-title" $ text "estuary"
+  hv <- headerVisible
 
-  hideableWidget' headerVisible $ do
+  headerButton <- clickableDiv "header-area" $
+    hideableWidget' hv $ divClass "header-title" $ text "estuary"
+  toggleHeaderVisible headerButton
+
+  hideableWidget' hv $ do
     divClass "config-toolbar" $ do
 
-      themeChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
-        let styleMap =  fromList [("../css-custom/classic.css", "Classic"),("../css-custom/dark.css", "Dark" ),("../css-custom/inverse.css","Inverse"), ("../css-custom/grayscale.css","Grayscale"), ("../css-custom/bubble.css","Bubble"), ("../css-custom/minimalist.css","Minimalist")]
+      divClass "config-entry display-inline-block primary-color ui-font" $ do
         term Term.Theme >>= dynText
-        styleChange <- _dropdown_change <$> dropdown "../css-custom/classic.css" (constDyn styleMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" )) -- Event t String
-        return $ fmap (\x c -> c {theme = x}) styleChange -- Event t (Context -> Context)
+        let styleMap = fromList [("../css-custom/classic.css", "Classic"),("../css-custom/dark.css", "Dark" ),("../css-custom/inverse.css","Inverse"),("../css-custom/grayscale.css","Grayscale"),("../css-custom/bubble.css","Bubble"),("../css-custom/minimalist.css","Minimalist")]
+        theme >>= dropdownW styleMap >>= setTheme
 
-      langChangeEv <- divClass "config-entry display-inline-block primary-color ui-font" $ do
+      divClass "config-entry display-inline-block primary-color ui-font" $ do
         term Term.Language >>= dynText
         let langMap = fromList $ zip languages (fmap (T.pack . show) languages)
-        langChange <- _dropdown_change <$> dropdown English (constDyn langMap) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
-        return $ fmap (\x c -> c { language = x }) langChange
+        language >>= dropdownW langMap >>= setLanguage
 
-      sidebarButtonEvent <- divClass "config-entry display-inline-block primary-color ui-font" $ dynButton "?"
-      hint $ fmap (const ToggleSidebar) sidebarButtonEvent
-      return $ mergeWith (.) [themeChangeEv, langChangeEv]
+      sideBarButton <- divClass "config-entry display-inline-block primary-color ui-font" $ dynButton "?"
+      toggleSideBarVisible sideBarButton

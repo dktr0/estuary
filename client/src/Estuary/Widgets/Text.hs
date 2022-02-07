@@ -128,7 +128,7 @@ textToInvisibleClass False = "class" =: "primary-color textInputToEndOfLine code
 
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s, Hydra {--Ver, Oir--}] ++ (fmap TidalTextNotation tidalParsers)
+textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s, Hydra] ++ (fmap TidalTextNotation tidalParsers)
 
 holdUniq :: (MonadWidget t m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated

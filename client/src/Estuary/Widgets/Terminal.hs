@@ -11,7 +11,8 @@ import Data.Map.Strict (fromList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Monad
-
+import TextShow
+import Sound.MusicW.AudioContext
 
 
 import Estuary.Protocol.Peer
@@ -30,6 +31,8 @@ import Estuary.Types.Hint
 import Estuary.Widgets.W
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.TranslatableText
+import Estuary.Render.R
+import Estuary.Render.MainBus
 
 import Estuary.Types.Language
 
@@ -47,7 +50,7 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
     let parsedInput = fmap Terminal.parseCommand terminalInput
     let commands = fmapMaybe (either (const Nothing) Just) parsedInput
     let errorMsgs = fmap (fmap english) $ fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) parsedInput -- [Event t Text]
-    let hintMsgs' = fmap hintsToMessages hints -- Event t [TranslatableText]
+    let hintMsgs' = fmap hintsToMessages $ mergeWith (++) [hints,fmap pure commandHints] -- Event t [TranslatableText]
     let hintMsgs = ffilter (/= []) hintMsgs' --
     -- parse responses from server in order to display log/chat messages
     let responseMsgs = fmap (\x -> fmap english (Data.Maybe.mapMaybe responseToMessage x)) deltasDown -- [Event t Text]
@@ -60,8 +63,8 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
       divClass "chatMessage code-font primary-color" $ dynText v' -- m()
 
     pp <- liftIO $ newPeerProtocol
-    mb <- mainBus <$> immutableRenderContext
-    performCommands pp mb commands
+    irc <- renderEnvironment
+    commandHints <- performCommands pp irc commands
     streamId <- peerProtocolIdReflex pp $ ffilter (== Terminal.StreamId) commands
     return commands
 
@@ -77,13 +80,31 @@ hintToMessage :: Hint -> Maybe TranslatableText --TranslatableText-- Map Languag
 hintToMessage (LogMessage x) = Just x -- translatableText $ Data.Map.fromList [(English, x)]
 hintToMessage _ = Nothing
 
-performCommands :: MonadWidget t m => PeerProtocol -> MainBus -> Event t Terminal.Command -> m ()
-performCommands pp mb x = performEvent_ $ fmap (liftIO . doCommands pp mb) x
+performCommands :: MonadWidget t m => PeerProtocol -> RenderEnvironment -> Event t Terminal.Command -> m (Event t Hint)
+performCommands pp rEnv x = do
+  y <- performEvent $ fmap (liftIO . doCommands pp rEnv) x
+  return $ fmap (LogMessage . english) $ fmapMaybe id y
 
-doCommands :: PeerProtocol -> MainBus -> Terminal.Command -> IO ()
-doCommands _ mb (Terminal.MonitorInput x) = changeMonitorInput mb x
-doCommands pp _ Terminal.StartStreaming = startStreaming pp
-doCommands _ _ _ = return ()
+doCommands :: PeerProtocol -> RenderEnvironment -> Terminal.Command -> IO (Maybe Text)
+doCommands _ irc (Terminal.MonitorInput x) = changeMonitorInput (mainBus irc) x >> return Nothing
+doCommands pp _ Terminal.StartStreaming = startStreaming pp >> return Nothing
+doCommands _ irc (Terminal.SetCC n v) = setCC n v irc >> return Nothing
+doCommands _ irc (Terminal.ShowCC n) = do
+  x <- getCC n irc -- :: Maybe Double
+  return $ Just $ case x of
+    Just x' -> "CC" <> showt n <> " = " <> showt x'
+    Nothing -> "CC" <> showt n <> " not set"
+doCommands _ _ Terminal.MaxAudioOutputs = liftAudioIO $ do
+  n <- maxChannelCount
+  return $ Just $ "maxAudioOutputs = " <> showt n
+doCommands _ _ Terminal.AudioOutputs = liftAudioIO $ do
+  n <- channelCount
+  return $ Just $ "audioOutputs = " <> showt n
+doCommands _ irc (Terminal.SetAudioOutputs n) = do
+  setAudioOutputs (webDirt irc) (mainBus irc) n
+  n' <- liftAudioIO $ channelCount
+  return $ Just $ "audioOutputs = " <> showt n'
+doCommands _ _ _ = return Nothing
 
 peerProtocolIdReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m (Event t Text)
 peerProtocolIdReflex pp e = performEvent $ fmap (liftIO . const (peerProtocolId pp)) e

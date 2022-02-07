@@ -1,6 +1,6 @@
 {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
-module Estuary.Render.WebDirt (WebDirt, newWebDirt, initializeWebAudio, performHints, playSample, mapTextJSValToJSVal, mapStringJSValToJSVal, noteEventToWebDirtJSVal, tidalEventToWebDirtJSVal) where
+module Estuary.Render.WebDirt (WebDirt, newWebDirt, initializeWebAudio, performHints, playSample, mapTextJSValToJSVal, mapStringJSValToJSVal, noteEventToWebDirtJSVal, tidalEventToWebDirtJSVal, setWebDirtAudioOutputs) where
 
 import GHCJS.Types
 import GHCJS.Marshal.Pure
@@ -58,6 +58,9 @@ foreign import javascript unsafe
   "try { $1.playSample({ buffer: $2 }) } catch(e) { console.log(e)} "
   playBuffer :: WebDirt -> JSVal -> IO ()
 
+foreign import javascript unsafe
+  "$1.audioOutputs = $2;"
+  setWebDirtAudioOutputs :: WebDirt -> Int -> IO ()
 
 performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
