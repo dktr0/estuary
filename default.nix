@@ -206,12 +206,12 @@ in
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
-        haskellish = # dontHaddock (self.callCabal2nix "haskellish" ../Haskellish {}); #
-        dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
+        haskellish = # dontHaddock (self.callCabal2nix "haskellish" ../Haskellish {});
+         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "0w04qg2jmjgrkxrjc9ddads606fvsbain9bf2k1d0spk41ckayyb";
-           rev = "3bc2dd4133843751a3ae4a3e88063d7d99f18f81";
+           sha256 = "03sv69hnav1p8rd6i301kirx4anm5f402is4n7bxmjjqi7br5hna";
+           rev = "75cd924f8699da352ef4d441f35a18ee53d598b0";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});

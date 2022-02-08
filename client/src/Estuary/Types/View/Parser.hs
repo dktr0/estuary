@@ -1,16 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Estuary.Types.View.Parser (viewParser,dumpView) where
--- module Estuary.Types.View.Parser where
-
--- import Text.Parsec
--- import Text.Parsec.Text
--- import qualified Text.ParserCombinators.Parsec.Token as P
--- import Text.Parsec.Language (haskellDef)
--- import Data.List (intercalate)
--- import Data.Text (Text)
--- import TextShow
--- import Control.Monad.Identity (Identity)
 
 import Language.Haskellish as LH
 import qualified Language.Haskell.Exts as Exts
@@ -19,8 +9,10 @@ import Data.List (intercalate)
 import Control.Applicative
 import TextShow
 import Control.Monad.Identity (Identity)
+import Control.Monad.Except
 
 import Estuary.Types.View
+import Estuary.Types.View.Presets
 
 type H = Haskellish ()
 
@@ -83,6 +75,15 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> notePadParser
           <|> iFrameParser
           <|> calendarEventParser
+          <|> genGridParser
+
+genGridParser :: H View
+genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
+
+rowsOrColumns :: H Int
+rowsOrColumns = do
+  x <- integer
+  if (x >= 1 && x <= 12) then return (fromIntegral x) else throwError "rows or columns must be between 1 and 12"
 
 --
 calendarEventParser :: H View
