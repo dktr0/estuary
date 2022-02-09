@@ -40,7 +40,8 @@ data View =
   TuningView Int |
   NotePadView Int |
   IFrame Text | -- embedded web page
-  CalendarEventView Int
+  CalendarEventView Int |
+  JSoWidgetView
 
   deriving (Show,Eq,Generic)
 

@@ -43,6 +43,7 @@ dumpView (TuningView z) = "tunning " <> showInt z
 dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
 dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
+dumpView (JSoWidgetView) = "jSoWidgetView"
 
 dumpView _ = " "
 
@@ -76,9 +77,13 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> iFrameParser
           <|> calendarEventParser
           <|> genGridParser
+          <|> jSoWidgetViewParser
 
 genGridParser :: H View
 genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
+
+jSoWidgetViewParser :: H View
+jSoWidgetViewParser = (reserved "jSoWidget" <|> reserved "jsoWidget") >> return JSoWidgetView
 
 rowsOrColumns :: H Int
 rowsOrColumns = do

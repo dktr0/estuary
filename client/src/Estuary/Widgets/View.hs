@@ -40,6 +40,7 @@ import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
+import Estuary.Widgets.JSoWidget
 
 
 
@@ -123,6 +124,10 @@ viewWidget _ AudioMapView = do
 viewWidget _ (IFrame url) = do
   let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
   elAttr "iframe" attrs $ return ()
+  return never
+
+viewWidget _ (JSoWidgetView) = do
+  jSoWidgetView
   return never
 
 zoneWidget :: (MonadWidget t m, Eq a)

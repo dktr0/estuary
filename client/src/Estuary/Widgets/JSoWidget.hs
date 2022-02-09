@@ -1,16 +1,19 @@
-{-# LANGUAGE JavascriptFFI, OverloadedStrings #-}
+{-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 module Estuary.Widgets.JSoWidget where
 
 import Data.Text
+import GHCJS.DOM.Types hiding (Event)
+import Reflex.Dom hiding (Element)
+import Control.Monad.IO.Class
 
-newtype JSoWidget = JSoWidget JSVal
+newtype JSoWidgetFactory = JSoWidgetFactory JSVal
 
 
 -- step 1 (for now) is to create a Haskell representation of a "JSoWidget object"
 
 foreign import javascript safe
   "_aJSoWidget" -- trivial for now, will be replaced w something remote & asynchronous
-  load :: IO JSoWidget
+  load :: IO JSoWidgetFactory
 
 
 -- that JSoWidget object has a "create" method/member
@@ -20,20 +23,20 @@ foreign import javascript safe
 -- a callback that the widget can use to have effects on Estuary via
 -- a highly specific protocol.
 
-newtype JSoWidgetView = JSoWidgetView JSVal
+newtype JSoWidget = JSoWidget JSVal
 
 foreign import javascript safe
-  "$1.create($2)"
-  create :: JSoWidget -> HTMLDomElement -> IO JSoWidgetView
+  "_aJSoWidget.create($1)"
+  create :: {- JSoWidgetFactory -> -} Element -> IO JSoWidget
 
 
 -- here is a placeholder connection of the above functionality into a Reflex
 -- environment/context:
 
-jSoWidgetView :: MonadWidget t m => JSoWidget -> m ()
-jSoWidgetView jsw = do
-  x <- ??? -- need to figure out what parent widget is...
-  liftIO $ create jsw parent
+jSoWidgetView :: MonadWidget t m => {- JSoWidget -> -} m JSoWidget
+jSoWidgetView {- jsw -} = do
+  (parentElement,_) <- el' "div" $ return ()
+  liftIO $ create {- jsw -} (_el_element parentElement)
 
 
 {-
@@ -43,8 +46,9 @@ a JSoWidget might look like:
 
 {
   create: function (parent) {
-    var newDomElement = document.createElement("button");
-    parent.appendChild()
+    var x = document.createElement("button");
+    parent.appendChild(x);
+    return x;
     }
 }
 -}

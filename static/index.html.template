@@ -91,6 +91,19 @@
 <body>
   <div id="estuary-root"></div>
   <script type="text/javascript">
+  // temporary place for a JSoWidget (to be replaced by remote, asynchronous loading)
+  _aJSoWidget = {
+    create: function (parent) {
+      var aDiv = document.createElement("div");
+      var x = document.createTextNode("feel free to push the button");
+      aDiv.appendChild(x);
+      aDiv.appendChild(document.createElement("button"));
+      parent.appendChild(aDiv);
+      return x;
+      }
+  }
+  </script>
+  <script type="text/javascript">
 
 function fatalError(m) {
   var e = document.getElementById("estuary-root");
