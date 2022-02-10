@@ -21,6 +21,9 @@ import Estuary.Widgets.W
 
 compiledAnnouncements :: Map Day [TranslatableText]
 compiledAnnouncements = fromList [
+  (read "2022-01-21",[ fromList [
+    (English,"Estuary now contains version 0.4.0 of Punctual, with support for video files as textures, optimized fragment shader generation, combinatorial semantics in many operations with multi-channel signals, and numerous other changes.")
+    ]]),
   (read "2021-12-11",[ fromList [
     (English,"Estuary now supports multichannel audio output. Use !maxAudioOutputs at the terminal to query channels available in the browser, !audioOutputs to query currently used channels, and !setAudioOutputs [someNumber] to switch to a specific number of audio outputs.")
     ]]),

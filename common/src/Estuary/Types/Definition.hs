@@ -57,6 +57,13 @@ data TimerUpState =
   Stopped NominalDiffTime
   deriving (Eq, Show, Generic)
 
+--data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
+data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
+
+instance ToJSON TimeVision where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON TimeVision
+
 instance ToJSON TimerUpState where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON TimerUpState
@@ -74,7 +81,7 @@ data Definition =
   CountDown TimerDownState |
   SandClock TimerDownState |
   StopWatch TimerUpState |
-  SeeTime Tempo |
+  SeeTime TimeVision |
   NotePad NotePad |
   CalendarEv CalendarEvent
   deriving (Eq,Show,Generic)
@@ -152,7 +159,7 @@ maybeTimerDownState (CountDown x) = Just x
 maybeTimerDownState (SandClock x) = Just x
 maybeTimerDownState _ = Nothing
 
-maybeSeeTime:: Definition -> Maybe Tempo
+maybeSeeTime:: Definition -> Maybe TimeVision
 maybeSeeTime (SeeTime x) = Just x
 maybeSeeTime _ = Nothing
 

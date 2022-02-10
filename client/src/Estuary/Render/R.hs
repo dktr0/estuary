@@ -14,17 +14,20 @@ import Sound.MusicW
 import TextShow
 
 import qualified Sound.Tidal.Context as Tidal
+import qualified Sound.Punctual.Resolution as Punctual
 
 import Estuary.Types.TextNotation
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
-import Estuary.Render.DynamicsMode
+-- import Estuary.Render.DynamicsMode
+import Estuary.Render.MainBus
 import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Resources
 import Estuary.Types.ResourceOp
 import Estuary.Client.Settings as Settings
+import Estuary.Types.Language
 
 
 data RenderEnvironment = RenderEnvironment {
@@ -104,19 +107,50 @@ setEvaluationTime z n = modify' $ \x -> x { evaluationTimes = IntMap.insert z n 
 
 
 -- updating Settings (eg. in response to user action in widgets)
--- and accessing them from within the R monad
 
 updateSettings :: RenderEnvironment -> Settings -> IO ()
 updateSettings re = writeIORef (_settings re)
 
+
+-- asking/reading settings from within the R monad
+-- (note: not all Settings are given accessors here, just those that might
+-- be useful during computations with Estuary's two render threads.)
+
+askSettings :: (Settings -> a) -> R a
+askSettings f = asks _settings >>= liftIO . readIORef >>= return . f
+
+language :: R Language
+language = askSettings Settings.language
+
 canvasOn :: R Bool
-canvasOn = asks _settings >>= liftIO . readIORef >>= return . Settings.canvasOn
+canvasOn = askSettings Settings.canvasOn
+
+resolution :: R Punctual.Resolution
+resolution = askSettings Settings.resolution
+
+brightness :: R Double
+brightness = askSettings Settings.brightness
+
+fpsLimit :: R (Maybe NominalDiffTime)
+fpsLimit = askSettings Settings.fpsLimit
+
+cineCer0ZIndex :: R Int
+cineCer0ZIndex = askSettings Settings.cineCer0ZIndex
+
+punctualZIndex :: R Int
+punctualZIndex = askSettings Settings.punctualZIndex
+
+improvizZIndex :: R Int
+improvizZIndex = askSettings Settings.improvizZIndex
+
+hydraZIndex :: R Int
+hydraZIndex = askSettings Settings.hydraZIndex
 
 webDirtOn :: R Bool
-webDirtOn = asks _settings >>= liftIO . readIORef >>= return . Settings.webDirtOn
-
-superDirtOn :: R Bool
-superDirtOn = asks _settings >>= liftIO . readIORef >>= return . Settings.superDirtOn
+webDirtOn = askSettings Settings.webDirtOn
 
 unsafeModeOn :: R Bool
-unsafeModeOn = asks _settings >>= liftIO . readIORef >>= return . Settings.unsafeModeOn
+unsafeModeOn = askSettings Settings.unsafeModeOn
+
+superDirtOn :: R Bool
+superDirtOn = askSettings Settings.superDirtOn

@@ -566,6 +566,11 @@ display: block;
   font-size: 1em;
 }
 
+.tempo-visualiser {
+	color: var(--primary-color);
+	font-size: 1em;
+  }
+
 .invisible-color {
 	color: rgba(0,0,0,0);
   }
@@ -705,10 +710,13 @@ ______________________________
 	flex-direction: column;
 	height: 100%;
   width: 100%;
+  overflow: hidden;
+  background-color: transparent;
 }
 
 .tutorialView {
   overflow-y: scroll;
+  overflow-x: scroll;
 }
 
 .tutorialButton{
@@ -737,8 +745,18 @@ ______________________________
 	font-weight: bold;
 	margin-bottom: 0.5em;
 }
+
+.rowOfButtons{
+  display: flex;
+  flex-direction: row;
+  height: 15%;
+  width: 100%;
+  background-color: transparent;
+}
+
 .prevNextButtons{
-	width: 10%;
+	width: 6%;
+  text-align: center;
 }
 
 .prevNextButtons button {
@@ -746,7 +764,7 @@ ______________________________
 	 color: var(--primary-color);
 	 border-radius: 5px;
 	 margin-bottom: 0.5em;
-     border: 1px solid var(--secondary-color);
+   border: 1px solid var(--secondary-color);
 }
 
 
@@ -987,6 +1005,19 @@ cursor: pointer;
 }
 
 .stopwatch textarea{
+	position: relative;
+	border: none;
+	max-width:13em;
+    text-align: center;
+    width: fit-content;
+}
+
+.time-visualiser {
+	display: flex;
+	border: none;
+}
+
+.time-visualiser textarea{
 	position: relative;
 	border: none;
 	max-width:13em;
@@ -1780,3 +1811,29 @@ input::-webkit-inner-spin-button {
 	flex-wrap: wrap;
 	margin-right: 1.5em;
 	}
+
+/* Notepad style */
+
+.notepadContainers{
+	display: flex;
+	flex-direction: column;
+	height: 95%;
+  width: 100%;
+  overflow: hidden;
+  background-color: transparent;
+}
+
+.notepage-title {
+	width: 100%;
+  font-weight: bold;
+	border: none;
+	background-color: transparent;
+}
+
+.notepage-content {
+	display: flex;
+	height: 100%;
+  width: 100%;
+	border: none;
+	background-color: transparent;
+}
