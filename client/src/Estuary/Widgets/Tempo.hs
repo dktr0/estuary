@@ -298,11 +298,21 @@ whichSegment r nSegments beatInPercent =
 
 --- select visualiser
 
+--- clickableDivAttrs::MonadWidget t m => Text -> a -> Map Text Text -> m (Event t a)
+leftInvisible:: MonadWidget t m => m (Event t ())
+leftInvisible = clickableDivNoClass blank 
+
+
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
-selectVisualiser (Cyclic 0) = divClass "time-visualiser" $ do
-  cycleTracer 0 
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Cyclic 1)) buttonEvent
+selectVisualiser (Cyclic 0) = divClass "time-visualiser" $ mdo
+
+  left <- leftInvisible
+  -- numbs <- foldDyn (+) (0 :: Rational)  (1 <$ buttonEvent)
+  -- el "div" $ display numbs
+  
+  cd <- clickableDiv "time-visualiser" $ cycleTracer 0  
+  return $ fmap (const (Cyclic 1)) cd
+
 selectVisualiser (Cyclic 1) = do
   cycleTracer 1 
   buttonEvent <- button $ "change" 
