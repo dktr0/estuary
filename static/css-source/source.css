@@ -1718,13 +1718,22 @@ box-shadow: inset 0 0 3px var(--primary-color);
 
 .calendarEventWidget {
 	display:flex;
+	flex-direction: column;
 	flex-wrap: wrap;
 }
 
 
 .descriptionWidget {
     width: 100%;
+
 }
+
+.descriptionWidget input {
+    width: 100%;
+    box-sizing:border-box;
+}
+
+
 
 
 .descriptionWidgetInput {
@@ -1740,9 +1749,16 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	width: 100%;
 
 }
+.selectDateAndRecurrencyContainer {
+	display: flex;
+
+}
+
 .dateWidget {
+	margin-top: 0.2em;
 	    cursor: pointer;
         z-index: 999;
+
 }
 
 .calendarContainer {
@@ -1756,27 +1772,29 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	width: 80px;
 }
 .timeWidget {
+	display: flex;
 	width: 10%;
 }
 
 .zoneWidget {
-	width: 60%;
-
+margin-top: 0.2em;
 }
 
+
 .timeWidgetInput {
+	margin-top: 0.2em;
 	width: 30%;
+}
+
+
+.timeWidgetInput input {
+	width: 100%;
 	color: var(--primary-color);
     border: none;
     box-shadow: inset 0 0 3px var(--primary-color);
     border-radius: 5px;
 }
 
-.timeWidget input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
 
 .selectedDate {
     border: none;
@@ -1812,6 +1830,11 @@ input::-webkit-inner-spin-button {
 	margin-right: 1.5em;
 	}
 
+.enableRecurrence {
+	margin-top: 0.2em;
+}
+
+
 /* Notepad style */
 
 .notepadContainers{
@@ -1821,6 +1844,14 @@ input::-webkit-inner-spin-button {
   width: 100%;
   overflow: hidden;
   background-color: transparent;
+}
+.selectPeriodicity {
+/* 	background-color: yellow; */
+}
+.selectPeriodicity  select {
+	border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+
 }
 
 .notepage-title {
