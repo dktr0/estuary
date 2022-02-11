@@ -39,7 +39,8 @@ tempoWidget tempoDyn = do
     edits <- performEvent $ fmap liftIO $ attachPromptlyDynWith (flip changeTempoNow) tempoDyn cpsEvent -- *** attachPromptlyDynWith here might not be right!!!
     return edits
   return $ localEdits v
-------
+
+-------------------
 
 cycleTracer:: MonadWidget t m => Rational ->  W t m ()
 cycleTracer segments = do
@@ -303,71 +304,71 @@ selectVisualiser (Cyclic 0) = divClass "time-visualiser" $ do
   cycleTracer 0 
   buttonEvent <- button $ "change" 
   return $ fmap (const (Cyclic 1)) buttonEvent
-selectVisualiser (Cyclic 1) = do
+selectVisualiser (Cyclic 1) = divClass "time-visualiser" $ do
   cycleTracer 1 
   buttonEvent <- button $ "change" 
   return $ fmap (const (Cyclic 2)) buttonEvent
-selectVisualiser (Cyclic 2) = do
+selectVisualiser (Cyclic 2) = divClass "time-visualiser" $ do
   cycleTracer 2 
   buttonEvent <- button $ "change" 
   return $ fmap (const (Cyclic 3)) buttonEvent
-selectVisualiser (Cyclic 3) = do
+selectVisualiser (Cyclic 3) = divClass "time-visualiser" $ do
   cycleTracer 3 
   buttonEvent <- button $ "change" 
   return $ fmap (const (Cyclic 4)) buttonEvent
-selectVisualiser (Cyclic 4) = do
+selectVisualiser (Cyclic 4) = divClass "time-visualiser" $ do
   cycleTracer 4 
   buttonEvent <- button $ "change" 
   return $ fmap (const (Metric 2)) buttonEvent
-selectVisualiser (Metric 2) = do
+selectVisualiser (Metric 2) = divClass "time-visualiser" $ do
   metreTracer 2
   buttonEvent <- button $ "change" 
   return $ fmap (const (Metric 3)) buttonEvent
-selectVisualiser (Metric 3) = do-- here I will add the second part of the type TimeVision: Cyclic 0
+selectVisualiser (Metric 3) = divClass "time-visualiser" $ do
   metreTracer 3
   buttonEvent <- button $ "change" 
   return $ fmap (const (Metric 4)) buttonEvent
-selectVisualiser (Metric 4) = do
+selectVisualiser (Metric 4) = divClass "time-visualiser" $ do
   metreTracer 4
   buttonEvent <- button $ "change" 
   return $ fmap (const (Metric 5)) buttonEvent
-selectVisualiser (Metric 5) = do
+selectVisualiser (Metric 5) = divClass "time-visualiser" $ do
   metreTracer 5
   buttonEvent <- button $ "change" 
   return $ fmap (const (Metric 6)) buttonEvent
-selectVisualiser (Metric 6) = do
+selectVisualiser (Metric 6) = divClass "time-visualiser" $ do
   metreTracer 6
   buttonEvent <- button $ "change" 
   return $ fmap (const (Metric 7)) buttonEvent
-selectVisualiser (Metric 7) = do
+selectVisualiser (Metric 7) = divClass "time-visualiser" $ do
   metreTracer 7
   buttonEvent <- button $ "change" 
   return $ fmap (const (Metric 8)) buttonEvent
-selectVisualiser (Metric 8) = do
+selectVisualiser (Metric 8) = divClass "time-visualiser" $ do
   metreTracer 8
   buttonEvent <- button $ "change" 
   return $ fmap (const (Ring 3)) buttonEvent
-selectVisualiser (Ring 3) = do  ------- OJO ----- if ring is 0 produces a crash in the system!!!!!
+selectVisualiser (Ring 3) = divClass "time-visualiser" $ do  ------- OJO ----- if ring is 0 produces a crash in the system!!!!!
   ringTracer 3
   buttonEvent <- button $ "change" 
   return $ fmap (const (Ring 4)) buttonEvent
-selectVisualiser (Ring 4) = do
+selectVisualiser (Ring 4) = divClass "time-visualiser" $ do
   ringTracer 4
   buttonEvent <- button $ "change" 
   return $ fmap (const (Ring 5)) buttonEvent
-selectVisualiser (Ring 5) = do
+selectVisualiser (Ring 5) = divClass "time-visualiser" $ do
   ringTracer 5
   buttonEvent <- button $ "change" 
   return $ fmap (const (Ring 6)) buttonEvent
-selectVisualiser (Ring 6) = do
+selectVisualiser (Ring 6) = divClass "time-visualiser" $ do
   ringTracer 6
   buttonEvent <- button $ "change" 
   return $ fmap (const (Ring 7)) buttonEvent
-selectVisualiser (Ring 7) = do
+selectVisualiser (Ring 7) = divClass "time-visualiser" $ do
   ringTracer 7
   buttonEvent <- button $ "change" 
   return $ fmap (const (Ring 8)) buttonEvent
-selectVisualiser (Ring 8) = do
+selectVisualiser (Ring 8) = divClass "time-visualiser" $ do
   ringTracer 8
   buttonEvent <- button $ "change" 
   return $ fmap (const (Cyclic 0)) buttonEvent
