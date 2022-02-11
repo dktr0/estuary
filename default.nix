@@ -226,8 +226,8 @@ in
           doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "seis8s";
-           sha256 = "0fyiiqya4rfq9h8q17rarv06vizd967jxc353kznadj93asi4his";
-           rev = "a3f9ea35b9037df3f8405dc66c20b19f92b1a675";
+           sha256 = "1nnzsmkcy28k1s1s72ckq136564r2d6xzngm2bd1sm5ixasxx0lq";
+           rev = "6edbf1e21ade2669a0098d3120c698463c86f52a";
          }) {}));
       };
     in
