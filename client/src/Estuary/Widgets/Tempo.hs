@@ -83,7 +83,7 @@ getElapsedBeats t now = do
   return x  
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
-visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
+visualiseTempoWidget delta = divClass "tempo-visualiser" $  mdo
   v <- variable delta $ localEdits'
   initialValue <- sample $ current delta
   let initialWidget = selectVisualiser initialValue
@@ -96,12 +96,13 @@ visualiseTempoWidget delta = divClass "tempoVisualiser" $  mdo
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
 visualiseCycles :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseCycles delta segments = do
-  let class' = constDyn $ "class" =: "human-to-human-comm code-font"
+  let class' = constDyn $ "class" =: "time-visualiser"
+  let z = constDyn $ "z" =: "-9"
   let style = constDyn $ "style" =: "height: auto;"
   let vB = constDyn $ "viewBox" =: "-1.5 -1.5 3 3"
   let w' = constDyn $ "width" =: "100"
   let h' = constDyn $ "height" =: "100"
-  let attrs = mconcat [class',w',h',style,vB]
+  let attrs = mconcat [class',w',h',style,vB,z]
 
   let (cx,cy) = (constDyn $ "cx" =: "0", constDyn $ "cy" =: "0")
   let r = constDyn $ "r" =: "1"
@@ -113,7 +114,7 @@ visualiseCycles delta segments = do
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1")
   let transform = beatToRotation <$> delta 
 
-  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform]
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform,z]
 
  -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
@@ -142,6 +143,7 @@ beatToPercentage atr beat = atr =: (showt percen)
 visualiseMetre :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseMetre delta subDivisions = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
+  let z = constDyn $ "z" =: "-9"
   let style = constDyn $ "style" =: "height: auto;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100"
@@ -149,12 +151,12 @@ visualiseMetre delta subDivisions = do
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05;" 
 
-  let attrs = mconcat [class',w',h',style,vB]
+  let attrs = mconcat [class',w',h',style,vB,z]
 
   let x1 = beatToPercentage "x1" <$> delta
   let x2 = beatToPercentage "x2" <$> delta
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "100")
-  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,z]
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     -- manecilla
@@ -175,13 +177,14 @@ generateSegments width nLines = do
   
 generateSegment:: MonadWidget t m => Dynamic t Rational ->  m ()
 generateSegment x = do
+  let z = constDyn $ "z" =: "-9"
   let x1 = generateAttr "x1" <$> x
   let x2 = generateAttr "x2" <$> x
   let y1 = constDyn $ "y1" =: "0"
   let y2 = constDyn $ "y2" =: "100"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05;"
-  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,z]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
   return ()
   
@@ -198,12 +201,13 @@ generatePieSegments nLines = do
   
 generatePieSegment:: MonadWidget t m => Dynamic t Rational ->  m ()
 generatePieSegment x = do
+  let z = constDyn $ "z" =: "-9"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05"
   let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1")
   let transform = (\x -> "transform" =: ("rotate(" <> (showt (realToFrac x :: Double)) <> ")")) <$> x
-  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform]
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform,z]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
   return ()
 
@@ -211,11 +215,12 @@ generatePieSegment x = do
 visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseRing delta segments = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
+  let z = constDyn $ "z" =: "-9"
   let style = constDyn $ "style" =: "height: auto;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100"
   let h' = constDyn $ "height" =: "100"
-  let attrs = mconcat [class',w',h',style,vB]
+  let attrs = mconcat [class',w',h',style,vB,z]
 
   let radius = 30 :: Float
   let stroke = constDyn $ "stroke" =: "var(--secondary-color)"
@@ -228,7 +233,7 @@ visualiseRing delta segments = do
   let dashArray = constDyn $ "stroke-dasharray" =: ((showt ((radius * pi * 2)/(realToFrac segments :: Float)*(realToFrac (segments - 1) ::Float))) <> " " <> (showt ((radius * pi * 2)/(realToFrac segments :: Float))))
   let offset = beatToRingSegment radius segments <$> delta
 
-  let currentBeatAttrs = mconcat [class',cx,cy,r,fill,stroke,strokeWidth,dashArray,offset,transformar]
+  let currentBeatAttrs = mconcat [class',cx,cy,r,fill,stroke,strokeWidth,dashArray,offset,transformar,z]
 
  -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
@@ -240,13 +245,14 @@ visualiseRing delta segments = do
 ring:: MonadWidget t m => m ()
 ring = do
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
+  let z = constDyn $ "z" =: "-9"
   let cx = constDyn $  "cx" =: "50" 
   let cy = constDyn $  "cy" =: "50"
   let r = constDyn $ "r" =: "30"
   let fill = constDyn $ "fill" =: "transparent"
   let (stroke,strokew) = (constDyn $ "stroke" =: "var(--primary-color)",constDyn $ "stroke-width" =: "14")
-  let ringAttrs = mconcat [class',cx,cy,r,fill,stroke,strokew]
-  let holeAttrs = mconcat [class',cx,cy,r,fill]
+  let ringAttrs = mconcat [class',cx,cy,r,fill,stroke,strokew,z]
+  let holeAttrs = mconcat [class',cx,cy,r,fill,z]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" ringAttrs $ return ()
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" holeAttrs $ return ()
   return ()
@@ -260,6 +266,7 @@ generateRingSegments nSegs = do
   
 generateRingSegment:: MonadWidget t m => Dynamic t Rational ->  m ()
 generateRingSegment x = do
+  let z = constDyn $ "z" =: "-9"
   let stroke = constDyn $ "stroke" =: "var(--background-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "4"
   let fill = constDyn $ "fill" =: "transparent"
@@ -269,7 +276,7 @@ generateRingSegment x = do
   let dashArray = constDyn $ "stroke-dasharray" =: "25 75" 
   let offset = (\x -> "stroke-dashoffset" =: (showt (realToFrac x :: Double))) <$> x
   
-  let attrs = mconcat [cx,cy,r,stroke,strokeWidth,fill,dashArray,offset]
+  let attrs = mconcat [cx,cy,r,stroke,strokeWidth,fill,dashArray,offset,z]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrs $ return ()
   return ()
 
@@ -298,13 +305,28 @@ whichSegment r nSegments beatInPercent =
 -- </svg>
 
 --- select visualiser
+accTimeSegments:: TimeVision -> TimeVision
+accTimeSegments (Cyclic x) = Cyclic (x+1)
+accTimeSegments (Metric x) = Metric (x+1)
+accTimeSegments (Ring x) = Ring (x+1) 
+
+getSeg:: TimeVision -> Rational
+getSeg (Cyclic x) = (x) 
+getSeg (Metric x) = (x) 
+getSeg (Ring x) = (x) 
 
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
-selectVisualiser (Cyclic 0) = divClass "time-visualiser" $ do
-  cycleTracer 0 
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Cyclic 1)) buttonEvent
-selectVisualiser (Cyclic 1) = divClass "time-visualiser" $ do
+selectVisualiser (Cyclic 0) = divClass "flex-container-for-timeVision" $ mdo
+
+  leftPanel <- clickableDiv "flex-item-for-timeVision" blank 
+  centrePanel <- clickableDiv "flex-item-for-timeVision" $ cycleTracer 0
+  rightPanel <- clickableDiv "flex-item-for-timeVision" blank
+  
+  let accumSegments = fmap (const $ accTimeSegments) $ traceEvent "que es esto?" centrePanel
+  
+  return $ fmap (const (Cyclic 1)) centrePanel
+
+selectVisualiser (Cyclic 1) = do
   cycleTracer 1 
   buttonEvent <- button $ "change" 
   return $ fmap (const (Cyclic 2)) buttonEvent

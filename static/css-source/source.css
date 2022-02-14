@@ -255,7 +255,7 @@ body::-webkit-scrollbar-thumb {
 	background-color: rgb(98, 221, 115);
 	color: black;
 	width: 50%;
-	height: 1000px
+	height: 1000px;
 	z-index: 0;
 	position: fixed;
 	top: 10em;
@@ -568,6 +568,9 @@ display: block;
 
 .tempo-visualiser {
 	color: var(--primary-color);
+	width: 100%;
+	height: 100%;
+	position:relative;
 	font-size: 1em;
   }
 
@@ -952,7 +955,7 @@ cursor: pointer;
 .ensembleHeader {
 	display: flex;
 	flex-direction: row;
-    border:none
+    border:none;
     display: none;
 
 }
@@ -986,9 +989,21 @@ cursor: pointer;
 
 /* recently added by AFB, experimentas for widget creation */
 
+.flex-container-for-timeVision {
+	display: flex;
+}
+
+.flex-container-for-timeVision > div {
+	width: 33%;
+}
+
+.flex-item-for-timeVision {
+	width: 33%;
+}
+
 .countDown {
 	display: flex;
-	border: none;
+	flex-direction: row;
 }
 
 .countDown textarea{
@@ -1013,8 +1028,8 @@ cursor: pointer;
 }
 
 .time-visualiser {
-	display: flex;
 	border: none;
+	position:relative;
 }
 
 .time-visualiser textarea{
