@@ -82,15 +82,16 @@ getElapsedBeats t now = do
   let x = timeToCount t now 
   return x  
 
+
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
 visualiseTempoWidget delta = divClass "tempo-visualiser" $  mdo
-  v <- variable delta $ localEdits'
-  initialValue <- sample $ current delta
-  let initialWidget = selectVisualiser initialValue
-  let remoteOrLocalEdits = leftmost [updated delta, localEdits']
-  let updatedWidgets = fmap selectVisualiser remoteOrLocalEdits -- type? dynamic or event??
-  localEdits <- widgetHold initialWidget updatedWidgets -- m (Dynamic t (Event t T)) -- this does not need localEdits <-
-  let localEdits' = switchDyn localEdits -- this line seems unecessary -- switchdyn digs up the event inside the dynamic
+--  initialValue <- sample $ current delta -- :: Dynamic t TimeVision
+
+  widget <- selectVisualiser delta -- :: Variable t TimeVision
+  let dynWidget = (currentValue widget) -- Dynamic t TimeVision
+  let eventWidget = (localEdits widget) -- :: Event t TimeVision
+  -- widgetHold_ ?? ???? 
+  v <- variable delta $ eventWidget
   return v
 
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
@@ -305,92 +306,35 @@ whichSegment r nSegments beatInPercent =
 -- </svg>
 
 --- select visualiser
-accTimeSegments:: TimeVision -> TimeVision
-accTimeSegments (Cyclic x) = Cyclic (x+1)
-accTimeSegments (Metric x) = Metric (x+1)
-accTimeSegments (Ring x) = Ring (x+1) 
-
 getSeg:: TimeVision -> Rational
 getSeg (Cyclic x) = (x) 
 getSeg (Metric x) = (x) 
 getSeg (Ring x) = (x) 
 
-selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)
-selectVisualiser (Cyclic 0) = divClass "flex-container-for-timeVision" $ mdo
 
-  leftPanel <- clickableDiv "flex-item-for-timeVision" blank 
-  centrePanel <- clickableDiv "flex-item-for-timeVision" $ cycleTracer 0
+selectVisualiser :: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
+selectVisualiser delta = divClass "flex-container-for-timeVision" $ mdo
+  leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
+  let leftTag = tag (constant $ tvNextStateLeft) leftPanel -- Event t (TimeVision -> TimeVision)
   rightPanel <- clickableDiv "flex-item-for-timeVision" blank
-  
-  let accumSegments = fmap (const $ accTimeSegments) $ traceEvent "que es esto?" centrePanel
-  
-  return $ fmap (const (Cyclic 1)) centrePanel
+  let rightTag = tag (constant $ tvNextStateRight) rightPanel 
+  centrePanel <- clickableDiv "flex-item-for-timeVision" $ blank
+  let centreTag = tag (constant $ segmentUp) centrePanel
+  let localEdits = attachWith (&) (current $ currentValue v) $ leftmost [centreTag,leftTag,rightTag]
+  v <- variable delta $ localEdits
+  return v
 
-selectVisualiser (Cyclic 1) = do
-  cycleTracer 1 
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Cyclic 2)) buttonEvent
-selectVisualiser (Cyclic 2) = divClass "time-visualiser" $ do
-  cycleTracer 2 
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Cyclic 3)) buttonEvent
-selectVisualiser (Cyclic 3) = divClass "time-visualiser" $ do
-  cycleTracer 3 
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Cyclic 4)) buttonEvent
-selectVisualiser (Cyclic 4) = divClass "time-visualiser" $ do
-  cycleTracer 4 
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Metric 2)) buttonEvent
-selectVisualiser (Metric 2) = divClass "time-visualiser" $ do
-  metreTracer 2
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Metric 3)) buttonEvent
-selectVisualiser (Metric 3) = divClass "time-visualiser" $ do
-  metreTracer 3
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Metric 4)) buttonEvent
-selectVisualiser (Metric 4) = divClass "time-visualiser" $ do
-  metreTracer 4
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Metric 5)) buttonEvent
-selectVisualiser (Metric 5) = divClass "time-visualiser" $ do
-  metreTracer 5
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Metric 6)) buttonEvent
-selectVisualiser (Metric 6) = divClass "time-visualiser" $ do
-  metreTracer 6
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Metric 7)) buttonEvent
-selectVisualiser (Metric 7) = divClass "time-visualiser" $ do
-  metreTracer 7
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Metric 8)) buttonEvent
-selectVisualiser (Metric 8) = divClass "time-visualiser" $ do
-  metreTracer 8
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Ring 3)) buttonEvent
-selectVisualiser (Ring 3) = divClass "time-visualiser" $ do  ------- OJO ----- if ring is 0 produces a crash in the system!!!!!
-  ringTracer 3
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Ring 4)) buttonEvent
-selectVisualiser (Ring 4) = divClass "time-visualiser" $ do
-  ringTracer 4
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Ring 5)) buttonEvent
-selectVisualiser (Ring 5) = divClass "time-visualiser" $ do
-  ringTracer 5
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Ring 6)) buttonEvent
-selectVisualiser (Ring 6) = divClass "time-visualiser" $ do
-  ringTracer 6
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Ring 7)) buttonEvent
-selectVisualiser (Ring 7) = divClass "time-visualiser" $ do
-  ringTracer 7
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Ring 8)) buttonEvent
-selectVisualiser (Ring 8) = divClass "time-visualiser" $ do
-  ringTracer 8
-  buttonEvent <- button $ "change" 
-  return $ fmap (const (Cyclic 0)) buttonEvent
+segmentUp:: TimeVision -> TimeVision
+segmentUp (Cyclic x) = (Cyclic (realToFrac ((floor (x+1))`mod`17) :: Rational))
+segmentUp (Metric x) = (Metric (realToFrac ((floor (x+1))`mod`17) :: Rational))
+segmentUp   (Ring x) =   (Ring (realToFrac ((floor (x+1))`mod`17) :: Rational))
+
+tvNextStateRight:: TimeVision -> TimeVision
+tvNextStateRight (Cyclic x) = (Metric x)
+tvNextStateRight (Metric x) =   (Ring x)
+tvNextStateRight   (Ring x) = (Cyclic x)
+
+tvNextStateLeft:: TimeVision -> TimeVision
+tvNextStateLeft (Cyclic x) =   (Ring x)
+tvNextStateLeft   (Ring x) = (Metric x)
+tvNextStateLeft (Metric x) = (Cyclic x)
