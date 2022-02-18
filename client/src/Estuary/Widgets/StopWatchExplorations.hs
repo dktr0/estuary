@@ -33,7 +33,7 @@ stopWatchWidget deltasDown =  divClass "stopwatch" $  mdo
   let initialText = stopWatchToText initialStopWatch widgetBuildTime -- calculated once :: Text
   tick <- tickLossy 0.01 widgetBuildTime -- :: tickInfo (next line is UTC)
   let textUpdates = attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
- -- holdDyn initialText textUpdates >>= dynText -- simple unstilled display of the timer
+ -- holdDyn initialText textUpdates >>= dynText -- simple unstyled display of the timer
   texto <- holdDyn initialText textUpdates
   visualiseStopwatchWidget $ texto
   v <- returnVariable deltasDown localChanges

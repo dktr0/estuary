@@ -87,7 +87,7 @@ visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variabl
 visualiseTempoWidget delta = divClass "tempo-visualiser" $  mdo
 --  initialValue <- sample $ current delta -- :: Dynamic t TimeVision
 
-  widget <- selectVisualiser delta -- :: Variable t TimeVision
+  widget <- selectVisualiser delta -- :: W t m (Variable t TimeVision)
   let dynWidget = (currentValue widget) -- Dynamic t TimeVision
   let eventWidget = (localEdits widget) -- :: Event t TimeVision
   -- widgetHold_ ?? ???? 
@@ -306,13 +306,8 @@ whichSegment r nSegments beatInPercent =
 -- </svg>
 
 --- select visualiser
-getSeg:: TimeVision -> Rational
-getSeg (Cyclic x) = (x) 
-getSeg (Metric x) = (x) 
-getSeg (Ring x) = (x) 
 
-
-selectVisualiser :: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
+selectVisualiser :: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
 selectVisualiser delta = divClass "flex-container-for-timeVision" $ mdo
   leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
   let leftTag = tag (constant $ tvNextStateLeft) leftPanel -- Event t (TimeVision -> TimeVision)
