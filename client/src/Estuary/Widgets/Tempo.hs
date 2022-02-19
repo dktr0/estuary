@@ -85,13 +85,13 @@ getElapsedBeats t now = do
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
 visualiseTempoWidget delta = divClass "tempo-visualiser" $  mdo
---  initialValue <- sample $ current delta -- :: Dynamic t TimeVision
-
-  widget <- selectVisualiser delta -- :: W t m (Variable t TimeVision)
-  let dynWidget = (currentValue widget) -- Dynamic t TimeVision
-  let eventWidget = (localEdits widget) -- :: Event t TimeVision
-  -- widgetHold_ ?? ???? 
-  v <- variable delta $ eventWidget
+  v <- variable delta $ localEdits'
+  initialValue <- sample $ current delta
+  let initialWidget = selectVisualiser initialValue
+  let remoteOrLocalEdits = leftmost [updated delta, localEdits']
+  let updatedWidgets = fmap selectVisualiser remoteOrLocalEdits -- type? dynamic or event??
+  localEdits <- widgetHold initialWidget updatedWidgets -- m (Dynamic t (Event t T)) -- this does not need localEdits <-
+  let localEdits' = switchDyn localEdits -- this line seems unecessary -- switchdyn digs up the event inside the dynamic
   return v
 
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
@@ -214,7 +214,8 @@ generatePieSegment x = do
 
 
 visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
-visualiseRing delta segments = do
+visualiseRing delta segs = do
+  let segments = if segs < 1 then 1 else segs
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
   let z = constDyn $ "z" =: "-9"
   let style = constDyn $ "style" =: "height: auto;"
@@ -306,18 +307,35 @@ whichSegment r nSegments beatInPercent =
 -- </svg>
 
 --- select visualiser
-
-selectVisualiser :: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
-selectVisualiser delta = divClass "flex-container-for-timeVision" $ mdo
+selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
+selectVisualiser (Cyclic seg) = divClass "flex-container-for-timeVision" $ do
+  leftPanel <- clickableDiv "flex-item-for-timeVision" $ blank -- :: Event t ()
+  let leftTag = tag (constant $ tvNextStateLeft) leftPanel -- Event t (TimeVision -> TimeVision)
+  centrePanel <- clickableDiv "flex-item-for-timeVision" $ cycleTracer seg
+  let centreTag = tag (constant $ segmentUp) centrePanel
+  rightPanel <- clickableDiv "flex-item-for-timeVision" $ blank
+  let rightTag = tag (constant $ tvNextStateRight) rightPanel 
+  let panelEvent = fmap (\x -> x $ Cyclic seg) $ leftmost [centreTag,leftTag,rightTag]
+  return panelEvent
+selectVisualiser (Metric seg) = divClass "flex-container-for-timeVision" $ do
   leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
   let leftTag = tag (constant $ tvNextStateLeft) leftPanel -- Event t (TimeVision -> TimeVision)
-  rightPanel <- clickableDiv "flex-item-for-timeVision" blank
-  let rightTag = tag (constant $ tvNextStateRight) rightPanel 
-  centrePanel <- clickableDiv "flex-item-for-timeVision" $ blank
+  centrePanel <- clickableDiv "flex-item-for-timeVision" $ metreTracer seg
   let centreTag = tag (constant $ segmentUp) centrePanel
-  let localEdits = attachWith (&) (current $ currentValue v) $ leftmost [centreTag,leftTag,rightTag]
-  v <- variable delta $ localEdits
-  return v
+  rightPanel <- clickableDiv "flex-item-for-timeVision" $ blank
+  let rightTag = tag (constant $ tvNextStateRight) rightPanel 
+  let panelEvent = fmap (\x -> x $ Metric seg) $ leftmost [centreTag,leftTag,rightTag]
+  return panelEvent
+selectVisualiser (Ring seg) = divClass "flex-container-for-timeVision" $ do
+  leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
+  let leftTag = tag (constant $ tvNextStateLeft) leftPanel -- Event t (TimeVision -> TimeVision)
+  centrePanel <- clickableDiv "flex-item-for-timeVision" $ ringTracer seg
+  let centreTag = tag (constant $ segmentUp) centrePanel
+  rightPanel <- clickableDiv "flex-item-for-timeVision" $ blank
+  let rightTag = tag (constant $ tvNextStateRight) rightPanel 
+  let panelEvent = fmap (\x -> x $ Ring seg) $ leftmost [centreTag,leftTag,rightTag]
+  return panelEvent
+
 
 segmentUp:: TimeVision -> TimeVision
 segmentUp (Cyclic x) = (Cyclic (realToFrac ((floor (x+1))`mod`17) :: Rational))

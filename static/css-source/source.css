@@ -1027,19 +1027,6 @@ cursor: pointer;
     width: fit-content;
 }
 
-.time-visualiser {
-	border: none;
-	position:relative;
-}
-
-.time-visualiser textarea{
-	position: relative;
-	border: none;
-	max-width:13em;
-    text-align: center;
-    width: fit-content;
-}
-
 /*
 --------------------------------------------------------------------
 							help files
