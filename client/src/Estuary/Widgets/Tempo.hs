@@ -27,6 +27,7 @@ import Estuary.Types.Ensemble
 import Estuary.Widgets.W
 import Estuary.Types.Definition
 
+
 tempoWidget :: MonadWidget t m => Dynamic t Tempo -> W t m (Event t Tempo)
 tempoWidget tempoDyn = do
   v <- variableWidget tempoDyn $ \a eventA -> divClass "ensembleTempo ui-font primary-color" $ mdo
@@ -41,47 +42,42 @@ tempoWidget tempoDyn = do
   return $ localEdits v
 
 -------------------
+getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
+getElapsedBeats t now = do
+  let x = timeToCount t now 
+  return x  
 
-cycleTracer:: MonadWidget t m => Rational ->  W t m ()
-cycleTracer segments = do
+currentBeat:: MonadWidget t m => W t m (Event t Rational)
+currentBeat = do
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   widgetBuildTime <- liftIO $ getCurrentTime
   tick <- tickLossy 0.01 widgetBuildTime
-  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
+  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick
+  return beatPosition
+
+cycleTracer:: MonadWidget t m => Rational ->  W t m ()
+cycleTracer segments = do
+  beatPosition <- currentBeat -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
   visualiseCycles beat segments
   return ()
 
 metreTracer:: MonadWidget t m => Rational -> W t m ()
 metreTracer subDivisions = do
-  c <- context
-  let currentTempo = fmap (tempo . ensemble . ensembleC) c
-  widgetBuildTime <- liftIO $ getCurrentTime
-  tick <- tickLossy 0.01 widgetBuildTime
-  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
+  beatPosition <- currentBeat
   beat <- holdDyn 0 beatPosition
   visualiseMetre beat subDivisions -- segments-- W t m TimeVision
   return ()
 
 ringTracer:: MonadWidget t m => Rational -> W t m ()
 ringTracer segments = do
-  c <- context
-  let currentTempo = fmap (tempo . ensemble . ensembleC) c
-  widgetBuildTime <- liftIO $ getCurrentTime
-  tick <- tickLossy 0.01 widgetBuildTime
-  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick 
+  beatPosition <- currentBeat
   beat <- holdDyn 0 beatPosition
   visualiseRing beat segments
   return ()
 
 -- select visualiser at the bottom
-
-getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
-getElapsedBeats t now = do
-  let x = timeToCount t now 
-  return x  
-
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
 visualiseTempoWidget delta = divClass "tempo-visualiser" $  mdo
@@ -93,6 +89,25 @@ visualiseTempoWidget delta = divClass "tempo-visualiser" $  mdo
   -- widgetHold_ ?? ???? 
   v <- variable delta $ eventWidget
   return v
+
+-- beat helpers
+
+beatToRotation:: Rational -> Map Text Text
+beatToRotation r = "transform" =: ("rotate(" <> (showt radio) <> ")")
+  where radio = fromIntegral (round $ radio' * 360) :: Double
+        radio' = r - (realToFrac $ floor r)
+ 
+beatToPercentage:: Text -> Rational -> Map Text Text
+beatToPercentage atr beat = atr =: (showt percen)
+  where percen = fromIntegral (round $ percen' * 100) :: Double
+        percen' = beat - (realToFrac $ floor beat)
+
+beatToPercentage':: Rational -> Rational -- outputs a Rational representing percentage normalize from 0 to 1
+beatToPercentage' beat = percen 
+  where percen = beat - (realToFrac $ floor beat)
+
+
+-- cycle visualiser widget
 
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
 visualiseCycles :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
@@ -127,19 +142,26 @@ visualiseCycles delta segments = do
     generatePieSegments segments
   return ()
 
+generatePieSegments:: MonadWidget t m => Rational ->  m ()
+generatePieSegments nLines = do
+  let segmentsSize = 360 / nLines 
+      lineList = constDyn $ Prelude.take (floor nLines) $ iterate (+ segmentsSize) 0
+  x <- simpleList lineList (generatePieSegment)
+  return ()
+  
+generatePieSegment:: MonadWidget t m => Dynamic t Rational ->  m ()
+generatePieSegment x = do
+  let z = constDyn $ "z" =: "-9"
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let strokeWidth = constDyn $ "stroke-width" =: "0.05"
+  let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
+  let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1")
+  let transform = (\x -> "transform" =: ("rotate(" <> (showt (realToFrac x :: Double)) <> ")")) <$> x
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform,z]
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
+  return ()     
 
-
-beatToRotation:: Rational -> Map Text Text
-beatToRotation r = "transform" =: ("rotate(" <> (showt radio) <> ")")
-  where radio = fromIntegral (round $ radio' * 360) :: Double
-        radio' = r - (realToFrac $ floor r)
- 
-beatToPercentage:: Text -> Rational -> Map Text Text
-beatToPercentage atr beat = atr =: (showt percen)
-  where percen = fromIntegral (round $ percen' * 100) :: Double
-        percen' = beat - (realToFrac $ floor beat)
-
-
+-- metre visuliser widget
 
 visualiseMetre :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseMetre delta subDivisions = do
@@ -166,9 +188,6 @@ visualiseMetre delta subDivisions = do
     generateSegments 100 subDivisions
   return ()
 
-
--- simpleList :: MonadWidget t m => Dynamic t [v] -> (Dynamic t v -> m a) -> m (Dynamic t [a]) 
-
 generateSegments:: MonadWidget t m => Rational -> Rational ->  m ()
 generateSegments width nLines = do
   let segmentsSize = width / nLines 
@@ -192,26 +211,7 @@ generateSegment x = do
 generateAttr :: Text -> Rational -> Map Text Text
 generateAttr atr x = atr =: (showt (realToFrac x :: Double))
 
-
-generatePieSegments:: MonadWidget t m => Rational ->  m ()
-generatePieSegments nLines = do
-  let segmentsSize = 360 / nLines 
-      lineList = constDyn $ Prelude.take (floor nLines) $ iterate (+ segmentsSize) 0
-  x <- simpleList lineList (generatePieSegment)
-  return ()
-  
-generatePieSegment:: MonadWidget t m => Dynamic t Rational ->  m ()
-generatePieSegment x = do
-  let z = constDyn $ "z" =: "-9"
-  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let strokeWidth = constDyn $ "stroke-width" =: "0.05"
-  let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
-  let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1")
-  let transform = (\x -> "transform" =: ("rotate(" <> (showt (realToFrac x :: Double)) <> ")")) <$> x
-  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform,z]
-  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
-  return ()
-
+-- ring visualiser widget
 
 visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseRing delta segments = do
@@ -294,16 +294,89 @@ whichSegment r nSegments beatInPercent =
       segment = ((realToFrac segment' :: Float) * (r * pi * 2) * 0.01)
   in "stroke-dashoffset" =: (showt $ (realToFrac segment :: Double))
 
---   <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="black" stroke-width="3" stroke-dasharray="25 75" stroke-dashoffset="0"></circle>
---   <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="black" stroke-width="3" stroke-dasharray="25 75" stroke-dashoffset="25"></circle>
---   <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="black" stroke-width="3" stroke-dasharray="25 75" stroke-dashoffset="50"></circle>
---   <circle class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="black" stroke-width="3" stroke-dasharray="25 75" stroke-dashoffset="75"></circle>
+---- new visualiser:  bead visualiser widget
+-- <svg height="100" width="100" >
+--   <rect width="100" height="100" style="fill:rgb(0,0,255);stroke-width:3;stroke:rgb(0,0,0)" />
+--   <circle transform=rotate(0,50,50) cx="50" cy="25" r="10" stroke="black" stroke-width="3"
+--   fill="red" />
+--   <circle transform=rotate(90,50,50) cx="50" cy="25" r="10" stroke="black" stroke-width="3"
+--   fill="red" />
+--   <circle transform=rotate(180,50,50) cx="50" cy="25" r="10" stroke="black" stroke-width="3"
+--   fill="red" />
+--   <circle transform=rotate(270,50,50) cx="50" cy="25" r="10" stroke="black" stroke-width="3"
+--   fill="red" />
+--   Sorry, your browser does not support inline SVG.  
+-- </svg> 
+
+beadPosition:: Rational -> Rational -> Map Text Text
+beadPosition nBeads position = 
+  let beadDur = 360 / nBeads
+      beadList = Prelude.take (floor nBeads) $ iterate (+ beadDur) 0
+      bead = Prelude.last $ Prelude.filter (<= (position*360)) beadList
+  in "transform" =: ("rotate(" <> (showt (realToFrac bead :: Double)) <> ",50,50)")
+
+beadSize:: Rational -> Rational -> Map Text Text
+beadSize nBeads position = 
+  let beadDur = if nBeads /= 0 then (1 / nBeads) else 1
+      beadList = Prelude.take (floor nBeads) $ iterate (+ beadDur) 0
+      bead' = 0.25 + (negate $ position - (Prelude.last $ Prelude.filter (<= (position)) beadList)) -- cuenta regresiva de fraccion q representa segmento del beat a 0
+      bead = bead' / beadDur
+  in "r" =: showt (realToFrac bead :: Double)
+
+visualiseBeads :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
+visualiseBeads delta beads = do
+
+  let class' = constDyn $ "class" =: "human-to-human-comm code-font"
+  let z = constDyn $ "z" =: "-9"
+  let style = constDyn $ "style" =: "height: auto;"
+  let vB = constDyn $ "viewBox" =: "0 0 100 100"
+  let w' = constDyn $ "width" =: "100"
+  let h' = constDyn $ "height" =: "100"
+  let attrs = mconcat [class',w',h',style,vB,z]
+
+  -- define circle attrs
+ -- let (cx,cy) = xxxxxxxxxx
+ -- let fillBead = xxxxxxxxxxx
+
+  -- size of bead changes depending of position in the beat
+  let currentBeatBead = beadPosition beads <$> beatToPercentage' <$> delta -- Map Text Text --- transform: rotate(x,50,50)
+  let beadDynSize = beadSize beads <$> beatToPercentage' <$> delta
+
+ -- let beadAttrs = mconcat [class',z,style,cx,cy,beadDynSize,currentBeatBead,fillBead]
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    -- create bids with transparent fill and minimal stroke
+    generateBeads beads
+    -- change the filled bid of position and size
+--    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" beadAttrs $ return ()
+    
+  return ()
+
+generateBeads:: MonadWidget t m => Rational ->  m ()
+generateBeads nBeads = do
+  let beadDistribution = 360 / nBeads 
+      segList = constDyn $ Prelude.take (floor nBeads) $ iterate (+ beadDistribution) 0
+  x <- simpleList segList (generateBead)
+  return ()
+
+generateBead:: MonadWidget t m => Dynamic t Rational -> m ()
+generateBead beads = do 
+  let z = constDyn $ "z" =: "-9"
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let strokeWidth = constDyn $ "stroke-width" =: "0.5"
+  let fill = constDyn $ "fill" =: "transparent"
+  let cx = constDyn $  "cx" =: "50" 
+  let cy = constDyn $  "cy" =: "25"
+  let r = constDyn $ "r" =: "10"
+  let transform = (\x -> "transform" =: ("rotate(" <> (showt (realToFrac x :: Double)) <> ",50,50)")) <$> beads
+
+  let attrs = mconcat [cx,cy,r,stroke,strokeWidth,fill,transform,z]
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrs $ return ()
+  return ()
 
 
--- <svg width="100%" height="100%" viewBox="0 0 42 42" class="donut">
---   <circle class="donut-hole" cx="21" cy="21" r="15.91549430918954" fill="#fff"></circle>
---   <circle class="donut-ring" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="green" stroke-width="4"></circle>
--- </svg>
+
 
 --- select visualiser
 
