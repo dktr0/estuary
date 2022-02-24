@@ -1001,6 +1001,19 @@ cursor: pointer;
 	width: 33%;
 }
 
+.flex-container-for-timeVision-vertical {
+	display: flex;
+	flex-direction: column;
+}
+
+.flex-container-for-timeVision-vertical > div {
+	height: 50%;
+}
+
+.flex-item-for-timeVision-vertical {
+	height: 50%;
+}
+
 .countDown {
 	display: flex;
 	flex-direction: row;
