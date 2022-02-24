@@ -14,6 +14,7 @@ import Sound.MusicW.AudioContext
 import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
+import qualified Sound.Tidal.Bjorklund as TBj
 
 import Estuary.Types.Tempo
 import Estuary.Types.Context
@@ -77,11 +78,11 @@ ringTracer segments = do
   visualiseRing beat segments
   return ()
 
-beadsTracer:: MonadWidget t m => Rational -> W t m ()
-beadsTracer segments = do
+beadsTracer:: MonadWidget t m => Rational -> Rational -> W t m ()
+beadsTracer k segments = do
   beatPosition <- currentBeat
   beat <- holdDyn 0 beatPosition
-  visualiseBeads beat segments
+  visualiseBeads beat k segments
   return ()
 
 -- select visualiser at the bottom
@@ -334,8 +335,8 @@ beadSize nBeads' position =
       scaleF = (beadScaling nBeads) + 0.1
   in "r" =: showt (realToFrac (bead*scaleF) :: Double)
 
-visualiseBeads :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
-visualiseBeads delta beads = do
+visualiseBeads :: MonadWidget t m => Dynamic t Rational -> Rational -> Rational -> m ()
+visualiseBeads delta k beads = do
 
   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
   let z = constDyn $ "z" =: "-9"
@@ -359,6 +360,8 @@ visualiseBeads delta beads = do
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     -- create bids with transparent fill and minimal stroke
     generateBeads beads
+    -- bjorklund beads
+    generateBjorklundBeads (k,beads)
     -- change the filled bid of position and size
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" beadAttrs $ return ()
     
@@ -370,7 +373,7 @@ generateBeads nBeads' = do
       beadSize = beadScaling nBeads
       beadDistribution = if nBeads /= 0 then (360 / nBeads) else 1
       segList = constDyn $ Prelude.take (floor nBeads) $ iterate (+ beadDistribution) 0
-  x <- simpleList segList (generateBead beadSize)
+  x <- simpleList segList (generateBead beadSize False)
   return ()
 
 beadScaling:: Rational -> Rational
@@ -381,36 +384,67 @@ beadScaling x
   | x <= 16 = 3 
   | otherwise = 2
 
-generateBead:: MonadWidget t m => Rational -> Dynamic t Rational -> m ()
-generateBead beadSize beads = do 
+generateBead:: MonadWidget t m => Rational -> Bool -> Dynamic t Rational -> m ()
+generateBead beadSize colour beads = do 
   let z = constDyn $ "z" =: "-9"
-  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let stroke = constDyn $ beadStroke colour
   let strokeWidth = constDyn $ "stroke-width" =: "0.5"
-  let fill = constDyn $ "fill" =: "transparent"
+  let fill = constDyn $ beadFill colour
   let cx = constDyn $  "cx" =: "50" 
   let cy = constDyn $  "cy" =: "25"
   let r = constDyn $ "r" =: showt (realToFrac beadSize :: Double)
   let transform = (\x -> "transform" =: ("rotate(" <> (showt (realToFrac x :: Double)) <> ",50,50)")) <$> beads
-
   let attrs = mconcat [cx,cy,r,stroke,strokeWidth,fill,transform,z]
-
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrs $ return ()
   return ()
+
+beadStroke:: Bool -> Map Text Text
+beadStroke True = "stroke" =: "var(--secondary-color)"
+beadStroke False = "stroke" =: "var(--primary-color)"
+
+beadFill:: Bool -> Map Text Text
+beadFill True = "fill" =: "var(--secondary-color)"
+beadFill False = "fill" =: "transparent"
+
+generateBjorklundBeads:: MonadWidget t m => (Rational,Rational) ->  m ()
+generateBjorklundBeads (k,n) = do
+  let nBeads = if n /= 0 then n else 1
+      beadSize = beadScaling nBeads
+      beadInterval = (360 / nBeads) 
+      beadDistribution = Prelude.map (*beadInterval) $ bjorklundR (k,n)
+      segList = constDyn $ Prelude.take (floor k) $ Prelude.scanl (+) 0 $ beadDistribution
+  x <- simpleList segList (generateBead beadSize True)
+  return ()
+
+bjorklundR:: (Rational,Rational) -> [Rational]
+bjorklundR (k,n) = 
+  let x = (floor k :: Int, floor n :: Int)
+      bj = TBj.bjorklund x -- [t,f,f,t,f,f,t,f] --- 0,3,6,8 = 3 - 0 // 6 - 3 // 8 - 6 
+      durs' = Prelude.reverse $ Prelude.map (snd) $ Prelude.filter (\x -> (fst x) == True) $ Prelude.zip bj [0..] 
+      durs = getScaling $ Prelude.reverse $ ((snd x) : durs') -- [0,3,6,8] -> [3,3,2]
+  in Prelude.map (\x -> realToFrac x :: Rational) durs
+
+getScaling:: [Int] -> [Int]
+getScaling (d:urs) 
+    | (Prelude.length (d:urs)) == 0 = []
+    | (Prelude.length (d:urs)) == 1 = []
+    | otherwise = (Prelude.head urs) - d : (getScaling urs)
+
 
 
 --- select visualiser
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
 selectVisualiser (Cyclic seg) = divClass "flex-container-for-timeVision" $ do
-  leftPanel <- clickableDiv "flex-item-for-timeVision" $ text "<- |" -- :: Event t ()
+  leftPanel <- clickableDiv "flex-item-for-timeVision" blank -- :: Event t ()
   let leftEvent = tvNextStateLeft <$ leftPanel-- Event t (TimeVision -> TimeVision)
   centreEvent <- elClass "div" "flex-container-for-timeVision-vertical" $ do
       upPanel <- clickableDiv "flex-item-for-timeVision" $ cycleTracer seg
       let upEvent = segmentUp <$ upPanel  
-      downPanel <- clickableDiv "flex-item-for-timeVision" $ blank
+      downPanel <- clickableDiv "flex-item-for-timeVision" blank
       let downEvent = segmentDown <$ downPanel
       let cPanelEvent = leftmost [upEvent,downEvent]
       return cPanelEvent
-  rightPanel <- clickableDiv "flex-item-for-timeVision" $ text "| ->"
+  rightPanel <- clickableDiv "flex-item-for-timeVision" blank
   let rightEvent = tvNextStateRight <$ rightPanel
   let panelEvent = fmap (\x -> x $ Cyclic seg) $ leftmost [centreEvent,leftEvent,rightEvent]
   return panelEvent
@@ -442,41 +476,49 @@ selectVisualiser (Ring seg) = divClass "flex-container-for-timeVision" $ do
   let rightEvent = tvNextStateRight <$ rightPanel
   let panelEvent = fmap (\x -> x $ Ring seg) $ leftmost [centreEvent,leftEvent,rightEvent]
   return panelEvent
-selectVisualiser (Beads seg) = divClass "flex-container-for-timeVision" $ do
+
+selectVisualiser (Beads (k,seg)) = divClass "flex-container-for-timeVision" $ do
   leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
   let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
-  centreEvent <- elClass "div" "flex-container-for-timeVision-vertical" $ do
-      upPanel <- clickableDiv "flex-item-for-timeVision" $ beadsTracer seg
+  centreEvent <- elClass "div" "flex-container-for-timeVision-vertical-2" $ do
+      upPanel <- clickableDiv "flex-item-for-timeVision-2" $ beadsTracer k seg
       let upEvent = segmentUp <$ upPanel  
-      downPanel <- clickableDiv "flex-item-for-timeVision" blank
+      middlePanel <- clickableDiv "flex-item-for-timeVision-2" blank
+      let middleEvent = bjorklundUp <$ middlePanel
+      downPanel <- clickableDiv "flex-item-for-timeVision-2" blank
       let downEvent = segmentDown <$ downPanel
-      let cPanelEvent = leftmost [upEvent,downEvent]
+      let cPanelEvent = leftmost [middleEvent,upEvent,downEvent]
       return cPanelEvent
   rightPanel <- clickableDiv "flex-item-for-timeVision" $ blank
   let rightEvent = tvNextStateRight <$ rightPanel
-  let panelEvent = fmap (\x -> x $ Beads seg) $ leftmost [centreEvent,leftEvent,rightEvent]
+  let panelEvent = fmap (\x -> x $ Beads (k,seg)) $ leftmost [centreEvent,leftEvent,rightEvent]
   return panelEvent
 
 segmentUp:: TimeVision -> TimeVision
 segmentUp (Cyclic x) = (Cyclic (realToFrac ((floor (x+1))`mod`17) :: Rational))
 segmentUp (Metric x) = (Metric (realToFrac ((floor (x+1))`mod`17) :: Rational))
 segmentUp   (Ring x) =   (Ring (realToFrac ((floor (x+1))`mod`17) :: Rational))
-segmentUp  (Beads x) =  (Beads (realToFrac ((floor (x+1))`mod`17) :: Rational))
+segmentUp  (Beads x) =  (Beads ((realToFrac ((floor (fst x))`mod`((floor $ snd x)+1)) :: Rational), (realToFrac ((floor ((snd x)+1))`mod`17) :: Rational)))
 
 segmentDown:: TimeVision -> TimeVision
 segmentDown (Cyclic x) = (Cyclic (realToFrac ((floor (x-1))`mod`17) :: Rational))
 segmentDown (Metric x) = (Metric (realToFrac ((floor (x-1))`mod`17) :: Rational))
 segmentDown   (Ring x) =   (Ring (realToFrac ((floor (x-1))`mod`17) :: Rational))
-segmentDown  (Beads x) =  (Beads (realToFrac ((floor (x-1))`mod`17) :: Rational))
+segmentDown  (Beads x) = (Beads ((realToFrac ((floor (fst x))`mod`((floor $ snd x)+1)) :: Rational), (realToFrac ((floor ((snd x)-1))`mod`17) :: Rational)))
+
+bjorklundUp:: TimeVision -> TimeVision
+bjorklundUp  (Beads x) =  (Beads ((realToFrac ((floor ((fst x)+1))`mod`((floor $ snd x)+1)) :: Rational),snd x))
+bjorklundUp _ = (Beads (10,15))
+
 
 tvNextStateRight:: TimeVision -> TimeVision
 tvNextStateRight (Cyclic x) = (Metric x)
-tvNextStateRight (Metric x) =   (Ring x)
-tvNextStateRight   (Ring x) =  (Beads x)
-tvNextStateRight  (Beads x) = (Cyclic x)
+tvNextStateRight (Metric x) = (Ring x)
+tvNextStateRight   (Ring x) = (Beads (0,x))
+tvNextStateRight  (Beads x) = (Cyclic (snd x))
 
 tvNextStateLeft:: TimeVision -> TimeVision
-tvNextStateLeft (Cyclic x) =  (Beads x)
-tvNextStateLeft  (Beads x) =   (Ring x)
+tvNextStateLeft (Cyclic x) = (Beads (0,x))
+tvNextStateLeft  (Beads x) = (Ring (snd x))
 tvNextStateLeft   (Ring x) = (Metric x)
 tvNextStateLeft (Metric x) = (Cyclic x)
