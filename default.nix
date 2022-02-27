@@ -206,12 +206,12 @@ in
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
-        haskellish = # dontHaddock (self.callCabal2nix "haskellish" ../Haskellish {}); #
-        dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
+        haskellish = # dontHaddock (self.callCabal2nix "haskellish" ../Haskellish {});
+         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
            owner = "dktr0";
            repo = "Haskellish";
-           sha256 = "0w04qg2jmjgrkxrjc9ddads606fvsbain9bf2k1d0spk41ckayyb";
-           rev = "3bc2dd4133843751a3ae4a3e88063d7d99f18f81";
+           sha256 = "03sv69hnav1p8rd6i301kirx4anm5f402is4n7bxmjjqi7br5hna";
+           rev = "75cd924f8699da352ef4d441f35a18ee53d598b0";
         }) {});
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
@@ -226,8 +226,8 @@ in
           doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "seis8s";
-           sha256 = "0fyiiqya4rfq9h8q17rarv06vizd967jxc353kznadj93asi4his";
-           rev = "a3f9ea35b9037df3f8405dc66c20b19f92b1a675";
+           sha256 = "1nnzsmkcy28k1s1s72ckq136564r2d6xzngm2bd1sm5ixasxx0lq";
+           rev = "6edbf1e21ade2669a0098d3120c698463c86f52a";
          }) {}));
       };
     in
