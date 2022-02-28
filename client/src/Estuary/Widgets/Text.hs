@@ -15,6 +15,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time
 
+import GHCJS.Types
+import GHCJS.DOM.Types (HTMLDivElement)
+
 import Estuary.Widgets.Reflex
 import Estuary.Tidal.Types
 import Estuary.Widgets.GeneralPattern
@@ -31,6 +34,10 @@ import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Widgets.W
 import Estuary.Types.Context
+
+
+foreign import javascript unsafe "navigator.clipboard.writeText($1);" copyToClipboard :: Text -> IO ()
+
 
 textWidgetClass :: Bool -> Map Text Text
 textWidgetClass True = "class" =: "evalFlash textInputToEndOfLine code-font"
@@ -90,6 +97,9 @@ textWithLockAndClipBoardWidget rows editable delta = do
 
   butt <- button "to ClipBoard"
   let xx = tag (current $ value) butt
+  
+  performEvent $ fmap (liftIO . copyToClipboard) xx
+  
   ----- to clipboard ------
 
   return (value,edits)

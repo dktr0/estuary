@@ -24,7 +24,7 @@ stopWatchWidget :: MonadWidget t m => Dynamic t TimerUpState -> W t m (Variable 
 stopWatchWidget deltasDown =  divClass "stopwatch" $  mdo
   -- 1. Translate button presses into localChanges
   let bText = stopWatchToButtonText <$> currentValue v
-  x <- dynButton $ bText 
+  x <- dynButton $ bText -- Event () (i think)
   let y = tag (current $ currentValue v) x 
   localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
   -- 2. Calculate and display text
@@ -33,7 +33,7 @@ stopWatchWidget deltasDown =  divClass "stopwatch" $  mdo
   let initialText = stopWatchToText initialStopWatch widgetBuildTime -- calculated once :: Text
   tick <- tickLossy 0.01 widgetBuildTime -- :: tickInfo (next line is UTC)
   let textUpdates = attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
- -- holdDyn initialText textUpdates >>= dynText -- simple unstilled display of the timer
+ -- holdDyn initialText textUpdates >>= dynText -- simple unstyled display of the timer
   texto <- holdDyn initialText textUpdates
   visualiseStopwatchWidget $ texto
   v <- returnVariable deltasDown localChanges
