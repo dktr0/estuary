@@ -60,7 +60,7 @@ viewsContainerCollaps :: MonadWidget t m => W t m (Event t EnsembleRequest) -> W
 viewsContainerCollaps x = mdo
   dynBool <- toggle True evClick
   evClick <- dynButton dynOpenClose
-  let dynOpenClose = (bool "-" "+") <$> dynBool -- Dyn Text
+  let dynOpenClose = (bool "+" "-") <$> dynBool -- Dyn Text
   let dynAttr = attrsColp <$> dynBool -- Dyn Value
   elDynAttr "div" dynAttr x
 
