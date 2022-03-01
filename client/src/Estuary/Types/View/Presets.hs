@@ -262,6 +262,16 @@ presetViews = fromList [
       ("notepadAndCode", GridView 1 2 [
       BorderDiv [NotePadView 0],
       BorderDiv [LabelView 0,CodeView 1 0]
+      ]),
+
+      ("notepadAndCodeWithCollapDiv", GridView 1 2 [
+      BorderDiv [LabelView 1, CollapsableView (NotePadView 0), CodeView 2 0],
+      BorderDiv [LabelView 3,CodeView 4 0]
+      ]),
+
+      ("notepadAndCodeWithCollapDiv2", GridView 1 2 [
+      CollapsableView (NotePadView 0),
+      Views [LabelView 3,CodeView 4 0]
       ])
 
       ]
