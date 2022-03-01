@@ -23,9 +23,9 @@ import Estuary.Languages.CineCer0.Signal
 
 
 newtype VideoLayer = VideoLayer { videoJSVal :: JSVal }--list :: Haskellish st a -> Haskellish st [a]
-
 newtype ImageLayer = ImageLayer { imageJSVal :: JSVal }
 newtype TextLayer = TextLayer { textJSVal :: JSVal }
+newtype SVGLayer = SVGLayer { svgJSVal :: JSVal }
 
 instance PToJSVal VideoLayer where pToJSVal (VideoLayer x) = x
 instance PFromJSVal VideoLayer where pFromJSVal = VideoLayer
@@ -35,6 +35,9 @@ instance PFromJSVal ImageLayer where pFromJSVal = ImageLayer
 
 instance PToJSVal TextLayer where pToJSVal (TextLayer x) = x
 instance PFromJSVal TextLayer where pFromJSVal = TextLayer
+
+instance PToJSVal SVGLayer where pToJSVal (SVGLayer x) = x
+instance PFromJSVal SVGLayer where pFromJSVal = SVGLayer
 
 
 foreign import javascript unsafe "$1.offsetWidth" offsetWidth :: HTMLDivElement -> IO Double

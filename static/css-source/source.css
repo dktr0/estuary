@@ -570,7 +570,6 @@ display: block;
 	color: var(--primary-color);
 	width: 100%;
 	height: 100%;
-	position:relative;
 	font-size: 1em;
   }
 
@@ -991,40 +990,57 @@ cursor: pointer;
 
 .flex-container-for-timeVision {
 	display: flex;
+	z-index: 0;
+	height: 100%;
+	width: 100%;
 }
 
 .flex-container-for-timeVision > div {
-	width: 33%;
+	width: 100%;
+	z-index: 0;
 }
 
 .flex-item-for-timeVision {
-	width: 33%;
+	width: 100%;
+	z-index: 0;
 }
 
 .flex-container-for-timeVision-vertical {
 	display: flex;
 	flex-direction: column;
+	z-index: 0;
+	height: 100%;
 }
 
 .flex-container-for-timeVision-vertical > div {
-	height: 50%;
+	width: 100%;
+	z-index: 0;
+	height: 100%;
 }
 
 .flex-item-for-timeVision-vertical {
-	height: 50%;
+	width: 100%;
+	z-index: 0;
+	height: 100%;
 }
 
 .flex-container-for-timeVision-vertical-2 {
 	display: flex;
 	flex-direction: column;
+	z-index: 0;
+	height: 100%;
 }
 
 .flex-container-for-timeVision-vertical-2 > div {
-	height: 33%;
+	width: 100%;
+	z-index: 0;
+	height: 100%;
 }
 
 .flex-item-for-timeVision-vertical-2 {
-	height: 33%;
+	width: 100%;
+	z-index: 0;
+	height: 100%;
 }
 
 .countDown {
