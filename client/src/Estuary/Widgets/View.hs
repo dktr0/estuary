@@ -50,12 +50,6 @@ attrsColp b = "class" =: "collapsableView" <> "style" =: ("display: " <> showDiv
     showDiv True  = "block"
     showDiv False = "none"
 
-buttonDinamico :: MonadWidget t m => Dynamic t T.Text -> m (Event t ())
-buttonDinamico label = do
-  (element, _) <- el' "div" $ dynText $ label
-  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
-  return $ () <$ clickEv
-
 viewsContainerCollaps :: MonadWidget t m => W t m (Event t EnsembleRequest) -> W t m (Event t EnsembleRequest)
 viewsContainerCollaps x = mdo
   dynBool <- toggle True evClick
