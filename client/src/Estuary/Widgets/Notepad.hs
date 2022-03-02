@@ -17,22 +17,23 @@ import Estuary.Widgets.Reflex
 
 notePadWidget :: MonadWidget t m => Dynamic t NotePad -> W t m (Variable t NotePad)
 notePadWidget delta = divClass "notepadContainers" $ mdo
+  divClass "notepad-Title code-font" $ text "Notepad"
   let changes = currentValue v
   let pageNum = fmap fst changes
   let notes = fmap snd changes -- []
   let setNoteContent' = fmap setNoteContent contentEv -- :: m (Event t (Notepad -> Notepad))
   buttons <- divClass "rowOfButtons" $ do
     -- add note
-    addPageButton <- clickableDivClass "+" "prevNextButtons" -- :: m (Event t ())
+    addPageButton <- clickableDivClass "+" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let addPage = addNote <$ addPageButton -- :: m (Event t (Notepad -> Notepad))
     -- erase note
-    erasePageButton <- clickableDivClass "-" "prevNextButtons" -- :: m (Event t ())
+    erasePageButton <- clickableDivClass "-" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let erasePage = eraseNote <$ erasePageButton -- :: m (Event t (Notepad -> Notepad))
     -- prev page
-    prevPageButton <- clickableDivClass "←" "prevNextButtons" -- :: m (Event t ())
+    prevPageButton <- clickableDivClass "←" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let prevPage = prevPageOfNote <$ prevPageButton -- :: m (Event t (Notepad -> Notepad))
     -- next page
-    nextPageButton <- clickableDivClass "→" "prevNextButtons" -- :: m (Event t ())
+    nextPageButton <- clickableDivClass "→" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let nextPage = nextPageOfNote <$ nextPageButton -- :: m (Event t (Notepad -> Notepad))
     --
     return $ leftmost [addPage, erasePage, prevPage, nextPage]
@@ -77,7 +78,7 @@ prevPageOfNote (currentPage,listOfNotes)
 
 addNote :: NotePad -> NotePad
 addNote notepad = do
-  let note = ("","")
+  let note = ("NewTitle","NewContent")
   (fst notepad, insertAt (fst notepad) note (snd notepad))
 
 eraseNote :: NotePad -> NotePad

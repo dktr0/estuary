@@ -23,6 +23,7 @@ data View =
   Link Text [View] | -- a clickable link
   BulletPoints [View] | -- an HTML <ul> element containing <li> elements for each child view
   GridView Int Int [View] | -- columns rows [children]
+  CollapsableView View |
   Text TranslatableText |
   LabelView Int |
   StructureView Int |
