@@ -88,7 +88,7 @@ beadsTracer k segments = do
 -- select visualiser at the bottom
 
 visualiseTempoWidget:: MonadWidget t m => Dynamic t TimeVision -> W t m (Variable t TimeVision)
-visualiseTempoWidget delta = divClass "tempo-visualiser" $  mdo
+visualiseTempoWidget delta = mdo
   v <- variable delta $ localEdits'
   initialValue <- sample $ current delta
   let initialWidget = selectVisualiser initialValue
