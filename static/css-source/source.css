@@ -988,6 +988,17 @@ cursor: pointer;
 
 /* recently added by AFB, experimentas for widget creation */
 
+.cycleVisualiser {
+	display: flex;
+	position: absolute; 
+	z-index: -10;
+}
+
+.central-panel {
+	position: relative;
+	display: flex;
+}
+
 .flex-container-for-timeVision {
 	display: flex;
 	z-index: 0;

@@ -120,12 +120,12 @@ beatToPercentage' beat = percen
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
 visualiseCycles :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseCycles delta segments = do
-  let class' = constDyn $ "class" =: "tempo-visualiser"
-  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
+  let class' = constDyn $ "class" =: "cycleVisualiser"
+--  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "-1.5 -1.5 3 3"
   let w' = constDyn $ "width" =: "100%;"
   let h' = constDyn $ "height" =: "100%;"
-  let attrs = mconcat [class',w',h',style,vB]
+  let attrs = mconcat [class',w',h',vB]
 
   let (cx,cy) = (constDyn $ "cx" =: "0", constDyn $ "cy" =: "0")
   let r = constDyn $ "r" =: "1.4"
@@ -430,11 +430,11 @@ getScaling (d:urs)
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
 selectVisualiser (Cyclic seg) = divClass "tempo-visualiser" $ do
   cycleTracer seg
-  x <- divClass "tempo-visualiser" $ do 
+  x <- do 
     x <- divClass "flex-container-for-timeVision" $ do
       leftPanel <- clickableDiv "flex-item-for-timeVision" blank -- :: Event t ()
       let leftEvent = tvNextStateLeft <$ leftPanel-- Event t (TimeVision -> TimeVision)
-      centreEvent <- elClass "div" "tempo-visualiser" $ do
+      centreEvent <-divClass "central-panel" $  do
           x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
             upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
             let upEvent = segmentUp <$ upPanel  
