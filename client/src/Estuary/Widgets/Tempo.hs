@@ -121,7 +121,7 @@ beatToPercentage' beat = percen
 visualiseCycles :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseCycles delta segments = do
   let class' = constDyn $ "class" =: "tempo-visualiser"
-  let style = constDyn $ "style" =: "position: absolute; z-index: -10;"
+  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "-1.5 -1.5 3 3"
   let w' = constDyn $ "width" =: "100%;"
   let h' = constDyn $ "height" =: "100%;"
@@ -172,7 +172,7 @@ generatePieSegment x = do
 visualiseMetre :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseMetre delta subDivisions = do
   let class' = constDyn $ "class" =: "tempo-visualiser code-font"
-  let style = constDyn $ "style" =: "position: absolute; z-index: -10;"
+  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100%"
   let h' = constDyn $ "height" =: "100%"
@@ -222,7 +222,7 @@ visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseRing delta segs = do
   let segments = if segs < 1 then 1 else segs
   let class' = constDyn $ "class" =: "tempo-visualiser code-font"
-  let style = constDyn $ "style" =: "position: absolute; z-index: -10;"
+  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100%;"
   let h' = constDyn $ "height" =: "100%;"
@@ -335,7 +335,7 @@ visualiseBeads :: MonadWidget t m => Dynamic t Rational -> Rational -> Rational 
 visualiseBeads delta k beads = do
 
   let class' = constDyn $ "class" =: "tempo-visualiser code-font"
-  let style = constDyn $ "style" =: "position: absolute; z-index: -10;"
+  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100"
   let h' = constDyn $ "height" =: "100"
@@ -430,22 +430,24 @@ getScaling (d:urs)
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
 selectVisualiser (Cyclic seg) = divClass "tempo-visualiser" $ do
   cycleTracer seg
-  x <- divClass "flex-container-for-timeVision" $ do
-    leftPanel <- clickableDiv "flex-item-for-timeVision" blank -- :: Event t ()
-    let leftEvent = tvNextStateLeft <$ leftPanel-- Event t (TimeVision -> TimeVision)
-    centreEvent <- elClass "div" "tempo-visualiser" $ do
-        x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
-          upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
-          let upEvent = segmentUp <$ upPanel  
-          downPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
-          let downEvent = segmentDown <$ downPanel
-          let cPanelEvent = leftmost [upEvent,downEvent]
-          return cPanelEvent
-        return x
-    rightPanel <- clickableDiv "flex-item-for-timeVision" blank
-    let rightEvent = tvNextStateRight <$ rightPanel
-    let panelEvent = fmap (\x -> x $ Cyclic seg) $ leftmost [centreEvent,leftEvent,rightEvent]
-    return panelEvent
+  x <- divClass "tempo-visualiser" $ do 
+    x <- divClass "flex-container-for-timeVision" $ do
+      leftPanel <- clickableDiv "flex-item-for-timeVision" blank -- :: Event t ()
+      let leftEvent = tvNextStateLeft <$ leftPanel-- Event t (TimeVision -> TimeVision)
+      centreEvent <- elClass "div" "tempo-visualiser" $ do
+          x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
+            upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+            let upEvent = segmentUp <$ upPanel  
+            downPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+            let downEvent = segmentDown <$ downPanel
+            let cPanelEvent = leftmost [upEvent,downEvent]
+            return cPanelEvent
+          return x
+      rightPanel <- clickableDiv "flex-item-for-timeVision" blank
+      let rightEvent = tvNextStateRight <$ rightPanel
+      let panelEvent = fmap (\x -> x $ Cyclic seg) $ leftmost [centreEvent,leftEvent,rightEvent]
+      return panelEvent
+    return x
   return x
 
 selectVisualiser (Metric seg) = divClass "tempo-visualiser" $ do
