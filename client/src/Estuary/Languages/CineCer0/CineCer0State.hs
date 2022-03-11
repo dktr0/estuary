@@ -40,6 +40,14 @@ instance PToJSVal SVGLayer where pToJSVal (SVGLayer x) = x
 instance PFromJSVal SVGLayer where pFromJSVal = SVGLayer
 
 
+
+-- svg
+-- <object id="svg-object" data="path/to/external.svg" type="image/svg+xml"></object>
+foreign import javascript unsafe
+  "var svg = document.createElement('object'); svg.setAttribute('data',$1); svg.setAttribute('type', \"image/svg+xml\")"
+  makeSVG :: Text -> IO SVGLayer
+
+
 foreign import javascript unsafe "$1.offsetWidth" offsetWidth :: HTMLDivElement -> IO Double
 foreign import javascript unsafe "$1.offsetHeight" offsetHeight :: HTMLDivElement -> IO Double
 -- video
@@ -107,6 +115,12 @@ data CineCer0Text = CineCer0Text {
   positionLockTx :: Int,
   previousStyleTx :: Text
   }
+
+-- data CineCer0SVG = CineCer0SVG {
+--   svgLayer :: svgLayer,
+--   positionLockSVG :: Int,
+--   previousStyleSVG :: Text
+--   }
 
 addVideo :: HTMLDivElement -> LayerSpec -> IO CineCer0Video
 addVideo j os = do
