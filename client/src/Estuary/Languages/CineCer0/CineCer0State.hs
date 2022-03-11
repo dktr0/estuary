@@ -23,9 +23,9 @@ import Estuary.Languages.CineCer0.Signal
 
 
 newtype VideoLayer = VideoLayer { videoJSVal :: JSVal }--list :: Haskellish st a -> Haskellish st [a]
-
 newtype ImageLayer = ImageLayer { imageJSVal :: JSVal }
 newtype TextLayer = TextLayer { textJSVal :: JSVal }
+newtype SVGLayer = SVGLayer { svgJSVal :: JSVal }
 
 instance PToJSVal VideoLayer where pToJSVal (VideoLayer x) = x
 instance PFromJSVal VideoLayer where pFromJSVal = VideoLayer
@@ -35,6 +35,17 @@ instance PFromJSVal ImageLayer where pFromJSVal = ImageLayer
 
 instance PToJSVal TextLayer where pToJSVal (TextLayer x) = x
 instance PFromJSVal TextLayer where pFromJSVal = TextLayer
+
+instance PToJSVal SVGLayer where pToJSVal (SVGLayer x) = x
+instance PFromJSVal SVGLayer where pFromJSVal = SVGLayer
+
+
+
+-- svg
+-- <object id="svg-object" data="path/to/external.svg" type="image/svg+xml"></object>
+foreign import javascript unsafe
+  "var svg = document.createElement('object'); svg.setAttribute('data',$1); svg.setAttribute('type', \"image/svg+xml\")"
+  makeSVG :: Text -> IO SVGLayer
 
 
 foreign import javascript unsafe "$1.offsetWidth" offsetWidth :: HTMLDivElement -> IO Double
@@ -104,6 +115,12 @@ data CineCer0Text = CineCer0Text {
   positionLockTx :: Int,
   previousStyleTx :: Text
   }
+
+-- data CineCer0SVG = CineCer0SVG {
+--   svgLayer :: svgLayer,
+--   positionLockSVG :: Int,
+--   previousStyleSVG :: Text
+--   }
 
 addVideo :: HTMLDivElement -> LayerSpec -> IO CineCer0Video
 addVideo j os = do
