@@ -153,7 +153,7 @@ sequenceParser' :: H (Int -> View)
 sequenceParser' = sequenceFunc <$ reserved "sequence"
 
 sequenceFunc :: Int -> View
-sequenceFunc x = StructureView x
+sequenceFunc x = SequenceView x
 --
 
 
