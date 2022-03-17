@@ -44,7 +44,8 @@ layerSpecFunc :: H (Text -> LayerSpec)
 layerSpecFunc =
   videoToLayerSpec <$ reserved "video" <|>
   imageToLayerSpec <$ reserved "image" <|>
-  textToLayerSpec <$ reserved "text"
+  textToLayerSpec <$ reserved "text" <|>
+  svgToLayerSpec <$ reserved "svg"
 
 -- //////////////
 

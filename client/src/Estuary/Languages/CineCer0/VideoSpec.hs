@@ -19,7 +19,7 @@ data Colour = Colour (Signal Text) | ColourRGB (Signal Rational) (Signal Rationa
 --   (==) (ColourRGB a b c) (ColourRGB a' b' c') = True
 --   (==) _ _ = False
 
-data Source = VideoSource Text | ImageSource Text | TextSource Text deriving (Show, Eq)
+data Source = VideoSource Text | ImageSource Text | TextSource Text | SVGSource Text deriving (Show, Eq)
 
 data LayerSpec = LayerSpec {
   source :: Source,
@@ -101,6 +101,9 @@ imageToLayerSpec x = emptyLayerSpec { source = ImageSource x}
 
 textToLayerSpec :: Text -> LayerSpec
 textToLayerSpec x = emptyLayerSpec { source = TextSource x}
+
+svgToLayerSpec :: Text -> LayerSpec
+svgToLayerSpec x = emptyLayerSpec { source = SVGSource x}
 
 -- it should be just five arguments _ _ _ _ _
 emptyText :: Signal Text
