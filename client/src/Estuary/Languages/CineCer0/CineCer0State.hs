@@ -40,12 +40,19 @@ instance PToJSVal SVGLayer where pToJSVal (SVGLayer x) = x
 instance PFromJSVal SVGLayer where pFromJSVal = SVGLayer
 
 
-
--- svg
--- <object id="svg-object" data="path/to/external.svg" type="image/svg+xml"></object>
 foreign import javascript unsafe
-  "var svg = document.createElement('object'); svg.setAttribute('data',$1); svg.setAttribute('type', \"image/svg+xml\")"
+  "var myObject = document.createElement('object'); myObject.setAttribute('type', 'image/svg+xml'); myObject.setAttribute('data', $1); $r=myObject;"
   makeSVG :: Text -> IO SVGLayer
+
+
+---- text svg possibility
+-- foreign import javascript unsafe
+--   "var svgTx = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svgTx.setAttribute('xlink','http://www.w3.org/1999/xlink'); var text = document.createElementNS('ttp://www.w3.org/2000/svg', 'text'); text.setAttribute('x', '10'); text.setAttribute('y', '20'); text.setAttribute('fill', '#000'); text.textContent = '2666'; $r= svgTx.appendChild(text); ;"
+--   makeSVG :: Text -> IO SVGLayer
+
+foreign import javascript unsafe
+  "$2.appendChild($1);"
+  appendSVG :: SVGLayer -> HTMLDivElement -> IO ()
 
 
 foreign import javascript unsafe "$1.offsetWidth" offsetWidth :: HTMLDivElement -> IO Double
@@ -96,6 +103,13 @@ foreign import javascript unsafe "$1.style = $2;" _setTextStyle :: TextLayer -> 
 foreign import javascript unsafe "$1.textContent = $2;" changeTextSource :: TextLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.offsetWidth" textWidth :: TextLayer -> IO Double
 foreign import javascript unsafe "$1.offsetHeight" textHeight :: TextLayer -> IO Double
+-- SVG
+foreign import javascript unsafe "$1.removeChild($2)" removeSVG :: HTMLDivElement -> SVGLayer -> IO ()
+foreign import javascript unsafe "$1.style = $2;" _setSVGStyle :: SVGLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.textContent = $2;" changeSVGSource :: SVGLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.offsetWidth" svgWidth :: SVGLayer -> IO Double
+foreign import javascript unsafe "$1.offsetHeight" svgHeight :: SVGLayer -> IO Double
+
 
 data CineCer0Video = CineCer0Video {
   videoLayer :: VideoLayer,
@@ -116,11 +130,11 @@ data CineCer0Text = CineCer0Text {
   previousStyleTx :: Text
   }
 
--- data CineCer0SVG = CineCer0SVG {
---   svgLayer :: svgLayer,
---   positionLockSVG :: Int,
---   previousStyleSVG :: Text
---   }
+data CineCer0SVG = CineCer0SVG {
+  svgLayer :: SVGLayer,
+  positionLockSVG :: Int,
+  previousStyleSVG :: Text
+  }
 
 addVideo :: HTMLDivElement -> LayerSpec -> IO CineCer0Video
 addVideo j os = do
@@ -157,10 +171,22 @@ addText j os = do
     previousStyleTx = ""
   }
 
+addSVG :: HTMLDivElement -> LayerSpec -> IO CineCer0SVG
+addSVG j os = do
+  let svg = sourceToText $ source os
+  x <- makeSVG svg
+  appendSVG x j
+  return $ CineCer0SVG {
+    svgLayer = x,
+    positionLockSVG = 0,
+    previousStyleSVG = ""
+  }
+
 sourceToText :: Source -> Text
 sourceToText (VideoSource x) = x
 sourceToText (ImageSource x) = x
 sourceToText (TextSource x) = x
+sourceToText (SVGSource x) = x
 
 
 -- addInvisibleText :: HTMLDivElement -> LayerSpec -> IO CineCer0Text
@@ -227,6 +253,13 @@ setTextStyle tx x = do
   else do
     _setTextStyle (textLayer tx) x
     return $ tx { previousStyleTx = x }
+
+setSVGStyle :: CineCer0SVG -> Text -> IO CineCer0SVG
+setSVGStyle svg x = do
+  if previousStyleSVG svg == x then return svg
+  else do
+    _setSVGStyle (svgLayer svg) x
+    return $ svg { previousStyleSVG = x }
 
 updateContinuingVideo :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0Video -> IO CineCer0Video
 updateContinuingVideo t eTime rTime (sw,sh) s v = logExceptions v $ do
@@ -367,6 +400,37 @@ updateContinuingText t eTime rTime (sw,sh) s tx = logExceptions tx $ do
   setTextStyle tx $ txStyle
   else return tx
 
+updateContinuingSVG :: Tempo -> UTCTime -> UTCTime -> (Double,Double) -> LayerSpec -> CineCer0SVG -> IO CineCer0SVG
+updateContinuingSVG t eTime rTime (sw,sh) s svg = logExceptions svg $ do
+  let j = svgLayer svg
+  vw <- svgWidth j
+  vh <- svgHeight j
+
+  if (vw /= 0 && vh /= 0) then do
+    let length = 10
+    let aspectRatio = vw/vh
+    let heightIfFitsWidth = sw / aspectRatio
+    let widthIfFitsHeight = sh * aspectRatio
+    let fitByWidth = heightIfFitsWidth <= sh
+    let fitWidth = if fitByWidth then sw else widthIfFitsHeight
+    let fitHeight = if fitByWidth then heightIfFitsWidth else sh
+    let aTime = anchorTime s t eTime
+    let actualWidth = (width s t length rTime eTime aTime) * realToFrac fitWidth
+    let actualHeight = (height s t length rTime eTime aTime) * realToFrac fitHeight
+    let centreX = ((posX s t length rTime eTime aTime)* 0.5 + 0.5) * realToFrac sw
+    let centreY = ((posY s t length rTime eTime aTime)* 0.5 + 0.5) * realToFrac sh
+    let leftX = centreX - (actualWidth * 0.5)
+    let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
+    let mask' = ((Cinecer0.mask s) t length rTime eTime aTime)
+
+    let z' = generateZIndex (z s t length rTime eTime aTime)
+
+    setSVGStyle svg $ svgStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) mask' z'
+  else return svg
+
+
+svgStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
+svgStyle x y w h m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> m <> z
 
 
 generateOpacity :: Maybe Double -> Text
@@ -469,7 +533,9 @@ data CineCer0State = CineCer0State {
   images :: IntMap CineCer0Image,
   previousImageSpecs :: IntMap LayerSpec,
   texts :: IntMap CineCer0Text,
-  previousTextSpecs :: IntMap LayerSpec
+  previousTextSpecs :: IntMap LayerSpec,
+  svgs :: IntMap CineCer0SVG,
+  previousSVGSpecs :: IntMap LayerSpec
   }
 
 emptyCineCer0State :: HTMLDivElement -> CineCer0State
@@ -480,7 +546,9 @@ emptyCineCer0State j = CineCer0State {
   images = empty,
   previousImageSpecs = empty,
   texts = empty,
-  previousTextSpecs = empty
+  previousTextSpecs = empty,
+  svgs = empty,
+  previousSVGSpecs = empty
   }
 
 isVideo :: IntMap LayerSpec -> IntMap LayerSpec
@@ -491,6 +559,9 @@ isImage layerSpecMap = IntMap.filter (\x -> getImage (source x) == True) layerSp
 
 isText :: IntMap LayerSpec -> IntMap LayerSpec
 isText layerSpecMap = IntMap.filter (\x -> getText (source x) == True) layerSpecMap
+
+isSVG :: IntMap LayerSpec -> IntMap LayerSpec
+isSVG layerSpecMap = IntMap.filter (\x -> getSVG (source x) == True) layerSpecMap
 
 getVideo :: Source -> Bool
 getVideo (VideoSource x) = True
@@ -504,15 +575,21 @@ getText :: Source -> Bool
 getText (TextSource x) = True
 getText _ = False
 
+getSVG :: Source -> Bool
+getSVG (SVGSource x) = True
+getSVG _ = False
+
 getLayerText :: Source -> Text
 getLayerText (VideoSource x) = x
 getLayerText (ImageSource x) = x
 getLayerText (TextSource x) = x
+getLayerText (SVGSource x) = x
 
 ifEmptyLayer :: Source -> Bool
 ifEmptyLayer (VideoSource x) = x == ""
 ifEmptyLayer (ImageSource x) = x == ""
 ifEmptyLayer (TextSource x) = x == ""
+ifEmptyLayer (SVGSource x) = x == ""
 
 
 deleteCineCer0State :: CineCer0State -> IO ()
@@ -520,6 +597,7 @@ deleteCineCer0State st = do
   mapM_ ((removeVideo $ container st) . videoLayer) $ videos st
   mapM_ ((removeImage $ container st) . imageLayer) $ images st
   mapM_ ((removeText $ container st) . textLayer) $ texts st
+  mapM_ ((removeSVG $ container st) . svgLayer) $ svgs st
 
 -- filter :: (a -> Bool) -> f a -> f a
 
@@ -530,6 +608,7 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let vSpecs = isVideo objSpecs
   let imgSpecs = isImage objSpecs
   let txSpecs = isText objSpecs
+  let svgSpecs = isSVG objSpecs
   let eTime = evalTime spec
   divWidth <- offsetWidth $ container st
   divHeight <- offsetHeight $ container st
@@ -545,10 +624,11 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   -- add text
   let newTextSpecs = difference txSpecs (texts st) -- :: IntMap LayerSpec
   let toAddtx = IntMap.filter (\x -> ifEmptyLayer (source x) == False) newTextSpecs -- answer false to is the source empty?
-  -- function to process text in time -- :: Tempo -> rTime -> evalTime -> st
-  -- let toAddSubTx = func t rTime eTime textSpecs
-  -- splitting the text, tuplets: (index, subtx), depending on index compared with a module of the render time the tx is added or not.
   addedTexts <- mapM (\x -> addText (container st) x) toAddtx
+  -- add SVG
+  let newSVGSpecs = difference svgSpecs (svgs st) -- :: IntMap LayerSpec
+  let toAddsvg = IntMap.filter (\x -> ifEmptyLayer (source x) == False) newSVGSpecs -- answer false to is the source empty?
+  addedSVGs <- mapM (\x -> addSVG (container st) x) toAddsvg
 
   -- change videos
   let continuingLayerSpecs = intersectionWith onlyChangedLayerSources vSpecs (previousLayerSpecs st) -- :: IntMap (Maybe LayerSpec)
@@ -565,6 +645,11 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let toChangeTx = fmapMaybe id continuingTextSpecs -- :: IntMap LayerSpec
   let toChangeTx' = intersectionWith (\a b -> (a,b)) toChangeTx $ texts st -- IntMap (LayerSpec,CineCer0Text)
   mapM_ (\(x,cTx) -> changeTextSource (textLayer cTx) $ (getLayerText (source x))) toChangeTx'
+  -- change svgs
+  let continuingSVGSpecs = intersectionWith onlyChangedLayerSources svgSpecs (previousSVGSpecs st)
+  let toChangeSVG = fmapMaybe id continuingSVGSpecs -- :: IntMap LayerSpec
+  let toChangeSVG' = intersectionWith (\a b -> (a,b)) toChangeSVG $ svgs st -- IntMap (LayerSpec,CineCer0Text)
+  mapM_ (\(x,cSVG) -> changeSVGSource (svgLayer cSVG) $ (getLayerText (source x))) toChangeSVG'
 
   -- delete videos
   let videosWithRemovedSpecs = difference (videos st) vSpecs -- :: IntMap CineCer0Video
@@ -584,6 +669,12 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   let toDeleteTx = union textsWithRemovedSpecs textsWithEmptySource
   mapM (\x -> removeText (container st) (textLayer x)) toDeleteTx
   let textsThereBefore = difference (texts st) toDeleteTx -- :: IntMap CineCer0Text
+  -- delete SVG
+  let svgsWithRemovedSpecs = difference (svgs st) svgSpecs -- IntMap CineCer0Text
+  let svgsWithEmptySource = intersection (svgs st) $ IntMap.filter (\x -> (ifEmptyLayer $ source x) == True) svgSpecs -- :: IntMap CineCer0Video
+  let toDeleteSVG = union svgsWithRemovedSpecs svgsWithEmptySource
+  mapM (\x -> removeSVG (container st) (svgLayer x)) toDeleteSVG
+  let svgsThereBefore = difference (svgs st) toDeleteSVG -- :: IntMap CineCer0Text
 
   -- update cached states
   -- video
@@ -595,8 +686,12 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
   -- text
   let continuingTexts = union textsThereBefore addedTexts
   continuingTexts' <- sequence $ intersectionWith (updateContinuingText t eTime rTime (divWidth,divHeight)) txSpecs continuingTexts
+  -- SVG
+  let continuingSVGs = union svgsThereBefore addedSVGs
+  continuingSVGs' <- sequence $ intersectionWith (updateContinuingSVG t eTime rTime (divWidth,divHeight)) svgSpecs continuingSVGs
 
-  return $ st { videos = continuingVideos', previousLayerSpecs = vSpecs, images = continuingImages', previousImageSpecs = imgSpecs, texts = continuingTexts', previousTextSpecs = txSpecs }
+
+  return $ st { videos = continuingVideos', previousLayerSpecs = vSpecs, images = continuingImages', previousImageSpecs = imgSpecs, texts = continuingTexts', previousTextSpecs = txSpecs, svgs = continuingSVGs', previousSVGSpecs = svgSpecs }
 
 
 logExceptions :: a -> IO a -> IO a

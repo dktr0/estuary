@@ -22,7 +22,7 @@ notePadWidget delta = divClass "notepadContainers" $ mdo
   let pageNum = fmap fst changes
   let notes = fmap snd changes -- []
   let setNoteContent' = fmap setNoteContent contentEv -- :: m (Event t (Notepad -> Notepad))
-  buttons <- divClass "rowOfButtons" $ do
+  buttons <- divClass "notepad-rowOfButtons" $ do
     -- add note
     addPageButton <- clickableDivClass "+" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let addPage = addNote <$ addPageButton -- :: m (Event t (Notepad -> Notepad))

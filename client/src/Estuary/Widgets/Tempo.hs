@@ -372,11 +372,11 @@ generateBeads nBeads' = do
 
 beadScaling:: Rational -> Rational
 beadScaling x
-  | x <= 5 = 6
-  | x <= 8 = 5
-  | x <= 12 = 4
-  | x <= 16 = 3 
-  | otherwise = 2
+  | x <= 5 = 7
+  | x <= 8 = 6
+  | x <= 12 = 5
+  | x <= 16 = 4 
+  | otherwise = 3
 
 generateBead:: MonadWidget t m => Rational -> Bool -> Dynamic t Rational -> m ()
 generateBead beadSize colour beads = do 
@@ -511,17 +511,19 @@ selectVisualiser (Beads (k,seg)) = divClass "tempo-visualiser" $ do
     return panelEvent
   return x
 
+beatLim = 33
+
 segmentUp:: TimeVision -> TimeVision
-segmentUp (Cyclic x) = (Cyclic (realToFrac ((floor (x+1))`mod`17) :: Rational))
-segmentUp (Metric x) = (Metric (realToFrac ((floor (x+1))`mod`17) :: Rational))
-segmentUp   (Ring x) =   (Ring (realToFrac ((floor (x+1))`mod`17) :: Rational))
-segmentUp  (Beads x) =  (Beads ((realToFrac ((floor (fst x))`mod`((floor $ snd x)+1)) :: Rational), (realToFrac ((floor ((snd x)+1))`mod`17) :: Rational)))
+segmentUp (Cyclic x) = (Cyclic (realToFrac ((floor (x+1))`mod`beatLim) :: Rational))
+segmentUp (Metric x) = (Metric (realToFrac ((floor (x+1))`mod`beatLim) :: Rational))
+segmentUp   (Ring x) =   (Ring (realToFrac ((floor (x+1))`mod`beatLim) :: Rational))
+segmentUp  (Beads x) =  (Beads ((realToFrac ((floor (fst x))`mod`((floor $ snd x)+1)) :: Rational), (realToFrac ((floor ((snd x)+1))`mod`beatLim) :: Rational)))
 
 segmentDown:: TimeVision -> TimeVision
-segmentDown (Cyclic x) = (Cyclic (realToFrac ((floor (x-1))`mod`17) :: Rational))
-segmentDown (Metric x) = (Metric (realToFrac ((floor (x-1))`mod`17) :: Rational))
-segmentDown   (Ring x) =   (Ring (realToFrac ((floor (x-1))`mod`17) :: Rational))
-segmentDown  (Beads x) = (Beads ((realToFrac ((floor (fst x))`mod`((floor $ snd x)+1)) :: Rational), (realToFrac ((floor ((snd x)-1))`mod`17) :: Rational)))
+segmentDown (Cyclic x) = (Cyclic (realToFrac ((floor (x-1))`mod`beatLim) :: Rational))
+segmentDown (Metric x) = (Metric (realToFrac ((floor (x-1))`mod`beatLim) :: Rational))
+segmentDown   (Ring x) =   (Ring (realToFrac ((floor (x-1))`mod`beatLim) :: Rational))
+segmentDown  (Beads x) = (Beads ((realToFrac ((floor (fst x))`mod`((floor $ snd x)+1)) :: Rational), (realToFrac ((floor ((snd x)-1))`mod`beatLim) :: Rational)))
 
 bjorklundUp:: TimeVision -> TimeVision
 bjorklundUp  (Beads x) =  (Beads ((realToFrac ((floor ((fst x)+1))`mod`((floor $ snd x)+1)) :: Rational),snd x))
