@@ -229,6 +229,12 @@ in
            sha256 = "1nnzsmkcy28k1s1s72ckq136564r2d6xzngm2bd1sm5ixasxx0lq";
            rev = "6edbf1e21ade2669a0098d3120c698463c86f52a";
          }) {}));
+
+        -- "overlay" of the original Cabal version of transformers on GHCJS only
+        -- uncomment to see if that helps on systems that have a certificate-related problem
+        -- with the version of transformers pointed to by particular version of reflex-platform
+        -- transformers = if !(self.ghc.isGhcjs or false) then super.transformers else self.callHackage "transformers" "0.5.6.2" {};
+
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [
