@@ -40,7 +40,8 @@ data View =
   NotePadView Int |
   IFrame Text | -- embedded web page
   CalendarEventView Int |
-  LoadVisionView 
+  LoadVisionView |
+  GraphVisionView
 
   deriving (Show,Eq,Generic)
 

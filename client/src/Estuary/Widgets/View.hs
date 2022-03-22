@@ -125,6 +125,10 @@ viewWidget _ LoadVisionView = do
   concentricCircleVisionWidget
   return never
 
+viewWidget _ GraphVisionView = do
+  graphVisionWidget
+  return never
+
 viewWidget _ (IFrame url) = do
   let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
   elAttr "iframe" attrs $ return ()

@@ -42,7 +42,8 @@ dumpView (SeeTimeView z) = "timeVision " <> showInt z
 dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
 dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
-dumpView LoadVisionView = "loadVision " 
+dumpView LoadVisionView = "loadVision"
+dumpView GraphVisionView = "grafo" 
 
 
 dumpView _ = " "
@@ -77,6 +78,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> calendarEventParser
           <|> genGridParser
           <|> loadVisionParser
+          <|> graphVisionParser
 
 genGridParser :: H View
 genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
@@ -314,6 +316,13 @@ loadVisionParser = loadVisionFunc <$ (reserved "loadVision")
 
 loadVisionFunc :: View
 loadVisionFunc = LoadVisionView
+
+graphVisionParser :: H View
+graphVisionParser = graphVisionFunc <$ (reserved "grafo")
+
+graphVisionFunc :: View
+graphVisionFunc = GraphVisionView
+--
 
 iFrameParser :: H View
 iFrameParser = (reserved "iFrame" >> return IFrame) <*> textLiteral

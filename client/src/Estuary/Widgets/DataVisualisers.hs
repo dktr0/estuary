@@ -30,18 +30,18 @@ import Estuary.Types.Definition
 import Estuary.Types.RenderInfo 
 
 
--- currentLoad:: MonadWidget t m => W t m (Event t Int)
--- currentLoad = do
---     r <- renderInfo
---     widgetBuildTime <- liftIO $ getCurrentTime
---     tick <- tickLossy 0.01 widgetBuildTime
---     currentLoad <- performEvent $ attachWith getLoad (current r) $ fmap _tickInfo_lastUTC tick
---     return currentLoad
+currentLoad:: MonadWidget t m => W t m (Event t Int)
+currentLoad = do
+    r <- renderInfo
+    widgetBuildTime <- liftIO $ getCurrentTime
+    tick <- tickLossy 0.01 widgetBuildTime
+    currentLoad <- performEvent $ attachWith getLoad (current r) $ fmap _tickInfo_lastUTC tick
+    return currentLoad
 
--- getLoad:: MonadIO m => RenderInfo -> UTCTime -> m Int  
--- getLoad r _ = do 
---     let x = avgRenderLoad r 
---     return x
+getLoad:: MonadIO m => RenderInfo -> UTCTime -> m Int  
+getLoad r _ = do 
+    let x = avgRenderLoad r 
+    return x
 
 
 concentricCircleVisionWidget :: MonadWidget t m => W t m ()
@@ -92,3 +92,47 @@ colourCircle:: Int -> Map Text Text
 colourCircle x 
     | x < 50 = "fill" =: "var(--primary-color)"
     | otherwise = "fill" =: "var(--transient-color)"
+
+
+graphVisionWidget :: MonadWidget t m => W t m ()
+graphVisionWidget =  mdo
+    r <- renderInfo
+    load <- holdUniqDyn $ fmap avgRenderLoad r
+    -- dynText $ fmap (showt) load -- debugging text
+    let svgA = constDyn svgAttrs
+
+    elDynAttrNS (Just "http://www.w3.org/2000/svg") "svg" svgA $ do
+        loadGraph
+    return ()
+
+
+loadGraph:: MonadWidget t m => m ()
+loadGraph = do
+    let z = constDyn $ "z" =: "-8"
+    let fill = constDyn $  "fill" =: "none" 
+    let stroke = constDyn $  "stroke" =: "var(--primary-color)"
+    let strokeWidth = constDyn $ "stroke-width" =: "2"  
+    let ps = constDyn $ points [(0,40),(25,20),(50,60),(75,30),(100,50)]
+    let attrs = mconcat [z,fill,stroke,strokeWidth,ps]
+    elDynAttrNS (Just "http://www.w3.org/2000/svg") "polyline" attrs $ return ()
+    return ()
+
+
+
+-- <svg height="200" width="500">
+--   <polyline fill="none" stroke="black" stroke-width="3" points="20,20 40,25 60,40 80,120 120,140 200,180" 
+--   Sorry, your browser does not support inline SVG.
+-- </svg>
+
+
+    -------- points to make polygons or paths
+
+points :: [(Int,Int)] -> Map Text Text
+points [] = Data.Map.empty
+points x = "points" =: (coordToText x)
+
+coordToText:: [(Int,Int)] -> Text
+coordToText p = Prelude.foldl (\ x y -> x <> " " <> (ptsToCoord y)) "" p
+
+ptsToCoord:: (Int,Int) -> Text
+ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)

@@ -79,7 +79,8 @@ stopWatchToButtonText (Stopped _) = "Clear"
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
 countDownWidget deltasDown =  divClass "countDown" $  mdo
 
-  let initialText = "initial count: 60, change it here"
+
+  let initialText = "t-minus: 60"
   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
   let editable = editableText <$> currentValue v
   textos <- holdDyn initialText $ leftmost [updatedText, textUpdates]
@@ -91,7 +92,7 @@ countDownWidget deltasDown =  divClass "countDown" $  mdo
   localChanges <- performEvent $ attachPromptlyDynWith countDownButtonStateChange timeDyn stateWhenButtonPressed
   -- this needs to change to attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed, however I have to discover how to updateText in line 81 and keep an eye on the targetTime update issue, for the moment it is clear that buttonPressedEvent caqnnot be in line 81 without consequences in the proper functioning of the widget...
 
-  timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent
+  timeDyn <- holdDyn (countDownToInitialVal initialCount) $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent
   widgetBuildTime <- liftIO $ getCurrentTime  
   initialCount <- sample $ current deltasDown
   let initialTime = countDownToDisplay initialCount widgetBuildTime
@@ -162,6 +163,10 @@ countDownToDisplay (Falling x y) now = if xx < 0 then Just $ diffTimeToText 0 el
 countDownToButtonText:: TimerDownState -> Text
 countDownToButtonText (Holding _) = "Start"
 countDownToButtonText (Falling _ _) = "Stop"
+
+countDownToInitialVal:: TimerDownState -> Int
+countDownToInitialVal (Holding x) = x
+countDownToInitialVal (Falling x _) = x
 
 
 clockForSVGs:: TimerDownState -> UTCTime -> Maybe Int 
