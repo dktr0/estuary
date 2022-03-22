@@ -39,7 +39,8 @@ data View =
   SeeTimeView Int |
   NotePadView Int |
   IFrame Text | -- embedded web page
-  CalendarEventView Int
+  CalendarEventView Int |
+  LoadVisionView 
 
   deriving (Show,Eq,Generic)
 

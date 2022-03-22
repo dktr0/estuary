@@ -42,6 +42,8 @@ dumpView (SeeTimeView z) = "timeVision " <> showInt z
 dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
 dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
+dumpView LoadVisionView = "loadVision " 
+
 
 dumpView _ = " "
 
@@ -74,6 +76,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> iFrameParser
           <|> calendarEventParser
           <|> genGridParser
+          <|> loadVisionParser
 
 genGridParser :: H View
 genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
@@ -82,6 +85,7 @@ rowsOrColumns :: H Int
 rowsOrColumns = do
   x <- integer
   if (x >= 1 && x <= 12) then return (fromIntegral x) else throwError "rows or columns must be between 1 and 12"
+
 
 --
 calendarEventParser :: H View
@@ -303,6 +307,13 @@ audioMapView = audioMapViewFunc <$ (reserved "audiomap")
 
 audioMapViewFunc :: View
 audioMapViewFunc = AudioMapView
+
+--
+loadVisionParser :: H View
+loadVisionParser = loadVisionFunc <$ (reserved "loadVision")
+
+loadVisionFunc :: View
+loadVisionFunc = LoadVisionView
 
 iFrameParser :: H View
 iFrameParser = (reserved "iFrame" >> return IFrame) <*> textLiteral

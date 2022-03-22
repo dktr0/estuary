@@ -48,21 +48,30 @@ concentricCircleVisionWidget :: MonadWidget t m => W t m ()
 concentricCircleVisionWidget =  mdo
     r <- renderInfo
     load <- holdUniqDyn $ fmap avgRenderLoad r
-    dynText $ fmap (showt) load
+    -- dynText $ fmap (showt) load -- debugging text
+    let svgA = constDyn svgAttrs
 
-    loadCircles load 
-
+    elDynAttrNS (Just "http://www.w3.org/2000/svg") "svg" svgA $ do
+        loadCircles load
     return ()
+
+svgAttrs:: Map Text Text
+svgAttrs = 
+    let vB = "viewBox" =: "0 0 100 100"
+        w = "width" =: "100%"
+        h = "height" =: "100%"
+    in mconcat [vB,w,h]
+
 
 loadCircles:: MonadWidget t m => Dynamic t Int -> m ()
 loadCircles load = do
 
-    let size = 25 :: Rational;
+    let coords = 50 :: Double;
     let z = constDyn $ "z" =: "-8"
-    let cx = constDyn $  "cx" =: ((showt size) <> "%") 
-    let cy = constDyn $  "cy" =: ((showt size) <> "%") 
+    let cx = constDyn $  "cx" =: (showt $ coords) 
+    let cy = constDyn $  "cy" =: (showt $ coords) 
 
-    let r1 = constDyn $ "r" =:  "13%" -- ((showt (floor (size*0.5))) <> "%") 
+    let r1 = constDyn $ "r" =:  (showt ((coords*0.5))) 
     let fill1 = constDyn $ "fill" =: "transparent"
 
     let r2 = sizeCircle <$> load
@@ -76,7 +85,8 @@ loadCircles load = do
     return ()
 
 sizeCircle:: Int -> Map Text Text
-sizeCircle x = "r" =: (showt x)
+sizeCircle x = "r" =: (showt (x'*0.5))
+    where x' = (realToFrac x :: Double)
 
 colourCircle:: Int -> Map Text Text
 colourCircle x 

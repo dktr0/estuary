@@ -40,6 +40,7 @@ import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
+import Estuary.Widgets.DataVisualisers
 
 
 
@@ -118,6 +119,10 @@ viewWidget _ (Example n t) = do
 
 viewWidget _ AudioMapView = do
   audioMapWidget
+  return never
+
+viewWidget _ LoadVisionView = do
+  concentricCircleVisionWidget
   return never
 
 viewWidget _ (IFrame url) = do
