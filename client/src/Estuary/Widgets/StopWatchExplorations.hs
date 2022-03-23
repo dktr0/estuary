@@ -77,14 +77,14 @@ stopWatchToButtonText (Stopped _) = "Clear"
 -------- Countdown widget 
 
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
-countDownWidget deltasDown =  divClass "countDown" $  mdo
-
+countDownWidget delta =  divClass "countDown" $  mdo
 
   let initialText = "t-minus: 60"
   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
   let editable = editableText <$> currentValue v
-  textos <- holdDyn initialText $ leftmost [updatedText, textUpdates]
+  textos <- holdDyn initialText $ leftmost [textUpdates,updatedText]
   (valTxBx,_) <- textWithLockWidget 1 editable textos
+
   let bText = countDownToButtonText <$> currentValue v
   butt <- dynButton $ bText 
   let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
@@ -92,13 +92,13 @@ countDownWidget deltasDown =  divClass "countDown" $  mdo
   localChanges <- performEvent $ attachPromptlyDynWith countDownButtonStateChange timeDyn stateWhenButtonPressed
   -- this needs to change to attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed, however I have to discover how to updateText in line 81 and keep an eye on the targetTime update issue, for the moment it is clear that buttonPressedEvent caqnnot be in line 81 without consequences in the proper functioning of the widget...
 
-  timeDyn <- holdDyn (countDownToInitialVal initialCount) $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent
+  timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent
   widgetBuildTime <- liftIO $ getCurrentTime  
-  initialCount <- sample $ current deltasDown
+  initialCount <- sample $ current delta
   let initialTime = countDownToDisplay initialCount widgetBuildTime
   tick <- tickLossy 0.01 widgetBuildTime 
   let textUpdates = attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
-  v <- returnVariable deltasDown localChanges
+  v <- variable delta localChanges
   return v
 
 
@@ -291,7 +291,11 @@ ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)
 -- general helpers
 
 diffTimeToText :: NominalDiffTime -> Text
-diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> showt (floor x `mod` 60 :: Int)
+diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> (add0Mod x)
+
+add0Mod:: NominalDiffTime -> Text
+add0Mod x = if modulo < 10 then ("0" <> (showt modulo)) else showt modulo 
+  where modulo = (floor x) `mod` (60 :: Int)
 
 countToPercent:: Int -> Int -> NominalDiffTime -> Int
 countToPercent newSize target grains = if target == 0 then 0 else round $ (grains / (realToFrac target)) * (realToFrac newSize)
