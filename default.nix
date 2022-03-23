@@ -1,5 +1,5 @@
 {
-  reflexPlatformVersion ? "9e306f72ed0dbcdccce30a4ba0eb37aa03cf91e3",
+  reflexPlatformVersion ? "123a6f487ca954fd983f6d4cd6b2a69d4c463d10",
   musl ? false,     # build with musl instead of glibc
   linkType ? null   # executable linking mode, null will build the closest to unconfigured for the current platform.
                     # 'static' will completely statically link everything.
@@ -164,16 +164,17 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "078sk2x62i4hbzh2cck6sq092484vb73ggn8g3z93ac9xrah1pwz";
-          rev = "882051a42bd8cc3cd11005fadfc6eda36a15462c";
+          sha256 = "180z11v3jqc3355apcv5y6db1fg10z6ghj0pkahmkrfkl0lhq9gx";
+          rev = "3c18722448a54523ed1dd1f93b5488b9e5b4dd28";
         }) {}));
 
-        musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
+        # musicw = self.callHackage "musicw" "0.3.9" {};
+        musicw = self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "0j5xxy3ry4nwl5bamhrkalgnz8g77bs7ck965mfciyc4k9b66x5i";
-          rev = "4adc14978f5466829f744bb8b4217ef2d26b31fa";
-          }) {});
+          sha256 = "03ngymxmzja48fk6kna9vyxn1gbz767x4d0bkwwrbs5jci7h0vb5";
+          rev = "39303ec3e263a5167bc2275d40b2dc957ea3b815";
+        }) {};
 
         reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
           owner = "reflex-frp";
@@ -206,13 +207,13 @@ in
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
-        haskellish = # dontHaddock (self.callCabal2nix "haskellish" ../Haskellish {});
-         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
-           owner = "dktr0";
-           repo = "Haskellish";
-           sha256 = "03sv69hnav1p8rd6i301kirx4anm5f402is4n7bxmjjqi7br5hna";
-           rev = "75cd924f8699da352ef4d441f35a18ee53d598b0";
-        }) {});
+        # haskellish = self.callHackage "haskellish" "0.3.2" {};
+        haskellish = self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
+          owner = "dktr0";
+          repo = "haskellish";
+          sha256 = "03sv69hnav1p8rd6i301kirx4anm5f402is4n7bxmjjqi7br5hna";
+          rev = "75cd924f8699da352ef4d441f35a18ee53d598b0";
+        }) {};
 
         tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
          dontHaddock (self.callCabal2nix "tempi" (pkgs.fetchFromGitHub {
@@ -230,11 +231,12 @@ in
            rev = "6edbf1e21ade2669a0098d3120c698463c86f52a";
          }) {}));
 
-        -- "overlay" of the original Cabal version of transformers on GHCJS only
-        -- uncomment to see if that helps on systems that have a certificate-related problem
-        -- with the version of transformers pointed to by particular version of reflex-platform
-        -- transformers = if !(self.ghc.isGhcjs or false) then super.transformers else self.callHackage "transformers" "0.5.6.2" {};
+         # the following are hacking around dependencies marked as broken in reflex-platform
+         hmt = markUnbroken super.hmt;
+         hsc3 = markUnbroken super.hsc3;
+         permutation = markUnbroken super.permutation;
 
+         dependent-sum-template = self.callHackage "dependent-sum-template" "0.1.1.1" {};
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [
