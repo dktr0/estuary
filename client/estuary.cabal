@@ -133,7 +133,6 @@ library
     , punctual
     , reflex
     , reflex-dom
-    , reflex-dom-contrib
     , reflex-dom-core
     , safe
     , seis8s
@@ -185,7 +184,6 @@ executable Estuary
     , punctual
     , reflex
     , reflex-dom
-    , reflex-dom-contrib
     , reflex-dom-core
     , safe
     , seis8s
@@ -246,7 +244,6 @@ executable interaction-test
     , punctual
     , reflex
     , reflex-dom
-    , reflex-dom-contrib
     , reflex-dom-core
     , safe
     , seis8s
@@ -305,7 +302,6 @@ executable simple-test
     , punctual
     , reflex
     , reflex-dom
-    , reflex-dom-contrib
     , reflex-dom-core
     , safe
     , seis8s
@@ -362,7 +358,6 @@ test-suite clientTest
     , punctual
     , reflex
     , reflex-dom
-    , reflex-dom-contrib
     , reflex-dom-core
     , safe
     , seis8s

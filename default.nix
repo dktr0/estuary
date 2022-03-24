@@ -219,6 +219,12 @@ in
          hsc3 = markUnbroken super.hsc3;
          permutation = markUnbroken super.permutation;
 
+         #network = self.callHackageDirect {
+        #   pkg = "network";
+        #   ver = "3.1.2.7";
+        #   sha256 = "1762r7jckinwvz5m99l5jr1p2p2d10jysg159nwlqxmsnr39waz7"; # note: temporarily set to pkgs.lib.fakeSha256 to find new hash...
+         #} { };
+
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [
