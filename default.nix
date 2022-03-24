@@ -47,7 +47,6 @@ in
   };
 
   shellToolOverrides = ghc: super: {
-    inherit (ghc8_6) hpack; # always use ghc (not ghcjs) compiled hpack
     python3 = pkgs.python3.withPackages (ps: with ps; [ pyyaml ]);
   };
 
@@ -69,7 +68,7 @@ in
         # if using ghcjs.
         pkgs.lib.genAttrs [
             "Glob" "mockery" "silently" "unliftio" "conduit"
-            "yaml" "hpack" "base-compat-batteries" "text-show" "modular-arithmetic"
+            "yaml" "base-compat-batteries" "text-show" "modular-arithmetic"
           ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else dontCheck) super.${name});
       # a hacky way of avoiding building unnecessary dependencies with GHCJS
       # (our system is currently building GHC dependencies even for the front-end...
@@ -79,13 +78,11 @@ in
             "foundation" "memory" "wai-app-static" "asn1-types"
             "asn1-encoding" "asn1-parse" "sqlite-simple" "cryptonite"
             "http-client" "pem" "x509" "connection" "tls" "http-client-tls"
-            "hpack"
           ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
         estuary = dontCheck (overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
           preConfigure = ''
-            ${ghc8_6.hpack}/bin/hpack --force;
           '';
           postInstall = ''
             ${pkgs.closurecompiler}/bin/closure-compiler $out/bin/Estuary.jsexe/all.js \
@@ -99,7 +96,6 @@ in
 
         estuary-common = overrideCabal super.estuary-common (drv: {
           preConfigure = ''
-            ${ghc8_6.hpack}/bin/hpack --force;
           '';
         });
 
@@ -138,16 +134,9 @@ in
                 };
             }.${linkType} or {}) // {
               preConfigure = ''
-                ${ghc8_6.hpack}/bin/hpack --force;
               '';
             }
         );
-
-        text-show = dontCheck super.text-show;
-
-        text-short = dontCheck super.text-short;
-
-        criterion = dontCheck super.criterion;
 
         webdirt = import ./deps/webdirt self;
 
@@ -164,24 +153,17 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "180z11v3jqc3355apcv5y6db1fg10z6ghj0pkahmkrfkl0lhq9gx";
-          rev = "3c18722448a54523ed1dd1f93b5488b9e5b4dd28";
+          sha256 = "1jszc80pv1m56haw75xrfm6qpkw267a0jgzr8821qpwbbwn5jgxl";
+          rev = "dc863728d259aa840fe68c9536597e9087f09376";
         }) {}));
 
         # musicw = self.callHackage "musicw" "0.3.9" {};
         musicw = self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "03ngymxmzja48fk6kna9vyxn1gbz767x4d0bkwwrbs5jci7h0vb5";
-          rev = "39303ec3e263a5167bc2275d40b2dc957ea3b815";
+          sha256 = "19c31jnsdhw85qczgwcmfch217nfc631qv9jf4wzbyg0xz50s64c";
+          rev = "b42ff7b1ea3ea322fb830a4e4757626761aebcd5";
         }) {};
-
-        reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
-          owner = "reflex-frp";
-          repo = "reflex-dom-contrib";
-          rev = "b9e2965dff062a4e13140f66d487362a34fe58b3";
-          sha256 = "1aa045mr82hdzzd8qlqhfrycgyhd29lad8rf7vsqykly9axpl52a";
-        }) {});
 
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
@@ -215,13 +197,14 @@ in
           rev = "75cd924f8699da352ef4d441f35a18ee53d598b0";
         }) {};
 
-        tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
-         dontHaddock (self.callCabal2nix "tempi" (pkgs.fetchFromGitHub {
-           owner = "dktr0";
-           repo = "tempi";
-           sha256 = "0z4fjdnl7riivw77pl8wypw1a98av3nhpmw0z5g2a1q2kjja0sfp";
-           rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
-        }) {});
+        tempi = self.callHackage "tempi" "1.0.2.1" {};
+        #tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
+        # dontHaddock (self.callCabal2nix "tempi" (pkgs.fetchFromGitHub {
+        #   owner = "dktr0";
+        #   repo = "tempi";
+        #   sha256 = "0z4fjdnl7riivw77pl8wypw1a98av3nhpmw0z5g2a1q2kjja0sfp";
+        #   rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
+        # }) {});
 
         seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
           doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
@@ -236,7 +219,6 @@ in
          hsc3 = markUnbroken super.hsc3;
          permutation = markUnbroken super.permutation;
 
-         dependent-sum-template = self.callHackage "dependent-sum-template" "0.1.1.1" {};
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [

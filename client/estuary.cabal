@@ -1,0 +1,380 @@
+cabal-version: 1.12
+
+name:           estuary
+version:        0.0.0.1
+synopsis:       Platform for collaboration and learning through live coding
+description:    Please see README.md
+category:       Web
+homepage:       http://github.com/dktr0/estuary/blob/stable/README.md
+author:         David Ogborn and contributors
+maintainer:     ogbornd@mcmaster.ca
+copyright:      2015-20 David Ogborn and contributors
+license:        GPL-3
+build-type:     Simple
+
+flag build-test-executables
+  description: Build the test executables.
+  manual: True
+  default: False
+
+library
+  exposed-modules:
+      Estuary.Client.Settings
+      Estuary.Help.CineCer0.CineCer0
+      Estuary.Help.CineCer0.CineCer0Reference
+      Estuary.Help.Hydra
+      Estuary.Help.LanguageHelp
+      Estuary.Help.MiniTidal
+      Estuary.Help.NoHelpFile
+      Estuary.Help.PunctualAudio
+      Estuary.Help.TerminalViewCommands
+      Estuary.Languages.CineCer0.CineCer0State
+      Estuary.Languages.CineCer0.Parser
+      Estuary.Languages.CineCer0.Signal
+      Estuary.Languages.CineCer0.Spec
+      Estuary.Languages.CineCer0.VideoSpec
+      Estuary.Languages.Hydra.Parser
+      Estuary.Languages.Hydra.Render
+      Estuary.Languages.Hydra.Test
+      Estuary.Languages.Hydra.Types
+      Estuary.Languages.JSoLang
+      Estuary.Languages.TidalParsers
+      Estuary.Protocol.Peer
+      Estuary.Render.DynamicsMode
+      Estuary.Render.MainBus
+      Estuary.Render.R
+      Estuary.Render.Renderer
+      Estuary.Render.SuperDirt
+      Estuary.Render.WebDirt
+      Estuary.Resources
+      Estuary.Resources.AudioResource
+      Estuary.Resources.Loadable
+      Estuary.Resources.LocMap
+      Estuary.Resources.ResourceList
+      Estuary.Resources.XMLHttpRequest
+      Estuary.Tutorials.CineCer0
+      Estuary.Tutorials.Punctual
+      Estuary.Tutorials.TidalCyclesBasics
+      Estuary.Types.AnimationState
+      Estuary.Types.Context
+      Estuary.Types.EnsembleC
+      Estuary.Types.Hint
+      Estuary.Types.NoteEvent
+      Estuary.Types.ParamPatternable
+      Estuary.Types.RenderInfo
+      Estuary.Types.RenderState
+      Estuary.Types.Term
+      Estuary.Types.Terminal
+      Estuary.Types.Tutorial
+      Estuary.Types.View.Parser
+      Estuary.Types.View.Presets
+      Estuary.Widgets.AboutEstuary
+      Estuary.Widgets.Announcements
+      Estuary.Widgets.AudioMap
+      Estuary.Widgets.CalendarEvent
+      Estuary.Widgets.Config
+      Estuary.Widgets.CreateEnsemble
+      Estuary.Widgets.Ensemble
+      Estuary.Widgets.EnsembleStatus
+      Estuary.Widgets.Estuary
+      Estuary.Widgets.EstuaryIcon
+      Estuary.Widgets.Footer
+      Estuary.Widgets.GeneralPattern
+      Estuary.Widgets.Header
+      Estuary.Widgets.Navigation
+      Estuary.Widgets.Notepad
+      Estuary.Widgets.Reference
+      Estuary.Widgets.Reflex
+      Estuary.Widgets.ResourceWidget
+      Estuary.Widgets.Roulette
+      Estuary.Widgets.Router
+      Estuary.Widgets.Sequencer
+      Estuary.Widgets.Sidebar
+      Estuary.Widgets.SpecificPattern
+      Estuary.Widgets.StopWatchExplorations
+      Estuary.Widgets.Tempo
+      Estuary.Widgets.Terminal
+      Estuary.Widgets.Text
+      Estuary.Widgets.TransformedPattern
+      Estuary.Widgets.Tutorial
+      Estuary.Widgets.View
+      Estuary.Widgets.ViewEditor
+      Estuary.Widgets.W
+      Estuary.Widgets.WebSocket
+  other-modules:
+      Paths_estuary
+  hs-source-dirs:
+      ./src
+  build-depends:
+      aeson
+    , array
+    , base
+    , bytestring
+    , containers
+    , data-default
+    , deepseq
+    , estuary-common
+    , file-embed
+    , ghcjs-base
+    , ghcjs-dom
+    , ghcjs-prim
+    , haskell-src-exts
+    , haskellish
+    , hosc
+    , jsaddle
+    , lens
+    , microspec
+    , monad-loops
+    , mtl
+    , musicw >=0.3.9
+    , network-uri
+    , parsec
+    , parsec-numbers
+    , punctual
+    , reflex
+    , reflex-dom
+    , reflex-dom-contrib
+    , reflex-dom-core
+    , safe
+    , seis8s
+    , split
+    , tempi
+    , text
+    , text-show
+    , tidal
+    , tidal-parse
+    , time
+    , timeNot
+    , transformers
+    , tuple
+    , witherable
+  default-language: Haskell2010
+
+executable Estuary
+  main-is: Main.hs
+  other-modules:
+      Paths_estuary
+  hs-source-dirs:
+      ./app
+  build-depends:
+      aeson
+    , array
+    , base
+    , bytestring
+    , containers
+    , data-default
+    , deepseq
+    , estuary
+    , estuary-common
+    , file-embed
+    , ghcjs-base
+    , ghcjs-dom
+    , ghcjs-prim
+    , haskell-src-exts
+    , haskellish
+    , hosc
+    , jsaddle
+    , lens
+    , microspec
+    , monad-loops
+    , mtl
+    , musicw >=0.3.9
+    , network-uri
+    , parsec
+    , parsec-numbers
+    , punctual
+    , reflex
+    , reflex-dom
+    , reflex-dom-contrib
+    , reflex-dom-core
+    , safe
+    , seis8s
+    , split
+    , tempi
+    , text
+    , text-show
+    , tidal
+    , tidal-parse
+    , time
+    , timeNot
+    , transformers
+    , tuple
+    , witherable
+  if flag(build-test-executables)
+    buildable: False
+  else
+    buildable: True
+  default-language: Haskell2010
+
+executable interaction-test
+  main-is: Interaction.hs
+  other-modules:
+      Paths_estuary
+  hs-source-dirs:
+      ./test
+  js-sources:
+      ./test/Estuary/Test/protocol-inspector.js
+  build-depends:
+      aeson
+    , array
+    , async
+    , base
+    , bytestring
+    , bytestring-handle
+    , containers
+    , data-default
+    , deepseq
+    , estuary
+    , estuary-common
+    , file-embed
+    , ghcjs-base
+    , ghcjs-dom
+    , ghcjs-prim
+    , haskell-src-exts
+    , haskellish
+    , hosc
+    , hspec
+    , jsaddle
+    , lens
+    , microspec
+    , monad-loops
+    , mtl
+    , musicw >=0.3.9
+    , network-uri
+    , parsec
+    , parsec-numbers
+    , punctual
+    , reflex
+    , reflex-dom
+    , reflex-dom-contrib
+    , reflex-dom-core
+    , safe
+    , seis8s
+    , split
+    , tempi
+    , text
+    , text-show
+    , tidal
+    , tidal-parse
+    , time
+    , timeNot
+    , transformers
+    , tuple
+    , witherable
+  if flag(build-test-executables)
+    buildable: True
+  else
+    buildable: False
+  default-language: Haskell2010
+
+executable simple-test
+  main-is: Simple.hs
+  other-modules:
+      Paths_estuary
+  hs-source-dirs:
+      ./test
+  build-depends:
+      aeson
+    , array
+    , async
+    , base
+    , bytestring
+    , bytestring-handle
+    , containers
+    , data-default
+    , deepseq
+    , estuary
+    , estuary-common
+    , file-embed
+    , ghcjs-base
+    , ghcjs-dom
+    , ghcjs-prim
+    , haskell-src-exts
+    , haskellish
+    , hosc
+    , hspec
+    , jsaddle
+    , lens
+    , microspec
+    , monad-loops
+    , mtl
+    , musicw >=0.3.9
+    , network-uri
+    , parsec
+    , parsec-numbers
+    , punctual
+    , reflex
+    , reflex-dom
+    , reflex-dom-contrib
+    , reflex-dom-core
+    , safe
+    , seis8s
+    , split
+    , tempi
+    , text
+    , text-show
+    , tidal
+    , tidal-parse
+    , time
+    , timeNot
+    , transformers
+    , tuple
+    , witherable
+  if flag(build-test-executables)
+    buildable: True
+  else
+    buildable: False
+  default-language: Haskell2010
+
+test-suite clientTest
+  type: exitcode-stdio-1.0
+  main-is: ClientTests.hs
+  other-modules:
+      Paths_estuary
+  hs-source-dirs:
+      ./tests
+  build-depends:
+      aeson
+    , array
+    , base
+    , bytestring
+    , containers
+    , data-default
+    , deepseq
+    , estuary
+    , estuary-common
+    , file-embed
+    , ghcjs-base
+    , ghcjs-dom
+    , ghcjs-prim
+    , haskell-src-exts
+    , haskellish
+    , hosc
+    , jsaddle
+    , lens
+    , microspec >=0.2.1.3
+    , monad-loops
+    , mtl
+    , musicw >=0.3.9
+    , network-uri
+    , parsec
+    , parsec-numbers
+    , punctual
+    , reflex
+    , reflex-dom
+    , reflex-dom-contrib
+    , reflex-dom-core
+    , safe
+    , seis8s
+    , split
+    , tempi
+    , text
+    , text-show
+    , tidal
+    , tidal-parse
+    , time
+    , timeNot
+    , transformers
+    , tuple
+    , witherable
+  default-language: Haskell2010
