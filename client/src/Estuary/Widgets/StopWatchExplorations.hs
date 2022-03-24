@@ -82,14 +82,14 @@ countDownWidget delta =  divClass "countDown" $  mdo
   let initialText = "t-minus: 60"
   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
   let editable = editableText <$> currentValue v
-  textos <- holdDyn initialText $ leftmost [textUpdates,updatedText]
+  textos <- holdDyn initialText $ leftmost [updatedText,textUpdates]
   (valTxBx,_) <- textWithLockWidget 1 editable textos
 
   let bText = countDownToButtonText <$> currentValue v
   butt <- dynButton $ bText 
-  let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
-  let stateWhenButtonPressed = tagPromptlyDyn (currentValue v) buttonPressedEvent
-  localChanges <- performEvent $ attachPromptlyDynWith countDownButtonStateChange timeDyn stateWhenButtonPressed
+  let buttonPressedEvent = tag (current valTxBx) $ butt
+  let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent
+  localChanges <- performEvent $ attachWith countDownButtonStateChange (current $ timeDyn) stateWhenButtonPressed
   -- this needs to change to attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed, however I have to discover how to updateText in line 81 and keep an eye on the targetTime update issue, for the moment it is clear that buttonPressedEvent caqnnot be in line 81 without consequences in the proper functioning of the widget...
 
   timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent

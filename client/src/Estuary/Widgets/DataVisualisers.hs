@@ -99,11 +99,18 @@ graphVisionWidget =  mdo
     r <- renderInfo
     load <- holdUniqDyn $ fmap avgRenderLoad r
     -- dynText $ fmap (showt) load -- debugging text
-    let svgA = constDyn svgAttrs
 
+    load' <- sample $ current $ load -- Event t Int
+
+    let lista = Prelude.take 10 $ load':[2,3,4] 
+
+    simpleList (constDyn lista) (\x -> dynText $ fmap (showt) x) 
+
+    let svgA = constDyn svgAttrs
     elDynAttrNS (Just "http://www.w3.org/2000/svg") "svg" svgA $ do
         loadGraph
     return ()
+
 
 
 loadGraph:: MonadWidget t m => m ()
