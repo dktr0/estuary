@@ -219,11 +219,23 @@ in
          hsc3 = markUnbroken super.hsc3;
          permutation = markUnbroken super.permutation;
 
-         #network = self.callHackageDirect {
-        #   pkg = "network";
-        #   ver = "3.1.2.7";
-        #   sha256 = "1762r7jckinwvz5m99l5jr1p2p2d10jysg159nwlqxmsnr39waz7"; # note: temporarily set to pkgs.lib.fakeSha256 to find new hash...
-         #} { };
+
+         # working on getting 'network' dependency to build on GHCJS-side of project:
+
+         # the default configuration provided by reflex-platform produces an error where a
+         # patch to network, applied to 3.1.1.1, is unable to find the file Network.hsc
+         # the file does indeed appear to be a file that used to exist in the network library
+         # but which doesn't anymore.
+
+         # these three all produce the same result (both are ways of having an unpatched library)
+         # - an error about js-unknown not recognized in host system type
+         # network = overrideCabal super.network (drv: { patches = null; });
+         # network = self.callHackage "network" "3.1.1.1" {};
+         network = super.callHackageDirect {
+           pkg = "network";
+           ver = "3.1.2.7";
+           sha256 = "1762r7jckinwvz5m99l5jr1p2p2d10jysg159nwlqxmsnr39waz7"; # note: temporarily set to pkgs.lib.fakeSha256 to find new hash...
+         } { };
 
       };
     in
