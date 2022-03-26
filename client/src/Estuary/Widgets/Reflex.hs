@@ -815,18 +815,20 @@ flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e
 -- whether the ctrl and shift keys should be pressed, prevent the default behaviour when
 -- that keypress happens on that element, and fire an event.
 
-catchKeyboardShortcut :: IsEvent t => Element? -> Word -> Bool -> Bool -> m (Event t ())
-catchKeyboardShortcut el keyCode ctrlKey shiftKey = fmap (fmapMaybe (const ())) $ wrapDomEvent el (onEventName Keypress) $ do
-  e <- event
-  k <- getKeyEvent
-  c <- liftIO $ _getCtrlKey (unKeyboardEvent e)
-  s <- liftIO $ _getShiftKey (unKeyboardEvent e)
-  if (k == keyCode && c == ctrlKey && s == shiftKey) then
-    (preventDefault >> return (Just ()))
-    else return Nothing
+catchKeyboardShortcut :: (Reflex t, TriggerEvent t m, G.MonadJSM m, G.IsHTMLElement e) => e -> Word -> Bool -> Bool -> m (Event t ())
+catchKeyboardShortcut el keyCode ctrlKey shiftKey = do
+  x <- wrapDomEvent el (onEventName Keypress) $ do
+    e <- event
+    k <- getKeyEvent
+    c <- liftIO $ _getCtrlKey (G.unKeyboardEvent e)
+    s <- liftIO $ _getShiftKey (G.unKeyboardEvent e)
+    if (k == keyCode && c == ctrlKey && s == shiftKey) then
+      (GHCJS.DOM.EventM.preventDefault >> return (Just ()))
+      else return Nothing
+  return $ fmapMaybe id x
 
 foreign import javascript unsafe "$1['ctrlKey']"
-  _getCtrlKey :: JSVal -> IO Bool
+  _getCtrlKey :: T.JSVal -> IO Bool
 
 foreign import javascript unsafe "$1['shiftKey']"
-  _getShiftKey :: JSVal -> IO Bool
+  _getShiftKey :: T.JSVal -> IO Bool

@@ -15,7 +15,7 @@ import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
-import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..),HTMLDivElement(..))
+import GHCJS.DOM.Types hiding (Event,Request)
 import GHCJS.Marshal.Pure
 import GHCJS.DOM.EventM
 import Data.Functor (void)
@@ -69,9 +69,9 @@ import Estuary.Client.Settings as Settings
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher rEnv settings ctxM riM = mdo
   (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardShortcut
-  let e = _el_element theElement
-  togTerminal <- fmap (const 24) <$> catchKeyboardShortcut e 24 True True
-  togStats <- fmap (const 12) <$> catchKeyboardShortcut e 12 True True
+  let e = HTMLDivElement $ pToJSVal $ _el_element theElement
+  togTerminal <- (24 <$) <$> catchKeyboardShortcut e 24 True True
+  togStats <- (12 <$) <$> catchKeyboardShortcut e 12 True True
   let keyboardShortcut = leftmost [togTerminal,togStats]
   return ()
 
