@@ -97,30 +97,32 @@ colourCircle x
 graphVisionWidget :: MonadWidget t m => W t m ()
 graphVisionWidget =  mdo
     r <- renderInfo
-    load <- holdUniqDyn $ fmap avgRenderLoad r
-    -- dynText $ fmap (showt) load -- debugging text
-
-    load' <- sample $ current $ load -- Event t Int
-
-    let lista = Prelude.take 10 $ load':[2,3,4] 
-
-    simpleList (constDyn lista) (\x -> dynText $ fmap (showt) x) 
-
-    let svgA = constDyn svgAttrs
-    elDynAttrNS (Just "http://www.w3.org/2000/svg") "svg" svgA $ do
-        loadGraph
+    let loadDyn = fmap avgRenderLoad r
+    let loadEvent = updated $ loadDyn -- Event t Int
+    lista <- accumDyn injectFact [] loadEvent  
+    elDynAttrNS (Just "http://www.w3.org/2000/svg") "svg" (constDyn svgAttrs) $ do
+        loadGraph lista
     return ()
 
 
+-- accumDyn :: (Reflex t, MonadHold t m, MonadFix m) => (a -> b -> a) -> a -> Event t b -> m (Dynamic t a) 
 
-loadGraph:: MonadWidget t m => m ()
-loadGraph = do
+-- accum :: (MonadHold t m, MonadFix m) => (a -> b -> a) -> a -> Event t b -> m (f a) 
+
+injectFact:: [Int] -> Int -> [Int]
+injectFact xs x = Prelude.take 100 $ x:xs
+
+loadGraph:: MonadWidget t m => Dynamic t [Int] -> m ()
+loadGraph xs = do
     let z = constDyn $ "z" =: "-8"
     let fill = constDyn $  "fill" =: "none" 
     let stroke = constDyn $  "stroke" =: "var(--primary-color)"
-    let strokeWidth = constDyn $ "stroke-width" =: "2"  
-    let ps = constDyn $ points [(0,40),(25,20),(50,60),(75,30),(100,50)]
-    let attrs = mconcat [z,fill,stroke,strokeWidth,ps]
+    let strokeWidth = constDyn $ "stroke-width" =: "1"  
+    let transf = constDyn $ "transform" =: "rotate(180)"
+
+    let pts = (points . Prelude.zip [0..]) <$> xs -- [(Int,Int)]
+
+    let attrs = mconcat [z,fill,stroke,strokeWidth,pts,transf]
     elDynAttrNS (Just "http://www.w3.org/2000/svg") "polyline" attrs $ return ()
     return ()
 
