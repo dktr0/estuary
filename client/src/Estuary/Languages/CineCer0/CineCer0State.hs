@@ -44,12 +44,6 @@ foreign import javascript unsafe
   "var myObject = document.createElement('object'); myObject.setAttribute('type', 'image/svg+xml'); myObject.setAttribute('data', $1); $r=myObject;"
   makeSVG :: Text -> IO SVGLayer
 
-
----- text svg possibility
--- foreign import javascript unsafe
---   "var svgTx = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svgTx.setAttribute('xlink','http://www.w3.org/1999/xlink'); var text = document.createElementNS('ttp://www.w3.org/2000/svg', 'text'); text.setAttribute('x', '10'); text.setAttribute('y', '20'); text.setAttribute('fill', '#000'); text.textContent = '2666'; $r= svgTx.appendChild(text); ;"
---   makeSVG :: Text -> IO SVGLayer
-
 foreign import javascript unsafe
   "$2.appendChild($1);"
   appendSVG :: SVGLayer -> HTMLDivElement -> IO ()
@@ -106,7 +100,7 @@ foreign import javascript unsafe "$1.offsetHeight" textHeight :: TextLayer -> IO
 -- SVG
 foreign import javascript unsafe "$1.removeChild($2)" removeSVG :: HTMLDivElement -> SVGLayer -> IO ()
 foreign import javascript unsafe "$1.style = $2;" _setSVGStyle :: SVGLayer -> Text -> IO ()
-foreign import javascript unsafe "$1.textContent = $2;" changeSVGSource :: SVGLayer -> Text -> IO ()
+foreign import javascript unsafe "$1.data = $2;" changeSVGSource :: SVGLayer -> Text -> IO ()
 foreign import javascript unsafe "$1.offsetWidth" svgWidth :: SVGLayer -> IO Double
 foreign import javascript unsafe "$1.offsetHeight" svgHeight :: SVGLayer -> IO Double
 
@@ -422,15 +416,27 @@ updateContinuingSVG t eTime rTime (sw,sh) s svg = logExceptions svg $ do
     let leftX = centreX - (actualWidth * 0.5)
     let topY = realToFrac sh - (centreY + (actualHeight * 0.5))
     let mask' = ((Cinecer0.mask s) t length rTime eTime aTime)
+    let r' = rotate s t length rTime eTime aTime
+    let rotateText = generateRotate (ceiling r')
+    let opacity' = (*) <$> (opacity s) t length rTime eTime aTime <*> Just 100
+    let blur' = blur s t length rTime eTime aTime
+    let brightness' = (*) <$> (brightness s) t length rTime eTime aTime <*> Just 100
+    let contrast' = (*) <$> (contrast s) t length rTime eTime aTime <*> Just 100
+    let grayscale' = (*) <$> (grayscale s) t length rTime eTime aTime <*> Just 100
+    let saturate' = (*) <$> (saturate s) t length rTime eTime aTime <*> Just 100
+    let filterText = generateFilter (fmap realToFrac opacity') (fmap realToFrac blur') (fmap realToFrac brightness') (fmap realToFrac contrast') (fmap realToFrac grayscale') (fmap realToFrac saturate')
 
     let z' = generateZIndex (z s t length rTime eTime aTime)
 
-    setSVGStyle svg $ svgStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) mask' z'
+    setSVGStyle svg $ svgStyle (realToFrac $ leftX) (realToFrac $ topY) (realToFrac $ actualWidth) (realToFrac $ actualHeight) filterText rotateText mask' z'
   else return svg
 
 
-svgStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text
-svgStyle x y w h m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> m <> z
+--generateFilter :: Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Maybe Double -> Text
+
+
+svgStyle :: Double -> Double -> Double -> Double -> Text -> Text -> Text -> Text -> Text
+svgStyle x y w h fil rot m z = "left: " <> showt x <> "px; top: " <> showt y <> "px; position: absolute; width:" <> showt (w) <> "px; height:" <> showt (h) <> "px; object-fit: fill;" <> fil <> rot <> m <> z
 
 
 generateOpacity :: Maybe Double -> Text
