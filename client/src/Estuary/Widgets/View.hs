@@ -122,7 +122,7 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 
 viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
-viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("","")]) maybeNotePad NotePad er notePadWidget
+viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad er notePadWidget
 
 viewWidget er TempoView = do
   ctx <- context
