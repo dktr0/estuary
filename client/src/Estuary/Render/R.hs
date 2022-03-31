@@ -105,6 +105,9 @@ setBaseNotation z n = modify' $ \x -> x { baseNotations = IntMap.insert z n $ ba
 setEvaluationTime :: Int -> UTCTime -> R ()
 setEvaluationTime z n = modify' $ \x -> x { evaluationTimes = IntMap.insert z n $ evaluationTimes x}
 
+clearParamPattern :: Int -> R ()
+clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }
+
 
 -- updating Settings (eg. in response to user action in widgets)
 

@@ -40,14 +40,13 @@ import qualified Sound.TimeNot.Parsers as TimeNot
 import qualified Sound.TimeNot.Render as TimeNot
 -- import qualified Sound.Seis8s.Parser as Seis8s
 import Estuary.Languages.Punctual
+import Estuary.Languages.CineCer0
 import Sound.Punctual.GL (GLContext)
 
 import qualified Estuary.Languages.Hydra.Types as Hydra
 import qualified Estuary.Languages.Hydra.Parser as Hydra
 import qualified Estuary.Languages.Hydra.Render as Hydra
-import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
-import qualified Estuary.Languages.CineCer0.Spec as CineCer0
-import qualified Estuary.Languages.CineCer0.Parser as CineCer0
+
 import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
 import Estuary.Types.Context
@@ -261,20 +260,10 @@ clearZone _ _ = return ()
 
 clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
 clearTextProgram z (Punctual,_,_) = (clearZone' punctual) z
-clearTextProgram z (CineCer0,_,_) = do
-  s <- get
-  case (IntMap.lookup z $ cineCer0States s) of
-    Just x -> liftIO $ CineCer0.deleteCineCer0State x
-    Nothing -> return ()
-  modify' $ \x -> x {
-    cineCer0Specs = IntMap.delete z $ cineCer0Specs x,
-    cineCer0States = IntMap.delete z $ cineCer0States x
-    }
+clearTextProgram z (CineCer0,_,_) = (clearZone' cineCer0) z
 clearTextProgram z (Hydra,_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
 clearTextProgram _ _ = return ()
 
-clearParamPattern :: Int -> R ()
-clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }
 
 
 renderAnimation :: R ()
@@ -316,20 +305,9 @@ renderZoneAnimation tNow z n = do
 
 renderZoneAnimationTextProgram :: UTCTime -> Int -> TextNotation -> R ()
 renderZoneAnimationTextProgram tNow z Punctual = (zoneAnimationFrame punctual) tNow z
-renderZoneAnimationTextProgram tNow z CineCer0 = renderCineCer0 tNow z
+renderZoneAnimationTextProgram tNow z CineCer0 = (zoneAnimationFrame cineCer0) tNow z
 renderZoneAnimationTextProgram tNow z Hydra = renderHydra tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
-
-renderCineCer0 :: UTCTime -> Int -> R ()
-renderCineCer0 tNow z = do
-  s <- get
-  case videoDivCache s of
-    Nothing -> return ()
-    Just theDiv -> do
-      let spec = IntMap.findWithDefault (CineCer0.emptySpec $ renderStart s) z (cineCer0Specs s)
-      let prevState = IntMap.findWithDefault (CineCer0.emptyCineCer0State theDiv) z $ cineCer0States s
-      newState <- liftIO $ CineCer0.updateCineCer0State (tempoCache s) tNow spec prevState
-      modify' $ \x -> x { cineCer0States = insert z newState (cineCer0States s) }
 
 renderHydra :: UTCTime -> Int -> R ()
 renderHydra tNow z = do
@@ -396,18 +374,8 @@ renderTextProgramChanged c z (TidalTextNotation x,y,eTime) = do
     Left err -> setZoneError z $ T.pack err
 
 renderTextProgramChanged c z (Punctual,x,eTime) = (parseZone punctual) c z x eTime
-
+renderTextProgramChanged c z (CineCer0,x,eTime) = (parseZone cineCer0) c z x eTime
 renderTextProgramChanged c z (Hydra,x,_) = parseHydra c z x
-
-renderTextProgramChanged c z (CineCer0,x,eTime) = do
-  let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack x -- Either String CineCer0Spec
-  case parseResult of
-    Right spec -> do
-      clearZoneError z
-      setBaseNotation z CineCer0
-      setEvaluationTime z eTime
-      modify' $ \xx -> xx { cineCer0Specs = insert z spec $ cineCer0Specs xx }
-    Left err -> setZoneError z (T.pack err)
 
 renderTextProgramChanged c z (TimeNot,x,eTime) = do
   let parseResult = TimeNot.runCanonParser $ T.unpack x
