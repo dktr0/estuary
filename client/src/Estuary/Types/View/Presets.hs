@@ -72,22 +72,22 @@ presetViews = fromList [
 
       ("tempoAndCode", GridView 2 1  [
       BorderDiv [LabelView 0,CodeView 1 0],
-      BorderDiv [SeeTimeView 0]
+      BorderDiv [SeeTimeView 2]
       ]),
 
       ("sandClockAndCode", GridView 2 1  [
       BorderDiv [LabelView 0,CodeView 1 0],
-      BorderDiv [SandClockView 0]
+      BorderDiv [SandClockView 2]
       ]),
 
       ("countDownAndCode", GridView 2 1  [
       BorderDiv [LabelView 0,CodeView 1 0],
-      BorderDiv [CountDownView 0]
+      BorderDiv [CountDownView 2]
       ]),
 
       ("stopWatchDownAndCode", GridView 2 1  [
       BorderDiv [LabelView 0,CodeView 1 0],
-      BorderDiv [CountDownView 0]
+      BorderDiv [CountDownView 2]
       ]),
 
       ("notepad", GridView 1 1 [
@@ -96,7 +96,7 @@ presetViews = fromList [
 
       ("notepadAndCode", GridView 1 2 [
       BorderDiv [NotePadView 0],
-      BorderDiv [LabelView 0,CodeView 1 0]
+      BorderDiv [LabelView 1,CodeView 2 0]
       ]),
 
       ("notepadAndCodeWithCollapDiv", GridView 1 2 [

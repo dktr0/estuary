@@ -81,7 +81,7 @@ in
           ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
-        estuary = dontCheck (overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
+        estuary = dontHaddock (dontCheck (overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
           preConfigure = ''
           '';
           postInstall = ''
@@ -92,12 +92,12 @@ in
               --jscomp_off=checkVars;
             gzip -fk "$out/bin/all.min.js"
          '';
-        }));
+        })));
 
-        estuary-common = overrideCabal super.estuary-common (drv: {
+        estuary-common = dontHaddock (overrideCabal super.estuary-common (drv: {
           preConfigure = ''
           '';
-        });
+        }));
 
        estuary-server =
           let configure-flags = map (opt: "--ghc-option=${opt}") (
@@ -114,7 +114,7 @@ in
               )
           );
           in
-          overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv:
+          dontHaddock (overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv:
             ({
               dynamic = {
                   # based on fix from https://github.com/NixOS/nixpkgs/issues/26140, on linux when building a dynamic exe
@@ -136,7 +136,7 @@ in
               preConfigure = ''
               '';
             }
-        );
+        ));
 
         webdirt = import ./deps/webdirt self;
 
