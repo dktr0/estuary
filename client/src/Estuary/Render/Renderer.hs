@@ -69,6 +69,7 @@ import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
 import Estuary.Render.MainBus
 import Estuary.Render.R
+import Estuary.Render.TextNotationRenderer
 import qualified Estuary.Client.Settings as Settings
 
 

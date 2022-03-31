@@ -1,4 +1,4 @@
-module Estuary.Languages.Punctual (punctual,Renderer(..)) where
+module Estuary.Languages.Punctual (punctual) where
 
 import Data.Time
 import Control.Monad.Except
@@ -18,6 +18,7 @@ import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.Punctual.Resolution as Punctual
 
 import Estuary.Render.R
+import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
 import Estuary.Types.RenderInfo
 import Estuary.Types.Context
@@ -27,17 +28,8 @@ import Estuary.Types.Tempo
 import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
 
-
-data Renderer = Renderer {
-  parseZone :: Context -> Int -> Text -> UTCTime -> R (),
-  clearZone' :: Int -> R (),
-  preAnimationFrame :: R (),
-  zoneAnimationFrame :: UTCTime -> Int -> R (),
-  postAnimationFrame :: R ()
-}
-
-punctual :: Renderer
-punctual = Renderer {
+punctual :: TextNotationRenderer
+punctual = TextNotationRenderer {
   parseZone = _parseZone,
   clearZone' = _clearZone,
   preAnimationFrame = _preAnimationFrame,
