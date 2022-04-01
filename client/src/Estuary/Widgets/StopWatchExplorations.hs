@@ -79,18 +79,21 @@ stopWatchToButtonText (Stopped _) = "Clear"
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
 countDownWidget delta =  divClass "countDown" $  mdo
 
-  let initialText = "t-minus: 60"
+  let initialText = "t-minus: 60"   -- Text
   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
-  let editable = editableText <$> currentValue v
-  textos <- holdDyn initialText $ leftmost [updatedText,textUpdates]
-  (valTxBx,_) <- textWithLockWidget 1 editable textos
+  let editable = editableText <$> currentValue v    -- Bool
+  textos <- holdDyn initialText $ leftmost [updatedText,textUpdates] -- Dynamic t Text
+  (valTxBx,_) <- textWithLockWidget 1 editable textos -- (Dynamic t Text, Event t Text)
 
-  let bText = countDownToButtonText <$> currentValue v
-  butt <- dynButton $ bText 
-  let buttonPressedEvent = tag (current valTxBx) $ butt
+  let bText = countDownToButtonText <$> currentValue v -- Dynamic t Text
+  butt <- dynButton $ bText                            -- Event t Text
+  let buttonPressedEvent = tag (current valTxBx) $ butt -- Event t Int
   let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent
   localChanges <- performEvent $ attachWith countDownButtonStateChange (current $ timeDyn) stateWhenButtonPressed
   -- this needs to change to attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed, however I have to discover how to updateText in line 81 and keep an eye on the targetTime update issue, for the moment it is clear that buttonPressedEvent caqnnot be in line 81 without consequences in the proper functioning of the widget...
+
+  let remoteOrLocalEdits = leftmost [updated delta, localChanges]
+
 
   timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent
   widgetBuildTime <- liftIO $ getCurrentTime  
