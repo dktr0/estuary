@@ -81,29 +81,35 @@ countDownWidget delta =  divClass "countDown" $  mdo
 
   let initialText = "t-minus: 60"   -- Text
   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
-  let editable = editableText <$> currentValue v    -- Bool
+  let editable = editableText <$> currentValue v    -- Bool --checks if holding or falling. If holding editable if falling not.
   textos <- holdDyn initialText $ leftmost [updatedText,textUpdates] -- Dynamic t Text
   (valTxBx,_) <- textWithLockWidget 1 editable textos -- (Dynamic t Text, Event t Text)
 
-  let bText = countDownToButtonText <$> currentValue v -- Dynamic t Text
-  butt <- dynButton $ bText                            -- Event t Text
-  let buttonPressedEvent = tag (current valTxBx) $ butt -- Event t Int
-  let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent
-  localChanges <- performEvent $ attachWith countDownButtonStateChange (current $ timeDyn) stateWhenButtonPressed
-  -- this needs to change to attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed, however I have to discover how to updateText in line 81 and keep an eye on the targetTime update issue, for the moment it is clear that buttonPressedEvent caqnnot be in line 81 without consequences in the proper functioning of the widget...
+  let bText = countDownToButtonText <$> currentValue v -- Dynamic t Text  -- changes the text in button
+  butt <- dynButton $ bText                            -- Event t ()  -- when this button is pressed
 
-  let remoteOrLocalEdits = leftmost [updated delta, localChanges]
+---- OJO two tags in a row, different kind of pattern
+  let buttonPressedEvent = tag (current valTxBx) $ butt -- Event t Text  -- the val in the textbox is tagged
+
+  let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent -- Event t Downer -- the current value of v (not delta) is tagged to the button pressed, currentValue v is a Dynamic of Downer, current gets the behaviour
 
 
-  timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent
+  localChanges <- performEvent $ attachWith countDownButtonStateChange (current $ timeDyn) stateWhenButtonPressed -- Event to Downer
+
+------------------------------------------------------
+  timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) $ buttonPressedEvent -- Dynamic t Int
+
   widgetBuildTime <- liftIO $ getCurrentTime  
-  initialCount <- sample $ current delta
+  initialCount <- sample $ current delta -- current gets the Behaviour of the dyn and then gets the m Downer
   let initialTime = countDownToDisplay initialCount widgetBuildTime
   tick <- tickLossy 0.01 widgetBuildTime 
   let textUpdates = attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
   v <- variable delta localChanges
   return v
 
+func:: TimerDownState -> Int
+func (Falling x _) = x
+func (Holding x) = x
 
 -------- Sandclock widget 
 
