@@ -107,9 +107,7 @@ countDownWidget delta =  divClass "countDown" $  mdo
   v <- variable delta localChanges
   return v
 
-func:: TimerDownState -> Int
-func (Falling x _) = x
-func (Holding x) = x
+
 
 -------- Sandclock widget 
 

@@ -76,7 +76,7 @@ loadCircles load = do
     let fill1 = constDyn $ "fill" =: "transparent"
 
     let r2 = sizeCircle <$> load
-    let fill2 = colourCircle <$> load
+    let fill2 = colouring ("fill","var(--primary-color)") <$> load
 
     let (stroke1,stroke2,strokew) = (constDyn $ "stroke" =: "var(--secondary-color)",constDyn $ "stroke" =: "transparent",constDyn $ "stroke-width" =: "2")
     let externalCircle = mconcat [cx,cy,r1,fill1,stroke1,strokew,z]
@@ -89,10 +89,10 @@ sizeCircle:: Int -> Map Text Text
 sizeCircle x = "r" =: (showt (x'*0.5))
     where x' = (realToFrac x :: Double)
 
-colourCircle:: Int -> Map Text Text
-colourCircle x 
-    | x < 50 = "fill" =: "var(--primary-color)"
-    | otherwise = "fill" =: "var(--transient-color)"
+colouring:: (Text,Text) -> Int -> Map Text Text
+colouring (t,c) x 
+    | x < 50 = t =: c
+    | otherwise = t =: "var(--transient-color)"
 
 
 graphVisionWidget :: MonadWidget t m => W t m ()
@@ -100,34 +100,43 @@ graphVisionWidget =  mdo
     r <- renderInfo
     let loadDyn = fmap avgRenderLoad r
     let loadEvent = updated $ loadDyn -- Event t Int
-    lista <- accumDyn injectFact [] loadEvent  
+    lista <- accumDyn injectFact [0] loadEvent  
     elDynAttrNS (Just "http://www.w3.org/2000/svg") "svg" (constDyn svgAttrs) $ do
         loadGraph lista
     return ()
 
 injectFact:: [Int] -> Int -> [Int]
-injectFact xs x = Prelude.take 100 $ x:xs
+injectFact xs x = Prelude.take 150 $ x:xs -- changing width means changing the amount of samples
 
 loadGraph:: MonadWidget t m => Dynamic t [Int] -> m ()
 loadGraph xs = do
+    let widths = 150 :: Float 
     let z = constDyn $ "z" =: "-8"
     let fill = constDyn $  "fill" =: "none" 
     let stroke = constDyn $  "stroke" =: "var(--primary-color)"
     let strokeWidth = constDyn $ "stroke-width" =: "1"  
-    let transf = constDyn $ "transform" =: "rotate(180,50,50)"
-
+    let transf = constDyn $ "transform" =: ("rotate(180," <> (showt $ widths*0.5) <> ",50)")
     let pts = (points . Prelude.zip [0..]) <$> xs -- [(Int,Int)]
-
     let attrs = mconcat [z,fill,stroke,strokeWidth,pts,transf]
+
+    let dynStroke = fmap ((colouring ("stroke","var(--secondary-color)")) . Prelude.head) xs
+    let x1 = constDyn $ "x1" =: "0"
+    let y1 = constDyn $ "y1" =: "50"
+    let x2 = constDyn $ "x2" =: (showt widths)
+    let y2 = constDyn $ "y2" =: "50"
+    let attrs' = mconcat [z,dynStroke,x1,y1,x2,y2]
+
+    let dynStroke = fmap ((colouring ("stroke","var(--secondary-color)")) . Prelude.head) xs
+    let w = constDyn $ "width" =: (showt widths)
+    let h = constDyn $ "height" =: "100"
+    let attrs'' = mconcat [z,dynStroke,w,h]
+
+
+    elDynAttrNS (Just "http://www.w3.org/2000/svg") "rect" attrs'' $ return ()
     elDynAttrNS (Just "http://www.w3.org/2000/svg") "polyline" attrs $ return ()
+    elDynAttrNS (Just "http://www.w3.org/2000/svg") "line" attrs' $ return ()
     return ()
 
-
-
--- <svg height="200" width="500">
---   <polyline fill="none" stroke="black" stroke-width="3" points="20,20 40,25 60,40 80,120 120,140 200,180" 
---   Sorry, your browser does not support inline SVG.
--- </svg>
 
 
     -------- points to make polygons or paths
