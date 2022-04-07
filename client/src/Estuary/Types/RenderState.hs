@@ -64,8 +64,6 @@ data RenderState = RenderState {
   valueMap :: Tidal.ValueMap
   }
 
--- Map.mapKeys T.unpack -- Map Text a -> Map String a
--- fmap Tidal.toValue ... -- Map a Double -> Map a Value
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do

@@ -69,6 +69,7 @@ import Estuary.Render.DynamicsMode
 import Estuary.Render.MainBus
 import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
+import Estuary.Render.ZoneOp
 import qualified Estuary.Client.Settings as Settings
 
 
@@ -137,9 +138,9 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
   where f False = "~"
         f True = T.unpack sampleName
 
-render :: Context -> R ()
-render c = do
-  irc <- ask
+render :: R ()
+render = do
+  -- rEnv <- ask
   s <- get
   -- check if audio clock has advanced same amount as system clock
   t1System <- liftIO $ getCurrentTime
@@ -196,11 +197,11 @@ render c = do
   -- using renderStart and renderEnd from the state as the window to render
   when (not wait && not rewind) $ do
     updateTidalValueMap
-    let newDefs = zones $ ensemble $ ensembleC c
-    clearDeletedZones newDefs
-    traverseWithKey (renderZone c) newDefs
+    updateTempo
+    renderZoneOps
+    renderZones
     flushEvents
-    preAnimationFrame punctual
+    preAnimationFrame punctual -- ? shouldn't this be in the animationFrame loop instead ?
     -- calculate how much time this render cycle took and update load measurements
     t2System <- liftIO $ getCurrentTime
     t2Audio <- liftAudioIO $ audioTime
@@ -213,18 +214,27 @@ render c = do
     traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s -- *** SHOULDN'T BE HERE
     return ()
 
+renderZoneOps :: R ()
+renderZoneOps = getZoneOps >>= foldM renderZoneOp ()
 
-renderZone :: Context -> Int -> Definition -> R ()
-renderZone c z d = do
+renderZoneOp :: () -> ZoneOp -> R ()
+renderZoneOp _ (SetZoneOp n x) = renderZoneChanged n x
+-- renderZoneOp _ ClearAllZonesOp = do
+
+renderZones :: R ()
+renderZones = return () -- placeholder
+
+renderZone :: Int -> Definition -> R ()
+renderZone z d = do
   t1 <- liftIO $ getCurrentTime
   s <- get
   let prevDef = IntMap.lookup z $ cachedDefs s
   let d' = definitionForRendering d
   when (prevDef /= (Just d')) $ do
     maybeClearChangedZone z prevDef d'
-    renderZoneChanged c z d'
+    renderZoneChanged z d'
     modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
-  renderZoneAlways c z d'
+  renderZoneAlways z d'
   t2 <- liftIO $ getCurrentTime
   let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
   let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
@@ -319,31 +329,28 @@ renderHydra tNow z = do
     Just hydra -> liftIO $ Hydra.tick hydra elapsed
     Nothing -> return ()
 
-renderZoneChanged :: Context -> Int -> Definition -> R ()
-renderZoneChanged c z (TidalStructure x) = do
+renderZoneChanged :: Int -> Definition -> R ()
+renderZoneChanged z (TidalStructure x) = do
   let newParamPattern = toParamPattern x
-  s <- get
-  modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged c z (TextProgram x) = do
-  renderTextProgramChanged c z $ forRendering x
-renderZoneChanged c z (Sequence xs) = do
+  modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
+renderZoneChanged z (TextProgram x) = renderTextProgramChanged z $ forRendering x
+renderZoneChanged z (Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
-  s <- get
-  modify' $ \x -> x { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged _ _ _ = return ()
+  modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
+renderZoneChanged _ _ = return ()
 
-renderZoneAlways :: Context -> Int -> Definition -> R ()
-renderZoneAlways c z (TidalStructure _) = renderControlPattern c z
-renderZoneAlways c z (TextProgram x) = do
+renderZoneAlways :: Int -> Definition -> R ()
+renderZoneAlways z (TidalStructure _) = renderControlPattern z
+renderZoneAlways z (TextProgram x) = do
   let (_,_,evalTime) = forRendering x
-  renderTextProgramAlways c z evalTime
-renderZoneAlways c z (Sequence _) = renderControlPattern c z
-renderZoneAlways _ _ _ = return ()
+  renderTextProgramAlways z evalTime
+renderZoneAlways z (Sequence _) = renderControlPattern z
+renderZoneAlways _ _ = return ()
 
 
-renderTextProgramChanged :: Context -> Int -> TextProgram -> R ()
+renderTextProgramChanged :: Int -> TextProgram -> R ()
 
-renderTextProgramChanged c z (UnspecifiedNotation,x,eTime) = do
+renderTextProgramChanged z (UnspecifiedNotation,x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
   liftIO $ T.putStrLn $ T.pack $ show ns
   case determineTextNotation x ns of
@@ -360,9 +367,9 @@ renderTextProgramChanged c z (UnspecifiedNotation,x,eTime) = do
             _ -> do
               setZoneError z "no base notation specified"
               setBaseNotation z UnspecifiedNotation
-        _-> renderTextProgramChanged c z (n,x',eTime)
+        _-> renderTextProgramChanged z (n,x',eTime)
 
-renderTextProgramChanged c z (TidalTextNotation x,y,eTime) = do
+renderTextProgramChanged z (TidalTextNotation x,y,eTime) = do
   s <- get
   parseResult <- liftIO $ (return $! force (tidalParser x y)) `catch` (return . Left . (show :: SomeException -> String))
   case parseResult of
@@ -373,11 +380,11 @@ renderTextProgramChanged c z (TidalTextNotation x,y,eTime) = do
       modify' $ \xx -> xx { paramPatterns = insert z p $ paramPatterns xx }
     Left err -> setZoneError z $ T.pack err
 
-renderTextProgramChanged c z (Punctual,x,eTime) = (parseZone punctual) c z x eTime
-renderTextProgramChanged c z (CineCer0,x,eTime) = (parseZone cineCer0) c z x eTime
-renderTextProgramChanged c z (Hydra,x,_) = parseHydra c z x
+renderTextProgramChanged z (Punctual,x,eTime) = (parseZone punctual) z x eTime
+renderTextProgramChanged z (CineCer0,x,eTime) = (parseZone cineCer0) z x eTime
+renderTextProgramChanged z (Hydra,x,_) = parseHydra z x
 
-renderTextProgramChanged c z (TimeNot,x,eTime) = do
+renderTextProgramChanged z (TimeNot,x,eTime) = do
   let parseResult = TimeNot.runCanonParser $ T.unpack x
   case parseResult of
     Right p -> do
@@ -387,7 +394,7 @@ renderTextProgramChanged c z (TimeNot,x,eTime) = do
       modify' $ \xx -> xx { timeNots = insert z p (timeNots xx) }
     Left e -> setZoneError z (T.pack $ show e)
 
-{- renderTextProgramChanged c z (Seis8s,x,eTime) = do
+{- renderTextProgramChanged z (Seis8s,x,eTime) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
   case parseResult of
     Right p -> do
@@ -397,7 +404,7 @@ renderTextProgramChanged c z (TimeNot,x,eTime) = do
       modify' $ \xx -> xx { seis8ses = insert z p $ seis8ses xx }
     Left e -> setZoneError z (T.pack $ show e) -}
 
-renderTextProgramChanged c z (JSoLang x,y,eTime) = do
+renderTextProgramChanged z (JSoLang x,y,eTime) = do
   parseResult <- liftIO $ JSoLang.define y
   case parseResult of
     Right j -> do
@@ -408,7 +415,7 @@ renderTextProgramChanged c z (JSoLang x,y,eTime) = do
       liftIO $ T.putStrLn $ "defined JSoLang " <> x
     Left e -> setZoneError z (T.pack $ show e)
 
-renderTextProgramChanged c z (EphemeralNotation x,y,eTime) = do
+renderTextProgramChanged z (EphemeralNotation x,y,eTime) = do
   maybeJSoLang <- (Map.lookup x . jsoLangs) <$> get
   case maybeJSoLang of
     Just j -> do
@@ -417,14 +424,14 @@ renderTextProgramChanged c z (EphemeralNotation x,y,eTime) = do
         Right x' -> do
           liftIO $ T.putStrLn $ "result of parsing " <> x <> ":"
           liftIO $ T.putStrLn x'
-          renderTextProgramChanged c z (UnspecifiedNotation,x',eTime)
+          renderTextProgramChanged z (UnspecifiedNotation,x',eTime)
         Left e -> setZoneError z e
     Nothing -> setZoneError z $ "no ephemeral notation called " <> y <> " exists"
 
-renderTextProgramChanged c z _ = setZoneError z "renderTextProgramChanged: no match for base notation"
+renderTextProgramChanged z _ = setZoneError z "renderTextProgramChanged: no match for base notation"
 
-parseHydra :: Context -> Int -> Text -> R ()
-parseHydra c z t = do
+parseHydra :: Int -> Text -> R ()
+parseHydra z t = do
  s <- get
  parseResult <- liftIO $ try $ return $! Hydra.parseHydra t
  case parseResult of
@@ -445,40 +452,40 @@ parseHydra c z t = do
    Left exception -> setZoneError z (T.pack $ show (exception :: SomeException))
 
 
-renderTextProgramAlways :: Context -> Int -> UTCTime -> R ()
-renderTextProgramAlways c z eTime = do
+renderTextProgramAlways :: Int -> UTCTime -> R ()
+renderTextProgramAlways z eTime = do
   s <- get
   let baseNotation = IntMap.lookup z $ baseNotations s
-  renderBaseProgramAlways c z eTime $ baseNotation
+  renderBaseProgramAlways z eTime $ baseNotation
 
-renderBaseProgramAlways :: Context -> Int -> UTCTime -> Maybe TextNotation -> R ()
-renderBaseProgramAlways c z _ (Just (TidalTextNotation _)) = renderControlPattern c z
-renderBaseProgramAlways c z _ (Just TimeNot) = do
+renderBaseProgramAlways :: Int -> UTCTime -> Maybe TextNotation -> R ()
+renderBaseProgramAlways z _ (Just (TidalTextNotation _)) = renderControlPattern z
+renderBaseProgramAlways z _ (Just TimeNot) = do
   s <- get
   let p = IntMap.lookup z $ timeNots s
   case p of
     (Just p') -> do
-      let theTempo = (tempo . ensemble . ensembleC) c
+      let theTempo = tempoCache s
       let eTime = IntMap.findWithDefault (wakeTimeSystem s) z $ evaluationTimes s
       let wStart = renderStart s
       let wEnd = renderEnd s
       let oTime = firstCycleStartAfter theTempo eTime
       pushNoteEvents $ fmap TimeNot.mapForEstuary $ TimeNot.render oTime p' wStart wEnd
     Nothing -> return ()
-{- renderBaseProgramAlways c z _ (Just Seis8s) = do
+{- renderBaseProgramAlways z _ (Just Seis8s) = do
   s <- get
   let p = IntMap.lookup z $ seis8ses s
   case p of
     Just p' -> do
-      let theTempo = (tempo . ensemble . ensembleC) c
+      let theTempo = tempoCache s
       let wStart = renderStart s
       let wEnd = renderEnd s
       pushNoteEvents $ Seis8s.render p' theTempo wStart wEnd
     Nothing -> return () -}
-renderBaseProgramAlways _ _ _ _ = return ()
+renderBaseProgramAlways _ _ _ = return ()
 
-renderControlPattern :: Context -> Int -> R ()
-renderControlPattern c z = do
+renderControlPattern :: Int -> R ()
+renderControlPattern z = do
   wdOn <- webDirtOn
   sdOn <- superDirtOn
   when (wdOn || sdOn) $ do
@@ -489,17 +496,12 @@ renderControlPattern c z = do
       Just controlPattern' -> do
         let lt = renderStart s
         let rp = renderPeriod s
-        let tempo' = tempo $ ensemble $ ensembleC c
+        let tempo' = tempoCache s
         newEvents <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp tempo' controlPattern')
           `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
         pushTidalEvents newEvents
       Nothing -> return ()
 
-updateTidalValueMap :: R ()
-updateTidalValueMap = do
-  rEnv <- ask
-  m <- liftIO $ readIORef $ ccMap rEnv
-  modify' $ \x -> x { valueMap = fmap Tidal.toValue $ Map.mapKeys T.unpack m}
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> R ()
 calculateZoneRenderTimes z zrt = do
@@ -530,27 +532,24 @@ forkRenderThreads rEnv s ctxM cvsElement glCtx hCanvas riM = do
   putStrLn "about to initialRenderState"
   irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio
   putStrLn "returned from initialRenderState"
-  rsM <- newMVar irs
+  ctx <- readMVar ctxM -- note: this read (and ctxM itself) can be factored out (later) by just passing videoDivCache here instead
+  let irs' = irs { videoDivCache = videoDivElement ctx }
+  rsM <- newMVar irs'
   putStrLn "about to fork mainRenderThread..."
-  void $ forkIO $ mainRenderThread rEnv ctxM riM rsM
+  void $ forkIO $ mainRenderThread rEnv riM rsM
   putStrLn "returned from forking mainRenderThread"
   void $ forkIO $ animationThread rEnv rsM
   putStrLn "returned from forking animationThread"
   return rEnv
 
-mainRenderThread :: RenderEnvironment -> MVar Context -> MVar RenderInfo -> MVar RenderState -> IO ()
-mainRenderThread rEnv ctxM riM rsM = do
-  ctx <- readMVar ctxM
+mainRenderThread :: RenderEnvironment -> MVar RenderInfo -> MVar RenderState -> IO ()
+mainRenderThread rEnv riM rsM = do
   rs <- takeMVar rsM
-  rs' <- runR (render ctx) rEnv rs
-  let rs'' = rs' {
-    tempoCache = tempo $ ensemble $ ensembleC ctx,
-    videoDivCache = videoDivElement ctx
-    }
-  putMVar rsM rs''
-  swapMVar riM (info rs'') -- copy RenderInfo from state into MVar for instant reading elsewhere
-  _ <- runR sleepIfNecessary rEnv rs''
-  mainRenderThread rEnv ctxM riM rsM
+  rs' <- runR render rEnv rs
+  putMVar rsM rs'
+  swapMVar riM (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
+  _ <- runR sleepIfNecessary rEnv rs'
+  mainRenderThread rEnv riM rsM
 
 animationThread :: RenderEnvironment -> MVar RenderState -> IO ()
 animationThread rEnv rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do

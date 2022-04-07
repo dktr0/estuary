@@ -4,9 +4,11 @@ module Estuary.Render.R where
 
 import Data.Time
 import Data.Text (Text)
+import qualified Data.Text as T
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Control.Exception (evaluate,catch,SomeException,try)
+import Control.Concurrent.MVar
 import Data.IntMap.Strict as IntMap
 import Data.Map.Strict as Map
 import Data.IORef
@@ -16,14 +18,17 @@ import TextShow
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
 
+import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
--- import Estuary.Render.DynamicsMode
+
 import Estuary.Render.MainBus
 import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
+import Estuary.Render.ZoneOp
+import Estuary.Types.Tempo
 import Estuary.Resources
 import Estuary.Types.ResourceOp
 import Estuary.Client.Settings as Settings
@@ -36,8 +41,38 @@ data RenderEnvironment = RenderEnvironment {
   superDirt :: SuperDirt,
   resources :: Resources,
   ccMap :: IORef (Map.Map Text Double),
-  _settings :: IORef Settings
+  _settings :: IORef Settings,
+  zoneOps :: MVar [ZoneOp],
+  tempoOp :: MVar (Maybe Tempo)
   }
+
+
+addZoneOp :: MonadIO m => RenderEnvironment -> ZoneOp -> m ()
+addZoneOp re x = liftIO $ do
+  ops <- takeMVar $ zoneOps re
+  putMVar (zoneOps re) $ ops ++ [x]
+
+getZoneOps :: R [ZoneOp]
+getZoneOps = do
+  mv <- asks zoneOps
+  ops <- liftIO $ takeMVar mv
+  liftIO $ putMVar mv []
+  return ops
+
+setTempo :: MonadIO m => RenderEnvironment -> Tempo -> m ()
+setTempo re x = liftIO $ do
+  _ <- takeMVar $ tempoOp re
+  putMVar (tempoOp re) $ Just x
+
+updateTempo :: R ()
+updateTempo = do
+  mv <- asks tempoOp
+  t <- liftIO $ takeMVar mv
+  liftIO $ putMVar mv Nothing
+  case t of
+    Just t' -> modify' $ \s -> s { tempoCache = t' }
+    Nothing -> return ()
+
 
 initialRenderEnvironment :: Settings -> IO RenderEnvironment
 initialRenderEnvironment s = do
@@ -52,6 +87,8 @@ initialRenderEnvironment s = do
   addResourceOp resources' $ ResourceListURL "samples/resources.json"
   ccMap' <- newIORef Map.empty
   settings' <- newIORef s
+  zoneOps' <- newMVar []
+  tempoOp' <- newMVar Nothing
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,
@@ -59,7 +96,9 @@ initialRenderEnvironment s = do
     superDirt = sd,
     resources = resources',
     ccMap = ccMap',
-    _settings = settings'
+    _settings = settings',
+    zoneOps = zoneOps',
+    tempoOp = tempoOp'
   }
 
 setCC :: Int -> Double -> RenderEnvironment -> IO ()
@@ -69,6 +108,12 @@ getCC :: Int -> RenderEnvironment -> IO (Maybe Double)
 getCC n irc = do
   m <- readIORef $ ccMap irc
   return $ Map.lookup (showt n) m
+
+updateTidalValueMap :: R ()
+updateTidalValueMap = do
+  rEnv <- ask
+  m <- liftIO $ readIORef $ ccMap rEnv
+  modify' $ \x -> x { valueMap = fmap Tidal.toValue $ Map.mapKeys T.unpack m}
 
 
 type R = ReaderT RenderEnvironment (StateT RenderState IO)

@@ -37,8 +37,8 @@ cineCer0 = TextNotationRenderer {
   }
 
 
-_parseZone :: Context -> Int -> Text -> UTCTime -> R ()
-_parseZone c z x eTime = do
+_parseZone :: Int -> Text -> UTCTime -> R ()
+_parseZone z x eTime = do
   let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack x -- Either String CineCer0Spec
   case parseResult of
     Right spec -> do
