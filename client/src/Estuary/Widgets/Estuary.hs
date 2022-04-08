@@ -66,9 +66,9 @@ import Estuary.Render.R as R
 import Estuary.Render.MainBus
 import Estuary.Client.Settings as Settings
 
-keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
-keyboardHintsCatcher rEnv settings ctxM riM = mdo
-  (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardShortcut
+keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar RenderInfo -> m ()
+keyboardHintsCatcher rEnv settings riM = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings riM keyboardShortcut
   let e = HTMLDivElement $ pToJSVal $ _el_element theElement
   togTerminal <- (24 <$) <$> catchKeyboardShortcut e 24 True True
   togStats <- (12 <$) <$> catchKeyboardShortcut e 12 True True
@@ -90,26 +90,26 @@ settingsForWidgets rEnv iSettings hints = do
   return settings
 
 
-estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> Event t Int -> m ()
-estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar RenderInfo -> Event t Int -> m ()
+estuaryWidget rEnv iSettings riM keyboardShortcut = divClass "estuary" $ mdo
 
   settings <- settingsForWidgets rEnv iSettings hints
 
-  vidDiv <- cinecer0Widget settings ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
+  vidDiv <- cinecer0Widget settings
   punctualZIndex' <- holdUniqDyn $ fmap Settings.punctualZIndex settings
-  cvsElement <- canvasWidget settings punctualZIndex' ctx -- canvas for Punctual
+  cvsElement <- canvasWidget settings punctualZIndex' -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
   improvizZIndex' <- holdUniqDyn $ fmap Settings.improvizZIndex settings
-  iCanvas <- canvasWidget settings improvizZIndex' ctx -- canvas for Improviz
+  iCanvas <- canvasWidget settings improvizZIndex' -- canvas for Improviz
   hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
-  hCanvas <- canvasWidget settings hydraZIndex' ctx -- canvas for Hydra
+  hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
 
-  iCtx <- liftIO $ readMVar ctxM
+  nowUtc <- liftIO $ getCurrentTime
+  let iCtx = initialContext nowUtc
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
 
   liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas riM
 
-  performContext ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
   let responsesFromEnsembleRequests = fmap ((:[]) . EnsembleResponse) $ fmapMaybe ensembleRequestsToResponses commandEnsembleRequests
@@ -207,8 +207,8 @@ hintsToSettingsChange = g . catMaybes . fmap f
     g (x:[]) = Just x
     g xs = Just $ foldl1 (.) xs
 
-cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> Dynamic t Context -> m HTMLDivElement
-cinecer0Widget settings ctx = do
+cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> m HTMLDivElement
+cinecer0Widget settings = do
   let canvasVisible = Settings.canvasOn <$> settings
   let canvasVisible' = fmap (("visibility:" <>)  . bool "hidden" "visible") canvasVisible
   dynZIndex <- holdUniqDyn $ fmap Settings.cineCer0ZIndex settings
@@ -219,8 +219,8 @@ cinecer0Widget settings ctx = do
   let attrs = (<>) <$> dynAttrs <*> resMap
   liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
 
-canvasWidget :: MonadWidget t m => Dynamic t Settings -> Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
-canvasWidget settings dynZIndex ctx = do
+canvasWidget :: MonadWidget t m => Dynamic t Settings -> Dynamic t Int -> m HTMLCanvasElement
+canvasWidget settings dynZIndex = do
   let canvasVisible = Settings.canvasOn <$> settings
   let canvasVisible' = fmap (("visibility:" <>)  . bool "hidden" "visible") canvasVisible
   let dynZIndex' = fmap (T.pack . show) dynZIndex -- :: Dynamic t Text
@@ -240,11 +240,6 @@ pollRenderInfo riM = do
   newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
   holdDyn riInitial newInfo
 
-
-performContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
-performContext cMvar cDyn = do
-  iCtx <- sample $ current cDyn
-  performEvent_ $ fmap (liftIO . (\x -> swapMVar cMvar x >> return ())) $ updated cDyn -- transfer whole Context for render/animation threads
 
   -- when the superDirt flag changes, make it so
   -- TODO: this is broken, needs to be re-implemented!!!

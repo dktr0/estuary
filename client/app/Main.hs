@@ -46,14 +46,12 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  nowUtc <- getCurrentTime
-  context <- newMVar $ initialContext nowUtc
   renderInfo <- newMVar $ emptyRenderInfo
 
   settings <- getSettingsFromURI
   setThemeIO $ theme settings
   rEnv <- initialRenderEnvironment settings
-  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings context renderInfo
+  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings renderInfo
 
   -- Signal the splash page that estuary is loaded.
   -- js_setIconStateLoaded
