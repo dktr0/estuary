@@ -95,7 +95,7 @@ estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ md
 
   settings <- settingsForWidgets rEnv iSettings hints
 
-  cinecer0Widget settings ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
+  vidDiv <- cinecer0Widget settings ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
   punctualZIndex' <- holdUniqDyn $ fmap Settings.punctualZIndex settings
   cvsElement <- canvasWidget settings punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
@@ -107,7 +107,7 @@ estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ md
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
 
-  liftIO $ forkRenderThreads rEnv iSettings ctxM cvsElement glCtx hCanvas riM
+  liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas riM
 
   performContext ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
@@ -207,9 +207,8 @@ hintsToSettingsChange = g . catMaybes . fmap f
     g (x:[]) = Just x
     g xs = Just $ foldl1 (.) xs
 
-cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> MVar Context -> Dynamic t Context -> m ()
-cinecer0Widget settings ctxM ctx = do
-  ic0 <- liftIO $ takeMVar ctxM
+cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> Dynamic t Context -> m HTMLDivElement
+cinecer0Widget settings ctx = do
   let canvasVisible = Settings.canvasOn <$> settings
   let canvasVisible' = fmap (("visibility:" <>)  . bool "hidden" "visible") canvasVisible
   dynZIndex <- holdUniqDyn $ fmap Settings.cineCer0ZIndex settings
@@ -218,9 +217,7 @@ cinecer0Widget settings ctxM ctx = do
   res <- fmap pixels <$> (holdUniqDyn $ fmap Settings.resolution settings)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
   let attrs = (<>) <$> dynAttrs <*> resMap
-  videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
-  let ic = ic0 { videoDivElement = Just videoDiv }
-  liftIO $ putMVar ctxM ic
+  liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
 
 canvasWidget :: MonadWidget t m => Dynamic t Settings -> Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
 canvasWidget settings dynZIndex ctx = do

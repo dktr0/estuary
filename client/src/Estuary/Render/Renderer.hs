@@ -29,7 +29,7 @@ import TextShow
 import Sound.OSC.Datum
 import Text.Parsec (ParseError)
 import qualified Data.ByteString as B
-import GHCJS.DOM.Types (HTMLCanvasElement)
+import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
 import Data.Witherable
 import Data.Char
 import Data.IORef
@@ -49,7 +49,6 @@ import qualified Estuary.Languages.Hydra.Render as Hydra
 
 import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
-import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
@@ -196,56 +195,41 @@ render = do
   -- if there is no reason not to traverse/render zones, then do so
   -- using renderStart and renderEnd from the state as the window to render
   when (not wait && not rewind) $ do
-    updateTidalValueMap
     updateTempo
+    updateTidalValueMap
     renderZoneOps
     renderZones
     flushEvents
-    preAnimationFrame punctual -- ? shouldn't this be in the animationFrame loop instead ?
+
     -- calculate how much time this render cycle took and update load measurements
     t2System <- liftIO $ getCurrentTime
-    t2Audio <- liftAudioIO $ audioTime
     let mostRecentRenderTime = diffUTCTime t2System t1System
     let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
     let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac maxRenderPeriod)
     modify' $ \x -> x { renderTime = newRenderTime }
     modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
-    traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s -- *** SHOULDN'T BE HERE
-    traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s -- *** SHOULDN'T BE HERE
     return ()
+
 
 renderZoneOps :: R ()
 renderZoneOps = getZoneOps >>= foldM renderZoneOp ()
 
 renderZoneOp :: () -> ZoneOp -> R ()
-renderZoneOp _ (SetZoneOp n x) = renderZoneChanged n x
--- renderZoneOp _ ClearAllZonesOp = do
+
+renderZoneOp _ (SetZoneOp z x) = do
+  defs <- gets cachedDefs
+  let x' = definitionForRendering x
+  maybeClearChangedZone z (IntMap.lookup z defs) x'
+  renderZoneChanged z x'
+  modify' $ \s -> s { cachedDefs = insert z x' (cachedDefs s) }
+
+renderZoneOp _ ClearAllZonesOp = do
+  gets cachedDefs >>= traverseWithKey clearZone
+  modify' $ \s -> s { cachedDefs = empty }
 
 renderZones :: R ()
-renderZones = return () -- placeholder
+renderZones = gets cachedDefs >>= traverseWithKey renderZoneAlways >> return ()
 
-renderZone :: Int -> Definition -> R ()
-renderZone z d = do
-  t1 <- liftIO $ getCurrentTime
-  s <- get
-  let prevDef = IntMap.lookup z $ cachedDefs s
-  let d' = definitionForRendering d
-  when (prevDef /= (Just d')) $ do
-    maybeClearChangedZone z prevDef d'
-    renderZoneChanged z d'
-    modify' $ \x -> x { cachedDefs = insert z d' (cachedDefs s) }
-  renderZoneAlways z d'
-  t2 <- liftIO $ getCurrentTime
-  let prevZoneRenderTimes = findWithDefault (newAverage 20) z $ zoneRenderTimes s
-  let newZoneRenderTimes = updateAverage prevZoneRenderTimes (realToFrac $ diffUTCTime t2 t1)
-  modify' $ \x -> x { zoneRenderTimes = insert z newZoneRenderTimes (zoneRenderTimes s) }
-
-
-clearDeletedZones :: IntMap.IntMap Definition -> R ()
-clearDeletedZones newDefs = do
-  prevDefs <- gets cachedDefs
-  IntMap.traverseWithKey clearZone $ IntMap.difference prevDefs newDefs
-  return ()
 
 maybeClearChangedZone :: Int -> Maybe Definition -> Definition -> R ()
 maybeClearChangedZone _ Nothing y = return ()
@@ -275,7 +259,6 @@ clearTextProgram z (Hydra,_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ 
 clearTextProgram _ _ = return ()
 
 
-
 renderAnimation :: R ()
 renderAnimation = do
   t1 <- liftIO $ getCurrentTime
@@ -283,11 +266,12 @@ renderAnimation = do
   fpsl <- fpsLimit
   let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
   when okToRender $ do
+    preAnimationFrame punctual
     ns <- baseNotations <$> get
     traverseWithKey (renderZoneAnimation t1) ns
     postAnimationFrame punctual
     t2 <- liftIO $ getCurrentTime
-    s  <- get
+    s <- get
     let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 wta)
     let newAnimationTime = updateAverage (animationTime s) (realToFrac $ diffUTCTime t2 t1)
     let newAnimationFPS = round $ 1 / getAverage newAnimationDelta
@@ -303,15 +287,7 @@ renderAnimation = do
       }
 
 renderZoneAnimation :: UTCTime -> Int -> TextNotation -> R ()
-renderZoneAnimation tNow z n = do
-  t1 <- liftIO $ getCurrentTime
-  renderZoneAnimationTextProgram tNow z n
-  t2 <- liftIO $ getCurrentTime
-  prevTimes <- zoneAnimationTimes <$> get
-  let prevZoneAnimationTimes = findWithDefault (newAverage 20) z prevTimes
-  let newZoneAnimationTimes = updateAverage prevZoneAnimationTimes (realToFrac $ diffUTCTime t2 t1)
-  modify' $ \x -> x { zoneAnimationTimes = insert z newZoneAnimationTimes prevTimes }
-  return ()
+renderZoneAnimation tNow z n = renderZoneAnimationTextProgram tNow z n
 
 renderZoneAnimationTextProgram :: UTCTime -> Int -> TextNotation -> R ()
 renderZoneAnimationTextProgram tNow z Punctual = (zoneAnimationFrame punctual) tNow z
@@ -523,8 +499,8 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: RenderEnvironment -> Settings.Settings -> MVar Context -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
-forkRenderThreads rEnv s ctxM cvsElement glCtx hCanvas riM = do
+forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
+forkRenderThreads rEnv s vidDiv cvsElement glCtx hCanvas riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv
@@ -532,8 +508,7 @@ forkRenderThreads rEnv s ctxM cvsElement glCtx hCanvas riM = do
   putStrLn "about to initialRenderState"
   irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio
   putStrLn "returned from initialRenderState"
-  ctx <- readMVar ctxM -- note: this read (and ctxM itself) can be factored out (later) by just passing videoDivCache here instead
-  let irs' = irs { videoDivCache = videoDivElement ctx }
+  let irs' = irs { videoDivCache = Just vidDiv }
   rsM <- newMVar irs'
   putStrLn "about to fork mainRenderThread..."
   void $ forkIO $ mainRenderThread rEnv riM rsM
