@@ -17,41 +17,52 @@ import Estuary.Widgets.Reflex
 
 notePadWidget :: MonadWidget t m => Dynamic t NotePad -> W t m (Variable t NotePad)
 notePadWidget delta = divClass "notepadContainers" $ mdo
+  let pageNumSampled = fmap fst delta
+  let notesSampled = fmap snd delta -- []
+
   let changes = currentValue v
   let pageNum = fmap fst changes
   let notes = fmap snd changes -- []
-  let setNoteContent' = fmap setNoteContent contentEv -- :: m (Event t (Notepad -> Notepad))
-  buttons <- divClass "rowOfButtons" $ do
+
+  buttons <- divClass "notepad-rowOfButtons" $ do
     -- add note
-    addPageButton <- clickableDivClass "+" "prevNextButtons" -- :: m (Event t ())
+    addPageButton <- clickableDivClass "+" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let addPage = addNote <$ addPageButton -- :: m (Event t (Notepad -> Notepad))
     -- erase note
-    erasePageButton <- clickableDivClass "-" "prevNextButtons" -- :: m (Event t ())
+    erasePageButton <- clickableDivClass "-" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let erasePage = eraseNote <$ erasePageButton -- :: m (Event t (Notepad -> Notepad))
     -- prev page
-    prevPageButton <- clickableDivClass "←" "prevNextButtons" -- :: m (Event t ())
+    prevPageButton <- clickableDivClass "←" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let prevPage = prevPageOfNote <$ prevPageButton -- :: m (Event t (Notepad -> Notepad))
     -- next page
-    nextPageButton <- clickableDivClass "→" "prevNextButtons" -- :: m (Event t ())
+    nextPageButton <- clickableDivClass "→" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
     let nextPage = nextPageOfNote <$ nextPageButton -- :: m (Event t (Notepad -> Notepad))
     --
     return $ leftmost [addPage, erasePage, prevPage, nextPage]
+
   let noteTupple = Seq.index <$> notes <*> pageNum -- (t,c)
-  (titleEv,contentEv) <- titleContentWidget (fmap fst noteTupple) (fmap snd noteTupple) -- :: (Event t Text, Event t Text)
+  let noteTuppleSampled = Seq.index <$> notesSampled <*> pageNumSampled -- (t,c)
+
+  (titleEv,contentEv) <- titleContentWidget (fmap fst noteTuppleSampled) (fmap snd noteTuppleSampled) (fmap fst noteTupple) (fmap snd noteTupple) -- :: (Event t Text, Event t Text)
+
   let setNoteTitle' = fmap setNoteTitle titleEv -- :: m (Event t (Notepad -> Notepad))
+  let setNoteContent' = fmap setNoteContent contentEv -- :: m (Event t (Notepad -> Notepad))
   let localEvs = mergeWith (.) [setNoteTitle',setNoteContent', buttons]
   let localUpdates = attachWith (flip ($)) (current $ currentValue v) localEvs
   v <- variable delta localUpdates
   return v
 
--- & textAreaConfig_setValue .~ changes
 
-titleContentWidget :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> m (Event t Text,Event t Text)
-titleContentWidget t c = divClass "notepadContainers code-font" $ do
-  x <- textInput $ def & textInputConfig_setValue .~ (updated t)
+titleContentWidget :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> Dynamic t Text -> Dynamic t Text -> m (Event t Text,Event t Text)
+titleContentWidget it ic t c = divClass "notepadContainers code-font" $ mdo
+  it' <- sample $ current it
+  ic' <- sample $ current ic
+  x <- textInput $ def & textInputConfig_initialValue .~ it'
+                       & textInputConfig_setValue .~ (updated t)
                        & attributes .~ constDyn ("class" =: "notepage-title code-font primary-color")
   let title = _textInput_input x -- :: Event t Text
-  y <- textArea $ def & textAreaConfig_setValue .~ (updated c)
+  y <- textArea $ def & textAreaConfig_initialValue .~ ic'
+                      & textAreaConfig_setValue .~ (updated c)
                       & attributes .~ constDyn ("class" =: "notepage-content code-font primary-color primary-borders")
   let content = _textArea_input y
   return $ (title,content)
@@ -64,12 +75,12 @@ titleContentWidget t c = divClass "notepadContainers code-font" $ do
 
 nextPageOfNote :: NotePad -> NotePad
 nextPageOfNote (currentPage,listOfNotes)
-  | currentPage >= Prelude.length listOfNotes = (0,listOfNotes)
+  | currentPage >= (Prelude.length listOfNotes - 1) = (0,listOfNotes)
   | otherwise = ((currentPage+1),listOfNotes)
 
 prevPageOfNote :: NotePad -> NotePad
 prevPageOfNote (currentPage,listOfNotes)
-  | currentPage <= 0 = ((Prelude.length listOfNotes), listOfNotes)
+  | currentPage <= 0 = ((Prelude.length listOfNotes)-1, listOfNotes)
   | otherwise = ((currentPage-1),listOfNotes)
 
 
@@ -77,7 +88,7 @@ prevPageOfNote (currentPage,listOfNotes)
 
 addNote :: NotePad -> NotePad
 addNote notepad = do
-  let note = ("","")
+  let note = ("NewTitle","NewContent")
   (fst notepad, insertAt (fst notepad) note (snd notepad))
 
 eraseNote :: NotePad -> NotePad
@@ -110,5 +121,6 @@ replaceTitleInPage newT (currentT,currentC) = (newT,currentC)
 
 replaceContentInPage :: Text -> NotePage -> NotePage
 replaceContentInPage newC (currentT,currentC) = (currentT,newC)
+
 
 --

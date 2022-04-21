@@ -762,14 +762,6 @@ ______________________________
 	margin-bottom: 0.5em;
 }
 
-.rowOfButtons{
-  display: flex;
-  flex-direction: row;
-  height: 15%;
-  width: 100%;
-  background-color: transparent;
-}
-
 .prevNextButtons{
 	width: 6%;
   text-align: center;
@@ -1961,6 +1953,54 @@ margin-top: 0.2em;
   overflow: hidden;
   background-color: transparent;
 }
+
+.notepad-Title {
+	width: 100%;
+  text-align: center;
+  font-weight: bold;
+	border: none;
+	background-color: transparent;
+  margin-top: 0.2em;
+}
+
+.notepage-title {
+	width: 100%;
+  font-weight: bold;
+	border: 1px solid var(--secondary-color);
+	background-color: transparent;
+  margin-top: 0.5em;
+}
+
+.notepage-content {
+	display: flex;
+	height: 100%;
+  width: 100%;
+	border: 1px solid var(--secondary-color);
+	background-color: transparent;
+}
+
+.notepad-rowOfButtons{
+  display: flex;
+  flex-direction: row;
+  height: 2em;
+  width: 100%;
+  background-color: transparent;
+  margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.notepad-prevNextButtons{
+	width: 100%;
+	height: 1.5em;
+  text-align: center;
+	border: 1px solid var(--secondary-color);
+}
+
+.notepad-prevNextButtons button {
+	background-color: var(--secondary-color);
+	color: var(--primary-color);
+}
+
 .selectPeriodicity {
 /* 	background-color: yellow; */
 }
@@ -1968,19 +2008,4 @@ margin-top: 0.2em;
 	border: none;
     box-shadow: inset 0 0 3px var(--primary-color);
 
-}
-
-.notepage-title {
-	width: 100%;
-  font-weight: bold;
-	border: none;
-	background-color: transparent;
-}
-
-.notepage-content {
-	display: flex;
-	height: 100%;
-  width: 100%;
-	border: none;
-	background-color: transparent;
 }

@@ -29,6 +29,7 @@ dumpView (BorderDiv vs) = "border " <> dumpViews vs
 dumpView (Link url vs) = "link \"" <> url <> "\" " <> dumpViews vs
 dumpView (BulletPoints vs) = "bulletpoints " <> dumpViews vs
 dumpView (GridView cols rows vs) = "grid " <> showInt cols <> " " <> showInt rows <> " " <> dumpViews vs
+dumpView (CollapsableView v) = "collapsable" <> dumpView v
 -- dumpView (Text t) = ...
 dumpView (LabelView x) = "label " <> showInt x
 dumpView (StructureView x) = "structure " <> showInt x
@@ -65,6 +66,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> linkView
           <|> bulletpointsParser
           <|> gridViewParser
+          <|> collapsableViewParser
           <|> labelParser  -- localview (grid 1 1  [border [label 0,code 1 0]])
           <|> structureParser
           <|> codeViewView  -- localview (grid 1 1 [border [label 0,code 1 0]])
@@ -193,7 +195,7 @@ sequenceParser' :: H (Int -> View)
 sequenceParser' = sequenceFunc <$ reserved "sequence"
 
 sequenceFunc :: Int -> View
-sequenceFunc x = StructureView x
+sequenceFunc x = SequenceView x
 --
 
 
@@ -291,6 +293,19 @@ gridViewParser''' = gridViewFunc <$ (reserved "grid")
 
 gridViewFunc :: Int -> Int -> [View] -> View
 gridViewFunc cols rows vx = GridView cols rows vx
+
+
+-- collapsable View
+
+collapsableViewParser :: H View
+collapsableViewParser = collapsableViewParser' <*> viewParser
+
+collapsableViewParser' :: H (View -> View)
+collapsableViewParser' = collapsableViewFunc <$ reserved "collapsable"
+
+collapsableViewFunc :: View -> View
+collapsableViewFunc v = CollapsableView v
+
 
 -- div View
 divView :: H View

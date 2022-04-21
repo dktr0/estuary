@@ -5,8 +5,7 @@ module Estuary.Widgets.Estuary where
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault,append)
-import Reflex.Dom.Contrib.KeyEvent
+import Reflex.Dom hiding (Request,Response,append)
 import Reflex.Dom.Old
 import Reflex.Dynamic
 import Data.Time
@@ -16,7 +15,7 @@ import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
-import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..),HTMLDivElement(..))
+import GHCJS.DOM.Types hiding (Event,Request)
 import GHCJS.Marshal.Pure
 import GHCJS.DOM.EventM
 import Data.Functor (void)
@@ -70,20 +69,12 @@ import Estuary.Client.Settings as Settings
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher rEnv settings ctxM riM = mdo
   (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardShortcut
-  let e = _el_element theElement
-  e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
-    y <- getKeyEvent
-    if (isJust $ keyEventToHint y) then (preventDefault >> return (keyEventToHint y)) else return Nothing
-  let keyboardShortcut = fmapMaybe id e'
+  let e = HTMLDivElement $ pToJSVal $ _el_element theElement
+  togTerminal <- (24 <$) <$> catchKeyboardShortcut e 24 True True
+  togStats <- (12 <$) <$> catchKeyboardShortcut e 12 True True
+  let keyboardShortcut = leftmost [togTerminal,togStats]
   return ()
 
-
--- uhoh: not sure if keyboard short cuts are working, or even what keys are represented by 24 and 12!...
-keyEventToHint :: KeyEvent -> Maybe Int
-keyEventToHint x
-  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 24) = Just 24 -- toggle terminal
-  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just 12 -- toggle statistics
-keyEventToHint _ = Nothing
 
 keyboardHintsW :: MonadWidget t m => Event t Int -> W t m ()
 keyboardHintsW x = do
