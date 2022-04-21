@@ -122,7 +122,7 @@ snippetParser':: H (T.Text -> View)
 snippetParser' = snippetParser'' <*> assignTextNotation
 
 snippetParser'':: H (T.Text -> T.Text -> View)
-snippetParser'' = snippetParser''' <*> assignBool
+snippetParser'' = snippetParser''' <*> bools
 
 snippetParser''':: H (Bool -> T.Text -> T.Text -> View)
 snippetParser''' = snippetParser'''' <*> int
@@ -426,8 +426,8 @@ formatText:: T.Text -> T.Text
 formatText x = T.replace "\"" "\\\"" x
 
 boolToText:: Bool -> T.Text
-boolToText True = "explicit"
-boolToText False = "brief"
+boolToText True = "True"
+boolToText False = "False"
 
 ----- parse languages as textNotation
 assignTextNotation :: H T.Text
@@ -439,8 +439,3 @@ assignTextNotation =
   "timenot" <$ reserved "timenot" <|>
   "seis8s" <$ reserved "seis8s" <|>
   "hydra" <$ reserved "hydra"
-
-assignBool:: H Bool
-assignBool =
-  True <$ reserved "explicit" <|>
-  False <$ reserved "brief"
