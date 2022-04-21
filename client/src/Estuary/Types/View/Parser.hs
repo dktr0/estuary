@@ -13,6 +13,8 @@ import Control.Monad.Except
 
 import Estuary.Types.View
 import Estuary.Types.View.Presets
+import Estuary.Types.TextNotation
+import Estuary.Types.TidalParser
 
 type H = Haskellish ()
 
@@ -20,6 +22,8 @@ dumpView :: View -> T.Text
 dumpView EmptyView = "empty"
 dumpView (Div css vs) = "div \"" <> css <> "\"" <> dumpViews vs
 dumpView (Views vs) = dumpViews vs
+dumpView (Columns vs) = "cols " <> dumpViews vs
+dumpView (Rows vs) = "rows " <> dumpViews vs
 dumpView (Paragraph vs) = "paragraph " <> dumpViews vs
 dumpView (BorderDiv vs) = "border " <> dumpViews vs
 dumpView (Link url vs) = "link \"" <> url <> "\" " <> dumpViews vs
@@ -30,7 +34,7 @@ dumpView (LabelView x) = "label " <> showInt x
 dumpView (StructureView x) = "structure " <> showInt x
 dumpView (CodeView x y) = "code " <> showInt x <> " " <> showInt y
 dumpView (SequenceView z) = "sequence " <> showInt z
--- dumpView (Example tn txt) = ...
+dumpView (Snippet z b tn txt) = "snippet " <> showInt z <> " " <> (boolToText b) <> " " <> (notationToText tn) <> (" \""<>(formatText txt)<>"\"")
 dumpView EnsembleStatusView = "ensembleStatus"
 dumpView TempoView = "tempo"
 dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
@@ -42,8 +46,7 @@ dumpView (SeeTimeView z) = "timeVision " <> showInt z
 dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
 dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
-dumpView LoadVisionView = "loadVision"
-dumpView GraphVisionView = "grafo" 
+dumpView (LoadView x) = "load " <> showInt x
 
 
 dumpView _ = " "
@@ -55,6 +58,8 @@ viewParser :: H View
 viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> divView
           <|> views -- localview [[label 0,code 1 0]]
+          <|> columns
+          <|> rows
           <|> paragraphParser
           <|> borderParser  -- localview (grid 2 1  [border [label 0,code 1 0], border [label 2,code 3 0]])
           <|> linkView
@@ -64,7 +69,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> structureParser
           <|> codeViewView  -- localview (grid 1 1 [border [label 0,code 1 0]])
           <|> sequenceParser
-          -- currently not parsing Example...
+          <|> snippetParser
           <|> ensembleStatusView
           <|> tempoView
           <|> rouletteViewView -- localview (grid 2 2 [roulette 0 0,roulette 1 0,roulette 2 0,roulette 3 0])
@@ -78,7 +83,6 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> calendarEventParser
           <|> genGridParser
           <|> loadVisionParser
-          <|> graphVisionParser
 
 genGridParser :: H View
 genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
@@ -100,6 +104,38 @@ calendarEventFunc :: Int -> View
 calendarEventFunc x = CalendarEventView x
 
 --
+loadVisionParser :: H View
+loadVisionParser = loadVisionParser' <*> int
+
+loadVisionParser' :: H (Int -> View)
+loadVisionParser' = loadVisionFunc <$ reserved "load"
+
+loadVisionFunc :: Int -> View
+loadVisionFunc x = LoadView $ (x `mod` 3)
+
+-- Snippet z n t
+
+snippetParser:: H View
+snippetParser = snippetParser' <*> textLiteral
+
+snippetParser':: H (T.Text -> View)
+snippetParser' = snippetParser'' <*> assignTextNotation
+
+snippetParser'':: H (T.Text -> T.Text -> View)
+snippetParser'' = snippetParser''' <*> assignBool
+
+snippetParser''':: H (Bool -> T.Text -> T.Text -> View)
+snippetParser''' = snippetParser'''' <*> int
+
+snippetParser'''':: H (Int -> Bool -> T.Text -> T.Text -> View)
+snippetParser'''' = snippetViewFunc <$ (reserved "snippet") 
+
+snippetViewFunc :: Int -> Bool -> T.Text -> T.Text -> View
+snippetViewFunc z b tn sn = Snippet z b (textToNotation' tn) sn
+
+
+-- 
+
 seeTimeParser :: H View
 seeTimeParser = seeTimeParser' <*> int
 
@@ -209,6 +245,7 @@ paragraphParser' = paragraphFunc <$ reserved "paragraph"
 
 paragraphFunc :: [View] -> View
 paragraphFunc vx = Paragraph vx
+
 --
 views :: H View
 views = do
@@ -218,6 +255,27 @@ views = do
 
 viewsParser :: H [View]
 viewsParser = list viewParser
+
+--
+
+rows:: H View
+rows = rowParser <*> viewsParser
+
+rowParser:: H ([View] -> View)
+rowParser = rowFunc <$ reserved "rows"
+
+rowFunc:: [View] -> View
+rowFunc vs = Rows vs
+
+columns:: H View
+columns = columnParser <*> viewsParser
+
+columnParser:: H ([View] -> View)
+columnParser = columnFunc <$ reserved "cols"
+
+columnFunc:: [View] -> View
+columnFunc vs = Columns vs
+
 --
 gridViewParser :: H View
 gridViewParser =  gridViewParser' <*> viewsParser
@@ -311,18 +369,6 @@ audioMapViewFunc :: View
 audioMapViewFunc = AudioMapView
 
 --
-loadVisionParser :: H View
-loadVisionParser = loadVisionFunc <$ (reserved "loadVision")
-
-loadVisionFunc :: View
-loadVisionFunc = LoadVisionView
-
-graphVisionParser :: H View
-graphVisionParser = graphVisionFunc <$ (reserved "grafo")
-
-graphVisionFunc :: View
-graphVisionFunc = GraphVisionView
---
 
 iFrameParser :: H View
 iFrameParser = (reserved "iFrame" >> return IFrame) <*> textLiteral
@@ -331,6 +377,9 @@ iFrameParser = (reserved "iFrame" >> return IFrame) <*> textLiteral
 -- helper funcs
 int :: H Int
 int = fromIntegral <$> integer
+
+bools :: H Bool
+bools = trueOrFalse
 
 showInt :: Int -> T.Text
 showInt x = showtParen (x < 0) (showt x)
@@ -344,3 +393,54 @@ identifierText :: H T.Text
 identifierText = do
   s <- identifier
   return $ T.pack s
+
+
+-----
+
+textToNotation:: T.Text -> TextNotation    
+textToNotation "minitidal" = TidalTextNotation MiniTidal
+textToNotation "punctual" = Punctual
+textToNotation "cinecer0" = CineCer0
+textToNotation "timenot" = TimeNot
+textToNotation "seis8s" = Seis8s
+textToNotation "hydra" = Hydra
+textToNotation x = EphemeralNotation x
+
+textToNotation':: T.Text -> TextNotation ----- this wrapper function checks for JSoLangs. Syntax is: "jsolang myNanoLang" and "ephemeral myNanoLang"
+textToNotation' x 
+        | "jsolang" == (Prelude.head $ T.words x) = JSoLang (T.unwords $ Prelude.tail $ T.words x)
+        | otherwise = textToNotation x
+
+notationToText:: TextNotation -> T.Text
+notationToText (TidalTextNotation x) = "minitidal"
+notationToText Punctual = "punctual"
+notationToText CineCer0 = "cinecer0"
+notationToText TimeNot = "timenot"
+notationToText Seis8s = "seis8s"
+notationToText Hydra = "hydra"
+notationToText (JSoLang x) = "\"" <> "jsolang " <> x <> "\""
+notationToText (EphemeralNotation x) = "\"" <> x <> "\""
+notationToText UnspecifiedNotation = ""
+
+formatText:: T.Text -> T.Text
+formatText x = T.replace "\"" "\\\"" x
+
+boolToText:: Bool -> T.Text
+boolToText True = "explicit"
+boolToText False = "brief"
+
+----- parse languages as textNotation
+assignTextNotation :: H T.Text
+assignTextNotation =
+  textLiteral <|>
+  "minitidal" <$ reserved "minitidal" <|>
+  "punctual" <$ reserved "punctual" <|>
+  "cinecer0" <$ reserved "cinecer0" <|>
+  "timenot" <$ reserved "timenot" <|>
+  "seis8s" <$ reserved "seis8s" <|>
+  "hydra" <$ reserved "hydra"
+
+assignBool:: H Bool
+assignBool =
+  True <$ reserved "explicit" <|>
+  False <$ reserved "brief"

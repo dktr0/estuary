@@ -205,10 +205,12 @@ visualiseSVGWidget delta = do
   let heightHold = countToHoldH 0 <$> delta
 
   let class' = constDyn $ "class" =: "mySVG"
-  let width = constDyn $ "width" =: "100"
-  let height = constDyn $ "height" =: "100"
-  let style = constDyn $ "style" =: ("height: auto; color: white;")
-  let attrs = mconcat [class',width,height, style]
+  let width = constDyn $ "width" =: "100%"
+  let height = constDyn $ "height" =: "100%"
+  let style = constDyn $ "style" =: ("height: auto; color: white; z-index: 0")
+  let vB = constDyn $  "viewBox" =: "0 0 100 100"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let attrs = mconcat [class',width,height, style, vB, par]
   -- sand falling 
   let x = constDyn $ "x" =: "0"
   let width' = constDyn $ "width" =: "100"

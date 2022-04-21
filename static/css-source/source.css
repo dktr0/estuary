@@ -93,7 +93,7 @@ body::-webkit-scrollbar-thumb {
   font-size: 0.9em;
   cursor: pointer;
 	margin-top:0.5em;
-	width: 90vw;
+	width: 100%;
 	border:none;
 	border-radius: 5px;
   box-shadow: 0px 0.25px 4px 0.025px grey;
@@ -104,6 +104,27 @@ body::-webkit-scrollbar-thumb {
 .example:hover{
 	border: 1px dashed var(--primary-color);
 }
+
+.snippet {
+	font-family: "Courier New", Courier, monospace;
+	font-size: 0.9em;
+	cursor: pointer;
+	  width: 20%;
+	  border:none;
+	  border-radius: 5px;
+	box-shadow: 0px 0.25px 4px 0.025px grey;
+	margin-bottom: 0.25em;
+	max-height: 10%;
+	display: flex;
+	white-space: nowrap;
+  	overflow: hidden;
+  	text-overflow: ellipsis;
+  }
+  
+  .snippet:hover{
+	box-shadow: 0px 0.25px 4px 0.025px var(--secondary-color);
+  }
+
 
 /* modifies the help view (source)*/
 .languageHelpContainer{
@@ -552,8 +573,8 @@ display: block;
 /*contains the tempo and coding textareas  */
 
 .textInputToEndOfLine  {
-	height: 150%;
-	width: 150%;
+	height: 100%;
+	width: 100%;
 	box-sizing:border-box;
     background-color: transparent;
 	overflow: hidden;
@@ -991,34 +1012,34 @@ cursor: pointer;
 
 .cycleVisualiser {
 	position: absolute; 
-	z-index: -10;
+	z-index: 0;
 	width: 100%;
   	height: 100%;
 }
 
 .metreVisualiser {
 	position: absolute; 
-	z-index: -10;
+	z-index: 0;
 	width: 100%;
   	height: 100%;
 }
 
 .ringVisualiser {
 	position: absolute; 
-	z-index: -10;
+	z-index: 0;
 	width: 100%;
   	height: 100%;
 }
 
 .beadVisualiser {
 	position: absolute; 
-	z-index: -10;
+	z-index: 0;
 	width: 100%;
   	height: 100%;
 }
 
 .central-panel {
-	z-index: 0;
+	z-index: 1;
   	height: 100%;
   	width: 100%;
   	min-height: 100%;
@@ -1026,7 +1047,7 @@ cursor: pointer;
 
 .flex-container-for-timeVision {
 	display: flex;
-	z-index: 0;
+	z-index: 1;
 	width: 100%;
     height: 100%;
   	min-height: 100%;
@@ -1035,7 +1056,7 @@ cursor: pointer;
 
 .flex-item-for-timeVision {
 	width: 100%;
-	z-index: 0;
+	z-index: 1;
   	height: 100%;
   	min-height: 100%;
 }
@@ -1043,7 +1064,7 @@ cursor: pointer;
 .flex-container-for-timeVision-vertical {
 	display: flex;
 	flex-direction: column;
-	z-index: 0;
+	z-index: 1;
   	height: 100%;
   	width: 100%;
   	min-height: 100%;
@@ -1052,14 +1073,14 @@ cursor: pointer;
 .flex-item-for-timeVision-vertical {
 	width: 100%;
   	height: 100%;
-	z-index: 0;
+	z-index: 1;
   	min-height: 50%;
 }
 
 .flex-container-for-timeVision-vertical-2 {
 	display: flex;
 	flex-direction: column;
-	z-index: 0;
+	z-index: 1;
 	height: 100%;
 	width: 100%;
 	min-height: 100%;
@@ -1068,13 +1089,16 @@ cursor: pointer;
 .flex-item-for-timeVision-vertical-2 {
 	width: 100%;
   	height: 100%;
-	z-index: 0;
+	z-index: 1;
   	min-height: 33%;
 }
 
 .countDown {
 	display: flex;
 	flex-direction: row;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
 }
 
 .countDown textarea{
@@ -1082,12 +1106,14 @@ cursor: pointer;
 	border: none;
 	max-width:13em;
     text-align: center;
-    width: fit-content;
 }
 
 .stopwatch {
 	display: flex;
 	border: none;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
 }
 
 .stopwatch textarea{
@@ -1096,6 +1122,7 @@ cursor: pointer;
 	max-width:13em;
     text-align: center;
     width: fit-content;
+	z-index: 0;
 }
 
 /*
@@ -1223,7 +1250,23 @@ display: inline-flex;
   display: flex;
   flex-direction: column;
   height: 100%;
+  flex-wrap: wrap;
 }
+
+.rows {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: row;
+	height: 100%;
+  }
+
+.columns {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	flex-wrap: wrap;
+  }
 
 .gridView {
   flex-grow: 1;
