@@ -423,6 +423,7 @@ textToNotation x = EphemeralNotation x
 
 textToNotation':: T.Text -> TextNotation ----- this wrapper function checks for JSoLangs. Syntax is: "jsolang myNanoLang" and "ephemeral myNanoLang"
 textToNotation' x 
+        | x == "" = UnspecifiedNotation
         | "jsolang" == (Prelude.head $ T.words x) = JSoLang (T.unwords $ Prelude.tail $ T.words x)
         | otherwise = textToNotation x
 
