@@ -40,8 +40,8 @@ foreign import javascript unsafe "navigator.clipboard.writeText($1);" copyToClip
 
 
 textWidgetClass :: Bool -> Map Text Text
-textWidgetClass True = "class" =: "evalFlash textInputToEndOfLine code-font"
-textWidgetClass False = "class" =: "primary-color textInputToEndOfLine code-font"
+textWidgetClass True = "class" =: "evalFlash textInputToEndOfLine codeEditor-font"
+textWidgetClass False = "class" =: "primary-color textInputToEndOfLine codeEditor-font"
 
 textWidgetRows :: Int -> Map Text Text
 textWidgetRows 0 = Data.Map.empty
@@ -68,6 +68,48 @@ textWidget rows flash i delta = do
 
   return (value,edits,evalEvent) -- return these set of info
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13) --something about which keys to press to evaluate code
+
+
+fluxusTextWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+fluxusTextWidget rows flash i delta = mdo
+  let class' = fmap textWidgetClass flash
+  let rows' = constDyn $ textWidgetRows rows
+  let fluxusStyle = fmap fluxusBehaviour value
+  let attrs = mconcat [class',rows', fluxusStyle]
+  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
+  let e = _textArea_element x
+  e' <- wrapDomEvent (e) (onEventName Keypress) $ do
+    y <- getKeyEvent
+    if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
+  let evalEvent = fmap (const ()) $ ffilter (==True) e'
+  let edits = _textArea_input x
+  let value = _textArea_value x
+  return (value,edits,evalEvent)
+  where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
+
+
+-- fluxusBehaviour :: Int -> Map Text Text
+-- fluxusBehaviour rows
+--   | rows == 1 = "style" =: "font-size: calc(8vw + 8vh)"
+--   | rows == 2 = "style" =: "font-size: calc(6vw + 6vh)"
+--   | rows == 3 = "style" =: "font-size: calc(4vw + 4vh)"
+--   | rows == 4 = "style" =: "font-size: calc(2vw + 2vh)"
+--   | otherwise = "style" =: "font-size: calc(2vw + 2vh)"
+
+-- it is just making a pure function from Text -> Int and then applying that to the a Dynamic representation of the current text
+fluxusBehaviour :: Text -> Map Text Text
+fluxusBehaviour i
+  | T.length i <= 8 = "style" =: "font-size: calc(8vw + 8vh); height: auto"
+  | (T.length i >= 8) && (T.length i <= 15) = "style" =: "font-size: calc(7vw + 7vh); height: auto"
+  | (T.length i >= 16) && (T.length i <= 20) = "style" =: "font-size: calc(6vw + 6vh); height: auto"
+  | (T.length i >= 21) && (T.length i <= 30) = "style" =: "font-size: calc(5vw + 5vh); height: auto"
+  | (T.length i >= 31) && (T.length i <= 40) = "style" =: "font-size: calc(4vw + 4vh); height: auto"
+  | (T.length i >= 41) && (T.length i <= 60) = "style" =: "font-size: calc(3vw + 3vh); height: auto"
+  | (T.length i >= 61) && (T.length i <= 90) = "style" =: "font-size: calc(2.5vw + 2.5vh); height: auto"
+  | (T.length i >= 91) && (T.length i <= 120) = "style" =: "font-size: calc(2vw + 2vh); height: auto"
+  | otherwise = "style" =: "font-size: calc(1.5vw + 1.5vh); height: auto"
+
+
 
 
 
@@ -159,7 +201,7 @@ textWithLockWidgetClass :: Bool -> Map Text Text
 textWithLockWidgetClass True = "class" =: "human-to-human-comm textInputToEndOfLine code-font" -- some styling that visually divides "working-executable code" and just normal "non-executable" communication
 textWithLockWidgetClass False = "class" =: "primary-color textInputToEndOfLine code-font"
 
-textToInvisibleClass:: Bool -> Map Text Text
+textToInvisibleClass :: Bool -> Map Text Text
 textToInvisibleClass True =  "class" =: "invisible-color textInputToEndOfLine code-font" -- this must affect the opacity of the text to it dissapears.
 textToInvisibleClass False = "class" =: "primary-color textInputToEndOfLine code-font"
 
@@ -223,7 +265,7 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo 
     return (_dropdown_change d,evalButton') -- regresa el lenguaje seleccionado actual, el boyón... interesante que aquí no regresa nada sobre el syntax error message, en nada más algo que pasa pero que no se guarda, la info no se guarda
 
   --segunda tupla que contiene, mm algo _, no entiendo muy bien esto: (_,_,_), esta lista, dónde está?, pero bueno es básicamente la caja de texto y el evento para evaluar code
-  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget rows evalFlash initialText textDelta --aquí se le da el textWidget que es el que crea la caja de texto con un styling pre-definido y al cual se le da el no. de rows qu crea la altura, el evalFlash que es lo que hace que el background hage un flash (Bool que crea un styling), el texto inicial y el texto actual.
+  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ fluxusTextWidget rows evalFlash initialText textDelta --aquí se le da el textWidget que es el que crea la caja de texto con un styling pre-definido y al cual se le da el no. de rows qu crea la altura, el evalFlash que es lo que hace que el background hage un flash (Bool que crea un styling), el texto inicial y el texto actual.
 
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter] -- evento para evaluar con ambas opciones
 

@@ -85,7 +85,12 @@ body::-webkit-scrollbar-thumb {
 }
 
 
-
+/*styles the font of the code editors*/
+.codeEditor-font {
+	  font-family: 'Helvetica';
+    /* font-family must be change to the customizable css */
+	  /* font-size: 2em; */
+	  }
 
 /* for the Example element in the view system, which is primarly used in tutorials for clickable examples */
 .example {
