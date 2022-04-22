@@ -13,6 +13,7 @@ import Data.Map
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.List as L
 import Data.Time
 
 import GHCJS.Types
@@ -97,18 +98,35 @@ fluxusTextWidget rows flash i delta = mdo
 --   | otherwise = "style" =: "font-size: calc(2vw + 2vh)"
 
 -- it is just making a pure function from Text -> Int and then applying that to the a Dynamic representation of the current text
+-- fluxusBehaviour :: Text -> Map Text Text
+-- fluxusBehaviour i
+--   | T.length i <= 8 = "style" =: "font-size: calc(8vw + 8vh); height: auto"
+--   | (T.length i >= 8) && (T.length i <= 15) = "style" =: "font-size: calc(7vw + 7vh); height: auto"
+--   | (T.length i >= 16) && (T.length i <= 20) = "style" =: "font-size: calc(6vw + 6vh); height: auto"
+--   | (T.length i >= 21) && (T.length i <= 30) = "style" =: "font-size: calc(5vw + 5vh); height: auto"
+--   | (T.length i >= 31) && (T.length i <= 40) = "style" =: "font-size: calc(4vw + 4vh); height: auto"
+--   | (T.length i >= 41) && (T.length i <= 60) = "style" =: "font-size: calc(3vw + 3vh); height: auto"
+--   | (T.length i >= 61) && (T.length i <= 90) = "style" =: "font-size: calc(2.5vw + 2.5vh); height: auto"
+--   | (T.length i >= 91) && (T.length i <= 120) = "style" =: "font-size: calc(2vw + 2vh); height: auto"
+--   | otherwise = "style" =: "font-size: calc(1.5vw + 1.5vh); height: auto"
+
+-- fluxusBehaviour :: Text -> Map Text Text
+-- fluxusBehaviour i
+--      | T.compareLength i 10 == LT = "style" =: "font-size: calc(8vw + 8vh); height: auto"
+--      | T.compareLength i 10 == EQ = "style" =: "font-size: calc(4vw + 4vh); height: auto"
+--      | T.compareLength i 10 == GT = "style" =: "font-size: calc(2vw + 2vh); height: auto"
+
+
+-- Data.Text
+-- lines :: Text -> [Text]
+-- Data.List
+-- length :: [a] -> Int
 fluxusBehaviour :: Text -> Map Text Text
 fluxusBehaviour i
-  | T.length i <= 8 = "style" =: "font-size: calc(8vw + 8vh); height: auto"
-  | (T.length i >= 8) && (T.length i <= 15) = "style" =: "font-size: calc(7vw + 7vh); height: auto"
-  | (T.length i >= 16) && (T.length i <= 20) = "style" =: "font-size: calc(6vw + 6vh); height: auto"
-  | (T.length i >= 21) && (T.length i <= 30) = "style" =: "font-size: calc(5vw + 5vh); height: auto"
-  | (T.length i >= 31) && (T.length i <= 40) = "style" =: "font-size: calc(4vw + 4vh); height: auto"
-  | (T.length i >= 41) && (T.length i <= 60) = "style" =: "font-size: calc(3vw + 3vh); height: auto"
-  | (T.length i >= 61) && (T.length i <= 90) = "style" =: "font-size: calc(2.5vw + 2.5vh); height: auto"
-  | (T.length i >= 91) && (T.length i <= 120) = "style" =: "font-size: calc(2vw + 2vh); height: auto"
-  | otherwise = "style" =: "font-size: calc(1.5vw + 1.5vh); height: auto"
-
+     | (L.length $ T.lines i) == 1 = "style" =: "font-size: calc(8vw + 8vh); height: auto"
+     | (L.length $ T.lines i) == 2 = "style" =: "font-size: calc(4vw + 4vh); height: auto"
+     | (L.length $ T.lines i) == 3 = "style" =: "font-size: calc(2vw + 2vh); height: auto"
+     | otherwise = "style" =: "font-size: calc(1vw + 1vh);"
 
 
 
