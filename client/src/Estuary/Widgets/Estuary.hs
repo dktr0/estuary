@@ -176,6 +176,7 @@ estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ md
   performDynamicsMode rEnv settings
   performPunctualAudioInputMode rEnv settings
   performTheme settings
+  performSuperDirt rEnv settings
 
   -- requests up to server
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
@@ -249,11 +250,13 @@ performContext cMvar cDyn = do
   iCtx <- sample $ current cDyn
   performEvent_ $ fmap (liftIO . (\x -> swapMVar cMvar x >> return ())) $ updated cDyn -- transfer whole Context for render/animation threads
 
-  -- when the superDirt flag changes, make it so
-  -- TODO: this is broken, needs to be re-implemented!!!
-  -- let sd = superDirt rEnv
-  -- sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
-  -- performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
+performSuperDirt :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performSuperDirt rEnv settings = do
+  let sd = superDirt rEnv
+  iSettings <- sample $ current settings
+  liftIO $ setActive sd (Settings.superDirtOn iSettings)
+  sdOn <- holdUniqDyn $ fmap Settings.superDirtOn settings
+  performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
 performTheme :: MonadWidget t m => Dynamic t Settings -> m ()
 performTheme settings = do
