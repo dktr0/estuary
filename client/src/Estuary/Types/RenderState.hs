@@ -9,7 +9,7 @@ import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Resolution as Punctual
 import Sound.MusicW.AudioContext
 import Sound.MusicW.Node as MusicW
-import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
+import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement,JSVal)
 import Data.Text (Text)
 import Sound.Punctual.GL
 import Data.Tempo
@@ -58,17 +58,19 @@ data RenderState = RenderState {
   glContext :: GLContext,
   canvasElement :: HTMLCanvasElement,
   hydraCanvas :: HTMLCanvasElement,
+  locoMotionCanvas :: HTMLCanvasElement,
   videoDivCache :: Maybe HTMLDivElement,
   tempoCache :: Tempo,
   jsoLangs :: Map.Map Text JSoLang,
-  valueMap :: Tidal.ValueMap
+  valueMap :: Tidal.ValueMap,
+  locoMotions :: !(IntMap JSVal)
   }
 
 -- Map.mapKeys T.unpack -- Map Text a -> Map String a
 -- fmap Tidal.toValue ... -- Map a Double -> Map a Value
 
-initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
-initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
+initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
+initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 hCanvas glCtx
   return $ RenderState {
     wakeTimeSystem = t0System,
@@ -99,8 +101,10 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
     glContext = glCtx,
     canvasElement = cvsElement,
     hydraCanvas = hCanvas,
+    locoMotionCanvas = lCanvas,
     videoDivCache = Nothing,
     tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
     jsoLangs = Map.empty,
-    valueMap = Map.empty
+    valueMap = Map.empty,
+    locoMotions = empty
   }

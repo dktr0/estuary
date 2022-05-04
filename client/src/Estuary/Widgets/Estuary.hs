@@ -100,14 +100,14 @@ estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ md
   cvsElement <- canvasWidget settings punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
   improvizZIndex' <- holdUniqDyn $ fmap Settings.improvizZIndex settings
-  iCanvas <- canvasWidget settings improvizZIndex' ctx -- canvas for Improviz
+  lCanvas <- canvasWidget settings improvizZIndex' ctx -- canvas for Improviz
   hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
   hCanvas <- canvasWidget settings hydraZIndex' ctx -- canvas for Hydra
 
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
 
-  liftIO $ forkRenderThreads rEnv iSettings ctxM cvsElement glCtx hCanvas riM
+  liftIO $ forkRenderThreads rEnv iSettings ctxM cvsElement glCtx hCanvas lCanvas riM
 
   performContext ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)

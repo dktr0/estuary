@@ -41,6 +41,7 @@ import qualified Sound.TimeNot.Render as TimeNot
 -- import qualified Sound.Seis8s.Parser as Seis8s
 import Estuary.Languages.Punctual
 import Estuary.Languages.CineCer0
+import Estuary.Languages.LocoMotion
 import Sound.Punctual.GL (GLContext)
 
 import qualified Estuary.Languages.Hydra.Types as Hydra
@@ -262,6 +263,7 @@ clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
 clearTextProgram z (Punctual,_,_) = (clearZone' punctual) z
 clearTextProgram z (CineCer0,_,_) = (clearZone' cineCer0) z
 clearTextProgram z (Hydra,_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
+clearTextProgram z (LocoMotion,_,_) = (clearZone' locoMotion) z
 clearTextProgram _ _ = return ()
 
 
@@ -307,6 +309,7 @@ renderZoneAnimationTextProgram :: UTCTime -> Int -> TextNotation -> R ()
 renderZoneAnimationTextProgram tNow z Punctual = (zoneAnimationFrame punctual) tNow z
 renderZoneAnimationTextProgram tNow z CineCer0 = (zoneAnimationFrame cineCer0) tNow z
 renderZoneAnimationTextProgram tNow z Hydra = renderHydra tNow z
+renderZoneAnimationTextProgram tNow z LocoMotion = (zoneAnimationFrame locoMotion) tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
 renderHydra :: UTCTime -> Int -> R ()
@@ -376,6 +379,7 @@ renderTextProgramChanged c z (TidalTextNotation x,y,eTime) = do
 renderTextProgramChanged c z (Punctual,x,eTime) = (parseZone punctual) c z x eTime
 renderTextProgramChanged c z (CineCer0,x,eTime) = (parseZone cineCer0) c z x eTime
 renderTextProgramChanged c z (Hydra,x,_) = parseHydra c z x
+renderTextProgramChanged c z (LocoMotion,x,eTime) = (parseZone locoMotion) c z x eTime
 
 renderTextProgramChanged c z (TimeNot,x,eTime) = do
   let parseResult = TimeNot.runCanonParser $ T.unpack x
@@ -521,14 +525,14 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: RenderEnvironment -> Settings.Settings -> MVar Context -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
-forkRenderThreads rEnv s ctxM cvsElement glCtx hCanvas riM = do
+forkRenderThreads :: RenderEnvironment -> Settings.Settings -> MVar Context -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
+forkRenderThreads rEnv s ctxM cvsElement glCtx hCanvas lCanvas riM = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv
   pOut <- getMainBusInput $ mainBus rEnv
   putStrLn "about to initialRenderState"
-  irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio
+  irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio
   putStrLn "returned from initialRenderState"
   rsM <- newMVar irs
   putStrLn "about to fork mainRenderThread..."
