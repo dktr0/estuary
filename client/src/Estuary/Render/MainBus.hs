@@ -234,7 +234,7 @@ changeDestination :: MainBus -> (forall m. AudioIO m => m Node) -> IO Node
 changeDestination mb destCreator = liftAudioIO $ do
   newDest <- destCreator
   cpg <- liftIO $ readMVar $ compressorPostGain mb
-  liftIO $ disconnectAll cpg -- *** TO FIX/INVESTIGATE: will this break analysis system?
+  liftIO $ disconnectAll cpg -- TO FIX/INVESTIGATE: will this break analysis system?
   connectNodes cpg newDest
   return newDest -- *** also to fix/investigate: why is new destination not being stored anywhere?
 

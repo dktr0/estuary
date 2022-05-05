@@ -93,7 +93,7 @@ body::-webkit-scrollbar-thumb {
   font-size: 0.9em;
   cursor: pointer;
 	margin-top:0.5em;
-	width: 90vw;
+	width: 100%;
 	border:none;
 	border-radius: 5px;
   box-shadow: 0px 0.25px 4px 0.025px grey;
@@ -104,6 +104,27 @@ body::-webkit-scrollbar-thumb {
 .example:hover{
 	border: 1px dashed var(--primary-color);
 }
+
+.snippet {
+	font-family: "Courier New", Courier, monospace;
+	font-size: 0.9em;
+	cursor: pointer;
+	  width: 20%;
+	  border:none;
+	  border-radius: 5px;
+	box-shadow: 0px 0.25px 4px 0.025px grey;
+	margin-bottom: 0.25em;
+	max-height: 10%;
+	display: flex;
+	white-space: nowrap;
+  	overflow: hidden;
+  	text-overflow: ellipsis;
+  }
+
+  .snippet:hover{
+	box-shadow: 0px 0.25px 4px 0.025px var(--secondary-color);
+  }
+
 
 /* modifies the help view (source)*/
 .languageHelpContainer{
@@ -255,7 +276,7 @@ body::-webkit-scrollbar-thumb {
 	background-color: rgb(98, 221, 115);
 	color: black;
 	width: 50%;
-	height: 1000px
+	height: 1000px;
 	z-index: 0;
 	position: fixed;
 	top: 10em;
@@ -566,11 +587,6 @@ display: block;
   font-size: 1em;
 }
 
-.tempo-visualiser {
-	color: var(--primary-color);
-	font-size: 1em;
-  }
-
 .invisible-color {
 	color: rgba(0,0,0,0);
   }
@@ -744,14 +760,6 @@ ______________________________
 	width: 100%;
 	font-weight: bold;
 	margin-bottom: 0.5em;
-}
-
-.rowOfButtons{
-  display: flex;
-  flex-direction: row;
-  height: 15%;
-  width: 100%;
-  background-color: transparent;
 }
 
 .prevNextButtons{
@@ -952,7 +960,7 @@ cursor: pointer;
 .ensembleHeader {
 	display: flex;
 	flex-direction: row;
-    border:none
+    border:none;
     display: none;
 
 }
@@ -986,9 +994,103 @@ cursor: pointer;
 
 /* recently added by AFB, experimentas for widget creation */
 
+.tempo-visualiser {
+	width: 100%;
+  	height: 100%;
+  	position: relative;
+	color: var(--primary-color);
+	font-size: 1em;
+}
+
+.cycleVisualiser {
+	position: absolute;
+	z-index: 0;
+	width: 100%;
+  	height: 100%;
+}
+
+.metreVisualiser {
+	position: absolute;
+	z-index: 0;
+	width: 100%;
+  	height: 100%;
+}
+
+.ringVisualiser {
+	position: absolute;
+	z-index: 0;
+	width: 100%;
+  	height: 100%;
+}
+
+.beadVisualiser {
+	position: absolute;
+	z-index: 0;
+	width: 100%;
+  	height: 100%;
+}
+
+.central-panel {
+	z-index: 1;
+  	height: 100%;
+  	width: 100%;
+  	min-height: 100%;
+}
+
+.flex-container-for-timeVision {
+	display: flex;
+	z-index: 1;
+	width: 100%;
+    height: 100%;
+  	min-height: 100%;
+}
+
+
+.flex-item-for-timeVision {
+	width: 100%;
+	z-index: 1;
+  	height: 100%;
+  	min-height: 100%;
+}
+
+.flex-container-for-timeVision-vertical {
+	display: flex;
+	flex-direction: column;
+	z-index: 1;
+  	height: 100%;
+  	width: 100%;
+  	min-height: 100%;
+}
+
+.flex-item-for-timeVision-vertical {
+	width: 100%;
+  	height: 100%;
+	z-index: 1;
+  	min-height: 50%;
+}
+
+.flex-container-for-timeVision-vertical-2 {
+	display: flex;
+	flex-direction: column;
+	z-index: 1;
+	height: 100%;
+	width: 100%;
+	min-height: 100%;
+}
+
+.flex-item-for-timeVision-vertical-2 {
+	width: 100%;
+  	height: 100%;
+	z-index: 1;
+  	min-height: 33%;
+}
+
 .countDown {
 	display: flex;
-	border: none;
+	flex-direction: row;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
 }
 
 .countDown textarea{
@@ -996,12 +1098,14 @@ cursor: pointer;
 	border: none;
 	max-width:13em;
     text-align: center;
-    width: fit-content;
 }
 
 .stopwatch {
 	display: flex;
 	border: none;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
 }
 
 .stopwatch textarea{
@@ -1010,19 +1114,7 @@ cursor: pointer;
 	max-width:13em;
     text-align: center;
     width: fit-content;
-}
-
-.time-visualiser {
-	display: flex;
-	border: none;
-}
-
-.time-visualiser textarea{
-	position: relative;
-	border: none;
-	max-width:13em;
-    text-align: center;
-    width: fit-content;
+	z-index: 0;
 }
 
 /*
@@ -1151,6 +1243,21 @@ display: inline-flex;
   flex-direction: column;
   height: 100%;
 }
+
+.rows {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: row;
+	height: 100%;
+  }
+
+.columns {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	flex-wrap: wrap;
+  }
 
 .gridView {
   flex-grow: 1;
@@ -1975,6 +2082,26 @@ box-shadow: inset 0 0 3px var(--primary-color);
     position: relative;
     }
 
+.showDate {
+  margin-right: 2%;
+}
+
+.confirmButton{
+ width: 100vw;
+ text-align: center;
+}
+
+
+.cancelButton{
+ text-align: center;
+}
+
+.confirmButton:hover  {
+ background: var(--secondary-color);
+}
+
+.cancelButton:hover {
+ background: var(--secondary-color);
 
 /* Notepad style */
 
@@ -1987,38 +2114,58 @@ box-shadow: inset 0 0 3px var(--primary-color);
   background-color: transparent;
 }
 
-.notepage-title {
+.notepad-Title {
 	width: 100%;
+  text-align: center;
   font-weight: bold;
 	border: none;
 	background-color: transparent;
+  margin-top: 0.2em;
+}
+
+.notepage-title {
+	width: 100%;
+  font-weight: bold;
+	border: 1px solid var(--secondary-color);
+	background-color: transparent;
+  margin-top: 0.5em;
 }
 
 .notepage-content {
 	display: flex;
 	height: 100%;
   width: 100%;
-	border: none;
+	border: 1px solid var(--secondary-color);
 	background-color: transparent;
 }
- .showDate {
-	 margin-right: 2%;
- }
 
-.confirmButton{
-	width: 100vw;
-	text-align: center;
+.notepad-rowOfButtons{
+  display: flex;
+  flex-direction: row;
+  height: 2em;
+  width: 100%;
+  background-color: transparent;
+  margin-top: 0.5em;
+	margin-bottom: 0.5em;
 }
 
-
-.cancelButton{
-	text-align: center;
+.notepad-prevNextButtons{
+	width: 100%;
+	height: 1.5em;
+  text-align: center;
+	border: 1px solid var(--secondary-color);
 }
 
-.confirmButton:hover  {
-	background: var(--secondary-color);
+.notepad-prevNextButtons button {
+	background-color: var(--secondary-color);
+	color: var(--primary-color);
 }
 
-.cancelButton:hover {
-	background: var(--secondary-color);
+.selectPeriodicity {
+/* 	background-color: yellow; */
+}
+.selectPeriodicity  select {
+	border: none;
+    box-shadow: inset 0 0 3px var(--primary-color);
+
 }

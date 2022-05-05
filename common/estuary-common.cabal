@@ -1,0 +1,63 @@
+cabal-version: 1.12
+
+name:           estuary-common
+version:        0.0.0.1
+synopsis:       Platform for collaboration and learning through live coding
+description:    Please see README.md
+category:       Web
+homepage:       http://github.com/dktr0/estuary/blob/stable/README.md
+author:         David Ogborn and contributors
+maintainer:     ogbornd@mcmaster.ca
+copyright:      2015-22 David Ogborn and contributors
+license:        GPL-3
+build-type:     Simple
+
+library
+  exposed-modules:
+      Estuary.Tidal.Types
+      Estuary.Types.AspectRatio
+      Estuary.Types.AudioMeta
+      Estuary.Types.Chat
+      Estuary.Types.Definition
+      Estuary.Types.Ensemble
+      Estuary.Types.EnsembleRequest
+      Estuary.Types.EnsembleResponse
+      Estuary.Types.ImageMeta
+      Estuary.Types.Language
+      Estuary.Types.Live
+      Estuary.Types.Location
+      Estuary.Types.MovingAverage
+      Estuary.Types.Name
+      Estuary.Types.Participant
+      Estuary.Types.Request
+      Estuary.Types.ResourceMeta
+      Estuary.Types.ResourceOp
+      Estuary.Types.Resources
+      Estuary.Types.ResourceType
+      Estuary.Types.Response
+      Estuary.Types.Scope
+      Estuary.Types.Tempo
+      Estuary.Types.TextNotation
+      Estuary.Types.TidalParser
+      Estuary.Types.TranslatableText
+      Estuary.Types.VideoMeta
+      Estuary.Types.View
+      Estuary.Types.ZonedTime
+      Estuary.Utility
+  other-modules:
+      Paths_estuary_common
+  hs-source-dirs:
+      ./src
+  build-depends:
+      aeson
+    , base
+    , containers
+    , haskellish
+    , mtl
+    , parsec
+    , tempi
+    , text
+    , text-show
+    , time
+    , witherable
+  default-language: Haskell2010

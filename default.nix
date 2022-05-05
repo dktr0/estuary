@@ -1,5 +1,5 @@
 {
-  reflexPlatformVersion ? "9e306f72ed0dbcdccce30a4ba0eb37aa03cf91e3",
+  reflexPlatformVersion ? "123a6f487ca954fd983f6d4cd6b2a69d4c463d10",
   musl ? false,     # build with musl instead of glibc
   linkType ? null   # executable linking mode, null will build the closest to unconfigured for the current platform.
                     # 'static' will completely statically link everything.
@@ -47,7 +47,6 @@ in
   };
 
   shellToolOverrides = ghc: super: {
-    inherit (ghc8_6) hpack; # always use ghc (not ghcjs) compiled hpack
     python3 = pkgs.python3.withPackages (ps: with ps; [ pyyaml ]);
   };
 
@@ -69,7 +68,7 @@ in
         # if using ghcjs.
         pkgs.lib.genAttrs [
             "Glob" "mockery" "silently" "unliftio" "conduit"
-            "yaml" "hpack" "base-compat-batteries" "text-show" "modular-arithmetic"
+            "yaml" "base-compat-batteries" "text-show" "modular-arithmetic"
           ] (name: (if !(self.ghc.isGhcjs or false) then pkgs.lib.id else dontCheck) super.${name});
       # a hacky way of avoiding building unnecessary dependencies with GHCJS
       # (our system is currently building GHC dependencies even for the front-end...
@@ -79,13 +78,11 @@ in
             "foundation" "memory" "wai-app-static" "asn1-types"
             "asn1-encoding" "asn1-parse" "sqlite-simple" "cryptonite"
             "http-client" "pem" "x509" "connection" "tls" "http-client-tls"
-            "hpack"
           ] (name: if (self.ghc.isGhcjs or false) then null else super.${name});
 
       manualOverrides = self: super: {
-        estuary = dontCheck (overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
+        estuary = dontHaddock (dontCheck (overrideCabal (appendConfigureFlags super.estuary ["--ghcjs-options=-DGHCJS_BROWSER" "--ghcjs-options=-O2" "--ghcjs-options=-dedupe" "--ghcjs-options=-DGHCJS_GC_INTERVAL=60000"]) (drv: {
           preConfigure = ''
-            ${ghc8_6.hpack}/bin/hpack --force;
           '';
           postInstall = ''
             ${pkgs.closurecompiler}/bin/closure-compiler $out/bin/Estuary.jsexe/all.js \
@@ -95,13 +92,12 @@ in
               --jscomp_off=checkVars;
             gzip -fk "$out/bin/all.min.js"
          '';
-        }));
+        })));
 
-        estuary-common = overrideCabal super.estuary-common (drv: {
+        estuary-common = dontHaddock (overrideCabal super.estuary-common (drv: {
           preConfigure = ''
-            ${ghc8_6.hpack}/bin/hpack --force;
           '';
-        });
+        }));
 
        estuary-server =
           let configure-flags = map (opt: "--ghc-option=${opt}") (
@@ -118,7 +114,7 @@ in
               )
           );
           in
-          overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv:
+          dontHaddock (overrideCabal (appendConfigureFlags super.estuary-server configure-flags) (drv:
             ({
               dynamic = {
                   # based on fix from https://github.com/NixOS/nixpkgs/issues/26140, on linux when building a dynamic exe
@@ -138,16 +134,9 @@ in
                 };
             }.${linkType} or {}) // {
               preConfigure = ''
-                ${ghc8_6.hpack}/bin/hpack --force;
               '';
             }
-        );
-
-        text-show = dontCheck super.text-show;
-
-        text-short = dontCheck super.text-short;
-
-        criterion = dontCheck super.criterion;
+        ));
 
         webdirt = import ./deps/webdirt self;
 
@@ -164,23 +153,17 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "180z11v3jqc3355apcv5y6db1fg10z6ghj0pkahmkrfkl0lhq9gx";
-          rev = "3c18722448a54523ed1dd1f93b5488b9e5b4dd28";
+          sha256 = "1jszc80pv1m56haw75xrfm6qpkw267a0jgzr8821qpwbbwn5jgxl";
+          rev = "dc863728d259aa840fe68c9536597e9087f09376";
         }) {}));
 
-        musicw = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
+        # musicw = self.callHackage "musicw" "0.3.9" {};
+        musicw = self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "musicw";
-          sha256 = "0j5xxy3ry4nwl5bamhrkalgnz8g77bs7ck965mfciyc4k9b66x5i";
-          rev = "4adc14978f5466829f744bb8b4217ef2d26b31fa";
-          }) {});
-
-        reflex-dom-contrib = if !(self.ghc.isGhcjs or false) then null else dontHaddock (self.callCabal2nix "reflex-dom-contrib" (pkgs.fetchFromGitHub {
-          owner = "reflex-frp";
-          repo = "reflex-dom-contrib";
-          rev = "b9e2965dff062a4e13140f66d487362a34fe58b3";
-          sha256 = "1aa045mr82hdzzd8qlqhfrycgyhd29lad8rf7vsqykly9axpl52a";
-        }) {});
+          sha256 = "19c31jnsdhw85qczgwcmfch217nfc631qv9jf4wzbyg0xz50s64c";
+          rev = "b42ff7b1ea3ea322fb830a4e4757626761aebcd5";
+        }) {};
 
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
@@ -206,29 +189,38 @@ in
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
-        haskellish = # dontHaddock (self.callCabal2nix "haskellish" ../Haskellish {});
-         dontHaddock (self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
-           owner = "dktr0";
-           repo = "Haskellish";
-           sha256 = "03sv69hnav1p8rd6i301kirx4anm5f402is4n7bxmjjqi7br5hna";
-           rev = "75cd924f8699da352ef4d441f35a18ee53d598b0";
-        }) {});
+        haskellish = self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
+          owner = "dktr0";
+          repo = "haskellish";
+          sha256 = "03sv69hnav1p8rd6i301kirx4anm5f402is4n7bxmjjqi7br5hna";
+          rev = "75cd924f8699da352ef4d441f35a18ee53d598b0";
+        }) {};
 
-        tempi = # dontHaddock (self.callCabal2nix "tempi" ../tempi {});
-         dontHaddock (self.callCabal2nix "tempi" (pkgs.fetchFromGitHub {
-           owner = "dktr0";
-           repo = "tempi";
-           sha256 = "0z4fjdnl7riivw77pl8wypw1a98av3nhpmw0z5g2a1q2kjja0sfp";
-           rev = "9513df2ed323ebaff9b85b72215a1e726ede1e96";
-        }) {});
+        tempi = self.callHackage "tempi" "1.0.2.1" {};
 
-        seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
-          doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
-           owner = "luisnavarrodelangel";
-           repo = "seis8s";
-           sha256 = "1nnzsmkcy28k1s1s72ckq136564r2d6xzngm2bd1sm5ixasxx0lq";
-           rev = "6edbf1e21ade2669a0098d3120c698463c86f52a";
-         }) {}));
+        # we will won't be able to build this until reflex-dom-contrib dependency is removed
+        #seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
+        #  doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
+        #   owner = "luisnavarrodelangel";
+        #   repo = "seis8s";
+        #   sha256 = "1nnzsmkcy28k1s1s72ckq136564r2d6xzngm2bd1sm5ixasxx0lq";
+        #   rev = "6edbf1e21ade2669a0098d3120c698463c86f52a";
+         #}) {}));
+
+         permutation = markUnbroken super.permutation;
+
+         hosc = self.callHackage "hosc" "0.19.1" {};
+         hsc3 = self.callHackage "hsc3" "0.19.1" {};
+         hmt = doJailbreak (markUnbroken super.hmt);
+
+         network = if !(self.ghc.isGhcjs or false) then super.network else
+           let unpatchedNetwork = super.callHackageDirect {
+             pkg = "network";
+             ver = "3.1.2.7";
+             sha256 = "1762r7jckinwvz5m99l5jr1p2p2d10jysg159nwlqxmsnr39waz7"; # note: temporarily set to pkgs.lib.fakeSha256 to find new hash...
+           } { };
+           in appendConfigureFlags unpatchedNetwork ["--configure-option=--host=x86_64-pc-linux-gnu"];
+
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [

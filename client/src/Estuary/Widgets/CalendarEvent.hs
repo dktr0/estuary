@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-} {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts #-} {-# LANGUAGE RecursiveDo #-}
 
 module Estuary.Widgets.CalendarEvent where
 

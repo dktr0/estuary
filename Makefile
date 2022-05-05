@@ -37,14 +37,10 @@ endif
 
 cabalBuildClient: assertInNixGhcjsShell
 	@ echo "cabalBuildClient:"
-	cd common && hpack --force
-	cd client && hpack --force
 	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all --disable-library-profiling --disable-documentation --ghcjs-options=-DGHCJS_GC_INTERVAL=60000
 
 cabalBuildServer: assertInNixGhcShell
 	@ echo "cabalBuildServer:"
-	cd common && hpack --force
-	cd server && hpack --force
 	cabal new-build all --disable-library-profiling --disable-documentation
 
 nixBuild:
@@ -114,12 +110,12 @@ devStageSamples: stageSamples
 GCC_PREPROCESSOR=gcc -E -x c -P -C -nostdinc
 TEMPLATE_SOURCE=static/index.html.template
 
-GET_CABAL_CLIENT_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('client/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
+GET_CABAL_CLIENT_PACKAGE_NAME=estuary-0.0.0.1
 GET_GHCJS_VERSION=ghcjs --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
 CABAL_CLIENT_BIN_DIR=dist-ghcjs/build/x86_64-linux/ghcjs-${GHCJS_VERSION}/${CABAL_CLIENT_PACKAGE_NAME}/x/Estuary/build/Estuary/Estuary.jsexe/
 cabalStageClient: assertInNixGhcjsShell prepDevStage
 	@ echo "cabalStageClient:"
-	$(eval export CABAL_CLIENT_PACKAGE_NAME=$(shell $(GET_CABAL_CLIENT_PACKAGE_NAME)))
+	$(eval export CABAL_CLIENT_PACKAGE_NAME=$(GET_CABAL_CLIENT_PACKAGE_NAME))
 	$(eval export GHCJS_VERSION=$(shell $(GET_GHCJS_VERSION)))
 	# compile the index.html template in development mode and stage it
 	$(GCC_PREPROCESSOR) $(TEMPLATE_SOURCE) -o $(DEV_STAGING_ROOT)/Estuary.jsexe/index.html
@@ -129,12 +125,12 @@ cabalStageClient: assertInNixGhcjsShell prepDevStage
 		chmod a+w $(DEV_STAGING_ROOT)/Estuary.jsexe/$$part.js ; \
 	done
 
-GET_CABAL_SERVER_PACKAGE_NAME=python3 -c "import yaml; p = yaml.load(open('server/package.yaml', 'r')); print(p.get('name') + '-' + p.get('version', '0.0.0'), end='')"
+GET_CABAL_SERVER_PACKAGE_NAME=estuary-server-0.0.0.1
 GET_GHC_VERSION=ghc --version | sed -nre "s/.*version ([^ ]*).*/\1/p"
 CABAL_SERVER_BIN=dist-newstyle/build/$(SYSTEM)/ghc-${GHC_VERSION}/${CABAL_SERVER_PACKAGE_NAME}/x/EstuaryServer/build/EstuaryServer/EstuaryServer
 cabalStageServer: assertInNixGhcShell
 	@ echo "cabalStageServer:"
-	$(eval export CABAL_SERVER_PACKAGE_NAME=$(shell $(GET_CABAL_SERVER_PACKAGE_NAME)))
+	$(eval export CABAL_SERVER_PACKAGE_NAME=$(GET_CABAL_SERVER_PACKAGE_NAME))
 	$(eval export GHC_VERSION=$(shell $(GET_GHC_VERSION)))
 	# stage the server binary
 	$(CP) $(CABAL_SERVER_BIN) $(DEV_STAGING_ROOT)
@@ -207,8 +203,6 @@ stageLocalWebDirt: prepStage prepDevStage
 
 clientTest:
 	@ echo "clientTest:"
-	cd common && hpack --force
-	cd client && hpack --force
 	cabal --ghcjs new-test --project-file=cabal-ghcjs.project --builddir=test-ghcjs test:clientTest --disable-library-profiling --disable-documentation
 
 fetchPEGjs:

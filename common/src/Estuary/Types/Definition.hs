@@ -62,7 +62,7 @@ data TimerUpState =
   deriving (Eq, Show, Generic)
 
 --data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
-data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
+data TimeVision = Cyclic Rational | Metric Rational | Ring Rational | Beads (Rational,Rational) deriving (Show,Eq,Ord,Generic)
 
 instance ToJSON TimeVision where
   toEncoding = genericToEncoding defaultOptions

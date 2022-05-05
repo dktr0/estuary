@@ -31,11 +31,11 @@ setBrightness [br] $ --  0-0.9 = less, 1++ = more <br />
 setContrast [c] $ -- 0-0.9 = less, 1++ = more <br />
 setGrayscale [g] $ -- 0 = no grayscale, 1 = full grayscale <br />
 setSaturate [s] $ -- 1 = natural video saturation (1++ = more, 1-- =less) <br />
-circleMask [m] $ -- 0 is no mask, 0-0.99 makes the mask appear from biggest to smallest (it grows/decrease from the centre)
-circleMask' [m] [x] [y] $ -- similar to circleMask but with two more parameters that move the center of the circleMask
-sqrMask [m] $ -- 0 is no mask, 0-0.99 makes the mask appear from biggest to smallest (it grows/decrease from the centre)
-rectMask [t] [r] [b] [l] $ -- accepts four parameters: top right bottom left, which are the amount of reduction in each side
-z [n] -- changes the depth of the video being reproduced
+circleMask [m] $ -- 0 is no mask, 0-0.99 makes the mask appear from biggest to smallest (it grows/decrease from the centre) <br />
+circleMask' [m] [x] [y] $ -- similar to circleMask but with two more parameters that move the center of the circleMask <br />
+sqrMask [m] $ -- 0 is no mask, 0-0.99 makes the mask appear from biggest to smallest (it grows/decrease from the centre) <br />
+rectMask [t] [r] [b] [l] $ -- accepts four parameters: top right bottom left, which are the amount of reduction in each side <br />
+z [n] -- changes the depth of the video being reproduced <br />
 
 ## Text Function
 

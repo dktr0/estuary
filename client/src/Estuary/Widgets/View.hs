@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings #-}
 
 module Estuary.Widgets.View where
 
@@ -12,7 +12,9 @@ import Control.Monad.IO.Class
 import Data.Maybe
 import TextShow
 import Data.Time
+import Data.Bool
 import qualified Data.Sequence as Seq
+import GHCJS.DOM.EventM
 
 import Estuary.Types.Live
 import Estuary.Types.Definition
@@ -40,7 +42,22 @@ import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
+import Estuary.Widgets.DataVisualisers
 
+
+attrsColp :: Bool -> Map.Map T.Text T.Text
+attrsColp b = "class" =: "collapsableView" <> "style" =: ("display: " <> showDiv b)
+  where
+    showDiv True  = "block"
+    showDiv False = "none"
+
+viewsContainerCollaps :: MonadWidget t m => W t m (Event t EnsembleRequest) -> W t m (Event t EnsembleRequest)
+viewsContainerCollaps x = mdo
+  dynBool <- toggle True evClick
+  evClick <- dynButton dynOpenClose
+  let dynOpenClose = (bool "+" "-") <$> dynBool -- Dyn Text
+  let dynAttr = attrsColp <$> dynBool -- Dyn Value
+  elDynAttr "div" dynAttr x
 
 
 viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
@@ -50,6 +67,10 @@ viewWidget er EmptyView = return never
 viewWidget er (Div c vs) = divClass c $ liftM leftmost $ mapM (viewWidget er) vs
 
 viewWidget er (Views vs) = viewWidget er (Div "views" vs)
+
+viewWidget er (Columns vs) = viewWidget er (Div "columns" vs)
+
+viewWidget er (Rows vs) = viewWidget er (Div "rows" vs)
 
 viewWidget er (BorderDiv vs) = viewWidget er (Div "borderDiv" vs)
 
@@ -68,6 +89,12 @@ viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> 
     setNumColumns =  "grid-template-columns: " <> (T.intercalate " " $ defineNumRowsOrColumns c) <> ";"
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
     setColumnsAndRows  = setNumColumns <> setNumRows
+
+
+viewWidget er (CollapsableView v) = viewsContainerCollaps $ divClass "gridChild" $ viewWidget er v
+
+
+--
 
 viewWidget _ (Text t) = translatableText t >>= dynText >> return never
 
@@ -100,7 +127,7 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 
 viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
-viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("initialnote","content")]) maybeNotePad NotePad er notePadWidget
+viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad er notePadWidget
 
 viewWidget er TempoView = do
   ctx <- context
@@ -110,15 +137,28 @@ viewWidget er TempoView = do
   tempoE <- tempoWidget tempoDelta
   return $ fmap WriteTempo tempoE
 
-viewWidget _ (Example n t) = do
-  b <- clickableDiv "example code-font" $ text t
+viewWidget _ (Snippet z b n t) = do
+  b <- clickableDiv (snippetOrExample b) $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
-  hint $ fmap (\et -> ZoneHint 1 (TextProgram (Live (n,t,et) L3))) bTime
+  hint $ fmap (\et -> ZoneHint z (TextProgram (Live (n,t,et) L3))) bTime
   return never
 
 viewWidget _ AudioMapView = do
   audioMapWidget
   return never
+
+viewWidget _ (LoadView 0) = do
+  graphVisionWidget
+  return never
+
+viewWidget _ (LoadView 1) = do
+  vintageVisionWidget
+  return never
+
+viewWidget _ (LoadView 2) = do
+  concentricCircleVisionWidget
+  return never
+
 
 viewWidget _ (IFrame url) = do
   let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
@@ -140,3 +180,9 @@ zoneWidget z defaultA f g ensResponses anEditorWidget = do
   dynUpdates <- holdDyn iValue deltas'
   variableFromWidget <- anEditorWidget dynUpdates
   return $ (WriteZone z . g) <$> localEdits variableFromWidget
+
+  -- a helper function
+
+snippetOrExample:: Bool -> T.Text
+snippetOrExample True = "example code-font"
+snippetOrExample False = "snippet code-font"
