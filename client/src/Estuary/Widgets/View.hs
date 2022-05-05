@@ -90,7 +90,7 @@ viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er 
 
 viewWidget er (CalendarEventView z) = do
   today <- liftIO getZonedTime
-  zoneWidget z (CalendarEvent "add details for your event" (CalendarTime today Nothing)) maybeCalendarEvent CalendarEv er calendarEventWidget
+  zoneWidget z (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today))) maybeCalendarEvent CalendarEv er calendarEventWidget
 
 viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 
@@ -100,7 +100,7 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 
 viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
-viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("","")]) maybeNotePad NotePad er notePadWidget
+viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("initialnote","content")]) maybeNotePad NotePad er notePadWidget
 
 viewWidget er TempoView = do
   ctx <- context

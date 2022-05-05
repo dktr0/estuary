@@ -13,10 +13,12 @@ import qualified Data.Fixed as F
 import Data.Map as Map
 import Data.Maybe as Maybe
 import Control.Monad.IO.Class
+import Control.Monad(liftM)
 import qualified Data.Char as C
 
 
 import Estuary.Types.Context
+import Estuary.Types.Language
 import Estuary.Widgets.W
 import Estuary.Types.Definition
 import Estuary.Widgets.Reflex
@@ -39,73 +41,196 @@ import Estuary.Widgets.Reflex
 -- type calendarEvent = (Text, ZonedTime) -- still be able to converted, but also know the timeZone of the last person who changed the time in the widgets.
 -- operations:
 
-enableRecurrence :: Bool -> CalendarEvent -> CalendarEvent
-enableRecurrence True (CalendarEvent details (CalendarTime startingDate recurrence)) = CalendarEvent details (CalendarTime startingDate (Just (Recurrence Daily startingDate)))
-enableRecurrence False (CalendarEvent details (CalendarTime startingDate recurrence)) = (CalendarEvent details (CalendarTime startingDate Nothing))
+-- enableRecurrence :: Bool -> CalendarEvent -> CalendarEvent
+-- enableRecurrence True (CalendarEvent details (CalendarTime startingDate recurrence)) = CalendarEvent details (CalendarTime startingDate (Just (Recurrence Daily startingDate)))
+-- enableRecurrence False (CalendarEvent details (CalendarTime startingDate recurrence)) = (CalendarEvent details (CalendarTime startingDate Nothing))
+
+calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Variable t CalendarEvent)
+calendarEventWidget delta = divClass "calendarEventWidgetMainContainer" $ mdo
+  -- thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+  -- sampledDelta <- sample $ current delta
+  -- d <- holdDyn sampledDelta $ localUpdates
+  -- dynText $ fmap (T.pack . show) delta
+
+  autoUpdateStartingDateEv <- autoUpdateStartingDate $ fmap getStartingDateFromCalendarEv delta
+
+  (descEv, dateEv, changePeriodicityEv, changeEndDateEv) <- divClass "calendarEventWidgetSubContainer" $ do
+    descEv' <- divClass "detailsContainer" $ divClass "descriptionWidget code-font background" $ descriptionWidget $ fmap getDetailsFromCalendarEv delta -- Event t Text
+
+    dateEv' <- divClass "selectStartingDateContainer" $ do
+        dateEv'' <- divClass "dateWidget code-font background" $ utcTimeOrLocalTimeWidget (fmap getStartingDateFromCalendarEv delta) -- Event t TimeZone
+        return dateEv''
+
+    (changePeriodicityEv', changeEndDateEv') <- divClass "periodicity" $ do
+      changePeriodicityEv'' <- divClass "selectPeriodicity" $ changePeriodicityWidget $ fmap (getPeriodicityFromRecurrence' . getRecurrenceFromCalendarEvent) delta
+      changeEndDateEv'' <- divClass "endDateWidget code-font background" $ changeEndDateWidget changePeriodicityEv'' (fmap (getPeriodicityFromRecurrence' . getRecurrenceFromCalendarEvent) delta) $ fmap (localDay . zonedTimeToLocalTime . getEndDateFromCalendarEv) delta -- Event t Day
+      return (changePeriodicityEv'', changeEndDateEv'')
+    return (descEv', dateEv', changePeriodicityEv', changeEndDateEv'  {--, timeOfDayEv', zoneEv', utcTimeEv'--})
+
+  let descF = fmap changeDescription descEv -- Event t (CalendarEvent -> CalendarEvent)
+  let autoUpdateStartingDateF = fmap startingDayAutoUpdate autoUpdateStartingDateEv
+  let dateAndTimeF = fmap changeDateAndTime dateEv
+  let changePeriodicityF = fmap changePeriodicity changePeriodicityEv
+  let changeEndDateF = fmap changeEndDate changeEndDateEv
+
+  let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF ] -- Event t (CalendarEvent -> CalendarEvent)--
+  let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t CalendarEvent
+  v <- variable delta localUpdates
+  return v
+
 
 changePeriodicity :: Periodicity -> CalendarEvent -> CalendarEvent
-changePeriodicity newPeriodicity (CalendarEvent details (CalendarTime startingDate Nothing)) = CalendarEvent details (CalendarTime startingDate Nothing)
-changePeriodicity newPeriodicity (CalendarEvent details (CalendarTime startingDate (Just (Recurrence periodicity endDate)))) =   CalendarEvent details (CalendarTime startingDate (Just (Recurrence newPeriodicity endDate)))
+changePeriodicity Once (CalendarEvent details (CalendarTime startingDate (Recurrence periodicity endDate))) = CalendarEvent details (CalendarTime startingDate (Recurrence Once startingDate))
+changePeriodicity newPeriodicity (CalendarEvent details (CalendarTime startingDate (Recurrence periodicity endDate))) = CalendarEvent details (CalendarTime startingDate (Recurrence newPeriodicity endDate))
+
 --
 changeEndDate :: Day -> CalendarEvent -> CalendarEvent
-changeEndDate newDay (CalendarEvent details (CalendarTime startingDate Nothing)) = CalendarEvent details (CalendarTime startingDate Nothing)
--- (Just (Recurrence Daily (ZonedTime (LocalTime newDay (localTimeOfDay $ zonedTimeToLocalTime startingDate)) (zonedTimeZone  startingDate)))))
-changeEndDate newDay (CalendarEvent details (CalendarTime startingDate (Just (Recurrence periodicity (ZonedTime (LocalTime day timeOfDay) timeZone))))) = CalendarEvent details (CalendarTime startingDate (Just (Recurrence periodicity (ZonedTime (LocalTime newDay timeOfDay) timeZone))))
+changeEndDate newDay (CalendarEvent details (CalendarTime startingDate  (Recurrence periodicity (ZonedTime (LocalTime day timeOfDay) timeZone)))) = CalendarEvent details (CalendarTime startingDate  (Recurrence periodicity (ZonedTime (LocalTime newDay timeOfDay) timeZone)))
 
+--
 startingDayAutoUpdate :: ZonedTime -> CalendarEvent -> CalendarEvent
-startingDayAutoUpdate now (CalendarEvent details (CalendarTime startingDay Nothing)) = CalendarEvent details (CalendarTime startingDay Nothing)
-startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Just (Recurrence Daily (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay))))) = do
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime startingDate   (Recurrence Once endDate))) = CalendarEvent details (CalendarTime startingDate   (Recurrence Once endDate))
+
+-- Daily
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence Daily (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
   let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
   let newStartingDay = addDays 1 startingDay
-  let nextStartingDate = (ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
+  let diffNowAndStartDate = diffZonedTime now startingDate
+  let diffNowAndEndDate = diffZonedTime now endDate
+  let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
+  let nextStartingDate' | (diffNowAndStartDate > 0) = nextStartingDate
+                        | otherwise = startingDate
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence Daily (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+
+
+-- "daily until" recurrence
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence DailyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+  let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
+  let newStartingDay = addDays 1 startingDay
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
   let diffNowAndStartDate = diffZonedTime now startingDate
   let diffNowAndEndDate = diffZonedTime now endDate
   let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) = nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate' (Just (Recurrence Daily (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay))))
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence DailyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
-startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Just (Recurrence Weekly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay))))) = do
+-- "weekly"
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence Weekly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
   let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
   let newStartingDay = addDays 7 startingDay
-  let nextStartingDate = (ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
+  let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
+  let diffNowAndStartDate = diffZonedTime now startingDate
+  let diffNowAndEndDate = diffZonedTime now endDate
+  let nextStartingDate' | (diffNowAndStartDate > 0) =  nextStartingDate
+                      | otherwise = startingDate
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence Weekly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+
+-- "weekly until"
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence WeeklyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+  let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
+  let newStartingDay = addDays 7 startingDay
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
   let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
   let diffNowAndStartDate = diffZonedTime now startingDate
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) =  nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate' (Just (Recurrence Weekly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay))))
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence WeeklyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
 
+--"monthly on x-day"
   --repeat on same day number as opposed to the same week day :: eg. will always update to the 3rd of the next month
-startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Just (Recurrence Monthly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay))))) = do
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Recurrence MonthlyXDay (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
   let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
   let numberOfDaysOfMonth  =  gregorianMonthLength (getYearFromDay startingDay) (getMonthFromDay startingDay)
   let newStartingDay = addDays (fromIntegral numberOfDaysOfMonth) startingDay
-  let nextStartingDate = (ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
+  let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
+  let diffNowAndStartDate = diffZonedTime now startingDate
+  let diffNowAndEndDate = diffZonedTime now endDate
+  let nextStartingDate' | (diffNowAndStartDate > 0) = nextStartingDate
+                      | otherwise = startingDate
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyXDay (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+
+--"monthly x-day until"
+  --repeat on same day number as opposed to the same week day :: eg. will always update to the 3rd of the next month
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence MonthlyXDayUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+  let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
+  let numberOfDaysOfMonth  =  gregorianMonthLength (getYearFromDay startingDay) (getMonthFromDay startingDay)
+  let newStartingDay = addDays (fromIntegral numberOfDaysOfMonth) startingDay
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
   let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
   let diffNowAndStartDate = diffZonedTime now startingDate
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) = nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate' (Just (Recurrence Monthly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay))))
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyXDayUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
-startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Just (Recurrence Yearly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay))))) = do
+--"monthly on the first wed"
+  --repeat on same day number as opposed to the same week day :: eg. will always update to the 3rd of the next month
+-- startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Recurrence MonthlyFirstXDay (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+--   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
+--   let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
+--   let numberOfDaysOfMonth  =  gregorianMonthLength (getYearFromDay startingDay) (getMonthFromDay startingDay)
+--   let newStartingDay = addDays (fromIntegral numberOfDaysOfMonth) startingDay
+--   let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
+--   let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
+--   let diffNowAndStartDate = diffZonedTime now startingDate
+--   let diffNowAndEndDate = diffZonedTime now endDate
+--   let nextStartingDate' | (diffNowAndStartDate > 0) = nextStartingDate
+--                       | otherwise = startingDate
+--   CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyFirstXDay (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+--
+-- selectFirstSecondThirdOrFourthXDayFromNextMonth ::
+--
+-- isFirstSecondThirdOrFourthXDay :: Day -> [Day] -> Int
+-- isFirstSecondThirdOrFourthXDay daySelected calendarDays = length $ catMaybes $ fmap (compareDayOfCalendar daySelected) calendarDays
+--
+-- compareDayOfCalendar :: Day -> Day -> Maybe Bool
+-- compareDay daySelected calendarDay
+--   | daySelected == calendarDay = True
+--   | otherwise = Nothing
+
+-- "yearly "
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence Yearly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
   let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
   let yearLength year | (isLeapYear year) == True = 366
                       | otherwise = 365
   let newStartingDay = addDays (fromIntegral $ yearLength (getYearFromDay startingDay)) startingDay
-  let nextStartingDate = (ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
+  let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
+  let diffNowAndStartDate = diffZonedTime now startingDate
+  let diffNowAndEndDate = diffZonedTime now endDate
+  let nextStartingDate' | (diffNowAndStartDate > 0) =  nextStartingDate
+                      | otherwise = startingDate
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence Yearly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+
+
+-- "yearly until"
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence YearlyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+  let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
+  let yearLength year | (isLeapYear year) == True = 366
+                      | otherwise = 365
+  let newStartingDay = addDays (fromIntegral $ yearLength (getYearFromDay startingDay)) startingDay
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
   let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
   let diffNowAndStartDate = diffZonedTime now startingDate
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) =  nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate' (Just (Recurrence Yearly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay))))
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence YearlyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+
 
 diffZonedTime :: ZonedTime -> ZonedTime -> NominalDiffTime
 diffZonedTime a b = diffUTCTime (zonedTimeToUTC a) (zonedTimeToUTC b)
@@ -113,14 +238,17 @@ diffZonedTime a b = diffUTCTime (zonedTimeToUTC a) (zonedTimeToUTC b)
 changeDescription :: Text -> CalendarEvent -> CalendarEvent -- same for the others
 changeDescription newDetails (CalendarEvent details calendarTime) = CalendarEvent newDetails calendarTime
 
+changeDateAndTime :: ZonedTime -> CalendarEvent -> CalendarEvent -- given a day the func will return the new calendarEvent --attachWith
+changeDateAndTime zt (CalendarEvent details (CalendarTime zonedTime   recurrence))  = CalendarEvent details  (CalendarTime zt  recurrence)
+
 changeDate :: Day -> CalendarEvent -> CalendarEvent -- given a day the func will return the new calendarEvent --attachWith
-changeDate d (CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) timeZone) recurrence))  = CalendarEvent details  (CalendarTime (ZonedTime (LocalTime d timeOfDay) timeZone) recurrence)
+changeDate d (CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) timeZone)   recurrence))  = CalendarEvent details  (CalendarTime (ZonedTime (LocalTime d timeOfDay) timeZone)  recurrence)
 
 changeTimeOfDay :: TimeOfDay -> CalendarEvent -> CalendarEvent
-changeTimeOfDay td (CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) timeZone) recurrence)) = CalendarEvent details (CalendarTime (ZonedTime (LocalTime day td) timeZone) recurrence)
+changeTimeOfDay td (CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) timeZone)  recurrence)) = CalendarEvent details (CalendarTime (ZonedTime (LocalTime day td) timeZone)  recurrence)
 
 changeTimeZone :: TimeZone -> CalendarEvent -> CalendarEvent --
-changeTimeZone tz (CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) timeZone) recurrence)) = CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) tz) recurrence)
+changeTimeZone tz (CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) timeZone)  recurrence)) = CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) tz)  recurrence)
 
 
 descriptionWidget ::  MonadWidget t m => Dynamic t Text -> m (Event t Text) -- similar to our text editors ---- displays a text
@@ -147,69 +275,66 @@ getDayFromDay d = do
 -- when you click a picker with two modes : 1) displays the day only/ current scheduled day; when you click it shifts to 2) picker so you can select; we will use dateWidgetMode1 and 2.
 -- Day =
 
-timeZoneWidgetEv ::  MonadWidget t m => Event t TimeOfDay -> Dynamic t TimeZone -> m (Event t TimeZone)
-timeZoneWidgetEv tEv dynCurrentZone = mdo
-  currentZone <- sample $ current dynCurrentZone
+thisClientTimeZoneEv ::  MonadWidget t m => Event t TimeOfDay -> m (Event t TimeZone)
+thisClientTimeZoneEv tEv = mdo
   thisClientTimeZone <- liftIO getCurrentTimeZone -- Dyn TimeZone -- new zone
-  dynBool <- toggle False tEv
-  let zDyn = (utcORutc5 currentZone thisClientTimeZone) <$> dynBool -- Dynamic t TimeZone
-  return (updated zDyn)
-
-utcORutc5 ::TimeZone -> TimeZone -> Bool -> TimeZone
-utcORutc5 currentTimeZone updatedTz False  = currentTimeZone
-utcORutc5 currentTimeZone updatedTz True = updatedTz
+  let zDyn = tagPromptlyDyn (constDyn thisClientTimeZone) tEv--
+  return zDyn
 
 showZoneWidget ::  MonadWidget t m => Dynamic t TimeZone -> m ()
 showZoneWidget updatedTz = do
-  let showZDyn = fmap (T.pack . show) updatedTz
+  let showZDyn = fmap (T.pack . timeZoneName) updatedTz
   dynText showZDyn -- <> " " <> "(the local time of the last person who edited the time)"
 
-timeZoneWidget ::  MonadWidget t m => Event t TimeOfDay -> Dynamic t TimeZone -> m (Event t TimeZone)
-timeZoneWidget changedTimeEv currentDynTimeZone = mdo
-  currentZone <- sample $ current currentDynTimeZone
-  timeZoneWidgetEv' <- timeZoneWidgetEv changedTimeEv currentDynTimeZone
-  let updatedZoneEvs = leftmost [timeZoneWidgetEv', updated currentDynTimeZone]
-  dynTimeZone <- holdDyn currentZone updatedZoneEvs
-  showZoneWidget dynTimeZone
-  return timeZoneWidgetEv'
+timeZoneWidget ::  MonadWidget t m => Event t TimeOfDay -> Dynamic t ZonedTime -> Dynamic t TimeZone -> m (Event t TimeZone)
+timeZoneWidget changedTimeEv zt currentDynTimeZone = mdo
+  sampledCurrentZone <- sample $ current currentDynTimeZone
+  let showSampledCurrentZone = timeZoneOffsetTotimeZoneName sampledCurrentZone -- text
+  thisClientTimeZoneEv' <- thisClientTimeZoneEv changedTimeEv -- event t TimeZone
+
+  let showTimeZoneWidgetEv = fmap timeZoneOffsetTotimeZoneName thisClientTimeZoneEv'
+  dynTextThisClientTimeZone <- holdDyn showSampledCurrentZone showTimeZoneWidgetEv -- Dyn text
+
+  dynThisClientTimeZone <- holdDyn sampledCurrentZone thisClientTimeZoneEv' -- dyn TimeZone
+  sampledThisClientTimeZone <- sample $ current dynThisClientTimeZone -- timezone
+  let uctTimeOfDay = fmap (timeToTimeOfDay . utctDayTime. zonedTimeToUTC) zt -- Dynamic TimeOfDay
+  sampledUTCTimeOfDay <- sample $ current uctTimeOfDay
+  let localTimeOfDay = fmap (utcToLocalTimeOfDay sampledThisClientTimeZone) uctTimeOfDay
+
+  -- dayAjustment <- holdDyn (showDayAdjustment $ (fst $ utcToLocalTimeOfDay sampledCurrentZone sampledUTCTimeOfDay)) $ leftmost [{--updated (fmap (showDayAdjustment . fst) localTimeOfDay), --} updated (fmap (showDayAdjustment . fst . (utcToLocalTimeOfDay sampledCurrentZone)) uctTimeOfDay)]
+
+  -- tooltip (divClass "zoneWidget" $ dynText $ dynTextThisClientTimeZone) (text "local time")
+
+  -- divClass "localDayAdjustment" $ dynText dayAjustment
+  return thisClientTimeZoneEv'
+
+timeZoneOffsetTotimeZoneName :: TimeZone -> Text
+timeZoneOffsetTotimeZoneName zone = do
+ let offsetStringToInt = read (timeZoneOffsetString zone) :: Int
+ let offsetIntDisplaced = (realToFrac offsetStringToInt) * 0.01
+ let decimalFromOffset x | (abs ((realToFrac $ round x) - x) == 0.0) = show $ round x
+                         | otherwise = show x
+ T.pack $ "UTC" ++ (decimalFromOffset offsetIntDisplaced)
 
 
-enableRecurrenceWidget :: MonadWidget t m => Dynamic t (Maybe Recurrence) -> m (Event t Bool)
-enableRecurrenceWidget r = do
-  let checkboxStatus = fmap deductBoolFromRecurrence r -- Dynamic t Bool
-  cb <- checkboxW checkboxStatus
-  return $ cb
-
-
-deductBoolFromRecurrence :: Maybe Recurrence -> Bool
-deductBoolFromRecurrence Nothing = False
-deductBoolFromRecurrence (Just r) = True
-
-printRecurrence :: MonadWidget t m => Event t CalendarEvent -> Dynamic t (Maybe Recurrence) -> m ()
-printRecurrence calendarEv serverR = do
-  let calendarEv' = fmap getRecurrenceFromCalendarEvent calendarEv
-  recurrence <- holdDyn Nothing (leftmost [updated serverR, calendarEv'])
+--
+printRecurrence :: MonadWidget t m => Dynamic t Recurrence -> m ()
+printRecurrence serverR = do
+  sampledRecurrence <- sample $ current serverR
+  recurrence <- holdDyn sampledRecurrence  (updated serverR)
   dynText $ fmap (T.pack . show) recurrence
 
-periodicityAndEndDateToRecurrence ::  Maybe ZonedTime -> Maybe Periodicity -> Maybe Recurrence
-periodicityAndEndDateToRecurrence Nothing Nothing = Nothing
-periodicityAndEndDateToRecurrence Nothing (Just p) = Nothing
-periodicityAndEndDateToRecurrence (Just z) Nothing = Nothing
-periodicityAndEndDateToRecurrence (Just z) (Just p) = Just (Recurrence p z)
+getPeriodicityFromRecurrence :: Recurrence -> Periodicity
+getPeriodicityFromRecurrence r = periodicity r
 
-getPeriodicityFromRecurrence :: Maybe Recurrence -> Maybe Periodicity
-getPeriodicityFromRecurrence Nothing = Nothing
-getPeriodicityFromRecurrence (Just r) = Just (periodicity r)
+getPeriodicityFromRecurrence' :: Recurrence -> Periodicity
+getPeriodicityFromRecurrence' r = periodicity r
 
-getPeriodicityFromRecurrence' :: Maybe Recurrence -> Periodicity
-getPeriodicityFromRecurrence' Nothing = Daily
-getPeriodicityFromRecurrence' (Just r) = periodicity r
+getRecurrenceFromCalendarEvent :: CalendarEvent -> Recurrence
+getRecurrenceFromCalendarEvent (CalendarEvent details (CalendarTime startingDate  recurrence)) = recurrence
 
-getRecurrenceFromCalendarEvent :: CalendarEvent -> Maybe Recurrence
-getRecurrenceFromCalendarEvent (CalendarEvent details (CalendarTime startingDate recurrence)) = recurrence
-
-selectPeriodicityWidget :: MonadWidget t m => Dynamic t (Periodicity) -> m (Event t Periodicity)
-selectPeriodicityWidget p = mdo
+changePeriodicityWidget :: MonadWidget t m => Dynamic t (Periodicity) -> m (Event t Periodicity)
+changePeriodicityWidget p = mdo
   let p' = fmap periodicityToKey p -- Dynamic Int -- (updated p) -- Event t Int
   dd <- dropdownW periodicities p' -- Event t Int -- $ def & dropdownConfig_setValue .~ currentPeriodicity
   let selItem = fmap lookupPeriodicity dd -- event t Periodicity
@@ -217,31 +342,54 @@ selectPeriodicityWidget p = mdo
 
 
 periodicityToKey :: Periodicity -> Int
-periodicityToKey Daily = 1
-periodicityToKey Weekly = 2
-periodicityToKey Monthly = 3
-periodicityToKey Yearly = 4
+periodicityToKey Once = 1
+periodicityToKey Daily = 2
+periodicityToKey DailyUntil = 3
+periodicityToKey Weekly = 4
+periodicityToKey WeeklyUntil = 5
+periodicityToKey MonthlyXDay = 6
+periodicityToKey MonthlyXDayUntil = 7
+periodicityToKey Yearly = 8
+periodicityToKey YearlyUntil = 9
 
 periodicities :: Map.Map Int Text
-periodicities = Map.fromList [(1, "Daily"), (2, "Weekly"), (3, "Monthly"), (4, "Yearly")]
+periodicities = Map.fromList [(1, "Once"), (2, "Daily"), (3, "Daily until"), (4, "Weekly"), (5, "Weekly until"), (6, "Monthly"), (7, "Monthly until"), (8, "Yearly"), (9, "Yearly until")]
 
 lookupPeriodicity :: Int  -> Periodicity
 lookupPeriodicity key = textToPeriodicity $ Maybe.fromJust (Map.lookup key periodicities)
 
 textToPeriodicity :: Text -> Periodicity
+textToPeriodicity "Once" =  Once
 textToPeriodicity "Daily" =  Daily
+textToPeriodicity "Daily until" =  DailyUntil
 textToPeriodicity "Weekly" = Weekly
-textToPeriodicity "Monthly" = Monthly
+textToPeriodicity "Weekly until" = WeeklyUntil
+textToPeriodicity "Monthly" = MonthlyXDay
+textToPeriodicity "Monthly until" = MonthlyXDayUntil
 textToPeriodicity "Yearly" = Yearly
+textToPeriodicity "Yearly until" = YearlyUntil
 
-changeEndDateWidget ::  MonadWidget t m => Dynamic t Day -> m (Event t Day)
-changeEndDateWidget d = mdo
+endDateAttrs :: Periodicity -> Map Text Text
+endDateAttrs p | p == Once || p == Daily || p == Weekly || p == MonthlyXDay || p == Yearly =  "style" =: ("display: none;")
+               | otherwise = "style" =: ("display: block;")
+
+changeEndDateWidget :: MonadWidget t m => Event t Periodicity -> Dynamic t Periodicity -> Dynamic t Day -> m (Event t Day)
+changeEndDateWidget pEv dynP d = mdo
+    sampledCurrentPeriodicity <- sample $ current dynP
+    let updatedP = leftmost [pEv, updated dynP]
+    dynPeriodicity <- holdDyn sampledCurrentPeriodicity updatedP
+    let dynAttrs = endDateAttrs <$> dynPeriodicity
+    elDynAttr "div" dynAttrs $ changeEndDateWidget' d
+
+
+changeEndDateWidget' :: MonadWidget t m => Dynamic t Day -> m (Event t Day)
+changeEndDateWidget' d = mdo
   let openCloseEvs = leftmost [mode1Ev, () <$ mode2Ev]
   dynBool <- toggle False openCloseEvs
   let mode1Attrs = calendaContainerAttrs <$> dynBool
   let mode2Attrs = dateLabelAttrs <$> dynBool
   mode2Ev <- dateWidgetMode2 mode1Attrs d
-  mode1Ev <- elDynAttr "div" mode2Attrs $ dateWidgetMode1 selDate -- m (Event t ())
+  mode1Ev <- elDynAttr "div" mode2Attrs $ dateWidgetMode1ForEndDate selDate -- dateWidgetMode1ForEndDate selDate -- m (Event t ())
   today <- (sample $ current d)
   let updatedDay = leftmost [mode2Ev, updated d]
   selDate <- holdDyn today updatedDay -- mode2Ev -- Dynamic t Day
@@ -258,19 +406,188 @@ autoUpdateStartingDate defTime = do
   let nowUTCtoZonedTime = fmap (utcToZonedTime (zonedTimeZone defTime')) nowUTC' -- ZonedTime
   return $ updated nowUTCtoZonedTime
 
+dateWidgetMode1ForEndDate ::  MonadWidget t m =>  Dynamic t Day -> m (Event t ())
+dateWidgetMode1ForEndDate d = mdo
+  let d' = fmap (T.pack . show) d
+  (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ dynText d'
+  openPickerEv <- wrapDomEvent (_element_raw openPicker) (elementOnEventName Click) (mouseXY)
+  let openPicker' = () <$ openPickerEv -- (Event t (Dynamic t calendarEvent)
+  return openPicker'
 
-dateWidget ::  MonadWidget t m => Dynamic t Day -> m (Event t Day)
-dateWidget d = mdo
+
+--   updatedUTCTimeOfDay <- divClass "changeUTCTimeWidget" $ timeWidget utcTimeOfDayDyns -- Event t TimeOfDay
+--   let updatedTimeOfDayInLocalTime = fmap (snd . utcToLocalTimeOfDay thisComputerZone) updatedUTCTimeOfDay
+--   showDayAdjustmentUTC tdEvent ztCurrent
+--   -- tooltip (divClass "changeUTCTimeWidgetText" $ dynText $ "UTC " <> dayAjustment) (text "universal time")
+--   return updatedTimeOfDayInLocalTime -- Event t TimeOf Day in UTCTime
+--
+-- new challenge
+--- it displays the date and time in local terms, and when you click on the date you are picking a date in local terms. clicking on the local area brings up a picker where you can set date and time in local, clicking on the UTC area brings up a similar picker where you can set date and time in UTC prior to the click, you are not editing
+localTimeWidgetRefactored :: MonadWidget t m => Dynamic t ZonedTime -> m (Event t ZonedTime) --  m (Event t ZonedTime)
+localTimeWidgetRefactored  zt = mdo
   let openCloseEvs = leftmost [mode1Ev, () <$ mode2Ev]
   dynBool <- toggle False openCloseEvs
   let mode1Attrs = calendaContainerAttrs <$> dynBool
   let mode2Attrs = dateLabelAttrs <$> dynBool
-  mode2Ev <- dateWidgetMode2 mode1Attrs d
+  mode2Ev <- dateAndTimeMode2InLocalTime mode1Attrs zt -- m Event t ZonedTime in local time -- this needs a holdDyn?
+  mode1Ev <- elDynAttr "div" mode2Attrs $ displayLocalTimeWidget mode2Ev zt -- m (Event t ())
+  return mode2Ev -- mode2Ev -- evenrt t Zoned Time
+
+
+-- 2. We need another (sub)widget utcTimeWidget :: Dynamic t ZonedTime -> m (Event t ZonedTime) - it displays the time in UTC terms, displays the +1 day when necessary, and has a way of being clicked on to pick a date (in which case, the date is being picked in universal terms).
+
+utcTimeWidgetRefactored :: MonadWidget t m =>  Dynamic t ZonedTime -> m (Event t ZonedTime) -- m (Event t ZonedTime)
+utcTimeWidgetRefactored  zt = mdo
+  let openCloseEvs = leftmost [mode1Ev, () <$ mode2Ev]
+  dynBool <- toggle False openCloseEvs
+  let mode1Attrs = calendaContainerAttrs <$> dynBool
+  let mode2Attrs = dateLabelAttrs <$> dynBool
+  mode2Ev <- dateAndTimeMode2UTCTime mode1Attrs zt -- m Event t ZonedTime in utc time -- this needs a holdDyn?
+  mode1Ev <- elDynAttr "div" mode2Attrs $ displayUTCTimeWidget mode2Ev zt -- m (Event t ())
+  return mode2Ev -- event t Zoned Time
+
+-- 3. Then bringing them together is straightforward and should just use the generic mergeDeltas defined above.
+mergeDeltas :: MonadWidget t m => Dynamic t ZonedTime -> Event t ZonedTime ->  m (Dynamic t ZonedTime)
+mergeDeltas delta edits  = do
+  iVal <- sample $ current delta
+  holdDyn iVal $ leftmost [edits,updated delta]
+
+utcTimeOrLocalTimeWidget :: MonadWidget t m => Dynamic t ZonedTime -> m (Event t ZonedTime)
+utcTimeOrLocalTimeWidget delta = mdo
+  deltaFor1 <- mergeDeltas delta localEdits2
+  deltaFor2 <- mergeDeltas delta localEdits1
+  deltaFor3 <- mergeDeltas delta $ leftmost [localEdits1, localEdits2]
+  divClass "showDate" $ showSelectedDate deltaFor3
+  (localEdits1, localEdits2) <- divClass "timeWidgetsContainer" $ do
+    localEdits1' <- localTimeWidgetRefactored deltaFor1
+    localEdits2' <- utcTimeWidgetRefactored deltaFor2
+    return $ (localEdits1',localEdits2')
+  return $ leftmost [localEdits1,localEdits2]
+  -- variable delta $ leftmost [localEdits1,localEdits2]
+
+showSelectedDate :: MonadWidget t m => Dynamic t ZonedTime ->  m ()
+showSelectedDate delta = do
+  let selDate = fmap (T.pack . show . localDay . zonedTimeToLocalTime) delta
+  dynText selDate
+
+
+dateWidget ::  MonadWidget t m => Dynamic t ZonedTime -> m (Event t Day)
+dateWidget zt = mdo
+  thisComputerDay <- zonedDayToThisComputerDay zt
+  let openCloseEvs = leftmost [mode1Ev, () <$ mode2Ev]
+  dynBool <- toggle False openCloseEvs
+  let mode1Attrs = calendaContainerAttrs <$> dynBool
+  let mode2Attrs = dateLabelAttrs <$> dynBool
+  mode2Ev <- dateWidgetMode2 mode1Attrs thisComputerDay
   mode1Ev <- elDynAttr "div" mode2Attrs $ dateWidgetMode1 selDate -- m (Event t ())
-  today <- (sample $ current d)
-  let updatedDay = leftmost [mode2Ev, updated d]
+  today <- (sample $ current thisComputerDay)
+  let updatedDay = leftmost [mode2Ev, updated thisComputerDay]
   selDate <- holdDyn today updatedDay -- mode2Ev -- Dynamic t Day
   return mode2Ev
+
+
+dayAndTimeWidgetMode1 ::  MonadWidget t m =>  Dynamic t ZonedTime -> m (Event t ())
+dayAndTimeWidgetMode1 zt = mdo
+  let zt' = fmap (T.pack . show) zt
+  (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ dynText zt'
+  openPickerEv <- wrapDomEvent (_element_raw openPicker) (elementOnEventName Click) (mouseXY)
+  let openPicker' = () <$ openPickerEv -- (Event t (Dynamic t calendarEvent)
+  return openPicker'
+
+--1. show separateley the date from the time
+
+displayLocalTimeWidget ::  MonadWidget t m =>  Event t ZonedTime -> Dynamic t ZonedTime -> m (Event t ())
+displayLocalTimeWidget ztEv zt = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+  let localTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) zt
+  sampledLocalTime <- sample $ current localTime-- Dynamic t Zoned time in local time
+  selLocalTime <- holdDyn sampledLocalTime $ leftmost [ztEv, updated localTime] -- mode2Ev -- Dynamic t zonedTime
+  let selLocalTime' = fmap (T.pack . show) selLocalTime
+  let selTimeOfDay =  fmap (T.pack . show . localTimeOfDay . zonedTimeToLocalTime) selLocalTime
+  let selTimeZone = fmap (T.pack . show . zonedTimeZone) selLocalTime
+  dayAdj <- dayAdjustmentWidgetForLocalWidget ztEv zt
+  (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ tooltip (divClass "zoneWidget" $ dynText $ selTimeOfDay <> " " <> selTimeZone <> " " <> dayAdj) (text "local time")  -- dynText $ selLocalTime' <> " " <> dayAdj
+  openPickerEv <- wrapDomEvent (_element_raw openPicker) (elementOnEventName Click) (mouseXY)
+  let openPicker' = () <$ openPickerEv -- (Event t (Dynamic t calendarEvent)
+  return openPicker'
+
+  --   return updatedTimeOfDayInLocalTime -- Event t TimeOf Day in UTCTime
+
+dayAdjustmentWidgetForLocalWidget :: MonadWidget t m =>  Event t ZonedTime -> Dynamic t ZonedTime -> m (Dynamic t Text)
+dayAdjustmentWidgetForLocalWidget ztEv zt = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+  let localTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) zt -- dyn zonedTime in localTime
+  sampledLocalTime <- sample $ current localTime -- localTime
+  let ztEvInLocalTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) ztEv
+  zt' <- holdDyn sampledLocalTime $ leftmost [ztEvInLocalTime, updated localTime]
+
+  -- let utcTime = fmap zonedTimeToUTC zt
+  -- sampledUTCTime <- sample $ current utcTime
+  sampledZonedTime <- sample $ current zt
+  utct <- holdDyn sampledZonedTime $ leftmost [ztEv, updated zt]
+
+  return $ dayAdjustmentWidgetForLocalWidget' <$> zt'  <*> utct
+
+dayAdjustmentWidgetForLocalWidget' :: ZonedTime -> ZonedTime -> Text
+dayAdjustmentWidgetForLocalWidget' localT zonedT
+  | zonedD == utcD = dayAdjustment''' localT zonedT
+  | otherwise = ""
+    where
+      utcD = utctDay $ zonedTimeToUTC zonedT
+      zonedD = localDay $ zonedTimeToLocalTime zonedT
+
+dayAdjustment''' :: ZonedTime -> ZonedTime -> Text
+dayAdjustment''' localT zonedT
+  | localD > zonedD = "+" <> (T.pack $ show 1 <> "day")
+  | localD < zonedD = (T.pack $ show (-1) <> "day")
+  |otherwise = ""
+    where
+      zonedD = localDay $ zonedTimeToLocalTime zonedT
+      localD = localDay $ zonedTimeToLocalTime localT
+
+displayUTCTimeWidget ::  MonadWidget t m => Event t ZonedTime -> Dynamic t ZonedTime -> m (Event t ())
+displayUTCTimeWidget ztEv zt = mdo
+  sampledZTCurrent <- sample $ current zt
+  let utcTimeCurrent = fmap zonedTimeToUTC zt --
+  let utcTimeEv = fmap zonedTimeToUTC ztEv
+  sampledUTCTime <- sample $ current utcTimeCurrent-- Dynamic t utcTime
+  selUTCTime <- holdDyn sampledUTCTime $ leftmost [utcTimeEv, updated utcTimeCurrent] -- mode2Ev -- Dynamic t utcTime
+  let selUTCTime' = fmap (T.pack . show) selUTCTime
+  let selUTCTimeOfDay = fmap (T.pack . show . timeToTimeOfDay . utctDayTime) selUTCTime
+  dayAdj <- dayAdjustmentWidget ztEv zt
+  (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ tooltip (divClass "changeUTCTimeWidgetText" $ dynText $ selUTCTimeOfDay <> " " <> "UTC" <> " " <> dayAdj)(text "universal time") -- dynText $ selUTCTime' <> " " <> dayAdj
+  openPickerEv <- wrapDomEvent (_element_raw openPicker) (elementOnEventName Click) (mouseXY)
+  let openPicker' = () <$ openPickerEv -- (Event t (Dynamic t calendarEvent)
+  return openPicker'
+
+
+dayAdjustmentWidget :: MonadWidget t m => Event t ZonedTime -> Dynamic t ZonedTime -> m (Dynamic t Text)
+dayAdjustmentWidget ztEv zt = mdo
+   thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+   let ztToUtcTime = fmap zonedTimeToUTC zt -- Dyn UTCTIme
+   sampledZtToUtcTime <- sample $ current ztToUtcTime
+   let ztEvToUTCTime = fmap zonedTimeToUTC  ztEv-- Event UTCTIme
+   utct <- holdDyn sampledZtToUtcTime $ leftmost [ztEvToUTCTime, (updated ztToUtcTime)] -- Dyn UTCtime --con este funciona bien todo!
+   -- utct <- holdDyn sampledZtToUtcTime (updated ztToUtcTime) -- Dyn UTCtime -- con este funciona bien todo!
+
+   {-- let ztInLocalTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) zt -- dyn Zoned Time in local time
+    sampledZtInLocalTime <- sample $ current ztInLocalTime -- ZonedTime -- no funciona cuando se convierte a localtime--}
+   sampledZt <- sample $ current zt -- ZonedTime
+   zt' <- holdDyn sampledZt $ leftmost [ztEv, (updated zt)] -- Dyn ZonedTime -- con este funciona bien todo!
+   -- zt' <- holdDyn  sampledZt (updated zt) -- Dyn ZonedTime -- con esta opcion funciona bien
+   return $ dayAdjustment'' <$> zt'  <*> utct
+
+
+dayAdjustment'' :: ZonedTime -> UTCTime -> Text
+dayAdjustment'' zt utct
+  | utcDay > ztDay = "+" <> (T.pack $ show 1 <> "day")
+  | utcDay < ztDay = (T.pack $ show (-1) <> "day")
+  |otherwise = ""
+    where
+      utcDay = utctDay utct
+      ztDay = localDay $ zonedTimeToLocalTime zt
+
+
 
 -- only displays; cant change the date
 dateWidgetMode1 ::  MonadWidget t m =>  Dynamic t Day -> m (Event t ())
@@ -280,6 +597,46 @@ dateWidgetMode1 d = mdo
   openPickerEv <- wrapDomEvent (_element_raw openPicker) (elementOnEventName Click) (mouseXY)
   let openPicker' = () <$ openPickerEv -- (Event t (Dynamic t calendarEvent)
   return openPicker'
+
+
+
+zonedDayToThisComputerDay :: MonadWidget t m => Dynamic t ZonedTime -> m (Dynamic t Day)
+zonedDayToThisComputerDay zt = do
+  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+  let zt' = fmap zonedTimeToUTC zt -- Dynamic UTCTime
+  let utcToZonedTime' = fmap (utcToZonedTime thisComputerZone) zt' -- Dynamic t ZonedTime
+  let thisComputerDay = fmap (localDay . zonedTimeToLocalTime) utcToZonedTime' -- Dynamic t Day
+  return thisComputerDay
+
+showUtcTimeToThisClientZoneTimeWidget :: MonadWidget t m => Event t CalendarEvent -> Dynamic t ZonedTime ->  m ()
+showUtcTimeToThisClientZoneTimeWidget calendarEv serverZT = do
+  let calendarEv' = fmap (showZonedTimeWithoutSeconds . getStartingDateFromCalendarEv) calendarEv -- Ev t Text
+  sampledServerZT <- sample $ current serverZT -- ZonedTime
+  let showSampledServerZT = showZonedTimeWithoutSeconds sampledServerZT
+  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+
+  let serverZT' = fmap zonedTimeToUTC serverZT -- Event UTCTime
+  let utcToZonedTime' = fmap (utcToZonedTime thisComputerZone) serverZT' -- Event t ZonedTime
+  let thisComputerLocalTime = fmap showZonedTimeWithoutSeconds utcToZonedTime' -- Event t text
+  thisComputerLocalTime'' <- holdDyn showSampledServerZT (leftmost [updated thisComputerLocalTime, calendarEv'])
+  dynText $ thisComputerLocalTime''
+
+--
+showZonedTimeWithoutSeconds :: ZonedTime -> Text
+showZonedTimeWithoutSeconds zt = do
+  let day = T.pack $ show $ localDay $ zonedTimeToLocalTime zt -- Text
+  let hourOfDay = T.pack $ show $ todHour $ localTimeOfDay $ zonedTimeToLocalTime zt -- Text
+  let minsOfDay = T.pack $ show $ todMin $ localTimeOfDay $ zonedTimeToLocalTime zt -- Text
+  let zone = timeZoneOffsetTotimeZoneName $ zonedTimeZone zt-- Text
+  day <> " " <> hourOfDay <> ":" <> minsOfDay <> " " <> zone
+
+showUTCTimeWithoutSeconds :: UTCTime -> Text
+showUTCTimeWithoutSeconds zt = do
+  let day = T.pack $ show $ utctDay zt -- Text
+  let hourOfDay = T.pack $ show $ todHour $ timeToTimeOfDay $ utctDayTime zt -- Text
+  let minsOfDay = T.pack $ show $ todMin $ timeToTimeOfDay $ utctDayTime zt -- Text
+  day <> " " <> "at" <> " " <> hourOfDay <> " : " <> minsOfDay <> " " <> "UTC" <> " " <> "(universal time)"
+
 
 monthIndex :: Int -> Int
 monthIndex i
@@ -324,6 +681,147 @@ selectYear year = divClass "selectMonth" $ mdo
   return year'
 --utctDay :: UTCTime -> Day -- 2021-08-12
 -- (close event, pick day) or when people press okay -> only changes the server when you confirm it.
+
+localTimeZone ::  MonadWidget t m => Dynamic t ZonedTime -> m (Event t ZonedTime)
+localTimeZone zt  = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+  myzonedTime <- liftIO getZonedTime
+  -- let localTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) zt -- Dynamic t Zoned time in local time
+  -- let localDay' = fmap (localDay . zonedTimeToLocalTime) localTime -- Dynamic t localday
+  -- let localTimeOfDay' = fmap (localTimeOfDay . zonedTimeToLocalTime) localTime -- Dynamic t local time of day
+  -- let localTimeZone = fmap zonedTimeZone localTime -- Dynamic t local time zone
+  --
+  -- date <- dateWidgetMode2' dynAttrs localDay' -- Dyn t day
+  -- time <- elDynAttr "div" dynAttrs $ timeWidget' localTimeOfDay'
+  -- let makeLocalTime = makeZonedTime <$> date <*> time <*> localTimeZone-- dynamic zonedTime
+  return $ updated (constDyn myzonedTime)
+
+dateAndTimeMode2InLocalTime :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t ZonedTime -> m (Event t ZonedTime)
+dateAndTimeMode2InLocalTime dynAttrs zt = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+  let localTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) zt -- Dynamic t Zoned time in local time
+  let localDay' = fmap (localDay . zonedTimeToLocalTime) localTime -- Dynamic t localday
+  let localTimeOfDay' = fmap (localTimeOfDay . zonedTimeToLocalTime) localTime -- Dynamic t local time of day
+  let localTimeZone = fmap zonedTimeZone localTime -- Dynamic t local time zone
+
+  date <- dateWidgetMode2' dynAttrs localDay' -- Dyn t day
+  time <- elDynAttr "div" dynAttrs $ divClass "timeWidget" $ timeWidget'' localTimeOfDay'
+  let makeLocalTime = makeZonedTime <$> date <*> time <*> localTimeZone-- dynamic zonedTime
+
+  (confirmDateButton, closeCalendarButton)  <- divClass "confirm-close-buttons" $ do
+    confirmDate' <- elDynAttr "div" dynAttrs $ clickableDiv "confirmButton" $ text "confirm"
+    closeCalendar' <- elDynAttr "div" dynAttrs $ clickableDiv "cancelButton" $ text "cancel"
+    return (confirmDate', closeCalendar') -- (Event t ())
+
+  let confirmDate = tag (current makeLocalTime) confirmDateButton -- Dynamic a -> Event b -> Event a
+
+  sampledCurrentLocalTime <- sample $ current localTime
+  updatedLocalTime <- holdDyn sampledCurrentLocalTime $ leftmost [confirmDate, updated localTime] -- dyn Day
+
+  let closeCalendar = tag (current updatedLocalTime) closeCalendarButton -- Dynamic a -> Event b -> Event a
+  return $ leftmost [confirmDate, closeCalendar]
+
+
+dateAndTimeMode2UTCTime :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t ZonedTime -> m (Event t ZonedTime)
+dateAndTimeMode2UTCTime dynAttrs zt = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+  let utcTime = fmap zonedTimeToUTC zt -- Dynamic t time in utc time
+  let utcDay' = fmap utctDay utcTime -- Dynamic t utcday
+  let utcTimeOfDay' = fmap (timeToTimeOfDay . utctDayTime) utcTime -- Dynamic t utc time of day
+  let makeUTCTime = makeZonedTime  <$> utcDay' <*> utcTimeOfDay' <*> (constDyn utc)
+
+  date <- dateWidgetMode2' dynAttrs utcDay' -- Dyn t day
+  time <- elDynAttr "div" dynAttrs $ divClass "changeUTCTimeWidget" $ timeWidget'' utcTimeOfDay'
+  let makeUpdatedUTCTime = makeZonedTime <$> date <*> time <*> (constDyn utc) -- dynamic zonedTime
+
+  (confirmDateButton, closeCalendarButton)  <- divClass "confirm-close-buttons" $ do
+    confirmDate' <- elDynAttr "div" dynAttrs $ clickableDiv "" $ text "confirm"
+    closeCalendar' <-  elDynAttr "div" dynAttrs $ clickableDiv "" $ text "cancel"
+    return (confirmDate', closeCalendar') -- (Event t ())
+
+  let confirmDate = tag (current makeUpdatedUTCTime) confirmDateButton -- Dynamic a -> Event b -> Event a
+
+  sampledCurrentUTCTime <- sample $ current makeUTCTime
+  updatedUTCTime <- holdDyn sampledCurrentUTCTime $ leftmost [confirmDate, updated makeUTCTime] -- dyn Day
+
+  let closeCalendar = tag (current updatedUTCTime) closeCalendarButton -- Dynamic a -> Event b -> Event a
+  return $ leftmost [confirmDate, closeCalendar]
+
+
+makeZonedTime :: Day -> TimeOfDay -> TimeZone -> ZonedTime
+makeZonedTime d t z = ZonedTime	(LocalTime	d t) z
+
+dateWidgetMode2' :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t Day -> m (Dynamic t Day)
+dateWidgetMode2' dynAttrs dynDate = mdo
+  let year = fmap getYearFromDay dynDate
+  let month = fmap getMonthFromDay dynDate -- Dyn Int
+  let day = fmap getDayFromDay dynDate
+  (selectedYear, selectedMonth, selectedDay) <- elDynAttr "div" dynAttrs $ do
+    (selectedYear', selectedMonth', firstDayOfSelMonthBool') <- divClass "monthAndYear" $ do
+      selectedMonth'' <- selectMonth month
+      selectedYear'' <- selectYear year
+      let dayToGregorian = fromGregorian <$> selectedYear'' <*> selectedMonth'' <*> (constDyn 1)
+      let initialDayOfSelMonth =  dayOfWeek <$> dayToGregorian
+      let firstDayOfSelMonthBool = dayOfWeekBool <$> initialDayOfSelMonth
+      return (selectedYear'', selectedMonth'', firstDayOfSelMonthBool)
+
+    selectedDay''' <- el "div"  $ do
+      selectedDay'' <- elClass "div" "dayNumbers" $ do
+        el "div" $ do text "Su"
+        el "div" $ text "Mo"
+        el "div" $ text "Tu"
+        el "div" $ text "We"
+        el "div" $ text "Th"
+        el "div" $ text "Fr"
+        el "div" $ text "Sa"
+
+        sun <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 1) firstDayOfSelMonthBool'
+        mon <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 2) firstDayOfSelMonthBool'
+        tue <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 3) firstDayOfSelMonthBool'
+        wed <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 4) firstDayOfSelMonthBool'
+        thu <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 5) firstDayOfSelMonthBool'
+        fri <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 6) firstDayOfSelMonthBool'
+        sat <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 7) firstDayOfSelMonthBool'
+
+        a <- el "div" $ selDay selectedYear' selectedMonth' 1
+        b <- el "div" $ selDay selectedYear' selectedMonth' 2
+        c <- el "div" $ selDay selectedYear' selectedMonth' 3
+        d <- el "div" $ selDay selectedYear' selectedMonth' 4
+        e <- el "div" $ selDay selectedYear' selectedMonth' 5
+        f <- el "div" $ selDay selectedYear' selectedMonth' 6
+        g <- el "div" $ selDay selectedYear' selectedMonth' 7
+        h <- el "div" $ selDay selectedYear' selectedMonth' 8
+        i <- el "div" $ selDay selectedYear' selectedMonth' 9
+        j <- el "div" $ selDay selectedYear' selectedMonth' 10
+        k <- el "div" $ selDay selectedYear' selectedMonth' 11
+        l <- el "div" $ selDay selectedYear' selectedMonth' 12
+        m <- el "div" $ selDay selectedYear' selectedMonth' 13
+        n <- el "div" $ selDay selectedYear' selectedMonth' 14
+        o <- el "div" $ selDay selectedYear' selectedMonth' 15
+        p <- el "div" $ selDay selectedYear' selectedMonth' 16
+        q <- el "div" $ selDay selectedYear' selectedMonth' 17
+        r <- el "div" $ selDay selectedYear' selectedMonth' 18
+        s <- el "div" $ selDay selectedYear' selectedMonth' 19
+        t <- el "div" $ selDay selectedYear' selectedMonth' 20
+        u <- el "div" $ selDay selectedYear' selectedMonth' 21
+        v <- el "div" $ selDay selectedYear' selectedMonth' 22
+        w <- el "div" $ selDay selectedYear' selectedMonth' 23
+        x <- el "div" $ selDay selectedYear' selectedMonth' 24
+        y <- el "div" $ selDay selectedYear' selectedMonth' 25
+        z <- el "div" $ selDay selectedYear' selectedMonth' 26
+        a' <- el "div" $ selDay selectedYear' selectedMonth' 27
+        b' <- el "div" $ selDay selectedYear' selectedMonth' 28
+        c' <- el "div" $ selDay selectedYear' selectedMonth' 29
+        d' <- el "div" $ selDay selectedYear' selectedMonth' 30
+        e' <- el "div" $ selDay selectedYear' selectedMonth' 31
+        return $ leftmost [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, a', b', c', d', e'] --  (Event t Int)
+      return selectedDay''
+    return (selectedYear', selectedMonth', selectedDay''')
+  today <- sample $ current day
+  selectedDay' <- holdDyn today selectedDay -- Dynamic t a
+  let date = fromGregorian <$> selectedYear <*> selectedMonth <*> selectedDay' -- Day
+  return date -- Dynamic t Day
+
 dateWidgetMode2 :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t Day -> m (Event t Day)
 dateWidgetMode2 dynAttrs dynDate = mdo
   let year = fmap getYearFromDay dynDate
@@ -403,6 +901,7 @@ dateWidgetMode2 dynAttrs dynDate = mdo
   let confirmDate' = tagPromptlyDyn date confirmDateEv -- Dynamic a -> Event b -> Event a
   currentDate' <- sample $ current dynDate
   currentDate <- holdDyn currentDate' $ leftmost [confirmDate', updated dynDate]
+
   closeCalendarEv <- wrapDomEvent (_element_raw closeCalendar) (elementOnEventName Click) (mouseXY)
   let closeCalendar' = tagPromptlyDyn currentDate closeCalendarEv -- Dynamic a -> Event b -> Event a
   return $ leftmost [confirmDate', closeCalendar']
@@ -444,8 +943,8 @@ getBoolFromBoolTuple _ (b1, b2, b3, b4, b5, b6, b7) = b7
 monthStartsWhen :: Bool ->  Map.Map T.Text T.Text
 monthStartsWhen b = display b
   where
-    display True = "class" =: "dateLabel"
-    display _    = "class" =: "dateLabel" <> "style" =: "display: none"
+    display True = "class" =: "dayLabel"
+    display _    = "class" =: "dayLabel" <> "style" =: "display: none"
 
 weekDaysToNumbers :: DayOfWeek -> Int
 weekDaysToNumbers Sunday = 0
@@ -477,73 +976,287 @@ dateLabelAttrs b = "class" =: "dateLabel" <> "style" =: ("visibility: " <> visib
 
 howManyDaysInTheMonth :: Int -> Int -> Integer -> Map.Map T.Text T.Text
 howManyDaysInTheMonth day month year
-  | (day > gregorianMonthLength year month) = "class" =: "dateLabel" <> "style" =: "visibility: hidden"
-  | otherwise = "class" =: "dateLabel" <> "style" =: "visibility: visible"
+  | (day > gregorianMonthLength year month) = "class" =: "dayLabel" <> "style" =: "visibility: hidden"
+  | otherwise = "class" =: "dayLabel" <> "style" =: "visibility: visible"
+
+makeTuple :: TimeOfDay -> Bool -> (TimeOfDay, Bool)
+makeTuple t b = (t, b)
 
 
-timeWidget ::  MonadWidget t m => Dynamic t ZonedTime -> m (Event t TimeOfDay)
-timeWidget zt = do
-  let localTime = fmap (localTimeOfDay . zonedTimeToLocalTime) zt
-  let hours = fmap todHour localTime -- Dynamic t Int
-  let mins = fmap todMin localTime -- Dynamic t Int
+showDayAdjustmentUTC :: MonadWidget t m => Event t TimeOfDay -> Dynamic t ZonedTime  -> m ()
+showDayAdjustmentUTC tdEv ztCurrent = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone
+  sampledZTCurrent <- sample $ current ztCurrent
+  let sampledTimeZoneCurrent = zonedTimeZone sampledZTCurrent
+  let sampledTimeOfDayCurrent = localTimeOfDay $ zonedTimeToLocalTime sampledZTCurrent
+  let sampledDayAdjCurrent = T.pack $ show $ fst $ localToUTCTimeOfDay sampledTimeZoneCurrent sampledTimeOfDayCurrent
+  let getDayAdjustmentEv = fmap (T.pack . show . fst . localToUTCTimeOfDay thisComputerZone) tdEv -- Event t text
+  let tzCurrent = fmap zonedTimeZone ztCurrent
+  let tdCurrent = fmap (localTimeOfDay . zonedTimeToLocalTime) ztCurrent
+  let localToUTCTimeOfDay' = localToUTCTimeOfDay <$> tzCurrent <*> tdCurrent
+  let getDayAdjustmentDyn = fmap (T.pack . show . fst) localToUTCTimeOfDay'
+  dayAdjustmentDyn <- holdDyn sampledDayAdjCurrent $ leftmost [getDayAdjustmentEv, (updated getDayAdjustmentDyn)]
+  divClass "dayAdjustmentStartingTime" $ dynText dayAdjustmentDyn
+
+tAndB :: Bool -> TimeOfDay -> (TimeOfDay, Bool)
+tAndB b x = (x, b)
+
+
+
+
+-- --entra en local y zone
+-- utcTimeWidget :: MonadWidget t m => Event t TimeOfDay -> Dynamic t ZonedTime -> m (Event t TimeOfDay)
+-- utcTimeWidget tdEvent ztCurrent = mdo
+--   thisComputerZone <- liftIO getCurrentTimeZone
+--   sampledZTCurrent <- sample $ current ztCurrent
+--   let sampledTDCurrenttoUTC = timeToTimeOfDay $ utctDayTime $ zonedTimeToUTC sampledZTCurrent -- sample td in utc
+--   let tdCurrenInUTC = fmap (timeToTimeOfDay . utctDayTime . zonedTimeToUTC) ztCurrent -- dyn curr td in utc
+--   let tcEventinUTC = fmap (snd . localToUTCTimeOfDay thisComputerZone) tdEvent
+--   utcTimeOfDayDyns <- holdDyn sampledTDCurrenttoUTC $ leftmost [tcEventinUTC, updated tdCurrenInUTC] -- Dyn TimeOfDay
+--   updatedUTCTimeOfDay <- divClass "changeUTCTimeWidget" $ timeWidget utcTimeOfDayDyns -- Event t TimeOfDay
+--   let updatedTimeOfDayInLocalTime = fmap (snd . utcToLocalTimeOfDay thisComputerZone) updatedUTCTimeOfDay
+--   showDayAdjustmentUTC tdEvent ztCurrent
+--   -- tooltip (divClass "changeUTCTimeWidgetText" $ dynText $ "UTC " <> dayAjustment) (text "universal time")
+--   return updatedTimeOfDayInLocalTime -- Event t TimeOf Day in UTCTime
+--
+--
+-- -- entre en local time, entonces hay que traducir event a localtime y server a local time
+-- localTimeWidget :: MonadWidget t m => Event t TimeOfDay -> Dynamic t ZonedTime -> m (Event t TimeOfDay)
+-- localTimeWidget tdEv ztCurrent = mdo
+--   thisComputerZone <- liftIO getCurrentTimeZone
+--   let tdCurrentInLocalTime = fmap (localTimeOfDay . zonedTimeToLocalTime. utcToZonedTime thisComputerZone . zonedTimeToUTC) ztCurrent -- Dyn timeOfDay in local time
+--   sampledTdCurrentInLocalTime <- sample $ current tdCurrentInLocalTime -- TimeOfDay
+--   localTimeOfDayDyns <- holdDyn sampledTdCurrentInLocalTime $ leftmost [tdEv, (updated tdCurrentInLocalTime)] -- Dyn  (TimeOfDay, Bool)
+--   updatedLocalTime <- timeWidget localTimeOfDayDyns -- Event t TimeOfDay in localtime
+--   return updatedLocalTime -- -- (TimeOfDay, Bool)
+
+showBool :: MonadWidget t m => Event t Bool -> Event t Bool ->  Dynamic t Bool -> m ()
+showBool bEv1 bEv2 bCurrent = do
+  sampleBcurrent <- sample $ current bCurrent
+  bDyns <- holdDyn sampleBcurrent $ leftmost [bEv1, bEv2, (updated bCurrent)]
+  dynText $ fmap (T.pack . show) bDyns
+
+showDayAdjustment :: MonadWidget t m => Event t TimeOfDay -> m ()
+showDayAdjustment tdEv  = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone
+  let getDayAdjustmentEv = fmap (T.pack . show . fst . utcToLocalTimeOfDay thisComputerZone . snd . localToUTCTimeOfDay thisComputerZone) tdEv -- Event t text
+  dayAdjustmentDyn <- holdDyn "" getDayAdjustmentEv
+  divClass "dayAdjustmentStartingTime" $ dynText dayAdjustmentDyn
+
+showDayAdjustmentFromServer :: MonadWidget t m => Dynamic t ZonedTime -> m ()
+showDayAdjustmentFromServer ztCurrent = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone
+  let tdCurrentInLocalTime = fmap (localTimeOfDay . zonedTimeToLocalTime . utcToZonedTime thisComputerZone . zonedTimeToUTC) ztCurrent -- Dyn timeOfDay in local time
+  let getDayAdjustmentEv = fmap (T.pack . show . fst . utcToLocalTimeOfDay thisComputerZone . snd . localToUTCTimeOfDay thisComputerZone) tdCurrentInLocalTime -- Event t text
+  dayAdjustmentDyn <- holdDyn "" (updated getDayAdjustmentEv)
+  divClass "dayAdjustmentStartingTime" $ dynText dayAdjustmentDyn
+
+
+
+
+-- lastEditIsMadeFrom :: MonadWidget t m =>  Event t TimeOfDay ->  Event t TimeOfDay -> Dynamic t Bool -> m (Event t Bool)
+-- lastEditIsMadeFrom localTimeEv utcTimeEv currentBool = mdo
+--   sampledCurrentBool <- sample $ current currentBool
+--   dynBools <- holdDyn sampledCurrentBool $ leftmost [False <$ localTimeEv, True <$ utcTimeEv, (updated currentBool)]
+--   dynText $ fmap (T.pack . show) dynBools
+--   return (updated dynBools)
+
+deltaFromZonedToLocalTime :: TimeZone -> ZonedTime -> TimeOfDay
+deltaFromZonedToLocalTime thisComputerZone zt  = localTimeOfDay $ zonedTimeToLocalTime $ utcToZonedTime thisComputerZone $ zonedTimeToUTC zt -- time of day in local time
+
+deltaFromZonedToUTCTime :: ZonedTime -> TimeOfDay
+deltaFromZonedToUTCTime zt =   timeToTimeOfDay $ utctDayTime $ zonedTimeToUTC zt -- time of day in local time
+
+localeditsFromLocalToUTCTime :: TimeZone -> TimeOfDay -> TimeOfDay
+localeditsFromLocalToUTCTime thisComputerZone td = snd $ localToUTCTimeOfDay thisComputerZone td  -- time of day in local time
+
+
+localTimeWidget :: MonadWidget t m => Dynamic t Int -> m (Event t TimeOfDay)
+localTimeWidget delta = mdo
+  ev <- divClass "timeWidgetInput" $ intTextInputW delta -- Event t Int -- in local
+  return $ fmap hourToTimeOfDay ev -- Dynamic t TimeOfDay in local time
+
+
+utcTimeWidget :: MonadWidget t m => Dynamic t Int -> m (Event t TimeOfDay)
+utcTimeWidget delta = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone
+  ev <- divClass "timeWidgetInput" $ intTextInputW delta -- Event t Int -- in local
+  return $ fmap (snd . utcToLocalTimeOfDay thisComputerZone . hourToTimeOfDay) ev -- -- Dynamic t TimeOfDay in local time
+
+mergeDeltasForLocalEdits :: MonadWidget t m => Dynamic t ZonedTime -> Event t TimeOfDay -> m (Dynamic t TimeOfDay)
+mergeDeltasForLocalEdits delta edits = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone
+  iVal <- sample $ current delta
+  let iValInLocalTime = deltaFromZonedToLocalTime thisComputerZone iVal -- sampled time of day in local time
+  let deltaFromZonedToLocalTime' = fmap (deltaFromZonedToLocalTime thisComputerZone) delta  -- time of day
+  holdDyn iValInLocalTime $ leftmost [edits,updated deltaFromZonedToLocalTime'] -- dyn time of day in local time
+
+mergeDeltasForUTCEdits :: MonadWidget t m => Dynamic t ZonedTime -> Event t TimeOfDay -> m (Dynamic t TimeOfDay)
+mergeDeltasForUTCEdits delta edits = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone
+  iVal <- sample $ current delta
+  let iValInUTCTime = deltaFromZonedToUTCTime iVal -- sampled time of day in utc time
+  let deltaFromZonedToUTCTime' = fmap deltaFromZonedToUTCTime delta
+  let localeditsFromLocalToUTCTime' = fmap (localeditsFromLocalToUTCTime thisComputerZone) edits
+  holdDyn iValInUTCTime $ leftmost [localeditsFromLocalToUTCTime',updated deltaFromZonedToUTCTime'] -- dyn time of day in local time
+
+dayAdjustmentForUTCinput :: MonadWidget t m => Dynamic t TimeOfDay -> m ()
+dayAdjustmentForUTCinput delta = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone
+  let dayAdjustmentForUTCinput = fmap (fst . localToUTCTimeOfDay thisComputerZone . snd . utcToLocalTimeOfDay thisComputerZone) delta -- Dyn t Integer in LocalTime
+  dynText $ fmap (T.pack . show) dayAdjustmentForUTCinput
+
+changeLocalAndUTCTimeWidget :: MonadWidget t m => Dynamic t ZonedTime -> m (Event t TimeOfDay)
+changeLocalAndUTCTimeWidget delta = mdo
+  deltaFor1 <- mergeDeltasForLocalEdits delta localEdits2 -- Dyn t TimeOfDay
+  deltaFor2 <- mergeDeltasForUTCEdits delta localEdits1 -- Dyn t TimeOfDay
+  localEdits1 <- localTimeWidget (fmap todHour deltaFor1) -- Event t TimeOfDay in utc
+  localEdits2 <- utcTimeWidget (fmap todHour deltaFor2) -- Event t TimeOfDay in utc time
+  dayAdjustmentForUTCinput deltaFor2
+  return $ leftmost [localEdits1, localEdits2]
+
+  -- let utcTimeOfDay =  timeToTimeOfDay $ utctDayTime $ zonedTimeToUTC zt -- TimeOfDay in UTCTIme
+--entra el timeofday ya en local time
+timeWidgets ::  MonadWidget t m => Dynamic t ZonedTime -> m (Event t TimeOfDay)
+timeWidgets zt = mdo
+  thisComputerZone <- liftIO getCurrentTimeZone
+  let deltaInLocalTime = fmap (todHour. localTimeOfDay . zonedTimeToLocalTime . utcToZonedTime thisComputerZone . zonedTimeToUTC) zt -- Dynamic t Int in local time
+  let deltaInUTCTime = fmap (todHour.  timeToTimeOfDay . utctDayTime . zonedTimeToUTC) zt -- Dynamic t Int in utctime
+  iValInLocalTime <- sample $ current deltaInLocalTime -- Int
+  iValInUTCTime <- sample $ current deltaInUTCTime -- Int
+  deltaFor1 <- holdDyn iValInLocalTime $ leftmost [fmap localeditsFromUTCtoLocalTime localedits2, updated deltaInLocalTime] -- Dynamic t Int in local
+  deltaFor2 <- holdDyn iValInUTCTime $ leftmost [fmap localeditsFromLocalToUTCTime localedits1, updated deltaInUTCTime] -- Dynamic t Int in utc
+  localedits1 <- divClass "timeWidgetInput" $ intTextInputW deltaFor1 -- Event t Int -- in local
+  localedits2 <- divClass "timeWidgetInput" $ intTextInputW deltaFor2 -- Event t Int -- in utc
+  let localeditsFromLocalToUTCTime x = todHour $ snd $ localToUTCTimeOfDay thisComputerZone $ hourToTimeOfDay x  -- Event t Int in UTCtime
+  let localeditsFromUTCtoLocalTime x = todHour $ snd $ utcToLocalTimeOfDay thisComputerZone $ hourToTimeOfDay x -- Event t Int in LocalTime
+  -- day adjustment:
+  let dayAdjustmentForUTCinput = fmap (fst . localToUTCTimeOfDay thisComputerZone . snd . utcToLocalTimeOfDay thisComputerZone . hourToTimeOfDay) deltaFor2 -- Dyn t Integer in LocalTime
+  dynText $ fmap (T.pack . show) dayAdjustmentForUTCinput
+  return $ leftmost [fmap hourToTimeOfDay localedits1, fmap (snd . utcToLocalTimeOfDay thisComputerZone . hourToTimeOfDay) localedits2] -- Event t TimeOfDay both in local time
+
+hourToTimeOfDay :: Int -> TimeOfDay
+hourToTimeOfDay h  = do
+  let h' | h < 0 = (00 :: Int)
+         | h > 23 = (23 :: Int)
+         | otherwise  = h
+  TimeOfDay h'  (00 :: Int) (00 :: F.Pico)
+
+
+timeWidget' ::  MonadWidget t m => Dynamic t TimeOfDay -> m (Dynamic t TimeOfDay)
+timeWidget' td = do
+  let hours = fmap todHour td -- Dynamic t Int
+  let mins = fmap todMin td -- Dynamic t Int
   sampleHours <- sample $ current hours
   sampleMins <- sample $ current mins
-  h <- divClass "timeWidgetInput" $ intTextInputW hours -- Event t Int --  $ def & attributes .~ constDyn ("class" =: "code-font background timeWidgetInput") & textInputConfig_inputType .~ "number" & textInputConfig_setValue .~ (updated hours) -- Dyn Text
-  text ":"
-  m <- divClass "timeWidgetInput" $ intTextInputW mins -- Event t Int -- $ def & attributes .~ constDyn ("class" =: "code-font background timeWidgetInput") & textInputConfig_inputType .~ "number" & textInputConfig_setValue .~ (updated mins) -- Dyn Text
+  h <- divClass "timeWidgetInput" $ intTextInputW hours -- Event t Int --
+  divClass "timeWidgetColon" $ text ":"
+  m <- divClass "timeWidgetInput" $ intTextInputW mins -- Event t Int --
   hDyn <- holdDyn sampleHours h
   mDyn <- holdDyn sampleMins m
-  let newTimeOfDay = updatedTimeOfDay <$> hDyn <*> mDyn   -- Event t TimeOfDay
-  return $ updated (newTimeOfDay)
+  let newTimeOfDay = updatedTimeOfDay <$> hDyn <*> mDyn  -- Event t TimeOfDay
+  return newTimeOfDay
+
+timeWidget ::  MonadWidget t m => Dynamic t TimeOfDay -> m (Event t TimeOfDay)
+timeWidget td = do
+  let hours = fmap todHour td -- Dynamic t Int
+  let mins = fmap todMin td -- Dynamic t Int
+  sampleHours <- sample $ current hours
+  sampleMins <- sample $ current mins
+  h <- divClass "timeWidgetInput" $ intTextInputW hours -- Event t Int --
+  divClass "timeWidgetColon" $ text ":"
+  m <- divClass "timeWidgetInput" $ intTextInputW mins -- Event t Int --
+  hDyn <- holdDyn sampleHours h
+  mDyn <- holdDyn sampleMins m
+  let newTimeOfDay = updatedTimeOfDay <$> hDyn <*> mDyn  -- Event t TimeOfDay
+  return $ updated newTimeOfDay
+
+
+timeWidget'' ::  MonadWidget t m => Dynamic t TimeOfDay -> m (Dynamic t TimeOfDay)
+timeWidget'' td  = do
+  let hours = fmap todHour td -- Dynamic t Int
+  let mins = fmap todMin td -- Dynamic t Int
+  sampleHours <- sample $ current hours
+  sampleMins <- sample $ current mins
+  h <- divClass "timeWidgetInput" $ intTextInputW (constDyn sampleHours) -- (constDyn 00) -- Event t Int --
+  divClass "timeWidgetColon" $ text ":"
+  m <- divClass "timeWidgetInput" $ intTextInputW (constDyn sampleMins) -- (constDyn 00) -- Event t Int --
+  hDyn <- holdDyn sampleHours h
+  mDyn <- holdDyn sampleMins m
+  let newTimeOfDay = updatedTimeOfDay <$> hDyn <*> mDyn  -- Event t TimeOfDay
+  return newTimeOfDay
 
 updatedTimeOfDay :: Int -> Int -> TimeOfDay
-updatedTimeOfDay h m  = do
+updatedTimeOfDay h m = do
   let h' | h < 0 = (00 :: Int)
          | h > 23 = (23 :: Int)
          | otherwise  = h
   let m' | m < 0 = (00 :: Int)
          | m > 59 = (59 :: Int)
          | otherwise  = m
-  TimeOfDay h' m' (00 :: F.Pico)-- hoursToTimeZone (read (T.unpack tz) :: Int))
+  TimeOfDay h' m' (00 :: F.Pico)
 
--- ZonedTime (LocalTime day timeOfDay) timeZone)
- -- type calendarEvent = (Text, ZonedTime)
-zonedTimeToTimeOfDayAndTimeZone :: ZonedTime -> (Day, TimeOfDay, TimeZone) --  (TimeOfDay, TimeZone)
-zonedTimeToTimeOfDayAndTimeZone zt = do
--- (LocalTime day timeOfDay) timeZone)
-  let localToUTCtime = zonedTimeToUTC zt -- UTCTime
-  let utcTime = timeToTimeOfDay $ utctDayTime localToUTCtime -- $ localTimeToUTC (zonedTimeZone zt) (zonedTimeToLocalTime zt) --  UTC {utctDay :: Day  utctDayTime :: DiffTime}
-  let utcDay = utctDay localToUTCtime
-  let utcTimeZone =  TimeZone { timeZoneName = "UTC"}
-  (utcDay, utcTime, utcTimeZone)
 
+zonedTimeOfDayToThisComputerTimeOfDay :: TimeZone -> ZonedTime -> TimeOfDay
+zonedTimeOfDayToThisComputerTimeOfDay thisComputerZone zt = do
+  let zt' = zonedTimeToUTC zt -- UTCTime
+  let utcToZonedTime' = utcToZonedTime thisComputerZone zt' -- ZonedTime
+  let thisComputerTimeOfDay = localTimeOfDay $ zonedTimeToLocalTime utcToZonedTime' -- timeofday
+  thisComputerTimeOfDay
+--
 getStartingDateFromCalendarEv :: CalendarEvent -> ZonedTime
 getStartingDateFromCalendarEv (CalendarEvent details (CalendarTime startingDate recurrence)) = startingDate
 
+-- traducir event in utctimeofday to a localtimeodday y server a local time
+getTimeOfDayInLocalTime :: TimeZone -> CalendarEvent -> TimeOfDay
+getTimeOfDayInLocalTime thisComputerZone (CalendarEvent details (CalendarTime startingDate  recurrence)) = do
+  let zt = zonedTimeToUTC startingDate -- UTCTime
+  let utcToLocalTime' = utcToZonedTime thisComputerZone zt -- ZonedTime in local time
+  localTimeOfDay $ zonedTimeToLocalTime utcToLocalTime' -- timeofday
+
+-- to use with utctime
+--entra en utctime y sale en utctime
+-- entra local y sale utctime
+timeOfDayLocalToUTCTime :: TimeZone -> TimeOfDay -> TimeOfDay
+timeOfDayLocalToUTCTime thisComputerZone td = snd $ localToUTCTimeOfDay thisComputerZone td
+
+getTimeOfDayInUTCtime :: TimeZone -> CalendarEvent -> TimeOfDay
+getTimeOfDayInUTCtime thisComputerZone (CalendarEvent details (CalendarTime startingDate  recurrence)) = do
+  let zonedTimeToUTC' = zonedTimeToUTC startingDate -- UTCTime
+  timeToTimeOfDay $ utctDayTime zonedTimeToUTC' -- timeofday in utctime
+
+-- isLastEditFrom :: Event t TimeOfDay -> Event t TimeOfDay -> CalendarEvent -> Bool
+-- isLastEditFrom tdEvLocal tdEvUtc c = do
+
+
+-- timeOfDayAndDayAdjFromZonedTimeToLocalTime :: TimeZone -> CalendarEvent -> (Integer, (TimeOfDay, Bool))
+-- timeOfDayAndDayAdjFromZonedTimeToLocalTime thisComputerZone (CalendarEvent details (CalendarTime startingDate False recurrence)) = do
+--   let zonedTimeToUTC'  = zonedTimeToUTC startingDate --UTCTime
+--   let utcToLocalTime' =  utcToLocalTime thisComputerZone zonedTimeToUTC' -- LocalTime
+--   let localTimeOfDay' = localTimeOfDay utcToLocalTime' -- TimeOfDay in local time
+--   let dayAjustment' = dayAjustment startingDate utcToLocalTime' --Integer
+--   (dayAjustment', (localTimeOfDay', False))
+--
+-- timeOfDayAndDayAdjFromZonedTimeToLocalTime thisComputerZone (CalendarEvent details (CalendarTime startingDate True recurrence)) = do
+--   let zonedTimeToUTC'  = zonedTimeToUTC startingDate --UTCTime
+--   let utcToLocalTime' =  utcToLocalTime thisComputerZone zonedTimeToUTC' -- LocalTime
+--   timeOfDayAndDayAdjFromLocalZoneToUTCTime thisComputerZone (localTimeOfDay utcToLocalTime', True) --  (Integer, TimeOfDay)
+--
+--
+
+
+timeOfDayAndDayAdjFromLocalZoneToUTCTime :: TimeZone -> (TimeOfDay, Bool) -> (Integer, (TimeOfDay, Bool))
+timeOfDayAndDayAdjFromLocalZoneToUTCTime thisComputerZone (td, b) = do
+  let localToUTCTimeOfDay' = localToUTCTimeOfDay thisComputerZone td -- (Integer, TimeOfDay)
+  let utcToLocalTimeOfDay' = utcToLocalTimeOfDay thisComputerZone $ snd localToUTCTimeOfDay' -- (snd localToUTCTimeOfDay') -- (Integer, TimeOfDay)
+  (fst utcToLocalTimeOfDay', (snd utcToLocalTimeOfDay', True))
+
 getEndDateFromCalendarEv :: CalendarEvent -> ZonedTime
-getEndDateFromCalendarEv (CalendarEvent details (CalendarTime startingDate Nothing)) = startingDate -- deberia ser nothing
-getEndDateFromCalendarEv (CalendarEvent details (CalendarTime startingDate (Just (Recurrence periodicity endDate)))) = endDate
+getEndDateFromCalendarEv (CalendarEvent details (CalendarTime startingDate (Recurrence periodicity endDate))) = endDate
 
-
-
-utcTimeToThisClientZoneTimeWidget :: MonadWidget t m => Event t CalendarEvent -> Dynamic t ZonedTime ->  m ()
-utcTimeToThisClientZoneTimeWidget calendarEv serverZT = do
-  let calendarEv' = fmap (T.pack . show . getStartingDateFromCalendarEv) calendarEv -- Ev t Text
-  sampledServerZT <- sample $ current serverZT -- ZonedTime
-  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
-  let serverZT' = fmap zonedTimeToUTC serverZT -- Event UTCTime
-  let utcToZonedTime' = fmap (utcToZonedTime thisComputerZone) serverZT' -- Event t ZonedTime
-  let thisComputerLocalTime = fmap (T.pack . show) utcToZonedTime' -- Event t text
-  thisComputerLocalTime'' <- holdDyn (T.pack $ show sampledServerZT) (leftmost [updated thisComputerLocalTime, calendarEv'])
-  dynText $ thisComputerLocalTime''
-
-zonedTimeToUTCTime :: MonadWidget t m => Event t CalendarEvent -> Dynamic t ZonedTime ->  m ()
-zonedTimeToUTCTime calendarEv serverZT = do
-  sampledServerZT <- sample $ current serverZT -- ZonedTime
-  let serverZT' = fmap (T.pack . show . zonedTimeToUTC) serverZT -- dyn Text
-  let calendarEv' = fmap (T.pack . show . zonedTimeToUTC . getStartingDateFromCalendarEv) calendarEv
-  zonedTimeToUTCTime <- holdDyn (T.pack $ show sampledServerZT) (leftmost [updated serverZT', calendarEv'])
-  dynText $ zonedTimeToUTCTime
+--
+-- timeZoneOffsetTotimeZoneName :: TimeZone -> Text
+-- timeZoneOffsetTotimeZoneName zone
 
 -- localTimeToUTC :: TimeZone -> LocalTime -> UTCTime
     -- data TimeOfDay = TimeOfDay
@@ -575,64 +1288,8 @@ getYeatMonthOrDayFromTuple 1 (h, m, d) = fromIntegral h
 getYeatMonthOrDayFromTuple 2 (h, m, d) = m
 getYeatMonthOrDayFromTuple 3 (h, m, d) = d
 
-utcTimeZoneWidget :: MonadWidget t m => Dynamic t (Day, TimeOfDay, TimeZone) -> m ()
-utcTimeZoneWidget timeAndZone = do
-  let timeOfDay' = fmap toTime timeAndZone
-  let hour = fmap (T.pack . show . todHour) timeOfDay'
-  let mins = fmap (T.pack . show . todMin ) timeOfDay'
-  let date = fmap (toGregorian . toDate) timeAndZone
-  let year = fmap (T.pack . show . getYeatMonthOrDayFromTuple 1) date
-  let month = fmap (T.pack . show . getYeatMonthOrDayFromTuple 2) date
-  let day = fmap (T.pack . show . getYeatMonthOrDayFromTuple 3) date
-  let zone = fmap (T.pack . timeZoneName . toZone) timeAndZone
-  updatedHour <- holdDyn "" (updated hour) -- Dynamic t Text
-  updatedMins <- holdDyn "" (updated mins) -- Dynamic t Text
-  updatedYear <- holdDyn "" (updated year) -- Dynamic t Text
-  updatedMonth <- holdDyn "" (updated month) -- Dynamic t Text
-  updatedDay <- holdDyn "" (updated day) -- Dynamic t Text
-  divClass "utcTimeZoneWidget code-font background" $ dynText (updatedYear <> "-" <> updatedMonth <> "-" <> updatedDay <> " ")
-  divClass "utcTimeZoneWidget code-font background" $ dynText (updatedHour <> ":" <> updatedMins <> "00 ")
-  divClass "utcTimeZoneWidget code-font background" $ dynText zone
-
 getDetailsFromCalendarEv :: CalendarEvent -> Text
 getDetailsFromCalendarEv (CalendarEvent details calendarTime) = details
-
-calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Variable t CalendarEvent)
-calendarEventWidget delta = divClass "calendarEventWidget" $ mdo
-  -- let changes = currentValue v
-  descEv <- divClass "descriptionWidget code-font background" $ descriptionWidget $ fmap getDetailsFromCalendarEv delta -- Event t Text, representing a local edit
-  autoUpdateStartingDateEv <- autoUpdateStartingDate $ fmap getStartingDateFromCalendarEv delta
-  thisComputerLocalTime <- divClass "thisComputerLocalTimeWidget code-font background" $ utcTimeToThisClientZoneTimeWidget localUpdatesWithoutDescriptionF $ fmap getStartingDateFromCalendarEv delta
-  (dateEv, timeOfDayEv,zoneEv,enableRecurrenceEv, changePeriodicityEv, changeEndDateEv) <- divClass "selectDateAndRecurrencyContainer" $ do
-    dateEv' <- divClass "dateWidget code-font background" $ dateWidget $ fmap (localDay . zonedTimeToLocalTime . getStartingDateFromCalendarEv) delta -- Event t Day
-    timeOfDayEv' <- divClass "timeWidget code-font background" $ timeWidget $ fmap getStartingDateFromCalendarEv delta -- Event t TimeOfDay
-    zoneEv' <-divClass "zoneWidget code-font background" $ timeZoneWidget timeOfDayEv $ fmap (zonedTimeZone . getStartingDateFromCalendarEv) delta -- Event t TimeZone
-    enableRecurrenceEv' <- divClass "enableRecurrence" $ enableRecurrenceWidget $ fmap getRecurrenceFromCalendarEvent delta-- Event t CalendarTime
-    changePeriodicityEv' <- divClass "selectPeriodicity" $ selectPeriodicityWidget $ fmap (getPeriodicityFromRecurrence' . getRecurrenceFromCalendarEvent) delta
-    changeEndDateEv' <- divClass "dateWidget code-font background" $ changeEndDateWidget $ fmap (localDay . zonedTimeToLocalTime . getEndDateFromCalendarEv) delta -- Event t Day
-    return (dateEv', timeOfDayEv', zoneEv', enableRecurrenceEv', changePeriodicityEv', changeEndDateEv')
-  zonedTimeToUTCTimeEv <- divClass "zonedTimeToUTCTime code-font background" $ zonedTimeToUTCTime localUpdatesWithoutDescriptionF $ fmap getStartingDateFromCalendarEv delta -- m ()
-
-    -- printRecurrence' <- printRecurrence localUpdatesWithoutDescriptionF $ fmap getRecurrenceFromCalendarEvent delta
-
-  let descF = fmap changeDescription descEv -- Event t (CalendarEvent -> CalendarEvent)
-  let autoUpdateStartingDateF = fmap startingDayAutoUpdate autoUpdateStartingDateEv
-  let dateF = fmap changeDate dateEv-- Event t (CalendarEvent -> CalendarEvent)
-  let timeF = fmap changeTimeOfDay timeOfDayEv
-  let zoneF = fmap changeTimeZone zoneEv
-  let enableRecurrenceF = fmap enableRecurrence enableRecurrenceEv -- Event t (CalendarEvent -> CalendarEvent)
-  -- let endDateF = fmap changeEndDate endDateEv -- Event t (CalendarEvent -> CalendarEvent)
-  -- let recurrenceF = fmap changeRecurrence recurrenceEv
-  let changePeriodicityF = fmap changePeriodicity changePeriodicityEv
-  let changeEndDateF = fmap changeEndDate changeEndDateEv
-
-  let localF = mergeWith (.) [descF, dateF, timeF, zoneF, enableRecurrenceF, changePeriodicityF, changeEndDateF, autoUpdateStartingDateF] -- Event t (CalendarEvent -> CalendarEvent)--
-  let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t CalendarEvent
-  let localFWithoutDescriptionF = mergeWith (.) [dateF, timeF, zoneF, enableRecurrenceF, changePeriodicityF, changeEndDateF]
-  let localUpdatesWithoutDescriptionF = attachWith (flip ($)) (current $ currentValue v) localFWithoutDescriptionF -- Event t CalendarEvent
-  v <- variable delta localUpdates
-  return v
-
 
 -- day of week
 -- | \"Circular\", so for example @[Tuesday ..]@ gives an endless sequence.
