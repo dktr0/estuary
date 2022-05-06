@@ -14,6 +14,7 @@ import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
 
+
 locoMotion :: TextNotationRenderer
 locoMotion = TextNotationRenderer {
   parseZone = parseZone',
@@ -58,7 +59,7 @@ zoneAnimationFrame' now z = do
 
 
 foreign import javascript safe
-  "PS.Main.launch($1)()"
+  "locoMotion.launch($1)"
   launch :: HTMLCanvasElement -> IO JSVal
 
 -- Nothing values represent successful evaluation
@@ -70,7 +71,7 @@ evaluateLocoMotion j x = do
     False -> return $ Just $ _error x
 
 foreign import javascript safe
-  "PS.Main.evaluateLocomotion($1)($2)()"
+  "locoMotion.evaluateLocomotion($1,$2)"
   _evaluateLocoMotion :: JSVal -> Text -> IO JSVal
 
 foreign import javascript safe
@@ -82,5 +83,5 @@ foreign import javascript safe
   _error :: JSVal -> Text
 
 foreign import javascript unsafe
-  "PS.Main.animateLocomotion($1)()"
+  "locoMotion.animateLocomotion($1)"
   animateLocoMotion :: JSVal -> IO ()
