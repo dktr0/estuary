@@ -98,17 +98,19 @@ fluxusTextWidget rows flash i delta = mdo
 --   | otherwise = "style" =: "font-size: calc(2vw + 2vh)"
 
 -- it is just making a pure function from Text -> Int and then applying that to the a Dynamic representation of the current text
--- fluxusBehaviour :: Text -> Map Text Text
--- fluxusBehaviour i
---   | T.length i <= 8 = "style" =: "font-size: calc(8vw + 8vh); height: auto"
---   | (T.length i >= 8) && (T.length i <= 15) = "style" =: "font-size: calc(7vw + 7vh); height: auto"
---   | (T.length i >= 16) && (T.length i <= 20) = "style" =: "font-size: calc(6vw + 6vh); height: auto"
---   | (T.length i >= 21) && (T.length i <= 30) = "style" =: "font-size: calc(5vw + 5vh); height: auto"
---   | (T.length i >= 31) && (T.length i <= 40) = "style" =: "font-size: calc(4vw + 4vh); height: auto"
---   | (T.length i >= 41) && (T.length i <= 60) = "style" =: "font-size: calc(3vw + 3vh); height: auto"
---   | (T.length i >= 61) && (T.length i <= 90) = "style" =: "font-size: calc(2.5vw + 2.5vh); height: auto"
---   | (T.length i >= 91) && (T.length i <= 120) = "style" =: "font-size: calc(2vw + 2vh); height: auto"
---   | otherwise = "style" =: "font-size: calc(1.5vw + 1.5vh); height: auto"
+fluxusBehaviour1 :: Text -> Text
+fluxusBehaviour1 i
+  | T.length i <= 8 = "font-size: calc(8vw + 8vh)"
+  | (L.length $ T.lines i) <= 1 = "font-size: calc(8vw + 8vh)"
+
+  | (T.length i >= 9) && (T.length i <= 15) = "font-size: calc(7vw + 7vh); height: auto"
+  | (T.length i >= 16) && (T.length i <= 20) = "font-size: calc(6vw + 6vh); height: auto"
+  | (T.length i >= 21) && (T.length i <= 30) = "font-size: calc(5vw + 5vh); height: auto"
+  | (T.length i >= 31) && (T.length i <= 40) = "font-size: calc(4vw + 4vh); height: auto"
+  | (T.length i >= 41) && (T.length i <= 60) = "font-size: calc(3vw + 3vh); height: auto"
+  | (T.length i >= 61) && (T.length i <= 90) = "font-size: calc(2.5vw + 2.5vh); height: auto"
+  | (T.length i >= 91) && (T.length i <= 120) = "font-size: calc(2vw + 2vh); height: auto"
+  | otherwise = "font-size: calc(1.5vw + 1.5vh)"
 
 -- fluxusBehaviour :: Text -> Map Text Text
 -- fluxusBehaviour i
@@ -121,14 +123,40 @@ fluxusTextWidget rows flash i delta = mdo
 -- lines :: Text -> [Text]
 -- Data.List
 -- length :: [a] -> Int
+fluxusBehaviour2 :: Text -> Text
+fluxusBehaviour2 i
+     | (L.length $ T.lines i) <= 1 = "font-size: calc(8vw + 8vh); height: auto"
+     | (L.length $ T.lines i) == 2 = "font-size: calc(6vw + 6vh); height: auto"
+     | (L.length $ T.lines i) == 3 = "font-size: calc(4vw + 4vh); height: auto"
+     | (L.length $ T.lines i) == 4 = "font-size: calc(3vw + 3vh); height: auto"
+     | (L.length $ T.lines i) >= 5 = "font-size: calc(2vw + 2vh); height: auto"
+     | otherwise = "font-size: calc(1.5vw + 1.5vh);"
+
+fluxusBehaviour' :: Text -> Map Text Text
+fluxusBehaviour' i = do
+  let b1 = fluxusBehaviour1 i
+  let b2 = fluxusBehaviour2 i
+  "style" =: (b1 <> b2)
+
 fluxusBehaviour :: Text -> Map Text Text
 fluxusBehaviour i
-     | (L.length $ T.lines i) == 1 = "style" =: "font-size: calc(8vw + 8vh); height: auto"
-     | (L.length $ T.lines i) == 2 = "style" =: "font-size: calc(4vw + 4vh); height: auto"
-     | (L.length $ T.lines i) == 3 = "style" =: "font-size: calc(2vw + 2vh); height: auto"
-     | otherwise = "style" =: "font-size: calc(1vw + 1vh);"
+  | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "style" =: "font-size: calc(8vw + 8vh)"
 
+  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "style" =: "font-size: calc(7vw + 7vh); height: auto"
 
+  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "style" =: "font-size: calc(6vw + 6vh); height: auto"
+
+  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "style" =: "font-size: calc(5vw + 5vh); height: auto"
+
+  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "style" =: "font-size: calc(4vw + 4vh); height: auto"
+
+  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "style" =: "font-size: calc(3vw + 3vh); height: auto"
+
+  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "style" =: "font-size: calc(2.5vw + 2.5vh); height: auto"
+
+  | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 12)) = "style" =: "font-size: calc(2vw + 2vh); height: auto"
+
+  | otherwise = "style" =: "font-size: calc(1.5vw + 1.5vh)"
 
 
 -- ok, where does textToInvisible is used? look for this at the end... maybe in those parts where text can be hidden--- this code does not have the Text input
