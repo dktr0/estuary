@@ -44,10 +44,6 @@ notePadWidget delta = divClass "notepadContainers" $ mdo
   let noteTuppleSampled = Seq.index <$> notesSampled <*> pageNumSampled -- (t,c)
 
   (titleEv,contentEv) <- titleContentWidget (fmap fst noteTuppleSampled) (fmap snd noteTuppleSampled) (fmap fst noteTupple) (fmap snd noteTupple) -- :: (Event t Text, Event t Text)
-<<<<<<< HEAD
-=======
-
->>>>>>> eaf54948f51529215c9decd6d82255cb5ca3175d
   let setNoteTitle' = fmap setNoteTitle titleEv -- :: m (Event t (Notepad -> Notepad))
   let setNoteContent' = fmap setNoteContent contentEv -- :: m (Event t (Notepad -> Notepad))
   let localEvs = mergeWith (.) [setNoteTitle',setNoteContent', buttons]
@@ -57,10 +53,6 @@ notePadWidget delta = divClass "notepadContainers" $ mdo
 
 
 titleContentWidget :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> Dynamic t Text -> Dynamic t Text -> m (Event t Text,Event t Text)
-<<<<<<< HEAD
-
-=======
->>>>>>> eaf54948f51529215c9decd6d82255cb5ca3175d
 titleContentWidget it ic t c = divClass "notepadContainers code-font" $ mdo
   it' <- sample $ current it
   ic' <- sample $ current ic
