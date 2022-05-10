@@ -120,7 +120,7 @@ body::-webkit-scrollbar-thumb {
   	overflow: hidden;
   	text-overflow: ellipsis;
   }
-  
+
   .snippet:hover{
 	box-shadow: 0px 0.25px 4px 0.025px var(--secondary-color);
   }
@@ -1003,28 +1003,28 @@ cursor: pointer;
 }
 
 .cycleVisualiser {
-	position: absolute; 
+	position: absolute;
 	z-index: 0;
 	width: 100%;
   	height: 100%;
 }
 
 .metreVisualiser {
-	position: absolute; 
+	position: absolute;
 	z-index: 0;
 	width: 100%;
   	height: 100%;
 }
 
 .ringVisualiser {
-	position: absolute; 
+	position: absolute;
 	z-index: 0;
 	width: 100%;
   	height: 100%;
 }
 
 .beadVisualiser {
-	position: absolute; 
+	position: absolute;
 	z-index: 0;
 	width: 100%;
   	height: 100%;
@@ -1797,7 +1797,10 @@ box-shadow: inset 0 0 3px var(--primary-color);
 
 
 
-/* rehearsal widget */
+/* CalendarEvent widget */
+
+
+
 
 .selectYear, .selectMonth {
   display: flex;
@@ -1830,117 +1833,275 @@ box-shadow: inset 0 0 3px var(--primary-color);
 }
 
 
-.descriptionWidget {
-    width: 100%;
-
-}
-
-.descriptionWidget input {
-    width: 100%;
-    box-sizing:border-box;
-}
-
-
-
-
 .descriptionWidgetInput {
     width: 100%;
     box-sizing:border-box;
     color: var(--primary-color);
     border: none;
-    box-shadow: inset 0 0 3px var(--primary-color);
-    border-radius: 5px;
 }
 
-.thisComputerLocalTimeWidget {
-	width: 100%;
-
-}
-.selectDateAndRecurrencyContainer {
-	display: flex;
-
-}
-
-.dateWidget {
-	margin-top: 0.2em;
-	    cursor: pointer;
-        z-index: 999;
-
-}
 
 .calendarContainer {
 	text-align:center;
 	border: none;
     box-shadow: inset 0 0 3px var(--primary-color);
     border-radius: 5px;
+
 }
 
 .calendarContainer th {
 	width: 80px;
 }
-.timeWidget {
-	display: flex;
-	width: 10%;
-}
-
-.zoneWidget {
-margin-top: 0.2em;
-}
-
-
-.timeWidgetInput {
-	margin-top: 0.2em;
-	width: 30%;
-}
-
-
-.timeWidgetInput input {
-	width: 100%;
-	color: var(--primary-color);
-    border: none;
-    box-shadow: inset 0 0 3px var(--primary-color);
-    border-radius: 5px;
-}
-
 
 .selectedDate {
     border: none;
-    box-shadow: inset 0 0 3px var(--primary-color);
+/*     box-shadow: inset 0 0 3px var(--primary-color); */
     border-radius: 5px;
     padding: 1px;
 /*     padding-left: 2px; */
 /*     padding-right: 6px; */
     margin-right: 0.1em;
-
+    height: 100%;
+    box-sizing: border-box;
  }
 
 .confirm-close-buttons {
 	display: flex;
+	width: 100%;
 }
 
 .confirm-close-buttons div {
 	width: 50%;
 	}
 
-.dateLabel:hover {
+.dateLabel {
+	height: 45%;
+/* 	background: blue; */
+	border: 1px solid;
+	border-radius: 5px;
+	}
+
+.dayLabel {}
+
+.dayLabel:hover {
 	background-color: var(--secondary-color)
 }
 
-.dateLabel:active {
+.dayLabel:active {
     background-color:var(--primary-color);
     color: var(--background-color);
 }
 
-.timeZoneWidget {
-	display:flex;
-	flex-wrap: wrap;
-	margin-right: 1.5em;
-	}
 
-.enableRecurrence {
-	margin-top: 0.2em;
+.calendarEventWidgetMainContainer {
+/* 	background-color: brown; */
+
 }
 
+.calendarEventWidgetSubContainer {
+	display: flex;
+	flex-wrap:wrap;
+/*     grid-template-areas:'details startingDate periodicity'; */
+/*     grid-template-columns: 25% 30.5% 27%; */
+
+}
+
+
+
+.detailsContainer {
+ grid-area: details;
+ height: 80%;
+}
+
+
+.descriptionWidget {}
+
+.descriptionWidget input {
+	width: 95%;
+	box-sizing:border-box;
+	white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+.selectStartingDateContainer {
+  display: flex;
+
+}
+
+
+
+.dateWidget {
+	display: flex;
+	height: 66%;
+	cursor: pointer;
+    z-index: 999;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+/*     border: 1px solid ; */
+/*     border-radius: 5px; */
+    position: relative;
+/*     top: 20%; */
+}
+
+
+.timeWidgetsContainer {
+	display: flex;
+  flex-direction: column;
+	width: 100%;
+}
+
+
+.startTimeWidgetContainer {
+	display:flex;
+	width: 100%;
+	height: 40%;
+}
+
+.timeWidget {
+/*     width: 4vw; */
+	width: 100%;
+	display: inline-flex;
+	flex-wrap: nowrap;
+/* 	box-shadow: inset 0 0 3px var(--primary-color); */
+    border: 1px solid;
+	border-radius: 5px;
+	box-sizing:border-box;
+
+
+/*     height: 70%; */
+
+}
+
+
+.timeWidget .timeWidgetInput {
+	width: 50%;
+    display: flex;
+}
+
+
+.timeWidgetInput input {
+	text-align: center;
+	font-size: 70%;
+    border: none;
+    width: 100%;
+    box-sizing:border-box;
+
+
+}
+
+.timeWidgetColon {
+  position:relative;
+  font-size: 90%;
+  bottom: 25%;
+}
+
+.zoneWidget {
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  height: 80%;
+  font-size: 70%;
+  position: relative;
+  bottom: 0.25em;
+
+}
+
+.changeUTCTimeWidgetEv {
+	display: flex;
+    width: 100%;
+    height: 41%;
+    white-space: nowrap;
+}
+
+
+.changeUTCTimeWidget {
+	display: flex;
+	width: 100%;
+    white-space: nowrap;
+    border: 1px solid ;
+    border-radius: 5px;
+	box-sizing:border-box;
+/*   	box-shadow: inset 0 0 3px var(--primary-color); */
+
+}
+
+
+
+.changeUTCTimeWidget .timeWidgetInput {
+    display: flex;
+	text-align: center;
+    border: none;
+    width: 100%;
+    box-sizing:border-box;
+}
+
+.changeUTCTimeWidgetText {
+	font-size: 70%;
+/* 	background: red; */
+	position: relative;
+	bottom: 0.25em;
+	width: 100%;
+}
+
+.utcDayAdjustment {
+}
+
+.localDayAdjustment {
+
+}
+.periodicity {
+	height: 100%;
+/* 	width: 100%; */
+	grid-area: periodicity;
+	display:flex;
+/* 	position: relat/ive; */
+/*     top: 20%; */
+
+}
+
+.selectPeriodicity {
+	height: 62%;
+/* 	width: 45%; */
+}
+
+.selectPeriodicity select {
+/* 	width:100%; */
+/* border: none; */
+   position: relative;
+   bottom: 3px;
+/*    right: 12%; */
+}
+
+.endDateWidget {
+	height: 56%;
+	cursor: pointer;
+    z-index: 999;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    position: relative;
+    }
+
+.showDate {
+  margin-right: 2%;
+}
+
+.confirmButton{
+ width: 100vw;
+ text-align: center;
+}
+
+
+.cancelButton{
+ text-align: center;
+}
+
+.confirmButton:hover  {
+ background: var(--secondary-color);
+}
+
+.cancelButton:hover {
+ background: var(--secondary-color);
 
 /* Notepad style */
 

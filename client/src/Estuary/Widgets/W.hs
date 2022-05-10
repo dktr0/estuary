@@ -262,11 +262,13 @@ dropdownW m x = divClass "config-entry display-inline-block primary-color ui-fon
 intTextInputW :: MonadWidget t m => Dynamic t Int -> m (Event t Int)
 intTextInputW x = do
   i <- sample $ current x
-  let xEvents = updated x
+  let xEvents = updated $ fmap (T.pack . show) x
   w <- textInput $ def & textInputConfig_inputType .~ "number"
                        & textInputConfig_initialValue .~ T.pack (show i)
                        & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+                       & textInputConfig_setValue .~ xEvents
   return $ fmapMaybe (readMaybe . T.unpack) $ _textInput_input w
+
 
 textInputW :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
 textInputW x = do
@@ -274,8 +276,8 @@ textInputW x = do
   let xEvents = updated x
   w <- textInput $ def & textInputConfig_initialValue .~ i
                        & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+                       & textInputConfig_setValue .~ xEvents
   return $ _textInput_input w
-
 
 -- Issue a single hint
 hint :: (Reflex t, Monad m) => Event t Hint -> W t m ()

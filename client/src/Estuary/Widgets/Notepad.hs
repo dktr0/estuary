@@ -44,7 +44,6 @@ notePadWidget delta = divClass "notepadContainers" $ mdo
   let noteTuppleSampled = Seq.index <$> notesSampled <*> pageNumSampled -- (t,c)
 
   (titleEv,contentEv) <- titleContentWidget (fmap fst noteTuppleSampled) (fmap snd noteTuppleSampled) (fmap fst noteTupple) (fmap snd noteTupple) -- :: (Event t Text, Event t Text)
-
   let setNoteTitle' = fmap setNoteTitle titleEv -- :: m (Event t (Notepad -> Notepad))
   let setNoteContent' = fmap setNoteContent contentEv -- :: m (Event t (Notepad -> Notepad))
   let localEvs = mergeWith (.) [setNoteTitle',setNoteContent', buttons]
