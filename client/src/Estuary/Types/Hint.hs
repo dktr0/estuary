@@ -17,6 +17,7 @@ data Hint =
   SetGlobalDelayTime Double |
   SilenceHint |
   ZoneHint Int Definition |
+  TempoHint Tempo |
   ChangeSettings (Settings -> Settings)
 
 justGlobalDelayTime :: [Hint] -> Maybe Double

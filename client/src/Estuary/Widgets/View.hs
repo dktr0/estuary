@@ -51,7 +51,7 @@ attrsColp b = "class" =: "collapsableView" <> "style" =: ("display: " <> showDiv
     showDiv True  = "block"
     showDiv False = "none"
 
-viewsContainerCollaps :: MonadWidget t m => W t m (Event t EnsembleRequest) -> W t m (Event t EnsembleRequest)
+viewsContainerCollaps :: MonadWidget t m => W t m () -> W t m ()
 viewsContainerCollaps x = mdo
   dynBool <- toggle True evClick
   evClick <- dynButton dynOpenClose
@@ -60,11 +60,11 @@ viewsContainerCollaps x = mdo
   elDynAttr "div" dynAttr x
 
 
-viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
+viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m ()
 
-viewWidget er EmptyView = return never
+viewWidget er EmptyView = return ()
 
-viewWidget er (Div c vs) = divClass c $ liftM leftmost $ mapM (viewWidget er) vs
+viewWidget er (Div c vs) = divClass c $ mapM_ (viewWidget er) vs
 
 viewWidget er (Views vs) = viewWidget er (Div "views" vs)
 
@@ -78,11 +78,9 @@ viewWidget er (Paragraph vs) = viewWidget er (Div "paragraph code-font" vs)
 
 viewWidget er (Link url vs) = elAttr "a" ("href" =: url) $ viewWidget er (Views vs)
 
-viewWidget er (BulletPoints vs) = el "ul" $ do
-  rs <- forM vs $ \v -> el "li" $ viewWidget er v
-  return $ leftmost rs
+viewWidget er (BulletPoints vs) = el "ul" $ forM_ vs $ \v -> el "li" $ viewWidget er v
 
-viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> divClass "gridChild" $ viewWidget er v) vs
+viewWidget er (GridView c r vs) = viewsContainer $ mapM_ (\v -> divClass "gridChild" $ viewWidget er v) vs
   where
     viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
     defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
@@ -93,10 +91,7 @@ viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> 
 
 viewWidget er (CollapsableView v) = viewsContainerCollaps $ divClass "gridChild" $ viewWidget er v
 
-
---
-
-viewWidget _ (Text t) = translatableText t >>= dynText >> return never
+viewWidget _ (Text t) = translatableText t >>= dynText
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
@@ -135,40 +130,29 @@ viewWidget er TempoView = do
   let initialTempo = (tempo . ensemble . ensembleC) iCtx
   tempoDelta <- holdDyn initialTempo $ fmapMaybe lastTempoChange er
   tempoE <- tempoWidget tempoDelta
-  return $ fmap WriteTempo tempoE
+  hint $ TempoHint <$> tempoE
 
 viewWidget _ (Snippet z b n t) = do
   b <- clickableDiv (snippetOrExample b) $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
   hint $ fmap (\et -> ZoneHint z (TextProgram (Live (n,t,et) L3))) bTime
-  return never
 
-viewWidget _ AudioMapView = do
-  audioMapWidget
-  return never
+viewWidget _ AudioMapView = audioMapWidget
 
-viewWidget _ (LoadView 0) = do
-  graphVisionWidget
-  return never
+viewWidget _ (LoadView 0) = graphVisionWidget
 
-viewWidget _ (LoadView 1) = do
-  vintageVisionWidget
-  return never
+viewWidget _ (LoadView 1) = vintageVisionWidget
 
-viewWidget _ (LoadView 2) = do
-  concentricCircleVisionWidget
-  return never
-
+viewWidget _ (LoadView 2) = concentricCircleVisionWidget
 
 viewWidget _ (IFrame url) = do
   let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
   elAttr "iframe" attrs $ return ()
-  return never
 
 zoneWidget :: (MonadWidget t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
   -> (Dynamic t a -> W t m (Variable t a))
-  -> W t m (Event t EnsembleRequest)
+  -> W t m ()
 zoneWidget z defaultA f g ensResponses anEditorWidget = do
   ctx <- context
   iCtx <- sample $ current ctx
@@ -179,9 +163,9 @@ zoneWidget z defaultA f g ensResponses anEditorWidget = do
   let deltas' = fmapMaybe f deltas
   dynUpdates <- holdDyn iValue deltas'
   variableFromWidget <- anEditorWidget dynUpdates
-  return $ (WriteZone z . g) <$> localEdits variableFromWidget
+  hint $ (ZoneHint z . g) <$> localEdits variableFromWidget
 
-  -- a helper function
+-- a helper function
 
 snippetOrExample:: Bool -> T.Text
 snippetOrExample True = "example code-font"

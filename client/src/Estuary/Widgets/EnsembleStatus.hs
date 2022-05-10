@@ -19,7 +19,7 @@ import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
 
-ensembleStatusWidget :: MonadWidget t m => W t m (Event t EnsembleRequest)
+ensembleStatusWidget :: MonadWidget t m => W t m ()
 ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
   ctx <- context
   let ensC = fmap ensembleC ctx
@@ -30,16 +30,10 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
   let status = fmap wsStatus ctx --ensemble status
   anonymous <- holdUniqDyn $ fmap anonymousParticipants ens -- Dynamic t Int
 
-  -- divClass "ensemble-name-container code-font" $ do
-  --   divClass "ensemble-name" $ do
-  --     term Term.Ensemble >>= dynText
-  --     text ": "
-  --     dynText ensName
-
   divClass "statusWidgetScrollableContainer" $ do
     divClass "infoContainer" $ do
       divClass "tableContainer code-font" $ do
-        status <- el "table" $ do
+        el "table" $ do
           now <- liftIO getCurrentTime -- this time is measured before building the widget
           evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
           currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
@@ -67,7 +61,6 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
           text ": "
           dynText $ fmap showt anonymous
 
-        return status -- puts the value on the monad
 
 headerMode1 :: MonadWidget t m  => Dynamic t Text -> W t m ()
 headerMode1 ensName = divClass "rowHeaderContainer" $ do
