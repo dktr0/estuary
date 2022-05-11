@@ -29,7 +29,7 @@ dumpView (CollapsableView v) = "collapsable" <> dumpView v
 -- dumpView (Text t) = ...
 dumpView (LabelView x) = "label " <> showInt x
 dumpView (StructureView x) = "structure " <> showInt x
-dumpView (CodeView x y) = "code " <> showInt x <> " " <> showInt y
+dumpView (CodeView x y s) = "code " <> showInt x <> " " <> showInt y <> " " <> s
 dumpView (SequenceView z) = "sequence " <> showInt z
 -- dumpView (Example tn txt) = ...
 dumpView EnsembleStatusView = "ensembleStatus"
@@ -271,16 +271,19 @@ linkViewFunc s vx = Link s vx
 
 --
 codeViewView :: H View
-codeViewView =  codeViewView' <*> int
+codeViewView =  codeViewView' <*> textLiteral
 
-codeViewView' :: H (Int -> View)
+codeViewView' :: H (T.Text -> View)
 codeViewView' =  codeViewView'' <*> int
 
-codeViewView'' :: H (Int -> Int -> View)
-codeViewView'' = codeViewViewFunc <$ (reserved "code")
+codeViewView'' :: H (Int -> T.Text -> View)
+codeViewView'' =  codeViewView''' <*> int
 
-codeViewViewFunc :: Int -> Int -> View
-codeViewViewFunc x y = CodeView x y
+codeViewView''' :: H (Int -> Int -> T.Text -> View)
+codeViewView''' = codeViewViewFunc <$ (reserved "code")
+
+codeViewViewFunc :: Int -> Int -> T.Text -> View
+codeViewViewFunc x y s = CodeView x y s
 
 --
 

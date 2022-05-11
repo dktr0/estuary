@@ -14,7 +14,7 @@ import Estuary.Types.View
 
 genGrid :: Int -> Int -> Bool -> View
 genGrid rows columns withBorder = GridView rows columns $ fmap v [0..(rows*columns-1)]
-  where v n = bool Views BorderDiv withBorder [LabelView $ n*2, CodeView (n*2+1) 0 ]
+  where v n = bool Views BorderDiv withBorder [LabelView $ n*2, CodeView (n*2+1) 0 "def" ]
 
 
 presetViews :: Map Text View
@@ -28,19 +28,19 @@ presetViews = fromList [
       -- ("def", genGrid 2 3 False),
 
       ("def",  GridView 2 2  [
-      (Views [CodeView 1 0]),
-      (Views [CodeView 2 0]),
-      (Views [CodeView 3 0]),
-      (Views [CodeView 4 0])
+      (Views [CodeView 1 0 "fluxus"]),
+      (Views [CodeView 2 0 "def"]),
+      (Views [CodeView 3 0 "def"]),
+      (Views [CodeView 4 0 "def"])
       ]),
 
       ("test",  GridView 2 3  [
       (Views [LabelView 1, CalendarEventView 2]),
-      (Views [LabelView 3, CodeView 4 0]),
-      (Views [LabelView 5, CodeView 6 0]),
-      (Views [LabelView 7, CodeView 8 0]),
-      (Views [LabelView 9, CodeView 10 0]),
-      (Views [LabelView 11, CodeView 12 0])
+      (Views [LabelView 3, CodeView 4 0 "def"]),
+      (Views [LabelView 5, CodeView 6 0 "def"]),
+      (Views [LabelView 7, CodeView 8 0 "def"]),
+      (Views [LabelView 9, CodeView 10 0 "def"]),
+      (Views [LabelView 11, CodeView 12 0 "def"])
       ]),
 
       ("fulltexteditor", genGrid 1 1 True),
@@ -73,27 +73,27 @@ presetViews = fromList [
 -- the second number of the RouletteView will modify the height of the view. It is expressed in ems, it is recommended to use numbers above 2 to avoid the roulette buttons being cutoff. If set to 0, the roulette view will expand automatically and the text will wrap.
 
       ("roulette",GridView 2 1 [
-        BorderDiv [RouletteView 0 2, CodeView 1 0],
-        BorderDiv [RouletteView 2 2, CodeView 3 0]
+        BorderDiv [RouletteView 0 2, CodeView 1 0 "def"],
+        BorderDiv [RouletteView 2 2, CodeView 3 0 "def"]
         ]),
 
       ("tempoAndCode", GridView 2 1  [
-      BorderDiv [LabelView 0,CodeView 1 0],
+      BorderDiv [LabelView 0,CodeView 1 0 "def"],
       BorderDiv [SeeTimeView 0]
       ]),
 
       ("sandClockAndCode", GridView 2 1  [
-      BorderDiv [LabelView 0,CodeView 1 0],
+      BorderDiv [LabelView 0,CodeView 1 0 "def"],
       BorderDiv [SandClockView 0]
       ]),
 
       ("countDownAndCode", GridView 2 1  [
-      BorderDiv [LabelView 0,CodeView 1 0],
+      BorderDiv [LabelView 0,CodeView 1 0 "def"],
       BorderDiv [CountDownView 0]
       ]),
 
       ("stopWatchDownAndCode", GridView 2 1  [
-      BorderDiv [LabelView 0,CodeView 1 0],
+      BorderDiv [LabelView 0,CodeView 1 0 "def"],
       BorderDiv [CountDownView 0]
       ]),
 
@@ -103,17 +103,17 @@ presetViews = fromList [
 
       ("notepadAndCode", GridView 1 2 [
       BorderDiv [NotePadView 0],
-      BorderDiv [LabelView 0,CodeView 1 0]
+      BorderDiv [LabelView 0,CodeView 1 0 "def"]
       ]),
 
       ("notepadAndCodeWithCollapDiv", GridView 1 2 [
-      Views [LabelView 1, CollapsableView (NotePadView 0), CodeView 2 0],
-      Views [CodeView 3 0]
+      Views [LabelView 1, CollapsableView (NotePadView 0), CodeView 2 0 "def"],
+      Views [CodeView 3 0 "def"]
       ]),
 
       ("notepadAndCodeWithCollapDiv2", GridView 1 2 [
       CollapsableView (NotePadView 0),
-      Views [LabelView 3,CodeView 4 0]
+      Views [LabelView 3,CodeView 4 0 "def"]
       ])
 
       ]

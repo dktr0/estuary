@@ -42,7 +42,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setSize 0.8 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/European_honey_bee_extracts_nectar.jpg/640px-European_honey_bee_extracts_nectar.jpg\"",
             Example CineCer0 "size 10 $ setPosY (-0.8) $ text \"I am a river\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -69,7 +69,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "video \"https://upload.wikimedia.org/wikipedia/commons/transcoded/9/9e/Carpenter_bee_on_Abelia_flowers.webm/Carpenter_bee_on_Abelia_flowers.webm.480p.webm\"",
             Example CineCer0 "video \"https://cdn.videvo.net/videvo_files/video/free/2020-05/small_watermarked/3d_ocean_1590675653_preview.webm\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "image \"https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Edinburgh_Union_Canal_SR.jpg/1024px-Edinburgh_Union_Canal_SR.jpg\"",
             Example CineCer0 "image \"https://upload.wikimedia.org/wikipedia/commons/f/fe/Royal_emblem_of_Paramara.jpg\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -119,7 +119,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "text \"Hello word\"",
             Example CineCer0 "text \"This is my text - Este es mi texto\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -144,7 +144,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setPosX 0.5 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Red-flowers-at-cerro-pelon.jpg/800px-Red-flowers-at-cerro-pelon.jpg\"",
             Example CineCer0 "setCoord 0.2 (-0.5) $ text \"This is my text. Este es mi texto. Ceci est mon texte. Este é o meu texto. Das ist mein Text\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -168,7 +168,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setHeight 4.1 $ video \"https://upload.wikimedia.org/wikipedia/commons/9/9a/Time_Lapse_of_New_York_City.ogv\"",
             Example CineCer0 "setSize 0.8 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Tricyrtis_hirta_-_blossom_side_%28aka%29.jpg/640px-Tricyrtis_hirta_-_blossom_side_%28aka%29.jpg\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -192,7 +192,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "size 15 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
             Example CineCer0 "size 40 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -219,7 +219,7 @@ cineCer0Tutorial = Tutorial {
             ]],
             Example CineCer0 "setCoord 0 (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira,\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -238,7 +238,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "vol 0.3 $ video \"https://github.com/jac307/videoTextures/blob/master/otros/street.mov?raw=true\"",
             Example CineCer0 "vol 0.7 $ video \"https://github.com/jac307/videoTextures/blob/master/otros/colombia.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -258,7 +258,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setRotate 50 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Leaf_epidermis.jpg/640px-Leaf_epidermis.jpg\"",
             Example CineCer0 "setRotate 180 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Leaf_epidermis.jpg/640px-Leaf_epidermis.jpg\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -282,7 +282,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setOpacity 0.7 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/puertas.mov?raw=true\"",
             Example CineCer0 "setOpacity 0.2 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/puertas.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -306,7 +306,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setBrightness 0.5 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Edinburgh_Union_Canal_SR.jpg/1024px-Edinburgh_Union_Canal_SR.jpg\"",
             Example CineCer0 "setBrightness 2.5 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Edinburgh_Union_Canal_SR.jpg/1024px-Edinburgh_Union_Canal_SR.jpg\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -330,7 +330,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setBlur 20 $ video \"https://upload.wikimedia.org/wikipedia/commons/transcoded/4/4d/Baha%27i_Temple_--_Wilmette_%2C_IL_--_Drone_Video_%28DJI_Spark%29.webm/Baha%27i_Temple_--_Wilmette_%2C_IL_--_Drone_Video_%28DJI_Spark%29.webm.360p.vp9.webm\"",
             Example CineCer0 "setBlur 2 $ video \"https://upload.wikimedia.org/wikipedia/commons/transcoded/4/4d/Baha%27i_Temple_--_Wilmette_%2C_IL_--_Drone_Video_%28DJI_Spark%29.webm/Baha%27i_Temple_--_Wilmette_%2C_IL_--_Drone_Video_%28DJI_Spark%29.webm.360p.vp9.webm\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -354,7 +354,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setContrast 0.5 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Monarch-at-cerro-pelon.jpg/800px-Monarch-at-cerro-pelon.jpg\"",
             Example CineCer0 "setContrast 2.5 $ image \"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Monarch-at-cerro-pelon.jpg/800px-Monarch-at-cerro-pelon.jpg\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -378,7 +378,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setSaturate 0.6 $ video \"https://upload.wikimedia.org/wikipedia/commons/transcoded/5/54/04-European_Robin-nX-1.webm/04-European_Robin-nX-1.webm.480p.webm\"",
             Example CineCer0 "setSaturate 3 $ video \"https://upload.wikimedia.org/wikipedia/commons/transcoded/5/54/04-European_Robin-nX-1.webm/04-European_Robin-nX-1.webm.480p.webm\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -402,7 +402,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setGrayscale 0.5 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/recuerdos.mov?raw=true\"",
             Example CineCer0 "setGrayscale 1 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/recuerdos.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -422,7 +422,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setSaturate 12 $ setSize 0.5 $ setCoord 0 (-0.5) $ video \"https://upload.wikimedia.org/wikipedia/commons/transcoded/5/54/04-European_Robin-nX-1.webm/04-European_Robin-nX-1.webm.480p.webm\"",
             Example CineCer0 "setBrightness 0.5 $ setGrayscale 1 $ setSize 0.8 $ setPosX 0.3 $ vol 0.3 $ video \"https://github.com/jac307/videoTextures/blob/master/otros/street.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -446,7 +446,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "colour \"magenta\" $ setPosY (-0.4) $ size 4 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
             Example CineCer0 "colour \"#ff8000\" $ setPosY (-0.4) $ size 4 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -470,7 +470,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "rgb 0.7 0 0.9 $ size 4 $ setPosY (-0.4) $ text \"un ganglio de luz que se ha vuelto loco\"",
             Example CineCer0 "rgb 0 0 1 $ size 4 $ setPosY (-0.4) $ text \"un ganglio de luz que se ha vuelto loco\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -494,7 +494,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "hsl 1 1 0.7 $ size 4 $ setPosY (-0.4) $ text \"Pourquoi un chapeau ferait-il peur?\"",
             Example CineCer0 "hsl 0 0.3 0.7 $ size 4 $ setPosY (-0.4) $ text \"Pourquoi un chapeau ferait-il peur?\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -518,7 +518,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "font \"Arial\" $ size 4 $ setPosY (-0.4) $ text \"He walked across stepping carefully among the wounded\"",
             Example CineCer0 "font \"Impact\" $ size 4 $ setPosY (-0.4) $ text \"He walked across stepping carefully among the wounded\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -544,7 +544,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "strike $ size 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
             Example CineCer0 "border $ size 4 $ setPosY (-0.5) $ text \"rodzaje, urodzaje widzi, rozpoznaje\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -564,7 +564,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "bold $ hsl 0.1 1 0.5 $ size 5 $ text \"That lofty monarch, Monarch Mind\"",
             Example CineCer0 "font \"Georgia\" $ border $ size 3 $ setCoord 0.6 (-0.5) $ text \"sobald ich die Melone aufschneide\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -583,7 +583,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "circleMask 0.3 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/hogweed.mov?raw=true\"",
             Example CineCer0 "circleMask 0.92 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/hogweed.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -602,7 +602,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "circleMask' 0.3 0.2 0.5 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/thorns.mov?raw=true\"",
             Example CineCer0 "circleMask' 0.7 0.7 0.3 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/thorns.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -621,7 +621,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "sqrMask 0.5 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/flags-shadows.MOV?raw=true\"",
             Example CineCer0 "sqrMask 0.83 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/flags-shadows.MOV?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -642,7 +642,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "rectMask 0 0 0.1 0 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/spencer-creek.mov?raw=true\"",
             Example CineCer0 "rectMask 0 0 0 0.9 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/spencer-creek.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -662,7 +662,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setGrayscale 1 $ setBrightness 0.6 $ setBlur 5.5 $ circleMask 0.3 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/musgo.mov?raw=true\"",
             Example CineCer0 "setCoord 0.65 0.4 $ setContrast 1.2 $ sqrMask 0.5 $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/stem.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -689,7 +689,7 @@ cineCer0Tutorial = Tutorial {
             ]],
             Example CineCer0 "rgb (ramp 10 0 1) 0 (ramp 10 1 0) $ size 4 $ text \"Pourquoi un chapeau ferait-il peur?\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -712,7 +712,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setCoord (sin 1) (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
             Example CineCer0 "setPosY (sin 0.1) $ size 0.5 $ video \"https://github.com/jac307/videoTextures/blob/master/otros/street.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -731,7 +731,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "setCoord (range (-1.4) 1.4 $ sin 0.2) (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira\"",
             Example CineCer0 "circleMask (range 1 0.5 $ sin 0.1) $ video \"https://github.com/dktr0/cybernetic-samples/blob/main/videos/hogweed.mov?raw=true\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     }),
     -- ///////////////////////////////////////////////////////////////
@@ -750,7 +750,7 @@ cineCer0Tutorial = Tutorial {
             Example CineCer0 "rectMask 0.3 0 0.3 0 $ setSize 1.3 $ video \"https://github.com/jac307/MEMORIAS/blob/master/samples/videoSamples/instrumentos.mov?raw=true\"; rgb 0.2 0 0.2 $ italic $ size 4 $ text \"rodzaje, urodzaje widzi, rozpoznaje\"",
             Example CineCer0 "brightness 0.8 $ size 2 $ video \"https://github.com/jac307/videoTextures/blob/master/mariposa/10.mov?raw=true\"; opacity 0.5 $ size 2 $ brightness 0.8 $ video \"https://github.com/jac307/videoTextures/blob/master/mariposa/20.mov?raw=true\"; font \"Didot\" $ colour \"#ff60a8\" $ size 5 $ setPosY (-0.6) $ italic $ text \"and then, there is water\""
         ],
-        CodeView 1 0
+        CodeView 1 0 "def"
       ]
     })
     -- end
