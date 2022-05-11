@@ -89,74 +89,27 @@ fluxusTextWidget rows flash i delta = mdo
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
 
--- fluxusBehaviour :: Int -> Map Text Text
--- fluxusBehaviour rows
---   | rows == 1 = "style" =: "font-size: calc(8vw + 8vh)"
---   | rows == 2 = "style" =: "font-size: calc(6vw + 6vh)"
---   | rows == 3 = "style" =: "font-size: calc(4vw + 4vh)"
---   | rows == 4 = "style" =: "font-size: calc(2vw + 2vh)"
---   | otherwise = "style" =: "font-size: calc(2vw + 2vh)"
-
--- it is just making a pure function from Text -> Int and then applying that to the a Dynamic representation of the current text
-fluxusBehaviour1 :: Text -> Text
-fluxusBehaviour1 i
-  | T.length i <= 8 = "font-size: calc(8vw + 8vh)"
-  | (L.length $ T.lines i) <= 1 = "font-size: calc(8vw + 8vh)"
-
-  | (T.length i >= 9) && (T.length i <= 15) = "font-size: calc(7vw + 7vh); height: auto"
-  | (T.length i >= 16) && (T.length i <= 20) = "font-size: calc(6vw + 6vh); height: auto"
-  | (T.length i >= 21) && (T.length i <= 30) = "font-size: calc(5vw + 5vh); height: auto"
-  | (T.length i >= 31) && (T.length i <= 40) = "font-size: calc(4vw + 4vh); height: auto"
-  | (T.length i >= 41) && (T.length i <= 60) = "font-size: calc(3vw + 3vh); height: auto"
-  | (T.length i >= 61) && (T.length i <= 90) = "font-size: calc(2.5vw + 2.5vh); height: auto"
-  | (T.length i >= 91) && (T.length i <= 120) = "font-size: calc(2vw + 2vh); height: auto"
-  | otherwise = "font-size: calc(1.5vw + 1.5vh)"
-
--- fluxusBehaviour :: Text -> Map Text Text
--- fluxusBehaviour i
---      | T.compareLength i 10 == LT = "style" =: "font-size: calc(8vw + 8vh); height: auto"
---      | T.compareLength i 10 == EQ = "style" =: "font-size: calc(4vw + 4vh); height: auto"
---      | T.compareLength i 10 == GT = "style" =: "font-size: calc(2vw + 2vh); height: auto"
-
-
--- Data.Text
--- lines :: Text -> [Text]
--- Data.List
--- length :: [a] -> Int
-fluxusBehaviour2 :: Text -> Text
-fluxusBehaviour2 i
-     | (L.length $ T.lines i) <= 1 = "font-size: calc(8vw + 8vh); height: auto"
-     | (L.length $ T.lines i) == 2 = "font-size: calc(6vw + 6vh); height: auto"
-     | (L.length $ T.lines i) == 3 = "font-size: calc(4vw + 4vh); height: auto"
-     | (L.length $ T.lines i) == 4 = "font-size: calc(3vw + 3vh); height: auto"
-     | (L.length $ T.lines i) >= 5 = "font-size: calc(2vw + 2vh); height: auto"
-     | otherwise = "font-size: calc(1.5vw + 1.5vh);"
-
-fluxusBehaviour' :: Text -> Map Text Text
-fluxusBehaviour' i = do
-  let b1 = fluxusBehaviour1 i
-  let b2 = fluxusBehaviour2 i
-  "style" =: (b1 <> b2)
-
 fluxusBehaviour :: Text -> Map Text Text
 fluxusBehaviour i
-  | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "style" =: "font-size: calc(8vw + 8vh)"
+  | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "style" =: "font-size: 8em"
 
-  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "style" =: "font-size: calc(7vw + 7vh); height: auto"
+  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "style" =: "font-size: 7em"
 
-  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "style" =: "font-size: calc(6vw + 6vh); height: auto"
+  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "style" =: "font-size: 6em"
 
-  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "style" =: "font-size: calc(5vw + 5vh); height: auto"
+  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "style" =: "font-size: 5em"
 
-  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "style" =: "font-size: calc(4vw + 4vh); height: auto"
+  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "style" =: "font-size: 4em"
 
-  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "style" =: "font-size: calc(3vw + 3vh); height: auto"
+  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "style" =: "font-size: 3em"
 
-  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "style" =: "font-size: calc(2.5vw + 2.5vh); height: auto"
+  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "style" =: "font-size: 2.5em"
 
-  | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 12)) = "style" =: "font-size: calc(2vw + 2vh); height: auto"
+  | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 10)) = "style" =: "font-size: 2em"
 
-  | otherwise = "style" =: "font-size: calc(1.5vw + 1.5vh)"
+  | (T.length i >= 121) && (T.length i <= 140) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 10) && ((L.length $ T.lines i) <= 13)) = "style" =: "font-size: 1.5em"
+
+  | otherwise = "style" =: "font-size: 1em"
 
 
 -- ok, where does textToInvisible is used? look for this at the end... maybe in those parts where text can be hidden--- this code does not have the Text input
