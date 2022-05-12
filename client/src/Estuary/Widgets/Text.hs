@@ -210,13 +210,11 @@ textProgramEditor style rows errorText deltasDown = divClass "textPatternChain" 
   let textDelta = attachWithMaybe (\(_,x,_) (_,y,_) -> if x==y then Nothing else Just y) (fmap forEditing $ current $ currentValue cv) deltaFuture
   errorText' <- holdUniqDyn errorText
 
-  -- determine whether we currently display "eval flash" or not
   evalTimeDyn <- holdUniqDyn $ fmap ((\(_,_,x)->x) . forRendering) $ currentValue cv
-  let flashOn = True <$ updated evalTimeDyn -- Event t Bool, fires every time evalTime changes
-  flashOff <- liftM (False <$) $ delay 0.1 flashOn -- Event t Bool, fires 0.1 seconds later
-  evalFlash <- holdDyn False $ leftmost [flashOff,flashOn] -- Dynamic t Bool
+  let flashOn = True <$ updated evalTimeDyn
+  flashOff <- liftM (False <$) $ delay 0.1 flashOn
+  evalFlash <- holdDyn False $ leftmost [flashOff,flashOn]
 
-  -- GUI elements: language selection menu, eval button, error display, and text area (textWidget)
   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
     d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
@@ -225,9 +223,6 @@ textProgramEditor style rows errorText deltasDown = divClass "textPatternChain" 
     return (_dropdown_change d,evalButton')
   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' style rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
-
-  -- produce a Variable by combining current value of Variable (that already includes deltas down from elsewhere)
-  -- with the results of local edits to that variable
   let c = current $ currentValue cv
   let parserEdit' = attachWith applyParserEdit c parserEdit
   let textEdit' = attachWith applyTextEdit c textEdit
