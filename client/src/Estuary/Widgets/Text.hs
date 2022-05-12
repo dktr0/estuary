@@ -37,12 +37,12 @@ import Estuary.Widgets.W
 import Estuary.Types.Context
 
 
-foreign import javascript unsafe "navigator.clipboard.writeText($1);" copyToClipboard :: Text -> IO () -- ok, este import es mas bien para hacer el copy/paste en el texto, no tiene ingerencia en el tipo del textWidget ni nada
+foreign import javascript unsafe "navigator.clipboard.writeText($1);" copyToClipboard :: Text -> IO ()
 
 
 textWidgetClass :: Bool -> Map Text Text
-textWidgetClass True = "class" =: "evalFlash textInputToEndOfLine codeEditor-font"
-textWidgetClass False = "class" =: "primary-color textInputToEndOfLine codeEditor-font"
+textWidgetClass True = "class" =: "evalFlash textInputToEndOfLine code-font"
+textWidgetClass False = "class" =: "primary-color textInputToEndOfLine code-font"
 
 textWidgetRows :: Int -> Map Text Text
 textWidgetRows 0 = Data.Map.empty
@@ -51,52 +51,16 @@ textWidgetRows x = "rows" =: T.pack (show x)
 defOrFluxus :: Text -> Text -> Map Text Text
 defOrFluxus x i
   | x == "def" = "style" =: "height: auto"
+  | x == "fluxus" = fluxusStyle i
   | otherwise = "style" =: "height: auto"
-  -- | x == "fluxus" = "class" =: "codeEditor-fluxusFont" <> (fluxusStyle i)
 
-
-textWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
-textWidget rows flash i delta = do
-  let class' = fmap textWidgetClass flash
-  let rows' = constDyn $ textWidgetRows rows
-  let style = constDyn $ "style" =: "height: auto"
-  let attrs = mconcat [class',rows',style] -- :: Dynamic t (Map Text Text)
-  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
-  let e = _textArea_element x
-  e' <- wrapDomEvent (e) (onEventName Keypress) $ do
-    y <- getKeyEvent
-    if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
-  let evalEvent = fmap (const ()) $ ffilter (==True) e'
-  let edits = _textArea_input x
-  let value = _textArea_value x
-  return (value,edits,evalEvent)
-  where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
-
-
+-- for code-boxes-editors
 textWidget' :: MonadWidget t m => Text -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
 textWidget' style rows flash i delta = mdo
   let class' = fmap textWidgetClass flash
   let rows' = constDyn $ textWidgetRows rows
   let style' = fmap (defOrFluxus style) value
   let attrs = mconcat [class',rows', style']
-  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
-  let e = _textArea_element x
-  e' <- wrapDomEvent (e) (onEventName Keypress) $ do
-    y <- getKeyEvent
-    if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
-  let evalEvent = fmap (const ()) $ ffilter (==True) e'
-  let edits = _textArea_input x
-  let value = _textArea_value x
-  return (value,edits,evalEvent)
-  where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
-
-
-fluxusTextWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
-fluxusTextWidget rows flash i delta = mdo
-  let class' = fmap textWidgetClass flash
-  let rows' = constDyn $ textWidgetRows rows
-  let fluxusStyle' = fmap fluxusStyle value
-  let attrs = mconcat [class',rows', fluxusStyle']
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let e = _textArea_element x
   e' <- wrapDomEvent (e) (onEventName Keypress) $ do
@@ -132,54 +96,82 @@ fluxusStyle i
   | otherwise = "style" =: "font-size: 1em; height: auto"
 
 
-                               --  Rows         Colour       EditableOrNot
+
+-- for everything that is not code-boxes-editors
+textWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+textWidget rows flash i delta = do
+  let class' = fmap textWidgetClass flash
+  let rows' = constDyn $ textWidgetRows rows
+  let style = constDyn $ "style" =: "height: auto"
+  let attrs = mconcat [class',rows',style] -- :: Dynamic t (Map Text Text)
+  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
+  let e = _textArea_element x
+  e' <- wrapDomEvent (e) (onEventName Keypress) $ do
+    y <- getKeyEvent
+    if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
+  let evalEvent = fmap (const ()) $ ffilter (==True) e'
+  let edits = _textArea_input x
+  let value = _textArea_value x
+  return (value,edits,evalEvent)
+  where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
+
+
+                                     --  Rows  Colour     EditableOrNot
 textToInvisible :: MonadWidget t m => Int -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
 textToInvisible rows invisible delta = do
   i <- sample $ current delta
+--  let class' = constDyn $ "class" =: "exp-color textInputToEndOfLine code-font"
   let class' = fmap textToInvisibleClass invisible
   let rows' = constDyn $ textWidgetRows rows
   let readon = lockText <$> invisible
   let style = constDyn $ styleFunc
-  let attrs = mconcat [class',rows', readon, style] -- :: Dynamic t (Map Text Text)
+--  let style = constDyn $ "style" =: ("height: auto; font-size:2em; " <> (temporaryFuncColour <$> colour))
+  let attrs = mconcat [class',rows', readon, style]
   x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
-  let edits = _textArea_input x -- ::  Event t String
-  let value = _textArea_value x -- :: Dynamic t String
-  return (value,edits) -- :: (Dynamic t Text, Event t Text)
+  let edits = _textArea_input x
+  let value = _textArea_value x
+  return (value,edits)
 
 
 textWithLockAndClipBoardWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
 textWithLockAndClipBoardWidget rows editable delta = do
   i <- sample $ current delta
+--  let class' = constDyn $ "class" =: "exp-color textInputToEndOfLine code-font"
   let class' = fmap textWithLockWidgetClass editable
   let rows' = constDyn $ textWidgetRows rows
   let readon = lockText <$> editable
   let style = constDyn $ styleFunc
 --  let style = constDyn $ "style" =: ("height: auto; font-size:2em; " <> (temporaryFuncColour <$> colour))
-  let attrs = mconcat [class',rows', readon, style] -- :: Dynamic t (Map Text Text)
+  let attrs = mconcat [class',rows', readon, style]
   x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
-  let edits = _textArea_input x -- :: Event t String
-  let value = _textArea_value x -- :: Dynamic t String
+  let edits = _textArea_input x -- Event t String
+  let value = _textArea_value x -- Dynamic t String
+
   butt <- button "to ClipBoard"
   let xx = tag (current $ value) butt
+
   performEvent $ fmap (liftIO . copyToClipboard) xx
+
   ----- to clipboard ------
+
   return (value,edits)
 
 
-                                     --  Rows     Colour     EditableOrNot
+                                     --  Rows  Colour     EditableOrNot
 textWithLockWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
 textWithLockWidget rows editable delta = do
   i <- sample $ current delta
+--  let class' = constDyn $ "class" =: "exp-color textInputToEndOfLine code-font"
   let class' = fmap textWithLockWidgetClass editable
   let rows' = constDyn $ textWidgetRows rows
   let readon = lockText <$> editable
   let style = constDyn $ styleFunc
 --  let style = constDyn $ "style" =: ("height: auto; font-size:2em; " <> (temporaryFuncColour <$> colour))
-  let attrs = mconcat [class',rows', readon, style] -- :: Dyn t (Map Text Text)
+  let attrs = mconcat [class',rows', readon, style]
   x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let edits = _textArea_input x
   let value = _textArea_value x
-  return (value,edits) -- :: (Dynamic t Text, Event t Text)
+  return (value,edits)
 
 styleFunc:: Map Text Text
 styleFunc = "style" =: "height: auto; font-size: 1em;"
@@ -192,7 +184,7 @@ textWithLockWidgetClass :: Bool -> Map Text Text
 textWithLockWidgetClass True = "class" =: "human-to-human-comm textInputToEndOfLine code-font"
 textWithLockWidgetClass False = "class" =: "primary-color textInputToEndOfLine code-font"
 
-textToInvisibleClass :: Bool -> Map Text Text
+textToInvisibleClass:: Bool -> Map Text Text
 textToInvisibleClass True =  "class" =: "invisible-color textInputToEndOfLine code-font"
 textToInvisibleClass False = "class" =: "primary-color textInputToEndOfLine code-font"
 
@@ -207,19 +199,22 @@ holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
 textProgramEditor :: forall t m. MonadWidget t m => Text -> Int -> Dynamic t (Maybe Text)
   -> Dynamic t (Live TextProgram) -> W t m (Variable t (Live TextProgram))
 textProgramEditor style rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
-  -- translate deltasDown into initial value and events that reflect remote changes that will affect local GUI
 
+  -- translate deltasDown into initial value and events that reflect remote changes that will affect local GUI
   i <- sample $ current deltasDown
   let initialParser = (\(x,_,_) -> x) $ forEditing i
   let initialText = (\(_,x,_) -> x) $ forEditing i
   let deltaFuture = fmap forEditing $ updated deltasDown
+
   let parserDelta = attachWithMaybe (\(x,_,_) (y,_,_) -> if x==y then Nothing else Just y) (fmap forEditing $ current $ currentValue cv) deltaFuture
   let textDelta = attachWithMaybe (\(_,x,_) (_,y,_) -> if x==y then Nothing else Just y) (fmap forEditing $ current $ currentValue cv) deltaFuture
   errorText' <- holdUniqDyn errorText
+
+  -- determine whether we currently display "eval flash" or not
   evalTimeDyn <- holdUniqDyn $ fmap ((\(_,_,x)->x) . forRendering) $ currentValue cv
-  let flashOn = True <$ updated evalTimeDyn
-  flashOff <- liftM (False <$) $ delay 0.1 flashOn
-  evalFlash <- holdDyn False $ leftmost [flashOff,flashOn]
+  let flashOn = True <$ updated evalTimeDyn -- Event t Bool, fires every time evalTime changes
+  flashOff <- liftM (False <$) $ delay 0.1 flashOn -- Event t Bool, fires 0.1 seconds later
+  evalFlash <- holdDyn False $ leftmost [flashOff,flashOn] -- Dynamic t Bool
 
   -- GUI elements: language selection menu, eval button, error display, and text area (textWidget)
   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
@@ -230,6 +225,9 @@ textProgramEditor style rows errorText deltasDown = divClass "textPatternChain" 
     return (_dropdown_change d,evalButton')
   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' style rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
+
+  -- produce a Variable by combining current value of Variable (that already includes deltas down from elsewhere)
+  -- with the results of local edits to that variable
   let c = current $ currentValue cv
   let parserEdit' = attachWith applyParserEdit c parserEdit
   let textEdit' = attachWith applyTextEdit c textEdit
@@ -250,6 +248,7 @@ applyTextEdit (Edited (x,y,z) (x',_,z')) y' = Edited (x,y,z) (x',y',z')
 applyEvalEdit :: Live TextProgram -> UTCTime -> Live TextProgram
 applyEvalEdit (Live (x,y,_) _) z = Live (x,y,z) L3
 applyEvalEdit (Edited _ (x,y,_)) z = Live (x,y,z) L3
+
 
 labelEditor :: MonadWidget t m => Dynamic t Text -> W t m (Variable t Text)
 labelEditor delta = do
