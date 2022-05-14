@@ -198,14 +198,14 @@ in
 
         tempi = self.callHackage "tempi" "1.0.2.1" {};
 
-        # we will won't be able to build this until reflex-dom-contrib dependency is removed
-        #seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
-        #  doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
-        #   owner = "luisnavarrodelangel";
-        #   repo = "seis8s";
-        #   sha256 = "1nnzsmkcy28k1s1s72ckq136564r2d6xzngm2bd1sm5ixasxx0lq";
-        #   rev = "6edbf1e21ade2669a0098d3120c698463c86f52a";
-         #}) {}));
+        seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
+          doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
+           owner = "luisnavarrodelangel";
+           repo = "seis8s";
+           sha256 = "169rfxknyv8ali87n6pmfpdm2vy09khsx4c9spa40sisskbbmlsz";
+           rev = "1db0e3ff1399e176792e815df748c62aff9aa227";
+
+         }) {}));
 
          permutation = markUnbroken super.permutation;
 

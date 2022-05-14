@@ -15,7 +15,7 @@ import Estuary.Types.Hint
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.W
-
+ 
 
 type Sequence = Map Int (Text, [Bool])
 

@@ -10,6 +10,9 @@ import GHC.Generics
 import Data.Aeson
 import Data.Time
 import Data.Sequence
+import qualified Data.IntMap as IntMap
+
+
 
 import Estuary.Tidal.Types
 import Estuary.Types.Live
@@ -23,6 +26,8 @@ type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
 type NotePad = (Int,Seq NotePage)
 type NotePage = (Text,Text)
+
+type CalendarEvents = IntMap.IntMap CalendarEvent
 
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
 data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
@@ -87,7 +92,9 @@ data Definition =
   StopWatch TimerUpState |
   SeeTime TimeVision |
   NotePad NotePad |
-  CalendarEv CalendarEvent
+  CalendarEv CalendarEvent |
+  CalendarEvs CalendarEvents
+
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -146,6 +153,13 @@ maybeRoulette _ = Nothing
 
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
+
+maybeCalendarEvents :: Definition -> Maybe CalendarEvents
+maybeCalendarEvents (CalendarEvs x) = (Just x)
+maybeCalendarEvents _ = Nothing
+
+justCalendarEvents :: [Definition] -> [CalendarEvents]
+justCalendarEvents = mapMaybe maybeCalendarEvents
 
 maybeCalendarEvent :: Definition -> Maybe CalendarEvent
 maybeCalendarEvent (CalendarEv x) = Just x

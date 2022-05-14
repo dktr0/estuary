@@ -38,7 +38,7 @@ import Sound.MusicW.AudioContext
 import qualified Sound.TimeNot.AST as TimeNot
 import qualified Sound.TimeNot.Parsers as TimeNot
 import qualified Sound.TimeNot.Render as TimeNot
--- import qualified Sound.Seis8s.Parser as Seis8s
+import qualified Sound.Seis8s.Parser as Seis8s
 import Estuary.Languages.Punctual
 import Estuary.Languages.CineCer0
 import Estuary.Languages.LocoMotion
@@ -391,7 +391,7 @@ renderTextProgramChanged c z (TimeNot,x,eTime) = do
       modify' $ \xx -> xx { timeNots = insert z p (timeNots xx) }
     Left e -> setZoneError z (T.pack $ show e)
 
-{- renderTextProgramChanged c z (Seis8s,x,eTime) = do
+renderTextProgramChanged c z (Seis8s,x,eTime) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
   case parseResult of
     Right p -> do
@@ -399,7 +399,7 @@ renderTextProgramChanged c z (TimeNot,x,eTime) = do
       setBaseNotation z Seis8s
       setEvaluationTime z eTime
       modify' $ \xx -> xx { seis8ses = insert z p $ seis8ses xx }
-    Left e -> setZoneError z (T.pack $ show e) -}
+    Left e -> setZoneError z (T.pack $ show e)
 
 renderTextProgramChanged c z (JSoLang x,y,eTime) = do
   parseResult <- liftIO $ JSoLang.define y
@@ -469,7 +469,8 @@ renderBaseProgramAlways c z _ (Just TimeNot) = do
       let oTime = firstCycleStartAfter theTempo eTime
       pushNoteEvents $ fmap TimeNot.mapForEstuary $ TimeNot.render oTime p' wStart wEnd
     Nothing -> return ()
-{- renderBaseProgramAlways c z _ (Just Seis8s) = do
+
+renderBaseProgramAlways c z _ (Just Seis8s) = do
   s <- get
   let p = IntMap.lookup z $ seis8ses s
   case p of
@@ -478,7 +479,8 @@ renderBaseProgramAlways c z _ (Just TimeNot) = do
       let wStart = renderStart s
       let wEnd = renderEnd s
       pushNoteEvents $ Seis8s.render p' theTempo wStart wEnd
-    Nothing -> return () -}
+    Nothing -> return ()
+
 renderBaseProgramAlways _ _ _ _ = return ()
 
 renderControlPattern :: Context -> Int -> R ()

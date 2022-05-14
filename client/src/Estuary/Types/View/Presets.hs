@@ -29,7 +29,7 @@ presetViews = fromList [
 
       ("test",  GridView 2 3  [
       (Views [LabelView 1, CalendarEventView 2]),
-      (Views [LabelView 3, CodeView 4 0]),
+      (Views [LabelView 3, SequenceView 4]),
       (Views [LabelView 5, CodeView 6 0]),
       (Views [LabelView 7, CodeView 8 0]),
       (Views [LabelView 9, CodeView 10 0]),

@@ -115,9 +115,15 @@ viewWidget er EnsembleStatusView = ensembleStatusWidget
 
 viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
 
+-- viewWidget er (CalendarEventView z) = do
+--   today <- liftIO getZonedTime
+--   zoneWidget z (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today))) maybeCalendarEvent CalendarEv er calendarEventWidget
+
+
 viewWidget er (CalendarEventView z) = do
   today <- liftIO getZonedTime
-  zoneWidget z (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today))) maybeCalendarEvent CalendarEv er calendarEventWidget
+  zoneWidget z (IntMap.fromList [(1, CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today)))]) maybeCalendarEvents CalendarEvs er calendarEventWidget'
+
 
 viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 
