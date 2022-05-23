@@ -186,11 +186,11 @@ cineCer0Tutorial = Tutorial {
             ]],
             Snippet 1 True CineCer0 "text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
             Paragraph [ Text $ Map.fromList[
-              (English,"Function to change font-size: \"fontSize 10 #\". Values bellow \"1\" make the text smaller (can down up to \"0\"). Values above \"1\" makes the text bigger."),
-              (Español,"Función para cambiar el tamño de fuente: \"fontSize 10 #\". Los valores por debajo de \"1\" hacen el texto más pequeño (puede reducirse hasta \"0\"). Los valores arriba de \"1\" hacen el texto más grande.")
+              (English,"Function to change font size: \"size 3 #\". Values bellow \"1\" make the text smaller (can down up to \"0\"). Values above \"1\" makes the text bigger."),
+              (Español,"Función para cambiar el tamño de fuente: \"size 2 #\". Los valores por debajo de \"1\" hacen el texto más pequeño (puede reducirse hasta \"0\"). Los valores arriba de \"1\" hacen el texto más grande.")
             ]],
-            Snippet 1 True CineCer0 "size 15 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
-            Snippet 1 True CineCer0 "size 40 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\""
+            Snippet 1 True CineCer0 "size 2 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\"",
+            Snippet 1 True CineCer0 "size 4 $ text \"My text. Mi texto. Mon texte. Meu texto. Mein Text\""
         ],
         CodeView 1 0
       ]
@@ -214,7 +214,7 @@ cineCer0Tutorial = Tutorial {
             ]],
             Snippet 1 True CineCer0 "setPosX 0.5 $ setSize 0.5 $ video \"https://upload.wikimedia.org/wikipedia/commons/9/9a/Time_Lapse_of_New_York_City.ogv\"",
             Paragraph [ Text $ Map.fromList[
-              (English,"In this example, the coordinates (in axis X,Y) and the font-size are combined to modify the appearance of text:"),
+              (English,"In this example, the coordinates (in axis X,Y) and the font size are combined to modify the appearance of text:"),
               (Español,"En este ejemplo, las coordenadas (en los ejes X,Y) y el tamaño de fuente son combinadas para modificar la apariencia del texto:")
             ]],
             Snippet 1 True CineCer0 "setCoord 0 (-0.5) $ size 2.5 $ text \"Mentira es la palabra. La palabra mentira,\""
@@ -561,7 +561,7 @@ cineCer0Tutorial = Tutorial {
               (Español,"Ejemplos con múltiples funciones afectando la visualización de un text:")
             ]],
             Snippet 1 True CineCer0 "font \"Didot\" $ colour \"#ff60a8\" $ size 3 $ setPosY (-0.6) $ italic $ text \"Hay besos que calcinan y que hieren, hay besos que arrebatan los sentidos\"",
-            Snippet 1 True CineCer0 "bold $ hsl 0.1 1 0.5 $ size 5 $ text \"That lofty monarch, Monarch Mind\"",
+            Snippet 1 True CineCer0 "bold $ hsl 0.1 1 0.5 $ size 2 $ text \"That lofty monarch, Monarch Mind\"",
             Snippet 1 True CineCer0 "font \"Georgia\" $ border $ size 3 $ setCoord 0.6 (-0.5) $ text \"sobald ich die Melone aufschneide\""
         ],
         CodeView 1 0
