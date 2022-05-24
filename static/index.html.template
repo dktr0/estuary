@@ -162,6 +162,9 @@ function loadJavascriptDependencies() {
     "WebDirt/SampleBank.js",
     "hydra-synth.js",
     "peg-0.10.0.min.js",
+    "https://dktr0.github.io/LocoMotion/three.min.js",
+    "https://dktr0.github.io/LocoMotion/GLTFLoader.js",
+    "https://dktr0.github.io/LocoMotion/locoMotion.js",
     #ifdef PRODUCTION
     "all.min.js"
     #else

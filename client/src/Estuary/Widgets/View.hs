@@ -42,6 +42,7 @@ import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
+import Estuary.Widgets.DataVisualisers
 
 
 attrsColp :: Bool -> Map.Map T.Text T.Text
@@ -66,6 +67,10 @@ viewWidget er EmptyView = return never
 viewWidget er (Div c vs) = divClass c $ liftM leftmost $ mapM (viewWidget er) vs
 
 viewWidget er (Views vs) = viewWidget er (Div "views" vs)
+
+viewWidget er (Columns vs) = viewWidget er (Div "columns" vs)
+
+viewWidget er (Rows vs) = viewWidget er (Div "rows" vs)
 
 viewWidget er (BorderDiv vs) = viewWidget er (Div "borderDiv" vs)
 
@@ -112,7 +117,7 @@ viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er 
 
 viewWidget er (CalendarEventView z) = do
   today <- liftIO getZonedTime
-  zoneWidget z (CalendarEvent "add details for your event" (CalendarTime today Nothing)) maybeCalendarEvent CalendarEv er calendarEventWidget
+  zoneWidget z (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today))) maybeCalendarEvent CalendarEv er calendarEventWidget
 
 viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 
@@ -132,15 +137,28 @@ viewWidget er TempoView = do
   tempoE <- tempoWidget tempoDelta
   return $ fmap WriteTempo tempoE
 
-viewWidget _ (Example n t) = do
-  b <- clickableDiv "example code-font" $ text t
+viewWidget _ (Snippet z b n t) = do
+  b <- clickableDiv (snippetOrExample b) $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
-  hint $ fmap (\et -> ZoneHint 1 (TextProgram (Live (n,t,et) L3))) bTime
+  hint $ fmap (\et -> ZoneHint z (TextProgram (Live (n,t,et) L3))) bTime
   return never
 
 viewWidget _ AudioMapView = do
   audioMapWidget
   return never
+
+viewWidget _ (LoadView 0) = do
+  graphVisionWidget
+  return never
+
+viewWidget _ (LoadView 1) = do
+  vintageVisionWidget
+  return never
+
+viewWidget _ (LoadView 2) = do
+  concentricCircleVisionWidget
+  return never
+
 
 viewWidget _ (IFrame url) = do
   let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
@@ -162,3 +180,9 @@ zoneWidget z defaultA f g ensResponses anEditorWidget = do
   dynUpdates <- holdDyn iValue deltas'
   variableFromWidget <- anEditorWidget dynUpdates
   return $ (WriteZone z . g) <$> localEdits variableFromWidget
+
+  -- a helper function
+
+snippetOrExample:: Bool -> T.Text
+snippetOrExample True = "example code-font"
+snippetOrExample False = "snippet code-font"

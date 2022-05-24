@@ -123,9 +123,10 @@ visualiseCycles delta segments = do
   let class' = constDyn $ "class" =: "cycleVisualiser"
 --  let style = constDyn $ "style" =: "position: absolute; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "-1.5 -1.5 3 3"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let w' = constDyn $ "width" =: "100%;"
   let h' = constDyn $ "height" =: "100%;"
-  let attrs = mconcat [class',w',h',vB]
+  let attrs = mconcat [class',w',h',vB, par]
 
   let (cx,cy) = (constDyn $ "cx" =: "0", constDyn $ "cy" =: "0")
   let r = constDyn $ "r" =: "1.4"
@@ -177,9 +178,10 @@ visualiseMetre delta subDivisions = do
   let w' = constDyn $ "width" =: "100%"
   let h' = constDyn $ "height" =: "100%"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let strokeWidth = constDyn $ "stroke-width" =: "0.5" 
+  let strokeWidth = constDyn $ "stroke-width" =: "0.5"
+  let par = constDyn $ "preserveAspectRatio" =: "none"
 
-  let attrs = mconcat [class',w',h',vB]
+  let attrs = mconcat [class',w',h',vB, par]
 
   let x1 = beatToPercentage "x1" <$> delta
   let x2 = beatToPercentage "x2" <$> delta
@@ -226,7 +228,8 @@ visualiseRing delta segs = do
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100%;"
   let h' = constDyn $ "height" =: "100%;"
-  let attrs = mconcat [class',w',h',vB]
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
+  let attrs = mconcat [class',w',h',vB,par]
 
   let radius = 30 :: Float
   let stroke = constDyn $ "stroke" =: "var(--secondary-color)"
@@ -299,19 +302,7 @@ whichSegment r nSegments beatInPercent =
       segment = ((realToFrac segment' :: Float) * (r * pi * 2) * 0.01)
   in "stroke-dashoffset" =: (showt $ (realToFrac segment :: Double))
 
----- new visualiser:  bead visualiser widget
--- <svg height="100" width="100" >
---   <rect width="100" height="100" style="fill:rgb(0,0,255);stroke-width:3;stroke:rgb(0,0,0)" />
---   <circle transform=rotate(0,50,50) cx="50" cy="25" r="10" stroke="black" stroke-width="3"
---   fill="red" />
---   <circle transform=rotate(90,50,50) cx="50" cy="25" r="10" stroke="black" stroke-width="3"
---   fill="red" />
---   <circle transform=rotate(180,50,50) cx="50" cy="25" r="10" stroke="black" stroke-width="3"
---   fill="red" />
---   <circle transform=rotate(270,50,50) cx="50" cy="25" r="10" stroke="black" stroke-width="3"
---   fill="red" />
---   Sorry, your browser does not support inline SVG.  
--- </svg> 
+  ------ bead visualiser
 
 beadPosition:: Rational -> Rational -> Map Text Text
 beadPosition nBeads' position =
@@ -338,11 +329,12 @@ visualiseBeads delta k beads = do
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100"
   let h' = constDyn $ "height" =: "100"
-  let attrs = mconcat [class',w',h',vB]
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
+  let attrs = mconcat [class',w',h',vB,par]
 
   -- define circle attrs
   let cx = constDyn $  "cx" =: "50" 
-  let cy = constDyn $  "cy" =: "25"
+  let cy = constDyn $  "cy" =: "7.2"
   let fill = constDyn $ "fill" =:"var(--primary-color)"
 
   -- size of bead changes depending of position in the beat
@@ -384,7 +376,7 @@ generateBead beadSize colour beads = do
   let strokeWidth = constDyn $ "stroke-width" =: "0.5"
   let fill = constDyn $ beadFill colour
   let cx = constDyn $  "cx" =: "50" 
-  let cy = constDyn $  "cy" =: "25"
+  let cy = constDyn $  "cy" =: "7.2"
   let r = constDyn $ "r" =: showt (realToFrac beadSize :: Double)
   let transform = (\x -> "transform" =: ("rotate(" <> (showt (realToFrac x :: Double)) <> ",50,50)")) <$> beads
   let attrs = mconcat [cx,cy,r,stroke,strokeWidth,fill,transform]

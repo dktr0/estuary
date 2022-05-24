@@ -35,7 +35,6 @@ dev-staging/
 /*-result
 
 ### cabal
-**/*.cabal
 dist-*/
 .ghc.environment*
 test-ghcjs

@@ -3,8 +3,7 @@
 module Estuary.Widgets.Text where
 
 import Reflex
-import Reflex.Dom hiding (getKeyEvent,preventDefault)
-import Reflex.Dom.Contrib.KeyEvent
+import Reflex.Dom
 import Control.Monad
 import Control.Monad.Trans
 import GHCJS.DOM.EventM
@@ -122,15 +121,10 @@ textWidget rows flash i delta = do
   let style = constDyn $ "style" =: "height: auto"
   let attrs = mconcat [class',rows',style] -- :: Dynamic t (Map Text Text)
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
-  let e = _textArea_element x
-  e' <- wrapDomEvent (e) (onEventName Keypress) $ do
-    y <- getKeyEvent
-    if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
-  let evalEvent = fmap (const ()) $ ffilter (==True) e'
-  let edits = _textArea_input x
   let value = _textArea_value x
-  return (value,edits,evalEvent)
-  where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
+  let edits = _textArea_input x
+  shiftEnter <- catchKeyboardShortcut (_textArea_element x) 13 False True
+  return (value,edits,shiftEnter)
 
 
                                      --  Rows  Colour     EditableOrNot

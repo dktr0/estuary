@@ -5,8 +5,7 @@ module Estuary.Widgets.Estuary where
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response,getKeyEvent,preventDefault,append)
-import Reflex.Dom.Contrib.KeyEvent
+import Reflex.Dom hiding (Request,Response,append)
 import Reflex.Dom.Old
 import Reflex.Dynamic
 import Data.Time
@@ -16,7 +15,7 @@ import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
-import GHCJS.DOM.Types (uncheckedCastTo,HTMLCanvasElement(..),HTMLDivElement(..))
+import GHCJS.DOM.Types hiding (Event,Request)
 import GHCJS.Marshal.Pure
 import GHCJS.DOM.EventM
 import Data.Functor (void)
@@ -70,20 +69,12 @@ import Estuary.Client.Settings as Settings
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher rEnv settings ctxM riM = mdo
   (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardShortcut
-  let e = _el_element theElement
-  e' <- wrapDomEvent (e) (elementOnEventName Keypress) $ do
-    y <- getKeyEvent
-    if (isJust $ keyEventToHint y) then (preventDefault >> return (keyEventToHint y)) else return Nothing
-  let keyboardShortcut = fmapMaybe id e'
+  let e = HTMLDivElement $ pToJSVal $ _el_element theElement
+  togTerminal <- (24 <$) <$> catchKeyboardShortcut e 24 True True
+  togStats <- (12 <$) <$> catchKeyboardShortcut e 12 True True
+  let keyboardShortcut = leftmost [togTerminal,togStats]
   return ()
 
-
--- uhoh: not sure if keyboard short cuts are working, or even what keys are represented by 24 and 12!...
-keyEventToHint :: KeyEvent -> Maybe Int
-keyEventToHint x
-  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 24) = Just 24 -- toggle terminal
-  | (keShift x == True) && (keCtrl x == True) && (keKeyCode x == 12) = Just 12 -- toggle statistics
-keyEventToHint _ = Nothing
 
 keyboardHintsW :: MonadWidget t m => Event t Int -> W t m ()
 keyboardHintsW x = do
@@ -109,14 +100,14 @@ estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ md
   cvsElement <- canvasWidget settings punctualZIndex' ctx -- canvas for Punctual
   glCtx <- liftIO $ newGLContext cvsElement
   improvizZIndex' <- holdUniqDyn $ fmap Settings.improvizZIndex settings
-  iCanvas <- canvasWidget settings improvizZIndex' ctx -- canvas for Improviz
+  lCanvas <- canvasWidget settings improvizZIndex' ctx -- canvas for Improviz
   hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
   hCanvas <- canvasWidget settings hydraZIndex' ctx -- canvas for Hydra
 
   iCtx <- liftIO $ readMVar ctxM
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
 
-  liftIO $ forkRenderThreads rEnv iSettings ctxM cvsElement glCtx hCanvas riM
+  liftIO $ forkRenderThreads rEnv iSettings ctxM cvsElement glCtx hCanvas lCanvas riM
 
   performContext ctxM ctx -- perform all IO actions consequent to Context changing
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
@@ -185,6 +176,7 @@ estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ md
   performDynamicsMode rEnv settings
   performPunctualAudioInputMode rEnv settings
   performTheme settings
+  performSuperDirt rEnv settings
 
   -- requests up to server
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
@@ -258,11 +250,13 @@ performContext cMvar cDyn = do
   iCtx <- sample $ current cDyn
   performEvent_ $ fmap (liftIO . (\x -> swapMVar cMvar x >> return ())) $ updated cDyn -- transfer whole Context for render/animation threads
 
-  -- when the superDirt flag changes, make it so
-  -- TODO: this is broken, needs to be re-implemented!!!
-  -- let sd = superDirt rEnv
-  -- sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
-  -- performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
+performSuperDirt :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performSuperDirt rEnv settings = do
+  let sd = superDirt rEnv
+  iSettings <- sample $ current settings
+  liftIO $ setActive sd (Settings.superDirtOn iSettings)
+  sdOn <- holdUniqDyn $ fmap Settings.superDirtOn settings
+  performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
 performTheme :: MonadWidget t m => Dynamic t Settings -> m ()
 performTheme settings = do
