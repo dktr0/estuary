@@ -23,7 +23,7 @@ More advanced customization is available through CSS classes within this documen
                     /*Colour establishing human-to-human communication*/
 /* sets the color of things that are meant as text  */
   --experiment-color: rgb(180,155,250);
-  
+
   /* hsl(260,30,70);  */
 }
 

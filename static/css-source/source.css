@@ -85,8 +85,6 @@ body::-webkit-scrollbar-thumb {
 }
 
 
-
-
 /* for the Example element in the view system, which is primarly used in tutorials for clickable examples */
 .example {
   font-family: "Courier New", Courier, monospace;
