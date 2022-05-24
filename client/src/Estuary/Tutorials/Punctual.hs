@@ -43,7 +43,7 @@ punctualTutorial = Tutorial {
             ]],
           Example Punctual "circle [0.5,-0.5] 0.1 >> rgb;\ntri (63m) * (-20)db >> splay"
           ],
-        CodeView 1 0 "def"
+        CodeView 1 0 []
       ]
     }),
     (TutorialPage {
@@ -74,7 +74,7 @@ punctualTutorial = Tutorial {
             (English,"Notice the brackets in the preceding examples - they are very important as they make sure that the number gets applied to the oscillator:")
             ]]
           ],
-        CodeView 1 0 "def"
+        CodeView 1 0 []
       ]
     })
 

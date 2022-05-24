@@ -48,7 +48,7 @@ tidalCyclesBasics = Tutorial {
             (English,"You can try to make your own patterns by adding more names of samples (or more ~ for silences) between the quotation marks. When you're ready for more, click next above to go to the next page of this tutorial.")
             ]]
           ],
-        CodeView 1 0 "def"
+        CodeView 1 0 []
       ]
     },
     TutorialPage {
@@ -70,7 +70,7 @@ tidalCyclesBasics = Tutorial {
             ]],
           Example (TidalTextNotation MiniTidal) "s \"bd [cp,sn casio]\""
           ],
-        CodeView 1 0 "def"
+        CodeView 1 0 []
       ]
     },
     TutorialPage {
@@ -90,7 +90,7 @@ tidalCyclesBasics = Tutorial {
           Example (TidalTextNotation MiniTidal) "s \"glitch\" # n (irand 8)",
           Example (TidalTextNotation MiniTidal) "stack [s \"bd cp\",s \"arpy*4\" # note \"[0,4,7]\" ] "
           ],
-        CodeView 1 0 "def"
+        CodeView 1 0 []
       ]
     }
   ]

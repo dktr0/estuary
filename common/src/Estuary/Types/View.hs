@@ -27,7 +27,7 @@ data View =
   Text TranslatableText |
   LabelView Int |
   StructureView Int |
-  CodeView Int Int Text | -- first int is zone to edit, second int is number of lines in editor, text is style
+  CodeView Int Int [Text] | -- first int is zone to edit, second int is number of lines in editor, text is style
   SequenceView Int |
   Example TextNotation Text | -- a clickable text-code example
   EnsembleStatusView |

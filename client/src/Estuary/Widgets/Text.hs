@@ -48,18 +48,35 @@ textWidgetRows :: Int -> Map Text Text
 textWidgetRows 0 = Data.Map.empty
 textWidgetRows x = "rows" =: T.pack (show x)
 
-defOrFluxus :: Text -> Text -> Map Text Text
-defOrFluxus x i
-  | x == "def" = "style" =: "height: auto"
-  | x == "fluxus" = fluxusStyle i
-  | otherwise = "style" =: "height: auto"
 
--- for code-boxes-editors
-textWidget' :: MonadWidget t m => Text -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
-textWidget' style rows flash i delta = mdo
+styleParameters :: [Text] -> Text -> Map Text Text
+styleParameters vs i = "style" =: ("height: auto;" <> (stiloList vs i))
+
+stiloList :: [Text] -> Text -> Text
+stiloList vs i = mconcat $ fmap (stilos i) vs -- :: Text
+
+stilos :: Text -> Text -> Text
+stilos i x = mconcat [fontSizeStilos i x] -- :: Text
+
+fontSizeStilos :: Text -> Text -> Text
+fontSizeStilos i x
+  | x == "fluxus" = fluxusStyle i
+  | otherwise = ""
+
+
+-- styleParameters :: Text -> Text -> Map Text Text
+-- styleParameters x i = "style" =: y
+--   where
+--     y | x == "defStyle" = "height: auto"
+--       | x == "fluxus" = fluxusStyle i
+--       | otherwise = "height: auto"
+
+-- for code-box-editors
+textWidget' :: MonadWidget t m => [Text] -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+textWidget' styles rows flash i delta = mdo
   let class' = fmap textWidgetClass flash
   let rows' = constDyn $ textWidgetRows rows
-  let style' = fmap (defOrFluxus style) value
+  let style' = fmap (styleParameters styles) value
   let attrs = mconcat [class',rows', style']
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let e = _textArea_element x
@@ -73,31 +90,31 @@ textWidget' style rows flash i delta = mdo
   where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
 
 
-fluxusStyle :: Text -> Map Text Text
+fluxusStyle :: Text -> Text
 fluxusStyle i
-  | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "style" =: "font-size: 8em; height: auto"
+  | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "font-size: 8em;"
 
-  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "style" =: "font-size: 7em; height: auto"
+  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "font-size: 7em;"
 
-  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "style" =: "font-size: 6em; height: auto"
+  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "font-size: 6em;"
 
-  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "style" =: "font-size: 5em; height: auto"
+  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "font-size: 5em;"
 
-  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "style" =: "font-size: 4em; height: auto"
+  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "font-size: 4em;"
 
-  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "style" =: "font-size: 3em; height: auto"
+  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "font-size: 3em;"
 
-  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "style" =: "font-size: 2.5em; height: auto"
+  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "font-size: 2.5em;"
 
-  | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 10)) = "style" =: "font-size: 2em; height: auto"
+  | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 10)) = "font-size: 2em;"
 
-  | (T.length i >= 121) && (T.length i <= 140) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 10) && ((L.length $ T.lines i) <= 13)) = "style" =: "font-size: 1.5em; height: auto"
+  | (T.length i >= 121) && (T.length i <= 140) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 10) && ((L.length $ T.lines i) <= 13)) = "font-size: 1.5em;"
 
-  | otherwise = "style" =: "font-size: 1em; height: auto"
+  | otherwise = "font-size: 1em;"
 
 
 
--- for everything that is not code-boxes-editors
+-- for everything that is not code-box-editors
 textWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
 textWidget rows flash i delta = do
   let class' = fmap textWidgetClass flash
@@ -196,9 +213,9 @@ holdUniq :: (MonadWidget t m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
 
 
-textProgramEditor :: forall t m. MonadWidget t m => Text -> Int -> Dynamic t (Maybe Text)
+textProgramEditor :: forall t m. MonadWidget t m => [Text] -> Int -> Dynamic t (Maybe Text)
   -> Dynamic t (Live TextProgram) -> W t m (Variable t (Live TextProgram))
-textProgramEditor style rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
+textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
 
   -- translate deltasDown into initial value and events that reflect remote changes that will affect local GUI
   i <- sample $ current deltasDown
@@ -221,7 +238,7 @@ textProgramEditor style rows errorText deltasDown = divClass "textPatternChain" 
     evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
     widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
     return (_dropdown_change d,evalButton')
-  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' style rows evalFlash initialText textDelta
+  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' styles rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
   let c = current $ currentValue cv
   let parserEdit' = attachWith applyParserEdit c parserEdit
