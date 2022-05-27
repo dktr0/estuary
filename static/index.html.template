@@ -157,9 +157,7 @@ function loadJavascriptDependencies() {
   loadJavascript([
     "SuperDirt.js",
     "PeerProtocol.js",
-    "WebDirt/WebDirt.js",
-    "WebDirt/Graph.js",
-    "WebDirt/SampleBank.js",
+    "WebDirt/WebDirt-packed.js",
     "hydra-synth.js",
     "peg-0.10.0.min.js",
     "https://dktr0.github.io/LocoMotion/three.min.js",

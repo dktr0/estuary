@@ -42,7 +42,7 @@ newWebDirt n = do
   liftIO $ js_newWebDirt ctx n
 
 foreign import javascript unsafe
-  "$r = new WebDirt({ latency: 0, maxLateness: 0.010, audioContext: $1, destination: $2 });"
+  "$r = new WebDirt.WebDirt({ latency: 0, maxLateness: 0.010, audioContext: $1, destination: $2 });"
   js_newWebDirt :: AudioContext -> Node -> IO WebDirt
 
 foreign import javascript unsafe
