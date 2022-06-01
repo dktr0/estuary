@@ -53,11 +53,6 @@ foreign import javascript unsafe
   "try { $1.playSample($2) } catch(e) { console.log(e)} "
   playSample :: WebDirt -> JSVal -> IO ()
 
--- temporary, just for testing
-foreign import javascript unsafe
-  "try { $1.playSample({ buffer: $2 }) } catch(e) { console.log(e)} "
-  playBuffer :: WebDirt -> JSVal -> IO ()
-
 foreign import javascript unsafe
   "$1.audioOutputs = $2;"
   setWebDirtAudioOutputs :: WebDirt -> Int -> IO ()
