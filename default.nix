@@ -166,27 +166,29 @@ in
         }) {};
 
         # needs jailbreak for dependency microspec >=0.2.0.1
-                tidal = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
-                #  "tidal" ../Tidal "" {}));
-                  "tidal"
-                  ( pkgs.fetchgit {
-                  url = "https://github.com/dktr0/Tidal.git";
-                  sha256 = "1fx0la5i793fayrm073fkcsi2hmb42adfgc1nvdbivkkfl83w8ld";
-                  rev = "fbcd38a3e28ca160f023128690d6eee1da595b93";
-                  fetchSubmodules = true;
-                }) "" {}));
+        tidal = if !(self.ghc.isGhcjs or false) then null else appendPatch (dontCheck (doJailbreak (self.callCabal2nixWithOptions
+        #  "tidal" ../Tidal "" {}));
+          "tidal"
+          ( pkgs.fetchgit {
+          url = "https://github.com/dktr0/Tidal.git";
+          sha256 = "0m32m8lypvxszjlifd18gnaqbyprnpjyw31isjnd69a1mprzh6dh";
+          rev = "ac66771fd5201d6f669b80570a3623b0f33f3704";
+          fetchSubmodules = true;
+        }) "" {}))) ./tidal.patch;
+        hint = null;
+        # note: Tidal depends on the hint library, which does not build with GHCJS, only for its executable
+        # so, in the above, we patch Tidal to not have an executable, and then null out hint in the Haskell package set
 
-                tidal-parse = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
-                #  "tidal-parse" ../Tidal/tidal-parse "" {}));
-                    "tidal-parse"
-                    ( pkgs.fetchgit {
-                    url = "https://github.com/dktr0/Tidal.git";
-                    sha256 = "1fx0la5i793fayrm073fkcsi2hmb42adfgc1nvdbivkkfl83w8ld";
-                    rev = "fbcd38a3e28ca160f023128690d6eee1da595b93";
-                    fetchSubmodules = true;
-                })
-                "--subpath tidal-parse" {}));
-                
+        tidal-parse = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
+        #  "tidal-parse" ../Tidal/tidal-parse "" {}));
+           "tidal-parse"
+          ( pkgs.fetchgit {
+            url = "https://github.com/dktr0/Tidal.git";
+            sha256 = "0m32m8lypvxszjlifd18gnaqbyprnpjyw31isjnd69a1mprzh6dh";
+            rev = "ac66771fd5201d6f669b80570a3623b0f33f3704";
+            fetchSubmodules = true;
+        }) "--subpath tidal-parse" {}));
+
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
         haskellish = self.callCabal2nix "haskellish" (pkgs.fetchFromGitHub {
