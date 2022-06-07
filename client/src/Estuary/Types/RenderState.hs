@@ -9,7 +9,7 @@ import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Resolution as Punctual
 import Sound.MusicW.AudioContext
 import Sound.MusicW.Node as MusicW
-import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement,JSVal)
+import GHCJS.DOM.Types hiding (Text)
 import Data.Text (Text)
 import Sound.Punctual.GL
 import Data.Tempo
@@ -19,7 +19,7 @@ import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
 import Estuary.Types.NoteEvent
 import Estuary.Types.MovingAverage
-import Estuary.Types.TextNotation
+import Estuary.Types.TextNotation hiding (LocoMotion)
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
@@ -28,6 +28,11 @@ import qualified Sound.TimeNot.AST as TimeNot
 import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
 
+newtype LocoMotion = LocoMotion JSVal
+
+instance PToJSVal LocoMotion where pToJSVal (LocoMotion x) = x
+
+instance PFromJSVal LocoMotion where pFromJSVal = LocoMotion
 
 data RenderState = RenderState {
   wakeTimeAudio :: !Double,
@@ -63,7 +68,7 @@ data RenderState = RenderState {
   tempoCache :: Tempo,
   jsoLangs :: Map.Map Text JSoLang,
   valueMap :: Tidal.ValueMap,
-  locoMotions :: !(IntMap JSVal)
+  locoMotions :: !(IntMap LocoMotion)
   }
 
 -- Map.mapKeys T.unpack -- Map Text a -> Map String a

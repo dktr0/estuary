@@ -171,8 +171,8 @@ in
           "tidal"
           ( pkgs.fetchgit {
           url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "19pdqkns90vi0y4d7ahc1kp0zjyss35d81rcn5danc1v39k85fjb";
-          rev = "b4b0b803286d56983739ae9331cb195e2966aa08";
+          sha256 = "0m32m8lypvxszjlifd18gnaqbyprnpjyw31isjnd69a1mprzh6dh";
+          rev = "ac66771fd5201d6f669b80570a3623b0f33f3704";
           fetchSubmodules = true;
         }) "" {}))) ./tidal.patch;
         hint = null;
@@ -181,14 +181,13 @@ in
 
         tidal-parse = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
         #  "tidal-parse" ../Tidal/tidal-parse "" {}));
-            "tidal-parse"
-            ( pkgs.fetchgit {
+           "tidal-parse"
+          ( pkgs.fetchgit {
             url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "19pdqkns90vi0y4d7ahc1kp0zjyss35d81rcn5danc1v39k85fjb";
-            rev = "b4b0b803286d56983739ae9331cb195e2966aa08";
+            sha256 = "0m32m8lypvxszjlifd18gnaqbyprnpjyw31isjnd69a1mprzh6dh";
+            rev = "ac66771fd5201d6f669b80570a3623b0f33f3704";
             fetchSubmodules = true;
-        })
-        "--subpath tidal-parse" {}));
+        }) "--subpath tidal-parse" {}));
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
