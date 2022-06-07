@@ -26,8 +26,7 @@ type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
 type NotePad = (Int,Seq NotePage)
 type NotePage = (Text,Text)
-
-type CalendarEvents = IntMap.IntMap CalendarEvent
+type CalendarEvents = M.Map Int CalendarEvent
 
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
 data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
