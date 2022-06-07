@@ -55,20 +55,23 @@ stiloList :: [Text] -> Text -> Text
 stiloList vs i = mconcat $ fmap (stilos i) vs -- :: Text
 
 stilos :: Text -> Text -> Text
-stilos i x = mconcat [fontSizeStilos i x] -- :: Text
+stilos i x = mconcat [fontSizeStilos i x, textAlignmentStilos x] -- :: Text
 
 fontSizeStilos :: Text -> Text -> Text
 fontSizeStilos i x
   | x == "fluxus" = fluxusStyle i
   | otherwise = ""
 
+customFontSize :: Int -> Text
+customFontSize em = "font-size: " <> T.pack (show em) <> "em;"
 
--- styleParameters :: Text -> Text -> Map Text Text
--- styleParameters x i = "style" =: y
---   where
---     y | x == "defStyle" = "height: auto"
---       | x == "fluxus" = fluxusStyle i
---       | otherwise = "height: auto"
+textAlignmentStilos :: Text -> Text
+textAlignmentStilos x
+  | x == "center" = "text-align: center;"
+  | x == "right" = "text-align: right;"
+  | otherwise = ""
+
+-- custom font
 
 -- for code-box-editors
 textWidget' :: MonadWidget t m => [Text] -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
@@ -82,17 +85,6 @@ textWidget' styles rows flash i delta = mdo
   let edits = _textArea_input x
   shiftEnter <- catchKeyboardShortcut (_textArea_element x) 13 False True
   return (value,edits,shiftEnter)
-  -- x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
-  -- let e = _textArea_element x
-  -- e' <- wrapDomEvent (e) (onEventName Keypress) $ do
-  --   y <- getKeyEvent
-  --   if keyPressWasShiftEnter y then (preventDefault >> return True) else return False
-  -- let evalEvent = fmap (const ()) $ ffilter (==True) e'
-  -- let edits = _textArea_input x
-  -- let value = _textArea_value x
-  -- return (value,edits,evalEvent)
-  -- where keyPressWasShiftEnter ke = (keShift ke == True) && (keKeyCode ke == 13)
-
 
 fluxusStyle :: Text -> Text
 fluxusStyle i
@@ -231,12 +223,28 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
   flashOff <- liftM (False <$) $ delay 0.1 flashOn
   evalFlash <- holdDyn False $ leftmost [flashOff,flashOn]
 
+
+-- f :: Bool -> Event t (dropdown d, evalButton)
+-- f True = mywdiget
+-- f False = return never
+
+  -- :: String -> Event t (parserEdit, evalButton)
+
+  -- (parserEdit,evalButton) <- flip (return never) $ do
+
   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
+    -- dropdown menu
     let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
     d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
+
+    --evaluation button
     evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
+
+    --error message
     widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
+
     return (_dropdown_change d,evalButton')
+
   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' styles rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
   let c = current $ currentValue cv
@@ -247,6 +255,22 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
   cv <- returnVariable deltasDown localEdits
   return cv
 
+  --   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
+  --     let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
+  --     d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
+  --     evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
+  --     widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
+  --     return (_dropdown_change d,evalButton')
+  --
+  --   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' styles rows evalFlash initialText textDelta
+  --   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
+  --   let c = current $ currentValue cv
+  --   let parserEdit' = attachWith applyParserEdit c parserEdit
+  --   let textEdit' = attachWith applyTextEdit c textEdit
+  --   let evalEdit' = attachWith applyEvalEdit c evalEdit
+  --   let localEdits = leftmost [parserEdit',textEdit',evalEdit']
+  --   cv <- returnVariable deltasDown localEdits
+  --   return cv
 
 applyParserEdit :: Live TextProgram -> TextNotation -> Live TextProgram
 applyParserEdit (Live (x,y,z) _) x' = Edited (x,y,z) (x',y,z)
