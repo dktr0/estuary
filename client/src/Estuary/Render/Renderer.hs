@@ -110,12 +110,12 @@ flushEvents = do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
     noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources irc) cDiff) $ noteEvents s
     tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (resources irc) cDiff) $ tidalEvents s
-    mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents'
+    mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents' ++ webDirtEvents s
   when sdOn $ liftIO $ do
     noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
     tidalEvents' <- mapM SuperDirt.tidalEventToSuperDirtJSVal $ tidalEvents s
     mapM_ (SuperDirt.playSample (superDirt irc)) $ noteEvents' ++ tidalEvents'
-  modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
+  modify' $ \x -> x { noteEvents = [], tidalEvents = [], webDirtEvents = [] } -- note: webDirtEvents is temporary/deprecated
   return ()
 
 renderTidalPattern :: Tidal.ValueMap -> UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
@@ -443,8 +443,8 @@ renderBaseProgramAlways c z (Just (TidalTextNotation _)) = do
   xs <- (scheduleTidalEvents miniTidal) c z
   pushTidalEvents xs
 renderBaseProgramAlways c z (Just TimeNot) = do
-  xs <- (scheduleNoteEvents timeNot) c z
-  pushNoteEvents xs
+  xs <- (scheduleWebDirtEvents timeNot) c z
+  pushWebDirtEvents xs
 
 
 {- renderBaseProgramAlways c z (Just Seis8s) = do

@@ -11,7 +11,7 @@ import JavaScript.Object
 import GHCJS.Types
 import GHCJS.Marshal.Pure
 import qualified Sound.Tidal.Context as Tidal
-
+import Data.IntMap as IntMap
 
 type NoteEvent = (UTCTime, Map Text Datum)
 

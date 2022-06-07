@@ -5,10 +5,8 @@ import Data.Text (Text)
 import Data.Time
 import qualified Data.Text as T
 import Control.Monad.State.Strict
-
-import qualified Sound.TimeNot.AST as TimeNot
-import qualified Sound.TimeNot.Parsers as TimeNot
-import qualified Sound.TimeNot.Render as TimeNot
+import GHCJS.Types
+import GHCJS.Marshal -- .Internal
 
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderState
@@ -19,36 +17,83 @@ import Estuary.Types.TextNotation
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.Tempo
+import Estuary.Render.ForeignTempo
 
 
 timeNot :: TextNotationRenderer
 timeNot = emptyTextNotationRenderer {
   parseZone = _parseZone,
-  scheduleNoteEvents = _scheduleNoteEvents -- ,
-  -- clearZone' = _clearZone
+  scheduleWebDirtEvents = _scheduleWebDirtEvents,
+  clearZone' = _clearZone
   }
 
 
 _parseZone :: Context -> Int -> Text -> UTCTime -> R ()
-_parseZone c z x eTime = do
-  let parseResult = TimeNot.runCanonParser $ T.unpack x
-  case parseResult of
-    Right p -> do
-      clearZoneError z
+_parseZone c z txt eTime = do
+  s <- get
+  timekNot <- case IntMap.lookup z (timeNots s) of
+    Just j -> pure j
+    Nothing -> do
+      x <- liftIO $ launch
+      modify' $ \ss -> ss { timeNots = IntMap.insert z x $ timeNots ss }
+      pure x
+  evalResult <- liftIO $ evaluate timekNot txt 0.0 -- *** TODO: 0.0 should be POSIX-time Number
+  case exoResultToErrorText evalResult of
+    Just err -> do
+      liftIO $ putStrLn "there was a timenot error"
+      setBaseNotation z TimeNot
+      setZoneError z err
+    Nothing -> do
+      liftIO $ putStrLn "there was no timenot error"
       setBaseNotation z TimeNot
       setEvaluationTime z eTime
-      modify' $ \xx -> xx { timeNots = IntMap.insert z p (timeNots xx) }
-    Left e -> setZoneError z (T.pack $ show e)
+      clearZoneError z
 
-_scheduleNoteEvents :: Context -> Int -> R [NoteEvent]
-_scheduleNoteEvents c z = do
+
+_scheduleWebDirtEvents :: Context -> Int -> R [JSVal]
+_scheduleWebDirtEvents c z = do
+  liftIO $ putStrLn "_scheduleWebDirtEvents"
   s <- get
-  let theTempo = (tempo . ensemble . ensembleC) c
-  let eTime = IntMap.findWithDefault (wakeTimeSystem s) z $ evaluationTimes s
-  let wStart = renderStart s
-  let wEnd = renderEnd s
-  let oTime = firstCycleStartAfter theTempo eTime
-  let p = IntMap.lookup z $ timeNots s
-  case p of
-    (Just p') -> return $ fmap TimeNot.mapForEstuary $ TimeNot.render oTime p' wStart wEnd
+  case IntMap.lookup z (timeNots s) of
+    Just timekNot -> liftIO $ do
+      setTempo timekNot $ (tempo . ensemble . ensembleC) c
+      j <- _scheduleEvents timekNot 0.0 0.0 -- ** TODO: 0.0 should be POSIX-time Number
+      showJSVal j
+      -- *** TODO: s and n fields of JSVals need to be mapped to appropriate buffers, i.e in flushEvents
+      j' <- fromJSVal j -- fromJSVal :: JSVal -> JSM (Maybe a)
+      case j' of
+        Just xs -> do
+          mapM_ showJSVal xs
+          return xs
+        Nothing -> do
+          putStrLn "Estuary.Languages.TimeNot JSval problem"
+          return []
     Nothing -> return []
+
+foreign import javascript safe
+  "console.log($1)"
+  showJSVal :: JSVal -> IO ()
+
+
+_clearZone :: Int -> R ()
+_clearZone z = modify' $ \s -> s { timeNots = IntMap.delete z (timeNots s) }
+
+
+foreign import javascript safe
+  "window.timekNot.launch()"
+  launch :: IO JSVal
+
+foreign import javascript safe
+  "window.timekNot.evaluate($1,$2,$3)"
+  evaluate :: JSVal -> Text -> Double -> IO ExoResult
+
+foreign import javascript safe
+  "window.timekNot.scheduleNoteEvents($1,$2,$3)"
+  _scheduleEvents :: JSVal -> Double -> Double -> IO JSVal
+
+foreign import javascript unsafe
+  "window.timekNot.setTempo($1,$2)"
+  _setTempo :: JSVal -> ForeignTempo -> IO ()
+
+setTempo :: JSVal -> Tempo -> IO ()
+setTempo timekNot x = _setTempo timekNot $ toForeignTempo x
