@@ -101,20 +101,21 @@ earlyWakeUp = 0.002
 -- flush events for SuperDirt and WebDirt
 flushEvents :: R ()
 flushEvents = do
-  irc <- ask
+  rEnv <- ask
   s <- get
   unsafe <- unsafeModeOn
   wdOn <- webDirtOn
   sdOn <- superDirtOn
   when wdOn $ liftIO $ do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
-    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources irc) cDiff) $ noteEvents s
-    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (resources irc) cDiff) $ tidalEvents s
-    mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents' ++ webDirtEvents s
+    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources rEnv) cDiff) $ noteEvents s
+    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (resources rEnv) cDiff) $ tidalEvents s
+    webDirtEvents' <- mapM (WebDirt.accessBufferForWebDirtEvent (resources rEnv)) $ webDirtEvents s
+    mapM_ (WebDirt.playSample (webDirt rEnv)) $ noteEvents' ++ tidalEvents' ++ webDirtEvents'
   when sdOn $ liftIO $ do
     noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
     tidalEvents' <- mapM SuperDirt.tidalEventToSuperDirtJSVal $ tidalEvents s
-    mapM_ (SuperDirt.playSample (superDirt irc)) $ noteEvents' ++ tidalEvents'
+    mapM_ (SuperDirt.playSample (superDirt rEnv)) $ noteEvents' ++ tidalEvents'
   modify' $ \x -> x { noteEvents = [], tidalEvents = [], webDirtEvents = [] } -- note: webDirtEvents is temporary/deprecated
   return ()
 

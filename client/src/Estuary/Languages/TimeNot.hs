@@ -58,8 +58,7 @@ _scheduleWebDirtEvents c z = do
       let wStart = utcTimeToWhenPOSIX $ renderStart s
       let wEnd = utcTimeToWhenPOSIX $ renderEnd s
       j <- _scheduleEvents timekNot wStart wEnd
-      -- *** TODO: s and n fields of JSVals need to be mapped to appropriate buffers, i.e in flushEvents
-      j' <- fromJSVal j -- fromJSVal :: JSVal -> JSM (Maybe a)
+      j' <- fromJSVal j -- :: JSM (Maybe [JSVal])
       case j' of
         Just xs -> return xs
         Nothing -> do
