@@ -37,14 +37,12 @@ _parseZone c z txt eTime = do
       x <- liftIO $ launch
       modify' $ \ss -> ss { timeNots = IntMap.insert z x $ timeNots ss }
       pure x
-  evalResult <- liftIO $ evaluate timekNot txt 0.0 -- *** TODO: 0.0 should be POSIX-time Number
+  evalResult <- liftIO $ evaluate timekNot txt (utcTimeToWhenPOSIX eTime)
   case exoResultToErrorText evalResult of
     Just err -> do
-      liftIO $ putStrLn "there was a timenot error"
       setBaseNotation z TimeNot
       setZoneError z err
     Nothing -> do
-      liftIO $ putStrLn "there was no timenot error"
       setBaseNotation z TimeNot
       setEvaluationTime z eTime
       clearZoneError z
@@ -57,22 +55,17 @@ _scheduleWebDirtEvents c z = do
   case IntMap.lookup z (timeNots s) of
     Just timekNot -> liftIO $ do
       setTempo timekNot $ (tempo . ensemble . ensembleC) c
-      j <- _scheduleEvents timekNot 0.0 0.0 -- ** TODO: 0.0 should be POSIX-time Number
-      showJSVal j
+      let wStart = utcTimeToWhenPOSIX $ renderStart s
+      let wEnd = utcTimeToWhenPOSIX $ renderEnd s
+      j <- _scheduleEvents timekNot wStart wEnd
       -- *** TODO: s and n fields of JSVals need to be mapped to appropriate buffers, i.e in flushEvents
       j' <- fromJSVal j -- fromJSVal :: JSVal -> JSM (Maybe a)
       case j' of
-        Just xs -> do
-          mapM_ showJSVal xs
-          return xs
+        Just xs -> return xs
         Nothing -> do
           putStrLn "Estuary.Languages.TimeNot JSval problem"
           return []
     Nothing -> return []
-
-foreign import javascript safe
-  "console.log($1)"
-  showJSVal :: JSVal -> IO ()
 
 
 _clearZone :: Int -> R ()

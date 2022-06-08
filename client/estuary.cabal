@@ -143,7 +143,6 @@ library
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable
@@ -194,7 +193,6 @@ executable Estuary
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable
@@ -254,7 +252,6 @@ executable interaction-test
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable
@@ -312,7 +309,6 @@ executable simple-test
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable
@@ -368,7 +364,6 @@ test-suite clientTest
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable

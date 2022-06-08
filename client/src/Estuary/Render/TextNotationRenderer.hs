@@ -2,6 +2,7 @@ module Estuary.Render.TextNotationRenderer where
 
 import Data.Text
 import Data.Time
+import Data.Time.Clock.POSIX
 
 import Estuary.Types.Context
 import Estuary.Types.Tempo
@@ -53,3 +54,7 @@ exoResultToErrorText :: ExoResult -> Maybe Text
 exoResultToErrorText x = case _exoResultSuccess x of
   True -> Nothing
   False -> Just $ _exoResultError x
+
+
+utcTimeToWhenPOSIX :: UTCTime -> Double
+utcTimeToWhenPOSIX = realToFrac . utcTimeToPOSIXSeconds
