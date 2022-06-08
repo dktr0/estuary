@@ -32,7 +32,6 @@ library
       Estuary.Types.Request
       Estuary.Types.ResourceMeta
       Estuary.Types.ResourceOp
-      Estuary.Types.Resources
       Estuary.Types.ResourceType
       Estuary.Types.Response
       Estuary.Types.Scope

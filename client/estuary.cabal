@@ -85,7 +85,6 @@ library
       Estuary.Widgets.Notepad
       Estuary.Widgets.Reference
       Estuary.Widgets.Reflex
-      Estuary.Widgets.ResourceWidget
       Estuary.Widgets.Roulette
       Estuary.Widgets.Router
       Estuary.Widgets.Sequencer
