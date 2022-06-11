@@ -29,11 +29,11 @@ presetViews = fromList [
 
       ("def",  GridView 2 3  [
       (Views [LabelView 1, CalendarEventView 2]),
-      (Views [LabelView 3, CodeView 4 0 ["center"] ]),
-      (Views [LabelView 5, CodeView 6 0 [] ]),
-      (Views [LabelView 7, CodeView 8 0 ["right"] ]),
+      (Views [LabelView 3, CodeView 4 0 ["center", "nomenu"] ]),
+      (Views [LabelView 5, CodeView 6 0 ["nomenu", "noevalbutton", "noerrors"] ]),
+      (Views [LabelView 7, CodeView 8 0 ["right", "noevalbutton"] ]),
       (Views [LabelView 9, CodeView 10 0 ["fluxus", "center"] ]),
-      (Views [LabelView 11, CodeView 12 0 ["fluxus"] ])
+      (Views [LabelView 11, CodeView 12 0 ["fluxus", "noerrors"] ])
       ]),
 
       ("fulltexteditor", genGrid 1 1 True),

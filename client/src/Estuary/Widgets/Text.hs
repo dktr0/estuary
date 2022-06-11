@@ -14,6 +14,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.List as L
 import Data.Time
+import Data.Bool
+import Data.List
 
 import GHCJS.Types
 import GHCJS.DOM.Types (HTMLDivElement)
@@ -203,7 +205,6 @@ textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s,
 holdUniq :: (MonadWidget t m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
 
-
 textProgramEditor :: forall t m. MonadWidget t m => [Text] -> Int -> Dynamic t (Maybe Text)
   -> Dynamic t (Live TextProgram) -> W t m (Variable t (Live TextProgram))
 textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
@@ -224,26 +225,26 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
   evalFlash <- holdDyn False $ leftmost [flashOff,flashOn]
 
 
--- f :: Bool -> Event t (dropdown d, evalButton)
--- f True = mywdiget
--- f False = return never
+  -- and :: Foldable t => t Bool -> BoolSource#
+  --
+  -- and returns the conjunction of a container of Bools. For the result to be True, the container must be finite; False, however, results from a False value finitely far from the left end.
 
-  -- :: String -> Event t (parserEdit, evalButton)
 
-  -- (parserEdit,evalButton) <- flip (return never) $ do
+  -- flip (bool $ return never) (not $ elem "nomenu") $ do
+  -- flip ( bool $ (return (never,never)) ) (not $ isSubsequenceOf ["nomenu", "noevalbutton", "noerrors"] styles) $ do
+  (parserEdit,evalButton) <- flip ( bool $ (return (never,never)) ) (not $ and $ [(elem "nomenu" styles),(elem "noerrors" styles),(elem "noevalbutton" styles)]) $ do
+    divClass "fullWidthDiv" $ do
+      -- dropdown menu
+      let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
+      d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
 
-  (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
-    -- dropdown menu
-    let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-    d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
+      --evaluation button
+      evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
 
-    --evaluation button
-    evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
+      --error message
+      widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $  updated errorText'
 
-    --error message
-    widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
-
-    return (_dropdown_change d,evalButton')
+      return (_dropdown_change d,evalButton')
 
   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' styles rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
