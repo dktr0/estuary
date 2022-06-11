@@ -224,25 +224,21 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
   flashOff <- liftM (False <$) $ delay 0.1 flashOn
   evalFlash <- holdDyn False $ leftmost [flashOff,flashOn]
 
-
-  -- and :: Foldable t => t Bool -> BoolSource#
-  --
-  -- and returns the conjunction of a container of Bools. For the result to be True, the container must be finite; False, however, results from a False value finitely far from the left end.
-
-
   -- flip (bool $ return never) (not $ elem "nomenu") $ do
-  -- flip ( bool $ (return (never,never)) ) (not $ isSubsequenceOf ["nomenu", "noevalbutton", "noerrors"] styles) $ do
   (parserEdit,evalButton) <- flip ( bool $ (return (never,never)) ) (not $ and $ [(elem "nomenu" styles),(elem "noerrors" styles),(elem "noevalbutton" styles)]) $ do
     divClass "fullWidthDiv" $ do
+
       -- dropdown menu
       let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
       d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
 
       --evaluation button
-      evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
+      evalButton' <- flip (bool $ (return never)) (not $ elem "noevalbutton" styles) $ do
+        divClass "textInputLabel" $ dynButton "\x25B6"
 
       --error message
-      widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $  updated errorText'
+      errorMsg <- flip (bool $ (return (constDyn ()))) (not $ elem "noerrors" styles) $ do
+        widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $  updated errorText'
 
       return (_dropdown_change d,evalButton')
 
