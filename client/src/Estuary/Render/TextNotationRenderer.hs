@@ -101,6 +101,7 @@ emptyTextNotationRenderer = TextNotationRenderer {
   parseZone = \_ _ _ _ -> return (),
   scheduleTidalEvents = \_ _ -> return [],
   scheduleNoteEvents = \_ _ -> return [],
+  scheduleWebDirtEvents = \_ _ -> return [],
   clearZone' = \_ -> return (),
   zoneAnimationFrame = \_ _ -> return (),
   preAnimationFrame = return (),

@@ -62,7 +62,7 @@ import qualified Estuary.Render.WebDirt as WebDirt
 import qualified Estuary.Render.SuperDirt as SuperDirt
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
-import Estuary.Types.RenderState hiding (LocoMotion)
+import Estuary.Types.RenderState hiding (LocoMotion,locoMotion)
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
@@ -276,9 +276,11 @@ renderAnimation = do
   fpsl <- fpsLimit
   let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
   when okToRender $ do
+    preAnimationFrame locoMotion
     ns <- baseNotations <$> get
     traverseWithKey (renderZoneAnimation t1) ns
     postAnimationFrame punctual
+    postAnimationFrame locoMotion
     t2 <- liftIO $ getCurrentTime
     s  <- get
     let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 wta)

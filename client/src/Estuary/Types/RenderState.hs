@@ -68,7 +68,7 @@ data RenderState = RenderState {
   tempoCache :: Tempo,
   jsoLangs :: Map.Map Text JSoLang,
   valueMap :: Tidal.ValueMap,
-  locoMotions :: !(IntMap LocoMotion)
+  locoMotion :: Maybe JSVal
   }
 
 -- Map.mapKeys T.unpack -- Map Text a -> Map String a
@@ -112,5 +112,5 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
     jsoLangs = Map.empty,
     valueMap = Map.empty,
-    locoMotions = empty
+    locoMotion = Nothing
   }
