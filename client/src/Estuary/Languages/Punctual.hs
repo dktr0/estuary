@@ -87,7 +87,7 @@ punctualProgramChanged c z p = do
   -- B. update Punctual WebGL state in response to new, syntactically correct program
   pWebGL <- gets punctualWebGL
   newWebGL <- liftIO $
-    Punctual.evaluatePunctualWebGL (glContext s) (tempoCache s) z p pWebGL
+    fmap fst (Punctual.evaluatePunctualWebGL (glContext s) (tempoCache s) z p pWebGL)
     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return pWebGL)
   modify' $ \x -> x { punctualWebGL = newWebGL }
 
