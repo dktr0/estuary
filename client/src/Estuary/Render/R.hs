@@ -12,6 +12,8 @@ import Data.Map.Strict as Map
 import Data.IORef
 import Sound.MusicW
 import TextShow
+import GHCJS.Types (JSVal)
+
 
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
@@ -84,6 +86,11 @@ pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
 pushTidalEvents :: [(UTCTime,Tidal.ValueMap)] -> R ()
 pushTidalEvents xs = modify' $ \x -> x { tidalEvents = tidalEvents x ++ xs }
+
+-- deprecated/temporary
+pushWebDirtEvents :: [JSVal] -> R ()
+pushWebDirtEvents xs = modify' $ \x -> x { webDirtEvents = webDirtEvents x ++ xs }
+
 
 setZoneError :: Int -> Text -> R ()
 setZoneError z t = do

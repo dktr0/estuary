@@ -140,21 +140,12 @@ in
 
         webdirt = import ./deps/webdirt self;
 
-        timeNot = if !(self.ghc.isGhcjs or false) then null else dontHaddock
-        #(self.callCabal2nix "timeNot" ../timeNot {});
-        (self.callCabal2nix "TimeNot" (pkgs.fetchFromGitHub {
-            owner = "afrancob";
-            repo = "timeNot";
-            sha256 = "1jq2gwszdcw6blgcfj60knpj0pj6yc330dwrvjzq8ys8rp17skvq";
-            rev =  "c6c88bd9003afc0c69a651f4156a34e6593044bf";
-          }) {});
-
         punctual = # dontCheck (dontHaddock (self.callCabal2nix "punctual" ../Punctual {}));
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "1jszc80pv1m56haw75xrfm6qpkw267a0jgzr8821qpwbbwn5jgxl";
-          rev = "dc863728d259aa840fe68c9536597e9087f09376";
+          sha256 = "10rmdjcwj5grc989xl3yaj6awpzq6siyailbqxxc55wgs0xqaf9l";
+          rev = "c2f5526e15d09e3781add458d7e76c2ba0d7e79a";
         }) {}));
 
         # musicw = self.callHackage "musicw" "0.3.9" {};

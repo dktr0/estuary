@@ -35,13 +35,12 @@ import Data.Char
 import Data.IORef
 
 import Sound.MusicW.AudioContext
-import qualified Sound.TimeNot.AST as TimeNot
-import qualified Sound.TimeNot.Parsers as TimeNot
-import qualified Sound.TimeNot.Render as TimeNot
 -- import qualified Sound.Seis8s.Parser as Seis8s
 import Estuary.Languages.Punctual
 import Estuary.Languages.CineCer0
 import Estuary.Languages.LocoMotion
+import Estuary.Languages.MiniTidal
+import Estuary.Languages.TimeNot
 import Sound.Punctual.GL (GLContext)
 
 import qualified Estuary.Languages.Hydra.Types as Hydra
@@ -63,7 +62,7 @@ import qualified Estuary.Render.WebDirt as WebDirt
 import qualified Estuary.Render.SuperDirt as SuperDirt
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
-import Estuary.Types.RenderState hiding (LocoMotion)
+import Estuary.Types.RenderState hiding (LocoMotion,locoMotion)
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
@@ -102,21 +101,22 @@ earlyWakeUp = 0.002
 -- flush events for SuperDirt and WebDirt
 flushEvents :: R ()
 flushEvents = do
-  irc <- ask
+  rEnv <- ask
   s <- get
   unsafe <- unsafeModeOn
   wdOn <- webDirtOn
   sdOn <- superDirtOn
   when wdOn $ liftIO $ do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
-    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources irc) cDiff) $ noteEvents s
-    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (resources irc) cDiff) $ tidalEvents s
-    mapM_ (WebDirt.playSample (webDirt irc)) $ noteEvents' ++ tidalEvents'
+    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources rEnv) cDiff) $ noteEvents s
+    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (resources rEnv) cDiff) $ tidalEvents s
+    webDirtEvents' <- mapM (WebDirt.accessBufferForWebDirtEvent (resources rEnv)) $ webDirtEvents s
+    mapM_ (WebDirt.playSample (webDirt rEnv)) $ noteEvents' ++ tidalEvents' ++ webDirtEvents'
   when sdOn $ liftIO $ do
     noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
     tidalEvents' <- mapM SuperDirt.tidalEventToSuperDirtJSVal $ tidalEvents s
-    mapM_ (SuperDirt.playSample (superDirt irc)) $ noteEvents' ++ tidalEvents'
-  modify' $ \x -> x { noteEvents = [], tidalEvents = [] }
+    mapM_ (SuperDirt.playSample (superDirt rEnv)) $ noteEvents' ++ tidalEvents'
+  modify' $ \x -> x { noteEvents = [], tidalEvents = [], webDirtEvents = [] } -- note: webDirtEvents is temporary/deprecated
   return ()
 
 renderTidalPattern :: Tidal.ValueMap -> UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
@@ -260,6 +260,7 @@ clearZone z (Sequence _) = clearParamPattern z
 clearZone _ _ = return ()
 
 clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
+clearTextProgram z (TidalTextNotation MiniTidal,_,_) = (clearZone' miniTidal) z
 clearTextProgram z (Punctual,_,_) = (clearZone' punctual) z
 clearTextProgram z (CineCer0,_,_) = (clearZone' cineCer0) z
 clearTextProgram z (Hydra,_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
@@ -275,9 +276,11 @@ renderAnimation = do
   fpsl <- fpsLimit
   let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
   when okToRender $ do
+    preAnimationFrame locoMotion
     ns <- baseNotations <$> get
     traverseWithKey (renderZoneAnimation t1) ns
     postAnimationFrame punctual
+    postAnimationFrame locoMotion
     t2 <- liftIO $ getCurrentTime
     s  <- get
     let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 wta)
@@ -365,31 +368,14 @@ renderTextProgramChanged c z (UnspecifiedNotation,x,eTime) = do
               setBaseNotation z UnspecifiedNotation
         _-> renderTextProgramChanged c z (n,x',eTime)
 
-renderTextProgramChanged c z (TidalTextNotation x,y,eTime) = do
-  s <- get
-  parseResult <- liftIO $ (return $! force (tidalParser x y)) `catch` (return . Left . (show :: SomeException -> String))
-  case parseResult of
-    Right p -> do
-      clearZoneError z
-      setBaseNotation z (TidalTextNotation x)
-      setEvaluationTime z eTime
-      modify' $ \xx -> xx { paramPatterns = insert z p $ paramPatterns xx }
-    Left err -> setZoneError z $ T.pack err
-
+renderTextProgramChanged c z (TidalTextNotation _,x,eTime) = (parseZone miniTidal) c z x eTime
 renderTextProgramChanged c z (Punctual,x,eTime) = (parseZone punctual) c z x eTime
 renderTextProgramChanged c z (CineCer0,x,eTime) = (parseZone cineCer0) c z x eTime
 renderTextProgramChanged c z (Hydra,x,_) = parseHydra c z x
 renderTextProgramChanged c z (LocoMotion,x,eTime) = (parseZone locoMotion) c z x eTime
+renderTextProgramChanged c z (TimeNot,x,eTime) = (parseZone timeNot) c z x eTime
 
-renderTextProgramChanged c z (TimeNot,x,eTime) = do
-  let parseResult = TimeNot.runCanonParser $ T.unpack x
-  case parseResult of
-    Right p -> do
-      clearZoneError z
-      setBaseNotation z TimeNot
-      setEvaluationTime z eTime
-      modify' $ \xx -> xx { timeNots = insert z p (timeNots xx) }
-    Left e -> setZoneError z (T.pack $ show e)
+
 
 {- renderTextProgramChanged c z (Seis8s,x,eTime) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
@@ -453,23 +439,18 @@ renderTextProgramAlways :: Context -> Int -> UTCTime -> R ()
 renderTextProgramAlways c z eTime = do
   s <- get
   let baseNotation = IntMap.lookup z $ baseNotations s
-  renderBaseProgramAlways c z eTime $ baseNotation
+  renderBaseProgramAlways c z $ baseNotation
 
-renderBaseProgramAlways :: Context -> Int -> UTCTime -> Maybe TextNotation -> R ()
-renderBaseProgramAlways c z _ (Just (TidalTextNotation _)) = renderControlPattern c z
-renderBaseProgramAlways c z _ (Just TimeNot) = do
-  s <- get
-  let p = IntMap.lookup z $ timeNots s
-  case p of
-    (Just p') -> do
-      let theTempo = (tempo . ensemble . ensembleC) c
-      let eTime = IntMap.findWithDefault (wakeTimeSystem s) z $ evaluationTimes s
-      let wStart = renderStart s
-      let wEnd = renderEnd s
-      let oTime = firstCycleStartAfter theTempo eTime
-      pushNoteEvents $ fmap TimeNot.mapForEstuary $ TimeNot.render oTime p' wStart wEnd
-    Nothing -> return ()
-{- renderBaseProgramAlways c z _ (Just Seis8s) = do
+renderBaseProgramAlways :: Context -> Int -> Maybe TextNotation -> R ()
+renderBaseProgramAlways c z (Just (TidalTextNotation _)) = do
+  xs <- (scheduleTidalEvents miniTidal) c z
+  pushTidalEvents xs
+renderBaseProgramAlways c z (Just TimeNot) = do
+  xs <- (scheduleWebDirtEvents timeNot) c z
+  pushWebDirtEvents xs
+
+
+{- renderBaseProgramAlways c z (Just Seis8s) = do
   s <- get
   let p = IntMap.lookup z $ seis8ses s
   case p of
@@ -479,25 +460,8 @@ renderBaseProgramAlways c z _ (Just TimeNot) = do
       let wEnd = renderEnd s
       pushNoteEvents $ Seis8s.render p' theTempo wStart wEnd
     Nothing -> return () -}
-renderBaseProgramAlways _ _ _ _ = return ()
+renderBaseProgramAlways _ _ _ = return ()
 
-renderControlPattern :: Context -> Int -> R ()
-renderControlPattern c z = do
-  wdOn <- webDirtOn
-  sdOn <- superDirtOn
-  when (wdOn || sdOn) $ do
-    s <- get
-    let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
-    let vMap = valueMap s
-    case controlPattern of
-      Just controlPattern' -> do
-        let lt = renderStart s
-        let rp = renderPeriod s
-        let tempo' = tempo $ ensemble $ ensembleC c
-        newEvents <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp tempo' controlPattern')
-          `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
-        pushTidalEvents newEvents
-      Nothing -> return ()
 
 updateTidalValueMap :: R ()
 updateTidalValueMap = do

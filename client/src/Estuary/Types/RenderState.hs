@@ -23,7 +23,6 @@ import Estuary.Types.TextNotation hiding (LocoMotion)
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
-import qualified Sound.TimeNot.AST as TimeNot
 -- import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
@@ -44,12 +43,13 @@ data RenderState = RenderState {
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
   tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
+  webDirtEvents :: ![JSVal], -- deprecated/temporary
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap Punctual.PunctualW),
   punctualWebGL :: Punctual.PunctualWebGL,
   cineCer0Specs :: !(IntMap CineCer0.Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
-  timeNots :: IntMap TimeNot.Program,
+  timeNots :: IntMap JSVal,
   -- seis8ses :: IntMap Seis8s.Program,
   hydras :: IntMap Hydra.Hydra,
   evaluationTimes :: IntMap UTCTime, -- this is probably temporary
@@ -68,7 +68,7 @@ data RenderState = RenderState {
   tempoCache :: Tempo,
   jsoLangs :: Map.Map Text JSoLang,
   valueMap :: Tidal.ValueMap,
-  locoMotions :: !(IntMap LocoMotion)
+  locoMotion :: Maybe JSVal
   }
 
 -- Map.mapKeys T.unpack -- Map Text a -> Map String a
@@ -87,6 +87,7 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     paramPatterns = empty,
     noteEvents = [],
     tidalEvents = [],
+    webDirtEvents = [],
     baseNotations = empty,
     punctuals = empty,
     punctualWebGL = pWebGL,
@@ -111,5 +112,5 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
     jsoLangs = Map.empty,
     valueMap = Map.empty,
-    locoMotions = empty
+    locoMotion = Nothing
   }

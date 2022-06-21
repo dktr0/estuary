@@ -88,28 +88,19 @@ textWidget' styles rows flash i delta = mdo
   shiftEnter <- catchKeyboardShortcut (_textArea_element x) 13 False True
   return (value,edits,shiftEnter)
 
+
 fluxusStyle :: Text -> Text
 fluxusStyle i
   | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "font-size: 8em;"
-
   | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "font-size: 7em;"
-
   | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "font-size: 6em;"
-
   | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "font-size: 5em;"
-
   | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "font-size: 4em;"
-
   | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "font-size: 3em;"
-
   | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "font-size: 2.5em;"
-
   | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 10)) = "font-size: 2em;"
-
   | (T.length i >= 121) && (T.length i <= 140) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 10) && ((L.length $ T.lines i) <= 13)) = "font-size: 1.5em;"
-
   | otherwise = "font-size: 1em;"
-
 
 
 -- for everything that is not code-box-editors
@@ -224,23 +215,21 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
   flashOff <- liftM (False <$) $ delay 0.1 flashOn
   evalFlash <- holdDyn False $ leftmost [flashOff,flashOn]
 
-  -- flip (bool $ return never) (not $ elem "nomenu") $ do
-  (parserEdit,evalButton) <- flip ( bool $ (return (never,never)) ) (not $ and $ [(elem "nomenu" styles),(elem "noerrors" styles),(elem "noevalbutton" styles)]) $ do
-    divClass "fullWidthDiv" $ do
-
-      -- dropdown menu
+  (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
+    -- build dropdown menu if "nomenu" is not among the provided options
+    dropdown' <- if elem "nomenu" styles then (return never) else do
       let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-      d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
-
-      --evaluation button
-      evalButton' <- flip (bool $ (return never)) (not $ elem "noevalbutton" styles) $ do
-        divClass "textInputLabel" $ dynButton "\x25B6"
-
-      --error message
-      errorMsg <- flip (bool $ (return (constDyn ()))) (not $ elem "noerrors" styles) $ do
-        widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $  updated errorText'
-
-      return (_dropdown_change d,evalButton')
+      let ddAttrs = ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
+      d <- dropdown initialParser parserMap ddAttrs
+      return $ _dropdown_change d
+    -- build eval button if "noeval" is not among the provided options
+    evalButton' <- if elem "noeval" styles then (return never) else do
+      divClass "textInputLabel" $ dynButton "\x25B6"
+    -- build error text display if "noerrors" is not among the provided options
+    if elem "noerrors" styles then (return ()) else do
+      widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
+      pure ()
+    return (dropdown',evalButton')
 
   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' styles rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]

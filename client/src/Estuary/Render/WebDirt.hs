@@ -1,10 +1,20 @@
 {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
-module Estuary.Render.WebDirt (WebDirt, newWebDirt, initializeWebAudio, performHints, playSample, mapTextJSValToJSVal, mapStringJSValToJSVal, noteEventToWebDirtJSVal, tidalEventToWebDirtJSVal, setWebDirtAudioOutputs) where
+module Estuary.Render.WebDirt (
+  WebDirt,
+  newWebDirt,
+  initializeWebAudio,
+  performHints,
+  playSample,
+  mapTextJSValToJSVal,
+  mapStringJSValToJSVal,
+  noteEventToWebDirtJSVal,
+  tidalEventToWebDirtJSVal,
+  accessBufferForWebDirtEvent,
+  setWebDirtAudioOutputs) where
 
-import GHCJS.Types
-import GHCJS.Marshal.Pure
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad
+import Control.Monad.IO.Class
 import Reflex.Dom
 import Sound.MusicW
 import Data.Text
@@ -16,7 +26,7 @@ import Data.String (fromString)
 import Data.JSString.Text
 import GHCJS.Types
 import GHCJS.Marshal.Pure
-import JavaScript.Object
+import Language.Javascript.JSaddle.Object
 import Data.Text.Encoding
 
 
@@ -126,6 +136,27 @@ mapStringJSValToJSVal (t,m) = do
   unsafeSetProp "when" (pToJSVal t) o
   Map.traverseWithKey (\k v -> unsafeSetProp (fromString k) v o) m
   return $ jsval o
+
+
+-- given a JSVal that contains a JavaScript object containing parameters ready for consumption
+-- by WebDirt's playSample method, use the audio resources system to substitute a buffer
+-- this is probably just a temporary hack while we are (temporarily) allowing a "direct to WebDirt"
+-- pathway in connection with some languages.
+
+accessBufferForWebDirtEvent :: MonadIO m => Resources -> JSVal -> m JSVal
+accessBufferForWebDirtEvent r j = do
+  o <- liftIO $ makeObject j
+  props <- liftIO $ listProps o
+  when (elem "s" props) $ do
+    s <- pFromJSVal <$> (liftIO $ unsafeGetProp "s" o)
+    n <- case elem "n" props of
+      False -> pure 0
+      True -> pFromJSVal <$> (liftIO $ unsafeGetProp "n" o)
+    x <- accessAudioResource r (s,n)
+    liftIO $ case x of
+      Left err -> putStrLn $ "accessBufferForWebDirtEvent error: " ++ show err
+      Right ar -> unsafeSetProp "buffer" (audioJSVal ar) o
+  pure j
 
 datumsToLocation :: Maybe Datum -> Maybe Datum -> Maybe Location
 datumsToLocation (Just (ASCII_String x)) Nothing = Just (decodeUtf8 x,0)

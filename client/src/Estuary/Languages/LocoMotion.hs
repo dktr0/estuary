@@ -1,6 +1,6 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
-module Estuary.Languages.LocoMotion (locoMotion) where
+module Estuary.Languages.LocoMotion (Estuary.Languages.LocoMotion.locoMotion) where
 
 import Data.Text
 import Data.Time
@@ -18,25 +18,34 @@ import Estuary.Types.RenderState
 
 
 locoMotion :: TextNotationRenderer
-locoMotion = TextNotationRenderer {
+locoMotion = emptyTextNotationRenderer {
   parseZone = parseZone',
   clearZone' = clearZone'',
-  preAnimationFrame = return (),
+  preAnimationFrame = preAnimationFrame',
   zoneAnimationFrame = zoneAnimationFrame',
-  postAnimationFrame = return ()
+  postAnimationFrame = postAnimationFrame'
   }
 
-parseZone' :: Context -> Int -> Text -> UTCTime -> R ()
-parseZone' ctx z txt eTime = do
+
+-- if a LocoMotion object hasn't already been allocated, allocate it
+-- otherwise, just retrieve it from the RenderState
+getLocoMotion :: R LocoMotion
+getLocoMotion = do
   s <- get
-  let cvs = locoMotionCanvas s
-  j <- case IntMap.lookup z (locoMotions s) of
+  case Estuary.Types.RenderState.locoMotion s of
+    Just j -> pure $ pFromJSVal j
     Nothing -> do
-      j <- liftIO $ newLocoMotion cvs
-      modify' $ \s -> s { locoMotions = IntMap.insert z j $ locoMotions s }
-      return j
-    Just x -> return x
-  r <- liftIO $ evaluate j txt
+      let cvs = locoMotionCanvas s
+      lm <- liftIO $ newLocoMotion cvs
+      modify' $ \x -> x { Estuary.Types.RenderState.locoMotion = Just $ pToJSVal lm }
+      pure lm
+
+
+-- note: Context is unused here and could eventually be removed as an argument
+parseZone' :: Context -> Int -> Text -> UTCTime -> R ()
+parseZone' _ z txt eTime = do
+  lm <- getLocoMotion
+  r <- liftIO $ evaluate lm z txt
   case r of
     Just err -> do
       setBaseNotation z TextNotation.LocoMotion
@@ -48,15 +57,30 @@ parseZone' ctx z txt eTime = do
 
 
 clearZone'' :: Int -> R ()
-clearZone'' z = modify' $ \x -> x { locoMotions = IntMap.delete z $ locoMotions x }
+clearZone'' z = do
+  lm <- getLocoMotion
+  liftIO $ clearZone lm z
+
+
+preAnimationFrame' :: R ()
+preAnimationFrame' = do
+  lm <- getLocoMotion
+  liftIO $ preAnimate lm
 
 
 zoneAnimationFrame' :: UTCTime -> Int -> R ()
-zoneAnimationFrame' now z = do
+zoneAnimationFrame' _ z = do
+  lm <- getLocoMotion
   s <- get
-  case IntMap.lookup z (locoMotions s) of
-    Just lm -> liftIO $ setTempo lm (tempoCache s) >> animate lm
-    Nothing -> return ()
+  liftIO $ setTempo lm (tempoCache s)
+  liftIO $ animateZone lm z
+
+
+postAnimationFrame' :: R ()
+postAnimationFrame' = do
+  lm <- getLocoMotion
+  liftIO $ postAnimate lm
+
 
 
 foreign import javascript safe
@@ -64,28 +88,28 @@ foreign import javascript safe
   newLocoMotion :: HTMLCanvasElement -> IO LocoMotion
 
 -- Nothing values represent successful evaluation
-evaluate :: LocoMotion -> Text -> IO (Maybe Text)
-evaluate lm x = do
-  x <- _evaluate lm x
-  case _success x of
-    True -> return Nothing
-    False -> return $ Just $ _error x
+evaluate :: LocoMotion -> Int -> Text -> IO (Maybe Text)
+evaluate lm z x = _evaluate lm z x >>= (pure . exoResultToErrorText)
 
 foreign import javascript safe
-  "$1.evaluate($2)"
-  _evaluate :: LocoMotion -> Text -> IO JSVal
+  "$1.evaluate($2,$3)"
+  _evaluate :: LocoMotion -> Int -> Text -> IO ExoResult
 
 foreign import javascript safe
-  "$1.success"
-  _success :: JSVal -> Bool
-
-foreign import javascript safe
-  "$1.error"
-  _error :: JSVal -> Text
+  "$1.clearZone($2)"
+  clearZone :: LocoMotion -> Int -> IO ()
 
 foreign import javascript unsafe
-  "$1.animate()"
-  animate :: LocoMotion -> IO ()
+  "$1.preAnimate()"
+  preAnimate :: LocoMotion -> IO ()
+
+foreign import javascript unsafe
+  "$1.animateZone($2)"
+  animateZone :: LocoMotion -> Int -> IO ()
+
+foreign import javascript unsafe
+  "$1.postAnimate()"
+  postAnimate :: LocoMotion -> IO ()
 
 foreign import javascript unsafe
   "$1.setTempo($2)"

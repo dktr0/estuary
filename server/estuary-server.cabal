@@ -15,7 +15,6 @@ build-type:     Simple
 library
   exposed-modules:
       Estuary.AtomicallyTimed
-      Estuary.Resources
       Estuary.Types.Client
       Estuary.Types.Database
       Estuary.Types.EnsembleS

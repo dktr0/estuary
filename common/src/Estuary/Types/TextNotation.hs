@@ -14,7 +14,7 @@ import Estuary.Types.TidalParser
 
 data TextNotation =
   UnspecifiedNotation |
-  TidalTextNotation TidalParser |
+  TidalTextNotation TidalParser | -- TODO: this can just become MiniTidal with no argument, eliminating the type TidalParser
   Punctual |
   CineCer0 |
   TimeNot |
