@@ -241,23 +241,6 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
   cv <- returnVariable deltasDown localEdits
   return cv
 
-  --   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
-  --     let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-  --     d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
-  --     evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
-  --     widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
-  --     return (_dropdown_change d,evalButton')
-  --
-  --   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' styles rows evalFlash initialText textDelta
-  --   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
-  --   let c = current $ currentValue cv
-  --   let parserEdit' = attachWith applyParserEdit c parserEdit
-  --   let textEdit' = attachWith applyTextEdit c textEdit
-  --   let evalEdit' = attachWith applyEvalEdit c evalEdit
-  --   let localEdits = leftmost [parserEdit',textEdit',evalEdit']
-  --   cv <- returnVariable deltasDown localEdits
-  --   return cv
-
 applyParserEdit :: Live TextProgram -> TextNotation -> Live TextProgram
 applyParserEdit (Live (x,y,z) _) x' = Edited (x,y,z) (x',y,z)
 applyParserEdit (Edited (x,y,z) (_,y',z')) x' = Edited (x,y,z) (x',y',z')
