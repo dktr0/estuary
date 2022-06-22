@@ -1,6 +1,12 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
-module Estuary.Render.SuperDirt (SuperDirt, newSuperDirt, setActive, playSample, noteEventToSuperDirtJSVal, tidalEventToSuperDirtJSVal) where
+module Estuary.Render.SuperDirt (
+  SuperDirt,
+  newSuperDirt,
+  setActive,
+  playSample,
+  noteEventToSuperDirtJSVal
+  ) where
 
 import GHCJS.Types
 import GHCJS.Marshal.Pure
@@ -34,8 +40,3 @@ noteEventToSuperDirtJSVal :: NoteEvent -> IO JSVal
 noteEventToSuperDirtJSVal (utc,m) = do
   let t = realToFrac $ utcTimeToPOSIXSeconds utc
   mapTextJSValToJSVal (t,fmap datumToJSVal m)
-
-tidalEventToSuperDirtJSVal :: (UTCTime, Tidal.ValueMap) -> IO JSVal
-tidalEventToSuperDirtJSVal (utc,m) = do
-  let t = realToFrac $ utcTimeToPOSIXSeconds utc
-  mapStringJSValToJSVal (t,fmap valueToJSVal m)

@@ -42,7 +42,7 @@ data RenderState = RenderState {
   cachedDefs :: !DefinitionMap,
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
-  tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
+--  tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
   webDirtEvents :: ![JSVal], -- deprecated/temporary
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap Punctual.PunctualW),
@@ -86,7 +86,7 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     cachedDefs = empty,
     paramPatterns = empty,
     noteEvents = [],
-    tidalEvents = [],
+--    tidalEvents = [],
     webDirtEvents = [],
     baseNotations = empty,
     punctuals = empty,

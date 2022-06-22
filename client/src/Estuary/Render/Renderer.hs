@@ -70,6 +70,7 @@ import Estuary.Render.MainBus
 import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
 import qualified Estuary.Client.Settings as Settings
+import Estuary.Render.WebSerial as WebSerial
 
 
 clockRatioThreshold :: Double
@@ -98,25 +99,33 @@ earlyWakeUp :: NominalDiffTime
 earlyWakeUp = 0.002
 
 
--- flush events for SuperDirt and WebDirt
+-- flush note events to WebDirt, SuperDirt, and/or WebSerial
 flushEvents :: R ()
 flushEvents = do
   rEnv <- ask
   s <- get
   unsafe <- unsafeModeOn
+
+  -- maybe send events to WebDirt
   wdOn <- webDirtOn
-  sdOn <- superDirtOn
   when wdOn $ liftIO $ do
     let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
     noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources rEnv) cDiff) $ noteEvents s
-    tidalEvents' <- witherM (WebDirt.tidalEventToWebDirtJSVal unsafe (resources rEnv) cDiff) $ tidalEvents s
     webDirtEvents' <- mapM (WebDirt.accessBufferForWebDirtEvent (resources rEnv)) $ webDirtEvents s
-    mapM_ (WebDirt.playSample (webDirt rEnv)) $ noteEvents' ++ tidalEvents' ++ webDirtEvents'
+    mapM_ (WebDirt.playSample (webDirt rEnv)) $ noteEvents' ++ webDirtEvents'
+
+  -- maybe send events to SuperDirt via the SuperDirt socket
+  sdOn <- superDirtOn
   when sdOn $ liftIO $ do
     noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
-    tidalEvents' <- mapM SuperDirt.tidalEventToSuperDirtJSVal $ tidalEvents s
-    mapM_ (SuperDirt.playSample (superDirt rEnv)) $ noteEvents' ++ tidalEvents'
-  modify' $ \x -> x { noteEvents = [], tidalEvents = [], webDirtEvents = [] } -- note: webDirtEvents is temporary/deprecated
+    mapM_ (SuperDirt.playSample (superDirt rEnv)) $ noteEvents'
+
+  -- maybe send events to WebSerial
+  webSerialOn <- liftIO $ WebSerial.isActive (webSerial rEnv)
+  when webSerialOn $ liftIO $ mapM_ (WebSerial.send (webSerial rEnv)) $ noteEvents s
+
+  -- clear the queue of all note events
+  modify' $ \x -> x { noteEvents = [], webDirtEvents = [] } -- note: webDirtEvents is temporary/deprecated
   return ()
 
 renderTidalPattern :: Tidal.ValueMap -> UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
@@ -275,6 +284,8 @@ renderAnimation = do
   wta <- gets wakeTimeAnimation
   fpsl <- fpsLimit
   let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
+  rEnv <- ask
+  liftIO $ WebSerial.flush (webSerial rEnv)
   when okToRender $ do
     preAnimationFrame locoMotion
     ns <- baseNotations <$> get

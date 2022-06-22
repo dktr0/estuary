@@ -7,9 +7,7 @@ module Estuary.Render.WebDirt (
   performHints,
   playSample,
   mapTextJSValToJSVal,
-  mapStringJSValToJSVal,
   noteEventToWebDirtJSVal,
-  tidalEventToWebDirtJSVal,
   accessBufferForWebDirtEvent,
   setWebDirtAudioOutputs) where
 
@@ -106,35 +104,12 @@ noteEventToWebDirtJSVal unsafe r cDiff (utc,m) = do
 makeTidalEventSafe :: Tidal.ValueMap -> Tidal.ValueMap
 makeTidalEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
-tidalEventToWebDirtJSVal :: Bool -> Resources -> (UTCTime,Double) -> (UTCTime, Tidal.ValueMap) -> IO (Maybe JSVal)
-tidalEventToWebDirtJSVal unsafe r cDiff (utc,m) = do
-  let mSafe = if unsafe then m else makeTidalEventSafe m
-  let s = Map.lookup "s" mSafe
-  let n = Map.lookup "n" mSafe
-  case valuesToLocation s n of
-    Nothing -> return Nothing
-    Just loc -> do
-      res <- accessAudioResource r loc
-      case res of
-        Right res' -> do
-          let t' = utcTimeToAudioSeconds cDiff utc
-          let m' = Map.insert "buffer" (pToJSVal res') $ fmap valueToJSVal mSafe -- :: Map Text JSVal
-          Just <$> mapStringJSValToJSVal (t',m')
-        Left _ -> return Nothing
 
 mapTextJSValToJSVal :: (Double, Map.Map Text JSVal) -> IO JSVal
 mapTextJSValToJSVal (t,m) = do
   o <- create
   unsafeSetProp "when" (pToJSVal t) o
   Map.traverseWithKey (\k v -> unsafeSetProp (textToJSString k) v o) m
-  return $ jsval o
-
--- for Tidal-sourced events, which arrive here as Map String JSVal
-mapStringJSValToJSVal :: (Double, Map.Map String JSVal) -> IO JSVal
-mapStringJSValToJSVal (t,m) = do
-  o <- create
-  unsafeSetProp "when" (pToJSVal t) o
-  Map.traverseWithKey (\k v -> unsafeSetProp (fromString k) v o) m
   return $ jsval o
 
 
@@ -162,10 +137,3 @@ datumsToLocation :: Maybe Datum -> Maybe Datum -> Maybe Location
 datumsToLocation (Just (ASCII_String x)) Nothing = Just (decodeUtf8 x,0)
 datumsToLocation (Just (ASCII_String x)) (Just (Int32 y)) = Just (decodeUtf8 x,fromIntegral y)
 datumsToLocation _ _ = Nothing
-
-valuesToLocation :: Maybe Tidal.Value -> Maybe Tidal.Value -> Maybe Location
-valuesToLocation (Just (Tidal.VS x)) Nothing = Just (T.pack x,0)
-valuesToLocation (Just (Tidal.VS x)) (Just (Tidal.VF y)) = Just (T.pack x,floor y)
-valuesToLocation (Just (Tidal.VS x)) (Just (Tidal.VI y)) = Just (T.pack x,y)
-valuesToLocation (Just (Tidal.VS x)) (Just (Tidal.VN y)) = Just (T.pack x,floor $ Tidal.unNote y)
-valuesToLocation _ _ = Nothing
