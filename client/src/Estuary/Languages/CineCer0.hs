@@ -19,7 +19,6 @@ import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
 import Estuary.Types.RenderInfo
-import Estuary.Types.Context
 import Estuary.Types.TextNotation
 import Estuary.Render.MainBus
 import Estuary.Types.Tempo

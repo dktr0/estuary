@@ -77,28 +77,36 @@ stopWatchToButtonText (Stopped _) = "Clear"
 -------- Countdown widget 
 
 countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
-countDownWidget deltasDown =  divClass "countDown" $  mdo
+countDownWidget delta =  divClass "countDown" $  mdo
 
-  let initialText = "initial count: 60, change it here"
+  let initialText = "t-minus: 60"   -- Text
   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
-  let editable = editableText <$> currentValue v
-  textos <- holdDyn initialText $ leftmost [updatedText, textUpdates]
-  (valTxBx,_) <- textWithLockWidget 1 editable textos
-  let bText = countDownToButtonText <$> currentValue v
-  butt <- dynButton $ bText 
-  let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
-  let stateWhenButtonPressed = tagPromptlyDyn (currentValue v) buttonPressedEvent
-  localChanges <- performEvent $ attachPromptlyDynWith countDownButtonStateChange timeDyn stateWhenButtonPressed
-  -- this needs to change to attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed, however I have to discover how to updateText in line 81 and keep an eye on the targetTime update issue, for the moment it is clear that buttonPressedEvent caqnnot be in line 81 without consequences in the proper functioning of the widget...
+  let editable = editableText <$> currentValue v    -- Bool --checks if holding or falling. If holding editable if falling not.
+  textos <- holdDyn initialText $ leftmost [updatedText,textUpdates] -- Dynamic t Text
+  (valTxBx,_) <- textWithLockWidget 1 editable textos -- (Dynamic t Text, Event t Text)
 
-  timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent
+  let bText = countDownToButtonText <$> currentValue v -- Dynamic t Text  -- changes the text in button
+  butt <- dynButton $ bText                            -- Event t ()  -- when this button is pressed
+
+---- OJO two tags in a row, different kind of pattern
+  let buttonPressedEvent = tag (current valTxBx) $ butt -- Event t Text  -- the val in the textbox is tagged
+
+  let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent -- Event t Downer -- the current value of v (not delta) is tagged to the button pressed, currentValue v is a Dynamic of Downer, current gets the behaviour
+
+
+  localChanges <- performEvent $ attachWith countDownButtonStateChange (current $ timeDyn) stateWhenButtonPressed -- Event to Downer
+
+------------------------------------------------------
+  timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) $ buttonPressedEvent -- Dynamic t Int
+
   widgetBuildTime <- liftIO $ getCurrentTime  
-  initialCount <- sample $ current deltasDown
+  initialCount <- sample $ current delta -- current gets the Behaviour of the dyn and then gets the m Downer
   let initialTime = countDownToDisplay initialCount widgetBuildTime
   tick <- tickLossy 0.01 widgetBuildTime 
   let textUpdates = attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
-  v <- returnVariable deltasDown localChanges
+  v <- variable delta localChanges
   return v
+
 
 
 -------- Sandclock widget 
@@ -163,6 +171,10 @@ countDownToButtonText:: TimerDownState -> Text
 countDownToButtonText (Holding _) = "Start"
 countDownToButtonText (Falling _ _) = "Stop"
 
+countDownToInitialVal:: TimerDownState -> Int
+countDownToInitialVal (Holding x) = x
+countDownToInitialVal (Falling x _) = x
+
 
 clockForSVGs:: TimerDownState -> UTCTime -> Maybe Int 
 clockForSVGs (Holding _) _ = Nothing
@@ -193,10 +205,12 @@ visualiseSVGWidget delta = do
   let heightHold = countToHoldH 0 <$> delta
 
   let class' = constDyn $ "class" =: "mySVG"
-  let width = constDyn $ "width" =: "100"
-  let height = constDyn $ "height" =: "100"
-  let style = constDyn $ "style" =: ("height: auto; color: white;")
-  let attrs = mconcat [class',width,height, style]
+  let width = constDyn $ "width" =: "100%"
+  let height = constDyn $ "height" =: "100%"
+  let style = constDyn $ "style" =: ("height: auto; color: white; z-index: 0")
+  let vB = constDyn $  "viewBox" =: "0 0 100 100"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let attrs = mconcat [class',width,height, style, vB, par]
   -- sand falling 
   let x = constDyn $ "x" =: "0"
   let width' = constDyn $ "width" =: "100"
@@ -286,7 +300,11 @@ ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)
 -- general helpers
 
 diffTimeToText :: NominalDiffTime -> Text
-diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> showt (floor x `mod` 60 :: Int)
+diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> (add0Mod x)
+
+add0Mod:: NominalDiffTime -> Text
+add0Mod x = if modulo < 10 then ("0" <> (showt modulo)) else showt modulo 
+  where modulo = (floor x) `mod` (60 :: Int)
 
 countToPercent:: Int -> Int -> NominalDiffTime -> Int
 countToPercent newSize target grains = if target == 0 then 0 else round $ (grains / (realToFrac target)) * (realToFrac newSize)

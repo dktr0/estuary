@@ -14,7 +14,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Aeson
 
-import Estuary.Types.Context
 import Estuary.Types.RenderInfo
 import Estuary.Types.Request
 import Estuary.Types.Response
@@ -26,9 +25,9 @@ import Estuary.Types.TranslatableText
 import Estuary.Widgets.W
 
 
-estuaryWebSocket :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> Event t [Request] ->
+estuaryWebSocket :: MonadWidget t m => Dynamic t RenderInfo -> Event t [Request] ->
   m (Event t Response, Event t ContextChange, Event t Hint)
-estuaryWebSocket ctx rInfo toSend = mdo
+estuaryWebSocket rInfo toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
   userAgent <- liftIO $ getUserAgent

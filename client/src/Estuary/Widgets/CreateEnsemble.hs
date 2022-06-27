@@ -11,7 +11,6 @@ import Data.Map
 import qualified Data.Map.Strict as Map
 
 
-import Estuary.Types.Context
 import Estuary.Types.Response
 import Estuary.Types.Request
 import Estuary.Widgets.Reflex

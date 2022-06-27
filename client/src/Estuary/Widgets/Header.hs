@@ -8,7 +8,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Map.Strict
 
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.Hint
 import qualified Estuary.Types.Term as Term

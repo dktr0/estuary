@@ -35,7 +35,6 @@ import qualified GHCJS.Marshal.Pure as P
 import Data.Functor.Misc -- For Const2
 
 import Estuary.Types.Term
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.TranslatableText
 import Estuary.Tidal.Types

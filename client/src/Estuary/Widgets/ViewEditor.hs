@@ -12,7 +12,6 @@ import Control.Monad(liftM)
 import Text.Parsec
 
 import Estuary.Widgets.Reflex
-import Estuary.Types.Context
 import Estuary.Types.EnsembleC
 import Estuary.Types.View.Parser
 import Language.Haskellish as LH

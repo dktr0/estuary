@@ -12,6 +12,7 @@ import Data.Map
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.List as L
 import Data.Time
 
 import GHCJS.Types
@@ -32,7 +33,6 @@ import Estuary.Help.LanguageHelp
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Widgets.W
-import Estuary.Types.Context
 
 
 foreign import javascript unsafe "navigator.clipboard.writeText($1);" copyToClipboard :: Text -> IO ()
@@ -46,17 +46,63 @@ textWidgetRows :: Int -> Map Text Text
 textWidgetRows 0 = Data.Map.empty
 textWidgetRows x = "rows" =: T.pack (show x)
 
-textWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
-textWidget rows flash i delta = do
+
+styleParameters :: [Text] -> Text -> Map Text Text
+styleParameters vs i = "style" =: ("height: auto;" <> (stiloList vs i))
+
+stiloList :: [Text] -> Text -> Text
+stiloList vs i = mconcat $ fmap (stilos i) vs -- :: Text
+
+stilos :: Text -> Text -> Text
+stilos i x = mconcat [fontSizeStilos i x] -- :: Text
+
+fontSizeStilos :: Text -> Text -> Text
+fontSizeStilos i x
+  | x == "fluxus" = fluxusStyle i
+  | otherwise = ""
+
+
+-- for code-box-editors
+textWidget' :: MonadWidget t m => [Text] -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+textWidget' styles rows flash i delta = mdo
   let class' = fmap textWidgetClass flash
   let rows' = constDyn $ textWidgetRows rows
-  let style = constDyn $ "style" =: "height: auto"
-  let attrs = mconcat [class',rows',style]
+  let style' = fmap (styleParameters styles) value
+  let attrs = mconcat [class',rows', style']
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let value = _textArea_value x
   let edits = _textArea_input x
   shiftEnter <- catchKeyboardShortcut (_textArea_element x) 13 False True
   return (value,edits,shiftEnter)
+
+
+fluxusStyle :: Text -> Text
+fluxusStyle i
+  | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "font-size: 8em;"
+  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "font-size: 7em;"
+  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "font-size: 6em;"
+  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "font-size: 5em;"
+  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "font-size: 4em;"
+  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "font-size: 3em;"
+  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "font-size: 2.5em;"
+  | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 10)) = "font-size: 2em;"
+  | (T.length i >= 121) && (T.length i <= 140) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 10) && ((L.length $ T.lines i) <= 13)) = "font-size: 1.5em;"
+  | otherwise = "font-size: 1em;"
+
+
+-- for everything that is not code-box-editors
+textWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+textWidget rows flash i delta = do
+  let class' = fmap textWidgetClass flash
+  let rows' = constDyn $ textWidgetRows rows
+  let style = constDyn $ "style" =: "height: auto"
+  let attrs = mconcat [class',rows',style] -- :: Dynamic t (Map Text Text)
+  x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
+  let value = _textArea_value x
+  let edits = _textArea_input x
+  shiftEnter <- catchKeyboardShortcut (_textArea_element x) 13 False True
+  return (value,edits,shiftEnter)
+
 
                                      --  Rows  Colour     EditableOrNot
 textToInvisible :: MonadWidget t m => Int -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
@@ -138,9 +184,9 @@ holdUniq :: (MonadWidget t m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
 
 
-textProgramEditor :: forall t m. MonadWidget t m => Int -> Dynamic t (Maybe Text)
+textProgramEditor :: forall t m. MonadWidget t m => [Text] -> Int -> Dynamic t (Maybe Text)
   -> Dynamic t (Live TextProgram) -> W t m (Variable t (Live TextProgram))
-textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
+textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
 
   -- translate deltasDown into initial value and events that reflect remote changes that will affect local GUI
   i <- sample $ current deltasDown
@@ -152,24 +198,28 @@ textProgramEditor rows errorText deltasDown = divClass "textPatternChain" $ mdo 
   let textDelta = attachWithMaybe (\(_,x,_) (_,y,_) -> if x==y then Nothing else Just y) (fmap forEditing $ current $ currentValue cv) deltaFuture
   errorText' <- holdUniqDyn errorText
 
-  -- determine whether we currently display "eval flash" or not
   evalTimeDyn <- holdUniqDyn $ fmap ((\(_,_,x)->x) . forRendering) $ currentValue cv
-  let flashOn = True <$ updated evalTimeDyn -- Event t Bool, fires every time evalTime changes
-  flashOff <- liftM (False <$) $ delay 0.1 flashOn -- Event t Bool, fires 0.1 seconds later
-  evalFlash <- holdDyn False $ leftmost [flashOff,flashOn] -- Dynamic t Bool
+  let flashOn = True <$ updated evalTimeDyn
+  flashOff <- liftM (False <$) $ delay 0.1 flashOn
+  evalFlash <- holdDyn False $ leftmost [flashOff,flashOn]
 
-  -- GUI elements: language selection menu, eval button, error display, and text area (textWidget)
   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
-    let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-    d <- dropdown initialParser parserMap $ ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
-    evalButton' <- divClass "textInputLabel" $ dynButton "\x25B6"
-    widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
-    return (_dropdown_change d,evalButton')
-  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget rows evalFlash initialText textDelta
+    -- build dropdown menu if "nomenu" is not among the provided options
+    dropdown' <- if elem "nomenu" styles then (return never) else do
+      let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
+      let ddAttrs = ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
+      d <- dropdown initialParser parserMap ddAttrs
+      return $ _dropdown_change d
+    -- build eval button if "noeval" is not among the provided options
+    evalButton' <- if elem "noeval" styles then (return never) else do
+      divClass "textInputLabel" $ dynButton "\x25B6"
+    -- build error text display if "noerrors" is not among the provided options
+    if elem "noerrors" styles then (return ()) else do
+      widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
+      pure ()
+    return (dropdown',evalButton')
+  (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' styles rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
-
-  -- produce a Variable by combining current value of Variable (that already includes deltas down from elsewhere)
-  -- with the results of local edits to that variable
   let c = current $ currentValue cv
   let parserEdit' = attachWith applyParserEdit c parserEdit
   let textEdit' = attachWith applyTextEdit c textEdit

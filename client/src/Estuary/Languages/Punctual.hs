@@ -21,7 +21,6 @@ import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
 import Estuary.Types.RenderInfo
-import Estuary.Types.Context
 import Estuary.Types.TextNotation
 import Estuary.Render.MainBus
 import Estuary.Types.Tempo
@@ -87,7 +86,7 @@ punctualProgramChanged z p = do
   -- B. update Punctual WebGL state in response to new, syntactically correct program
   pWebGL <- gets punctualWebGL
   newWebGL <- liftIO $
-    Punctual.evaluatePunctualWebGL (glContext s) (tempoCache s) z p pWebGL
+    fmap fst (Punctual.evaluatePunctualWebGL (glContext s) (tempoCache s) z p pWebGL)
     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return pWebGL)
   modify' $ \x -> x { punctualWebGL = newWebGL }
 

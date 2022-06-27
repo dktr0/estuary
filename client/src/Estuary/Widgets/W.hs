@@ -17,20 +17,22 @@ import Data.Text as T
 import Data.IORef
 import Data.Time
 import Data.Map as Map
+import Data.IntMap
 import Text.Read (readMaybe)
 
 import qualified Sound.Punctual.Resolution as Punctual
 
 import Estuary.Types.Language
-import Estuary.Types.Context
 import qualified Estuary.Render.R as R
 import Estuary.Render.DynamicsMode
-import Estuary.Types.RenderInfo
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
 import Estuary.Types.Term
 import Estuary.Resources
+import qualified Estuary.Types.RenderInfo as RenderInfo
 import qualified Estuary.Client.Settings as Settings
+import qualified Estuary.Types.ServerInfo as ServerInfo
+import Estuary.Types.Participant
 
 
 -- If we have widget-producing actions and we make them in the (W t m) monad
@@ -41,10 +43,10 @@ type W t m = EventWriterT t [Hint] (ReaderT (WidgetEnvironment t) m)
 
 data WidgetEnvironment t = WidgetEnvironment {
   _renderEnvironment :: R.RenderEnvironment,
-  _context :: Dynamic t Context,
-  _renderInfo :: Dynamic t RenderInfo,
+  _renderInfo :: Dynamic t RenderInfo.RenderInfo,
   _resourceMaps :: Dynamic t ResourceMaps,
-  _settings :: Dynamic t Settings.Settings
+  _settings :: Dynamic t Settings.Settings,
+  _serverInfo :: Dynamic t ServerInfo.ServerInfo
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -64,17 +66,79 @@ widgetEnvironment = lift ask
 renderEnvironment :: Monad m => W t m R.RenderEnvironment
 renderEnvironment = lift $ asks _renderEnvironment
 
--- Get the dynamic context.
-context :: Monad m => W t m (Dynamic t Context)
-context = lift $ asks _context
-
--- Get the dynamic information from the render engine.
-renderInfo :: Monad m => W t m (Dynamic t RenderInfo)
-renderInfo = lift $ asks _renderInfo
-
 -- Get a dynamically-updated map of the current maps of "fixed" resources (audiofiles, images, videos)
 resourceMaps :: Monad m => W t m (Dynamic t ResourceMaps)
 resourceMaps = lift $ asks _resourceMaps
+
+
+-- Get information from the EnsembleC
+-- WORK IN PROGRESS / PLACEHOLDERS
+-- (making the W t monad the interface for all widget-side queries into
+-- fundamental aspects of ensemble state)
+
+userHandle :: (Monad m, Reflex t) => W t m (Dynamic t Text)
+userHandle = pure $ pure "userHandle" -- PLACEHOLDER
+
+ensembleName :: (Monad m, Reflex t) => W t m (Dynamic t Text)
+ensembleName = pure $ pure "ensembleName" -- PLACEHOLDER
+
+participants :: (Monad m, Reflex t) => W t m (Dynamic t (Map.Map Text Participant))
+participants = pure $ pure Map.empty -- PLACEHOLDER
+
+anonymousParticipants :: (Monad m, Reflex t) => W t m (Dynamic t Int)
+anonymousParticipants = pure $ pure 0 -- PLACEHOLDER
+
+
+-- Get information from the ServerInfo
+
+askServerInfo :: (Reflex t, MonadFix m, MonadHold t m, Eq a) => (ServerInfo.ServerInfo -> a) -> W t m (Dynamic t a)
+askServerInfo f = asks _serverInfo >>= holdUniqDyn . fmap f
+
+aboutThisServer :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t TranslatableText)
+aboutThisServer = askServerInfo ServerInfo.aboutThisServer
+
+announcements :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (Map Day [TranslatableText]))
+announcements = askServerInfo ServerInfo.announcements
+
+wsStatus :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+wsStatus = askServerInfo ServerInfo.wsStatus
+
+serverLatency :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t NominalDiffTime)
+serverLatency = askServerInfo ServerInfo.serverLatency
+
+clientCount :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+clientCount = askServerInfo ServerInfo.clientCount
+
+
+-- Get information from the RenderInfo
+
+askRenderInfo :: (Reflex t, MonadFix m, MonadHold t m, Eq a) => (RenderInfo.RenderInfo -> a) -> W t m (Dynamic t a)
+askRenderInfo f = asks  _renderInfo >>= holdUniqDyn . fmap f
+
+errors :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (IntMap Text))
+errors = askRenderInfo RenderInfo.errors
+
+avgRenderLoad :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+avgRenderLoad = askRenderInfo RenderInfo.avgRenderLoad
+
+animationFPS :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+animationFPS = askRenderInfo RenderInfo.animationFPS
+
+animationLoad :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+animationLoad = askRenderInfo RenderInfo.animationLoad
+
+avgZoneRenderTime :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (IntMap Double))
+avgZoneRenderTime = askRenderInfo RenderInfo.avgZoneRenderTime
+
+avgZoneAnimationTime :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (IntMap Double))
+avgZoneAnimationTime = askRenderInfo RenderInfo.avgZoneAnimationTime
+
+clockRatio :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Double)
+clockRatio = askRenderInfo RenderInfo.clockRatio
+
+clockRatioProblem :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
+clockRatioProblem = askRenderInfo RenderInfo.clockRatioProblem
+
 
 -- Get and change the Dynamic Settings record
 settings :: Monad m => W t m (Dynamic t Settings.Settings)
@@ -262,11 +326,13 @@ dropdownW m x = divClass "config-entry display-inline-block primary-color ui-fon
 intTextInputW :: MonadWidget t m => Dynamic t Int -> m (Event t Int)
 intTextInputW x = do
   i <- sample $ current x
-  let xEvents = updated x
+  let xEvents = updated $ fmap (T.pack . show) x
   w <- textInput $ def & textInputConfig_inputType .~ "number"
                        & textInputConfig_initialValue .~ T.pack (show i)
                        & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+                       & textInputConfig_setValue .~ xEvents
   return $ fmapMaybe (readMaybe . T.unpack) $ _textInput_input w
+
 
 textInputW :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
 textInputW x = do
@@ -274,8 +340,8 @@ textInputW x = do
   let xEvents = updated x
   w <- textInput $ def & textInputConfig_initialValue .~ i
                        & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+                       & textInputConfig_setValue .~ xEvents
   return $ _textInput_input w
-
 
 -- Issue a single hint
 hint :: (Reflex t, Monad m) => Event t Hint -> W t m ()

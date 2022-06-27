@@ -9,7 +9,7 @@ import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Resolution as Punctual
 import Sound.MusicW.AudioContext
 import Sound.MusicW.Node as MusicW
-import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)
+import GHCJS.DOM.Types hiding (Text)
 import Data.Text (Text)
 import Sound.Punctual.GL
 import Data.Tempo
@@ -19,15 +19,19 @@ import Estuary.Types.Definition
 import Estuary.Types.RenderInfo
 import Estuary.Types.NoteEvent
 import Estuary.Types.MovingAverage
-import Estuary.Types.TextNotation
+import Estuary.Types.TextNotation hiding (LocoMotion)
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
-import qualified Sound.TimeNot.AST as TimeNot
 -- import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
 
+newtype LocoMotion = LocoMotion JSVal
+
+instance PToJSVal LocoMotion where pToJSVal (LocoMotion x) = x
+
+instance PFromJSVal LocoMotion where pFromJSVal = LocoMotion
 
 data RenderState = RenderState {
   wakeTimeAudio :: !Double,
@@ -38,13 +42,14 @@ data RenderState = RenderState {
   cachedDefs :: !DefinitionMap,
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
-  tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
+--  tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
+  webDirtEvents :: ![JSVal], -- deprecated/temporary
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap Punctual.PunctualW),
   punctualWebGL :: Punctual.PunctualWebGL,
   cineCer0Specs :: !(IntMap CineCer0.Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
-  timeNots :: IntMap TimeNot.Program,
+  timeNots :: IntMap JSVal,
   -- seis8ses :: IntMap Seis8s.Program,
   hydras :: IntMap Hydra.Hydra,
   evaluationTimes :: IntMap UTCTime, -- this is probably temporary
@@ -58,15 +63,17 @@ data RenderState = RenderState {
   glContext :: GLContext,
   canvasElement :: HTMLCanvasElement,
   hydraCanvas :: HTMLCanvasElement,
+  locoMotionCanvas :: HTMLCanvasElement,
   videoDivCache :: Maybe HTMLDivElement,
   tempoCache :: Tempo,
   jsoLangs :: Map.Map Text JSoLang,
-  valueMap :: Tidal.ValueMap
+  valueMap :: Tidal.ValueMap,
+  locoMotion :: Maybe JSVal
   }
 
 
-initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
-initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
+initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
+initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 hCanvas glCtx
   return $ RenderState {
     wakeTimeSystem = t0System,
@@ -77,7 +84,8 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
     cachedDefs = empty,
     paramPatterns = empty,
     noteEvents = [],
-    tidalEvents = [],
+--    tidalEvents = [],
+    webDirtEvents = [],
     baseNotations = empty,
     punctuals = empty,
     punctualWebGL = pWebGL,
@@ -97,8 +105,10 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas t0System t0Audio = do
     glContext = glCtx,
     canvasElement = cvsElement,
     hydraCanvas = hCanvas,
+    locoMotionCanvas = lCanvas,
     videoDivCache = Nothing,
     tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
     jsoLangs = Map.empty,
-    valueMap = Map.empty
+    valueMap = Map.empty,
+    locoMotion = Nothing
   }

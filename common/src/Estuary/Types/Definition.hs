@@ -25,9 +25,13 @@ type NotePad = (Int,Seq NotePage)
 type NotePage = (Text,Text)
 
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
-data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Maybe Recurrence } deriving  (Eq, Show, Generic)
+data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
 data Recurrence = Recurrence { periodicity :: Periodicity, endDate :: ZonedTime} deriving  (Eq, Show, Generic)
-data Periodicity = Daily | Weekly | Monthly | Yearly deriving  (Eq, Show, Generic)
+data Periodicity =  Once | Daily | DailyUntil | Weekly | WeeklyUntil | MonthlyXDay| MonthlyXDayUntil | Yearly| YearlyUntil deriving  (Eq, Show, Generic)
+
+
+-- data Periodicity =  Once | Daily | DailyUntil | Weekly | WeeklyUntil | MonthlyXDay| MonthlyXDayUntil | MonthlyFirstXDay | MonthlyFirstXDayUntil | MonthlySecondXDay | MonthlySecondXDayUntil | MonthlyThirdXDay | MonthlyThirdXDayUntil| MonthlyFourthXDay | MonthlyFourthXDayUntil | MonthlyLastXDay | MonthlyLastXDayUntil | Yearly| YearlyUntil deriving  (Eq, Show, Generic)
+
 
 instance ToJSON CalendarEvent where
   toEncoding = genericToEncoding defaultOptions

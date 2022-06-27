@@ -13,7 +13,6 @@ import Data.Tuple.Select
 import Control.Monad.Fix
 
 import Estuary.Widgets.W
-import Estuary.Types.Context
 import Estuary.Resources.LocMap
 
 

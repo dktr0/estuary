@@ -8,7 +8,6 @@ import Data.Map
 import qualified Data.Text as T
 import Data.Time
 
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Types.TranslatableText
 import Estuary.Widgets.Reflex
@@ -74,7 +73,7 @@ announcementsWidget = divClass "announcements" $ do
     dynText =<< (translatableText $ fromList [
       (English,"About This Estuary Server: ")
       ])
-    dynText =<< dynTranslatableText =<< (fmap aboutThisServer <$> context)
+    dynText =<< dynTranslatableText =<< aboutThisServer
 
   divClass "announcement" $ do
     dynText =<< (translatableText $ fromList [
@@ -82,8 +81,7 @@ announcementsWidget = divClass "announcements" $ do
       ])
 
   do
-    ctx <- context
-    serverAnnouncements <- holdUniqDyn $ fmap announcements ctx
+    serverAnnouncements <- announcements
     let annMap = fmap (unionWith (++) compiledAnnouncements) serverAnnouncements
     let xs = fmap (reverse . concat . mapWithKey  (\k a -> zip (repeat k) a)) annMap
     simpleList xs individualAnnouncement

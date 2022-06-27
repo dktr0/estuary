@@ -6,35 +6,23 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
 import Data.Time
--- import Data.Tuple.Select
 import Control.Monad.Trans (liftIO)
 import Data.Map.Strict
 import Control.Monad
-import Estuary.Types.Context
-import Estuary.Types.EnsembleC
-import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleRequest
-import Estuary.Types.Participant
+import Estuary.Types.Participant as Participant
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
 
 ensembleStatusWidget :: MonadWidget t m => W t m (Event t EnsembleRequest)
 ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
-  ctx <- context
-  let ensC = fmap ensembleC ctx
-  let ens = fmap ensemble ensC
-  let uHandle = fmap userHandle ensC -- Dynamic Text
-  ensName <- holdUniqDyn $ fmap ensembleName ens -- Dynamic t Text
-  let ensParticipants = fmap participants ens -- Dynamic t (Map.Map Text Participant)
-  let status = fmap wsStatus ctx --ensemble status
-  anonymous <- holdUniqDyn $ fmap anonymousParticipants ens -- Dynamic t Int
 
-  -- divClass "ensemble-name-container code-font" $ do
-  --   divClass "ensemble-name" $ do
-  --     term Term.Ensemble >>= dynText
-  --     text ": "
-  --     dynText ensName
+  uHandle <- userHandle
+  ensName <- ensembleName
+  ensParticipants <- participants
+  anonymous <- anonymousParticipants
+  -- status <- wsStatus
 
   divClass "statusWidgetScrollableContainer" $ do
     divClass "infoContainer" $ do
@@ -124,8 +112,8 @@ participantFPSLatencyAndLoad :: MonadWidget t m => Text ->  Dynamic t Participan
 participantFPSLatencyAndLoad name part = do
   let latency' = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
   let load' = fmap (showt . mainLoad) part
-  let fps' = fmap (showt . animationFPS) part
-  let animationLoad' = fmap (showt . animationLoad) part
+  let fps' = fmap (showt . Participant.animationFPS) part
+  let animationLoad' = fmap (showt . Participant.animationLoad) part
   (dynText $ latency' <> constDyn "ms " <> load' <> constDyn "% " <> fps') >> (term Term.FPS >>= dynText) >> (dynText $ constDyn "(" <> animationLoad' <> constDyn ")")
 
 participantLatency :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
@@ -140,8 +128,8 @@ participantLoad name part = do
 
 participantFPS :: MonadWidget t m => Text ->  Dynamic t Participant -> W t m ()
 participantFPS name part = do
-  let fps' = fmap (showt . animationFPS) part
-  let animationLoad' = fmap (showt . animationLoad) part
+  let fps' = fmap (showt . Participant.animationFPS) part
+  let animationLoad' = fmap (showt . Participant.animationLoad) part
   dynText fps' >> (term Term.FPS >>= dynText) >> (dynText $ constDyn "(" <> animationLoad' <> constDyn "ms)")
 
 participantIP :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
@@ -177,7 +165,7 @@ attrs b = "class" =: "code-font" <> "style" =: ("pointer-events: " <> pevents b 
     bevents False = ""
 
 location' :: Participant -> Text
-location' p = f (Estuary.Types.Participant.location p)
+location' p = f (Participant.location p)
   where
     f x | x == "" = x
         | otherwise = "@" <> x
@@ -186,7 +174,7 @@ participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m (
 participantNameWidget name part =  text name
 
 participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
-participantLocationWidget name part = dynText $ fmap Estuary.Types.Participant.location part
+participantLocationWidget name part = dynText $ fmap Participant.location part
 
 participantActivityWidget :: MonadWidget t m => Event t UTCTime -> Text -> Dynamic t Participant -> m ()
 participantActivityWidget t name part =  do

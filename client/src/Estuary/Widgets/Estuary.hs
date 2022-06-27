@@ -108,7 +108,7 @@ estuaryWidget rEnv iSettings riM keyboardShortcut = divClass "estuary" $ mdo
   let iCtx = initialContext nowUtc
   ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
 
-  liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas riM
+  liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas iCanvas riM
 
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
   (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
@@ -176,6 +176,7 @@ estuaryWidget rEnv iSettings riM keyboardShortcut = divClass "estuary" $ mdo
   performDynamicsMode rEnv settings
   performPunctualAudioInputMode rEnv settings
   performTheme settings
+  performSuperDirt rEnv settings
 
   -- requests up to server
   let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
@@ -241,11 +242,19 @@ pollRenderInfo riM = do
   holdDyn riInitial newInfo
 
 
-  -- when the superDirt flag changes, make it so
-  -- TODO: this is broken, needs to be re-implemented!!!
-  -- let sd = superDirt rEnv
-  -- sdOn <- holdUniqDyn $ fmap superDirtOn cDyn
-  -- performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
+{- performContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
+performContext cMvar cDyn = do
+  iCtx <- sample $ current cDyn
+  performEvent_ $ fmap (liftIO . (\x -> swapMVar cMvar x >> return ())) $ updated cDyn -- transfer whole Context for render/animation threads
+  -}
+
+performSuperDirt :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performSuperDirt rEnv settings = do
+  let sd = superDirt rEnv
+  iSettings <- sample $ current settings
+  liftIO $ setActive sd (Settings.superDirtOn iSettings)
+  sdOn <- holdUniqDyn $ fmap Settings.superDirtOn settings
+  performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
 performTheme :: MonadWidget t m => Dynamic t Settings -> m ()
 performTheme settings = do

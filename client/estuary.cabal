@@ -46,6 +46,7 @@ library
       Estuary.Render.Renderer
       Estuary.Render.SuperDirt
       Estuary.Render.WebDirt
+      Estuary.Render.WebSerial
       Estuary.Resources
       Estuary.Resources.AudioResource
       Estuary.Resources.Loadable
@@ -56,7 +57,6 @@ library
       Estuary.Tutorials.Punctual
       Estuary.Tutorials.TidalCyclesBasics
       Estuary.Types.AnimationState
-      Estuary.Types.Context
       Estuary.Types.EnsembleC
       Estuary.Types.Hint
       Estuary.Types.NoteEvent
@@ -85,7 +85,6 @@ library
       Estuary.Widgets.Notepad
       Estuary.Widgets.Reference
       Estuary.Widgets.Reflex
-      Estuary.Widgets.ResourceWidget
       Estuary.Widgets.Roulette
       Estuary.Widgets.Router
       Estuary.Widgets.Sequencer
@@ -143,7 +142,6 @@ library
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable
@@ -194,7 +192,6 @@ executable Estuary
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable
@@ -254,7 +251,6 @@ executable interaction-test
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable
@@ -312,7 +308,6 @@ executable simple-test
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable
@@ -368,7 +363,6 @@ test-suite clientTest
     , tidal
     , tidal-parse
     , time
-    , timeNot
     , transformers
     , tuple
     , witherable

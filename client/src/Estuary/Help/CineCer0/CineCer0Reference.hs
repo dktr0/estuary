@@ -4,7 +4,6 @@ module Estuary.Help.CineCer0.CineCer0Reference where
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.W
@@ -130,7 +129,7 @@ funcionsCineCer0 = el "div" $ do
     ])
   --quant
   el "ul" $ do
-    el "li" $ elClass "div" "ieRef" $ text "quant 4 0 $ hsv (ramp 0.5 0 0.66) 0.5 0.6 $ font \"Times New Romans\" $ size 5 $ text \"Ayer: hoy & mañana –de repente\" -- in the next beat multiple of 4 the change will take place, test it with this miniTidal code: every 4 (#speed \"-0.5\") $ s \"cp\"" 
+    el "li" $ elClass "div" "ieRef" $ text "quant 4 0 $ hsv (ramp 0.5 0 0.66) 0.5 0.6 $ font \"Times New Romans\" $ size 5 $ text \"Ayer: hoy & mañana –de repente\" -- in the next beat multiple of 4 the change will take place, test it with this miniTidal code: every 4 (#speed \"-0.5\") $ s \"cp\""
   --ramp
   el "ul" $ do
     el "li" $ elClass "div" "ieRef" $ text "setSize (ramp 3 0 0.5) $ video \"videos/hogweed.mov\""

@@ -4,7 +4,6 @@ module Estuary.Help.CineCer0.CineCer0 where
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.W

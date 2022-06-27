@@ -89,7 +89,7 @@ cleanDevStage: cleanStage
 
 stageStaticAssets: prepStage
 	@ echo "stageStaticAssets:"
-	cp -Rf $(WEBDIRT)/* $(STAGING_ROOT)/Estuary.jsexe/WebDirt
+	cp -Rf $(WEBDIRT)/dist/* $(STAGING_ROOT)/Estuary.jsexe/WebDirt
 	cp -f $(HYDRA)/dist/hydra-synth.js $(STAGING_ROOT)/Estuary.jsexe/
 	cp -f $(PEGJS)/* $(STAGING_ROOT)/Estuary.jsexe/
 	$(CP_RECURSIVE) static/*.js $(STAGING_ROOT)/Estuary.jsexe/
@@ -198,8 +198,8 @@ selfCertificates:
 	openssl x509 -req -in cert.csr -signkey privkey.pem -out cert.pem
 
 stageLocalWebDirt: prepStage prepDevStage
-	cp -Rf ~/WebDirt/* $(STAGING_ROOT)/Estuary.jsexe/WebDirt/
-	cp -Rf ~/WebDirt/* $(DEV_STAGING_ROOT)/Estuary.jsexe/WebDirt/
+	cp -Rf ~/WebDirt/dist/* $(STAGING_ROOT)/Estuary.jsexe/WebDirt/
+	cp -Rf ~/WebDirt/dist/* $(DEV_STAGING_ROOT)/Estuary.jsexe/WebDirt/
 
 clientTest:
 	@ echo "clientTest:"

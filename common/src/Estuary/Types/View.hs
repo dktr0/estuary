@@ -18,6 +18,8 @@ data View =
   EmptyView |
   Div Text [View] | -- a div with an arbitrary CSS class (specified by first argument to constructor)
   Views [View] |
+  Columns [View] |
+  Rows [View] |
   Paragraph [View] | -- a block of explanatory text
   BorderDiv [View] |
   Link Text [View] | -- a clickable link
@@ -27,9 +29,9 @@ data View =
   Text TranslatableText |
   LabelView Int |
   StructureView Int |
-  CodeView Int Int| -- first int is zone to edit, second int is number of lines in editor
+  CodeView Int Int [Text] | -- first int is zone to edit, second int is number of lines in editor, text is style
   SequenceView Int |
-  Example TextNotation Text | -- a clickable text-code example
+  Snippet Int Bool TextNotation Text | -- a clickable text-code example
   EnsembleStatusView |
   TempoView |
   RouletteView Int Int |
@@ -40,8 +42,8 @@ data View =
   SeeTimeView Int |
   NotePadView Int |
   IFrame Text | -- embedded web page
-  CalendarEventView Int
-
+  CalendarEventView Int |
+  LoadView Int
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where
