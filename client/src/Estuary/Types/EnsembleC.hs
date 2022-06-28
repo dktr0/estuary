@@ -92,8 +92,9 @@ nameOfActiveView e = either (const "(local view)") id $ view e
 selectPresetView :: Text -> EnsembleC -> EnsembleC
 selectPresetView t e = e { view = Right t }
 
+{- factored out already into W monad
 selectLocalView :: View -> EnsembleC -> EnsembleC
-selectLocalView v e = e { view = Left v }
+selectLocalView v e = e { view = Left v } -}
 
 -- replaceStandardView selects a standard view while also redefining it
 -- according to the provided View argument. (To be used when a custom view is
@@ -126,10 +127,11 @@ commandToHint _ Terminal.ResetViews = Just $ LogMessage  (Map.fromList [(English
 commandToHint _ Terminal.ResetTempo = Just $ LogMessage  (Map.fromList [(English, "tempo reset"), (Español, "tempo reiniciado")])
 commandToHint _ Terminal.Reset = Just $ LogMessage (Map.fromList [(English, "(full) reset"), (Español, "reinicio (completo)")])
 commandToHint es Terminal.ShowResources = Just $ LogMessage $ english $ showResourceOps $ resourceOps $ ensemble es
+commandToHint _ (Terminal.LocalView v) = Just $ SetLocalView v
 commandToHint _ _ = Nothing
 
+-- WORK IN PROGRESS: this definition should cease to exist, all patterns migrate above to commandToHint
 commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
-commandToStateChange (Terminal.LocalView v) es = selectLocalView v es
 commandToStateChange (Terminal.PresetView t) es = selectPresetView t es
 commandToStateChange (Terminal.PublishView t) es = replaceStandardView t (activeView es) es
 commandToStateChange _ es = es

@@ -10,6 +10,7 @@ import Estuary.Utility
 import Estuary.Types.Definition
 import Estuary.Types.TranslatableText
 import Estuary.Client.Settings
+import Estuary.Types.View
 
 data Hint =
   SampleHint Text |
@@ -17,7 +18,8 @@ data Hint =
   SetGlobalDelayTime Double |
   SilenceHint |
   ZoneHint Int Definition |
-  ChangeSettings (Settings -> Settings)
+  ChangeSettings (Settings -> Settings) |
+  SetLocalView View
 
 justGlobalDelayTime :: [Hint] -> Maybe Double
 justGlobalDelayTime = lastOrNothing . mapMaybe f

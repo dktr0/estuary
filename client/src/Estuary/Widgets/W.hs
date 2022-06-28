@@ -18,11 +18,13 @@ import Data.IORef
 import Data.Time
 import Data.Map as Map
 import Data.IntMap
+import Data.Sequence
 import Text.Read (readMaybe)
 
 import qualified Sound.Punctual.Resolution as Punctual
 
 import Estuary.Types.Language
+import Estuary.Types.View
 import qualified Estuary.Render.R as R
 import Estuary.Render.DynamicsMode
 import Estuary.Types.Hint
@@ -32,8 +34,13 @@ import Estuary.Resources
 import qualified Estuary.Types.RenderInfo as RenderInfo
 import qualified Estuary.Client.Settings as Settings
 import qualified Estuary.Types.ServerInfo as ServerInfo
+import Estuary.Types.EnsembleC as EnsembleC
+import Estuary.Types.Ensemble as Ensemble
 import Estuary.Types.Participant
-
+import Estuary.Types.Tempo
+import Estuary.Types.Definition
+import Estuary.Types.ResourceOp
+import Estuary.Types.Chat
 
 -- If we have widget-producing actions and we make them in the (W t m) monad
 -- we will be able to do all the normal things we can do in the more general
@@ -46,7 +53,8 @@ data WidgetEnvironment t = WidgetEnvironment {
   _renderInfo :: Dynamic t RenderInfo.RenderInfo,
   _resourceMaps :: Dynamic t ResourceMaps,
   _settings :: Dynamic t Settings.Settings,
-  _serverInfo :: Dynamic t ServerInfo.ServerInfo
+  _serverInfo :: Dynamic t ServerInfo.ServerInfo,
+  _ensembleC :: Dynamic t EnsembleC
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -69,24 +77,6 @@ renderEnvironment = lift $ asks _renderEnvironment
 -- Get a dynamically-updated map of the current maps of "fixed" resources (audiofiles, images, videos)
 resourceMaps :: Monad m => W t m (Dynamic t ResourceMaps)
 resourceMaps = lift $ asks _resourceMaps
-
-
--- Get information from the EnsembleC
--- WORK IN PROGRESS / PLACEHOLDERS
--- (making the W t monad the interface for all widget-side queries into
--- fundamental aspects of ensemble state)
-
-userHandle :: (Monad m, Reflex t) => W t m (Dynamic t Text)
-userHandle = pure $ pure "userHandle" -- PLACEHOLDER
-
-ensembleName :: (Monad m, Reflex t) => W t m (Dynamic t Text)
-ensembleName = pure $ pure "ensembleName" -- PLACEHOLDER
-
-participants :: (Monad m, Reflex t) => W t m (Dynamic t (Map.Map Text Participant))
-participants = pure $ pure Map.empty -- PLACEHOLDER
-
-anonymousParticipants :: (Monad m, Reflex t) => W t m (Dynamic t Int)
-anonymousParticipants = pure $ pure 0 -- PLACEHOLDER
 
 
 -- Get information from the ServerInfo
@@ -294,6 +284,60 @@ toggleTerminalVisible :: (Reflex t, MonadFix m, MonadHold t m) => Event t a -> W
 toggleTerminalVisible x = do
   y <- current <$> terminalVisible
   setTerminalVisible $ attachWith (\a _ -> not a) y x
+
+
+-- get/query/set ensemble state
+
+askEnsemble :: (Reflex t, MonadFix m, MonadHold t m, Eq a) => (EnsembleC -> a) -> W t m (Dynamic t a)
+askEnsemble f = asks _ensembleC >>= holdUniqDyn . fmap f
+
+userHandle :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+userHandle = askEnsemble EnsembleC.userHandle
+
+location :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+location = askEnsemble EnsembleC.location
+
+password :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+password = askEnsemble EnsembleC.password
+
+view :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (Either View Text))
+view = askEnsemble EnsembleC.view
+
+activeView :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t View)
+activeView = askEnsemble EnsembleC.activeView
+
+nameOfActiveView :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+nameOfActiveView = askEnsemble EnsembleC.nameOfActiveView
+
+setLocalView :: (Monad m, Reflex t) => Event t View -> W t m ()
+setLocalView = hint . fmap SetLocalView
+
+ensembleName :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t Text)
+ensembleName = askEnsemble (Ensemble.ensembleName . ensemble)
+
+tempo :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t Tempo)
+tempo = askEnsemble (Ensemble.tempo . ensemble)
+
+zones :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (IntMap Definition))
+zones = askEnsemble (Ensemble.zones . ensemble)
+
+views :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (Map Text View))
+views = askEnsemble (Ensemble.views . ensemble)
+
+resourceOps :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (Seq ResourceOp))
+resourceOps = askEnsemble (Ensemble.resourceOps . ensemble)
+
+chats :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t [Chat])
+chats = askEnsemble (Ensemble.chats . ensemble)
+
+participants :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (Map.Map Text Participant))
+participants = askEnsemble (Ensemble.participants . ensemble)
+
+anonymousParticipants :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+anonymousParticipants = askEnsemble (Ensemble.anonymousParticipants . ensemble)
+
+
+
 
 
 -- A basic checkbox widget that is updated from elsewhere (eg. collaborative editing)

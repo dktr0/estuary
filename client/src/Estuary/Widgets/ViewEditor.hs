@@ -12,64 +12,50 @@ import Control.Monad(liftM)
 import Text.Parsec
 
 import Estuary.Widgets.Reflex
-import Estuary.Types.EnsembleC
 import Estuary.Types.View.Parser
 import Language.Haskellish as LH
 import qualified Language.Haskell.Exts as Exts
-
 
 import Estuary.Types.View
 import Estuary.Widgets.Text
 import Estuary.Widgets.W
 
--- viewParseResultToText :: Either String ParseError -> Text
-viewParseResultToText :: Either String View -> Text
-viewParseResultToText v = do
-  case v of
-    Left errMsg -> "Error"
-    Right view -> ""
 
--- viewToContextChange :: Either String ParseError -> Maybe ContextChange
-viewToContextChange :: Either String View -> Maybe ContextChange
-viewToContextChange v = do
-  case v of
-    Left _ -> Nothing
-    Right view -> Just $ modifyEnsembleC $ selectLocalView view
-
-buildError :: MonadWidget t m => Text -> W t m ()
-buildError x = if x == "" then return () else syntaxErrorWidget x
-
-viewEditor :: MonadWidget t m => W t m (Event t ContextChange)
+viewEditor :: MonadWidget t m => W t m ()
 viewEditor = mdo
-  ctx <- context
 
-  -- let viewList = fromList [(1, "default"), (2, "cybernetic"), (3, "blackbox"), (4, "memorias")]
-  -- viewChange <- _dropdown_change <$> dropdown 1.0 (constDyn viewList) (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font"))
   runViewButton <- divClass "config-entry display-inline-block primary-color ui-font" $ buttonWithClass "Run"
 
-  let y = fmap buildError viewParseResult
-  widgetHold (return ()) y
+  widgetHold (return ()) $ fmap buildError viewParseResult
 
-  currentView <- holdUniqDyn $ fmap (activeView . ensembleC) ctx
+  currentView <- activeView
   let incomingView = updated $ fmap dumpView currentView
   initialView <- sample $ current currentView
   let initialText = dumpView initialView
   (textValue,_,shiftEnter) <- textWidget 5 (constDyn False) initialText incomingView
   let runViewEvent = leftmost [runViewButton, shiftEnter]
   let evaledText = tag (current textValue) runViewEvent
-  let parsedInput = fmap parseViewParser evaledText -- fmap (parse viewParser "") evaledText
+  let parsedInput = fmap parseViewParser evaledText -- Event t (Either String View)
   let viewParseResult = fmap viewParseResultToText parsedInput
-  let viewCtxChange = fmapMaybe viewToContextChange parsedInput
 
-  -- text "View name: "
-  -- let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
-  -- liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs
-  -- buttonWithClass "Publish"
+  -- WORKING HERE: need to map parsedInput from Event t Either... to Event t Maybe... and use fmapMaybe
+  -- setLocalView $ fmapMaybe ...
 
-  return viewCtxChange
+  pure ()
 
 
-parseViewParser :: T.Text -> Either String View -- Text -> Either ParseError Command
+viewParseResultToText :: Either String View -> Text
+viewParseResultToText v = do
+  case v of
+    Left errMsg -> "Error"
+    Right view -> ""
+
+
+buildError :: MonadWidget t m => Text -> W t m ()
+buildError x = if x == "" then return () else syntaxErrorWidget x
+
+
+parseViewParser :: T.Text -> Either String View
 parseViewParser s = (f . Exts.parseExp) $ T.unpack s
     where
       f (Exts.ParseOk x) = fmap fst $ runHaskellish viewParser () x -- Either String a

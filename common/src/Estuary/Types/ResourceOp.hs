@@ -17,7 +17,7 @@ data ResourceOp =
   AppendResource ResourceType Text Text | -- first Text is URL, second Text is bankName
   DeleteResource ResourceType Location |
   ResourceListURL Text
-  deriving (Show,Generic)
+  deriving (Show,Generic,Eq)
 
 instance ToJSON ResourceOp where
   toEncoding = genericToEncoding defaultOptions
