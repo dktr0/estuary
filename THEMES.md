@@ -6,7 +6,7 @@ This document will outline how to customize Estuary's interface themes.
 
 - Within estuary's main folder look for the 'static' folder. Inside 'static', access to the 'css-custom' folder.
 
-- Insde 'css-custom' you'll find Estuary's current themes. You can explore all of them to see how they are put together.
+- Inside 'css-custom' you'll find Estuary's current themes. You can explore all of them to see how they are put together.
 
 - To create a new theme, create a new css file inside of the 'css-custom' folder. To get started, copy the code from one of the current themes in your new css file.
 

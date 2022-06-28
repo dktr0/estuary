@@ -35,7 +35,7 @@ import Data.Char
 import Data.IORef
 
 import Sound.MusicW.AudioContext
--- import qualified Sound.Seis8s.Parser as Seis8s
+import qualified Sound.Seis8s.Parser as Seis8s
 import Estuary.Languages.Punctual
 import Estuary.Languages.CineCer0
 import Estuary.Languages.LocoMotion
@@ -388,7 +388,7 @@ renderTextProgramChanged c z (TimeNot,x,eTime) = (parseZone timeNot) c z x eTime
 
 
 
-{- renderTextProgramChanged c z (Seis8s,x,eTime) = do
+renderTextProgramChanged c z (Seis8s,x,eTime) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
   case parseResult of
     Right p -> do
@@ -396,7 +396,7 @@ renderTextProgramChanged c z (TimeNot,x,eTime) = (parseZone timeNot) c z x eTime
       setBaseNotation z Seis8s
       setEvaluationTime z eTime
       modify' $ \xx -> xx { seis8ses = insert z p $ seis8ses xx }
-    Left e -> setZoneError z (T.pack $ show e) -}
+    Left e -> setZoneError z (T.pack $ show e)
 
 renderTextProgramChanged c z (JSoLang x,y,eTime) = do
   parseResult <- liftIO $ JSoLang.define y
@@ -453,15 +453,9 @@ renderTextProgramAlways c z eTime = do
   renderBaseProgramAlways c z $ baseNotation
 
 renderBaseProgramAlways :: Context -> Int -> Maybe TextNotation -> R ()
-renderBaseProgramAlways c z (Just (TidalTextNotation _)) = do
-  xs <- (scheduleTidalEvents miniTidal) c z
-  pushTidalEvents xs
-renderBaseProgramAlways c z (Just TimeNot) = do
-  xs <- (scheduleWebDirtEvents timeNot) c z
-  pushWebDirtEvents xs
-
-
-{- renderBaseProgramAlways c z (Just Seis8s) = do
+renderBaseProgramAlways c z (Just (TidalTextNotation _)) = (scheduleTidalEvents miniTidal) c z >>= pushTidalEvents
+renderBaseProgramAlways c z (Just TimeNot) = (scheduleWebDirtEvents timeNot) c z >>= pushWebDirtEvents
+renderBaseProgramAlways c z (Just Seis8s) = do
   s <- get
   let p = IntMap.lookup z $ seis8ses s
   case p of
@@ -470,7 +464,7 @@ renderBaseProgramAlways c z (Just TimeNot) = do
       let wStart = renderStart s
       let wEnd = renderEnd s
       pushNoteEvents $ Seis8s.render p' theTempo wStart wEnd
-    Nothing -> return () -}
+    Nothing -> return ()
 renderBaseProgramAlways _ _ _ = return ()
 
 

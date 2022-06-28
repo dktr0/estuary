@@ -4,18 +4,23 @@ module Estuary.Widgets.CalendarEvent where
 
 import Reflex
 import Reflex.Dom
+import Reflex.Dynamic
+
 import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
 import Data.Time
+import Data.Time.LocalTime
 import GHCJS.DOM.EventM
 import qualified Data.Fixed as F
 import Data.Map as Map
+import Data.IntMap.Strict
+import Data.Map.Strict as M
 import Data.Maybe as Maybe
 import Control.Monad.IO.Class
 import Control.Monad(liftM)
 import qualified Data.Char as C
-
+import Safe.Foldable (maximumMay)
 
 import Estuary.Types.Context
 import Estuary.Types.Language
@@ -23,13 +28,192 @@ import Estuary.Widgets.W
 import Estuary.Types.Definition
 import Estuary.Widgets.Reflex
 
-calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Variable t CalendarEvent)
-calendarEventWidget delta = divClass "calendarEventWidgetMainContainer" $ mdo
-  -- thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
-  -- sampledDelta <- sample $ current delta
-  -- d <- holdDyn sampledDelta $ localUpdates
-  -- dynText $ fmap (T.pack . show) delta
 
+
+
+calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvents -> m (Variable t CalendarEvents)
+calendarEventWidget deltasDown = mdo
+  plusButton <- el "div" $ button "+" -- Event t ()
+  initialValue <- sample $ current deltasDown -- Map Int CalendarEvent
+  let initialWidget = calendarEventsBuilder initialValue
+  let widgetUpdates = fmap calendarEventsBuilder calendarEvs
+  x <- widgetHold initialWidget widgetUpdates -- :: m (Dynamic t (Event t CalendarEvents))
+  let widgetEvs = switchDyn x -- Event t CalendarEvents
+  let plusButtonEvs = attachWith appendNewCalendarEvent (current $ currentValue v) plusButton
+  let localEvs = leftmost [widgetEvs,plusButtonEvs]
+  v <- variable deltasDown localEvs
+  let calendarEvs = traceEvent "calendarEvs" $ updated $ currentValue v
+  pure v
+
+
+calendarEventsBuilder :: MonadWidget t m => CalendarEvents -> m (Event t CalendarEvents)
+calendarEventsBuilder prevMap = do
+  xs <- mapM calendarEventBuilder prevMap -- Map Int (Event t CalendarEvent)
+  let updateMapEv = mergeMap xs -- Event t (Map Int CalendarEvent)
+  pure $ fmap (\updateMap -> M.union updateMap prevMap) updateMapEv
+
+{-
+rethinking...
+
+----------------------- initial value -> local edits that do require rebuild, that don't require rebuild
+f :: MonadWidget t m => SomeType -> m (Event t SomeType, Event t SomeType)
+-- f is a replacement for calendarEventsBuilder
+
+calendarEventsBuilder :: MonadWidget t m => CalendarEvents -> m (Event t CalendarEvents,Event t CalendarEvents)
+calendarEventsBuilder initialMap = do
+  xs <- mapM f initialMap  -- Map Int (Event t CalendarEvent,Event t CalendarEvent)
+  let rebuild = mergeMap $ fmap fst xs -- Event t (Map Int CalendarEvent)
+  let noRebuild = mergeMap $ fmap snd xs -- Event t (Map Int CalendarEvent)
+  let updates = leftmost [rebuild,noRebuild]
+  v <- foldDyn (\updateMap prevMap -> M.union updateMap prevMap) initialMap updates
+  let thisRebuild = tagPromptlyDyn v rebuild
+  let thisNoRebuild = tagPromptlyDyn v noRebuild
+  pure (thisRebuild,thisNoRebuild)
+
+-}
+
+calendarEventBuilder :: MonadWidget t m => CalendarEvent -> m (Event t CalendarEvent)
+calendarEventBuilder x@(CalendarEvent txt calTime) = do
+  ev <- calendarEventWidgetEv (pure x)
+  pure $ fmap (\f -> f x) ev
+
+
+
+
+
+
+
+appendNewCalendarEvent :: CalendarEvents -> () -> CalendarEvents
+appendNewCalendarEvent x _ = M.insert (length x) (CalendarEvent "test" (CalendarTime today (Recurrence Once today))) x
+
+
+-- CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
+-- CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence }
+-- data Recurrence = Recurrence { periodicity :: Periodicity, endDate :: ZonedTime} deriving  (Eq, Show, Generic)
+today :: ZonedTime
+today = ZonedTime (LocalTime (fromGregorian 2022 05 11) (TimeOfDay 15 30 00)) utc
+
+
+initialIntMapBuilder :: MonadWidget t m => Map Int CalendarEvent -> m (Event t (Map Int CalendarEvent))
+initialIntMapBuilder xs = do
+  let xs' = fmap constDyn xs
+  mapM myCalendarEventWidget xs' >>= (return . mergeMap)
+-- note: mergeIntMap :: Reflex t => IntMap (Event t a) -> Event t (IntMap a)
+
+intMapBuilder :: MonadWidget t m => Dynamic t (Map Int CalendarEvent) -> m (Event t (Map Int CalendarEvent)) -- this has to be Event t a
+intMapBuilder xs = do
+  xs' <- sample $ current xs -- (Map Int CalendarEvent)
+  let xs'' = fmap constDyn xs' -- (Map Int (constDyn CalendarEvent))
+  newMap <- mapM myCalendarEventWidget xs'' --  m (Map Int CalendarEvent)
+  return $ mergeMap newMap --Event t (Map Int CalendarEvent)
+
+myCalendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvent -> m (Event t CalendarEvent) -- this has to be Event t a
+myCalendarEventWidget x = do
+  rowInput <- textInputW  $ constDyn "test" -- (Event t Text)
+  return $ updated x
+
+makeIntMapCalendarEventWidget :: MonadWidget t m => Event t () -> Dynamic t (Map Int CalendarEvent) -> m (Dynamic t (Map Int CalendarEvent))
+makeIntMapCalendarEventWidget evButton delta = do
+  sampledDelta <- sample $ current delta -- Map Int CalendarEvent
+  let deltaLength = (length sampledDelta) - 1-- Int
+  counter <- foldDyn (+) (deltaLength :: Int)  (1 <$ evButton) -- Dynamic Int
+  let intMapCalendarEvent = fmap makeIntMapCalendarEvent counter -- Dynamic Text
+  return intMapCalendarEvent -- Dynamic Text
+
+makeIntMapCalendarEvent :: Int -> Map Int CalendarEvent
+makeIntMapCalendarEvent count  = do
+  let xs = [0 .. count]
+  M.fromList $ fmap (\x -> (x, (CalendarEvent "test" (CalendarTime today (Recurrence Once today))))) xs
+
+addNewText :: Text -> Map Int Text -> Map Int Text
+addNewText newtext delta = do
+  let key' = (length delta) + 1
+  M.insert key' newtext delta
+
+holdWidget :: MonadWidget t m => m ()
+holdWidget = el "div" $ do
+  eSwitch <- el "div" $ button "+" -- Event t ()
+  dToggle <- toggle True eSwitch -- Event t Bool
+  let
+    eShow1 = ffilter id . updated $ dToggle
+    eShow2 = ffilter not . updated $ dToggle
+  deText <- widgetHold singleCalendarWidgetEv . leftmost $ [singleCalendarWidgetEv <$ eShow1, singleCalendarWidgetEv <$ eShow2]
+  return ()
+
+
+
+-- intWidget :: ... => Dynamic t Int -> m (Variable t Int)
+singleCalendarWidget' :: MonadWidget t m => Dynamic t CalendarEvent -> m (Dynamic t CalendarEvent)
+singleCalendarWidget' delta = mdo
+  sampledDelta <- sample $ current delta
+  rowInput <- textInputW  $ constDyn "test"
+  return delta
+
+
+singleCalendarWidgetEv :: MonadWidget t m =>  m (Dynamic t CalendarEvent)
+singleCalendarWidgetEv = mdo
+  rowInput <- textInputW  $ constDyn "test"
+  return $ constDyn $ CalendarEvent "test" (CalendarTime today (Recurrence Once today))
+
+singleCalendarWidget :: MonadWidget t m => Dynamic t CalendarEvent -> m (Variable t CalendarEvent)
+singleCalendarWidget delta = mdo
+  sampledDelta <- sample $ current delta
+  rowInput <- textInputW  $ constDyn "test"
+  let descF = fmap changeDescription rowInput -- Event t (CalendarEvent -> CalendarEvent)
+  let localUpdates = attachWith (flip ($)) (current $ currentValue v) descF -- Event t CalendarEvent
+  v <- variable delta localUpdates
+  return v
+
+
+insertCalendarToList' :: CalendarEvent -> Map Int CalendarEvent
+insertCalendarToList' x1 = do
+  M.insert 1 x1 (M.fromList [])
+
+
+insertCalendarToList :: (Int, CalendarEvent) -> (Int, CalendarEvent) -> Map Int CalendarEvent
+insertCalendarToList (i1, x1) (i2, x2) = do
+  let x = M.insert i1 x1 (M.fromList [])
+  M.insert i2 x2 x
+
+--(CalendarEvent "test" (CalendarTime today (Recurrence Once today)))
+
+calendarEventRow' :: MonadWidget t m => Int -> Dynamic t CalendarEvent -> m (Dynamic t (CalendarEvent, Event t ()))
+calendarEventRow' key delta = divClass "descriptionWidgetInput" $ do
+   deleteMe <- clickableDivClass' "-" "" ()
+   rowInput <- textInputW  $ constDyn "test"
+   let val' = constDyn $ CalendarEvent "test" (CalendarTime today (Recurrence Once today))
+   return $ fmap (\x -> (x, deleteMe)) val' -- Dynamic t (calendarEv, Event t())
+
+
+calendarEventRow :: MonadWidget t m =>  CalendarEvent -> Event t CalendarEvent -> m (Dynamic t (CalendarEvent, Event t ()))
+calendarEventRow val edits = divClass "descriptionWidgetInput" $ do
+   deleteMe <- clickableDivClass' "-" "" ()
+   rowInput <- textInputW  $ constDyn "test"
+   let val' = constDyn val -- $ CalendarEvent "test" (CalendarTime today (Recurrence Once today))
+   return $ fmap (\x -> (x, deleteMe)) val' -- Dynamic t (calendarEv, Event t())
+
+
+updatedCalendarList :: MonadWidget t m => m (Event t (Map Int (Maybe CalendarEvent)))
+updatedCalendarList = return $ updated (constDyn $ Map.singleton 1 (Just $ CalendarEvent "test" (CalendarTime today (Recurrence Once today))))
+
+
+
+
+-- calendarEventWidget' :: MonadWidget t m => Dynamic t (Map Int  CalendarEvent) -> W t m (Variable t (Map Int  CalendarEvent))
+-- calendarEventWidget' delta =  mdo
+--   sampledDelta <- sample $ current delta
+--   showDelta <- holdDyn sampledDelta $ leftmost [calendarEv, updated delta]
+--   dynText $ fmap (T.pack. show) showDelta
+--   calendarEv <- addCalendarEvent delta -- (Event t (Map Int  CalendarEvent))
+--   -- let insertCalendarF = fmap insertCalendarEvent calendarEv -- Event t ( IntMap CalendarEvent -> IntMap CalendarEvent)
+--   -- let localF = mergeWith (.) [insertCalendarF] -- Event t (CalendarEvent -> CalendarEvent)--
+--   -- let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t CalendarEvent
+--   v <- variable delta calendarEv
+--   return v
+
+
+calendarEventWidgetEv :: MonadWidget t m => Dynamic t CalendarEvent -> m (Event t (CalendarEvent -> CalendarEvent))
+calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
   autoUpdateStartingDateEv <- autoUpdateStartingDate $ fmap getStartingDateFromCalendarEv delta
 
   (descEv, dateEv, changePeriodicityEv, changeEndDateEv) <- divClass "calendarEventWidgetSubContainer" $ do
@@ -52,9 +236,44 @@ calendarEventWidget delta = divClass "calendarEventWidgetMainContainer" $ mdo
   let changeEndDateF = fmap changeEndDate changeEndDateEv
 
   let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF ] -- Event t (CalendarEvent -> CalendarEvent)--
-  let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t CalendarEvent
-  v <- variable delta localUpdates
-  return v
+  -- let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t CalendarEvent
+  -- v <- variable delta localUpdates
+  -- return v
+  return localF -- -- Event t (CalendarEvent -> CalendarEvent)
+
+-- calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Variable t CalendarEvent)
+-- calendarEventWidget delta = divClass "calendarEventWidgetMainContainer" $ mdo
+--   -- thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
+--   -- sampledDelta <- sample $ current delta
+--   -- d <- holdDyn sampledDelta $ localUpdates
+--   -- dynText $ fmap (T.pack . show) delta
+--
+--   autoUpdateStartingDateEv <- autoUpdateStartingDate $ fmap getStartingDateFromCalendarEv delta
+--
+--   (descEv, dateEv, changePeriodicityEv, changeEndDateEv) <- divClass "calendarEventWidgetSubContainer" $ do
+--     descEv' <- divClass "detailsContainer" $ divClass "descriptionWidget code-font background" $ descriptionWidget $ fmap getDetailsFromCalendarEv delta -- Event t Text
+--
+--     dateEv' <- divClass "selectStartingDateContainer" $ do
+--         dateEv'' <- divClass "dateWidget code-font background" $ utcTimeOrLocalTimeWidget (fmap getStartingDateFromCalendarEv delta) -- Event t TimeZone
+--         return dateEv''
+--
+--     (changePeriodicityEv', changeEndDateEv') <- divClass "periodicity" $ do
+--       changePeriodicityEv'' <- divClass "selectPeriodicity" $ changePeriodicityWidget $ fmap (getPeriodicityFromRecurrence' . getRecurrenceFromCalendarEvent) delta
+--       changeEndDateEv'' <- divClass "endDateWidget code-font background" $ changeEndDateWidget changePeriodicityEv'' (fmap (getPeriodicityFromRecurrence' . getRecurrenceFromCalendarEvent) delta) $ fmap (localDay . zonedTimeToLocalTime . getEndDateFromCalendarEv) delta -- Event t Day
+--       return (changePeriodicityEv'', changeEndDateEv'')
+--     return (descEv', dateEv', changePeriodicityEv', changeEndDateEv'  {--, timeOfDayEv', zoneEv', utcTimeEv'--})
+--
+--   let descF = fmap changeDescription descEv -- Event t (CalendarEvent -> CalendarEvent)
+--   let autoUpdateStartingDateF = fmap startingDayAutoUpdate autoUpdateStartingDateEv
+--   let dateAndTimeF = fmap changeDateAndTime dateEv
+--   let changePeriodicityF = fmap changePeriodicity changePeriodicityEv
+--   let changeEndDateF = fmap changeEndDate changeEndDateEv
+--
+--   let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF ] -- Event t (CalendarEvent -> CalendarEvent)--
+--   let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t CalendarEvent
+--   v <- variable delta localUpdates
+--   return v
+
 
 
 changePeriodicity :: Periodicity -> CalendarEvent -> CalendarEvent
@@ -369,7 +588,7 @@ autoUpdateStartingDate defTime = do
   defTime' <- sample $ current defTime
   let defZonedTimeToUTC = zonedTimeToUTC defTime'
   nowUTC <- liftIO getCurrentTime
-  evTick <- tickLossy 1 nowUTC
+  evTick <- pure never -- tickLossy 1 nowUTC
   let evTime = _tickInfo_lastUTC <$> evTick
   nowUTC' <- holdDyn defZonedTimeToUTC evTime
   let nowUTCtoZonedTime = fmap (utcToZonedTime (zonedTimeZone defTime')) nowUTC' -- ZonedTime
