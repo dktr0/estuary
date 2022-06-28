@@ -33,7 +33,7 @@ dumpView (CollapsableView v) = "collapsable" <> dumpView v
 -- dumpView (Text t) = ...
 dumpView (LabelView x) = "label " <> showInt x
 dumpView (StructureView x) = "structure " <> showInt x
-dumpView (CodeView x y) = "code " <> showInt x <> " " <> showInt y
+dumpView (CodeView x y vs) = "code " <> showInt x <> " " <> showInt y <> " " <> (T.pack $ show vs)
 dumpView (SequenceView z) = "sequence " <> showInt z
 dumpView (Snippet z b tn txt) = "snippet " <> showInt z <> " " <> (boolToText b) <> " " <> (notationToText tn) <> (" \""<>(formatText txt)<>"\"")
 dumpView EnsembleStatusView = "ensembleStatus"
@@ -54,6 +54,7 @@ dumpView _ = " "
 
 dumpViews :: [View] -> T.Text
 dumpViews vs = "[" <> (T.intercalate "," $ fmap dumpView vs) <> "]"
+
 
 viewParser :: H View
 viewParser =  EmptyView <$ reserved "empty" -- localview empty
@@ -335,16 +336,19 @@ linkViewFunc s vx = Link s vx
 
 --
 codeViewView :: H View
-codeViewView =  codeViewView' <*> int
+codeViewView =  codeViewView' <*> listOftextLiteral
 
-codeViewView' :: H (Int -> View)
+codeViewView' :: H ([T.Text] -> View)
 codeViewView' =  codeViewView'' <*> int
 
-codeViewView'' :: H (Int -> Int -> View)
-codeViewView'' = codeViewViewFunc <$ (reserved "code")
+codeViewView'' :: H (Int -> [T.Text] -> View)
+codeViewView'' =  codeViewView''' <*> int
 
-codeViewViewFunc :: Int -> Int -> View
-codeViewViewFunc x y = CodeView x y
+codeViewView''' :: H (Int -> Int -> [T.Text] -> View)
+codeViewView''' = codeViewViewFunc <$ (reserved "code")
+
+codeViewViewFunc :: Int -> Int -> [T.Text] -> View
+codeViewViewFunc x y vs = CodeView x y vs
 
 --
 
@@ -403,6 +407,9 @@ textLiteral :: H T.Text
 textLiteral = do
   s <- string
   return $ T.pack s
+
+listOftextLiteral :: H [T.Text]
+listOftextLiteral = list textLiteral
 
 identifierText :: H T.Text
 identifierText = do

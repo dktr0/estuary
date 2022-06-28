@@ -63,7 +63,7 @@ import qualified Estuary.Render.WebDirt as WebDirt
 import qualified Estuary.Render.SuperDirt as SuperDirt
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
-import Estuary.Types.RenderState
+import Estuary.Types.RenderState hiding (LocoMotion)
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode

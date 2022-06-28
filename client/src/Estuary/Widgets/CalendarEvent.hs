@@ -95,36 +95,56 @@ today = makeZonedTime (fromGregorian 2022 05 11) (TimeOfDay 15 30 00) utc
 --   v <- variable delta localEdits -- (updated flattenedWidgets)
 --   return v
 
--- TODO: hacer que estas listas reciban un Map Int Text
+-- TODO: troubleshoot why my addnewcalendar function is only adding one calendar, stopping when there are 2 calendars.
 -- example :: MonadWidget t m => Dynamic t (IntMap Text) -> m (Variable t (IntMap Text))
+--option 1.
 calendarEventWidget' :: MonadWidget t m => Dynamic t (Map Int CalendarEvent) -> m (Variable t (Map Int CalendarEvent))
 calendarEventWidget' deltasDown = mdo
-  initialValue <- sample $ current deltasDown
   plusButton <- el "div" $ button "+" -- Event t ()
-  -- dToggle <- toggle True plusButton -- Event t Bool
-  -- let plusButton' = updated dToggle
-  x <- widgetHold (intMapBuilder deltasDown) $ (intMapBuilder $ currentValue v) <$ plusButton -- Dynamic (Event t Text)
-  let localEdits = never
+  initialValue <- sample $ current deltasDown -- Map Int CalendarEvent
+  let deltaLength = (length initialValue) - 1  -- Int
+  count <- foldDyn (+) (deltaLength :: Int) (1 <$ plusButton) -- Dynamic Int
+  let intMapCalendarEventRebuilt = fmap makeIntMapCalendarEvent count --Dynamic (Map Int CalendarEvent)
+  x <- widgetHold (initialIntMapBuilder initialValue) $ (intMapBuilder $ intMapCalendarEventRebuilt) <$ plusButton  -- Dynamic t (Event t (Map Int CalendarEvent)))
+  let localEdits = switchDyn x -- Event t Map Int CalendarEvent
   v <- variable deltasDown localEdits
   return v
 
--- intMapBuilder :: MonadWidget t m => Dynamic t Text -> m (Dynamic t Text) -- this has to be Event t a
-intMapBuilder :: MonadWidget t m => Dynamic t (Map Int CalendarEvent) -> m (Event t (Map Int CalendarEvent)) -- this has to be Event t a
-intMapBuilder tx = do
-  rowInput <- textInputW  $ constDyn "test" -- (Event t Text)
-  let newMap = addNewCalendarEvent <$> tx
-  return $ updated newMap
+initialIntMapBuilder :: MonadWidget t m => Map Int CalendarEvent -> m (Event t (Map Int CalendarEvent))
+initialIntMapBuilder xs = do
+  let xs' = fmap constDyn xs
+  mapM myCalendarEventWidget xs' >>= (return . mergeMap)
+-- note: mergeIntMap :: Reflex t => IntMap (Event t a) -> Event t (IntMap a)
 
-addNewCalendarEvent :: Map Int CalendarEvent -> Map Int CalendarEvent
-addNewCalendarEvent  delta = do
-  let key' = (length delta) + 1
-  M.insert key' (CalendarEvent "test" (CalendarTime today (Recurrence Once today))) delta
+intMapBuilder :: MonadWidget t m => Dynamic t (Map Int CalendarEvent) -> m (Event t (Map Int CalendarEvent)) -- this has to be Event t a
+intMapBuilder xs = do
+  xs' <- sample $ current xs -- (Map Int CalendarEvent)
+  let xs'' = fmap constDyn xs' -- (Map Int (constDyn CalendarEvent))
+  newMap <- mapM myCalendarEventWidget xs'' --  m (Map Int CalendarEvent)
+  return $ mergeMap newMap --Event t (Map Int CalendarEvent)
+
+myCalendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvent -> m (Event t CalendarEvent) -- this has to be Event t a
+myCalendarEventWidget x = do
+  rowInput <- textInputW  $ constDyn "test" -- (Event t Text)
+  return $ updated x
+
+makeIntMapCalendarEventWidget :: MonadWidget t m => Event t () -> Dynamic t (Map Int CalendarEvent) -> m (Dynamic t (Map Int CalendarEvent))
+makeIntMapCalendarEventWidget evButton delta = do
+  sampledDelta <- sample $ current delta -- Map Int CalendarEvent
+  let deltaLength = (length sampledDelta) - 1-- Int
+  counter <- foldDyn (+) (deltaLength :: Int)  (1 <$ evButton) -- Dynamic Int
+  let intMapCalendarEvent = fmap makeIntMapCalendarEvent counter -- Dynamic Text
+  return intMapCalendarEvent -- Dynamic Text
+
+makeIntMapCalendarEvent :: Int -> Map Int CalendarEvent
+makeIntMapCalendarEvent count  = do
+  let xs = [0 .. count]
+  M.fromList $ fmap (\x -> (x, (CalendarEvent "test" (CalendarTime today (Recurrence Once today))))) xs
 
 addNewText :: Text -> Map Int Text -> Map Int Text
 addNewText newtext delta = do
   let key' = (length delta) + 1
   M.insert key' newtext delta
-
 
 holdWidget :: MonadWidget t m => m ()
 holdWidget = el "div" $ do
@@ -160,9 +180,6 @@ singleCalendarWidget delta = mdo
   v <- variable delta localUpdates
   return v
 
-
-
-
 insertCalendarToList'' :: Map Int CalendarEvent -> Map Int CalendarEvent
 insertCalendarToList'' delta = do
   let key = (length delta) + 1
@@ -177,11 +194,6 @@ insertCalendarToList :: (Int, CalendarEvent) -> (Int, CalendarEvent) -> Map Int 
 insertCalendarToList (i1, x1) (i2, x2) = do
   let x = M.insert i1 x1 (M.fromList [])
   M.insert i2 x2 x
-
-
-
--- addCalendarEventToDelta :: ?
-
 
 --(CalendarEvent "test" (CalendarTime today (Recurrence Once today)))
 

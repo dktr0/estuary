@@ -42,7 +42,7 @@ newWebDirt n = do
   liftIO $ js_newWebDirt ctx n
 
 foreign import javascript unsafe
-  "$r = new WebDirt({ latency: 0, maxLateness: 0.010, audioContext: $1, destination: $2 });"
+  "$r = new WebDirt.WebDirt({ latency: 0, maxLateness: 0.010, audioContext: $1, destination: $2 });"
   js_newWebDirt :: AudioContext -> Node -> IO WebDirt
 
 foreign import javascript unsafe
@@ -52,11 +52,6 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   "try { $1.playSample($2) } catch(e) { console.log(e)} "
   playSample :: WebDirt -> JSVal -> IO ()
-
--- temporary, just for testing
-foreign import javascript unsafe
-  "try { $1.playSample({ buffer: $2 }) } catch(e) { console.log(e)} "
-  playBuffer :: WebDirt -> JSVal -> IO ()
 
 foreign import javascript unsafe
   "$1.audioOutputs = $2;"

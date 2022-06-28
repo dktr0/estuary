@@ -89,6 +89,16 @@
 #endif
 </head>
 <body>
+  <script src="./WebDirt/WebDirt-packed.js"></script>
+  <script src="https://dktr0.github.io/LocoMotion/threejs/three.min.js"></script>
+  <script src="https://dktr0.github.io/LocoMotion/threejs/GLTFLoader.js"></script>
+  <script src="https://dktr0.github.io/LocoMotion/threejs/DRACOLoader.js"></script>
+  <script src="https://dktr0.github.io/LocoMotion/locoMotion.js"></script>
+  <script src="./SuperDirt.js"></script>
+  <script src="./PeerProtocol.js"></script>
+  <script src="./hydra-synth.js"></script>
+  <script src="./peg-0.10.0.min.js"></script>
+
   <div id="estuary-root"></div>
   <script type="text/javascript">
 
@@ -155,16 +165,6 @@ function checkForWebGL() {
 
 function loadJavascriptDependencies() {
   loadJavascript([
-    "SuperDirt.js",
-    "PeerProtocol.js",
-    "WebDirt/WebDirt.js",
-    "WebDirt/Graph.js",
-    "WebDirt/SampleBank.js",
-    "hydra-synth.js",
-    "peg-0.10.0.min.js",
-    "https://dktr0.github.io/LocoMotion/three.min.js",
-    "https://dktr0.github.io/LocoMotion/GLTFLoader.js",
-    "https://dktr0.github.io/LocoMotion/locoMotion.js",
     #ifdef PRODUCTION
     "all.min.js"
     #else
