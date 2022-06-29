@@ -19,13 +19,9 @@ import GHCJS.DOM.EventM
 import Estuary.Types.Live
 import Estuary.Types.Definition
 import Estuary.Types.View
-import Estuary.Types.EnsembleC
-import Estuary.Types.Ensemble
-import Estuary.Types.Context
 import Estuary.Tidal.Types (TransformedPattern(..))
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser
-import Estuary.Types.RenderInfo
 import Estuary.Types.Tempo
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
@@ -93,9 +89,6 @@ viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> 
 
 viewWidget er (CollapsableView v) = viewsContainerCollaps $ divClass "gridChild" $ viewWidget er v
 
-
---
-
 viewWidget _ (Text t) = translatableText t >>= dynText >> return never
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
@@ -104,8 +97,7 @@ viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTida
 
 viewWidget er (CodeView z rows style) = do
   whenever <- liftIO $ getCurrentTime
-  ri <- renderInfo
-  let errorDyn = fmap (IntMap.lookup z . errors) ri
+  errorDyn <- fmap (IntMap.lookup z) <$> errors
   zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor style rows errorDyn)
 
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
@@ -130,9 +122,7 @@ viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er 
 viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad er notePadWidget
 
 viewWidget er TempoView = do
-  ctx <- context
-  iCtx <- sample $ current ctx
-  let initialTempo = (tempo . ensemble . ensembleC) iCtx
+  initialTempo <- tempo >>= (sample . current)
   tempoDelta <- holdDyn initialTempo $ fmapMaybe lastTempoChange er
   tempoE <- tempoWidget tempoDelta
   return $ fmap WriteTempo tempoE
@@ -170,9 +160,8 @@ zoneWidget :: (MonadWidget t m, Eq a)
   -> (Dynamic t a -> W t m (Variable t a))
   -> W t m (Event t EnsembleRequest)
 zoneWidget z defaultA f g ensResponses anEditorWidget = do
-  ctx <- context
-  iCtx <- sample $ current ctx
-  let iDef = IntMap.findWithDefault (g defaultA) z $ zones $ ensemble $ ensembleC iCtx
+  iZones <- zones >>= sample . current
+  let iDef = IntMap.findWithDefault (g defaultA) z iZones
   let iValue = maybe defaultA id $ f iDef
   let resetValue = g defaultA
   let deltas = fmapMaybe (lastEditOrResetInZone resetValue z) ensResponses

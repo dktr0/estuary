@@ -25,7 +25,6 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Widgets.W
 import Estuary.Types.Definition
-import Estuary.Types.RenderInfo
 
 ------ svg attributes for different visualisers
 svgAttrsGraph:: Map Text Text
@@ -55,8 +54,7 @@ svgAttrsVintage =
 
 concentricCircleVisionWidget :: MonadWidget t m => W t m ()
 concentricCircleVisionWidget =  mdo
-    r <- renderInfo
-    let load = fmap avgRenderLoad r
+    load <- avgRenderLoad
     -- dynText $ fmap (showt) load -- debugging text
     let svgA = constDyn svgAttrsCircle
 
@@ -105,8 +103,7 @@ colouring (t,c) x
 
 graphVisionWidget :: MonadWidget t m => W t m ()
 graphVisionWidget =  mdo
-    r <- renderInfo
-    let loadDyn = fmap avgRenderLoad r
+    loadDyn <- avgRenderLoad
     let loadEvent = updated $ loadDyn -- Event t Int
     lista <- accumDyn injectFact [0] loadEvent
     elDynAttrNS (Just "http://www.w3.org/2000/svg") "svg" (constDyn svgAttrsGraph) $ do  -- broken adapt to new viewBox
@@ -166,8 +163,7 @@ ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)
 
 vintageVisionWidget:: MonadWidget t m => W t m ()
 vintageVisionWidget = mdo
-    r <- renderInfo
-    let load = fmap avgRenderLoad r
+    load <- avgRenderLoad
     -- dynText $ fmap (showt) load -- debugging text
     let svgA = constDyn svgAttrsVintage
 

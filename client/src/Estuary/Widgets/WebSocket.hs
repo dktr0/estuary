@@ -26,7 +26,7 @@ import Estuary.Widgets.W
 
 
 estuaryWebSocket :: MonadWidget t m => Dynamic t RenderInfo -> Event t [Request] ->
-  m (Event t Response, Event t ContextChange, Event t Hint)
+  m (Event t Response, Event t Hint)
 estuaryWebSocket rInfo toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
@@ -71,7 +71,7 @@ estuaryWebSocket rInfo toSend = mdo
   let clientInfoDyn = ClientInfo <$> fmap avgRenderLoad rInfo <*> fmap animationFPS rInfo <*> fmap animationLoad rInfo <*> latencyDyn
   let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith ($) clientInfoDyn pingTickTime
 
-  return (response,contextChanges,wsHints)
+  return (response,wsHints)
 
 maybeRejoinEnsemble :: Context -> () -> Maybe Request
 maybeRejoinEnsemble ctx _

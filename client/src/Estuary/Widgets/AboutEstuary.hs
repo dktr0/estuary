@@ -6,7 +6,6 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response,link)
 import Data.Map
 
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.W

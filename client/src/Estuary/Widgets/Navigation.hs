@@ -21,7 +21,6 @@ import Estuary.Widgets.W
 import Estuary.Widgets.Router
 import Estuary.Types.RenderInfo
 import Estuary.Tidal.Types
-import Estuary.Types.Context
 import Estuary.Types.Definition
 import Estuary.Types.EnsembleC
 import Estuary.Types.Hint

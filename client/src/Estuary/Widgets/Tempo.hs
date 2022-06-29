@@ -22,8 +22,6 @@ import Estuary.Widgets.Text
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
-import Estuary.Types.EnsembleC
-import Estuary.Types.Ensemble
 import Estuary.Widgets.W
 import Estuary.Types.Definition
 
@@ -49,8 +47,7 @@ getElapsedBeats t now = do
 
 currentBeat:: MonadWidget t m => W t m (Event t Rational)
 currentBeat = do
-  c <- context
-  let currentTempo = fmap (tempo . ensemble . ensembleC) c
+  currentTempo <- tempo
   widgetBuildTime <- liftIO $ getCurrentTime
   tick <- tickLossy 0.01 widgetBuildTime
   beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick
