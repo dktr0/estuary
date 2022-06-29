@@ -28,7 +28,7 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
 
 punctual :: TextNotationRenderer
-punctual = TextNotationRenderer {
+punctual = emptyTextNotationRenderer {
   parseZone = _parseZone,
   clearZone' = _clearZone,
   preAnimationFrame = _preAnimationFrame,

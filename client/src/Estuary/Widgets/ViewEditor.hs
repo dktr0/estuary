@@ -23,11 +23,8 @@ import Estuary.Widgets.W
 
 viewEditor :: MonadWidget t m => W t m ()
 viewEditor = mdo
-
   runViewButton <- divClass "config-entry display-inline-block primary-color ui-font" $ buttonWithClass "Run"
-
   widgetHold (return ()) $ fmap buildError viewParseResult
-
   currentView <- activeView
   let incomingView = updated $ fmap dumpView currentView
   initialView <- sample $ current currentView
@@ -37,11 +34,7 @@ viewEditor = mdo
   let evaledText = tag (current textValue) runViewEvent
   let parsedInput = fmap parseViewParser evaledText -- Event t (Either String View)
   let viewParseResult = fmap viewParseResultToText parsedInput
-
-  -- WORKING HERE: need to map parsedInput from Event t Either... to Event t Maybe... and use fmapMaybe
-  -- setLocalView $ fmapMaybe ...
-
-  pure ()
+  setLocalView $ fmapMaybe (either (const Nothing) Just) parsedInput
 
 
 viewParseResultToText :: Either String View -> Text
