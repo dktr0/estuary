@@ -22,7 +22,7 @@ import Estuary.Types.Hint
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.TranslatableText
-import Estuary.Widgets.W
+import Estuary.Widgets.W hiding (avgRenderLoad,animationFPS,animationLoad)
 
 
 estuaryWebSocket :: MonadWidget t m => Dynamic t RenderInfo -> Event t [Request] ->
@@ -73,15 +73,10 @@ estuaryWebSocket rInfo toSend = mdo
 
   return (response,wsHints)
 
-maybeRejoinEnsemble :: Context -> () -> Maybe Request
-maybeRejoinEnsemble ctx _
-  | ensembleName (ensemble (ensembleC ctx)) == "" = Nothing
+maybeRejoinEnsemble :: (Text,Text,Text,Text) -> Maybe Request
+maybeRejoinEnsemble (eName,uName,loc,pwd)
+  | eName == "" = Nothing
   | otherwise = Just $ RejoinEnsemble eName uName loc pwd
-    where
-      eName = ensembleName (ensemble (ensembleC ctx))
-      uName = userHandle (ensembleC ctx)
-      loc = location (ensembleC ctx)
-      pwd = password (ensembleC ctx)
 
 foreign import javascript unsafe
   "$r = location.hostname"
