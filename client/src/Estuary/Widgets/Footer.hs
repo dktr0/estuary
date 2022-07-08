@@ -35,9 +35,16 @@ footer = divClass "footer code-font" $ do
       text ", "
       term Term.Latency >>= dynText
       text " "
+
       sl <- fmap (fmap $ (showt :: Int -> Text) . round . (*1000)) $ holdUniqDyn $ fmap serverLatency ctx
       dynText sl
       text "ms, "
+
+      (fmap (fmap showt) $ holdUniqDyn $ fmap webDirtVoices ri) >>= dynText
+      text " "
+      term Term.Voices >>= dynText
+      text ", "
+
       term Term.Load >>= dynText
       text " "
       (fmap (fmap showt) $ holdUniqDyn $ fmap avgRenderLoad ri) >>= dynText

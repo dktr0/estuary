@@ -9,7 +9,8 @@ module Estuary.Render.WebDirt (
   mapTextJSValToJSVal,
   noteEventToWebDirtJSVal,
   accessBufferForWebDirtEvent,
-  setWebDirtAudioOutputs) where
+  setWebDirtAudioOutputs,
+  voices) where
 
 import Control.Monad
 import Control.Monad.IO.Class
@@ -81,6 +82,10 @@ doHints wd = mapM_ (doHint wd)
 foreign import javascript unsafe
   "$1.sampleHint($2)"
   sampleHint :: WebDirt -> JSVal -> IO ()
+
+foreign import javascript unsafe
+  "$1.voices"
+  voices :: WebDirt -> IO Int
 
 makeNoteEventSafe :: Map.Map Text Datum -> Map.Map Text Datum
 makeNoteEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
