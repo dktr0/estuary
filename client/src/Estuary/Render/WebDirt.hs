@@ -141,4 +141,5 @@ accessBufferForWebDirtEvent r j = do
 datumsToLocation :: Maybe Datum -> Maybe Datum -> Maybe Location
 datumsToLocation (Just (ASCII_String x)) Nothing = Just (decodeUtf8 x,0)
 datumsToLocation (Just (ASCII_String x)) (Just (Int32 y)) = Just (decodeUtf8 x,fromIntegral y)
+datumsToLocation (Just (ASCII_String x)) (Just (Double y)) = Just (decodeUtf8 x,floor y)
 datumsToLocation _ _ = Nothing
