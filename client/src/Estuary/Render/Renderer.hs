@@ -219,6 +219,7 @@ render = do
     modify' $ \x -> x { renderTime = newRenderTime }
     modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
     return ()
+  updateWebDirtVoices
 
 
 renderZoneOps :: R ()

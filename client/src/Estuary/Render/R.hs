@@ -36,6 +36,7 @@ import Estuary.Types.ResourceOp
 import Estuary.Client.Settings as Settings
 import Estuary.Types.Language
 import Estuary.Render.WebSerial as WebSerial
+import Estuary.Render.WebDirt as WebDirt
 
 
 data RenderEnvironment = RenderEnvironment {
@@ -213,3 +214,10 @@ unsafeModeOn = askSettings Settings.unsafeModeOn
 
 superDirtOn :: R Bool
 superDirtOn = askSettings Settings.superDirtOn
+
+
+updateWebDirtVoices :: R ()
+updateWebDirtVoices = do
+  wd <- asks webDirt
+  n <- liftIO $ WebDirt.voices wd
+  modify' $ \s -> s { info = (info s) { webDirtVoices = n } }

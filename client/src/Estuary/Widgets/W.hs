@@ -129,6 +129,9 @@ clockRatio = askRenderInfo RenderInfo.clockRatio
 clockRatioProblem :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
 clockRatioProblem = askRenderInfo RenderInfo.clockRatioProblem
 
+webDirtVoices :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+webDirtVoices = askRenderInfo RenderInfo.webDirtVoices
+
 
 -- Get and change the Dynamic Settings record
 settings :: Monad m => W t m (Dynamic t Settings.Settings)
