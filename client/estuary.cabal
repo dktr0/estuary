@@ -46,6 +46,7 @@ library
       Estuary.Render.Renderer
       Estuary.Render.SuperDirt
       Estuary.Render.WebDirt
+      Estuary.Render.WebSerial
       Estuary.Resources
       Estuary.Resources.AudioResource
       Estuary.Resources.Loadable
