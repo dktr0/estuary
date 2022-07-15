@@ -43,7 +43,8 @@ data View =
   NotePadView Int |
   IFrame Text | -- embedded web page
   CalendarEventView Int |
-  LoadView Int
+  LoadView Int |
+  ChatView Int 
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

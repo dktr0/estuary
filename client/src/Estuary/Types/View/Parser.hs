@@ -48,7 +48,7 @@ dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
 dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
 dumpView (LoadView x) = "load " <> showInt x
-
+dumpView (ChatView x) = "chat " <> showInt x
 
 dumpView _ = " "
 
@@ -86,6 +86,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> calendarEventParser
           <|> genGridParser
           <|> loadVisionParser
+          <|> specChatParser 
 
 genGridParser :: H View
 genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
@@ -392,6 +393,15 @@ audioMapViewFunc = AudioMapView
 iFrameParser :: H View
 iFrameParser = (reserved "iFrame" >> return IFrame) <*> textLiteral
 
+--
+specChatParser :: H View
+specChatParser = specChatParser' <*> int
+
+specChatParser' :: H (Int -> View)
+specChatParser' =  specChatFunc <$ reserved "chat"
+
+specChatFunc :: Int -> View
+specChatFunc x  = ChatView x 
 
 -- helper funcs
 int :: H Int
