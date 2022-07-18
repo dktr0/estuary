@@ -138,7 +138,7 @@ viewWidget er TempoView = do
   return $ fmap WriteTempo tempoE
 
 viewWidget _ (Snippet z b n t) = do
-  b <- clickableDiv (snippetOrExample b) $ text t
+  b <- clickableDiv (bool "snippet code-font" "example code-font" b) $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
   hint $ fmap (\et -> ZoneHint z (TextProgram (Live (n,t,et) L3))) bTime
   return never
@@ -180,9 +180,3 @@ zoneWidget z defaultA f g ensResponses anEditorWidget = do
   dynUpdates <- holdDyn iValue deltas'
   variableFromWidget <- anEditorWidget dynUpdates
   return $ (WriteZone z . g) <$> localEdits variableFromWidget
-
-  -- a helper function
-
-snippetOrExample:: Bool -> T.Text
-snippetOrExample True = "example code-font"
-snippetOrExample False = "snippet code-font"

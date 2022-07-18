@@ -48,6 +48,25 @@ getElapsedBeats t now = do
   let x = timeToCount t now 
   return x  
 
+countDown':: Rational -> Rational -> Rational
+countDown' len beatPosition = len - beatPosition  -- 290 - 200
+
+endTime:: Rational -> Rational -> Rational
+endTime len start = start + len 
+
+countDown:: MonadWidget t m => Event t () -> Dynamic t (Rational) -> W t m (Event t Rational)
+countDown trig len = do
+  c <- context
+  let currentTempo = fmap (tempo . ensemble . ensembleC) c -- this is a dynamic!!!! OJO AQUI 
+  widgetBuildTime <- liftIO $ getCurrentTime
+  let st = performEvent $ fmap (liftIO $ getCurrentTime) trig
+  let start = attachWith timeToCount (current currentTempo) $ st -- event t Rational -- event gets the current time (start moment of the counter), then transform it to beats
+  let end = attachWith endTime (current $ len) start -- event t rational
+  tick <- tickLossy 0.01 widgetBuildTime -- event t tickinfo
+  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick
+  x <- countDown' <$> end <*> beatPosition
+  return x
+
 currentBeat:: MonadWidget t m => W t m (Event t Rational)
 currentBeat = do
   c <- context
@@ -113,6 +132,8 @@ beatToPercentage atr beat = atr =: (showt percen)
 beatToPercentage':: Rational -> Rational -- outputs a Rational representing percentage normalize from 0 to 1
 beatToPercentage' beat = percen 
   where percen = beat - (realToFrac $ floor beat)
+
+
 
 
 -- cycle visualiser widget
