@@ -18,6 +18,7 @@ import Data.IORef
 import Data.Time
 import Data.Map as Map
 import Text.Read (readMaybe)
+import Data.IntMap
 
 import qualified Sound.Punctual.Resolution as Punctual
 
@@ -377,3 +378,19 @@ flattenDynamicVariable x = Variable d e
   where
     d = join $ fmap currentValue x -- Dynamic (Dynamic t a)
     e = switchPromptlyDyn $ fmap localEdits x -- Dynamic (Event t a)
+
+distributeIntMapOverVariable :: Reflex t => IntMap (Variable t a) -> Variable t (IntMap a)
+distributeIntMapOverVariable iMap = Variable curVal locEdits
+  where
+    curVal = distributeIntMapOverDynPure $ fmap currentValue iMap
+    locEdits = mergeInt $ fmap localEdits iMap  -- IntMap (Event t a)
+
+             -- deltas,              widget builder function,             result
+widgetMap :: MonadWidget t m => Dynamic t (IntMap a) -> (Dynamic t a -> m (Variable t a)) -> m (Variable t (IntMap a))
+widgetMap delta buildF = do
+  iMap <- sample $ current delta
+  let f b m = mapM (buildF . constDyn) iMap -- f :: (Dynamic t a -> m (Variable t a)) -> IntMap a -> m (IntMap (Variable t a))
+  let iWidget = f buildF iMap
+  let rebuilds = fmap (f buildF) $ updated delta
+  vMap <- widgetHold iWidget rebuilds -- vMap :: Dynamic t (IntMap (Variable t a))
+  pure $ flattenDynamicVariable $ fmap distributeIntMapOverVariable vMap
