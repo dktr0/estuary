@@ -12,6 +12,8 @@ import Data.Map.Strict as Map
 import Data.IORef
 import Sound.MusicW
 import TextShow
+import GHCJS.Types (JSVal)
+
 
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
@@ -28,12 +30,15 @@ import Estuary.Resources
 import Estuary.Types.ResourceOp
 import Estuary.Client.Settings as Settings
 import Estuary.Types.Language
+import Estuary.Render.WebSerial as WebSerial
+import Estuary.Render.WebDirt as WebDirt
 
 
 data RenderEnvironment = RenderEnvironment {
   mainBus :: MainBus,
   webDirt :: WebDirt,
   superDirt :: SuperDirt,
+  webSerial :: WebSerial.WebSerial,
   resources :: Resources,
   ccMap :: IORef (Map.Map Text Double),
   _settings :: IORef Settings
@@ -48,6 +53,7 @@ initialRenderEnvironment s = do
   wd <- liftAudioIO $ newWebDirt wdOutput
   initializeWebAudio wd
   sd <- newSuperDirt
+  _webSerial <- WebSerial.newWebSerial
   resources' <- newResources
   addResourceOp resources' $ ResourceListURL "samples/resources.json"
   ccMap' <- newIORef Map.empty
@@ -57,6 +63,7 @@ initialRenderEnvironment s = do
     mainBus = mb,
     webDirt = wd,
     superDirt = sd,
+    webSerial = _webSerial,
     resources = resources',
     ccMap = ccMap',
     _settings = settings'
@@ -83,7 +90,12 @@ pushNoteEvents :: [NoteEvent] -> R ()
 pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
 pushTidalEvents :: [(UTCTime,Tidal.ValueMap)] -> R ()
-pushTidalEvents xs = modify' $ \x -> x { tidalEvents = tidalEvents x ++ xs }
+pushTidalEvents = pushNoteEvents . fmap tidalEventToNoteEvent
+
+-- deprecated/temporary
+pushWebDirtEvents :: [JSVal] -> R ()
+pushWebDirtEvents xs = modify' $ \x -> x { webDirtEvents = webDirtEvents x ++ xs }
+
 
 setZoneError :: Int -> Text -> R ()
 setZoneError z t = do
@@ -157,3 +169,10 @@ unsafeModeOn = askSettings Settings.unsafeModeOn
 
 superDirtOn :: R Bool
 superDirtOn = askSettings Settings.superDirtOn
+
+
+updateWebDirtVoices :: R ()
+updateWebDirtVoices = do
+  wd <- asks webDirt
+  n <- liftIO $ WebDirt.voices wd
+  modify' $ \s -> s { info = (info s) { webDirtVoices = n } }

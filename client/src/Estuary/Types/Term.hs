@@ -51,7 +51,8 @@ data Term =
   FPSDescription |
   IPaddress |
   IPaddressDescription |
-  TerminalViewCommands
+  TerminalViewCommands |
+  Voices
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -224,5 +225,7 @@ translate IPaddress Español = "dirección IP"
 
 translate IPaddressDescription English = "The IP addresses of the participants"
 translate IPaddressDescription Español = "Las direcciones IP de l@s participantes"
+
+translate Voices English = "voices"
 
 translate x _ = translate x English

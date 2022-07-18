@@ -11,7 +11,7 @@ in
     '';
     src = builtins.fetchGit {
       url = "https://github.com/dktr0/WebDirt.git";
-      rev = "f4790e7d3b0fce3c2f72a754d1b9e7a393a31d0a";
+      rev = "41342e81d6ad694a2310d491fef7b7e8b0929efe";
       ref = "main";
     };
   }

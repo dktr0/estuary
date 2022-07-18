@@ -102,11 +102,11 @@ viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelE
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
-viewWidget er (CodeView z rows) = do
+viewWidget er (CodeView z rows style) = do
   whenever <- liftIO $ getCurrentTime
   ri <- renderInfo
   let errorDyn = fmap (IntMap.lookup z . errors) ri
-  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor rows errorDyn)
+  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor style rows errorDyn)
 
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
@@ -117,7 +117,7 @@ viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er 
 
 viewWidget er (CalendarEventView z) = do
   today <- liftIO getZonedTime
-  zoneWidget z (CalendarEvent "add details for your event" (CalendarTime today Nothing)) maybeCalendarEvent CalendarEv er calendarEventWidget
+  zoneWidget z (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today))) maybeCalendarEvent CalendarEv er calendarEventWidget
 
 viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 

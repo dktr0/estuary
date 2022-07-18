@@ -14,16 +14,15 @@ import Estuary.Types.TidalParser
 
 data TextNotation =
   UnspecifiedNotation |
-  TidalTextNotation TidalParser |
+  TidalTextNotation TidalParser | -- TODO: this can just become MiniTidal with no argument, eliminating the type TidalParser
   Punctual |
   CineCer0 |
   TimeNot |
   Seis8s |
   Hydra |
+  LocoMotion |
   JSoLang Text |
   EphemeralNotation Text
-  -- Ver |
-  -- Oir
   deriving (Read,Eq,Ord,Show,Generic)
 
 instance ToJSON TextNotation where
@@ -58,6 +57,7 @@ pragmaToTextNotation "cinecer0" _ _ = Just CineCer0
 pragmaToTextNotation "timenot" _ _ = Just TimeNot
 pragmaToTextNotation "seis8s" _ _ = Just Seis8s
 pragmaToTextNotation "hydra" _ _ = Just Hydra
+pragmaToTextNotation "locomotion" _ _ = Just LocoMotion
 pragmaToTextNotation "jsolang" x _ = Just $ JSoLang x
 pragmaToTextNotation x _ ns =
   case elem x ns of

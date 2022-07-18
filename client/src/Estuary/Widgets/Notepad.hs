@@ -26,16 +26,16 @@ notePadWidget delta = divClass "notepadContainers" $ mdo
 
   buttons <- divClass "notepad-rowOfButtons" $ do
     -- add note
-    addPageButton <- clickableDivClass "+" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
+    addPageButton <- clickableDivClass "+" "notepad-prevNextButtons ui-buttons ui-font"
     let addPage = addNote <$ addPageButton -- :: m (Event t (Notepad -> Notepad))
     -- erase note
-    erasePageButton <- clickableDivClass "-" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
+    erasePageButton <- clickableDivClass "-" "notepad-prevNextButtons ui-buttons ui-font"
     let erasePage = eraseNote <$ erasePageButton -- :: m (Event t (Notepad -> Notepad))
     -- prev page
-    prevPageButton <- clickableDivClass "←" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
+    prevPageButton <- clickableDivClass "←" "notepad-prevNextButtons ui-buttons ui-font" -- :: m (Event t ())
     let prevPage = prevPageOfNote <$ prevPageButton -- :: m (Event t (Notepad -> Notepad))
     -- next page
-    nextPageButton <- clickableDivClass "→" "notepad-prevNextButtons ui-buttons" -- :: m (Event t ())
+    nextPageButton <- clickableDivClass "→" "notepad-prevNextButtons ui-buttons ui-font" -- :: m (Event t ())
     let nextPage = nextPageOfNote <$ nextPageButton -- :: m (Event t (Notepad -> Notepad))
     --
     return $ leftmost [addPage, erasePage, prevPage, nextPage]
@@ -44,7 +44,6 @@ notePadWidget delta = divClass "notepadContainers" $ mdo
   let noteTuppleSampled = Seq.index <$> notesSampled <*> pageNumSampled -- (t,c)
 
   (titleEv,contentEv) <- titleContentWidget (fmap fst noteTuppleSampled) (fmap snd noteTuppleSampled) (fmap fst noteTupple) (fmap snd noteTupple) -- :: (Event t Text, Event t Text)
-
   let setNoteTitle' = fmap setNoteTitle titleEv -- :: m (Event t (Notepad -> Notepad))
   let setNoteContent' = fmap setNoteContent contentEv -- :: m (Event t (Notepad -> Notepad))
   let localEvs = mergeWith (.) [setNoteTitle',setNoteContent', buttons]
