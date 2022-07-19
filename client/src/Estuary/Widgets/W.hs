@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, RecursiveDo #-}
 
 module Estuary.Widgets.W where
 
@@ -385,12 +385,68 @@ distributeIntMapOverVariable iMap = Variable curVal locEdits
     curVal = distributeIntMapOverDynPure $ fmap currentValue iMap
     locEdits = mergeInt $ fmap localEdits iMap  -- IntMap (Event t a)
 
-             -- deltas,              widget builder function,             result
-widgetMap :: MonadWidget t m => Dynamic t (IntMap a) -> (Dynamic t a -> m (Variable t a)) -> m (Variable t (IntMap a))
+
+-- we need the difference between a and b here if we are to have widgets that give back signals of different types
+-- than the types of the values the "create" the widgets, such as a "delete me" signal, for example.
+-- soon we expect to rework this so that builder function takes an Int argument representing that item's position in map
+-- and later we expect to rework this to avoid rebuilds whenever possible (eg. when values change but keys don't)
+
+widgetMap :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m b) -> m (Dynamic t (IntMap b))
 widgetMap delta buildF = do
-  iMap <- sample $ current delta
-  let f b m = mapM (buildF . constDyn) iMap -- f :: (Dynamic t a -> m (Variable t a)) -> IntMap a -> m (IntMap (Variable t a))
-  let iWidget = f buildF iMap
-  let rebuilds = fmap (f buildF) $ updated delta
-  vMap <- widgetHold iWidget rebuilds -- vMap :: Dynamic t (IntMap (Variable t a))
-  pure $ flattenDynamicVariable $ fmap distributeIntMapOverVariable vMap
+  iMapA <- sample $ current delta
+  let f m = mapM (buildF . constDyn) m -- f :: IntMap a -> m (IntMap b)
+  let iWidget = f iMapA
+  let rebuilds = fmap f $ traceEvent "rebuilds" $ updated delta
+  widgetHold iWidget rebuilds -- x :: Dynamic t (IntMap b), representing only specific rows that are locally edited
+
+-- | widgetMapEvent is a variant of widgetMap, specialized for Event
+widgetMapEvent :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
+widgetMapEvent delta buildF = mdo
+  x <- widgetMap delta buildF
+  let evPartialMap = switchDyn $ fmap mergeIntMap x -- Event t (IntMap a), representing change to specific row(s) only
+  let evFullMap = attachWith (flip Data.IntMap.union) (current localValue) evPartialMap
+  iLocalValue <- sample $ current delta
+  localValue <- holdDyn iLocalValue $ leftmost [updated delta,evFullMap]
+  pure evFullMap
+
+-- | widgetMapEventWithAdd is another variant, specialized for Event, with a channel to add items to the end of the map
+widgetMapEventWithAdd :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> Event t a -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
+widgetMapEventWithAdd delta addEv buildF = mdo
+  -- insert add events into dynamic stream of deltas
+  iDelta <- sample $ current delta
+  let addEv' = attachWith (\m a -> Data.IntMap.insert (Data.IntMap.size m) a m) (current displayedValue) addEv
+  let evIntegratedDelta = leftmost [updated delta,addEv']
+  dynIntegratedDelta <- holdDyn iDelta evIntegratedDelta
+  editsBelow <- widgetMapEvent dynIntegratedDelta buildF
+  displayedValue <- holdDyn iDelta $ leftmost [evIntegratedDelta, traceEvent "editsBelow" editsBelow]
+  pure $ leftmost [editsBelow,addEv']
+
+-- below this line are just demos of widgetMap etc above (code below this line will be deleted before too long)
+
+type Test = IntMap Text
+
+testMap :: MonadWidget t m => Dynamic t Test -> m (Variable t Test)
+testMap delta = do
+  addButton <- traceEvent "AddButton" <$> button "+"
+  mapEv <- widgetMapEventWithAdd delta ("newtext" <$ addButton) testRow
+  variable delta mapEv
+
+testRow :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
+testRow delta = el "div" $ textInputW delta
+
+widgetMapDemo :: IO ()
+widgetMapDemo = mainWidget $ do
+  let i = Data.IntMap.singleton 0 "text zero"
+  delta <- holdDyn i never
+  x <- el "div" $ testMap delta -- :: Variable t Test
+
+  -- display localEdits issued from widget
+  el "div" $ do
+    text "localEdits: "
+    y <- holdDyn i $ localEdits x -- :: Dynamic t Test
+    dynText $ fmap (T.pack . show) y
+
+  -- display currentValue issued from widget
+  el "div" $ do
+    text "currentValue: "
+    dynText $ fmap (T.pack . show) $ currentValue x
