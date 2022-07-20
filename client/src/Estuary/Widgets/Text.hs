@@ -50,37 +50,44 @@ textWidgetRows 0 = Data.Map.empty
 textWidgetRows x = "rows" =: T.pack (show x)
 
 
-styleParameters :: [Text] -> Text -> Map Text Text
-styleParameters vs i = "style" =: ("height: auto;" <> (stiloList vs i))
+stilosEditors :: [Text] -> Text -> Map Text Text
+stilosEditors vs i = do
+  let s' = stilos vs i
+  "style" =: ("height: auto;" <> s')
 
-stiloList :: [Text] -> Text -> Text
-stiloList vs i = mconcat $ fmap (stilos i) vs -- :: Text
+stilos :: [Text] -> Text -> Text
+stilos vs i = do
+  let a = if elem "fluxus" vs then (fluxusStyle i) else ""
+  let b = if elem "center" vs then "text-align: center;" else ""
+  let c = if elem "right" vs then "text-align: right;" else ""
+  a <> b
 
-stilos :: Text -> Text -> Text
-stilos i x = mconcat [fontSizeStilos i x, textAlignmentStilos x] -- :: Text
+  --
+  -- customFontSize :: Text -> Text
+  -- customFontSize s = do
+  --   let x = dropWhile () s
+  --   "fontSize:" <> "\"" <> (show x) <> "\"" <> "em;"
 
-fontSizeStilos :: Text -> Text -> Text
-fontSizeStilos i x
-  | x == "fluxus" = fluxusStyle i
-  | otherwise = ""
 
-customFontSize :: Int -> Text
-customFontSize em = "font-size: " <> T.pack (show em) <> "em;"
+    -- let x = find () vs -- :: Maybe Char
+    -- let y = digitToInt x -- :: Int
+    -- "fontSize:" <> "\"" <> (show x) <> "\"" <> "em;"
 
-textAlignmentStilos :: Text -> Text
-textAlignmentStilos x
-  | x == "center" = "text-align: center;"
-  | x == "right" = "text-align: right;"
-  | otherwise = ""
 
--- custom font
+-- find :: (Char -> Bool) -> Text -> Maybe Char
+-- O(n) The find function takes a predicate and a Text, and returns the first element matching the predicate, or Nothing if there is no such element.
+--
+-- digitToInt :: Char -> Int
+--
+-- Convert a single digit Char to the corresponding Int. This function fails unless its argument satisfies isHexDigit, but recognises both upper- and lower-case hexadecimal digits (that is, '0'..'9', 'a'..'f', 'A'..'F').
+
 
 -- for code-box-editors
 textWidget' :: MonadWidget t m => [Text] -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
 textWidget' styles rows flash i delta = mdo
   let class' = fmap textWidgetClass flash
   let rows' = constDyn $ textWidgetRows rows
-  let style' = fmap (styleParameters styles) value
+  let style' = fmap (stilosEditors styles) value
   let attrs = mconcat [class',rows', style']
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let value = _textArea_value x
@@ -92,12 +99,12 @@ textWidget' styles rows flash i delta = mdo
 fluxusStyle :: Text -> Text
 fluxusStyle i
   | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "font-size: 8em;"
-  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "font-size: 7em;"
-  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "font-size: 6em;"
-  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "font-size: 5em;"
-  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "font-size: 4em;"
-  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "font-size: 3em;"
-  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "font-size: 2.5em;"
+  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) <= 1) = "font-size: 7em;"
+  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) <= 2) = "font-size: 6em;"
+  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) <= 3) = "font-size: 5em;"
+  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) <= 4) = "font-size: 4em;"
+  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) <= 5) = "font-size: 3em;"
+  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) <= 6) = "font-size: 2.5em;"
   | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 10)) = "font-size: 2em;"
   | (T.length i >= 121) && (T.length i <= 140) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 10) && ((L.length $ T.lines i) <= 13)) = "font-size: 1.5em;"
   | otherwise = "font-size: 1em;"

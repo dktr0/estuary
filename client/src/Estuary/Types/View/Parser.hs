@@ -55,7 +55,6 @@ dumpView _ = " "
 dumpViews :: [View] -> T.Text
 dumpViews vs = "[" <> (T.intercalate "," $ fmap dumpView vs) <> "]"
 
-
 viewParser :: H View
 viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> divView
@@ -95,7 +94,6 @@ rowsOrColumns = do
   x <- integer
   if (x >= 1 && x <= 12) then return (fromIntegral x) else throwError "rows or columns must be between 1 and 12"
 
-
 --
 calendarEventParser :: H View
 calendarEventParser = calendarEventParser' <*> int
@@ -131,13 +129,13 @@ snippetParser''':: H (Bool -> T.Text -> T.Text -> View)
 snippetParser''' = snippetParser'''' <*> int
 
 snippetParser'''':: H (Int -> Bool -> T.Text -> T.Text -> View)
-snippetParser'''' = snippetViewFunc <$ (reserved "snippet") 
+snippetParser'''' = snippetViewFunc <$ (reserved "snippet")
 
 snippetViewFunc :: Int -> Bool -> T.Text -> T.Text -> View
 snippetViewFunc z b tn sn = Snippet z b (textToNotation' tn) sn
 
 
--- 
+--
 
 seeTimeParser :: H View
 seeTimeParser = seeTimeParser' <*> int
@@ -178,7 +176,7 @@ stopwatchParser' = stopwatchFunc <$ reserved "stopwatch"
 stopwatchFunc :: Int -> View
 stopwatchFunc z = StopWatchView z
 
---
+-- NotePad
 notePadParser :: H View
 notePadParser = notePadParser' <*> int
 
@@ -188,7 +186,7 @@ notePadParser' = notePadFunc <$ reserved "notepad"
 notePadFunc :: Int -> View
 notePadFunc x = NotePadView x
 
---
+-- Sequencer
 sequenceParser :: H View
 sequenceParser = sequenceParser' <*> int
 
@@ -197,9 +195,8 @@ sequenceParser' = sequenceFunc <$ reserved "sequence"
 
 sequenceFunc :: Int -> View
 sequenceFunc x = SequenceView x
+
 --
-
-
 structureParser :: H View
 structureParser = structureParser' <*> int
 
@@ -208,7 +205,6 @@ structureParser' = structureFunc <$ reserved "structure"
 
 structureFunc :: Int -> View
 structureFunc x = StructureView x
-
 
 --
 labelParser :: H View
@@ -220,7 +216,6 @@ labelParser' = labelFunc <$ reserved "label"
 labelFunc :: Int -> View
 labelFunc x = LabelView x
 
-
 --
 bulletpointsParser :: H View
 bulletpointsParser = bulletpointsParser' <*> viewsParser
@@ -230,6 +225,7 @@ bulletpointsParser' = bulletpointsFunc <$ reserved "bulletpoints"
 
 bulletpointsFunc :: [View] -> View
 bulletpointsFunc vx = BulletPoints vx
+
 --
 borderParser :: H View
 borderParser = borderParser' <*> viewsParser
@@ -239,6 +235,7 @@ borderParser' = borderFunc <$ reserved "border"
 
 borderFunc :: [View] -> View
 borderFunc vx = BorderDiv vx
+
 --
 paragraphParser :: H View
 paragraphParser = paragraphParser' <*> viewsParser
@@ -255,12 +252,11 @@ views = do
   vs <- viewsParser
   return $ Views vs
 --
-
+--
 viewsParser :: H [View]
 viewsParser = list viewParser
 
 --
-
 rows:: H View
 rows = rowParser <*> viewsParser
 
@@ -270,6 +266,7 @@ rowParser = rowFunc <$ reserved "rows"
 rowFunc:: [View] -> View
 rowFunc vs = Rows vs
 
+--
 columns:: H View
 columns = columnParser <*> viewsParser
 
@@ -279,7 +276,7 @@ columnParser = columnFunc <$ reserved "cols"
 columnFunc:: [View] -> View
 columnFunc vs = Columns vs
 
---
+-- GridView
 gridViewParser :: H View
 gridViewParser =  gridViewParser' <*> viewsParser
 
@@ -296,8 +293,7 @@ gridViewFunc :: Int -> Int -> [View] -> View
 gridViewFunc cols rows vx = GridView cols rows vx
 
 
--- collapsable View
-
+-- CollapsableView
 collapsableViewParser :: H View
 collapsableViewParser = collapsableViewParser' <*> viewParser
 
@@ -306,7 +302,6 @@ collapsableViewParser' = collapsableViewFunc <$ reserved "collapsable"
 
 collapsableViewFunc :: View -> View
 collapsableViewFunc v = CollapsableView v
-
 
 -- div View
 divView :: H View
@@ -334,7 +329,7 @@ linkView'' = linkViewFunc <$ reserved "link"
 linkViewFunc :: T.Text -> [View] -> View
 linkViewFunc s vx = Link s vx
 
---
+--CodeView
 codeViewView :: H View
 codeViewView =  codeViewView' <*> listOftextLiteral
 
@@ -350,8 +345,8 @@ codeViewView''' = codeViewViewFunc <$ (reserved "code")
 codeViewViewFunc :: Int -> Int -> [T.Text] -> View
 codeViewViewFunc x y vs = CodeView x y vs
 
---
 
+-- Roulette View
 rouletteViewView :: H View
 rouletteViewView =  rouletteViewView' <*> int
 
@@ -419,7 +414,7 @@ identifierText = do
 
 -----
 
-textToNotation:: T.Text -> TextNotation    
+textToNotation:: T.Text -> TextNotation
 textToNotation "minitidal" = TidalTextNotation MiniTidal
 textToNotation "punctual" = Punctual
 textToNotation "cinecer0" = CineCer0
@@ -429,7 +424,7 @@ textToNotation "hydra" = Hydra
 textToNotation x = EphemeralNotation x
 
 textToNotation':: T.Text -> TextNotation ----- this wrapper function checks for JSoLangs. Syntax is: "jsolang myNanoLang" and "ephemeral myNanoLang"
-textToNotation' x 
+textToNotation' x
         | x == "" = UnspecifiedNotation
         | "jsolang" == (Prelude.head $ T.words x) = JSoLang (T.unwords $ Prelude.tail $ T.words x)
         | otherwise = textToNotation x
