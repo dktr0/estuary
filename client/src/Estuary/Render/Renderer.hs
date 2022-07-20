@@ -222,6 +222,7 @@ render c = do
     traverseWithKey calculateZoneRenderTimes $ zoneRenderTimes s -- *** SHOULDN'T BE HERE
     traverseWithKey calculateZoneAnimationTimes $ zoneAnimationTimes s -- *** SHOULDN'T BE HERE
     return ()
+  updateWebDirtVoices
 
 
 renderZone :: Context -> Int -> Definition -> R ()

@@ -9,7 +9,8 @@ module Estuary.Render.WebDirt (
   mapTextJSValToJSVal,
   noteEventToWebDirtJSVal,
   accessBufferForWebDirtEvent,
-  setWebDirtAudioOutputs) where
+  setWebDirtAudioOutputs,
+  voices) where
 
 import Control.Monad
 import Control.Monad.IO.Class
@@ -82,6 +83,10 @@ foreign import javascript unsafe
   "$1.sampleHint($2)"
   sampleHint :: WebDirt -> JSVal -> IO ()
 
+foreign import javascript unsafe
+  "$1.voices"
+  voices :: WebDirt -> IO Int
+
 makeNoteEventSafe :: Map.Map Text Datum -> Map.Map Text Datum
 makeNoteEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
 
@@ -136,4 +141,5 @@ accessBufferForWebDirtEvent r j = do
 datumsToLocation :: Maybe Datum -> Maybe Datum -> Maybe Location
 datumsToLocation (Just (ASCII_String x)) Nothing = Just (decodeUtf8 x,0)
 datumsToLocation (Just (ASCII_String x)) (Just (Int32 y)) = Just (decodeUtf8 x,fromIntegral y)
+datumsToLocation (Just (ASCII_String x)) (Just (Double y)) = Just (decodeUtf8 x,floor y)
 datumsToLocation _ _ = Nothing
