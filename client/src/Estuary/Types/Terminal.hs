@@ -58,7 +58,10 @@ data Command =
   ShowCC Int | -- show a MIDI continuous-controller value in the terminal
   MaxAudioOutputs | -- query max number of audio output channels according to browser
   SetAudioOutputs Int | -- attempt to set a specific number of audio output channels
-  AudioOutputs -- query current number of output audio channels
+  AudioOutputs | -- query current number of output audio channels
+  ListSerialPorts | -- query available WebSerial ports
+  SetSerialPort Int | -- select a WebSerial port by index, and activate WebSerial output
+  NoSerialPort -- disactivate WebSerial output
   deriving (Show,Eq)
 
 parseCommand :: T.Text -> Either (Span, Text) Command
@@ -105,6 +108,7 @@ terminalCommand =
   <|> setCCParser
   <|> showCCParser
   <|> audioOutputsEtcParsers
+  <|> serialPortsParsers
   <|> commandErrors
 
 commandErrors :: H Command
@@ -219,6 +223,13 @@ audioOutputsEtcParsers =
   (AudioOutputs <$ reserved "audioOutputs") <|>
   ((SetAudioOutputs <$ reserved "setAudioOutputs") <*> int) <|>
   (reserved "setAudioOutputs" >> fatal "Missing argument. !setAudioOutputs expects an Int argument.")
+
+serialPortsParsers :: H Command
+serialPortsParsers =
+  (ListSerialPorts <$ reserved "listSerialPorts") <|>
+  (NoSerialPort <$ reserved "noSerialPort") <|>
+  ((SetSerialPort <$ reserved "setSerialPort") <*> int) <|>
+  (reserved "setSerialPort" >> fatal "Missing argument. !setSerialPort expects an Int argument.")
 
 
 -- select a presetview

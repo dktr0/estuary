@@ -33,6 +33,7 @@ import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.TranslatableText
 import Estuary.Render.R
 import Estuary.Render.MainBus
+import qualified Estuary.Render.WebSerial as WebSerial
 
 import Estuary.Types.Language
 
@@ -104,7 +105,13 @@ doCommands _ irc (Terminal.SetAudioOutputs n) = do
   setAudioOutputs (webDirt irc) (mainBus irc) n
   n' <- liftAudioIO $ channelCount
   return $ Just $ "audioOutputs = " <> showt n'
+doCommands _ rEnv Terminal.ListSerialPorts = do
+  portMap <- WebSerial.listPorts (webSerial rEnv)
+  pure $ Just $ T.pack $ show portMap
+doCommands _ rEnv (Terminal.SetSerialPort n) = WebSerial.setActivePort (webSerial rEnv) n >> pure (Just "serial port set")
+doCommands _ rEnv Terminal.NoSerialPort = WebSerial.setNoActivePort (webSerial rEnv) >> pure (Just "serial port disactivated")
 doCommands _ _ _ = return Nothing
+
 
 peerProtocolIdReflex :: MonadWidget t m => PeerProtocol -> Event t a -> m (Event t Text)
 peerProtocolIdReflex pp e = performEvent $ fmap (liftIO . const (peerProtocolId pp)) e
