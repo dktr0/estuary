@@ -37,6 +37,7 @@ library
       Estuary.Types.Scope
       Estuary.Types.Tempo
       Estuary.Types.TextNotation
+      Estuary.Types.CodeWidgetOptions
       Estuary.Types.TidalParser
       Estuary.Types.TranslatableText
       Estuary.Types.VideoMeta

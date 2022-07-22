@@ -36,6 +36,7 @@ import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Widgets.W
 import Estuary.Types.Context
+import Estuary.Types.CodeWidgetOptions
 
 
 foreign import javascript unsafe "navigator.clipboard.writeText($1);" copyToClipboard :: Text -> IO ()
@@ -50,40 +51,37 @@ textWidgetRows 0 = Data.Map.empty
 textWidgetRows x = "rows" =: T.pack (show x)
 
 
-stilosEditors :: [Text] -> Text -> Map Text Text
+stilosEditors :: [CodeWidgetOptions] -> Text -> Map Text Text
 stilosEditors vs i = do
   let s' = stilos vs i
   "style" =: ("height: auto;" <> s')
 
-stilos :: [Text] -> Text -> Text
+-- stilos :: [CodeWidgetOptions] -> Text -> Text
+-- stilos vs i = do
+--   let a = if elem Fluxus vs then (fluxusStyle i) else ""
+--   let b = if elem CentreAlign vs then "text-align: center;" else ""
+--   let c = if elem RightAlign vs then "text-align: right;" else ""
+--   a <> b <> c
+
+stilos :: [CodeWidgetOptions] -> Text -> Text
 stilos vs i = do
-  let a = if elem "fluxus" vs then (fluxusStyle i) else ""
-  let b = if elem "center" vs then "text-align: center;" else ""
-  let c = if elem "right" vs then "text-align: right;" else ""
-  a <> b
+  let a = fmap (cwoToText i) vs -- :: [Text]
+  mconcat a
 
-  --
-  -- customFontSize :: Text -> Text
-  -- customFontSize s = do
-  --   let x = dropWhile () s
-  --   "fontSize:" <> "\"" <> (show x) <> "\"" <> "em;"
+cwoToText :: Text -> CodeWidgetOptions -> Text
+cwoToText i Fluxus = fluxusStyle i
+cwoToText i CentreAlign = "text-align: center;"
+cwoToText i RightAlign = "text-align: right;"
+cwoToText i (Fontsize x) = customFontSize x
+cwoToText _ _ = ""
 
-
-    -- let x = find () vs -- :: Maybe Char
-    -- let y = digitToInt x -- :: Int
-    -- "fontSize:" <> "\"" <> (show x) <> "\"" <> "em;"
-
-
--- find :: (Char -> Bool) -> Text -> Maybe Char
--- O(n) The find function takes a predicate and a Text, and returns the first element matching the predicate, or Nothing if there is no such element.
---
--- digitToInt :: Char -> Int
---
--- Convert a single digit Char to the corresponding Int. This function fails unless its argument satisfies isHexDigit, but recognises both upper- and lower-case hexadecimal digits (that is, '0'..'9', 'a'..'f', 'A'..'F').
+customFontSize :: Double -> Text
+customFontSize s = "font-size: " <> (T.pack $ show s) <> "em;"
+-- fontsize: 10em
 
 
 -- for code-box-editors
-textWidget' :: MonadWidget t m => [Text] -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+textWidget' :: MonadWidget t m => [CodeWidgetOptions] -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
 textWidget' styles rows flash i delta = mdo
   let class' = fmap textWidgetClass flash
   let rows' = constDyn $ textWidgetRows rows
@@ -203,7 +201,7 @@ textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s,
 holdUniq :: (MonadWidget t m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
 
-textProgramEditor :: forall t m. MonadWidget t m => [Text] -> Int -> Dynamic t (Maybe Text)
+textProgramEditor :: forall t m. MonadWidget t m => [CodeWidgetOptions] -> Int -> Dynamic t (Maybe Text)
   -> Dynamic t (Live TextProgram) -> W t m (Variable t (Live TextProgram))
 textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
 
@@ -224,16 +222,16 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
 
   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
     -- build dropdown menu if "nomenu" is not among the provided options
-    dropdown' <- if elem "nomenu" styles then (return never) else do
+    dropdown' <- if elem Nomenu styles then (return never) else do
       let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
       let ddAttrs = ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
       d <- dropdown initialParser parserMap ddAttrs
       return $ _dropdown_change d
     -- build eval button if "noeval" is not among the provided options
-    evalButton' <- if elem "noeval" styles then (return never) else do
+    evalButton' <- if elem Noeval styles then (return never) else do
       divClass "textInputLabel" $ dynButton "\x25B6"
     -- build error text display if "noerrors" is not among the provided options
-    if elem "noerrors" styles then (return ()) else do
+    if elem Noerrors styles then (return ()) else do
       widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
       pure ()
     return (dropdown',evalButton')

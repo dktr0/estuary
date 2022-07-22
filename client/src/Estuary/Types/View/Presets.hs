@@ -10,6 +10,7 @@ import qualified Data.Text as T
 
 
 import Estuary.Types.View
+import Estuary.Types.CodeWidgetOptions
 
 
 genGrid :: Int -> Int -> Bool -> View
@@ -29,11 +30,11 @@ presetViews = fromList [
 
       ("def",  GridView 2 3  [
       (Views [LabelView 1, CalendarEventView 2]),
-      (Views [LabelView 3, CodeView 4 0 ["center", "nomenu", "right", "fontsize: 2"] ]),
-      (Views [LabelView 5, CodeView 6 0 ["nomenu", "noeval", "noerrors"] ]),
-      (Views [LabelView 7, CodeView 8 0 ["right", "noeval"] ]),
-      (Views [LabelView 9, CodeView 10 0 ["fluxus", "center"] ]),
-      (Views [LabelView 11, CodeView 12 0 ["fluxus", "noerrors"] ])
+      (Views [LabelView 3, CodeView 4 0 [ Nomenu, Noeval ] ]),
+      (Views [LabelView 5, CodeView 6 0 [ Noeval, (Fontsize 10)] ]),
+      (Views [LabelView 7, CodeView 8 0 [ Fluxus ] ]),
+      (Views [LabelView 9, CodeView 10 0 [ CentreAlign ] ]),
+      (Views [LabelView 11, CodeView 12 0 [ RightAlign ] ])
       ]),
 
       ("fulltexteditor", genGrid 1 1 True),
@@ -71,14 +72,14 @@ presetViews = fromList [
         ]),
 
       ("fluxus",GridView 1 1 [
-        BorderDiv [CodeView 1 0 ["fluxus"] ]
+        BorderDiv [CodeView 1 0 [] ]
         ]),
 
       ("fluxus2",GridView 2 2 [
-        Views [CodeView 1 0 ["fluxus"] ],
-        Views [CodeView 2 0 ["fluxus"] ],
-        Views [CodeView 3 0 ["fluxus"] ],
-        Views [CodeView 4 0 ["fluxus"] ]
+        Views [CodeView 1 0 [] ],
+        Views [CodeView 2 0 [] ],
+        Views [CodeView 3 0 [] ],
+        Views [CodeView 4 0 [] ]
         ]),
 
       ("tempoAndCode", GridView 2 1  [

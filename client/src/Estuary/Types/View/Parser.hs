@@ -14,6 +14,7 @@ import Control.Monad.Except
 import Estuary.Types.View
 import Estuary.Types.View.Presets
 import Estuary.Types.TextNotation
+import Estuary.Types.CodeWidgetOptions
 import Estuary.Types.TidalParser
 
 type H = Haskellish ()
@@ -33,7 +34,7 @@ dumpView (CollapsableView v) = "collapsable" <> dumpView v
 -- dumpView (Text t) = ...
 dumpView (LabelView x) = "label " <> showInt x
 dumpView (StructureView x) = "structure " <> showInt x
-dumpView (CodeView x y vs) = "code " <> showInt x <> " " <> showInt y <> " " <> (T.pack $ show vs)
+dumpView (CodeView x y vs) = "code " <> showInt x <> " " <> showInt y <> " "
 dumpView (SequenceView z) = "sequence " <> showInt z
 dumpView (Snippet z b tn txt) = "snippet " <> showInt z <> " " <> (boolToText b) <> " " <> (notationToText tn) <> (" \""<>(formatText txt)<>"\"")
 dumpView EnsembleStatusView = "ensembleStatus"
@@ -331,18 +332,18 @@ linkViewFunc s vx = Link s vx
 
 --CodeView
 codeViewView :: H View
-codeViewView =  codeViewView' <*> listOftextLiteral
+codeViewView =  codeViewView' <*> listOfCodeWidgetOptions
 
-codeViewView' :: H ([T.Text] -> View)
+codeViewView' :: H ([CodeWidgetOptions] -> View)
 codeViewView' =  codeViewView'' <*> int
 
-codeViewView'' :: H (Int -> [T.Text] -> View)
+codeViewView'' :: H (Int -> [CodeWidgetOptions] -> View)
 codeViewView'' =  codeViewView''' <*> int
 
-codeViewView''' :: H (Int -> Int -> [T.Text] -> View)
+codeViewView''' :: H (Int -> Int -> [CodeWidgetOptions] -> View)
 codeViewView''' = codeViewViewFunc <$ (reserved "code")
 
-codeViewViewFunc :: Int -> Int -> [T.Text] -> View
+codeViewViewFunc :: Int -> Int -> [CodeWidgetOptions] -> View
 codeViewViewFunc x y vs = CodeView x y vs
 
 
@@ -414,7 +415,29 @@ identifierText = do
 
 -----
 
-textToNotation:: T.Text -> TextNotation
+listOfCodeWidgetOptions :: H [CodeWidgetOptions]
+listOfCodeWidgetOptions = list stringToCodeWidgetOptions
+
+stringToCodeWidgetOptions :: H CodeWidgetOptions
+stringToCodeWidgetOptions =
+  (reserved "nomenu" >> return Nomenu) <|>
+  (reserved "noeval" >> return Noeval) <|>
+  (reserved "noerrors" >> return Noerrors) <|>
+  (reserved "fluxus" >> return Fluxus) <|>
+  ((reserved "centre" <|> reserved "center") >> return CentreAlign) <|>
+  (reserved "right" >> return RightAlign)
+
+codeWidgetOptionsToString :: CodeWidgetOptions -> String
+codeWidgetOptionsToString Nomenu = "nomenu"
+codeWidgetOptionsToString Noeval = "noeval"
+codeWidgetOptionsToString Noerrors = "noerrors"
+codeWidgetOptionsToString Fluxus = "fluxus"
+codeWidgetOptionsToString CentreAlign = "centre"
+codeWidgetOptionsToString RightAlign = "right"
+
+-----
+
+textToNotation :: T.Text -> TextNotation
 textToNotation "minitidal" = TidalTextNotation MiniTidal
 textToNotation "punctual" = Punctual
 textToNotation "cinecer0" = CineCer0
