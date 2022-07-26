@@ -30,11 +30,11 @@ presetViews = fromList [
 
       ("def",  GridView 2 3  [
       (Views [LabelView 1, CalendarEventView 2]),
-      (Views [LabelView 3, CodeView 4 0 [ Nomenu, Noeval ] ]),
-      (Views [LabelView 5, CodeView 6 0 [ Noeval, (Fontsize 10)] ]),
-      (Views [LabelView 7, CodeView 8 0 [ Fluxus ] ]),
-      (Views [LabelView 9, CodeView 10 0 [ CentreAlign ] ]),
-      (Views [LabelView 11, CodeView 12 0 [ RightAlign ] ])
+      (Views [LabelView 3, CodeView 4 0 [] ]),
+      (Views [LabelView 5, CodeView 6 0 [] ]),
+      (Views [LabelView 7, CodeView 8 0 [] ]),
+      (Views [LabelView 9, CodeView 10 0 [] ]),
+      (Views [LabelView 11, CodeView 12 0 [] ])
       ]),
 
       ("fulltexteditor", genGrid 1 1 True),
@@ -72,14 +72,16 @@ presetViews = fromList [
         ]),
 
       ("fluxus",GridView 1 1 [
-        BorderDiv [CodeView 1 0 [] ]
+        BorderDiv [CodeView 1 0 [Fluxus] ]
         ]),
 
-      ("fluxus2",GridView 2 2 [
-        Views [CodeView 1 0 [] ],
-        Views [CodeView 2 0 [] ],
-        Views [CodeView 3 0 [] ],
-        Views [CodeView 4 0 [] ]
+      ("justtexteditor",GridView 1 1 [
+        BorderDiv [CodeView 1 0 [Nomenu, Noeval, Noerrors] ]
+        ]),
+
+      ("bigFont",GridView 2 1 [
+        BorderDiv [CodeView 1 0 [Fontsize 5] ],
+        BorderDiv [CodeView 2 0 [Nomenu, Noeval, Noerrors, Fontsize 5] ]
         ]),
 
       ("tempoAndCode", GridView 2 1  [

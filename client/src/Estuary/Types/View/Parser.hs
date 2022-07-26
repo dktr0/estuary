@@ -34,7 +34,9 @@ dumpView (CollapsableView v) = "collapsable" <> dumpView v
 -- dumpView (Text t) = ...
 dumpView (LabelView x) = "label " <> showInt x
 dumpView (StructureView x) = "structure " <> showInt x
-dumpView (CodeView x y vs) = "code " <> showInt x <> " " <> showInt y <> " "
+
+dumpView (CodeView x y vs) = "code " <> showInt x <> " " <> showInt y <> " " <> (codeWidgetOptionsToString vs)
+
 dumpView (SequenceView z) = "sequence " <> showInt z
 dumpView (Snippet z b tn txt) = "snippet " <> showInt z <> " " <> (boolToText b) <> " " <> (notationToText tn) <> (" \""<>(formatText txt)<>"\"")
 dumpView EnsembleStatusView = "ensembleStatus"
@@ -427,13 +429,19 @@ stringToCodeWidgetOptions =
   ((reserved "centre" <|> reserved "center") >> return CentreAlign) <|>
   (reserved "right" >> return RightAlign)
 
-codeWidgetOptionsToString :: CodeWidgetOptions -> String
-codeWidgetOptionsToString Nomenu = "nomenu"
-codeWidgetOptionsToString Noeval = "noeval"
-codeWidgetOptionsToString Noerrors = "noerrors"
-codeWidgetOptionsToString Fluxus = "fluxus"
-codeWidgetOptionsToString CentreAlign = "centre"
-codeWidgetOptionsToString RightAlign = "right"
+
+codeWidgetOptionsToString :: [CodeWidgetOptions] -> T.Text
+codeWidgetOptionsToString vs = "[" <> (T.intercalate ", " $ fmap cwoToText vs) <> "]"
+  --mconcat $ fmap cwoToText vs
+
+cwoToText :: CodeWidgetOptions -> T.Text
+cwoToText Nomenu = "nomenu"
+cwoToText Noeval = "noeval"
+cwoToText Noerrors = "noerrors"
+cwoToText Fluxus = "fluxus"
+cwoToText CentreAlign = "centre"
+cwoToText RightAlign = "right"
+cwoToText (Fontsize x) = "(fontsize " <> (showt x) <> ")"
 
 -----
 
