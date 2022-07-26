@@ -10,8 +10,6 @@ import GHC.Generics
 import Data.Aeson
 import Data.Time
 import Data.Sequence
-import qualified Data.IntMap as IntMap
-
 
 
 import Estuary.Tidal.Types
@@ -26,12 +24,12 @@ type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
 type NotePad = (Int,Seq NotePage)
 type NotePage = (Text,Text)
-type CalendarEvents = M.Map Int CalendarEvent
+type CalendarEvents = IntMap.IntMap CalendarEvent
 
-data CalendarEvent = CalendarEvent Bool Text CalendarTime deriving (Eq, Show, Generic)
+data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
 data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
 data Recurrence = Recurrence { periodicity :: Periodicity, endDate :: ZonedTime} deriving  (Eq, Show, Generic)
-data Periodicity =  Once | Daily | DailyUntil | Weekly | WeeklyUntil | MonthlyXDay| MonthlyXDayUntil | Yearly| YearlyUntil deriving  (Eq, Show, Generic)
+data Periodicity =  Once | Daily | DailyUntil | Weekly | WeeklyUntil | MonthlyDate | MonthlyDateUntil | MonthlyNthDayOfWeek | MonthlyNthDayOfWeekUntil | Yearly | YearlyUntil deriving  (Eq, Show, Generic)
 
 
 -- data Periodicity =  Once | Daily | DailyUntil | Weekly | WeeklyUntil | MonthlyXDay| MonthlyXDayUntil | MonthlyFirstXDay | MonthlyFirstXDayUntil | MonthlySecondXDay | MonthlySecondXDayUntil | MonthlyThirdXDay | MonthlyThirdXDayUntil| MonthlyFourthXDay | MonthlyFourthXDayUntil | MonthlyLastXDay | MonthlyLastXDayUntil | Yearly| YearlyUntil deriving  (Eq, Show, Generic)
