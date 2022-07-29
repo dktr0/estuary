@@ -43,6 +43,8 @@ import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
 import Estuary.Widgets.DataVisualisers
+import Estuary.Widgets.Chat
+
 
 
 attrsColp :: Bool -> Map.Map T.Text T.Text
@@ -128,6 +130,9 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
 viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad er notePadWidget
+
+viewWidget er (ChatView z) = zoneWidget z [] maybeSpecChat SpecChat er chatWidget
+
 
 viewWidget er TempoView = do
   ctx <- context

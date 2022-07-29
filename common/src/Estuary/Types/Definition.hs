@@ -16,6 +16,8 @@ import Estuary.Types.Live
 import Estuary.Types.TextNotation
 import Estuary.Types.Tempo
 import Estuary.Types.ZonedTime
+import Estuary.Types.Chat
+
 
 type TextProgram = (TextNotation,Text,UTCTime)
 
@@ -23,6 +25,8 @@ type Sequence = M.Map Int (Text,[Bool])
 type Roulette = [Text]
 type NotePad = (Int,Seq NotePage)
 type NotePage = (Text,Text)
+type SpecChat = [Chat]
+
 
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
 data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
@@ -87,7 +91,9 @@ data Definition =
   StopWatch TimerUpState |
   SeeTime TimeVision |
   NotePad NotePad |
-  CalendarEv CalendarEvent
+  CalendarEv CalendarEvent |
+  SpecChat SpecChat
+
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -111,6 +117,8 @@ definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
 definitionForRendering (NotePad x) = NotePad x
+definitionForRendering (SpecChat x) = SpecChat x
+
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -170,3 +178,8 @@ maybeSeeTime _ = Nothing
 maybeNotePad :: Definition -> Maybe NotePad
 maybeNotePad (NotePad x) = Just x
 maybeNotePad _ = Nothing
+
+
+maybeSpecChat :: Definition -> Maybe SpecChat
+maybeSpecChat (SpecChat x) = Just x
+maybeSpecChat _ = Nothing
