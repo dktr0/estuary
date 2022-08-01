@@ -9,6 +9,7 @@ import Text.Read
 import Data.Text
 import Data.Time
 import Data.Map
+import Data.Maybe
 
 import Sound.MusicW.AudioContext
 import Data.Text (Text)
@@ -43,43 +44,147 @@ tempoWidget tempoDyn = do
   return $ localEdits v
 
 -------------------
+
+-- timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
+-- timerWidget delta = mdo
+--   v <- variable delta $ localEdits'
+--   initialValue' <- sample $ current delta
+--   initialValue <- TimerDown [20,30,10] utc False Cycles  
+--   let initialWidget = selectPanelOfTimer initialValue
+--   let remoteOrLocalEdits = leftmost [updated delta, localEdits']
+--   let updatedWidgets = fmap selectPanelOfTimer remoteOrLocalEdits -- type? dynamic or event??
+--   localEdits <- widgetHold initialWidget updatedWidgets -- m (Dynamic t (Event t T)) -- this does not need localEdits <-
+--   let localEdits' = switchDyn localEdits -- this line seems unecessary -- switchdyn digs up the event inside the dynamic
+--   return v
+
+
+-- create test function: utc
+
+data Measure = Cycles | Seconds deriving (Show)
+
+data Visualiser = Interface | SandClock | SimpleBar | Text deriving (Show)
+
+--                    targets      start  Loop?                    
+data Timer = TimerUp Visualiser (Maybe [Int]) UTCTime Bool Measure | TimerDown Visualiser [Int] UTCTime Bool Measure deriving (Show)
+
+-- timer views  do not require a definition as they are local behaviours
+
+
+timer:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> W t m ()
+timer beat tempo = mdo 
+  let textos = constDyn "enter multiple countdowns like: 20 30 10"
+  (valTxBx,_) <- textWithLockWidget 2 (constDyn False) textos -- Dyn t Text
+  boton <- button "test" -- Event ()
+
+  -- terrible loop mechanism, this will change once the definition is concieved
+  tru <- button "true"
+  fals <- button "false"
+  let si = tag (constant True)  tru -- Event t Bool
+  let no = tag (constant False) fals -- Event t Bool
+  stateOfLoop <- holdDyn False $ leftmost [si,no]
+
+  let beatAtBEvent = tag (current $ beat) boton -- Event t Rational
+  lastBEventDyn <- holdDyn 0 beatAtBEvent -- Dynamic t Rational
+
+  let txPressed = tag (current $ valTxBx) boton
+  targetDyn <- holdDyn [] $ fmap parseForm txPressed -- Dyn t [Rational]
+
+  let countFromBEvent = (\x y -> x - y) <$> beat <*> lastBEventDyn
+
+  let countFromBEventLooped = loopBool <$> stateOfLoop <*> targetDyn <*> countFromBEvent
+
+  let inSecsBeat = countToTime <$> tempo <*> beat
+  let inSecsLastBEventDyn = countToTime <$> tempo <*> lastBEventDyn
+
+  let countdown = multiTimer 0 <$> targetDyn <*> countFromBEventLooped
+
+  let countFromBEventInSecs = diffUTCTime <$> inSecsBeat <*> inSecsLastBEventDyn 
+
+--  dynText $ fmap (\x -> showt (realToFrac x ::Double)) beat -- this shows beats from booting estuary
+  dynText $ fmap (\x -> showt $ (realToFrac x :: Double)) countdown
+  text "| is the countdown(s) (in beats) |"
+  dynText $ fmap (\x -> showt $ (realToFrac x ::Double)) countFromBEventInSecs 
+  text "| is the count up from button pressed in seconds |"
+  dynText $ fmap (\x -> showt $ (realToFrac x ::Double)) countFromBEvent 
+  text "| is the count up from button pressed in beats |"
+  return ()
+
+
+-- countDown':: Rational -> Rational -> Rational
+-- countDown' len beatPosition = len - beatPosition  -- 290 - 200
+
+-- endTime:: Rational -> Rational -> Rational
+-- endTime len start = start + len 
+
+-- countDown:: MonadWidget t m => Event t () -> Dynamic t (Rational) -> W t m (Event t Rational)
+-- countDown trig len = do
+--   c <- context
+--   let currentTempo = fmap (tempo . ensemble . ensembleC) c -- this is a dynamic!!!! OJO AQUI 
+--   widgetBuildTime <- liftIO $ getCurrentTime
+--   let st = performEvent $ fmap (liftIO $ getCurrentTime) trig
+--   let start = attachWith timeToCount (current currentTempo) $ st -- event t Rational -- event gets the current time (start moment of the counter), then transform it to beats
+--   let end = attachWith endTime (current $ len) start -- event t rational
+--   tick <- tickLossy 0.01 widgetBuildTime -- event t tickinfo
+--   beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick
+--   x <- countDown' <$> end <*> beatPosition
+--   return x
+
+loopBool':: Bool -> [Rational] -> Rational -> Rational
+loopBool' True xs b = realToFrac (mod (floor b) $ floor $ sum xs) :: Rational
+loopBool' False _ b = b
+
+loopBool:: Bool -> [Rational] -> Rational -> Rational
+loopBool True xs b = ((b / (sum xs)) - (realToFrac (floor (b / (sum xs))) :: Rational)) * (sum xs)
+loopBool False _ b = b
+
+parseForm:: T.Text -> [Rational] 
+parseForm tx = 
+    let listOfDurs = T.words $ T.strip tx
+        listOfInts = Data.Maybe.mapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) listOfDurs
+    in Prelude.map fromIntegral listOfInts
+
+multiTimer:: Rational -> [Rational] -> Rational -> Rational
+multiTimer startPoint x  b
+  | (x==[]) = 0
+  | otherwise = if (Prelude.head ts) > b then (Prelude.head ts) - b else multiTimer (Prelude.head ts) (Prelude.tail x) b
+        where ts = Prelude.tail $ Prelude.scanl (+) startPoint x
+
+
+---
 getElapsedBeats :: MonadIO m => Tempo -> UTCTime -> m Rational
 getElapsedBeats t now = do
   let x = timeToCount t now 
   return x  
-
-countDown':: Rational -> Rational -> Rational
-countDown' len beatPosition = len - beatPosition  -- 290 - 200
-
-endTime:: Rational -> Rational -> Rational
-endTime len start = start + len 
-
-countDown:: MonadWidget t m => Event t () -> Dynamic t (Rational) -> W t m (Event t Rational)
-countDown trig len = do
-  c <- context
-  let currentTempo = fmap (tempo . ensemble . ensembleC) c -- this is a dynamic!!!! OJO AQUI 
-  widgetBuildTime <- liftIO $ getCurrentTime
-  let st = performEvent $ fmap (liftIO $ getCurrentTime) trig
-  let start = attachWith timeToCount (current currentTempo) $ st -- event t Rational -- event gets the current time (start moment of the counter), then transform it to beats
-  let end = attachWith endTime (current $ len) start -- event t rational
-  tick <- tickLossy 0.01 widgetBuildTime -- event t tickinfo
-  beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick
-  x <- countDown' <$> end <*> beatPosition
-  return x
 
 currentBeat:: MonadWidget t m => W t m (Event t Rational)
 currentBeat = do
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   widgetBuildTime <- liftIO $ getCurrentTime
-  tick <- tickLossy 0.01 widgetBuildTime
+  tick <- tickLossy 0.06666666666666667 widgetBuildTime
   beatPosition <- performEvent $ attachWith getElapsedBeats (current currentTempo) $ fmap _tickInfo_lastUTC tick
   return beatPosition
 
+
+----
+-- interfaceForTimerTracer:: MonadQidget t m => W t m ()
+-- interfaceForTimerTracer = do
+--   c <- context 
+--   let currentTempo = fmap (tempo . ensemble . ensembleC) c
+--   beat' <- currentBeat
+--   beat <- holdDyn 0 beat'
+--   timer beat currentTempo
+--   return ()
+
+----
+
 cycleTracer:: MonadWidget t m => Rational ->  W t m ()
 cycleTracer segments = do
+  c <- context
+  let currentTempo = fmap (tempo . ensemble . ensembleC) c
   beatPosition <- currentBeat -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
+--  timer beat currentTempo
   visualiseCycles beat segments
   return ()
 
@@ -554,3 +659,33 @@ tvNextStateLeft (Cyclic x) = (Beads (0,x))
 tvNextStateLeft  (Beads x) = (Ring (snd x))
 tvNextStateLeft   (Ring x) = (Metric x)
 tvNextStateLeft (Metric x) = (Cyclic x)
+
+
+------------------------------------------
+-- data Timer = TimerUp Visualiser (Maybe [Int]) UTCTime Bool Measure | TimerDown Visualiser [Int] UTCTime Bool Measure deriving (Show)
+
+-- how will this work? too much information being shared by all users... not clear if the visualiser is part or not of the definition... in principle no...
+
+--- select either interface or time visualiser
+-- selectPanelOfTimer :: MonadWidget t m => Timer -> W t m (Event t Timer)
+
+-- this should be discussed with David...
+
+
+-- interfaceOfTimer :: MonadWidget t m => Dynamic t Rational -> m ()
+-- interfaceOfTimer delta = divClass "interfaceForTimers" $ do
+--   leftPanel <- clickableDiv "sideButton" blank
+--   -- event with next state for changing to panels
+--   divClass "interactiveArea" do
+--     textWidget xxx xxx xxx >>= divClass "txAreaDiv" 
+--     divClass "mid-centre-InteractiveArea" $ do
+--       loopButton
+--       secondsOrCycles
+--       return ()
+--     divClass "timeDisplay" $ do
+--       timeDisplay
+--       beatDisplay
+--     return () -- here an event with the new timer configuration
+--   rightPanel <- clickableDiv "side-Button" blank
+--   -- event with next state for changing to panels
+--   return ()

@@ -34,7 +34,7 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
 import Estuary.Widgets.Roulette
 import Estuary.Widgets.EnsembleStatus
-import Estuary.Widgets.Tempo
+import Estuary.Widgets.Tempo 
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 import Estuary.Types.Hint
@@ -96,7 +96,7 @@ viewWidget er (CollapsableView v) = viewsContainerCollaps $ divClass "gridChild"
 
 --
 
-viewWidget _ (Text t) = translatableText t >>= dynText >> return never
+viewWidget _ (Estuary.Types.View.Text t) = translatableText t >>= dynText >> return never
 
 viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
 
