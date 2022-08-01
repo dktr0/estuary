@@ -10,6 +10,7 @@ import qualified Data.Text as T
 
 
 import Estuary.Types.View
+import Estuary.Types.CodeWidgetOptions
 
 
 genGrid :: Int -> Int -> Bool -> View
@@ -25,11 +26,11 @@ presetViews :: Map Text View
 
 presetViews = fromList [
 
-      ("def", genGrid 2 3 False),
+      -- ("def", genGrid 2 3 False),
 
-      ("test",  GridView 2 3  [
-      (Views [LabelView 1, CalendarEventView 2]),
-      (Views [LabelView 3, CodeView 4 0 ["fluxus"] ]),
+      ("def",  GridView 2 3  [
+      (Views [LabelView 1, CodeView 2 0 [] ]),
+      (Views [LabelView 3, CodeView 4 0 [] ]),
       (Views [LabelView 5, CodeView 6 0 [] ]),
       (Views [LabelView 7, CodeView 8 0 [] ]),
       (Views [LabelView 9, CodeView 10 0 [] ]),
@@ -71,14 +72,16 @@ presetViews = fromList [
         ]),
 
       ("fluxus",GridView 1 1 [
-        BorderDiv [CodeView 1 0 ["fluxus"] ]
+        BorderDiv [CodeView 1 0 [Fluxus] ]
         ]),
 
-      ("fluxus2",GridView 2 2 [
-        Views [CodeView 1 0 ["fluxus"] ],
-        Views [CodeView 2 0 ["fluxus"] ],
-        Views [CodeView 3 0 ["fluxus"] ],
-        Views [CodeView 4 0 ["fluxus"] ]
+      ("justtexteditor",GridView 1 1 [
+        BorderDiv [CodeView 1 0 [Nomenu, Noeval, Noerrors] ]
+        ]),
+
+      ("bigFont",GridView 2 1 [
+        BorderDiv [CodeView 1 0 [Fontsize 5] ],
+        BorderDiv [CodeView 2 0 [Nomenu, Noeval, Noerrors, Fontsize 5] ]
         ]),
 
       ("tempoAndCode", GridView 2 1  [

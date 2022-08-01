@@ -13,6 +13,7 @@ import Data.Time
 import Estuary.Types.TranslatableText
 import Estuary.Types.TextNotation
 import Estuary.Types.Language
+import Estuary.Types.CodeWidgetOptions
 
 data View =
   EmptyView |
@@ -29,7 +30,7 @@ data View =
   Text TranslatableText |
   LabelView Int |
   StructureView Int |
-  CodeView Int Int [Text] | -- first int is zone to edit, second int is number of lines in editor, text is style
+  CodeView Int Int [CodeWidgetOptions] | -- first int is zone to edit, second int is number of lines in editor, text is style
   SequenceView Int |
   Snippet Int Bool TextNotation Text | -- a clickable text-code example
   EnsembleStatusView |
@@ -43,7 +44,8 @@ data View =
   NotePadView Int |
   IFrame Text | -- embedded web page
   CalendarEventView Int |
-  LoadView Int
+  LoadView Int |
+  ChatView Int 
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

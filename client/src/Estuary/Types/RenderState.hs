@@ -23,7 +23,7 @@ import Estuary.Types.TextNotation hiding (LocoMotion)
 import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
--- import qualified Sound.Seis8s.Program as Seis8s
+import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
 
@@ -50,7 +50,7 @@ data RenderState = RenderState {
   cineCer0Specs :: !(IntMap CineCer0.Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
   timeNots :: IntMap JSVal,
-  -- seis8ses :: IntMap Seis8s.Program,
+  seis8ses :: IntMap Seis8s.Program,
   hydras :: IntMap Hydra.Hydra,
   evaluationTimes :: IntMap UTCTime, -- this is probably temporary
   renderTime :: !MovingAverage,
@@ -94,7 +94,7 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     cineCer0Specs = empty,
     cineCer0States = empty,
     timeNots = empty,
-    -- seis8ses = empty,
+    seis8ses = empty,
     hydras = empty,
     evaluationTimes = empty,
     renderTime = newAverage 20,

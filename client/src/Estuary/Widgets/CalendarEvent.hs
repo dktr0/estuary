@@ -4,18 +4,23 @@ module Estuary.Widgets.CalendarEvent where
 
 import Reflex
 import Reflex.Dom
+import Reflex.Dynamic
+
 import Data.Text (Text)
 import qualified Data.Text as T
 import TextShow
 import Data.Time
+import Data.Time.LocalTime
 import GHCJS.DOM.EventM
 import qualified Data.Fixed as F
 import Data.Map as Map
+import Data.IntMap.Strict
+import Data.Map.Strict as M
 import Data.Maybe as Maybe
 import Control.Monad.IO.Class
 import Control.Monad(liftM)
 import qualified Data.Char as C
-
+import Safe.Foldable (maximumMay)
 
 import Estuary.Types.Context
 import Estuary.Types.Language
@@ -23,13 +28,23 @@ import Estuary.Widgets.W
 import Estuary.Types.Definition
 import Estuary.Widgets.Reflex
 
-calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Variable t CalendarEvent)
-calendarEventWidget delta = divClass "calendarEventWidgetMainContainer" $ mdo
-  -- thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
-  -- sampledDelta <- sample $ current delta
-  -- d <- holdDyn sampledDelta $ localUpdates
-  -- dynText $ fmap (T.pack . show) delta
+-- working widget
+calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvents -> m (Variable t CalendarEvents)
+calendarEventWidget deltasDown = mdo
+  sampledDelta <- sample $ current deltasDown
+  holdDelta <- holdDyn sampledDelta (updated deltasDown)
+  dynText $ fmap (T.pack . show) holdDelta
+  today <- liftIO getZonedTime
+  addButton <- el "div" $ button "+" -- Event t ()
+  let newCalendarEvent = CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today))
+  mapEv <- widgetMapEventWithAdd deltasDown (newCalendarEvent <$ addButton) calendarEventBuilder
+  variable deltasDown mapEv
 
+calendarEventBuilder :: MonadWidget t m => Dynamic t CalendarEvent ->  m (Event t CalendarEvent)
+calendarEventBuilder delta = calendarEventWidgetEv delta
+
+calendarEventWidgetEv :: MonadWidget t m => Dynamic t CalendarEvent -> m (Event t CalendarEvent)
+calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
   autoUpdateStartingDateEv <- autoUpdateStartingDate $ fmap getStartingDateFromCalendarEv delta
 
   (descEv, dateEv, changePeriodicityEv, changeEndDateEv) <- divClass "calendarEventWidgetSubContainer" $ do
@@ -40,10 +55,10 @@ calendarEventWidget delta = divClass "calendarEventWidgetMainContainer" $ mdo
         return dateEv''
 
     (changePeriodicityEv', changeEndDateEv') <- divClass "periodicity" $ do
-      changePeriodicityEv'' <- divClass "selectPeriodicity" $ changePeriodicityWidget $ fmap (getPeriodicityFromRecurrence' . getRecurrenceFromCalendarEvent) delta
-      changeEndDateEv'' <- divClass "endDateWidget code-font background" $ changeEndDateWidget changePeriodicityEv'' (fmap (getPeriodicityFromRecurrence' . getRecurrenceFromCalendarEvent) delta) $ fmap (localDay . zonedTimeToLocalTime . getEndDateFromCalendarEv) delta -- Event t Day
+      changePeriodicityEv'' <- divClass "selectPeriodicity" $ changePeriodicityWidget $ fmap (getPeriodicityFromRecurrence . getRecurrenceFromCalendarEvent) delta
+      changeEndDateEv'' <- divClass "endDateWidget code-font background" $ changeEndDateWidget changePeriodicityEv'' (fmap (getPeriodicityFromRecurrence . getRecurrenceFromCalendarEvent) delta) $ fmap (localDay . zonedTimeToLocalTime . getEndDateFromCalendarEv) delta -- Event t Day
       return (changePeriodicityEv'', changeEndDateEv'')
-    return (descEv', dateEv', changePeriodicityEv', changeEndDateEv'  {--, timeOfDayEv', zoneEv', utcTimeEv'--})
+    return (descEv', dateEv', changePeriodicityEv', changeEndDateEv' {--, timeOfDayEv', zoneEv', utcTimeEv'--})
 
   let descF = fmap changeDescription descEv -- Event t (CalendarEvent -> CalendarEvent)
   let autoUpdateStartingDateF = fmap startingDayAutoUpdate autoUpdateStartingDateEv
@@ -51,11 +66,13 @@ calendarEventWidget delta = divClass "calendarEventWidgetMainContainer" $ mdo
   let changePeriodicityF = fmap changePeriodicity changePeriodicityEv
   let changeEndDateF = fmap changeEndDate changeEndDateEv
 
-  let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF ] -- Event t (CalendarEvent -> CalendarEvent)--
+  let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
   let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t CalendarEvent
-  v <- variable delta localUpdates
-  return v
 
+  v <- variable delta localUpdates --  m (Variable t a)
+  return localUpdates -- -- Event t (CalendarEvent )
+
+-- helper functions
 
 changePeriodicity :: Periodicity -> CalendarEvent -> CalendarEvent
 changePeriodicity Once (CalendarEvent details (CalendarTime startingDate (Recurrence periodicity endDate))) = CalendarEvent details (CalendarTime startingDate (Recurrence Once startingDate))
@@ -123,9 +140,9 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence WeeklyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
 
---"monthly on x-day"
+--"monthly date"
   --repeat on same day number as opposed to the same week day :: eg. will always update to the 3rd of the next month
-startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Recurrence MonthlyXDay (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Recurrence MonthlyDate (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
   let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
   let numberOfDaysOfMonth  =  gregorianMonthLength (getYearFromDay startingDay) (getMonthFromDay startingDay)
@@ -136,11 +153,11 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) = nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyXDay (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyDate (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
---"monthly x-day until"
+--"monthly date until"
   --repeat on same day number as opposed to the same week day :: eg. will always update to the 3rd of the next month
-startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence MonthlyXDayUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence MonthlyDateUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
   let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
   let numberOfDaysOfMonth  =  gregorianMonthLength (getYearFromDay startingDay) (getMonthFromDay startingDay)
@@ -151,32 +168,39 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) = nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyXDayUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyDateUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
---"monthly on the first wed"
-  --repeat on same day number as opposed to the same week day :: eg. will always update to the 3rd of the next month
--- startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Recurrence MonthlyFirstXDay (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
---   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
---   let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
---   let numberOfDaysOfMonth  =  gregorianMonthLength (getYearFromDay startingDay) (getMonthFromDay startingDay)
---   let newStartingDay = addDays (fromIntegral numberOfDaysOfMonth) startingDay
---   let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
---   let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
---   let diffNowAndStartDate = diffZonedTime now startingDate
---   let diffNowAndEndDate = diffZonedTime now endDate
---   let nextStartingDate' | (diffNowAndStartDate > 0) = nextStartingDate
---                       | otherwise = startingDate
---   CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyFirstXDay (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
---
--- selectFirstSecondThirdOrFourthXDayFromNextMonth ::
---
--- isFirstSecondThirdOrFourthXDay :: Day -> [Day] -> Int
--- isFirstSecondThirdOrFourthXDay daySelected calendarDays = length $ catMaybes $ fmap (compareDayOfCalendar daySelected) calendarDays
---
--- compareDayOfCalendar :: Day -> Day -> Maybe Bool
--- compareDay daySelected calendarDay
---   | daySelected == calendarDay = True
---   | otherwise = Nothing
+-- monthly nth day of week until"
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Recurrence MonthlyNthDayOfWeekUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+  let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
+  let (nth, dayOfWeek)  =  dayOfWeekAndNthofDayOfWeekOfMonth startingDay --  (Int, DayOfWeek) of select date, e.g 1st Monday of Month
+  let newStartingDay = dateOfNthDayOfWeekOfNextMonth (nth, dayOfWeek) startingDay
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
+  let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
+  let diffNowAndStartDate = diffZonedTime now startingDate
+  let diffNowAndEndDate = diffZonedTime now endDate
+  let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) = nextStartingDate
+                        | otherwise = startingDate
+  CalendarEvent details (CalendarTime nextStartingDate' (Recurrence MonthlyNthDayOfWeekUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+
+
+-- "monthly on the first wed"
+  -- repeat on same day week day as opposed to on a same day number: eg. will always update to the 3rd wednesday of the next month
+startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay) (Recurrence MonthlyNthDayOfWeek (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
+  let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
+  let endDate = (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)
+  let (nth, weekOfDay)  =  dayOfWeekAndNthofDayOfWeekOfMonth startingDay --  (Int, DayOfWeek) of select date, e.g 1st Monday of Month
+  let newStartingDay = dateOfNthDayOfWeekOfNextMonth (nth, weekOfDay) startingDay
+  let nextStartingDate = ZonedTime (LocalTime newStartingDay timeOfStartingDay) timeZoneOfStartingDay
+  let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
+  let diffNowAndStartDate = diffZonedTime now startingDate
+  let diffNowAndEndDate = diffZonedTime now endDate
+  let nextStartingDate' | (diffNowAndStartDate > 0) = nextStartingDate
+                        | otherwise = startingDate
+  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyNthDayOfWeek (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+
+
 
 -- "yearly "
 startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence Yearly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
@@ -208,6 +232,49 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) =  nextStartingDate
                       | otherwise = startingDate
   CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence YearlyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+
+dateOfNthDayOfWeekOfNextMonth :: (Int, DayOfWeek) -> Day -> Day
+dateOfNthDayOfWeekOfNextMonth (n, weekOfDay) startingDay = do
+  let nextmonth = addGregorianMonthsClip 1 startingDay -- Day
+  let firstDayOfNextMonth = fromGregorian (getYearFromDay nextmonth) (getMonthFromDay nextmonth) (01 :: Int)
+  let firstSelectedDayOfWeekOfNextMonth = firstDayOfWeekOnAfter weekOfDay firstDayOfNextMonth -- DayOfWeek -> Day -> Day  e.g. Wednesday
+  nthOfDayOfWeekOfNextMonth n firstSelectedDayOfWeekOfNextMonth -- Day
+
+nthOfDayOfWeekOfNextMonth :: Int -> Day -> Day
+nthOfDayOfWeekOfNextMonth weekNum firstSelectedDayOfWeekOfMonth
+  | weekNum == 1 = addDays (fromIntegral 0) firstSelectedDayOfWeekOfMonth
+  | weekNum == 2 = addDays (fromIntegral 7) firstSelectedDayOfWeekOfMonth
+  | weekNum == 3 = addDays (fromIntegral 14) firstSelectedDayOfWeekOfMonth
+  | weekNum == 4 = addDays (fromIntegral 21) firstSelectedDayOfWeekOfMonth
+  | otherwise = clipDayToLastDayOfMonth firstSelectedDayOfWeekOfMonth (addDays (fromIntegral 28) firstSelectedDayOfWeekOfMonth) (addDays (fromIntegral 21) firstSelectedDayOfWeekOfMonth)
+
+-- si la fecha calculada al sumar 28 es mayor que el ultimo dia del mes, entonces default a 21 dias
+clipDayToLastDayOfMonth :: Day -> Day -> Day -> Day
+clipDayToLastDayOfMonth firstDayOfMonth d ddef = do
+  let monthLength = gregorianMonthLength (getYearFromDay firstDayOfMonth) (getMonthFromDay firstDayOfMonth) -- e.g 31
+  let lastDayOfMonth = fromGregorian (getYearFromDay firstDayOfMonth) (getMonthFromDay firstDayOfMonth) (monthLength :: Int)-- last Day  of month
+  let clipDayToLastDayOfMonth' |d > lastDayOfMonth = ddef
+                               |otherwise = d
+  clipDayToLastDayOfMonth'
+dayOfWeekAndNthofDayOfWeekOfMonth :: Day -> (Int, DayOfWeek)
+
+dayOfWeekAndNthofDayOfWeekOfMonth selectedDay = do
+  let nameOfselectedDay = dayOfWeek selectedDay -- :: Day -> DayOfWeek
+  let fstDayOfMonth =  fromGregorian (getYearFromDay selectedDay) (getMonthFromDay selectedDay) (01 :: Int) -- Year -> MonthOfYear -> DayOfMonth -> Day
+  let firstSelectedDayOfWeek = firstDayOfWeekOnAfter nameOfselectedDay fstDayOfMonth -- DayOfWeek -> Day -> Day  e.g. Wednesday
+  let whichNofXDay' = whichNofXDay firstSelectedDayOfWeek selectedDay
+  (whichNofXDay', nameOfselectedDay)
+
+whichNofXDay :: Day -> Day -> Int
+whichNofXDay d1 d2
+  | (day1 + 0) ==  day2 = 1
+  | (day1 + 7) ==  day2 = 2
+  | (day1 + 14) ==  day2 = 3
+  | (day1 + 21) ==  day2 = 4
+  | otherwise = 5
+    where
+      (year1, month1, day1) = toGregorian d1
+      (year2, month2, day2) = toGregorian d2
 
 
 diffZonedTime :: ZonedTime -> ZonedTime -> NominalDiffTime
@@ -296,9 +363,6 @@ printRecurrence serverR = do
 getPeriodicityFromRecurrence :: Recurrence -> Periodicity
 getPeriodicityFromRecurrence r = periodicity r
 
-getPeriodicityFromRecurrence' :: Recurrence -> Periodicity
-getPeriodicityFromRecurrence' r = periodicity r
-
 getRecurrenceFromCalendarEvent :: CalendarEvent -> Recurrence
 getRecurrenceFromCalendarEvent (CalendarEvent details (CalendarTime startingDate  recurrence)) = recurrence
 
@@ -309,20 +373,21 @@ changePeriodicityWidget p = mdo
   let selItem = fmap lookupPeriodicity dd -- event t Periodicity
   return $ selItem
 
-
 periodicityToKey :: Periodicity -> Int
 periodicityToKey Once = 1
 periodicityToKey Daily = 2
 periodicityToKey DailyUntil = 3
 periodicityToKey Weekly = 4
 periodicityToKey WeeklyUntil = 5
-periodicityToKey MonthlyXDay = 6
-periodicityToKey MonthlyXDayUntil = 7
-periodicityToKey Yearly = 8
-periodicityToKey YearlyUntil = 9
+periodicityToKey MonthlyDate = 6
+periodicityToKey MonthlyDateUntil = 7
+periodicityToKey MonthlyNthDayOfWeek = 8
+periodicityToKey MonthlyNthDayOfWeekUntil = 9
+periodicityToKey Yearly = 10
+periodicityToKey YearlyUntil = 11
 
 periodicities :: Map.Map Int Text
-periodicities = Map.fromList [(1, "Once"), (2, "Daily"), (3, "Daily until"), (4, "Weekly"), (5, "Weekly until"), (6, "Monthly"), (7, "Monthly until"), (8, "Yearly"), (9, "Yearly until")]
+periodicities = Map.fromList [(1, "Once"), (2, "Daily"), (3, "Daily until"), (4, "Weekly"), (5, "Weekly until"), (6, "Monthly date"), (7, "Monthly date until"), (8, "Monthly nth weekday"), (9, "Monthly nth weekday until"), (10, "Yearly"), (11, "Yearly until")]
 
 lookupPeriodicity :: Int  -> Periodicity
 lookupPeriodicity key = textToPeriodicity $ Maybe.fromJust (Map.lookup key periodicities)
@@ -333,13 +398,15 @@ textToPeriodicity "Daily" =  Daily
 textToPeriodicity "Daily until" =  DailyUntil
 textToPeriodicity "Weekly" = Weekly
 textToPeriodicity "Weekly until" = WeeklyUntil
-textToPeriodicity "Monthly" = MonthlyXDay
-textToPeriodicity "Monthly until" = MonthlyXDayUntil
+textToPeriodicity "Monthly date" = MonthlyDate
+textToPeriodicity "Monthly date until" = MonthlyDateUntil
+textToPeriodicity "Monthly nth weekday" = MonthlyNthDayOfWeek
+textToPeriodicity "Monthly nth weekday until" = MonthlyNthDayOfWeekUntil
 textToPeriodicity "Yearly" = Yearly
 textToPeriodicity "Yearly until" = YearlyUntil
 
 endDateAttrs :: Periodicity -> Map Text Text
-endDateAttrs p | p == Once || p == Daily || p == Weekly || p == MonthlyXDay || p == Yearly =  "style" =: ("display: none;")
+endDateAttrs p | p == Once || p == Daily || p == Weekly || p == MonthlyDate || p == MonthlyNthDayOfWeek || p == Yearly =  "style" =: ("display: none;")
                | otherwise = "style" =: ("display: block;")
 
 changeEndDateWidget :: MonadWidget t m => Event t Periodicity -> Dynamic t Periodicity -> Dynamic t Day -> m (Event t Day)
@@ -554,7 +621,6 @@ dateWidgetMode1 d = mdo
   return openPicker'
 
 
-
 zonedDayToThisComputerDay :: MonadWidget t m => Dynamic t ZonedTime -> m (Dynamic t Day)
 zonedDayToThisComputerDay zt = do
   thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
@@ -562,19 +628,6 @@ zonedDayToThisComputerDay zt = do
   let utcToZonedTime' = fmap (utcToZonedTime thisComputerZone) zt' -- Dynamic t ZonedTime
   let thisComputerDay = fmap (localDay . zonedTimeToLocalTime) utcToZonedTime' -- Dynamic t Day
   return thisComputerDay
-
-showUtcTimeToThisClientZoneTimeWidget :: MonadWidget t m => Event t CalendarEvent -> Dynamic t ZonedTime ->  m ()
-showUtcTimeToThisClientZoneTimeWidget calendarEv serverZT = do
-  let calendarEv' = fmap (showZonedTimeWithoutSeconds . getStartingDateFromCalendarEv) calendarEv -- Ev t Text
-  sampledServerZT <- sample $ current serverZT -- ZonedTime
-  let showSampledServerZT = showZonedTimeWithoutSeconds sampledServerZT
-  thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
-
-  let serverZT' = fmap zonedTimeToUTC serverZT -- Event UTCTime
-  let utcToZonedTime' = fmap (utcToZonedTime thisComputerZone) serverZT' -- Event t ZonedTime
-  let thisComputerLocalTime = fmap showZonedTimeWithoutSeconds utcToZonedTime' -- Event t text
-  thisComputerLocalTime'' <- holdDyn showSampledServerZT (leftmost [updated thisComputerLocalTime, calendarEv'])
-  dynText $ thisComputerLocalTime''
 
 --
 showZonedTimeWithoutSeconds :: ZonedTime -> Text
@@ -989,7 +1042,6 @@ getEndDateFromCalendarEv (CalendarEvent details (CalendarTime startingDate (Recu
 getDetailsFromCalendarEv :: CalendarEvent -> Text
 getDetailsFromCalendarEv (CalendarEvent details calendarTime) = details
 
-
 toDate :: (Day, TimeOfDay, TimeZone) -> Day
 toDate (day, time, zone) = day
 
@@ -1047,3 +1099,12 @@ dayOfWeek (ModifiedJulianDay d) = toEnum $ fromInteger $ d + 3
 
 showDayOfWeek :: DayOfWeek -> Text
 showDayOfWeek d = T.pack $ show d
+
+-- | @dayOfWeekDiff a b = a - b@ in range 0 to 6.
+-- The number of days from b to the next a.
+dayOfWeekDiff :: DayOfWeek -> DayOfWeek -> Int
+dayOfWeekDiff a b = F.mod' (fromEnum a - fromEnum b) 7
+
+-- | The first day-of-week on or after some day
+firstDayOfWeekOnAfter :: DayOfWeek -> Day -> Day
+firstDayOfWeekOnAfter dw d = addDays (toInteger $ dayOfWeekDiff dw $ dayOfWeek d) d

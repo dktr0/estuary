@@ -17,6 +17,7 @@ import qualified Data.Sequence as Seq
 import GHCJS.DOM.EventM
 
 import Estuary.Types.Live
+import Estuary.Types.CodeWidgetOptions
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.EnsembleC
@@ -43,6 +44,8 @@ import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
 import Estuary.Widgets.DataVisualisers
+import Estuary.Widgets.Chat
+
 
 
 attrsColp :: Bool -> Map.Map T.Text T.Text
@@ -102,11 +105,11 @@ viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelE
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
-viewWidget er (CodeView z rows style) = do
+viewWidget er (CodeView z rows styles) = do
   whenever <- liftIO $ getCurrentTime
   ri <- renderInfo
   let errorDyn = fmap (IntMap.lookup z . errors) ri
-  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor style rows errorDyn)
+  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor styles rows errorDyn)
 
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
@@ -117,7 +120,8 @@ viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er 
 
 viewWidget er (CalendarEventView z) = do
   today <- liftIO getZonedTime
-  zoneWidget z (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today))) maybeCalendarEvent CalendarEv er calendarEventWidget
+  let defaultValue = IntMap.singleton 0 (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today)))
+  zoneWidget z defaultValue maybeCalendarEvents CalendarEvs er calendarEventWidget
 
 viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
 
@@ -128,6 +132,9 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
 viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad er notePadWidget
+
+viewWidget er (ChatView z) = zoneWidget z [] maybeSpecChat SpecChat er chatWidget
+
 
 viewWidget er TempoView = do
   ctx <- context
