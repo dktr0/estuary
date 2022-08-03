@@ -15,10 +15,10 @@ import Estuary.Types.Language
 import Estuary.Types.TranslatableText
 import Estuary.Types.Definition
 import qualified Estuary.Types.Term as Term
-import Control.Monad.Fix
+import Control.Monad.Fix (MonadFix)
 
 
-terminalViewCommandsHelpFile :: MonadWidget t m => W t m ()
+terminalViewCommandsHelpFile :: (DomBuilder t m, PostBuild t m, MonadFix m, MonadHold t m) => W t m ()
 terminalViewCommandsHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
   about
   functionRef "!localview"

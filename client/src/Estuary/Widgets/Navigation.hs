@@ -15,7 +15,7 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Text.Read
 import Control.Monad.IO.Class
-import Control.Monad.Fix
+import Control.Monad.Fix (MonadFix)
 
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.W

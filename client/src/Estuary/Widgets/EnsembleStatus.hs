@@ -19,7 +19,7 @@ import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
 import Control.Monad.IO.Class
-import Control.Monad.Fix
+import Control.Monad.Fix (MonadFix)
 
 ensembleStatusWidget :: MonadWidget t m => W t m (Event t EnsembleRequest)
 ensembleStatusWidget = divClass "ensembleStatusWidget" $ do

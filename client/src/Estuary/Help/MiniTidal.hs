@@ -7,10 +7,10 @@ import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Reflex
-import Control.Monad.Fix
+import Control.Monad.Fix (MonadFix)
 
 --render multiple sub-help files
-miniTidalHelpFile :: (Monad m, MonadFix m, PostBuild t00 m,  MonadHold t00 m, DomBuilder t00 m) => m ()
+miniTidalHelpFile :: (Monad m, MonadFix m, PostBuild t m,  MonadHold t m, DomBuilder t m) => m ()
 miniTidalHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
     about
     functionRef "silence"
@@ -170,7 +170,7 @@ miniTidalHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $
     return ()
 
 -- about
-about :: DomBuilder t0 m => m ()
+about :: DomBuilder t m => m ()
 about = do
   divClass "about primary-color code-font" $ text  "A live coding language that allows you to make musical patterns with text, describing sequences and ways of transforming and combining them, exploring complex interactions between simple parts."
 
@@ -490,7 +490,7 @@ referenceText "cosine" = "A cosine wave, i.e. a sine shifted in time by a quarte
 
 
 -- help files for samples
-functionRef :: (Monad m, Reflex t0, MonadFix m, PostBuild t0 m, DomBuilder t0 m, MonadHold t0 m) => Text -> m ()
+functionRef :: (Monad m, Reflex t, MonadFix m, PostBuild t m, DomBuilder t m, MonadHold t m) => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
    switchToReference <- buttonWithClass' x
    exampleVisible <- toggle True switchToReference

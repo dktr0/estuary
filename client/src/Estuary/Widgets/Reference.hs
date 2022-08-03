@@ -8,7 +8,7 @@ import Reflex.Dom hiding (Request,Response)
 import Control.Monad
 import GHC.Generics
 import GHCJS.Marshal
-import Control.Monad.Fix
+import Control.Monad.Fix (MonadFix)
 import Data.Text (Text)
 import qualified Data.Map.Strict as Map
 

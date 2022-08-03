@@ -4,6 +4,7 @@ module Estuary.Widgets.Announcements (splitPageWithAnnouncements) where
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
+import Control.Monad.Fix (MonadFix)
 import Data.Map
 import qualified Data.Text as T
 import Data.Time
@@ -60,14 +61,14 @@ compiledAnnouncements = fromList [
   ]
 
 
-splitPageWithAnnouncements :: MonadWidget t m => W t m a -> W t m a
+splitPageWithAnnouncements :: (DomBuilder t m, Monad m, PostBuild t m, MonadHold t m, MonadFix m) => W t m a -> W t m a
 splitPageWithAnnouncements child = divClass "pageSplitter" $ do
   r <- divClass "halfPage" $ child
   divClass "halfPage" announcementsWidget
   return r
 
 
-announcementsWidget :: MonadWidget t m => W t m ()
+announcementsWidget :: (DomBuilder t m, Monad m, PostBuild t m, Reflex t, Adjustable t m, MonadHold t m, MonadFix m) => W t m ()
 announcementsWidget = divClass "announcements" $ do
 
   divClass "announcement" $ do
@@ -90,7 +91,7 @@ announcementsWidget = divClass "announcements" $ do
 
   return ()
 
-individualAnnouncement :: MonadWidget t m => Dynamic t (Day,TranslatableText) -> W t m ()
+individualAnnouncement :: (DomBuilder t m, PostBuild t m, Reflex t, MonadFix m, MonadHold t m) => Dynamic t (Day,TranslatableText) -> W t m ()
 individualAnnouncement x = divClass "announcement" $ do
   dynText $ fmap (T.pack . show . fst) x
   text ": "

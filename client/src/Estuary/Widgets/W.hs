@@ -398,7 +398,7 @@ widgetMap delta buildF = do
   let iWidget = f iMapA
   let rebuilds = fmap f $ traceEvent "rebuilds" $ updated delta
   widgetHold iWidget rebuilds
-  
+
 -- | widgetMapEvent is a variant of widgetMap, specialized for Event
 widgetMapEvent :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
 widgetMapEvent delta buildF = mdo

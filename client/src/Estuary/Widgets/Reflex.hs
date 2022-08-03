@@ -24,7 +24,7 @@ import Data.Monoid
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Fix
+import Control.Monad.Fix (MonadFix)
 import GHCJS.DOM.HTMLSelectElement as Select
 import Safe -- for readMay
 import GHCJS.DOM.GlobalEventHandlers (change)

@@ -27,29 +27,29 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Widgets.W
 import Estuary.Types.Definition
-import Estuary.Types.RenderInfo 
+import Estuary.Types.RenderInfo
 
 ------ svg attributes for different visualisers
 svgAttrsGraph:: Map Text Text
-svgAttrsGraph = 
+svgAttrsGraph =
     let vB = "viewBox" =: "0 0 1000 600"
-        par = "preserveAspectRatio" =: "none" 
+        par = "preserveAspectRatio" =: "none"
         w = "width" =: "100%"
         h = "height" =: "100%"
     in mconcat [vB,w,h,par]
 
 svgAttrsCircle:: Map Text Text
-svgAttrsCircle = 
+svgAttrsCircle =
     let vB = "viewBox" =: "0 0 1000 600"
-        par = "preserveAspectRatio" =: "xMidYMid meet" 
+        par = "preserveAspectRatio" =: "xMidYMid meet"
         w = "width" =: "100%"
         h = "height" =: "100%"
     in mconcat [vB,w,h,par]
 
 svgAttrsVintage:: Map Text Text
-svgAttrsVintage = 
+svgAttrsVintage =
     let vB = "viewBox" =: "0 0 1000 600"
-        par = "preserveAspectRatio" =: "XMidyMid meet" 
+        par = "preserveAspectRatio" =: "XMidyMid meet"
         w = "width" =: "100%"
         h = "height" =: "100%"
     in mconcat [vB,w,h,par]
@@ -79,9 +79,9 @@ loadCircles load = do
 
     let coords = 100 :: Double;
     let z = constDyn $ "z" =: "0"
-    let cx = constDyn $  "cx" =: (showt $ (coords*5)) 
-    let cy = constDyn $  "cy" =: (showt $ (coords*3)) 
-    let r1 = constDyn $ "r" =:  (showt ((coords*3*0.5))) 
+    let cx = constDyn $  "cx" =: (showt $ (coords*5))
+    let cy = constDyn $  "cy" =: (showt $ (coords*3))
+    let r1 = constDyn $ "r" =:  (showt ((coords*3*0.5)))
     let fill1 = constDyn $ "fill" =: "transparent"
     let r2 = sizeCircle <$> load
     let fill2 = colouring ("fill","var(--primary-color)") <$> load
@@ -94,13 +94,13 @@ loadCircles load = do
     return ()
 
 sizeCircle:: Int -> Map Text Text
-sizeCircle x 
+sizeCircle x
     | x > 100 = "r" =: "300"
     | otherwise = "r" =: (showt (x'*3))
                 where x' = (realToFrac x :: Double)
 
 colouring:: (Text,Text) -> Int -> Map Text Text
-colouring (t,c) x 
+colouring (t,c) x
     | x < 50 = t =: c
     | otherwise = t =: "var(--transient-color)"
 
@@ -110,7 +110,7 @@ graphVisionWidget =  mdo
     r <- renderInfo
     let loadDyn = fmap avgRenderLoad r
     let loadEvent = updated $ loadDyn -- Event t Int
-    lista <- accumDyn injectFact [0] loadEvent  
+    lista <- accumDyn injectFact [0] loadEvent
     elDynAttrNS (Just "http://www.w3.org/2000/svg") "svg" (constDyn svgAttrsGraph) $ do  -- broken adapt to new viewBox
         loadGraph lista
     return ()
@@ -118,17 +118,17 @@ graphVisionWidget =  mdo
 injectFact:: [Int] -> Int -> [Int]
 injectFact xs x = Prelude.take 500 $ x:xs -- changing width means changing the amount of samples
 
-scaleIntegers:: Double -> [Int] -> [Int] 
+scaleIntegers:: Double -> [Int] -> [Int]
 scaleIntegers factor xs = Prelude.map (\x -> round $ ((realToFrac x :: Double) * factor) :: Int ) xs
 
 
 loadGraph:: MonadWidget t m => Dynamic t [Int] -> m ()
 loadGraph xs = do
-    let widths = 1000 :: Float 
+    let widths = 1000 :: Float
     let z = constDyn $ "z" =: "0"
-    let fill = constDyn $  "fill" =: "none" 
+    let fill = constDyn $  "fill" =: "none"
     let stroke = constDyn $  "stroke" =: "var(--primary-color)"
-    let strokeWidth = constDyn $ "stroke-width" =: "1"  
+    let strokeWidth = constDyn $ "stroke-width" =: "1"
     let transf = constDyn $ "transform" =: ("rotate(180," <> (showt $ widths*0.5) <> ",300)")
     let pts = (points . Prelude.zip [0,2..]) <$> fmap (scaleIntegers 6) xs -- [(Int,Int)]
     let attrs = mconcat [z,fill,stroke,strokeWidth,pts,transf]
@@ -195,7 +195,7 @@ loadCockpit load = do
     return ()
 
 needle:: Int -> Map Text Text
-needle load 
+needle load
     | load > 100 = "transform" =: ("rotate(146.6667,500,700)")
     | otherwise =  "transform" =: ("rotate(" <> (showt l) <> ",500,700)")
                     where l = round (33 + ((realToFrac load :: Rational)*0.01*113.6667)) :: Int
@@ -218,7 +218,7 @@ path = do
     return ()
 
 
-tx:: MonadWidget t m => Dynamic t (Text,Int) -> m ()
+tx :: (Reflex t, PostBuild t m, Monad m, DomBuilder t m, MonadSample t m) => Dynamic t (Text,Int) -> m ()
 tx x = do
 --    let txLength = constDyn $ "textLength" =: "1030" might be useful at some point
     let texto = fmap fst x
@@ -226,16 +226,16 @@ tx x = do
 
     let fontS = constDyn $ "font-size" =: "3em"
     let fill = constDyn $ "fill" =: "var(--background-color)"
-    let startOffset = generateAttr "startOffset" <$> offset  -- make dyn t map text text /// 
+    let startOffset = generateAttr "startOffset" <$> offset  -- make dyn t map text text ///
     let href = constDyn $ "href" =: "#percen"
     let txAttrs = mconcat [fontS, fill]
     let txPAttrs = mconcat [startOffset, href]
     elDynAttrNS (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
-        elDynAttrNS (Just "http://www.w3.org/2000/svg") "textPath" txPAttrs $ tex texto 
+        elDynAttrNS (Just "http://www.w3.org/2000/svg") "textPath" txPAttrs $ tex texto
     return ()
 
-tex:: MonadWidget t m => Dynamic t Text -> m ()
-tex x = do 
+tex :: (Monad m, MonadSample t m, Reflex t, DomBuilder t0 m) => Dynamic t Text -> m ()
+tex x = do
     t <- sample $ current x
     text t
     return ()
