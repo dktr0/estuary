@@ -44,7 +44,7 @@ import Estuary.Types.Hint
 
 
 -- the former 'dynEditor'...
-dyn' :: MonadWidget t m => Dynamic t (m a) -> m (Dynamic t a)
+dyn' :: (Monad m, MonadSample t m, Reflex t, Adjustable t m, MonadHold t m) => Dynamic t (m a) -> m (Dynamic t a)
 dyn' x = do
   initialWidget <- sample $ current x
   widgetHold initialWidget $ updated x -- m (Dynamic t a)
@@ -54,24 +54,24 @@ dynAttr :: Reflex t => Text -> Dynamic t Text -> Dynamic t (Map Text Text)
 dynAttr k = fmap (Data.Map.singleton k)
 
 -- a temporary button with class for the reference files
-buttonWithClass' :: MonadWidget t m => Text -> m (Event t ())
+buttonWithClass' :: (Monad m, Reflex t, DomBuilder t m) => Text -> m (Event t ())
 buttonWithClass' s = do
   (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "ui-buttons code-font primary-color"), ("style", "background-color:transparent; border:none; cursor:help")]) $ text s
   return $ domEvent Click e
 
 -- a button with class
-buttonWithClass :: MonadWidget t m => Text -> m (Event t ())
+buttonWithClass :: (Monad m, Reflex t, DomBuilder t m) => Text -> m (Event t ())
 buttonWithClass s = do
   (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "ui-buttons other-borders code-font")]) $ text s
   return $ domEvent Click e
 
-buttonWithSettableClass :: MonadWidget t m => Text -> Text -> m (Event t ())
+buttonWithSettableClass :: (Monad m, Reflex t, DomBuilder t m) => Text -> Text -> m (Event t ())
 buttonWithSettableClass c s = do
   (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", c)]) $ text s
   return $ domEvent Click e
 
 -- used in the footer
-invisibleButton :: MonadWidget t m => m (Event t ())
+invisibleButton :: (Monad m, Reflex t, DomBuilder t m) => m (Event t ())
 invisibleButton = do
   (e, _) <- elAttr' "button" (fromList [("type", "button"), ("class", "invisible-button")]) $ text "none"
   return $ domEvent Click e
@@ -89,7 +89,7 @@ dynButtonWSettableClass c s = dynE (buttonWithSettableClass <$> c <*> s)
 dynButton :: MonadWidget t m => Dynamic t Text -> m (Event t ())
 dynButton = dynE . fmap buttonWithClass
 
-dynButtonWithChild :: MonadWidget t m => String -> m () -> m (Event t ())
+dynButtonWithChild :: (Monad m, Reflex t, DomBuilder t m) => String -> m () -> m (Event t ())
 dynButtonWithChild cls child = do
   (e, _) <- elAttr' "div" (fromList [("type", "button"), ("class", T.pack $ cls ++ " btn")]) child
   return $ domEvent Click e
@@ -97,18 +97,18 @@ dynButtonWithChild cls child = do
 -- | dynE is like dyn from Reflex, specialized for widgets that return
 -- events. A dynamic argument updates the widget, and the return value is
 -- already flattened to just being the events returned by the child widget.
-dynE :: MonadWidget t m => Dynamic t (m (Event t a)) -> m (Event t a)
+dynE :: (Adjustable t m, Monad m, Reflex t, NotReady t m, PostBuild t m, MonadHold t m) => Dynamic t (m (Event t a)) -> m (Event t a)
 dynE x = dyn x >>= switchPromptly never
 
 -- a button that, instead of producing Event t (), produces an event of
 -- some constant value
-button' :: (MonadWidget t m) => Text -> a -> m (Event t a)
+button' :: (Monad m, DomBuilder t m, Reflex t) => Text -> a -> m (Event t a)
 button' t r = do
   x <- button t
   return (r <$ x)
 
 -- Button With Dynamic attributes
-buttonDynAttrs :: MonadWidget t m => Text -> a -> Dynamic t (Map Text Text)-> m (Event t a)
+buttonDynAttrs :: (Monad m, DomBuilder t m, Reflex t, PostBuild t m) => Text -> a -> Dynamic t (Map Text Text)-> m (Event t a)
 buttonDynAttrs s val attrs = do
   (e, _) <- elDynAttr' "button" attrs $ text s
   let event = domEvent Click e
@@ -119,7 +119,7 @@ buttonDynAttrs s val attrs = do
 -- to String tuples. The first String of the tuple indicates a subheader,
 -- and the second indicates the selectable item under it. DropdownConfig options
 -- expect the same as with a regular dropdown
-dropdownOpts :: (MonadWidget t m) => Int -> Map Int (Text,Text) ->  DropdownConfig t Int -> m (Dropdown t Int)
+dropdownOpts :: MonadWidget t m => Int -> Map Int (Text,Text) ->  DropdownConfig t Int -> m (Dropdown t Int)
 dropdownOpts k0 setUpMap (DropdownConfig setK attrs) = do
   let options = fromList $ Prelude.zip (keys setUpMap) $ fmap snd $ elems setUpMap
   let optGroups = fromList $ Prelude.zip (keys setUpMap) $ fmap fst $ elems setUpMap
@@ -194,7 +194,7 @@ instance Show a => Show (EditSignal a) where
   show TransformMe = "Transform"
 
 
-isChangeValue::EditSignal a -> Bool
+isChangeValue :: EditSignal a -> Bool
 isChangeValue (ChangeValue _) = True
 isChangeValue _ = False
 --data EditSignal = DeleteMe | MakeGroup |
@@ -259,7 +259,7 @@ clickableDivClass'' label c e = do
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (e <$) clickEv
 
-mouseOverClickableDiv::MonadWidget t m => Dynamic t Text -> Text -> a -> m(Event t a)
+mouseOverClickableDiv :: MonadWidget t m => Dynamic t Text -> Text -> a -> m(Event t a)
 mouseOverClickableDiv label c e = mdo
   (element, _) <- elDynAttr' "div" attrs $ dynText label
   mouseOver <- liftM (True <$) $ wrapDomEvent (_el_element element) (elementOnEventName Mouseover) mouseXY
@@ -270,13 +270,13 @@ mouseOverClickableDiv label c e = mdo
   return $ (e <$) clickEv
 
 
-clickableDivAttrs::MonadWidget t m => Text -> a -> Map Text Text -> m (Event t a)
+clickableDivAttrs :: MonadWidget t m => Text -> a -> Map Text Text -> m (Event t a)
 clickableDivAttrs label val attrs= do
   (element,_) <- elAttr' "div" attrs $ text label
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (val <$) clickEv
 
-clickableDivAttrs'::MonadWidget t m => Text -> a -> Map Text Text -> x -> y -> m (Dynamic t ((),Event t a))
+clickableDivAttrs' :: MonadWidget t m => Text -> a -> Map Text Text -> x -> y -> m (Dynamic t ((),Event t a))
 clickableDivAttrs' label val attrs _ _= do
   (element,_) <- elAttr' "div" attrs $ text label
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
@@ -290,13 +290,13 @@ clickableDivDynAttrs label val attrs = do
   return $ (val <$) clickEv
 
 -- with displayed text that can change
-clickableSpanClass:: MonadWidget t m => Dynamic t Text -> Text -> a -> m (Event t a)
+clickableSpanClass :: MonadWidget t m => Dynamic t Text -> Text -> a -> m (Event t a)
 clickableSpanClass label c e = do
   (element, _) <- elAttr' "span" ("class"=:c) $ dynText label
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (e <$) clickEv
 
-clickableTdClass::MonadWidget t m => Dynamic t Text -> Dynamic t Text -> a -> m (Event t a)
+clickableTdClass :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> a -> m (Event t a)
 clickableTdClass label c val = do
   let attrs = fmap (singleton "class") c
   (element, _) <- elDynAttr' "td" attrs $ dynText label
@@ -304,47 +304,47 @@ clickableTdClass label c val = do
   return $ ((val) <$) clickEv
 
 
-pingButton :: MonadWidget t m => Text -> m (Event t ())
+pingButton :: (Monad m, Reflex t, DomBuilder t m) => Text -> m (Event t ())
 pingButton label = liftM (() <$) $ button label
 
-pingButton' :: MonadWidget t m => Text -> m (Dynamic t ((),Event t ()))
+pingButton' :: (Monad m, DomBuilder t m) => Text -> m (Dynamic t ((),Event t ()))
 pingButton' label = do
   x <- pingButton label
   return $ constDyn ((),x)
 
-pingButton'' :: MonadWidget t m => Text -> a -> b -> m (Dynamic t ((),Event t ()))
+pingButton'' :: (DomBuilder t m) => Text -> a -> b -> m (Dynamic t ((),Event t ()))
 pingButton'' label _ _ = pingButton' label
 
-pingButton''':: MonadWidget t m => Text -> Map Text Text -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())))
+pingButton''' :: (PostBuild t m, Monad m, DomBuilder t m) => Text -> Map Text Text -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())))
 pingButton''' label attrs _ _ = do
   b <- buttonDynAttrs label (ChangeValue ()) $ constDyn attrs
   return $ constDyn ((), b)
 
-makeNewButton:: (MonadWidget t m)=> Text -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())) )
+makeNewButton :: (Monad m, DomBuilder t m, Reflex t) => Text -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())) )
 makeNewButton label _ _ = do
   a <- button label
   return $ constDyn ((), ((MakeNew::EditSignal ()) <$) a)
 
 
-tdButtonAttrs:: MonadWidget t m => Text -> a -> Map Text Text -> m (Event t a)
+tdButtonAttrs :: MonadWidget t m => Text -> a -> Map Text Text -> m (Event t a)
 tdButtonAttrs s val attrs = do
   (element, _) <- elAttr' "td" attrs $ text s
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ ((val) <$) clickEv
 
 -- with displayed text that can change
-tdButtonAttrs':: MonadWidget t m => Dynamic t Text -> a -> Map Text Text -> m (Event t a)
+tdButtonAttrs' :: MonadWidget t m => Dynamic t Text -> a -> Map Text Text -> m (Event t a)
 tdButtonAttrs' s val attrs = do
   (element, _) <- elAttr' "td" attrs $ dynText s
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ ((val) <$) clickEv
 
-tdPingButtonAttrs:: MonadWidget t m => Text -> Map Text Text -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())))
+tdPingButtonAttrs :: (Monad m, DomBuilder t m, PostBuild t m) => Text -> Map Text Text -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())))
 tdPingButtonAttrs label attrs _ _ = el "td" $ do
   b <- buttonDynAttrs label (ChangeValue ()) $ constDyn attrs
   return $ constDyn ((), b)
 
-growingTextInput::MonadWidget t m => TextInputConfig t -> m (TextInput t)
+growingTextInput :: MonadWidget t m => TextInputConfig t -> m (TextInput t)
 growingTextInput config = mdo
   let attrs = _textInputConfig_attributes config
   let dynAttrs = (\m w-> insertWith (T.append) "style" (T.pack $ ";width:"++ show (max 20 $ min 100 $ 8*T.length w) ++ "px" ++";") m) <$> attrs <*> (_textInput_value textField)
@@ -352,7 +352,7 @@ growingTextInput config = mdo
   textField <- textInput newConfig
   return textField
 
-whitespace:: (MonadWidget t m, Show a, Eq a)=> Dynamic t Liveness -> GeneralPattern a -> Text -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a)), Event t Hint))
+whitespace :: (MonadWidget t m, Show a, Eq a) => Dynamic t Liveness -> GeneralPattern a -> Text -> [EditSignal (GeneralPattern a)] -> () -> Event t (EditSignal (GeneralPattern a)) -> m (Dynamic t ((), Event t (EditSignal (GeneralPattern a)), Event t Hint))
 whitespace liveness iVal cssClass popupList _ event = elAttr "div" ("style"=:"position:relative;display:inline-block") $ elClass "div" cssClass $ mdo
   -- whitespace <- clickableDivClass'' (constDyn (case iVal of (Layers _ _)->",    ";otherwise->"     ")) "whiteSpaceClickable" ()
   whitespace <- mouseOverClickableDiv (constDyn (case iVal of (Layers _ _)->",    ";otherwise->"     ")) "whiteSpaceAdd" ()
@@ -373,7 +373,7 @@ whitespace liveness iVal cssClass popupList _ event = elAttr "div" ("style"=:"po
 
 
 
-whitespacePopup::(MonadWidget t m,Show a)=> Dynamic t Liveness -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
+whitespacePopup :: (MonadWidget t m, Show a) => Dynamic t Liveness -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
 whitespacePopup liveness actionList = elClass "div" "popupMenu" $ do
   let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "primary-color code-font background" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
@@ -384,7 +384,7 @@ whitespacePopup liveness actionList = elClass "div" "popupMenu" $ do
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget, fmap Just layerSplit]
 
 
-livenessWidget::(MonadWidget t m) =>  Dynamic t Liveness -> m (Event t (EditSignal a))
+livenessWidget :: MonadWidget t m => Dynamic t Liveness -> m (Event t (EditSignal a))
 livenessWidget liveness = elClass "div" "livenessWidget" $ mdo
   let livenessText = fmap (\x->if x==L3 then "L3" else "L4") liveness
   livenessButton <- clickableDivClass'' (livenessText) "livenessText" ()
@@ -392,7 +392,7 @@ livenessWidget liveness = elClass "div" "livenessWidget" $ mdo
   let livenessChange = attachWith (\d e -> if d==L4 then MakeL3 else MakeL4) (current liveness) livenessButton
   return $ leftmost [livenessChange,eval]
 
-livenessCheckboxWidget::(MonadWidget t m ) => Dynamic t Liveness -> m (Event t (EditSignal a))
+livenessCheckboxWidget :: MonadWidget t m => Dynamic t Liveness -> m (Event t (EditSignal a))
 livenessCheckboxWidget liveness = elClass "div" "livenessWidget" $ do
   text "Live"
   let isLive = fmap (==L4) liveness
@@ -400,7 +400,7 @@ livenessCheckboxWidget liveness = elClass "div" "livenessWidget" $ do
   eval <- clickableDivClass' "Eval" "L3Eval" Eval
   return $ leftmost [fmap (\x-> if x then MakeL4 else MakeL3) cb,eval]
 
-basicPopup::(MonadWidget t m,Show a)=> Dynamic t Liveness -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
+basicPopup :: (MonadWidget t m, Show a) => Dynamic t Liveness -> [EditSignal a]  -> m (Event t (Maybe (EditSignal a)))
 basicPopup liveness actionList = elClass "div" "popupMenu" $ do
   let popupList = fmap (\x->clickableDivClass' (T.pack $ show x) "primary-color code-font background" (Just x)) actionList -- [m (Maybe (EditSignal))]
   let events = Control.Monad.sequence popupList  -- m (t a)
@@ -409,7 +409,7 @@ basicPopup liveness actionList = elClass "div" "popupMenu" $ do
   closeMenu <- clickableDivClass' "close" "primary-color code-font background" (Nothing)
   return $ leftmost $ events' ++[closeMenu, fmap Just liveWidget]
 
-samplePickerPopup::(MonadWidget t m)=>  Dynamic t Liveness -> Map Int (Text,Text) -> [EditSignal  Text] -> m (Event t (Maybe (EditSignal Text)),Event t Hint)
+samplePickerPopup :: MonadWidget t m => Dynamic t Liveness -> Map Int (Text,Text) -> [EditSignal  Text] -> m (Event t (Maybe (EditSignal Text)),Event t Hint)
 samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ do
   dd <- dropdownOpts (-1) sampleMap def  --defaults to -1 so that someone can select "~" (the first one) and have it register as a change
   let sampleKey = _dropdown_value dd
@@ -421,7 +421,7 @@ samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ d
   closeMenu <- clickableDivClass' "close" "primary-color code-font background" (Nothing)
   return $ (leftmost $ events' ++[closeMenu, fmap Just liveWidget,fmap (Just . ChangeValue) (updated sampleChange)], fmap SampleHint $ ffilter (\x->if x =="~" then False else True) $ updated sampleChange)
 
-repDivWidget'::MonadWidget t m => RepOrDiv -> Event t () -> m (Event t RepOrDiv)
+repDivWidget' :: MonadWidget t m => RepOrDiv -> Event t () -> m (Event t RepOrDiv)
 repDivWidget' iVal _ = elClass "span" "repOrDiv" $ mdo
   repDivButton <- clickableSpanClass showRep "repDivSpan" ()
   repTog <- toggle iToggle repDivButton
@@ -438,7 +438,7 @@ repDivWidget' iVal _ = elClass "span" "repOrDiv" $ mdo
       (Div x) -> (False,x)
       otherwise -> (True, 1)
 
-repDivWidget''::MonadWidget t m => RepOrDiv -> Event t () -> m (Dynamic t RepOrDiv)
+repDivWidget'' :: MonadWidget t m => RepOrDiv -> Event t () -> m (Dynamic t RepOrDiv)
 repDivWidget'' iVal _ = elClass "span" "repOrDiv" $ mdo
   repDivButton <- clickableSpanClass showRep "repDivSpan" ()
   repTog <- toggle iToggle repDivButton
@@ -470,7 +470,7 @@ popupSignalWidget = elAttr "div" (singleton "style" "border: 1px solid black; po
   let popupEvents = leftmost [Just genericSignalMenu <$ x,Nothing <$ y]
   return $ (fmap fromJust . ffilter isJust) y
 
-genericSignalWidget :: MonadWidget t m => m (Event t (EditSignal a))
+genericSignalWidget :: (Monad m, DomBuilder t m) => m (Event t (EditSignal a))
 genericSignalWidget = elClass "div" "genericSignalWidget" $ do
   b <- button' "-" DeleteMe
   c <- button' "[]" MakeGroup
@@ -479,19 +479,19 @@ genericSignalWidget = elClass "div" "genericSignalWidget" $ do
 
 -- Used heavily in Help section
 -- Contains the child in a hideable div with a class
-hideableWidget :: MonadWidget t m => Dynamic t Bool -> Text -> m a -> m a
+hideableWidget :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> Text -> m a -> m a
 hideableWidget b c m = do
   let attrs = fmap (bool (fromList [("hidden","true"),("class",c)]) (singleton "class" c)) b
   elDynAttr "div" attrs m
 
 -- Used for the terminal
 -- Contains the child in a hideable div with no class
-hideableWidget' :: MonadWidget t m => Dynamic t Bool -> m a -> m a
+hideableWidget' :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> m a -> m a
 hideableWidget' b m = do
   let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("visible","true")])) b
   elDynAttr "div" attrs m
 
-hideableWidgetWFlexColumn :: MonadWidget t m => Dynamic t Bool -> m a -> m a
+hideableWidgetWFlexColumn :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> m a -> m a
 hideableWidgetWFlexColumn b  m = do
   let attrs = fmap (bool (fromList [("hidden","true")]) (fromList [("style", "display: flex; flex-direction: column;")])) b
   elDynAttr "div" attrs m
@@ -549,7 +549,7 @@ tooltipNoPopUpClass child popup = do
 -- below this line is the former Estuary.Reflex.Container
 
 
-widgetMap :: (MonadWidget t m,Ord k) => Map k (m a) -> Event t (Map k (m a)) -> m (Dynamic t (Map k a))
+widgetMap :: (MonadWidget t m, Ord k) => Map k (m a) -> Event t (Map k (m a)) -> m (Dynamic t (Map k a))
 widgetMap iMap rebuild = do
   let iWidget = sequence $ elems iMap -- :: m [a]
   let rebuild' = fmap (sequence . elems) rebuild -- :: Event t (m [a])
@@ -772,7 +772,7 @@ eitherContainer'' i cEvents lBuild rBuild = mdo
     build _ (Right a) = rBuild a >>= mapDyn (\c-> Right c)
 -}
 
-eitherWidget :: (MonadWidget t m)
+eitherWidget :: (Monad m, PostBuild t m)
   => (a -> Event t c -> m (Dynamic t (a,Event t d)))
   -> (b -> Event t c -> m (Dynamic t (b,Event t d)))
   -> Either a b -> Event t c -> m (Dynamic t ((Either a b),Event t d))
@@ -782,7 +782,7 @@ eitherWidget buildA buildB iValue c = either buildA' buildB' iValue
     buildA' a = buildA a c >>= return . fmap (\(x,d) -> (Left x,d))
     buildB' b = buildB b c >>= return . fmap (\(x,d) -> (Right x,d))
 
-wfor :: (MonadWidget t m) => [a] -> (a -> m (Dynamic t b)) -> m (Dynamic t [b])
+wfor :: (Monad m, Reflex t, Adjustable t m, PostBuild t m, MonadHold t m) => [a] -> (a -> m (Dynamic t b)) -> m (Dynamic t [b])
 wfor iVals mkChild = do
   widgets <- liftM (joinDynThroughMap) $ listHoldWithKey iMap never mkChild' -- m (Dynamic t [b]))
   return $ fmap elems widgets
@@ -790,15 +790,15 @@ wfor iVals mkChild = do
     iMap = fromList $ zip [(0::Int)..] iVals
     mkChild' _ a = mkChild a
 
-wmap :: (MonadWidget t m) => (a -> m (Dynamic t b)) -> [a] -> m (Dynamic t [b])
+wmap :: (Adjustable t m, PostBuild t m, MonadHold t m) => (a -> m (Dynamic t b)) -> [a] -> m (Dynamic t [b])
 wmap = flip wfor
 
 
-resettableWidget :: MonadWidget t m => (a -> Event t b -> m (Dynamic t c)) -> a -> Event t b -> Event t a -> m (Dynamic t c)
+resettableWidget :: (Monad m, Adjustable t m, Reflex t, MonadHold t m) => (a -> Event t b -> m (Dynamic t c)) -> a -> Event t b -> Event t a -> m (Dynamic t c)
 resettableWidget f i e reset = liftM (join) $ widgetHold (f i e) $ fmap (\x -> f x e) reset
 
 
-popup :: MonadWidget t m => Event t (Maybe (m (Event t a))) -> m (Event t a)
+popup :: (Monad m, Reflex t, Adjustable t m, MonadHold t m) => Event t (Maybe (m (Event t a))) -> m (Event t a)
 popup buildEvents = do
   let buildEvents' = fmap (maybe (return never) id) buildEvents
   liftM (switchPromptlyDyn) $ widgetHold (return never) buildEvents'
@@ -810,7 +810,7 @@ clickableWhiteSpace = do
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
-flippableWidget :: MonadWidget t m => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
+flippableWidget :: (Adjustable t m, Reflex t, MonadHold t m) => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
 flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e
 
 
