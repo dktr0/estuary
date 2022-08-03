@@ -77,6 +77,7 @@ invisibleButton = do
   return $ domEvent Click e
 
 --button with dynamic label and settable class
+
 dynButtonWSettableClass :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> m (Event t ())
 dynButtonWSettableClass c s = dynE (buttonWithSettableClass <$> c <*> s)
 

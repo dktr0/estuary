@@ -7,9 +7,10 @@ import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Reflex
+import Control.Monad.Fix
 
 --render multiple sub-help files
-miniTidalHelpFile :: MonadWidget t m => m ()
+miniTidalHelpFile :: (Monad m, MonadFix m, PostBuild t00 m,  MonadHold t00 m, DomBuilder t00 m) => m ()
 miniTidalHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
     about
     functionRef "silence"
@@ -49,7 +50,6 @@ miniTidalHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $
     functionRef "hcutoff"
     functionRef "hresonance"
     functionRef "resonance"
-    functionRef "shape"
     -- functionRef "loop"
     functionRef "s"
     functionRef "sound"
@@ -170,7 +170,7 @@ miniTidalHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $
     return ()
 
 -- about
-about :: MonadWidget t m => m ()
+about :: DomBuilder t0 m => m ()
 about = do
   divClass "about primary-color code-font" $ text  "A live coding language that allows you to make musical patterns with text, describing sequences and ways of transforming and combining them, exploring complex interactions between simple parts."
 
@@ -213,7 +213,6 @@ exampleText "end" = "s \"rave/2\" # end \"<0 0.25 0.5>\""
 exampleText "hcutoff" = "s \"drum*8\" # hcutoff \"100 1000 2000 5000\""
 exampleText "hresonance" = "s \"drum*8\" # hpf \"1000\" # hresonance\"0 0.2 0.4 0.6\""
 exampleText "resonance" = "s \"drum*8\" # cutoff \"1000\" # resonance \"0 0.2 0.4 0.6\""
-exampleText "shape" = "sound \"feel*4\" # shape \"0 0.2 0.4\""
 -- exampleText "loop" =
 exampleText "s" = "s \"arpy\""
 exampleText "sound" = "sound \"arpy\""
@@ -371,7 +370,6 @@ referenceText "end" = "takes a pattern of numbers from 0 to 1. It controls the e
 referenceText "hcutoff" = "turns a number pattern into a control pattern that sets the cutoff frequency of a high pass filter. In SuperDirt, this is in Hz (try a range between 0 and 10000). In classic dirt, it is from 0 to 1."
 referenceText "hresonance" = "turns a number pattern into a control pattern that sets the resonance of a high pass filter. Values range from 0 to 1."
 referenceText "resonance" = "turns a number pattern into a control pattern that sets the resonance of a low pass filter. Values range from 0 to 1."
-referenceText "shape" = " produces wave shaping distortion, a pattern of numbers from 0 for no distortion up to 1 for loads of distortion. It can get very loud if you reach 1 - be careful!"
 -- referenceText "loop"
 referenceText "s" = "tells us we’re making a pattern of sound samples"
 referenceText "sound" = "tells us we’re making a pattern of sound samples"
@@ -492,7 +490,7 @@ referenceText "cosine" = "A cosine wave, i.e. a sine shifted in time by a quarte
 
 
 -- help files for samples
-functionRef :: MonadWidget t m => Text -> m ()
+functionRef :: (Monad m, Reflex t0, MonadFix m, PostBuild t0 m, DomBuilder t0 m, MonadHold t0 m) => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
    switchToReference <- buttonWithClass' x
    exampleVisible <- toggle True switchToReference

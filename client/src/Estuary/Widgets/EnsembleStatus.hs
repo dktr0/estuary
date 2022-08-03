@@ -18,6 +18,8 @@ import Estuary.Types.Participant
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
+import Control.Monad.IO.Class
+import Control.Monad.Fix
 
 ensembleStatusWidget :: MonadWidget t m => W t m (Event t EnsembleRequest)
 ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
@@ -69,13 +71,13 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
 
         return status -- puts the value on the monad
 
-headerMode1 :: MonadWidget t m  => Dynamic t Text -> W t m ()
+headerMode1 :: (DomBuilder t m, Monad m, Reflex t, PostBuild t m, MonadFix m, MonadHold t m) => Dynamic t Text -> W t m ()
 headerMode1 ensName = divClass "rowHeaderContainer" $ do
     divClass "statusWidgetNameAndLocation" $ divClass "statusWidgetNameAndLocationText" $ (term Term.Ensemble >>= dynText) >> (dynText $ constDyn ": " <> ensName)
     divClass "statusWidgetActivity" $ infoDescription (term Term.Activity >>= dynText) (term Term.ActivityDescription >>= dynText)
     divClass "statusWidgetStatusInput" $ infoDescription (term Term.Status >>= dynText) (term Term.StatusDescription >>= dynText)
 
-headerMode2 :: MonadWidget t m  => Dynamic t Text -> W t m ()
+headerMode2 :: (DomBuilder t m, Monad m, Reflex t, PostBuild t m, MonadFix m, MonadHold t m) => Dynamic t Text -> W t m ()
 headerMode2 ensName = divClass "rowHeaderContainer" $ do
     divClass "statusWidgetName" $ (term Term.Ensemble >>= dynText) >> (dynText $ constDyn ": " <> ensName)
     divClass "statusWidgetLatency" $ infoDescription (term Term.Latency >>= dynText) (term Term.LatencyDescription >>= dynText)
@@ -83,7 +85,7 @@ headerMode2 ensName = divClass "rowHeaderContainer" $ do
     divClass "statusWidgetFPS" $ infoDescription (term Term.FPS >>= dynText) (term Term.FPSDescription >>= dynText)
     divClass "statusWidgetIP" $ infoDescription (term Term.IPaddress >>= dynText) (term Term.IPaddressDescription >>= dynText)
 --
-headerMode3 :: MonadWidget t m  => Dynamic t Text -> W t m ()
+headerMode3 :: (DomBuilder t m, Monad m, Reflex t, PostBuild t m, MonadHold t m, MonadFix m) => Dynamic t Text -> W t m ()
 headerMode3 ensName = divClass "rowHeaderContainer" $ do
     divClass "statusWidgetNameAndLocation" $ divClass "statusWidgetNameAndLocationText" $ (term Term.Ensemble >>= dynText) >> (dynText $ constDyn ": " <> ensName)
 
@@ -93,7 +95,7 @@ infoDescription label explanation  = do
   let popup = elClass "span" "tooltiptextStatusLabels code-font" $ explanation
   tooltipNoPopUpClass child popup
 
-mode1 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t (), Event t EnsembleRequest)
+mode1 :: MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t (), Event t EnsembleRequest)
 mode1 uHandle t name part =  divClass "rowContainer" $ do
   ev <- clickableDiv "rowSubContainer" $ do
     divClass "statusWidgetNameAndLocation" $ participantNameLocationAndIPWidget name part
@@ -103,7 +105,7 @@ mode1 uHandle t name part =  divClass "rowContainer" $ do
   -- return (ev, status)
 
 
-mode2 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  W t m (Event t ())
+mode2 :: MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  W t m (Event t ())
 mode2 uHandle t name part = do
   ev <- clickableDiv "rowContainer" $ do
    divClass "statusWidgetName" $ participantNameWidget name part
@@ -113,14 +115,14 @@ mode2 uHandle t name part = do
    divClass "statusWidgetIP" $ participantIP name part
   return ev
 
-mode3 ::  MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t ())
+mode3 :: MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t ())
 mode3 uHandle t name part = do
   ev <- clickableDiv "rowContainer" $ do
    divClass "statusWidgetName" $ participantNameWidget name part
    divClass "otherInfo" $ text "info placeholder"
   return ev
 
-participantFPSLatencyAndLoad :: MonadWidget t m => Text ->  Dynamic t Participant -> W t m ()
+participantFPSLatencyAndLoad :: (Monad m, PostBuild t m, Reflex t, DomBuilder t m, MonadHold t m, MonadFix m) => Text ->  Dynamic t Participant -> W t m ()
 participantFPSLatencyAndLoad name part = do
   let latency' = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
   let load' = fmap (showt . mainLoad) part
@@ -128,23 +130,23 @@ participantFPSLatencyAndLoad name part = do
   let animationLoad' = fmap (showt . animationLoad) part
   (dynText $ latency' <> constDyn "ms " <> load' <> constDyn "% " <> fps') >> (term Term.FPS >>= dynText) >> (dynText $ constDyn "(" <> animationLoad' <> constDyn ")")
 
-participantLatency :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantLatency :: (PostBuild t m, Reflex t, DomBuilder t m) => Text ->  Dynamic t Participant -> m ()
 participantLatency name part = do
   let latency' = fmap (T.pack . show . floor . realToFrac . (*) 1000 . latency) part
   dynText $ latency' <> (constDyn "ms ")
 
-participantLoad :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantLoad :: (PostBuild t m, Reflex t, DomBuilder t m) => Text ->  Dynamic t Participant -> m ()
 participantLoad name part = do
   let load' = fmap (showt . mainLoad) part
   dynText $ load' <> (constDyn "% ")
 
-participantFPS :: MonadWidget t m => Text ->  Dynamic t Participant -> W t m ()
+participantFPS :: (PostBuild t m, Monad m, Reflex t, DomBuilder t m, MonadHold t m, MonadFix m) => Text ->  Dynamic t Participant -> W t m ()
 participantFPS name part = do
   let fps' = fmap (showt . animationFPS) part
   let animationLoad' = fmap (showt . animationLoad) part
   dynText fps' >> (term Term.FPS >>= dynText) >> (dynText $ constDyn "(" <> animationLoad' <> constDyn "ms)")
 
-participantIP :: MonadWidget t m => Text ->  Dynamic t Participant -> m ()
+participantIP :: (PostBuild t m, DomBuilder t m) => Text ->  Dynamic t Participant -> m ()
 participantIP name part = do
   let ip' = fmap ipAddress part
   dynText ip'
@@ -159,7 +161,7 @@ participantStatusWidget thisUserHandle _ part = do
   let writeStatusToServer = fmap (\x -> WriteStatus x) $ _textInput_input s --msg only sent when they press a key
   return writeStatusToServer
 
-participantNameLocationAndIPWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantNameLocationAndIPWidget :: (DomBuilder t m, Reflex t, PostBuild t m) => Text -> Dynamic t Participant -> m ()
 participantNameLocationAndIPWidget name part = do
   let child = divClass "statusWidgetNameAndLocationText" $ dynText $ constDyn name <> fmap location' part
   let popup = dynText $ fmap browser part <> "; " <> "IP address: " <> fmap ipAddress part
@@ -185,15 +187,15 @@ location' p = f (Estuary.Types.Participant.location p)
 participantNameWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
 participantNameWidget name part =  text name
 
-participantLocationWidget :: MonadWidget t m => Text -> Dynamic t Participant -> m ()
+participantLocationWidget :: (PostBuild t m, DomBuilder t m) => Text -> Dynamic t Participant -> m ()
 participantLocationWidget name part = dynText $ fmap Estuary.Types.Participant.location part
 
-participantActivityWidget :: MonadWidget t m => Event t UTCTime -> Text -> Dynamic t Participant -> m ()
+participantActivityWidget :: (Monad m, Reflex t, PostBuild t m, MonadHold t m, DomBuilder t m, MonadIO m) => Event t UTCTime -> Text -> Dynamic t Participant -> m ()
 participantActivityWidget t name part =  do
    x <- pollParticipantActivity t part
    dynText x
 
-pollParticipantActivity :: MonadWidget t m => Event t UTCTime -> Dynamic t Participant -> m (Dynamic t Text)
+pollParticipantActivity :: (Monad m, Functor m, Reflex t, MonadHold t m, MonadIO m) => Event t UTCTime -> Dynamic t Participant -> m (Dynamic t Text)
 pollParticipantActivity e part = do
   now <- liftIO getCurrentTime
   iv <- fmap (\x -> generateActivityMessage x now) $ sample $ current part -- initial v of part
