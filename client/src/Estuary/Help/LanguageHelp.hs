@@ -4,6 +4,7 @@ module Estuary.Help.LanguageHelp where
 
 import Reflex
 import Reflex.Dom
+import Control.Monad.Fix (MonadFix)
 import Data.Text (Text)
 import qualified Data.Text as Td
 import Data.Map
@@ -20,7 +21,7 @@ import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
 import Estuary.Types.TextNotation
 
-parserToHelp :: (MonadWidget t m) => TextNotation -> m ()
+parserToHelp :: (MonadFix m, PostBuild t m, DomBuilder t m, MonadHold t m) => TextNotation -> m ()
 parserToHelp (TidalTextNotation MiniTidal) = miniTidalHelpFile
 parserToHelp Punctual = punctualAudioHelpFile
 parserToHelp _ = noHelpFile

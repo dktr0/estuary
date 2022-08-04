@@ -14,6 +14,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.List as L
 import Data.Time
+import Data.Bool
+import Data.List
 
 import GHCJS.Types
 import GHCJS.DOM.Types (HTMLDivElement)
@@ -33,6 +35,7 @@ import Estuary.Help.LanguageHelp
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Widgets.W
+import Estuary.Types.CodeWidgetOptions
 
 
 foreign import javascript unsafe "navigator.clipboard.writeText($1);" copyToClipboard :: Text -> IO ()
@@ -47,27 +50,41 @@ textWidgetRows 0 = Data.Map.empty
 textWidgetRows x = "rows" =: T.pack (show x)
 
 
-styleParameters :: [Text] -> Text -> Map Text Text
-styleParameters vs i = "style" =: ("height: auto;" <> (stiloList vs i))
+stilosEditors :: [CodeWidgetOptions] -> Text -> Map Text Text
+stilosEditors vs i = do
+  let s' = stilos vs i
+  "style" =: ("height: auto;" <> s')
 
-stiloList :: [Text] -> Text -> Text
-stiloList vs i = mconcat $ fmap (stilos i) vs -- :: Text
+-- stilos :: [CodeWidgetOptions] -> Text -> Text
+-- stilos vs i = do
+--   let a = if elem Fluxus vs then (fluxusStyle i) else ""
+--   let b = if elem CentreAlign vs then "text-align: center;" else ""
+--   let c = if elem RightAlign vs then "text-align: right;" else ""
+--   a <> b <> c
 
-stilos :: Text -> Text -> Text
-stilos i x = mconcat [fontSizeStilos i x] -- :: Text
+stilos :: [CodeWidgetOptions] -> Text -> Text
+stilos vs i = do
+  let a = fmap (cwoToText i) vs -- :: [Text]
+  mconcat a
 
-fontSizeStilos :: Text -> Text -> Text
-fontSizeStilos i x
-  | x == "fluxus" = fluxusStyle i
-  | otherwise = ""
+cwoToText :: Text -> CodeWidgetOptions -> Text
+cwoToText i Fluxus = fluxusStyle i
+cwoToText i CentreAlign = "text-align: center;"
+cwoToText i RightAlign = "text-align: right;"
+cwoToText i (Fontsize x) = customFontSize x
+cwoToText _ _ = ""
+
+customFontSize :: Double -> Text
+customFontSize s = "font-size: " <> (T.pack $ show s) <> "em;"
+-- fontsize: 10em
 
 
 -- for code-box-editors
-textWidget' :: MonadWidget t m => [Text] -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
+textWidget' :: MonadWidget t m => [CodeWidgetOptions] -> Int -> Dynamic t Bool -> Text -> Event t Text -> m (Dynamic t Text, Event t Text, Event t ())
 textWidget' styles rows flash i delta = mdo
   let class' = fmap textWidgetClass flash
   let rows' = constDyn $ textWidgetRows rows
-  let style' = fmap (styleParameters styles) value
+  let style' = fmap (stilosEditors styles) value
   let attrs = mconcat [class',rows', style']
   x <- textArea $ def & textAreaConfig_setValue .~ delta & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
   let value = _textArea_value x
@@ -79,12 +96,12 @@ textWidget' styles rows flash i delta = mdo
 fluxusStyle :: Text -> Text
 fluxusStyle i
   | (T.length i <= 5) && ((L.length $ T.lines i) <= 1) = "font-size: 8em;"
-  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) == 1) = "font-size: 7em;"
-  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) == 2) = "font-size: 6em;"
-  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) == 3) = "font-size: 5em;"
-  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) == 4) = "font-size: 4em;"
-  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) == 5) = "font-size: 3em;"
-  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) == 6) = "font-size: 2.5em;"
+  | (T.length i >= 6) && (T.length i <= 10) && ((L.length $ T.lines i) <= 1) = "font-size: 7em;"
+  | (T.length i >= 11) && (T.length i <= 20) && ((L.length $ T.lines i) <= 2) || ((L.length $ T.lines i) <= 2) = "font-size: 6em;"
+  | (T.length i >= 21) && (T.length i <= 30) && ((L.length $ T.lines i) <= 3) || ((L.length $ T.lines i) <= 3) = "font-size: 5em;"
+  | (T.length i >= 31) && (T.length i <= 40) && ((L.length $ T.lines i) <= 4) || ((L.length $ T.lines i) <= 4) = "font-size: 4em;"
+  | (T.length i >= 41) && (T.length i <= 60) && ((L.length $ T.lines i) <= 5) || ((L.length $ T.lines i) <= 5) = "font-size: 3em;"
+  | (T.length i >= 61) && (T.length i <= 90) && ((L.length $ T.lines i) <= 6) || ((L.length $ T.lines i) <= 6) = "font-size: 2.5em;"
   | (T.length i >= 91) && (T.length i <= 120) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 7) && ((L.length $ T.lines i) <= 10)) = "font-size: 2em;"
   | (T.length i >= 121) && (T.length i <= 140) && ((L.length $ T.lines i) <= 12) || (((L.length $ T.lines i) >= 10) && ((L.length $ T.lines i) <= 13)) = "font-size: 1.5em;"
   | otherwise = "font-size: 1em;"
@@ -183,8 +200,7 @@ textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s,
 holdUniq :: (MonadWidget t m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
 
-
-textProgramEditor :: forall t m. MonadWidget t m => [Text] -> Int -> Dynamic t (Maybe Text)
+textProgramEditor :: forall t m. MonadWidget t m => [CodeWidgetOptions] -> Int -> Dynamic t (Maybe Text)
   -> Dynamic t (Live TextProgram) -> W t m (Variable t (Live TextProgram))
 textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain" $ mdo -- *** TODO: change css class
 
@@ -205,19 +221,20 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
 
   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
     -- build dropdown menu if "nomenu" is not among the provided options
-    dropdown' <- if elem "nomenu" styles then (return never) else do
+    dropdown' <- if elem Nomenu styles then (return never) else do
       let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
       let ddAttrs = ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
       d <- dropdown initialParser parserMap ddAttrs
       return $ _dropdown_change d
     -- build eval button if "noeval" is not among the provided options
-    evalButton' <- if elem "noeval" styles then (return never) else do
+    evalButton' <- if elem Noeval styles then (return never) else do
       divClass "textInputLabel" $ dynButton "\x25B6"
     -- build error text display if "noerrors" is not among the provided options
-    if elem "noerrors" styles then (return ()) else do
+    if elem Noerrors styles then (return ()) else do
       widgetHold (return ()) $ fmap (maybe (return ()) syntaxErrorWidget) $ updated errorText'
       pure ()
     return (dropdown',evalButton')
+
   (_,textEdit,shiftEnter) <- divClass "labelAndTextPattern" $ textWidget' styles rows evalFlash initialText textDelta
   evalEdit <- performEvent $ fmap (liftIO . const getCurrentTime) $ leftmost [evalButton,shiftEnter]
   let c = current $ currentValue cv
@@ -227,7 +244,6 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
   let localEdits = leftmost [parserEdit',textEdit',evalEdit']
   cv <- returnVariable deltasDown localEdits
   return cv
-
 
 applyParserEdit :: Live TextProgram -> TextNotation -> Live TextProgram
 applyParserEdit (Live (x,y,z) _) x' = Edited (x,y,z) (x',y,z)

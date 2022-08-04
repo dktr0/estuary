@@ -3,17 +3,18 @@ module Estuary.Help.CineCer0.CineCer0Reference where
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
+import Control.Monad.Fix (MonadFix)
 
 import Estuary.Types.Language
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.W
 import Data.Map.Strict
 
-cineCer0Reference :: MonadWidget t m => W t m ()
+cineCer0Reference :: (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) => W t m ()
 cineCer0Reference = el "div" $ do
   funcionsCineCer0
 
-funcionsCineCer0 :: MonadWidget t m => W t m ()
+funcionsCineCer0 :: (DomBuilder t m, PostBuild t m, Monad m, Reflex t, MonadHold t m, MonadFix m) => W t m ()
 funcionsCineCer0 = el "div" $ do
   dynText =<< (translatableText $ fromList [
     (English,"Functions"),

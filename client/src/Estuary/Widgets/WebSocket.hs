@@ -6,7 +6,8 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Reflex.Dom.WebSocket
 import Control.Lens hiding (Context)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Fix (MonadFix)
 import Data.Time
 import Data.Either
 import Data.Maybe

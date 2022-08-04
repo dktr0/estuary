@@ -134,7 +134,7 @@ library
     , reflex-dom
     , reflex-dom-core
     , safe
---    , seis8s
+    , seis8s
     , split
     , tempi
     , text
@@ -184,7 +184,7 @@ executable Estuary
     , reflex-dom
     , reflex-dom-core
     , safe
---    , seis8s
+    , seis8s
     , split
     , tempi
     , text
@@ -243,7 +243,7 @@ executable interaction-test
     , reflex-dom
     , reflex-dom-core
     , safe
---    , seis8s
+    , seis8s
     , split
     , tempi
     , text
@@ -300,7 +300,7 @@ executable simple-test
     , reflex-dom
     , reflex-dom-core
     , safe
---    , seis8s
+    , seis8s
     , split
     , tempi
     , text
@@ -355,7 +355,7 @@ test-suite clientTest
     , reflex-dom
     , reflex-dom-core
     , safe
---    , seis8s
+    , seis8s
     , split
     , tempi
     , text

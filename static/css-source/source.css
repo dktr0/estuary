@@ -1224,6 +1224,10 @@ display: inline-flex;
 	background-color: transparent;
   }
 
+.noDiv {
+	display: none;
+  }
+
 .fullWidthDiv select{
 	margin-right: 1em;
 }

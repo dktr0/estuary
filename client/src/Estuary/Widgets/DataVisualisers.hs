@@ -26,6 +26,7 @@ import Estuary.Types.Ensemble
 import Estuary.Widgets.W
 import Estuary.Types.Definition
 
+
 ------ svg attributes for different visualisers
 svgAttrsGraph:: Map Text Text
 svgAttrsGraph =
@@ -212,7 +213,7 @@ path = do
     return ()
 
 
-tx:: MonadWidget t m => Dynamic t (Text,Int) -> m ()
+tx :: (Reflex t, PostBuild t m, Monad m, DomBuilder t m, MonadSample t m) => Dynamic t (Text,Int) -> m ()
 tx x = do
 --    let txLength = constDyn $ "textLength" =: "1030" might be useful at some point
     let texto = fmap fst x
@@ -228,7 +229,7 @@ tx x = do
         elDynAttrNS (Just "http://www.w3.org/2000/svg") "textPath" txPAttrs $ tex texto
     return ()
 
-tex:: MonadWidget t m => Dynamic t Text -> m ()
+tex :: (Monad m, MonadSample t m, Reflex t, DomBuilder t0 m) => Dynamic t Text -> m ()
 tex x = do
     t <- sample $ current x
     text t

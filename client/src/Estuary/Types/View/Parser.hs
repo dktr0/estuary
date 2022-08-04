@@ -14,6 +14,7 @@ import Control.Monad.Except
 import Estuary.Types.View
 import Estuary.Types.View.Presets
 import Estuary.Types.TextNotation
+import Estuary.Types.CodeWidgetOptions
 import Estuary.Types.TidalParser
 
 type H = Haskellish ()
@@ -33,7 +34,9 @@ dumpView (CollapsableView v) = "collapsable" <> dumpView v
 -- dumpView (Text t) = ...
 dumpView (LabelView x) = "label " <> showInt x
 dumpView (StructureView x) = "structure " <> showInt x
-dumpView (CodeView x y vs) = "code " <> showInt x <> " " <> showInt y <> " " <> (T.pack $ show vs)
+
+dumpView (CodeView x y vs) = "code " <> showInt x <> " " <> showInt y <> " " <> (codeWidgetOptionsToString vs)
+
 dumpView (SequenceView z) = "sequence " <> showInt z
 dumpView (Snippet z b tn txt) = "snippet " <> showInt z <> " " <> (boolToText b) <> " " <> (notationToText tn) <> (" \""<>(formatText txt)<>"\"")
 dumpView EnsembleStatusView = "ensembleStatus"
@@ -48,13 +51,12 @@ dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
 dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
 dumpView (LoadView x) = "load " <> showInt x
-
+dumpView (ChatView x) = "chat " <> showInt x
 
 dumpView _ = " "
 
 dumpViews :: [View] -> T.Text
 dumpViews vs = "[" <> (T.intercalate "," $ fmap dumpView vs) <> "]"
-
 
 viewParser :: H View
 viewParser =  EmptyView <$ reserved "empty" -- localview empty
@@ -86,6 +88,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> calendarEventParser
           <|> genGridParser
           <|> loadVisionParser
+          <|> specChatParser 
 
 genGridParser :: H View
 genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
@@ -94,7 +97,6 @@ rowsOrColumns :: H Int
 rowsOrColumns = do
   x <- integer
   if (x >= 1 && x <= 12) then return (fromIntegral x) else throwError "rows or columns must be between 1 and 12"
-
 
 --
 calendarEventParser :: H View
@@ -131,13 +133,13 @@ snippetParser''':: H (Bool -> T.Text -> T.Text -> View)
 snippetParser''' = snippetParser'''' <*> int
 
 snippetParser'''':: H (Int -> Bool -> T.Text -> T.Text -> View)
-snippetParser'''' = snippetViewFunc <$ (reserved "snippet") 
+snippetParser'''' = snippetViewFunc <$ (reserved "snippet")
 
 snippetViewFunc :: Int -> Bool -> T.Text -> T.Text -> View
 snippetViewFunc z b tn sn = Snippet z b (textToNotation' tn) sn
 
 
--- 
+--
 
 seeTimeParser :: H View
 seeTimeParser = seeTimeParser' <*> int
@@ -178,7 +180,7 @@ stopwatchParser' = stopwatchFunc <$ reserved "stopwatch"
 stopwatchFunc :: Int -> View
 stopwatchFunc z = StopWatchView z
 
---
+-- NotePad
 notePadParser :: H View
 notePadParser = notePadParser' <*> int
 
@@ -188,7 +190,7 @@ notePadParser' = notePadFunc <$ reserved "notepad"
 notePadFunc :: Int -> View
 notePadFunc x = NotePadView x
 
---
+-- Sequencer
 sequenceParser :: H View
 sequenceParser = sequenceParser' <*> int
 
@@ -197,9 +199,8 @@ sequenceParser' = sequenceFunc <$ reserved "sequence"
 
 sequenceFunc :: Int -> View
 sequenceFunc x = SequenceView x
+
 --
-
-
 structureParser :: H View
 structureParser = structureParser' <*> int
 
@@ -208,7 +209,6 @@ structureParser' = structureFunc <$ reserved "structure"
 
 structureFunc :: Int -> View
 structureFunc x = StructureView x
-
 
 --
 labelParser :: H View
@@ -220,7 +220,6 @@ labelParser' = labelFunc <$ reserved "label"
 labelFunc :: Int -> View
 labelFunc x = LabelView x
 
-
 --
 bulletpointsParser :: H View
 bulletpointsParser = bulletpointsParser' <*> viewsParser
@@ -230,6 +229,7 @@ bulletpointsParser' = bulletpointsFunc <$ reserved "bulletpoints"
 
 bulletpointsFunc :: [View] -> View
 bulletpointsFunc vx = BulletPoints vx
+
 --
 borderParser :: H View
 borderParser = borderParser' <*> viewsParser
@@ -239,6 +239,7 @@ borderParser' = borderFunc <$ reserved "border"
 
 borderFunc :: [View] -> View
 borderFunc vx = BorderDiv vx
+
 --
 paragraphParser :: H View
 paragraphParser = paragraphParser' <*> viewsParser
@@ -255,12 +256,11 @@ views = do
   vs <- viewsParser
   return $ Views vs
 --
-
+--
 viewsParser :: H [View]
 viewsParser = list viewParser
 
 --
-
 rows:: H View
 rows = rowParser <*> viewsParser
 
@@ -270,6 +270,7 @@ rowParser = rowFunc <$ reserved "rows"
 rowFunc:: [View] -> View
 rowFunc vs = Rows vs
 
+--
 columns:: H View
 columns = columnParser <*> viewsParser
 
@@ -279,7 +280,7 @@ columnParser = columnFunc <$ reserved "cols"
 columnFunc:: [View] -> View
 columnFunc vs = Columns vs
 
---
+-- GridView
 gridViewParser :: H View
 gridViewParser =  gridViewParser' <*> viewsParser
 
@@ -296,8 +297,7 @@ gridViewFunc :: Int -> Int -> [View] -> View
 gridViewFunc cols rows vx = GridView cols rows vx
 
 
--- collapsable View
-
+-- CollapsableView
 collapsableViewParser :: H View
 collapsableViewParser = collapsableViewParser' <*> viewParser
 
@@ -306,7 +306,6 @@ collapsableViewParser' = collapsableViewFunc <$ reserved "collapsable"
 
 collapsableViewFunc :: View -> View
 collapsableViewFunc v = CollapsableView v
-
 
 -- div View
 divView :: H View
@@ -334,24 +333,24 @@ linkView'' = linkViewFunc <$ reserved "link"
 linkViewFunc :: T.Text -> [View] -> View
 linkViewFunc s vx = Link s vx
 
---
+--CodeView
 codeViewView :: H View
-codeViewView =  codeViewView' <*> listOftextLiteral
+codeViewView =  codeViewView' <*> listOfCodeWidgetOptions
 
-codeViewView' :: H ([T.Text] -> View)
+codeViewView' :: H ([CodeWidgetOptions] -> View)
 codeViewView' =  codeViewView'' <*> int
 
-codeViewView'' :: H (Int -> [T.Text] -> View)
+codeViewView'' :: H (Int -> [CodeWidgetOptions] -> View)
 codeViewView'' =  codeViewView''' <*> int
 
-codeViewView''' :: H (Int -> Int -> [T.Text] -> View)
+codeViewView''' :: H (Int -> Int -> [CodeWidgetOptions] -> View)
 codeViewView''' = codeViewViewFunc <$ (reserved "code")
 
-codeViewViewFunc :: Int -> Int -> [T.Text] -> View
+codeViewViewFunc :: Int -> Int -> [CodeWidgetOptions] -> View
 codeViewViewFunc x y vs = CodeView x y vs
 
---
 
+-- Roulette View
 rouletteViewView :: H View
 rouletteViewView =  rouletteViewView' <*> int
 
@@ -392,6 +391,15 @@ audioMapViewFunc = AudioMapView
 iFrameParser :: H View
 iFrameParser = (reserved "iFrame" >> return IFrame) <*> textLiteral
 
+--
+specChatParser :: H View
+specChatParser = specChatParser' <*> int
+
+specChatParser' :: H (Int -> View)
+specChatParser' =  specChatFunc <$ reserved "chat"
+
+specChatFunc :: Int -> View
+specChatFunc x  = ChatView x 
 
 -- helper funcs
 int :: H Int
@@ -419,7 +427,35 @@ identifierText = do
 
 -----
 
-textToNotation:: T.Text -> TextNotation    
+listOfCodeWidgetOptions :: H [CodeWidgetOptions]
+listOfCodeWidgetOptions = list stringToCodeWidgetOptions
+
+stringToCodeWidgetOptions :: H CodeWidgetOptions
+stringToCodeWidgetOptions =
+  (reserved "nomenu" >> return Nomenu) <|>
+  (reserved "noeval" >> return Noeval) <|>
+  (reserved "noerrors" >> return Noerrors) <|>
+  (reserved "fluxus" >> return Fluxus) <|>
+  ((reserved "centre" <|> reserved "center") >> return CentreAlign) <|>
+  (reserved "right" >> return RightAlign)
+
+
+codeWidgetOptionsToString :: [CodeWidgetOptions] -> T.Text
+codeWidgetOptionsToString vs = "[" <> (T.intercalate ", " $ fmap cwoToText vs) <> "]"
+  --mconcat $ fmap cwoToText vs
+
+cwoToText :: CodeWidgetOptions -> T.Text
+cwoToText Nomenu = "nomenu"
+cwoToText Noeval = "noeval"
+cwoToText Noerrors = "noerrors"
+cwoToText Fluxus = "fluxus"
+cwoToText CentreAlign = "centre"
+cwoToText RightAlign = "right"
+cwoToText (Fontsize x) = "(fontsize " <> (showt x) <> ")"
+
+-----
+
+textToNotation :: T.Text -> TextNotation
 textToNotation "minitidal" = TidalTextNotation MiniTidal
 textToNotation "punctual" = Punctual
 textToNotation "cinecer0" = CineCer0
@@ -429,7 +465,7 @@ textToNotation "hydra" = Hydra
 textToNotation x = EphemeralNotation x
 
 textToNotation':: T.Text -> TextNotation ----- this wrapper function checks for JSoLangs. Syntax is: "jsolang myNanoLang" and "ephemeral myNanoLang"
-textToNotation' x 
+textToNotation' x
         | x == "" = UnspecifiedNotation
         | "jsolang" == (Prelude.head $ T.words x) = JSoLang (T.unwords $ Prelude.tail $ T.words x)
         | otherwise = textToNotation x

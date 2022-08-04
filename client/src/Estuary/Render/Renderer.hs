@@ -35,7 +35,7 @@ import Data.Char
 import Data.IORef
 
 import Sound.MusicW.AudioContext
--- import qualified Sound.Seis8s.Parser as Seis8s
+import qualified Sound.Seis8s.Parser as Seis8s
 import Estuary.Languages.Punctual
 import Estuary.Languages.CineCer0
 import Estuary.Languages.LocoMotion
@@ -335,7 +335,7 @@ renderZoneChanged _ _ = return ()
 
 renderZoneAlways :: Int -> Definition -> R ()
 renderZoneAlways z (TidalStructure _) = renderControlPattern z
-renderZoneAlways z (TextProgram x) = renderTextProgramAlways z 
+renderZoneAlways z (TextProgram x) = renderTextProgramAlways z
 renderZoneAlways z (Sequence _) = renderControlPattern z
 renderZoneAlways _ _ = return ()
 
@@ -368,9 +368,7 @@ renderTextProgramChanged z (Hydra,x,_) = parseHydra z x
 renderTextProgramChanged z (LocoMotion,x,eTime) = (parseZone locoMotion) z x eTime
 renderTextProgramChanged z (TimeNot,x,eTime) = (parseZone timeNot) z x eTime
 
-
-
-{- renderTextProgramChanged z (Seis8s,x,eTime) = do
+renderTextProgramChanged z (Seis8s,x,eTime) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
   case parseResult of
     Right p -> do
@@ -378,7 +376,7 @@ renderTextProgramChanged z (TimeNot,x,eTime) = (parseZone timeNot) z x eTime
       setBaseNotation z Seis8s
       setEvaluationTime z eTime
       modify' $ \xx -> xx { seis8ses = insert z p $ seis8ses xx }
-    Left e -> setZoneError z (T.pack $ show e) -}
+    Left e -> setZoneError z (T.pack $ show e)
 
 renderTextProgramChanged z (JSoLang x,y,eTime) = do
   parseResult <- liftIO $ JSoLang.define y
@@ -437,8 +435,7 @@ renderTextProgramAlways z = do
 renderBaseProgramAlways :: Int -> Maybe TextNotation -> R ()
 renderBaseProgramAlways z (Just (TidalTextNotation _)) = (scheduleTidalEvents miniTidal) z >>= pushTidalEvents
 renderBaseProgramAlways z (Just TimeNot) = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
-{- renderBaseProgramAlways z (Just Seis8s) = do
->>>>>>> dev
+renderBaseProgramAlways z (Just Seis8s) = do
   s <- get
   let p = IntMap.lookup z $ seis8ses s
   case p of
@@ -447,9 +444,8 @@ renderBaseProgramAlways z (Just TimeNot) = (scheduleWebDirtEvents timeNot) z >>=
       let wStart = renderStart s
       let wEnd = renderEnd s
       pushNoteEvents $ Seis8s.render p' theTempo wStart wEnd
-    Nothing -> return () -}
+    Nothing -> return ()
 renderBaseProgramAlways _ _ = return ()
-
 
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> R ()

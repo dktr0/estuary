@@ -144,8 +144,8 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "10rmdjcwj5grc989xl3yaj6awpzq6siyailbqxxc55wgs0xqaf9l";
-          rev = "c2f5526e15d09e3781add458d7e76c2ba0d7e79a";
+          sha256 = "0261r35wqbsc2i88h6gwwid29pq440c6fqa22s3srrpkj9xl2vhk";
+          rev = "4ca893c480a022810c4ad82223e362bab11bb969";
         }) {}));
 
         # musicw = self.callHackage "musicw" "0.3.9" {};
@@ -191,14 +191,14 @@ in
 
         tempi = self.callHackage "tempi" "1.0.2.1" {};
 
-        # we will won't be able to build this until reflex-dom-contrib dependency is removed
-        #seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
-        #  doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
-        #   owner = "luisnavarrodelangel";
-        #   repo = "seis8s";
-        #   sha256 = "1nnzsmkcy28k1s1s72ckq136564r2d6xzngm2bd1sm5ixasxx0lq";
-        #   rev = "6edbf1e21ade2669a0098d3120c698463c86f52a";
-         #}) {}));
+        seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
+          doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
+           owner = "luisnavarrodelangel";
+           repo = "seis8s";
+           sha256 = "169rfxknyv8ali87n6pmfpdm2vy09khsx4c9spa40sisskbbmlsz";
+           rev = "1db0e3ff1399e176792e815df748c62aff9aa227";
+
+         }) {}));
 
          permutation = markUnbroken super.permutation;
 

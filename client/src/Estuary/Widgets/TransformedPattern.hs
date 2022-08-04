@@ -149,7 +149,7 @@ patternCombinatorDropDown iValue _ = do
       (Divide) -> 5
       -- sorry....
 
-patternCombinatorDropDown' :: MonadWidget t m => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
+patternCombinatorDropDown' :: (Monad m, Reflex t) => PatternCombinator -> Event t () -> m (Dynamic t (PatternCombinator,Event t (EditSignal a)))
 patternCombinatorDropDown' _ _ = do
   return $ constDyn (Merge,never)
 

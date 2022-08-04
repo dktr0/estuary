@@ -1,4 +1,4 @@
- {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
+ {-# LANGUAGE JavaScriptFFI, OverloadedStrings, RecursiveDo #-}
 
 module Main where
 
@@ -11,6 +11,7 @@ import Control.Monad(liftM)
 import Control.Monad.IO.Class(liftIO)
 import System.IO
 import Sound.MusicW
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
@@ -27,17 +28,22 @@ import Estuary.Client.Settings
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
 import GHCJS.DOM
-import GHCJS.DOM.Types hiding (toJSString)
+import GHCJS.DOM.Types hiding (toJSString,Text,Event)
 import GHCJS.Foreign.Callback (Callback, syncCallback1')
 import GHCJS.Marshal.Pure
 import GHCJS.Prim(toJSString)
 import GHCJS.Types
+
+-- just for temporary test
+import Data.IntMap as IntMap
+import Estuary.Widgets.W hiding (theme)
 
 import Reflex.Host.Class (HostFrame)
 
 import System.Timeout(timeout)
 
 main :: IO ()
+{- main = widgetMapDemo -}
 main = do
   hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser

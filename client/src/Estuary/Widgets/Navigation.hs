@@ -15,6 +15,7 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Text.Read
 import Control.Monad.IO.Class
+import Control.Monad.Fix (MonadFix)
 
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.W
@@ -182,7 +183,7 @@ joinButton x = do
   return $ tag (current x) b
 
 
-panel :: MonadWidget t m => Text -> Navigation -> Term.Term -> W t m () -> W t m (Event t Navigation)
+panel :: (DomBuilder t m, Monad m, Reflex t, PostBuild t m, MonadHold t m, MonadFix m) => Text -> Navigation -> Term.Term -> W t m () -> W t m (Event t Navigation)
 panel c targetPage title icon = divClass c $ do
   liftM (targetPage <$) $ dynButtonWithChild "splash-panel" $ do
     divClass "splash-title-container" $ divClass "splash-title" $ term title >>= dynText

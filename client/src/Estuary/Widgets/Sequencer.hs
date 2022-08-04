@@ -63,7 +63,7 @@ sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
   return $ fmap (\x->(x,deleteMe)) val
 
 
-sequencerButton::(MonadWidget t m) => Int -> Bool -> Event t Bool -> m (Dynamic t Bool)
+sequencerButton :: (MonadWidget t m) => Int -> Bool -> Event t Bool -> m (Dynamic t Bool)
 sequencerButton pos val edits = mdo
   (element,_) <- elDynAttr' "td" attrs $ return ()
   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Mousedown) (return ())

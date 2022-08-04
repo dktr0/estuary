@@ -7,10 +7,11 @@ import Data.Text
 import GHCJS.DOM.EventM
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Reflex
+import Control.Monad.Fix (MonadFix)
 
 
 --render multiple sub-help files
-punctualAudioHelpFile :: MonadWidget t m => m ()
+punctualAudioHelpFile :: (Monad m, MonadFix m, PostBuild t m, MonadHold t m, DomBuilder t m) => m ()
 punctualAudioHelpFile = divClass "languageHelpContainer" $ divClass "languageHelp" $ do
     about
     functionRef "sin"
@@ -27,7 +28,7 @@ punctualAudioHelpFile = divClass "languageHelpContainer" $ divClass "languageHel
     return ()
 
 -- about
-about :: MonadWidget t m => m ()
+about :: DomBuilder t m => m ()
 about = do
   divClass "about primary-color code-font" $ text "Punctual is a language for live coding audio and visuals. It allows you to build and change networks of signal processors (oscillators, filters, etc) on the fly. Punctual was created by David Ogborn, building on top of the MusicW synthesis library (by David Ogborn, Spencer Park, Jamie Beverley, and others). Conceptually, Punctual extends the work of Julian Rohrhuber and others on SuperCollider's JITlib notations. Complete and up-to-date documentation of Punctual can be found here: https://github.com/dktr0/Punctual"
 
@@ -60,7 +61,7 @@ referenceText ">> right" = "sound panned to the right"
 referenceText "db" = "a quieter sine wave. You can try quieter decibels like -13db or -40db"
 
 -- help files for samples
-functionRef :: MonadWidget t m => Text -> m ()
+functionRef :: (Monad m, Reflex t, MonadHold t m, PostBuild t m, DomBuilder t m, MonadFix m) => Text -> m ()
 functionRef x = divClass "helpWrapper" $ do
    switchToReference <- buttonWithClass' x
    exampleVisible <- toggle True switchToReference
