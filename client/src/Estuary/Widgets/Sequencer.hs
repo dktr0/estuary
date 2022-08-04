@@ -66,7 +66,7 @@ sequencerRow (iVal,vals) edits = elClass "tr" "sequencerRow" $ do
 sequencerButton :: (MonadWidget t m) => Int -> Bool -> Event t Bool -> m (Dynamic t Bool)
 sequencerButton pos val edits = mdo
   (element,_) <- elDynAttr' "td" attrs $ return ()
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Mousedown) (return ())
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Mousedown) (return ())
   let clickUpdates = attachWith (\v _-> not v) (current isActive) $ leftmost [clickEv]
   isActive <- holdDyn val $ leftmost [edits, clickUpdates]
   let attrs = fmap (\x-> singleton "class" $ if x then "sequencerButton sequencerButton-activated primary-color other-borders" else "sequencerButton other-borders") isActive

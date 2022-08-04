@@ -99,7 +99,7 @@ dynButtonWithChild cls child = do
 -- events. A dynamic argument updates the widget, and the return value is
 -- already flattened to just being the events returned by the child widget.
 dynE :: (Adjustable t m, Monad m, Reflex t, NotReady t m, PostBuild t m, MonadHold t m) => Dynamic t (m (Event t a)) -> m (Event t a)
-dynE x = dyn x >>= switchPromptly never
+dynE x = dyn x >>= switchHoldPromptly never
 
 -- a button that, instead of producing Event t (), produces an event of
 -- some constant value
@@ -131,7 +131,7 @@ dropdownOpts k0 setUpMap (DropdownConfig setK attrs) = do
       if not (elem k optGroupPositions) then blank else do
         elAttr "optgroup" ("label"=:(maybe "" id $ Data.Map.lookup k optGroups)) $ blank
       elAttr "option" ("value" =: (T.pack . show) k <> if k == k0 then "selected" =: "selected" else mempty) $ dynText v
-  let e = G.uncheckedCastTo HTMLSelectElement $ _el_element eRaw
+  let e = G.uncheckedCastTo HTMLSelectElement $ _element_raw eRaw
   performEvent_ $ fmap (Select.setValue e . show) setK
   eChange <- wrapDomEvent e (`on` change) $ do
 --    kStr <- fromMaybe "" <$> Select.getValue e
@@ -207,13 +207,13 @@ justChangeValues _ = Nothing
 clickableDivDynAttrsWChild :: MonadWidget t m => Dynamic t (Map Text Text) -> m a -> m (Event t ()) -- return (Event t (), a)
 clickableDivDynAttrsWChild attrs child = do
   (element,_) <- elDynAttr' "div" attrs $ child
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
 clickableDivNoClass :: MonadWidget t m => m a -> m (Event t a) -- return (Event t (), a)
 clickableDivNoClass child = do
   (element, a) <- el' "div" $ child -- look elAttr' ::
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   let event = (a <$) clickEv
   return event
 
@@ -224,7 +224,7 @@ clickableDivNoClass child = do
 -- clickableA label child = liftM (child <$) $ (clickableDivWithLabel $ text label)
    -- return (event, child)
   -- (element, a) <- el' "div" $ child
-  -- clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  -- clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   -- let event = (() <$) clickEv
   -- return $ a
 
@@ -232,14 +232,14 @@ clickableDivNoClass child = do
 -- clickableDivWithLabel :: MonadWidget t m => m a -> m (Event t ())
 -- clickableDivWithLabel child = do
 --   (element,_) <- el' "div" $ child
---   clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+--   clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
 --   return $ (() <$) clickEv
 
 -- clickableDiv with class
 clickableDiv :: MonadWidget t m => Text -> m a -> m (Event t ())
 clickableDiv cssclass child = do
   (element,_) <- elAttr' "div" attr $ child
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
   where
     attr = singleton "class" cssclass
@@ -247,7 +247,7 @@ clickableDiv cssclass child = do
 clickableDivClass :: MonadWidget t m => Text -> Text -> m (Event t ())
 clickableDivClass label c = do
   (element,_) <- elAttr' "div" (singleton "class" c) $ text label
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
 clickableDivClass' :: MonadWidget t m => Text -> Text -> a -> m (Event t a)
@@ -257,51 +257,51 @@ clickableDivClass' label c e = liftM (e <$) $ clickableDivClass label c
 clickableDivClass'':: MonadWidget t m => Dynamic t Text -> Text -> a -> m (Event t a)
 clickableDivClass'' label c e = do
   (element, _) <- elAttr' "div" ("class"=:c) $ dynText label
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (e <$) clickEv
 
 mouseOverClickableDiv :: MonadWidget t m => Dynamic t Text -> Text -> a -> m(Event t a)
 mouseOverClickableDiv label c e = mdo
   (element, _) <- elDynAttr' "div" attrs $ dynText label
-  mouseOver <- liftM (True <$) $ wrapDomEvent (_el_element element) (elementOnEventName Mouseover) mouseXY
-  mouseOut <- liftM (False <$) $ wrapDomEvent (_el_element element) (elementOnEventName Mouseout) mouseXY
+  mouseOver <- liftM (True <$) $ wrapDomEvent (_element_raw element) (elementOnEventName Mouseover) mouseXY
+  mouseOut <- liftM (False <$) $ wrapDomEvent (_element_raw element) (elementOnEventName Mouseout) mouseXY
   isMouseOver <- holdDyn False $ leftmost [mouseOut, mouseOver]
   let attrs  = fmap (fromList . (\x-> [("class",c),x]) . ((,) "style") . bool "" ";background-color:rgba(144,238,144,0.2);") isMouseOver
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (e <$) clickEv
 
 
 clickableDivAttrs :: MonadWidget t m => Text -> a -> Map Text Text -> m (Event t a)
 clickableDivAttrs label val attrs= do
   (element,_) <- elAttr' "div" attrs $ text label
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (val <$) clickEv
 
 clickableDivAttrs' :: MonadWidget t m => Text -> a -> Map Text Text -> x -> y -> m (Dynamic t ((),Event t a))
 clickableDivAttrs' label val attrs _ _= do
   (element,_) <- elAttr' "div" attrs $ text label
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   let event = (val <$) clickEv
   return $ constDyn ((),event)
 
 clickableDivDynAttrs :: MonadWidget t m => Text -> a -> Dynamic t (Map Text Text) -> m (Event t a)
 clickableDivDynAttrs label val attrs = do
   (element,_) <- elDynAttr' "div" attrs $ text label
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (val <$) clickEv
 
 -- with displayed text that can change
 clickableSpanClass :: MonadWidget t m => Dynamic t Text -> Text -> a -> m (Event t a)
 clickableSpanClass label c e = do
   (element, _) <- elAttr' "span" ("class"=:c) $ dynText label
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (e <$) clickEv
 
 clickableTdClass :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> a -> m (Event t a)
 clickableTdClass label c val = do
   let attrs = fmap (singleton "class") c
   (element, _) <- elDynAttr' "td" attrs $ dynText label
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ ((val) <$) clickEv
 
 
@@ -330,14 +330,14 @@ makeNewButton label _ _ = do
 tdButtonAttrs :: MonadWidget t m => Text -> a -> Map Text Text -> m (Event t a)
 tdButtonAttrs s val attrs = do
   (element, _) <- elAttr' "td" attrs $ text s
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ ((val) <$) clickEv
 
 -- with displayed text that can change
 tdButtonAttrs' :: MonadWidget t m => Dynamic t Text -> a -> Map Text Text -> m (Event t a)
 tdButtonAttrs' s val attrs = do
   (element, _) <- elAttr' "td" attrs $ dynText s
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ ((val) <$) clickEv
 
 tdPingButtonAttrs :: (Monad m, DomBuilder t m, PostBuild t m) => Text -> Map Text Text -> a -> b -> m (Dynamic t ((),Event t (EditSignal ())))
@@ -808,8 +808,9 @@ popup buildEvents = do
 clickableWhiteSpace :: MonadWidget t m => m (Event t ())
 clickableWhiteSpace = do
   (element,_) <- elAttr' "div" (singleton "class" "clickableWhiteSpace") $ text "clickableWhiteSpace"
-  clickEv <- wrapDomEvent (_el_element element) (elementOnEventName Click) (mouseXY)
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
+
 
 flippableWidget :: (Adjustable t m, Reflex t, MonadHold t m) => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
 flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e

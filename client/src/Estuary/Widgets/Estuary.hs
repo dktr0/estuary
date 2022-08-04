@@ -69,7 +69,7 @@ import Estuary.Client.Settings as Settings
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
 keyboardHintsCatcher rEnv settings ctxM riM = mdo
   (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardShortcut
-  let e = HTMLDivElement $ pToJSVal $ _el_element theElement
+  let e = HTMLDivElement $ pToJSVal $ _element_raw theElement
   togTerminal <- (24 <$) <$> catchKeyboardShortcut e 24 True True
   togStats <- (12 <$) <$> catchKeyboardShortcut e 12 True True
   let keyboardShortcut = leftmost [togTerminal,togStats]

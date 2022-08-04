@@ -5,6 +5,7 @@ module Estuary.Languages.CineCer0.CineCer0State where
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Data.Witherable as F
 import GHCJS.Types
 import GHCJS.DOM.Types (HTMLDivElement)
 import GHCJS.Marshal.Pure
@@ -632,22 +633,22 @@ updateCineCer0State t rTime spec st = logExceptions st $ do
 
   -- change videos
   let continuingLayerSpecs = intersectionWith onlyChangedLayerSources vSpecs (previousLayerSpecs st) -- :: IntMap (Maybe LayerSpec)
-  let toChangeV = fmapMaybe id continuingLayerSpecs -- :: IntMap LayerSpec
+  let toChangeV = F.mapMaybe id continuingLayerSpecs -- :: IntMap LayerSpec
   let toChangeV' = intersectionWith (\a b -> (a,b)) toChangeV $ videos st -- IntMap (LayerSpec,CineCer0Video)
   mapM_ (\(x,cv) -> changeVideoSource (videoLayer cv) $ (getLayerText (source x))) toChangeV'
   -- change images
   let continuingImageSpecs = intersectionWith onlyChangedLayerSources imgSpecs (previousImageSpecs st)
-  let toChangeImg = fmapMaybe id continuingImageSpecs -- :: IntMap LayerSpec
+  let toChangeImg = F.mapMaybe id continuingImageSpecs -- :: IntMap LayerSpec
   let toChangeImg' = intersectionWith (\a b -> (a,b)) toChangeImg $ images st -- IntMap (LayerSpec,CineCer0Image)
   mapM_ (\(x,cImg) -> changeImageSource (imageLayer cImg) $ (getLayerText (source x))) toChangeImg'
   -- change texts
   let continuingTextSpecs = intersectionWith onlyChangedLayerSources txSpecs (previousTextSpecs st)
-  let toChangeTx = fmapMaybe id continuingTextSpecs -- :: IntMap LayerSpec
+  let toChangeTx = F.mapMaybe id continuingTextSpecs -- :: IntMap LayerSpec
   let toChangeTx' = intersectionWith (\a b -> (a,b)) toChangeTx $ texts st -- IntMap (LayerSpec,CineCer0Text)
   mapM_ (\(x,cTx) -> changeTextSource (textLayer cTx) $ (getLayerText (source x))) toChangeTx'
   -- change svgs
   let continuingSVGSpecs = intersectionWith onlyChangedLayerSources svgSpecs (previousSVGSpecs st)
-  let toChangeSVG = fmapMaybe id continuingSVGSpecs -- :: IntMap LayerSpec
+  let toChangeSVG = F.mapMaybe id continuingSVGSpecs -- :: IntMap LayerSpec
   let toChangeSVG' = intersectionWith (\a b -> (a,b)) toChangeSVG $ svgs st -- IntMap (LayerSpec,CineCer0Text)
   mapM_ (\(x,cSVG) -> changeSVGSource (svgLayer cSVG) $ (getLayerText (source x))) toChangeSVG'
 
