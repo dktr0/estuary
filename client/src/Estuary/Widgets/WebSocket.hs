@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo, OverloadedStrings, JavaScriptFFI #-}
+{-# LANGUAGE RecursiveDo, OverloadedStrings, JavaScriptFFI, FlexibleContexts #-}
 
 module Estuary.Widgets.WebSocket (estuaryWebSocket) where
 
@@ -15,20 +15,16 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Aeson
 
-import Estuary.Types.RenderInfo
 import Estuary.Types.Request
 import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Hint
-import Estuary.Types.EnsembleC
-import Estuary.Types.Ensemble
 import Estuary.Types.TranslatableText
-import Estuary.Widgets.W hiding (avgRenderLoad,animationFPS,animationLoad)
+import Estuary.Widgets.W
 
 
-estuaryWebSocket :: MonadWidget t m => Dynamic t RenderInfo -> Event t [Request] ->
-  m (Event t Response, Event t Hint)
-estuaryWebSocket rInfo toSend = mdo
+estuaryWebSocket :: (Reflex t, MonadIO m, MonadFix m, PostBuild t m, PerformEvent t m, MonadIO (Performable m), TriggerEvent t m, MonadHold t m) => Event t [Request] -> W t m (Event t Response)
+estuaryWebSocket toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
   userAgent <- liftIO $ getUserAgent
@@ -45,9 +41,16 @@ estuaryWebSocket rInfo toSend = mdo
   let wsOpenHint = LogMessage <$> (english "websocket opened" <$ (ws^.webSocket_open))
   let wsErrorHint = LogMessage <$> (english "websocket error" <$ ws^.webSocket_error)
   let wsCloseHint = LogMessage <$> (english "websocket closed" <$ ws^.webSocket_close)
-  let wsHints = leftmost [wsOpenHint,wsErrorHint,wsCloseHint]
-  let rejoinEvent = fmap pure $ attachWithMaybe maybeRejoinEnsemble (current ctx) $ ws^.webSocket_open
+  hint $ leftmost [wsOpenHint,wsErrorHint,wsCloseHint]
 
+  -- attempt to rejoin an ensemble if web socket connection re-opens
+  eName <- ensembleName
+  uName <- userHandle
+  loc <- location
+  pwd <- password
+  let maybeRejoinEnsemble = ffilter (/= "") $ tag (current eName) $ ws^.webSocket_open
+  let rejoinMessage = RejoinEnsemble <$> eName <*> uName <*> loc <*> pwd
+  let rejoinEvent = fmap pure $ tag (current rejoinMessage) maybeRejoinEnsemble
 
   -- after widget is built, query and report browser info to server
   postBuild <- getPostBuild
@@ -56,12 +59,12 @@ estuaryWebSocket rInfo toSend = mdo
   -- the server responds to ClientInfo (below) with ServerInfo, which we process below
   -- by issuing events that update the context
   let serverInfos = fmapMaybe justServerInfo response
-  let serverClientCounts = fmap fst serverInfos
-  let serverClientCountChanges = fmap (\x c -> c { clientCount = x }) serverClientCounts
+  -- SHOULD BE COLLECTED ELSEWHERE: let serverClientCounts = fmap fst serverInfos
+  -- SHOULD BE COLLECTED ELSEWHERE: let serverClientCountChanges = fmap (\x c -> c { clientCount = x }) serverClientCounts
   let pingTimes = fmap snd serverInfos
   latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pingTimes
-  let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
-  let contextChanges = mergeWith (.) [serverClientCountChanges,latencyChanges]
+  -- SHOULD BE COLLECTED ELSEWHERE: let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
+  -- let contextChanges = mergeWith (.) [serverClientCountChanges,latencyChanges]
 
   -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
   -- let socketIsOpen = fmap (=="connection open") status'
@@ -69,13 +72,16 @@ estuaryWebSocket rInfo toSend = mdo
   pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
   pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
   latencyDyn <- holdDyn 0 $ latency
-  let clientInfoDyn = ClientInfo <$> fmap avgRenderLoad rInfo <*> fmap animationFPS rInfo <*> fmap animationLoad rInfo <*> latencyDyn
+  arl <- avgRenderLoad
+  afps <- animationFPS
+  aload <- animationLoad
+  let clientInfoDyn = ClientInfo <$> arl <*> afps <*> aload <*> latencyDyn
   let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith ($) clientInfoDyn pingTickTime
 
-  return (response,wsHints)
+  return response
 
-maybeRejoinEnsemble :: (Text,Text,Text,Text) -> Maybe Request
-maybeRejoinEnsemble (eName,uName,loc,pwd)
+maybeRejoinEnsemble :: (Text,Text,Text,Text) -> () -> Maybe Request
+maybeRejoinEnsemble (eName,uName,loc,pwd) _
   | eName == "" = Nothing
   | otherwise = Just $ RejoinEnsemble eName uName loc pwd
 
