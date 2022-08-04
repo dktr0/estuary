@@ -78,7 +78,7 @@ invisibleButton = do
 
 --button with dynamic label and settable class
 
-dynButtonWSettableClass :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> m (Event t ())
+dynButtonWSettableClass :: (Adjustable t m, DomBuilder t m, PostBuild t m, MonadHold t m) => Dynamic t Text -> Dynamic t Text -> m (Event t ())
 dynButtonWSettableClass c s = dynE (buttonWithSettableClass <$> c <*> s)
 
 
@@ -87,7 +87,7 @@ dynButtonWSettableClass c s = dynE (buttonWithSettableClass <$> c <*> s)
 --
 
 --Button with dynamic label.
-dynButton :: MonadWidget t m => Dynamic t Text -> m (Event t ())
+dynButton :: (Adjustable t m, DomBuilder t m, PostBuild t m, MonadHold t m) => Dynamic t Text -> m (Event t ())
 dynButton = dynE . fmap buttonWithClass
 
 dynButtonWithChild :: (Monad m, Reflex t, DomBuilder t m) => String -> m () -> m (Event t ())
@@ -120,6 +120,7 @@ buttonDynAttrs s val attrs = do
 -- to String tuples. The first String of the tuple indicates a subheader,
 -- and the second indicates the selectable item under it. DropdownConfig options
 -- expect the same as with a regular dropdown
+-- dropdownOpts :: (Monad m, DomBuilder t m, Reflex t, Adjustable t m, PerformEvent t m, TriggerEvent t m, MonadIO m, MonadFix m, PostBuild t m, MonadHold t m) =>
 dropdownOpts :: MonadWidget t m => Int -> Map Int (Text,Text) ->  DropdownConfig t Int -> m (Dropdown t Int)
 dropdownOpts k0 setUpMap (DropdownConfig setK attrs) = do
   let options = fromList $ Prelude.zip (keys setUpMap) $ fmap snd $ elems setUpMap
@@ -204,12 +205,14 @@ justChangeValues :: EditSignal a -> Maybe a
 justChangeValues (ChangeValue x) = Just x
 justChangeValues _ = Nothing
 
+--clickableDivDynAttrsWChild :: (Monad m, DomBuilder t m, TriggerEvent t m, MonadIO m, PostBuild t m)
 clickableDivDynAttrsWChild :: MonadWidget t m => Dynamic t (Map Text Text) -> m a -> m (Event t ()) -- return (Event t (), a)
 clickableDivDynAttrsWChild attrs child = do
   (element,_) <- elDynAttr' "div" attrs $ child
   clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
   return $ (() <$) clickEv
 
+--clickableDivNoClass :: (Monad m, TriggerEvent t m, Reflex t, DomBuilder t m, MonadIO m)
 clickableDivNoClass :: MonadWidget t m => m a -> m (Event t a) -- return (Event t (), a)
 clickableDivNoClass child = do
   (element, a) <- el' "div" $ child -- look elAttr' ::

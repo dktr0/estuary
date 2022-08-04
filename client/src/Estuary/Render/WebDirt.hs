@@ -69,6 +69,7 @@ foreign import javascript unsafe
 performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
 
+-- (PerformEvent t m, Reflex t)
 performHints :: MonadWidget t m => WebDirt -> Event t [Hint] -> m ()
 performHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
 

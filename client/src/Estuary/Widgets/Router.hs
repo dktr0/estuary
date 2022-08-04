@@ -7,6 +7,7 @@ module Estuary.Widgets.Router(
 ) where
 
 import Control.Monad.IO.Class
+import Control.Monad.Fix (MonadFix)
 
 import Data.Maybe
 
@@ -57,6 +58,7 @@ router def inStatChangeEv renderPage = mdo
 
   return dynPage
 
+--router' :: (TriggerEvent t m, MonadFix m, MonadHold t m, PerformEvent t m, Reflex t, MonadIO m,  Adjustable t m, FromJSVal state, ToJSVal state)
 router' :: (MonadWidget t m, FromJSVal state, ToJSVal state) => state -> Event t state -> (state -> m (Event t state)) -> m (Dynamic t (Event t state))
 router' def inStatChangeEv renderPage = mdo
   let initialPage = renderPage def
@@ -86,7 +88,7 @@ pushPageState state url = do
       -- Mozilla reccomends to pass "" as title to keep things future proof
       pushState history jsState "" (Just url)
 
-getPopStateEv :: (MonadWidget t m, FromJSVal state) => m (Event t (Maybe state))
+getPopStateEv :: (Monad m, MonadIO m, Reflex t, TriggerEvent t m, FromJSVal state) => m (Event t (Maybe state))
 getPopStateEv = do
   mWindow <- liftIO $ currentWindow
   case mWindow of
