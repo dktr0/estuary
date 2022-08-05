@@ -23,7 +23,7 @@ import Reflex.Dom
 -- likewise m satisfies `DomBuilder t m` with `placeRawElement` defaulting to
 -- `placeRawElement` in `GhcjsDomSpace` (`append . toNode`).
 
-estuaryIcon :: (MonadWidget t m) => m ()
+estuaryIcon :: Monad m => m ()
 estuaryIcon = return () {- do
   jsIconInstance <- liftIO $ js_splashIconInstance
   jsCanvas <- liftIO $ (fmap pFromJSVal (js_getCanvas jsIconInstance) :: IO (Dom.Element))

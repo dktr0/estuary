@@ -45,7 +45,7 @@ navigation = do
   let a = switchDyn x
   return a
 
-referenceWidget :: MonadWidget t m => Reference -> W t m (Event t Reference)
+referenceWidget :: (DomBuilder t m, Monad m, PostBuild t m, Reflex t, MonadFix m, MonadHold t m) => Reference -> W t m (Event t Reference)
 
 referenceWidget MainList = do
   divClass "reference-title" $ text "estuary"
