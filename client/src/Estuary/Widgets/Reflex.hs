@@ -504,6 +504,13 @@ traceDynamic msg x = do
   let u = traceEvent msg (updated x)
   holdDyn i u
 
+traceDynamicWith :: (MonadIO m, Reflex t, MonadSample t m, MonadHold t m, Show a) => (a -> String) -> Dynamic t a -> m (Dynamic t a)
+traceDynamicWith f x = do
+  i <- sample $ current x 
+  let i' = f i
+  liftIO $ putStrLn $ show i'
+  let u = traceEventWith f (updated x)
+  holdDyn i u
 
 -- a hideable widget that is only built/rebuilt when it is made visible
 deferredWidget :: (MonadFix m, DomBuilder t m, MonadSample t m, MonadHold t m, Adjustable t m, NotReady t m, PostBuild t m) => Text -> Dynamic t Bool -> Dynamic t (m ()) -> m ()
