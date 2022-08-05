@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo, JavaScriptFFI, OverloadedStrings #-}
+{-# LANGUAGE RecursiveDo, JavaScriptFFI, OverloadedStrings, FlexibleContexts #-}
 
 module Estuary.Widgets.Estuary where
 
@@ -8,6 +8,8 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response,append)
 import Reflex.Dom.Old
 import Reflex.Dynamic
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Fix (MonadFix)
 import Data.Time
 import Data.Map
 import Data.Maybe
@@ -76,13 +78,13 @@ keyboardHintsCatcher rEnv settings ctxM riM = mdo
   return ()
 
 
-keyboardHintsW :: MonadWidget t m => Event t Int -> W t m ()
+keyboardHintsW :: (Reflex t, MonadFix m, MonadHold t m) => Event t Int -> W t m ()
 keyboardHintsW x = do
   toggleTerminalVisible $ ffilter (==24) x
   toggleStatsVisible $ ffilter (==12) x
 
 
-settingsForWidgets :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t [Hint] -> m (Dynamic t Settings)
+settingsForWidgets :: (Monad m, PerformEvent t m, Reflex t, MonadHold t m, TriggerEvent t m, MonadFix m, MonadIO (Performable m)) => R.RenderEnvironment -> Settings -> Event t [Hint] -> m (Dynamic t Settings)
 settingsForWidgets rEnv iSettings hints = do
   settingsChange <- delay 0.025 $ fmapMaybe hintsToSettingsChange hints
   settings <- foldDyn ($) iSettings settingsChange
@@ -236,7 +238,7 @@ canvasWidget settings dynZIndex ctx = do
 
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
-pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
+pollRenderInfo :: (Monad m, MonadIO m, PostBuild t m, Reflex t, MonadHold t m, PerformEvent t m, TriggerEvent t m, MonadIO (Performable m), MonadFix m) => MVar RenderInfo -> m (Dynamic t RenderInfo)
 pollRenderInfo riM = do
   now <- liftIO $ getCurrentTime
   riInitial <- liftIO $ readMVar riM
@@ -245,12 +247,12 @@ pollRenderInfo riM = do
   holdDyn riInitial newInfo
 
 
-performContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
+performContext :: (Monad m, MonadSample t m, Reflex t, PerformEvent t m, MonadIO (Performable m)) => MVar Context -> Dynamic t Context -> m ()
 performContext cMvar cDyn = do
   iCtx <- sample $ current cDyn
   performEvent_ $ fmap (liftIO . (\x -> swapMVar cMvar x >> return ())) $ updated cDyn -- transfer whole Context for render/animation threads
 
-performSuperDirt :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performSuperDirt :: (Monad m, MonadSample t m, Reflex t, MonadIO m, MonadHold t m, PerformEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performSuperDirt rEnv settings = do
   let sd = superDirt rEnv
   iSettings <- sample $ current settings
@@ -258,23 +260,23 @@ performSuperDirt rEnv settings = do
   sdOn <- holdUniqDyn $ fmap Settings.superDirtOn settings
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
-performTheme :: MonadWidget t m => Dynamic t Settings -> m ()
+performTheme :: (Monad m, Reflex t, MonadHold t m, PerformEvent t m, MonadIO (Performable m), MonadFix m) => Dynamic t Settings -> m ()
 performTheme settings = do
   themeChanged <- liftM updated $ holdUniqDyn $ fmap Settings.theme settings
   performEvent_ $ fmap (liftIO . Settings.setThemeIO) themeChanged
 
-performDynamicsMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performDynamicsMode :: (Monad m, Reflex t, MonadHold t m, PerformEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performDynamicsMode rEnv settings = do
   dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap Settings.dynamicsMode settings
   performEvent_ $ fmap (liftIO . changeDynamicsMode (R.mainBus rEnv)) dynamicsModeChanged
 
-performPunctualAudioInputMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performPunctualAudioInputMode :: (Monad m, Reflex t, MonadHold t m, PerformEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performPunctualAudioInputMode rEnv settings = do
   punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap Settings.punctualAudioInputMode settings
   performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (R.mainBus rEnv)) punctualAudioInputChanged
 
 -- TODO: this still needs to be refactored to use new Settings type, not Hint directly
-performDelayHints :: MonadWidget t m => R.RenderEnvironment -> Event t [Hint] -> m ()
+performDelayHints :: (Reflex t, PerformEvent t m, MonadIO (Performable m)) => R.RenderEnvironment -> Event t [Hint] -> m ()
 performDelayHints rEnv hs = do
   let nodes = R.mainBus rEnv
   let newDelayTime = fmapMaybe justGlobalDelayTime hs
