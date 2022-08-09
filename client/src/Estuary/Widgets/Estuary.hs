@@ -38,7 +38,6 @@ import Estuary.Types.Request
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Response
 import Estuary.Types.EnsembleResponse
-import Estuary.Types.Context
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Widgets.Reflex
@@ -104,14 +103,14 @@ estuaryWidget rEnv iSettings riM keyboardShortcut = divClass "estuary" $ mdo
   hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
   hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
 
-  nowUtc <- liftIO $ getCurrentTime
-  let iCtx = initialContext nowUtc
-  ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
-
   liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas iCanvas riM
 
   rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
+
+  (responseDown,webSocketHints) <- runW wEnv $ estuaryWebSocket requestsUP
+
+
+
   let responsesFromEnsembleRequests = fmap ((:[]) . EnsembleResponse) $ fmapMaybe ensembleRequestsToResponses commandEnsembleRequests
   let deltasDownAlt = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints,responsesFromEnsembleRequests]
   let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
@@ -126,16 +125,22 @@ estuaryWidget rEnv iSettings riM keyboardShortcut = divClass "estuary" $ mdo
   -- four GUI components: header, main (navigation), terminal, footer
   let wEnv = WidgetEnvironment {
     _renderEnvironment = rEnv,
-    _context = ctx,
     _renderInfo = rInfo,
     _resourceMaps = resourceMaps,
-    W._settings = settings
+    W._settings = settings,
+    _serverInfo :: Dynamic t ServerInfo.ServerInfo,
+    _ensembleC :: Dynamic t EnsembleC
     }
 
-  (_,keyboardHints) <- runW wEnv $ keyboardHintsW keyboardShortcut
+  (_,keyboardAndHeaderHints) <- runW wEnv $ do
+    keyboardHintsW keyboardShortcut
+    header
+    divClass "page ui-font" $ do
+      navRequests <- navigation deltasDownAlt
+      sv <- W.sideBarVisible
+      hideableWidget sv "sidebar" sideBarWidget 
 
-  (_,headerHints) <- runW wEnv header
-
+  {-
   ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
     (navRequests,pageHints) <- runW wEnv $ navigation deltasDownAlt
     (ctxChange,sidebarHints) <- runW wEnv $ do
@@ -143,6 +148,7 @@ estuaryWidget rEnv iSettings riM keyboardShortcut = divClass "estuary" $ mdo
       hideableWidget sv "sidebar" $ sidebarWidget ctx rInfo
     let mergedHints = mergeWith (++) [pageHints, sidebarHints]
     return (navRequests,ctxChange,mergedHints)
+  -}
 
   (command,_) <- runW wEnv $ do
     tv <- W.terminalVisible
