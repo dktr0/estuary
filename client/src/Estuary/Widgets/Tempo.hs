@@ -166,7 +166,7 @@ currentBeat = do
 ----
 
 cycleTracer:: MonadWidget t m => Rational ->  W t m ()
-cycleTracer segments = do
+cycleTracer segments k = do
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   beatPosition <- currentBeat -- :: Event t Rational
@@ -176,13 +176,6 @@ cycleTracer segments = do
   visualiseCycles beat segments
   return ()
 
-metreTracer:: MonadWidget t m => Rational -> W t m ()
-metreTracer subDivisions = do
-  beatPosition <- currentBeat
-  beat <- holdDyn 0 beatPosition
-  visualiseMetre beat subDivisions -- segments-- W t m TimeVision
-  return ()
-
 ringTracer:: MonadWidget t m => Rational -> W t m ()
 ringTracer segments = do
   beatPosition <- currentBeat
@@ -190,18 +183,32 @@ ringTracer segments = do
   visualiseRing beat segments
   return ()
 
-beadsTracerPrecise:: MonadWidget t m => Rational -> Rational -> W t m ()
-beadsTracerPrecise k segments = do
+metreTracerFancy:: MonadWidget t m => Rational -> W t m ()
+metreTracerFancy subDivisions = do
   beatPosition <- currentBeat
   beat <- holdDyn 0 beatPosition
-  visualiseBeads beat k segments True
+  visualiseMetreFancy beat subDivisions -- segments-- W t m TimeVision
   return ()
 
-beadsTracerEconomic:: MonadWidget t m => Rational -> Rational -> W t m ()
-beadsTracerEconomic k segments = do
+metreTracerCheap:: MonadWidget t m => Rational -> W t m ()
+metreTracerCheap subDivisions = do
   beatPosition <- currentBeat
   beat <- holdDyn 0 beatPosition
-  visualiseBeads beat k segments False
+  visualiseMetreCheap beat subDivisions -- segments-- W t m TimeVision
+  return ()
+
+beadsTracerFancy:: MonadWidget t m => Rational -> Rational -> W t m ()
+beadsTracerFancy k bead = do
+  beatPosition <- currentBeat
+  beat <- holdDyn 0 beatPosition
+  visualiseBeads beat k bead True
+  return ()
+
+beadsTracerCheap:: MonadWidget t m => Rational -> Rational -> W t m ()
+beadsTracerCheap k bead = do
+  beatPosition <- currentBeat
+  beat <- holdDyn 0 beatPosition
+  visualiseBeads beat k bead False
   return ()
 
 -- select visualiser at the bottom
@@ -220,6 +227,9 @@ visualiseTempoWidget delta = mdo
 
 -- beat helpers
 
+truncToDec:: Rational -> Rational
+truncToDec r = r - (realToFrac $ floor r)
+
 beatToRotation:: Rational -> Map Text Text
 beatToRotation r = "transform" =: ("rotate(" <> (showt radio) <> ")")
   where radio = fromIntegral (round $ radio' * 360) :: Double
@@ -233,9 +243,6 @@ beatToPercentage atr beat = atr =: (showt percen)
 beatToPercentage':: Rational -> Rational -- outputs a Rational representing percentage normalize from 0 to 1
 beatToPercentage' beat = percen 
   where percen = beat - (realToFrac $ floor beat)
-
-
-
 
 -- cycle visualiser widget
 
@@ -296,9 +303,8 @@ generatePieSegment x = do
   return ()     
 
 -- metre visuliser widget
-
-visualiseMetre :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
-visualiseMetre delta subDivisions = do
+visualiseMetreFancy :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
+visualiseMetreFancy delta subDivisions = do
   liftIO $ putStrLn "build the metre visualiser"
   let class' = constDyn $ "class" =: "metreVisualiser code-font"
 --  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
@@ -328,17 +334,77 @@ visualiseMetre delta subDivisions = do
   let attrsRect = mconcat [barPos,y,width,height,f]
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
-    -- mark
     generateSegments 100 subDivisions
     -- segment
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
     -- manecilla
-  --  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
   return ()
+
+
+visualiseMetreCheap :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
+visualiseMetreCheap delta subDivisions = do
+  liftIO $ putStrLn "build the metre visualiser"
+  let class' = constDyn $ "class" =: "metreVisualiser code-font"
+--  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
+  let vB = constDyn $ "viewBox" =: "0 0 100 100"
+  let w' = constDyn $ "width" =: "100%"
+  let h' = constDyn $ "height" =: "100%"
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let strokeWidth = constDyn $ "stroke-width" =: "0.5"
+  let par = constDyn $ "preserveAspectRatio" =: "none"
+
+  let attrs = mconcat [class',w',h',vB, par]
+
+--  delta' <- traceDynamicWith (\x -> "beat of metre: " ++ show (realToFrac x :: Double)) delta
+
+  let x1 = beatToPercentage "x1" <$> delta
+  let x2 = beatToPercentage "x2" <$> delta
+--  let lineStyle = constDyn $ "style" =: "z-index:-9;"
+  let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "100")
+  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
+
+--  this is for the segment
+  let barPos = barPosition subDivisions <$> beatToPercentage' <$> delta
+  let y = constDyn $ "y" =: "0"
+  let width = constDyn $ "width" =: (showt (realToFrac (safeDiv 100 subDivisions) :: Double))
+  let height = constDyn $ "height" =: "100"
+  let f = constDyn $ "fill" =: "var(--primary-color)"
+  let attrsRect = mconcat [barPos,y,width,height,f]
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    markTheZero delta
+    -- mark
+    generateSegments 100 subDivisions
+    -- segment
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
+  return ()
+
+markTheZero:: MonadWidget t m => Dynamic t Rational -> m ()
+markTheZero beat = do
+  let x = constDyn $ "x" =: "1"
+  let y = constDyn $ "y" =: "1"
+  let width = constDyn $ "width" =: "98"
+  let height = constDyn $ "height" =: "98"
+  let opacity = constDyn $ "style" =: "opacity:0.75"
+  let dynStroke = markMetre <$> beat
+  let attrs = mconcat [x,y,width,height,dynStroke,opacity]
+      -- rect for beat
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrs $ return ()
+  return ()
+
+markMetre:: Rational -> Map Text Text
+markMetre x 
+    | ((truncToDec x) >= 0) && ((truncToDec x) < 0.02)  = "stroke" =: "var(--primary-color)"
+    | otherwise = "stroke" =: "none"
 
 safeDiv:: Rational -> Rational -> Rational
 safeDiv e 0 = 0
 safeDiv e n = e/n 
+
+safeDiv':: Float -> Float -> Float
+safeDiv' e 0 = 0
+safeDiv' e n = e/n
 
 generateSegments:: MonadWidget t m => Rational -> Rational ->  m ()
 generateSegments width nLines = do
@@ -386,7 +452,6 @@ visualiseRing delta segs = do
   liftIO $ putStrLn "build the doughnut visualiser"
   delta' <- traceDynamicWith (\x -> "beat of ring: " ++ show (realToFrac x :: Double)) delta
  -- delta' <- traceDynamicWith (\x -> "beat of metre: " ++ show (realToFrac x :: Double)) delta
-  let segments = if segs < 1 then 1 else segs
   let class' = constDyn $ "class" =: "ringVisualiser code-font"
 --  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
@@ -396,7 +461,7 @@ visualiseRing delta segs = do
   let attrs = mconcat [class',w',h',vB,par]
 
   let radius = 40 :: Float
-  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let stroke = constDyn $ dynStroke segs
   let strokeWidth = constDyn $ "stroke-width" =: "10"
   let fill = constDyn $ "fill" =: "none"
   let cx = constDyn $  "cx" =: "50" 
@@ -410,22 +475,28 @@ visualiseRing delta segs = do
 
  -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
-    
-    generateRingSegments segments radius
+    markTheZero delta
+    generateRingSegments segs radius
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" currentBeatAttrs $ return ()
     
   return ()
 
+dynStroke:: Rational -> Map Text Text
+dynStroke x 
+    | x == 0  = "stroke" =: "none"
+    | otherwise = "stroke" =: "var(--primary-color)"
+
+
 segmentSize:: Float -> Float -> Map Text Text
 segmentSize radio segs = "stroke-dasharray" =: ((showt arg1) <> " " <> (showt arg2))
-            where arg1 = realToFrac ((radio * pi * 2)/segs) :: Double
-                  arg2 = realToFrac (((radio * pi * 2)/segs)*(segs - 1)) :: Double
+            where arg1 = realToFrac (safeDiv' (radio * pi * 2) segs) :: Double
+                  arg2 = realToFrac ((safeDiv' (radio * pi * 2) segs)*if segs == 0 then 0 else (segs - 1)) :: Double
 
 segmentPosition:: Rational -> Rational -> Map Text Text
 segmentPosition segs position 
   | (segs == 0) = "transform" =: "rotate(0)"
   | otherwise =
-    let segDur = 360 / segs
+    let segDur = safeDiv 360 segs
         segList = Prelude.take (floor segs) $ iterate (+ segDur) 0
         segPos = Prelude.last $ Prelude.filter (<= (position*360)) segList
         segPosO = offset segPos 180 -- 180 means the thing starts at the left and goes to the right, 270 would start at top
@@ -437,8 +508,9 @@ offset setPos off = (x - x')*360
         x' = realToFrac (floor x) :: Rational
 
 generateRingSegments:: MonadWidget t m => Rational -> Float ->  m ()
-generateRingSegments nSegs radius = do
-  let segmentsSize = 360 / nSegs 
+generateRingSegments nSegs' radius = do
+  let nSegs = if nSegs' == 0 then 1 else nSegs'
+      segmentsSize = safeDiv 360 nSegs -- if 0 subdivisions then mark the whole circle with secondary colour
       segList = constDyn $ Prelude.take (floor nSegs) $ iterate (+ segmentsSize) 0
   x <- simpleList segList (\segPos -> generateRingSegment nSegs segPos radius)
   return ()
@@ -446,7 +518,6 @@ generateRingSegments nSegs radius = do
 generateRingSegment:: MonadWidget t m => Rational -> Dynamic t Rational -> Float ->  m ()
 generateRingSegment segs segPos radius = do
   liftIO $ putStrLn "build segment of doughnut"
-  let z = constDyn $ "z" =: "-9"
   let stroke = constDyn $ "stroke" =: "var(--secondary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "15"
   let fill = constDyn $ "fill" =: "transparent"
@@ -457,7 +528,7 @@ generateRingSegment segs segPos radius = do
   let position = segPosition <$> segPos
   let opacity = segOpacityDegrees <$> segPos
   
-  let attrs = mconcat [cx,cy,r,stroke,strokeWidth,fill,dashArray,position,opacity,z]
+  let attrs = mconcat [cx,cy,r,stroke,strokeWidth,fill,dashArray,position,opacity]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrs $ return ()
   return ()
 
@@ -473,24 +544,23 @@ segOpacityDegrees segPos = "style" =: ("opacity: " <> showt (realToFrac x :: Dou
   ------ bead visualiser
 
 beadPosition:: Rational -> Rational -> Map Text Text
-beadPosition nBeads' position =
-  let nBeads = if nBeads' /= 0 then nBeads' else 1
-      beadDur = 360 / nBeads
+beadPosition 0 _ = "" =: ""
+beadPosition nBeads position =
+  let beadDur = safeDiv 360 nBeads
       beadList = Prelude.take (floor nBeads) $ iterate (+ beadDur) 0
       bead = Prelude.last $ Prelude.filter (<= (position*360)) beadList
   in "transform" =: ("rotate(" <> (showt (realToFrac bead :: Double)) <> ",50,50)")
 
 beadSize:: Bool -> Rational -> Rational -> Map Text Text
-beadSize True nBeads' position = 
-  let nBeads = if nBeads' /= 0 then nBeads' else 1
-      beadDur = if nBeads /= 0 then (1 / nBeads) else 1
+beadSize _ 0 _ = "" =: ""
+beadSize True nBeads position = 
+  let beadDur = safeDiv 1 nBeads
       beadList = Prelude.take (floor nBeads) $ iterate (+ beadDur) 0
       bead' = beadDur + (negate $ position - (Prelude.last $ Prelude.filter (<= (position)) beadList)) -- cuenta regresiva de fraccion q representa segmento del beat a 0
-      bead = bead' / beadDur
+      bead = safeDiv bead' beadDur
       scaleF = (beadScaling nBeads) + 0.1
   in "r" =: showt (realToFrac (bead*scaleF) :: Double)
-beadSize False nBeads' pos = "r" =: showt (realToFrac (beadScaling nBeads) :: Double)
-  where nBeads = if nBeads' /= 0 then nBeads' else 0
+beadSize False nBeads pos = "r" =: showt (realToFrac (beadScaling nBeads) :: Double)
 
 visualiseBeads :: MonadWidget t m => Dynamic t Rational -> Rational -> Rational -> Bool -> m ()
 visualiseBeads delta k beads dyn = do
@@ -526,11 +596,10 @@ visualiseBeads delta k beads dyn = do
 
 
 generateBeads:: MonadWidget t m => Rational ->  m ()
-generateBeads nBeads' = do
+generateBeads nBeads = do
   liftIO $ putStrLn "build segment of beads"
-  let nBeads = if nBeads' /= 0 then nBeads' else 1
-      beadSize = beadScaling nBeads
-      beadDistribution = if nBeads /= 0 then (360 / nBeads) else 1
+  let beadSize = beadScaling nBeads
+      beadDistribution = safeDiv 360 nBeads
       segList = constDyn $ Prelude.take (floor nBeads) $ iterate (+ beadDistribution) 0
   x <- simpleList segList (generateBead beadSize False)
   return ()
@@ -566,9 +635,9 @@ beadFill False = "fill" =: "transparent"
 
 generateBjorklundBeads:: MonadWidget t m => (Rational,Rational) ->  m ()
 generateBjorklundBeads (k,n) = do
-  let nBeads = if n /= 0 then n else 1
+  let nBeads = n
       beadSize = beadScaling nBeads
-      beadInterval = (360 / nBeads) 
+      beadInterval = safeDiv 360 nBeads 
       beadDistribution = Prelude.map (*beadInterval) $ bjorklundR (k,n)
       segList = constDyn $ Prelude.take (floor k) $ Prelude.scanl (+) 0 $ beadDistribution
   x <- simpleList segList (generateBead beadSize True)
@@ -588,9 +657,50 @@ getScaling (d:urs)
     | (Prelude.length (d:urs)) == 1 = []
     | otherwise = (Prelude.head urs) - d : (getScaling urs)
 
---- select visualiser
+
+
+infoDisplay:: MonadWidget t m => Event t () -> Rational -> Integer -> m ()
+infoDisplay x seg tics = do 
+  let segDisplay = floor seg :: Int
+  liftIO $ putStrLn $ show segDisplay
+  eventTime <- liftIO $ getCurrentTime
+  tick <- tickLossy 0.1 eventTime -- Event t (TickInfo)
+  let w = intsToBool tics <$> fmap _tickInfo_n tick  -- Event t (Bool)
+  z' <- holdDyn False w
+  z <- holdUniqDyn z' -- Dyn t Bool
+  hideableWidget z "segmentMark" $ text (showt segDisplay)
+  pure ()
+
+-- this one displays two numbers: k and n
+infoDisplay':: MonadWidget t m => Event t () -> Rational ->  Rational -> Integer -> m ()
+infoDisplay' x k seg tics = do 
+  let segDisplay = floor seg :: Int
+  let kDisplay = floor k :: Int
+  liftIO $ putStrLn $ show segDisplay
+  eventTime <- liftIO $ getCurrentTime
+  tick <- tickLossy 0.1 eventTime -- Event t (TickInfo)
+  let w = intsToBool tics <$> fmap _tickInfo_n tick  -- Event t (Bool)
+  z' <- holdDyn False w
+  z <- holdUniqDyn z' -- Dyn t Bool
+  hideableWidget z "segmentMark" $ text ("("<>(showt kDisplay)<>","<>(showt segDisplay)<>")")
+  pure ()
+
+intsToBool:: Integer -> Integer -> Bool
+intsToBool n' n
+  | n < n' = True
+  | otherwise = False
+
+--- select visualiser -- newDEF: 
+-- Tv 0 seg k  -- cyclic
+-- Tv 1 seg k  -- doughnut
+-- Tv 2 seg k  -- metric expensive
+-- Tv 3 seg k  -- metric cheap
+-- Tv 4 seg k  -- bead expensive
+-- Tv 5 seg k  -- bead cheap
+
+
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
-selectVisualiser (Cyclic seg) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 0 seg k) = divClass "tempo-visualiser" $ do
   cycleTracer seg
   x <- do 
     x <- divClass "flex-container-for-timeVision" $ do
@@ -599,42 +709,22 @@ selectVisualiser (Cyclic seg) = divClass "tempo-visualiser" $ do
       centreEvent <- do
           x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
             upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+            infoDisplay upPanel seg 4
             let upEvent = segmentUp <$ upPanel  
             downPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+            infoDisplay downPanel seg 4
             let downEvent = segmentDown <$ downPanel
             let cPanelEvent = leftmost [upEvent,downEvent]
             return cPanelEvent
           return x
       rightPanel <- clickableDiv "flex-item-for-timeVision" blank
       let rightEvent = tvNextStateRight <$ rightPanel
-      let panelEvent = fmap (\x -> x $ Cyclic seg) $ leftmost [centreEvent,leftEvent,rightEvent]
+      let panelEvent = fmap (\x -> x $ Tv 0 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
       return panelEvent
     return x   
   return x
 
-selectVisualiser (Metric seg) = divClass "tempo-visualiser" $ do
-  metreTracer seg
-  x <- do
-    x <- divClass "flex-container-for-timeVision" $ do
-      leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
-      let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
-      centreEvent <- do 
-        x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
-          upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
-          let upEvent = segmentUp <$ upPanel  
-          downPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
-          let downEvent = segmentDown <$ downPanel
-          let cPanelEvent = leftmost [upEvent,downEvent]
-          return cPanelEvent
-        return x
-      rightPanel <- clickableDiv "flex-item-for-timeVision" blank
-      let rightEvent = tvNextStateRight <$ rightPanel
-      let panelEvent = fmap (\x -> x $ Metric seg) $ leftmost [centreEvent,leftEvent,rightEvent]
-      return panelEvent
-    return x
-  return x
-
-selectVisualiser (Ring seg) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 1 seg k) = divClass "tempo-visualiser" $ do
   ringTracer seg
   x <- divClass "flex-container-for-timeVision" $ do
     leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
@@ -642,70 +732,145 @@ selectVisualiser (Ring seg) = divClass "tempo-visualiser" $ do
     centreEvent <- do 
       x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
         upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+        infoDisplay upPanel seg 4
         let upEvent = segmentUp <$ upPanel  
         downPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+        infoDisplay downPanel seg 4
         let downEvent = segmentDown <$ downPanel
         let cPanelEvent = leftmost [upEvent,downEvent]
         return cPanelEvent
       return x
     rightPanel <- clickableDiv "flex-item-for-timeVision" $ blank
     let rightEvent = tvNextStateRight <$ rightPanel
-    let panelEvent = fmap (\x -> x $ Ring seg) $ leftmost [centreEvent,leftEvent,rightEvent]
+    let panelEvent = fmap (\x -> x $ Tv 1 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
     return panelEvent
   return x
 
-selectVisualiser (Beads (k,seg)) = divClass "tempo-visualiser" $ do
-  beadsTracerEconomic k seg
+selectVisualiser (Tv seg k) = divClass "tempo-visualiser" $ do
+  metreTracerFancy seg
+  x <- do
+    x <- divClass "flex-container-for-timeVision" $ do
+      leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
+      let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
+      centreEvent <- do 
+        x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
+          upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+          infoDisplay upPanel seg 4
+          let upEvent = segmentUp <$ upPanel  
+          downPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+          infoDisplay downPanel seg 4
+          let downEvent = segmentDown <$ downPanel
+          let cPanelEvent = leftmost [upEvent,downEvent]
+          return cPanelEvent
+        return x
+      rightPanel <- clickableDiv "flex-item-for-timeVision" blank
+      let rightEvent = tvNextStateRight <$ rightPanel
+      let panelEvent = fmap (\x -> x $ Tv 2 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
+      return panelEvent
+    return x
+  return x
+
+selectVisualiser (Tv seg k) = divClass "tempo-visualiser" $ do
+  metreTracerCheap seg
+  x <- do
+    x <- divClass "flex-container-for-timeVision" $ do
+      leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
+      let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
+      centreEvent <- do 
+        x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
+          upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+          infoDisplay upPanel seg 4
+          let upEvent = segmentUp <$ upPanel  
+          downPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
+          infoDisplay downPanel seg 4
+          let downEvent = segmentDown <$ downPanel
+          let cPanelEvent = leftmost [upEvent,downEvent]
+          return cPanelEvent
+        return x
+      rightPanel <- clickableDiv "flex-item-for-timeVision" blank
+      let rightEvent = tvNextStateRight <$ rightPanel
+      let panelEvent = fmap (\x -> x $ Tv 3 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
+      return panelEvent
+    return x
+  return x
+
+selectVisualiser (Tv 4 seg k) = divClass "tempo-visualiser" $ do
+  beadsTracerFancy k seg
   x <- divClass "flex-container-for-timeVision" $ do
     leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
     let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
     centreEvent <- do  
       x <- elClass "div" "flex-container-for-timeVision-vertical-2" $ do
         upPanel <- clickableDiv "flex-item-for-timeVision-vertical-2" blank
+        infoDisplay' upPanel k seg 4
         let upEvent = segmentUp <$ upPanel  
         middlePanel <- clickableDiv "flex-item-for-timeVision-vertical-2" blank
+        infoDisplay' middlePanel k seg 4
         let middleEvent = bjorklundUp <$ middlePanel
         downPanel <- clickableDiv "flex-item-for-timeVision-vertical-2" blank
+        infoDisplay' downPanel k seg 4
         let downEvent = segmentDown <$ downPanel
         let cPanelEvent = leftmost [middleEvent,upEvent,downEvent]
         return cPanelEvent
       return x
     rightPanel <- clickableDiv "flex-item-for-timeVision" $ blank
     let rightEvent = tvNextStateRight <$ rightPanel
-    let panelEvent = fmap (\x -> x $ Beads (k,seg)) $ leftmost [centreEvent,leftEvent,rightEvent]
+    let panelEvent = fmap (\x -> x $ Tv 4 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
+    return panelEvent
+  return x
+
+selectVisualiser (Tv 5 seg k) = divClass "tempo-visualiser" $ do
+  beadsTracerCheap k seg
+  x <- divClass "flex-container-for-timeVision" $ do
+    leftPanel <- clickableDiv "flex-item-for-timeVision" blank  -- :: Event t ()
+    let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
+    centreEvent <- do  
+      x <- elClass "div" "flex-container-for-timeVision-vertical-2" $ do
+        upPanel <- clickableDiv "flex-item-for-timeVision-vertical-2" blank
+        infoDisplay' upPanel k seg 4
+        let upEvent = segmentUp <$ upPanel  
+        middlePanel <- clickableDiv "flex-item-for-timeVision-vertical-2" blank
+        infoDisplay' middlePanel k seg 4
+        let middleEvent = bjorklundUp <$ middlePanel
+        downPanel <- clickableDiv "flex-item-for-timeVision-vertical-2" blank
+        infoDisplay' downPanel k seg 4
+        let downEvent = segmentDown <$ downPanel
+        let cPanelEvent = leftmost [middleEvent,upEvent,downEvent]
+        return cPanelEvent
+      return x
+    rightPanel <- clickableDiv "flex-item-for-timeVision" $ blank
+    let rightEvent = tvNextStateRight <$ rightPanel
+    let panelEvent = fmap (\x -> x $ Tv 5 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
     return panelEvent
   return x
 
 beatLim = 33
 
 segmentUp:: TimeVision -> TimeVision
-segmentUp (Cyclic x) = (Cyclic (realToFrac ((floor (x+1))`mod`beatLim) :: Rational))
-segmentUp (Metric x) = (Metric (realToFrac ((floor (x+1))`mod`beatLim) :: Rational))
-segmentUp   (Ring x) =   (Ring (realToFrac ((floor (x+1))`mod`beatLim) :: Rational))
-segmentUp  (Beads x) =  (Beads ((realToFrac ((floor (fst x))`mod`((floor $ snd x)+1)) :: Rational), (realToFrac ((floor ((snd x)+1))`mod`beatLim) :: Rational)))
+segmentUp (Tv 0 x k) = (Tv 0 (realToFrac ((floor (x+1))`mod`beatLim) :: Rational) k)
+segmentUp (Tv 1 x k) = (Tv 1 (realToFrac ((floor (x+1))`mod`beatLim) :: Rational) k)
+segmentUp (Tv 2 x k) = (Tv 2 (realToFrac ((floor (x+1))`mod`beatLim) :: Rational) k)
+segmentUp (Tv 3 x k) = (Tv 3 (realToFrac ((floor (x+1))`mod`beatLim) :: Rational) k)
+segmentUp (Tv 4 x k) = (Tv 4 (realToFrac ((floor (x+1))`mod`beatLim) :: Rational) (realToFrac ((floor k)`mod`((floor x)+1)) :: Rational))
+segmentUp (Tv 5 x k) = (Tv 5 (realToFrac ((floor (x+1))`mod`beatLim) :: Rational) (realToFrac ((floor k)`mod`((floor x)+1)) :: Rational))
 
 segmentDown:: TimeVision -> TimeVision
-segmentDown (Cyclic x) = (Cyclic (realToFrac ((floor (x-1))`mod`beatLim) :: Rational))
-segmentDown (Metric x) = (Metric (realToFrac ((floor (x-1))`mod`beatLim) :: Rational))
-segmentDown   (Ring x) =   (Ring (realToFrac ((floor (x-1))`mod`beatLim) :: Rational))
-segmentDown  (Beads x) = (Beads ((realToFrac ((floor (fst x))`mod`((floor $ snd x)+1)) :: Rational), (realToFrac ((floor ((snd x)-1))`mod`beatLim) :: Rational)))
+segmentDown (Tv 0 x k) = (Tv 0 (realToFrac ((floor (x-1))`mod`beatLim) :: Rational) k)
+segmentDown (Tv 1 x k) = (Tv 1 (realToFrac ((floor (x-1))`mod`beatLim) :: Rational) k)
+segmentDown (Tv 2 x k) = (Tv 2 (realToFrac ((floor (x-1))`mod`beatLim) :: Rational) k)
+segmentDown (Tv 3 x k) = (Tv 3 (realToFrac ((floor (x-1))`mod`beatLim) :: Rational) k)
+segmentDown (Tv 4 x k) = (Tv 4 (realToFrac ((floor (x-1))`mod`beatLim) :: Rational) (realToFrac ((floor k)`mod`((floor x)+1)) :: Rational))
+segmentDown (Tv 5 x k) = (Tv 5 (realToFrac ((floor (x-1))`mod`beatLim) :: Rational) (realToFrac ((floor k)`mod`((floor x)+1)) :: Rational))
 
 bjorklundUp:: TimeVision -> TimeVision
-bjorklundUp  (Beads x) =  (Beads ((realToFrac ((floor ((fst x)+1))`mod`((floor $ snd x)+1)) :: Rational),snd x))
-bjorklundUp _ = (Beads (10,15))
-
+bjorklundUp (Tv 4 x k) = Tv 4 x realToFrac ((floor (k+1))`mod`((floor x)+1)) :: Rational
+bjorklundUp (Tv 5 x k) = Tv 5 x realToFrac ((floor (k+1))`mod`((floor x)+1)) :: Rational
 
 tvNextStateRight:: TimeVision -> TimeVision
-tvNextStateRight (Cyclic x) = (Metric x)
-tvNextStateRight (Metric x) = (Ring x)
-tvNextStateRight   (Ring x) = (Beads (0,x))
-tvNextStateRight  (Beads x) = (Cyclic (snd x))
+tvNextStateRight (Tv n x k) = Tv ((n+1)`mod`6) x k
 
 tvNextStateLeft:: TimeVision -> TimeVision
-tvNextStateLeft (Cyclic x) = (Beads (0,x))
-tvNextStateLeft  (Beads x) = (Ring (snd x))
-tvNextStateLeft   (Ring x) = (Metric x)
-tvNextStateLeft (Metric x) = (Cyclic x)
+tvNextStateLeft (Tv n x k) = Tv ((n-1)`mod`6) x k
 
 
 ------------------------------------------

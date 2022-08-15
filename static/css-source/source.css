@@ -1035,6 +1035,12 @@ cursor: pointer;
   	min-height: 100%;
 }
 
+.segmentMark {
+	position:absolute;
+	left: 0%;
+	top: 0%;
+}
+
 .flex-container-for-timeVision {
 	display: flex;
 	z-index: 1;
