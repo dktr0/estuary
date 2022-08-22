@@ -47,6 +47,7 @@ dumpView (StopWatchView z) = "stopwatch " <> showInt z
 dumpView (CountDownView z) = "countDown " <> showInt z
 dumpView (SandClockView z) = "sandClock " <> showInt z
 dumpView (SeeTimeView z) = "timeVision " <> showInt z
+dumpView (TimerView z) = "timer " <> showInt z
 dumpView (NotePadView z) = "notepad " <> showInt z
 dumpView (IFrame url) = "iFrame \"" <> url <> "\""
 dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
@@ -83,6 +84,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> countDownParser
           <|> sandClockParser
           <|> seeTimeParser
+          <|> timerParser
           <|> notePadParser
           <|> iFrameParser
           <|> calendarEventParser
@@ -149,6 +151,17 @@ seeTimeParser' = seeTimeFunc <$ reserved "timeVision"
 
 seeTimeFunc :: Int -> View
 seeTimeFunc z = SeeTimeView z
+
+--
+
+timerParser :: H View
+timerParser = timerParser' <*> int
+
+timerParser' :: H (Int -> View)
+timerParser' = timerFunc <$ reserved "timer"
+
+timerFunc :: Int -> View
+timerFunc z = TimerView z
 
 --
 sandClockParser :: H View

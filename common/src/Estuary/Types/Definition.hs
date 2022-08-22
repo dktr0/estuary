@@ -67,6 +67,24 @@ data TimerUpState =
   deriving (Eq, Show, Generic)
 
 
+data Measure = Cycles | Seconds deriving (Show,Ord,Eq,Generic)
+instance ToJSON Measure where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Measure
+
+data CurrentMode = Playing UTCTime | Halted | Paused UTCTime Rational deriving (Show,Ord,Eq,Generic)
+instance ToJSON CurrentMode where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON CurrentMode
+
+-- visualiser is an Int
+-- Timer = Finite Visualiser Targets CurrentMode Loop Measure
+data Timer = Finite Int [Rational] CurrentMode Bool Measure deriving (Show,Eq,Ord,Generic)
+
+instance ToJSON Timer where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Timer
+
 data TimeVision = Tv Int Rational Rational deriving (Show,Eq,Ord,Generic)
 
 instance ToJSON TimeVision where
@@ -91,6 +109,7 @@ data Definition =
   SandClock TimerDownState |
   StopWatch TimerUpState |
   SeeTime TimeVision |
+  TimerDef Timer |
   NotePad NotePad |
   CalendarEv CalendarEvent |
   SpecChat SpecChat |
@@ -117,6 +136,7 @@ definitionForRendering (CountDown x) = CountDown x
 definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
+definitionForRendering (TimerDef x) = TimerDef x
 definitionForRendering (NotePad x) = NotePad x
 definitionForRendering (SpecChat x) = SpecChat x
 definitionForRendering (CalendarEvs x) = CalendarEvs x
@@ -182,6 +202,10 @@ maybeTimerDownState _ = Nothing
 maybeSeeTime:: Definition -> Maybe TimeVision
 maybeSeeTime (SeeTime x) = Just x
 maybeSeeTime _ = Nothing
+
+maybeTimer:: Definition -> Maybe Timer
+maybeTimer (TimerDef x) = Just x
+maybeTimer _ = Nothing
 
 maybeNotePad :: Definition -> Maybe NotePad
 maybeNotePad (NotePad x) = Just x

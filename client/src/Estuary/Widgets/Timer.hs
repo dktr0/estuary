@@ -35,11 +35,27 @@ visualiseTimerWidget delta = mdo
   initialValue <- sample $ current delta
   let initialWidget = selectVisualiser initialValue
   let remoteOrLocalEdits = leftmost [updated delta, localEdits']
-  let updatedWidgets = fmap selectVisualiser remoteOrLocalEdits -- type? dynamic or event??
+  let updatedWidgets = fmap selectVisualiser remoteOrLocalEdits -- gets an event t timer
   localEdits <- widgetHold initialWidget updatedWidgets
  -- localEdits <- widgetHold initialWidget $ traceEventWith show updatedWidgets -- m (Dynamic t (Event t TimeVi)) 
   let localEdits' = switchDyn localEdits -- Event t TimeVision
   return v
+
+selectVisualiser :: MonadWidget t m => Timer -> W t m (Event t Timer)
+selectVisualiser timer = divClass "tempo-visualiser" $ do
+    x <- do 
+        x <- divClass "flex-container-for-timeVision" $ do
+            testPanel <- clickableDiv "flex-item-for-timeVision" blank -- :: Event t ()
+            let testEvent = timerNextState <$ testPanel -- Event t (Timer -> Timer)
+            
+            let panelEvent = fmap (\x -> x $ Finite 0 [10,30,20] Halted True Cycles) $ leftmost [testEvent]
+            return panelEvent
+        return x
+    return x
+
+timerNextState:: Timer -> Timer
+timerNextState (Finite n w x y z) = (Finite (n+1) w x y z)
+
 
 --- I might have to use only a tick and the UTC time of 'last tick'
 currentBeat:: MonadWidget t m => W t m (Event t Rational)
@@ -49,18 +65,6 @@ currentBeat = do
   widgetBuildTime <- liftIO $ getCurrentTime
   tick <- tickLossy 0.06666666666666667 widgetBuildTime
   pure $ attachWith timeToCount (current currentTempo) $ fmap _tickInfo_lastUTC tick
-
-
--- this will go in Definition
-data Measure = Cycles | Seconds deriving (Show)
-data Visualiser = SandClock | SimpleBar | Textual deriving (Show)
-data CurrentMode = Playing UTCTime | Stopped | Paused UTCTime Rational deriving (Show)
-
-
--- visualiser is an Int
-          
--- Timer = Finite Visualiser Targets CurrentMode Loop Measure
-data Timer = Finite Int [Rational] CurrentMode Bool Measure deriving (Show)
 
 
 timer:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> W t m ()
