@@ -45,18 +45,6 @@ tempoWidget tempoDyn = do
 
 -------------------
 
--- timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
--- timerWidget delta = mdo
---   v <- variable delta $ localEdits'
---   initialValue' <- sample $ current delta
---   initialValue <- TimerDown [20,30,10] utc False Cycles  
---   let initialWidget = selectPanelOfTimer initialValue
---   let remoteOrLocalEdits = leftmost [updated delta, localEdits']
---   let updatedWidgets = fmap selectPanelOfTimer remoteOrLocalEdits -- type? dynamic or event??
---   localEdits <- widgetHold initialWidget updatedWidgets -- m (Dynamic t (Event t T)) -- this does not need localEdits <-
---   let localEdits' = switchDyn localEdits -- this line seems unecessary -- switchdyn digs up the event inside the dynamic
---   return v
-
 
 -- create test function: utc
 
@@ -75,7 +63,7 @@ data Timer = Finite Visualiser [Rational] CurrentMode Bool Measure deriving (Sho
 timer:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> W t m ()
 timer beat tempo = mdo 
   -- get the tick from inside the widget
-  let textos = constDyn "enter multiple countdowns like: 20 30 10"
+  let textos = constDyn "intro = 20, the lovely repetition = 30, outro = 10"
   (valTxBx,_) <- textWithLockWidget 2 (constDyn False) textos -- Dyn t Text
   boton <- button "test" -- Event ()
 
@@ -90,21 +78,24 @@ timer beat tempo = mdo
   lastBEventDyn <- holdDyn 0 beatAtBEvent -- Dynamic t Rational
 
   let txPressed = tag (current $ valTxBx) boton
-  targetDyn <- holdDyn [] $ fmap parseForm txPressed -- Dyn t [Rational]
+  targetDyn <- holdDyn [] $ fmap parseForm txPressed -- Dyn t [(Text,Rational)]
+  let countDyn = fmap (\x -> snd x) <$> targetDyn -- Dyn t [Rational]
 
   let countFromBEvent = (\x y -> x - y) <$> beat <*> lastBEventDyn
 
-  let countFromBEventLooped = loopBool <$> stateOfLoop <*> targetDyn <*> countFromBEvent
+  let countFromBEventLooped = loopBool <$> stateOfLoop <*> countDyn <*> countFromBEvent
 
   let inSecsBeat = countToTime <$> tempo <*> beat
   let inSecsLastBEventDyn = countToTime <$> tempo <*> lastBEventDyn
 
-  let countdown = multiTimer 0 <$> targetDyn <*> countFromBEventLooped
+  let countdown = multiTimer 0 <$> countDyn <*> countFromBEventLooped
+  let label = genLabel 0 <$> targetDyn <*> countFromBEventLooped
 
   let countFromBEventInSecs = diffUTCTime <$> inSecsBeat <*> inSecsLastBEventDyn 
 
 --  dynText $ fmap (\x -> showt (realToFrac x ::Double)) beat -- this shows beats from booting estuary
   divClass "." $ do 
+    dynText label
     dynText $ fmap (\x -> showt $ (realToFrac x :: Double)) countdown
     text "| is the countdown(s) (in beats) |"
     return ()
@@ -127,18 +118,33 @@ loopBool:: Bool -> [Rational] -> Rational -> Rational
 loopBool True xs b = ((b / (sum xs)) - (realToFrac (floor (b / (sum xs))) :: Rational)) * (sum xs)
 loopBool False _ b = b
 
-parseForm:: T.Text -> [Rational] 
+parseForm:: T.Text -> [(T.Text,Rational)]
 parseForm tx = 
-    let listOfDurs = T.words $ T.strip tx
-        listOfInts = Data.Maybe.mapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) listOfDurs
-    in Prelude.map fromIntegral listOfInts
+    let x = Prelude.map (\x -> (fst x,T.drop 1 $ snd x)) $ Prelude.map (T.breakOn $ T.pack "=") $ T.split (==',') $ T.strip tx
+        label = Prelude.map fst x
+        durs' = Prelude.map snd x
+        durs = Prelude.map fromIntegral $ Data.Maybe.mapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) durs'  
+    in Prelude.zip label durs
+
+-- parseForm:: T.Text -> [Rational] 
+-- parseForm tx = 
+--     let listOfDurs = T.words $ T.strip tx
+--         listOfInts = Data.Maybe.mapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) listOfDurs
+--     in Prelude.map fromIntegral listOfInts
+
 
 multiTimer:: Rational -> [Rational] -> Rational -> Rational
 multiTimer startPoint x  b
   | (x==[]) = 0
   | otherwise = if (Prelude.head ts) > b then (Prelude.head ts) - b else multiTimer (Prelude.head ts) (Prelude.tail x) b
-        where ts = Prelude.tail $ Prelude.scanl (+) startPoint x
+      where ts = Prelude.tail $ Prelude.scanl (+) startPoint x 
 
+genLabel:: Rational -> [(Text,Rational)] -> Rational -> T.Text
+genLabel startPoint x b 
+  | (x==[]) = pack ""
+  | otherwise = 
+      let ts = Prelude.tail $ Prelude.scanl (+) startPoint $ Prelude.map snd x 
+      in if (Prelude.head ts) > b then Prelude.fst $ Prelude.head x else genLabel (Prelude.head ts) (Prelude.tail x) b
 
 ---
 
@@ -147,7 +153,7 @@ currentBeat = do
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   widgetBuildTime <- liftIO $ getCurrentTime
-  tick <- tickLossy 0.01 widgetBuildTime
+  tick <- tickLossy 0.06666666666666667 widgetBuildTime
   pure $ attachWith timeToCount (current currentTempo) $ fmap _tickInfo_lastUTC tick
 
 
@@ -166,14 +172,15 @@ currentBeat = do
 ----
 
 cycleTracer:: MonadWidget t m => Rational ->  W t m ()
-cycleTracer segments k = do
+cycleTracer segments = do
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   beatPosition <- currentBeat -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
+  beat' <- holdUniqDyn beat
 --  beat' <- traceDynamicWith (\x -> "beat of cyclicTracer: " ++ show (realToFrac x :: Double)) beat
---  timer beat currentTempo
-  visualiseCycles beat segments
+  timer beat' currentTempo
+  visualiseCycles beat' segments
   return ()
 
 ringTracer:: MonadWidget t m => Rational -> W t m ()
@@ -249,7 +256,8 @@ beatToPercentage' beat = percen
 ---- separate the view Box from the circle, so this function can be a generic container for the metric and cyclic vis
 visualiseCycles :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseCycles delta segments = do
-  liftIO $ putStrLn "build the cycle visualiser"
+  delta' <- holdUniqDyn delta
+--  liftIO $ putStrLn "build the cycle visualiser"
   let class' = constDyn $ "class" =: "cycleVisualiser"
 --  let style = constDyn $ "style" =: "position: absolute; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "-1.5 -1.5 3 3"
@@ -269,11 +277,10 @@ visualiseCycles delta segments = do
 
 --  delta' <- traceDynamicWith (\x -> show $ (realToFrac x :: Double)) delta
 
-  let transform = beatToRotation <$> delta 
+  let transform = beatToRotation <$> delta'
 
   let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform]
 
- -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     -- create circular dial
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrsCircle $ return () 
@@ -292,7 +299,7 @@ generatePieSegments nLines = do
   
 generatePieSegment:: MonadWidget t m => Dynamic t Rational ->  m ()
 generatePieSegment x = do
-  liftIO $ putStrLn "generate segments for cycle visualiser"
+ -- liftIO $ putStrLn "generate segments for cycle visualiser"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05"
   let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
@@ -305,7 +312,8 @@ generatePieSegment x = do
 -- metre visuliser widget
 visualiseMetreFancy :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseMetreFancy delta subDivisions = do
-  liftIO $ putStrLn "build the metre visualiser"
+  delta' <- holdUniqDyn delta
+ -- liftIO $ putStrLn "build the metre visualiser"
   let class' = constDyn $ "class" =: "metreVisualiser code-font"
 --  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
@@ -319,24 +327,15 @@ visualiseMetreFancy delta subDivisions = do
 
 --  delta' <- traceDynamicWith (\x -> "beat of metre: " ++ show (realToFrac x :: Double)) delta
 
-  let x1 = beatToPercentage "x1" <$> delta
-  let x2 = beatToPercentage "x2" <$> delta
+  let x1 = beatToPercentage "x1" <$> delta'
+  let x2 = beatToPercentage "x2" <$> delta'
 --  let lineStyle = constDyn $ "style" =: "z-index:-9;"
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "100")
   let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
 
---  this is for the segment
-  let barPos = barPosition subDivisions <$> beatToPercentage' <$> delta
-  let y = constDyn $ "y" =: "0"
-  let width = constDyn $ "width" =: (showt (realToFrac (safeDiv 100 subDivisions) :: Double))
-  let height = constDyn $ "height" =: "100"
-  let f = constDyn $ "fill" =: "var(--primary-color)"
-  let attrsRect = mconcat [barPos,y,width,height,f]
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     generateSegments 100 subDivisions
-    -- segment
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
     -- manecilla
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "line" attrsLine $ return ()
   return ()
@@ -344,28 +343,21 @@ visualiseMetreFancy delta subDivisions = do
 
 visualiseMetreCheap :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseMetreCheap delta subDivisions = do
-  liftIO $ putStrLn "build the metre visualiser"
+  delta' <- holdUniqDyn delta
+ -- liftIO $ putStrLn "build the metre visualiser"
   let class' = constDyn $ "class" =: "metreVisualiser code-font"
 --  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100%"
   let h' = constDyn $ "height" =: "100%"
-  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let strokeWidth = constDyn $ "stroke-width" =: "0.5"
   let par = constDyn $ "preserveAspectRatio" =: "none"
 
   let attrs = mconcat [class',w',h',vB, par]
 
 --  delta' <- traceDynamicWith (\x -> "beat of metre: " ++ show (realToFrac x :: Double)) delta
 
-  let x1 = beatToPercentage "x1" <$> delta
-  let x2 = beatToPercentage "x2" <$> delta
---  let lineStyle = constDyn $ "style" =: "z-index:-9;"
-  let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "100")
-  let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
-
 --  this is for the segment
-  let barPos = barPosition subDivisions <$> beatToPercentage' <$> delta
+  let barPos = barPosition subDivisions <$> beatToPercentage' <$> delta'
   let y = constDyn $ "y" =: "0"
   let width = constDyn $ "width" =: (showt (realToFrac (safeDiv 100 subDivisions) :: Double))
   let height = constDyn $ "height" =: "100"
@@ -382,12 +374,13 @@ visualiseMetreCheap delta subDivisions = do
 
 markTheZero:: MonadWidget t m => Dynamic t Rational -> m ()
 markTheZero beat = do
+  beat' <- holdUniqDyn beat
   let x = constDyn $ "x" =: "1"
   let y = constDyn $ "y" =: "1"
   let width = constDyn $ "width" =: "98"
   let height = constDyn $ "height" =: "98"
   let opacity = constDyn $ "style" =: "opacity:0.75"
-  let dynStroke = markMetre <$> beat
+  let dynStroke = markMetre <$> beat'
   let attrs = mconcat [x,y,width,height,dynStroke,opacity]
       -- rect for beat
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrs $ return ()
@@ -415,15 +408,16 @@ generateSegments width nLines = do
   
 generateSegment:: MonadWidget t m => Rational -> Dynamic t Rational ->  m ()
 generateSegment width x = do
-  liftIO $ putStrLn "build a segment of metre"
-  let x1 = generateAttr "x" <$> x
+  x' <- holdUniqDyn x
+--  liftIO $ putStrLn "build a segment of metre"
+  let x1 = generateAttr "x" <$> x'
 --  let x2 = generateAttr "x2" <$> x
   let w = constDyn $ "width" =: (showt (realToFrac width :: Double))
   let h = constDyn $ "height" =: "100"
   let y1 = constDyn $ "y" =: "0"
 --  let y2 = constDyn $ "y2" =: "100"
   let f = constDyn $ "fill" =: "var(--secondary-color)"
-  let opacity = setOpacityPercen <$> x
+  let opacity = setOpacityPercen <$> x'
   let attrsRect = mconcat [x1,y1,w,h,f,opacity]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
   return ()
@@ -449,8 +443,9 @@ barPosition nSegs' position =
 
 visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseRing delta segs = do
-  liftIO $ putStrLn "build the doughnut visualiser"
-  delta' <- traceDynamicWith (\x -> "beat of ring: " ++ show (realToFrac x :: Double)) delta
+  delta' <- holdUniqDyn delta
+--  liftIO $ putStrLn "build the doughnut visualiser"
+--  delta' <- traceDynamicWith (\x -> "beat of ring: " ++ show (realToFrac x :: Double)) delta
  -- delta' <- traceDynamicWith (\x -> "beat of metre: " ++ show (realToFrac x :: Double)) delta
   let class' = constDyn $ "class" =: "ringVisualiser code-font"
 --  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
@@ -466,7 +461,7 @@ visualiseRing delta segs = do
   let fill = constDyn $ "fill" =: "none"
   let cx = constDyn $  "cx" =: "50" 
   let cy = constDyn $  "cy" =: "50"
-  let currentSegPos = segmentPosition segs <$> beatToPercentage' <$> delta -- this!!!
+  let currentSegPos = segmentPosition segs <$> beatToPercentage' <$> delta' -- this!!!
   let r = constDyn $ "r" =: (showt radius)
   let dashArray = constDyn $ segmentSize radius (realToFrac segs :: Float) -- because of PI it has to be floats
   let style = constDyn $ "style" =: "opacity: 0.85"
@@ -475,7 +470,7 @@ visualiseRing delta segs = do
 
  -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
-    markTheZero delta
+    markTheZero delta'
     generateRingSegments segs radius
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" currentBeatAttrs $ return ()
     
@@ -517,7 +512,8 @@ generateRingSegments nSegs' radius = do
   
 generateRingSegment:: MonadWidget t m => Rational -> Dynamic t Rational -> Float ->  m ()
 generateRingSegment segs segPos radius = do
-  liftIO $ putStrLn "build segment of doughnut"
+  segPos' <- holdUniqDyn segPos
+ -- liftIO $ putStrLn "build segment of doughnut"
   let stroke = constDyn $ "stroke" =: "var(--secondary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "15"
   let fill = constDyn $ "fill" =: "transparent"
@@ -525,8 +521,8 @@ generateRingSegment segs segPos radius = do
   let cy = constDyn $  "cy" =: "50"
   let r = constDyn $ "r" =: (showt radius)
   let dashArray = constDyn $ segmentSize radius (realToFrac segs :: Float)
-  let position = segPosition <$> segPos
-  let opacity = segOpacityDegrees <$> segPos
+  let position = segPosition <$> segPos'
+  let opacity = segOpacityDegrees <$> segPos'
   
   let attrs = mconcat [cx,cy,r,stroke,strokeWidth,fill,dashArray,position,opacity]
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" attrs $ return ()
@@ -564,8 +560,9 @@ beadSize False nBeads pos = "r" =: showt (realToFrac (beadScaling nBeads) :: Dou
 
 visualiseBeads :: MonadWidget t m => Dynamic t Rational -> Rational -> Rational -> Bool -> m ()
 visualiseBeads delta k beads dyn = do
-  liftIO $ putStrLn "build beads visualiser"
-  delta' <- traceDynamicWith (\x -> "beat of beads: " ++ show (realToFrac x :: Double)) delta
+  delta' <- holdUniqDyn delta
+ -- liftIO $ putStrLn "build beads visualiser"
+--  delta' <- traceDynamicWith (\x -> "beat of beads: " ++ show (realToFrac x :: Double)) delta
   let class' = constDyn $ "class" =: "beadVisualiser code-font"
 --  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
@@ -597,7 +594,7 @@ visualiseBeads delta k beads dyn = do
 
 generateBeads:: MonadWidget t m => Rational ->  m ()
 generateBeads nBeads = do
-  liftIO $ putStrLn "build segment of beads"
+ -- liftIO $ putStrLn "build segment of beads"
   let beadSize = beadScaling nBeads
       beadDistribution = safeDiv 360 nBeads
       segList = constDyn $ Prelude.take (floor nBeads) $ iterate (+ beadDistribution) 0
@@ -614,6 +611,7 @@ beadScaling x
 
 generateBead:: MonadWidget t m => Rational -> Bool -> Dynamic t Rational -> m ()
 generateBead beadSize colour beads = do 
+  beads' <- holdUniqDyn beads
   let stroke = constDyn $ beadStroke colour
   let strokeWidth = constDyn $ "stroke-width" =: "0.5"
   let fill = constDyn $ beadFill colour
@@ -657,14 +655,12 @@ getScaling (d:urs)
     | (Prelude.length (d:urs)) == 1 = []
     | otherwise = (Prelude.head urs) - d : (getScaling urs)
 
-
-
 infoDisplay:: MonadWidget t m => Event t () -> Rational -> Integer -> m ()
 infoDisplay x seg tics = do 
   let segDisplay = floor seg :: Int
-  liftIO $ putStrLn $ show segDisplay
+--  liftIO $ putStrLn $ show segDisplay
   eventTime <- liftIO $ getCurrentTime
-  tick <- tickLossy 0.1 eventTime -- Event t (TickInfo)
+  tick <- tickLossy 0.2 eventTime -- Event t (TickInfo)
   let w = intsToBool tics <$> fmap _tickInfo_n tick  -- Event t (Bool)
   z' <- holdDyn False w
   z <- holdUniqDyn z' -- Dyn t Bool
@@ -676,9 +672,9 @@ infoDisplay':: MonadWidget t m => Event t () -> Rational ->  Rational -> Integer
 infoDisplay' x k seg tics = do 
   let segDisplay = floor seg :: Int
   let kDisplay = floor k :: Int
-  liftIO $ putStrLn $ show segDisplay
+--  liftIO $ putStrLn $ show segDisplay
   eventTime <- liftIO $ getCurrentTime
-  tick <- tickLossy 0.1 eventTime -- Event t (TickInfo)
+  tick <- tickLossy 0.2 eventTime -- Event t (TickInfo)
   let w = intsToBool tics <$> fmap _tickInfo_n tick  -- Event t (Bool)
   z' <- holdDyn False w
   z <- holdUniqDyn z' -- Dyn t Bool
@@ -689,15 +685,6 @@ intsToBool:: Integer -> Integer -> Bool
 intsToBool n' n
   | n < n' = True
   | otherwise = False
-
---- select visualiser -- newDEF: 
--- Tv 0 seg k  -- cyclic
--- Tv 1 seg k  -- doughnut
--- Tv 2 seg k  -- metric expensive
--- Tv 3 seg k  -- metric cheap
--- Tv 4 seg k  -- bead expensive
--- Tv 5 seg k  -- bead cheap
-
 
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
 selectVisualiser (Tv 0 seg k) = divClass "tempo-visualiser" $ do
@@ -746,7 +733,7 @@ selectVisualiser (Tv 1 seg k) = divClass "tempo-visualiser" $ do
     return panelEvent
   return x
 
-selectVisualiser (Tv seg k) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 2 seg k) = divClass "tempo-visualiser" $ do
   metreTracerFancy seg
   x <- do
     x <- divClass "flex-container-for-timeVision" $ do
@@ -770,7 +757,7 @@ selectVisualiser (Tv seg k) = divClass "tempo-visualiser" $ do
     return x
   return x
 
-selectVisualiser (Tv seg k) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 3 seg k) = divClass "tempo-visualiser" $ do
   metreTracerCheap seg
   x <- do
     x <- divClass "flex-container-for-timeVision" $ do
@@ -863,8 +850,8 @@ segmentDown (Tv 4 x k) = (Tv 4 (realToFrac ((floor (x-1))`mod`beatLim) :: Ration
 segmentDown (Tv 5 x k) = (Tv 5 (realToFrac ((floor (x-1))`mod`beatLim) :: Rational) (realToFrac ((floor k)`mod`((floor x)+1)) :: Rational))
 
 bjorklundUp:: TimeVision -> TimeVision
-bjorklundUp (Tv 4 x k) = Tv 4 x realToFrac ((floor (k+1))`mod`((floor x)+1)) :: Rational
-bjorklundUp (Tv 5 x k) = Tv 5 x realToFrac ((floor (k+1))`mod`((floor x)+1)) :: Rational
+bjorklundUp (Tv 4 x k) = Tv 4 x (realToFrac ((floor (k+1))`mod`((floor x)+1)) :: Rational)
+bjorklundUp (Tv 5 x k) = Tv 5 x (realToFrac ((floor (k+1))`mod`((floor x)+1)) :: Rational)
 
 tvNextStateRight:: TimeVision -> TimeVision
 tvNextStateRight (Tv n x k) = Tv ((n+1)`mod`6) x k
@@ -874,30 +861,12 @@ tvNextStateLeft (Tv n x k) = Tv ((n-1)`mod`6) x k
 
 
 ------------------------------------------
--- data Timer = TimerUp Visualiser (Maybe [Int]) UTCTime Bool Measure | TimerDown Visualiser [Int] UTCTime Bool Measure deriving (Show)
-
--- how will this work? too much information being shared by all users... not clear if the visualiser is part or not of the definition... in principle no...
-
---- select either interface or time visualiser
--- selectPanelOfTimer :: MonadWidget t m => Timer -> W t m (Event t Timer)
-
--- this should be discussed with David...
 
 
--- interfaceOfTimer :: MonadWidget t m => Dynamic t Rational -> m ()
--- interfaceOfTimer delta = divClass "interfaceForTimers" $ do
---   leftPanel <- clickableDiv "sideButton" blank
---   -- event with next state for changing to panels
---   divClass "interactiveArea" do
---     textWidget xxx xxx xxx >>= divClass "txAreaDiv" 
---     divClass "mid-centre-InteractiveArea" $ do
---       loopButton
---       secondsOrCycles
---       return ()
---     divClass "timeDisplay" $ do
---       timeDisplay
---       beatDisplay
---     return () -- here an event with the new timer configuration
---   rightPanel <- clickableDiv "side-Button" blank
---   -- event with next state for changing to panels
---   return ()
+-- upLeft <- stop
+-- upCentre <- play
+-- upright <- pause
+
+-- downLeft <- flip visualiser
+-- downCentre <- flip to controlers
+-- downRight <- flip visualiser
