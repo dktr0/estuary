@@ -42,19 +42,60 @@ visualiseTimerWidget delta = mdo
   return v
 
 selectVisualiser :: MonadWidget t m => Timer -> W t m (Event t Timer)
-selectVisualiser timer = divClass "tempo-visualiser" $ do
+selectVisualiser timer = divClass "timer-Visualiser" $ do
+    -- here add the visualisation this has the class: visualiser
+    -- textVisualiserTimer (Rat,Text)
     x <- do 
-        x <- divClass "flex-container-for-timeVision" $ do
-            testPanel <- clickableDiv "flex-item-for-timeVision" blank -- :: Event t ()
-            let testEvent = timerNextState <$ testPanel -- Event t (Timer -> Timer)
-            
-            let panelEvent = fmap (\x -> x $ Finite 0 [10,30,20] Halted True Cycles) $ leftmost [testEvent]
-            return panelEvent
+        topFlexContainer <- divClass "flex-container-row" $ do
+            firstRow <- divClass "flex-item-row" $ do
+                firstRowEvent <- divClass "flex-container-col" $ do
+                    resetItem <- clickableDiv "flex-item-col" blank -- :: Event t ()
+                    let resetEvent = resetFunc <$ resetItem -- Event t (Timer -> Timer)
+                    flipItem <- clickableDiv "flex-item-col" blank
+                    let flipControlEvent = flipFunc <$ flipItem
+                    let leftEvent = leftmost [resetEvent,flipControlEvent]
+                    return leftEvent
+                return firstRowEvent
+            secondRow <- divClass "flex-item-row" $ do
+                secondRowEvent <- divClass "flex-container-col" $ do
+                    playItem <- clickableDiv "flex-item-col" blank
+                    let playEvent = playFunc <$ playItem
+                    visualiserItem <- clickableDiv "flex-item-col" blank
+                    let visualiserEvent = visualiserFunc <$ visualiserItem
+                    let rightEvent = leftmost [playEvent,visualiserEvent]
+                    return rightEvent
+                return secondRowEvent
+                let polyptychEvent = fmap (\x -> x $ Finite 0 [10,30,20] Halted True Cycles) $ leftmost [firstRowEvent,secondRowEvent]
+                return polyptychEvent
+            return topFlexContainer
         return x
     return x
 
-timerNextState:: Timer -> Timer
-timerNextState (Finite n w x y z) = (Finite (n+1) w x y z)
+-- I suspect that Falling needs a starting time as Holding has...
+-- data CurrentMode = Falling' UTCTime | Halted | Holding' UTCTime Rational
+
+resetFunc:: Timer -> Timer
+resetFunc (Finite n xs (Holding' pauseTime countTime) loop m) = Finite n xs (Holding' pauseTime 0) loop m
+resetFunc (Finite n xs (Falling' fallStartMark) loop m) = Finite n xs (Falling' fallStartMark) loop m
+              --  where newFallingTime = getCurrentUTC somehow... -- change this!
+resetFunc (Finite n xs Halted loop m) = Finite n xs Halted loop m
+
+flipFunc:: Bool -> Bool   --- ???? the flipping to controller functionality is not part of the definition :O
+flipFunc True = False
+flipFunc False = True
+
+playFunc:: Timer -> Timer
+playFunc (Finite n xs (Holding' pauseTime countTime) loop m) = Finite n xs (Falling' newFallTime) loop m 
+playFunc (Finite n xs (Falling' fallStartMark) loop m) = Finite n xs (Holding' pauseTime countTime) loop m 
+playFunc (Finite n xs Halted loop m) = Finite n xs (Falling' pauseTime newFallTime) loop m 
+
+
+visualiserFunc:: Timer -> Timer
+visualiserFunc (Finite n xs mode loop m) = Finite ((n+1)`mod`numberOfVis) xs mode loop m
+
+-- this need sto change if other visualisers are inputed on the fly.
+numberOfVis:: Int
+numberOfVis = 2
 
 
 --- I might have to use only a tick and the UTC time of 'last tick'

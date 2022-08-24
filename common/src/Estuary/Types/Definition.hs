@@ -72,7 +72,7 @@ instance ToJSON Measure where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Measure
 
-data CurrentMode = Playing UTCTime | Halted | Paused UTCTime Rational deriving (Show,Ord,Eq,Generic)
+data CurrentMode = Falling' UTCTime | Halted | Holding' UTCTime Rational deriving (Show,Ord,Eq,Generic)
 instance ToJSON CurrentMode where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON CurrentMode
