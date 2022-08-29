@@ -81,7 +81,7 @@ translate Collaborate Español = "Colaborar"
 translate Collaborate English = "Collaborate"
 
 translate Send Français = "Envoyer"
-translate Send Español = "enviar"
+translate Send Español = "Enviar"
 translate Send English = "Send"
 
 translate Ensemble English = "Ensemble"
@@ -110,14 +110,11 @@ translate ModeratorPassword Español = "Contraseña del/de la moderador(a):"
 translate CommunityPassword English = "Community password:"
 translate CommunityPassword Español = "Contraseña comunitaria:"
 
-
 translate HostPassword English = "Host password:"
 translate HostPassword Español = "Contraseña del/de la anfintrión(a):"
 
-
 translate ParticipantPassword English = "Participant password:"
 translate ParticipantPassword Español = "Contraseña del/de la participante:"
-
 
 translate EnsembleName Français = "Nom de l'ensemble:"
 translate EnsembleName English = "Ensemble name:"
@@ -126,18 +123,12 @@ translate EnsembleName Español = "Nombre del ensamble:"
 translate EnsembleExpiry English = "Ensemble Expiry:"
 translate EnsembleExpiry Español = "Expiración del ensemble:"
 
-
 translate AnonymousParticipants English = "Anonymous Participants"
 translate AnonymousParticipants Español = "Participantes Anónimos"
-
 
 translate TerminalChat Français = "Terminal/Chat:"
 translate TerminalChat English = "Terminal/Chat:"
 translate TerminalChat Español = "Terminal/Chat:"
-
-translate Send Français = "Envoyer"
-translate Send English = "Send"
-translate Send Español = "Enviar"
 
 translate Theme Français = "Thème"
 translate Theme English = "Theme"

@@ -468,32 +468,31 @@ sleepIfNecessary = do
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
 
-forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> MVar RenderInfo -> IO RenderEnvironment
-forkRenderThreads rEnv s vidDiv cvsElement glCtx hCanvas lCanvas riM = do
+forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> IO ()
+forkRenderThreads rEnv s vidDiv cvsElement glCtx hCanvas lCanvas = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv
   pOut <- getMainBusInput $ mainBus rEnv
-  putStrLn "about to initialRenderState"
+  putStrLn "about to do initialRenderState"
   irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio
   putStrLn "returned from initialRenderState"
   let irs' = irs { videoDivCache = Just vidDiv }
   rsM <- newMVar irs'
   putStrLn "about to fork mainRenderThread..."
-  void $ forkIO $ mainRenderThread rEnv riM rsM
+  void $ forkIO $ mainRenderThread rEnv rsM
   putStrLn "returned from forking mainRenderThread"
   void $ forkIO $ animationThread rEnv rsM
   putStrLn "returned from forking animationThread"
-  return rEnv
 
-mainRenderThread :: RenderEnvironment -> MVar RenderInfo -> MVar RenderState -> IO ()
-mainRenderThread rEnv riM rsM = do
+mainRenderThread :: RenderEnvironment -> MVar RenderState -> IO ()
+mainRenderThread rEnv rsM = do
   rs <- takeMVar rsM
   rs' <- runR render rEnv rs
   putMVar rsM rs'
-  swapMVar riM (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
+  swapMVar (renderInfo rEnv) (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
   _ <- runR sleepIfNecessary rEnv rs'
-  mainRenderThread rEnv riM rsM
+  mainRenderThread rEnv rsM
 
 animationThread :: RenderEnvironment -> MVar RenderState -> IO ()
 animationThread rEnv rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do

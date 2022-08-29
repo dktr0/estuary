@@ -37,6 +37,7 @@ import Estuary.Client.Settings as Settings
 import Estuary.Types.Language
 import Estuary.Render.WebSerial as WebSerial
 import Estuary.Render.WebDirt as WebDirt
+import Estuary.Types.RenderInfo
 
 
 data RenderEnvironment = RenderEnvironment {
@@ -48,7 +49,8 @@ data RenderEnvironment = RenderEnvironment {
   ccMap :: IORef (Map.Map Text Double),
   _settings :: IORef Settings,
   zoneOps :: MVar [ZoneOp],
-  tempoOp :: MVar (Maybe Tempo)
+  tempoOp :: MVar (Maybe Tempo),
+  renderInfo :: MVar RenderInfo
   }
 
 
@@ -95,6 +97,7 @@ initialRenderEnvironment s = do
   settings' <- newIORef s
   zoneOps' <- newMVar []
   tempoOp' <- newMVar Nothing
+  renderInfo' <- newMVar emptyRenderInfo
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,
@@ -105,7 +108,8 @@ initialRenderEnvironment s = do
     ccMap = ccMap',
     _settings = settings',
     zoneOps = zoneOps',
-    tempoOp = tempoOp'
+    tempoOp = tempoOp',
+    renderInfo = renderInfo'
   }
 
 setCC :: Int -> Double -> RenderEnvironment -> IO ()

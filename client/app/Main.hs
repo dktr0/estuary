@@ -16,12 +16,10 @@ import qualified Data.Text as T
 
 
 import Estuary.Protocol.Peer
-import Estuary.Types.Context
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
-import Estuary.Types.RenderInfo
-import Estuary.Types.RenderState
-import Estuary.Render.Renderer
+-- import Estuary.Types.RenderState
+--  import Estuary.Render.Renderer
 import Estuary.Render.R
 import Estuary.Client.Settings
 
@@ -52,12 +50,10 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  renderInfo <- newMVar $ emptyRenderInfo
-
   settings <- getSettingsFromURI
   setThemeIO $ theme settings
   rEnv <- initialRenderEnvironment settings
-  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings renderInfo
+  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings
 
   -- Signal the splash page that estuary is loaded.
   -- js_setIconStateLoaded

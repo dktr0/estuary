@@ -4,6 +4,7 @@ module Estuary.Widgets.View where
 
 import Reflex
 import Reflex.Dom hiding (Link)
+import Control.Monad.Fix (MonadFix)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -50,7 +51,7 @@ attrsColp b = "class" =: "collapsableView" <> "style" =: ("display: " <> showDiv
     showDiv True  = "block"
     showDiv False = "none"
 
-viewsContainerCollaps :: MonadWidget t m => W t m (Event t EnsembleRequest) -> W t m (Event t EnsembleRequest)
+viewsContainerCollaps :: (Monad m, Reflex t, DomBuilder t m, MonadFix m, PostBuild t m, MonadHold t m) => W t m (Event t EnsembleRequest) -> W t m (Event t EnsembleRequest)
 viewsContainerCollaps x = mdo
   dynBool <- toggle True evClick
   evClick <- dynButton dynOpenClose
@@ -162,7 +163,7 @@ viewWidget _ (IFrame url) = do
   elAttr "iframe" attrs $ return ()
   return never
 
-zoneWidget :: (MonadWidget t m, Eq a)
+zoneWidget :: (Monad m, MonadSample t m, Reflex t, MonadHold t m, MonadFix m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
   -> (Dynamic t a -> W t m (Variable t a))
   -> W t m (Event t EnsembleRequest)

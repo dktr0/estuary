@@ -20,10 +20,11 @@ import Estuary.Types.Response
 import Estuary.Types.EnsembleRequest
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
-import Estuary.Widgets.W
+import Estuary.Types.ServerInfo
+import Estuary.Widgets.W hiding (clientCount,serverLatency)
 
 
-estuaryWebSocket :: (Reflex t, MonadIO m, MonadFix m, PostBuild t m, PerformEvent t m, MonadIO (Performable m), TriggerEvent t m, MonadHold t m) => Event t [Request] -> W t m (Event t Response)
+estuaryWebSocket :: (Reflex t, MonadIO m, MonadFix m, PostBuild t m, PerformEvent t m, MonadIO (Performable m), TriggerEvent t m, MonadHold t m) => Event t [Request] -> W t m (Event t Response, Dynamic t ServerInfo)
 estuaryWebSocket toSend = mdo
   hostName <- liftIO $ getHostName
   port <- liftIO $ getPort
@@ -56,29 +57,34 @@ estuaryWebSocket toSend = mdo
   postBuild <- getPostBuild
   let sendBrowserInfo = fmap (const [BrowserInfo userAgent]) postBuild
 
-  -- the server responds to ClientInfo (below) with ServerInfo, which we process below
-  -- by issuing events that update the context
-  let serverInfos = fmapMaybe justServerInfo response
-  -- SHOULD BE COLLECTED ELSEWHERE: let serverClientCounts = fmap fst serverInfos
-  -- SHOULD BE COLLECTED ELSEWHERE: let serverClientCountChanges = fmap (\x c -> c { clientCount = x }) serverClientCounts
-  let pingTimes = fmap snd serverInfos
-  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pingTimes
-  -- SHOULD BE COLLECTED ELSEWHERE: let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
-  -- let contextChanges = mergeWith (.) [serverClientCountChanges,latencyChanges]
+  sInfo <- trackServerInfo response
 
   -- every 5 seconds, if websocket is working, send updated ClientInfo to the server
   -- let socketIsOpen = fmap (=="connection open") status'
   let socketIsOpen = constDyn True
   pingTick <- gate (current socketIsOpen) <$> tickLossy (5::NominalDiffTime) now
   pingTickTime <- performEvent $ fmap (liftIO . const getCurrentTime) pingTick
-  latencyDyn <- holdDyn 0 $ latency
+  let latencyDyn = fmap serverLatency sInfo
   arl <- avgRenderLoad
   afps <- animationFPS
   aload <- animationLoad
   let clientInfoDyn = ClientInfo <$> arl <*> afps <*> aload <*> latencyDyn
   let clientInfoEvent = fmap (:[]) $ attachPromptlyDynWith ($) clientInfoDyn pingTickTime
 
-  return response
+  return (response,sInfo)
+
+
+trackServerInfo :: (Monad m, Reflex t, MonadHold t m, PerformEvent t m, MonadFix m, MonadIO (Performable m)) => Event t Response -> m (Dynamic t ServerInfo)
+trackServerInfo responseDown = do
+  let serverInfoEv = fmapMaybe justServerInfo responseDown -- Event t (Maybe Int,UTCTime)
+  let serverClientCounts = fmap fst serverInfoEv
+  let serverClientCountChanges = fmap (\x s -> s { clientCount = x }) serverClientCounts
+  let pingTimes = fmap snd serverInfoEv
+  latency <- performEvent $ fmap (liftIO . (\t1 -> getCurrentTime >>= return . (flip diffUTCTime) t1)) pingTimes
+  let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
+  let serverInfoChanges = mergeWith (.) [serverClientCountChanges,latencyChanges]
+  foldDyn ($) emptyServerInfo serverInfoChanges
+
 
 maybeRejoinEnsemble :: (Text,Text,Text,Text) -> () -> Maybe Request
 maybeRejoinEnsemble (eName,uName,loc,pwd) _
