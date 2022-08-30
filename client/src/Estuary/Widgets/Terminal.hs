@@ -75,7 +75,7 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
 hintsToMessages :: [Hint] -> [TranslatableText] -- [TranslatableText]
 hintsToMessages hs = fmapMaybe hintToMessage hs -- [x ..]
 
-hintToMessage :: Hint -> Maybe TranslatableText --TranslatableText-- Map Language Text
+hintToMessage :: Hint -> Maybe TranslatableText
 hintToMessage (LogMessage x) = Just x -- translatableText $ Data.Map.fromList [(English, x)]
 hintToMessage _ = Nothing
 

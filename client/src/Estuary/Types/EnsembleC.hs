@@ -120,7 +120,7 @@ commandToHint _ (Terminal.PublishView x) = Just $ LogMessage $ (Map.fromList [(E
 commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ (english $ nameOfActiveView es)
 commandToHint es (Terminal.ListViews) = Just $ LogMessage $  (english $ showt $ listViews $ ensemble es)
 commandToHint es (Terminal.DumpView) = Just $ LogMessage $  (english $ dumpView (activeView es))
-commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
+commandToHint _ (Terminal.Delay t) = Just $ ChangeSettings (\s -> s { globalAudioDelay = t } )
 commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $  (english $ readableTempo $ tempo $ ensemble es)
 commandToHint _ Terminal.ResetZones = Just $ LogMessage  (Map.fromList [(English, "zones reset"), (Español, "zonas reiniciadas")])
 commandToHint _ Terminal.ResetViews = Just $ LogMessage  (Map.fromList [(English, "views reset"), (Español, "vistas reiniciadas")])

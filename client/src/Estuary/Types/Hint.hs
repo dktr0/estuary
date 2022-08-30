@@ -13,15 +13,8 @@ import Estuary.Client.Settings
 import Estuary.Types.View
 
 data Hint =
-  SampleHint Text |
-  LogMessage TranslatableText |
-  SetGlobalDelayTime Double |
-  SilenceHint |
+  SampleHint Text | -- TODO: supposed to cause preload of every sample in that bank, hasn't been reimplemented since new Resources system though (currently a no-op)
+  LogMessage TranslatableText | -- message is printed in Estuary's terminal (response: Estuary.Widgets.Terminal)
+  ChangeSettings (Settings -> Settings) | -- change Settings of local UI and rendering (response: settingsForWidgets in Estuary.Widgets.Estuary)
   ZoneHint Int Definition |
-  ChangeSettings (Settings -> Settings) |
   SetLocalView View
-
-justGlobalDelayTime :: [Hint] -> Maybe Double
-justGlobalDelayTime = lastOrNothing . mapMaybe f
-  where f (SetGlobalDelayTime x) = Just x
-        f _ = Nothing

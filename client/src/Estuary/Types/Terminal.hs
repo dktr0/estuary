@@ -2,7 +2,6 @@
 
 module Estuary.Types.Terminal (Command(..), parseCommand) where
 
-
 import Language.Haskellish as LH
 import qualified Language.Haskell.Exts as Exts
 import qualified Text.Parsec as Pc
@@ -13,17 +12,12 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Char as C
 import Data.Maybe
-
--- import Text.Parsec
--- import Text.Parsec.Text
--- import qualified Text.ParserCombinators.Parsec.Token as P
 import Control.Monad.Identity (Identity)
 
 import Estuary.Types.Name
 import Estuary.Types.View
 import Estuary.Types.View.Parser
 
--- type H = Haskellish ()
 
 data Command =
   LocalView View | -- change the active view to a local view that is not shared/stored anywhere
