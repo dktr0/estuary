@@ -17,6 +17,7 @@ import qualified Estuary.Types.Term as Term
 import Control.Monad.IO.Class
 import Control.Monad.Fix (MonadFix)
 
+-- TODO: needs to be W t m (), with appropriate Hint pathway opened as alternative to EnsembleRequest
 ensembleStatusWidget :: MonadWidget t m => W t m (Event t EnsembleRequest)
 ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
 

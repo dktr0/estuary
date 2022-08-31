@@ -51,7 +51,7 @@ attrsColp b = "class" =: "collapsableView" <> "style" =: ("display: " <> showDiv
     showDiv True  = "block"
     showDiv False = "none"
 
-viewsContainerCollaps :: (Monad m, Reflex t, DomBuilder t m, MonadFix m, PostBuild t m, MonadHold t m) => W t m (Event t EnsembleRequest) -> W t m (Event t EnsembleRequest)
+viewsContainerCollaps :: (Monad m, Reflex t, DomBuilder t m, MonadFix m, PostBuild t m, MonadHold t m) => m a -> m a
 viewsContainerCollaps x = mdo
   dynBool <- toggle True evClick
   evClick <- dynButton dynOpenClose
@@ -60,29 +60,27 @@ viewsContainerCollaps x = mdo
   elDynAttr "div" dynAttr x
 
 
-viewWidget :: MonadWidget t m => Event t [EnsembleResponse] -> View -> W t m (Event t EnsembleRequest)
+viewWidget :: MonadWidget t m => View -> W t m ()
 
-viewWidget er EmptyView = return never
+viewWidget EmptyView = return ()
 
-viewWidget er (Div c vs) = divClass c $ liftM leftmost $ mapM (viewWidget er) vs
+viewWidget (Div c vs) = divClass c $ mapM_ viewWidget vs
 
-viewWidget er (Views vs) = viewWidget er (Div "views" vs)
+viewWidget (Views vs) = viewWidget (Div "views" vs)
 
-viewWidget er (Columns vs) = viewWidget er (Div "columns" vs)
+viewWidget (Columns vs) = viewWidget (Div "columns" vs)
 
-viewWidget er (Rows vs) = viewWidget er (Div "rows" vs)
+viewWidget (Rows vs) = viewWidget (Div "rows" vs)
 
-viewWidget er (BorderDiv vs) = viewWidget er (Div "borderDiv" vs)
+viewWidget (BorderDiv vs) = viewWidget (Div "borderDiv" vs)
 
-viewWidget er (Paragraph vs) = viewWidget er (Div "paragraph code-font" vs)
+viewWidget (Paragraph vs) = viewWidget (Div "paragraph code-font" vs)
 
-viewWidget er (Link url vs) = elAttr "a" ("href" =: url) $ viewWidget er (Views vs)
+viewWidget (Link url vs) = elAttr "a" ("href" =: url) $ viewWidget (Views vs)
 
-viewWidget er (BulletPoints vs) = el "ul" $ do
-  rs <- forM vs $ \v -> el "li" $ viewWidget er v
-  return $ leftmost rs
+viewWidget (BulletPoints vs) = el "ul" $ forM_ vs $ \v -> el "li" $ viewWidget v
 
-viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> divClass "gridChild" $ viewWidget er v) vs
+viewWidget (GridView c r vs) = viewsContainer $ mapM_ (\v -> divClass "gridChild" $ viewWidget v) vs
   where
     viewsContainer x = elAttr "div" ("class" =: "gridView" <> "style" =: (setColumnsAndRows) ) $ x
     defineNumRowsOrColumns n = replicate n $ showt ((100.0 :: Double) / (fromIntegral n)) <> "%"
@@ -90,96 +88,76 @@ viewWidget er (GridView c r vs) = viewsContainer $ liftM leftmost $ mapM (\v -> 
     setNumRows =  "grid-template-rows: " <> (T.intercalate " " $ defineNumRowsOrColumns r) <> ";"
     setColumnsAndRows  = setNumColumns <> setNumRows
 
+viewWidget (CollapsableView v) = viewsContainerCollaps $ divClass "gridChild" $ viewWidget v
 
-viewWidget er (CollapsableView v) = viewsContainerCollaps $ divClass "gridChild" $ viewWidget er v
+viewWidget (Text t) = translatableText t >>= dynText
 
-viewWidget _ (Text t) = translatableText t >>= dynText >> return never
+viewWidget (LabelView z) = zoneWidget z "" maybeLabelText LabelText labelEditor
 
-viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelEditor
+viewWidget (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure structureEditor
 
-viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
-
-viewWidget er (CodeView z rows styles) = do
+viewWidget (CodeView z rows styles) = do
   whenever <- liftIO $ getCurrentTime
   errorDyn <- fmap (IntMap.lookup z) <$> errors
-  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor styles rows errorDyn)
+  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram (textProgramEditor styles rows errorDyn)
 
-viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
+viewWidget (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
 
-viewWidget er EnsembleStatusView = ensembleStatusWidget
+viewWidget EnsembleStatusView = ensembleStatusWidget
 
-viewWidget er (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette er (rouletteWidget rows)
+viewWidget (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette (rouletteWidget rows)
 
-viewWidget er (CalendarEventView z) = do
+viewWidget (CalendarEventView z) = do
   today <- liftIO getZonedTime
   let defaultValue = IntMap.singleton 0 (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today)))
-  zoneWidget z defaultValue maybeCalendarEvents CalendarEvs er calendarEventWidget
+  zoneWidget z defaultValue maybeCalendarEvents CalendarEvs calendarEventWidget
 
-viewWidget er (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er countDownWidget
+viewWidget (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown countDownWidget
 
-viewWidget er (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown er sandClockWidget
+viewWidget (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown sandClockWidget
 
-viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch er stopWatchWidget
+viewWidget (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch stopWatchWidget
 
-viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
+viewWidget (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime visualiseTempoWidget
 
-viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad er notePadWidget
+viewWidget (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad notePadWidget
 
-viewWidget er (ChatView z) = zoneWidget z [] maybeSpecChat SpecChat er chatWidget
+viewWidget (ChatView z) = zoneWidget z [] maybeSpecChat SpecChat chatWidget
 
 
-viewWidget er TempoView = do
+viewWidget TempoView = return () {- do -- disactivating TempoView - noone uses it anyway...
   initialTempo <- tempo >>= (sample . current)
   tempoDelta <- holdDyn initialTempo $ fmapMaybe lastTempoChange er
   tempoE <- tempoWidget tempoDelta
-  return $ fmap WriteTempo tempoE
+  return $ fmap WriteTempo tempoE -}
 
-viewWidget _ (Snippet z b n t) = do
-  b <- clickableDiv (snippetOrExample b) $ text t
+viewWidget (Snippet z b n t) = do
+  let c = if b then "example code-font" else "snippet code-font"
+  b <- clickableDiv c $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
   hint $ fmap (\et -> ZoneHint z (TextProgram (Live (n,t,et) L3))) bTime
-  return never
 
-viewWidget _ AudioMapView = do
-  audioMapWidget
-  return never
+viewWidget AudioMapView = audioMapWidget
 
-viewWidget _ (LoadView 0) = do
-  graphVisionWidget
-  return never
+viewWidget (LoadView 0) = graphVisionWidget
 
-viewWidget _ (LoadView 1) = do
-  vintageVisionWidget
-  return never
+viewWidget (LoadView 1) = vintageVisionWidget
 
-viewWidget _ (LoadView 2) = do
-  concentricCircleVisionWidget
-  return never
+viewWidget (LoadView 2) = concentricCircleVisionWidget
 
-
-viewWidget _ (IFrame url) = do
+viewWidget (IFrame url) = do
   let attrs = Map.fromList [("src",url), ("style","height:100%"), ("allow","microphone *")]
   elAttr "iframe" attrs $ return ()
-  return never
+
 
 zoneWidget :: (Monad m, MonadSample t m, Reflex t, MonadHold t m, MonadFix m, Eq a)
-  => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
+  => Int -> a -> (Definition -> Maybe a) -> (a -> Definition)
   -> (Dynamic t a -> W t m (Variable t a))
-  -> W t m (Event t EnsembleRequest)
-zoneWidget z defaultA f g ensResponses anEditorWidget = do
-  iZones <- zones >>= sample . current
-  let iDef = IntMap.findWithDefault (g defaultA) z iZones
-  let iValue = maybe defaultA id $ f iDef
-  let resetValue = g defaultA
-  let deltas = fmapMaybe (lastEditOrResetInZone resetValue z) ensResponses
-  let deltas' = fmapMaybe f deltas
-  dynUpdates <- holdDyn iValue deltas'
-  variableFromWidget <- anEditorWidget dynUpdates
-  return $ (WriteZone z . g) <$> localEdits variableFromWidget
-
-  -- a helper function
-
-snippetOrExample:: Bool -> T.Text
-snippetOrExample True = "example code-font"
-snippetOrExample False = "snippet code-font"
+  -> W t m ()
+zoneWidget zoneNumber defaultA defToMaybeA aToDef anEditingWidget = do
+  let getA = maybe defaultA (maybe defaultA id . defToMaybeA) . IntMap.lookup zoneNumber
+  zs <- zones
+  dynA <- holdUniqDyn $ fmap getA zs -- note: when zones are streamed separately, holdUniqDyn will not be necessary
+  varA <- anEditingWidget dynA
+  hint $ (ZoneHint zoneNumber . aToDef) <$> localEdits varA

@@ -36,6 +36,7 @@ import Estuary.Types.TranslatableText
 import Estuary.Types.Language
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
+import Estuary.Client.Settings
 
 data EnsembleC = EnsembleC {
   ensemble :: Ensemble,
