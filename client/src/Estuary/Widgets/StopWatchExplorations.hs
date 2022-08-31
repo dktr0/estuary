@@ -257,8 +257,6 @@ countToHoldH defH percent =
   let countUp = realToFrac (100 + (percent*(-1))) :: Double 
       halfClock = countUp/2
   in "height" =: showt halfClock
-
-
     
 ---- SVG helpers
 

@@ -468,7 +468,6 @@ visualiseRing delta segs = do
 
   let currentBeatAttrs = mconcat [cx,cy,r,fill,stroke,strokeWidth,dashArray,currentSegPos,style]
 
- -- elDynAttr "stopwatch" attrs $ dynText $ fmap (showt) $ fmap (showt) delta
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     markTheZero delta'
     generateRingSegments segs radius
@@ -690,11 +689,11 @@ selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-
 selectVisualiser (Tv 0 seg k) = divClass "tempo-visualiser" $ do
   cycleTracer seg
   x <- do 
-    x <- divClass "flex-container-for-timeVision" $ do
+    y <- divClass "flex-container-for-timeVision" $ do
       leftPanel <- clickableDiv "flex-item-for-timeVision" blank -- :: Event t ()
       let leftEvent = tvNextStateLeft <$ leftPanel-- Event t (TimeVision -> TimeVision)
       centreEvent <- do
-          x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
+          z <- elClass "div" "flex-container-for-timeVision-vertical" $ do
             upPanel <- clickableDiv "flex-item-for-timeVision-vertical" blank
             infoDisplay upPanel seg 4
             let upEvent = segmentUp <$ upPanel  
@@ -703,12 +702,12 @@ selectVisualiser (Tv 0 seg k) = divClass "tempo-visualiser" $ do
             let downEvent = segmentDown <$ downPanel
             let cPanelEvent = leftmost [upEvent,downEvent]
             return cPanelEvent
-          return x
+          return z
       rightPanel <- clickableDiv "flex-item-for-timeVision" blank
       let rightEvent = tvNextStateRight <$ rightPanel
       let panelEvent = fmap (\x -> x $ Tv 0 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
       return panelEvent
-    return x   
+    return y
   return x
 
 selectVisualiser (Tv 1 seg k) = divClass "tempo-visualiser" $ do

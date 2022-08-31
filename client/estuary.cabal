@@ -93,6 +93,7 @@ library
       Estuary.Widgets.SpecificPattern
       Estuary.Widgets.StopWatchExplorations
       Estuary.Widgets.Tempo
+      Estuary.Widgets.Timer
       Estuary.Widgets.Terminal
       Estuary.Widgets.Text
       Estuary.Widgets.TransformedPattern
