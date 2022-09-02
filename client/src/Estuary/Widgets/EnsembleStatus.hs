@@ -17,31 +17,26 @@ import qualified Estuary.Types.Term as Term
 import Control.Monad.IO.Class
 import Control.Monad.Fix (MonadFix)
 
--- TODO: needs to be W t m (), with appropriate Hint pathway opened as alternative to EnsembleRequest
-ensembleStatusWidget :: MonadWidget t m => W t m (Event t EnsembleRequest)
+ensembleStatusWidget :: MonadWidget t m => W t m ()
 ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
 
   uHandle <- userHandle
   ensName <- ensembleName
   ensParticipants <- participants
   anonymous <- anonymousParticipants
-  -- status <- wsStatus
 
   divClass "statusWidgetScrollableContainer" $ do
     divClass "infoContainer" $ do
       divClass "tableContainer code-font" $ do
-        status <- el "table" $ do
+        el "table" $ do
           now <- liftIO getCurrentTime -- this time is measured before building the widget
           evTick <- tickLossy 10.13 now  -- m (Event t TickInfo)
           currentTime <- performEvent $ fmap (\_ -> liftIO getCurrentTime) evTick
           rec
-            c1 <- count (switchDyn $ fmap (leftmost . fmap fst . elems) $ m1) -- count :: Num b => Event a -> m (Dynamic b)
+            c1 <- count (switchDyn $ fmap (leftmost . elems) $ m1) -- count :: Num b => Event a -> m (Dynamic b)
             c2 <- count (switchDyn $ fmap (leftmost . elems) $ m2)
             c3 <- count (switchDyn $ fmap (leftmost . elems) $ m3)
             let c' = fmap (`mod` 3) (c1 + c2 + c3) -- event 0,1,2
-            -- hideableWidget' :: MonadWidget t m => Dynamic t Bool -> m a -> m a
-            -- listWithKey :: forall t k v m a. (Ord k, MonadWidget t m) => Dynamic t (Map k v) -> (k -> Dynamic t v -> m a) -> m (Dynamic t (Map k a))
-            -- switchDyn :: forall t a. Reflex t => Dynamic t (Event t a) -> Event t a
             m1 <- hideableWidget' (fmap (== 0) c') $ do
               headerMode1 ensName
               (listWithKey ensParticipants $ (mode1 uHandle currentTime))
@@ -51,14 +46,14 @@ ensembleStatusWidget = divClass "ensembleStatusWidget" $ do
             m3 <- hideableWidget' (fmap (== 2) c') $ do
               headerMode3 ensName
               (listWithKey ensParticipants $ (mode3 uHandle currentTime))
-          return $ switchDyn $ fmap (leftmost . fmap snd . elems) $ m1 --Event t EnsembleRequest -- Dymaic Map Int (Event t EnsembleRequest)
+          pure ()
+          -- return $ switchDyn $ fmap (leftmost . fmap snd . elems) $ m1 --Event t EnsembleRequest -- Dymaic Map Int (Event t EnsembleRequest)
 
         divClass "statusWidgetAnonymousPart code-font" $ do
           term Term.AnonymousParticipants >>= dynText
           text ": "
           dynText $ fmap showt anonymous
 
-        return status -- puts the value on the monad
 
 headerMode1 :: (DomBuilder t m, Monad m, Reflex t, PostBuild t m, MonadFix m, MonadHold t m) => Dynamic t Text -> W t m ()
 headerMode1 ensName = divClass "rowHeaderContainer" $ do
@@ -73,7 +68,7 @@ headerMode2 ensName = divClass "rowHeaderContainer" $ do
     divClass "statusWidgetLoad" $ infoDescription (term Term.Load >>= dynText) (term Term.LoadDescription >>= dynText)
     divClass "statusWidgetFPS" $ infoDescription (term Term.FPS >>= dynText) (term Term.FPSDescription >>= dynText)
     divClass "statusWidgetIP" $ infoDescription (term Term.IPaddress >>= dynText) (term Term.IPaddressDescription >>= dynText)
---
+
 headerMode3 :: (DomBuilder t m, Monad m, Reflex t, PostBuild t m, MonadHold t m, MonadFix m) => Dynamic t Text -> W t m ()
 headerMode3 ensName = divClass "rowHeaderContainer" $ do
     divClass "statusWidgetNameAndLocation" $ divClass "statusWidgetNameAndLocationText" $ (term Term.Ensemble >>= dynText) >> (dynText $ constDyn ": " <> ensName)
@@ -84,15 +79,13 @@ infoDescription label explanation  = do
   let popup = elClass "span" "tooltiptextStatusLabels code-font" $ explanation
   tooltipNoPopUpClass child popup
 
-mode1 :: MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  m (Event t (), Event t EnsembleRequest)
+mode1 :: MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant -> W t m (Event t ())
 mode1 uHandle t name part =  divClass "rowContainer" $ do
   ev <- clickableDiv "rowSubContainer" $ do
     divClass "statusWidgetNameAndLocation" $ participantNameLocationAndIPWidget name part
     divClass "statusWidgetActivity" $ participantActivityWidget t name part
-  status <- divClass "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
-  return (ev, status)
-  -- return (ev, status)
-
+  divClass "statusWidgetStatusInput" $ participantStatusWidget uHandle name part
+  return ev
 
 mode2 :: MonadWidget t m  => Dynamic t Text -> Event t UTCTime -> Text -> Dynamic t Participant ->  W t m (Event t ())
 mode2 uHandle t name part = do
@@ -140,15 +133,14 @@ participantIP name part = do
   let ip' = fmap ipAddress part
   dynText ip'
 
-participantStatusWidget :: MonadWidget t m  => Dynamic t Text -> Text -> Dynamic t Participant -> m (Event t EnsembleRequest)
+participantStatusWidget :: MonadWidget t m => Dynamic t Text -> Text -> Dynamic t Participant -> W t m ()
 participantStatusWidget thisUserHandle _ part = do
   initialStatus <- status <$> sample (current part)
   updatedStatus <- fmap updated $ holdUniqDyn $ fmap status part -- event issued only when status changes
   let dynBool = compareHandles <$> thisUserHandle <*> part
   let dynAttrs = attrs <$> dynBool
   s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ dynAttrs
-  let writeStatusToServer = fmap (\x -> WriteStatus x) $ _textInput_input s --msg only sent when they press a key
-  return writeStatusToServer
+  ensembleRequest $ fmap WriteStatus $ _textInput_input s -- msg only sent when they press a key
 
 participantNameLocationAndIPWidget :: (DomBuilder t m, Reflex t, PostBuild t m) => Text -> Dynamic t Participant -> m ()
 participantNameLocationAndIPWidget name part = do

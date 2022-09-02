@@ -10,8 +10,8 @@ module Estuary.Widgets.W where
 -- cover a common case where we need to keep track of whether a value changes because of
 -- remote editing or local editing.
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request)
+import Reflex.Dom hiding (Request)
 import Control.Monad.Reader
 import Data.Text as T
 import Data.IORef
@@ -42,6 +42,8 @@ import Estuary.Types.Tempo
 import Estuary.Types.Definition
 import Estuary.Types.ResourceOp
 import Estuary.Types.Chat
+import Estuary.Types.Request
+import Estuary.Types.EnsembleRequest
 
 -- If we have widget-producing actions and we make them in the (W t m) monad
 -- we will be able to do all the normal things we can do in the more general
@@ -398,6 +400,14 @@ hint = tellEvent . fmap pure
 -- Issue multiple simultaneous hints
 hints :: (Reflex t, Monad m) => Event t [Hint] -> W t m ()
 hints = tellEvent
+
+-- Issue a Request directly (via Hint pathway)
+request :: (Reflex t, Monad m) => Event t Request -> W t m ()
+request = hint . fmap RequestHint
+
+-- Issue an EnsembleRequest directly (via Hint pathway)
+ensembleRequest :: (Reflex t, Monad m) => Event t EnsembleRequest -> W t m ()
+ensembleRequest = request . fmap EnsembleRequest
 
 
 -- Translate a term appropriately into dynamic text
