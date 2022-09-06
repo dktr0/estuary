@@ -13,8 +13,8 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.View
 import Estuary.Widgets.View
 
-aboutEstuary :: MonadWidget t m => W t m (Event t EnsembleRequest)
-aboutEstuary = viewWidget never $ Views [
+aboutEstuary :: MonadWidget t m => W t m ()
+aboutEstuary = viewWidget $ Views [
 
   Paragraph [
     Text $ fromList [

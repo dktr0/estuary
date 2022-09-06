@@ -28,11 +28,8 @@ import Estuary.Types.EnsembleRequest
 import Estuary.Types.EnsembleResponse
 
 
-ensembleView :: MonadWidget t m
-  => Event t [EnsembleResponse] -> W t m (Event t EnsembleRequest)
-ensembleView ensResponses = do
+ensembleView :: MonadWidget t m => W t m ()
+ensembleView = do
   currentView <- activeView
-  let dynamicViews = fmap (viewWidget ensResponses) currentView -- Dynamic t (W t m (Event t EnsembleRequest))
-  x <- dyn' dynamicViews -- Dynamic t (Event t EnsembleRequest)
-  let widgetRequests = switchDyn x -- Event t EnsembleRequest
-  return widgetRequests
+  _ <- dyn' $ fmap viewWidget currentView
+  pure ()

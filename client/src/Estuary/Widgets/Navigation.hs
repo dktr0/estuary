@@ -92,22 +92,19 @@ page wsDown TutorialList = splitPageWithAnnouncements $ do
   return (nav, (leaveEnsemble, never))
 
 page wsDown (TutorialNav "TidalCyclesBasics") = do
-  let ensResponses = fmapMaybe justEnsembleResponses wsDown
-  ensReq <- runTutorial tidalCyclesBasics ensResponses
+  ensReq <- runTutorial tidalCyclesBasics
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,ensReq))
+  return (never,(leaveEnsemble,never))
 
 page wsDown (TutorialNav "Punctual") = do
-  let ensResponses = fmapMaybe justEnsembleResponses wsDown
-  ensReq <- runTutorial punctualTutorial ensResponses
+  ensReq <- runTutorial punctualTutorial
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,ensReq))
+  return (never,(leaveEnsemble,never))
 
 page wsDown (TutorialNav "CineCer0") = do
-  let ensResponses = fmapMaybe justEnsembleResponses wsDown
-  ensReq <- runTutorial cineCer0Tutorial ensResponses
+  ensReq <- runTutorial cineCer0Tutorial
   leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,ensReq))
+  return (never,(leaveEnsemble,never))
 
 page _ (TutorialNav _) = do
   text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as an 'issue' on Estuary's github site"
@@ -167,14 +164,12 @@ page wsDown (JoinEnsemblePage ensembleName) = splitPageWithAnnouncements $ do
   return (navEvents, (serverRequests, never))
 
 page rs (EnsemblePage ensembleName) = do
-  let ensResponses = fmapMaybe justEnsembleResponses rs
-  ensReq <- ensembleView ensResponses
-  return (never,(never,ensReq))
+  ensembleView
+  return (never,(never,never))
 
 page rs Solo = do
-  let ensResponses = fmapMaybe justEnsembleResponses rs
-  ensReq <- ensembleView ensResponses
-  return (never,(never,ensReq))
+  ensembleView
+  return (never,(never,never))
 
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
