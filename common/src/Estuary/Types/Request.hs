@@ -20,7 +20,7 @@ data Request =
   JoinEnsemble Text Text Text Text | -- ensemble username location password (username, location, and password can be "")
   RejoinEnsemble Text Text Text Text | -- for re-authenticating when websocket connections close and re-open
   EnsembleRequest EnsembleRequest | -- see Estuary.Types.EnsembleRequest, request "within" an ensemble
-  LeaveEnsemble |
+  LeaveEnsemble | 
   CreateEnsemble Text Text Text Text (Maybe NominalDiffTime) | -- communityPassword ensembleName ownerPassword joinerPassword expiryTime (empty for no password)
   DeleteThisEnsemble Text | -- ownerPassword
   DeleteEnsemble Text Text -- ensembleName moderatorPassword

@@ -189,13 +189,13 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
 hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
 hintsToEnsembleRequests = catMaybes . fmap f
   where
-    f (ZoneHint n d) = Just (WriteZone n d)
+    f (RequestHint (EnsembleRequest x)) = Just x
     f _ = Nothing
 
 hintsToResponses :: [Hint] -> [Estuary.Types.Response.Response]
 hintsToResponses = catMaybes . fmap f
   where
-    f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
+    f (RequestHint (EnsembleRequest (WriteZone n d))) = Just (EnsembleResponse (ZoneRcvd n d))
     f _ = Nothing
 
 

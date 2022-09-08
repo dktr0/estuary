@@ -136,7 +136,7 @@ viewWidget (Snippet z b n t) = do
   let c = if b then "example code-font" else "snippet code-font"
   b <- clickableDiv c $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
-  hint $ fmap (\et -> ZoneHint z (TextProgram (Live (n,t,et) L3))) bTime
+  ensembleRequest $ fmap (\et -> WriteZone z (TextProgram (Live (n,t,et) L3))) bTime
 
 viewWidget AudioMapView = audioMapWidget
 
@@ -160,4 +160,4 @@ zoneWidget zoneNumber defaultA defToMaybeA aToDef anEditingWidget = do
   zs <- zones
   dynA <- holdUniqDyn $ fmap getA zs -- note: when zones are streamed separately, holdUniqDyn will not be necessary
   varA <- anEditingWidget dynA
-  hint $ (ZoneHint zoneNumber . aToDef) <$> localEdits varA
+  ensembleRequest $ (WriteZone zoneNumber . aToDef) <$> localEdits varA
