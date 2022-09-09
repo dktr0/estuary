@@ -115,7 +115,8 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas iCanvas
   rInfo <- pollRenderInfo rEnv
   resourceMaps <- dynamicResourceMaps rEnv
-
+  ensList <- maintainEnsembleList responseDown
+  resError <- maintainResponseError responseDown
 
 
   -- four GUI components: header, main (navigation), terminal, footer
@@ -125,7 +126,9 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
     _resourceMaps = resourceMaps,
     W._settings = settings,
     _serverInfo = serverInfo,
-    _ensembleC = ensembleC
+    _ensembleC = ensembleC,
+    _ensembleList = ensList,
+    _responseError = resError
     }
 
   (_,keyboardAndHeaderHints) <- runW wEnv $ do
@@ -199,6 +202,14 @@ hintsToResponses = catMaybes . fmap f
     f _ = Nothing
 
 
+maintainEnsembleList :: MonadWidget t m => Event t Response -> m (Dynamic t [Text])
+maintainEnsembleList responseDown = holdDyn [] $ fmapMaybe justEnsembleList responseDown
+
+maintainResponseError :: MonadWidget t m => Event t Response -> m (Dynamic t (Maybe Text))
+maintainResponseError responseDown = do
+  let errors = Just <$ fmapMaybe justResponseError responseDown
+  let oks = Nothing <$ fmapMaybe justResponseOK responseDown
+  holdDyn Nothing $ leftmost [errors,oks]
 
 cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> m HTMLDivElement
 cinecer0Widget settings = do

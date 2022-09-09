@@ -57,7 +57,9 @@ data WidgetEnvironment t = WidgetEnvironment {
   _resourceMaps :: Dynamic t ResourceMaps,
   _settings :: Dynamic t Settings.Settings,
   _serverInfo :: Dynamic t ServerInfo.ServerInfo,
-  _ensembleC :: Dynamic t EnsembleC
+  _ensembleC :: Dynamic t EnsembleC,
+  _ensembleList :: Dynamic t [Text],
+  _responseError :: Dynamic t (Maybe Text)
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -81,6 +83,12 @@ renderEnvironment = lift $ asks _renderEnvironment
 resourceMaps :: Monad m => W t m (Dynamic t ResourceMaps)
 resourceMaps = lift $ asks _resourceMaps
 
+-- Get a dynamically-updated map of the ensembles listed by the server
+ensembleList :: Monad m => W t m (Dynamic t [Text])
+ensembleList = lift $ asks _ensembleList
+
+responseError :: Monad m => W t m (Dynamic t (Maybe Text))
+responseError = lift $ asks _responseError
 
 -- Get information from the ServerInfo
 
@@ -409,6 +417,9 @@ request = hint . fmap RequestHint
 ensembleRequest :: (Reflex t, Monad m) => Event t EnsembleRequest -> W t m ()
 ensembleRequest = request . fmap EnsembleRequest
 
+-- Issue the request to leave an ensemble immediately (upon build)
+leaveEnsemble :: MonadWidget t m => W t m ()
+leaveEnsemble = getPostBuild >>= request . (LeaveEnsemble <$)
 
 -- Translate a term appropriately into dynamic text
 -- Note that it doesn't build the text in the DOM - for that, combine with dynText

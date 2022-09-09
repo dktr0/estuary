@@ -60,76 +60,55 @@ data Navigation =
   deriving (Generic, FromJSVal, ToJSVal)
 
 
-navigation :: MonadWidget t m => Event t [Response] -> W t m (Event t Request, Event t EnsembleRequest)
-navigation wsDown = do
-  x <- router Splash never $ page wsDown
-  let y = fmap snd x
-  let a = switchDyn $ fmap fst y
-  let b = switchDyn $ fmap snd y
-  return (a,b)
+navigation :: MonadWidget t m => W t m ()
+navigation wsDown = void $ router' Splash never page
 
 
-page :: MonadWidget t m => Event t [Response] -> Navigation
-  -> W t m (Event t Navigation, (Event t Request, Event t EnsembleRequest))
+page :: MonadWidget t m => Navigation -> W t m (Event t Navigation)
 
-page wsDown Splash = do
-  navEv <- splitPageWithAnnouncements $ divClass "splash-container" $ do
+page Splash = do
+  leaveEnsemble
+  splitPageWithAnnouncements $ divClass "splash-container" $ do
     gotoAboutEv <- panel "splash-margin" About Term.About (text "A") --estuaryIcon
     gotoTutorialEv <- panel "splash-margin" TutorialList Term.Tutorials (text "B") -- icon font: tutorial-icon.svg
     gotoSoloEv <- panel "splash-margin" Solo Term.Solo (text "C") -- icon font: solo-icon.png
     gotoCollaborateEv <- panel "splash-margin" Lobby Term.Collaborate (text "D") -- icon font: collaborate-icon.svg
     return $ leftmost [gotoAboutEv, gotoTutorialEv, gotoSoloEv, gotoCollaborateEv]
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (navEv, (leaveEnsemble, never))
 
-page wsDown TutorialList = splitPageWithAnnouncements $ do
+page TutorialList = splitPageWithAnnouncements $ do
+  leaveEnsemble
   divClass "ui-font primary-color" $ text "Select a tutorial:"
   navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ divClass "tutorialButton" $ button "TidalCycles"
   navPunctualTutorial <- liftM (TutorialNav "Punctual" <$) $ divClass "tutorialButton" $ button "Punctual"
   navCineCer0 <- liftM (TutorialNav "CineCer0" <$) $ divClass "tutorialButton" $ button "CineCer0"
-  let nav = leftmost [navTidalCyclesBasics,navPunctualTutorial,navCineCer0]
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (nav, (leaveEnsemble, never))
+  return $ leftmost [navTidalCyclesBasics,navPunctualTutorial,navCineCer0]
 
-page wsDown (TutorialNav "TidalCyclesBasics") = do
-  ensReq <- runTutorial tidalCyclesBasics
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,never))
+page (TutorialNav "TidalCyclesBasics") = leaveEnsemble >> runTutorial tidalCyclesBasics
 
-page wsDown (TutorialNav "Punctual") = do
-  ensReq <- runTutorial punctualTutorial
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,never))
+page (TutorialNav "Punctual") = leaveEnsemble >> runTutorial punctualTutorial
 
-page wsDown (TutorialNav "CineCer0") = do
-  ensReq <- runTutorial cineCer0Tutorial
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never,(leaveEnsemble,never))
+page (TutorialNav "CineCer0") = leaveEnsemble >> runTutorial cineCer0Tutorial
 
-page _ (TutorialNav _) = do
-  text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as an 'issue' on Estuary's github site"
-  return (never,(never,never))
+page (TutorialNav _) = text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as an 'issue' on Estuary's github site"
 
-page wsDown About = do
-  aboutEstuary
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  return (never, (leaveEnsemble, never))
+page About = leaveEnsemble >> aboutEstuary
 
-page wsDown Lobby = splitPageWithAnnouncements $ do
-  -- process received ensemble lists into widgets that display info about, and let us join, ensembles
-  ensembleList <- holdDyn [] $ fmapMaybe justEnsembleList wsDown
-  ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensembleList joinButton
+page Lobby = splitPageWithAnnouncements $ do
+  leaveEnsemble
+  ensList <- ensembleList
+  ensembleClicked <- liftM (switchPromptlyDyn . fmap leftmost) $ simpleList ensList joinButton
   let navToJoinEnsemble = fmap JoinEnsemblePage ensembleClicked
   navToCreateEnsemble <- liftM (CreateEnsemblePage <$) $ el "div" $ term Term.CreateNewEnsemble >>= dynButton
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
   now <- liftIO $ getCurrentTime
-  requestEnsembleList <- liftM (GetEnsembleList <$) $ tickLossy (3::NominalDiffTime) (addUTCTime 0.25 now)
-  let serverRequests = leftmost [leaveEnsemble,requestEnsembleList]
-  return (leftmost [navToJoinEnsemble, navToCreateEnsemble], (requestEnsembleList, never))
+  every3s <- tickLossy (3::NominalDiffTime) (addUTCTime 0.25 now)
+  request $ GetEnsembleList <$ every3s
+  return $ leftmost [navToJoinEnsemble, navToCreateEnsemble]
 
-page rs CreateEnsemblePage = splitPageWithAnnouncements $ do
-  (navigateAway,responses) <- createEnsembleWidget rs
-  return (Lobby <$ navigateAway,(responses,never))
+page CreateEnsemblePage = splitPageWithAnnouncements $ do
+  navigateAway <- createEnsembleWidget
+  return $ Lobby <$ navigateAway
+
+-- CONTINUE HERE
 
 page wsDown (JoinEnsemblePage ensembleName) = splitPageWithAnnouncements $ do
   el "div" $ do

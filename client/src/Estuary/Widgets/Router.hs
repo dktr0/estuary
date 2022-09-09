@@ -27,10 +27,6 @@ import GHCJS.Nullable
 import Reflex
 import Reflex.Dom
 
--- currentWindow :: IO (Maybe Window)
--- getHistory :: Window -> IO (Maybe History)
--- pushState :: (MonadIO m, ToJSString title, ToJSString url) =>
---     History -> JSVal -> title -> url -> m ()
 
 router ::
   (Monad m, Functor m, TriggerEvent t m, MonadFix m, Reflex t, PerformEvent t m, MonadIO (Performable m), Adjustable t m, MonadIO m, MonadHold t m, FromJSVal state, ToJSVal state)
@@ -60,7 +56,7 @@ router def inStatChangeEv renderPage = mdo
 
   return dynPage
 
---router' :: (TriggerEvent t m, MonadFix m, MonadHold t m, PerformEvent t m, Reflex t, MonadIO m,  Adjustable t m, FromJSVal state, ToJSVal state)
+
 router' ::
   (TriggerEvent t m, MonadFix m, MonadHold t m, PerformEvent t m, Reflex t, MonadIO m,  Adjustable t m, MonadIO (Performable m),  FromJSVal state, ToJSVal state)
   => state -> Event t state -> (state -> m (Event t state)) -> m (Dynamic t (Event t state))
@@ -76,6 +72,7 @@ router' def inStatChangeEv renderPage = mdo
   let stateChangeEv = leftmost [popStateEv, triggeredStateChangeEv]
   dynPage :: Dynamic t (Event t state) <- widgetHold initialPage (renderPage <$> stateChangeEv)
   return dynPage
+
 
 getInitialState :: (FromJSVal state) => state -> IO (state)
 getInitialState def =
