@@ -59,7 +59,8 @@ data WidgetEnvironment t = WidgetEnvironment {
   _serverInfo :: Dynamic t ServerInfo.ServerInfo,
   _ensembleC :: Dynamic t EnsembleC,
   _ensembleList :: Dynamic t [Text],
-  _responseError :: Dynamic t (Maybe Text)
+  _responseError :: Dynamic t (Maybe Text),
+  _joinedEnsemble :: Event t Text
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -89,6 +90,11 @@ ensembleList = lift $ asks _ensembleList
 
 responseError :: Monad m => W t m (Dynamic t (Maybe Text))
 responseError = lift $ asks _responseError
+
+-- an Event fired in response to server confirmation that an ensemble has been joined
+-- (Text is name of ensemble)
+joinedEnsemble :: Monad m => W t m (Event t Text)
+joinedEnsemble = lift $ asks _joinedEnsemble
 
 -- Get information from the ServerInfo
 

@@ -61,7 +61,7 @@ data Navigation =
 
 
 navigation :: MonadWidget t m => W t m ()
-navigation wsDown = void $ router' Splash never page
+navigation = void $ router' Splash never page
 
 
 page :: MonadWidget t m => Navigation -> W t m (Event t Navigation)
@@ -83,15 +83,29 @@ page TutorialList = splitPageWithAnnouncements $ do
   navCineCer0 <- liftM (TutorialNav "CineCer0" <$) $ divClass "tutorialButton" $ button "CineCer0"
   return $ leftmost [navTidalCyclesBasics,navPunctualTutorial,navCineCer0]
 
-page (TutorialNav "TidalCyclesBasics") = leaveEnsemble >> runTutorial tidalCyclesBasics
+page (TutorialNav "TidalCyclesBasics") = do
+  leaveEnsemble
+  runTutorial tidalCyclesBasics
+  return never
 
-page (TutorialNav "Punctual") = leaveEnsemble >> runTutorial punctualTutorial
+page (TutorialNav "Punctual") = do
+  leaveEnsemble
+  runTutorial punctualTutorial
+  return never
 
-page (TutorialNav "CineCer0") = leaveEnsemble >> runTutorial cineCer0Tutorial
+page (TutorialNav "CineCer0") = do
+  leaveEnsemble
+  runTutorial cineCer0Tutorial
+  return never
 
-page (TutorialNav _) = text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as an 'issue' on Estuary's github site"
+page (TutorialNav _) = do
+  text "Oops... a software error has occurred and we can't bring you to the tutorial you wanted! If you have a chance, please report this as an 'issue' on Estuary's github site"
+  return never
 
-page About = leaveEnsemble >> aboutEstuary
+page About = do
+  leaveEnsemble
+  aboutEstuary
+  return never
 
 page Lobby = splitPageWithAnnouncements $ do
   leaveEnsemble
@@ -108,9 +122,8 @@ page CreateEnsemblePage = splitPageWithAnnouncements $ do
   navigateAway <- createEnsembleWidget
   return $ Lobby <$ navigateAway
 
--- CONTINUE HERE
-
-page wsDown (JoinEnsemblePage ensembleName) = splitPageWithAnnouncements $ do
+page (JoinEnsemblePage ensembleName) = splitPageWithAnnouncements $ do
+  leaveEnsemble
   el "div" $ do
     term Term.JoiningEnsemble >>= dynText
     text " "
@@ -128,27 +141,19 @@ page wsDown (JoinEnsemblePage ensembleName) = splitPageWithAnnouncements $ do
     let attrs = constDyn ("class" =: "background primary-color primary-borders ui-font")
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
   go <- el "div" $ dynButton =<< term Term.EnsembleLogin
-  let joinRequest = tagPromptlyDyn (JoinEnsemble <$> constDyn ensembleName <*> h <*> l <*> p) go
-  let joinedEnsembleResponses = fmapMaybe justJoinedEnsemble wsDown
-  let joinedEnsembleNav = fmap (EnsemblePage . (\(x,_,_,_) -> x)) joinedEnsembleResponses
-  let responseError = fmapMaybe justResponseError wsDown
+  request $ tagPromptlyDyn (JoinEnsemble ensembleName <$> h <*> l <*> p) go
   p <- el "div" $ do
-    errorDisplay <- holdDyn "" responseError
-    dynText errorDisplay
+    err <- responseError
+    dynText $ fmap (maybe "" id) err
   cancel <- el "div" $ dynButton =<< term Term.Cancel
   let cancelNav = Lobby <$ cancel
-  let navEvents = leftmost [joinedEnsembleNav,cancelNav]
-  leaveEnsemble <- (LeaveEnsemble <$) <$>  getPostBuild
-  let serverRequests = leftmost [leaveEnsemble,joinRequest]
-  return (navEvents, (serverRequests, never))
+  je <- joinedEnsemble
+  let joinedEnsembleNav = fmap EnsemblePage je
+  return $ leftmost [cancelNav,joinedEnsembleNav]
 
-page rs (EnsemblePage ensembleName) = do
-  ensembleView
-  return (never,(never,never))
+page (EnsemblePage ensembleName) = ensembleView >> return never
 
-page rs Solo = do
-  ensembleView
-  return (never,(never,never))
+page Solo = ensembleView >> return never
 
 
 joinButton :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
