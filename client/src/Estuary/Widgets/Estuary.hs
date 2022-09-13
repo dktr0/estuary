@@ -118,7 +118,6 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   ensList <- maintainEnsembleList responseDown
   resError <- maintainResponseError responseDown
 
-
   -- four GUI components: header, main (navigation), terminal, footer
   let wEnv = WidgetEnvironment {
     _renderEnvironment = rEnv,
@@ -210,6 +209,7 @@ maintainResponseError responseDown = do
   let errors = Just <$ fmapMaybe justResponseError responseDown
   let oks = Nothing <$ fmapMaybe justResponseOK responseDown
   holdDyn Nothing $ leftmost [errors,oks]
+
 
 cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> m HTMLDivElement
 cinecer0Widget settings = do
