@@ -18,8 +18,7 @@ import Control.Monad.IO.Class
 import Data.Sequence as Seq
 
 import Estuary.Types.Response
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.EnsembleResponse
+import Estuary.Types.EnsembleOp
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
 import Estuary.Types.Definition
@@ -137,16 +136,16 @@ commandToStateChange (Terminal.PresetView t) es = selectPresetView t es
 commandToStateChange (Terminal.PublishView t) es = replaceStandardView t (activeView es) es
 commandToStateChange _ es = es
 
-requestToStateChange :: EnsembleRequest -> EnsembleC -> EnsembleC
-requestToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es
-requestToStateChange (WriteZone n v) es = modifyEnsemble (writeZone n v) es
-requestToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
-requestToStateChange ResetZonesRequest es = modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
-requestToStateChange ResetViewsRequest es = modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
-requestToStateChange (ResetTempoRequest t) es = modifyEnsemble (writeTempo t) es
-requestToStateChange (ResetRequest t) es = modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
-requestToStateChange (WriteResourceOps s) es = modifyEnsemble (\e -> e { resourceOps = s } ) es
-requestToStateChange _ es = es
+ensembleOpToStateChange :: EnsembleOp -> EnsembleC -> EnsembleC
+ensembleOpToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es
+ensembleOpToStateChange (WriteZone n v) es = modifyEnsemble (writeZone n v) es
+ensembleOpToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
+ensembleOpToStateChange ResetZonesRequest es = modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
+ensembleOpToStateChange ResetViewsRequest es = modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
+ensembleOpToStateChange (ResetTempoRequest t) es = modifyEnsemble (writeTempo t) es
+ensembleOpToStateChange (ResetRequest t) es = modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
+ensembleOpToStateChange (WriteResourceOps s) es = modifyEnsemble (\e -> e { resourceOps = s } ) es
+ensembleOpToStateChange _ es = es
 -- note: WriteChat and WriteStatus don't directly affect the EnsembleC and are thus
 -- not matched here. Instead, the server responds to these requests to all participants
 -- and in this way the information "comes back down" from the server.

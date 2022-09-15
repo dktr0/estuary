@@ -117,6 +117,7 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   resourceMaps <- dynamicResourceMaps rEnv
   ensList <- maintainEnsembleList responseDown
   resError <- maintainResponseError responseDown
+  ensembleC <- maintainEnsembleC requestsUp responseDown
 
   -- four GUI components: header, main (navigation), terminal, footer
   let wEnv = WidgetEnvironment {
@@ -124,55 +125,33 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
     _renderInfo = rInfo,
     _resourceMaps = resourceMaps,
     W._settings = settings,
-    _serverInfo = serverInfo,
+    _serverInfo = sInfo,
     _ensembleC = ensembleC,
     _ensembleList = ensList,
     _responseError = resError
     }
 
-  (_,keyboardAndHeaderHints) <- runW wEnv $ do
+  ((responseDown,sInfo),hints) <- runW wEnv $ do
     (responseDown,sInfo) <- estuaryWebSocket requestsUp
     keyboardHintsW keyboardShortcut
     header
-    navRequests <- divClass "page ui-font" $ do
-      navRequests <- navigation deltasDownAlt
+    divClass "page ui-font" $ do
+      navigation deltasDownAlt
       sv <- W.sideBarVisible
       hideableWidget sv "sidebar" sideBarWidget
-      return navRequests
     command <- do -- :: Event t Command
       tv <- W.terminalVisible
       hideableWidget' tv $ terminalWidget responseDown hints
     footer
+    -- TODO: as part of current refactor: commands will be translated to hints inside this W computation
+    -- (perhaps that translation could even happen in Estuary.Widgets.Terminal)
+    return (responseDown,sInfo)
 
+  let requests = fmap hintsToRequests hints
+  let ensembleRequests = fmap requestsToEnsembleRequests requests
 
-    {-
-    let responsesFromEnsembleRequests = fmap ((:[]) . EnsembleResponse) $ fmapMaybe ensembleRequestsToResponses commandEnsembleRequests
-    let deltasDownAlt = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints,responsesFromEnsembleRequests]
-    let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
-    -}
-
-  commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
-  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
-  performEvent_ $ fmap (ensembleRequestIO $ R.resources rEnv) ensembleRequests
-  let commandRequests = fmapMaybe commandToRequest command
-
-  -- changes to EnsembleC within Context, and to Context
-  let commandChange = fmap commandToStateChange command
-  let ensembleRequestChange = fmap requestToStateChange ensembleRequests
-  let ensembleResponses = fmapMaybe justEnsembleResponses deltasDown
-  let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
-  let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
-  performEvent_ $ fmap (mapM_ (ensembleResponseIO $ R.resources rEnv)) ensembleResponses
-  let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
-  let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  let contextChange = mergeWith (.) [ensembleChange, ccChange, wsCtxChange, sidebarChange]
-
-  -- hints
-  let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, footerHints, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
-  let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
-  let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
-  performHints (R.webDirt rEnv) hints
+  -- perform Hints and Settings changes as IO
+  performWebDirtHints (R.webDirt rEnv) hints
   performDelayHints rEnv settings
   performDynamicsMode rEnv settings
   performPunctualAudioInputMode rEnv settings
@@ -188,18 +167,6 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
 
   return ()
 
-hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
-hintsToEnsembleRequests = catMaybes . fmap f
-  where
-    f (RequestHint (EnsembleRequest x)) = Just x
-    f _ = Nothing
-
-hintsToResponses :: [Hint] -> [Estuary.Types.Response.Response]
-hintsToResponses = catMaybes . fmap f
-  where
-    f (RequestHint (EnsembleRequest (WriteZone n d))) = Just (EnsembleResponse (ZoneRcvd n d))
-    f _ = Nothing
-
 
 maintainEnsembleList :: MonadWidget t m => Event t Response -> m (Dynamic t [Text])
 maintainEnsembleList responseDown = holdDyn [] $ fmapMaybe justEnsembleList responseDown
@@ -209,6 +176,10 @@ maintainResponseError responseDown = do
   let errors = Just <$ fmapMaybe justResponseError responseDown
   let oks = Nothing <$ fmapMaybe justResponseOK responseDown
   holdDyn Nothing $ leftmost [errors,oks]
+
+maintainEnsembleC :: MonadWidget t m => Event t [EnsembleRequest] -> Event t Response -> m (Dynamic t EnsembleC)
+maintainEnsembleC ensembleRequests responseDown = do
+  ... WORKING HERE ...
 
 
 cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> m HTMLDivElement
@@ -275,8 +246,8 @@ performPunctualAudioInputMode rEnv settings = do
   punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap Settings.punctualAudioInputMode settings
   performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (R.mainBus rEnv)) punctualAudioInputChanged
 
-performDelayHints :: (Reflex t, PerformEvent t m, MonadIO (Performable m)) => R.RenderEnvironment -> Dynamic t Settings -> m ()
-performDelayHints rEnv settings = do
+performDelay :: (Reflex t, PerformEvent t m, MonadIO (Performable m)) => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performDelay rEnv settings = do
   let nodes = R.mainBus rEnv
   delTime <- holdUniqDyn $ fmap Settings.globalAudioDelay settings
   performEvent_ $ fmap (liftIO . changeDelay nodes) $ updated delTime

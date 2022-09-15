@@ -9,23 +9,29 @@ import Data.Time.Clock
 import Data.Text
 import GHC.Generics
 import Data.Aeson
+import Data.Maybe (mapMaybe)
 
-import Estuary.Types.EnsembleRequest
+import Estuary.Types.EnsembleOp
 import Estuary.Types.Definition
 
 data Request =
   BrowserInfo Text | -- text is browser userAgent field, issued at client launch (by alternateWebSocket)
   ClientInfo Int Int Int NominalDiffTime UTCTime | -- load animationFPS animationLoad serverLatency pingTime, issued every 5s (by alternateWebSocket)
   GetEnsembleList | -- issued when client enters Lobby page
+  CreateEnsemble Text Text Text Text (Maybe NominalDiffTime) | -- communityPassword ensembleName ownerPassword joinerPassword expiryTime (empty for no password)
   JoinEnsemble Text Text Text Text | -- ensemble username location password (username, location, and password can be "")
   RejoinEnsemble Text Text Text Text | -- for re-authenticating when websocket connections close and re-open
-  EnsembleRequest EnsembleRequest | -- see Estuary.Types.EnsembleRequest, request "within" an ensemble
-  LeaveEnsemble | 
-  CreateEnsemble Text Text Text Text (Maybe NominalDiffTime) | -- communityPassword ensembleName ownerPassword joinerPassword expiryTime (empty for no password)
+  LeaveEnsemble |
   DeleteThisEnsemble Text | -- ownerPassword
-  DeleteEnsemble Text Text -- ensembleName moderatorPassword
+  DeleteEnsemble Text Text | -- ensembleName moderatorPassword
+  EnsembleOpUp EnsembleOp
   deriving (Generic)
 
 instance ToJSON Request where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Request
+
+requestsToEnsembleOps :: [Request] -> [EnsembleOp]
+requestsToEnsembleOps = mapMaybe f
+  where f (EnsembleOpUp r) = Just r
+        f _ = Nothing

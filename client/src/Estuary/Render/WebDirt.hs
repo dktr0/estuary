@@ -4,7 +4,7 @@ module Estuary.Render.WebDirt (
   WebDirt,
   newWebDirt,
   initializeWebAudio,
-  performHints,
+  performWebDirtHints,
   playSample,
   mapTextJSValToJSVal,
   noteEventToWebDirtJSVal,
@@ -70,8 +70,8 @@ performHint :: (PerformEvent t m, Reflex t, MonadIO (Performable m)) => WebDirt 
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
 
 -- (PerformEvent t m, Reflex t)
-performHints :: (PerformEvent t m, Reflex t, MonadIO (Performable m)) => WebDirt -> Event t [Hint] -> m ()
-performHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
+performWebDirtHints :: (PerformEvent t m, Reflex t, MonadIO (Performable m)) => WebDirt -> Event t [Hint] -> m ()
+performWebDirtHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
 
 doHint :: WebDirt -> Hint -> IO ()
 doHint wd (SampleHint x) = sampleHint wd (pToJSVal x)

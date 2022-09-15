@@ -47,8 +47,6 @@ import qualified Estuary.Languages.Hydra.Types as Hydra
 import qualified Estuary.Languages.Hydra.Parser as Hydra
 import qualified Estuary.Languages.Hydra.Render as Hydra
 
-import Estuary.Types.Ensemble
-import Estuary.Types.EnsembleC
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Types.TidalParser

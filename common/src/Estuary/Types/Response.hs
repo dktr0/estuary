@@ -5,38 +5,51 @@
 
 module Estuary.Types.Response where
 
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe,catMaybes)
 import Data.Time.Clock
 import Data.Text
 import GHC.Generics
 import Data.Aeson
+import Data.Sequence
 
 import Estuary.Utility
-import Estuary.Types.EnsembleResponse
 import Estuary.Types.Definition
+import Estuary.Types.Participant
+import Estuary.Types.LogEntry
+import Estuary.Types.View
+import Estuary.Types.Tempo
+import Estuary.Types.ResourceOp
 
 data Response =
-  ResponseOK Text | -- eg. ensemble successfully deleted
-  ResponseError Text | -- eg. ensemble login failure
+  ServerInfo Int UTCTime | -- response to ClientInfo: serverClientCount pingTime (from triggering ClientInfo)
+  ResponseOK Text | -- eg. ensemble successfully deleted -- could this include the request it was a response to?
+  ResponseError Text | -- eg. ensemble login failure -- could this include the request it was a response to?
   EnsembleList [Text] |
-  JoinedEnsemble Text Text Text Text | -- ensemble username location password
-  EnsembleResponse EnsembleResponse |
-  ServerInfo Int UTCTime -- response to ClientInfo: serverClientCount pingTime (from triggering ClientInfo)
+  JoinedEnsemble Text Text Text Text | -- ensemble username location password -- could be deleted if ResponseOk includes Request? (see above)
+  ZoneResponse Int Definition |
+  LogResponse LogEntry |
+  ViewResponse Text View |
+  TempoResponse Tempo |
+  ParticipantUpdate Participant | -- could this profitably be Text Participant, with handle removed from Participant type?
+  ParticipantLeaves Text |
+  AnonymousParticipants Int |
+  ResourceOpsResponse (Seq ResourceOp) |
+  ResetZones |
+  ResetViews |
+  ResetTempo Tempo | -- reset the metric grid/tempo only
+  Reset Tempo -- reset the zones, views and metric grid/tempo (with the provided tempo)
   deriving (Generic)
 
 instance ToJSON Response where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Response
 
-justEnsembleResponses :: [Response] -> Maybe [EnsembleResponse]
-justEnsembleResponses = g . mapMaybe f
-  where f (EnsembleResponse x) = Just x
-        f _ = Nothing
-        g [] = Nothing
-        g xs = Just xs
+{-
 
-justEnsembleList :: [Response] -> Maybe [Text]
-justEnsembleList = lastOrNothing . mapMaybe f
+all of the definitions below, if still needed, should be in client tree instead:
+
+responsesToEnsembleList :: [Response] -> Maybe [Text]
+responsesToEnsembleList = lastOrNothing . mapMaybe f
   where f (EnsembleList x) = Just x
         f _ = Nothing
 
@@ -58,3 +71,5 @@ justResponseError = lastOrNothing . mapMaybe f
 justServerInfo :: Response -> Maybe (Int,UTCTime)
 justServerInfo (ServerInfo x y) = Just (x,y)
 justServerInfo _ = Nothing
+
+-}
