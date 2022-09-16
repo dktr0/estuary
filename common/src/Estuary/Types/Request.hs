@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 -- This type represents all messages that an Estuary client can send
--- to an Estuary server via WebSockets.
+-- to an Estuary server via WebSockets. This also includes
 
 module Estuary.Types.Request where
 
@@ -10,9 +10,12 @@ import Data.Text
 import GHC.Generics
 import Data.Aeson
 import Data.Maybe (mapMaybe)
+import Data.Sequence
 
-import Estuary.Types.EnsembleOp
 import Estuary.Types.Definition
+import Estuary.Types.Tempo
+import Estuary.Types.View
+import Estuary.Types.ResourceOp
 
 data Request =
   BrowserInfo Text | -- text is browser userAgent field, issued at client launch (by alternateWebSocket)
@@ -24,14 +27,17 @@ data Request =
   LeaveEnsemble |
   DeleteThisEnsemble Text | -- ownerPassword
   DeleteEnsemble Text Text | -- ensembleName moderatorPassword
-  EnsembleOpUp EnsembleOp
+  TempoRequest Tempo |
+  ZoneRequest Int Definition |
+  ViewRequest Text View |
+  ChatRequest Text |
+  StatusRequest Text |
+  ResourceOpsRequest (Seq ResourceOp) |
+  ResetZonesRequest |
+  ResetViewsRequest |
+  ResetRequest Tempo -- reset the zones, views and metric grid/tempo (with the provided tempo)
   deriving (Generic)
 
 instance ToJSON Request where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Request
-
-requestsToEnsembleOps :: [Request] -> [EnsembleOp]
-requestsToEnsembleOps = mapMaybe f
-  where f (EnsembleOpUp r) = Just r
-        f _ = Nothing

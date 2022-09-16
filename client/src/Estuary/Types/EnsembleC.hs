@@ -18,7 +18,6 @@ import Control.Monad.IO.Class
 import Data.Sequence as Seq
 
 import Estuary.Types.Response
-import Estuary.Types.EnsembleOp
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
 import Estuary.Types.Definition
@@ -178,44 +177,6 @@ responseToStateChange :: Response -> EnsembleC -> EnsembleC
 responseToStateChange (JoinedEnsemble eName uName loc pwd) es = joinEnsembleC eName uName loc pwd es
 responseToStateChange _ es = es
 
-commandToEnsembleRequest :: MonadIO m => EnsembleC -> Terminal.Command -> Maybe (m EnsembleRequest)
-commandToEnsembleRequest es (Terminal.PublishView x) = Just $ return (WriteView x (activeView es))
-commandToEnsembleRequest es (Terminal.Chat x) = Just $ return (WriteChat x)
-commandToEnsembleRequest es Terminal.AncientTempo = Just $ return (WriteTempo x)
-  where x = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
-commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ liftIO $ do
-  x' <- changeTempoNow (realToFrac x) (tempo $ ensemble es)
-  return (WriteTempo x')
-commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ liftIO $ do
-  x' <- changeTempoNow (realToFrac x / 240) (tempo $ ensemble es)
-  return (WriteTempo x')
-commandToEnsembleRequest _ Terminal.ResetZones = Just $ return ResetZonesRequest
-commandToEnsembleRequest _ Terminal.ResetViews = Just $ return ResetViewsRequest
-commandToEnsembleRequest _ Terminal.ResetTempo = Just $ liftIO $ do
-  t <- getCurrentTime
-  return $ ResetTempoRequest $ Tempo { freq = 0.5, time = t, count = 0 }
-commandToEnsembleRequest _ Terminal.Reset = Just $ liftIO $ do
-  t <- getCurrentTime
-  return $ ResetRequest $ Tempo { freq = 0.5, time = t, count = 0 }
-commandToEnsembleRequest es (Terminal.InsertSound url bankName n) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> InsertResource Audio url (bankName,n)
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.DeleteSound bankName n) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> DeleteResource Audio (bankName,n)
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.AppendSound url bankName) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> AppendResource Audio url bankName
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.ResList url) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> ResourceListURL url
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es Terminal.ClearResources = Just $ return $ WriteResourceOps Seq.empty
-commandToEnsembleRequest es Terminal.DefaultResources = Just $ return $ WriteResourceOps defaultResourceOps
-commandToEnsembleRequest _ _ = Nothing
 
 responseToMessage :: Response -> Maybe Text
 responseToMessage (ResponseError e) = Just $ "error: " <> e

@@ -16,7 +16,6 @@ import Sound.MusicW
 import TextShow
 import GHCJS.Types (JSVal)
 
-
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
 
@@ -29,7 +28,7 @@ import Estuary.Types.RenderState
 import Estuary.Render.MainBus
 import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
-import Estuary.Render.ZoneOp
+import Estuary.Render.RenderOp
 import Estuary.Types.Tempo
 import Estuary.Resources
 import Estuary.Types.ResourceOp
@@ -48,38 +47,9 @@ data RenderEnvironment = RenderEnvironment {
   resources :: Resources,
   ccMap :: IORef (Map.Map Text Double),
   _settings :: IORef Settings,
-  zoneOps :: MVar [ZoneOp],
-  tempoOp :: MVar (Maybe Tempo),
+  renderOps :: MVar [RenderOp],
   renderInfo :: MVar RenderInfo
   }
-
-
-addZoneOp :: MonadIO m => RenderEnvironment -> ZoneOp -> m ()
-addZoneOp re x = liftIO $ do
-  ops <- takeMVar $ zoneOps re
-  putMVar (zoneOps re) $ ops ++ [x]
-
-getZoneOps :: R [ZoneOp]
-getZoneOps = do
-  mv <- asks zoneOps
-  ops <- liftIO $ takeMVar mv
-  liftIO $ putMVar mv []
-  return ops
-
-setTempo :: MonadIO m => RenderEnvironment -> Tempo -> m ()
-setTempo re x = liftIO $ do
-  _ <- takeMVar $ tempoOp re
-  putMVar (tempoOp re) $ Just x
-
-updateTempo :: R ()
-updateTempo = do
-  mv <- asks tempoOp
-  t <- liftIO $ takeMVar mv
-  liftIO $ putMVar mv Nothing
-  case t of
-    Just t' -> modify' $ \s -> s { tempoCache = t' }
-    Nothing -> return ()
-
 
 initialRenderEnvironment :: Settings -> IO RenderEnvironment
 initialRenderEnvironment s = do
@@ -95,8 +65,7 @@ initialRenderEnvironment s = do
   addResourceOp resources' $ ResourceListURL "samples/resources.json"
   ccMap' <- newIORef Map.empty
   settings' <- newIORef s
-  zoneOps' <- newMVar []
-  tempoOp' <- newMVar Nothing
+  renderOps' <- newMVar []
   renderInfo' <- newMVar emptyRenderInfo
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
@@ -107,10 +76,22 @@ initialRenderEnvironment s = do
     resources = resources',
     ccMap = ccMap',
     _settings = settings',
-    zoneOps = zoneOps',
-    tempoOp = tempoOp',
+    renderOps = renderOps',
     renderInfo = renderInfo'
   }
+
+putRenderOp :: MonadIO m => RenderEnvironment -> RenderOp -> m ()
+putRenderOp re x = liftIO $ do
+  ops <- takeMVar $ renderOps re
+  putMVar (renderOps re) $ ops ++ [x]
+
+takeRenderOps :: R [RenderOp]
+takeRenderOps = do
+  mv <- asks renderOps
+  ops <- liftIO $ takeMVar mv
+  liftIO $ putMVar mv []
+  return ops
+
 
 setCC :: Int -> Double -> RenderEnvironment -> IO ()
 setCC n v rEnv = modifyIORef' (ccMap rEnv) $ Map.insert (showt n) v
@@ -138,8 +119,10 @@ runR r rEnv rState = do
 pushNoteEvents :: [NoteEvent] -> R ()
 pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
+{- already obsolete?
 pushTidalEvents :: [(UTCTime,Tidal.ValueMap)] -> R ()
 pushTidalEvents = pushNoteEvents . fmap tidalEventToNoteEvent
+-}
 
 -- deprecated/temporary
 pushWebDirtEvents :: [JSVal] -> R ()

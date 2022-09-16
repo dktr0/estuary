@@ -20,7 +20,6 @@ library
       Estuary.Types.Chat
       Estuary.Types.Definition
       Estuary.Types.Ensemble
-      Estuary.Types.EnsembleOp
       Estuary.Types.ImageMeta
       Estuary.Types.Language
       Estuary.Types.Live
