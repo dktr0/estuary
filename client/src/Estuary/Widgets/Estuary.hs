@@ -252,6 +252,11 @@ performDelay rEnv settings = do
   delTime <- holdUniqDyn $ fmap Settings.globalAudioDelay settings
   performEvent_ $ fmap (liftIO . changeDelay nodes) $ updated delTime
 
+performMonitorInput :: (Reflex t, PerformEvent t m, MonadIO (Performable m)) => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performMonitorInput rEnv settings = do
+  let nodes = R.mainBus rEnv
+  maybeDouble <- holdUniqDyn $ fmap Settings.monitorInput settings
+  performEvent_ $ fmap (liftIO . changeMonitorInput nodes) $ updated maybeDouble
 
 commandToRequest :: Terminal.Command -> Maybe Request
 commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)

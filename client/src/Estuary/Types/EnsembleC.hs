@@ -112,28 +112,7 @@ readableTempo tempo =
   in "Freq: " <> showt f <> "Time: " <> (T.pack $ show t) <> "Count: " <> showt c
 
 
-commandToHint :: EnsembleC -> Terminal.Command -> Maybe Hint
-commandToHint _ (Terminal.LocalView _) = Just $ LogMessage $ (Map.fromList [(English,  "local view changed"), (Español, "La vista local ha cambiado")])
-commandToHint _ (Terminal.PresetView x) = Just $ LogMessage $ (Map.fromList [(English,  "preset view " <> x <> " selected"), (Español, "vista predeterminada " <> x <> " seleccionada")])
-commandToHint _ (Terminal.PublishView x) = Just $ LogMessage $ (Map.fromList [(English, "active view published as " <> x), (Español, "vista activa publicada como " <> x)])
-commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ (english $ nameOfActiveView es)
-commandToHint es (Terminal.ListViews) = Just $ LogMessage $  (english $ showt $ listViews $ ensemble es)
-commandToHint es (Terminal.DumpView) = Just $ LogMessage $  (english $ dumpView (activeView es))
-commandToHint _ (Terminal.Delay t) = Just $ ChangeSettings (\s -> s { globalAudioDelay = t } )
-commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $  (english $ readableTempo $ tempo $ ensemble es)
-commandToHint _ Terminal.ResetZones = Just $ LogMessage  (Map.fromList [(English, "zones reset"), (Español, "zonas reiniciadas")])
-commandToHint _ Terminal.ResetViews = Just $ LogMessage  (Map.fromList [(English, "views reset"), (Español, "vistas reiniciadas")])
-commandToHint _ Terminal.ResetTempo = Just $ LogMessage  (Map.fromList [(English, "tempo reset"), (Español, "tempo reiniciado")])
-commandToHint _ Terminal.Reset = Just $ LogMessage (Map.fromList [(English, "(full) reset"), (Español, "reinicio (completo)")])
-commandToHint es Terminal.ShowResources = Just $ LogMessage $ english $ showResourceOps $ resourceOps $ ensemble es
-commandToHint _ (Terminal.LocalView v) = Just $ SetLocalView v
-commandToHint _ _ = Nothing
 
--- WORK IN PROGRESS: this definition should cease to exist, all patterns migrate above to commandToHint
-commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
-commandToStateChange (Terminal.PresetView t) es = selectPresetView t es
-commandToStateChange (Terminal.PublishView t) es = replaceStandardView t (activeView es) es
-commandToStateChange _ es = es
 
 ensembleOpToStateChange :: EnsembleOp -> EnsembleC -> EnsembleC
 ensembleOpToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es

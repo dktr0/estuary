@@ -51,8 +51,8 @@ data Settings = Settings {
   superDirtOn :: Bool,
   dynamicsMode :: DynamicsMode,
   globalAudioDelay :: Double,
-  punctualAudioInputMode :: PunctualAudioInputMode
-
+  punctualAudioInputMode :: PunctualAudioInputMode,
+  monitorInput :: Maybe Double
   }
 
 
@@ -80,7 +80,8 @@ defaultSettings = Settings {
   superDirtOn = False,
   dynamicsMode = DefaultDynamics,
   globalAudioDelay = 0.0,
-  punctualAudioInputMode = MicToPunctual
+  punctualAudioInputMode = MicToPunctual,
+  monitorInput = Nothing
   }
 
 getSettingsFromURI :: MonadJSM m => m Settings
