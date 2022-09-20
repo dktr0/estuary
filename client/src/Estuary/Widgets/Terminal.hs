@@ -24,7 +24,7 @@ import Estuary.Widgets.Reflex
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
-import Estuary.Types.Hint
+import Estuary.Types.Hint as Hint
 import Estuary.Widgets.W
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.TranslatableText
@@ -85,15 +85,15 @@ performCommands pp rEnv x = do
 runCommand :: MonadIO m => PeerProtocol -> RenderEnvironment -> EnsembleC -> Terminal.Command -> m [Hint]
 
 -- change the active view to a local view that is not shared/stored anywhere
-runCommand _ _ _ (Terminal.LocalView v) = pure [ LocalViewHint v ]
+runCommand _ _ _ (Terminal.LocalView v) = pure [ LocalView v ]
 
 -- make the current active view a named preset of current ensemble or Estuary itself
 runCommand _ _ e (Terminal.PresetView n) = case lookupView n e of
-  Just _ -> pure [ PresetViewHint n ]
+  Just _ -> pure [ PresetView n ]
   Nothing -> pure [ logHint "error: no preset by that name exists" ]
 
 -- take the current local view and publish it with the specified name
-runCommand _ _ e (Terminal.PublishView n) = pure [ RequestHint $ ViewRequest n $ activeView e ]
+runCommand _ _ e (Terminal.PublishView n) = pure [ Request $ WriteView n $ activeView e ]
 
 -- display name of active view if it is standard/published, otherwise report that it is a local view
 runCommand _ _ e Terminal.ActiveView = case view e of
@@ -107,15 +107,7 @@ runCommand _ _ e Terminal.ListViews = pure [ logHint $ listViews $ ensemble e]
 runCommand _ _ e Terminal.DumpView = pure [ logHint $ dumpView $ activeView e ]
 
 -- send a chat message
-runCommand _ _ _ (Terminal.Chat msg) = pure [ RequestHint $ ChatRequest msg ]
-
--- start RTP streaming of Estuary audio
-runCommand pp _ _ Terminal.StartStreaming = startStreaming pp >> pure []
-
--- display the id assigned to RTP streaming of Estuary audio
-runCommand pp _ _ Terminal.StreamId = do
-  txt <- liftIO $ peerProtocolId pp
-  pure [ logHint $ "new Peer id: " <> txt ]
+runCommand _ _ _ (Terminal.Chat msg) = pure [ Request $ SendChat msg ]
 
 -- delay estuary's audio output by the specified time in seconds
 runCommand _ _ _ (Terminal.Delay t) = pure [ ChangeSettings $ \s -> s { globalAudioDelay = t } ]
@@ -124,38 +116,65 @@ runCommand _ _ _ (Terminal.Delay t) = pure [ ChangeSettings $ \s -> s { globalAu
 runCommand _ _ _ (Terminal.MonitorInput maybeDouble) = pure [ ChangeSettings $ \s -> s { monitorInput = maybeDouble } ]
 
 -- delete the current ensemble from the server (with host password)
-runCommand _ _ _ (Terminal.DeleteThisEnsemble pwd) = pure [ RequestHint $ DeleteThisEnsemble pwd ]
+runCommand _ _ _ (Terminal.DeleteThisEnsemble pwd) = pure [ Request $ DeleteThisEnsemble pwd ]
 
 -- delete the ensemble specified by first argument from the server (with moderator password)
-runCommand _ _ _ (Terminal.DeleteEnsemble name pwd) = pure [ RequestHint $ DeleteEnsemble name pwd ]
+runCommand _ _ _ (Terminal.DeleteEnsemble name pwd) = pure [ Request $ DeleteEnsemble name pwd ]
 
 -- for testing, sets active tempo to one anchored years in the past
-runCommand _ _ _ Terminal.AncientTempo = pure [ RequestHint $ TempoRequest t ]
+runCommand _ _ _ Terminal.AncientTempo = pure [ Request $ WriteTempo t ]
   where t = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
 
 runCommand _ _ e Terminal.ShowTempo = pure [ logHint $ readableTempo $ tempo $ ensemble e ]
 
 runCommand _ _ e (Terminal.SetCPS x) = do
   t <- liftIO $ changeTempoNow (realToFrac x) (tempo $ ensemble e)
-  pure [ RequestHint $ TempoRequest t ]
+  pure [ Request $ WriteTempo t ]
 
 runCommand _ _ e (Terminal.SetBPM x) = do
   t <- liftIO $ changeTempoNow (realToFrac x / 240) (tempo $ ensemble e)
-  pure [ RequestHint $ TempoRequest t ]
+  pure [ Request $ WriteTempo t ]
 
-*** CONTINUE HERE ***
+runCommand _ _ e (Terminal.InsertSound url bankName n) = do
+  let rs = resourceOps $ ensemble e
+  let rs' = rs |> InsertResource Audio url (bankName,n)
+  pure [ Request $ WriteResourceOps rs' ]
 
-  InsertSound Text Text Int | -- "url" [bankName] [n]
-  DeleteSound Text Int | -- [bankName] [n]
-  AppendSound Text Text | -- "url" [bankName]
-  ResList Text | -- "url"
-  ClearResources |
-  DefaultResources |
-  ShowResources |
-  ResetZones |
-  ResetViews |
-  ResetTempo |
-  Reset | -- same effect as ResetZones + ResetTempo (doesn't reset views)
+runCommand _ _ e (Terminal.DeleteSound bankName n) = do
+  let rs = resourceOps $ ensemble e
+  let rs' = rs |> DeleteResource Audio (bankName,n)
+  pure [ Request $ WriteResourceOps rs' ]
+
+runCommand _ _ e (Terminal.AppendSound url bankName) = do
+  let rs = resourceOps $ ensemble e
+  let rs' = rs |> AppendResource Audio url bankName
+  pure [ Request $ WriteResourceOps rs' ]
+
+runCommand _ _ e (Terminal.ResList url) = do
+  let rs = resourceOps $ ensemble e
+  let rs' = rs |> ResourceListURL url
+  pure [ Request $ WriteResourceOps rs' ]
+
+runCommand _ _ _ Terminal.ClearResources = pure [ Request $ WriteResourceOps Seq.empty ]
+
+runCommand _ _ _ Terminal.DefaultResources = pure [ Request $ WriteResourceOps defaultResourceOps ]
+
+runCommand _ _ e Terminal.ShowResources = pure [ logHint $ showResourceOps $ resourceOps $ ensemble e ]
+
+runCommand _ _ _ Terminal.ResetZones = pure [ Request ResetZones ]
+
+runCommand _ _ _ Terminal.ResetViews = pure [ Request ResetViews ]
+
+runCommand _ _ _ Terminal.ResetTempo = do
+  t <- liftIO getCurrentTime
+  pure [ Request $ WriteTempo $ Tempo { freq = 0.5, time = t, count = 0 } ]
+
+runCommand _ _ _ Terminal.Reset = do
+  t <- liftIO getCurrentTime
+  pure [ Request $ Reset $ Tempo { freq = 0.5, time = t, count = 0 } ]
+
+CONTINUE HERE
+
   SetCC Int Double | -- set a MIDI continuous-controller value (range of Double is 0-1)
   ShowCC Int | -- show a MIDI continuous-controller value in the terminal
   MaxAudioOutputs | -- query max number of audio output channels according to browser
@@ -189,34 +208,6 @@ doCommands _ rEnv Terminal.NoSerialPort = WebSerial.setNoActivePort (webSerial r
 doCommands _ _ _ = return Nothing
 
 
-commandToEnsembleRequest :: MonadIO m => EnsembleC -> Terminal.Command -> Maybe (m EnsembleRequest)
-commandToEnsembleRequest _ Terminal.ResetZones = Just $ return ResetZonesRequest
-commandToEnsembleRequest _ Terminal.ResetViews = Just $ return ResetViewsRequest
-commandToEnsembleRequest _ Terminal.ResetTempo = Just $ liftIO $ do
-  t <- getCurrentTime
-  return $ ResetTempoRequest $ Tempo { freq = 0.5, time = t, count = 0 }
-commandToEnsembleRequest _ Terminal.Reset = Just $ liftIO $ do
-  t <- getCurrentTime
-  return $ ResetRequest $ Tempo { freq = 0.5, time = t, count = 0 }
-commandToEnsembleRequest es (Terminal.InsertSound url bankName n) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> InsertResource Audio url (bankName,n)
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.DeleteSound bankName n) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> DeleteResource Audio (bankName,n)
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.AppendSound url bankName) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> AppendResource Audio url bankName
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.ResList url) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> ResourceListURL url
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es Terminal.ClearResources = Just $ return $ WriteResourceOps Seq.empty
-commandToEnsembleRequest es Terminal.DefaultResources = Just $ return $ WriteResourceOps defaultResourceOps
-commandToEnsembleRequest _ _ = Nothing
 
 commandToHint :: EnsembleC -> Terminal.Command -> Maybe Hint
 commandToHint _ (Terminal.LocalView _) = Just $ LogMessage $ (Map.fromList [(English,  "local view changed"), (Español, "La vista local ha cambiado")])
@@ -230,7 +221,6 @@ commandToHint _ Terminal.ResetZones = Just $ LogMessage  (Map.fromList [(English
 commandToHint _ Terminal.ResetViews = Just $ LogMessage  (Map.fromList [(English, "views reset"), (Español, "vistas reiniciadas")])
 commandToHint _ Terminal.ResetTempo = Just $ LogMessage  (Map.fromList [(English, "tempo reset"), (Español, "tempo reiniciado")])
 commandToHint _ Terminal.Reset = Just $ LogMessage (Map.fromList [(English, "(full) reset"), (Español, "reinicio (completo)")])
-commandToHint es Terminal.ShowResources = Just $ LogMessage $ english $ showResourceOps $ resourceOps $ ensemble es
 commandToHint _ (Terminal.LocalView v) = Just $ SetLocalView v
 commandToHint _ _ = Nothing
 

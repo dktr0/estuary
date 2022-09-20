@@ -27,8 +27,6 @@ data Command =
   ListViews | -- display the names of all available standard/published views
   DumpView | -- display the definition of the current view, regardless of whether standard/published or local
   Chat Text | -- send a chat message
-  StartStreaming | -- start RTP streaming of Estuary audio
-  StreamId | -- display the id assigned to RTP streaming of Estuary audio
   Delay Double | -- delay estuary's audio output by the specified time in seconds
   MonitorInput (Maybe Double) | -- send audio input straight to audio output, at specified level in dB (nothing=off)
   DeleteThisEnsemble Password | -- delete the current ensemble from the server (with host password)
@@ -78,8 +76,6 @@ terminalCommand =
   <|> activeView
   <|> listViews
   <|> dumpViewParser
-  <|> startStreaming
-  <|> streamId
   <|> delay
   <|> monitorInput
   <|> deletethisensembleParser
@@ -271,13 +267,6 @@ listViews = ListViews <$ reserved "listviews"
 dumpViewParser :: H Command
 dumpViewParser = DumpView <$ reserved "dumpview"
 
--- start streaming
-startStreaming :: H Command
-startStreaming = StartStreaming <$ reserved "startstreaming"
-
---  streamId
-streamId :: H Command
-streamId = StreamId <$ reserved "streamid"
 
 -- delay
 delay :: H Command

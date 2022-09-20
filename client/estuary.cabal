@@ -39,7 +39,6 @@ library
       Estuary.Languages.Hydra.Types
       Estuary.Languages.JSoLang
       Estuary.Languages.TidalParsers
-      Estuary.Protocol.Peer
       Estuary.Render.DynamicsMode
       Estuary.Render.MainBus
       Estuary.Render.R

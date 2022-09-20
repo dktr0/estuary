@@ -27,15 +27,15 @@ data Request =
   LeaveEnsemble |
   DeleteThisEnsemble Text | -- ownerPassword
   DeleteEnsemble Text Text | -- ensembleName moderatorPassword
-  TempoRequest Tempo |
-  ZoneRequest Int Definition |
-  ViewRequest Text View |
-  ChatRequest Text |
-  StatusRequest Text |
-  ResourceOpsRequest (Seq ResourceOp) |
-  ResetZonesRequest |
-  ResetViewsRequest |
-  ResetRequest Tempo -- reset the zones, views and metric grid/tempo (with the provided tempo)
+  WriteTempo Tempo |
+  WriteZone Int Definition |
+  WriteView Text View |
+  SendChat Text |
+  WriteStatus Text |
+  WriteResourceOps (Seq ResourceOp) |
+  ResetZones |
+  ResetViews |
+  Reset Tempo -- reset the zones, views and metric grid/tempo (with the provided tempo)
   deriving (Generic)
 
 instance ToJSON Request where

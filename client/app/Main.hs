@@ -15,11 +15,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-import Estuary.Protocol.Peer
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
--- import Estuary.Types.RenderState
---  import Estuary.Render.Renderer
 import Estuary.Render.R
 import Estuary.Client.Settings
 
