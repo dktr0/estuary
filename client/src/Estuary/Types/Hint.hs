@@ -20,7 +20,8 @@ data Hint =
   ChangeSettings (Settings -> Settings) | -- change Settings of local UI and rendering (response: settingsForWidgets in Estuary.Widgets.Estuary)
   Request Request | -- directly issue a Request
   LocalView View |
-  PresetView Text
+  PresetView Text |
+  SetCC Int Double -- TODO: above W tree, SetCC hint needs to become IO operation with RenderEnvironment
 
 logHint :: TextShow a => a -> Hint
 logHint = LogMessage . english . showt
