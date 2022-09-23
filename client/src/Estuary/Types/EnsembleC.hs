@@ -17,7 +17,8 @@ import Control.Applicative
 import Control.Monad.IO.Class
 import Data.Sequence as Seq
 
-import Estuary.Types.Response
+import Estuary.Types.Response as Response
+import Estuary.Types.Request as Request
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
 import Estuary.Types.Definition
@@ -35,6 +36,7 @@ import Estuary.Types.Language
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
 import Estuary.Client.Settings
+import Estuary.Types.LogEntry
 
 data EnsembleC = EnsembleC {
   ensemble :: Ensemble,
@@ -113,66 +115,57 @@ readableTempo tempo =
 
 
 requestToEnsembleC :: MonadIO m => Resources -> Request -> EnsembleC -> m EnsembleC
-requestToEnsembleC _ LeaveEnsemble e = pure $ leaveEnsembleC e
-requestToEnsembleC _ (DeleteThisEnsemble _) e = pure $ leaveEnsembleC e
-requestToEnsembleC _ (WriteTempo x) e = pure $ modifyEnsemble (writeTempo x) e
-requestToEnsembleC _ (WriteZone n v) e = pure $ modifyEnsemble (writeZone n v) e
-requestToEnsembleC _ (WriteView t v) e = pure $ modifyEnsemble (writeView t v) e
-requestToEnsembleC rs (WriteResourceOps x) e = do
+requestToEnsembleC _ Request.LeaveEnsemble e = pure $ leaveEnsembleC e
+requestToEnsembleC _ (Request.DeleteThisEnsemble _) e = pure $ leaveEnsembleC e
+requestToEnsembleC _ (Request.WriteTempo x) e = pure $ modifyEnsemble (writeTempo x) e
+requestToEnsembleC _ (Request.WriteZone n v) e = pure $ modifyEnsemble (writeZone n v) e
+requestToEnsembleC _ (Request.WriteView t v) e = pure $ modifyEnsemble (writeView t v) e
+requestToEnsembleC rs (Request.WriteResourceOps x) e = do
   setResourceOps rs x
   pure $ modifyEnsemble (\y -> y { resourceOps = x } ) e
-requestToEnsembleC ResetZones e = pure $ modifyEnsemble (\e -> e { zones = IntMap.empty } ) e
-requestToEnsembleC ResetViews e = pure $ modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" e
-requestToEnsembleC (Reset t) e = pure $ modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) e
+requestToEnsembleC _ Request.ResetZones e = pure $ modifyEnsemble (\e -> e { zones = IntMap.empty } ) e
+requestToEnsembleC _ Request.ResetViews e = pure $ modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" e
+requestToEnsembleC _ (Request.Reset t) e = pure $ modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) e
 requestToEnsembleC _ _ e = pure e
 
 
-ensembleResponseToStateChange :: EnsembleResponse -> EnsembleC -> EnsembleC
-ensembleResponseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) es
-ensembleResponseToStateChange (ZoneRcvd n v) es = modifyEnsemble (writeZone n v) es
-ensembleResponseToStateChange (ViewRcvd t v) es = modifyEnsemble (writeView t v) es
-ensembleResponseToStateChange (ChatRcvd c) es = modifyEnsemble (appendChat c) es
-ensembleResponseToStateChange (ParticipantJoins x) es = modifyEnsemble (writeParticipant (name x) x) es
-ensembleResponseToStateChange (ParticipantUpdate x) es = modifyEnsemble (writeParticipant (name x) x) es
-ensembleResponseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
-ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
-ensembleResponseToStateChange ResetZonesResponse es = modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
-ensembleResponseToStateChange ResetViewsResponse es = modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
-ensembleResponseToStateChange (ResetTempoResponse t) es = modifyEnsemble (writeTempo t) es
-ensembleResponseToStateChange (ResetResponse t) es = modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
-ensembleResponseToStateChange (ResourceOps s) es = modifyEnsemble (\e -> e { resourceOps = s} ) es
-ensembleResponseToStateChange _ es = es
+-- some responses from the server are mapped into one or more hints, for the purpose
+-- of updating rendering, updating ensembleC, or printing log messages
+-- (the resulting requests are not re-sent to the server, of course)
+responseToHints :: Response -> [Hint]
+responseToHints (Response.OK m) = pure $ LogMessage $ english m
+responseToHints (Response.Error e) = pure $ LogMessage $ english $ "error: " <> e
+responseToHints (Response.WriteZone n d) = pure $ Request $ Request.WriteZone n d
+responseToHints (Response.LogEntry (LogChat c)) = pure $ LogMessage $ english $ showChatMessage c
+responseToHints (Response.LogEntry (EnsembleEvent t txt)) = pure $ LogMessage $ english "placeholder (EnsembleEvent not handled in responseToHints)"
+responseToHints (Response.WriteView n v) = pure $ Request $ Request.WriteView n v
+responseToHints (Response.WriteTempo t) = [
+  Request $ Request.WriteTempo t,
+  LogMessage $ english "received new tempo"
+  ]
+responseToHints (Response.ParticipantLeaves n) = pure $ LogMessage $ english $ n <> " has left the ensemble"
+responseToHints (Response.AnonymousParticipants n) = pure $ LogMessage $ english $ showt n <>  " anonymous participants"
+responseToHints (Response.WriteResourceOps x) = pure $ Request $ Request.WriteResourceOps x
+responseToHints Response.ResetZones = [
+  Request $ Request.ResetZones,
+  LogMessage $ english "received ResetZones"
+  ]
+responseToHints Response.ResetViews = [
+  Request $ Request.ResetViews,
+  LogMessage $ english "received ResetViews"
+  ]
+responseToHints (Response.Reset t) = [
+  Request $ Request.Reset t,
+  LogMessage $ english "received Reset (resetting zones and tempo)"
+  ]
+responseToHints _ = []
 
-ensembleResponseIO :: MonadIO m => Resources -> EnsembleResponse -> m ()
-ensembleResponseIO rs (ResourceOps s) = setResourceOps rs s
-ensembleResponseIO _ _ = return ()
 
-responseToStateChange :: Response -> EnsembleC -> EnsembleC
-responseToStateChange (JoinedEnsemble eName uName loc pwd) es = joinEnsembleC eName uName loc pwd es
-responseToStateChange _ es = es
-
-
-responseToMessage :: Response -> Maybe Text
-responseToMessage (ResponseError e) = Just $ "error: " <> e
-responseToMessage (ResponseOK m) = Just m
-responseToMessage (EnsembleResponse (ChatRcvd c)) = Just $ showChatMessage c
-responseToMessage (EnsembleResponse (ParticipantJoins x)) = Just $ name x <> " has joined the ensemble"
-responseToMessage (EnsembleResponse (ParticipantLeaves n)) = Just $ n <> " has left the ensemble"
-responseToMessage (EnsembleResponse (TempoRcvd _)) = Just $ "received new tempo"
-responseToMessage (EnsembleResponse ResetZonesResponse) = Just $ "received ResetZones"
-responseToMessage (EnsembleResponse ResetViewsResponse) = Just $ "received ResetViews"
-responseToMessage (EnsembleResponse (ResetTempoResponse _)) = Just $ "received ResetTempo"
-responseToMessage (EnsembleResponse (ResetResponse _)) = Just $ "received Reset (resetting zones and tempo)"
-responseToMessage (EnsembleResponse (AnonymousParticipants n)) = Just $ showt n <>  " anonymous participants"
--- the cases below are for debugging only and can be commented out when not debugging:
--- responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showt n
--- responseToMessage (ViewRcvd n _) = Just $ "received view " <> n
--- responseToMessage (ParticipantUpdate n _) = Just $ "received ParticipantUpdate about " <> n
--- don't comment out the case below, of course!
-responseToMessage _ = Nothing
-
--- a hack for the sole purpose of supporting resets ahead of the big refactor completing
-ensembleRequestsToResponses :: EnsembleRequest -> Maybe EnsembleResponse
-ensembleRequestsToResponses ResetZonesRequest = Just ResetZonesResponse
-ensembleRequestsToResponses (ResetRequest t) = Just (ResetResponse t)
-ensembleRequestsToResponses _ = Nothing
+-- while other responses from the server are mapped directly onto EnsembleC state changes
+-- (because their semantics are not represented by the Request type)
+responseToEnsembleC :: Response -> EnsembleC -> EnsembleC
+responseToEnsembleC (JoinedEnsemble eName uName loc pwd) e = joinEnsembleC eName uName loc pwd e
+responseToEnsembleC (ParticipantUpdate x) e = modifyEnsemble (writeParticipant (name x) x) e
+responseToEnsembleC (ParticipantLeaves n) e = modifyEnsemble (deleteParticipant n) e
+responseToEnsembleC (AnonymousParticipants n) e = modifyEnsemble (writeAnonymousParticipants n) e
+responseToEnsembleC _ e = e

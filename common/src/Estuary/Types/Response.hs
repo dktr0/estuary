@@ -22,18 +22,18 @@ import Estuary.Types.ResourceOp
 
 data Response =
   ServerInfo Int UTCTime | -- response to ClientInfo: serverClientCount pingTime (from triggering ClientInfo)
-  ResponseOK Text | -- eg. ensemble successfully deleted -- could this include the request it was a response to?
-  ResponseError Text | -- eg. ensemble login failure -- could this include the request it was a response to?
+  OK Text | -- eg. ensemble successfully deleted -- could this include the request it was a response to?
+  Error Text | -- eg. ensemble login failure -- could this include the request it was a response to?
   EnsembleList [Text] |
   JoinedEnsemble Text Text Text Text | -- ensemble username location password -- could be deleted if ResponseOk includes Request? (see above)
-  ZoneResponse Int Definition |
-  LogResponse LogEntry |
-  ViewResponse Text View |
-  TempoResponse Tempo |
+  WriteZone Int Definition |
+  LogEntry LogEntry |
+  WriteView Text View |
+  WriteTempo Tempo |
   ParticipantUpdate Participant | -- could this profitably be Text Participant, with handle removed from Participant type?
   ParticipantLeaves Text |
   AnonymousParticipants Int |
-  ResourceOpsResponse (Seq ResourceOp) |
+  WriteResourceOps (Seq ResourceOp) |
   ResetZones |
   ResetViews |
   ResetTempo Tempo | -- reset the metric grid/tempo only
