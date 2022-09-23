@@ -112,25 +112,20 @@ readableTempo tempo =
   in "Freq: " <> showt f <> "Time: " <> (T.pack $ show t) <> "Count: " <> showt c
 
 
+requestToEnsembleC :: MonadIO m => Resources -> Request -> EnsembleC -> m EnsembleC
+requestToEnsembleC _ LeaveEnsemble e = pure $ leaveEnsembleC e
+requestToEnsembleC _ (DeleteThisEnsemble _) e = pure $ leaveEnsembleC e
+requestToEnsembleC _ (WriteTempo x) e = pure $ modifyEnsemble (writeTempo x) e
+requestToEnsembleC _ (WriteZone n v) e = pure $ modifyEnsemble (writeZone n v) e
+requestToEnsembleC _ (WriteView t v) e = pure $ modifyEnsemble (writeView t v) e
+requestToEnsembleC rs (WriteResourceOps x) e = do
+  setResourceOps rs x
+  pure $ modifyEnsemble (\y -> y { resourceOps = x } ) e
+requestToEnsembleC ResetZones e = pure $ modifyEnsemble (\e -> e { zones = IntMap.empty } ) e
+requestToEnsembleC ResetViews e = pure $ modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" e
+requestToEnsembleC (Reset t) e = pure $ modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) e
+requestToEnsembleC _ _ e = pure e
 
-
-ensembleOpToStateChange :: EnsembleOp -> EnsembleC -> EnsembleC
-ensembleOpToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es
-ensembleOpToStateChange (WriteZone n v) es = modifyEnsemble (writeZone n v) es
-ensembleOpToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
-ensembleOpToStateChange ResetZonesRequest es = modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
-ensembleOpToStateChange ResetViewsRequest es = modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
-ensembleOpToStateChange (ResetTempoRequest t) es = modifyEnsemble (writeTempo t) es
-ensembleOpToStateChange (ResetRequest t) es = modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
-ensembleOpToStateChange (WriteResourceOps s) es = modifyEnsemble (\e -> e { resourceOps = s } ) es
-ensembleOpToStateChange _ es = es
--- note: WriteChat and WriteStatus don't directly affect the EnsembleC and are thus
--- not matched here. Instead, the server responds to these requests to all participants
--- and in this way the information "comes back down" from the server.
-
-ensembleRequestIO :: MonadIO m => Resources -> EnsembleRequest -> m ()
-ensembleRequestIO rs (WriteResourceOps s) = setResourceOps rs s
-ensembleRequestIO _ _ = return ()
 
 ensembleResponseToStateChange :: EnsembleResponse -> EnsembleC -> EnsembleC
 ensembleResponseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) es
