@@ -85,20 +85,37 @@ performCommands ensDyn x = do
 runCommand :: MonadIO m => RenderEnvironment -> EnsembleC -> Terminal.Command -> m [Hint]
 
 -- change the active view to a local view that is not shared/stored anywhere
-runCommand _ _ (Terminal.LocalView v) = pure [ LocalView v ]
+runCommand _ _ (Terminal.LocalView v) =
+  pure [
+    LocalView v,
+    LogMessage $ (Map.fromList [
+      (English,  "local view changed"),
+      (Español, "La vista local ha cambiado")
+      ])
+  ]
 
 -- make the current active view a named preset of current ensemble or Estuary itself
 runCommand _ e (Terminal.PresetView n) = case lookupView n e of
-  Just _ -> pure [ PresetView n ]
+  Just _ -> pure [
+    PresetView n,
+    LogMessage $ (Map.fromList [
+      (English,  "preset view " <> x <> " selected"),
+      (Español, "vista predeterminada " <> x <> " seleccionada")
+      ])
+    ]
   Nothing -> pure [ logHint "error: no preset by that name exists" ]
 
 -- take the current local view and publish it with the specified name
-runCommand _ e (Terminal.PublishView n) = pure [ Request $ WriteView n $ activeView e ]
+runCommand _ e (Terminal.PublishView n) = pure [
+  Request $ WriteView n $ activeView e,
+  LogMessage $ (Map.fromList [
+    (English, "active view published as " <> x),
+    (Español, "vista activa publicada como " <> x)
+    ])
+  ]
 
 -- display name of active view if it is standard/published, otherwise report that it is a local view
-runCommand _ e Terminal.ActiveView = case view e of
-  Left _ -> pure [ logHint "(local view)" ]
-  Right n -> pure [ logHint n ]
+runCommand _ e Terminal.ActiveView = pure [ logHint $ nameOfActiveView e ]
 
 -- display the names of all available standard/published views
 runCommand _ e Terminal.ListViews = pure [ logHint $ listViews $ ensemble e]
@@ -161,17 +178,41 @@ runCommand _ _ Terminal.DefaultResources = pure [ Request $ WriteResourceOps def
 
 runCommand _ e Terminal.ShowResources = pure [ logHint $ showResourceOps $ resourceOps $ ensemble e ]
 
-runCommand _ _ Terminal.ResetZones = pure [ Request ResetZones ]
+runCommand _ _ Terminal.ResetZones = pure [
+  Request ResetZones,
+  LogMessage (Map.fromList [
+    (English, "zones reset"),
+    (Español, "zonas reiniciadas")
+    ])
+  ]
 
-runCommand _ _ Terminal.ResetViews = pure [ Request ResetViews ]
+runCommand _ _ Terminal.ResetViews = pure [
+  Request ResetViews,
+  LogMessage (Map.fromList [
+    (English, "views reset"),
+    (Español, "vistas reiniciadas")
+    ])
+  ]
 
 runCommand _ _ Terminal.ResetTempo = do
   t <- liftIO getCurrentTime
-  pure [ Request $ WriteTempo $ Tempo { freq = 0.5, time = t, count = 0 } ]
+  pure [
+    Request $ WriteTempo $ Tempo { freq = 0.5, time = t, count = 0 },
+    LogMessage (Map.fromList [
+      (English, "tempo reset"),
+      (Español, "tempo reiniciado")
+      ])
+  ]
 
 runCommand _ _ Terminal.Reset = do
   t <- liftIO getCurrentTime
-  pure [ Request $ Reset $ Tempo { freq = 0.5, time = t, count = 0 } ]
+  pure [
+    Request $ Reset $ Tempo { freq = 0.5, time = t, count = 0 },
+    LogMessage (Map.fromList [
+      (English, "(full) reset"),
+      (Español, "reinicio (completo)")
+      ])
+  ]
 
 -- set a MIDI continuous-controller value (range of Double is 0-1)
 runCommand _ _ (Terminal.SetCC n v) = pure [ SetCC n v ]
@@ -213,22 +254,3 @@ runCommand rEnv _ (Terminal.SetSerialPort n) = do
 runCommand rEnv _ Terminal.NoSerialPort = do
   WebSerial.setNoActivePort (webSerial rEnv)
   pure [ logHint "serial port disactivated" ]
-
-
--- CONTINUE HERE
--- TODO: make sure all behaviour from commandToHint is refactored into runCommand (above)
-
-commandToHint :: EnsembleC -> Terminal.Command -> Maybe Hint
-commandToHint _ (Terminal.LocalView _) = Just $ LogMessage $ (Map.fromList [(English,  "local view changed"), (Español, "La vista local ha cambiado")])
-commandToHint _ (Terminal.PresetView x) = Just $ LogMessage $ (Map.fromList [(English,  "preset view " <> x <> " selected"), (Español, "vista predeterminada " <> x <> " seleccionada")])
-commandToHint _ (Terminal.PublishView x) = Just $ LogMessage $ (Map.fromList [(English, "active view published as " <> x), (Español, "vista activa publicada como " <> x)])
-commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ (english $ nameOfActiveView es)
-commandToHint es (Terminal.ListViews) = Just $ LogMessage $  (english $ showt $ listViews $ ensemble es)
-commandToHint es (Terminal.DumpView) = Just $ LogMessage $  (english $ dumpView (activeView es))
-commandToHint _ (Terminal.Delay t) = Just $ ChangeSettings (\s -> s { globalAudioDelay = t } )
-commandToHint _ Terminal.ResetZones = Just $ LogMessage  (Map.fromList [(English, "zones reset"), (Español, "zonas reiniciadas")])
-commandToHint _ Terminal.ResetViews = Just $ LogMessage  (Map.fromList [(English, "views reset"), (Español, "vistas reiniciadas")])
-commandToHint _ Terminal.ResetTempo = Just $ LogMessage  (Map.fromList [(English, "tempo reset"), (Español, "tempo reiniciado")])
-commandToHint _ Terminal.Reset = Just $ LogMessage (Map.fromList [(English, "(full) reset"), (Español, "reinicio (completo)")])
-commandToHint _ (Terminal.LocalView v) = Just $ SetLocalView v
-commandToHint _ _ = Nothing
