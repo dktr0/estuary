@@ -439,7 +439,7 @@ samplePickerPopup liveness sampleMap actionList  = elClass "div" "popupMenu" $ d
   events' <- liftM (id) events
   liveWidget <- livenessCheckboxWidget liveness
   closeMenu <- clickableDivClass' "close" "primary-color code-font background" (Nothing)
-  return $ (leftmost $ events' ++[closeMenu, fmap Just liveWidget,fmap (Just . ChangeValue) (updated sampleChange)], fmap SampleHint $ ffilter (\x->if x =="~" then False else True) $ updated sampleChange)
+  return $ (leftmost $ events' ++[closeMenu, fmap Just liveWidget,fmap (Just . ChangeValue) (updated sampleChange)], fmap PreloadAudioBank $ ffilter (\x->if x =="~" then False else True) $ updated sampleChange)
 
 repDivWidget' :: MonadWidget t m => RepOrDiv -> Event t () -> m (Event t RepOrDiv)
 repDivWidget' iVal _ = elClass "span" "repOrDiv" $ mdo

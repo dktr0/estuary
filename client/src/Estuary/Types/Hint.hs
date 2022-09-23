@@ -28,5 +28,5 @@ logHint = LogMessage . english . showt
 
 hintsToRequests :: [Hint] -> [Request]
 hintsToRequests = mapMaybe f
-  where f (RequestHint r) = Just r
+  where f (Request r) = Just r
         f _ = Nothing

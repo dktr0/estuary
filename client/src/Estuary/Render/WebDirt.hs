@@ -74,7 +74,7 @@ performWebDirtHints :: (PerformEvent t m, Reflex t, MonadIO (Performable m)) => 
 performWebDirtHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
 
 doHint :: WebDirt -> Hint -> IO ()
-doHint wd (SampleHint x) = sampleHint wd (pToJSVal x)
+doHint wd (PreloadAudioBank x) = sampleHint wd (pToJSVal x)
 doHint _ _ = return ()
 
 doHints :: WebDirt -> [Hint] -> IO ()
