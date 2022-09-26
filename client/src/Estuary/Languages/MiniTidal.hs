@@ -28,7 +28,7 @@ import Estuary.Languages.TidalParsers
 miniTidal :: TextNotationRenderer
 miniTidal = emptyTextNotationRenderer {
   parseZone = _parseZone,
-  scheduleTidalEvents = _scheduleTidalEvents,
+  scheduleNoteEvents = _scheduleNoteEvents,
   clearZone' = clearParamPattern
   }
 
@@ -46,16 +46,18 @@ _parseZone z y eTime = do
     Left err -> setZoneError z $ T.pack err
 
 
-_scheduleTidalEvents :: Int -> R [(UTCTime,Tidal.ValueMap)]
-_scheduleTidalEvents z = do
+_scheduleNoteEvents :: Int -> R [NoteEvent]
+_scheduleNoteEvents z = do
   s <- get
   let lt = renderStart s
   let rp = renderPeriod s
   let vMap = valueMap s
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   case controlPattern of
-    Just controlPattern' -> liftIO $ (return $! force $ renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
+    Just controlPattern' -> do
+      ns <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
         `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
+      pure $ tidalEventToNoteEvent <$> ns
     Nothing -> return []
 
 

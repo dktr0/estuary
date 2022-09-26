@@ -14,7 +14,6 @@ import GHCJS.DOM.Types hiding (Text)
 
 data TextNotationRenderer = TextNotationRenderer {
   parseZone :: Int -> Text -> UTCTime -> R (),
-  scheduleTidalEvents :: Int -> R [(UTCTime,Tidal.ValueMap)], -- deprecated/temporary
   scheduleNoteEvents :: Int -> R [NoteEvent],
   scheduleWebDirtEvents :: Int -> R [JSVal], -- deprecated/temporary
   clearZone' :: Int -> R (),
