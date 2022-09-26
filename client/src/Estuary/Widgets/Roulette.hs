@@ -14,7 +14,6 @@ import GHCJS.DOM.EventM
 import Control.Monad.Trans (liftIO)
 import Data.Map.Strict
 import Control.Monad
-import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex

@@ -17,7 +17,6 @@ import Data.Aeson
 
 import Estuary.Types.Request
 import Estuary.Types.Response
-import Estuary.Types.EnsembleRequest
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
 import Estuary.Types.ServerInfo

@@ -13,7 +13,6 @@ import Control.Monad.Trans (liftIO)
 import Data.Map.Strict (fromList)
 import Control.Monad
 import Estuary.Types.Ensemble
-import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Types.Chat
 import Estuary.Types.Definition

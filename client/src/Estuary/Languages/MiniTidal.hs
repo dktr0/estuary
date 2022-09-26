@@ -23,6 +23,7 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
 import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
+import Estuary.Types.NoteEvent
 
 
 miniTidal :: TextNotationRenderer
@@ -73,9 +74,9 @@ renderControlPattern z = do
       Just controlPattern' -> do
         let lt = renderStart s
         let rp = renderPeriod s
-        newEvents <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
+        ns <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
           `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
-        pushTidalEvents newEvents
+        pushNoteEvents $ tidalEventToNoteEvent <$> ns
       Nothing -> return ()
 
 

@@ -4,43 +4,43 @@ module Estuary.Widgets.Terminal (terminalWidget) where
 
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (liftIO,MonadIO)
 import Data.Either
 import Data.Maybe
-import Data.Map.Strict (fromList)
+import Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Monad
 import TextShow
 import Sound.MusicW.AudioContext
+import Data.Sequence as Seq
 
-import Estuary.Protocol.Peer
 import Estuary.Types.Definition
-import Estuary.Types.Request
-import Estuary.Types.Response
-import Estuary.Types.EnsembleResponse
-import Estuary.Types.EnsembleC
+import Estuary.Types.Request as Request
+import Estuary.Types.Response as Response
+import Estuary.Types.EnsembleC as EnsembleC
 import Estuary.Widgets.Reflex
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
 import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Types.Hint as Hint
-import Estuary.Widgets.W
+import Estuary.Widgets.W as W
 import Estuary.Widgets.EnsembleStatus
 import Estuary.Types.TranslatableText
 import Estuary.Render.R
 import Estuary.Render.MainBus
+import Estuary.Client.Settings as Settings
 import qualified Estuary.Render.WebSerial as WebSerial
-
+import Estuary.Types.Tempo
 import Estuary.Types.Language
 
-terminalWidget :: MonadWidget t m => Event t [Response] -> Event t [Hint] -> W t m (Event t Terminal.Command)
+terminalWidget :: MonadWidget t m => W t m ()
 terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
-  commands <- divClass "chat" $ mdo
+  divClass "chat" $ mdo
     (inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
       divClass "webSocketButtons" $ term Term.TerminalChat >>= dynText
       let resetText = fmap (const "") terminalInput
-      let attrs = constDyn $ fromList [("class","primary-color code-font"),("style","width: 100%")]
+      let attrs = constDyn $ Map.fromList [("class","primary-color code-font"),("style","width: 100%")]
       inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
       return (inputWidget')
     let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
@@ -54,19 +54,16 @@ terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
     let responseMsgs = fmap (\x -> fmap english (Data.Maybe.mapMaybe responseToMessage x)) deltasDown -- [Event t Text]
     let messages = mergeWith (++)  [responseMsgs, errorMsgs, hintMsgs]
 
-    mostRecent <- foldDyn (\a b -> take 12 $ (reverse a) ++ b) [] messages
+    mostRecent <- foldDyn (\a b -> Prelude.take 12 $ (Prelude.reverse a) ++ b) [] messages
     divClass "chatMessageContainer" $ simpleList mostRecent $ \v -> do
       v' <- dynTranslatableText v -- W t m (Dynamic t Text)
       divClass "chatMessage code-font primary-color" $ dynText v' -- m()
 
-    pp <- liftIO $ newPeerProtocol
-    irc <- renderEnvironment
-    commandHints <- performCommands pp irc commands
-    return commands
+    rEnv <- renderEnvironment
+    ensC <- lift $ asks _renderEnvironment
+    hs <- performEvent $ attachWith (runCommand rEnv) (current ensC) commands
 
   divClass "ensembleStatus" $ ensembleStatusWidget
-
-  return commands
 
 
 hintsToMessages :: [Hint] -> [TranslatableText] -- [TranslatableText]
@@ -75,11 +72,6 @@ hintsToMessages hs = fmapMaybe hintToMessage hs -- [x ..]
 hintToMessage :: Hint -> Maybe TranslatableText
 hintToMessage (LogMessage x) = Just x -- translatableText $ Data.Map.fromList [(English, x)]
 hintToMessage _ = Nothing
-
-performCommands :: MonadWidget t m => Dynamic t EnsembleC -> Event t Terminal.Command -> m (Event t Hint)
-performCommands ensDyn x = do
-  y <- performEvent $ fmap (liftIO . doCommands pp rEnv) x
-  return $ fmap (LogMessage . english) $ fmapMaybe id y
 
 
 runCommand :: MonadIO m => RenderEnvironment -> EnsembleC -> Terminal.Command -> m [Hint]
@@ -107,7 +99,7 @@ runCommand _ e (Terminal.PresetView n) = case lookupView n e of
 
 -- take the current local view and publish it with the specified name
 runCommand _ e (Terminal.PublishView n) = pure [
-  Request $ WriteView n $ activeView e,
+  Request $ Request.WriteView n $ EnsembleC.activeView e,
   LogMessage $ (Map.fromList [
     (English, "active view published as " <> x),
     (Español, "vista activa publicada como " <> x)
@@ -115,19 +107,19 @@ runCommand _ e (Terminal.PublishView n) = pure [
   ]
 
 -- display name of active view if it is standard/published, otherwise report that it is a local view
-runCommand _ e Terminal.ActiveView = pure [ logHint $ nameOfActiveView e ]
+runCommand _ e Terminal.ActiveView = pure [ logHint $ EnsembleC.nameOfActiveView e ]
 
 -- display the names of all available standard/published views
 runCommand _ e Terminal.ListViews = pure [ logHint $ listViews $ ensemble e]
 
 -- display the definition of the current view, regardless of whether standard/published or local
-runCommand _ e Terminal.DumpView = pure [ logHint $ dumpView $ activeView e ]
+runCommand _ e Terminal.DumpView = pure [ logHint $ dumpView $ EnsembleC.activeView e ]
 
 -- send a chat message
 runCommand _ _ (Terminal.Chat msg) = pure [ Request $ SendChat msg ]
 
 -- delay estuary's audio output by the specified time in seconds
-runCommand _ _ (Terminal.Delay t) = pure [ ChangeSettings $ \s -> s { globalAudioDelay = t } ]
+runCommand _ _ (Terminal.Delay t) = pure [ ChangeSettings $ \s -> s { Settings.globalAudioDelay = t } ]
 
 -- send audio input straight to audio output, at specified level in dB (nothing=off)
 runCommand _ _ (Terminal.MonitorInput maybeDouble) = pure [ ChangeSettings $ \s -> s { monitorInput = maybeDouble } ]
@@ -139,47 +131,47 @@ runCommand _ _ (Terminal.DeleteThisEnsemble pwd) = pure [ Request $ DeleteThisEn
 runCommand _ _ (Terminal.DeleteEnsemble name pwd) = pure [ Request $ DeleteEnsemble name pwd ]
 
 -- for testing, sets active tempo to one anchored years in the past
-runCommand _ _ Terminal.AncientTempo = pure [ Request $ WriteTempo t ]
-  where t = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
+runCommand _ _ Terminal.AncientTempo = pure [ Request $ Request.WriteTempo t ]
+  where t = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, Estuary.Types.Tempo.count = 0 }
 
 runCommand _ e Terminal.ShowTempo = pure [ logHint $ readableTempo $ tempo $ ensemble e ]
 
 runCommand _ e (Terminal.SetCPS x) = do
   t <- liftIO $ changeTempoNow (realToFrac x) (tempo $ ensemble e)
-  pure [ Request $ WriteTempo t ]
+  pure [ Request $ Request.WriteTempo t ]
 
 runCommand _ e (Terminal.SetBPM x) = do
   t <- liftIO $ changeTempoNow (realToFrac x / 240) (tempo $ ensemble e)
-  pure [ Request $ WriteTempo t ]
+  pure [ Request $ Request.WriteTempo t ]
 
 runCommand _ e (Terminal.InsertSound url bankName n) = do
   let rs = resourceOps $ ensemble e
   let rs' = rs |> InsertResource Audio url (bankName,n)
-  pure [ Request $ WriteResourceOps rs' ]
+  pure [ Request $ Request.WriteResourceOps rs' ]
 
 runCommand _ e (Terminal.DeleteSound bankName n) = do
   let rs = resourceOps $ ensemble e
   let rs' = rs |> DeleteResource Audio (bankName,n)
-  pure [ Request $ WriteResourceOps rs' ]
+  pure [ Request $ Request.WriteResourceOps rs' ]
 
 runCommand _ e (Terminal.AppendSound url bankName) = do
   let rs = resourceOps $ ensemble e
   let rs' = rs |> AppendResource Audio url bankName
-  pure [ Request $ WriteResourceOps rs' ]
+  pure [ Request $ Request.WriteResourceOps rs' ]
 
 runCommand _ e (Terminal.ResList url) = do
   let rs = resourceOps $ ensemble e
   let rs' = rs |> ResourceListURL url
-  pure [ Request $ WriteResourceOps rs' ]
+  pure [ Request $ Request.WriteResourceOps rs' ]
 
-runCommand _ _ Terminal.ClearResources = pure [ Request $ WriteResourceOps Seq.empty ]
+runCommand _ _ Terminal.ClearResources = pure [ Request $ Request.WriteResourceOps Seq.empty ]
 
-runCommand _ _ Terminal.DefaultResources = pure [ Request $ WriteResourceOps defaultResourceOps ]
+runCommand _ _ Terminal.DefaultResources = pure [ Request $ Request.WriteResourceOps defaultResourceOps ]
 
 runCommand _ e Terminal.ShowResources = pure [ logHint $ showResourceOps $ resourceOps $ ensemble e ]
 
 runCommand _ _ Terminal.ResetZones = pure [
-  Request ResetZones,
+  Request Request.ResetZones,
   LogMessage (Map.fromList [
     (English, "zones reset"),
     (Español, "zonas reiniciadas")
@@ -187,7 +179,7 @@ runCommand _ _ Terminal.ResetZones = pure [
   ]
 
 runCommand _ _ Terminal.ResetViews = pure [
-  Request ResetViews,
+  Request Request.ResetViews,
   LogMessage (Map.fromList [
     (English, "views reset"),
     (Español, "vistas reiniciadas")
@@ -197,22 +189,22 @@ runCommand _ _ Terminal.ResetViews = pure [
 runCommand _ _ Terminal.ResetTempo = do
   t <- liftIO getCurrentTime
   pure [
-    Request $ WriteTempo $ Tempo { freq = 0.5, time = t, count = 0 },
+    Request $ Request.WriteTempo $ Tempo { freq = 0.5, time = t, Estuary.Types.Tempo.count = 0 },
     LogMessage (Map.fromList [
       (English, "tempo reset"),
       (Español, "tempo reiniciado")
       ])
-  ]
+    ]
 
 runCommand _ _ Terminal.Reset = do
   t <- liftIO getCurrentTime
   pure [
-    Request $ Reset $ Tempo { freq = 0.5, time = t, count = 0 },
+    Request $ Request.Reset $ Tempo { freq = 0.5, time = t, Estuary.Types.Tempo.count = 0 },
     LogMessage (Map.fromList [
       (English, "(full) reset"),
       (Español, "reinicio (completo)")
       ])
-  ]
+    ]
 
 -- set a MIDI continuous-controller value (range of Double is 0-1)
 runCommand _ _ (Terminal.SetCC n v) = pure [ SetCC n v ]

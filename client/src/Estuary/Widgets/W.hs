@@ -43,7 +43,6 @@ import Estuary.Types.Definition
 import Estuary.Types.ResourceOp
 import Estuary.Types.Chat
 import Estuary.Types.Request
-import Estuary.Types.EnsembleRequest
 
 -- If we have widget-producing actions and we make them in the (W t m) monad
 -- we will be able to do all the normal things we can do in the more general
@@ -325,7 +324,7 @@ nameOfActiveView :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Te
 nameOfActiveView = askEnsemble EnsembleC.nameOfActiveView
 
 setLocalView :: (Monad m, Reflex t) => Event t View -> W t m ()
-setLocalView = hint . fmap SetLocalView
+setLocalView = hint . fmap LocalView
 
 ensembleName :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t Text)
 ensembleName = askEnsemble (Ensemble.ensembleName . ensemble)
@@ -416,11 +415,7 @@ hints = tellEvent
 
 -- Issue a Request directly (via Hint pathway)
 request :: (Reflex t, Monad m) => Event t Request -> W t m ()
-request = hint . fmap RequestHint
-
--- Issue an EnsembleRequest directly (via Hint pathway)
-ensembleRequest :: (Reflex t, Monad m) => Event t EnsembleRequest -> W t m ()
-ensembleRequest = request . fmap EnsembleRequest
+request = hint . fmap Request
 
 -- Issue the request to leave an ensemble immediately (upon build)
 leaveEnsemble :: MonadWidget t m => W t m ()

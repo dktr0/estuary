@@ -97,7 +97,6 @@ SomeExoLang.prototype.postAnimationFrame = function (context :: Object) {
 emptyTextNotationRenderer :: TextNotationRenderer
 emptyTextNotationRenderer = TextNotationRenderer {
   parseZone = \_ _ _ -> return (),
-  scheduleTidalEvents = \_ -> return [],
   scheduleNoteEvents = \_ -> return [],
   scheduleWebDirtEvents = \_ -> return [],
   clearZone' = \_ -> return (),

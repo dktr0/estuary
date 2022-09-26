@@ -9,7 +9,7 @@ import Data.Time
 import Control.Monad.Trans (liftIO)
 import Data.Map.Strict
 import Control.Monad
-import Estuary.Types.EnsembleRequest
+import Estuary.Types.Request
 import Estuary.Types.Participant as Participant
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
@@ -140,7 +140,7 @@ participantStatusWidget thisUserHandle _ part = do
   let dynBool = compareHandles <$> thisUserHandle <*> part
   let dynAttrs = attrs <$> dynBool
   s <- textInput $ def & textInputConfig_setValue .~ updatedStatus & textInputConfig_initialValue .~ initialStatus & attributes .~ dynAttrs
-  ensembleRequest $ fmap WriteStatus $ _textInput_input s -- msg only sent when they press a key
+  request $ fmap WriteStatus $ _textInput_input s -- msg only sent when they press a key
 
 participantNameLocationAndIPWidget :: (DomBuilder t m, Reflex t, PostBuild t m) => Text -> Dynamic t Participant -> m ()
 participantNameLocationAndIPWidget name part = do

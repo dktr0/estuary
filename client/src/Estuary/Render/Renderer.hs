@@ -66,7 +66,7 @@ import Estuary.Render.DynamicsMode
 import Estuary.Render.MainBus
 import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
-import Estuary.Render.ZoneOp
+import Estuary.Render.RenderOp
 import qualified Estuary.Client.Settings as Settings
 import Estuary.Render.WebSerial as WebSerial
 
@@ -203,9 +203,8 @@ render = do
   -- if there is no reason not to traverse/render zones, then do so
   -- using renderStart and renderEnd from the state as the window to render
   when (not wait && not rewind) $ do
-    updateTempo
     updateTidalValueMap
-    renderZoneOps
+    renderRenderOps
     renderZones
     flushEvents
 
@@ -220,19 +219,22 @@ render = do
   updateWebDirtVoices
 
 
-renderZoneOps :: R ()
-renderZoneOps = getZoneOps >>= foldM renderZoneOp ()
+renderRenderOps :: R ()
+renderRenderOps = takeRenderOps >>= foldM renderRenderOp ()
 
-renderZoneOp :: () -> ZoneOp -> R ()
+renderRenderOp :: () -> RenderOp -> R ()
 
-renderZoneOp _ (SetZoneOp z x) = do
+renderRenderOp _ (WriteTempo t) = do
+  modify' $ \s -> s { tempoCache = t }
+
+renderRenderOp _ (WriteZone z x) = do
   defs <- gets cachedDefs
   let x' = definitionForRendering x
   maybeClearChangedZone z (IntMap.lookup z defs) x'
   renderZoneChanged z x'
   modify' $ \s -> s { cachedDefs = insert z x' (cachedDefs s) }
 
-renderZoneOp _ ClearAllZonesOp = do
+renderRenderOp _ ResetAllZones = do
   gets cachedDefs >>= traverseWithKey clearZone
   modify' $ \s -> s { cachedDefs = empty }
 
@@ -431,7 +433,7 @@ renderTextProgramAlways z = do
 
 
 renderBaseProgramAlways :: Int -> Maybe TextNotation -> R ()
-renderBaseProgramAlways z (Just (TidalTextNotation _)) = (scheduleTidalEvents miniTidal) z >>= pushTidalEvents
+renderBaseProgramAlways z (Just (TidalTextNotation _)) = (scheduleNoteEvents miniTidal) z >>= pushNoteEvents
 renderBaseProgramAlways z (Just TimeNot) = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
 renderBaseProgramAlways z (Just Seis8s) = do
   s <- get

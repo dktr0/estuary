@@ -17,7 +17,6 @@ import TextShow
 import qualified Sound.Tidal.Bjorklund as TBj
 
 import Estuary.Types.Tempo
-import Estuary.Types.EnsembleResponse
 import Estuary.Widgets.Text
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
