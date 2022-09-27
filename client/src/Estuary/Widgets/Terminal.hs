@@ -11,14 +11,17 @@ import Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Monad
+import Control.Monad.Reader
 import TextShow
 import Sound.MusicW.AudioContext
 import Data.Sequence as Seq
+import Data.Time
 
 import Estuary.Types.Definition
 import Estuary.Types.Request as Request
 import Estuary.Types.Response as Response
 import Estuary.Types.EnsembleC as EnsembleC
+import Estuary.Types.Ensemble as Ensemble
 import Estuary.Widgets.Reflex
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
@@ -33,45 +36,40 @@ import Estuary.Client.Settings as Settings
 import qualified Estuary.Render.WebSerial as WebSerial
 import Estuary.Types.Tempo
 import Estuary.Types.Language
+import Estuary.Types.View.Parser
+import Estuary.Types.ResourceOp
+import Estuary.Types.ResourceType
 
 terminalWidget :: MonadWidget t m => W t m ()
-terminalWidget deltasDown hints = divClass "terminal code-font" $ mdo
+terminalWidget = divClass "terminal code-font" $ mdo
   divClass "chat" $ mdo
-    (inputWidget) <- divClass "terminalHeader code-font primary-color" $ do
+    inputWidget <- divClass "terminalHeader code-font primary-color" $ do
       divClass "webSocketButtons" $ term Term.TerminalChat >>= dynText
-      let resetText = fmap (const "") terminalInput
       let attrs = constDyn $ Map.fromList [("class","primary-color code-font"),("style","width: 100%")]
-      inputWidget' <- divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ resetText & textInputConfig_attributes .~ attrs
-      return (inputWidget')
+      divClass "terminalInput" $ textInput $ def & textInputConfig_setValue .~ ("" <$ terminalInput) & textInputConfig_attributes .~ attrs
     let enterPressed = fmap (const ()) $ ffilter (==13) $ _textInput_keypress inputWidget
     let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [enterPressed]
-    let parsedInput = fmap Terminal.parseCommand terminalInput
-    let commands = fmapMaybe (either (const Nothing) Just) parsedInput
-    let errorMsgs = fmap (fmap english) $ fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) parsedInput -- [Event t Text]
-    let hintMsgs' = fmap hintsToMessages $ mergeWith (++) [hints,fmap pure commandHints] -- Event t [TranslatableText]
-    let hintMsgs = ffilter (/= []) hintMsgs' --
+    let maybeCommand = fmap Terminal.parseCommand terminalInput
+    let command = fmapMaybe (either (const Nothing) Just) maybeCommand
+    let errorMsg = fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) maybeCommand
+    hint $ fmap logHint errorMsg
+
+    {-
+    TODO: refactor so that log entries are maintained as part of widget environment instead
     -- parse responses from server in order to display log/chat messages
     let responseMsgs = fmap (\x -> fmap english (Data.Maybe.mapMaybe responseToMessage x)) deltasDown -- [Event t Text]
     let messages = mergeWith (++)  [responseMsgs, errorMsgs, hintMsgs]
-
     mostRecent <- foldDyn (\a b -> Prelude.take 12 $ (Prelude.reverse a) ++ b) [] messages
     divClass "chatMessageContainer" $ simpleList mostRecent $ \v -> do
       v' <- dynTranslatableText v -- W t m (Dynamic t Text)
       divClass "chatMessage code-font primary-color" $ dynText v' -- m()
+    -}
 
     rEnv <- renderEnvironment
-    ensC <- lift $ asks _renderEnvironment
-    hs <- performEvent $ attachWith (runCommand rEnv) (current ensC) commands
+    ensC <- lift $ asks _ensembleC
+    (performEvent $ attachWith (runCommand rEnv) (current ensC) command) >>= hints
 
   divClass "ensembleStatus" $ ensembleStatusWidget
-
-
-hintsToMessages :: [Hint] -> [TranslatableText] -- [TranslatableText]
-hintsToMessages hs = fmapMaybe hintToMessage hs -- [x ..]
-
-hintToMessage :: Hint -> Maybe TranslatableText
-hintToMessage (LogMessage x) = Just x -- translatableText $ Data.Map.fromList [(English, x)]
-hintToMessage _ = Nothing
 
 
 runCommand :: MonadIO m => RenderEnvironment -> EnsembleC -> Terminal.Command -> m [Hint]
@@ -87,9 +85,9 @@ runCommand _ _ (Terminal.LocalView v) =
   ]
 
 -- make the current active view a named preset of current ensemble or Estuary itself
-runCommand _ e (Terminal.PresetView n) = case lookupView n e of
+runCommand _ e (Terminal.PresetView x) = case lookupView x (ensemble e) of
   Just _ -> pure [
-    PresetView n,
+    PresetView x,
     LogMessage $ (Map.fromList [
       (English,  "preset view " <> x <> " selected"),
       (Español, "vista predeterminada " <> x <> " seleccionada")
@@ -98,8 +96,8 @@ runCommand _ e (Terminal.PresetView n) = case lookupView n e of
   Nothing -> pure [ logHint "error: no preset by that name exists" ]
 
 -- take the current local view and publish it with the specified name
-runCommand _ e (Terminal.PublishView n) = pure [
-  Request $ Request.WriteView n $ EnsembleC.activeView e,
+runCommand _ e (Terminal.PublishView x) = pure [
+  Request $ Request.WriteView x $ EnsembleC.activeView e,
   LogMessage $ (Map.fromList [
     (English, "active view published as " <> x),
     (Español, "vista activa publicada como " <> x)
@@ -134,33 +132,33 @@ runCommand _ _ (Terminal.DeleteEnsemble name pwd) = pure [ Request $ DeleteEnsem
 runCommand _ _ Terminal.AncientTempo = pure [ Request $ Request.WriteTempo t ]
   where t = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, Estuary.Types.Tempo.count = 0 }
 
-runCommand _ e Terminal.ShowTempo = pure [ logHint $ readableTempo $ tempo $ ensemble e ]
+runCommand _ e Terminal.ShowTempo = pure [ logHint $ readableTempo $ Ensemble.tempo $ ensemble e ]
 
 runCommand _ e (Terminal.SetCPS x) = do
-  t <- liftIO $ changeTempoNow (realToFrac x) (tempo $ ensemble e)
+  t <- liftIO $ changeTempoNow (realToFrac x) (Ensemble.tempo $ ensemble e)
   pure [ Request $ Request.WriteTempo t ]
 
 runCommand _ e (Terminal.SetBPM x) = do
-  t <- liftIO $ changeTempoNow (realToFrac x / 240) (tempo $ ensemble e)
+  t <- liftIO $ changeTempoNow (realToFrac x / 240) (Ensemble.tempo $ ensemble e)
   pure [ Request $ Request.WriteTempo t ]
 
 runCommand _ e (Terminal.InsertSound url bankName n) = do
-  let rs = resourceOps $ ensemble e
+  let rs = Ensemble.resourceOps $ ensemble e
   let rs' = rs |> InsertResource Audio url (bankName,n)
   pure [ Request $ Request.WriteResourceOps rs' ]
 
 runCommand _ e (Terminal.DeleteSound bankName n) = do
-  let rs = resourceOps $ ensemble e
+  let rs = Ensemble.resourceOps $ ensemble e
   let rs' = rs |> DeleteResource Audio (bankName,n)
   pure [ Request $ Request.WriteResourceOps rs' ]
 
 runCommand _ e (Terminal.AppendSound url bankName) = do
-  let rs = resourceOps $ ensemble e
+  let rs = Ensemble.resourceOps $ ensemble e
   let rs' = rs |> AppendResource Audio url bankName
   pure [ Request $ Request.WriteResourceOps rs' ]
 
 runCommand _ e (Terminal.ResList url) = do
-  let rs = resourceOps $ ensemble e
+  let rs = Ensemble.resourceOps $ ensemble e
   let rs' = rs |> ResourceListURL url
   pure [ Request $ Request.WriteResourceOps rs' ]
 
@@ -168,7 +166,7 @@ runCommand _ _ Terminal.ClearResources = pure [ Request $ Request.WriteResourceO
 
 runCommand _ _ Terminal.DefaultResources = pure [ Request $ Request.WriteResourceOps defaultResourceOps ]
 
-runCommand _ e Terminal.ShowResources = pure [ logHint $ showResourceOps $ resourceOps $ ensemble e ]
+runCommand _ e Terminal.ShowResources = pure [ logHint $ showResourceOps $ Ensemble.resourceOps $ ensemble e ]
 
 runCommand _ _ Terminal.ResetZones = pure [
   Request Request.ResetZones,
@@ -211,10 +209,11 @@ runCommand _ _ (Terminal.SetCC n v) = pure [ SetCC n v ]
 
 -- show a MIDI continuous-controller value in the terminal
 runCommand rEnv _ (Terminal.ShowCC n) = do
-  x <- getCC n rEnv -- :: Maybe Double
-  pure $ logHint $ Just $ case x of
+  x <- liftIO $ getCC n rEnv -- :: Maybe Double
+  pure [ logHint $ Just $ case x of
     Just x' -> "CC" <> showt n <> " = " <> showt x'
     Nothing -> "CC" <> showt n <> " not set"
+    ]
 
 -- query max number of audio output channels according to browser
 runCommand _ _ Terminal.MaxAudioOutputs = do
@@ -223,7 +222,7 @@ runCommand _ _ Terminal.MaxAudioOutputs = do
 
 -- attempt to set a specific number of audio output channels
 runCommand rEnv _ (Terminal.SetAudioOutputs n) = do
-  setAudioOutputs (webDirt rEnv) (mainBus rEnv) n
+  liftIO $ setAudioOutputs (webDirt rEnv) (mainBus rEnv) n
   n' <- liftAudioIO channelCount
   pure [ logHint $ "audioOutputs = " <> showt n' ]
 
@@ -234,15 +233,15 @@ runCommand _ _ Terminal.AudioOutputs = do
 
 -- query available WebSerial ports
 runCommand rEnv _ Terminal.ListSerialPorts = do
-  portMap <- WebSerial.listPorts (webSerial rEnv)
+  portMap <- liftIO $ WebSerial.listPorts (webSerial rEnv)
   pure [ logHint portMap ]
 
 -- select a WebSerial port by index, and activate WebSerial output
 runCommand rEnv _ (Terminal.SetSerialPort n) = do
-  WebSerial.setActivePort (webSerial rEnv) n
+  liftIO $ WebSerial.setActivePort (webSerial rEnv) n
   pure [ logHint "serial port set" ]
 
 -- disactivate WebSerial output
 runCommand rEnv _ Terminal.NoSerialPort = do
-  WebSerial.setNoActivePort (webSerial rEnv)
+  liftIO $ WebSerial.setNoActivePort (webSerial rEnv)
   pure [ logHint "serial port disactivated" ]
