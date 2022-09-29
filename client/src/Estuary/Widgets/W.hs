@@ -43,6 +43,7 @@ import Estuary.Types.Definition
 import Estuary.Types.ResourceOp
 import Estuary.Types.Chat
 import Estuary.Types.Request
+import Estuary.Types.LogEntry
 
 -- If we have widget-producing actions and we make them in the (W t m) monad
 -- we will be able to do all the normal things we can do in the more general
@@ -58,7 +59,8 @@ data WidgetEnvironment t = WidgetEnvironment {
   _serverInfo :: Dynamic t ServerInfo.ServerInfo,
   _ensembleC :: Dynamic t EnsembleC,
   _ensembleList :: Dynamic t [Text],
-  _responseError :: Dynamic t (Maybe Text)
+  _responseError :: Dynamic t (Maybe Text),
+  _ensembleLog :: Dynamic t [LogEntry]
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -89,6 +91,8 @@ ensembleList = lift $ asks _ensembleList
 responseError :: Monad m => W t m (Dynamic t (Maybe Text))
 responseError = lift $ asks _responseError
 
+ensembleLog :: Monad m => W t m (Dynamic t [LogEntry])
+ensembleLog = lift $ asks _ensembleLog
 
 -- Get information from the ServerInfo
 
