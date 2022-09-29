@@ -51,8 +51,8 @@ terminalWidget = divClass "terminal code-font" $ mdo
     let terminalInput = tag (current $ _textInput_value inputWidget) $ leftmost [enterPressed]
     let maybeCommand = fmap Terminal.parseCommand terminalInput
     let command = fmapMaybe (either (const Nothing) Just) maybeCommand
-    let errorMsg = fmapMaybe (either (Just . (:[]) . ("Error: " <>) . T.pack . show) (const Nothing)) maybeCommand
-    hint $ fmap logHint errorMsg
+    let errorMsg = fmapMaybe (either (Just . ("Error: " <>) . T.pack . show) (const Nothing)) maybeCommand
+    hint $ fmap logText errorMsg
 
     {-
     TODO: refactor so that log entries are maintained as part of widget environment instead
@@ -93,7 +93,7 @@ runCommand _ e (Terminal.PresetView x) = case lookupView x (ensemble e) of
       (Español, "vista predeterminada " <> x <> " seleccionada")
       ])
     ]
-  Nothing -> pure [ logHint "error: no preset by that name exists" ]
+  Nothing -> pure [ logText "error: no preset by that name exists" ]
 
 -- take the current local view and publish it with the specified name
 runCommand _ e (Terminal.PublishView x) = pure [
@@ -105,13 +105,13 @@ runCommand _ e (Terminal.PublishView x) = pure [
   ]
 
 -- display name of active view if it is standard/published, otherwise report that it is a local view
-runCommand _ e Terminal.ActiveView = pure [ logHint $ EnsembleC.nameOfActiveView e ]
+runCommand _ e Terminal.ActiveView = pure [ logText $ EnsembleC.nameOfActiveView e ]
 
 -- display the names of all available standard/published views
-runCommand _ e Terminal.ListViews = pure [ logHint $ listViews $ ensemble e]
+runCommand _ e Terminal.ListViews = pure [ logTextShow $ listViews $ ensemble e]
 
 -- display the definition of the current view, regardless of whether standard/published or local
-runCommand _ e Terminal.DumpView = pure [ logHint $ dumpView $ EnsembleC.activeView e ]
+runCommand _ e Terminal.DumpView = pure [ logText $ dumpView $ EnsembleC.activeView e ]
 
 -- send a chat message
 runCommand _ _ (Terminal.Chat msg) = pure [ Request $ SendChat msg ]
@@ -132,7 +132,7 @@ runCommand _ _ (Terminal.DeleteEnsemble name pwd) = pure [ Request $ DeleteEnsem
 runCommand _ _ Terminal.AncientTempo = pure [ Request $ Request.WriteTempo t ]
   where t = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, Estuary.Types.Tempo.count = 0 }
 
-runCommand _ e Terminal.ShowTempo = pure [ logHint $ readableTempo $ Ensemble.tempo $ ensemble e ]
+runCommand _ e Terminal.ShowTempo = pure [ logText $ readableTempo $ Ensemble.tempo $ ensemble e ]
 
 runCommand _ e (Terminal.SetCPS x) = do
   t <- liftIO $ changeTempoNow (realToFrac x) (Ensemble.tempo $ ensemble e)
@@ -166,7 +166,7 @@ runCommand _ _ Terminal.ClearResources = pure [ Request $ Request.WriteResourceO
 
 runCommand _ _ Terminal.DefaultResources = pure [ Request $ Request.WriteResourceOps defaultResourceOps ]
 
-runCommand _ e Terminal.ShowResources = pure [ logHint $ showResourceOps $ Ensemble.resourceOps $ ensemble e ]
+runCommand _ e Terminal.ShowResources = pure [ logText $ showResourceOps $ Ensemble.resourceOps $ ensemble e ]
 
 runCommand _ _ Terminal.ResetZones = pure [
   Request Request.ResetZones,
@@ -210,7 +210,7 @@ runCommand _ _ (Terminal.SetCC n v) = pure [ SetCC n v ]
 -- show a MIDI continuous-controller value in the terminal
 runCommand rEnv _ (Terminal.ShowCC n) = do
   x <- liftIO $ getCC n rEnv -- :: Maybe Double
-  pure [ logHint $ Just $ case x of
+  pure [ logText $ case x of
     Just x' -> "CC" <> showt n <> " = " <> showt x'
     Nothing -> "CC" <> showt n <> " not set"
     ]
@@ -218,30 +218,30 @@ runCommand rEnv _ (Terminal.ShowCC n) = do
 -- query max number of audio output channels according to browser
 runCommand _ _ Terminal.MaxAudioOutputs = do
   n <- liftAudioIO maxChannelCount
-  pure [ logHint $ "maxAudioOutputs = " <> showt n ]
+  pure [ logText $ "maxAudioOutputs = " <> showt n ]
 
 -- attempt to set a specific number of audio output channels
 runCommand rEnv _ (Terminal.SetAudioOutputs n) = do
   liftIO $ setAudioOutputs (webDirt rEnv) (mainBus rEnv) n
   n' <- liftAudioIO channelCount
-  pure [ logHint $ "audioOutputs = " <> showt n' ]
+  pure [ logText $ "audioOutputs = " <> showt n' ]
 
 -- query current number of output audio channels
 runCommand _ _ Terminal.AudioOutputs = do
   n <- liftAudioIO channelCount
-  pure [ logHint $ "audioOutputs = " <> showt n ]
+  pure [ logText $ "audioOutputs = " <> showt n ]
 
 -- query available WebSerial ports
 runCommand rEnv _ Terminal.ListSerialPorts = do
   portMap <- liftIO $ WebSerial.listPorts (webSerial rEnv)
-  pure [ logHint portMap ]
+  pure [ logShow portMap ]
 
 -- select a WebSerial port by index, and activate WebSerial output
 runCommand rEnv _ (Terminal.SetSerialPort n) = do
   liftIO $ WebSerial.setActivePort (webSerial rEnv) n
-  pure [ logHint "serial port set" ]
+  pure [ logText "serial port set" ]
 
 -- disactivate WebSerial output
 runCommand rEnv _ Terminal.NoSerialPort = do
   liftIO $ WebSerial.setNoActivePort (webSerial rEnv)
-  pure [ logHint "serial port disactivated" ]
+  pure [ logText "serial port disactivated" ]

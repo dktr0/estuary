@@ -2,7 +2,7 @@
 
 module Estuary.Types.Hint where
 
-import Data.Text (Text)
+import Data.Text (Text,pack)
 import Data.Maybe (mapMaybe)
 import TextShow
 
@@ -23,8 +23,14 @@ data Hint =
   PresetView Text |
   SetCC Int Double -- TODO: above W tree, SetCC hint needs to become IO operation with RenderEnvironment
 
-logHint :: TextShow a => a -> Hint
-logHint = LogMessage . english . showt
+logText :: Text -> Hint
+logText = LogMessage . english
+
+logTextShow :: TextShow a => a -> Hint
+logTextShow = LogMessage . english . showt
+
+logShow :: Show a => a -> Hint
+logShow = LogMessage . english . pack . show
 
 hintsToRequests :: [Hint] -> [Request]
 hintsToRequests = mapMaybe f
