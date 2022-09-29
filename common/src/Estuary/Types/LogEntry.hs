@@ -17,8 +17,15 @@ import Estuary.Types.TranslatableText
 data LogEntry =
   LogChat Chat |
   EnsembleEvent UTCTime TranslatableText -- eg. "so-and-so has joined the ensemble"
-  deriving (Generic)
+  deriving (Generic,Eq)
 
 instance ToJSON LogEntry where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON LogEntry
+
+instance Ord LogEntry where
+  compare (LogChat c1) (LogChat c2) = compare (chatTime c1) (chatTime c2)
+  compare (EnsembleEvent t1 _) (EnsembleEvent t2 _) = compare t1 t2
+  compare (LogChat c) (EnsembleEvent t _) = compare (chatTime c) t
+  compare (EnsembleEvent t _) (LogChat c) = compare t (chatTime c)
+  
