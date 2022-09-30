@@ -5,7 +5,7 @@ module Estuary.Widgets.Estuary where
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response,append)
+import Reflex.Dom hiding (Request,Response,append,Error)
 import Reflex.Dom.Old
 import Reflex.Dynamic
 import Control.Monad.IO.Class (MonadIO)
@@ -17,7 +17,7 @@ import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
-import GHCJS.DOM.Types hiding (Event,Request)
+import GHCJS.DOM.Types hiding (Event,Request,Response,Text)
 import GHCJS.Marshal.Pure
 import GHCJS.DOM.EventM
 import Data.Functor (void)
@@ -29,6 +29,7 @@ import TextShow
 import Sound.MusicW.AudioContext
 import Sound.Punctual.GL
 import Sound.Punctual.Resolution
+import Data.List (sort)
 
 import Estuary.Utility
 import Estuary.Widgets.Navigation
@@ -36,10 +37,8 @@ import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Widgets.WebSocket
 import Estuary.Types.Definition
-import Estuary.Types.Request
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.Response
-import Estuary.Types.EnsembleResponse
+import Estuary.Types.Request as Request
+import Estuary.Types.Response as Response
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Widgets.Reflex
@@ -66,6 +65,7 @@ import Estuary.Widgets.W as W
 import Estuary.Render.R as R
 import Estuary.Render.MainBus
 import Estuary.Client.Settings as Settings
+import Estuary.Types.LogEntry
 
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> m ()
 keyboardHintsCatcher rEnv settings = mdo
@@ -118,6 +118,7 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   ensList <- maintainEnsembleList responseDown
   resError <- maintainResponseError responseDown
   ensembleC <- maintainEnsembleC requestsUp responseDown
+  log <- maintainLog hints responseDown
 
   -- four GUI components: header, main (navigation), terminal, footer
   let wEnv = WidgetEnvironment {
@@ -128,7 +129,8 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
     _serverInfo = sInfo,
     _ensembleC = ensembleC,
     _ensembleList = ensList,
-    _responseError = resError
+    _responseError = resError,
+    _log = log
     }
 
   ((responseDown,sInfo),hints) <- runW wEnv $ do
@@ -177,9 +179,48 @@ maintainResponseError responseDown = do
   let oks = Nothing <$ fmapMaybe justResponseOK responseDown
   holdDyn Nothing $ leftmost [errors,oks]
 
-maintainEnsembleC :: MonadWidget t m => Event t [EnsembleRequest] -> Event t Response -> m (Dynamic t EnsembleC)
+justResponseOK :: [Response] -> Maybe Text
+justResponseOK = lastOrNothing . Data.Maybe.mapMaybe f
+  where f (OK x) = Just x
+        f _ = Nothing
+
+justResponseError :: [Response] -> Maybe Text
+justResponseError = lastOrNothing . Data.Maybe.mapMaybe f
+  where f (Error x) = Just x
+        f _ = Nothing
+
+maintainLog :: MonadWidget t m => Event t [Hint] -> Event t Response -> m (Dynamic t [LogEntry])
+maintainLog hints response = do
+  -- where log messages come from:
+  -- currently: responses to terminal commands (including, but not only, error messages) (Hints, aka localLog)
+  -- currently: chat messages received from the server when in a collaborative ensemble (Response, aka ensembleLog)
+  -- future possibility: critical messages from the rendering or resource systems (also localLog)
+  -- future possibility: server broadcast messages
+  -- these are maintained separately and then combined; for example, when ensemble changes, chat history changes
+  let justEnsembleLog (EnsembleLog x) = Just x
+      justEnsembleLog _ = Nothing
+  let chatsReceived = fmap (:) $ fmapMaybe justEnsembleLog response
+  let leftEnsemble = never -- PLACEHOLDER
+  ensembleLog <- foldDyn ($) [] $ leftmost [chatsReceived,leftEnsemble]
+  localLogEntries <- performEvent $ fmap localLogsFromHints hints
+  localLog <- foldDyn (++) [] $ localLogEntries
+  let combinedLog = (++) <$> ensembleLog <*> localLog
+  pure $ fmap (reverse . sort) combinedLog
+
+
+localLogsFromHints :: MonadIO m => [Hint] -> m [LogEntry]
+localLogsFromHints hs = do
+  let f (LocalLog x) = Just x
+      f _ = Nothing
+  let txts = Data.Maybe.mapMaybe f hs
+  now <- liftIO $ getCurrentTime
+  let g x = LogEntry { logEntryTime = now, logEntrySender = "", logEntryText = x }
+  pure $ fmap g txts
+
+
+{- maintainEnsembleC :: MonadWidget t m => Event t [EnsembleRequest] -> Event t Response -> m (Dynamic t EnsembleC)
 maintainEnsembleC ensembleRequests responseDown = do
-  ... WORKING HERE ...
+  ... WORKING HERE ... -}
 
 
 cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> m HTMLDivElement
@@ -216,7 +257,7 @@ pollRenderInfo rEnv = do
   holdDyn riInitial newInfo
 
 
-dynamicResourceMaps :: (Monad m, Reflex t) => R.RenderEnvironment -> m (Dynamic t ResourceMaps)
+dynamicResourceMaps :: (MonadIO m, Reflex t, MonadHold t m, TriggerEvent t m) => R.RenderEnvironment -> m (Dynamic t ResourceMaps)
 dynamicResourceMaps rEnv = do
   (resourceMapsEvent,resourceMapsCallback) <- newTriggerEvent
   setResourcesUpdatedCallback (R.resources rEnv) resourceMapsCallback
@@ -246,13 +287,13 @@ performPunctualAudioInputMode rEnv settings = do
   punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap Settings.punctualAudioInputMode settings
   performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (R.mainBus rEnv)) punctualAudioInputChanged
 
-performDelay :: (Reflex t, PerformEvent t m, MonadIO (Performable m)) => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performDelay :: (Reflex t, PerformEvent t m, MonadIO (Performable m), MonadHold t m, MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performDelay rEnv settings = do
   let nodes = R.mainBus rEnv
   delTime <- holdUniqDyn $ fmap Settings.globalAudioDelay settings
   performEvent_ $ fmap (liftIO . changeDelay nodes) $ updated delTime
 
-performMonitorInput :: (Reflex t, PerformEvent t m, MonadIO (Performable m)) => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performMonitorInput :: (Reflex t, PerformEvent t m, MonadIO (Performable m), MonadHold t m, MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performMonitorInput rEnv settings = do
   let nodes = R.mainBus rEnv
   maybeDouble <- holdUniqDyn $ fmap Settings.monitorInput settings

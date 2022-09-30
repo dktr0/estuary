@@ -78,7 +78,7 @@ runCommand :: MonadIO m => RenderEnvironment -> EnsembleC -> Terminal.Command ->
 runCommand _ _ (Terminal.LocalView v) =
   pure [
     LocalView v,
-    LogMessage $ (Map.fromList [
+    LocalLog $ (Map.fromList [
       (English,  "local view changed"),
       (Español, "La vista local ha cambiado")
       ])
@@ -88,7 +88,7 @@ runCommand _ _ (Terminal.LocalView v) =
 runCommand _ e (Terminal.PresetView x) = case lookupView x (ensemble e) of
   Just _ -> pure [
     PresetView x,
-    LogMessage $ (Map.fromList [
+    LocalLog $ (Map.fromList [
       (English,  "preset view " <> x <> " selected"),
       (Español, "vista predeterminada " <> x <> " seleccionada")
       ])
@@ -98,7 +98,7 @@ runCommand _ e (Terminal.PresetView x) = case lookupView x (ensemble e) of
 -- take the current local view and publish it with the specified name
 runCommand _ e (Terminal.PublishView x) = pure [
   Request $ Request.WriteView x $ EnsembleC.activeView e,
-  LogMessage $ (Map.fromList [
+  LocalLog $ (Map.fromList [
     (English, "active view published as " <> x),
     (Español, "vista activa publicada como " <> x)
     ])
@@ -170,7 +170,7 @@ runCommand _ e Terminal.ShowResources = pure [ logText $ showResourceOps $ Ensem
 
 runCommand _ _ Terminal.ResetZones = pure [
   Request Request.ResetZones,
-  LogMessage (Map.fromList [
+  LocalLog (Map.fromList [
     (English, "zones reset"),
     (Español, "zonas reiniciadas")
     ])
@@ -178,7 +178,7 @@ runCommand _ _ Terminal.ResetZones = pure [
 
 runCommand _ _ Terminal.ResetViews = pure [
   Request Request.ResetViews,
-  LogMessage (Map.fromList [
+  LocalLog (Map.fromList [
     (English, "views reset"),
     (Español, "vistas reiniciadas")
     ])
@@ -188,7 +188,7 @@ runCommand _ _ Terminal.ResetTempo = do
   t <- liftIO getCurrentTime
   pure [
     Request $ Request.WriteTempo $ Tempo { freq = 0.5, time = t, Estuary.Types.Tempo.count = 0 },
-    LogMessage (Map.fromList [
+    LocalLog (Map.fromList [
       (English, "tempo reset"),
       (Español, "tempo reiniciado")
       ])
@@ -198,7 +198,7 @@ runCommand _ _ Terminal.Reset = do
   t <- liftIO getCurrentTime
   pure [
     Request $ Request.Reset $ Tempo { freq = 0.5, time = t, Estuary.Types.Tempo.count = 0 },
-    LogMessage (Map.fromList [
+    LocalLog (Map.fromList [
       (English, "(full) reset"),
       (Español, "reinicio (completo)")
       ])

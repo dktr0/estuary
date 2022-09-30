@@ -24,8 +24,6 @@ import Estuary.Widgets.View
 import Estuary.Widgets.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.View
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.EnsembleResponse
 
 
 ensembleView :: MonadWidget t m => W t m ()

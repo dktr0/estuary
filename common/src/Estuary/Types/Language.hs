@@ -7,6 +7,7 @@ import GHC.Generics
 import Data.Aeson
 
 data Language =
+  NoLanguage |
   English |
   Español |
   Français

@@ -133,30 +133,28 @@ requestToEnsembleC _ _ e = pure e
 -- of updating rendering, updating ensembleC, or printing log messages
 -- (the resulting requests are not re-sent to the server, of course)
 responseToHints :: Response -> [Hint]
-responseToHints (Response.OK m) = pure $ LogMessage $ english m
-responseToHints (Response.Error e) = pure $ LogMessage $ english $ "error: " <> e
+responseToHints (Response.OK m) = pure $ LocalLog $ english m
+responseToHints (Response.Error e) = pure $ LocalLog $ english $ "error: " <> e
 responseToHints (Response.WriteZone n d) = pure $ Request $ Request.WriteZone n d
-responseToHints (Response.LogEntry (LogChat c)) = pure $ LogMessage $ english $ showChatMessage c
-responseToHints (Response.LogEntry (EnsembleEvent t txt)) = pure $ LogMessage $ english "placeholder (EnsembleEvent not handled in responseToHints)"
 responseToHints (Response.WriteView n v) = pure $ Request $ Request.WriteView n v
 responseToHints (Response.WriteTempo t) = [
   Request $ Request.WriteTempo t,
-  LogMessage $ english "received new tempo"
+  LocalLog $ english "received new tempo"
   ]
-responseToHints (Response.ParticipantLeaves n) = pure $ LogMessage $ english $ n <> " has left the ensemble"
-responseToHints (Response.AnonymousParticipants n) = pure $ LogMessage $ english $ showt n <>  " anonymous participants"
+responseToHints (Response.ParticipantLeaves n) = pure $ LocalLog $ english $ n <> " has left the ensemble"
+responseToHints (Response.AnonymousParticipants n) = pure $ LocalLog $ english $ showt n <>  " anonymous participants"
 responseToHints (Response.WriteResourceOps x) = pure $ Request $ Request.WriteResourceOps x
 responseToHints Response.ResetZones = [
   Request $ Request.ResetZones,
-  LogMessage $ english "received ResetZones"
+  LocalLog $ english "received ResetZones"
   ]
 responseToHints Response.ResetViews = [
   Request $ Request.ResetViews,
-  LogMessage $ english "received ResetViews"
+  LocalLog $ english "received ResetViews"
   ]
 responseToHints (Response.Reset t) = [
   Request $ Request.Reset t,
-  LogMessage $ english "received Reset (resetting zones and tempo)"
+  LocalLog $ english "received Reset (resetting zones and tempo)"
   ]
 responseToHints _ = []
 

@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import Data.Aeson
 
 import Estuary.Types.Request
-import Estuary.Types.Response
+import Estuary.Types.Response as Response
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
 import Estuary.Types.ServerInfo
@@ -38,9 +38,9 @@ estuaryWebSocket toSend = mdo
   let response = fmapMaybe id $ ws^.webSocket_recv
 
   -- respond to websocket open, error, and close events
-  let wsOpenHint = LogMessage <$> (english "websocket opened" <$ (ws^.webSocket_open))
-  let wsErrorHint = LogMessage <$> (english "websocket error" <$ ws^.webSocket_error)
-  let wsCloseHint = LogMessage <$> (english "websocket closed" <$ ws^.webSocket_close)
+  let wsOpenHint = LocalLog <$> (english "websocket opened" <$ (ws^.webSocket_open))
+  let wsErrorHint = LocalLog <$> (english "websocket error" <$ ws^.webSocket_error)
+  let wsCloseHint = LocalLog <$> (english "websocket closed" <$ ws^.webSocket_close)
   hint $ leftmost [wsOpenHint,wsErrorHint,wsCloseHint]
 
   -- attempt to rejoin an ensemble if web socket connection re-opens
@@ -83,6 +83,10 @@ trackServerInfo responseDown = do
   let latencyChanges = fmap (\x c -> c { serverLatency = x }) latency
   let serverInfoChanges = mergeWith (.) [serverClientCountChanges,latencyChanges]
   foldDyn ($) emptyServerInfo serverInfoChanges
+
+justServerInfo :: Response -> Maybe (Int,UTCTime)
+justServerInfo (Response.ServerInfo x y) = Just (x,y)
+justServerInfo _ = Nothing
 
 
 maybeRejoinEnsemble :: (Text,Text,Text,Text) -> () -> Maybe Request

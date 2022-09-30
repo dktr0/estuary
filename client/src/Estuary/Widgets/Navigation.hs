@@ -27,8 +27,6 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Hint
 import Estuary.Types.Language
 import Estuary.Types.Request
-import Estuary.Types.Response
-import Estuary.Types.EnsembleRequest
 import Estuary.Types.Tempo
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Terminal

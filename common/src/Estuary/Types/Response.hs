@@ -27,7 +27,7 @@ data Response =
   EnsembleList [Text] |
   JoinedEnsemble Text Text Text Text | -- ensemble username location password -- could be deleted if ResponseOk includes Request? (see above)
   WriteZone Int Definition |
-  LogEntry LogEntry |
+  EnsembleLog LogEntry | -- used for chat messages
   WriteView Text View |
   WriteTempo Tempo |
   ParticipantUpdate Participant | -- could this profitably be Text Participant, with handle removed from Participant type?
@@ -58,18 +58,5 @@ justJoinedEnsemble = lastOrNothing . mapMaybe f
   where f (JoinedEnsemble a b c d) = Just (a,b,c,d)
         f _ = Nothing
 
-justResponseOK :: [Response] -> Maybe Text
-justResponseOK = lastOrNothing . mapMaybe f
-  where f (ResponseOK x) = Just x
-        f _ = Nothing
-
-justResponseError :: [Response] -> Maybe Text
-justResponseError = lastOrNothing . mapMaybe f
-  where f (ResponseError x) = Just x
-        f _ = Nothing
-
-justServerInfo :: Response -> Maybe (Int,UTCTime)
-justServerInfo (ServerInfo x y) = Just (x,y)
-justServerInfo _ = Nothing
 
 -}

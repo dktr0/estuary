@@ -8,9 +8,6 @@ import Control.Monad
 
 import Data.Sequence as Seq
 import Estuary.Types.Tutorial
-import Estuary.Types.Language
-import Estuary.Types.EnsembleResponse
-import Estuary.Types.EnsembleRequest
 import Estuary.Widgets.W
 import Estuary.Widgets.View
 

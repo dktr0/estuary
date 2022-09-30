@@ -60,7 +60,7 @@ data WidgetEnvironment t = WidgetEnvironment {
   _ensembleC :: Dynamic t EnsembleC,
   _ensembleList :: Dynamic t [Text],
   _responseError :: Dynamic t (Maybe Text),
-  _ensembleLog :: Dynamic t [LogEntry]
+  _log :: Dynamic t [LogEntry]
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -91,8 +91,8 @@ ensembleList = lift $ asks _ensembleList
 responseError :: Monad m => W t m (Dynamic t (Maybe Text))
 responseError = lift $ asks _responseError
 
-ensembleLog :: Monad m => W t m (Dynamic t [LogEntry])
-ensembleLog = lift $ asks _ensembleLog
+log :: Monad m => W t m (Dynamic t [LogEntry])
+log = lift $ asks _log
 
 -- Get information from the ServerInfo
 

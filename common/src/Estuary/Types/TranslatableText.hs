@@ -16,3 +16,6 @@ translateText t l
 
 english :: Text -> TranslatableText
 english x = Data.Map.fromList [(English, x)]
+
+noLanguage :: Text -> TranslatableText
+noLanguage x = Data.Map.fromList [(NoLanguage, x)]
