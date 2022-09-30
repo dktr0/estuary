@@ -79,7 +79,7 @@ instance FromJSON CurrentMode
 
 -- visualiser is an Int
 -- Timer = Finite Visualiser Targets CurrentMode Loop Measure
-data Timer = Finite Int [Rational] CurrentMode Bool Measure deriving (Show,Eq,Ord,Generic)
+data Timer = Finite Int [(Text,Rational)] CurrentMode Bool Measure deriving (Show,Eq,Ord,Generic)
 
 instance ToJSON Timer where
   toEncoding = genericToEncoding defaultOptions
