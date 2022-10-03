@@ -37,6 +37,8 @@ import GHCJS.Types
 -- just for temporary test
 import Data.IntMap as IntMap
 import Estuary.Widgets.W hiding (theme)
+import Estuary.Widgets.MultilingualEditor
+
 
 import Reflex.Host.Class (HostFrame)
 

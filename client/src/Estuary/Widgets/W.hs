@@ -19,6 +19,7 @@ import Data.Time
 import Data.Map as Map
 import Text.Read (readMaybe)
 import Data.IntMap
+import Data.Maybe
 
 import qualified Sound.Punctual.Resolution as Punctual
 
@@ -271,14 +272,16 @@ intTextInputW x = do
   return $ fmapMaybe (readMaybe . T.unpack) $ _textInput_input w
 
 
-textInputW :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
-textInputW x = do
+textInputW :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t Text -> m (Event t Text)
+textInputW inputHint x = do
   i <- sample $ current x
   let xEvents = updated x
   w <- textInput $ def & textInputConfig_initialValue .~ i
-                       & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+                       & attributes .~ (constDyn $ "class" =: "ui-inputMenus primary-color primary-borders ui-font") <> inputHint
                        & textInputConfig_setValue .~ xEvents
   return $ _textInput_input w
+
+
 
 -- Issue a single hint
 hint :: (Reflex t, Monad m) => Event t Hint -> W t m ()
@@ -396,9 +399,9 @@ widgetMap delta buildF = do
   iMapA <- sample $ current delta
   let f m = mapM (buildF . constDyn) m -- f :: IntMap a -> m (IntMap b)
   let iWidget = f iMapA
-  let rebuilds = fmap f $ traceEvent "rebuilds" $ updated delta
+  let rebuilds = fmap f $ updated delta
   widgetHold iWidget rebuilds
-  
+
 -- | widgetMapEvent is a variant of widgetMap, specialized for Event
 widgetMapEvent :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
 widgetMapEvent delta buildF = mdo
@@ -418,21 +421,74 @@ widgetMapEventWithAdd delta addEv buildF = mdo
   let evIntegratedDelta = leftmost [updated delta,addEv']
   dynIntegratedDelta <- holdDyn iDelta evIntegratedDelta
   editsBelow <- widgetMapEvent dynIntegratedDelta buildF
-  displayedValue <- holdDyn iDelta $ leftmost [evIntegratedDelta, traceEvent "editsBelow" editsBelow]
+  displayedValue <- holdDyn iDelta $ leftmost [evIntegratedDelta, editsBelow]
   pure $ leftmost [editsBelow,addEv']
 
 -- below this line are just demos of widgetMap etc above (code below this line will be deleted before too long)
+--
+-- widgetMapEventWithAddDelete :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> Event t a -> (Dynamic t a -> m (Event t (Maybe a))) -> m (Event t (IntMap a))
+-- widgetMapEventWithAddDelete delta addEv buildF = mdo
+--     iDelta <- sample $ current delta
+--     let addEv' = attachWith (\m a -> Data.IntMap.insert (Data.IntMap.size m) a m) (current displayedValue) addEv -- Event (IntMap a)
+--     let evIntegratedDelta = leftmost [updated delta,addEv']  -- Event (IntMap a)
+--     dynIntegratedDelta <- holdDyn iDelta evIntegratedDelta -- Dyn (IntMap a)
+--     editsBelow <- widgetMapEvent' dynIntegratedDelta buildF
+--     displayedValue <- holdDyn iDelta $ leftmost [evIntegratedDelta,  editsBelow]
+--     pure $ leftmost [editsBelow,addEv']
+--
+-- -- let filterIWidgetNothing = liftM (Data.IntMap.filter isJust) iWidget -- m (IntMap (Maybe b)
+--
+-- widgetMap' :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m  b) -> m (Dynamic t (IntMap b))
+-- widgetMap' delta buildF = do
+--   iMapA <- sample $ current delta -- []
+--   let f m = mapM (buildF . constDyn) m -- f :: IntMap a -> m (IntMap (Maybe b))
+--   -- let iWidget = liftM localChangeOrDelete $ f iMapA -- m (IntMap (Maybe b))
+--   let iWidget = f iMapA -- m (IntMap (Maybe b))
+--   let rebuilds = fmap f $ updated delta -- Event t (m (Intmap (Maybe b))
+--   -- let rebuilds' = fmap (liftM localChangeOrDelete) rebuilds
+--   w <- widgetHold iWidget rebuilds -- m a -> Event t (m a) -> m (Dynamic t a)
+--   return $ fmap (Data.IntMap.map fromJust . Data.IntMap.filter isJust) w
+-- --
+-- widgetMapEvent' :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
+-- widgetMapEvent' delta buildF = mdo
+--   x <- widgetMap' delta buildF -- Dynamic t (IntMap (Event t (Maybe a)))
+--   let evPartialMap = switchDyn $ fmap mergeIntMap x -- Event t (IntMap (Maybe a)), representing change to specific row(s) only
+--   -- let evPartialMap' = fmap (Data.IntMap.map fromJust . Data.IntMap.filter isJust) evPartialMap -- Event t (IntMap a)
+--   let evFullMap = attachWith (flip Data.IntMap.union) (current localValue) evPartialMap ---- Event t (IntMap a)
+--   iLocalValue <- sample $ current delta
+--   localValue <- holdDyn iLocalValue $ leftmost [updated delta, evFullMap]
+--   pure evFullMap
 
 type Test = IntMap Text
 
 testMap :: MonadWidget t m => Dynamic t Test -> m (Variable t Test)
 testMap delta = do
   addButton <- traceEvent "AddButton" <$> button "+"
+  deleteButton <- button "-"
   mapEv <- widgetMapEventWithAdd delta ("newtext" <$ addButton) testRow
   variable delta mapEv
 
 testRow :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
-testRow delta = el "div" $ textInputW delta
+testRow delta = el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta)
+
+testRowMaybe :: MonadWidget t m => Dynamic t Text -> m (Event t (Maybe Text))
+testRowMaybe delta = do
+  deleteButton <- button "-"
+  row <- el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta) -- Event t Text
+  let rowMaybe = fmap Just row -- Event t (Maybe Text)
+  return $ leftmost [rowMaybe, Nothing <$ deleteButton]
+
+
+testRowMaybe' :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
+testRowMaybe' delta = do
+  deleteButton <- button "-"
+  row <- el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta) -- Event t Text
+  return $ leftmost [row, "delete" <$ deleteButton]
+
+-- Dynamic t a -> m (Event t (Maybe a))
+-- Event t (Maybe a) where
+--  Nothing = delete this row
+--  Just x = local edit to this row
 
 widgetMapDemo :: IO ()
 widgetMapDemo = mainWidget $ do
