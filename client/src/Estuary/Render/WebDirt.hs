@@ -1,4 +1,4 @@
-{-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
+{-# LANGUAGE JavaScriptFFI, OverloadedStrings, FlexibleContexts #-}
 
 module Estuary.Render.WebDirt (
   WebDirt,
@@ -66,10 +66,11 @@ foreign import javascript unsafe
   "$1.audioOutputs = $2;"
   setWebDirtAudioOutputs :: WebDirt -> Int -> IO ()
 
-performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
+performHint :: (PerformEvent t m, Reflex t, MonadIO (Performable m)) => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
 
-performHints :: MonadWidget t m => WebDirt -> Event t [Hint] -> m ()
+-- (PerformEvent t m, Reflex t)
+performHints :: (PerformEvent t m, Reflex t, MonadIO (Performable m)) => WebDirt -> Event t [Hint] -> m ()
 performHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
 
 doHint :: WebDirt -> Hint -> IO ()

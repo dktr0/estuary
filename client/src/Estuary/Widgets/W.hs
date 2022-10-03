@@ -237,7 +237,7 @@ toggleTerminalVisible x = do
 -- A basic checkbox widget that is updated from elsewhere (eg. collaborative editing)
 -- and which issues events when it is changed by local input only.
 
-checkboxW :: MonadWidget t m => Dynamic t Bool -> m (Event t Bool)
+checkboxW :: (Monad m, MonadSample t m, Reflex t, Functor m, DomBuilder t m, PostBuild t m) => Dynamic t Bool -> m (Event t Bool)
 checkboxW x = do
   i <- sample $ current x
   let xEvents = updated x
@@ -248,7 +248,7 @@ checkboxW x = do
 -- and which issues events when it is changed by local input only.
 -- *** Note: currently introduces some kind of cyclic dataflow problem when used with hints/W monad - still DEBUGGING
 
-dropdownW :: (MonadWidget t m, Ord k) => Map k Text -> Dynamic t k -> m (Event t k)
+dropdownW :: (Monad m, MonadSample t m, Reflex t, DomBuilder t m, Ord k, MonadFix m, MonadHold t m, PostBuild t m) => Map k Text -> Dynamic t k -> m (Event t k)
 dropdownW m x = divClass "config-entry display-inline-block primary-color ui-font" $ do
   let m' = constDyn m
   i <- sample $ current x
@@ -394,7 +394,7 @@ distributeIntMapOverVariable iMap = Variable curVal locEdits
 -- soon we expect to rework this so that builder function takes an Int argument representing that item's position in map
 -- and later we expect to rework this to avoid rebuilds whenever possible (eg. when values change but keys don't)
 
-widgetMap :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m b) -> m (Dynamic t (IntMap b))
+widgetMap :: (Show a, Monad m, MonadSample t m, Reflex t, Adjustable t m, MonadHold t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m b) -> m (Dynamic t (IntMap b))
 widgetMap delta buildF = do
   iMapA <- sample $ current delta
   let f m = mapM (buildF . constDyn) m -- f :: IntMap a -> m (IntMap b)
@@ -403,7 +403,7 @@ widgetMap delta buildF = do
   widgetHold iWidget rebuilds
 
 -- | widgetMapEvent is a variant of widgetMap, specialized for Event
-widgetMapEvent :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
+widgetMapEvent :: (Show a, Applicative m, Reflex t, MonadFix m, Adjustable t m, Monad m, MonadHold t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
 widgetMapEvent delta buildF = mdo
   x <- widgetMap delta buildF
   let evPartialMap = switchDyn $ fmap mergeIntMap x -- Event t (IntMap a), representing change to specific row(s) only
@@ -413,7 +413,7 @@ widgetMapEvent delta buildF = mdo
   pure evFullMap
 
 -- | widgetMapEventWithAdd is another variant, specialized for Event, with a channel to add items to the end of the map
-widgetMapEventWithAdd :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> Event t a -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
+widgetMapEventWithAdd :: (Show a, Adjustable t m, MonadHold t m, Reflex t, MonadSample t m, Monad m, MonadFix m) => Dynamic t (IntMap a) -> Event t a -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
 widgetMapEventWithAdd delta addEv buildF = mdo
   -- insert add events into dynamic stream of deltas
   iDelta <- sample $ current delta

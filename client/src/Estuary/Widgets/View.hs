@@ -4,6 +4,7 @@ module Estuary.Widgets.View where
 
 import Reflex
 import Reflex.Dom hiding (Link)
+import Control.Monad.Fix (MonadFix)
 import qualified Data.IntMap.Strict as IntMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -17,6 +18,7 @@ import qualified Data.Sequence as Seq
 import GHCJS.DOM.EventM
 
 import Estuary.Types.Live
+import Estuary.Types.CodeWidgetOptions
 import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Types.EnsembleC
@@ -43,6 +45,8 @@ import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
 import Estuary.Widgets.DataVisualisers
+import Estuary.Widgets.Chat
+
 
 
 attrsColp :: Bool -> Map.Map T.Text T.Text
@@ -51,7 +55,7 @@ attrsColp b = "class" =: "collapsableView" <> "style" =: ("display: " <> showDiv
     showDiv True  = "block"
     showDiv False = "none"
 
-viewsContainerCollaps :: MonadWidget t m => W t m (Event t EnsembleRequest) -> W t m (Event t EnsembleRequest)
+viewsContainerCollaps :: (Monad m, Reflex t, DomBuilder t m, MonadFix m, PostBuild t m, MonadHold t m) => W t m (Event t EnsembleRequest) -> W t m (Event t EnsembleRequest)
 viewsContainerCollaps x = mdo
   dynBool <- toggle True evClick
   evClick <- dynButton dynOpenClose
@@ -102,11 +106,11 @@ viewWidget er (LabelView z) = zoneWidget z "" maybeLabelText LabelText er labelE
 
 viewWidget er (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure er structureEditor
 
-viewWidget er (CodeView z rows style) = do
+viewWidget er (CodeView z rows styles) = do
   whenever <- liftIO $ getCurrentTime
   ri <- renderInfo
   let errorDyn = fmap (IntMap.lookup z . errors) ri
-  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor style rows errorDyn)
+  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram er (textProgramEditor styles rows errorDyn)
 
 viewWidget er (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence er sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
@@ -129,6 +133,9 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 viewWidget er (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
 viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad er notePadWidget
+
+viewWidget er (ChatView z) = zoneWidget z [] maybeSpecChat SpecChat er chatWidget
+
 
 viewWidget er TempoView = do
   ctx <- context
@@ -166,7 +173,7 @@ viewWidget _ (IFrame url) = do
   elAttr "iframe" attrs $ return ()
   return never
 
-zoneWidget :: (MonadWidget t m, Eq a)
+zoneWidget :: (Monad m, MonadSample t m, Reflex t, MonadHold t m, Eq a)
   => Int -> a -> (Definition -> Maybe a) -> (a -> Definition) -> Event t [EnsembleResponse]
   -> (Dynamic t a -> W t m (Variable t a))
   -> W t m (Event t EnsembleRequest)

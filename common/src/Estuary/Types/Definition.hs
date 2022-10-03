@@ -17,22 +17,25 @@ import Estuary.Types.Live
 import Estuary.Types.TextNotation
 import Estuary.Types.Tempo
 import Estuary.Types.ZonedTime
+import Estuary.Types.Chat
+
 
 type TextProgram = (TextNotation,Text,UTCTime)
 
 type Sequence = M.Map Int (Text,[Bool])
+
 type Roulette = [Text]
+
 type NotePad = (Int,Seq NotePage)
 type NotePage = (Text,Text)
-type CalendarEvents = IntMap.IntMap CalendarEvent
 
+type SpecChat = [Chat]
+
+type CalendarEvents = IntMap.IntMap CalendarEvent
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
 data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
 data Recurrence = Recurrence { periodicity :: Periodicity, endDate :: ZonedTime} deriving  (Eq, Show, Generic)
 data Periodicity =  Once | Daily | DailyUntil | Weekly | WeeklyUntil | MonthlyDate | MonthlyDateUntil | MonthlyNthDayOfWeek | MonthlyNthDayOfWeekUntil | Yearly | YearlyUntil deriving  (Eq, Show, Generic)
-
-
--- data Periodicity =  Once | Daily | DailyUntil | Weekly | WeeklyUntil | MonthlyXDay| MonthlyXDayUntil | MonthlyFirstXDay | MonthlyFirstXDayUntil | MonthlySecondXDay | MonthlySecondXDayUntil | MonthlyThirdXDay | MonthlyThirdXDayUntil| MonthlyFourthXDay | MonthlyFourthXDayUntil | MonthlyLastXDay | MonthlyLastXDayUntil | Yearly| YearlyUntil deriving  (Eq, Show, Generic)
 
 
 instance ToJSON CalendarEvent where
@@ -90,8 +93,8 @@ data Definition =
   SeeTime TimeVision |
   NotePad NotePad |
   CalendarEv CalendarEvent |
+  SpecChat SpecChat |
   CalendarEvs CalendarEvents
-
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -115,6 +118,7 @@ definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
 definitionForRendering (NotePad x) = NotePad x
+definitionForRendering (SpecChat x) = SpecChat x
 definitionForRendering (CalendarEvs x) = CalendarEvs x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
@@ -182,3 +186,7 @@ maybeSeeTime _ = Nothing
 maybeNotePad :: Definition -> Maybe NotePad
 maybeNotePad (NotePad x) = Just x
 maybeNotePad _ = Nothing
+
+maybeSpecChat :: Definition -> Maybe SpecChat
+maybeSpecChat (SpecChat x) = Just x
+maybeSpecChat _ = Nothing
