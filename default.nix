@@ -191,30 +191,13 @@ in
 
         tempi = self.callHackage "tempi" "1.0.2.1" {};
 
-        seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
-          doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
-           owner = "luisnavarrodelangel";
-           repo = "seis8s";
-           sha256 = "169rfxknyv8ali87n6pmfpdm2vy09khsx4c9spa40sisskbbmlsz";
-           rev = "1db0e3ff1399e176792e815df748c62aff9aa227";
-
-         }) {}));
-
-         permutation = markUnbroken super.permutation;
-
-         hosc = self.callHackage "hosc" "0.19.1" {};
-         hsc3 = self.callHackage "hsc3" "0.19.1" {};
-         hmt = doJailbreak (markUnbroken super.hmt);
-
-
-         network = if !(self.ghc.isGhcjs or false) then super.network else
-           let unpatchedNetwork = super.callHackageDirect {
-             pkg = "network";
-             ver = "3.1.2.7";
-             sha256 = "1762r7jckinwvz5m99l5jr1p2p2d10jysg159nwlqxmsnr39waz7"; # note: temporarily set to pkgs.lib.fakeSha256 to find new hash...
-           } { };
-           in appendConfigureFlags unpatchedNetwork ["--configure-option=--host=x86_64-pc-linux-gnu"];
-
+        seis8s = dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
+          #dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
+           #owner = "luisnavarrodelangel";
+           #repo = "seis8s";
+           #sha256 = "0fyiiqya4rfq9h8q17rarv06vizd967jxc353kznadj93asi4his";
+           #rev = "a3f9ea35b9037df3f8405dc66c20b19f92b1a675";
+         #}) {});
       };
     in
       pkgs.lib.foldr pkgs.lib.composeExtensions (_: _: {}) [
