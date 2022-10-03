@@ -45,7 +45,6 @@ import Reflex.Host.Class (HostFrame)
 import System.Timeout(timeout)
 
 main :: IO ()
-{- main = widgetMapDemo -}
 main = do
   hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser
@@ -74,7 +73,6 @@ main = do
   case mErr of
     Just err -> putStrLn $ show err
     Nothing -> return ()
-
 
 visuallyCrash :: SomeException -> IO ()
 visuallyCrash e =
