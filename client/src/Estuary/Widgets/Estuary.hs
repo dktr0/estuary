@@ -51,7 +51,6 @@ import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.Reflex
-import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Sidebar
 import Estuary.Resources.AudioResource
 import Estuary.Types.AudioMeta
@@ -112,12 +111,14 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   iCanvas <- canvasWidget settings improvizZIndex' -- canvas for Improviz
   hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
   hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
+
   liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas iCanvas
+
   rInfo <- pollRenderInfo rEnv
   resourceMaps <- dynamicResourceMaps rEnv
+  ensembleC <- maintainEnsembleC allRequests responseDown
   ensList <- maintainEnsembleList responseDown
   resError <- maintainResponseError responseDown
-  ensembleC <- maintainEnsembleC requestsUp responseDown
   log <- maintainLog hints responseDown
 
   -- four GUI components: header, main (navigation), terminal, footer
@@ -133,61 +134,56 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
     _log = log
     }
 
-  ((responseDown,sInfo),hints) <- runW wEnv $ do
-    (responseDown,sInfo) <- estuaryWebSocket requestsUp
+  ((responseDown,sInfo),localHints) <- runW wEnv $ do
+    (responseDown,sInfo) <- estuaryWebSocket requestsToSend
     keyboardHintsW keyboardShortcut
     header
     divClass "page ui-font" $ do
-      navigation deltasDownAlt
+      navigation
       sv <- W.sideBarVisible
-      hideableWidget sv "sidebar" sideBarWidget
-    command <- do -- :: Event t Command
-      tv <- W.terminalVisible
-      hideableWidget' tv $ terminalWidget responseDown hints
+      hideableWidget sv "sidebar" sidebarWidget
+    tv <- W.terminalVisible
+    hideableWidget' tv $ terminalWidget
     footer
-    -- TODO: as part of current refactor: commands will be translated to hints inside this W computation
-    -- (perhaps that translation could even happen in Estuary.Widgets.Terminal)
     return (responseDown,sInfo)
 
-  let requests = fmap hintsToRequests hints
-  let ensembleRequests = fmap requestsToEnsembleRequests requests
+  let remoteHints = fmap responseToHints responseDown
+  let hints = mergeWith (++) [localHints,remoteHints]
+  let willSendRequestsToServer = current $ fmap inAnEnsemble ensembleC
+  let allRequests = fmap hintsToRequests localHints
+  let requestsToSend = gate willSendRequestsToServer allRequests
 
   -- perform Hints and Settings changes as IO
   performWebDirtHints (R.webDirt rEnv) hints
-  performDelayHints rEnv settings
+  performDelay rEnv settings
   performDynamicsMode rEnv settings
   performPunctualAudioInputMode rEnv settings
   performTheme settings
   performSuperDirt rEnv settings
 
-  -- requests up to server
-  let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
-  let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
-  let requests' = fmap (:[]) $ requests
-  let requests'' = fmap (:[]) $ commandRequests
-  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
+
+  let requests = fmap hintsToRequests hints -- :: Event t [Request]
+
 
   return ()
 
 
 maintainEnsembleList :: MonadWidget t m => Event t Response -> m (Dynamic t [Text])
-maintainEnsembleList responseDown = holdDyn [] $ fmapMaybe justEnsembleList responseDown
+maintainEnsembleList responseDown = holdDyn [] $ fmapMaybe f responseDown
+  where
+    f (EnsembleList x) = Just x
+    f _ = Nothing
 
 maintainResponseError :: MonadWidget t m => Event t Response -> m (Dynamic t (Maybe Text))
 maintainResponseError responseDown = do
-  let errors = Just <$ fmapMaybe justResponseError responseDown
-  let oks = Nothing <$ fmapMaybe justResponseOK responseDown
+  let f (Error x) = Just x
+      f _ = Nothing
+  let g (OK x) = Just x
+      g _ = Nothing
+  let errors = Just <$> fmapMaybe f responseDown
+  let oks = Nothing <$ fmapMaybe g responseDown
   holdDyn Nothing $ leftmost [errors,oks]
 
-justResponseOK :: [Response] -> Maybe Text
-justResponseOK = lastOrNothing . Data.Maybe.mapMaybe f
-  where f (OK x) = Just x
-        f _ = Nothing
-
-justResponseError :: [Response] -> Maybe Text
-justResponseError = lastOrNothing . Data.Maybe.mapMaybe f
-  where f (Error x) = Just x
-        f _ = Nothing
 
 maintainLog :: MonadWidget t m => Event t [Hint] -> Event t Response -> m (Dynamic t [LogEntry])
 maintainLog hints response = do
@@ -218,9 +214,18 @@ localLogsFromHints hs = do
   pure $ fmap g txts
 
 
-{- maintainEnsembleC :: MonadWidget t m => Event t [EnsembleRequest] -> Event t Response -> m (Dynamic t EnsembleC)
-maintainEnsembleC ensembleRequests responseDown = do
-  ... WORKING HERE ... -}
+maintainEnsembleC :: MonadWidget t m => Event t [Request] -> Event t Response -> m (Dynamic t EnsembleC)
+maintainEnsembleC requests response = do
+  now <- liftIO $ getCurrentTime
+  let initialEnsembleC = emptyEnsembleC now
+  let requestChanges = fmap requestsToEnsembleC requests
+  let responseChanges = fmap responseToEnsembleC response
+  let allChanges = mergeWith (.) $ [requestChanges,responseChanges]
+  foldDyn ($) initialEnsembleC allChanges
+
+-- WORKING HERE: thinking about mismatch betweeen requestsToEnsembleC (with IO) and
+-- responseToEnsembleC (no IO), probably have to make both with IO
+-- requestsToEnsembleC :: MonadIO m => Resources -> [Request] -> EnsembleC -> m EnsembleC
 
 
 cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> m HTMLDivElement
@@ -298,8 +303,3 @@ performMonitorInput rEnv settings = do
   let nodes = R.mainBus rEnv
   maybeDouble <- holdUniqDyn $ fmap Settings.monitorInput settings
   performEvent_ $ fmap (liftIO . changeMonitorInput nodes) $ updated maybeDouble
-
-commandToRequest :: Terminal.Command -> Maybe Request
-commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
-commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
-commandToRequest _ = Nothing

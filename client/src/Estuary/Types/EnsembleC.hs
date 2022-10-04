@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import TextShow
 import Control.Applicative
 import Control.Monad.IO.Class
+import Control.Monad
 import Data.Sequence as Seq
 
 import Estuary.Types.Response as Response
@@ -113,6 +114,9 @@ readableTempo tempo =
       c = realToFrac (count tempo) :: Double
   in "Freq: " <> showt f <> "Time: " <> (T.pack $ show t) <> "Count: " <> showt c
 
+
+requestsToEnsembleC :: MonadIO m => Resources -> [Request] -> EnsembleC -> m EnsembleC
+requestsToEnsembleC res reqs ensC = foldM (flip $ requestToEnsembleC res) ensC reqs
 
 requestToEnsembleC :: MonadIO m => Resources -> Request -> EnsembleC -> m EnsembleC
 requestToEnsembleC _ Request.LeaveEnsemble e = pure $ leaveEnsembleC e

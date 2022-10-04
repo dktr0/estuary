@@ -46,17 +46,9 @@ instance FromJSON Response
 
 {-
 
-all of the definitions below, if still needed, should be in client tree instead:
-
-responsesToEnsembleList :: [Response] -> Maybe [Text]
-responsesToEnsembleList = lastOrNothing . mapMaybe f
-  where f (EnsembleList x) = Just x
-        f _ = Nothing
-
 justJoinedEnsemble :: [Response] -> Maybe (Text,Text,Text,Text)
 justJoinedEnsemble = lastOrNothing . mapMaybe f
   where f (JoinedEnsemble a b c d) = Just (a,b,c,d)
         f _ = Nothing
-
 
 -}
