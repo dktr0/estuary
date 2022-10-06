@@ -29,17 +29,23 @@ import Estuary.Types.Ensemble
 import Estuary.Widgets.W
 import Estuary.Types.Definition
 
-visualiseTimerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer,Bool)
-visualiseTimerWidget (delta,bool) = mdo
+--flippableWidget :: (Adjustable t m, Reflex t, MonadHold t m) => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
+
+visualiseTimerWidget:: MonadWidget t m => Dynamic t (Timer,Bool) -> W t m (Variable t (Timer,Bool))
+visualiseTimerWidget delta = mdo
+  initialValue <- sample $ current delta -- (Timer,Bool)
+  let initialWidget = controlInterface initialValue -- (Event t (Timer, Bool))
+  let remoteOrLocalEdits = leftmost [updated delta, localEdits'] -- Event t (Timer,Bool)
+  x <- sample $ hold initialValue remoteOrLocalEdits -- (Timer,Bool)
+  updatedWidgets <- flippableWidget <$> (controlInterface x) (selectVisualiser x) False <$> snd remoteOrLocalEdits -- gets an Dynamic (Event t (timer,bool)) which I flatten with switchDyn
+  let updatedWidgets' = switchDyn updatedWidgets
+  localEdits <- widgetHold initialWidget updatedWidgets' -- Dyn t (Event t (Timer,Bool))
+ -- localEdits <- widgetHold initialWidget $ traceEventWith show updatedWidgets -- m (Dynamic t (Event t (Timer,Bool))) 
+  let localEdits' = switchDyn localEdits -- Event t (Timer, Bool)
   v <- variable delta $ localEdits'
-  initialValue <- sample $ current delta
-  let initialWidget = flipableWidget (controlInterface initialValue)...
-  let remoteOrLocalEdits = leftmost [updated delta, localEdits']
-  let updatedWidgets = fmap (flippableWidget controlInterface...) remoteOrLocalEdits -- gets an event t timer
-  localEdits <- widgetHold initialWidget updatedWidgets
- -- localEdits <- widgetHold initialWidget $ traceEventWith show updatedWidgets -- m (Dynamic t (Event t TimeVi)) 
-  let localEdits' = switchDyn localEdits -- Event t TimeVision
   return v
+
+--widgetHold :: (Adjustable t m, MonadHold t m) => m a -> Event t (m a) -> m (Dynamic t a)
 
 timerTracer:: MonadWidget t m => Timer ->  W t m ()
 timerTracer (Finite 0 xs mode loop measure) = do -- xs seq of counts, mode (playingstopped) loop measure
@@ -56,14 +62,14 @@ timerTracer (Finite 0 xs mode loop measure) = do -- xs seq of counts, mode (play
 
 -- selectVisualiser and controllerInterface have to produce a tuple: (Event t Timer, Event t Bool)
 -- the snd of this tuple has to be fed into a function:: Bool -> Bool where pattern matching true with false and viceversa
--- the flippablewidget then goes into
+-- the flippablewidget then goes into line 36 and 38 of course.... this will be wild....
 
 
 -- this for playFunc and resetFunc
 -- performEvent :: Event t (Performable m a) -> m (Event t a)
 -- localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
-selectVisualiser :: MonadWidget t m => (Timer,Bool) -> W t m (Event t Timer, Event t Bool)
-selectVisualiser (Finite 0 xs mode loop measure) = divClass "timer-Visualiser" $ do
+selectVisualiser :: MonadWidget t m => (Timer,Bool) -> W t m (Event t (Timer, Bool))
+selectVisualiser (Finite 0 xs mode loop measure, bool) = divClass "timer-Visualiser" $ do ----- Resolver el Evento entrante
   timerTracer (Finite 0 xs mode loop measure)
 
   topRowContainer <- divClass "flex-container-col" $ do
@@ -71,12 +77,9 @@ selectVisualiser (Finite 0 xs mode loop measure) = divClass "timer-Visualiser" $
       firstRowEvent <- divClass "flex-container-row" $ do
         resetItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
         let resetEvent = resetFunc <$ resetItem -- Event t (Timer -> Timer)
-        flip <- divClass "flex-item-row" blank -- :: Event t ()
-        -- let flipEvent = tag () $ flip -- toggle ??
-        -- here flipto controlers with flipableWidget
-        -- flippableWidget :: (Adjustable t m, Reflex t, MonadHold t m) => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
-        -- flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e
-        return resetEvent
+        flipItem <- divClass "flex-item-row" blank -- :: Event t ()
+        let flipEvent = flipFunc <$ flipItem
+        return (resetEvent,flipEvent)
       return firstRowEvent
     sndRowWrap <- divClass "flex-item-col" $ do 
       secondRowEvent <- divClass "flex-container-row" $ do
@@ -86,12 +89,13 @@ selectVisualiser (Finite 0 xs mode loop measure) = divClass "timer-Visualiser" $
         let rightEvents = leftmost [visualisationEvent] -- open path for playPause
         return rightEvents
       return secondRowEvent
-    let polyptychEvent = fmap (\x -> x $ Finite 0 xs mode loop measure) $ leftmost [fstRowWrap,sndRowWrap]
-    return polyptychEvent
+    let polyptychEvent = fmap (\x -> x $ Finite 0 xs mode loop measure) $ leftmost [fst fstRowWrap, sndRowWrap]
+    let flipper = fmap (\x -> x $ bool) $ snd fstRowWrap 
+    return (polyptychEvent, flipper)
   return topRowContainer
 
-controlInterface:: MonadWidget t m => (Timer,Bool) -> W t m (Event t Timer, Event t Bool)
-controlInterface (Finite 0 xs mode loop measure) = divClass "timer-Visualiser" $ do
+controlInterface:: MonadWidget t m => (Timer,Bool) -> W t m (Event t (Timer, Bool))
+controlInterface (Finite 0 xs mode loop measure, bool) = divClass "timer-Visualiser" $ do
   divClass "icons" $ do
     divClass "icons-row" $ do
         pure (structureIcon $ constDyn True) >>= (divClass "iconTopLeft") -- text -- needs to rework this bottom only
@@ -123,10 +127,8 @@ controlInterface (Finite 0 xs mode loop measure) = divClass "timer-Visualiser" $
     sndRowWrap <- divClass "flex-item-col" $ do 
       secondRowEvent <- divClass "flex-container-row" $ do
         flipItem <- clickableDiv "flex-item-row" blank -- Event t ()
-        let flipEvent = tag (constant $ True) $ flipItem
-        -- flippableWidget:: (Adjustable t m, Reflex t, MonadHold t m) => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
-        -- flippableWidget b1 b2 i e = widgetHold (bool b1 b2 i) $ fmap (bool b1 b2) e
-        flippableWidget (selectVisualiser (Finite 0 xs mode loop measure)) (controlInterface (Finite 0 xs mode loop measure)) False $ flipEvent
+        let flipEvent = flipFunc <$ flipItem
+
         -- flippable .... etc...
         loopItem <- clickableDiv "flex-item-row" blank
         let loopEvent = loopFunc <$ loopItem
@@ -134,12 +136,16 @@ controlInterface (Finite 0 xs mode loop measure) = divClass "timer-Visualiser" $
         return rightEvents
       return secondRowEvent
     let polyptychEvent = fmap (\x -> x $ Finite 0 xs mode loop measure) $ leftmost [fstRowWrap,fst sndRowWrap]
-    return (polyptychEvent, snd sndRowWrap) -- (Timer, Bool)
+    let flipper = fmap (\x -> x $ bool) $ snd sndRowWrap
+    return (polyptychEvent, flipper) -- (Timer, Bool)
   return topRowContainer
 
 
 -- I suspect that Falling needs a starting time as Holding has...
 -- data CurrentMode = Falling' UTCTime | Halted | Holding' UTCTime Rational
+flipFunc:: Bool -> Bool
+flipFunc True = False
+flipFunc False = True
 
 resetFunc:: Timer -> Timer
 resetFunc (Finite n xs (Holding' pauseTime countTime) loop m) = Finite n xs (Holding' pauseTime 0) loop m
