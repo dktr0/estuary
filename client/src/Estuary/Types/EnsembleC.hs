@@ -133,6 +133,18 @@ requestToEnsembleC _ (Request.Reset t) e = pure $ modifyEnsemble (\e -> e { zone
 requestToEnsembleC _ _ e = pure e
 
 
+-- some responses from the server are mapped directly onto EnsembleC state changes
+-- (because their semantics are not represented by the Request type)
+-- (see also responseToHints below, which handles things which can be represented with hints )
+
+responseToEnsembleC :: MonadIO m => Response -> EnsembleC -> m EnsembleC
+responseToEnsembleC (JoinedEnsemble eName uName loc pwd) e = pure $ joinEnsembleC eName uName loc pwd e
+responseToEnsembleC (ParticipantUpdate x) e = pure $ modifyEnsemble (writeParticipant (name x) x) e
+responseToEnsembleC (ParticipantLeaves n) e = pure $ modifyEnsemble (deleteParticipant n) e
+responseToEnsembleC (AnonymousParticipants n) e = pure $ modifyEnsemble (writeAnonymousParticipants n) e
+responseToEnsembleC _ e = pure e
+
+
 -- some responses from the server are mapped into one or more hints, for the purpose
 -- of updating rendering, updating ensembleC, or printing log messages
 -- (the resulting requests are not re-sent to the server, of course)
@@ -161,13 +173,3 @@ responseToHints (Response.Reset t) = [
   LocalLog $ english "received Reset (resetting zones and tempo)"
   ]
 responseToHints _ = []
-
-
--- while other responses from the server are mapped directly onto EnsembleC state changes
--- (because their semantics are not represented by the Request type)
-responseToEnsembleC :: Response -> EnsembleC -> EnsembleC
-responseToEnsembleC (JoinedEnsemble eName uName loc pwd) e = joinEnsembleC eName uName loc pwd e
-responseToEnsembleC (ParticipantUpdate x) e = modifyEnsemble (writeParticipant (name x) x) e
-responseToEnsembleC (ParticipantLeaves n) e = modifyEnsemble (deleteParticipant n) e
-responseToEnsembleC (AnonymousParticipants n) e = modifyEnsemble (writeAnonymousParticipants n) e
-responseToEnsembleC _ e = e

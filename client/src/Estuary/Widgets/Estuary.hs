@@ -116,7 +116,7 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
 
   rInfo <- pollRenderInfo rEnv
   resourceMaps <- dynamicResourceMaps rEnv
-  ensembleC <- maintainEnsembleC allRequests responseDown
+  ensembleC <- maintainEnsembleC (resources rEnv) allRequests responseDown
   ensList <- maintainEnsembleList responseDown
   resError <- maintainResponseError responseDown
   log <- maintainLog hints responseDown
@@ -214,19 +214,16 @@ localLogsFromHints hs = do
   pure $ fmap g txts
 
 
-maintainEnsembleC :: MonadWidget t m => Event t [Request] -> Event t Response -> m (Dynamic t EnsembleC)
-maintainEnsembleC requests response = do
+maintainEnsembleC :: MonadWidget t m => Resources -> Event t [Request] -> Event t Response -> m (Dynamic t EnsembleC)
+maintainEnsembleC res requests response = mdo
   now <- liftIO $ getCurrentTime
   let initialEnsembleC = emptyEnsembleC now
-  let requestChanges = fmap requestsToEnsembleC requests
-  let responseChanges = fmap responseToEnsembleC response
-  let allChanges = mergeWith (.) $ [requestChanges,responseChanges]
-  foldDyn ($) initialEnsembleC allChanges
-
--- WORKING HERE: thinking about mismatch betweeen requestsToEnsembleC (with IO) and
--- responseToEnsembleC (no IO), probably have to make both with IO
--- requestsToEnsembleC :: MonadIO m => Resources -> [Request] -> EnsembleC -> m EnsembleC
-
+  let requestChange = fmap (requestsToEnsembleC res) requests -- :: Event t (EnsembleC -> m EnsembleC)
+  let responseChange = fmap responseToEnsembleC response -- :: Event t (EnsembleC -> m EnsembleC)
+  let allChange = mergeWith (\x y ensC -> x ensC >>= y) [requestChange,responseChange]
+  updatedEnsembleC <- performEvent $ attachWith (&) (current r) allChange
+  r <- holdDyn initialEnsembleC updatedEnsembleC
+  pure r
 
 cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> m HTMLDivElement
 cinecer0Widget settings = do
