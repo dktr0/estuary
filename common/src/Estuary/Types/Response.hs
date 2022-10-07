@@ -36,7 +36,6 @@ data Response =
   WriteResourceOps (Seq ResourceOp) |
   ResetZones |
   ResetViews |
-  ResetTempo Tempo | -- reset the metric grid/tempo only
   Reset Tempo -- reset the zones, views and metric grid/tempo (with the provided tempo)
   deriving (Generic)
 
