@@ -65,6 +65,7 @@ import Estuary.Render.R as R
 import Estuary.Render.MainBus
 import Estuary.Client.Settings as Settings
 import Estuary.Types.LogEntry
+import Estuary.Render.RenderOp as RenderOp
 
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> m ()
 keyboardHintsCatcher rEnv settings = mdo
@@ -154,16 +155,13 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   let requestsToSend = gate willSendRequestsToServer allRequests
 
   -- perform Hints and Settings changes as IO
+  performRenderOps rEnv hints
   performWebDirtHints (R.webDirt rEnv) hints
   performDelay rEnv settings
   performDynamicsMode rEnv settings
   performPunctualAudioInputMode rEnv settings
   performTheme settings
   performSuperDirt rEnv settings
-
-
-  let requests = fmap hintsToRequests hints -- :: Event t [Request]
-
 
   return ()
 
@@ -300,3 +298,21 @@ performMonitorInput rEnv settings = do
   let nodes = R.mainBus rEnv
   maybeDouble <- holdUniqDyn $ fmap Settings.monitorInput settings
   performEvent_ $ fmap (liftIO . changeMonitorInput nodes) $ updated maybeDouble
+
+performRenderOps :: (Reflex t, PerformEvent t m, MonadIO (Performable m)) => RenderEnvironment -> Event t [Hint] -> m ()
+performRenderOps rEnv hints = do
+  let ops = fmap hintsToRenderOps hints
+  performEvent_ $ fmap (putRenderOps rEnv) ops
+
+-- TODO: MUST be optimized so that zones are not written when changes don't involve evaluation...
+-- (otherwise every bit of typing leads to potential evaluation)
+
+hintsToRenderOps :: [Hint] -> [RenderOp]
+hintsToRenderOps = concat . fmap f
+  where
+    f (Request LeaveEnsemble) = [RenderOp.ResetZones]
+    f (Request (Request.WriteTempo t)) = [RenderOp.WriteTempo t]
+    f (Request (Request.WriteZone n v)) = [RenderOp.WriteZone n v]
+    f (Request (Request.ResetZones)) = [RenderOp.ResetZones]
+    f (Request (Request.Reset t)) = [RenderOp.ResetZones,RenderOp.WriteTempo t]
+    f _ = []

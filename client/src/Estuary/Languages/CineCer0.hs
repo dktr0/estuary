@@ -27,7 +27,7 @@ import Estuary.Types.EnsembleC
 
 
 cineCer0 :: TextNotationRenderer
-cineCer0 = TextNotationRenderer {
+cineCer0 = emptyTextNotationRenderer {
   parseZone = _parseZone,
   clearZone' = _clearZone,
   preAnimationFrame = return (),

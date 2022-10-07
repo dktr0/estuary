@@ -10,4 +10,4 @@ import Estuary.Types.Tempo
 data RenderOp =
   WriteTempo Tempo |
   WriteZone Int Definition |
-  ResetAllZones
+  ResetZones

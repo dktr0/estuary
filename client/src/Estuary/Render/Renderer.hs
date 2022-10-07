@@ -234,7 +234,7 @@ renderRenderOp _ (WriteZone z x) = do
   renderZoneChanged z x'
   modify' $ \s -> s { cachedDefs = insert z x' (cachedDefs s) }
 
-renderRenderOp _ ResetAllZones = do
+renderRenderOp _ ResetZones = do
   gets cachedDefs >>= traverseWithKey clearZone
   modify' $ \s -> s { cachedDefs = empty }
 
