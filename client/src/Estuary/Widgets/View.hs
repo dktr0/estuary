@@ -91,38 +91,45 @@ viewWidget (CollapsableView v) = viewsContainerCollaps $ divClass "gridChild" $ 
 
 viewWidget (Text t) = translatableText t >>= dynText
 
-viewWidget (LabelView z) = zoneWidget z "" maybeLabelText LabelText labelEditor
+viewWidget (LabelView z) = zoneWidget False z "" maybeLabelText LabelText labelEditor
 
-viewWidget (StructureView z) = zoneWidget z EmptyTransformedPattern maybeTidalStructure TidalStructure structureEditor
+viewWidget (StructureView z) = zoneWidget True z EmptyTransformedPattern maybeTidalStructure TidalStructure structureEditor
 
-viewWidget (CodeView z rows styles) = do
+viewWidget (CodeView zoneNumber rows styles) = do
   whenever <- liftIO $ getCurrentTime
-  errorDyn <- fmap (IntMap.lookup z) <$> errors
-  zoneWidget z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram (textProgramEditor styles rows errorDyn)
+  errorDyn <- fmap (IntMap.lookup zoneNumber) <$> errors
+  -- zoneWidget True z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram (textProgramEditor styles rows errorDyn)
+  zs <- zones
+  let defaultLiveTextProgram = (Live (UnspecifiedNotation,"",whenever) L3)
+  let getLiveTextProgram = maybe defaultLiveTextProgram (maybe defaultLiveTextProgram id . maybeTextProgram) . IntMap.lookup zoneNumber
+  dynLiveTextProgram <- holdUniqDyn $ fmap getLiveTextProgram zs
+  varA <- textProgramEditor styles rows errorDyn dynLiveTextProgram -- :: W t m (Variable t (Live TextProgram))
+  let reqF x = WriteZone zoneNumber (TextProgram x) (not $ isEdited x)
+  request $ reqF <$> localEdits varA
 
-viewWidget (SequenceView z) = zoneWidget z defaultValue maybeSequence Sequence sequencer
+viewWidget (SequenceView z) = zoneWidget True z defaultValue maybeSequence Sequence sequencer
   where defaultValue = Map.singleton 0 ("",replicate 8 False)
 
 viewWidget EnsembleStatusView = ensembleStatusWidget
 
-viewWidget (RouletteView z rows) = zoneWidget z [] maybeRoulette Roulette (rouletteWidget rows)
+viewWidget (RouletteView z rows) = zoneWidget False z [] maybeRoulette Roulette (rouletteWidget rows)
 
 viewWidget (CalendarEventView z) = do
   today <- liftIO getZonedTime
   let defaultValue = IntMap.singleton 0 (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today)))
-  zoneWidget z defaultValue maybeCalendarEvents CalendarEvs calendarEventWidget
+  zoneWidget False z defaultValue maybeCalendarEvents CalendarEvs calendarEventWidget
 
-viewWidget (CountDownView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown countDownWidget
+viewWidget (CountDownView z) = zoneWidget False z (Holding 60) maybeTimerDownState CountDown countDownWidget
 
-viewWidget (SandClockView z) = zoneWidget z (Holding 60) maybeTimerDownState CountDown sandClockWidget
+viewWidget (SandClockView z) = zoneWidget False z (Holding 60) maybeTimerDownState CountDown sandClockWidget
 
-viewWidget (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWatch stopWatchWidget
+viewWidget (StopWatchView z) = zoneWidget False z Cleared maybeTimerUpState StopWatch stopWatchWidget
 
-viewWidget (SeeTimeView z) = zoneWidget z (Cyclic 0) maybeSeeTime SeeTime visualiseTempoWidget
+viewWidget (SeeTimeView z) = zoneWidget False z (Cyclic 0) maybeSeeTime SeeTime visualiseTempoWidget
 
-viewWidget (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad notePadWidget
+viewWidget (NotePadView z) = zoneWidget False z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad notePadWidget
 
-viewWidget (ChatView z) = zoneWidget z [] maybeSpecChat SpecChat chatWidget
+viewWidget (ChatView z) = zoneWidget False z [] maybeSpecChat SpecChat chatWidget
 
 
 viewWidget TempoView = return () {- do -- disactivating TempoView - noone uses it anyway...
@@ -135,7 +142,7 @@ viewWidget (Snippet z b n t) = do
   let c = if b then "example code-font" else "snippet code-font"
   b <- clickableDiv c $ text t
   bTime <- performEvent $ fmap (liftIO . const getCurrentTime) b
-  request $ fmap (\et -> WriteZone z (TextProgram (Live (n,t,et) L3))) bTime
+  request $ fmap (\et -> WriteZone z (TextProgram (Live (n,t,et) L3)) True) bTime
 
 viewWidget AudioMapView = audioMapWidget
 
@@ -151,12 +158,12 @@ viewWidget (IFrame url) = do
 
 
 zoneWidget :: (Monad m, MonadSample t m, Reflex t, MonadHold t m, MonadFix m, Eq a)
-  => Int -> a -> (Definition -> Maybe a) -> (a -> Definition)
+  => Bool -> Int -> a -> (Definition -> Maybe a) -> (a -> Definition)
   -> (Dynamic t a -> W t m (Variable t a))
   -> W t m ()
-zoneWidget zoneNumber defaultA defToMaybeA aToDef anEditingWidget = do
+zoneWidget changesRender zoneNumber defaultA defToMaybeA aToDef anEditingWidget = do
   let getA = maybe defaultA (maybe defaultA id . defToMaybeA) . IntMap.lookup zoneNumber
   zs <- zones
   dynA <- holdUniqDyn $ fmap getA zs -- note: when zones are streamed separately, holdUniqDyn will not be necessary
   varA <- anEditingWidget dynA
-  request $ (WriteZone zoneNumber . aToDef) <$> localEdits varA
+  request $ ((\x -> WriteZone zoneNumber x changesRender) . aToDef) <$> localEdits varA

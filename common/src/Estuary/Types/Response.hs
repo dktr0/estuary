@@ -26,7 +26,7 @@ data Response =
   Error Text | -- eg. ensemble login failure -- could this include the request it was a response to?
   EnsembleList [Text] |
   JoinedEnsemble Text Text Text Text | -- ensemble username location password -- could be deleted if ResponseOk includes Request? (see above)
-  WriteZone Int Definition |
+  WriteZone Int Definition Bool | -- Bool represents whether new Definition should be sent to renderer
   EnsembleLog LogEntry | -- used for chat messages
   WriteView Text View |
   WriteTempo Tempo |

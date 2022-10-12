@@ -147,8 +147,8 @@ webSocketsApp db ss sockAddr pc = do
     Right ws'' -> do
       (cHandle,ctvar,sChan) <- addClient sockAddr ss ws''
       postLog cHandle $ "new connection from " <> T.pack (show sockAddr)
-      (WS.forkPingThread ws'' 10) `catch` \(SomeException e) -> postLog cHandle $ "exception forking ping thread: " <> (T.pack $ show e)
-      race (sendThread ss cHandle sChan ws'') (receiveThread db ss cHandle ctvar ws'')
+      WS.withPingThread ws'' 10 (pure ()) $ do
+        race (sendThread ss cHandle sChan ws'') (receiveThread db ss cHandle ctvar ws'')
       postLog cHandle $ "thread finished."
     Left (SomeException e) -> do
       postLogNoHandle $ "exception during WS.acceptRequest: " <> (T.pack $ show e)
@@ -300,7 +300,7 @@ processRequest db ss ws cHandle ctvar (RejoinEnsemble eName uName loc pwd) = do
 processRequest db ss ws cHandle ctvar LeaveEnsemble = do
   runTransactionIOLogged db ss cHandle "LeaveEnsemble" $ leaveEnsemble db ctvar
 
-processRequest db ss ws cHandle ctvar (Request.WriteZone zone value) = do
+processRequest db ss ws cHandle ctvar (Request.WriteZone zone value changesRender) = do
   now <- getCurrentTime
   x <- runTransaction ss $ do
     writeZone now ctvar zone value
@@ -311,7 +311,7 @@ processRequest db ss ws cHandle ctvar (Request.WriteZone zone value) = do
       let m = "*WriteZone* " <> err
       sendThisClient ctvar (Response.Error m)
       postLog cHandle m
-    Right e -> sendEnsembleNoOrigin cHandle e $ Response.WriteZone zone value
+    Right e -> sendEnsembleNoOrigin cHandle e $ Response.WriteZone zone value changesRender
 
 processRequest db ss ws cHandle ctvar (Request.SendChat msg) = do
   now <- getCurrentTime

@@ -28,7 +28,7 @@ data Request =
   DeleteThisEnsemble Text | -- ownerPassword
   DeleteEnsemble Text Text | -- ensembleName moderatorPassword
   WriteTempo Tempo |
-  WriteZone Int Definition |
+  WriteZone Int Definition Bool | -- Bool represents whether new definition should be delivered to renderer
   WriteView Text View |
   SendChat Text |
   WriteStatus Text |

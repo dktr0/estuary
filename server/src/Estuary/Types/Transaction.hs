@@ -291,7 +291,7 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
     when (not isReauth) $ respond $ JoinedEnsemble eName uName loc pwd
     when (isReauth) $ respond $ OK "rejoined ensemble"
     respond $ Response.WriteTempo t
-    mapM_ respond $ IntMap.mapWithKey Response.WriteZone zs
+    mapM_ respond $ IntMap.mapWithKey (\k v -> Response.WriteZone k v True) zs
     mapM_ respond $ Map.mapWithKey Response.WriteView vs
     respond $ Response.WriteResourceOps rs
 

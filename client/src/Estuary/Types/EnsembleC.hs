@@ -122,7 +122,7 @@ requestToEnsembleC :: MonadIO m => Resources -> Request -> EnsembleC -> m Ensemb
 requestToEnsembleC _ Request.LeaveEnsemble e = pure $ leaveEnsembleC e
 requestToEnsembleC _ (Request.DeleteThisEnsemble _) e = pure $ leaveEnsembleC e
 requestToEnsembleC _ (Request.WriteTempo x) e = pure $ modifyEnsemble (writeTempo x) e
-requestToEnsembleC _ (Request.WriteZone n v) e = pure $ modifyEnsemble (writeZone n v) e
+requestToEnsembleC _ (Request.WriteZone n v _) e = pure $ modifyEnsemble (writeZone n v) e
 requestToEnsembleC _ (Request.WriteView t v) e = pure $ modifyEnsemble (writeView t v) e
 requestToEnsembleC rs (Request.WriteResourceOps x) e = do
   setResourceOps rs x
@@ -151,7 +151,7 @@ responseToEnsembleC _ e = pure e
 responseToHints :: Response -> [Hint]
 responseToHints (Response.OK m) = pure $ LocalLog $ english m
 responseToHints (Response.Error e) = pure $ LocalLog $ english $ "error: " <> e
-responseToHints (Response.WriteZone n d) = pure $ Request $ Request.WriteZone n d
+responseToHints (Response.WriteZone n d changesRender) = pure $ Request $ Request.WriteZone n d changesRender
 responseToHints (Response.WriteView n v) = pure $ Request $ Request.WriteView n v
 responseToHints (Response.WriteTempo t) = [
   Request $ Request.WriteTempo t,

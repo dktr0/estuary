@@ -304,15 +304,12 @@ performRenderOps rEnv hints = do
   let ops = fmap hintsToRenderOps hints
   performEvent_ $ fmap (putRenderOps rEnv) ops
 
--- TODO: MUST be optimized so that zones are not written when changes don't involve evaluation...
--- (otherwise every bit of typing leads to potential evaluation)
-
 hintsToRenderOps :: [Hint] -> [RenderOp]
 hintsToRenderOps = concat . fmap f
   where
     f (Request LeaveEnsemble) = [RenderOp.ResetZones]
     f (Request (Request.WriteTempo t)) = [RenderOp.WriteTempo t]
-    f (Request (Request.WriteZone n v)) = [RenderOp.WriteZone n v]
+    f (Request (Request.WriteZone n v True)) = [RenderOp.WriteZone n v]
     f (Request (Request.ResetZones)) = [RenderOp.ResetZones]
     f (Request (Request.Reset t)) = [RenderOp.ResetZones,RenderOp.WriteTempo t]
     f _ = []

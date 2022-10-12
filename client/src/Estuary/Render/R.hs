@@ -80,10 +80,6 @@ initialRenderEnvironment s = do
     renderInfo = renderInfo'
   }
 
-{- putRenderOp :: MonadIO m => RenderEnvironment -> RenderOp -> m ()
-putRenderOp re x = liftIO $ do
-  ops <- takeMVar $ renderOps re
-  putMVar (renderOps re) $ ops ++ [x] -}
 
 putRenderOps :: MonadIO m => RenderEnvironment -> [RenderOp] -> m ()
 putRenderOps re x = liftIO $ do
@@ -95,6 +91,7 @@ takeRenderOps = do
   mv <- asks renderOps
   ops <- liftIO $ takeMVar mv
   liftIO $ putMVar mv []
+  -- when (length ops > 0) $ liftIO $ putStrLn $ show (length ops) ++ " ops"
   return ops
 
 

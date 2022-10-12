@@ -344,7 +344,6 @@ renderTextProgramChanged :: Int -> TextProgram -> R ()
 
 renderTextProgramChanged z (UnspecifiedNotation,x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
-  liftIO $ T.putStrLn $ T.pack $ show ns
   case determineTextNotation x ns of
     Left err -> do
       setZoneError z (T.pack $ show err)
