@@ -148,11 +148,12 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
     footer
     return (responseDown,sInfo)
 
+  let localRequests = fmap hintsToRequests localHints
+  let inAnEnsembleB = current $ fmap inAnEnsemble ensembleC
+  let requestsToSend = attachWith requestsForServer inAnEnsembleB localRequests
   let remoteHints = fmap responseToHints responseDown
   let hints = mergeWith (++) [localHints,remoteHints]
-  let willSendRequestsToServer = current $ fmap inAnEnsemble ensembleC
-  let allRequests = fmap hintsToRequests localHints
-  let requestsToSend = gate willSendRequestsToServer allRequests
+  let allRequests = fmap hintsToRequests hints
 
   -- perform Hints and Settings changes as IO
   performRenderOps rEnv hints

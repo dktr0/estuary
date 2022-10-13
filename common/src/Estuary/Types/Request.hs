@@ -36,8 +36,23 @@ data Request =
   ResetZones |
   ResetViews |
   Reset Tempo -- reset the zones, views and metric grid/tempo (with the provided tempo)
-  deriving (Generic)
+  deriving (Generic,Show)
 
 instance ToJSON Request where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Request
+
+requestsForServer :: Bool -> [Request] -> [Request]
+requestsForServer inAnEnsemble = Prelude.filter (f inAnEnsemble)
+  where
+    f False (DeleteThisEnsemble _) = False
+    f False (WriteTempo _) = False
+    f False (WriteZone _ _ _) = False
+    f False (WriteView _ _) = False
+    f False (SendChat _) = False
+    f False (WriteStatus _) = False
+    f False (WriteResourceOps _) = False
+    f False ResetZones = False
+    f False ResetViews = False
+    f False (Reset _) = False
+    f _ x = True
