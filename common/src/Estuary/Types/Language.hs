@@ -12,7 +12,7 @@ data Language =
   Español |
   Français
   deriving (Read,Ord,Show,Eq,Generic)
-
+ 
 instance ToJSON Language where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Language

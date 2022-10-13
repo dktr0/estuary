@@ -32,13 +32,14 @@ import GHCJS.Types
 -- just for temporary test
 import Data.IntMap as IntMap
 import Estuary.Widgets.W hiding (theme)
+import Estuary.Widgets.MultilingualEditor
+
 
 import Reflex.Host.Class (HostFrame)
 
 import System.Timeout(timeout)
 
 main :: IO ()
-{- main = widgetMapDemo -}
 main = do
   hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser
@@ -63,7 +64,6 @@ main = do
   case mErr of
     Just err -> putStrLn $ show err
     Nothing -> return ()
-
 
 visuallyCrash :: SomeException -> IO ()
 visuallyCrash e =

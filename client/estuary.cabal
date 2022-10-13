@@ -80,6 +80,7 @@ library
       Estuary.Widgets.Footer
       Estuary.Widgets.GeneralPattern
       Estuary.Widgets.Header
+      Estuary.Widgets.MultilingualEditor      
       Estuary.Widgets.Navigation
       Estuary.Widgets.Notepad
       Estuary.Widgets.Reference

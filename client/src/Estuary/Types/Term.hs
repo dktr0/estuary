@@ -52,10 +52,14 @@ data Term =
   IPaddress |
   IPaddressDescription |
   TerminalViewCommands |
-  Voices
+  Voices |
+  AddATitle
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
+translate AddATitle English = "Add a title"
+translate AddATitle Español = "Add a title"
+
 translate TerminalViewCommands Français = "Estuary (un symbiote de codage en ligne)"
 translate TerminalViewCommands English = "Estuary (a live coding symbiont)"
 translate TerminalViewCommands Español = "Estuary (una simbionte live coding)"

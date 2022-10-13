@@ -116,7 +116,7 @@ viewWidget (RouletteView z rows) = zoneWidget False z [] maybeRoulette Roulette 
 
 viewWidget (CalendarEventView z) = do
   today <- liftIO getZonedTime
-  let defaultValue = IntMap.singleton 0 (CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today)))
+  let defaultValue = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
   zoneWidget False z defaultValue maybeCalendarEvents CalendarEvs calendarEventWidget
 
 viewWidget (CountDownView z) = zoneWidget False z (Holding 60) maybeTimerDownState CountDown countDownWidget
