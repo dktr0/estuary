@@ -29,26 +29,39 @@ import Estuary.Types.Ensemble
 import Estuary.Widgets.W
 import Estuary.Types.Definition
 
+-- visualiseTimerWidget:: MonadWidget t m => Dynamic t (Timer,Bool) -> W t m (Variable t (Timer,Bool))
+-- visualiseTimerWidget delta = mdo
+--   initialValue <- sample $ current delta -- (Timer,Bool)
+--   let initialWidget = controlInterface initialValue -- (Event t (Timer, Bool))
+--   let remoteOrLocalEdits = leftmost [updated delta, localEdits'] -- Event t (Timer,Bool)
+--   x <- sample $ hold initialValue remoteOrLocalEdits -- (Timer,Bool)
+--   updatedWidgets <- flippableWidget <$> (controlInterface x) (selectVisualiser x) False <$> snd remoteOrLocalEdits -- gets an Dynamic (Event t (timer,bool)) which I flatten with switchDyn
+--   let updatedWidgets' = switchDyn updatedWidgets
+--   localEdits <- widgetHold initialWidget updatedWidgets' -- Dyn t (Event t (Timer,Bool))
+--  -- localEdits <- widgetHold initialWidget $ traceEventWith show updatedWidgets -- m (Dynamic t (Event t (Timer,Bool))) 
+--   let localEdits' = switchDyn localEdits -- Event t (Timer, Bool)
+--   v <- variable delta $ localEdits'
+--   return v
+
 --flippableWidget :: (Adjustable t m, Reflex t, MonadHold t m) => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
 
-visualiseTimerWidget:: MonadWidget t m => Dynamic t (Timer,Bool) -> W t m (Variable t (Timer,Bool))
-visualiseTimerWidget delta = mdo
-  initialValue <- sample $ current delta -- (Timer,Bool)
-  let initialWidget = controlInterface initialValue -- (Event t (Timer, Bool))
-  let remoteOrLocalEdits = leftmost [updated delta, localEdits'] -- Event t (Timer,Bool)
-  x <- sample $ hold initialValue remoteOrLocalEdits -- (Timer,Bool)
-  updatedWidgets <- flippableWidget <$> (controlInterface x) (selectVisualiser x) False <$> snd remoteOrLocalEdits -- gets an Dynamic (Event t (timer,bool)) which I flatten with switchDyn
-  let updatedWidgets' = switchDyn updatedWidgets
-  localEdits <- widgetHold initialWidget updatedWidgets' -- Dyn t (Event t (Timer,Bool))
- -- localEdits <- widgetHold initialWidget $ traceEventWith show updatedWidgets -- m (Dynamic t (Event t (Timer,Bool))) 
-  let localEdits' = switchDyn localEdits -- Event t (Timer, Bool)
-  v <- variable delta $ localEdits'
-  return v
+
+timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
+timerWidget delta = mdo
+  x <- flippableWidget (timerControl delta) (timerDisplay delta) False newModeEv -- D t (E t Timer)
+  let timerEv = traceEvent "flipper" $ switchDyn $ fmap fst x -- :: Event t Timer
+  let newModeEv = switchDyn $ fmap snd x -- :: Event t Bool
+
+  variable delta timerEv
+
+-- timerDisplay :: MonadWidget t m => Dynamic t Timer -> m (Event t Timer, Event t Bool)
+
+-- timerControl :: MonadWidget t m => Dynamic t Timer -> m (Event t Timer, Event t Bool)
 
 --widgetHold :: (Adjustable t m, MonadHold t m) => m a -> Event t (m a) -> m (Dynamic t a)
 
-timerTracer:: MonadWidget t m => Timer ->  W t m ()
-timerTracer (Finite 0 xs mode loop measure) = do -- xs seq of counts, mode (playingstopped) loop measure
+timerTracer:: MonadWidget t m => Dynamic t Timer ->  W t m ()
+timerTracer delta = do -- xs seq of counts, mode (playingstopped) loop measure
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   beatPosition <- currentBeat -- :: Event t Rational
@@ -57,45 +70,58 @@ timerTracer (Finite 0 xs mode loop measure) = do -- xs seq of counts, mode (play
 --  beat' <- traceDynamicWith (\x -> "beat of cyclicTracer: " ++ show (realToFrac x :: Double)) beat
   -- timer beat' currentTempo
   --visualiseText beat' $ constDyn "mu"
-  timer beat' currentTempo loop
+  timer beat' currentTempo delta
   return ()
 
 -- selectVisualiser and controllerInterface have to produce a tuple: (Event t Timer, Event t Bool)
 -- the snd of this tuple has to be fed into a function:: Bool -> Bool where pattern matching true with false and viceversa
 -- the flippablewidget then goes into line 36 and 38 of course.... this will be wild....
 
+-- data Timer = Finite Int [(Text,Rational)] CurrentMode Bool Measure 
 
 -- this for playFunc and resetFunc
 -- performEvent :: Event t (Performable m a) -> m (Event t a)
 -- localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
-selectVisualiser :: MonadWidget t m => (Timer,Bool) -> W t m (Event t (Timer, Bool))
-selectVisualiser (Finite 0 xs mode loop measure, bool) = divClass "timer-Visualiser" $ do ----- Resolver el Evento entrante
-  timerTracer (Finite 0 xs mode loop measure)
+timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+timerDisplay delta = divClass "timer-Visualiser" $ do ----- Resolver el Evento entrante
+  timerTracer delta
+  d <- sample $ current delta
 
   topRowContainer <- divClass "flex-container-col" $ do
     fstRowWrap <- divClass "flex-item-col" $ do
       firstRowEvent <- divClass "flex-container-row" $ do
         resetItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
         let resetEvent = resetFunc <$ resetItem -- Event t (Timer -> Timer)
-        flipItem <- divClass "flex-item-row" blank -- :: Event t ()
-        let flipEvent = flipFunc <$ flipItem
-        return (resetEvent,flipEvent)
+        playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
+        let playPauseEvent = playPauseFunc <$ playPauseItem        
+        return $ leftmost [resetEvent,playPauseEvent]
       return firstRowEvent
     sndRowWrap <- divClass "flex-item-col" $ do 
       secondRowEvent <- divClass "flex-container-row" $ do
-        playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
+                ------ ************** -------
+        flipItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
+        let flipEvent = flipFunc <$ flipItem
+
+        -- ** --
+
         visualisationItem <- clickableDiv "flex-item-row" blank
-        let visualisationEvent = resetFunc <$ visualisationItem
-        let rightEvents = leftmost [visualisationEvent] -- open path for playPause
+        let visualisationEvent = visualiserFunc <$ visualisationItem
+        let rightEvents = (visualisationEvent, flipEvent) -- open path for playPause
+
         return rightEvents
       return secondRowEvent
-    let polyptychEvent = fmap (\x -> x $ Finite 0 xs mode loop measure) $ leftmost [fst fstRowWrap, sndRowWrap]
-    let flipper = fmap (\x -> x $ bool) $ snd fstRowWrap 
+    let polyptychEvent = traceEvent "polyDisplay" $ fmap (\x -> x d) $ leftmost [fstRowWrap, fst sndRowWrap]
+    let flipper = fmap (\x -> x $ True) $ snd sndRowWrap  -- this true???
     return (polyptychEvent, flipper)
   return topRowContainer
 
-controlInterface:: MonadWidget t m => (Timer,Bool) -> W t m (Event t (Timer, Bool))
-controlInterface (Finite 0 xs mode loop measure, bool) = divClass "timer-Visualiser" $ do
+-- playFunc (Finite n xs (Falling' fallStartMark) loop m) = Finite n xs (Holding' fallStartMark 30) loop m 
+-- playFunc (Finite n xs Halted loop m) = Finite n xs Halted loop m 
+
+timerControl:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+timerControl delta = divClass "timer-Visualiser" $ do
+  traceDynamic "delta" delta
+  d <- sample $ current delta
   divClass "icons" $ do
     divClass "icons-row" $ do
         pure (structureIcon $ constDyn True) >>= (divClass "iconTopLeft") -- text -- needs to rework this bottom only
@@ -120,23 +146,25 @@ controlInterface (Finite 0 xs mode loop measure, bool) = divClass "timer-Visuali
           parsed'' <- sample parsed'
           return (parsed'',boton)
         let textInputEvent = (textInputFunc $ fst txInputArea) <$ (snd txInputArea) -- Event t (Timer -> Timer)
-        measureItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
-        let measureEvent = measureFunc <$ measureItem
-        return $ leftmost [measureEvent,textInputEvent]
+        loopItem <- clickableDiv "flex-item-row" blank
+        let loopEvent = loopFunc <$ (traceEvent "loop" $ loopItem)
+        return $ leftmost [loopEvent,textInputEvent] -- Event t (Timer -> Timer)
       return firstRowEvent
     sndRowWrap <- divClass "flex-item-col" $ do 
       secondRowEvent <- divClass "flex-container-row" $ do
+
         flipItem <- clickableDiv "flex-item-row" blank -- Event t ()
         let flipEvent = flipFunc <$ flipItem
 
         -- flippable .... etc...
-        loopItem <- clickableDiv "flex-item-row" blank
-        let loopEvent = loopFunc <$ loopItem
-        let rightEvents = (loopEvent,flipEvent) 
+        measureItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
+        let measureEvent = measureFunc <$ (traceEvent "measure" $ measureItem)
+
+        let rightEvents = (measureEvent,flipEvent) 
         return rightEvents
       return secondRowEvent
-    let polyptychEvent = fmap (\x -> x $ Finite 0 xs mode loop measure) $ leftmost [fstRowWrap,fst sndRowWrap]
-    let flipper = fmap (\x -> x $ bool) $ snd sndRowWrap
+    let polyptychEvent = traceEvent "polyControl" $ fmap (\x -> x d) $ leftmost [fstRowWrap, fst sndRowWrap]
+    let flipper = fmap (\x -> x False) $ snd sndRowWrap -- this correct?
     return (polyptychEvent, flipper) -- (Timer, Bool)
   return topRowContainer
 
@@ -148,35 +176,28 @@ flipFunc True = False
 flipFunc False = True
 
 resetFunc:: Timer -> Timer
-resetFunc (Finite n xs (Holding' pauseTime countTime) loop m) = Finite n xs (Holding' pauseTime 0) loop m
-resetFunc (Finite n xs (Falling' fallStartMark) loop m) = Finite n xs (Falling' fallStartMark) loop m
-              --  where newFallingTime = getCurrentUTC somehow... -- change this!
-resetFunc (Finite n xs Halted loop m) = Finite n xs Halted loop m
+resetFunc timer = timer
 
--- CurrentMode = Falling' UTCTime | Halted | Holding' UTCTime Rational
-
-playPauseFunc:: UTCTime -> Timer -> Timer -- this needs to be Timer -> Timer !!!!!!!!!
-playPauseFunc playTime (Finite n xs Halted loop m) = Finite n xs (Falling' playTime) loop m
-
--- playFunc (Finite n xs (Falling' fallStartMark) loop m) = Finite n xs (Holding' fallStartMark 30) loop m 
--- playFunc (Finite n xs Halted loop m) = Finite n xs Halted loop m 
+playPauseFunc:: Timer -> Timer -- this needs to be Timer -> Timer !!!!!!!!!
+playPauseFunc timer = timer
 
 visualiserFunc:: Timer -> Timer
-visualiserFunc (Finite n xs mode loop m) = Finite ((n+1)`mod`numberOfVis) xs mode loop m
+visualiserFunc timer = timer {n= (((n timer)+1)`mod`numberOfVis)}
 
 --- controller funcas
 textInputFunc:: [(T.Text,Rational)] -> Timer -> Timer
-textInputFunc count (Finite n xs mode loop measure) = Finite n count mode True Seconds
-
+textInputFunc count timer = timer {form=count}
 
 -- Measure = Cycles | Seconds
 measureFunc:: Timer -> Timer 
-measureFunc (Finite n xs mode bool Seconds) = (Finite n xs mode True Cycles)
-measureFunc (Finite n xs mode bool Cycles) = (Finite n xs mode True Seconds)
+measureFunc timer 
+  | (measure timer) == Seconds = timer {measure= Cycles}
+  | (measure timer) == Cycles = timer {measure= Seconds}
 
 loopFunc:: Timer -> Timer 
-loopFunc (Finite n xs mode True m) = Finite n xs mode False m
-loopFunc (Finite n xs mode False m) = Finite n xs mode True m
+loopFunc timer 
+  | (loop timer) == True = timer {loop= False}
+  | (loop timer) == False = timer {loop= True}
 
 
 -- this need sto change if other visualisers are inputed on the fly.
@@ -381,11 +402,13 @@ currentBeat = do
   pure $ attachWith timeToCount (current currentTempo) $ fmap _tickInfo_lastUTC tick
 
 
-timer:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Bool -> W t m ()
-timer beat tempo loop = mdo 
+timer:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
+timer beat tempo delta = mdo 
   tempDiv <- divClass "temporaryDiv" $ do
+
+    traceDynamic "delta" delta
     -- get the tick from inside the widget
-    let textos = constDyn "intro = 20, the lovely repetition = 30, outro = 10"
+    let textos = constDyn "intro = 2, the lovely repetition = 3, outro = 1"
     (valTxBx,_) <- textWithLockWidget 2 (constDyn False) textos -- Dyn t Text
     boton <- button "test" -- Event ()
     -- terrible loop mechanism, this will change once the definition is concieved
@@ -405,7 +428,7 @@ timer beat tempo loop = mdo
 
     let countFromBEvent = (\x y -> x - y) <$> beat <*> lastBEventDyn
 
-    let countFromBEventLooped = loopBool loop <$> countDyn <*> countFromBEvent
+    let countFromBEventLooped = loopBool <$> (loop <$> delta) <*> countDyn <*> countFromBEvent
 
     let inSecsBeat = countToTime <$> tempo <*> beat
     let inSecsLastBEventDyn = countToTime <$> tempo <*> lastBEventDyn
@@ -417,7 +440,7 @@ timer beat tempo loop = mdo
     let countFromBEventInSecs = diffUTCTime <$> inSecsBeat <*> inSecsLastBEventDyn
     return ((countdownP,label))
 
-  traceDynamicWith (\x -> "count: " ++ show (realToFrac x :: Double)) $ fst tempDiv
+--  traceDynamicWith (\x -> "count: " ++ show (realToFrac x :: Double)) $ fst tempDiv
 
 --  visualiseText (fst tempDiv) $ snd tempDiv
   visualiseProgressBar (fst tempDiv) $ snd tempDiv

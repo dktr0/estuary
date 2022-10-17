@@ -72,14 +72,20 @@ instance ToJSON Measure where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Measure
 
-data CurrentMode = Falling' UTCTime | Halted | Holding' UTCTime Rational deriving (Show,Ord,Eq,Generic)
-instance ToJSON CurrentMode where
+data Mode = Falling' UTCTime | Halted | Holding' UTCTime Rational deriving (Show,Ord,Eq,Generic)
+instance ToJSON Mode where
   toEncoding = genericToEncoding defaultOptions
-instance FromJSON CurrentMode
+instance FromJSON Mode
 
 -- visualiser is an Int
 -- Timer = Finite Visualiser Targets CurrentMode Loop Measure
-data Timer = Finite Int [(Text,Rational)] CurrentMode Bool Measure deriving (Show,Eq,Ord,Generic)
+data Timer = Timer {
+  n:: Int,
+  form:: [(Text,Rational)],
+  mode:: Mode,
+  loop:: Bool,
+  measure:: Measure
+} deriving (Show,Eq,Ord,Generic)
 
 instance ToJSON Timer where
   toEncoding = genericToEncoding defaultOptions
