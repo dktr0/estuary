@@ -48,19 +48,13 @@ import Estuary.Types.Definition
 
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
-  
-  -- initWidg <- flippableWidget (timerControl delta) (timerDisplay delta) False newModeEv
-  
   flipVals' <- hold False $ newModeEv
   flipVals <- sample flipVals'
   let val = if (flipVals == False) then (delta,z) else (z,delta)
-
-
   x <- flippableWidget (timerControl $ fst val) (timerDisplay $ snd val) False newModeEv -- D t (E t Timer, E t Bool)
   let timerEv = traceEvent "timerEv" $ switchDyn $ fmap fst x -- :: Event t Timer
   let newModeEv = traceEvent "newModeEv" $ switchDyn $ fmap snd x -- :: Event t Bool
   let remoteOrLocalEdits = traceEvent "remoteOrlocalEdits" $ leftmost [updated delta, timerEv]
-
   w <- sample $ current delta
   z <- holdDyn w $ remoteOrLocalEdits
   variable delta timerEv
