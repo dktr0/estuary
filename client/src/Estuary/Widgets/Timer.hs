@@ -48,11 +48,25 @@ import Estuary.Types.Definition
 
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
-  x <- flippableWidget (timerControl delta) (timerDisplay delta) False newModeEv -- D t (E t Timer)
-  let timerEv = traceEvent "flipper" $ switchDyn $ fmap fst x -- :: Event t Timer
-  let newModeEv = switchDyn $ fmap snd x -- :: Event t Bool
+  
+  -- initWidg <- flippableWidget (timerControl delta) (timerDisplay delta) False newModeEv
+  
+  flipVals' <- hold False $ newModeEv
+  flipVals <- sample flipVals'
+  let val = if (flipVals == False) then (delta,z) else (z,delta)
 
+
+  x <- flippableWidget (timerControl $ fst val) (timerDisplay $ snd val) False newModeEv -- D t (E t Timer, E t Bool)
+  let timerEv = traceEvent "timerEv" $ switchDyn $ fmap fst x -- :: Event t Timer
+  let newModeEv = traceEvent "newModeEv" $ switchDyn $ fmap snd x -- :: Event t Bool
+  let remoteOrLocalEdits = traceEvent "remoteOrlocalEdits" $ leftmost [updated delta, timerEv]
+
+  w <- sample $ current delta
+  z <- holdDyn w $ remoteOrLocalEdits
   variable delta timerEv
+
+-- if newModeEV is false: timerControl delta and timerDisplay z 
+-- if newModeEv is true: timerControl z and timerDisplay delta
 
 -- timerDisplay :: MonadWidget t m => Dynamic t Timer -> m (Event t Timer, Event t Bool)
 
@@ -82,9 +96,12 @@ timerTracer delta = do -- xs seq of counts, mode (playingstopped) loop measure
 -- this for playFunc and resetFunc
 -- performEvent :: Event t (Performable m a) -> m (Event t a)
 -- localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
+
 timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 timerDisplay delta = divClass "timer-Visualiser" $ do ----- Resolver el Evento entrante
   timerTracer delta
+  traceDynamic "delta in display" delta
+
   d <- sample $ current delta
 
   topRowContainer <- divClass "flex-container-col" $ do
@@ -120,7 +137,7 @@ timerDisplay delta = divClass "timer-Visualiser" $ do ----- Resolver el Evento e
 
 timerControl:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 timerControl delta = divClass "timer-Visualiser" $ do
-  traceDynamic "delta" delta
+  traceDynamic "delta in control" delta
   d <- sample $ current delta
   divClass "icons" $ do
     divClass "icons-row" $ do
@@ -182,7 +199,7 @@ playPauseFunc:: Timer -> Timer -- this needs to be Timer -> Timer !!!!!!!!!
 playPauseFunc timer = timer
 
 visualiserFunc:: Timer -> Timer
-visualiserFunc timer = timer {n= (((n timer)+1)`mod`numberOfVis)}
+visualiserFunc timer = timer {n= (((n timer)+1))} -- add the mod numberOfVis later
 
 --- controller funcas
 textInputFunc:: [(T.Text,Rational)] -> Timer -> Timer
@@ -406,7 +423,7 @@ timer:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Ti
 timer beat tempo delta = mdo 
   tempDiv <- divClass "temporaryDiv" $ do
 
-    traceDynamic "delta" delta
+--    traceDynamic "delta" delta
     -- get the tick from inside the widget
     let textos = constDyn "intro = 2, the lovely repetition = 3, outro = 1"
     (valTxBx,_) <- textWithLockWidget 2 (constDyn False) textos -- Dyn t Text
