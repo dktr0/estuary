@@ -570,6 +570,13 @@ display: block;
 
 /*contains the tempo and coding textareas  */
 
+.divForText {
+	position: relative;
+	transform: translate(50%,50%);
+	height: 50%;
+	width: 50%;
+}
+
 .textInputToEndOfLine  {
 	height: 100%;
 	width: 100%;
@@ -1116,6 +1123,12 @@ cursor: pointer;
 	position: absolute;
 }
 
+.iconForm {
+    display: flex;
+    width: 100%;
+    height: 100%;
+	position: relative;
+}
 .testy {
     width: 100%;
     height: 100%;
@@ -1135,6 +1148,14 @@ cursor: pointer;
 }
 
 .iconBottomLeft {
+    position: absolute;
+    width: 50%;
+    height: 50%;
+	top: 50%;
+	left: 0%;
+}
+
+.iconFlippedFlip {
     position: absolute;
     width: 50%;
     height: 50%;
@@ -1183,7 +1204,14 @@ cursor: pointer;
 .flex-item-col {
     width: auto;
     height: 100%;
-    opacity: 0.5;
+    opacity: 1.0;
+	z-index: 0;
+}
+
+.flex-item-col-Form {
+    width: auto;
+    height: 50%;
+    opacity: 1.0;
 	z-index: 0;
 }
 

@@ -132,7 +132,7 @@ viewWidget er (StopWatchView z) = zoneWidget z Cleared maybeTimerUpState StopWat
 
 viewWidget er (SeeTimeView z) = zoneWidget z (Tv 0 4 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
-viewWidget er (TimerView z) = zoneWidget z (Timer 666 [] Halted True Cycles) maybeTimer TimerDef er timerWidget
+viewWidget er (TimerView z) = zoneWidget z (Timer 0 [] Halted True Cycles) maybeTimer TimerDef er timerWidget
 
 viewWidget er (NotePadView z) = zoneWidget z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad er notePadWidget
 
