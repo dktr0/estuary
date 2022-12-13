@@ -430,8 +430,12 @@ currentBeat = do
 -- need to get a dynamic that represents a flip. Meaning that flip produces a new representation of the timer always..... fun times....
 timer:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
 timer beat t timer = mdo 
+  defMode <- sample $ current timer 
+  let def = (\x -> n x) defMode
+  dynN <- holdDyn def $ updated $  n <$> timer
   let nEv = updated $ n <$> timer 
-  widgetHold (visualDisplay beat t timer 1) (visualDisplay beat t timer <$> nEv) 
+--  visualDisplay beat t timer <$> dynN
+  widgetHold (visualDisplay beat t timer 2) $ visualDisplay beat t timer <$> nEv
   pure ()
 
 visualDisplay:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> Int -> W t m ()
@@ -470,13 +474,16 @@ fi (Just x) = show (realToFrac x :: Float)
 
 engineDisplays:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m (Dynamic t (Maybe Rational), Dynamic t (Maybe Text))
 engineDisplays beat tempo delta = mdo
-  timeOfFall <- performEvent $ fmap (liftIO . generateStartTime) $ updated $ mode <$> delta
-  let startTime = fmap extractStartTime $ timeOfFall -- Dynamic t (Maybe UTC)
-  let startTimeInBeats = attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ startTime -- Event t (Maybe Rational)
-  beatAtPlayEvent <- holdDyn (Just 0) $ traceEventWith (\x -> "b @ fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ startTimeInBeats -- Dyn t (Maybe Rational)
-  let countFromBEvent' = (\b lb -> fmap (b-) lb) <$> beat <*> beatAtPlayEvent 
-  countFromBEvent <- traceDynamicWith (\x -> "countFromEvent " <> (show (fmap (\x -> realToFrac x :: Float) x))) countFromBEvent'
-  return (countFromBEvent, constDyn $ Just "nada" )
+--  y <- traceDynamic "mode: " $ mode <$> delta
+  return (constDyn $ Just 1, constDyn $ Just "nada")
+
+  -- timeOfFall <- performEvent $ fmap (liftIO . generateStartTime) $ updated $ mode <$> delta
+  -- let startTime = fmap extractStartTime $ timeOfFall -- Dynamic t (Maybe UTC)
+  -- let startTimeInBeats = attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ startTime -- Event t (Maybe Rational)
+  -- beatAtPlayEvent <- holdDyn (Just 0) $ traceEventWith (\x -> "fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ startTimeInBeats -- Dyn t (Maybe Rational)
+  -- let countFromBEvent' = (\b lb -> fmap (b-) lb) <$> beat <*> beatAtPlayEvent 
+  -- countFromBEvent <- traceDynamicWith (\x -> "count " <> (show (fmap (\x -> realToFrac x :: Float) x))) countFromBEvent'
+  -- return (countFromBEvent, constDyn $ Just "nada" )
 
 
 -- engineDisplays:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m (Dynamic t (Maybe Rational), Dynamic t (Maybe Text))
