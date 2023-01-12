@@ -29,10 +29,6 @@ import Estuary.Types.Ensemble
 import Estuary.Widgets.W
 import Estuary.Types.Definition
 
---flippableWidget :: (Adjustable t m, Reflex t, MonadHold t m) => m a -> m a -> Bool -> Event t Bool -> m (Dynamic t a)
-
--- visualiser is an Int
-
 -- data Timer = Timer {
 --   n:: Int,
 --   form:: [(Text,Rational)],
@@ -44,103 +40,27 @@ import Estuary.Types.Definition
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
   initVal <- sample $ current delta
-  dynMode <- holdDyn False $ newModeEv -- changes from previous to false
-  let gatedDisplay = gate (current dynMode) $ leftmost [timerEv]
-  let gatedControl = gate (current (not <$> dynMode)) $ leftmost [timerEv]
-  deltaForControl <- holdDyn initVal $ traceEvent "deltaForControl" $ gatedDisplay
-  deltaForDisplay <- holdDyn initVal $ traceEvent "deltaForDisplay" $ gatedControl
+  dynMode <- holdDyn True $ newModeEv -- changes from previous to false
+  let gatedDisplay = gate (current dynMode) $ leftmost [timerEv,updated delta]
+  let gatedControl = gate (current (not <$> dynMode)) $ leftmost [timerEv,updated delta]
+  deltaForControl <- holdDyn initVal {- $ traceEvent "deltaForControl" -} $ gatedDisplay
+  deltaForDisplay <- holdDyn initVal {- $ traceEvent "deltaForDisplay" -} $ gatedControl
   let timerEv = switchDyn $ fmap fst x -- :: Event t Timer -- timer from controler
-  let newModeEv = traceEvent "newModeEv" $ switchDyn $ fmap snd x -- :: Event t Bool -- false
-  x <- flippableWidget (timerControl deltaForControl) (timerDisplay deltaForDisplay) False newModeEv -- D t (E t Timer, E t Bool) -- False, watching the controler
+  let newModeEv = {- traceEvent "newModeEv" $ -} switchDyn $ fmap snd x -- :: Event t Bool -- false
+  x <- flippableWidget (timerControl deltaForControl) (timerDisplay deltaForDisplay) True newModeEv -- D t (E t Timer, E t Bool) -- False, watching the controler
   variable delta timerEv
-
-timerTracer:: MonadWidget t m => Dynamic t Timer ->  W t m ()
-timerTracer delta = do -- xs seq of counts, mode (playingstopped) loop measure
-  c <- context
-  let currentTempo = fmap (tempo . ensemble . ensembleC) c
-  beatPosition <- currentBeat -- :: Event t Rational
-  beat <- holdDyn 0 beatPosition
-  beat' <- holdUniqDyn beat
---  beat' <- traceDynamicWith (\x -> "beat of cyclicTracer: " ++ show (realToFrac x :: Double)) beat
-  -- timer beat' currentTempo
-  --visualiseText beat' $ constDyn "mu"
-  timer beat' currentTempo delta -- flipdyn
-  return ()
-
-
-timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
-timerDisplay delta = divClass "timer-Visualiser" $ mdo
-  timerTracer x 
-  
-  beat <- currentBeat
-  dInit <- sample $ current delta
-  let local = fst topRowContainer
-  x <- holdDyn dInit $ traceEvent "x" $ leftmost [local,updated delta]
-
-  divClass "icon" $ do
-    pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip
-    pure ()
-
-  topRowContainer <- divClass "flex-container-col" $ do
-    fstRowWrap <- divClass "flex-item-col" $ do
-      firstRowEvent <- divClass "flex-container-row" $ do
-        resetItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
-        let resetEvent = resetFunc <$ resetItem -- Event t (Timer -> Timer)
-        playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
-
-        aTime <- liftIO $ getCurrentTime
-        let playPauseEvent = playPauseFunc aTime <$ playPauseItem        
-        return $ leftmost [resetEvent,playPauseEvent]
-      return firstRowEvent
-    sndRowWrap <- divClass "flex-item-col" $ do 
-      secondRowEvent <- divClass "flex-container-row" $ do
-                ------ ************** -------
-        flipItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
-        let flipEvent = flipFunc <$ flipItem
-
-        -- ** --
-
-        visualisationItem <- clickableDiv "flex-item-row" blank
-        let visualisationEvent = visualiserFunc <$ visualisationItem
-        let rightEvents = (visualisationEvent, flipEvent) -- open path for playPause
-
-        return rightEvents
-      return secondRowEvent
-    let flippy = flipWithoutChangesFunc <$  (tag (constant ()) $ snd sndRowWrap)
-    let polyptychEvent = attachWith (\d x -> x d) (current x) $ leftmost [fstRowWrap, fst sndRowWrap, flippy]
-    let flipper = fmap (\x -> x $ True) $ snd sndRowWrap  -- this true???
-    return (polyptychEvent, flipper)
-  return topRowContainer
-
-flipWithoutChangesFunc:: Timer -> Timer
-flipWithoutChangesFunc timer = timer
 
 
 timerControl:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 timerControl delta = divClass "timer-Visualiser" $ mdo
   dInit <- sample $ current delta
-  let local = fst topRowContainer
-  x <- holdDyn dInit $ traceEvent "x" $ leftmost [local, updated delta]
-  
-  divClass "icons" $ do
-    divClass "icons-row" $ do
-        divClass "iconTopLeft" $ do
-          divClass "flex-container-col" $ do
-            divClass "flex-item-col-Form" blank
-            pure (structureIcon $ constDyn True) >>= (divClass "flex-item-col-Form") -- text -- needs to rework this bottom only
-            return ()
-          return () 
-        pure (loopIcon $ (loop <$> x)) >>= (divClass "iconTopRight") -- loop
-        return ()
-    divClass "icons-row" $ do
-      pure (flipIcon $ constDyn True) >>= (divClass "iconBottomLeft") -- flip
-      pure (measureIcons $ (measure <$> x)) >>= (divClass "iconBottomRight") -- measure
-      return ()
-    return ()
+  let local = fst topContainer
+  mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xC" -} $ leftmost [local, updated delta]  
+  iconDisplay mergedLocalDelta
 
-  topRowContainer <- divClass "flex-container-col" $ do
+  topContainer <- divClass "flex-container-col" $ do
     fstRowWrap <- divClass "flex-item-col" $ do
-      firstRowEvent <- divClass "flex-container-row" $ do
+      divClass "flex-container-row" $ do
         txInputArea <- divClass "flex-container-col" $ do
           let textos = constDyn "intro = 20, the lovely repetition = 30, outro = 10"
           txVal <- divClass "divForText" $ do
@@ -150,73 +70,244 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
           let txPressed = tag (current $ txVal) boton -- Event t Text
           let parsed = parseForm <$> txPressed -- Event t [(Text,Rat)]
           parsed' <- hold [("",0)] parsed
-          parsed'' <- sample parsed'
+          parsed'' <- sample parsed' -- all this needs to be redone without the def text
           return (parsed'',boton)
         let textInputEvent = (textInputFunc $ fst txInputArea) <$ (snd txInputArea) -- Event t (Timer -> Timer)
         loopItem <- clickableDiv "flex-item-row" blank
         let loopEvent = loopFunc <$ (loopItem)
         return $ leftmost [loopEvent,textInputEvent] -- Event t (Timer -> Timer)
-      return firstRowEvent
     sndRowWrap <- divClass "flex-item-col" $ do 
-      secondRowEvent <- divClass "flex-container-row" $ do
-
+      divClass "flex-container-row" $ do
         flipItem <- clickableDiv "flex-item-row" blank -- Event t ()
         let flipEvent = flipFunc <$ flipItem
-
-        -- flippable .... etc...
         measureItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
         let measureEvent = measureFunc <$ (measureItem)
+        return (measureEvent,flipEvent) 
 
-        let rightEvents = (measureEvent,flipEvent) 
-        return rightEvents
-      return secondRowEvent
-    let flippy = flipWithoutChangesFunc <$  (tag (constant ()) $ snd sndRowWrap)
-    let polyptychEvent = attachWith (\d x -> x d) (current x) $ leftmost [fstRowWrap, fst sndRowWrap, flippy] 
-    let flipper = fmap (\x -> x False) $ snd sndRowWrap -- this correct?
-    return (polyptychEvent, flipper) -- (Timer, Bool)
-  return topRowContainer
+    let flippy = id <$  (tag (constant ()) $ snd sndRowWrap)
+    let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [fstRowWrap, fst sndRowWrap, flippy] 
+    let flipper = fmap (\x -> x False) $ snd sndRowWrap -- this shopuld be only a Bool no need for flipFunc
+    return (polyptychEvent, flipper) -- (Timer, Bool) -- return of topRowContainer
+  return topContainer -- final return
+
+timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+timerDisplay delta = divClass "timer-Visualiser" $ mdo
+
+  dInit <- sample $ current delta
+  let local = fst topContainer
+  mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
+  attachBeatAndTempoToTimer mergedLocalDelta
+  
+  divClass "icon" $ do
+    pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip icon
+
+  topContainer <- divClass "flex-container-col" $ do
+    fstRowWrap <- divClass "flex-item-col" $ do
+      divClass "flex-container-row" $ do
+        resetItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
+        let resetEvent = resetFunc <$ resetItem -- Event t (Timer -> Timer)
+        playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
+        aTime <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) playPauseItem
+        let playPauseEvent = playPauseFunc <$> aTime
+        return $ leftmost [resetEvent,playPauseEvent]
+    sndRowWrap <- divClass "flex-item-col" $ do 
+      divClass "flex-container-row" $ do
+                ------ ************** -------
+        flipItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
+        let flipEvent = flipFunc <$ flipItem
+
+        -- ** --
+
+        visualisationItem <- clickableDiv "flex-item-row" blank
+        let visualisationEvent = visualiserFunc <$ visualisationItem
+        return (visualisationEvent, flipEvent) -- open path for playPause
+      
+    let flippy = id <$  (tag (constant ()) $ snd sndRowWrap)
+    let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [fstRowWrap, fst sndRowWrap, flippy] -- mergeWith is the proper one to use, also here you can use attachWith reverse application &!!!
+    let flipper = fmap (\x -> x $ True) $ snd sndRowWrap  -- this true???
+    return (polyptychEvent, flipper)
+  return topContainer
+
+attachBeatAndTempoToTimer:: MonadWidget t m => Dynamic t Timer ->  W t m ()
+attachBeatAndTempoToTimer delta = do -- xs seq of counts, mode (playingstopped) loop measure
+  c <- context
+  let currentTempo = fmap (tempo . ensemble . ensembleC) c
+  beatPosition <- currentBeat -- :: Event t Rational
+  beat <- holdDyn 0 beatPosition
+  -- beat' <- traceDynamicWith (\x -> "beat of cyclicTracer: " ++ show (realToFrac x :: Double)) beat
+  -- timer beat' currentTempo
+  --visualiseText beat' $ constDyn "mu"
+  -- text "timer tracer"
+  timerChangeDisplay beat currentTempo delta -- flipdyn
+  return ()
+
+-- here something about holding onto the proper display...... :/
+-- need to get a dynamic that represents a flip. Meaning that flip produces a new representation of the timer always..... fun times....
+timerChangeDisplay:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
+timerChangeDisplay beat t timer = do 
+  --timer' <- traceDynamic "timer'" timer
+  defTimer <- sample $ current timer
+  -- liftIO $ putStrLn $ show defMode
+  let defN = n defTimer
+  dynN <- holdDyn 0 $ updated $  n <$> timer
+  let nEv = updated $ n <$> timer
+  -- visualDisplay beat t timer' <$> dynN
+  -- visualDisplay beat t timer' 2
+  --text "adio"
+  widgetHold (text "default") $ testy timer <$> nEv
+--  widgetHold (visualDisplayDef beat t timer) $ visualDisplay beat t timer <$> nEv
+  pure ()
+
+testy:: MonadWidget t m => Dynamic t Timer -> Int -> W t m ()
+testy delta 0 = do
+  traceDynamic "mode cero: " $ mode <$> delta
+  text "cero"
+  pure ()
+
+testy delta 1 = do
+  traceDynamic "mode uno: " $ mode <$> delta
+  text "uno"
+  pure ()
+
+testy delta 2 = do
+  traceDynamic "mode dos: " $ mode <$> delta
+  text "dos"
+  pure ()
+
+testy delta _ = do
+  traceDynamic "mode otro: " $ mode <$> delta
+  text "otro"
+  pure ()
+
+visualDisplayDef:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
+visualDisplayDef beat tempo delta = do 
+  eng <- engineDisplays beat tempo delta
+--  visualiseProgressBar (fst eng) $ snd eng
+  text "probandio"
+  return ()
 
 
--- I suspect that Falling needs a starting time as Holding has...
--- data Mode = Falling' UTCTime | Halted | Holding' UTCTime Rational
-flipFunc:: Bool -> Bool
-flipFunc True = False
-flipFunc False = True
+visualDisplay:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> Int -> W t m ()
+visualDisplay beat tempo delta 0 = do 
+  eng <- engineDisplays beat tempo delta
+  visualiseProgressBar (fst eng) $ snd eng
+  return ()
 
-resetFunc:: Timer -> Timer
-resetFunc timer = timer
+visualDisplay beat tempo delta 1 = do 
+  eng <- engineDisplays beat tempo delta
+  visualiseSandClock (fst eng) $ snd eng
+  return ()
 
-playPauseFunc:: UTCTime -> Timer -> Timer -- this needs to be Timer -> Timer ???
-playPauseFunc u x = funki (mode x) u x
+visualDisplay beat tempo delta 2 = do
+  eng <- engineDisplays beat tempo delta
+  visualiseText (fst eng) $ snd eng
+  return ()
 
-funki:: Mode -> UTCTime -> Timer -> Timer
-funki Holding' u timer = timer {mode = Falling' u}
-funki (Falling' _) u timer = timer {mode = Holding'} 
-funki Halted u timer = timer {mode = Falling' u}
+visualDisplay beat tempo delta _ = do
+  eng <- engineDisplays beat tempo delta
+  visualiseText (fst eng) $ snd eng
+  return ()
 
+engineDisplays:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m (Dynamic t (Maybe Rational), Dynamic t (Maybe Text))
+engineDisplays beat tempo delta = do
+--  let startTime = fmap (extractStartTime . mode) delta
+  traceDynamic "mode: " $ mode <$> delta
+--  let startTimeInBeats = attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ updated startTime -- Event t (Maybe Rational)
+  -- beatAtPlayEvent <- holdDyn (Just 0) $ traceEventWith (\x -> "fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ startTimeInBeats -- Dyn t (Maybe Rational)
+  -- let countFromBEvent' = (\b lb -> fmap (b-) lb) <$> beat <*> beatAtPlayEvent 
+  -- countFromBEvent <- traceDynamicWith (\x -> "count " <> (show (fmap (\x -> realToFrac x :: Float) x))) countFromBEvent'
+  -- return (countFromBEvent, constDyn $ Just "nada" )
+  return (constDyn $ Just 1, constDyn $ Just "nada")
 
-visualiserFunc:: Timer -> Timer
-visualiserFunc timer = timer {n= (((n timer)+1)`mod`numberOfVis)} -- add the mod numberOfVis later
+visualiseProgressBar:: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
+visualiseProgressBar countdown' tag' = do
+  let countdown = fromMaybe 0 <$> countdown' 
+  --countdown <- traceDynamicWith (\x -> "cd: " <> (show (realToFrac x :: Float))) $ countdown''
+  let tag = fromMaybe "" <$> tag'
 
---- controller funcas
-textInputFunc:: [(T.Text,Rational)] -> Timer -> Timer
-textInputFunc count timer = timer {form=count}
+  let class' = constDyn $ "class" =: "visualiser"
+  let width = constDyn $ "width" =: "100%"
+  let height = constDyn $ "height" =: "100%"
+  let vB = constDyn $  "viewBox" =: "0 0 100 100"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let attrs = mconcat [class',width,height, vB, par]  -- svg
+  -- rect1
+  let x' = constDyn $ "x" =: "0"
+  let y' = constDyn $ "y" =: "20"
+  let width1 = constDyn $ "width" =: "100%"
+  let height1 = constDyn $ "height" =: "20%"
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let attrsRect = mconcat [x',y',width1, height1, stroke] 
+  -- progress rect
+  let x'' = constDyn $ "x" =: "100"
+  let y'' = constDyn $ "y" =: "40"
+  let height2 = constDyn $ "height" =: "20"
+  let opacity = constDyn $ "opacity" =: "0.5"
+  let transform = constDyn $ "transform" =: "rotate(180,100,40)"
+  let fill = constDyn $ "fill" =: "var(--primary-color)"
+  let dynWidth = (\x -> "width" =: showt (realToFrac x :: Double)) <$> countdown
+  let attrsDynRect = mconcat [x'', y'', height2, opacity, transform, fill, dynWidth]
+  -- tag text
+  let txFill = constDyn $ "fill" =: "var(--primary-color)"
+  let txX = constDyn $ "x" =: "50"
+  let txY = constDyn $ "y" =: "13"
+  let txAnchor = constDyn $ "text-anchor" =: "middle"
+  let txAttrs = mconcat [txFill, txX, txY, txAnchor]
 
--- Measure = Cycles | Seconds
-measureFunc:: Timer -> Timer 
-measureFunc timer 
-  | (measure timer) == Seconds = timer {measure= Cycles}
-  | (measure timer) == Cycles = timer {measure= Seconds}
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
+      dynText tag
+      return ()
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsDynRect $ return ()
+  return ()
 
-loopFunc:: Timer -> Timer 
-loopFunc timer 
-  | (loop timer) == True = timer {loop= False}
-  | (loop timer) == False = timer {loop= True}
+visualiseSandClock :: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
+visualiseSandClock countdown' tag' = do
+  -- dynamic stuff
+  let countdown = fromMaybe 0 <$> countdown' 
+  let tag = fromMaybe "" <$> tag'
 
+  let yFall = countToFallY 50 0 <$> countdown
+  let heightFall = countToFallH 50 <$> countdown
+  let yHold = countToHoldY 0 100 <$> countdown
+  let heightHold = countToHoldH 0 <$> countdown
 
--- this needs to change if other visualisers are inputed on the fly.
-numberOfVis:: Int
-numberOfVis = 3
+  let class' = constDyn $ "class" =: "visualiser"
+  let width = constDyn $ "width" =: "100%"
+  let height = constDyn $ "height" =: "100%"
+  let vB = constDyn $  "viewBox" =: "0 0 100 100"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let attrs = mconcat [class',width,height, vB, par]
+  -- sand falling 
+  let x' = constDyn $ "x" =: "0"
+  let width' = constDyn $ "width" =: "100%"
+  let strokeFall = constDyn $ "fill" =: "var(--primary-color)"
+  let mask' = constDyn $ "mask" =: "url(#myMask)"
+  let attrsFall = mconcat [mask',class',strokeFall,x',yFall,width',heightFall]
+
+  -- sand holder
+  let widthHold = constDyn $ "width" =: "100%"
+  let fillHold = constDyn $ "fill" =: "var(--primary-color)"
+  let attrsHold = mconcat [mask',class',fillHold,x',yHold,widthHold,heightHold]
+
+  let xtx = constDyn $ "x" =: "-75%"
+  let ytx = constDyn $ "y" =: "50%"
+  let fs = constDyn $ "font-size" =: "1em"
+
+  let txAttrs = mconcat [fillHold,xtx,ytx,fs]
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
+      dynText tag
+      return ()
+    -- creatMask first
+    sandClockMask
+    -- sand Falling
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsFall $ return () 
+    -- sand held
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
+  return ()
 
 visualiseText :: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
 visualiseText countdown' tag' = do
@@ -226,8 +317,8 @@ visualiseText countdown' tag' = do
   -- svg attrs
   let class' = constDyn $ "class" =: "visualiser code-font"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
-  let w' = constDyn $ "width" =: "100%;"
-  let h' = constDyn $ "height" =: "100%;"
+  let w' = constDyn $ "width" =: "100%"
+  let h' = constDyn $ "height" =: "100%"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
   let attrs = mconcat [class',w',h',vB,par]
   -- text attrs
@@ -257,97 +348,48 @@ visualiseText countdown' tag' = do
     return ()    
   return ()
 
-visualiseProgressBar:: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
-visualiseProgressBar countdown' tag' = do
-  let countdown = fromMaybe 0 <$> countdown' 
-  --countdown <- traceDynamicWith (\x -> "cd: " <> (show (realToFrac x :: Float))) $ countdown''
-  let tag = fromMaybe "" <$> tag'
+--------- Helpers for interface
+-- I suspect that Falling needs a starting time as Holding has...
+-- data Mode = Falling' UTCTime | Halted | Holding' UTCTime Rational
+flipFunc:: Bool -> Bool -- this is just not !!! -- instead of this we need a constant False in Display and viceversa
+flipFunc True = False
+flipFunc False = True
 
-  let class' = constDyn $ "class" =: "visualiser"
-  let width = constDyn $ "width" =: "100%"
-  let height = constDyn $ "height" =: "100%"
-  let vB = constDyn $  "viewBox" =: "0 0 100 100"
-  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
-  let attrs = mconcat [class',width,height, vB, par]  -- svg
-  -- rect1
-  let x' = constDyn $ "x" =: "0"
-  let y' = constDyn $ "y" =: "20"
-  let width1 = constDyn $ "width" =: "100"
-  let height1 = constDyn $ "height" =: "20"
-  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let attrsRect = mconcat [x',y',width1, height1, stroke] 
-  -- progress rect
-  let x'' = constDyn $ "x" =: "100"
-  let y'' = constDyn $ "y" =: "40"
-  let height2 = constDyn $ "height" =: "20"
-  let opacity = constDyn $ "opacity" =: "0.5"
-  let transform = constDyn $ "transform" =: "rotate(180,100,40)"
-  let fill = constDyn $ "fill" =: "var(--primary-color)"
-  let dynWidth = (\x -> "width" =: showt (realToFrac x :: Double)) <$> countdown
-  let attrsDynRect = mconcat [x'', y'', height2, opacity, transform, fill, dynWidth]
-  -- tag text
-  let txFill = constDyn $ "fill" =: "var(--primary-color)"
-  let txX = constDyn $ "x" =: "50"
-  let txY = constDyn $ "y" =: "13"
-  let txAnchor = constDyn $ "text-anchor" =: "middle"
-  let txAttrs = mconcat [txFill, txX, txY, txAnchor]
+resetFunc:: Timer -> Timer -- prelude func id: function that returns its input!!!
+resetFunc timer = timer
 
-  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
-      dynText tag
-      return ()
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsDynRect $ return ()
-  return ()
+playPauseFunc:: UTCTime -> Timer -> Timer -- this needs to be Timer -> Timer ???
+playPauseFunc u x = funki (mode x) u x
+
+funki:: Mode -> UTCTime -> Timer -> Timer
+funki Holding' u timer = timer {mode = Falling' u}
+funki (Falling' _) u timer = timer {mode = Holding'} 
+funki Halted u timer = timer {mode = Falling' u}
+
+visualiserFunc:: Timer -> Timer
+visualiserFunc timer = timer {n= (((n timer)+1)`mod`numberOfVis)} -- add the mod numberOfVis later
+
+--- controller funcas
+textInputFunc:: [(T.Text,Rational)] -> Timer -> Timer
+textInputFunc count timer = timer {form=count}
+
+-- Measure = Cycles | Seconds
+measureFunc:: Timer -> Timer 
+measureFunc timer 
+  | (measure timer) == Seconds = timer {measure= Cycles}
+  | (measure timer) == Cycles = timer {measure= Seconds}
+
+loopFunc:: Timer -> Timer 
+loopFunc timer 
+  | (loop timer) == True = timer {loop= False}
+  | (loop timer) == False = timer {loop= True}
+
+-- this needs to change if other visualisers are inputed on the fly.
+numberOfVis:: Int
+numberOfVis = 3
 
 
-visualiseSandClock :: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
-visualiseSandClock countdown' tag' = do
-  -- dynamic stuff
-  let countdown = fromMaybe 0 <$> countdown' 
-  let tag = fromMaybe "" <$> tag'
-
-  let yFall = countToFallY 50 0 <$> countdown
-  let heightFall = countToFallH 50 <$> countdown
-  let yHold = countToHoldY 0 100 <$> countdown
-  let heightHold = countToHoldH 0 <$> countdown
-
-  let class' = constDyn $ "class" =: "visualiser"
-  let width = constDyn $ "width" =: "100%"
-  let height = constDyn $ "height" =: "100%"
-  let vB = constDyn $  "viewBox" =: "0 0 100 100"
-  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
-  let attrs = mconcat [class',width,height, vB, par]
-  -- sand falling 
-  let x' = constDyn $ "x" =: "0"
-  let width' = constDyn $ "width" =: "100"
-  let strokeFall = constDyn $ "fill" =: "var(--primary-color)"
-  let mask' = constDyn $ "mask" =: "url(#myMask)"
-  let attrsFall = mconcat [mask',class',strokeFall,x',yFall,width',heightFall]
-
-  -- sand holder
-  let widthHold = constDyn $ "width" =: "100"
-  let fillHold = constDyn $ "fill" =: "var(--primary-color)"
-  let attrsHold = mconcat [mask',class',fillHold,x',yHold,widthHold,heightHold]
-
-  let xtx = constDyn $ "x" =: "-75%"
-  let ytx = constDyn $ "y" =: "50%"
-  let fs = constDyn $ "font-size" =: "1em"
-
-  let txAttrs = mconcat [fillHold,xtx,ytx,fs]
-
-  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
-      dynText tag
-      return ()
-    -- creatMask first
-    sandClockMask
-    -- sand Falling
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsFall $ return () 
-    -- sand held
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
-
-  return ()
+----- helpers for display
 
 fontSize:: Int -> Map Text Text -- this is not attach to anything yet... follow throu...
 fontSize len 
@@ -386,8 +428,8 @@ sandClockMask = do
   -- rect mask
   let x = constDyn $ "x" =: "0"
   let y = constDyn $ "y" =: "0"
-  let width' = constDyn $ "width" =: "100"
-  let height' = constDyn $ "height" =: "100"
+  let width' = constDyn $ "width" =: "100%"
+  let height' = constDyn $ "height" =: "100%"
   let fill' = constDyn $ "fill" =: "black"
   let attrsRect = mconcat [x,y,width',height',fill']
   -- clock shape attributes
@@ -425,58 +467,18 @@ currentBeat = do
   tick <- tickLossy 0.1 widgetBuildTime
   pure $ attachWith timeToCount (current currentTempo) $ fmap _tickInfo_lastUTC tick
 
-------- 
--- here something about holding onto the proper display...... :/
--- need to get a dynamic that represents a flip. Meaning that flip produces a new representation of the timer always..... fun times....
-timer:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
-timer beat t timer = mdo 
-  defMode <- sample $ current timer 
-  let def = (\x -> n x) defMode
-  dynN <- holdDyn def $ updated $  n <$> timer
-  let nEv = updated $ n <$> timer 
---  visualDisplay beat t timer <$> dynN
-  widgetHold (visualDisplay beat t timer 2) $ visualDisplay beat t timer <$> nEv
-  pure ()
-
-visualDisplay:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> Int -> W t m ()
-visualDisplay beat tempo delta 0 = do 
-  eng <- engineDisplays beat tempo delta
-  visualiseProgressBar (fst eng) $ snd eng
-  return ()
-
-visualDisplay beat tempo delta 1 = do 
-  eng <- engineDisplays beat tempo delta
-  visualiseSandClock (fst eng) $ snd eng
-  return ()
-
-visualDisplay beat tempo delta 2 = do
-  eng <- engineDisplays beat tempo delta
-  visualiseText (fst eng) $ snd eng
-  return ()
+------- Helpers for engine
 
 -- data Mode = Falling' | Halted | Holding'
 extractStartTime:: Mode -> Maybe UTCTime
 extractStartTime (Falling' u) = Just u
 extractStartTime _ = Nothing
 
-generateStartTime:: Mode -> IO Mode
-generateStartTime Holding' = do
-  now <- getCurrentTime
-  pure $ Falling' now
-generateStartTime (Falling' _) = pure Holding'
-generateStartTime Halted = do
-  now <- getCurrentTime
-  pure $ Falling' now 
-
 fi:: Maybe Rational -> String
 fi Nothing = "naipes"
 fi (Just x) = show (realToFrac x :: Float)
 
-engineDisplays:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m (Dynamic t (Maybe Rational), Dynamic t (Maybe Text))
-engineDisplays beat tempo delta = mdo
---  y <- traceDynamic "mode: " $ mode <$> delta
-  return (constDyn $ Just 1, constDyn $ Just "nada")
-
+-- part of engine display
   -- timeOfFall <- performEvent $ fmap (liftIO . generateStartTime) $ updated $ mode <$> delta
   -- let startTime = fmap extractStartTime $ timeOfFall -- Dynamic t (Maybe UTC)
   -- let startTimeInBeats = attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ startTime -- Event t (Maybe Rational)
@@ -555,9 +557,6 @@ multiTimerPercent startPoint xs b
       where ts = Prelude.head $ Prelude.tail $ Prelude.scanl (+) startPoint xs 
             tsPercent = 100 *(ts - b) / (Prelude.head xs)
 
--- timeStart :: Rational -> Rational -> Maybe Rational -> [Rational] -> Maybe Rational -> Maybe Rational 
--- timeStart ts b' tsPercent tailxs b = if ts > b' then tsPercent else multiTimerPercent ts tailxs b
-
 multiTimer:: Rational -> [Rational] -> Rational -> Rational -- Rational
 multiTimer startPoint xs b
   | (xs==[]) = 0
@@ -571,7 +570,6 @@ genLabel startPoint x b
       let ts = Prelude.tail $ Prelude.scanl (+) startPoint $ Prelude.map snd x 
       in if (Prelude.head ts) > b then Prelude.fst $ Prelude.head x else genLabel (Prelude.head ts) (Prelude.tail x) b
 
-
 diffTimeToText :: NominalDiffTime -> Text
 diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> (add0Mod x)
 
@@ -580,6 +578,18 @@ add0Mod x = if modulo < 10 then ("0" <> (showt modulo)) else showt modulo
   where modulo = (floor x) `mod` (60 :: Int)
 
 -- icons 
+iconDisplay:: MonadWidget t m => Dynamic t Timer -> W t m ()
+iconDisplay  x = do
+  divClass "icons" $ do
+    divClass "icons-row" $ do
+        divClass "iconTopLeft" $ do
+          divClass "flex-container-col" $ do
+            divClass "flex-item-col-Form" blank
+            pure (structureIcon $ constDyn True) >>= (divClass "flex-item-col-Form") -- text 
+        pure (loopIcon $ (loop <$> x)) >>= (divClass "iconTopRight") -- loop
+    divClass "icons-row" $ do
+      pure (flipIcon $ constDyn True) >>= (divClass "iconBottomLeft") -- flip
+      pure (measureIcons $ (measure <$> x)) >>= (divClass "iconBottomRight") -- measure
 
 loopIcon :: MonadWidget t m => Dynamic t Bool -> W t m ()
 loopIcon d = do
@@ -620,21 +630,13 @@ measureIcons measure = do
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let fill = constDyn $ "fill" =: "transparent"
 
-  -- let txAnchor = constDyn $ "text-anchor" =: "middle"
-  -- let x' = constDyn $ "x" =: "50%"
-  -- let y' = constDyn $ "y" =: "50%"
-
   let path = pathChoice <$> measure
 
   let attrs = mconcat [class',width,height, vB, par, stroke, fill]
   let pathAttrs = mconcat [path,fill,stroke]
---  let attrsTx = mconcat [x',y',fill,txAnchor]
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "path" pathAttrs $ pure () 
-    --elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" attrsTx $ do
-      --dynText $ fmap (\x -> funky x) measure
-     -- pure ()
   pure ()
 
 clockIcon:: MonadWidget t m => W t m ()
@@ -675,11 +677,9 @@ metronomeIcon = do
     return ()
   return ()
 
-
 pathBool:: Bool -> Map Text Text -> Map Text Text -> Map Text Text
 pathBool True d1 d2 = d1
 pathBool False d1 d2 = d2
-
 
 flipIcon':: MonadWidget t m => Dynamic t Bool -> W t m ()
 flipIcon' bool = do
@@ -695,7 +695,6 @@ flipIcon' bool = do
   let attrs = mconcat [class',width,height, vB, par, stroke, fill, opacity]
   let d1 = "d" =: "M 41.84497,3.9322539 C 32.723522,3.918239 23.597873,3.8236263 14.47905,3.8599597 10.280951,4.2162766 6.1500037,6.4966924 4.2135938,10.341822 2.6280799,13.43598 1.6417214,17.041898 2.5366669,20.49355 c 0.7163944,4.201267 3.8008953,7.825904 7.8377371,9.192912 1.894472,0.755219 3.915495,1.088006 5.946721,0.955982 8.744041,-0.02685 17.488083,-0.05369 26.232124,-0.08054 M 54.16108,17.324791 C 54.278329,23.549179 49.464093,29.380126 43.330041,30.443219 37.317176,31.715215 30.75789,28.207968 28.482775,22.496548 25.952046,16.775941 28.170208,9.4970044 33.462324,6.1609774 38.536398,2.690233 45.937178,3.4361127 50.217793,7.8477222 52.723654,10.318389 54.174719,13.80574 54.16108,17.324791 Z"
   let path = constDyn $ pathBool True d1 d1
-
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "path" path $ return () 
     return ()
