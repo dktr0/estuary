@@ -39,6 +39,7 @@ import Estuary.Types.Definition
 
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
+  -- liftIO $ putStrLn "timerWidget"
   initVal <- sample $ current delta
   dynMode <- holdDyn True $ newModeEv -- changes from previous to false
   let gatedDisplay = gate (current dynMode) $ leftmost [timerEv,updated delta]
@@ -46,13 +47,17 @@ timerWidget delta = mdo
   deltaForControl <- holdDyn initVal {- $ traceEvent "deltaForControl" -} $ gatedDisplay
   deltaForDisplay <- holdDyn initVal {- $ traceEvent "deltaForDisplay" -} $ gatedControl
   let timerEv = switchDyn $ fmap fst x -- :: Event t Timer -- timer from controler
+  -- let timerEv = fst x
   let newModeEv = {- traceEvent "newModeEv" $ -} switchDyn $ fmap snd x -- :: Event t Bool -- false
+  -- let newModeEv = never
   x <- flippableWidget (timerControl deltaForControl) (timerDisplay deltaForDisplay) True newModeEv -- D t (E t Timer, E t Bool) -- False, watching the controler
+  -- x <- timerDisplay deltaForDisplay
   variable delta timerEv
 
 
 timerControl:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 timerControl delta = divClass "timer-Visualiser" $ mdo
+  -- liftIO $ putStrLn "timerControl"
   dInit <- sample $ current delta
   let local = fst topContainer
   mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xC" -} $ leftmost [local, updated delta]  
@@ -92,7 +97,7 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
 
 timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 timerDisplay delta = divClass "timer-Visualiser" $ mdo
-
+  --liftIO $ putStrLn "timerDisplay"
   dInit <- sample $ current delta
   let local = fst topContainer
   mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
@@ -130,6 +135,7 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
 
 attachBeatAndTempoToTimer:: MonadWidget t m => Dynamic t Timer ->  W t m ()
 attachBeatAndTempoToTimer delta = do -- xs seq of counts, mode (playingstopped) loop measure
+  -- liftIO $ putStrLn "attachBeatAndTempoToTimer"
   c <- context
   let currentTempo = fmap (tempo . ensemble . ensembleC) c
   beatPosition <- currentBeat -- :: Event t Rational
@@ -145,6 +151,7 @@ attachBeatAndTempoToTimer delta = do -- xs seq of counts, mode (playingstopped) 
 -- need to get a dynamic that represents a flip. Meaning that flip produces a new representation of the timer always..... fun times....
 timerChangeDisplay:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
 timerChangeDisplay beat t timer = do 
+--  liftIO $ putStrLn "timerChangeDisplay"
   --timer' <- traceDynamic "timer'" timer
   defTimer <- sample $ current timer
   -- liftIO $ putStrLn $ show defMode
@@ -154,37 +161,41 @@ timerChangeDisplay beat t timer = do
   -- visualDisplay beat t timer' <$> dynN
   -- visualDisplay beat t timer' 2
   --text "adio"
-  widgetHold (text "default") $ testy timer <$> nEv
---  widgetHold (visualDisplayDef beat t timer) $ visualDisplay beat t timer <$> nEv
+  -- widgetHold_ (text "default") $ testy timer <$> nEv
+  widgetHold (visualDisplay beat t timer defN) $ visualDisplay beat t timer <$> nEv
   pure ()
 
 testy:: MonadWidget t m => Dynamic t Timer -> Int -> W t m ()
 testy delta 0 = do
+  liftIO $ putStrLn "testy 0"
   traceDynamic "mode cero: " $ mode <$> delta
   text "cero"
   pure ()
 
 testy delta 1 = do
+  liftIO $ putStrLn "testy 1"
   traceDynamic "mode uno: " $ mode <$> delta
   text "uno"
   pure ()
 
 testy delta 2 = do
+  liftIO $ putStrLn "testy 2"
   traceDynamic "mode dos: " $ mode <$> delta
   text "dos"
   pure ()
 
 testy delta _ = do
+  liftIO $ putStrLn "testy otro"
   traceDynamic "mode otro: " $ mode <$> delta
   text "otro"
   pure ()
 
-visualDisplayDef:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
-visualDisplayDef beat tempo delta = do 
-  eng <- engineDisplays beat tempo delta
---  visualiseProgressBar (fst eng) $ snd eng
-  text "probandio"
-  return ()
+-- visualDisplayDef:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
+-- visualDisplayDef beat tempo delta = do 
+--   eng <- engineDisplays beat tempo delta
+-- --  visualiseProgressBar (fst eng) $ snd eng
+--   text "probando"
+--   return ()
 
 
 visualDisplay:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> Int -> W t m ()
@@ -210,14 +221,18 @@ visualDisplay beat tempo delta _ = do
 
 engineDisplays:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m (Dynamic t (Maybe Rational), Dynamic t (Maybe Text))
 engineDisplays beat tempo delta = do
---  let startTime = fmap (extractStartTime . mode) delta
-  traceDynamic "mode: " $ mode <$> delta
---  let startTimeInBeats = attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ updated startTime -- Event t (Maybe Rational)
-  -- beatAtPlayEvent <- holdDyn (Just 0) $ traceEventWith (\x -> "fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ startTimeInBeats -- Dyn t (Maybe Rational)
-  -- let countFromBEvent' = (\b lb -> fmap (b-) lb) <$> beat <*> beatAtPlayEvent 
+  liftIO $ putStrLn "engineDisplay"
+  let startTime = fmap (extractStartTime . mode) delta -- :: Maybe UTC
+--  traceDynamic "mode: " $ mode <$> delta
+  let startTimeInBeats = traceEventWith (\x -> "startTime " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ updated startTime -- Event t (Maybe Rational)
+  beatAtPlayEvent <- holdDyn (Just 666) {- $ traceEventWith (\x -> "fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ -} startTimeInBeats -- Dyn t (Maybe Rational)
+  let countFromBEvent = (\b lb -> fmap (b-) lb) <$> beat <*> beatAtPlayEvent 
   -- countFromBEvent <- traceDynamicWith (\x -> "count " <> (show (fmap (\x -> realToFrac x :: Float) x))) countFromBEvent'
-  -- return (countFromBEvent, constDyn $ Just "nada" )
-  return (constDyn $ Just 1, constDyn $ Just "nada")
+
+  return (countFromBEvent, constDyn $ Just "nada" )
+
+
+ -- return (beatAtPlayEvent, fmap showt <$> beatAtPlayEvent)
 
 visualiseProgressBar:: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
 visualiseProgressBar countdown' tag' = do
