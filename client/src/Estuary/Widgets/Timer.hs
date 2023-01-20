@@ -18,8 +18,8 @@ import TextShow
 import qualified Sound.Tidal.Bjorklund as TBj
 
 import Estuary.Types.Tempo
-import Estuary.Types.Context
-import Estuary.Types.EnsembleResponse
+-- import Estuary.Types.Context
+-- import Estuary.Types.EnsembleResponse
 import Estuary.Widgets.Text
 import Estuary.Widgets.Reflex
 import qualified Estuary.Types.Term as Term
@@ -136,8 +136,10 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
 attachBeatAndTempoToTimer:: MonadWidget t m => Dynamic t Timer ->  W t m ()
 attachBeatAndTempoToTimer delta = do -- xs seq of counts, mode (playingstopped) loop measure
   -- liftIO $ putStrLn "attachBeatAndTempoToTimer"
-  c <- context
-  let currentTempo = fmap (tempo . ensemble . ensembleC) c
+  -- c <- context
+  -- let currentTempo = fmap (tempo . ensemble . ensembleC) c
+  currentTempo <- Estuary.Widgets.W.tempo
+
   beatPosition <- currentBeat -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
   -- beat' <- traceDynamicWith (\x -> "beat of cyclicTracer: " ++ show (realToFrac x :: Double)) beat
@@ -476,8 +478,7 @@ ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)
 --- I might have to use only a tick and the UTC time of 'last tick'
 currentBeat:: MonadWidget t m => W t m (Event t Rational)
 currentBeat = do
-  c <- context
-  let currentTempo = fmap (tempo . ensemble . ensembleC) c
+  currentTempo <- Estuary.Widgets.W.tempo -- OJO: se repito dos veces este patron, no deberia
   widgetBuildTime <- liftIO $ getCurrentTime
   tick <- tickLossy 0.1 widgetBuildTime
   pure $ attachWith timeToCount (current currentTempo) $ fmap _tickInfo_lastUTC tick

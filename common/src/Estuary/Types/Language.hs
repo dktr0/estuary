@@ -7,11 +7,12 @@ import GHC.Generics
 import Data.Aeson
 
 data Language =
+  NoLanguage |
   English |
   Español |
   Français
   deriving (Read,Ord,Show,Eq,Generic)
-
+ 
 instance ToJSON Language where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Language

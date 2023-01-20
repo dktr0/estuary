@@ -20,12 +20,11 @@ library
       Estuary.Types.Chat
       Estuary.Types.Definition
       Estuary.Types.Ensemble
-      Estuary.Types.EnsembleRequest
-      Estuary.Types.EnsembleResponse
       Estuary.Types.ImageMeta
       Estuary.Types.Language
       Estuary.Types.Live
       Estuary.Types.Location
+      Estuary.Types.LogEntry
       Estuary.Types.MovingAverage
       Estuary.Types.Name
       Estuary.Types.Participant

@@ -1,13 +1,15 @@
-{-# LANGUAGE RecursiveDo, JavaScriptFFI, OverloadedStrings #-}
+{-# LANGUAGE RecursiveDo, JavaScriptFFI, OverloadedStrings, FlexibleContexts #-}
 
 module Estuary.Widgets.Estuary where
 
 import Control.Monad (liftM)
 
 import Reflex hiding (Request,Response)
-import Reflex.Dom hiding (Request,Response,append)
+import Reflex.Dom hiding (Request,Response,append,Error)
 import Reflex.Dom.Old
 import Reflex.Dynamic
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Fix (MonadFix)
 import Data.Time
 import Data.Map
 import Data.Maybe
@@ -15,7 +17,7 @@ import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
-import GHCJS.DOM.Types hiding (Event,Request)
+import GHCJS.DOM.Types hiding (Event,Request,Response,Text)
 import GHCJS.Marshal.Pure
 import GHCJS.DOM.EventM
 import Data.Functor (void)
@@ -27,6 +29,7 @@ import TextShow
 import Sound.MusicW.AudioContext
 import Sound.Punctual.GL
 import Sound.Punctual.Resolution
+import Data.List (sort)
 
 import Estuary.Utility
 import Estuary.Widgets.Navigation
@@ -34,11 +37,8 @@ import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Widgets.WebSocket
 import Estuary.Types.Definition
-import Estuary.Types.Request
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.Response
-import Estuary.Types.EnsembleResponse
-import Estuary.Types.Context
+import Estuary.Types.Request as Request
+import Estuary.Types.Response as Response
 import Estuary.Types.Hint
 import Estuary.Types.Tempo
 import Estuary.Widgets.Reflex
@@ -51,7 +51,6 @@ import Estuary.Types.Ensemble
 import Estuary.Render.Renderer
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.Reflex
-import qualified Estuary.Types.Terminal as Terminal
 import Estuary.Widgets.Sidebar
 import Estuary.Resources.AudioResource
 import Estuary.Types.AudioMeta
@@ -65,10 +64,12 @@ import Estuary.Widgets.W as W
 import Estuary.Render.R as R
 import Estuary.Render.MainBus
 import Estuary.Client.Settings as Settings
+import Estuary.Types.LogEntry
+import Estuary.Render.RenderOp as RenderOp
 
-keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> m ()
-keyboardHintsCatcher rEnv settings ctxM riM = mdo
-  (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings ctxM riM keyboardShortcut
+keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> m ()
+keyboardHintsCatcher rEnv settings = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings keyboardShortcut
   let e = HTMLDivElement $ pToJSVal $ _el_element theElement
   togTerminal <- (24 <$) <$> catchKeyboardShortcut e 24 True True
   togStats <- (12 <$) <$> catchKeyboardShortcut e 12 True True
@@ -76,128 +77,18 @@ keyboardHintsCatcher rEnv settings ctxM riM = mdo
   return ()
 
 
-keyboardHintsW :: MonadWidget t m => Event t Int -> W t m ()
+keyboardHintsW :: (Reflex t, MonadFix m, MonadHold t m) => Event t Int -> W t m ()
 keyboardHintsW x = do
   toggleTerminalVisible $ ffilter (==24) x
   toggleStatsVisible $ ffilter (==12) x
 
 
-settingsForWidgets :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t [Hint] -> m (Dynamic t Settings)
+settingsForWidgets :: (Monad m, PerformEvent t m, Reflex t, MonadHold t m, TriggerEvent t m, MonadFix m, MonadIO (Performable m)) => R.RenderEnvironment -> Settings -> Event t [Hint] -> m (Dynamic t Settings)
 settingsForWidgets rEnv iSettings hints = do
   settingsChange <- delay 0.025 $ fmapMaybe hintsToSettingsChange hints
   settings <- foldDyn ($) iSettings settingsChange
   performEvent_ $ fmap (liftIO . R.updateSettings rEnv) $ updated settings
   return settings
-
-
-estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> MVar Context -> MVar RenderInfo -> Event t Int -> m ()
-estuaryWidget rEnv iSettings ctxM riM keyboardShortcut = divClass "estuary" $ mdo
-
-  settings <- settingsForWidgets rEnv iSettings hints
-
-  cinecer0Widget settings ctxM ctx -- div for cinecer0 shared with render threads through Context MVar, this needs to be first in this action
-  punctualZIndex' <- holdUniqDyn $ fmap Settings.punctualZIndex settings
-  cvsElement <- canvasWidget settings punctualZIndex' ctx -- canvas for Punctual
-  glCtx <- liftIO $ newGLContext cvsElement
-  improvizZIndex' <- holdUniqDyn $ fmap Settings.improvizZIndex settings
-  lCanvas <- canvasWidget settings improvizZIndex' ctx -- canvas for Improviz
-  hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
-  hCanvas <- canvasWidget settings hydraZIndex' ctx -- canvas for Hydra
-
-  iCtx <- liftIO $ readMVar ctxM
-  ctx <- foldDyn ($) iCtx contextChange -- dynamic context; near the top here so it is available for everything else
-
-  liftIO $ forkRenderThreads rEnv iSettings ctxM cvsElement glCtx hCanvas lCanvas riM
-
-  performContext ctxM ctx -- perform all IO actions consequent to Context changing
-  rInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
-  (deltasDown',wsCtxChange,wsHints) <- estuaryWebSocket ctx rInfo requestsUp
-  let responsesFromEnsembleRequests = fmap ((:[]) . EnsembleResponse) $ fmapMaybe ensembleRequestsToResponses commandEnsembleRequests
-  let deltasDownAlt = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints,responsesFromEnsembleRequests]
-  let deltasDown = mergeWith (++) [fmap (:[]) deltasDown',responsesFromHints]
-
-  let ensembleCDyn = fmap ensembleC ctx
-
-  -- resourceMaps :: Dynamic t ResourceMaps, updated by callback events from the Resources system
-  (resourceMapsEvent,resourceMapsCallback) <- newTriggerEvent
-  setResourcesUpdatedCallback (R.resources rEnv) resourceMapsCallback
-  resourceMaps <- holdDyn emptyResourceMaps resourceMapsEvent
-
-  -- four GUI components: header, main (navigation), terminal, footer
-  let wEnv = WidgetEnvironment {
-    _renderEnvironment = rEnv,
-    _context = ctx,
-    _renderInfo = rInfo,
-    _resourceMaps = resourceMaps,
-    W._settings = settings
-    }
-
-  (_,keyboardHints) <- runW wEnv $ keyboardHintsW keyboardShortcut
-
-  (_,headerHints) <- runW wEnv header
-
-  ((requests, ensembleRequestFromPage), sidebarChange, hintsFromPage) <- divClass "page ui-font" $ do
-    (navRequests,pageHints) <- runW wEnv $ navigation deltasDownAlt
-    (ctxChange,sidebarHints) <- runW wEnv $ do
-      sv <- W.sideBarVisible
-      hideableWidget sv "sidebar" $ sidebarWidget ctx rInfo
-    let mergedHints = mergeWith (++) [pageHints, sidebarHints]
-    return (navRequests,ctxChange,mergedHints)
-
-  (command,_) <- runW wEnv $ do
-    tv <- W.terminalVisible
-    hideableWidget' tv $ terminalWidget deltasDown hints
-
-  (_,footerHints) <- runW wEnv footer
-
-  commandEnsembleRequests <- performEvent $ attachWithMaybe commandToEnsembleRequest (current ensembleCDyn) command
-  let ensembleRequests = leftmost [commandEnsembleRequests, ensembleRequestFromPage, ensembleRequestsFromHints]
-  performEvent_ $ fmap (ensembleRequestIO $ R.resources rEnv) ensembleRequests
-  let commandRequests = fmapMaybe commandToRequest command
-
-  -- changes to EnsembleC within Context, and to Context
-  let commandChange = fmap commandToStateChange command
-  let ensembleRequestChange = fmap requestToStateChange ensembleRequests
-  let ensembleResponses = fmapMaybe justEnsembleResponses deltasDown
-  let ensembleResponseChange0 = fmap ((Prelude.foldl (.) id) . fmap responseToStateChange) deltasDown
-  let ensembleResponseChange1 = fmap ((Prelude.foldl (.) id) . fmap ensembleResponseToStateChange) ensembleResponses
-  performEvent_ $ fmap (mapM_ (ensembleResponseIO $ R.resources rEnv)) ensembleResponses
-  let ensembleChange = fmap modifyEnsembleC $ mergeWith (.) [commandChange,ensembleRequestChange,ensembleResponseChange0,ensembleResponseChange1]
-  let ccChange = fmap (setClientCount . fst) $ fmapMaybe justServerInfo deltasDown'
-  let contextChange = mergeWith (.) [ensembleChange, ccChange, wsCtxChange, sidebarChange]
-
-  -- hints
-  let commandHint = attachWithMaybe commandToHint (current ensembleCDyn) command
-  let hints = mergeWith (++) [hintsFromPage, fmap (:[]) commandHint, footerHints, keyboardHints, pure <$> wsHints, headerHints] -- Event t [Hint]
-  let ensembleRequestsFromHints = fmapMaybe lastOrNothing $ fmap hintsToEnsembleRequests hints
-  let responsesFromHints = fmapMaybe listOrNothing $ fmap hintsToResponses hints
-  performHints (R.webDirt rEnv) hints
-  performDelayHints rEnv hints
-  performDynamicsMode rEnv settings
-  performPunctualAudioInputMode rEnv settings
-  performTheme settings
-  performSuperDirt rEnv settings
-
-  -- requests up to server
-  let ensembleRequestsUp = gate (current $ fmap (inAnEnsemble . ensembleC) ctx) $ fmap EnsembleRequest ensembleRequests
-  let ensembleRequestsUp' = fmap (:[]) ensembleRequestsUp
-  let requests' = fmap (:[]) $ requests
-  let requests'' = fmap (:[]) $ commandRequests
-  let requestsUp = mergeWith (++) [ensembleRequestsUp',requests',requests'']
-
-  return ()
-
-hintsToEnsembleRequests :: [Hint] -> [EnsembleRequest]
-hintsToEnsembleRequests = catMaybes . fmap f
-  where
-    f (ZoneHint n d) = Just (WriteZone n d)
-    f _ = Nothing
-
-hintsToResponses :: [Hint] -> [Estuary.Types.Response.Response]
-hintsToResponses = catMaybes . fmap f
-  where
-    f (ZoneHint n d) = Just (EnsembleResponse (ZoneRcvd n d))
-    f _ = Nothing
 
 hintsToSettingsChange :: [Hint] -> Maybe (Settings -> Settings)
 hintsToSettingsChange = g . catMaybes . fmap f
@@ -208,9 +99,133 @@ hintsToSettingsChange = g . catMaybes . fmap f
     g (x:[]) = Just x
     g xs = Just $ foldl1 (.) xs
 
-cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> MVar Context -> Dynamic t Context -> m ()
-cinecer0Widget settings ctxM ctx = do
-  ic0 <- liftIO $ takeMVar ctxM
+
+estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t Int -> m ()
+estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
+
+  settings <- settingsForWidgets rEnv iSettings hints
+  vidDiv <- cinecer0Widget settings
+  punctualZIndex' <- holdUniqDyn $ fmap Settings.punctualZIndex settings
+  cvsElement <- canvasWidget settings punctualZIndex' -- canvas for Punctual
+  glCtx <- liftIO $ newGLContext cvsElement
+  improvizZIndex' <- holdUniqDyn $ fmap Settings.improvizZIndex settings
+  iCanvas <- canvasWidget settings improvizZIndex' -- canvas for Improviz
+  hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
+  hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
+
+  liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas iCanvas
+
+  rInfo <- pollRenderInfo rEnv
+  resourceMaps <- dynamicResourceMaps rEnv
+  ensembleC <- maintainEnsembleC (resources rEnv) allRequests responseDown
+  ensList <- maintainEnsembleList responseDown
+  resError <- maintainResponseError responseDown
+  log <- maintainLog hints responseDown
+
+  -- four GUI components: header, main (navigation), terminal, footer
+  let wEnv = WidgetEnvironment {
+    _renderEnvironment = rEnv,
+    _renderInfo = rInfo,
+    _resourceMaps = resourceMaps,
+    W._settings = settings,
+    _serverInfo = sInfo,
+    _ensembleC = ensembleC,
+    _ensembleList = ensList,
+    _responseError = resError,
+    _log = log
+    }
+
+  ((responseDown,sInfo),localHints) <- runW wEnv $ do
+    (responseDown,sInfo) <- estuaryWebSocket requestsToSend
+    keyboardHintsW keyboardShortcut
+    header
+    divClass "page ui-font" $ do
+      navigation
+      sv <- W.sideBarVisible
+      hideableWidget sv "sidebar" sidebarWidget
+    tv <- W.terminalVisible
+    hideableWidget' tv $ terminalWidget
+    footer
+    return (responseDown,sInfo)
+
+  let localRequests = fmap hintsToRequests localHints
+  let inAnEnsembleB = current $ fmap inAnEnsemble ensembleC
+  let requestsToSend = attachWith requestsForServer inAnEnsembleB localRequests
+  let remoteHints = fmap responseToHints responseDown
+  let hints = mergeWith (++) [localHints,remoteHints]
+  let allRequests = fmap hintsToRequests hints
+
+  -- perform Hints and Settings changes as IO
+  performRenderOps rEnv hints
+  performWebDirtHints (R.webDirt rEnv) hints
+  performDelay rEnv settings
+  performDynamicsMode rEnv settings
+  performPunctualAudioInputMode rEnv settings
+  performTheme settings
+  performSuperDirt rEnv settings
+
+  return ()
+
+
+maintainEnsembleList :: MonadWidget t m => Event t Response -> m (Dynamic t [Text])
+maintainEnsembleList responseDown = holdDyn [] $ fmapMaybe f responseDown
+  where
+    f (EnsembleList x) = Just x
+    f _ = Nothing
+
+maintainResponseError :: MonadWidget t m => Event t Response -> m (Dynamic t (Maybe Text))
+maintainResponseError responseDown = do
+  let f (Error x) = Just x
+      f _ = Nothing
+  let g (OK x) = Just x
+      g _ = Nothing
+  let errors = Just <$> fmapMaybe f responseDown
+  let oks = Nothing <$ fmapMaybe g responseDown
+  holdDyn Nothing $ leftmost [errors,oks]
+
+
+maintainLog :: MonadWidget t m => Event t [Hint] -> Event t Response -> m (Dynamic t [LogEntry])
+maintainLog hints response = do
+  -- where log messages come from:
+  -- currently: responses to terminal commands (including, but not only, error messages) (Hints, aka localLog)
+  -- currently: chat messages received from the server when in a collaborative ensemble (Response, aka ensembleLog)
+  -- future possibility: critical messages from the rendering or resource systems (also localLog)
+  -- future possibility: server broadcast messages
+  -- these are maintained separately and then combined; for example, when ensemble changes, chat history changes
+  let justEnsembleLog (EnsembleLog x) = Just x
+      justEnsembleLog _ = Nothing
+  let chatsReceived = fmap (:) $ fmapMaybe justEnsembleLog response
+  let leftEnsemble = never -- PLACEHOLDER
+  ensembleLog <- foldDyn ($) [] $ leftmost [chatsReceived,leftEnsemble]
+  localLogEntries <- performEvent $ fmap localLogsFromHints hints
+  localLog <- foldDyn (++) [] $ localLogEntries
+  let combinedLog = (++) <$> ensembleLog <*> localLog
+  pure $ fmap (reverse . sort) combinedLog
+
+
+localLogsFromHints :: MonadIO m => [Hint] -> m [LogEntry]
+localLogsFromHints hs = do
+  let f (LocalLog x) = Just x
+      f _ = Nothing
+  let txts = Data.Maybe.mapMaybe f hs
+  now <- liftIO $ getCurrentTime
+  let g x = LogEntry { logEntryTime = now, logEntrySender = "", logEntryText = x }
+  pure $ fmap g txts
+
+
+maintainEnsembleC :: MonadWidget t m => Resources -> Event t [Request] -> Event t Response -> m (Dynamic t EnsembleC)
+maintainEnsembleC res requests response = mdo
+  now <- liftIO $ getCurrentTime
+  let initialEnsembleC = emptyEnsembleC now
+  let requestChange = fmap (requestsToEnsembleC res) requests -- :: Event t (EnsembleC -> m EnsembleC)
+  let responseChange = fmap responseToEnsembleC response -- :: Event t (EnsembleC -> m EnsembleC)
+  let allChange = mergeWith (\x y ensC -> x ensC >>= y) [requestChange,responseChange]
+  updatedEnsembleC <- performEvent $ attachWith (&) (current r) allChange
+  r <- holdDyn initialEnsembleC updatedEnsembleC
+  pure r
+
+cinecer0Widget :: MonadWidget t m => Dynamic t Settings.Settings -> m HTMLDivElement
+cinecer0Widget settings = do
   let canvasVisible = Settings.canvasOn <$> settings
   let canvasVisible' = fmap (("visibility:" <>)  . bool "hidden" "visible") canvasVisible
   dynZIndex <- holdUniqDyn $ fmap Settings.cineCer0ZIndex settings
@@ -219,12 +234,10 @@ cinecer0Widget settings ctxM ctx = do
   res <- fmap pixels <$> (holdUniqDyn $ fmap Settings.resolution settings)
   let resMap = fmap (\(x,y) -> fromList [("width",showt (x::Int)),("height",showt (y::Int))]) res
   let attrs = (<>) <$> dynAttrs <*> resMap
-  videoDiv <- liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
-  let ic = ic0 { videoDivElement = Just videoDiv }
-  liftIO $ putMVar ctxM ic
+  liftM (uncheckedCastTo HTMLDivElement .  _element_raw . fst) $ elDynAttr' "div" attrs $ return ()
 
-canvasWidget :: MonadWidget t m => Dynamic t Settings -> Dynamic t Int -> Dynamic t Context -> m HTMLCanvasElement
-canvasWidget settings dynZIndex ctx = do
+canvasWidget :: MonadWidget t m => Dynamic t Settings -> Dynamic t Int -> m HTMLCanvasElement
+canvasWidget settings dynZIndex = do
   let canvasVisible = Settings.canvasOn <$> settings
   let canvasVisible' = fmap (("visibility:" <>)  . bool "hidden" "visible") canvasVisible
   let dynZIndex' = fmap (T.pack . show) dynZIndex -- :: Dynamic t Text
@@ -236,21 +249,23 @@ canvasWidget settings dynZIndex ctx = do
 
 
 -- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
-pollRenderInfo :: MonadWidget t m => MVar RenderInfo -> m (Dynamic t RenderInfo)
-pollRenderInfo riM = do
+pollRenderInfo :: (Monad m, MonadIO m, PostBuild t m, Reflex t, MonadHold t m, PerformEvent t m, TriggerEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> m (Dynamic t RenderInfo)
+pollRenderInfo rEnv = do
   now <- liftIO $ getCurrentTime
-  riInitial <- liftIO $ readMVar riM
+  riInitial <- liftIO $ readMVar (renderInfo rEnv)
   ticks <- tickLossy (1.02::NominalDiffTime) now
-  newInfo <- performEvent $ fmap (liftIO . const (readMVar riM)) ticks
+  newInfo <- performEvent $ fmap (liftIO . const (readMVar $ renderInfo rEnv)) ticks
   holdDyn riInitial newInfo
 
 
-performContext :: MonadWidget t m => MVar Context -> Dynamic t Context -> m ()
-performContext cMvar cDyn = do
-  iCtx <- sample $ current cDyn
-  performEvent_ $ fmap (liftIO . (\x -> swapMVar cMvar x >> return ())) $ updated cDyn -- transfer whole Context for render/animation threads
+dynamicResourceMaps :: (MonadIO m, Reflex t, MonadHold t m, TriggerEvent t m) => R.RenderEnvironment -> m (Dynamic t ResourceMaps)
+dynamicResourceMaps rEnv = do
+  (resourceMapsEvent,resourceMapsCallback) <- newTriggerEvent
+  setResourcesUpdatedCallback (R.resources rEnv) resourceMapsCallback
+  holdDyn emptyResourceMaps resourceMapsEvent
 
-performSuperDirt :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+
+performSuperDirt :: (Monad m, MonadSample t m, Reflex t, MonadIO m, MonadHold t m, PerformEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performSuperDirt rEnv settings = do
   let sd = superDirt rEnv
   iSettings <- sample $ current settings
@@ -258,33 +273,44 @@ performSuperDirt rEnv settings = do
   sdOn <- holdUniqDyn $ fmap Settings.superDirtOn settings
   performEvent_ $ fmap (liftIO . setActive sd) $ updated sdOn
 
-performTheme :: MonadWidget t m => Dynamic t Settings -> m ()
+performTheme :: (Monad m, Reflex t, MonadHold t m, PerformEvent t m, MonadIO (Performable m), MonadFix m) => Dynamic t Settings -> m ()
 performTheme settings = do
   themeChanged <- liftM updated $ holdUniqDyn $ fmap Settings.theme settings
   performEvent_ $ fmap (liftIO . Settings.setThemeIO) themeChanged
 
-performDynamicsMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performDynamicsMode :: (Monad m, Reflex t, MonadHold t m, PerformEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performDynamicsMode rEnv settings = do
   dynamicsModeChanged <- liftM updated $ holdUniqDyn $ fmap Settings.dynamicsMode settings
   performEvent_ $ fmap (liftIO . changeDynamicsMode (R.mainBus rEnv)) dynamicsModeChanged
 
-performPunctualAudioInputMode :: MonadWidget t m => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performPunctualAudioInputMode :: (Monad m, Reflex t, MonadHold t m, PerformEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
 performPunctualAudioInputMode rEnv settings = do
   punctualAudioInputChanged <- liftM updated $ holdUniqDyn $ fmap Settings.punctualAudioInputMode settings
   performEvent_ $ fmap (liftIO . changePunctualAudioInputMode (R.mainBus rEnv)) punctualAudioInputChanged
 
--- TODO: this still needs to be refactored to use new Settings type, not Hint directly
-performDelayHints :: MonadWidget t m => R.RenderEnvironment -> Event t [Hint] -> m ()
-performDelayHints rEnv hs = do
+performDelay :: (Reflex t, PerformEvent t m, MonadIO (Performable m), MonadHold t m, MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performDelay rEnv settings = do
   let nodes = R.mainBus rEnv
-  let newDelayTime = fmapMaybe justGlobalDelayTime hs
-  performEvent_ $ fmap (liftIO . changeDelay nodes) newDelayTime
+  delTime <- holdUniqDyn $ fmap Settings.globalAudioDelay settings
+  performEvent_ $ fmap (liftIO . changeDelay nodes) $ updated delTime
+
+performMonitorInput :: (Reflex t, PerformEvent t m, MonadIO (Performable m), MonadHold t m, MonadFix m) => R.RenderEnvironment -> Dynamic t Settings -> m ()
+performMonitorInput rEnv settings = do
+  let nodes = R.mainBus rEnv
+  maybeDouble <- holdUniqDyn $ fmap Settings.monitorInput settings
+  performEvent_ $ fmap (liftIO . changeMonitorInput nodes) $ updated maybeDouble
+
+performRenderOps :: (Reflex t, PerformEvent t m, MonadIO (Performable m)) => RenderEnvironment -> Event t [Hint] -> m ()
+performRenderOps rEnv hints = do
+  let ops = fmap hintsToRenderOps hints
+  performEvent_ $ fmap (putRenderOps rEnv) ops
+
+hintsToRenderOps :: [Hint] -> [RenderOp]
+hintsToRenderOps = concat . fmap f
   where
-    f (SetGlobalDelayTime x) = Just x
-    f _ = Nothing
-
-
-commandToRequest :: Terminal.Command -> Maybe Request
-commandToRequest (Terminal.DeleteThisEnsemble pwd) = Just (DeleteThisEnsemble pwd)
-commandToRequest (Terminal.DeleteEnsemble eName pwd) = Just (DeleteEnsemble eName pwd)
-commandToRequest _ = Nothing
+    f (Request LeaveEnsemble) = [RenderOp.ResetZones]
+    f (Request (Request.WriteTempo t)) = [RenderOp.WriteTempo t]
+    f (Request (Request.WriteZone n v True)) = [RenderOp.WriteZone n v]
+    f (Request (Request.ResetZones)) = [RenderOp.ResetZones]
+    f (Request (Request.Reset t)) = [RenderOp.ResetZones,RenderOp.WriteTempo t]
+    f _ = []

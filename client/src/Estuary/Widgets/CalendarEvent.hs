@@ -21,29 +21,41 @@ import Control.Monad.IO.Class
 import Control.Monad(liftM)
 import qualified Data.Char as C
 import Safe.Foldable (maximumMay)
+import qualified Data.List as L
 
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Widgets.W
 import Estuary.Types.Definition
 import Estuary.Widgets.Reflex
+import Estuary.Types.Language
+import qualified Estuary.Types.Term as Term
+
 
 -- working widget
-calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvents -> m (Variable t CalendarEvents)
+calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvents -> W t m (Variable t CalendarEvents)
 calendarEventWidget deltasDown = mdo
-  sampledDelta <- sample $ current deltasDown
-  holdDelta <- holdDyn sampledDelta (updated deltasDown)
-  dynText $ fmap (T.pack . show) holdDelta
+  -- sampledDelta <- sample $ current deltasDown
+  -- holdDelta <- holdDyn sampledDelta (updated deltasDown)
+  -- dynText $ fmap (T.pack . show) holdDelta
   today <- liftIO getZonedTime
-  addButton <- el "div" $ button "+" -- Event t ()
-  let newCalendarEvent = CalendarEvent "Add a title" (CalendarTime today (Recurrence Once today))
+  let newCalendarEvent = CalendarEvent "" (CalendarTime today (Recurrence Once today))
   mapEv <- widgetMapEventWithAdd deltasDown (newCalendarEvent <$ addButton) calendarEventBuilder
+  addButton <- divClass "" $ buttonWithClass "+" -- Event t ()
+  -- deleteButton <- button "-" -- Event t ()
   variable deltasDown mapEv
 
-calendarEventBuilder :: MonadWidget t m => Dynamic t CalendarEvent ->  m (Event t CalendarEvent)
-calendarEventBuilder delta = calendarEventWidgetEv delta
+calendarEventBuilder :: MonadWidget t m => Dynamic t CalendarEvent ->  W t m (Event t CalendarEvent)
+calendarEventBuilder delta = do
+  today <- liftIO getZonedTime
+  -- deleteButton <- button "-" -- Event t ()
+  row <- calendarEventWidgetEv delta -- Event t CalendarEvent
+  -- let rowMaybe = fmap row -- Event t (Maybe CalendarEvent)
+  return $ leftmost [row]
 
-calendarEventWidgetEv :: MonadWidget t m => Dynamic t CalendarEvent -> m (Event t CalendarEvent)
+-- calendarEventBuilder :: MonadWidget t m => Dynamic t CalendarEvent ->  W t m (Event t CalendarEvent)
+-- calendarEventBuilder delta = calendarEventWidgetEv delta -- Event t CalendarEvent
+
+calendarEventWidgetEv :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Event t CalendarEvent)
 calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
   autoUpdateStartingDateEv <- autoUpdateStartingDate $ fmap getStartingDateFromCalendarEv delta
 
@@ -99,7 +111,6 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
                         | otherwise = startingDate
   CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence Daily (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
-
 -- "daily until" recurrence
 startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence DailyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
   let startingDate = (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)
@@ -111,7 +122,7 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   let diffNextStartDateAndEndDate = diffZonedTime nextStartingDate endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) = nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence DailyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+  CalendarEvent details (CalendarTime nextStartingDate' (Recurrence DailyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
 -- "weekly"
 startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (LocalTime startingDay timeOfStartingDay) timeZoneOfStartingDay)   (Recurrence Weekly (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))) = do
@@ -137,7 +148,7 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) =  nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence WeeklyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+  CalendarEvent details (CalendarTime nextStartingDate' (Recurrence WeeklyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
 
 --"monthly date"
@@ -167,7 +178,7 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   let diffNowAndStartDate = diffZonedTime now startingDate
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) = nextStartingDate
-                      | otherwise = startingDate
+                        | otherwise = startingDate
   CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyDateUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
 -- monthly nth day of week until"
@@ -198,7 +209,7 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) = nextStartingDate
                         | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence MonthlyNthDayOfWeek (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+  CalendarEvent details (CalendarTime nextStartingDate' (Recurrence MonthlyNthDayOfWeek (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
 
 
@@ -231,7 +242,7 @@ startingDayAutoUpdate now (CalendarEvent details (CalendarTime (ZonedTime (Local
   let diffNowAndEndDate = diffZonedTime now endDate
   let nextStartingDate' | (diffNowAndStartDate > 0) && (diffNowAndEndDate < 0) && (diffNextStartDateAndEndDate < 0) =  nextStartingDate
                       | otherwise = startingDate
-  CalendarEvent details (CalendarTime nextStartingDate'  (Recurrence YearlyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
+  CalendarEvent details (CalendarTime nextStartingDate' (Recurrence YearlyUntil (ZonedTime (LocalTime endDay timeOfEndDay) timeZoneOfEndingDay)))
 
 dateOfNthDayOfWeekOfNextMonth :: (Int, DayOfWeek) -> Day -> Day
 dateOfNthDayOfWeekOfNextMonth (n, weekOfDay) startingDay = do
@@ -296,11 +307,15 @@ changeTimeZone :: TimeZone -> CalendarEvent -> CalendarEvent --
 changeTimeZone tz (CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) timeZone)  recurrence)) = CalendarEvent details (CalendarTime (ZonedTime (LocalTime day timeOfDay) tz)  recurrence)
 
 
-descriptionWidget ::  MonadWidget t m => Dynamic t Text -> m (Event t Text) -- similar to our text editors ---- displays a text
+descriptionWidget ::  MonadWidget t m => Dynamic t Text -> W t m (Event t Text) -- similar to our text editors ---- displays a text
 descriptionWidget t = divClass "descriptionWidgetInput" $ do
-  description <- textInputW t
+  addTitle <- translatableText (M.fromList [(English,"Add a title"), (Español, "Agrega un titulo")]) -- Dynamic t Text
+  let inputHint' = fmap inputHint addTitle
+  description <- tooltip (textInputW inputHint' t) (dynText =<< translatableText (M.fromList [(English,"Add a title"), (Español, "Agrega un titulo")]))
   return $ description
 
+inputHint :: Text -> Map Text Text
+inputHint x = "placeholder" =: x
 
 getYearFromDay :: Day -> Integer
 getYearFromDay d = do
@@ -317,18 +332,18 @@ getDayFromDay d = do
   let (year, month, day) = toGregorian d
   day
 
-thisClientTimeZoneEv ::  MonadWidget t m => Event t TimeOfDay -> m (Event t TimeZone)
+thisClientTimeZoneEv ::  MonadWidget t m => Event t TimeOfDay -> W t m (Event t TimeZone)
 thisClientTimeZoneEv tEv = mdo
   thisClientTimeZone <- liftIO getCurrentTimeZone -- Dyn TimeZone -- new zone
   let zDyn = tagPromptlyDyn (constDyn thisClientTimeZone) tEv--
   return zDyn
 
-showZoneWidget ::  MonadWidget t m => Dynamic t TimeZone -> m ()
+showZoneWidget ::  MonadWidget t m => Dynamic t TimeZone -> W t m ()
 showZoneWidget updatedTz = do
   let showZDyn = fmap (T.pack . timeZoneName) updatedTz
   dynText showZDyn -- <> " " <> "(the local time of the last person who edited the time)"
 
-timeZoneWidget ::  MonadWidget t m => Event t TimeOfDay -> Dynamic t ZonedTime -> Dynamic t TimeZone -> m (Event t TimeZone)
+timeZoneWidget ::  MonadWidget t m => Event t TimeOfDay -> Dynamic t ZonedTime -> Dynamic t TimeZone -> W t m (Event t TimeZone)
 timeZoneWidget changedTimeEv zt currentDynTimeZone = mdo
   sampledCurrentZone <- sample $ current currentDynTimeZone
   let showSampledCurrentZone = timeZoneOffsetTotimeZoneName sampledCurrentZone -- text
@@ -366,50 +381,57 @@ getPeriodicityFromRecurrence r = periodicity r
 getRecurrenceFromCalendarEvent :: CalendarEvent -> Recurrence
 getRecurrenceFromCalendarEvent (CalendarEvent details (CalendarTime startingDate  recurrence)) = recurrence
 
-changePeriodicityWidget :: MonadWidget t m => Dynamic t (Periodicity) -> m (Event t Periodicity)
+changePeriodicityWidget :: MonadWidget t m => Dynamic t (Periodicity) -> W t m (Event t Periodicity)
 changePeriodicityWidget p = mdo
-  let p' = fmap periodicityToKey p -- Dynamic Int -- (updated p) -- Event t Int
-  dd <- dropdownW periodicities p' -- Event t Int -- $ def & dropdownConfig_setValue .~ currentPeriodicity
-  let selItem = fmap lookupPeriodicity dd -- event t Periodicity
-  return $ selItem
+  -- let p' = fmap periodicityToKey p -- Dynamic Int -- (updated p) -- Event t Int
+  perdiodicityWTranslation' <- perdiodicityWTranslation
+  dd <- dropdown 1 perdiodicityWTranslation' def -- p' -- Event t Int -- $ def & dropdownConfig_setValue .~ currentPeriodicity
+  let selItem = lookupPeriodicity <$> value dd <*> perdiodicityWTranslation' -- event t Periodicity
+  return $ (updated selItem)
 
-periodicityToKey :: Periodicity -> Int
-periodicityToKey Once = 1
-periodicityToKey Daily = 2
-periodicityToKey DailyUntil = 3
-periodicityToKey Weekly = 4
-periodicityToKey WeeklyUntil = 5
-periodicityToKey MonthlyDate = 6
-periodicityToKey MonthlyDateUntil = 7
-periodicityToKey MonthlyNthDayOfWeek = 8
-periodicityToKey MonthlyNthDayOfWeekUntil = 9
-periodicityToKey Yearly = 10
-periodicityToKey YearlyUntil = 11
+  -- Map.fromList [(1, "Once"), (2, "Daily"), (3, "Daily until"), (4, "Weekly"), (5, "Weekly until"), (6, "Monthly date"), (7, "Monthly date until"), (8, "Monthly nth weekday"), (9, "Monthly nth weekday until"), (10, "Yearly"), (11, "Yearly until")]
 
-periodicities :: Map.Map Int Text
-periodicities = Map.fromList [(1, "Once"), (2, "Daily"), (3, "Daily until"), (4, "Weekly"), (5, "Weekly until"), (6, "Monthly date"), (7, "Monthly date until"), (8, "Monthly nth weekday"), (9, "Monthly nth weekday until"), (10, "Yearly"), (11, "Yearly until")]
+perdiodicityWTranslation :: MonadWidget t m =>  W t m (Dynamic t (Map Int Text))
+perdiodicityWTranslation = do
+  onceMap <- translatableText (M.fromList [(English,"Once"), (Español, "No se repite")]) -- Dynamic t Text
+  dailyMap <- translatableText (M.fromList [(English,"Daily"), (Español, "Diario")]) -- Dynamic t Text
+  dailyUntilMap <- translatableText (M.fromList [(English,"Daily until"), (Español, "Diario hasta")]) -- Dynamic t Text
+  weeklyMap <- translatableText (M.fromList [(English,"Weekly"), (Español, "Cada semana")]) -- Dynamic t Text
+  weeklyUntilMap <- translatableText (M.fromList [(English,"Weekly until"), (Español, "Cada semana hasta")]) -- Dynamic t Text
+  monthlyDateMap <- translatableText (M.fromList [(English,"Monthly date"), (Español, "Cada Mes")]) -- Dynamic t Text
+  monthlyDateUntilMap <- translatableText (M.fromList [(English,"Monthly date until"), (Español, "Cada mes hasta")]) -- Dynamic t Text
+  monthlyNthDayMap <- translatableText (M.fromList [(English,"Monthly nth weekday"), (Español, "Cada x día del mes")]) -- Dynamic t Text
+  monthlyNthDayUntilMap <- translatableText (M.fromList [(English,"Monthly nth weekday until"), (Español, "Cada x día del mes hasta")]) -- Dynamic t Text
+  yearlyMap <- translatableText (M.fromList [(English,"Yearly"), (Español, "Anualmente")]) -- Dynamic t Text
+  yearlyUntilMap <- translatableText (M.fromList [(English,"Yearly until"), (Español, "Anualmente hasta")]) -- Dynamic t Text
+  let periodicityMapWTranslation = periodicities <$> onceMap <*> dailyMap <*> dailyUntilMap <*> weeklyMap <*> weeklyUntilMap <*> monthlyDateMap <*> monthlyDateUntilMap <*> monthlyNthDayMap <*> monthlyNthDayUntilMap <*> yearlyMap <*> yearlyUntilMap -- Dynamic t (Map Int Text)
+  return periodicityMapWTranslation
 
-lookupPeriodicity :: Int  -> Periodicity
-lookupPeriodicity key = textToPeriodicity $ Maybe.fromJust (Map.lookup key periodicities)
+periodicities :: Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Text -> Map.Map Int Text
+periodicities t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 = M.fromList [(1, t1), (2, t2), (3, t3), (4, t4), (5, t5), (6, t6), (7, t7), (8, t8), (9, t9), (10, t10), (11, t11)]
+
+lookupPeriodicity :: Int ->  Map.Map Int Text -> Periodicity
+lookupPeriodicity key lMap = textToPeriodicity $ Maybe.fromJust (Map.lookup key lMap)
 
 textToPeriodicity :: Text -> Periodicity
-textToPeriodicity "Once" =  Once
-textToPeriodicity "Daily" =  Daily
-textToPeriodicity "Daily until" =  DailyUntil
-textToPeriodicity "Weekly" = Weekly
-textToPeriodicity "Weekly until" = WeeklyUntil
-textToPeriodicity "Monthly date" = MonthlyDate
-textToPeriodicity "Monthly date until" = MonthlyDateUntil
-textToPeriodicity "Monthly nth weekday" = MonthlyNthDayOfWeek
-textToPeriodicity "Monthly nth weekday until" = MonthlyNthDayOfWeekUntil
-textToPeriodicity "Yearly" = Yearly
-textToPeriodicity "Yearly until" = YearlyUntil
+textToPeriodicity x
+  | x == "Once" ||  x == "No se repite" =  Once
+  | x == "Daily" ||  x == "Diario" =  Daily
+  | x == "Daily until" ||  x == "Diario hasta" =  DailyUntil
+  | x == "Weekly" ||  x == "Cada semana" = Weekly
+  | x == "Weekly until" ||  x == "Cada semana hasta" = WeeklyUntil
+  | x == "Monthly date" ||  x == "Cada Mes" = MonthlyDate
+  | x == "Monthly date until" ||  x ==  "Cada mes hasta" = MonthlyDateUntil
+  | x == "Monthly nth weekday" ||  x == "Cada x día del mes" = MonthlyNthDayOfWeek
+  | x == "Monthly nth weekday until" ||  x == "Cada x día del mes hasta" = MonthlyNthDayOfWeekUntil
+  | x == "Yearly" ||  x == "Anualmente" = Yearly
+  | x == "Yearly until" ||  x == "Anualmente hasta" = YearlyUntil
 
 endDateAttrs :: Periodicity -> Map Text Text
 endDateAttrs p | p == Once || p == Daily || p == Weekly || p == MonthlyDate || p == MonthlyNthDayOfWeek || p == Yearly =  "style" =: ("display: none;")
                | otherwise = "style" =: ("display: block;")
 
-changeEndDateWidget :: MonadWidget t m => Event t Periodicity -> Dynamic t Periodicity -> Dynamic t Day -> m (Event t Day)
+changeEndDateWidget :: MonadWidget t m => Event t Periodicity -> Dynamic t Periodicity -> Dynamic t Day -> W t m (Event t Day)
 changeEndDateWidget pEv dynP d = mdo
     sampledCurrentPeriodicity <- sample $ current dynP
     let updatedP = leftmost [pEv, updated dynP]
@@ -418,7 +440,7 @@ changeEndDateWidget pEv dynP d = mdo
     elDynAttr "div" dynAttrs $ changeEndDateWidget' d
 
 
-changeEndDateWidget' :: MonadWidget t m => Dynamic t Day -> m (Event t Day)
+changeEndDateWidget' :: MonadWidget t m => Dynamic t Day -> W t m (Event t Day)
 changeEndDateWidget' d = mdo
   let openCloseEvs = leftmost [mode1Ev, () <$ mode2Ev]
   dynBool <- toggle False openCloseEvs
@@ -431,7 +453,7 @@ changeEndDateWidget' d = mdo
   selDate <- holdDyn today updatedDay -- mode2Ev -- Dynamic t Day
   return mode2Ev
 
-autoUpdateStartingDate :: MonadWidget t m => Dynamic t ZonedTime -> m (Event t ZonedTime)
+autoUpdateStartingDate :: MonadWidget t m => Dynamic t ZonedTime -> W t m (Event t ZonedTime)
 autoUpdateStartingDate defTime = do
   defTime' <- sample $ current defTime
   let defZonedTimeToUTC = zonedTimeToUTC defTime'
@@ -442,7 +464,7 @@ autoUpdateStartingDate defTime = do
   let nowUTCtoZonedTime = fmap (utcToZonedTime (zonedTimeZone defTime')) nowUTC' -- ZonedTime
   return $ updated nowUTCtoZonedTime
 
-dateWidgetMode1ForEndDate ::  MonadWidget t m =>  Dynamic t Day -> m (Event t ())
+dateWidgetMode1ForEndDate ::  MonadWidget t m =>  Dynamic t Day -> W t m (Event t ())
 dateWidgetMode1ForEndDate d = mdo
   let d' = fmap (T.pack . show) d
   (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ dynText d'
@@ -452,55 +474,57 @@ dateWidgetMode1ForEndDate d = mdo
 
 -- new challenge
 --- it displays the date and time in local terms, and when you click on the date you are picking a date in local terms. clicking on the local area brings up a picker where you can set date and time in local, clicking on the UTC area brings up a similar picker where you can set date and time in UTC prior to the click, you are not editing
-localTimeWidgetRefactored :: MonadWidget t m => Dynamic t ZonedTime -> m (Event t ZonedTime) --  m (Event t ZonedTime)
-localTimeWidgetRefactored  zt = mdo
-  let openCloseEvs = leftmost [mode1Ev, () <$ mode2Ev]
-  dynBool <- toggle False openCloseEvs
-  let mode1Attrs = calendaContainerAttrs <$> dynBool
-  let mode2Attrs = dateLabelAttrs <$> dynBool
+localTimeWidgetRefactored :: MonadWidget t m => Dynamic t ZonedTime ->  Event t () -> W t m (Event t ZonedTime, Event t ()) --  m (Event t ZonedTime)
+localTimeWidgetRefactored zt mode1And2FromFromUTCTimeWidget = mdo
+  let openCloseEvsMode1 = leftmost [mode1Ev, () <$ mode2Ev]
+  let openCloseEvsMode2 = leftmost [mode1Ev, () <$ mode2Ev, mode1And2FromFromUTCTimeWidget]
+  dynBoolMode1 <- toggle False openCloseEvsMode1
+  dynBoolMode2 <- toggle False openCloseEvsMode2
+  let mode1Attrs = calendaContainerAttrs <$> dynBoolMode1
+  let mode2Attrs = dateLabelAttrs <$> dynBoolMode2
   mode2Ev <- dateAndTimeMode2InLocalTime mode1Attrs zt -- m Event t ZonedTime in local time -- this needs a holdDyn?
   mode1Ev <- elDynAttr "div" mode2Attrs $ displayLocalTimeWidget mode2Ev zt -- m (Event t ())
-  return mode2Ev -- mode2Ev -- evenrt t Zoned Time
-
+  return (mode2Ev, mode1Ev)-- mode2Ev -- evenrt t Zoned Time
 
 -- 2. We need another (sub)widget utcTimeWidget :: Dynamic t ZonedTime -> m (Event t ZonedTime) - it displays the time in UTC terms, displays the +1 day when necessary, and has a way of being clicked on to pick a date (in which case, the date is being picked in universal terms).
 
-utcTimeWidgetRefactored :: MonadWidget t m =>  Dynamic t ZonedTime -> m (Event t ZonedTime) -- m (Event t ZonedTime)
-utcTimeWidgetRefactored  zt = mdo
-  let openCloseEvs = leftmost [mode1Ev, () <$ mode2Ev]
-  dynBool <- toggle False openCloseEvs
-  let mode1Attrs = calendaContainerAttrs <$> dynBool
-  let mode2Attrs = dateLabelAttrs <$> dynBool
+utcTimeWidgetRefactored :: MonadWidget t m =>  Dynamic t ZonedTime -> Event t () -> W t m (Event t ZonedTime, Event t ()) --  m (Event t ZonedTime)
+utcTimeWidgetRefactored  zt mode1And2FromFromLocalTimeWidget = mdo
+  let openCloseEvsMode1 = leftmost [mode1Ev, () <$ mode2Ev]
+  let openCloseEvsMode2 = leftmost [mode1Ev, () <$ mode2Ev, mode1And2FromFromLocalTimeWidget]
+  dynBoolMode1 <- toggle False openCloseEvsMode1
+  dynBoolMode2 <- toggle False openCloseEvsMode2
+  let mode1Attrs = calendaContainerAttrs <$> dynBoolMode1
+  let mode2Attrs = dateLabelAttrs <$> dynBoolMode2
   mode2Ev <- dateAndTimeMode2UTCTime mode1Attrs zt -- m Event t ZonedTime in utc time -- this needs a holdDyn?
   mode1Ev <- elDynAttr "div" mode2Attrs $ displayUTCTimeWidget mode2Ev zt -- m (Event t ())
-  return mode2Ev -- event t Zoned Time
+  return (mode2Ev, mode1Ev) -- event t Zoned Time
 
 -- 3. Then bringing them together is straightforward and should just use the generic mergeDeltas defined above.
-mergeDeltas :: MonadWidget t m => Dynamic t ZonedTime -> Event t ZonedTime ->  m (Dynamic t ZonedTime)
+mergeDeltas :: MonadWidget t m => Dynamic t ZonedTime -> Event t ZonedTime -> W t m (Dynamic t ZonedTime)
 mergeDeltas delta edits  = do
   iVal <- sample $ current delta
   holdDyn iVal $ leftmost [edits,updated delta]
 
-utcTimeOrLocalTimeWidget :: MonadWidget t m => Dynamic t ZonedTime -> m (Event t ZonedTime)
+utcTimeOrLocalTimeWidget :: MonadWidget t m => Dynamic t ZonedTime -> W t m (Event t ZonedTime)
 utcTimeOrLocalTimeWidget delta = mdo
   deltaFor1 <- mergeDeltas delta localEdits2
   deltaFor2 <- mergeDeltas delta localEdits1
   deltaFor3 <- mergeDeltas delta $ leftmost [localEdits1, localEdits2]
-  divClass "showDate" $ showSelectedDate deltaFor3
-  (localEdits1, localEdits2) <- divClass "timeWidgetsContainer" $ do
-    localEdits1' <- localTimeWidgetRefactored deltaFor1
-    localEdits2' <- utcTimeWidgetRefactored deltaFor2
-    return $ (localEdits1',localEdits2')
+  elClass' "div" "showDate" $ tooltip (showSelectedDate deltaFor3) (text "Click on the dropdown menus to modify the date and time")
+  (localEdits1, localEdits2) <- divClass "timeWidgetsContainer" $ mdo
+    (localEdits1', clickEvFromLocalTimeWidget) <- localTimeWidgetRefactored deltaFor1 $ leftmost [clickEvFromUTCTimeWidget, () <$ localEdits2']
+    (localEdits2', clickEvFromUTCTimeWidget) <-  utcTimeWidgetRefactored deltaFor2 $ leftmost [clickEvFromLocalTimeWidget, () <$ localEdits1']
+    return $ (localEdits1', localEdits2')
   return $ leftmost [localEdits1,localEdits2]
-  -- variable delta $ leftmost [localEdits1,localEdits2]
 
-showSelectedDate :: MonadWidget t m => Dynamic t ZonedTime ->  m ()
+showSelectedDate :: MonadWidget t m => Dynamic t ZonedTime -> W t m ()
 showSelectedDate delta = do
   let selDate = fmap (T.pack . show . localDay . zonedTimeToLocalTime) delta
   dynText selDate
 
 
-dateWidget ::  MonadWidget t m => Dynamic t ZonedTime -> m (Event t Day)
+dateWidget ::  MonadWidget t m => Dynamic t ZonedTime -> W t m (Event t Day)
 dateWidget zt = mdo
   thisComputerDay <- zonedDayToThisComputerDay zt
   let openCloseEvs = leftmost [mode1Ev, () <$ mode2Ev]
@@ -515,7 +539,7 @@ dateWidget zt = mdo
   return mode2Ev
 
 
-dayAndTimeWidgetMode1 ::  MonadWidget t m =>  Dynamic t ZonedTime -> m (Event t ())
+dayAndTimeWidgetMode1 ::  MonadWidget t m =>  Dynamic t ZonedTime -> W t m (Event t ())
 dayAndTimeWidgetMode1 zt = mdo
   let zt' = fmap (T.pack . show) zt
   (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ dynText zt'
@@ -525,22 +549,22 @@ dayAndTimeWidgetMode1 zt = mdo
 
 --1. show separateley the date from the time
 
-displayLocalTimeWidget ::  MonadWidget t m =>  Event t ZonedTime -> Dynamic t ZonedTime -> m (Event t ())
+displayLocalTimeWidget ::  MonadWidget t m =>  Event t ZonedTime -> Dynamic t ZonedTime -> W t m (Event t ())
 displayLocalTimeWidget ztEv zt = mdo
   thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
   let localTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) zt
   sampledLocalTime <- sample $ current localTime-- Dynamic t Zoned time in local time
   selLocalTime <- holdDyn sampledLocalTime $ leftmost [ztEv, updated localTime] -- mode2Ev -- Dynamic t zonedTime
-  let selLocalTime' = fmap (T.pack . show) selLocalTime
-  let selTimeOfDay =  fmap (T.pack . show . localTimeOfDay . zonedTimeToLocalTime) selLocalTime
-  let selTimeZone = fmap (T.pack . show . zonedTimeZone) selLocalTime
+  let selTimeOfDay =  fmap (localTimeOfDay . zonedTimeToLocalTime) selLocalTime -- Dynamic TimeOfDay
+  let selTimeZone = fmap (zonedTimeZone) selLocalTime -- Dynamic TimeZone
+  let showTimeOfDayWithoutSecAndMillisec' = showTimeOfDayWithoutSecAndMillisec <$> selTimeOfDay <*> selTimeZone -- Dynamic text
   dayAdj <- dayAdjustmentWidgetForLocalWidget ztEv zt
-  (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ tooltip (divClass "zoneWidget" $ dynText $ selTimeOfDay <> " " <> selTimeZone <> " " <> dayAdj) (text "local time")  -- dynText $ selLocalTime' <> " " <> dayAdj
+  (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ tooltip (divClass "zoneWidget" $ dynText $ showTimeOfDayWithoutSecAndMillisec' <> " " <> dayAdj) (text "local time")  -- dynText $ selLocalTime' <> " " <> dayAdj
   openPickerEv <- wrapDomEvent (_element_raw openPicker) (elementOnEventName Click) (mouseXY)
   let openPicker' = () <$ openPickerEv -- (Event t (Dynamic t calendarEvent)
   return openPicker'
 
-dayAdjustmentWidgetForLocalWidget :: MonadWidget t m =>  Event t ZonedTime -> Dynamic t ZonedTime -> m (Dynamic t Text)
+dayAdjustmentWidgetForLocalWidget :: MonadWidget t m =>  Event t ZonedTime -> Dynamic t ZonedTime -> W t m (Dynamic t Text)
 dayAdjustmentWidgetForLocalWidget ztEv zt = mdo
   thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
   let localTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) zt -- dyn zonedTime in localTime
@@ -572,23 +596,30 @@ dayAdjustment''' localT zonedT
       zonedD = localDay $ zonedTimeToLocalTime zonedT
       localD = localDay $ zonedTimeToLocalTime localT
 
-displayUTCTimeWidget ::  MonadWidget t m => Event t ZonedTime -> Dynamic t ZonedTime -> m (Event t ())
+displayUTCTimeWidget ::  MonadWidget t m => Event t ZonedTime -> Dynamic t ZonedTime -> W t m (Event t ())
 displayUTCTimeWidget ztEv zt = mdo
   sampledZTCurrent <- sample $ current zt
   let utcTimeCurrent = fmap zonedTimeToUTC zt --
   let utcTimeEv = fmap zonedTimeToUTC ztEv
   sampledUTCTime <- sample $ current utcTimeCurrent-- Dynamic t utcTime
   selUTCTime <- holdDyn sampledUTCTime $ leftmost [utcTimeEv, updated utcTimeCurrent] -- mode2Ev -- Dynamic t utcTime
-  let selUTCTime' = fmap (T.pack . show) selUTCTime
-  let selUTCTimeOfDay = fmap (T.pack . show . timeToTimeOfDay . utctDayTime) selUTCTime
+  let selUTCTimeOfDay = fmap ( timeToTimeOfDay . utctDayTime) selUTCTime -- Dynamic TimeOfDay
+  let showTimeOfDayWithoutSecAndMillisec' = fmap (\d -> showTimeOfDayWithoutSecAndMillisec d utc) selUTCTimeOfDay
   dayAdj <- dayAdjustmentWidget ztEv zt
-  (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ tooltip (divClass "changeUTCTimeWidgetText" $ dynText $ selUTCTimeOfDay <> " " <> "UTC" <> " " <> dayAdj)(text "universal time") -- dynText $ selUTCTime' <> " " <> dayAdj
+  (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ tooltip (divClass "changeUTCTimeWidgetText" $ dynText $ showTimeOfDayWithoutSecAndMillisec' <> " " <> dayAdj)(text "universal time")
   openPickerEv <- wrapDomEvent (_element_raw openPicker) (elementOnEventName Click) (mouseXY)
   let openPicker' = () <$ openPickerEv -- (Event t (Dynamic t calendarEvent)
   return openPicker'
 
+  -- position: absolute;
+  --   z-index: 1;
 
-dayAdjustmentWidget :: MonadWidget t m => Event t ZonedTime -> Dynamic t ZonedTime -> m (Dynamic t Text)
+showTimeOfDayWithoutSecAndMillisec :: TimeOfDay -> TimeZone -> Text
+showTimeOfDayWithoutSecAndMillisec d tz = do
+  let timeWithFixedSecs = TimeOfDay (todHour d) (todMin d) (00)
+  T.pack $ show timeWithFixedSecs <> " " <> (show tz)
+
+dayAdjustmentWidget :: MonadWidget t m => Event t ZonedTime -> Dynamic t ZonedTime -> W t m (Dynamic t Text)
 dayAdjustmentWidget ztEv zt = mdo
    thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
    let ztToUtcTime = fmap zonedTimeToUTC zt -- Dyn UTCTIme
@@ -612,7 +643,7 @@ dayAdjustment'' zt utct
 
 
 -- only displays; cant change the date
-dateWidgetMode1 ::  MonadWidget t m =>  Dynamic t Day -> m (Event t ())
+dateWidgetMode1 ::  MonadWidget t m =>  Dynamic t Day -> W t m (Event t ())
 dateWidgetMode1 d = mdo
   let d' = fmap (T.pack . show) d
   (openPicker, _) <- elClass' "div" "code-font background selectedDate" $ dynText d'
@@ -621,7 +652,7 @@ dateWidgetMode1 d = mdo
   return openPicker'
 
 
-zonedDayToThisComputerDay :: MonadWidget t m => Dynamic t ZonedTime -> m (Dynamic t Day)
+zonedDayToThisComputerDay :: MonadWidget t m => Dynamic t ZonedTime -> W t m (Dynamic t Day)
 zonedDayToThisComputerDay zt = do
   thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
   let zt' = fmap zonedTimeToUTC zt -- Dynamic UTCTime
@@ -651,12 +682,12 @@ monthIndex i
   | i == (-1) = 11
   |otherwise = i
 
-monthNames :: MonadWidget t m => Dynamic t Int -> m ()
+monthNames :: MonadWidget t m => Dynamic t Int -> W t m ()
 monthNames i = do
-  let i' = fmap monthIndex $ fmap ((+) (-1)) i
-  let monthName = ((!!) ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]) <$> i' -- Dynamic t Text
+  let i' = fmap monthIndex $ fmap ((+) (-1)) i  -- Dynamic t Int
+  let monthName = ((!!) [M.fromList [(English,"January"), (Español, "Enero")], M.fromList [(English,"February"), (Español, "Febrero")], M.fromList [(English,"March"), (Español, "Marzo")], M.fromList [(English,"April"), (Español, "Abril")], M.fromList [(English,"May"), (Español, "Mayo")], M.fromList [(English,"June"), (Español, "Junio")], M.fromList [(English,"July"), (Español, "Julio")], M.fromList [(English,"August"), (Español, "Agosto")], M.fromList [(English,"September"), (Español, "Septiembre")], M.fromList [(English,"October"), (Español, "Octubre")], M.fromList [(English,"November"), (Español, "Noviembre")], M.fromList [(English,"December"), (Español, "Diciembre")]]) <$> i' -- Dynamic t Text
   el "tr" $ do
-    el "th" $ dynText monthName
+    el "th" $ dynText =<< (dynTranslatableText $ monthName)
   return ()
 
 navMonthCount :: Int -> Int
@@ -664,47 +695,44 @@ navMonthCount c
   |mod c 12 == 0 = 12
   |otherwise = mod c 12
 
-selectMonth :: MonadWidget t m => Dynamic t Int -> m (Dynamic t Int)
-selectMonth month = divClass "selectYear" $ mdo
+selectMonth :: MonadWidget t m => Int -> W t m (Dynamic t Int)
+selectMonth month = divClass "selectMonth" $ mdo
   leftArrow <- clickableDivClass' "<" "CalendarLeftArrow" (-1)
   dynMonthName <- monthNames dynMonth -- $ fmap ((+) (-1)) dynMonth
   rightArrow <- clickableDivClass' ">" "CalendarRightArrow" 1
   let a = leftmost [leftArrow, rightArrow] -- Event t Int
-  currentMonth <- sample $ current month
-  count <- foldDyn (+) (currentMonth :: Int)  a -- Dynamic Int
+  count <- foldDyn (+) (month :: Int)  a -- Dynamic Int
   let dynMonth = fmap ((flip mod) 12) count -- monthCount <$> month <*> count   -- Dynamic Int
   let dynMonth' = fmap navMonthCount dynMonth -- monthCount <$> month <*> count   -- Dynamic Int
   -- divClass "" $ dynText (fmap (T.pack . show) dynMonth)
   return dynMonth'
 
-selectYear :: MonadWidget t m => Dynamic t Integer -> m (Dynamic t Integer)
-selectYear year = divClass "selectMonth" $ mdo
+selectYear :: MonadWidget t m => Integer -> W t m (Dynamic t Integer)
+selectYear year = divClass "selectYear" $ mdo
   leftArrow <- clickableDivClass' "<" "CalendarLeftArrow" (-1)
-  showDynYear <- divClass "" $ dynText (fmap (T.pack . show) year')
+  showDynYear <- elClass "th" "" $ dynText (fmap (T.pack . show) year')
   rightArrow <- clickableDivClass' ">" "CalendarRightArrow" 1
   let a = leftmost [leftArrow, rightArrow] -- Event t Int
-  currentYear <- sample $ current year
-  year' <- foldDyn (+) (currentYear :: Integer)  a -- Dynamic Int
+  year' <- foldDyn (+) (year :: Integer)  a -- Dynamic Int
   -- divClass "" $ dynText (fmap (T.pack . show) dynMonth)
   return year'
---utctDay :: UTCTime -> Day -- 2021-08-12
--- (close event, pick day) or when people press okay -> only changes the server when you confirm it.
 
-dateAndTimeMode2InLocalTime :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t ZonedTime -> m (Event t ZonedTime)
+dateAndTimeMode2InLocalTime :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t ZonedTime -> W t m (Event t ZonedTime)
 dateAndTimeMode2InLocalTime dynAttrs zt = mdo
   thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
   let localTime = fmap (utcToZonedTime thisComputerZone . zonedTimeToUTC) zt -- Dynamic t Zoned time in local time
   let localDay' = fmap (localDay . zonedTimeToLocalTime) localTime -- Dynamic t localday
   let localTimeOfDay' = fmap (localTimeOfDay . zonedTimeToLocalTime) localTime -- Dynamic t local time of day
   let localTimeZone = fmap zonedTimeZone localTime -- Dynamic t local time zone
-
+  sampledLocalTimeZone <- sample $ current localTimeZone
+  elDynAttr "div" dynAttrs $ dynText =<< (translatableText $ M.fromList [(English,"Local Time"), (Español, "Hora Local")])
   date <- dateWidgetMode2Dyn dynAttrs localDay' -- Dyn t day
-  time <- elDynAttr "div" dynAttrs $ divClass "timeWidget" $ timeWidgetDyn localTimeOfDay'
+  time <- elDynAttr "div" dynAttrs $ divClass "timeWidget" $ timeWidgetDyn (T.pack $ show sampledLocalTimeZone) localTimeOfDay'
   let makeLocalTime = makeZonedTime <$> date <*> time <*> localTimeZone-- dynamic zonedTime
 
   (confirmDateButton, closeCalendarButton)  <- divClass "confirm-close-buttons" $ do
-    confirmDate' <- elDynAttr "div" dynAttrs $ clickableDiv "confirmButton" $ text "confirm"
-    closeCalendar' <- elDynAttr "div" dynAttrs $ clickableDiv "cancelButton" $ text "cancel"
+    confirmDate' <- elDynAttr "div" dynAttrs $ clickableDiv "confirmButton" $ dynText =<< (translatableText $ M.fromList [(English,"confirm"), (Español, "confirmar")])
+    closeCalendar' <- elDynAttr "div" dynAttrs $ clickableDiv "cancelButton" $ dynText =<< (translatableText $ M.fromList [(English,"cancel"), (Español, "cancelar")])
     return (confirmDate', closeCalendar') -- (Event t ())
 
   let confirmDate = tag (current makeLocalTime) confirmDateButton -- Dynamic a -> Event b -> Event a
@@ -716,21 +744,21 @@ dateAndTimeMode2InLocalTime dynAttrs zt = mdo
   return $ leftmost [confirmDate, closeCalendar]
 
 
-dateAndTimeMode2UTCTime :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t ZonedTime -> m (Event t ZonedTime)
+dateAndTimeMode2UTCTime :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t ZonedTime -> W t m (Event t ZonedTime)
 dateAndTimeMode2UTCTime dynAttrs zt = mdo
   thisComputerZone <- liftIO getCurrentTimeZone -- TimeZone
   let utcTime = fmap zonedTimeToUTC zt -- Dynamic t time in utc time
   let utcDay' = fmap utctDay utcTime -- Dynamic t utcday
   let utcTimeOfDay' = fmap (timeToTimeOfDay . utctDayTime) utcTime -- Dynamic t utc time of day
   let makeUTCTime = makeZonedTime  <$> utcDay' <*> utcTimeOfDay' <*> (constDyn utc)
-
+  elDynAttr "div" dynAttrs $ dynText =<< (translatableText $ M.fromList [(English,"Universal Time"), (Español, "Hora Universal")])
   date <- dateWidgetMode2Dyn dynAttrs utcDay' -- Dyn t day
-  time <- elDynAttr "div" dynAttrs $ divClass "changeUTCTimeWidget" $ timeWidgetDyn utcTimeOfDay'
+  time <- elDynAttr "div" dynAttrs $ divClass "timeWidget" $ timeWidgetDyn "UTC" utcTimeOfDay'
   let makeUpdatedUTCTime = makeZonedTime <$> date <*> time <*> (constDyn utc) -- dynamic zonedTime
 
   (confirmDateButton, closeCalendarButton)  <- divClass "confirm-close-buttons" $ do
-    confirmDate' <- elDynAttr "div" dynAttrs $ clickableDiv "" $ text "confirm"
-    closeCalendar' <-  elDynAttr "div" dynAttrs $ clickableDiv "" $ text "cancel"
+    confirmDate' <- elDynAttr "div" dynAttrs $ clickableDiv "confirmButton" $ dynText =<< (translatableText $ M.fromList [(English,"confirm"), (Español, "confirmar")])
+    closeCalendar' <- elDynAttr "div" dynAttrs $ clickableDiv "cancelButton" $ dynText =<< (translatableText $ M.fromList [(English,"cancel"), (Español, "cancelar")])
     return (confirmDate', closeCalendar') -- (Event t ())
 
   let confirmDate = tag (current makeUpdatedUTCTime) confirmDateButton -- Dynamic a -> Event b -> Event a
@@ -745,29 +773,37 @@ dateAndTimeMode2UTCTime dynAttrs zt = mdo
 makeZonedTime :: Day -> TimeOfDay -> TimeZone -> ZonedTime
 makeZonedTime d t z = ZonedTime	(LocalTime	d t) z
 
-dateWidgetMode2Dyn :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t Day -> m (Dynamic t Day)
+dateWidgetMode2Dyn :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t Day -> W t m (Dynamic t Day)
 dateWidgetMode2Dyn dynAttrs dynDate = mdo
-  let year = fmap getYearFromDay dynDate
-  let month = fmap getMonthFromDay dynDate -- Dyn Int
-  let day = fmap getDayFromDay dynDate
+  today <- liftIO getZonedTime
+  serversDate <- sample $ current dynDate
+  let todaysYear = getYearFromDay $ localDay $ zonedTimeToLocalTime today -- Integer
+  let todaysMonth = getMonthFromDay $ localDay $ zonedTimeToLocalTime today -- Int
   (selectedYear, selectedMonth, selectedDay) <- elDynAttr "div" dynAttrs $ do
     (selectedYear', selectedMonth', firstDayOfSelMonthBool') <- divClass "monthAndYear" $ do
-      selectedMonth'' <- selectMonth month
-      selectedYear'' <- selectYear year
+      selectedMonth'' <- selectMonth todaysMonth -- Dyn Int
+      selectedYear'' <- selectYear todaysYear -- Dyn Integer
       let dayToGregorian = fromGregorian <$> selectedYear'' <*> selectedMonth'' <*> (constDyn 1)
       let initialDayOfSelMonth =  dayOfWeek <$> dayToGregorian
       let firstDayOfSelMonthBool = dayOfWeekBool <$> initialDayOfSelMonth
       return (selectedYear'', selectedMonth'', firstDayOfSelMonthBool)
 
+    let listOfDays' = listOfDays <$> selectedYear' <*> selectedMonth' -- [Dynamic Day]
+    holdDynListOfDays <- holdDyn (listOfDays todaysYear todaysMonth) (updated listOfDays')
+    let matchSelDayWithCalendarDay = matchSelDay <$> holdDynListOfDays <*> date -- Dynamic t [Bool]
+    backgroundDynBool <- holdDyn (replicate 31 False) $ updated matchSelDayWithCalendarDay -- Dynamic [Bool]
+    let highlightSelectedDayAttrs' = fmap highlightSelectedDayAttrsList backgroundDynBool -- Dynamic t [Map Text Text]
+
     selectedDay''' <- el "div"  $ do
       selectedDay'' <- elClass "div" "dayNumbers" $ do
-        el "div" $ do text "Su"
-        el "div" $ text "Mo"
-        el "div" $ text "Tu"
-        el "div" $ text "We"
-        el "div" $ text "Th"
-        el "div" $ text "Fr"
-        el "div" $ text "Sa"
+
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Su"), (Español, "Do")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Mo"), (Español, "Lu")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Tu"), (Español, "Ma")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "We"), (Español, "Mi")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Th"), (Español, "Ju")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Fr"), (Español, "Vi")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Sa"), (Español, "Sa")])
 
         sun <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 1) firstDayOfSelMonthBool'
         mon <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 2) firstDayOfSelMonthBool'
@@ -777,68 +813,79 @@ dateWidgetMode2Dyn dynAttrs dynDate = mdo
         fri <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 6) firstDayOfSelMonthBool'
         sat <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 7) firstDayOfSelMonthBool'
 
-        a <- el "div" $ selDay selectedYear' selectedMonth' 1
-        b <- el "div" $ selDay selectedYear' selectedMonth' 2
-        c <- el "div" $ selDay selectedYear' selectedMonth' 3
-        d <- el "div" $ selDay selectedYear' selectedMonth' 4
-        e <- el "div" $ selDay selectedYear' selectedMonth' 5
-        f <- el "div" $ selDay selectedYear' selectedMonth' 6
-        g <- el "div" $ selDay selectedYear' selectedMonth' 7
-        h <- el "div" $ selDay selectedYear' selectedMonth' 8
-        i <- el "div" $ selDay selectedYear' selectedMonth' 9
-        j <- el "div" $ selDay selectedYear' selectedMonth' 10
-        k <- el "div" $ selDay selectedYear' selectedMonth' 11
-        l <- el "div" $ selDay selectedYear' selectedMonth' 12
-        m <- el "div" $ selDay selectedYear' selectedMonth' 13
-        n <- el "div" $ selDay selectedYear' selectedMonth' 14
-        o <- el "div" $ selDay selectedYear' selectedMonth' 15
-        p <- el "div" $ selDay selectedYear' selectedMonth' 16
-        q <- el "div" $ selDay selectedYear' selectedMonth' 17
-        r <- el "div" $ selDay selectedYear' selectedMonth' 18
-        s <- el "div" $ selDay selectedYear' selectedMonth' 19
-        t <- el "div" $ selDay selectedYear' selectedMonth' 20
-        u <- el "div" $ selDay selectedYear' selectedMonth' 21
-        v <- el "div" $ selDay selectedYear' selectedMonth' 22
-        w <- el "div" $ selDay selectedYear' selectedMonth' 23
-        x <- el "div" $ selDay selectedYear' selectedMonth' 24
-        y <- el "div" $ selDay selectedYear' selectedMonth' 25
-        z <- el "div" $ selDay selectedYear' selectedMonth' 26
-        a' <- el "div" $ selDay selectedYear' selectedMonth' 27
-        b' <- el "div" $ selDay selectedYear' selectedMonth' 28
-        c' <- el "div" $ selDay selectedYear' selectedMonth' 29
-        d' <- el "div" $ selDay selectedYear' selectedMonth' 30
-        e' <- el "div" $ selDay selectedYear' selectedMonth' 31
+        a <- elDynAttr "div" (fmap (\x -> x !! 0) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 1
+        b <- elDynAttr "div" (fmap (\x -> x !! 1) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 2
+        c <- elDynAttr "div" (fmap (\x -> x !! 2) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 3
+        d <- elDynAttr "div" (fmap (\x -> x !! 3) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 4
+        e <- elDynAttr "div" (fmap (\x -> x !! 4) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 5
+        f <- elDynAttr "div" (fmap (\x -> x !! 5) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 6
+        g <- elDynAttr "div" (fmap (\x -> x !! 6) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 7
+        h <- elDynAttr "div" (fmap (\x -> x !! 7) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 8
+        i <- elDynAttr "div" (fmap (\x -> x !! 8) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 9
+        j <- elDynAttr "div" (fmap (\x -> x !! 9) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 10
+        k <- elDynAttr "div" (fmap (\x -> x !! 10) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 11
+        l <- elDynAttr "div" (fmap (\x -> x !! 11) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 12
+        m <- elDynAttr "div" (fmap (\x -> x !! 12) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 13
+        n <- elDynAttr "div" (fmap (\x -> x !! 13) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 14
+        o <- elDynAttr "div" (fmap (\x -> x !! 14) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 15
+        p <- elDynAttr "div" (fmap (\x -> x !! 15) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 16
+        q <- elDynAttr "div" (fmap (\x -> x !! 16) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 17
+        r <- elDynAttr "div" (fmap (\x -> x !! 17) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 18
+        s <- elDynAttr "div" (fmap (\x -> x !! 18) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 19
+        t <- elDynAttr "div" (fmap (\x -> x !! 19) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 20
+        u <- elDynAttr "div" (fmap (\x -> x !! 20) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 21
+        v <- elDynAttr "div" (fmap (\x -> x !! 21) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 22
+        w <- elDynAttr "div" (fmap (\x -> x !! 22) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 23
+        x <- elDynAttr "div" (fmap (\x -> x !! 23) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 24
+        y <- elDynAttr "div" (fmap (\x -> x !! 24) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 25
+        z <- elDynAttr "div" (fmap (\x -> x !! 25) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 26
+        a' <- elDynAttr "div" (fmap (\x -> x !! 26) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 27
+        b' <- elDynAttr "div" (fmap (\x -> x !! 27) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 28
+        c' <- elDynAttr "div" (fmap (\x -> x !! 28) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 29
+        d' <- elDynAttr "div" (fmap (\x -> x !! 29) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 30
+        e' <- elDynAttr "div" (fmap (\x -> x !! 30) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 31
         return $ leftmost [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, a', b', c', d', e'] --  (Event t Int)
       return selectedDay''
     return (selectedYear', selectedMonth', selectedDay''')
-  today <- sample $ current day
-  selectedDay' <- holdDyn today selectedDay -- Dynamic t a
-  let date = fromGregorian <$> selectedYear <*> selectedMonth <*> selectedDay' -- Day
+  let dayFromServer = getDayFromDay serversDate
+  selectedDay' <- holdDyn dayFromServer selectedDay -- Dynamic t a
+  let date = fromGregorian <$> selectedYear <*> selectedMonth <*>  selectedDay' -- Dynamic Day
   return date -- Dynamic t Day
 
-dateWidgetMode2Ev :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t Day -> m (Event t Day)
+dateWidgetMode2Ev :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t Day -> W t m (Event t Day)
 dateWidgetMode2Ev dynAttrs dynDate = mdo
-  let year = fmap getYearFromDay dynDate
-  let month = fmap getMonthFromDay dynDate -- Dyn Int
-  let day = fmap getDayFromDay dynDate
-  (selectedYear, selectedMonth, selectedDay) <- elDynAttr "div" dynAttrs $ do
-    (selectedYear', selectedMonth', firstDayOfSelMonthBool') <- divClass "monthAndYear" $ do
-      selectedMonth'' <- selectMonth month
-      selectedYear'' <- selectYear year
+  today <- liftIO getZonedTime
+  serversDate <- sample $ current dynDate
+  let todaysYear = getYearFromDay $ localDay $ zonedTimeToLocalTime today -- fmap getYearFromDay dynDate
+  let todaysMonth = getMonthFromDay $ localDay $ zonedTimeToLocalTime today -- fmap getMonthFromDay dynDate -- Dyn Int
+
+  (selectedYear, selectedMonth, selectedDay) <- elDynAttr "div" dynAttrs $ mdo
+    (selectedYear', selectedMonth', firstDayOfSelMonthBool') <- divClass "monthAndYear" $ mdo
+      selectedMonth'' <- selectMonth todaysMonth -- Dyn Int
+      selectedYear'' <- selectYear todaysYear -- Dyn Integer
       let dayToGregorian = fromGregorian <$> selectedYear'' <*> selectedMonth'' <*> (constDyn 1)
       let initialDayOfSelMonth =  dayOfWeek <$> dayToGregorian
       let firstDayOfSelMonthBool = dayOfWeekBool <$> initialDayOfSelMonth
       return (selectedYear'', selectedMonth'', firstDayOfSelMonthBool)
 
+    let listOfDays' = listOfDays <$> selectedYear' <*> selectedMonth' -- [Dynamic Day]
+    holdDynListOfDays <- holdDyn (listOfDays todaysYear todaysMonth ) (updated listOfDays')
+
+    let matchSelDayWithCalendarDay = matchSelDay <$> holdDynListOfDays <*> date -- Dynamic t [Bool]
+    backgroundDynBool <- holdDyn (replicate 31 False) $ updated matchSelDayWithCalendarDay -- Dynamic [Bool]
+    let highlightSelectedDayAttrs' = fmap highlightSelectedDayAttrsList backgroundDynBool -- Dynamic t [Map Text Text]
+
     selectedDay''' <- el "div"  $ do
       selectedDay'' <- elClass "div" "dayNumbers" $ do
-        el "div" $ do text "Su"
-        el "div" $ text "Mo"
-        el "div" $ text "Tu"
-        el "div" $ text "We"
-        el "div" $ text "Th"
-        el "div" $ text "Fr"
-        el "div" $ text "Sa"
+
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Su"), (Español, "Do")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Mo"), (Español, "Lu")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Tu"), (Español, "Ma")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "We"), (Español, "Mi")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Th"), (Español, "Ju")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Fr"), (Español, "Vi")])
+        el "div" $ dynText =<< (translatableText $ M.fromList [(English, "Sa"), (Español, "Sa")])
+
 
         sun <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 1) firstDayOfSelMonthBool'
         mon <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 2) firstDayOfSelMonthBool'
@@ -848,67 +895,84 @@ dateWidgetMode2Ev dynAttrs dynDate = mdo
         fri <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 6) firstDayOfSelMonthBool'
         sat <- firstDayOfMonth $ fmap (getBoolFromBoolTuple 7) firstDayOfSelMonthBool'
 
-        a <- el "div" $ selDay selectedYear' selectedMonth' 1
-        b <- el "div" $ selDay selectedYear' selectedMonth' 2
-        c <- el "div" $ selDay selectedYear' selectedMonth' 3
-        d <- el "div" $ selDay selectedYear' selectedMonth' 4
-        e <- el "div" $ selDay selectedYear' selectedMonth' 5
-        f <- el "div" $ selDay selectedYear' selectedMonth' 6
-        g <- el "div" $ selDay selectedYear' selectedMonth' 7
-        h <- el "div" $ selDay selectedYear' selectedMonth' 8
-        i <- el "div" $ selDay selectedYear' selectedMonth' 9
-        j <- el "div" $ selDay selectedYear' selectedMonth' 10
-        k <- el "div" $ selDay selectedYear' selectedMonth' 11
-        l <- el "div" $ selDay selectedYear' selectedMonth' 12
-        m <- el "div" $ selDay selectedYear' selectedMonth' 13
-        n <- el "div" $ selDay selectedYear' selectedMonth' 14
-        o <- el "div" $ selDay selectedYear' selectedMonth' 15
-        p <- el "div" $ selDay selectedYear' selectedMonth' 16
-        q <- el "div" $ selDay selectedYear' selectedMonth' 17
-        r <- el "div" $ selDay selectedYear' selectedMonth' 18
-        s <- el "div" $ selDay selectedYear' selectedMonth' 19
-        t <- el "div" $ selDay selectedYear' selectedMonth' 20
-        u <- el "div" $ selDay selectedYear' selectedMonth' 21
-        v <- el "div" $ selDay selectedYear' selectedMonth' 22
-        w <- el "div" $ selDay selectedYear' selectedMonth' 23
-        x <- el "div" $ selDay selectedYear' selectedMonth' 24
-        y <- el "div" $ selDay selectedYear' selectedMonth' 25
-        z <- el "div" $ selDay selectedYear' selectedMonth' 26
-        a' <- el "div" $ selDay selectedYear' selectedMonth' 27
-        b' <- el "div" $ selDay selectedYear' selectedMonth' 28
-        c' <- el "div" $ selDay selectedYear' selectedMonth' 29
-        d' <- el "div" $ selDay selectedYear' selectedMonth' 30
-        e' <- el "div" $ selDay selectedYear' selectedMonth' 31
+        a <- elDynAttr "div" (fmap (\x -> x !! 0) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 1
+        b <- elDynAttr "div" (fmap (\x -> x !! 1) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 2
+        c <- elDynAttr "div" (fmap (\x -> x !! 2) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 3
+        d <- elDynAttr "div" (fmap (\x -> x !! 3) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 4
+        e <- elDynAttr "div" (fmap (\x -> x !! 4) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 5
+        f <- elDynAttr "div" (fmap (\x -> x !! 5) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 6
+        g <- elDynAttr "div" (fmap (\x -> x !! 6) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 7
+        h <- elDynAttr "div" (fmap (\x -> x !! 7) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 8
+        i <- elDynAttr "div" (fmap (\x -> x !! 8) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 9
+        j <- elDynAttr "div" (fmap (\x -> x !! 9) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 10
+        k <- elDynAttr "div" (fmap (\x -> x !! 10) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 11
+        l <- elDynAttr "div" (fmap (\x -> x !! 11) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 12
+        m <- elDynAttr "div" (fmap (\x -> x !! 12) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 13
+        n <- elDynAttr "div" (fmap (\x -> x !! 13) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 14
+        o <- elDynAttr "div" (fmap (\x -> x !! 14) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 15
+        p <- elDynAttr "div" (fmap (\x -> x !! 15) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 16
+        q <- elDynAttr "div" (fmap (\x -> x !! 16) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 17
+        r <- elDynAttr "div" (fmap (\x -> x !! 17) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 18
+        s <- elDynAttr "div" (fmap (\x -> x !! 18) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 19
+        t <- elDynAttr "div" (fmap (\x -> x !! 19) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 20
+        u <- elDynAttr "div" (fmap (\x -> x !! 20) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 21
+        v <- elDynAttr "div" (fmap (\x -> x !! 21) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 22
+        w <- elDynAttr "div" (fmap (\x -> x !! 22) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 23
+        x <- elDynAttr "div" (fmap (\x -> x !! 23) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 24
+        y <- elDynAttr "div" (fmap (\x -> x !! 24) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 25
+        z <- elDynAttr "div" (fmap (\x -> x !! 25) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 26
+        a' <- elDynAttr "div" (fmap (\x -> x !! 26) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 27
+        b' <- elDynAttr "div" (fmap (\x -> x !! 27) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 28
+        c' <- elDynAttr "div" (fmap (\x -> x !! 28) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 29
+        d' <- elDynAttr "div" (fmap (\x -> x !! 29) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 30
+        e' <- elDynAttr "div" (fmap (\x -> x !! 30) highlightSelectedDayAttrs') $ selDay selectedYear' selectedMonth' 31
         return $ leftmost [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, a', b', c', d', e'] --  (Event t Int)
       return selectedDay''
     return (selectedYear', selectedMonth', selectedDay''')
-  today <- sample $ current day
-  selectedDay' <- holdDyn today selectedDay -- Dynamic t a
-  let date = fromGregorian <$> selectedYear <*> selectedMonth <*> selectedDay' -- Day
+  let dayFromServer = getDayFromDay serversDate
+  selectedDay' <- holdDyn dayFromServer selectedDay -- Dynamic t a
+  let date = fromGregorian <$> selectedYear <*> selectedMonth <*>  selectedDay' -- Dynamic Day
 
   (confirmDate, closeCalendar)  <- divClass "confirm-close-buttons" $ do
-    (confirmDate', _) <- elDynAttr' "div" dynAttrs $ text "confirm"
-    (closeCalendar', _) <- elDynAttr' "div" dynAttrs $ text "cancel"
+    (confirmDate', _) <- elDynAttr' "div" dynAttrs $ dynText =<< (translatableText $ M.fromList [(English,"confirm"), (Español, "confirmar")])
+    (closeCalendar', _) <- elDynAttr' "div" dynAttrs $ dynText =<< (translatableText $ M.fromList [(English,"cancel"), (Español, "cancelar")])
     return (confirmDate', closeCalendar')
 
   confirmDateEv <- wrapDomEvent (_element_raw confirmDate) (elementOnEventName Click) (mouseXY)
   let confirmDate' = tagPromptlyDyn date confirmDateEv -- Dynamic a -> Event b -> Event a
-  currentDate' <- sample $ current dynDate
-  currentDate <- holdDyn currentDate' $ leftmost [confirmDate', updated dynDate]
+  currentDate <- holdDyn serversDate $ leftmost [confirmDate', updated dynDate]
 
   closeCalendarEv <- wrapDomEvent (_element_raw closeCalendar) (elementOnEventName Click) (mouseXY)
   let closeCalendar' = tagPromptlyDyn currentDate closeCalendarEv -- Dynamic a -> Event b -> Event a
   return $ leftmost [confirmDate', closeCalendar']
 
-selDay :: MonadWidget t m => Dynamic t Integer -> Dynamic t Int -> Int -> m (Event t Int)
-selDay year month selectableDay = do
+listOfDays :: Integer -> Int -> [Day]
+listOfDays year month = fmap (\d -> fromGregorian year month d) [1 .. 31]
+
+matchSelDay :: [Day] -> Day -> [Bool]
+matchSelDay xs d = fmap (matchSelDay' d) xs -- [Bool]
+
+matchSelDay' :: Day -> Day -> Bool
+matchSelDay' date1 date2
+  | (date1 == date2) = True
+  | otherwise = False
+
+selDay :: MonadWidget t m => Dynamic t Integer -> Dynamic t Int -> Int -> W t m (Event t Int)
+selDay year month selectableDay = mdo
   let dynAttrs = (howManyDaysInTheMonth selectableDay) <$> month <*> year
   let day = T.pack $ show selectableDay
   aEv <- clickableDivDynAttrs day selectableDay dynAttrs
-  let selDay = selectableDay <$ aEv
+  let selDay = selectableDay <$ aEv --  Event t Int
   return selDay
 
-firstDayOfMonth :: MonadWidget t m => Dynamic t Bool -> m ()
+highlightSelectedDayAttrsList :: [Bool] -> [Map.Map T.Text T.Text]
+highlightSelectedDayAttrsList xs = fmap highlightSelectedDayAttrs xs -- [Map.Map T.Text T.Text]
+
+highlightSelectedDayAttrs :: Bool -> Map.Map T.Text T.Text
+highlightSelectedDayAttrs True = "style" =: "background-color: var(--secondary-color);"
+highlightSelectedDayAttrs _ = "style" =: ""
+
+firstDayOfMonth :: MonadWidget t m => Dynamic t Bool -> W t m ()
 firstDayOfMonth bool = do
   let dynAttrs = monthStartsWhen <$> bool
   dayOfWeek' <- elDynAttr "div" dynAttrs $ text ""
@@ -970,14 +1034,14 @@ dateLabelAttrs b = "class" =: "dateLabel" <> "style" =: ("visibility: " <> visib
 
 howManyDaysInTheMonth :: Int -> Int -> Integer -> Map.Map T.Text T.Text
 howManyDaysInTheMonth day month year
-  | (day > gregorianMonthLength year month) = "class" =: "dayLabel" <> "style" =: "visibility: hidden"
-  | otherwise = "class" =: "dayLabel" <> "style" =: "visibility: visible"
+  | (day > gregorianMonthLength year month) = "class" =: "dayLabel" <> "style" =: "visibility: hidden;"
+  | otherwise = "class" =: "dayLabel" <> "style" =: "visibility: visible;"
 
 makeTuple :: TimeOfDay -> Bool -> (TimeOfDay, Bool)
 makeTuple t b = (t, b)
 
 
-showDayAdjustmentUTC :: MonadWidget t m => Event t TimeOfDay -> Dynamic t ZonedTime  -> m ()
+showDayAdjustmentUTC :: MonadWidget t m => Event t TimeOfDay -> Dynamic t ZonedTime  -> W t m ()
 showDayAdjustmentUTC tdEv ztCurrent = mdo
   thisComputerZone <- liftIO getCurrentTimeZone
   sampledZTCurrent <- sample $ current ztCurrent
@@ -993,12 +1057,13 @@ showDayAdjustmentUTC tdEv ztCurrent = mdo
   divClass "dayAdjustmentStartingTime" $ dynText dayAdjustmentDyn
 
 
-timeWidget ::  MonadWidget t m => Dynamic t TimeOfDay -> m (Event t TimeOfDay)
+timeWidget ::  MonadWidget t m => Dynamic t TimeOfDay -> W t m (Event t TimeOfDay)
 timeWidget td = do
   let hours = fmap todHour td -- Dynamic t Int
   let mins = fmap todMin td -- Dynamic t Int
   sampleHours <- sample $ current hours
   sampleMins <- sample $ current mins
+  dynText =<< (translatableText $ M.fromList [(English,"hh"), (Español, "mm")])
   h <- divClass "timeWidgetInput" $ intTextInputW hours -- Event t Int --
   divClass "timeWidgetColon" $ text ":"
   m <- divClass "timeWidgetInput" $ intTextInputW mins -- Event t Int --
@@ -1008,15 +1073,22 @@ timeWidget td = do
   return $ updated newTimeOfDay
 
 
-timeWidgetDyn ::  MonadWidget t m => Dynamic t TimeOfDay -> m (Dynamic t TimeOfDay)
-timeWidgetDyn td  = do
+timeWidgetDyn ::  MonadWidget t m => Text -> Dynamic t TimeOfDay -> W t m (Dynamic t TimeOfDay)
+timeWidgetDyn tz td  = do
   let hours = fmap todHour td -- Dynamic t Int
   let mins = fmap todMin td -- Dynamic t Int
   sampleHours <- sample $ current hours
   sampleMins <- sample $ current mins
-  h <- divClass "timeWidgetInput" $ intTextInputW (constDyn sampleHours) -- (constDyn 00) -- Event t Int --
-  divClass "timeWidgetColon" $ text ":"
-  m <- divClass "timeWidgetInput" $ intTextInputW (constDyn sampleMins) -- (constDyn 00) -- Event t Int --
+  divClass "hoursAndminsLabelContainer" $ do
+    divClass "hoursAndminsLabel" $ el "th" $ dynText =<< (translatableText $ M.fromList [(English,"hh"), (Español, "mm")])
+    divClass "hoursAndminsLabel" $ el "th" $ dynText =<< (translatableText $ M.fromList [(English,"hh"), (Español, "mm")])
+    divClass "hoursAndminsLabel" $ el "th" $ dynText =<< (translatableText $ M.fromList [(English,"time zone"), (Español, "Zona horaria")])
+  (h, m) <- divClass "timeWidgetInputContainer" $ do
+    h' <- divClass "timeWidgetInput" $ intTextInputW (constDyn sampleHours) -- (constDyn 00) -- Event t Int --
+    divClass "timeWidgetColon" $ text ":"
+    m' <- divClass "timeWidgetInput" $ intTextInputW (constDyn sampleMins) -- (constDyn 00) -- Event t Int --
+    divClass "timeWidgetInput" $ text tz
+    return $ (h', m')
   hDyn <- holdDyn sampleHours h
   mDyn <- holdDyn sampleMins m
   let newTimeOfDay = updatedTimeOfDay <$> hDyn <*> mDyn  -- Event t TimeOfDay

@@ -4,9 +4,11 @@ module Estuary.Render.R where
 
 import Data.Time
 import Data.Text (Text)
+import qualified Data.Text as T
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Control.Exception (evaluate,catch,SomeException,try)
+import Control.Concurrent.MVar
 import Data.IntMap.Strict as IntMap
 import Data.Map.Strict as Map
 import Data.IORef
@@ -14,24 +16,27 @@ import Sound.MusicW
 import TextShow
 import GHCJS.Types (JSVal)
 
-
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
 
+import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
--- import Estuary.Render.DynamicsMode
+
 import Estuary.Render.MainBus
 import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
+import Estuary.Render.RenderOp
+import Estuary.Types.Tempo
 import Estuary.Resources
 import Estuary.Types.ResourceOp
 import Estuary.Client.Settings as Settings
 import Estuary.Types.Language
 import Estuary.Render.WebSerial as WebSerial
 import Estuary.Render.WebDirt as WebDirt
+import Estuary.Types.RenderInfo
 
 
 data RenderEnvironment = RenderEnvironment {
@@ -41,7 +46,9 @@ data RenderEnvironment = RenderEnvironment {
   webSerial :: WebSerial.WebSerial,
   resources :: Resources,
   ccMap :: IORef (Map.Map Text Double),
-  _settings :: IORef Settings
+  _settings :: IORef Settings,
+  renderOps :: MVar [RenderOp],
+  renderInfo :: MVar RenderInfo
   }
 
 initialRenderEnvironment :: Settings -> IO RenderEnvironment
@@ -58,6 +65,8 @@ initialRenderEnvironment s = do
   addResourceOp resources' $ ResourceListURL "samples/resources.json"
   ccMap' <- newIORef Map.empty
   settings' <- newIORef s
+  renderOps' <- newMVar []
+  renderInfo' <- newMVar emptyRenderInfo
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,
@@ -66,8 +75,25 @@ initialRenderEnvironment s = do
     webSerial = _webSerial,
     resources = resources',
     ccMap = ccMap',
-    _settings = settings'
+    _settings = settings',
+    renderOps = renderOps',
+    renderInfo = renderInfo'
   }
+
+
+putRenderOps :: MonadIO m => RenderEnvironment -> [RenderOp] -> m ()
+putRenderOps re x = liftIO $ do
+  ops <- takeMVar $ renderOps re
+  putMVar (renderOps re) $ ops ++ x
+
+takeRenderOps :: R [RenderOp]
+takeRenderOps = do
+  mv <- asks renderOps
+  ops <- liftIO $ takeMVar mv
+  liftIO $ putMVar mv []
+  -- when (length ops > 0) $ liftIO $ putStrLn $ show (length ops) ++ " ops"
+  return ops
+
 
 setCC :: Int -> Double -> RenderEnvironment -> IO ()
 setCC n v rEnv = modifyIORef' (ccMap rEnv) $ Map.insert (showt n) v
@@ -76,6 +102,12 @@ getCC :: Int -> RenderEnvironment -> IO (Maybe Double)
 getCC n irc = do
   m <- readIORef $ ccMap irc
   return $ Map.lookup (showt n) m
+
+updateTidalValueMap :: R ()
+updateTidalValueMap = do
+  rEnv <- ask
+  m <- liftIO $ readIORef $ ccMap rEnv
+  modify' $ \x -> x { valueMap = fmap Tidal.toValue $ Map.mapKeys T.unpack m}
 
 
 type R = ReaderT RenderEnvironment (StateT RenderState IO)
@@ -89,8 +121,10 @@ runR r rEnv rState = do
 pushNoteEvents :: [NoteEvent] -> R ()
 pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
+{- already obsolete?
 pushTidalEvents :: [(UTCTime,Tidal.ValueMap)] -> R ()
 pushTidalEvents = pushNoteEvents . fmap tidalEventToNoteEvent
+-}
 
 -- deprecated/temporary
 pushWebDirtEvents :: [JSVal] -> R ()

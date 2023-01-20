@@ -25,10 +25,8 @@ import Data.Sequence
 import Estuary.Types.ServerState
 import qualified Estuary.Types.EnsembleS as E
 import Estuary.Types.Client
-import Estuary.Types.Request
-import Estuary.Types.Response
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.EnsembleResponse
+import Estuary.Types.Request as Request
+import Estuary.Types.Response as Response
 import Estuary.Types.Database
 import Estuary.Types.Definition
 import Estuary.Types.View
@@ -291,24 +289,26 @@ joinEnsemble db cHandle ctvar eName uName loc pwd isReauth = do
     -- send responses to this client indicating successful join, and ensemble tempo, defs and views
     let respond = \x -> $atomically $ sendClient cHandle (sendChan self) x
     when (not isReauth) $ respond $ JoinedEnsemble eName uName loc pwd
-    when (isReauth) $ respond $ ResponseOK "rejoined ensemble"
-    respond $ EnsembleResponse $ TempoRcvd t
-    mapM_ respond $ fmap EnsembleResponse $ IntMap.mapWithKey ZoneRcvd zs
-    mapM_ respond $ fmap EnsembleResponse $ Map.mapWithKey ViewRcvd vs
-    respond $ EnsembleResponse $ ResourceOps rs
+    when (isReauth) $ respond $ OK "rejoined ensemble"
+    respond $ Response.WriteTempo t
+    mapM_ respond $ IntMap.mapWithKey (\k v -> Response.WriteZone k v True) zs
+    mapM_ respond $ Map.mapWithKey Response.WriteView vs
+    respond $ Response.WriteResourceOps rs
 
     -- send new participant information about existing participants
     ps <- getNamedParticipants ss e'
-    mapM_ respond $ fmap (EnsembleResponse . ParticipantUpdate) ps
+    mapM_ respond $ fmap ParticipantUpdate ps
     anonN <- $readTVarIO $ E.anonymousConnections e'
-    respond  $ EnsembleResponse $ AnonymousParticipants anonN
+    respond  $ AnonymousParticipants anonN
 
     -- send information about new participant to all of the other clients in this ensemble
     let respondEnsemble = sendEnsembleNoOrigin cHandle e
     case uName of
       "" -> do
-        respondEnsemble $ EnsembleResponse $ AnonymousParticipants anonN
-      _ -> respondEnsemble $ EnsembleResponse $ ParticipantJoins (clientToParticipant self)
+        respondEnsemble $ AnonymousParticipants anonN
+      _ -> do
+        respondEnsemble $ ParticipantUpdate (clientToParticipant self)
+        -- TODO: need to issue an announcement about participant joining as a LogEntry
 
 
 leaveEnsemble :: SQLite.Connection -> TVar Client -> Transaction (IO ())
@@ -345,10 +345,10 @@ notifyWhenClientDepartsEnsemble ss originHandle c = do
         "" -> do
           n <- $readTVarIO $ E.anonymousConnections e
           postLog originHandle $ "(anonymous) leaving ensemble " <> eName
-          sendEnsembleNoOrigin originHandle e $ EnsembleResponse $ AnonymousParticipants n
+          sendEnsembleNoOrigin originHandle e $ AnonymousParticipants n
         otherwise -> do
           postLog originHandle $ uName <> " leaving ensemble " <> eName
-          sendEnsembleNoOrigin originHandle e $ EnsembleResponse $ ParticipantLeaves uName
+          sendEnsembleNoOrigin originHandle e $ ParticipantLeaves uName
 
 
 updateLastEdit :: TVar Client -> UTCTime -> Transaction Participant

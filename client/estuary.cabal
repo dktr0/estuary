@@ -39,7 +39,6 @@ library
       Estuary.Languages.Hydra.Types
       Estuary.Languages.JSoLang
       Estuary.Languages.TidalParsers
-      Estuary.Protocol.Peer
       Estuary.Render.DynamicsMode
       Estuary.Render.MainBus
       Estuary.Render.R
@@ -57,7 +56,6 @@ library
       Estuary.Tutorials.Punctual
       Estuary.Tutorials.TidalCyclesBasics
       Estuary.Types.AnimationState
-      Estuary.Types.Context
       Estuary.Types.EnsembleC
       Estuary.Types.Hint
       Estuary.Types.NoteEvent
@@ -82,6 +80,7 @@ library
       Estuary.Widgets.Footer
       Estuary.Widgets.GeneralPattern
       Estuary.Widgets.Header
+      Estuary.Widgets.MultilingualEditor      
       Estuary.Widgets.Navigation
       Estuary.Widgets.Notepad
       Estuary.Widgets.Reference

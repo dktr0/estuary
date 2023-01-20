@@ -16,7 +16,6 @@ import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
 import Estuary.Types.RenderInfo
-import Estuary.Types.Context
 import Estuary.Types.TextNotation
 import Estuary.Render.MainBus
 import Estuary.Types.Tempo as Tempo
@@ -24,18 +23,19 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
 import Estuary.Types.TidalParser
 import Estuary.Languages.TidalParsers
+import Estuary.Types.NoteEvent
 
 
 miniTidal :: TextNotationRenderer
 miniTidal = emptyTextNotationRenderer {
   parseZone = _parseZone,
-  scheduleTidalEvents = _scheduleTidalEvents,
+  scheduleNoteEvents = _scheduleNoteEvents,
   clearZone' = clearParamPattern
   }
 
 
-_parseZone :: Context -> Int -> Text -> UTCTime -> R ()
-_parseZone c z y eTime = do
+_parseZone :: Int -> Text -> UTCTime -> R ()
+_parseZone z y eTime = do
   s <- get
   parseResult <- liftIO $ (return $! force (tidalParser MiniTidal y)) `catch` (return . Left . (show :: SomeException -> String))
   case parseResult of
@@ -47,22 +47,23 @@ _parseZone c z y eTime = do
     Left err -> setZoneError z $ T.pack err
 
 
-_scheduleTidalEvents :: Context -> Int -> R [(UTCTime,Tidal.ValueMap)]
-_scheduleTidalEvents c z = do
+_scheduleNoteEvents :: Int -> R [NoteEvent]
+_scheduleNoteEvents z = do
   s <- get
   let lt = renderStart s
   let rp = renderPeriod s
-  let tempo' = tempo $ ensemble $ ensembleC c
   let vMap = valueMap s
   let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
   case controlPattern of
-    Just controlPattern' -> liftIO $ (return $! force $ renderTidalPattern vMap lt rp tempo' controlPattern')
+    Just controlPattern' -> do
+      ns <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
         `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
+      pure $ tidalEventToNoteEvent <$> ns
     Nothing -> return []
 
 
-renderControlPattern :: Context -> Int -> R ()
-renderControlPattern c z = do
+renderControlPattern :: Int -> R ()
+renderControlPattern z = do
   wdOn <- webDirtOn
   sdOn <- superDirtOn
   when (wdOn || sdOn) $ do
@@ -73,10 +74,9 @@ renderControlPattern c z = do
       Just controlPattern' -> do
         let lt = renderStart s
         let rp = renderPeriod s
-        let tempo' = tempo $ ensemble $ ensembleC c
-        newEvents <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp tempo' controlPattern')
+        ns <- liftIO $ (return $! force $ renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
           `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
-        pushTidalEvents newEvents
+        pushNoteEvents $ tidalEventToNoteEvent <$> ns
       Nothing -> return ()
 
 

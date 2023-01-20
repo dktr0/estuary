@@ -10,8 +10,7 @@ import GHCJS.Marshal -- .Internal
 
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderState
-import Estuary.Render.R
-import Estuary.Types.Context
+import Estuary.Render.R hiding (setTempo)
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.TextNotation
 import Estuary.Types.EnsembleC
@@ -28,8 +27,8 @@ timeNot = emptyTextNotationRenderer {
   }
 
 
-_parseZone :: Context -> Int -> Text -> UTCTime -> R ()
-_parseZone c z txt eTime = do
+_parseZone :: Int -> Text -> UTCTime -> R ()
+_parseZone z txt eTime = do
   s <- get
   timekNot <- case IntMap.lookup z (timeNots s) of
     Just j -> pure j
@@ -48,13 +47,13 @@ _parseZone c z txt eTime = do
       clearZoneError z
 
 
-_scheduleWebDirtEvents :: Context -> Int -> R [JSVal]
-_scheduleWebDirtEvents c z = do
+_scheduleWebDirtEvents :: Int -> R [JSVal]
+_scheduleWebDirtEvents z = do
   liftIO $ putStrLn "_scheduleWebDirtEvents"
   s <- get
   case IntMap.lookup z (timeNots s) of
     Just timekNot -> liftIO $ do
-      setTempo timekNot $ (tempo . ensemble . ensembleC) c
+      setTempo timekNot $ tempoCache s
       let wStart = utcTimeToWhenPOSIX $ renderStart s
       let wEnd = utcTimeToWhenPOSIX $ renderEnd s
       j <- _scheduleEvents timekNot wStart wEnd

@@ -7,6 +7,7 @@ import Reflex.Dom
 import Control.Monad
 import Control.Monad.Trans
 import GHCJS.DOM.EventM
+import Control.Monad.Fix (MonadFix)
 import Data.Maybe
 import Data.Map
 import Data.Monoid
@@ -35,7 +36,6 @@ import Estuary.Help.LanguageHelp
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Language
 import Estuary.Widgets.W
-import Estuary.Types.Context
 import Estuary.Types.CodeWidgetOptions
 
 
@@ -198,7 +198,7 @@ textToInvisibleClass False = "class" =: "primary-color textInputToEndOfLine code
 textNotationParsers :: [TextNotation]
 textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s, Hydra] ++ (fmap TidalTextNotation tidalParsers)
 
-holdUniq :: (MonadWidget t m, Eq a) => a -> Event t a -> m (Event t a)
+holdUniq :: (MonadHold t m, Monad m, Reflex t, MonadFix m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
 
 textProgramEditor :: forall t m. MonadWidget t m => [CodeWidgetOptions] -> Int -> Dynamic t (Maybe Text)
@@ -267,7 +267,7 @@ labelEditor delta = do
     textInput $ def & textInputConfig_setValue .~ (updated delta) & textInputConfig_attributes .~ attrs & textInputConfig_initialValue .~ i
   returnVariable delta $ _textInput_input y
 
-syntaxErrorWidget :: MonadWidget t m => Text -> W t m ()
+syntaxErrorWidget :: (Monad m, Reflex t, PostBuild t m, DomBuilder t m, MonadHold t m, MonadFix m) => Text -> W t m ()
 syntaxErrorWidget t = do
   s <- term Term.Syntax
   let wb = elClass "div" "syntaxIssue" $ dynText s

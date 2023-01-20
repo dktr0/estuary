@@ -8,6 +8,7 @@ import Reflex.Dom hiding (Request,Response)
 import Control.Monad
 import GHC.Generics
 import GHCJS.Marshal
+import Control.Monad.Fix (MonadFix)
 import Data.Text (Text)
 import qualified Data.Map.Strict as Map
 
@@ -44,7 +45,7 @@ navigation = do
   let a = switchDyn x
   return a
 
-referenceWidget :: MonadWidget t m => Reference -> W t m (Event t Reference)
+referenceWidget :: (DomBuilder t m, Monad m, PostBuild t m, Reflex t, MonadFix m, MonadHold t m) => Reference -> W t m (Event t Reference)
 
 referenceWidget MainList = do
   divClass "reference-title" $ text "estuary"
@@ -108,6 +109,6 @@ referenceWidget TerminalViewCommands = do
   terminalViewCommandsHelpFile
   return navEv
 
-goTo :: MonadWidget t m => Reference -> TranslatableText -> W t m (Event t Reference)
+goTo :: (Monad m, Reflex t, DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) => Reference -> TranslatableText -> W t m (Event t Reference)
 goTo targetPage title = do
   liftM (targetPage <$) $ dynButtonWithChild "reference-link" $ dynText =<< (translatableText title)

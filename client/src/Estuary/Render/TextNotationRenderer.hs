@@ -4,8 +4,7 @@ import Data.Text
 import Data.Time
 import Data.Time.Clock.POSIX
 
-import Estuary.Types.Context
-import Estuary.Types.Tempo
+-- import Estuary.Types.Tempo
 import Estuary.Types.NoteEvent
 import Estuary.Render.R
 import qualified Sound.Tidal.Context as Tidal
@@ -14,10 +13,9 @@ import GHCJS.DOM.Types hiding (Text)
 
 
 data TextNotationRenderer = TextNotationRenderer {
-  parseZone :: Context -> Int -> Text -> UTCTime -> R (),
-  scheduleTidalEvents :: Context -> Int -> R [(UTCTime,Tidal.ValueMap)], -- deprecated/temporary
-  scheduleNoteEvents :: Context -> Int -> R [NoteEvent],
-  scheduleWebDirtEvents :: Context -> Int -> R [JSVal], -- deprecated/temporary
+  parseZone :: Int -> Text -> UTCTime -> R (),
+  scheduleNoteEvents :: Int -> R [NoteEvent],
+  scheduleWebDirtEvents :: Int -> R [JSVal], -- deprecated/temporary
   clearZone' :: Int -> R (),
   zoneAnimationFrame :: UTCTime -> Int -> R (),
   preAnimationFrame :: R (),
@@ -98,10 +96,9 @@ SomeExoLang.prototype.postAnimationFrame = function (context :: Object) {
 
 emptyTextNotationRenderer :: TextNotationRenderer
 emptyTextNotationRenderer = TextNotationRenderer {
-  parseZone = \_ _ _ _ -> return (),
-  scheduleTidalEvents = \_ _ -> return [],
-  scheduleNoteEvents = \_ _ -> return [],
-  scheduleWebDirtEvents = \_ _ -> return [],
+  parseZone = \_ _ _ -> return (),
+  scheduleNoteEvents = \_ -> return [],
+  scheduleWebDirtEvents = \_ -> return [],
   clearZone' = \_ -> return (),
   zoneAnimationFrame = \_ _ -> return (),
   preAnimationFrame = return (),

@@ -95,7 +95,6 @@
   <script src="https://dktr0.github.io/LocoMotion/threejs/DRACOLoader.js"></script>
   <script src="https://dktr0.github.io/LocoMotion/locoMotion.js"></script>
   <script src="./SuperDirt.js"></script>
-  <script src="./PeerProtocol.js"></script>
   <script src="./hydra-synth.js"></script>
   <script src="./peg-0.10.0.min.js"></script>
   <script src="https://afrancob.github.io/timekNot/timekNot.js" type="module"></script>
