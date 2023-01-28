@@ -113,7 +113,8 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
         let resetEvent = resetFunc <$ resetItem -- Event t (Timer -> Timer)
         playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
         aTime <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) playPauseItem
-        let playPauseEvent = playPauseFunc <$> aTime
+        let aTime' = traceEvent "aTime with playPauseItwm" $ aTime
+        let playPauseEvent = playPauseFunc <$> aTime'
         return $ leftmost [resetEvent,playPauseEvent]
     sndRowWrap <- divClass "flex-item-col" $ do 
       divClass "flex-container-row" $ do
@@ -221,11 +222,15 @@ visualDisplay beat tempo delta _ = do
 
 engineDisplays:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m (Dynamic t (Maybe Rational), Dynamic t (Maybe Text))
 engineDisplays beat tempo delta = do
-  liftIO $ putStrLn "engineDisplay"
+  liftIO $ putStrLn "engineDisplay ma"
+--  liftIO $ (putStrLn . show) <$> getCurrentTime
   let startTime = fmap (extractStartTime . mode) delta -- :: Maybe UTC
 --  traceDynamic "mode: " $ mode <$> delta
   let startTimeInBeats = traceEventWith (\x -> "startTime " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ updated startTime -- Event t (Maybe Rational)
-  beatAtPlayEvent <- holdDyn (Just 666) {- $ traceEventWith (\x -> "fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ -} startTimeInBeats -- Dyn t (Maybe Rational)
+  beatAtPlayEvent <- holdDyn (Just 0) {- $ traceEventWith (\x -> "fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ -} startTimeInBeats -- Dyn t (Maybe Rational)
+
+  -- here is where everything breaks
+
   let countFromBEvent = (\b lb -> fmap (b-) lb) <$> beat <*> beatAtPlayEvent 
   -- countFromBEvent <- traceDynamicWith (\x -> "count " <> (show (fmap (\x -> realToFrac x :: Float) x))) countFromBEvent'
 
@@ -236,38 +241,40 @@ engineDisplays beat tempo delta = do
 
 visualiseProgressBar:: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
 visualiseProgressBar countdown' tag' = do
-  let countdown = fromMaybe 0 <$> countdown' 
-  --countdown <- traceDynamicWith (\x -> "cd: " <> (show (realToFrac x :: Float))) $ countdown''
+  let countdown'' = fromMaybe 0 <$> countdown' 
+  countdown <- traceDynamicWith (\x -> "cd: " <> (show (realToFrac x :: Float))) $ countdown''
   let tag = fromMaybe "" <$> tag'
 
   let class' = constDyn $ "class" =: "visualiser"
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
-  let vB = constDyn $  "viewBox" =: "0 0 100 100"
+  let vB = constDyn $  "viewBox" =: "0 0 100 80"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let attrs = mconcat [class',width,height, vB, par]  -- svg
   -- rect1
   let x' = constDyn $ "x" =: "0"
-  let y' = constDyn $ "y" =: "20"
-  let width1 = constDyn $ "width" =: "100%"
-  let height1 = constDyn $ "height" =: "20%"
+  let y' = constDyn $ "y" =: "12"
+  let width1 = constDyn $ "width" =: "100"
+  let height1 = constDyn $ "height" =: "30"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let attrsRect = mconcat [x',y',width1, height1, stroke] 
   -- progress rect
   let x'' = constDyn $ "x" =: "100"
-  let y'' = constDyn $ "y" =: "40"
-  let height2 = constDyn $ "height" =: "20"
+  let y'' = constDyn $ "y" =: "0"
+  let height2 = constDyn $ "height" =: "30"
   let opacity = constDyn $ "opacity" =: "0.5"
-  let transform = constDyn $ "transform" =: "rotate(180,100,40)"
+  let transform = constDyn $ "transform" =: "rotate(180,100,21)"
   let fill = constDyn $ "fill" =: "var(--primary-color)"
   let dynWidth = (\x -> "width" =: showt (realToFrac x :: Double)) <$> countdown
   let attrsDynRect = mconcat [x'', y'', height2, opacity, transform, fill, dynWidth]
   -- tag text
   let txFill = constDyn $ "fill" =: "var(--primary-color)"
   let txX = constDyn $ "x" =: "50"
-  let txY = constDyn $ "y" =: "13"
+  let txY = constDyn $ "y" =: "72"
   let txAnchor = constDyn $ "text-anchor" =: "middle"
-  let txAttrs = mconcat [txFill, txX, txY, txAnchor]
+  let fontSize = constDyn $ "font-size" =: "2em"
+  -- let fontSz = a dynamic text size with...
+  let txAttrs = mconcat [txFill, txX, txY, txAnchor, fontSize]
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
@@ -306,11 +313,14 @@ visualiseSandClock countdown' tag' = do
   let fillHold = constDyn $ "fill" =: "var(--primary-color)"
   let attrsHold = mconcat [mask',class',fillHold,x',yHold,widthHold,heightHold]
 
-  let xtx = constDyn $ "x" =: "-75%"
-  let ytx = constDyn $ "y" =: "50%"
-  let fs = constDyn $ "font-size" =: "1em"
+  let xtx = constDyn $ "x" =: "50%"
+  let ytx = constDyn $ "y" =: "95"
+  let fs = constDyn $ "font-size" =: "2em" -- this should be dynamic
+  let txAnchor = constDyn $ "text-anchor" =: "middle"
+  let txAttrs = mconcat [fillHold,xtx,ytx,fs,txAnchor]
 
-  let txAttrs = mconcat [fillHold,xtx,ytx,fs]
+  let transform = constDyn $ "transform" =: "scale(0.67) translate(27)"
+  let layerAttrs = mconcat [transform]
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
@@ -319,9 +329,10 @@ visualiseSandClock countdown' tag' = do
     -- creatMask first
     sandClockMask
     -- sand Falling
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsFall $ return () 
-    -- sand held
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "g" layerAttrs $ do
+      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsFall $ return () 
+      -- sand held
+      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
   return ()
 
 visualiseText :: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
@@ -341,18 +352,20 @@ visualiseText countdown' tag' = do
   -- tspans attrs
   let txAnchor = constDyn $ "text-anchor" =: "middle"
   let fill = constDyn $ "fill" =: "var(--primary-color)"
-  let x' = constDyn $ "x" =: "50%"
+  let x' = constDyn $ "x" =: "50"
   -- tspan1 attrs
-  let font1 = constDyn $ "font-size" =: "1em"
-  let y' = constDyn $ "y" =: "30%"
+  let font1 = constDyn $ "font-size" =: "2em" -- this should be dynamic
+  let y' = constDyn $ "y" =: "95"
   let tspan1Attrs = mconcat [txAnchor,fill,x',y',font1]
   -- tspan2 attrs
-  let font2 = constDyn $ "font-size" =: "2em"
-  let y'' = constDyn $ "y" =: "75%"
+  let font2 = constDyn $ "font-size" =: "2.8em"
+  let y'' = constDyn $ "y" =: "45"
   let tspan2Attrs = mconcat [txAnchor,fill,x',y'',font2]
 
+  let txAttrs = mconcat [txAnchor,fill,x',y']
+
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" tspan1Attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
       elDynAttrNS' (Just "http://www.w3.org/2000/svg") "tspan" tspan1Attrs $ do
         dynText tag
         return ()
