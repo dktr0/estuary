@@ -10,10 +10,9 @@ import Data.Text
 import TextShow
 import Data.List (nub)
 import Data.Tuple.Select
-import Control.Monad.Fix
+import Control.Monad.Fix (MonadFix)
 
 import Estuary.Widgets.W
-import Estuary.Types.Context
 import Estuary.Resources.LocMap
 
 

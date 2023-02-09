@@ -15,13 +15,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-import Estuary.Protocol.Peer
-import Estuary.Types.Context
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
-import Estuary.Types.RenderInfo
-import Estuary.Types.RenderState
-import Estuary.Render.Renderer
 import Estuary.Render.R
 import Estuary.Client.Settings
 
@@ -37,13 +32,14 @@ import GHCJS.Types
 -- just for temporary test
 import Data.IntMap as IntMap
 import Estuary.Widgets.W hiding (theme)
+import Estuary.Widgets.MultilingualEditor
+
 
 import Reflex.Host.Class (HostFrame)
 
 import System.Timeout(timeout)
 
 main :: IO ()
-{- main = widgetMapDemo -}
 main = do
   hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser
@@ -52,14 +48,10 @@ main = do
     existingUncaughtHandler e
     visuallyCrash e
 
-  nowUtc <- getCurrentTime
-  context <- newMVar $ initialContext nowUtc
-  renderInfo <- newMVar $ emptyRenderInfo
-
   settings <- getSettingsFromURI
   setThemeIO $ theme settings
   rEnv <- initialRenderEnvironment settings
-  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings context renderInfo
+  mainWidgetInElementById "estuary-root" $ keyboardHintsCatcher rEnv settings
 
   -- Signal the splash page that estuary is loaded.
   -- js_setIconStateLoaded
@@ -72,7 +64,6 @@ main = do
   case mErr of
     Just err -> putStrLn $ show err
     Nothing -> return ()
-
 
 visuallyCrash :: SomeException -> IO ()
 visuallyCrash e =

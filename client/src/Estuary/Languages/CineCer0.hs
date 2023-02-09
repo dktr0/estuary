@@ -19,7 +19,6 @@ import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
 import Estuary.Types.RenderInfo
-import Estuary.Types.Context
 import Estuary.Types.TextNotation
 import Estuary.Render.MainBus
 import Estuary.Types.Tempo
@@ -28,7 +27,7 @@ import Estuary.Types.EnsembleC
 
 
 cineCer0 :: TextNotationRenderer
-cineCer0 = TextNotationRenderer {
+cineCer0 = emptyTextNotationRenderer {
   parseZone = _parseZone,
   clearZone' = _clearZone,
   preAnimationFrame = return (),
@@ -37,8 +36,8 @@ cineCer0 = TextNotationRenderer {
   }
 
 
-_parseZone :: Context -> Int -> Text -> UTCTime -> R ()
-_parseZone c z x eTime = do
+_parseZone :: Int -> Text -> UTCTime -> R ()
+_parseZone z x eTime = do
   let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack x -- Either String CineCer0Spec
   case parseResult of
     Right spec -> do

@@ -14,10 +14,6 @@ import GHCJS.DOM.EventM
 import Control.Monad.Trans (liftIO)
 import Data.Map.Strict
 import Control.Monad
-import Estuary.Types.Context
-import Estuary.Types.EnsembleC
-import Estuary.Types.Ensemble
-import Estuary.Types.EnsembleRequest
 import Estuary.Types.Participant
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
@@ -46,8 +42,7 @@ rouletteWidget rows delta = do
 
 rouletteWidget' :: MonadWidget t m => Dynamic t Roulette -> W t m (Variable t Roulette)
 rouletteWidget' delta = mdo
-    ctx <- context
-    uHandle <- sample $ current $ fmap (userHandle . ensembleC) ctx -- Text
+    uHandle <- userHandle >>= (sample . current)
 
     let currentValHead = liftM getHead currentVal
     let currentValTail =  liftM (Prelude.drop 1) currentVal -- [Text] or Roulette [1, 2, 3] => [2, 3]

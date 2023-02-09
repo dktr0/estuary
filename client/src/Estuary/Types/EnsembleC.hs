@@ -15,11 +15,11 @@ import qualified Data.Text as T
 import TextShow
 import Control.Applicative
 import Control.Monad.IO.Class
+import Control.Monad
 import Data.Sequence as Seq
 
-import Estuary.Types.Response
-import Estuary.Types.EnsembleRequest
-import Estuary.Types.EnsembleResponse
+import Estuary.Types.Response as Response
+import Estuary.Types.Request as Request
 import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
 import Estuary.Types.Definition
@@ -36,6 +36,8 @@ import Estuary.Types.TranslatableText
 import Estuary.Types.Language
 import Estuary.Types.Ensemble
 import Estuary.Types.Chat
+import Estuary.Client.Settings
+import Estuary.Types.LogEntry
 
 data EnsembleC = EnsembleC {
   ensemble :: Ensemble,
@@ -92,8 +94,9 @@ nameOfActiveView e = either (const "(local view)") id $ view e
 selectPresetView :: Text -> EnsembleC -> EnsembleC
 selectPresetView t e = e { view = Right t }
 
+{- factored out already into W monad
 selectLocalView :: View -> EnsembleC -> EnsembleC
-selectLocalView v e = e { view = Left v }
+selectLocalView v e = e { view = Left v } -}
 
 -- replaceStandardView selects a standard view while also redefining it
 -- according to the provided View argument. (To be used when a custom view is
@@ -112,130 +115,61 @@ readableTempo tempo =
   in "Freq: " <> showt f <> "Time: " <> (T.pack $ show t) <> "Count: " <> showt c
 
 
-commandToHint :: EnsembleC -> Terminal.Command -> Maybe Hint
-commandToHint _ (Terminal.LocalView _) = Just $ LogMessage $ (Map.fromList [(English,  "local view changed"), (Español, "La vista local ha cambiado")])
-commandToHint _ (Terminal.PresetView x) = Just $ LogMessage $ (Map.fromList [(English,  "preset view " <> x <> " selected"), (Español, "vista predeterminada " <> x <> " seleccionada")])
-commandToHint _ (Terminal.PublishView x) = Just $ LogMessage $ (Map.fromList [(English, "active view published as " <> x), (Español, "vista activa publicada como " <> x)])
-commandToHint es (Terminal.ActiveView) = Just $ LogMessage $ (english $ nameOfActiveView es)
-commandToHint es (Terminal.ListViews) = Just $ LogMessage $  (english $ showt $ listViews $ ensemble es)
-commandToHint es (Terminal.DumpView) = Just $ LogMessage $  (english $ dumpView (activeView es))
-commandToHint _ (Terminal.Delay t) = Just $ SetGlobalDelayTime t
-commandToHint es (Terminal.ShowTempo) = Just $ LogMessage $  (english $ readableTempo $ tempo $ ensemble es)
-commandToHint _ Terminal.ResetZones = Just $ LogMessage  (Map.fromList [(English, "zones reset"), (Español, "zonas reiniciadas")])
-commandToHint _ Terminal.ResetViews = Just $ LogMessage  (Map.fromList [(English, "views reset"), (Español, "vistas reiniciadas")])
-commandToHint _ Terminal.ResetTempo = Just $ LogMessage  (Map.fromList [(English, "tempo reset"), (Español, "tempo reiniciado")])
-commandToHint _ Terminal.Reset = Just $ LogMessage (Map.fromList [(English, "(full) reset"), (Español, "reinicio (completo)")])
-commandToHint es Terminal.ShowResources = Just $ LogMessage $ english $ showResourceOps $ resourceOps $ ensemble es
-commandToHint _ _ = Nothing
+requestsToEnsembleC :: MonadIO m => Resources -> [Request] -> EnsembleC -> m EnsembleC
+requestsToEnsembleC res reqs ensC = foldM (flip $ requestToEnsembleC res) ensC reqs
 
-commandToStateChange :: Terminal.Command -> EnsembleC -> EnsembleC
-commandToStateChange (Terminal.LocalView v) es = selectLocalView v es
-commandToStateChange (Terminal.PresetView t) es = selectPresetView t es
-commandToStateChange (Terminal.PublishView t) es = replaceStandardView t (activeView es) es
-commandToStateChange _ es = es
+requestToEnsembleC :: MonadIO m => Resources -> Request -> EnsembleC -> m EnsembleC
+requestToEnsembleC _ Request.LeaveEnsemble e = pure $ leaveEnsembleC e
+requestToEnsembleC _ (Request.DeleteThisEnsemble _) e = pure $ leaveEnsembleC e
+requestToEnsembleC _ (Request.WriteTempo x) e = pure $ modifyEnsemble (writeTempo x) e
+requestToEnsembleC _ (Request.WriteZone n v _) e = pure $ modifyEnsemble (writeZone n v) e
+requestToEnsembleC _ (Request.WriteView t v) e = pure $ modifyEnsemble (writeView t v) e
+requestToEnsembleC rs (Request.WriteResourceOps x) e = do
+  setResourceOps rs x
+  pure $ modifyEnsemble (\y -> y { resourceOps = x } ) e
+requestToEnsembleC _ Request.ResetZones e = pure $ modifyEnsemble (\e -> e { zones = IntMap.empty } ) e
+requestToEnsembleC _ Request.ResetViews e = pure $ modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" e
+requestToEnsembleC _ (Request.Reset t) e = pure $ modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) e
+requestToEnsembleC _ _ e = pure e
 
-requestToStateChange :: EnsembleRequest -> EnsembleC -> EnsembleC
-requestToStateChange (WriteTempo x) es = modifyEnsemble (writeTempo x) es
-requestToStateChange (WriteZone n v) es = modifyEnsemble (writeZone n v) es
-requestToStateChange (WriteView t v) es = modifyEnsemble (writeView t v) es
-requestToStateChange ResetZonesRequest es = modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
-requestToStateChange ResetViewsRequest es = modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
-requestToStateChange (ResetTempoRequest t) es = modifyEnsemble (writeTempo t) es
-requestToStateChange (ResetRequest t) es = modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
-requestToStateChange (WriteResourceOps s) es = modifyEnsemble (\e -> e { resourceOps = s } ) es
-requestToStateChange _ es = es
--- note: WriteChat and WriteStatus don't directly affect the EnsembleC and are thus
--- not matched here. Instead, the server responds to these requests to all participants
--- and in this way the information "comes back down" from the server.
 
-ensembleRequestIO :: MonadIO m => Resources -> EnsembleRequest -> m ()
-ensembleRequestIO rs (WriteResourceOps s) = setResourceOps rs s
-ensembleRequestIO _ _ = return ()
+-- some responses from the server are mapped directly onto EnsembleC state changes
+-- (because their semantics are not represented by the Request type)
+-- (see also responseToHints below, which handles things which can be represented with hints )
 
-ensembleResponseToStateChange :: EnsembleResponse -> EnsembleC -> EnsembleC
-ensembleResponseToStateChange (TempoRcvd t) es = modifyEnsemble (writeTempo t) es
-ensembleResponseToStateChange (ZoneRcvd n v) es = modifyEnsemble (writeZone n v) es
-ensembleResponseToStateChange (ViewRcvd t v) es = modifyEnsemble (writeView t v) es
-ensembleResponseToStateChange (ChatRcvd c) es = modifyEnsemble (appendChat c) es
-ensembleResponseToStateChange (ParticipantJoins x) es = modifyEnsemble (writeParticipant (name x) x) es
-ensembleResponseToStateChange (ParticipantUpdate x) es = modifyEnsemble (writeParticipant (name x) x) es
-ensembleResponseToStateChange (ParticipantLeaves n) es = modifyEnsemble (deleteParticipant n) es
-ensembleResponseToStateChange (AnonymousParticipants n) es = modifyEnsemble (writeAnonymousParticipants n) es
-ensembleResponseToStateChange ResetZonesResponse es = modifyEnsemble (\e -> e { zones = IntMap.empty } ) es
-ensembleResponseToStateChange ResetViewsResponse es = modifyEnsemble (\e -> e { views = Map.empty } ) $ selectPresetView "def" es
-ensembleResponseToStateChange (ResetTempoResponse t) es = modifyEnsemble (writeTempo t) es
-ensembleResponseToStateChange (ResetResponse t) es = modifyEnsemble (\e -> e { zones = IntMap.empty }) $ modifyEnsemble (writeTempo t) es
-ensembleResponseToStateChange (ResourceOps s) es = modifyEnsemble (\e -> e { resourceOps = s} ) es
-ensembleResponseToStateChange _ es = es
+responseToEnsembleC :: MonadIO m => Response -> EnsembleC -> m EnsembleC
+responseToEnsembleC (JoinedEnsemble eName uName loc pwd) e = pure $ joinEnsembleC eName uName loc pwd e
+responseToEnsembleC (ParticipantUpdate x) e = pure $ modifyEnsemble (writeParticipant (name x) x) e
+responseToEnsembleC (ParticipantLeaves n) e = pure $ modifyEnsemble (deleteParticipant n) e
+responseToEnsembleC (AnonymousParticipants n) e = pure $ modifyEnsemble (writeAnonymousParticipants n) e
+responseToEnsembleC _ e = pure e
 
-ensembleResponseIO :: MonadIO m => Resources -> EnsembleResponse -> m ()
-ensembleResponseIO rs (ResourceOps s) = setResourceOps rs s
-ensembleResponseIO _ _ = return ()
 
-responseToStateChange :: Response -> EnsembleC -> EnsembleC
-responseToStateChange (JoinedEnsemble eName uName loc pwd) es = joinEnsembleC eName uName loc pwd es
-responseToStateChange _ es = es
-
-commandToEnsembleRequest :: MonadIO m => EnsembleC -> Terminal.Command -> Maybe (m EnsembleRequest)
-commandToEnsembleRequest es (Terminal.PublishView x) = Just $ return (WriteView x (activeView es))
-commandToEnsembleRequest es (Terminal.Chat x) = Just $ return (WriteChat x)
-commandToEnsembleRequest es Terminal.AncientTempo = Just $ return (WriteTempo x)
-  where x = Tempo { freq = 0.5, time = UTCTime (fromGregorian 2020 01 01) 0, count = 0 }
-commandToEnsembleRequest es (Terminal.SetCPS x) = Just $ liftIO $ do
-  x' <- changeTempoNow (realToFrac x) (tempo $ ensemble es)
-  return (WriteTempo x')
-commandToEnsembleRequest es (Terminal.SetBPM x) = Just $ liftIO $ do
-  x' <- changeTempoNow (realToFrac x / 240) (tempo $ ensemble es)
-  return (WriteTempo x')
-commandToEnsembleRequest _ Terminal.ResetZones = Just $ return ResetZonesRequest
-commandToEnsembleRequest _ Terminal.ResetViews = Just $ return ResetViewsRequest
-commandToEnsembleRequest _ Terminal.ResetTempo = Just $ liftIO $ do
-  t <- getCurrentTime
-  return $ ResetTempoRequest $ Tempo { freq = 0.5, time = t, count = 0 }
-commandToEnsembleRequest _ Terminal.Reset = Just $ liftIO $ do
-  t <- getCurrentTime
-  return $ ResetRequest $ Tempo { freq = 0.5, time = t, count = 0 }
-commandToEnsembleRequest es (Terminal.InsertSound url bankName n) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> InsertResource Audio url (bankName,n)
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.DeleteSound bankName n) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> DeleteResource Audio (bankName,n)
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.AppendSound url bankName) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> AppendResource Audio url bankName
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es (Terminal.ResList url) = Just $ do
-  let rs = resourceOps $ ensemble es
-  let rs' = rs |> ResourceListURL url
-  return $ WriteResourceOps rs'
-commandToEnsembleRequest es Terminal.ClearResources = Just $ return $ WriteResourceOps Seq.empty
-commandToEnsembleRequest es Terminal.DefaultResources = Just $ return $ WriteResourceOps defaultResourceOps
-commandToEnsembleRequest _ _ = Nothing
-
-responseToMessage :: Response -> Maybe Text
-responseToMessage (ResponseError e) = Just $ "error: " <> e
-responseToMessage (ResponseOK m) = Just m
-responseToMessage (EnsembleResponse (ChatRcvd c)) = Just $ showChatMessage c
-responseToMessage (EnsembleResponse (ParticipantJoins x)) = Just $ name x <> " has joined the ensemble"
-responseToMessage (EnsembleResponse (ParticipantLeaves n)) = Just $ n <> " has left the ensemble"
-responseToMessage (EnsembleResponse (TempoRcvd _)) = Just $ "received new tempo"
-responseToMessage (EnsembleResponse ResetZonesResponse) = Just $ "received ResetZones"
-responseToMessage (EnsembleResponse ResetViewsResponse) = Just $ "received ResetViews"
-responseToMessage (EnsembleResponse (ResetTempoResponse _)) = Just $ "received ResetTempo"
-responseToMessage (EnsembleResponse (ResetResponse _)) = Just $ "received Reset (resetting zones and tempo)"
-responseToMessage (EnsembleResponse (AnonymousParticipants n)) = Just $ showt n <>  " anonymous participants"
--- the cases below are for debugging only and can be commented out when not debugging:
--- responseToMessage (ZoneRcvd n _) = Just $ "received zone " <> showt n
--- responseToMessage (ViewRcvd n _) = Just $ "received view " <> n
--- responseToMessage (ParticipantUpdate n _) = Just $ "received ParticipantUpdate about " <> n
--- don't comment out the case below, of course!
-responseToMessage _ = Nothing
-
--- a hack for the sole purpose of supporting resets ahead of the big refactor completing
-ensembleRequestsToResponses :: EnsembleRequest -> Maybe EnsembleResponse
-ensembleRequestsToResponses ResetZonesRequest = Just ResetZonesResponse
-ensembleRequestsToResponses (ResetRequest t) = Just (ResetResponse t)
-ensembleRequestsToResponses _ = Nothing
+-- some responses from the server are mapped into one or more hints, for the purpose
+-- of updating rendering, updating ensembleC, or printing log messages
+-- (the resulting requests are not re-sent to the server, of course)
+responseToHints :: Response -> [Hint]
+responseToHints (Response.OK m) = pure $ LocalLog $ english m
+responseToHints (Response.Error e) = pure $ LocalLog $ english $ "error: " <> e
+responseToHints (Response.WriteZone n d changesRender) = pure $ Request $ Request.WriteZone n d changesRender
+responseToHints (Response.WriteView n v) = pure $ Request $ Request.WriteView n v
+responseToHints (Response.WriteTempo t) = [
+  Request $ Request.WriteTempo t,
+  LocalLog $ english "received new tempo"
+  ]
+responseToHints (Response.ParticipantLeaves n) = pure $ LocalLog $ english $ n <> " has left the ensemble"
+responseToHints (Response.AnonymousParticipants n) = pure $ LocalLog $ english $ showt n <>  " anonymous participants"
+responseToHints (Response.WriteResourceOps x) = pure $ Request $ Request.WriteResourceOps x
+responseToHints Response.ResetZones = [
+  Request $ Request.ResetZones,
+  LocalLog $ english "received ResetZones"
+  ]
+responseToHints Response.ResetViews = [
+  Request $ Request.ResetViews,
+  LocalLog $ english "received ResetViews"
+  ]
+responseToHints (Response.Reset t) = [
+  Request $ Request.Reset t,
+  LocalLog $ english "received Reset (resetting zones and tempo)"
+  ]
+responseToHints _ = []

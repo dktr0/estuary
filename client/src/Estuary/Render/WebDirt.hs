@@ -1,10 +1,10 @@
-{-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
+{-# LANGUAGE JavaScriptFFI, OverloadedStrings, FlexibleContexts #-}
 
 module Estuary.Render.WebDirt (
   WebDirt,
   newWebDirt,
   initializeWebAudio,
-  performHints,
+  performWebDirtHints,
   playSample,
   mapTextJSValToJSVal,
   noteEventToWebDirtJSVal,
@@ -66,14 +66,15 @@ foreign import javascript unsafe
   "$1.audioOutputs = $2;"
   setWebDirtAudioOutputs :: WebDirt -> Int -> IO ()
 
-performHint :: MonadWidget t m => WebDirt -> Event t Hint -> m ()
+performHint :: (PerformEvent t m, Reflex t, MonadIO (Performable m)) => WebDirt -> Event t Hint -> m ()
 performHint wd ev = performEvent_ $ fmap (liftIO . (doHint wd)) ev
 
-performHints :: MonadWidget t m => WebDirt -> Event t [Hint] -> m ()
-performHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
+-- (PerformEvent t m, Reflex t)
+performWebDirtHints :: (PerformEvent t m, Reflex t, MonadIO (Performable m)) => WebDirt -> Event t [Hint] -> m ()
+performWebDirtHints wd evs = performEvent_ $ fmap (liftIO . (doHints wd)) evs
 
 doHint :: WebDirt -> Hint -> IO ()
-doHint wd (SampleHint x) = sampleHint wd (pToJSVal x)
+doHint wd (PreloadAudioBank x) = sampleHint wd (pToJSVal x)
 doHint _ _ = return ()
 
 doHints :: WebDirt -> [Hint] -> IO ()

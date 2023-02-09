@@ -9,9 +9,8 @@ import GHCJS.DOM.Types hiding (Text)
 import Control.Monad.State.Strict
 
 import Estuary.Types.TextNotation as TextNotation
-import Estuary.Types.Context
 import Estuary.Types.Tempo
-import Estuary.Render.R
+import Estuary.Render.R hiding (setTempo)
 import Estuary.Render.ForeignTempo
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
@@ -41,9 +40,8 @@ getLocoMotion = do
       pure lm
 
 
--- note: Context is unused here and could eventually be removed as an argument
-parseZone' :: Context -> Int -> Text -> UTCTime -> R ()
-parseZone' _ z txt eTime = do
+parseZone' :: Int -> Text -> UTCTime -> R ()
+parseZone' z txt eTime = do
   lm <- getLocoMotion
   r <- liftIO $ evaluate lm z txt
   case r of

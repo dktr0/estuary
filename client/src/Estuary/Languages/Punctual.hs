@@ -21,7 +21,6 @@ import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
 import Estuary.Types.RenderInfo
-import Estuary.Types.Context
 import Estuary.Types.TextNotation
 import Estuary.Render.MainBus
 import Estuary.Types.Tempo
@@ -29,7 +28,7 @@ import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
 
 punctual :: TextNotationRenderer
-punctual = TextNotationRenderer {
+punctual = emptyTextNotationRenderer {
   parseZone = _parseZone,
   clearZone' = _clearZone,
   preAnimationFrame = _preAnimationFrame,
@@ -38,15 +37,15 @@ punctual = TextNotationRenderer {
   }
 
 
-_parseZone :: Context -> Int -> Text -> UTCTime -> R ()
-_parseZone c z t eTime = do
+_parseZone :: Int -> Text -> UTCTime -> R ()
+_parseZone z t eTime = do
   s <- get
   parseResult <- liftIO $ try $ return $! Punctual.parse eTime t
   parseResult' <- case parseResult of
     Right (Right punctualProgram) -> do
       setBaseNotation z Punctual
       setEvaluationTime z eTime
-      punctualProgramChanged c z punctualProgram
+      punctualProgramChanged z punctualProgram
       return (Right punctualProgram)
     Right (Left parseErr) -> return (Left $ T.pack $ show parseErr)
     Left exception -> return (Left $ T.pack $ show (exception :: SomeException))
@@ -66,18 +65,18 @@ _clearZone z = do
     punctualWebGL = newPunctualWebGL
   }
 
-punctualProgramChanged :: Context -> Int -> Punctual.Program -> R ()
-punctualProgramChanged c z p = do
-  irc <- ask
+punctualProgramChanged :: Int -> Punctual.Program -> R ()
+punctualProgramChanged z p = do
+  rEnv <- ask
   s <- get
   -- A. update PunctualW (audio state) in response to new, syntactically correct program
-  pIn <- liftIO $ getPunctualInput $ mainBus irc
-  pOut <- liftIO $ getMainBusInput $ mainBus irc
+  pIn <- liftIO $ getPunctualInput $ mainBus rEnv
+  pOut <- liftIO $ getMainBusInput $ mainBus rEnv
   ac <- liftAudioIO $ audioContext
   t <- liftAudioIO $ audioTime
-  nchnls <- liftIO $ getAudioOutputs $ mainBus irc
+  nchnls <- liftIO $ getAudioOutputs $ mainBus rEnv
   let prevPunctualW = Punctual.setPunctualWChannels nchnls $ findWithDefault (Punctual.emptyPunctualW ac pIn pOut nchnls (Punctual.evalTime p)) z (punctuals s)
-  let tempo' = tempo $ ensemble $ ensembleC c
+  let tempo' = tempoCache s
   let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ origin tempo'
   let cps' = freq tempo'
   newPunctualW <- liftIO $ do

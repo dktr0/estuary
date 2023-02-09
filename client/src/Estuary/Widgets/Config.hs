@@ -12,17 +12,15 @@ import Data.Maybe
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.ViewEditor
-import Estuary.Types.Context
 import Estuary.Types.Language
 import Estuary.Render.DynamicsMode
 import qualified Estuary.Types.Term as Term
 import Estuary.Types.Hint
-import Estuary.Types.RenderInfo
 
 import qualified Sound.Punctual.Resolution as Punctual
 
-configWidget :: MonadWidget t m => Dynamic t Context -> Dynamic t RenderInfo -> W t m (Event t ContextChange)
-configWidget ctx ri = do
+configWidget :: MonadWidget t m => W t m ()
+configWidget = do
 
   divClass "config-option primary-color ui-font" $ do
     text "Canvas: "
@@ -154,11 +152,9 @@ configWidget ctx ri = do
 
   elClass "hr" "dashed" $ return ()
 
-  viewEditorChange <- divClass "config-option primary-color ui-font" $ do
+  divClass "config-option primary-color ui-font" $ do
     el "h3" $ dynText =<< (translatableText $ fromList [
       (English, "View Editor"),
       (Español, "Editor de vistas/layouts")
       ])
     viewEditor
-
-  return viewEditorChange

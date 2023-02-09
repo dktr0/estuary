@@ -10,29 +10,41 @@ module Estuary.Widgets.W where
 -- cover a common case where we need to keep track of whether a value changes because of
 -- remote editing or local editing.
 
-import Reflex
-import Reflex.Dom
+import Reflex hiding (Request)
+import Reflex.Dom hiding (Request)
 import Control.Monad.Reader
 import Data.Text as T
 import Data.IORef
 import Data.Time
 import Data.Map as Map
+import Data.IntMap
+import Data.Sequence
 import Text.Read (readMaybe)
 import Data.IntMap
+import Data.Maybe
 
 import qualified Sound.Punctual.Resolution as Punctual
 
 import Estuary.Types.Language
-import Estuary.Types.Context
+import Estuary.Types.View
 import qualified Estuary.Render.R as R
 import Estuary.Render.DynamicsMode
-import Estuary.Types.RenderInfo
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText
 import Estuary.Types.Term
 import Estuary.Resources
+import qualified Estuary.Types.RenderInfo as RenderInfo
 import qualified Estuary.Client.Settings as Settings
-
+import qualified Estuary.Types.ServerInfo as ServerInfo
+import Estuary.Types.EnsembleC as EnsembleC
+import Estuary.Types.Ensemble as Ensemble
+import Estuary.Types.Participant
+import Estuary.Types.Tempo
+import Estuary.Types.Definition
+import Estuary.Types.ResourceOp
+import Estuary.Types.Chat
+import Estuary.Types.Request
+import Estuary.Types.LogEntry
 
 -- If we have widget-producing actions and we make them in the (W t m) monad
 -- we will be able to do all the normal things we can do in the more general
@@ -42,10 +54,14 @@ type W t m = EventWriterT t [Hint] (ReaderT (WidgetEnvironment t) m)
 
 data WidgetEnvironment t = WidgetEnvironment {
   _renderEnvironment :: R.RenderEnvironment,
-  _context :: Dynamic t Context,
-  _renderInfo :: Dynamic t RenderInfo,
+  _renderInfo :: Dynamic t RenderInfo.RenderInfo,
   _resourceMaps :: Dynamic t ResourceMaps,
-  _settings :: Dynamic t Settings.Settings
+  _settings :: Dynamic t Settings.Settings,
+  _serverInfo :: Dynamic t ServerInfo.ServerInfo,
+  _ensembleC :: Dynamic t EnsembleC,
+  _ensembleList :: Dynamic t [Text],
+  _responseError :: Dynamic t (Maybe Text),
+  _log :: Dynamic t [LogEntry]
   }
 
 -- runW is used to embed a W widget in a different kind of widget. (This should mostly
@@ -65,17 +81,73 @@ widgetEnvironment = lift ask
 renderEnvironment :: Monad m => W t m R.RenderEnvironment
 renderEnvironment = lift $ asks _renderEnvironment
 
--- Get the dynamic context.
-context :: Monad m => W t m (Dynamic t Context)
-context = lift $ asks _context
-
--- Get the dynamic information from the render engine.
-renderInfo :: Monad m => W t m (Dynamic t RenderInfo)
-renderInfo = lift $ asks _renderInfo
-
 -- Get a dynamically-updated map of the current maps of "fixed" resources (audiofiles, images, videos)
 resourceMaps :: Monad m => W t m (Dynamic t ResourceMaps)
 resourceMaps = lift $ asks _resourceMaps
+
+-- Get a dynamically-updated map of the ensembles listed by the server
+ensembleList :: Monad m => W t m (Dynamic t [Text])
+ensembleList = lift $ asks _ensembleList
+
+responseError :: Monad m => W t m (Dynamic t (Maybe Text))
+responseError = lift $ asks _responseError
+
+log :: Monad m => W t m (Dynamic t [LogEntry])
+log = lift $ asks _log
+
+-- Get information from the ServerInfo
+
+askServerInfo :: (Reflex t, MonadFix m, MonadHold t m, Eq a) => (ServerInfo.ServerInfo -> a) -> W t m (Dynamic t a)
+askServerInfo f = asks _serverInfo >>= holdUniqDyn . fmap f
+
+aboutThisServer :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t TranslatableText)
+aboutThisServer = askServerInfo ServerInfo.aboutThisServer
+
+announcements :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (Map Day [TranslatableText]))
+announcements = askServerInfo ServerInfo.announcements
+
+wsStatus :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+wsStatus = askServerInfo ServerInfo.wsStatus
+
+serverLatency :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t NominalDiffTime)
+serverLatency = askServerInfo ServerInfo.serverLatency
+
+clientCount :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+clientCount = askServerInfo ServerInfo.clientCount
+
+
+-- Get information from the RenderInfo
+
+askRenderInfo :: (Reflex t, MonadFix m, MonadHold t m, Eq a) => (RenderInfo.RenderInfo -> a) -> W t m (Dynamic t a)
+askRenderInfo f = asks  _renderInfo >>= holdUniqDyn . fmap f
+
+errors :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (IntMap Text))
+errors = askRenderInfo RenderInfo.errors
+
+avgRenderLoad :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+avgRenderLoad = askRenderInfo RenderInfo.avgRenderLoad
+
+animationFPS :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+animationFPS = askRenderInfo RenderInfo.animationFPS
+
+animationLoad :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+animationLoad = askRenderInfo RenderInfo.animationLoad
+
+avgZoneRenderTime :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (IntMap Double))
+avgZoneRenderTime = askRenderInfo RenderInfo.avgZoneRenderTime
+
+avgZoneAnimationTime :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (IntMap Double))
+avgZoneAnimationTime = askRenderInfo RenderInfo.avgZoneAnimationTime
+
+clockRatio :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Double)
+clockRatio = askRenderInfo RenderInfo.clockRatio
+
+clockRatioProblem :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Bool)
+clockRatioProblem = askRenderInfo RenderInfo.clockRatioProblem
+
+webDirtVoices :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+webDirtVoices = askRenderInfo RenderInfo.webDirtVoices
+
 
 -- Get and change the Dynamic Settings record
 settings :: Monad m => W t m (Dynamic t Settings.Settings)
@@ -233,10 +305,68 @@ toggleTerminalVisible x = do
   setTerminalVisible $ attachWith (\a _ -> not a) y x
 
 
+-- get/query/set ensemble state
+
+askEnsemble :: (Reflex t, MonadFix m, MonadHold t m, Eq a) => (EnsembleC -> a) -> W t m (Dynamic t a)
+askEnsemble f = asks _ensembleC >>= holdUniqDyn . fmap f
+
+userHandle :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+userHandle = askEnsemble EnsembleC.userHandle
+
+location :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+location = askEnsemble EnsembleC.location
+
+password :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+password = askEnsemble EnsembleC.password
+
+view :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t (Either View Text))
+view = askEnsemble EnsembleC.view
+
+activeView :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t View)
+activeView = askEnsemble EnsembleC.activeView
+
+nameOfActiveView :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Text)
+nameOfActiveView = askEnsemble EnsembleC.nameOfActiveView
+
+setLocalView :: (Monad m, Reflex t) => Event t View -> W t m ()
+setLocalView = hint . fmap LocalView
+
+ensembleName :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t Text)
+ensembleName = askEnsemble (Ensemble.ensembleName . ensemble)
+
+tempo :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t Tempo)
+tempo = askEnsemble (Ensemble.tempo . ensemble)
+
+zones :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (IntMap Definition))
+zones = askEnsemble (Ensemble.zones . ensemble)
+
+views :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (Map Text View))
+views = askEnsemble (Ensemble.views . ensemble)
+
+resourceOps :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (Seq ResourceOp))
+resourceOps = askEnsemble (Ensemble.resourceOps . ensemble)
+
+chats :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t [Chat])
+chats = askEnsemble (Ensemble.chats . ensemble)
+
+participants :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (Map.Map Text Participant))
+participants = askEnsemble (Ensemble.participants . ensemble)
+
+anonymousParticipants :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Dynamic t Int)
+anonymousParticipants = askEnsemble (Ensemble.anonymousParticipants . ensemble)
+
+-- an Event fired in response to server confirmation that an ensemble has been joined
+-- (Text is name of ensemble)
+joinedEnsemble :: (Reflex t, MonadFix m, MonadHold t m) => W t m (Event t Text)
+joinedEnsemble = do
+  eName <- Estuary.Widgets.W.ensembleName
+  pure $ ffilter (/= "") $ updated eName
+
+
 -- A basic checkbox widget that is updated from elsewhere (eg. collaborative editing)
 -- and which issues events when it is changed by local input only.
 
-checkboxW :: MonadWidget t m => Dynamic t Bool -> m (Event t Bool)
+checkboxW :: (Monad m, MonadSample t m, Reflex t, Functor m, DomBuilder t m, PostBuild t m) => Dynamic t Bool -> m (Event t Bool)
 checkboxW x = do
   i <- sample $ current x
   let xEvents = updated x
@@ -247,7 +377,7 @@ checkboxW x = do
 -- and which issues events when it is changed by local input only.
 -- *** Note: currently introduces some kind of cyclic dataflow problem when used with hints/W monad - still DEBUGGING
 
-dropdownW :: (MonadWidget t m, Ord k) => Map k Text -> Dynamic t k -> m (Event t k)
+dropdownW :: (Monad m, MonadSample t m, Reflex t, DomBuilder t m, Ord k, MonadFix m, MonadHold t m, PostBuild t m) => Map k Text -> Dynamic t k -> m (Event t k)
 dropdownW m x = divClass "config-entry display-inline-block primary-color ui-font" $ do
   let m' = constDyn m
   i <- sample $ current x
@@ -271,14 +401,16 @@ intTextInputW x = do
   return $ fmapMaybe (readMaybe . T.unpack) $ _textInput_input w
 
 
-textInputW :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
-textInputW x = do
+textInputW :: MonadWidget t m => Dynamic t (Map Text Text) -> Dynamic t Text -> m (Event t Text)
+textInputW inputHint x = do
   i <- sample $ current x
   let xEvents = updated x
   w <- textInput $ def & textInputConfig_initialValue .~ i
-                       & attributes .~ constDyn ("class" =: "ui-inputMenus primary-color primary-borders ui-font")
+                       & attributes .~ (constDyn $ "class" =: "ui-inputMenus primary-color primary-borders ui-font") <> inputHint
                        & textInputConfig_setValue .~ xEvents
   return $ _textInput_input w
+
+
 
 -- Issue a single hint
 hint :: (Reflex t, Monad m) => Event t Hint -> W t m ()
@@ -288,6 +420,13 @@ hint = tellEvent . fmap pure
 hints :: (Reflex t, Monad m) => Event t [Hint] -> W t m ()
 hints = tellEvent
 
+-- Issue a Request directly (via Hint pathway)
+request :: (Reflex t, Monad m) => Event t Request -> W t m ()
+request = hint . fmap Request
+
+-- Issue the request to leave an ensemble immediately (upon build)
+leaveEnsemble :: MonadWidget t m => W t m ()
+leaveEnsemble = getPostBuild >>= request . (LeaveEnsemble <$)
 
 -- Translate a term appropriately into dynamic text
 -- Note that it doesn't build the text in the DOM - for that, combine with dynText
@@ -391,16 +530,16 @@ distributeIntMapOverVariable iMap = Variable curVal locEdits
 -- soon we expect to rework this so that builder function takes an Int argument representing that item's position in map
 -- and later we expect to rework this to avoid rebuilds whenever possible (eg. when values change but keys don't)
 
-widgetMap :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m b) -> m (Dynamic t (IntMap b))
+widgetMap :: (Show a, Monad m, MonadSample t m, Reflex t, Adjustable t m, MonadHold t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m b) -> m (Dynamic t (IntMap b))
 widgetMap delta buildF = do
   iMapA <- sample $ current delta
   let f m = mapM (buildF . constDyn) m -- f :: IntMap a -> m (IntMap b)
   let iWidget = f iMapA
-  let rebuilds = fmap f $ traceEvent "rebuilds" $ updated delta
+  let rebuilds = fmap f $ updated delta
   widgetHold iWidget rebuilds
-  
+
 -- | widgetMapEvent is a variant of widgetMap, specialized for Event
-widgetMapEvent :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
+widgetMapEvent :: (Show a, Applicative m, Reflex t, MonadFix m, Adjustable t m, Monad m, MonadHold t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
 widgetMapEvent delta buildF = mdo
   x <- widgetMap delta buildF
   let evPartialMap = switchDyn $ fmap mergeIntMap x -- Event t (IntMap a), representing change to specific row(s) only
@@ -410,29 +549,76 @@ widgetMapEvent delta buildF = mdo
   pure evFullMap
 
 -- | widgetMapEventWithAdd is another variant, specialized for Event, with a channel to add items to the end of the map
-widgetMapEventWithAdd :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> Event t a -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
+widgetMapEventWithAdd :: (Show a, Adjustable t m, MonadHold t m, Reflex t, MonadSample t m, Monad m, MonadFix m) => Dynamic t (IntMap a) -> Event t a -> (Dynamic t a -> m (Event t a)) -> m (Event t (IntMap a))
 widgetMapEventWithAdd delta addEv buildF = mdo
   -- insert add events into dynamic stream of deltas
   iDelta <- sample $ current delta
-  let addEv' = attachWith (\m a -> Data.IntMap.insert (Data.IntMap.size m) a m) (current displayedValue) addEv
+  let addEv' = attachWith (\m a -> Data.IntMap.insert (highestKeyPlusOne m) a m) (current displayedValue) addEv
   let evIntegratedDelta = leftmost [updated delta,addEv']
   dynIntegratedDelta <- holdDyn iDelta evIntegratedDelta
   editsBelow <- widgetMapEvent dynIntegratedDelta buildF
-  displayedValue <- holdDyn iDelta $ leftmost [evIntegratedDelta, traceEvent "editsBelow" editsBelow]
+  displayedValue <- holdDyn iDelta $ leftmost [evIntegratedDelta, editsBelow]
   pure $ leftmost [editsBelow,addEv']
 
--- below this line are just demos of widgetMap etc above (code below this line will be deleted before too long)
+widgetMapEventWithAddDelete :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> Event t a -> (Dynamic t a -> m (Event t (Maybe a))) -> m (Event t (IntMap a))
+widgetMapEventWithAddDelete delta addEv buildF = mdo
+  let evAddMap = attachWith (\m a -> Data.IntMap.insert (highestKeyPlusOne m) a m) (current localValue) addEv
+  let evIntegratedDelta = leftmost [updated delta,evAddMap,evDeleteMapOnly]
+  iDelta <- sample $ current delta
+  dynIntegratedDelta <- holdDyn iDelta evIntegratedDelta
+  x <- widgetMap dynIntegratedDelta buildF -- m (Dynamic t (IntMap (Event t (Maybe a))))
+  let evPartialMap = switchDyn $ fmap mergeIntMap x -- Event t (IntMap (Maybe a))
+  let evUpdateDeleteMap = attachWith updateOrDeletePartialMap (current localValue) evPartialMap
+  let evDeleteMapOnly0 = ffilter isADeleteMap evPartialMap
+  let evDeleteMapOnly = attachWith updateOrDeletePartialMap (current localValue) evDeleteMapOnly0
+  localValue <- holdDyn iDelta $ leftmost [updated delta, evUpdateDeleteMap, evAddMap]
+  pure $ leftmost [evUpdateDeleteMap, evAddMap]
+
+isADeleteMap :: IntMap (Maybe a) -> Bool
+isADeleteMap m = isNothing (Prelude.head $ Data.IntMap.elems m)
+
+highestKeyPlusOne :: IntMap a -> Int
+highestKeyPlusOne m = case Data.IntMap.lookupMax m of
+  Just (k,_) -> k + 1
+  Nothing -> 0
+
+
+updateOrDeletePartialMap :: IntMap a -> IntMap (Maybe a) -> IntMap a
+updateOrDeletePartialMap oldMap partialMap = Data.IntMap.alter f theKey oldMap
+  where
+    theKey = Prelude.head $ Data.IntMap.keys partialMap
+    f _ = Prelude.head $ Data.IntMap.elems partialMap
+
 
 type Test = IntMap Text
 
 testMap :: MonadWidget t m => Dynamic t Test -> m (Variable t Test)
 testMap delta = do
   addButton <- traceEvent "AddButton" <$> button "+"
-  mapEv <- widgetMapEventWithAdd delta ("newtext" <$ addButton) testRow
+  mapEv <- widgetMapEventWithAddDelete delta ("newtext" <$ addButton) testRowMaybe
   variable delta mapEv
 
 testRow :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
-testRow delta = el "div" $ textInputW delta
+testRow delta = el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta)
+
+testRowMaybe :: MonadWidget t m => Dynamic t Text -> m (Event t (Maybe Text))
+testRowMaybe delta = do
+  deleteButton <- button "-"
+  row <- el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta) -- Event t Text
+  let rowMaybe = fmap Just row -- Event t (Maybe Text)
+  return $ leftmost [rowMaybe, Nothing <$ deleteButton]
+
+
+testRowMaybe' :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
+testRowMaybe' delta = do
+  deleteButton <- button "-"
+  row <- el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta) -- Event t Text
+  return $ leftmost [row, "delete" <$ deleteButton]
+
+-- Dynamic t a -> m (Event t (Maybe a))
+-- Event t (Maybe a) where
+--  Nothing = delete this row
+--  Just x = local edit to this row
 
 widgetMapDemo :: IO ()
 widgetMapDemo = mainWidget $ do

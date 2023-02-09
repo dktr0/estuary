@@ -9,9 +9,9 @@ import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response)
 import Data.Map
 import qualified Data.Map.Strict as Map
+import Data.Maybe
 
 
-import Estuary.Types.Context
 import Estuary.Types.Response
 import Estuary.Types.Request
 import Estuary.Widgets.Reflex
@@ -21,9 +21,8 @@ import Estuary.Widgets.W
 import Estuary.Types.Language
 
 
-createEnsembleWidget :: MonadWidget t m => Event t [Response]
-  -> W t m (Event t (), Event t Request)
-createEnsembleWidget rs = el "div" $ do
+createEnsembleWidget :: MonadWidget t m => W t m (Event t ())
+createEnsembleWidget = el "div" $ do
 
   el "div" $ term Term.CreateNewEnsemble >>= dynText
 
@@ -70,17 +69,14 @@ createEnsembleWidget rs = el "div" $ do
     liftM _textInput_value $ textInput $ def & textInputConfig_attributes .~ attrs & textInputConfig_inputType .~ "password"
 
   confirm <- el "div" $ term Term.Confirm >>= dynButton
+  let draftRequest = CreateEnsemble <$> cpwd <*> ename <*> hpwd <*> ppwd <*> exptime
+  request $ tagPromptlyDyn draftRequest confirm
 
-  divClass "" $ do -- display of errors from server in response to ensemble creation requests
-    x <- holdDyn "" $ fmapMaybe justResponseError rs
-    dynText x
+  err <- responseError
+  let errText = fmap (maybe "" id) err
+  divClass "" $ dynText errText
+  let ensembleCreated = fmap (const ()) $ ffilter isNothing $ updated err
 
   cancel <- el "div" $ term Term.Cancel >>= dynButton
 
-  let draftRequest = CreateEnsemble <$> cpwd <*> ename <*> hpwd <*> ppwd <*> exptime
-  let createEnsemble = tagPromptlyDyn draftRequest confirm
-  leaveEnsemble <- (LeaveEnsemble <$) <$> getPostBuild
-  let serverRequests = leftmost [createEnsemble,leaveEnsemble]
-  let ensembleCreated = () <$ fmapMaybe justResponseOK rs
-  let navigateAway = leftmost [cancel,() <$ ensembleCreated]
-  return (navigateAway, serverRequests)
+  return $ leftmost [cancel,() <$ ensembleCreated]
