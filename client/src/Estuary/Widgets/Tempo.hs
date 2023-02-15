@@ -51,7 +51,7 @@ currentBeat = do
 
 cycleTracer:: MonadWidget t m => Rational ->  W t m ()
 cycleTracer segments = do
-  currentTempo <- Estuary.Widgets.W.tempo
+  currentTempo <- tempo
   beatPosition <- currentBeat -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
   beat' <- holdUniqDyn beat
