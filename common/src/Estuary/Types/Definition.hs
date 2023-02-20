@@ -73,7 +73,7 @@ instance ToJSON Measure where
 instance FromJSON Measure
 
 -- this should be something like: Falling' UTCTime | Halted | Holding' UTCTime Rational
-data Mode = Falling' UTCTime | Halted | Holding' deriving (Show,Ord,Eq,Generic)
+data Mode = Falling' UTCTime | Halted | Holding' Rational deriving (Show,Ord,Eq,Generic)
 instance ToJSON Mode where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Mode

@@ -27,15 +27,15 @@ presetViews :: Map Text View
 presetViews = fromList [
 
       -- ("def", genGrid 2 3 False),
-
-      ("def",  GridView 2 3  [
-      (Views [LabelView 1, CodeView 2 0 [] ]),
-      (Views [LabelView 3, CodeView 4 0 [] ]),
-      (Views [LabelView 5, CodeView 6 0 [] ]),
-      (Views [LabelView 7, CodeView 8 0 [] ]),
-      (Views [LabelView 9, CodeView 10 0 [] ]),
-      (Views [LabelView 11, CodeView 12 0 [] ])
-      ]),
+      ("def", GridView 2 2 [TimerView 100]),
+      -- ("def",  GridView 2 3  [
+      -- (Views [LabelView 1, CodeView 2 0 [] ]),
+      -- (Views [LabelView 3, CodeView 4 0 [] ]),
+      -- (Views [LabelView 5, CodeView 6 0 [] ]),
+      -- (Views [LabelView 7, CodeView 8 0 [] ]),
+      -- (Views [LabelView 9, CodeView 10 0 [] ]),
+      -- (Views [LabelView 11, CodeView 12 0 [] ])
+      -- ]),
 
       ("fulltexteditor", genGrid 1 1 True),
       ("twocolumns", genGrid 2 1 True),

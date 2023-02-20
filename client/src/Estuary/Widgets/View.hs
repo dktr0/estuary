@@ -128,7 +128,7 @@ viewWidget (StopWatchView z) = zoneWidget False z Cleared maybeTimerUpState Stop
 
 -- viewWidget er (SeeTimeView z) = zoneWidget z (Tv 0 4 0) maybeSeeTime SeeTime er visualiseTempoWidget
 
-viewWidget (TimerView z) = zoneWidget False z (Timer 0 [] Halted True Cycles) maybeTimer TimerDef timerWidget
+viewWidget (TimerView z) = zoneWidget False z (Timer 0 [("intro",60),("middleSection",120),("outro",30)] Halted True Cycles) maybeTimer TimerDef timerWidget
 
 viewWidget (SeeTimeView z) = zoneWidget False z (Tv 0 4 0) maybeSeeTime SeeTime visualiseTempoWidget
 

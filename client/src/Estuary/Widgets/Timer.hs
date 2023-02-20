@@ -67,18 +67,20 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
   topContainer <- divClass "flex-container-col" $ do
     fstRowWrap <- divClass "flex-item-col" $ do
       divClass "flex-container-row" $ do
+
         txInputArea <- divClass "flex-container-col" $ do
-          let textos = constDyn "intro = 20, the lovely repetition = 30, outro = 10"
+          let iText = (formToText . form) <$> delta 
           txVal <- divClass "divForText" $ do
-            (valTxBx,_) <- textWithLockWidget 3 (constDyn False) textos
-            return valTxBx
+            (valTxBx,_) <- textWithLockWidget 3 ((lock . mode) <$> delta) iText 
+            return valTxBx -- Dynamic t Text
           boton <- clickableDiv "flex-item-col" blank 
           let txPressed = tag (current $ txVal) boton -- Event t Text
-          let parsed = parseForm <$> txPressed -- Event t [(Text,Rat)]
-          parsed' <- hold [("",0)] parsed
-          parsed'' <- sample parsed' -- all this needs to be redone without the def text
-          return (parsed'',boton)
-        let textInputEvent = (textInputFunc $ fst txInputArea) <$ (snd txInputArea) -- Event t (Timer -> Timer)
+          -- let parsed = parseForm <$> txPressed -- Event t [(Text,Rat)]
+          return $ parseForm <$> txPressed -- Event t [(Text,Rat)]
+          -- attachWith :: Reflex t => (a -> b -> c) -> Behavior t a -> Event t b -> Event t c
+        
+        let textInputEvent = textInputFunc <$> txInputArea -- Event t (Form -> Timer -> Timer)
+
         loopItem <- clickableDiv "flex-item-row" blank
         let loopEvent = loopFunc <$ (loopItem)
         return $ leftmost [loopEvent,textInputEvent] -- Event t (Timer -> Timer)
@@ -102,7 +104,7 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
   dInit <- sample $ current delta
   let local = fst topContainer
   mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
-  attachBeatAndTempoToTimer mergedLocalDelta
+  timerChangeDisplay mergedLocalDelta
   
   divClass "icon" $ do
     pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip icon
@@ -111,11 +113,12 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
     fstRowWrap <- divClass "flex-item-col" $ do
       divClass "flex-container-row" $ do
         resetItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
-        let resetEvent = resetFunc <$ resetItem -- Event t (Timer -> Timer)
+        aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) resetItem
         playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
-        aTime <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) playPauseItem
-        let aTime' = traceEvent "aTime with playPauseItwm" $ aTime
-        let playPauseEvent = playPauseFunc <$> aTime'
+        aTimePlay <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) playPauseItem
+  --      let aTime' = traceEvent "aTime with playPauseItem and resetItem" $ aTime
+        let playPauseEvent = playPauseFunc <$> aTimePlay
+        let resetEvent = resetFunc <$> aTimeReset
         return $ leftmost [resetEvent,playPauseEvent]
     sndRowWrap <- divClass "flex-item-col" $ do 
       divClass "flex-container-row" $ do
@@ -135,26 +138,11 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
     return (polyptychEvent, flipper)
   return topContainer
 
-attachBeatAndTempoToTimer:: MonadWidget t m => Dynamic t Timer ->  W t m ()
-attachBeatAndTempoToTimer delta = do -- xs seq of counts, mode (playingstopped) loop measure
-  -- liftIO $ putStrLn "attachBeatAndTempoToTimer"
-  -- c <- context
-  -- let currentTempo = fmap (tempo . ensemble . ensembleC) c
-  currentTempo <- Estuary.Widgets.W.tempo
-
-  beatPosition <- currentBeat -- :: Event t Rational
-  beat <- holdDyn 0 beatPosition
-  -- beat' <- traceDynamicWith (\x -> "beat of cyclicTracer: " ++ show (realToFrac x :: Double)) beat
-  -- timer beat' currentTempo
-  --visualiseText beat' $ constDyn "mu"
-  -- text "timer tracer"
-  timerChangeDisplay beat currentTempo delta -- flipdyn
-  return ()
 
 -- here something about holding onto the proper display...... :/
 -- need to get a dynamic that represents a flip. Meaning that flip produces a new representation of the timer always..... fun times....
-timerChangeDisplay:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
-timerChangeDisplay beat t timer = do 
+timerChangeDisplay:: MonadWidget t m => Dynamic t Timer -> W t m ()
+timerChangeDisplay timer = do 
 --  liftIO $ putStrLn "timerChangeDisplay"
   --timer' <- traceDynamic "timer'" timer
   defTimer <- sample $ current timer
@@ -166,86 +154,81 @@ timerChangeDisplay beat t timer = do
   -- visualDisplay beat t timer' 2
   --text "adio"
   -- widgetHold_ (text "default") $ testy timer <$> nEv
-  widgetHold (visualDisplay beat t timer defN) $ visualDisplay beat t timer <$> nEv
+  widgetHold (visualDisplay timer defN) $ visualDisplay timer <$> nEv
   pure ()
 
-testy:: MonadWidget t m => Dynamic t Timer -> Int -> W t m ()
-testy delta 0 = do
-  liftIO $ putStrLn "testy 0"
-  traceDynamic "mode cero: " $ mode <$> delta
-  text "cero"
-  pure ()
-
-testy delta 1 = do
-  liftIO $ putStrLn "testy 1"
-  traceDynamic "mode uno: " $ mode <$> delta
-  text "uno"
-  pure ()
-
-testy delta 2 = do
-  liftIO $ putStrLn "testy 2"
-  traceDynamic "mode dos: " $ mode <$> delta
-  text "dos"
-  pure ()
-
-testy delta _ = do
-  liftIO $ putStrLn "testy otro"
-  traceDynamic "mode otro: " $ mode <$> delta
-  text "otro"
-  pure ()
-
--- visualDisplayDef:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m ()
--- visualDisplayDef beat tempo delta = do 
---   eng <- engineDisplays beat tempo delta
--- --  visualiseProgressBar (fst eng) $ snd eng
---   text "probando"
---   return ()
-
-
-visualDisplay:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> Int -> W t m ()
-visualDisplay beat tempo delta 0 = do 
-  eng <- engineDisplays beat tempo delta
-  visualiseProgressBar (fst eng) $ snd eng
+visualDisplay:: MonadWidget t m => Dynamic t Timer -> Int -> W t m ()
+visualDisplay delta 0 = do  -- beat tempo generate it as close to the poitn where you need them as possible!!! engineDisplay
+  visualiseProgressBar delta
   return ()
 
-visualDisplay beat tempo delta 1 = do 
-  eng <- engineDisplays beat tempo delta
-  visualiseSandClock (fst eng) $ snd eng
+visualDisplay delta 1 = do 
+  visualiseSandClock delta
   return ()
 
-visualDisplay beat tempo delta 2 = do
-  eng <- engineDisplays beat tempo delta
-  visualiseText (fst eng) $ snd eng
+visualDisplay delta 2 = do -- here we dont need beat and tempo. Remove the pipeline
+  visualiseText delta
   return ()
 
-visualDisplay beat tempo delta _ = do
-  eng <- engineDisplays beat tempo delta
-  visualiseText (fst eng) $ snd eng
+visualDisplay delta _ = do
+  visualiseText delta
   return ()
 
-engineDisplays:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m (Dynamic t (Maybe Rational), Dynamic t (Maybe Text))
-engineDisplays beat tempo delta = do
-  liftIO $ putStrLn "engineDisplay ma"
---  liftIO $ (putStrLn . show) <$> getCurrentTime
-  let startTime = fmap (extractStartTime . mode) delta -- :: Maybe UTC
---  traceDynamic "mode: " $ mode <$> delta
-  let startTimeInBeats = traceEventWith (\x -> "startTime " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ updated startTime -- Event t (Maybe Rational)
-  beatAtPlayEvent <- holdDyn (Just 0) {- $ traceEventWith (\x -> "fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ -} startTimeInBeats -- Dyn t (Maybe Rational)
+----
 
-  -- here is where everything breaks
+calculateCount:: Bool -> Timer -> Rational -> Tempo -> Rational
+calculateCount True delta beat t =  -- True calculates percentage for sandclock and progress bar
+  let timeMark = (extractTimeMark . mode) delta
+  in case timeMark of 
+      (Left mark) -> (freq t) * mark -- elapsed upwards count, this needs to be elapsed downwarss count!!!
+      (Right startMark) -> 
+        let countUp = beat - (timeToCount t startMark)
+            countForm = Prelude.map snd (form delta) -- [Rat]
+            looper = loopBool (loop delta) countForm countUp
+            countDown = multiTimerPercent 0 countForm looper
+        in countDown
 
-  let countFromBEvent = (\b lb -> fmap (b-) lb) <$> beat <*> beatAtPlayEvent 
-  -- countFromBEvent <- traceDynamicWith (\x -> "count " <> (show (fmap (\x -> realToFrac x :: Float) x))) countFromBEvent'
+calculateCount False delta beat t = -- calculates concrete counts for the numeric interface
+  let timeMark = (extractTimeMark . mode) delta
+  in case timeMark of 
+      (Left mark) -> (freq t) * mark
+      (Right startMark) -> 
+        let countUp = beat - (timeToCount t startMark)
+            countForm = Prelude.map snd (form delta) -- [Rat]
+            looper = loopBool' (loop delta) countForm countUp
+            countDown = multiTimer 0 countForm looper
+        in countDown
 
-  return (countFromBEvent, constDyn $ Just "nada" )
+--let countdownP = (\x y -> multiTimerPercent 0 x <$> y) <$> countDyn <*> countFromBEventLooped 
 
 
- -- return (beatAtPlayEvent, fmap showt <$> beatAtPlayEvent)
+-- let countFromBEventLooped = loopBool <$> (loop <$> delta) <*> countDyn <*> countFromBEvent
 
-visualiseProgressBar:: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
-visualiseProgressBar countdown' tag' = do
-  let countdown'' = fromMaybe 0 <$> countdown' 
-  countdown <- traceDynamicWith (\x -> "cd: " <> (show (realToFrac x :: Float))) $ countdown''
+
+  --     beatAtPlayEv = timeToCount t <$> startTime
+  -- in (\bpe -> beat - bpe) <$> beatAtPlayEv
+    
+calculateLabel:: Timer -> Rational -> Tempo -> Maybe Text
+calculateLabel delta beat t = Just "nada"
+
+----
+
+visualiseProgressBar:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseProgressBar delta = do
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  beatPosition <- currentBeat -- :: Event t Rational
+  beat <- holdDyn 0 beatPosition
+  let count = (calculateCount True iDelta) <$> beat <*> currentTempo
+  let label = calculateLabel iDelta <$> beat <*> currentTempo
+  drawProgressBar count label
+  pure ()
+
+
+drawProgressBar:: MonadWidget t m => Dynamic t Rational -> Dynamic t (Maybe Text) -> W t m ()
+drawProgressBar countdown tag' = do
+  -- let countdown = fromMaybe 0 <$> countdown' 
+  -- countdown <- traceDynamicWith (\x -> "cd: " <> (show (realToFrac x :: Float))) $ countdown''
   let tag = fromMaybe "" <$> tag'
 
   let class' = constDyn $ "class" =: "visualiser"
@@ -287,10 +270,23 @@ visualiseProgressBar countdown' tag' = do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsDynRect $ return ()
   return ()
 
-visualiseSandClock :: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
-visualiseSandClock countdown' tag' = do
+
+visualiseSandClock:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseSandClock delta = do
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  beatPosition <- currentBeat -- :: Event t Rational
+  beat <- holdDyn 0 beatPosition
+  let count = (calculateCount True iDelta) <$> beat <*> currentTempo
+  let label = calculateLabel iDelta <$> beat <*> currentTempo
+  drawSandClock count label
+  pure ()
+
+
+drawSandClock :: MonadWidget t m => Dynamic t Rational -> Dynamic t (Maybe Text) -> W t m ()
+drawSandClock countdown tag' = do
   -- dynamic stuff
-  let countdown = fromMaybe 0 <$> countdown' 
+  -- let countdown = fromMaybe 0 <$> countdown' 
   let tag = fromMaybe "" <$> tag'
 
   let yFall = countToFallY 50 0 <$> countdown
@@ -338,9 +334,24 @@ visualiseSandClock countdown' tag' = do
       elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
   return ()
 
-visualiseText :: MonadWidget t m => Dynamic t (Maybe Rational) -> Dynamic t (Maybe Text) -> W t m ()
-visualiseText countdown' tag' = do
-  let countdown = fromMaybe 0 <$> countdown' 
+
+visualiseText:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseText delta = do
+  liftIO $ putStrLn "visualiseTextBuilt"
+  traceDynamic "delta" $ delta
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  beatPosition <- currentBeat -- :: Event t Rational
+  beat <- holdDyn 0 beatPosition
+  let count = (calculateCount False iDelta) <$> beat <*> currentTempo
+  let label = calculateLabel iDelta <$> beat <*> currentTempo
+  drawText count label
+  pure ()
+
+
+drawText :: MonadWidget t m => Dynamic t Rational -> Dynamic t (Maybe Text) -> W t m ()
+drawText countdown tag' = do
+  -- let countdown = fromMaybe 0 <$> countdown' 
   let tag = fromMaybe "" <$> tag'
 
   -- svg attrs
@@ -380,21 +391,19 @@ visualiseText countdown' tag' = do
   return ()
 
 --------- Helpers for interface
--- I suspect that Falling needs a starting time as Holding has...
--- data Mode = Falling' UTCTime | Halted | Holding' UTCTime Rational
 flipFunc:: Bool -> Bool -- this is just not !!! -- instead of this we need a constant False in Display and viceversa
 flipFunc True = False
 flipFunc False = True
 
-resetFunc:: Timer -> Timer -- prelude func id: function that returns its input!!!
-resetFunc timer = timer
+resetFunc:: UTCTime -> Timer -> Timer -- prelude func id: function that returns its input!!!
+resetFunc u timer = timer {mode = Falling' u}
 
 playPauseFunc:: UTCTime -> Timer -> Timer -- this needs to be Timer -> Timer ???
 playPauseFunc u x = funki (mode x) u x
 
 funki:: Mode -> UTCTime -> Timer -> Timer
-funki Holding' u timer = timer {mode = Falling' u}
-funki (Falling' _) u timer = timer {mode = Holding'} 
+funki (Holding' c) u timer = timer {mode = Falling' (addUTCTime (realToFrac (c*(-1))) u )} -- aqui se necesita mas info!!
+funki (Falling' u) u' timer = timer {mode = Holding' $ realToFrac (diffUTCTime u' u)} 
 funki Halted u timer = timer {mode = Falling' u}
 
 visualiserFunc:: Timer -> Timer
@@ -500,13 +509,11 @@ currentBeat = do
 ------- Helpers for engine
 
 -- data Mode = Falling' | Halted | Holding'
-extractStartTime:: Mode -> Maybe UTCTime
-extractStartTime (Falling' u) = Just u
-extractStartTime _ = Nothing
+extractTimeMark:: Mode -> Either Rational UTCTime
+extractTimeMark (Falling' u) = Right u
+extractTimeMark (Holding' mark) = Left mark
+extractTimeMark Halted = Left $ realToFrac 0
 
-fi:: Maybe Rational -> String
-fi Nothing = "naipes"
-fi (Just x) = show (realToFrac x :: Float)
 
 -- part of engine display
   -- timeOfFall <- performEvent $ fmap (liftIO . generateStartTime) $ updated $ mode <$> delta
@@ -566,11 +573,20 @@ loopBool' True xs b = realToFrac (mod (floor b) $ floor $ sum xs) :: Rational
 loopBool' False _ b = b
 
 -- this generates all possible rationals (more expensive in terms of computation, more accurate??)
-loopBool:: Bool -> [Rational] -> Maybe Rational -> Maybe Rational
-loopBool True xs b = (-) <$> unfloored <*> floored
-  where floored = (fmap (\x -> realToFrac (x /sum xs) :: Rational) b)
-        unfloored = fmap (/ sum xs) b
-loopBool False xs b = b
+loopBool:: Bool -> [Rational] -> Rational -> Rational
+loopBool True xs b = (unfloored - floored) * (sum xs)
+  where floored = realToFrac (floor (b /sum xs)) :: Rational
+        unfloored = b / sum xs
+loopBool False _ b = b -- correct: 2,1,0,3,2,1,0,1,0 of [3,4,2] to: 3,2,1,4,3,2,1,2,1,0
+
+lock:: Mode -> Bool
+lock (Falling' _) = True
+lock _ = False
+
+formToText:: [(T.Text,Rational)] -> T.Text
+formToText form = T.init $ T.init $ T.concat $ Prelude.map toText form
+  where toText x = (fst x) <> " = " <> (showt $ (floor $ snd x  :: Int)) <> ", "
+
 
 parseForm:: T.Text -> [(T.Text,Rational)] -- parser needs to accept "my thingy" as left of =
 parseForm tx = 
@@ -578,7 +594,12 @@ parseForm tx =
         label = Prelude.map fst x
         durs' = Prelude.map snd x
         durs = Prelude.map fromIntegral $ Data.Maybe.mapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) durs'  
-    in Prelude.zip label durs
+    in invalidFormFilter $ Prelude.zip label durs
+
+invalidFormFilter:: [(T.Text,Rational)] -> [(T.Text,Rational)]
+invalidFormFilter form 
+  | form == [] = [("invalid form", 0)]
+  | otherwise = form
 
 multiTimerPercent:: Rational -> [Rational] -> Rational -> Rational -- output represents percentage
 multiTimerPercent startPoint xs b
@@ -628,7 +649,7 @@ loopIcon d = do
   let height = constDyn $ "height" =: "100%"
   let vB = constDyn $  "viewBox" =: "-2 -2 28 28"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
-  let stroke =  funca <$> d
+  let stroke =  setStroke <$> d
   let attrs = mconcat [class',width,height, vB, par, stroke]
 
   let opacity = boolOpacity <$> d
@@ -638,13 +659,9 @@ loopIcon d = do
     return ()
   return ()
 
-funca:: Bool -> Map Text Text
-funca True = "stroke" =: "var(--primary-color)"
-funca False = "stroke" =: "var(--secondary-color)"
-
-funky:: Measure -> Text
-funky Cycles = "Cycles"
-funky Seconds = "Seconds"
+setStroke:: Bool -> Map Text Text
+setStroke True = "stroke" =: "var(--primary-color)"
+setStroke False = "stroke" =: "var(--secondary-color)"
 
 pathChoice:: Measure -> Map Text Text
 pathChoice Seconds = "d" =: "M15 1c6.623 0 12 5.377 12 12s-5.377 12-12 12-12-5.377-12-12 5.377-12 12-12zm0 1c6.071 0 11 4.929 11 11s-4.929 11-11 11-11-4.929-11-11 4.929-11 11-11zm0 11h6v1h-7v-9h1v8z"
