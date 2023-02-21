@@ -57,11 +57,35 @@ import Estuary.Types.Chat
 import Estuary.AtomicallyTimed
 import Estuary.Types.LogEntry
 import Estuary.Types.TranslatableText
+import qualified System.Posix.Resource as Resource
+
+increaseOpenFilesLimit :: IO ()
+increaseOpenFilesLimit = do
+  initialLimits <- Resource.getResourceLimit Resource.ResourceOpenFiles
+  let initialSoft = Resource.softLimit initialLimits
+  let initialHard = Resource.hardLimit initialLimits
+  postLogNoHandle $ "initial soft limit of open files: " <> T.pack (showResourceLimit initialSoft)
+  postLogNoHandle $ "initial hard limit of open files: " <> T.pack (showResourceLimit initialHard)
+  case initialSoft of
+    Resource.ResourceLimit n -> do
+      when (n < 16384) $ do
+        postLogNoHandle " attempting to increase to 16384..."
+        Resource.setResourceLimit Resource.ResourceOpenFiles (initialLimits { Resource.softLimit = Resource.ResourceLimit 16384} )
+        newLimits <- Resource.getResourceLimit Resource.ResourceOpenFiles
+        let newSoft = Resource.softLimit newLimits
+        postLogNoHandle $ "new soft limit of open files: " <> T.pack (showResourceLimit $ Resource.softLimit  newLimits)
+    _ -> return ()
+
+showResourceLimit :: Resource.ResourceLimit -> String
+showResourceLimit Resource.ResourceLimitInfinity = "infinite"
+showResourceLimit Resource.ResourceLimitUnknown = "unknown"
+showResourceLimit (Resource.ResourceLimit n) = show n
 
 runServerWithDatabase :: Password -> Password -> Int -> Bool -> SQLite.Connection -> IO ()
 runServerWithDatabase mpwd cpwd port httpRedirect db = do
   nCap <- getNumCapabilities
   postLogNoHandle $ "Estuary collaborative editing server"
+  increaseOpenFilesLimit
   postLogNoHandle $ "max simultaneous Haskell threads: " <> showt nCap
   postLogNoHandle $ "moderator password: " <> mpwd
   postLogNoHandle $ "community password: " <> cpwd
