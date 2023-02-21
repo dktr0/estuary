@@ -94,9 +94,8 @@ nameOfActiveView e = either (const "(local view)") id $ view e
 selectPresetView :: Text -> EnsembleC -> EnsembleC
 selectPresetView t e = e { view = Right t }
 
-{- factored out already into W monad
 selectLocalView :: View -> EnsembleC -> EnsembleC
-selectLocalView v e = e { view = Left v } -}
+selectLocalView v e = e { view = Left v }
 
 -- replaceStandardView selects a standard view while also redefining it
 -- according to the provided View argument. (To be used when a custom view is
@@ -114,6 +113,13 @@ readableTempo tempo =
       c = realToFrac (count tempo) :: Double
   in "Freq: " <> showt f <> "Time: " <> (T.pack $ show t) <> "Count: " <> showt c
 
+hintsToEnsembleC :: MonadIO m => [Hint] -> EnsembleC -> m EnsembleC
+hintsToEnsembleC hints ensC = foldM (flip hintToEnsembleC) ensC hints
+
+hintToEnsembleC :: MonadIO m => Hint -> EnsembleC -> m EnsembleC
+hintToEnsembleC (PresetView x) ensC = pure $ selectPresetView x ensC
+hintToEnsembleC (LocalView x) ensC = pure $ selectLocalView x ensC
+hintToEnsembleC _ ensC = pure ensC
 
 requestsToEnsembleC :: MonadIO m => Resources -> [Request] -> EnsembleC -> m EnsembleC
 requestsToEnsembleC res reqs ensC = foldM (flip $ requestToEnsembleC res) ensC reqs

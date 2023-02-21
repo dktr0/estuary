@@ -93,7 +93,7 @@ runCommand _ e (Terminal.PresetView x) = case lookupView x (ensemble e) of
   Just _ -> pure [
     PresetView x,
     LocalLog $ (Map.fromList [
-      (English,  "preset view " <> x <> " selected"),
+      (English, "preset view " <> x <> " selected"),
       (Español, "vista predeterminada " <> x <> " seleccionada")
       ])
     ]

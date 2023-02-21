@@ -117,7 +117,7 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
 
   rInfo <- pollRenderInfo rEnv
   resourceMaps <- dynamicResourceMaps rEnv
-  ensembleC <- maintainEnsembleC (resources rEnv) allRequests responseDown
+  ensembleC <- maintainEnsembleC (resources rEnv) hints allRequests responseDown
   ensList <- maintainEnsembleList responseDown
   resError <- maintainResponseError responseDown
   log <- maintainLog hints responseDown
@@ -213,13 +213,14 @@ localLogsFromHints hs = do
   pure $ fmap g txts
 
 
-maintainEnsembleC :: MonadWidget t m => Resources -> Event t [Request] -> Event t Response -> m (Dynamic t EnsembleC)
-maintainEnsembleC res requests response = mdo
+maintainEnsembleC :: MonadWidget t m => Resources -> Event t [Hint] -> Event t [Request] -> Event t Response -> m (Dynamic t EnsembleC)
+maintainEnsembleC res hints requests response = mdo
   now <- liftIO $ getCurrentTime
   let initialEnsembleC = emptyEnsembleC now
   let requestChange = fmap (requestsToEnsembleC res) requests -- :: Event t (EnsembleC -> m EnsembleC)
   let responseChange = fmap responseToEnsembleC response -- :: Event t (EnsembleC -> m EnsembleC)
-  let allChange = mergeWith (\x y ensC -> x ensC >>= y) [requestChange,responseChange]
+  let hintChange = fmap hintsToEnsembleC hints -- :: Event t (EnsembleC -> m EnsembleC)
+  let allChange = mergeWith (\x y ensC -> x ensC >>= y) [hintChange,requestChange,responseChange]
   updatedEnsembleC <- performEvent $ attachWith (&) (current r) allChange
   r <- holdDyn initialEnsembleC updatedEnsembleC
   pure r

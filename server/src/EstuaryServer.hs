@@ -69,7 +69,7 @@ increaseOpenFilesLimit = do
   case initialSoft of
     Resource.ResourceLimit n -> do
       when (n < 16384) $ do
-        postLogNoHandle " attempting to increase to 16384..."
+        postLogNoHandle " attempting to increase soft limit to 16384..."
         Resource.setResourceLimit Resource.ResourceOpenFiles (initialLimits { Resource.softLimit = Resource.ResourceLimit 16384} )
         newLimits <- Resource.getResourceLimit Resource.ResourceOpenFiles
         let newSoft = Resource.softLimit newLimits
