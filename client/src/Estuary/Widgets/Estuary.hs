@@ -197,7 +197,7 @@ maintainLog hints response = do
   let chatsReceived = fmap (:) $ fmapMaybe justEnsembleLog response
   let leftEnsemble = never -- PLACEHOLDER
   ensembleLog <- foldDyn ($) [] $ leftmost [chatsReceived,leftEnsemble]
-  localLogEntries <- performEvent $ fmap localLogsFromHints $ traceEvent "hints" hints
+  localLogEntries <- performEvent $ fmap localLogsFromHints hints
   localLog <- foldDyn (++) [] $ localLogEntries
   let combinedLog = (++) <$> ensembleLog <*> localLog
   pure $ fmap (reverse . sort) combinedLog
