@@ -139,9 +139,10 @@ ourRedirect req respond = do
   respond $ WS.responseLBS status301 [("Content-Type","text/plain"),("Location",location)] "Redirect"
 
 ourTLSSettings :: TLSSettings
-ourTLSSettings = defaultTlsSettings {
-  certFile = "../cert.pem",
-  keyFile = "../privkey.pem",
+ourTLSSettings = (tlsSettings "../cert.pem" "../privkey.pem") {
+-- defaultTlsSettings {
+--  certFile = "../cert.pem",
+--  keyFile = "../privkey.pem",
   tlsAllowedVersions = [TLS12],
   tlsCiphers = [
     cipher_ECDHE_ECDSA_AES256GCM_SHA384,
