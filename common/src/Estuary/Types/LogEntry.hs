@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module Estuary.Types.LogEntry where
 
@@ -7,6 +7,7 @@ import Data.Text
 import GHC.Generics
 import Data.Aeson
 
+import Estuary.Types.Language
 import Estuary.Types.TranslatableText
 
 data LogEntry = LogEntry {
@@ -15,6 +16,11 @@ data LogEntry = LogEntry {
   logEntryText :: TranslatableText
   }
   deriving (Generic,Eq,Ord)
+
+showtLogEntry :: Language -> LogEntry -> Text
+showtLogEntry l x
+  | logEntrySender x == "" = translateText (logEntryText x) l
+  | otherwise = logEntrySender x <> ": " <> translateText (logEntryText x) l
 
 instance ToJSON LogEntry where
   toEncoding = genericToEncoding defaultOptions
