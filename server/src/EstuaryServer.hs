@@ -66,15 +66,19 @@ increaseOpenFilesLimit = do
   let initialHard = Resource.hardLimit initialLimits
   postLogNoHandle $ "initial soft limit of open files: " <> T.pack (showResourceLimit initialSoft)
   postLogNoHandle $ "initial hard limit of open files: " <> T.pack (showResourceLimit initialHard)
+  let targetSoft = case initialHard of
+                     Resource.ResourceLimit n -> if n >= 16384 then 16384 else n
+                     _ -> 16384
   case initialSoft of
     Resource.ResourceLimit n -> do
       when (n < 16384) $ do
-        postLogNoHandle " attempting to increase soft limit to 16384..."
-        Resource.setResourceLimit Resource.ResourceOpenFiles (initialLimits { Resource.softLimit = Resource.ResourceLimit 16384} )
+        postLogNoHandle $ " attempting to increase soft limit to " <> showt targetSoft
+        Resource.setResourceLimit Resource.ResourceOpenFiles (initialLimits { Resource.softLimit = Resource.ResourceLimit targetSoft }$
         newLimits <- Resource.getResourceLimit Resource.ResourceOpenFiles
         let newSoft = Resource.softLimit newLimits
         postLogNoHandle $ "new soft limit of open files: " <> T.pack (showResourceLimit $ Resource.softLimit  newLimits)
     _ -> return ()
+
 
 showResourceLimit :: Resource.ResourceLimit -> String
 showResourceLimit Resource.ResourceLimitInfinity = "infinite"
