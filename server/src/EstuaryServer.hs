@@ -73,7 +73,7 @@ increaseOpenFilesLimit = do
     Resource.ResourceLimit n -> do
       when (n < 16384) $ do
         postLogNoHandle $ " attempting to increase soft limit to " <> showt targetSoft
-        Resource.setResourceLimit Resource.ResourceOpenFiles (initialLimits { Resource.softLimit = Resource.ResourceLimit targetSoft }$
+        Resource.setResourceLimit Resource.ResourceOpenFiles (initialLimits { Resource.softLimit = Resource.ResourceLimit targetSoft })
         newLimits <- Resource.getResourceLimit Resource.ResourceOpenFiles
         let newSoft = Resource.softLimit newLimits
         postLogNoHandle $ "new soft limit of open files: " <> T.pack (showResourceLimit $ Resource.softLimit  newLimits)
