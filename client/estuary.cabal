@@ -71,6 +71,7 @@ library
       Estuary.Widgets.Announcements
       Estuary.Widgets.AudioMap
       Estuary.Widgets.CalendarEvent
+      Estuary.Widgets.TestMap
       Estuary.Widgets.Config
       Estuary.Widgets.CreateEnsemble
       Estuary.Widgets.Ensemble
@@ -80,7 +81,7 @@ library
       Estuary.Widgets.Footer
       Estuary.Widgets.GeneralPattern
       Estuary.Widgets.Header
-      Estuary.Widgets.MultilingualEditor      
+      Estuary.Widgets.MultilingualEditor
       Estuary.Widgets.Navigation
       Estuary.Widgets.Notepad
       Estuary.Widgets.Reference

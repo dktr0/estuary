@@ -16,6 +16,7 @@ import qualified Data.Fixed as F
 import Data.Map as Map
 import Data.IntMap.Strict
 import Data.Map.Strict as M
+import qualified Data.IntMap as IntMap
 import Data.Maybe as Maybe
 import Control.Monad.IO.Class
 import Control.Monad(liftM)
@@ -34,26 +35,28 @@ import qualified Estuary.Types.Term as Term
 -- working widget
 calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvents -> W t m (Variable t CalendarEvents)
 calendarEventWidget deltasDown = mdo
-  -- sampledDelta <- sample $ current deltasDown
-  -- holdDelta <- holdDyn sampledDelta (updated deltasDown)
-  -- dynText $ fmap (T.pack . show) holdDelta
   today <- liftIO getZonedTime
+  let i = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
+  -- delta <- holdDyn i never
+  addButton <- divClass "addButtonCalendarEvent" $ buttonWithClass "+" -- Event t ()
   let newCalendarEvent = CalendarEvent "" (CalendarTime today (Recurrence Once today))
-  mapEv <- widgetMapEventWithAdd deltasDown (newCalendarEvent <$ addButton) calendarEventBuilder
-  addButton <- divClass "" $ buttonWithClass "+" -- Event t ()
-  -- deleteButton <- button "-" -- Event t ()
+  mapEv <- widgetMapEventWithAddDelete deltasDown (newCalendarEvent <$ addButton) calendarEventBuilderMaybe
   variable deltasDown mapEv
+
+calendarEventBuilderMaybe :: MonadWidget t m => Dynamic t CalendarEvent ->  W t m (Event t (Maybe CalendarEvent))
+calendarEventBuilderMaybe delta = divClass "calendarEventRow" $ do
+  today <- liftIO getZonedTime
+  deleteButton <- divClass "deleteButtonCalendarEvent" $ buttonWithClass "-" -- Event t ()
+  row <- calendarEventWidgetEv delta
+  let rowMaybe = fmap Just row -- Event t (Maybe CalendarEvent)
+  return $ leftmost [rowMaybe, Nothing <$ deleteButton]
 
 calendarEventBuilder :: MonadWidget t m => Dynamic t CalendarEvent ->  W t m (Event t CalendarEvent)
 calendarEventBuilder delta = do
   today <- liftIO getZonedTime
-  -- deleteButton <- button "-" -- Event t ()
   row <- calendarEventWidgetEv delta -- Event t CalendarEvent
   -- let rowMaybe = fmap row -- Event t (Maybe CalendarEvent)
   return $ leftmost [row]
-
--- calendarEventBuilder :: MonadWidget t m => Dynamic t CalendarEvent ->  W t m (Event t CalendarEvent)
--- calendarEventBuilder delta = calendarEventWidgetEv delta -- Event t CalendarEvent
 
 calendarEventWidgetEv :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Event t CalendarEvent)
 calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
@@ -67,7 +70,7 @@ calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
         return dateEv''
 
     (changePeriodicityEv', changeEndDateEv') <- divClass "periodicity" $ do
-      changePeriodicityEv'' <- divClass "selectPeriodicity" $ changePeriodicityWidget $ fmap (getPeriodicityFromRecurrence . getRecurrenceFromCalendarEvent) delta
+      changePeriodicityEv'' <- divClass "selectPeriodicity  code-font background" $ changePeriodicityWidget $ fmap (getPeriodicityFromRecurrence . getRecurrenceFromCalendarEvent) delta
       changeEndDateEv'' <- divClass "endDateWidget code-font background" $ changeEndDateWidget changePeriodicityEv'' (fmap (getPeriodicityFromRecurrence . getRecurrenceFromCalendarEvent) delta) $ fmap (localDay . zonedTimeToLocalTime . getEndDateFromCalendarEv) delta -- Event t Day
       return (changePeriodicityEv'', changeEndDateEv'')
     return (descEv', dateEv', changePeriodicityEv', changeEndDateEv' {--, timeOfDayEv', zoneEv', utcTimeEv'--})
@@ -79,6 +82,7 @@ calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
   let changeEndDateF = fmap changeEndDate changeEndDateEv
 
   let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
+
   let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t CalendarEvent
 
   v <- variable delta localUpdates --  m (Variable t a)
@@ -385,7 +389,7 @@ changePeriodicityWidget :: MonadWidget t m => Dynamic t (Periodicity) -> W t m (
 changePeriodicityWidget p = mdo
   -- let p' = fmap periodicityToKey p -- Dynamic Int -- (updated p) -- Event t Int
   perdiodicityWTranslation' <- perdiodicityWTranslation
-  dd <- dropdown 1 perdiodicityWTranslation' def -- p' -- Event t Int -- $ def & dropdownConfig_setValue .~ currentPeriodicity
+  dd <- dropdown 1 perdiodicityWTranslation' (def & attributes .~ constDyn ("class" =: "ui-dropdownMenus primary-color primary-borders ui-font" )) -- p' -- Event t Int -- $ def & dropdownConfig_setValue .~ currentPeriodicity
   let selItem = lookupPeriodicity <$> value dd <*> perdiodicityWTranslation' -- event t Periodicity
   return $ (updated selItem)
 

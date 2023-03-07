@@ -10,6 +10,8 @@ import GHC.Generics
 import Data.Aeson
 import Data.Time
 import Data.Sequence
+import qualified  Data.IntMap as I
+
 
 
 import Estuary.Tidal.Types
@@ -30,6 +32,8 @@ type NotePad = (Int,Seq NotePage)
 type NotePage = (Text,Text)
 
 type SpecChat = [Chat]
+
+type Test = I.IntMap Text
 
 type CalendarEvents = IntMap.IntMap CalendarEvent
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
@@ -94,7 +98,9 @@ data Definition =
   NotePad NotePad |
   CalendarEv CalendarEvent |
   SpecChat SpecChat |
-  CalendarEvs CalendarEvents
+  CalendarEvs CalendarEvents |
+  Test Test
+
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -120,6 +126,7 @@ definitionForRendering (SeeTime x) = SeeTime x
 definitionForRendering (NotePad x) = NotePad x
 definitionForRendering (SpecChat x) = SpecChat x
 definitionForRendering (CalendarEvs x) = CalendarEvs x
+definitionForRendering (Test x) = Test x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -155,6 +162,13 @@ maybeRoulette _ = Nothing
 
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
+
+maybeTestEvent :: Definition -> Maybe Test
+maybeTestEvent (Test x) = Just x
+maybeTestEvent _ = Nothing
+
+justTestEvents :: [Definition] -> [Test]
+justTestEvents = mapMaybe maybeTestEvent
 
 maybeCalendarEvents :: Definition -> Maybe CalendarEvents
 maybeCalendarEvents (CalendarEvs x) = (Just x)

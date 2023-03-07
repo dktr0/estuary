@@ -38,6 +38,7 @@ import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
+import Estuary.Widgets.TestMap
 import Estuary.Widgets.DataVisualisers
 import Estuary.Widgets.Chat
 import Estuary.Types.Request
@@ -118,6 +119,12 @@ viewWidget (CalendarEventView z) = do
   today <- liftIO getZonedTime
   let defaultValue = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
   zoneWidget False z defaultValue maybeCalendarEvents CalendarEvs calendarEventWidget
+
+viewWidget (TestView z) = do
+  today <- liftIO getZonedTime
+  let defaultValue = IntMap.singleton 0 "a testMap"
+  zoneWidget False z defaultValue maybeTestEvent Test testMapWidget
+
 
 viewWidget (CountDownView z) = zoneWidget False z (Holding 60) maybeTimerDownState CountDown countDownWidget
 

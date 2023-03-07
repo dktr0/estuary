@@ -1826,14 +1826,37 @@ box-shadow: inset 0 0 3px var(--primary-color);
     border-radius: 5px;
 }
 
+.addButtonCalendarEvent {
+  width: 3.5%;
+  margin-bottom: 0.08%;
+}
 
+.addButtonCalendarEvent button {
+  width: 100%;
+  border: none;
+  box-shadow: inset 0 0 2px var(--primary-color);
+  border-radius: 5px;
+}
 
 .calendarEventWidget {
 	display:flex;
 	flex-direction: column;
 	flex-wrap: wrap;
+
 }
 
+.deleteButtonCalendarEvent {
+	width: 3.5%;
+	margin-right: 0.25%;
+
+}
+
+.deleteButtonCalendarEvent button {
+	width: 100%;
+	border: none;
+    box-shadow: inset 0 0 2px var(--primary-color);
+    border-radius: 5px;
+}
 
 .descriptionWidgetInput {
     width: 100%;
@@ -1901,7 +1924,6 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	}
 
 .dateLabel {
-	/* height: 45%; */
   height: 13px;
 	}
 
@@ -1916,6 +1938,10 @@ box-shadow: inset 0 0 3px var(--primary-color);
     color: var(--background-color);
 }
 
+.calendarEventRow {
+	display: flex;
+	margin-bottom: 1%;
+}
 
 .calendarEventWidgetMainContainer {
 	height: 25%;
@@ -2061,21 +2087,24 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	height: 100%;
 	grid-area: periodicity;
 	display:flex;
+	max-width: 100%;
+	margin-left: 2%;
 }
 
 .selectPeriodicity {
 	height: 62%;
-/* 	width: 45%; */
-
+	min-width: 40%;
+	max-width: 50%;
 }
 
 .selectPeriodicity select {
    width:100%;
    position: relative;
-   bottom: 3px;
    overflow:hidden;
    white-space: nowrap;
    text-overflow: ellipsis;
+   border: none;
+   box-shadow: inset 0 0 3px var(--primary-color);
 }
 
 .endDateWidget {
@@ -2085,6 +2114,7 @@ box-shadow: inset 0 0 3px var(--primary-color);
     white-space: nowrap;
     text-overflow: ellipsis;
     position: relative;
+	margin-left: 2%;
     }
 
 .showDate {
@@ -2107,13 +2137,10 @@ box-shadow: inset 0 0 3px var(--primary-color);
 
 }
 
-.selectPeriodicity {
-/* 	background-color: yellow; */
-}
-.selectPeriodicity  select {
-	border: none;
-	box-shadow: inset 0 0 3px var(--primary-color);
-}
+
+
+/* End of CalendarEvent CSS */
+
 
 /* Notepad style */
 
@@ -2172,5 +2199,6 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	background-color: var(--secondary-color);
 	color: var(--primary-color);
 }
+
 
 /* end of Notepad style */
