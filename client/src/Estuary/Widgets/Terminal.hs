@@ -249,3 +249,6 @@ runCommand rEnv _ (Terminal.SetSerialPort n) = do
 runCommand rEnv _ Terminal.NoSerialPort = do
   liftIO $ WebSerial.setNoActivePort (webSerial rEnv)
   pure [ logText "serial port disactivated" ]
+
+-- set custom CSS theme
+runCommand _ _ (Terminal.Theme x) = pure [ ChangeSettings $ \s -> s { Settings.theme = x } ]
