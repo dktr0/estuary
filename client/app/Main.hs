@@ -33,14 +33,28 @@ import GHCJS.Types
 import Data.IntMap as IntMap
 import Estuary.Widgets.W hiding (theme)
 import Estuary.Widgets.MultilingualEditor
-
+import Data.JSVal.Promise
+import Estuary.Languages.ExoLang
 
 import Reflex.Host.Class (HostFrame)
 
 import System.Timeout(timeout)
 
+
 main :: IO ()
 main = do
+
+  {-
+  exoLang <- loadExoLang "./exolang.js"
+  awaitExoLang exoLang
+  r <- testExoLang exoLang
+  putStrLn $ "result of exolang test: " ++ show r
+  exoLang2 <- loadExoLang "./exolang2.js"
+  awaitExoLang exoLang2
+  r <- testExoLang exoLang2
+  putStrLn $ "result of exolang2 test: " ++ show r
+  -}
+
   hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser
   existingUncaughtHandler <- getUncaughtExceptionHandler

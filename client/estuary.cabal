@@ -38,6 +38,7 @@ library
       Estuary.Languages.Hydra.Test
       Estuary.Languages.Hydra.Types
       Estuary.Languages.JSoLang
+      Estuary.Languages.ExoLang
       Estuary.Languages.TidalParsers
       Estuary.Render.DynamicsMode
       Estuary.Render.MainBus
@@ -80,7 +81,7 @@ library
       Estuary.Widgets.Footer
       Estuary.Widgets.GeneralPattern
       Estuary.Widgets.Header
-      Estuary.Widgets.MultilingualEditor      
+      Estuary.Widgets.MultilingualEditor
       Estuary.Widgets.Navigation
       Estuary.Widgets.Notepad
       Estuary.Widgets.Reference
@@ -145,6 +146,7 @@ library
     , transformers
     , tuple
     , witherable
+    , ghcjs-promise
   default-language: Haskell2010
 
 executable Estuary
@@ -195,6 +197,7 @@ executable Estuary
     , transformers
     , tuple
     , witherable
+    , ghcjs-promise
   if flag(build-test-executables)
     buildable: False
   else
