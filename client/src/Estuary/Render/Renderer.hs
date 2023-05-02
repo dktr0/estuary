@@ -26,7 +26,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Bifunctor
 import TextShow
-import Sound.OSC.Datum
 import Text.Parsec (ParseError)
 import qualified Data.ByteString as B
 import GHCJS.DOM.Types (HTMLCanvasElement,HTMLDivElement)

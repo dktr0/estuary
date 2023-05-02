@@ -16,7 +16,7 @@ import Data.IORef
 import Data.Text
 import qualified Data.ByteString as B
 import Data.Time
-import Sound.OSC.Datum
+import Sound.Osc.Datum
 import Estuary.Types.NoteEvent
 import Data.Map as Map
 import Control.Monad (guard)
@@ -77,7 +77,7 @@ flush webSerial = do
 noteEventToWebSerialEvent :: NoteEvent -> Maybe WebSerialEvent
 noteEventToWebSerialEvent (nWhenUtc,nMap) = do
   s <- Map.lookup "s" nMap
-  guard $ s == ASCII_String "serial"
+  guard $ s == AsciiString "serial"
   b <- Map.lookup "byte" nMap
   b' <- datumToInteger b
   pure $ (nWhenUtc,B.singleton $ fromInteger b')
