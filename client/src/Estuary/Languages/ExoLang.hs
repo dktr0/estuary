@@ -31,13 +31,13 @@ awaitExoLang (ExoLang ioref) = do
       case y of
         Left _ -> putStrLn "uhoh, error awaiting promise of exolang!!!"
         Right jsModule -> do
-          obj <- newExoLangObject jsModule
+          obj <- exoLang jsModule
           writeIORef ioref (Right obj)
     Right _ -> pure ()
 
 foreign import javascript safe
-  "$r = new $1.ExoLang();"
-  newExoLangObject :: JSVal -> IO ExoLangObject
+  "$r = $1.exoLang();"
+  exoLang :: JSVal -> IO ExoLangObject
 
 newtype ExoLangObject = ExoLangObject JSVal
 
