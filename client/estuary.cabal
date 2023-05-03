@@ -42,6 +42,7 @@ library
       Estuary.Languages.TidalParsers
       Estuary.Render.DynamicsMode
       Estuary.Render.MainBus
+      Estuary.Render.RenderEnvironment
       Estuary.Render.R
       Estuary.Render.Renderer
       Estuary.Render.SuperDirt

@@ -40,6 +40,7 @@ import Estuary.Types.View.Parser
 import Estuary.Types.ResourceOp
 import Estuary.Types.ResourceType
 import Estuary.Types.LogEntry
+import Estuary.Render.RenderEnvironment
 
 terminalWidget :: MonadWidget t m => W t m ()
 terminalWidget = divClass "terminal code-font" $ mdo

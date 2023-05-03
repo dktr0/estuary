@@ -17,6 +17,7 @@ import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.Tempo
 import Estuary.Render.ForeignTempo
+import Estuary.Languages.ExoLang (ExoResult,utcTimeToWhenPOSIX,exoResultToErrorText)
 
 
 timeNot :: TextNotationRenderer

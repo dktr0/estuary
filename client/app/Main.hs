@@ -17,7 +17,8 @@ import qualified Data.Text as T
 
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
-import Estuary.Render.R
+-- import Estuary.Render.R
+import Estuary.Render.RenderEnvironment
 import Estuary.Client.Settings
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
@@ -43,17 +44,6 @@ import System.Timeout(timeout)
 
 main :: IO ()
 main = do
-
-  {-
-  exoLang <- loadExoLang "./exolang.js"
-  awaitExoLang exoLang
-  r <- testExoLang exoLang
-  putStrLn $ "result of exolang test: " ++ show r
-  exoLang2 <- loadExoLang "./exolang2.js"
-  awaitExoLang exoLang2
-  r <- testExoLang exoLang2
-  putStrLn $ "result of exolang2 test: " ++ show r
-  -}
 
   hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser

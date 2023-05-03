@@ -1,15 +1,29 @@
-module Estuary.Render.TextNotationRenderer where
+{-# LANGUAGE JavaScriptFFI #-}
+
+module Estuary.Render.TextNotationRenderer
+  (
+  TextNotationRenderer(..),
+  emptyTextNotationRenderer,
+  exoLangToRenderer
+  ) where
 
 import Data.Text
 import Data.Time
 import Data.Time.Clock.POSIX
+import Control.Monad.State.Strict
 
--- import Estuary.Types.Tempo
 import Estuary.Types.NoteEvent
 import Estuary.Render.R
 import qualified Sound.Tidal.Context as Tidal
 import GHCJS.Types
 import GHCJS.DOM.Types hiding (Text)
+import Estuary.Languages.ExoLang
+import Estuary.Types.TextNotation as TextNotation
+import Estuary.Types.Tempo
+import Estuary.Render.R hiding (setTempo)
+import Estuary.Render.ForeignTempo
+import Estuary.Types.RenderState
+import Estuary.Languages.ExoLang
 
 
 data TextNotationRenderer = TextNotationRenderer {
@@ -21,6 +35,53 @@ data TextNotationRenderer = TextNotationRenderer {
   preAnimationFrame :: R (),
   postAnimationFrame :: R ()
 }
+
+emptyTextNotationRenderer :: TextNotationRenderer
+emptyTextNotationRenderer = TextNotationRenderer {
+  parseZone = \_ _ _ -> return (),
+  scheduleNoteEvents = \_ -> return [],
+  scheduleWebDirtEvents = \_ -> return [],
+  clearZone' = \_ -> return (),
+  zoneAnimationFrame = \_ _ -> return (),
+  preAnimationFrame = return (),
+  postAnimationFrame = return ()
+  }
+
+exoLangToRenderer :: ExoLang -> TextNotationRenderer
+exoLangToRenderer exolang = emptyTextNotationRenderer {
+  parseZone = parseZone' exolang,
+  clearZone' = clearZone'' exolang,
+  preAnimationFrame = preAnimationFrame' exolang,
+  zoneAnimationFrame = zoneAnimationFrame' exolang,
+  postAnimationFrame = postAnimationFrame' exolang
+  }
+
+parseZone' :: ExoLang -> Int -> Text -> UTCTime -> R ()
+parseZone' exoLang z txt eTime = do
+  r <- liftIO $ evaluate exoLang z txt
+  case r of
+    Just err -> do
+      setBaseNotation z TextNotation.LocoMotion
+      setZoneError z err
+    Nothing -> do
+      setBaseNotation z TextNotation.LocoMotion
+      setEvaluationTime z eTime
+      clearZoneError z
+
+clearZone'' :: ExoLang -> Int -> R ()
+clearZone'' exoLang z = liftIO $ clearZone exoLang z
+
+preAnimationFrame' :: ExoLang -> R ()
+preAnimationFrame' exoLang = liftIO $ preAnimate exoLang
+
+zoneAnimationFrame' :: ExoLang -> UTCTime -> Int -> R ()
+zoneAnimationFrame' exoLang _ z = do
+  s <- get
+  liftIO $ setTempo exoLang (tempoCache s)
+  liftIO $ animateZone exoLang z
+
+postAnimationFrame' :: ExoLang -> R ()
+postAnimationFrame' exoLang = liftIO $ postAnimate exoLang
 
 {-
 
@@ -90,41 +151,3 @@ SomeExoLang.prototype.postAnimationFrame = function (context :: Object) {
 }
 
 -}
-
-
-
-
-emptyTextNotationRenderer :: TextNotationRenderer
-emptyTextNotationRenderer = TextNotationRenderer {
-  parseZone = \_ _ _ -> return (),
-  scheduleNoteEvents = \_ -> return [],
-  scheduleWebDirtEvents = \_ -> return [],
-  clearZone' = \_ -> return (),
-  zoneAnimationFrame = \_ _ -> return (),
-  preAnimationFrame = return (),
-  postAnimationFrame = return ()
-  }
-
-
-newtype ExoResult = ExoResult JSVal
-
-instance PToJSVal ExoResult where pToJSVal (ExoResult x) = x
-
-instance PFromJSVal ExoResult where pFromJSVal = ExoResult
-
-foreign import javascript safe
-  "$1.success"
-  _exoResultSuccess :: ExoResult -> Bool
-
-foreign import javascript safe
-  "$1.error"
-  _exoResultError :: ExoResult -> Text
-
-exoResultToErrorText :: ExoResult -> Maybe Text
-exoResultToErrorText x = case _exoResultSuccess x of
-  True -> Nothing
-  False -> Just $ _exoResultError x
-
-
-utcTimeToWhenPOSIX :: UTCTime -> Double
-utcTimeToWhenPOSIX = realToFrac . utcTimeToPOSIXSeconds
