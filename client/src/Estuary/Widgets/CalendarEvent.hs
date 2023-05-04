@@ -35,6 +35,8 @@ import qualified Estuary.Types.Term as Term
 -- working widget
 calendarEventWidget :: MonadWidget t m => Dynamic t CalendarEvents -> W t m (Variable t CalendarEvents)
 calendarEventWidget deltasDown = mdo
+  iDeltasDown <- sample $ current deltasDown
+  deltasDownBroken <- holdDyn iDeltasDown never
   today <- liftIO getZonedTime
   let i = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
   -- delta <- holdDyn i never
