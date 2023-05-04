@@ -17,7 +17,8 @@ import qualified Data.Text as T
 
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
-import Estuary.Render.R
+-- import Estuary.Render.R
+import Estuary.Render.RenderEnvironment
 import Estuary.Client.Settings
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
@@ -33,14 +34,17 @@ import GHCJS.Types
 import Data.IntMap as IntMap
 import Estuary.Widgets.W hiding (theme)
 import Estuary.Widgets.MultilingualEditor
-
+import Data.JSVal.Promise
+import Estuary.Languages.ExoLang
 
 import Reflex.Host.Class (HostFrame)
 
 import System.Timeout(timeout)
 
+
 main :: IO ()
 main = do
+
   hSetBuffering stdout LineBuffering
   warnBeforeGoingBackInBrowser
   existingUncaughtHandler <- getUncaughtExceptionHandler

@@ -40,6 +40,7 @@ import Estuary.Types.View.Parser
 import Estuary.Types.ResourceOp
 import Estuary.Types.ResourceType
 import Estuary.Types.LogEntry
+import Estuary.Render.RenderEnvironment
 
 terminalWidget :: MonadWidget t m => W t m ()
 terminalWidget = divClass "terminal code-font" $ mdo
@@ -249,3 +250,6 @@ runCommand rEnv _ (Terminal.SetSerialPort n) = do
 runCommand rEnv _ Terminal.NoSerialPort = do
   liftIO $ WebSerial.setNoActivePort (webSerial rEnv)
   pure [ logText "serial port disactivated" ]
+
+-- set custom CSS theme
+runCommand _ _ (Terminal.Theme x) = pure [ ChangeSettings $ \s -> s { Settings.theme = x } ]

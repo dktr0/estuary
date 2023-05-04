@@ -1,0 +1,56 @@
+diff --git a/executable-src/Main.hs b/executable-src/Main.hs
+index accc5ac..2bd7da0 100644
+--- a/executable-src/Main.hs
++++ b/executable-src/Main.hs
+@@ -28,7 +28,7 @@ import Data.Either
+ import GHCJS.Marshal.Pure
+ import Language.Javascript.JSaddle (liftJSM, toJSVal)
+ import GHCJS.Types
+-import Sound.OSC.Datum
++import Sound.Osc.Datum
+ import Data.Text.Encoding
+ import JavaScript.Object
+ import qualified Data.Map as Map
+@@ -558,7 +558,7 @@ type NoteEvent = (UTCTime, Map Text Datum)
+ datumToJSVal :: Datum -> JSVal
+ datumToJSVal (Int32 x) = pToJSVal x
+ datumToJSVal (Double x) = pToJSVal x
+-datumToJSVal (ASCII_String x) = pToJSVal $ decodeUtf8 x
++datumToJSVal (AsciiString x) = pToJSVal $ decodeUtf8 x
+ datumToJSVal _ = nullRef
+ 
+ utcTimeToAudioSeconds :: (UTCTime,Double) -> UTCTime -> Double
+diff --git a/library-src/Sound/Seis8s/Layer.hs b/library-src/Sound/Seis8s/Layer.hs
+index 0690a75..e741d14 100644
+--- a/library-src/Sound/Seis8s/Layer.hs
++++ b/library-src/Sound/Seis8s/Layer.hs
+@@ -5,7 +5,7 @@ module Sound.Seis8s.Layer where
+ import Data.Time
+ import Data.Fixed
+ import Data.Tempo
+-import Sound.OSC as H
++import Sound.Osc as H
+ import qualified Data.Map as M
+ import Data.Tuple.Select
+ import Control.Monad.State
+diff --git a/library-src/Sound/Seis8s/Parser.hs b/library-src/Sound/Seis8s/Parser.hs
+index 1b32523..36fab05 100644
+--- a/library-src/Sound/Seis8s/Parser.hs
++++ b/library-src/Sound/Seis8s/Parser.hs
+@@ -17,7 +17,6 @@ import Control.Applicative
+ import Data.IntMap.Strict
+ import Control.Monad.State
+ import qualified Data.Map as Map
+-import qualified Sound.OSC as H
+ import qualified Data.Text as T
+ import qualified Data.List as List
+ import Data.List.Split (splitOn)
+@@ -27,7 +26,7 @@ import Data.Time
+ import Data.Fixed
+ import Data.Maybe
+ import Data.Char as C
+-import qualified Sound.OSC as H
++import qualified Sound.Osc as H
+ 
+ type H = Haskellish GlobalMaterial
+ 

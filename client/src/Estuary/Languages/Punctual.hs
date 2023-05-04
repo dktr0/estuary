@@ -18,6 +18,7 @@ import qualified Sound.Punctual.Parser as Punctual
 import qualified Sound.Punctual.Resolution as Punctual
 
 import Estuary.Render.R
+import Estuary.Render.RenderEnvironment
 import Estuary.Render.TextNotationRenderer
 import Estuary.Types.RenderState
 import Estuary.Types.RenderInfo

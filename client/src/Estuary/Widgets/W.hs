@@ -28,6 +28,7 @@ import qualified Sound.Punctual.Resolution as Punctual
 import Estuary.Types.Language
 import Estuary.Types.View
 import qualified Estuary.Render.R as R
+import qualified Estuary.Render.RenderEnvironment as R
 import Estuary.Render.DynamicsMode
 import Estuary.Types.Hint
 import Estuary.Types.TranslatableText

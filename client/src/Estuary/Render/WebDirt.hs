@@ -19,7 +19,7 @@ import Sound.MusicW
 import Data.Text
 import qualified Data.Text as T
 import Data.Time
-import Sound.OSC.Datum
+import Sound.Osc.Datum
 import qualified Data.Map as Map
 import Data.String (fromString)
 import Data.JSString.Text
@@ -140,7 +140,7 @@ accessBufferForWebDirtEvent r j = do
   pure j
 
 datumsToLocation :: Maybe Datum -> Maybe Datum -> Maybe Location
-datumsToLocation (Just (ASCII_String x)) Nothing = Just (decodeUtf8 x,0)
-datumsToLocation (Just (ASCII_String x)) (Just (Int32 y)) = Just (decodeUtf8 x,fromIntegral y)
-datumsToLocation (Just (ASCII_String x)) (Just (Double y)) = Just (decodeUtf8 x,floor y)
+datumsToLocation (Just (AsciiString x)) Nothing = Just (decodeUtf8 x,0)
+datumsToLocation (Just (AsciiString x)) (Just (Int32 y)) = Just (decodeUtf8 x,fromIntegral y)
+datumsToLocation (Just (AsciiString x)) (Just (Double y)) = Just (decodeUtf8 x,floor y)
 datumsToLocation _ _ = Nothing

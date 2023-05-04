@@ -62,10 +62,12 @@ import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
 import Estuary.Widgets.W as W
 import Estuary.Render.R as R
+import Estuary.Render.RenderEnvironment as R
 import Estuary.Render.MainBus
 import Estuary.Client.Settings as Settings
 import Estuary.Types.LogEntry
 import Estuary.Render.RenderOp as RenderOp
+
 
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> m ()
 keyboardHintsCatcher rEnv settings = mdo

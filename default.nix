@@ -144,8 +144,8 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "0261r35wqbsc2i88h6gwwid29pq440c6fqa22s3srrpkj9xl2vhk";
-          rev = "4ca893c480a022810c4ad82223e362bab11bb969";
+          sha256 = "063vcf5s3jvkxg6v6i986l8bai0xdq6sjxqb67xpvrpipjdh5mxs";
+          rev = "14f6e9ea9b8899e8f5cd2374229921cb2ac8fe4e";
         }) {}));
 
         # musicw = self.callHackage "musicw" "0.3.9" {};
@@ -161,24 +161,31 @@ in
         #  "tidal" ../Tidal "" {}));
           "tidal"
           ( pkgs.fetchgit {
-          url = "https://github.com/dktr0/Tidal.git";
-          sha256 = "0m32m8lypvxszjlifd18gnaqbyprnpjyw31isjnd69a1mprzh6dh";
-          rev = "ac66771fd5201d6f669b80570a3623b0f33f3704";
+          url = "https://github.com/TidalCycles/Tidal.git";
+          sha256 = "1b93amzqjdgccxhgqr4y9a1rdpyr7r1lrq4sy4h4vf2g2d4jbdx0";
+          rev = "1e6f7be9015a6cbfb2f2e723effcb395f04ba234";
           fetchSubmodules = true;
         }) "" {}))) ./tidal.patch;
-        hint = null;
-        # note: Tidal depends on the hint library, which does not build with GHCJS, only for its executable
-        # so, in the above, we patch Tidal to not have an executable, and then null out hint in the Haskell package set
 
         tidal-parse = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
         #  "tidal-parse" ../Tidal/tidal-parse "" {}));
            "tidal-parse"
           ( pkgs.fetchgit {
-            url = "https://github.com/dktr0/Tidal.git";
-            sha256 = "0m32m8lypvxszjlifd18gnaqbyprnpjyw31isjnd69a1mprzh6dh";
-            rev = "ac66771fd5201d6f669b80570a3623b0f33f3704";
+            url = "https://github.com/TidalCycles/Tidal.git";
+            sha256 = "1b93amzqjdgccxhgqr4y9a1rdpyr7r1lrq4sy4h4vf2g2d4jbdx0";
+            rev = "1e6f7be9015a6cbfb2f2e723effcb395f04ba234";
             fetchSubmodules = true;
         }) "--subpath tidal-parse" {}));
+
+        tidal-link = if !(self.ghc.isGhcjs or false) then null else dontCheck (doJailbreak (self.callCabal2nixWithOptions
+        #  "tidal-parse" ../Tidal/tidal-parse "" {}));
+           "tidal-link"
+          ( pkgs.fetchgit {
+            url = "https://github.com/TidalCycles/Tidal.git";
+            sha256 = "1b93amzqjdgccxhgqr4y9a1rdpyr7r1lrq4sy4h4vf2g2d4jbdx0";
+            rev = "1e6f7be9015a6cbfb2f2e723effcb395f04ba234";
+            fetchSubmodules = true;
+        }) "--subpath tidal-link" {}));
 
         wai-websockets = dontCheck super.wai-websockets; # apparently necessary on OS X
 
@@ -192,18 +199,22 @@ in
         tempi = self.callHackage "tempi" "1.0.2.1" {};
 
         seis8s = #dontHaddock (self.callCabal2nix "seis8s" ../seis8s {});
-          doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
+          appendPatch (doJailbreak (dontHaddock (self.callCabal2nix "seis8s" (pkgs.fetchFromGitHub {
            owner = "luisnavarrodelangel";
            repo = "seis8s";
            sha256 = "169rfxknyv8ali87n6pmfpdm2vy09khsx4c9spa40sisskbbmlsz";
            rev = "1db0e3ff1399e176792e815df748c62aff9aa227";
-
-         }) {}));
+         }) {}))) ./seis8s.patch;
 
          permutation = markUnbroken super.permutation;
 
-         hosc = self.callHackage "hosc" "0.19.1" {};
-         hsc3 = self.callHackage "hsc3" "0.19.1" {};
+         hosc = self.callCabal2nix "hosc" (pkgs.fetchFromGitHub {
+           owner = "rd--";
+           repo = "hosc";
+           sha256 = "1fasqzjwrvi3a2p7nj2l7q0h9ia42qj4kyrqlk2dkh12479iywbh";
+           rev = "e77aa67cd0b99a32498fef246a687ba443c9b4be";
+         }) {};
+         # hsc3 = self.callHackage "hsc3" "0.19.1" {};
          hmt = doJailbreak (markUnbroken super.hmt);
 
 
