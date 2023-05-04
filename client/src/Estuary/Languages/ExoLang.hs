@@ -2,12 +2,12 @@
 
 module Estuary.Languages.ExoLang
   (ExoLang,loadExoLang,awaitExoLang,ExoResult,exoResultToErrorText,utcTimeToWhenPOSIX,
-  evaluate,clearZone,preAnimate,animateZone,postAnimate,setTempo) where
+  evaluate,render,clearZone,preAnimate,animateZone,postAnimate,setTempo) where
 
 import Data.Text
 import Data.Time
 import Data.Time.Clock.POSIX
-import Control.Monad (void)
+import Control.Monad (void,when)
 import GHCJS.DOM.Types hiding (Text)
 import Data.IORef
 import Data.JSVal.Promise
@@ -85,6 +85,33 @@ foreign import javascript safe
   "$3.evaluate($1,$2)"
   _evaluate :: Int -> Text -> ExoLangObject -> IO ExoResult
 
+render :: ExoLang -> Int -> UTCTime -> UTCTime -> IO [JSVal]
+render x z wStart wEnd = do
+  let wStart' = utcTimeToWhenPOSIX wStart
+  let wEnd' = utcTimeToWhenPOSIX wEnd
+  r <- withExoLang x $ \elo -> if hasRender elo then (_render z wStart' wEnd' elo) else emptyList
+  case r of
+    Left err -> pure []
+    Right jsVal -> do
+      jsVal' <- fromJSVal jsVal
+      case jsVal' of
+        Just ns -> pure ns
+        Nothing -> pure []
+
+foreign import javascript unsafe
+  "[]"
+  emptyList :: IO JSVal
+
+foreign import javascript unsafe
+  "typeof ($2.$1)"
+  _typeOfProperty :: Text -> ExoLangObject -> Text
+
+hasRender :: ExoLangObject -> Bool
+hasRender elo = _typeOfProperty "render" elo == "Function"
+
+foreign import javascript safe
+  "$4.render($1,$2,$3)"
+  _render :: Int -> Double -> Double -> ExoLangObject -> IO JSVal
 
 clearZone :: ExoLang -> Int -> IO ()
 clearZone x z = void $ withExoLang x $ _clearZone z

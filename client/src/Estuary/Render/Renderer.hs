@@ -443,6 +443,10 @@ renderTextProgramAlways z = do
 
 renderBaseProgramAlways :: Int -> Maybe TextNotation -> R ()
 renderBaseProgramAlways z (Just (TidalTextNotation _)) = (scheduleNoteEvents miniTidal) z >>= pushNoteEvents
+renderBaseProgramAlways z (Just LocoMotion) = do
+  s <- get
+  ns <- (scheduleWebDirtEvents $ exoLangToRenderer $ locoMotion s) z
+  pushWebDirtEvents ns
 renderBaseProgramAlways z (Just TimeNot) = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
 renderBaseProgramAlways z (Just Seis8s) = do
   s <- get

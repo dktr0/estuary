@@ -50,6 +50,7 @@ emptyTextNotationRenderer = TextNotationRenderer {
 exoLangToRenderer :: ExoLang -> TextNotationRenderer
 exoLangToRenderer exolang = emptyTextNotationRenderer {
   parseZone = parseZone' exolang,
+  scheduleWebDirtEvents = scheduleWebDirtEvents' exolang,
   clearZone' = clearZone'' exolang,
   preAnimationFrame = preAnimationFrame' exolang,
   zoneAnimationFrame = zoneAnimationFrame' exolang,
@@ -67,6 +68,13 @@ parseZone' exoLang z txt eTime = do
       setBaseNotation z TextNotation.LocoMotion
       setEvaluationTime z eTime
       clearZoneError z
+
+scheduleWebDirtEvents' :: ExoLang -> Int -> R [JSVal]
+scheduleWebDirtEvents' exoLang z = do
+  s <- get
+  let wStart = renderStart s
+  let wEnd = renderEnd s
+  liftIO $ render exoLang z wStart wEnd
 
 clearZone'' :: ExoLang -> Int -> R ()
 clearZone'' exoLang z = liftIO $ clearZone exoLang z
