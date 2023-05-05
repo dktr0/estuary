@@ -1,7 +1,7 @@
 {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Languages.ExoLang
-  (ExoLang,loadExoLang,awaitExoLang,ExoResult,exoResultToErrorText,utcTimeToWhenPOSIX,
+  (ExoLang,exoLang,ExoResult,exoResultToErrorText,utcTimeToWhenPOSIX,
   evaluate,render,clearZone,preAnimate,animateZone,postAnimate,setTempo) where
 
 import Data.Text
@@ -11,92 +11,69 @@ import Control.Monad (void,when)
 import GHCJS.DOM.Types hiding (Text)
 import Data.IORef
 import Data.JSVal.Promise
+import Control.Exception.Base (throwIO,Exception)
 
+import Estuary.Types.AsyncValue
 import Estuary.Types.Tempo
 import Estuary.Render.ForeignTempo
 
 
-newtype ExoLang = ExoLang (IORef (Either (Text,Promise,HTMLCanvasElement) ExoLangObject))
-
-loadExoLang :: HTMLCanvasElement -> Text -> IO ExoLang
-loadExoLang cvs path = do
-  aPromise <- _loadExoLang path
-  x <- newIORef $ Left (path,aPromise,cvs)
-  pure $ ExoLang x
-
 foreign import javascript safe
   "$r = importExoLang($1);"
-  _loadExoLang :: Text -> IO Promise
+  exoLangPromise :: Text -> IO Promise
 
--- block until an ExoLang has finished loading
-awaitExoLang :: ExoLang -> IO ()
-awaitExoLang (ExoLang ioref) = do
-  x <- readIORef ioref
-  case x of
-    Left (path,aPromise,cvs) -> do
-      y <- await aPromise
-      case y of
-        Left _ -> putStrLn $ "ERROR: couldn't load exoLang at " ++ unpack path
-        Right jsModule -> do
-          obj <- exoLang jsModule cvs
-          writeIORef ioref (Right obj)
-          putStrLn $ "loaded exoLang at " ++ unpack path
-    Right _ -> pure ()
+newtype ExoLangClass = ExoLangClass JSVal
 
--- do something with an ExoLang (if it is not finished loading yet, wait for it to do so)
-withExoLang :: ExoLang -> (ExoLangObject -> IO a) -> IO (Either Text a)
-withExoLang (ExoLang ioref) f = do
-  x <- readIORef ioref
-  case x of
-    Left (path,aPromise,cvs) -> do
-      y <- await aPromise
-      case y of
-        Left _ -> pure $ Left $ "ERROR: couldn't load exoLang at " <> path
-        Right jsModule -> do
-          obj <- exoLang jsModule cvs
-          writeIORef ioref (Right obj)
-          putStrLn $ "loaded exoLang at " ++ unpack path
-          Right <$> f obj
-    Right obj -> Right <$> f obj
+instance PToJSVal ExoLangClass where pToJSVal (ExoLangClass x) = x
+
+instance PFromJSVal ExoLangClass where pFromJSVal = ExoLangClass
 
 foreign import javascript safe
-  "$r = $1.exoLang($2);"
-  exoLang :: JSVal -> HTMLCanvasElement -> IO ExoLangObject
+  "$r = $2.exoLang($1);"
+  exoLangClass :: HTMLCanvasElement -> JSVal -> IO ExoLangClass
 
-newtype ExoLangObject = ExoLangObject JSVal
+_loadExoLang :: HTMLCanvasElement -> Text -> IO ExoLangClass
+_loadExoLang canvas path = do
+  p <- exoLangPromise path
+  r <- await p
+  exoLangModule <- case r of
+    Left j -> throwIO (JSException j)
+    Right j -> pure j
+  putStrLn $ "loaded exolang from " ++ unpack path
+  exoLangClass canvas exoLangModule
 
-instance PToJSVal ExoLangObject where pToJSVal (ExoLangObject x) = x
 
-instance PFromJSVal ExoLangObject where pFromJSVal = ExoLangObject
+type ExoLang = AsyncValue ExoLangClass
+
+exoLang :: HTMLCanvasElement -> Text -> IO ExoLang
+exoLang canvas path = asyncValue $ _loadExoLang canvas path
+
+withExoLang :: ExoLang -> (ExoLangClass -> IO a) -> IO a
+withExoLang x f = blocking x >>= f
 
 
 -- Nothing values represent successful evaluation
 evaluate :: ExoLang -> Int -> Text -> IO (Maybe Text)
-evaluate x z txt = do
-  r <- withExoLang x $ _evaluate z txt
-  case r of
-    Left err -> pure (Just err)
-    Right exoResult -> do
-      case exoResultToErrorText exoResult of
-        Just err -> pure (Just err)
-        Nothing -> pure Nothing
+evaluate e z txt = do
+  exoResult <- withExoLang e $ _evaluate z txt
+  case exoResultToErrorText exoResult of
+    Just err -> pure (Just err)
+    Nothing -> pure Nothing
 
 foreign import javascript safe
   "$3.evaluate($1,$2)"
-  _evaluate :: Int -> Text -> ExoLangObject -> IO ExoResult
+  _evaluate :: Int -> Text -> ExoLangClass -> IO ExoResult
+
 
 render :: ExoLang -> Int -> UTCTime -> UTCTime -> IO [JSVal]
-render x z wStart wEnd = do
+render e z wStart wEnd = do
   let wStart' = utcTimeToWhenPOSIX wStart
   let wEnd' = utcTimeToWhenPOSIX wEnd
-  r <- withExoLang x $ \elo -> if hasRender elo then (_render z wStart' wEnd' elo) else emptyList
-  case r of
-    Left err -> pure []
-    Right jsVal -> do
-      jsVal' <- fromJSVal jsVal
-      case jsVal' of
-        Just ns -> pure ns
-        Nothing -> pure []
+  jsVal <- withExoLang e $ \elc -> if hasRender elc then (_render z wStart' wEnd' elc) else emptyList
+  jsVal' <- fromJSVal jsVal
+  case jsVal' of
+    Just ns -> pure ns
+    Nothing -> pure []
 
 foreign import javascript unsafe
   "[]"
@@ -104,53 +81,54 @@ foreign import javascript unsafe
 
 foreign import javascript unsafe
   "typeof ($2.$1)"
-  _typeOfProperty :: Text -> ExoLangObject -> Text
+  _typeOfProperty :: Text -> ExoLangClass -> Text
 
-hasRender :: ExoLangObject -> Bool
+hasRender :: ExoLangClass -> Bool
 hasRender elo = _typeOfProperty "render" elo == "Function"
 
 foreign import javascript safe
   "$4.render($1,$2,$3)"
-  _render :: Int -> Double -> Double -> ExoLangObject -> IO JSVal
+  _render :: Int -> Double -> Double -> ExoLangClass -> IO JSVal
+
 
 clearZone :: ExoLang -> Int -> IO ()
-clearZone x z = void $ withExoLang x $ _clearZone z
+clearZone e z = void $ withExoLang e $ _clearZone z
 
 foreign import javascript safe
   "$2.clearZone($1)"
-  _clearZone :: Int -> ExoLangObject -> IO ()
+  _clearZone :: Int -> ExoLangClass -> IO ()
 
 
 preAnimate :: ExoLang -> IO ()
-preAnimate x = void $ withExoLang x _preAnimate
+preAnimate e = void $ withExoLang e _preAnimate
 
 foreign import javascript unsafe
   "$1.preAnimate()"
-  _preAnimate :: ExoLangObject -> IO ()
+  _preAnimate :: ExoLangClass -> IO ()
 
 
 animateZone :: ExoLang -> Int -> IO ()
-animateZone x z = void $ withExoLang x $ _animateZone z
+animateZone e z = void $ withExoLang e $ _animateZone z
 
 foreign import javascript unsafe
   "$2.animateZone($1)"
-  _animateZone :: Int -> ExoLangObject -> IO ()
+  _animateZone :: Int -> ExoLangClass -> IO ()
 
 
 postAnimate :: ExoLang -> IO ()
-postAnimate x = void $ withExoLang x _postAnimate
+postAnimate e = void $ withExoLang e _postAnimate
 
 foreign import javascript unsafe
   "$1.postAnimate()"
-  _postAnimate :: ExoLangObject -> IO ()
+  _postAnimate :: ExoLangClass -> IO ()
 
 
 setTempo :: ExoLang -> Tempo -> IO ()
-setTempo x t = void $ withExoLang x $ _setTempo $ toForeignTempo t
+setTempo e t = void $ withExoLang e $ _setTempo $ toForeignTempo t
 
 foreign import javascript unsafe
   "$2.setTempo($1)"
-  _setTempo :: ForeignTempo -> ExoLangObject -> IO ()
+  _setTempo :: ForeignTempo -> ExoLangClass -> IO ()
 
 
 newtype ExoResult = ExoResult JSVal
@@ -175,3 +153,11 @@ exoResultToErrorText x = case _exoResultSuccess x of
 
 utcTimeToWhenPOSIX :: UTCTime -> Double
 utcTimeToWhenPOSIX = realToFrac . utcTimeToPOSIXSeconds
+
+
+data JSException = JSException JSVal
+
+instance Show JSException where
+  show (JSException _) = "A JSException"
+
+instance Exception JSException
