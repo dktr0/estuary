@@ -25,7 +25,7 @@ loadExoLang cvs path = do
   pure $ ExoLang x
 
 foreign import javascript safe
-  "$r = import($1);"
+  "$r = importExoLang($1);"
   _loadExoLang :: Text -> IO Promise
 
 -- block until an ExoLang has finished loading
