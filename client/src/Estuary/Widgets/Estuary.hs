@@ -2,19 +2,17 @@
 
 module Estuary.Widgets.Estuary where
 
-import Control.Monad (liftM)
-
+import Control.Monad (liftM,when)
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response,append,Error)
 import Reflex.Dom.Old
 import Reflex.Dynamic
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO,liftIO)
 import Control.Monad.Fix (MonadFix)
 import Data.Time
 import Data.Map
 import Data.Maybe
 import Text.Read
-import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
 import GHCJS.DOM.Types hiding (Event,Request,Response,Text)
@@ -140,14 +138,15 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   ((responseDown,sInfo),localHints) <- runW wEnv $ do
     (responseDown,sInfo) <- estuaryWebSocket requestsToSend
     keyboardHintsW keyboardShortcut
-    header
-    divClass "page ui-font" $ do
-      navigation
-      sv <- W.sideBarVisible
-      hideableWidget sv "sidebar" sidebarWidget
-    tv <- W.terminalVisible
-    hideableWidget' tv $ terminalWidget
-    footer
+    when (not $ noui iSettings) $ do
+      header
+      divClass "page ui-font" $ do
+        navigation
+        sv <- W.sideBarVisible
+        hideableWidget sv "sidebar" sidebarWidget
+      tv <- W.terminalVisible
+      hideableWidget' tv $ terminalWidget
+      footer
     return (responseDown,sInfo)
 
   let localRequests = fmap hintsToRequests localHints
