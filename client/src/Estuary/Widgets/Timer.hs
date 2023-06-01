@@ -38,6 +38,11 @@ import Estuary.Types.Definition
 --   measure:: Measure
 -- } deriving (Show,Eq,Ord,Generic)
 
+-- to do:
+-- when countdown stopped the displayed time is a count up
+
+
+
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
   -- liftIO $ putStrLn "timerWidget"
@@ -170,34 +175,55 @@ visualDisplay delta 2 = do -- here we dont need beat and tempo. Remove the pipel
   visualiseText delta
   return ()
 
-visualDisplay delta _ = do
-  visualiseText delta
-  return ()
-
 ----
+f':: Rational -> Timer -> Rational
+f' leftMark timer = f leftMark (Prelude.map snd $ form timer) (mode timer)
+
+f:: Rational -> [Rational] -> Mode -> Rational
+f leftMark form (Holding' _) = (funco leftMark form) + 1 
+ --   let countpart = funco pureMark $ map snd form 
+f leftMark form _ = leftMark
+
+funco:: Rational -> [Rational] -> Rational
+funco mark [] = 2666
+funco mark (x:xs) = if x >= mark then (x - mark) else funco mark $ Prelude.tail $ Prelude.scanl (+) x xs
+
+
+
+------ work this function from scratch basically
+--data Mode = Falling' UTCTime | Halted | Holding' Rational deriving (Show,Ord,Eq,Generic)
 
 calculateCount:: Bool -> Timer -> Rational -> Tempo -> Rational
-calculateCount True delta beat t =  -- True calculates percentage for sandclock and progress bar
+calculateCount _ delta elapsedCount t =
   let timeMark = (extractTimeMark . mode) delta
   in case timeMark of 
-      (Left mark) -> (freq t) * mark -- elapsed upwards count, this needs to be elapsed downwarss count!!!
-      (Right startMark) -> 
-        let countUp = beat - (timeToCount t startMark)
-            countForm = Prelude.map snd (form delta) -- [Rat]
-            looper = loopBool (loop delta) countForm countUp
-            countDown = multiTimerPercent 0 countForm looper
-        in countDown
+      (Left mark) -> mark
+      (Right startMark) -> 2999
 
-calculateCount False delta beat t = -- calculates concrete counts for the numeric interface
-  let timeMark = (extractTimeMark . mode) delta
-  in case timeMark of 
-      (Left mark) -> (freq t) * mark
-      (Right startMark) -> 
-        let countUp = beat - (timeToCount t startMark)
-            countForm = Prelude.map snd (form delta) -- [Rat]
-            looper = loopBool' (loop delta) countForm countUp
-            countDown = multiTimer 0 countForm looper
-        in countDown
+-- calculateCount:: Bool -> Timer -> Rational -> Tempo -> Rational
+-- calculateCount True delta elapsedCount t =  -- True calculates percentage for sandclock and progress bar
+--   let timeMark = (extractTimeMark . mode) delta
+--   in case timeMark of 
+--       (Left mark) -> f' mark delta  -- freq here does not make sense
+      
+
+--       (Right startMark) -> 
+--         let countUp = elapsedCount - (timeToCount t startMark)
+--             countForm = Prelude.map snd (form delta) -- [Rat]
+--             looper = loopBool (loop delta) countForm countUp
+--             countDown = multiTimerPercent 0 countForm looper
+--         in countDown
+
+-- calculateCount False delta elapsedCount t = -- False calculates concrete counts for the numeric interface
+--   let timeMark = (extractTimeMark . mode) delta
+--   in case timeMark of 
+--       (Left mark) -> f' ((freq t) * mark) delta 
+--       (Right startMark) -> 
+--         let countUp = elapsedCount - (timeToCount t startMark)
+--             countForm = Prelude.map snd (form delta) -- [Rat]
+--             looper = loopBool' (loop delta) countForm countUp
+--             countDown = multiTimer (loop delta) 0 countForm looper
+--         in countDown 
 
 --let countdownP = (\x y -> multiTimerPercent 0 x <$> y) <$> countDyn <*> countFromBEventLooped 
 
@@ -217,12 +243,15 @@ visualiseProgressBar:: MonadWidget t m => Dynamic t Timer -> W t m ()
 visualiseProgressBar delta = do
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
-  beatPosition <- currentBeat -- :: Event t Rational
+  beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
   beat <- holdDyn 0 beatPosition
   let count = (calculateCount True iDelta) <$> beat <*> currentTempo
   let label = calculateLabel iDelta <$> beat <*> currentTempo
   drawProgressBar count label
   pure ()
+
+
+--data Mode = Falling' UTCTime | Halted | Holding' Rational deriving (Show,Ord,Eq,Generic)
 
 
 drawProgressBar:: MonadWidget t m => Dynamic t Rational -> Dynamic t (Maybe Text) -> W t m ()
@@ -275,7 +304,7 @@ visualiseSandClock:: MonadWidget t m => Dynamic t Timer -> W t m ()
 visualiseSandClock delta = do
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
-  beatPosition <- currentBeat -- :: Event t Rational
+  beatPosition <- elapsedCounts -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
   let count = (calculateCount True iDelta) <$> beat <*> currentTempo
   let label = calculateLabel iDelta <$> beat <*> currentTempo
@@ -341,15 +370,23 @@ visualiseText delta = do
   traceDynamic "delta" $ delta
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
-  beatPosition <- currentBeat -- :: Event t Rational
-  beat <- holdDyn 0 beatPosition
-  let count = (calculateCount False iDelta) <$> beat <*> currentTempo
-  let label = calculateLabel iDelta <$> beat <*> currentTempo
+
+  -- funca para escoger tempo o segundos
+
+  elapsedCountPos <- elapsedCounts -- :: Event t Rational
+  elapsedCount <- holdDyn 0 elapsedCountPos
+
+
+  let count' = (calculateCount False iDelta) <$> elapsedCount <*> currentTempo -- Dyn t Rat
+  let count = fmap (\x -> showt (realToFrac (ceiling x) :: Double)) count'
+
+  let label = calculateLabel iDelta <$> elapsedCount <*> currentTempo
+  
   drawText count label
   pure ()
 
 
-drawText :: MonadWidget t m => Dynamic t Rational -> Dynamic t (Maybe Text) -> W t m ()
+drawText :: MonadWidget t m => Dynamic t Text -> Dynamic t (Maybe Text) -> W t m ()
 drawText countdown tag' = do
   -- let countdown = fromMaybe 0 <$> countdown' 
   let tag = fromMaybe "" <$> tag'
@@ -384,7 +421,8 @@ drawText countdown tag' = do
         dynText tag
         return ()
       elDynAttrNS' (Just "http://www.w3.org/2000/svg") "tspan" tspan2Attrs $ do
-        dynText $ fmap (\x -> diffTimeToText $ (realToFrac x :: NominalDiffTime)) countdown
+        -- dynText $ fmap (\x -> showt (floor x)) countdown
+        dynText countdown
         return ()
       return ()
     return ()    
@@ -401,8 +439,8 @@ resetFunc u timer = timer {mode = Falling' u}
 playPauseFunc:: UTCTime -> Timer -> Timer -- this needs to be Timer -> Timer ???
 playPauseFunc u x = funki (mode x) u x
 
-funki:: Mode -> UTCTime -> Timer -> Timer
-funki (Holding' c) u timer = timer {mode = Falling' (addUTCTime (realToFrac (c*(-1))) u )} -- aqui se necesita mas info!!
+funki:: Mode -> UTCTime -> Timer -> Timer -- 00000this u is the anchor from where start to count
+funki (Holding' c) u timer = timer {mode = Falling' (addUTCTime (realToFrac (0*(-1))) u )} -- aqui se necesita mas info!!
 funki (Falling' u) u' timer = timer {mode = Holding' $ realToFrac (diffUTCTime u' u)} 
 funki Halted u timer = timer {mode = Falling' u}
 
@@ -498,13 +536,18 @@ coordToText p = Prelude.foldl (\ x y -> x <> " " <> (ptsToCoord y)) "" p
 ptsToCoord:: (Int,Int) -> Text
 ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)
 
+
+----
+-- Elapsed seconds makes most sense. Basically pass the count of elapsed seconds from builtime and then make the conversions locally (to beats). You have to figure out where this operations makes the most sense, candidate: calculateCount
+
 --- I might have to use only a tick and the UTC time of 'last tick'
-currentBeat:: MonadWidget t m => W t m (Event t Rational)
-currentBeat = do
-  currentTempo <- Estuary.Widgets.W.tempo -- OJO: se repito dos veces este patron, no deberia
-  widgetBuildTime <- liftIO $ getCurrentTime
+-- this creates ticks from the moment estuary is built, just that
+elapsedCounts:: MonadWidget t m => W t m (Event t  Rational)
+elapsedCounts = do
+  widgetBuildTime <- liftIO getCurrentTime
   tick <- tickLossy 0.1 widgetBuildTime
-  pure $ attachWith timeToCount (current currentTempo) $ fmap _tickInfo_lastUTC tick
+  pure $ fmap realToFrac $ fmap (\x -> diffUTCTime x widgetBuildTime) $ fmap _tickInfo_lastUTC tick
+
 
 ------- Helpers for engine
 
@@ -608,11 +651,17 @@ multiTimerPercent startPoint xs b
       where ts = Prelude.head $ Prelude.tail $ Prelude.scanl (+) startPoint xs 
             tsPercent = 100 *(ts - b) / (Prelude.head xs)
 
-multiTimer:: Rational -> [Rational] -> Rational -> Rational -- Rational
-multiTimer startPoint xs b
+multiTimer:: Bool -> Rational -> [Rational] -> Rational -> Rational -- Rational
+multiTimer loopState startPoint xs b
   | (xs==[]) = 0
-  | otherwise = if ts > b then ts - b else multiTimer ts (Prelude.tail xs) b
+  | otherwise = if ts > b then ts - b else multiTimer loopState ts (Prelude.tail xs) b
       where ts = Prelude.head $ Prelude.tail $ Prelude.scanl (+) startPoint xs 
+
+
+
+-- here a funca is needed: a) add one to the coutndown, and anticipate the extra 0
+
+
 
 genLabel:: Rational -> [(Text,Rational)] -> Rational -> T.Text -- here cut if it is too long...
 genLabel startPoint x b 

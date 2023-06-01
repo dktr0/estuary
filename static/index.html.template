@@ -97,7 +97,7 @@
   <script src="./SuperDirt.js"></script>
   <script src="./hydra-synth.js"></script>
   <script src="./peg-0.10.0.min.js"></script>
-  <script src="https://afrancob.github.io/timekNot/timekNot.js" type="module"></script>
+  <script src="file:///home/alejandro/Documents/repos/tk/timekNot/timekNot.js" type="module"></script>
 
   <div id="estuary-root"></div>
   <script type="text/javascript">
