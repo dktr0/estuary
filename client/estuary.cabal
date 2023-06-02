@@ -69,6 +69,7 @@ library
       Estuary.Types.Tutorial
       Estuary.Types.View.Parser
       Estuary.Types.View.Presets
+      Estuary.Types.JSException
       Estuary.Widgets.AboutEstuary
       Estuary.Widgets.Announcements
       Estuary.Widgets.AudioMap
@@ -102,6 +103,7 @@ library
       Estuary.Widgets.ViewEditor
       Estuary.Widgets.W
       Estuary.Widgets.WebSocket
+      Estuary.Widgets.ExoWidget
       Estuary.Types.AsyncValue
   other-modules:
       Paths_estuary

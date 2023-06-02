@@ -9,11 +9,11 @@ import Data.Time
 import Data.Time.Clock.POSIX
 import Control.Monad (void,when)
 import GHCJS.DOM.Types hiding (Text)
-import Data.IORef
 import Data.JSVal.Promise
-import Control.Exception.Base (throwIO,Exception)
+import Control.Exception.Base (throwIO)
 
 import Estuary.Types.AsyncValue
+import Estuary.Types.JSException
 import Estuary.Types.Tempo
 import Estuary.Render.ForeignTempo
 
@@ -154,10 +154,3 @@ exoResultToErrorText x = case _exoResultSuccess x of
 utcTimeToWhenPOSIX :: UTCTime -> Double
 utcTimeToWhenPOSIX = realToFrac . utcTimeToPOSIXSeconds
 
-
-data JSException = JSException JSVal
-
-instance Show JSException where
-  show (JSException _) = "A JSException"
-
-instance Exception JSException
