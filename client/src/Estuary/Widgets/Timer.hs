@@ -38,10 +38,6 @@ import Estuary.Types.Definition
 --   measure:: Measure
 -- } deriving (Show,Eq,Ord,Generic)
 
--- to do:
--- when countdown stopped the displayed time is a count up
-
-
 
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
@@ -163,103 +159,150 @@ timerChangeDisplay timer = do
   pure ()
 
 visualDisplay:: MonadWidget t m => Dynamic t Timer -> Int -> W t m ()
-visualDisplay delta 0 = do  -- beat tempo generate it as close to the poitn where you need them as possible!!! engineDisplay
+visualDisplay delta 0 = do  
+  visualiseProgressBarLabel delta
+  return ()
+
+visualDisplay delta 1 = do  
   visualiseProgressBar delta
   return ()
 
-visualDisplay delta 1 = do 
+visualDisplay delta 2 = do 
+  visualiseSandClockLabel delta
+  return ()
+
+visualDisplay delta 3 = do 
   visualiseSandClock delta
   return ()
 
-visualDisplay delta 2 = do -- here we dont need beat and tempo. Remove the pipeline
+visualDisplay delta 4 = do 
+  visualiseTextLabel delta
+  return ()
+
+visualDisplay delta 5 = do 
   visualiseText delta
   return ()
 
+visualDisplay delta 6 = do 
+  visualiseOnlyLabel delta
+  return ()
+
 ----
-f':: Rational -> Timer -> Rational
-f' leftMark timer = f leftMark (Prelude.map snd $ form timer) (mode timer)
+-- NOTE: holdingCalculation functions and multiTimer functions perform more or less the same purpose but multiTimer depends on external cycling functions. So the looping of the time has to be calculated independently while the holdingCalc functions deal with that internally (by using cycleForm). holdingCalc should be generalised to work also as fallingCalc. 
 
-f:: Rational -> [Rational] -> Mode -> Rational
-f leftMark form (Holding' _) = (funco leftMark form) + 1 
- --   let countpart = funco pureMark $ map snd form 
-f leftMark form _ = leftMark
+holdingCalculation:: Bool -> Rational -> Timer -> Rational
+holdingCalculation True mark timer = holdingCalculationLooped mark $ Prelude.map snd (form timer)
+holdingCalculation False mark timer = holdingCalculationUnlooped mark $ Prelude.map snd (form timer)
 
-funco:: Rational -> [Rational] -> Rational
-funco mark [] = 2666
-funco mark (x:xs) = if x >= mark then (x - mark) else funco mark $ Prelude.tail $ Prelude.scanl (+) x xs
+holdingCalculationUnlooped:: Rational -> [Rational] -> Rational
+holdingCalculationUnlooped mark (x:xs) = if mark > (sum (x:xs)) then 0 else holdingCalculation' mark scannedForm
+  where scannedForm = Prelude.scanl (+) x xs
 
+holdingCalculationLooped:: Rational -> [Rational] -> Rational
+holdingCalculationLooped mark (x:xs) = holdingCalculation' markC scannedForm
+  where markC = cycleForm mark (x:xs) 
+        scannedForm = Prelude.scanl (+) x xs 
 
+holdingCalculation':: Rational -> [Rational] -> Rational
+holdingCalculation' markC [] = 0
+holdingCalculation' markC (z:zs) = if z > markC then (z-markC) 
+    else holdingCalculation' markC zs   
 
------- work this function from scratch basically
---data Mode = Falling' UTCTime | Halted | Holding' Rational deriving (Show,Ord,Eq,Generic)
+holdingCalculationP:: Bool -> Rational -> Timer -> Rational
+holdingCalculationP True mark timer = holdingCalculationLoopedP mark $ Prelude.map snd (form timer)
+holdingCalculationP False mark timer = holdingCalculationUnloopedP mark $ Prelude.map snd (form timer)
 
-calculateCount:: Bool -> Timer -> Rational -> Tempo -> Rational
-calculateCount _ delta elapsedCount t =
+holdingCalculationUnloopedP:: Rational -> [Rational] -> Rational
+holdingCalculationUnloopedP mark (x:xs) = if mark > (sum (x:xs)) then 0 else holdingCalculationP' mark scannedForm (x:xs)
+  where scannedForm = Prelude.scanl (+) x xs
+
+holdingCalculationLoopedP:: Rational -> [Rational] -> Rational
+holdingCalculationLoopedP mark (x:xs) = holdingCalculationP' markC scannedForm (x:xs)
+  where markC = cycleForm mark (x:xs) 
+        scannedForm = Prelude.scanl (+) x xs 
+
+holdingCalculationP':: Rational -> [Rational] -> [Rational] -> Rational
+holdingCalculationP' markC [] [] = 0
+holdingCalculationP' markC (z:zs) (x:xs) = if z > markC then percen 
+    else holdingCalculationP' markC zs xs   
+    where percen = 100 * (z - markC) / x
+
+cycleForm:: Rational -> [Rational] -> Rational
+cycleForm mark form = dur * (tr (mark/dur)) 
+    where dur = if (sum form == 0) then 1 else sum form
+          tr n = n - (realToFrac (floor n) ::Rational)
+
+-- first bool is for calculating percentage (true) or count (false)
+calculateCount:: Bool -> Timer -> UTCTime -> Rational -> Tempo -> Rational
+calculateCount False delta wBuildT elapsingCount t = -- elapsed count is seconds
   let timeMark = (extractTimeMark . mode) delta
-  in case timeMark of 
-      (Left mark) -> mark
-      (Right startMark) -> 2999
+  in case timeMark of -- right UTC (moment to start counting) and left Rational (mark where the count is paused)
+      (Left mark) -> holdingCalculation (loop delta) mark delta
+      (Right startMark) -> 
+        let startMarkInSecs = diffUTCTime startMark wBuildT
+            countUp = elapsingCount - (realToFrac startMarkInSecs :: Rational)
+            countForm = Prelude.map snd (form delta) -- [Rat]
+            loopedCountUp = loopCountUp' (loop delta) countForm countUp
+            countDown = multiTimer 0 countForm loopedCountUp
+        in countDown 
+calculateCount True delta wBuildT elapsingCount t = -- elapsed count is seconds
+  let timeMark = (extractTimeMark . mode) delta
+  in case timeMark of -- right UTC (moment to start counting) and left Rational (mark where the count is paused)
+      (Left mark) -> holdingCalculationP (loop delta) mark delta
+      (Right startMark) -> 
+        let startMarkInSecs = diffUTCTime startMark wBuildT
+            countUp = elapsingCount - (realToFrac startMarkInSecs :: Rational)
+            countForm = Prelude.map snd (form delta) -- [Rat]
+            loopedCountUp = loopCountUp (loop delta) countForm countUp
+            countDown = multiTimerPercent 0 countForm loopedCountUp
+        in countDown 
 
--- calculateCount:: Bool -> Timer -> Rational -> Tempo -> Rational
--- calculateCount True delta elapsedCount t =  -- True calculates percentage for sandclock and progress bar
---   let timeMark = (extractTimeMark . mode) delta
---   in case timeMark of 
---       (Left mark) -> f' mark delta  -- freq here does not make sense
-      
+holdingLabel:: Bool -> Rational -> Timer -> Text
+holdingLabel True mark timer = holdingLabelLooped mark (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
+holdingLabel False mark timer = holdingLabelUnlooped mark (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
 
---       (Right startMark) -> 
---         let countUp = elapsedCount - (timeToCount t startMark)
---             countForm = Prelude.map snd (form delta) -- [Rat]
---             looper = loopBool (loop delta) countForm countUp
---             countDown = multiTimerPercent 0 countForm looper
---         in countDown
+holdingLabelUnlooped:: Rational -> [Rational] -> [Text] -> Text
+holdingLabelUnlooped mark (x:xs) txs = if mark > (sum (x:xs)) then "*" else holdingLabel' mark scannedForm txs
+  where scannedForm = Prelude.scanl (+) x xs
 
--- calculateCount False delta elapsedCount t = -- False calculates concrete counts for the numeric interface
---   let timeMark = (extractTimeMark . mode) delta
---   in case timeMark of 
---       (Left mark) -> f' ((freq t) * mark) delta 
---       (Right startMark) -> 
---         let countUp = elapsedCount - (timeToCount t startMark)
---             countForm = Prelude.map snd (form delta) -- [Rat]
---             looper = loopBool' (loop delta) countForm countUp
---             countDown = multiTimer (loop delta) 0 countForm looper
---         in countDown 
+holdingLabelLooped:: Rational -> [Rational] -> [Text] -> Text
+holdingLabelLooped mark (x:xs) txs = holdingLabel' markC scannedForm txs
+  where markC = cycleForm mark (x:xs) 
+        scannedForm = Prelude.scanl (+) x xs 
 
---let countdownP = (\x y -> multiTimerPercent 0 x <$> y) <$> countDyn <*> countFromBEventLooped 
-
-
--- let countFromBEventLooped = loopBool <$> (loop <$> delta) <*> countDyn <*> countFromBEvent
-
-
-  --     beatAtPlayEv = timeToCount t <$> startTime
-  -- in (\bpe -> beat - bpe) <$> beatAtPlayEv
+holdingLabel':: Rational -> [Rational] -> [Text] -> Text
+holdingLabel' markC [] [] = "*"
+holdingLabel' markC (z:zs) (tx:txs) = if z > markC then tx 
+    else holdingLabel' markC zs txs
     
-calculateLabel:: Timer -> Rational -> Tempo -> Maybe Text
-calculateLabel delta beat t = Just "nada"
+calculateLabel:: Timer -> UTCTime -> Rational -> Tempo -> Text
+calculateLabel delta wBuildT elapsedCount t = 
+  let timeMark = (extractTimeMark . mode) delta
+  in case timeMark of -- right UTC (moment to start counting) and left Rational (mark where the count is paused)
+      (Left mark) -> holdingLabel (loop delta) mark delta
+      (Right startMark) -> 
+        let startMarkInSecs = diffUTCTime startMark wBuildT
+            countUp = elapsedCount - (realToFrac startMarkInSecs :: Rational)
+            countForm = Prelude.map snd (form delta) -- [Rat]
+            loopedCountUp = loopCountUp' (loop delta) countForm countUp
+            label = genLabel 0 (form delta) loopedCountUp
+        in label 
+---- genLabel:: Rational -> [(Text,Rational)] -> Rational -> T.Text
 
-----
-
-visualiseProgressBar:: MonadWidget t m => Dynamic t Timer -> W t m ()
-visualiseProgressBar delta = do
+visualiseProgressBarLabel:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseProgressBarLabel delta = do
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
   beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
   beat <- holdDyn 0 beatPosition
-  let count = (calculateCount True iDelta) <$> beat <*> currentTempo
-  let label = calculateLabel iDelta <$> beat <*> currentTempo
-  drawProgressBar count label
+  wBuildT <- liftIO getCurrentTime
+  let count = (calculateCount True iDelta wBuildT) <$> beat <*> currentTempo
+  let label = calculateLabel iDelta wBuildT <$> beat <*> currentTempo
+  drawProgressBarLabel count label
   pure ()
 
-
---data Mode = Falling' UTCTime | Halted | Holding' Rational deriving (Show,Ord,Eq,Generic)
-
-
-drawProgressBar:: MonadWidget t m => Dynamic t Rational -> Dynamic t (Maybe Text) -> W t m ()
-drawProgressBar countdown tag' = do
-  -- let countdown = fromMaybe 0 <$> countdown' 
-  -- countdown <- traceDynamicWith (\x -> "cd: " <> (show (realToFrac x :: Float))) $ countdown''
-  let tag = fromMaybe "" <$> tag'
-
+drawProgressBarLabel:: MonadWidget t m => Dynamic t Rational -> Dynamic t Text -> W t m ()
+drawProgressBarLabel countdown tag = do
   let class' = constDyn $ "class" =: "visualiser"
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
@@ -299,24 +342,65 @@ drawProgressBar countdown tag' = do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsDynRect $ return ()
   return ()
 
+visualiseProgressBar:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseProgressBar delta = do
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
+  beat <- holdDyn 0 beatPosition
+  wBuildT <- liftIO getCurrentTime
+  let count = (calculateCount True iDelta wBuildT) <$> beat <*> currentTempo
+  drawProgressBar count
+  pure ()
 
-visualiseSandClock:: MonadWidget t m => Dynamic t Timer -> W t m ()
-visualiseSandClock delta = do
+drawProgressBar:: MonadWidget t m => Dynamic t Rational -> W t m ()
+drawProgressBar countdown = do
+  let class' = constDyn $ "class" =: "visualiser"
+  let width = constDyn $ "width" =: "100%"
+  let height = constDyn $ "height" =: "100%"
+  let vB = constDyn $  "viewBox" =: "0 0 100 80"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let attrs = mconcat [class',width,height, vB, par]  -- svg
+  -- rect1
+  let x' = constDyn $ "x" =: "0"
+  let y' = constDyn $ "y" =: "12"
+  let width1 = constDyn $ "width" =: "100"
+  let height1 = constDyn $ "height" =: "30"
+  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
+  let attrsRect = mconcat [x',y',width1, height1, stroke] 
+  -- progress rect
+  let x'' = constDyn $ "x" =: "100"
+  let y'' = constDyn $ "y" =: "0"
+  let height2 = constDyn $ "height" =: "30"
+  let opacity = constDyn $ "opacity" =: "0.5"
+  let transform = constDyn $ "transform" =: "rotate(180,100,21)"
+  let fill = constDyn $ "fill" =: "var(--primary-color)"
+  let dynWidth = (\x -> "width" =: showt (realToFrac x :: Double)) <$> countdown
+  let attrsDynRect = mconcat [x'', y'', height2, opacity, transform, fill, dynWidth]
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsDynRect $ return ()
+  return ()
+
+----
+visualiseSandClockLabel:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseSandClockLabel delta = do
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
   beatPosition <- elapsedCounts -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
-  let count = (calculateCount True iDelta) <$> beat <*> currentTempo
-  let label = calculateLabel iDelta <$> beat <*> currentTempo
-  drawSandClock count label
+  wBuildT <- liftIO getCurrentTime
+  let count = (calculateCount True iDelta wBuildT) <$> beat <*> currentTempo
+  let label = calculateLabel iDelta wBuildT <$> beat <*> currentTempo
+  drawSandClockLabel count label
   pure ()
 
 
-drawSandClock :: MonadWidget t m => Dynamic t Rational -> Dynamic t (Maybe Text) -> W t m ()
-drawSandClock countdown tag' = do
+drawSandClockLabel :: MonadWidget t m => Dynamic t Rational -> Dynamic t Text -> W t m ()
+drawSandClockLabel countdown tag = do
   -- dynamic stuff
   -- let countdown = fromMaybe 0 <$> countdown' 
-  let tag = fromMaybe "" <$> tag'
 
   let yFall = countToFallY 50 0 <$> countdown
   let heightFall = countToFallH 50 <$> countdown
@@ -362,34 +446,86 @@ drawSandClock countdown tag' = do
       -- sand held
       elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
   return ()
+-------
+
+visualiseSandClock:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseSandClock delta = do
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  beatPosition <- elapsedCounts -- :: Event t Rational
+  beat <- holdDyn 0 beatPosition
+  wBuildT <- liftIO getCurrentTime
+  let count = (calculateCount True iDelta wBuildT) <$> beat <*> currentTempo
+  drawSandClock count
+  pure ()
 
 
-visualiseText:: MonadWidget t m => Dynamic t Timer -> W t m ()
-visualiseText delta = do
+drawSandClock :: MonadWidget t m => Dynamic t Rational -> W t m ()
+drawSandClock countdown = do
+
+  let yFall = countToFallY 50 0 <$> countdown
+  let heightFall = countToFallH 50 <$> countdown
+  let yHold = countToHoldY 0 100 <$> countdown
+  let heightHold = countToHoldH 0 <$> countdown
+
+  let class' = constDyn $ "class" =: "visualiser"
+  let width = constDyn $ "width" =: "100%"
+  let height = constDyn $ "height" =: "100%"
+  let vB = constDyn $  "viewBox" =: "0 0 100 100"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let attrs = mconcat [class',width,height, vB, par]
+  -- sand falling 
+  let x' = constDyn $ "x" =: "0"
+  let width' = constDyn $ "width" =: "100%"
+  let strokeFall = constDyn $ "fill" =: "var(--primary-color)"
+  let mask' = constDyn $ "mask" =: "url(#myMask)"
+  let attrsFall = mconcat [mask',class',strokeFall,x',yFall,width',heightFall]
+
+  -- sand holder
+  let widthHold = constDyn $ "width" =: "100%"
+  let fillHold = constDyn $ "fill" =: "var(--primary-color)"
+  let attrsHold = mconcat [mask',class',fillHold,x',yHold,widthHold,heightHold]
+
+  let transform = constDyn $ "transform" =: "scale(0.67) translate(27)"
+  let layerAttrs = mconcat [transform]
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    -- creatMask first
+    sandClockMask
+    -- sand Falling
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "g" layerAttrs $ do
+      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsFall $ return () 
+      -- sand held
+      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
+  return ()
+
+---------
+visualiseTextLabel:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseTextLabel delta = do
   liftIO $ putStrLn "visualiseTextBuilt"
   traceDynamic "delta" $ delta
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
+  wBuildT <- liftIO getCurrentTime
 
   -- funca para escoger tempo o segundos
 
   elapsedCountPos <- elapsedCounts -- :: Event t Rational
-  elapsedCount <- holdDyn 0 elapsedCountPos
+  elapsedCountDyn <- holdDyn 0 elapsedCountPos
 
 
-  let count' = (calculateCount False iDelta) <$> elapsedCount <*> currentTempo -- Dyn t Rat
+  let count' = (calculateCount False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo -- Dyn t Rat
   let count = fmap (\x -> showt (realToFrac (ceiling x) :: Double)) count'
 
-  let label = calculateLabel iDelta <$> elapsedCount <*> currentTempo
+  let label = (calculateLabel iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
   
-  drawText count label
+  drawTextLabel count label
   pure ()
 
 
-drawText :: MonadWidget t m => Dynamic t Text -> Dynamic t (Maybe Text) -> W t m ()
-drawText countdown tag' = do
+drawTextLabel :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> W t m ()
+drawTextLabel countdown tag = do
   -- let countdown = fromMaybe 0 <$> countdown' 
-  let tag = fromMaybe "" <$> tag'
 
   -- svg attrs
   let class' = constDyn $ "class" =: "visualiser code-font"
@@ -428,6 +564,103 @@ drawText countdown tag' = do
     return ()    
   return ()
 
+  ----------
+visualiseText:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseText delta = do
+  liftIO $ putStrLn "visualiseTextBuilt"
+  traceDynamic "delta" $ delta
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  wBuildT <- liftIO getCurrentTime
+  elapsedCountPos <- elapsedCounts -- :: Event t Rational
+  elapsedCountDyn <- holdDyn 0 elapsedCountPos
+  let count' = (calculateCount False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo -- Dyn t Rat
+  let count = fmap (\x -> showt (realToFrac (ceiling x) :: Double)) count'
+  drawText count
+  pure ()
+
+drawText :: MonadWidget t m => Dynamic t Text -> W t m ()
+drawText countdown = do
+  -- svg attrs
+  let class' = constDyn $ "class" =: "visualiser code-font"
+  let vB = constDyn $ "viewBox" =: "0 0 100 100"
+  let w' = constDyn $ "width" =: "100%"
+  let h' = constDyn $ "height" =: "100%"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
+  let attrs = mconcat [class',w',h',vB,par]
+  -- text attrs
+  -- let txAttrs = constDyn $ "" =: ""
+  -- tspans attrs
+  let txAnchor = constDyn $ "text-anchor" =: "middle"
+  let fill = constDyn $ "fill" =: "var(--primary-color)"
+  let x' = constDyn $ "x" =: "50"
+  -- tspan1 attrs
+  let y' = constDyn $ "y" =: "95"
+  -- tspan2 attrs
+  let font2 = constDyn $ "font-size" =: "2.8em"
+  let y'' = constDyn $ "y" =: "45"
+  let tspan2Attrs = mconcat [txAnchor,fill,x',y'',font2]
+
+  let txAttrs = mconcat [txAnchor,fill,x',y']
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
+      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "tspan" tspan2Attrs $ do
+        -- dynText $ fmap (\x -> showt (floor x)) countdown
+        dynText countdown
+        return ()
+      return ()
+    return ()    
+  return ()
+---------
+---------
+visualiseOnlyLabel:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseOnlyLabel delta = do
+  liftIO $ putStrLn "visualiseTextBuilt"
+  traceDynamic "delta" $ delta
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  wBuildT <- liftIO getCurrentTime
+  elapsedCountPos <- elapsedCounts -- :: Event t Rational
+  elapsedCountDyn <- holdDyn 0 elapsedCountPos
+  let label = (calculateLabel iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
+  
+  drawOnlyLabel label
+  pure ()
+
+drawOnlyLabel :: MonadWidget t m => Dynamic t Text -> W t m ()
+drawOnlyLabel tag = do
+  -- svg attrs
+  let class' = constDyn $ "class" =: "visualiser code-font"
+  let vB = constDyn $ "viewBox" =: "0 0 100 100"
+  let w' = constDyn $ "width" =: "100%"
+  let h' = constDyn $ "height" =: "100%"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
+  let attrs = mconcat [class',w',h',vB,par]
+  -- text attrs
+  -- let txAttrs = constDyn $ "" =: ""
+  -- tspans attrs
+  let txAnchor = constDyn $ "text-anchor" =: "middle"
+  let fill = constDyn $ "fill" =: "var(--primary-color)"
+  let x' = constDyn $ "x" =: "50"
+  -- tspan1 attrs
+  let font1 = constDyn $ "font-size" =: "3em" -- this should be dynamic
+  let y' = constDyn $ "y" =: "50"
+  let tspan1Attrs = mconcat [txAnchor,fill,x',y',font1]
+
+  let txAttrs = mconcat [txAnchor,fill,x',y']
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
+      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "tspan" tspan1Attrs $ do
+        dynText tag
+        return ()
+      return ()
+    return ()    
+  return ()
+
+
+
 --------- Helpers for interface
 flipFunc:: Bool -> Bool -- this is just not !!! -- instead of this we need a constant False in Display and viceversa
 flipFunc True = False
@@ -437,12 +670,22 @@ resetFunc:: UTCTime -> Timer -> Timer -- prelude func id: function that returns 
 resetFunc u timer = timer {mode = Falling' u}
 
 playPauseFunc:: UTCTime -> Timer -> Timer -- this needs to be Timer -> Timer ???
-playPauseFunc u x = funki (mode x) u x
+playPauseFunc u x = changeMode (mode x) u x
 
-funki:: Mode -> UTCTime -> Timer -> Timer -- 00000this u is the anchor from where start to count
-funki (Holding' c) u timer = timer {mode = Falling' (addUTCTime (realToFrac (0*(-1))) u )} -- aqui se necesita mas info!!
-funki (Falling' u) u' timer = timer {mode = Holding' $ realToFrac (diffUTCTime u' u)} 
-funki Halted u timer = timer {mode = Falling' u}
+
+--------- currently working here ------
+
+changeMode:: Mode -> UTCTime -> Timer -> Timer -- 00000this u is the anchor from where start to count
+changeMode (Holding' c) u timer = timer {mode = Falling' (addUTCTime (realToFrac (c*(-1))) u )} -- aqui se necesita mas info!!
+-- this pattern abpve needs: If (Holding mark) startUTC timer then: substract second mark to startTime. OJO: the mark is ALWAYS seconds!!!
+
+changeMode (Falling' u) u' timer = timer {mode = Holding' $ realToFrac (diffUTCTime u' u)} 
+-- pattern above needs: Whenever the count is paused, it Mode should be: Holding secMark
+
+changeMode Halted u timer = timer {mode = Falling' u}
+
+
+------------------------------------------
 
 visualiserFunc:: Timer -> Timer
 visualiserFunc timer = timer {n= (((n timer)+1)`mod`numberOfVis)} -- add the mod numberOfVis later
@@ -464,7 +707,7 @@ loopFunc timer
 
 -- this needs to change if other visualisers are inputed on the fly.
 numberOfVis:: Int
-numberOfVis = 3
+numberOfVis = 7
 
 
 ----- helpers for display
@@ -611,16 +854,16 @@ extractTimeMark Halted = Left $ realToFrac 0
 
 -- this generates only whole numbers (less precise, more economic??)
 -- needs to be changed to Maybes if wwe want to use it as the one below
-loopBool':: Bool -> [Rational] -> Rational -> Rational
-loopBool' True xs b = realToFrac (mod (floor b) $ floor $ sum xs) :: Rational
-loopBool' False _ b = b
+loopCountUp':: Bool -> [Rational] -> Rational -> Rational
+loopCountUp' True xs b = realToFrac (mod (floor b) $ floor $ sum xs) :: Rational
+loopCountUp' False _ b = b
 
 -- this generates all possible rationals (more expensive in terms of computation, more accurate??)
-loopBool:: Bool -> [Rational] -> Rational -> Rational
-loopBool True xs b = (unfloored - floored) * (sum xs)
+loopCountUp:: Bool -> [Rational] -> Rational -> Rational
+loopCountUp True xs b = (unfloored - floored) * (sum xs)
   where floored = realToFrac (floor (b /sum xs)) :: Rational
         unfloored = b / sum xs
-loopBool False _ b = b -- correct: 2,1,0,3,2,1,0,1,0 of [3,4,2] to: 3,2,1,4,3,2,1,2,1,0
+loopCountUp False _ b = b -- correct: 2,1,0,3,2,1,0,1,0 of [3,4,2] to: 3,2,1,4,3,2,1,2,1,0
 
 lock:: Mode -> Bool
 lock (Falling' _) = True
@@ -651,17 +894,11 @@ multiTimerPercent startPoint xs b
       where ts = Prelude.head $ Prelude.tail $ Prelude.scanl (+) startPoint xs 
             tsPercent = 100 *(ts - b) / (Prelude.head xs)
 
-multiTimer:: Bool -> Rational -> [Rational] -> Rational -> Rational -- Rational
-multiTimer loopState startPoint xs b
+multiTimer:: Rational -> [Rational] -> Rational -> Rational -- Rational
+multiTimer startPoint xs b
   | (xs==[]) = 0
-  | otherwise = if ts > b then ts - b else multiTimer loopState ts (Prelude.tail xs) b
+  | otherwise = if ts > b then ts - b else multiTimer ts (Prelude.tail xs) b
       where ts = Prelude.head $ Prelude.tail $ Prelude.scanl (+) startPoint xs 
-
-
-
--- here a funca is needed: a) add one to the coutndown, and anticipate the extra 0
-
-
 
 genLabel:: Rational -> [(Text,Rational)] -> Rational -> T.Text -- here cut if it is too long...
 genLabel startPoint x b 
