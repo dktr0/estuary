@@ -187,12 +187,28 @@ visualDisplay delta 6 = do
   visualiseOnlyLabel delta
   return ()
 
+-- think whether is better to pass UTC coming from the ticklossy rather than the Rational...
+---
+calculateCountSorC:: Measure -> Bool -> Timer -> UTCTime -> Rational -> Tempo -> Rational
+calculateCountSorC Cycles textOrGraph timer wBuildT elapsingCount t = 
+    calculateCount textOrGraph timer wBuildT elapsingBeat t
+    where elapsingBeat = timeToCount t $ addUTCTime (realToFrac elapsingCount) wBuildT
+calculateCountSorC Seconds textOrGraph timer wBuildT elapsingCount t = 
+    calculateCount textOrGraph timer wBuildT elapsingCount t
+---
+
 ----
 -- NOTE: holdingCalculation functions and multiTimer functions perform more or less the same purpose but multiTimer depends on external cycling functions. So the looping of the time has to be calculated independently while the holdingCalc functions deal with that internally (by using cycleForm). holdingCalc should be generalised to work also as fallingCalc. 
 
-holdingCalculation:: Bool -> Rational -> Timer -> Rational
-holdingCalculation True mark timer = holdingCalculationLooped mark $ Prelude.map snd (form timer)
-holdingCalculation False mark timer = holdingCalculationUnlooped mark $ Prelude.map snd (form timer)
+holdingCalculation:: Bool -> Rational -> Timer -> Tempo -> Rational
+holdingCalculation True mark timer t
+  | (measure timer) == Seconds = holdingCalculationLooped mark $ Prelude.map snd (form timer)
+  | otherwise = holdingCalculationLooped markAsBeat $ Prelude.map snd (form timer)
+    where markAsBeat = (freq t) * mark
+holdingCalculation False mark timer t
+  | (measure timer) == Seconds = holdingCalculationUnlooped mark $ Prelude.map snd (form timer)
+  | otherwise = holdingCalculationUnlooped markAsBeat $ Prelude.map snd (form timer)
+    where markAsBeat = (freq t) * mark
 
 holdingCalculationUnlooped:: Rational -> [Rational] -> Rational
 holdingCalculationUnlooped mark (x:xs) = if mark > (sum (x:xs)) then 0 else holdingCalculation' mark scannedForm
@@ -208,9 +224,15 @@ holdingCalculation' markC [] = 0
 holdingCalculation' markC (z:zs) = if z > markC then (z-markC) 
     else holdingCalculation' markC zs   
 
-holdingCalculationP:: Bool -> Rational -> Timer -> Rational
-holdingCalculationP True mark timer = holdingCalculationLoopedP mark $ Prelude.map snd (form timer)
-holdingCalculationP False mark timer = holdingCalculationUnloopedP mark $ Prelude.map snd (form timer)
+holdingCalculationP:: Bool -> Rational -> Timer -> Tempo -> Rational
+holdingCalculationP True mark timer t 
+  | (measure timer) == Seconds = holdingCalculationLoopedP mark $ Prelude.map snd (form timer)
+  | otherwise = holdingCalculationLoopedP markAsBeat $ Prelude.map snd (form timer)
+      where markAsBeat = (freq t) * mark
+holdingCalculationP False mark timer t 
+  | (measure timer) == Seconds = holdingCalculationUnloopedP mark $ Prelude.map snd (form timer)
+  | otherwise = holdingCalculationUnloopedP markAsBeat $ Prelude.map snd (form timer)
+      where markAsBeat = (freq t) * mark
 
 holdingCalculationUnloopedP:: Rational -> [Rational] -> Rational
 holdingCalculationUnloopedP mark (x:xs) = if mark > (sum (x:xs)) then 0 else holdingCalculationP' mark scannedForm (x:xs)
@@ -232,34 +254,57 @@ cycleForm mark form = dur * (tr (mark/dur))
     where dur = if (sum form == 0) then 1 else sum form
           tr n = n - (realToFrac (floor n) ::Rational)
 
+cyclesOrSecs:: Measure -> Rational -> Tempo -> Rational
+cyclesOrSecs Cycles n t = n / (freq t)
+cyclesOrSecs Seconds n t = n * (freq t)
+
 -- first bool is for calculating percentage (true) or count (false)
 calculateCount:: Bool -> Timer -> UTCTime -> Rational -> Tempo -> Rational
 calculateCount False delta wBuildT elapsingCount t = -- elapsed count is seconds
   let timeMark = (extractTimeMark . mode) delta
   in case timeMark of -- right UTC (moment to start counting) and left Rational (mark where the count is paused)
-      (Left mark) -> holdingCalculation (loop delta) mark delta
-      (Right startMark) -> 
-        let startMarkInSecs = diffUTCTime startMark wBuildT
-            countUp = elapsingCount - (realToFrac startMarkInSecs :: Rational)
+      (Left mark) -> holdingCalculation (loop delta) mark delta t
+      (Right startMark') -> 
+        let startMark = if (measure delta) == Seconds 
+                        then realToFrac (diffUTCTime startMark' wBuildT) :: Rational 
+                        else timeToCount t startMark'  
+            countUp = elapsingCount - startMark
             countForm = Prelude.map snd (form delta) -- [Rat]
             loopedCountUp = loopCountUp' (loop delta) countForm countUp
             countDown = multiTimer 0 countForm loopedCountUp
-        in countDown 
+        in countDown
 calculateCount True delta wBuildT elapsingCount t = -- elapsed count is seconds
   let timeMark = (extractTimeMark . mode) delta
   in case timeMark of -- right UTC (moment to start counting) and left Rational (mark where the count is paused)
-      (Left mark) -> holdingCalculationP (loop delta) mark delta
-      (Right startMark) -> 
-        let startMarkInSecs = diffUTCTime startMark wBuildT
-            countUp = elapsingCount - (realToFrac startMarkInSecs :: Rational)
+      (Left mark) -> holdingCalculationP (loop delta) mark delta t
+      (Right startMark') -> 
+        let startMark = if (measure delta) == Seconds 
+                        then realToFrac (diffUTCTime startMark' wBuildT) :: Rational 
+                        else timeToCount t startMark'  
+            countUp = elapsingCount - (realToFrac startMark :: Rational)
             countForm = Prelude.map snd (form delta) -- [Rat]
             loopedCountUp = loopCountUp (loop delta) countForm countUp
             countDown = multiTimerPercent 0 countForm loopedCountUp
         in countDown 
 
-holdingLabel:: Bool -> Rational -> Timer -> Text
-holdingLabel True mark timer = holdingLabelLooped mark (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
-holdingLabel False mark timer = holdingLabelUnlooped mark (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
+-- label stuff below
+calculateLabelSorC:: Measure -> Timer -> UTCTime -> Rational -> Tempo -> Text
+calculateLabelSorC Cycles timer wBuildT elapsingCount t = 
+    calculateLabel timer wBuildT elapsingBeat t
+    where elapsingBeat = timeToCount t $ addUTCTime (realToFrac elapsingCount) wBuildT
+calculateLabelSorC Seconds timer wBuildT elapsingCount t = 
+    calculateLabel timer wBuildT elapsingCount t
+
+
+holdingLabel:: Bool -> Rational -> Timer -> Tempo -> Text
+holdingLabel True mark timer t 
+  | (measure timer) == Seconds = holdingLabelLooped mark (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
+  | otherwise = holdingLabelLooped markAsBeat (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
+      where markAsBeat = (freq t) * mark
+holdingLabel False mark timer t 
+  | (measure timer) == Seconds = holdingLabelUnlooped mark (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
+  | otherwise = holdingLabelUnlooped markAsBeat (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
+    where markAsBeat = (freq t) * mark 
 
 holdingLabelUnlooped:: Rational -> [Rational] -> [Text] -> Text
 holdingLabelUnlooped mark (x:xs) txs = if mark > (sum (x:xs)) then "*" else holdingLabel' mark scannedForm txs
@@ -279,10 +324,12 @@ calculateLabel:: Timer -> UTCTime -> Rational -> Tempo -> Text
 calculateLabel delta wBuildT elapsedCount t = 
   let timeMark = (extractTimeMark . mode) delta
   in case timeMark of -- right UTC (moment to start counting) and left Rational (mark where the count is paused)
-      (Left mark) -> holdingLabel (loop delta) mark delta
-      (Right startMark) -> 
-        let startMarkInSecs = diffUTCTime startMark wBuildT
-            countUp = elapsedCount - (realToFrac startMarkInSecs :: Rational)
+      (Left mark) -> holdingLabel (loop delta) mark delta t
+      (Right startMark') -> 
+        let startMark = if (measure delta) == Seconds 
+                        then realToFrac (diffUTCTime startMark' wBuildT) :: Rational 
+                        else timeToCount t startMark'
+            countUp = elapsedCount - (realToFrac startMark :: Rational)
             countForm = Prelude.map snd (form delta) -- [Rat]
             loopedCountUp = loopCountUp' (loop delta) countForm countUp
             label = genLabel 0 (form delta) loopedCountUp
@@ -296,8 +343,8 @@ visualiseProgressBarLabel delta = do
   beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
   beat <- holdDyn 0 beatPosition
   wBuildT <- liftIO getCurrentTime
-  let count = (calculateCount True iDelta wBuildT) <$> beat <*> currentTempo
-  let label = calculateLabel iDelta wBuildT <$> beat <*> currentTempo
+  let count = (calculateCountSorC (measure iDelta) True iDelta wBuildT) <$> beat <*> currentTempo
+  let label = calculateLabelSorC (measure iDelta) iDelta wBuildT <$> beat <*> currentTempo
   drawProgressBarLabel count label
   pure ()
 
@@ -349,7 +396,7 @@ visualiseProgressBar delta = do
   beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
   beat <- holdDyn 0 beatPosition
   wBuildT <- liftIO getCurrentTime
-  let count = (calculateCount True iDelta wBuildT) <$> beat <*> currentTempo
+  let count = (calculateCountSorC (measure iDelta) True iDelta wBuildT) <$> beat <*> currentTempo
   drawProgressBar count
   pure ()
 
@@ -391,8 +438,8 @@ visualiseSandClockLabel delta = do
   beatPosition <- elapsedCounts -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
   wBuildT <- liftIO getCurrentTime
-  let count = (calculateCount True iDelta wBuildT) <$> beat <*> currentTempo
-  let label = calculateLabel iDelta wBuildT <$> beat <*> currentTempo
+  let count = (calculateCountSorC (measure iDelta) True iDelta wBuildT) <$> beat <*> currentTempo
+  let label = calculateLabelSorC (measure iDelta) iDelta wBuildT <$> beat <*> currentTempo
   drawSandClockLabel count label
   pure ()
 
@@ -455,7 +502,7 @@ visualiseSandClock delta = do
   beatPosition <- elapsedCounts -- :: Event t Rational
   beat <- holdDyn 0 beatPosition
   wBuildT <- liftIO getCurrentTime
-  let count = (calculateCount True iDelta wBuildT) <$> beat <*> currentTempo
+  let count = (calculateCountSorC (measure iDelta) True iDelta wBuildT) <$> beat <*> currentTempo
   drawSandClock count
   pure ()
 
@@ -514,10 +561,10 @@ visualiseTextLabel delta = do
   elapsedCountDyn <- holdDyn 0 elapsedCountPos
 
 
-  let count' = (calculateCount False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo -- Dyn t Rat
+  let count' = (calculateCountSorC (measure iDelta) False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo -- Dyn t Rat
   let count = fmap (\x -> showt (realToFrac (ceiling x) :: Double)) count'
 
-  let label = (calculateLabel iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
+  let label = (calculateLabelSorC (measure iDelta) iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
   
   drawTextLabel count label
   pure ()
@@ -567,14 +614,14 @@ drawTextLabel countdown tag = do
   ----------
 visualiseText:: MonadWidget t m => Dynamic t Timer -> W t m ()
 visualiseText delta = do
-  liftIO $ putStrLn "visualiseTextBuilt"
+  liftIO $ putStrLn "visualiseTextBuiltNoLabel"
   traceDynamic "delta" $ delta
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
   wBuildT <- liftIO getCurrentTime
   elapsedCountPos <- elapsedCounts -- :: Event t Rational
   elapsedCountDyn <- holdDyn 0 elapsedCountPos
-  let count' = (calculateCount False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo -- Dyn t Rat
+  let count' = (calculateCountSorC (measure iDelta) False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
   let count = fmap (\x -> showt (realToFrac (ceiling x) :: Double)) count'
   drawText count
   pure ()
@@ -623,7 +670,7 @@ visualiseOnlyLabel delta = do
   wBuildT <- liftIO getCurrentTime
   elapsedCountPos <- elapsedCounts -- :: Event t Rational
   elapsedCountDyn <- holdDyn 0 elapsedCountPos
-  let label = (calculateLabel iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
+  let label = (calculateLabelSorC (measure iDelta) iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
   
   drawOnlyLabel label
   pure ()
@@ -790,7 +837,6 @@ elapsedCounts = do
   widgetBuildTime <- liftIO getCurrentTime
   tick <- tickLossy 0.1 widgetBuildTime
   pure $ fmap realToFrac $ fmap (\x -> diffUTCTime x widgetBuildTime) $ fmap _tickInfo_lastUTC tick
-
 
 ------- Helpers for engine
 
