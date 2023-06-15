@@ -520,7 +520,8 @@ drawSandClock countdown = do
   let height = constDyn $ "height" =: "100%"
   let vB = constDyn $  "viewBox" =: "0 0 100 100"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
-  let attrs = mconcat [class',width,height, vB, par]
+  let style = constDyn $ "style" =: ("height: auto; color: white; z-index: 0")
+  let attrs = mconcat [class',width,height, style, vB, par]
   -- sand falling 
   let x' = constDyn $ "x" =: "0"
   let width' = constDyn $ "width" =: "100%"
@@ -529,6 +530,7 @@ drawSandClock countdown = do
   let attrsFall = mconcat [mask',class',strokeFall,x',yFall,width',heightFall]
 
   -- sand holder
+  let x' = constDyn $ "x" =: "0"
   let widthHold = constDyn $ "width" =: "100%"
   let fillHold = constDyn $ "fill" =: "var(--primary-color)"
   let attrsHold = mconcat [mask',class',fillHold,x',yHold,widthHold,heightHold]
@@ -562,7 +564,8 @@ visualiseTextLabel delta = do
 
 
   let count' = (calculateCountSorC (measure iDelta) False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo -- Dyn t Rat
-  let count = fmap (\x -> showt (realToFrac (ceiling x) :: Double)) count'
+  let count = formatTextDisplay (measure iDelta) <$> count'
+
 
   let label = (calculateLabelSorC (measure iDelta) iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
   
@@ -622,7 +625,7 @@ visualiseText delta = do
   elapsedCountPos <- elapsedCounts -- :: Event t Rational
   elapsedCountDyn <- holdDyn 0 elapsedCountPos
   let count' = (calculateCountSorC (measure iDelta) False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
-  let count = fmap (\x -> showt (realToFrac (ceiling x) :: Double)) count'
+  let count = formatTextDisplay (measure iDelta) <$> count'
   drawText count
   pure ()
 
@@ -677,6 +680,9 @@ visualiseOnlyLabel delta = do
 
 drawOnlyLabel :: MonadWidget t m => Dynamic t Text -> W t m ()
 drawOnlyLabel tag = do
+  -- scale tag
+  let fontScaled = (fontSize . T.length) <$> tag
+  
   -- svg attrs
   let class' = constDyn $ "class" =: "visualiser code-font"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
@@ -691,7 +697,7 @@ drawOnlyLabel tag = do
   let fill = constDyn $ "fill" =: "var(--primary-color)"
   let x' = constDyn $ "x" =: "50"
   -- tspan1 attrs
-  let font1 = constDyn $ "font-size" =: "3em" -- this should be dynamic
+  let font1 = fontScaled
   let y' = constDyn $ "y" =: "50"
   let tspan1Attrs = mconcat [txAnchor,fill,x',y',font1]
 
@@ -752,7 +758,7 @@ loopFunc timer
   | (loop timer) == True = timer {loop= False}
   | (loop timer) == False = timer {loop= True}
 
--- this needs to change if other visualisers are inputed on the fly.
+-- this needs to change if other visualisers are added (either on the fly or permanently to estuary).
 numberOfVis:: Int
 numberOfVis = 7
 
@@ -761,11 +767,11 @@ numberOfVis = 7
 
 fontSize:: Int -> Map Text Text -- this is not attach to anything yet... follow throu...
 fontSize len 
-    | len <= 12 = "font-size" =: "1em"
-    | len <= 18 = "font-size" =: "0.75em"
-    | len <= 24 = "font-size" =: "0.5em"
-    | len <= 30 = "font-size" =: "0.25em"
-    | otherwise = "font-size" =: "0.125em"
+    | len <= 8 = "font-size" =: "3em"
+    | len <= 12 = "font-size" =: "2.0em"
+    | len <= 20 = "font-size" =: "1.5em"
+    | len <= 30 = "font-size" =: "1em"
+    | otherwise = "font-size" =: "0.5em"
 
 countToFallY:: Rational -> Rational -> Rational -> Map Text Text
 countToFallY defH defY percent = 
@@ -847,56 +853,6 @@ extractTimeMark (Holding' mark) = Left mark
 extractTimeMark Halted = Left $ realToFrac 0
 
 
--- part of engine display
-  -- timeOfFall <- performEvent $ fmap (liftIO . generateStartTime) $ updated $ mode <$> delta
-  -- let startTime = fmap extractStartTime $ timeOfFall -- Dynamic t (Maybe UTC)
-  -- let startTimeInBeats = attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ startTime -- Event t (Maybe Rational)
-  -- beatAtPlayEvent <- holdDyn (Just 0) $ traceEventWith (\x -> "fall " <> (show (fmap (\x -> realToFrac x :: Float) x))) $ startTimeInBeats -- Dyn t (Maybe Rational)
-  -- let countFromBEvent' = (\b lb -> fmap (b-) lb) <$> beat <*> beatAtPlayEvent 
-  -- countFromBEvent <- traceDynamicWith (\x -> "count " <> (show (fmap (\x -> realToFrac x :: Float) x))) countFromBEvent'
-  -- return (countFromBEvent, constDyn $ Just "nada" )
-
-
--- engineDisplays:: MonadWidget t m => Dynamic t Rational -> Dynamic t Tempo -> Dynamic t Timer -> W t m (Dynamic t (Maybe Rational), Dynamic t (Maybe Text))
--- engineDisplays beat tempo delta = mdo
---   tempDiv <- divClass "temporaryDiv" $ do
--- --    traceDynamic "delta" delta
---     -- get the tick from inside the widget
---     let textos = constDyn "intro = 2, the lovely repetition = 3, outro = 1"
---     (valTxBx,_) <- textWithLockWidget 2 (constDyn False) textos -- Dyn t Text
---   --  boton <- button "test" -- Event ()
---     let startTime = fmap extractStartTime (mode <$> delta) -- Dynamic t (Maybe UTC)
---     let startTimeInBeats = attachWith (\t startT -> timeToCount t <$> startT) (current tempo) $ updated startTime -- Event t (Maybe Rational)
---     let beatAtPlayEvent = startTimeInBeats -- attachWith (\b stb -> fmap (b -) stb) (current beat) startTimeInBeats
-
--- --    let beatAtBEvent = tag (current $ beat) boton -- Event t Rational
-
---     lastBEventDyn <- holdDyn (Just 0) $ leftmost [beatAtPlayEvent] -- Dynamic t Rational
-
---     let txPressed = tag (current $ valTxBx) beatAtPlayEvent
---     targetDyn <- holdDyn [] $ fmap parseForm txPressed -- Dyn t [(Text,Rational)]
---     let countDyn = fmap (\x -> snd x) <$> targetDyn -- Dyn t [Rational]
-
--- --    countDyn' <- traceDynamic "countDyn" $ countDyn
-
-
---     let countFromBEvent = (\b lb -> fmap (b-) lb) <$> beat <*> lastBEventDyn
-
---     countFromBEvent' <- traceDynamicWith (\x -> "substract startBeat to beat: " <> (show $ fmap (\x -> realToFrac x :: Float) x)) countFromBEvent
-
-
---     let countFromBEventLooped = loopBool <$> (loop <$> delta) <*> countDyn <*> countFromBEvent
-
---     -- let inSecsBeat = countToTime <$> tempo <*> beat
---     -- let inSecsLastBEventDyn = countToTime <$> tempo <*> lastBEventDyn
-
--- --    let countdown = multiTimer 0 <$> countDyn <*> countFromBEventLooped
---     let countdownP = (\x y -> multiTimerPercent 0 x <$> y) <$> countDyn <*> countFromBEventLooped 
---     let label = (\x y -> genLabel 0 x <$> y) <$> targetDyn <*> countFromBEventLooped
-
---  --   let countFromBEventInSecs = diffUTCTime <$> inSecsBeat <*> inSecsLastBEventDyn
---     return (countdownP,label)
---   return tempDiv
 
 -- this generates only whole numbers (less precise, more economic??)
 -- needs to be changed to Maybes if wwe want to use it as the one below
@@ -953,12 +909,14 @@ genLabel startPoint x b
       let ts = Prelude.tail $ Prelude.scanl (+) startPoint $ Prelude.map snd x 
       in if (Prelude.head ts) > b then Prelude.fst $ Prelude.head x else genLabel (Prelude.head ts) (Prelude.tail x) b
 
-diffTimeToText :: NominalDiffTime -> Text
-diffTimeToText x = showt (floor x `div` 60 :: Int) <> ":" <> (add0Mod x)
 
-add0Mod:: NominalDiffTime -> Text
+formatTextDisplay :: Measure ->  Rational -> Text
+formatTextDisplay Seconds x = showt (ceiling x `div` 60 :: Int) <> ":" <> (add0Mod x)
+formatTextDisplay Cycles x = showt (realToFrac (ceiling x) :: Double)
+
+add0Mod:: Rational -> Text
 add0Mod x = if modulo < 10 then ("0" <> (showt modulo)) else showt modulo 
-  where modulo = (floor x) `mod` (60 :: Int)
+  where modulo = (ceiling x) `mod` (60 :: Int)
 
 -- icons 
 iconDisplay:: MonadWidget t m => Dynamic t Timer -> W t m ()
