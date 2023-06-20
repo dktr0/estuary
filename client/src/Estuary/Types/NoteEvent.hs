@@ -6,7 +6,7 @@ import Data.Time
 import Data.Map
 import Data.Text
 import Data.Text.Encoding
-import Sound.OSC.Datum
+import Sound.Osc.Datum
 import JavaScript.Object
 import GHCJS.Types
 import GHCJS.Marshal.Pure
@@ -18,7 +18,7 @@ type NoteEvent = (UTCTime, Map Text Datum)
 datumToJSVal :: Datum -> JSVal
 datumToJSVal (Int32 x) = pToJSVal x
 datumToJSVal (Double x) = pToJSVal x
-datumToJSVal (ASCII_String x) = pToJSVal $ decodeUtf8 x
+datumToJSVal (AsciiString x) = pToJSVal $ decodeUtf8 x
 datumToJSVal _ = nullRef
 
 datumToInteger :: Datum -> Maybe Integer
@@ -36,7 +36,7 @@ valueToJSVal (Tidal.VB x) = pToJSVal (if x then pToJSVal (1::Int) else pToJSVal 
 valueToJSVal _ = nullRef
 
 valueToDatum :: Tidal.Value -> Datum
-valueToDatum (Tidal.VS x) = ASCII_String $ encodeUtf8 $ pack x
+valueToDatum (Tidal.VS x) = AsciiString $ encodeUtf8 $ pack x
 valueToDatum (Tidal.VF x) = Double x
 valueToDatum (Tidal.VN x) = Double (Tidal.unNote x)
 valueToDatum (Tidal.VR x) = Double (realToFrac x)

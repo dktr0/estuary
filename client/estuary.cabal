@@ -38,9 +38,11 @@ library
       Estuary.Languages.Hydra.Test
       Estuary.Languages.Hydra.Types
       Estuary.Languages.JSoLang
+      Estuary.Languages.ExoLang
       Estuary.Languages.TidalParsers
       Estuary.Render.DynamicsMode
       Estuary.Render.MainBus
+      Estuary.Render.RenderEnvironment
       Estuary.Render.R
       Estuary.Render.Renderer
       Estuary.Render.SuperDirt
@@ -67,6 +69,7 @@ library
       Estuary.Types.Tutorial
       Estuary.Types.View.Parser
       Estuary.Types.View.Presets
+      Estuary.Types.JSException
       Estuary.Widgets.AboutEstuary
       Estuary.Widgets.Announcements
       Estuary.Widgets.AudioMap
@@ -80,7 +83,7 @@ library
       Estuary.Widgets.Footer
       Estuary.Widgets.GeneralPattern
       Estuary.Widgets.Header
-      Estuary.Widgets.MultilingualEditor      
+      Estuary.Widgets.MultilingualEditor
       Estuary.Widgets.Navigation
       Estuary.Widgets.Notepad
       Estuary.Widgets.Reference
@@ -101,6 +104,8 @@ library
       Estuary.Widgets.ViewEditor
       Estuary.Widgets.W
       Estuary.Widgets.WebSocket
+      Estuary.Widgets.ExoWidget
+      Estuary.Types.AsyncValue
   other-modules:
       Paths_estuary
   hs-source-dirs:
@@ -146,6 +151,8 @@ library
     , transformers
     , tuple
     , witherable
+    , ghcjs-promise
+    , async
   default-language: Haskell2010
 
 executable Estuary
@@ -196,6 +203,7 @@ executable Estuary
     , transformers
     , tuple
     , witherable
+    , ghcjs-promise
   if flag(build-test-executables)
     buildable: False
   else

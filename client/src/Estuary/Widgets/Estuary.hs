@@ -2,19 +2,17 @@
 
 module Estuary.Widgets.Estuary where
 
-import Control.Monad (liftM)
-
+import Control.Monad (liftM,when)
 import Reflex hiding (Request,Response)
 import Reflex.Dom hiding (Request,Response,append,Error)
 import Reflex.Dom.Old
 import Reflex.Dynamic
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO,liftIO)
 import Control.Monad.Fix (MonadFix)
 import Data.Time
 import Data.Map
 import Data.Maybe
 import Text.Read
-import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
 import GHCJS.Types
 import GHCJS.DOM.Types hiding (Event,Request,Response,Text)
@@ -62,10 +60,12 @@ import Estuary.Types.ResourceType
 import Estuary.Types.ResourceOp
 import Estuary.Widgets.W as W
 import Estuary.Render.R as R
+import Estuary.Render.RenderEnvironment as R
 import Estuary.Render.MainBus
 import Estuary.Client.Settings as Settings
 import Estuary.Types.LogEntry
 import Estuary.Render.RenderOp as RenderOp
+
 
 keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> m ()
 keyboardHintsCatcher rEnv settings = mdo
@@ -117,7 +117,7 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
 
   rInfo <- pollRenderInfo rEnv
   resourceMaps <- dynamicResourceMaps rEnv
-  ensembleC <- maintainEnsembleC (resources rEnv) allRequests responseDown
+  ensembleC <- maintainEnsembleC (resources rEnv) hints allRequests responseDown
   ensList <- maintainEnsembleList responseDown
   resError <- maintainResponseError responseDown
   log <- maintainLog hints responseDown
@@ -138,14 +138,15 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   ((responseDown,sInfo),localHints) <- runW wEnv $ do
     (responseDown,sInfo) <- estuaryWebSocket requestsToSend
     keyboardHintsW keyboardShortcut
-    header
-    divClass "page ui-font" $ do
-      navigation
-      sv <- W.sideBarVisible
-      hideableWidget sv "sidebar" sidebarWidget
-    tv <- W.terminalVisible
-    hideableWidget' tv $ terminalWidget
-    footer
+    when (not $ noui iSettings) $ do
+      header
+      divClass "page ui-font" $ do
+        navigation
+        sv <- W.sideBarVisible
+        hideableWidget sv "sidebar" sidebarWidget
+      tv <- W.terminalVisible
+      hideableWidget' tv $ terminalWidget
+      footer
     return (responseDown,sInfo)
 
   let localRequests = fmap hintsToRequests localHints
@@ -213,13 +214,14 @@ localLogsFromHints hs = do
   pure $ fmap g txts
 
 
-maintainEnsembleC :: MonadWidget t m => Resources -> Event t [Request] -> Event t Response -> m (Dynamic t EnsembleC)
-maintainEnsembleC res requests response = mdo
+maintainEnsembleC :: MonadWidget t m => Resources -> Event t [Hint] -> Event t [Request] -> Event t Response -> m (Dynamic t EnsembleC)
+maintainEnsembleC res hints requests response = mdo
   now <- liftIO $ getCurrentTime
   let initialEnsembleC = emptyEnsembleC now
   let requestChange = fmap (requestsToEnsembleC res) requests -- :: Event t (EnsembleC -> m EnsembleC)
   let responseChange = fmap responseToEnsembleC response -- :: Event t (EnsembleC -> m EnsembleC)
-  let allChange = mergeWith (\x y ensC -> x ensC >>= y) [requestChange,responseChange]
+  let hintChange = fmap hintsToEnsembleC hints -- :: Event t (EnsembleC -> m EnsembleC)
+  let allChange = mergeWith (\x y ensC -> x ensC >>= y) [hintChange,requestChange,responseChange]
   updatedEnsembleC <- performEvent $ attachWith (&) (current r) allChange
   r <- holdDyn initialEnsembleC updatedEnsembleC
   pure r

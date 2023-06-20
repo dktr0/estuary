@@ -39,10 +39,14 @@ import Estuary.Types.Language
 import Estuary.Types.View.Parser
 import Estuary.Types.ResourceOp
 import Estuary.Types.ResourceType
+import Estuary.Types.LogEntry
+import Estuary.Render.RenderEnvironment
 
 terminalWidget :: MonadWidget t m => W t m ()
 terminalWidget = divClass "terminal code-font" $ mdo
   divClass "chat" $ mdo
+
+    -- take input
     inputWidget <- divClass "terminalHeader code-font primary-color" $ do
       divClass "webSocketButtons" $ term Term.TerminalChat >>= dynText
       let attrs = constDyn $ Map.fromList [("class","primary-color code-font"),("style","width: 100%")]
@@ -54,16 +58,14 @@ terminalWidget = divClass "terminal code-font" $ mdo
     let errorMsg = fmapMaybe (either (Just . ("Error: " <>) . T.pack . show) (const Nothing)) maybeCommand
     hint $ fmap logText errorMsg
 
-    {-
-    TODO: refactor so that log entries are maintained as part of widget environment instead
-    -- parse responses from server in order to display log/chat messages
-    let responseMsgs = fmap (\x -> fmap english (Data.Maybe.mapMaybe responseToMessage x)) deltasDown -- [Event t Text]
-    let messages = mergeWith (++)  [responseMsgs, errorMsgs, hintMsgs]
-    mostRecent <- foldDyn (\a b -> Prelude.take 12 $ (Prelude.reverse a) ++ b) [] messages
-    divClass "chatMessageContainer" $ simpleList mostRecent $ \v -> do
-      v' <- dynTranslatableText v -- W t m (Dynamic t Text)
-      divClass "chatMessage code-font primary-color" $ dynText v' -- m()
-    -}
+    -- display log
+    lang <- W.language
+    logEntries <- W.log
+    let mostRecent = fmap (Prelude.take 50) logEntries
+    let entriesAsText = showtLogEntries <$> lang <*> mostRecent
+    divClass "chatMessageContainer" $ simpleList entriesAsText $ \v -> do
+      divClass "chatMessage code-font primary-color" $ dynText v
+
 
     rEnv <- renderEnvironment
     ensC <- lift $ asks _ensembleC
@@ -71,6 +73,9 @@ terminalWidget = divClass "terminal code-font" $ mdo
 
   divClass "ensembleStatus" $ ensembleStatusWidget
 
+
+showtLogEntries :: Language -> [LogEntry] -> [Text]
+showtLogEntries l xs = fmap (showtLogEntry l) xs
 
 runCommand :: MonadIO m => RenderEnvironment -> EnsembleC -> Terminal.Command -> m [Hint]
 
@@ -89,7 +94,7 @@ runCommand _ e (Terminal.PresetView x) = case lookupView x (ensemble e) of
   Just _ -> pure [
     PresetView x,
     LocalLog $ (Map.fromList [
-      (English,  "preset view " <> x <> " selected"),
+      (English, "preset view " <> x <> " selected"),
       (Español, "vista predeterminada " <> x <> " seleccionada")
       ])
     ]
@@ -245,3 +250,6 @@ runCommand rEnv _ (Terminal.SetSerialPort n) = do
 runCommand rEnv _ Terminal.NoSerialPort = do
   liftIO $ WebSerial.setNoActivePort (webSerial rEnv)
   pure [ logText "serial port disactivated" ]
+
+-- set custom CSS theme
+runCommand _ _ (Terminal.Theme x) = pure [ ChangeSettings $ \s -> s { Settings.theme = x } ]

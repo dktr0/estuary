@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Types.RenderState where
 
 import Data.Time.Clock
@@ -26,6 +28,7 @@ import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
+import Estuary.Languages.ExoLang
 
 newtype LocoMotion = LocoMotion JSVal
 
@@ -68,13 +71,16 @@ data RenderState = RenderState {
   tempoCache :: Tempo,
   jsoLangs :: Map.Map Text JSoLang,
   valueMap :: Tidal.ValueMap,
-  locoMotion :: Maybe JSVal
+  locoMotion :: ExoLang,
+  exoLangTest :: ExoLang
   }
 
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 hCanvas glCtx
+  lm <- exoLang lCanvas "https://dktr0.github.io/LocoMotion/src/webpack-module.js"
+  elt <- exoLang lCanvas "./exolang.js"
   return $ RenderState {
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
@@ -110,5 +116,6 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     tempoCache = Tempo { freq = 0.5, time = t0System, count = 0 },
     jsoLangs = Map.empty,
     valueMap = Map.empty,
-    locoMotion = Nothing
+    locoMotion = lm,
+    exoLangTest = elt
   }

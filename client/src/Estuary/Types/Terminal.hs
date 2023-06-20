@@ -53,7 +53,8 @@ data Command =
   AudioOutputs | -- query current number of output audio channels
   ListSerialPorts | -- query available WebSerial ports
   SetSerialPort Int | -- select a WebSerial port by index, and activate WebSerial output
-  NoSerialPort -- disactivate WebSerial output
+  NoSerialPort | -- disactivate WebSerial output
+  Theme Text -- URL to a custom stylesheet (aka "theme"), empty text = revert to theme setting
   deriving (Show,Eq)
 
 parseCommand :: T.Text -> Either (Span, Text) Command
@@ -99,6 +100,7 @@ terminalCommand =
   <|> showCCParser
   <|> audioOutputsEtcParsers
   <|> serialPortsParsers
+  <|> themeParser
   <|> commandErrors
 
 commandErrors :: H Command
@@ -221,6 +223,10 @@ serialPortsParsers =
   ((SetSerialPort <$ reserved "setSerialPort") <*> int) <|>
   (reserved "setSerialPort" >> fatal "Missing argument. !setSerialPort expects an Int argument.")
 
+themeParser :: H Command
+themeParser =
+  ((Theme <$ reserved "theme") <*> textLiteral) <|>
+  (reserved "theme" >> fatal "Missing argument. !theme expects a text literal argument (in quotation marks)")
 
 -- select a presetview
 presetView :: H Command

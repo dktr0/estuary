@@ -23,6 +23,15 @@ data Hint =
   PresetView Text |
   SetCC Int Double -- TODO: above W tree, SetCC hint needs to become IO operation with RenderEnvironment
 
+instance Show Hint where
+  show (PreloadAudioBank x) = "(PreloadAudioBank " ++ show x ++ ")"
+  show (LocalLog x) = "(LocalLog " ++ show x ++ ")"
+  show (ChangeSettings f) = "ChangeSettings"
+  show (Request x) = "(Request " ++ show x ++ ")"
+  show (LocalView x) = "(LocalView " ++ show x ++ ")"
+  show (PresetView x) = "(PresetView " ++ show x ++ ")"
+  show (SetCC n x) = "(SetCC " ++ show n ++ " " ++ show x ++ ")"
+
 logText :: Text -> Hint
 logText = LocalLog . noLanguage
 
