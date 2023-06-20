@@ -30,15 +30,6 @@ import Estuary.Widgets.W
 import Estuary.Types.Definition
 
 
--- data Timer = Timer {
---   n:: Int,
---   form:: [(Text,Rational)],
---   mode:: Mode,
---   loop:: Bool,
---   measure:: Measure
--- } deriving (Show,Eq,Ord,Generic)
-
-
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
   -- liftIO $ putStrLn "timerWidget"
@@ -76,12 +67,8 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
             return valTxBx -- Dynamic t Text
           boton <- clickableDiv "flex-item-col" blank 
           let txPressed = tag (current $ txVal) boton -- Event t Text
-          -- let parsed = parseForm <$> txPressed -- Event t [(Text,Rat)]
           return $ parseForm <$> txPressed -- Event t [(Text,Rat)]
-          -- attachWith :: Reflex t => (a -> b -> c) -> Behavior t a -> Event t b -> Event t c
-        
         let textInputEvent = textInputFunc <$> txInputArea -- Event t (Form -> Timer -> Timer)
-
         loopItem <- clickableDiv "flex-item-row" blank
         let loopEvent = loopFunc <$ (loopItem)
         return $ leftmost [loopEvent,textInputEvent] -- Event t (Timer -> Timer)
@@ -95,9 +82,13 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
 
     let flippy = id <$  (tag (constant ()) $ snd sndRowWrap)
     let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [fstRowWrap, fst sndRowWrap, flippy] 
-    let flipper = fmap (\x -> x False) $ snd sndRowWrap -- this shopuld be only a Bool no need for flipFunc
+    let flipper = fmap (\x -> x False) $ snd sndRowWrap 
     return (polyptychEvent, flipper) -- (Timer, Bool) -- return of topRowContainer
   return topContainer -- final return
+
+
+
+-- there is a need to display information at some clicks from users, specially important: "reset" should be displayed every time someone pushes reset and "playing"/"paused" when someone pushes this div
 
 timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 timerDisplay delta = divClass "timer-Visualiser" $ mdo
@@ -106,9 +97,10 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
   let local = fst topContainer
   mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
   timerChangeDisplay mergedLocalDelta
-  
-  divClass "icon" $ do
-    pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip icon
+
+-- flip icon might be useful at some point  
+  -- divClass "icon" $ do
+  --   pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip icon
 
   topContainer <- divClass "flex-container-col" $ do
     fstRowWrap <- divClass "flex-item-col" $ do
@@ -123,38 +115,25 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
         return $ leftmost [resetEvent,playPauseEvent]
     sndRowWrap <- divClass "flex-item-col" $ do 
       divClass "flex-container-row" $ do
-                ------ ************** -------
         flipItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
         let flipEvent = flipFunc <$ flipItem
-
-        -- ** --
-
         visualisationItem <- clickableDiv "flex-item-row" blank
         let visualisationEvent = visualiserFunc <$ visualisationItem
-        return (visualisationEvent, flipEvent) -- open path for playPause
-      
+        return (visualisationEvent, flipEvent) -- open path for playPause      
     let flippy = id <$  (tag (constant ()) $ snd sndRowWrap)
     let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [fstRowWrap, fst sndRowWrap, flippy] -- mergeWith is the proper one to use, also here you can use attachWith reverse application &!!!
-    let flipper = fmap (\x -> x $ True) $ snd sndRowWrap  -- this true???
+    let flipper = fmap (\x -> x $ True) $ snd sndRowWrap 
     return (polyptychEvent, flipper)
   return topContainer
 
-
--- here something about holding onto the proper display...... :/
--- need to get a dynamic that represents a flip. Meaning that flip produces a new representation of the timer always..... fun times....
 timerChangeDisplay:: MonadWidget t m => Dynamic t Timer -> W t m ()
 timerChangeDisplay timer = do 
 --  liftIO $ putStrLn "timerChangeDisplay"
   --timer' <- traceDynamic "timer'" timer
   defTimer <- sample $ current timer
-  -- liftIO $ putStrLn $ show defMode
   let defN = n defTimer
   dynN <- holdDyn 0 $ updated $  n <$> timer
   let nEv = updated $ n <$> timer
-  -- visualDisplay beat t timer' <$> dynN
-  -- visualDisplay beat t timer' 2
-  --text "adio"
-  -- widgetHold_ (text "default") $ testy timer <$> nEv
   widgetHold (visualDisplay timer defN) $ visualDisplay timer <$> nEv
   pure ()
 
@@ -188,7 +167,6 @@ visualDisplay delta 6 = do
   return ()
 
 -- think whether is better to pass UTC coming from the ticklossy rather than the Rational...
----
 calculateCountSorC:: Measure -> Bool -> Timer -> UTCTime -> Rational -> Tempo -> Rational
 calculateCountSorC Cycles textOrGraph timer wBuildT elapsingCount t = 
     calculateCount textOrGraph timer wBuildT elapsingBeat t
@@ -275,7 +253,7 @@ calculateCount False delta wBuildT elapsingCount t = -- elapsed count is seconds
         in countDown
 calculateCount True delta wBuildT elapsingCount t = -- elapsed count is seconds
   let timeMark = (extractTimeMark . mode) delta
-  in case timeMark of -- right UTC (moment to start counting) and left Rational (mark where the count is paused)
+  in case timeMark of
       (Left mark) -> holdingCalculationP (loop delta) mark delta t
       (Right startMark') -> 
         let startMark = if (measure delta) == Seconds 
@@ -454,6 +432,8 @@ drawSandClockLabel countdown tag = do
   let yHold = countToHoldY 0 100 <$> countdown
   let heightHold = countToHoldH 0 <$> countdown
 
+  -- let class' = constDyn $ "class" =: "visualiser"
+
   let class' = constDyn $ "class" =: "visualiser"
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
@@ -465,12 +445,12 @@ drawSandClockLabel countdown tag = do
   let width' = constDyn $ "width" =: "100%"
   let strokeFall = constDyn $ "fill" =: "var(--primary-color)"
   let mask' = constDyn $ "mask" =: "url(#myMask)"
-  let attrsFall = mconcat [mask',class',strokeFall,x',yFall,width',heightFall]
+  let attrsFall = mconcat [mask',strokeFall,x',yFall,width',heightFall]
 
   -- sand holder
   let widthHold = constDyn $ "width" =: "100%"
   let fillHold = constDyn $ "fill" =: "var(--primary-color)"
-  let attrsHold = mconcat [mask',class',fillHold,x',yHold,widthHold,heightHold]
+  let attrsHold = mconcat [mask',fillHold,x',yHold,widthHold,heightHold]
 
   let xtx = constDyn $ "x" =: "50%"
   let ytx = constDyn $ "y" =: "95"
@@ -515,25 +495,26 @@ drawSandClock countdown = do
   let yHold = countToHoldY 0 100 <$> countdown
   let heightHold = countToHoldH 0 <$> countdown
 
+  -- let class' = constDyn $ "class" =: "visualiser"
   let class' = constDyn $ "class" =: "visualiser"
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
   let vB = constDyn $  "viewBox" =: "0 0 100 100"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
-  let style = constDyn $ "style" =: ("height: auto; color: white; z-index: 0")
-  let attrs = mconcat [class',width,height, style, vB, par]
+  -- let style = constDyn $ "style" =: ("height: auto; color: white; z-index: 0")
+  let attrs = mconcat [class',width,height, vB, par]
   -- sand falling 
   let x' = constDyn $ "x" =: "0"
   let width' = constDyn $ "width" =: "100%"
   let strokeFall = constDyn $ "fill" =: "var(--primary-color)"
   let mask' = constDyn $ "mask" =: "url(#myMask)"
-  let attrsFall = mconcat [mask',class',strokeFall,x',yFall,width',heightFall]
+  let attrsFall = mconcat [mask',strokeFall,x',yFall,width',heightFall]
 
   -- sand holder
   let x' = constDyn $ "x" =: "0"
   let widthHold = constDyn $ "width" =: "100%"
   let fillHold = constDyn $ "fill" =: "var(--primary-color)"
-  let attrsHold = mconcat [mask',class',fillHold,x',yHold,widthHold,heightHold]
+  let attrsHold = mconcat [mask',fillHold,x',yHold,widthHold,heightHold]
 
   let transform = constDyn $ "transform" =: "scale(0.67) translate(27)"
   let layerAttrs = mconcat [transform]
@@ -551,32 +532,21 @@ drawSandClock countdown = do
 ---------
 visualiseTextLabel:: MonadWidget t m => Dynamic t Timer -> W t m ()
 visualiseTextLabel delta = do
-  liftIO $ putStrLn "visualiseTextBuilt"
-  traceDynamic "delta" $ delta
+  -- liftIO $ putStrLn "visualiseTextBuilt"
+  -- traceDynamic "delta" $ delta
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
   wBuildT <- liftIO getCurrentTime
-
-  -- funca para escoger tempo o segundos
-
   elapsedCountPos <- elapsedCounts -- :: Event t Rational
   elapsedCountDyn <- holdDyn 0 elapsedCountPos
-
-
   let count' = (calculateCountSorC (measure iDelta) False iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo -- Dyn t Rat
   let count = formatTextDisplay (measure iDelta) <$> count'
-
-
   let label = (calculateLabelSorC (measure iDelta) iDelta wBuildT) <$> elapsedCountDyn <*> currentTempo
-  
   drawTextLabel count label
   pure ()
 
-
 drawTextLabel :: MonadWidget t m => Dynamic t Text -> Dynamic t Text -> W t m ()
 drawTextLabel countdown tag = do
-  -- let countdown = fromMaybe 0 <$> countdown' 
-
   -- svg attrs
   let class' = constDyn $ "class" =: "visualiser code-font"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
@@ -585,7 +555,6 @@ drawTextLabel countdown tag = do
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
   let attrs = mconcat [class',w',h',vB,par]
   -- text attrs
-  -- let txAttrs = constDyn $ "" =: ""
   -- tspans attrs
   let txAnchor = constDyn $ "text-anchor" =: "middle"
   let fill = constDyn $ "fill" =: "var(--primary-color)"
@@ -598,9 +567,7 @@ drawTextLabel countdown tag = do
   let font2 = constDyn $ "font-size" =: "2.8em"
   let y'' = constDyn $ "y" =: "45"
   let tspan2Attrs = mconcat [txAnchor,fill,x',y'',font2]
-
   let txAttrs = mconcat [txAnchor,fill,x',y']
-
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
       elDynAttrNS' (Just "http://www.w3.org/2000/svg") "tspan" tspan1Attrs $ do
@@ -617,8 +584,8 @@ drawTextLabel countdown tag = do
   ----------
 visualiseText:: MonadWidget t m => Dynamic t Timer -> W t m ()
 visualiseText delta = do
-  liftIO $ putStrLn "visualiseTextBuiltNoLabel"
-  traceDynamic "delta" $ delta
+  -- liftIO $ putStrLn "visualiseTextBuiltNoLabel"
+  -- traceDynamic "delta" $ delta
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
   wBuildT <- liftIO getCurrentTime
@@ -666,8 +633,8 @@ drawText countdown = do
 ---------
 visualiseOnlyLabel:: MonadWidget t m => Dynamic t Timer -> W t m ()
 visualiseOnlyLabel delta = do
-  liftIO $ putStrLn "visualiseTextBuilt"
-  traceDynamic "delta" $ delta
+  -- liftIO $ putStrLn "visualiseTextBuilt"
+  -- traceDynamic "delta" $ delta
   iDelta <- sample $ current delta
   currentTempo <- Estuary.Widgets.W.tempo
   wBuildT <- liftIO getCurrentTime
@@ -767,7 +734,7 @@ numberOfVis = 7
 
 fontSize:: Int -> Map Text Text -- this is not attach to anything yet... follow throu...
 fontSize len 
-    | len <= 8 = "font-size" =: "3em"
+    | len <= 8 = "font-size" =: "2.5em"
     | len <= 12 = "font-size" =: "2.0em"
     | len <= 20 = "font-size" =: "1.5em"
     | len <= 30 = "font-size" =: "1em"
@@ -918,6 +885,9 @@ add0Mod:: Rational -> Text
 add0Mod x = if modulo < 10 then ("0" <> (showt modulo)) else showt modulo 
   where modulo = (ceiling x) `mod` (60 :: Int)
 
+
+
+
 -- icons 
 iconDisplay:: MonadWidget t m => Dynamic t Timer -> W t m ()
 iconDisplay  x = do
@@ -926,7 +896,7 @@ iconDisplay  x = do
         divClass "iconTopLeft" $ do
           divClass "flex-container-col" $ do
             divClass "flex-item-col-Form" blank
-            pure (structureIcon $ constDyn True) >>= (divClass "flex-item-col-Form") -- text 
+            pure (refreshIcon $ constDyn True) >>= (divClass "flex-item-col-Form") -- text 
         pure (loopIcon $ (loop <$> x)) >>= (divClass "iconTopRight") -- loop
     divClass "icons-row" $ do
       pure (flipIcon $ constDyn True) >>= (divClass "iconBottomLeft") -- flip
@@ -1003,9 +973,9 @@ metronomeIcon = do
   let vB = constDyn $  "viewBox" =: "0 0 512 512"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let fill = constDyn $ "fill" =: "var(--primary-color)"
+  -- let fill = constDyn $ "fill" =: "var(--primary-color)"
 
-  let attrs = mconcat [class',width,height, vB, par, stroke, fill]
+  let attrs = mconcat [class',width,height, vB, par, stroke]
   let d1 = "d" =: "M442.032,192.56c-6.281-6.595-16.721-6.849-23.317-0.57l-8.089,7.703c-1.728-0.656-3.563-1.042-5.448-1.089 c-4.381-0.109-8.609,1.528-11.776,4.544l-13.577,12.931c-4.748,4.521-6.19,11.192-4.296,17.036l-19.077,18.167L328.06,59.809 c-0.755-5.087-3.838-9.531-8.342-12.018l-82.82-45.736c-4.961-2.74-10.984-2.74-15.945,0l-82.82,45.737 c-4.503,2.487-7.586,6.931-8.342,12.018L65.598,492.733c-0.704,4.744,0.694,9.738,3.826,13.37 c3.132,3.632,7.691,5.898,12.487,5.898h294.03c4.796,0,9.355-2.266,12.487-5.898c3.134-3.632,4.53-8.535,3.826-13.281 L362.371,291.24l35.906-34.215c1.881,0.714,3.865,1.078,5.855,1.078c4.086,0,8.178-1.514,11.371-4.554l13.579-12.932 c3.169-3.017,5.008-7.17,5.114-11.542c0.046-1.883-0.25-3.736-0.82-5.494l8.089-7.704 C448.058,209.595,448.313,199.156,442.032,192.56z M333.152,319.021l7.258,48.948h-58.656L333.152,319.021z M228.926,35.332 l46.871,25.884h-93.741L228.926,35.332z M158.037,94.2h141.777l27.489,184.91l-49.315,47.031V174.642 c0-9.108-7.526-16.672-16.634-16.672h-64.858c-9.108,0-16.361,7.564-16.361,16.672v193.327h-62.693L158.037,94.2z M245.005,190.953v177.015H213.12V190.953H245.005z M101.029,479.016l11.523-78.063H345.3l11.522,78.063H101.029z"
   let path = constDyn $ pathBool True d1 d1
 
@@ -1045,9 +1015,9 @@ flipIcon bool = do
   let vB = constDyn $  "viewBox" =: "0 0 50 50"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let fill = constDyn $ "fill" =: "var(--primary-color)"
+  -- let fill = constDyn $ "fill" =: "var(--primary-color)"
 
-  let attrs = mconcat [class',width,height, vB, par, stroke, fill]
+  let attrs = mconcat [class',width,height, vB, par, stroke]
   let d1 = "d" =: "M 41.84497,3.9322539 C 32.723522,3.918239 23.597873,3.8236263 14.47905,3.8599597 10.280951,4.2162766 6.1500037,6.4966924 4.2135938,10.341822 2.6280799,13.43598 1.6417214,17.041898 2.5366669,20.49355 c 0.7163944,4.201267 3.8008953,7.825904 7.8377371,9.192912 1.894472,0.755219 3.915495,1.088006 5.946721,0.955982 8.744041,-0.02685 17.488083,-0.05369 26.232124,-0.08054 M 54.16108,17.324791 C 54.278329,23.549179 49.464093,29.380126 43.330041,30.443219 37.317176,31.715215 30.75789,28.207968 28.482775,22.496548 25.952046,16.775941 28.170208,9.4970044 33.462324,6.1609774 38.536398,2.690233 45.937178,3.4361127 50.217793,7.8477222 52.723654,10.318389 54.174719,13.80574 54.16108,17.324791 Z"
   let path = constDyn $ pathBool True d1 d1
 
@@ -1056,25 +1026,27 @@ flipIcon bool = do
     return ()
   return ()
 
-structureIcon:: MonadWidget t m => Dynamic t Bool -> W t m ()
-structureIcon bool = do
+refreshIcon:: MonadWidget t m => Dynamic t Bool -> W t m ()
+refreshIcon bool = do
   let class' = constDyn $ "class" =: "iconForm"
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
-  let vB = constDyn $  "viewBox" =: "0 0 100 60"
+  let vB = constDyn $  "viewBox" =: "0 0 122.61 122.88"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMax meet" 
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
 
   let attrs = mconcat [class',width,height, vB, par, stroke]
   let d1 = constDyn $ "d" =: "M50 0 L5 30 L95 30 Z"
   let d2 = constDyn $ "d" =: "M50 25 L5 55 L95 55 Z"
+  -- let d = constDyn $ "d" =: "M111.9,61.57a5.36,5.36,0,0,1,10.71,0A61.3,61.3,0,0,1,17.54,104.48v12.35a5.36,5.36,0,0,1-10.72,0V89.31A5.36,5.36,0,0,1,12.18,84H40a5.36,5.36,0,1,1,0,10.71H23a50.6,50.6,0,0,0,88.87-33.1ZM106.6,5.36a5.36,5.36,0,1,1,10.71,0V33.14A5.36,5.36,0,0,1,112,38.49H84.44a5.36,5.36,0,1,1,0-10.71H99A50.6,50.6,0,0,0,10.71,61.57,5.36,5.36,0,1,1,0,61.57,61.31,61.31,0,0,1,91.07,8,61.83,61.83,0,0,1,106.6,20.27V5.36Z"
+
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    -- elDynAttrNS' (Just "http://www.w3.org/2000/svg") "path" d $ return ()
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "path" d1 $ return ()
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "path" d2 $ return ()
     return ()
   return ()
-
 
 boolOpacity:: Bool -> Map Text Text
 boolOpacity False = "style" =: "filter: opacity(50%)"
