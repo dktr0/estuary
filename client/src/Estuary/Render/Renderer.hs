@@ -72,30 +72,35 @@ import Estuary.Render.WebSerial as WebSerial
 
 
 
+mainRenderThreadSleepTime :: Int
+mainRenderThreadSleepTime = 200000 -- in microseconds
+
+mainRenderPeriod :: NominalDiffTime
+mainRenderPeriod = 0.2
+
+fastForwardThreshold :: NominalDiffTime
+fastForwardThreshold = 0.070
+
+catchupThreshold :: NominalDiffTime
+catchupThreshold = 0.300
+
+microRenderThreshold :: NominalDiffTime
+microRenderThreshold = 0.250
+
+waitThreshold :: NominalDiffTime
+waitThreshold = 0.500
+
+rewindThreshold :: NominalDiffTime
+rewindThreshold = 0.800
+
 clockRatioThreshold :: Double
 clockRatioThreshold = 0.8
 
-maxRenderLatency :: NominalDiffTime
-maxRenderLatency = 0.360
 
-maxRenderPeriod :: NominalDiffTime
-maxRenderPeriod = 0.360
-
-minRenderLatency :: NominalDiffTime
-minRenderLatency = 0.070
-
-minRenderPeriod :: NominalDiffTime
-minRenderPeriod = 0.120
-
--- should be somewhat larger than maxRenderLatency
-waitThreshold :: NominalDiffTime
-waitThreshold = 0.380
-
-rewindThreshold :: NominalDiffTime
-rewindThreshold = 1.0
-
+{-
 earlyWakeUp :: NominalDiffTime
 earlyWakeUp = 0.002
+-}
 
 
 -- flush note events to WebDirt, SuperDirt, and/or WebSerial
@@ -164,60 +169,83 @@ render = do
   }
   when crProblem $ liftIO $ T.putStrLn $ "audio clock slower, ratio=" <> showt cr
 
-  -- four possible timing scenarios to account for...
   let diff = diffUTCTime (renderEnd s) t1System
+
   -- 1. Fast Forward
-  when (diff < minRenderLatency) $ do
+  -- if the logical endtime of previous rendering is very soon in the future (below a threshold), or is in the past
+  -- then skip ahead so that the logical starttime of new rendering is at least in the future by that threshold
+  let fastForward = diff < fastForwardThreshold
+  when fastForward $ do
     liftIO $ T.putStrLn "FAST-FORWARD"
     modify' $ \x -> x {
-      renderStart = addUTCTime minRenderLatency t1System,
-      renderPeriod = minRenderPeriod,
-      renderEnd = addUTCTime (minRenderPeriod+minRenderLatency) t1System
+      renderStart = addUTCTime fastForwardThreshold t1System,
+      renderPeriod = mainRenderPeriod,
+      renderEnd = addUTCTime (mainRenderPeriod+fastForwardThreshold) t1System
     }
 
-  -- 2. Normal Advance
-  when (diff >= minRenderLatency && diff <= waitThreshold) $ do
-    let ratio0 = (diff - minRenderLatency) / (maxRenderLatency - minRenderLatency)
-    let ratio = min 1 ratio0
-    let adaptivePeriod = ratio * (maxRenderPeriod - minRenderPeriod) + minRenderPeriod
-    -- liftIO $ T.putStrLn $ "NORMAL " <> showt (realToFrac ratio :: Double) <> " " <> showt (realToFrac adaptivePeriod :: Double)
+  -- 2. Catchup
+  let catchup = diff >= fastForwardThreshold && diff < catchupThreshold
+  when catchup $ do
+    liftIO $ T.putStrLn $ "CATCHUP"
     modify' $ \x -> x {
       renderStart = renderEnd s,
-      renderPeriod = adaptivePeriod,
-      renderEnd = addUTCTime adaptivePeriod (renderEnd s)
+      renderPeriod = mainRenderPeriod,
+      renderEnd = addUTCTime mainRenderPeriod (renderEnd s)
     }
 
   -- 3. Wait
-  let wait = (diff > waitThreshold && diff < rewindThreshold)
-  when wait $ liftIO $ T.putStrLn $ "WAIT " <> showt (realToFrac diff :: Double)
-
+  -- let wait = diff >= waitThreshold && diff < rewindThreshold
+ 
   -- 4. Rewind
   let rewind = (diff >= rewindThreshold)
   when rewind $ do
     liftIO $ T.putStrLn $ "REWIND"
     modify' $ \x -> x {
-      renderStart = addUTCTime minRenderLatency t1System,
-      renderPeriod = minRenderPeriod,
-      renderEnd = addUTCTime (minRenderPeriod+minRenderLatency) t1System
+      renderStart = addUTCTime fastForwardThreshold t1System,
+      renderPeriod = mainRenderPeriod,
+      renderEnd = addUTCTime (mainRenderPeriod+fastForwardThreshold) t1System
     }
-
-  -- if there is no reason not to traverse/render zones, then do so
-  -- using renderStart and renderEnd from the state as the window to render
-  when (not wait && not rewind) $ do
+  
+  renderRenderOps
+  when (fastForward || catchup || rewind) $ do
     updateTidalValueMap
-    renderRenderOps
     renderZones
     flushEvents
 
-    -- calculate how much time this render cycle took and update load measurements
-    t2System <- liftIO $ getCurrentTime
-    let mostRecentRenderTime = diffUTCTime t2System t1System
-    let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
-    let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac maxRenderPeriod)
-    modify' $ \x -> x { renderTime = newRenderTime }
-    modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
-    return ()
+  -- calculate how much time this render cycle took and update load measurements
+  -- TODO: these calculations don't completely make sense given the microRendering system
+  t2System <- liftIO $ getCurrentTime
+  let mostRecentRenderTime = diffUTCTime t2System t1System
+  let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
+  let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac mainRenderPeriod)
+  modify' $ \x -> x { renderTime = newRenderTime }
+  modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
   updateWebDirtVoices
+
+
+microRenderInAnimationFrame :: R ()
+microRenderInAnimationFrame = do
+  s <- get
+  tNow <- liftIO $ getCurrentTime
+  let diff = diffUTCTime (renderEnd s) tNow
+  let microRender = diff >= microRenderThreshold && diff < waitThreshold
+  when microRender $ do
+    -- liftIO $ T.putStrLn "+"
+    fpsl <- fpsLimit
+    let mDelta = realToFrac $ getAverage $ animationDelta s
+    let microRenderPeriod = calculateMicroRenderPeriod mDelta fpsl
+    modify' $ \x -> x {
+      renderStart = renderEnd s,
+      renderEnd = addUTCTime microRenderPeriod (renderEnd s),
+      renderPeriod = microRenderPeriod
+    }
+    updateTidalValueMap
+    renderZones
+    flushEvents
+
+calculateMicroRenderPeriod :: NominalDiffTime -> Maybe NominalDiffTime -> NominalDiffTime
+calculateMicroRenderPeriod _ (Just fpsl) = fpsl
+calculateMicroRenderPeriod measuredDelta Nothing = measuredDelta
 
 
 renderRenderOps :: R ()
@@ -308,6 +336,7 @@ renderAnimation = do
         animationLoad = newAnimationLoad
         }
       }
+  microRenderInAnimationFrame
 
 renderZoneAnimation :: UTCTime -> Int -> TextNotation -> R ()
 renderZoneAnimation tNow z n = renderZoneAnimationTextProgram tNow z n
@@ -473,6 +502,7 @@ calculateZoneAnimationTimes z zat = do
   let newAvgMap = insert z (getAverage zat) (avgZoneAnimationTime $ info s)
   modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap }}
 
+{-
 sleepIfNecessary :: R ()
 sleepIfNecessary = do
   s <- get
@@ -480,23 +510,19 @@ sleepIfNecessary = do
   tNow <- liftIO $ getCurrentTime
   let diff = diffUTCTime targetTime tNow
   when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
-
+-}
+  
 forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> IO ()
 forkRenderThreads rEnv s vidDiv cvsElement glCtx hCanvas lCanvas = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv
   pOut <- getMainBusInput $ mainBus rEnv
-  putStrLn "about to do initialRenderState"
   irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio
-  putStrLn "returned from initialRenderState"
   let irs' = irs { videoDivCache = Just vidDiv }
   rsM <- newMVar irs'
-  putStrLn "about to fork mainRenderThread..."
   void $ forkIO $ mainRenderThread rEnv rsM
-  putStrLn "returned from forking mainRenderThread"
   void $ forkIO $ animationThread rEnv rsM
-  putStrLn "returned from forking animationThread"
 
 mainRenderThread :: RenderEnvironment -> MVar RenderState -> IO ()
 mainRenderThread rEnv rsM = do
@@ -504,7 +530,8 @@ mainRenderThread rEnv rsM = do
   rs' <- runR render rEnv rs
   putMVar rsM rs'
   swapMVar (renderInfo rEnv) (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
-  _ <- runR sleepIfNecessary rEnv rs'
+  -- _ <- runR sleepIfNecessary rEnv rs'
+  threadDelay mainRenderThreadSleepTime
   mainRenderThread rEnv rsM
 
 animationThread :: RenderEnvironment -> MVar RenderState -> IO ()
