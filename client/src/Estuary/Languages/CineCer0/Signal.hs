@@ -106,8 +106,10 @@ playNatural_Rate sh t vl render eval anchor = Just 1
 
 -- gets the onset time of the video in playEvery
 playEvery_Pos:: Rational -> Rational -> Signal (Maybe NominalDiffTime)
-playEvery_Pos c sh t vl render eval anchor =
-    let n = if c == 0 then 3 else c -- 4  -- if c is 0 needs to do something safe
+playEvery_Pos c sh t vl render eval anchor 
+    | c == 0 = Nothing
+    | otherwise =
+    let n = c -- 4  -- if c is 0 needs to do something safe
         ec = (timeToCount t render) -- 30 cycles (60 secs if each cycle is 2 secs long)
         ecOf = ec - sh
         floored = floor (ecOf/n) -- 30/4 = 7.5 then floored= 7

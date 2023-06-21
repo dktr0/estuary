@@ -32,7 +32,8 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
 import Estuary.Widgets.Roulette
 import Estuary.Widgets.EnsembleStatus
-import Estuary.Widgets.Tempo
+import Estuary.Widgets.Tempo 
+import Estuary.Widgets.Timer
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
@@ -125,7 +126,11 @@ viewWidget (SandClockView z) = zoneWidget False z (Holding 60) maybeTimerDownSta
 
 viewWidget (StopWatchView z) = zoneWidget False z Cleared maybeTimerUpState StopWatch stopWatchWidget
 
-viewWidget (SeeTimeView z) = zoneWidget False z (Cyclic 0) maybeSeeTime SeeTime visualiseTempoWidget
+-- viewWidget er (SeeTimeView z) = zoneWidget z (Tv 0 4 0) maybeSeeTime SeeTime er visualiseTempoWidget
+
+viewWidget (TimerView z) = zoneWidget False z (Timer 0 [("a",5),("b",7),("c",3)] Halted True Cycles) maybeTimer TimerDef timerWidget
+
+viewWidget (SeeTimeView z) = zoneWidget False z (Tv 0 4 0) maybeSeeTime SeeTime visualiseTempoWidget
 
 viewWidget (NotePadView z) = zoneWidget False z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad notePadWidget
 
