@@ -87,37 +87,40 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
   return topContainer -- final return
 
 
-
-
-
--- timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
-timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m ()
-timerDisplay' delta = divClass "timer-Visualiser" $ mdo
-  --liftIO $ putStrLn "timerDisplay"
-  -- dInit <- sample $ current delta
-  -- let local = fst topContainer
-  -- mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
-  -- timerChangeDisplay mergedLocalDelta
+timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+-- timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m ()
+timerDisplay delta = divClass "timer-Visualiser" $ mdo
+  -- liftIO $ putStrLn "timerDisplay"
+  dInit <- sample $ current delta
+  let local = fst top
+  mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
+  timerChangeDisplay mergedLocalDelta
 
 -- flip icon might be useful at some point  
   -- divClass "icon" $ do
   --   pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip icon
-
-  topContainer <- divClass "containerTimer" $ do 
-      flipItem <- clickableDiv "segment" blank
+  top <- do
+    topContainer <- divClass "containerTimer" $ do 
+      flipItem <- clickableDiv "segmentTimer" blank
       let flipEvent = flipFunc <$ flipItem  
-      timerStateItems <- divClass "segmentTimer" $ do
+      timerStateEvents <- divClass "segmentTimer" $ do
         reset <- clickableDiv "rowTimer" blank
         pausePlay <- clickableDiv "rowTimer" blank
-        return (reset, pausePlay)
-      aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) $ fst timerStateItems
-      aTimePlay <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) $ snd timerStateItems
-      playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
-      let playPauseEvent = playPauseFunc <$> aTimePlay
-      let resetEvent = resetFunc <$> aTimeReset
-      modeChangeItem <- clickableDiv "segment" blank
-      return ()
-  return () -- mdo return from the widget
+        aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) reset
+        let resetEvent = resetFunc <$> aTimeReset
+        aTimePlay <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) pausePlay
+        let playPauseEvent = playPauseFunc <$> aTimePlay
+        return $ leftmost [resetEvent, playPauseEvent]
+      modeChangeItem <- clickableDiv "segmentTimer" blank
+      let modeChangeEvent = visualiserFunc <$ modeChangeItem
+      let networkedEvents = leftmost [timerStateEvents, modeChangeEvent]
+      return (networkedEvents, flipEvent)
+    let flippy = id <$  (tag (constant ()) $ snd topContainer)
+    let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [fst topContainer,flippy] -- mergeWith is the proper one to use, also here you can use attachWith reverse application &!!!
+    let flipper = fmap (\x -> x $ True) $ snd topContainer 
+    return (polyptychEvent, flipper)
+  return top
+  -- return () -- mdo return from the widget
 
   -- topContainer <- divClass "flex-container-col" $ do
   --   fstRowWrap <- divClass "flex-item-col" $ do
@@ -147,8 +150,8 @@ timerDisplay' delta = divClass "timer-Visualiser" $ mdo
 
 
 
-timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
-timerDisplay delta = divClass "timer-Visualiser" $ mdo
+timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+timerDisplay' delta = divClass "timer-Visualiser" $ mdo
   --liftIO $ putStrLn "timerDisplay"
   dInit <- sample $ current delta
   let local = fst topContainer
@@ -745,10 +748,10 @@ flipFunc:: Bool -> Bool -- this is just not !!! -- instead of this we need a con
 flipFunc True = False
 flipFunc False = True
 
-resetFunc:: UTCTime -> Timer -> Timer -- prelude func id: function that returns its input!!!
+resetFunc:: UTCTime -> Timer -> Timer 
 resetFunc u timer = timer {mode = Falling' u}
 
-playPauseFunc:: UTCTime -> Timer -> Timer -- this needs to be Timer -> Timer ???
+playPauseFunc:: UTCTime -> Timer -> Timer
 playPauseFunc u x = changeMode (mode x) u x
 
 
