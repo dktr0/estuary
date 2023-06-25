@@ -88,7 +88,64 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
 
 
 
--- there is a need to display information at some clicks from users, specially important: "reset" should be displayed every time someone pushes reset and "playing"/"paused" when someone pushes this div
+
+
+-- timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m ()
+timerDisplay' delta = divClass "timer-Visualiser" $ mdo
+  --liftIO $ putStrLn "timerDisplay"
+  -- dInit <- sample $ current delta
+  -- let local = fst topContainer
+  -- mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
+  -- timerChangeDisplay mergedLocalDelta
+
+-- flip icon might be useful at some point  
+  -- divClass "icon" $ do
+  --   pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip icon
+
+  topContainer <- divClass "containerTimer" $ do 
+      flipItem <- clickableDiv "segment" blank
+      let flipEvent = flipFunc <$ flipItem  
+      timerStateItems <- divClass "segmentTimer" $ do
+        reset <- clickableDiv "rowTimer" blank
+        pausePlay <- clickableDiv "rowTimer" blank
+        return (reset, pausePlay)
+      aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) $ fst timerStateItems
+      aTimePlay <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) $ snd timerStateItems
+      playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
+      let playPauseEvent = playPauseFunc <$> aTimePlay
+      let resetEvent = resetFunc <$> aTimeReset
+      modeChangeItem <- clickableDiv "segment" blank
+      return ()
+  return () -- mdo return from the widget
+
+  -- topContainer <- divClass "flex-container-col" $ do
+  --   fstRowWrap <- divClass "flex-item-col" $ do
+  --     divClass "flex-container-row" $ do
+  --       -- let w = divClass "hola" $ text $ T.pack "moi"
+  --       -- tooltip w $ text $ T.pack "mui"
+  --       resetItem <- clickableDIv "flex-item-row" blank -- :: Event t ()
+  --       aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) resetItem
+  --       playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
+  --       aTimePlay <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) playPauseItem
+  -- --      let aTime' = traceEvent "aTime with playPauseItem and resetItem" $ aTime
+  --       let playPauseEvent = playPauseFunc <$> aTimePlay
+  --       let resetEvent = resetFunc <$> aTimeReset
+  --       return $ leftmost [resetEvent,playPauseEvent]
+  --   sndRowWrap <- divClass "flex-item-col" $ do 
+  --     divClass "flex-container-row" $ do
+  --       flipItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
+  --       let flipEvent = flipFunc <$ flipItem
+  --       visualisationItem <- clickableDiv "flex-item-row" blank
+  --       let visualisationEvent = visualiserFunc <$ visualisationItem
+  --       return (visualisationEvent, flipEvent) -- open path for playPause      
+  --   let flippy = id <$  (tag (constant ()) $ snd sndRowWrap)
+  --   let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [fstRowWrap, fst sndRowWrap, flippy] -- mergeWith is the proper one to use, also here you can use attachWith reverse application &!!!
+  --   let flipper = fmap (\x -> x $ True) $ snd sndRowWrap 
+  --   return (polyptychEvent, flipper)
+  -- return topContainer
+
+
 
 timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 timerDisplay delta = divClass "timer-Visualiser" $ mdo
@@ -105,6 +162,8 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
   topContainer <- divClass "flex-container-col" $ do
     fstRowWrap <- divClass "flex-item-col" $ do
       divClass "flex-container-row" $ do
+        -- let w = divClass "hola" $ text $ T.pack "moi"
+        -- tooltip w $ text $ T.pack "mui"
         resetItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
         aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) resetItem
         playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()

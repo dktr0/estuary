@@ -240,6 +240,19 @@ clickableDivNoClass child = do
 --   clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
 --   return $ (() <$) clickEv
 
+---- see this!!!  !! !! !!
+clickableDivAndTooltip :: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
+  => Text -> m a -> m (Event t ())
+clickableDivAndTooltip cssclass child = do
+  (element,_) <- elAttr' "div" attr $ child
+  tooltip child $ text $ T.pack "pruebiringa"
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
+  return $ (() <$) clickEv
+  where
+    attr = singleton "class" cssclass
+
+-- divClass :: forall t m a. DomBuilder t m => Text -> m a -> m a
+
 -- clickableDiv with class
 clickableDiv :: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
   => Text -> m a -> m (Event t ())
@@ -571,6 +584,7 @@ tooltipNoPopUpClass child popup = do
     a <- child
     divClass "tooltipPosAbsolute" $ popup
     return a
+
 
 
 -- below this line is the former Estuary.Reflex.Container
