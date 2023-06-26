@@ -163,7 +163,6 @@ textWithLockAndClipBoardWidget rows editable delta = do
   return (value,edits)
 
 
-                                     --  Rows  Colour     EditableOrNot
 textWithLockWidget :: MonadWidget t m => Int -> Dynamic t Bool -> Dynamic t Text -> W t m (Dynamic t Text, Event t Text)
 textWithLockWidget rows editable delta = do
   i <- sample $ current delta
@@ -172,6 +171,7 @@ textWithLockWidget rows editable delta = do
   let rows' = constDyn $ textWidgetRows rows
   let readon = lockText <$> editable
   let style = constDyn $ styleFunc
+  
 --  let style = constDyn $ "style" =: ("height: auto; font-size:2em; " <> (temporaryFuncColour <$> colour))
   let attrs = mconcat [class',rows', readon, style]
   x <- textArea $ def & textAreaConfig_setValue .~ (updated delta) & textAreaConfig_attributes .~ attrs & textAreaConfig_initialValue .~ i
@@ -179,8 +179,9 @@ textWithLockWidget rows editable delta = do
   let value = _textArea_value x
   return (value,edits)
 
+
 styleFunc:: Map Text Text
-styleFunc = "style" =: "height: auto; font-size: 1em;"
+styleFunc = "style" =: "height: 100%; font-size: 1em;"
 
 lockText:: Bool -> Map Text Text
 lockText False = Data.Map.empty

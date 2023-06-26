@@ -1118,8 +1118,6 @@ cursor: pointer;
 
 .icons {
     display: flex;
-    width: 100%;
-    height: 100%;
 	position: absolute;
 }
 
@@ -2307,6 +2305,76 @@ box-shadow: inset 0 0 3px var(--primary-color);
 
 /* end of Notepad style */
 
+/*timer control LAST VERSION*/
+.containerControl {
+	display: flex;
+	height: 100%;
+  }
+  
+  .columnControl {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+  }
+  
+  .small-areaControl {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+  }
+  
+  .big-areaControl {
+	flex: 20;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+  }
+  
+  .rowControl {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100%;
+  }
+  
+  .input-wrapperControl {
+	height: 100%;
+	padding: 1px;
+	text-align: left;
+  }
+  
+  .input-textControl {
+	height: 100%;
+	width: 100%;
+	font-size: 16px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	resize: none;
+  }
+  
+  .additional-divControl {
+	background-color: transparent;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 50%;
+  }
+  
+  .additional-div-topControl {
+	bottom: 50%;
+  }
+  
+  .additional-div-bottomControl {
+	top: 50%;
+  }
+
+
 /*timer display LAST VERSION*/
 .containerTimer {
 	display: flex;
@@ -2324,8 +2392,17 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	width:100%;
 	height: 100%;
 	min-height: 100%;
+	display: inline-block;
+  }
+
+  .segmentTimer:hover .tooltiptextest {
+	visibility: visible;
   }
   
+  .segmentTimer:hover .tooltiptextStatusLabelsTest {
+	visibility: visible;
+  }
+
   .rowTimer {
 	justify-content: center;
 	align-items: center;
@@ -2349,7 +2426,7 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	height: 1px;
 	}
   
-  .tooltip .tooltiptext {
+  .segmentTimer .tooltiptexttest {
 	visibility: hidden;
 	display:flex;
 	min-width:15vw;
@@ -2367,7 +2444,7 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	margin-left: -60px;
   }
   
-  .tooltip .tooltiptext::after {
+  .segmentTimer .tooltiptexttest::after {
 	content: "";
 	position: absolute;
 	bottom: 100%;
@@ -2377,4 +2454,34 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	border-style: solid;
 	border-color: transparent transparent var(--secondary-color) transparent;
   
+  }
+
+  .tooltiptextStatusLabelsTest {
+	visibility: hidden;
+	white-space:normal;
+	font-weight: lighter;
+	display:flex;
+	min-width:15vw;
+	max-width: 15vw;
+	width:max-content;
+	background-color: var(--secondary-color);
+	color: var(--primary-color);
+	text-align: center;
+	border-radius: 6px;
+	padding: 5px 0;
+	position: relative;
+	z-index: 1;
+	top: 150%;
+	left: 50%;
+	margin-left: -60px;
+  }
+  
+  .tooltiptextStatusLabelsTest::after {
+	position: absolute;
+	bottom: 100%;
+	left: 12vh;
+  /*   margin-left: -5px; */
+	border-width: 5px;
+	border-style: solid;
+	border-color: transparent transparent var(--secondary-color) transparent;
   }

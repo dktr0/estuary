@@ -251,8 +251,15 @@ clickableDivAndTooltip cssclass child = do
   where
     attr = singleton "class" cssclass
 
--- divClass :: forall t m a. DomBuilder t m => Text -> m a -> m a
+flipItemWithinClickableAndTooltip:: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
+  => m a -> m (Event t ())
+flipItemWithinClickableAndTooltip popup = do
+    flipItem <- clickableDiv "segmentTimer" $ do
+      divClass "tooltipPosAbsolutetest" $ elClass "span" "tooltiptexttest code-font" popup
+      return ()
+    return flipItem
 
+    
 -- clickableDiv with class
 clickableDiv :: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
   => Text -> m a -> m (Event t ())
