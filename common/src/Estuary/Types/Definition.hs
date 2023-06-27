@@ -78,8 +78,7 @@ instance ToJSON Mode where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Mode
 
--- visualiser is an Int
--- Timer = Finite Visualiser Targets CurrentMode Loop Measure
+
 data Timer = Timer {
   n:: Int,
   form:: [(Text,Rational)],

@@ -152,18 +152,21 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
   --   pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip icon
   top <- do
     topContainer <- divClass "containerTimer" $ do 
-      flipItem <- clickableDiv "segmentTimer" blank
-      -- flipItem <- flipItemWithinClickableAndTooltip $ text "que hay detras de la ventana?"
+      flipItem <- clickableDiv "segmentLeftTimer" $ do
+        divClass "flipTimer" $ text $ T.pack "edit"
       let flipEvent = flipFunc <$ flipItem  
       timerStateEvents <- divClass "segmentTimer" $ do
-        reset <- clickableDiv "rowTimer" blank
-        pausePlay <- clickableDiv "rowTimer" blank
+        reset <- clickableDiv "rowTopTimer" $ do
+          divClass "resetTimer" $ text $ T.pack "reset"
+        pausePlay <- clickableDiv "rowBottomTimer" $ do
+          divClass "pauseTimer" $ text $ T.pack "pause/play"
         aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) reset
         let resetEvent = resetFunc <$> aTimeReset
         aTimePlay <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) pausePlay
         let playPauseEvent = playPauseFunc <$> aTimePlay
         return $ leftmost [resetEvent, playPauseEvent]
-      modeChangeItem <- clickableDiv "segmentTimer" blank
+      modeChangeItem <- clickableDiv "segmentRightTimer" $ do
+        divClass "modeTimer" $ text $ T.pack "change mode"
       let modeChangeEvent = visualiserFunc <$ modeChangeItem
       let networkedEvents = leftmost [timerStateEvents, modeChangeEvent]
       return (networkedEvents, flipEvent)
@@ -407,9 +410,12 @@ peek delta = do
   beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
   beat <- holdDyn 0 beatPosition
   wBuildT <- liftIO getCurrentTime
-  let count = (calculateCountSorC (measure iDelta) True iDelta wBuildT) <$> beat <*> currentTempo
+  let count' = (calculateCountSorC (measure iDelta) False iDelta wBuildT) <$> beat <*> currentTempo
+  let count = formatTextDisplay (measure iDelta) <$> count'
   let label = calculateLabelSorC (measure iDelta) iDelta wBuildT <$> beat <*> currentTempo
   dynText label
+  text $ T.pack "    "
+  dynText count
   pure ()
 
 visualiseProgressBarLabel:: MonadWidget t m => Dynamic t Timer -> W t m ()
@@ -438,7 +444,8 @@ drawProgressBarLabel countdown tag = do
   let width1 = constDyn $ "width" =: "100"
   let height1 = constDyn $ "height" =: "30"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let attrsRect = mconcat [x',y',width1, height1, stroke] 
+  let fill = constDyn $ "fill" =: "transparent"
+  let attrsRect = mconcat [x',y',width1, height1, stroke, fill] 
   -- progress rect
   let x'' = constDyn $ "x" =: "100"
   let y'' = constDyn $ "y" =: "0"
@@ -490,7 +497,8 @@ drawProgressBar countdown = do
   let width1 = constDyn $ "width" =: "100"
   let height1 = constDyn $ "height" =: "30"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let attrsRect = mconcat [x',y',width1, height1, stroke] 
+  let fill = constDyn $ "fill" =: "transparent"
+  let attrsRect = mconcat [x',y',width1, height1, stroke, fill] 
   -- progress rect
   let x'' = constDyn $ "x" =: "100"
   let y'' = constDyn $ "y" =: "0"
