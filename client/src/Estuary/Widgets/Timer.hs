@@ -32,19 +32,11 @@ import Estuary.Types.Definition
 
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
-  -- liftIO $ putStrLn "timerWidget"
   initVal <- sample $ current delta
   dynMode <- holdDyn True $ newModeEv -- changes from previous to false
-  let gatedDisplay = gate (current dynMode) $ leftmost [timerEv,updated delta]
-  let gatedControl = gate (current (not <$> dynMode)) $ leftmost [timerEv,updated delta]
-  deltaForControl <- holdDyn initVal {- $ traceEvent "deltaForControl" -} $ gatedDisplay
-  deltaForDisplay <- holdDyn initVal {- $ traceEvent "deltaForDisplay" -} $ gatedControl
   let timerEv = switchDyn $ fmap fst x -- :: Event t Timer -- timer from controler
-  -- let timerEv = fst x
   let newModeEv = {- traceEvent "newModeEv" $ -} switchDyn $ fmap snd x -- :: Event t Bool -- false
-  -- let newModeEv = never
-  x <- flippableWidget (timerControl deltaForControl) (timerDisplay deltaForDisplay) True newModeEv -- D t (E t Timer, E t Bool) -- False, watching the controler
-  -- x <- timerDisplay deltaForDisplay
+  x <- flippableWidget (timerControl delta) (timerDisplay delta) True newModeEv 
   variable delta timerEv
 
 
