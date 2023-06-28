@@ -1118,8 +1118,6 @@ cursor: pointer;
 
 .icons {
     display: flex;
-    width: 100%;
-    height: 100%;
 	position: absolute;
 }
 
@@ -2306,3 +2304,197 @@ box-shadow: inset 0 0 3px var(--primary-color);
 }
 
 /* end of Notepad style */
+
+/*timer control LAST VERSION*/
+.containerControl {
+	display: flex;
+	height: 100%;
+  }
+  
+  .columnControl {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+  }
+  
+  .small-areaControl {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+  }
+  
+  .big-areaControl {
+	flex: 20;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+  }
+  
+  .rowControl {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100%;
+  }
+  
+  .input-wrapperControl {
+	height: 100%;
+	padding: 1px;
+	text-align: left;
+  }
+  
+  .input-textControl {
+	height: 100%;
+	width: 100%;
+	font-size: 16px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	resize: none;
+  }
+  
+  .additional-divControl {
+	background-color: transparent;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 50%;
+  }
+  
+  .additional-div-topControl {
+	bottom: 50%;
+  }
+  
+  .additional-div-bottomControl {
+	top: 50%;
+  }
+
+
+/*timer display LAST VERSION*/
+.containerTimer {
+	display: flex;
+    flex-direction: row;
+	z-index: 0;
+	width: 100%;
+    height: 100%;
+  }
+  
+  .segmentTimer {
+	flex: 1;
+	justify-content: center;
+	align-items: center;
+	position: relative; 
+	width:100%;
+	height: 100%;
+	min-height: 100%;
+	display: inline-block;
+  }
+
+  .segmentLeftTimer {
+	flex: 1;
+	justify-content: center;
+	align-items: center;
+	position: relative; 
+	width:100%;
+	height: 100%;
+	min-height: 100%;
+	display: inline-block;
+  }
+
+  .segmentLeftTimer:hover .flipTimer {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+  }
+
+  .flipTimer {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 50%;
+	left: 0%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+  }
+
+  .segmentRightTimer {
+	flex: 1;
+	justify-content: center;
+	align-items: center;
+	position: relative; 
+	width:100%;
+	height: 100%;
+	min-height: 100%;
+	display: inline-block;
+  }
+
+  .segmentRightTimer:hover .modeTimer {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+  }
+
+  .modeTimer {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 50%;
+	left: 0%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+  }
+
+  .rowTopTimer {
+	justify-content: center;
+	align-items: center;
+	position: relative;
+	width:100%;
+	height: 50%;
+	min-height: 50%;
+  }
+
+  .rowTopTimer:hover .resetTimer {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+  }
+
+  .resetTimer {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 50%;
+	left: 0%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+  }
+
+  .rowBottomTimer {
+	justify-content: center;
+	align-items: center;
+	position: relative;
+	width:100%;
+	height: 50%;
+	min-height: 50%;
+  }
+
+  .rowBottomTimer:hover .pauseTimer {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+  }
+
+  .pauseTimer {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 50%;
+	left: 0%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+  }

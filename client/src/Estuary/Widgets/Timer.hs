@@ -48,8 +48,58 @@ timerWidget delta = mdo
   variable delta timerEv
 
 
+
 timerControl:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+-- timerControl':: MonadWidget t m => Dynamic t Timer -> W t m ()
 timerControl delta = divClass "timer-Visualiser" $ mdo
+  liftIO $ putStrLn "timerControl"
+  dInit <- sample $ current delta
+  let local = fst topContainer
+  mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xC" -} $ leftmost [local, updated delta]
+
+  topContainer <- divClass "containerControl" $ do
+    columnLeft <- divClass "columnControl" $ do
+      smallAreaL <- divClass "small-areaControl" $ do
+        flipItem <- buttonWithSettableClass "rowControl ui-buttons other-borders code-font" $ T.pack "display"
+        let flipEvent = flipFunc <$ flipItem -- Event t Bool
+        programItem <- buttonWithSettableClass "rowControl ui-buttons other-borders code-font" $ T.pack "▶" -- Event t ()
+        return (flipEvent, programItem) -- small area :: (Event t Bool, Event t ())
+      bigAreaL <- divClass "big-areaControl" $ do
+        inputWrapper <- divClass "input-wrapperControl" $ do
+          let iText = (formToText . form) <$> delta 
+          (valTxBx,_) <- textWithLockWidget 3 ((lock . mode) <$> delta) iText 
+          let boton = snd smallAreaL
+          let txPressed = tag (current $ valTxBx) boton -- Event t Text
+          return $ parseForm <$> txPressed -- Event t [(Text,Rat)]
+        return $ textInputFunc <$> inputWrapper -- big area :: Event t (Form -> Timer Timer)     
+      return (bigAreaL, fst smallAreaL) -- columnLeft
+
+
+    columnRight <- divClass "columnControl" $ do
+      smallAreaR <- divClass "small-areaControl" $ do
+        peek mergedLocalDelta
+        return () -- small area 
+      bigAreaR <- divClass "big-areaControl" $ do
+        pure (loopIcon $ (loop <$> mergedLocalDelta)) >>= (divClass "rowControl") -- loop
+        loopItem <- clickableDiv "additional-divControl additional-div-topControl" blank
+        pure (measureIcons $ (measure <$> mergedLocalDelta)) >>= (divClass "rowControl")
+        metreItem <- clickableDiv "additional-divControl additional-div-bottomControl" blank
+        let loopEvent = loopFunc <$ (loopItem)
+        let metreEvent = measureFunc <$ (metreItem)
+        return $ leftmost [loopEvent, metreEvent]
+      return bigAreaR -- columnR
+
+    let flippy = id <$  (tag (constant ()) $ snd columnLeft)
+    let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [columnRight, fst columnLeft, flippy] 
+    let flipper = fmap (\x -> x False) $ snd columnLeft 
+    return (polyptychEvent, flipper) -- (Timer, Bool) -- return of topRowContainer
+
+  return topContainer -- mdo last return
+
+
+
+timerControl':: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+timerControl' delta = divClass "timer-Visualiser" $ mdo
   -- liftIO $ putStrLn "timerControl"
   dInit <- sample $ current delta
   let local = fst topContainer
@@ -88,10 +138,47 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
 
 
 
--- there is a need to display information at some clicks from users, specially important: "reset" should be displayed every time someone pushes reset and "playing"/"paused" when someone pushes this div
-
 timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+-- timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m ()
 timerDisplay delta = divClass "timer-Visualiser" $ mdo
+  -- liftIO $ putStrLn "timerDisplay"
+  dInit <- sample $ current delta
+  let local = fst top
+  mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
+  timerChangeDisplay mergedLocalDelta
+
+-- flip icon might be useful at some point  
+  -- divClass "icon" $ do
+  --   pure (flipIcon' $ constDyn True) >>= (divClass "iconFlippedFlip") -- flip icon
+  top <- do
+    topContainer <- divClass "containerTimer" $ do 
+      flipItem <- clickableDiv "segmentLeftTimer" $ do
+        divClass "flipTimer" $ text $ T.pack "edit"
+      let flipEvent = flipFunc <$ flipItem  
+      timerStateEvents <- divClass "segmentTimer" $ do
+        reset <- clickableDiv "rowTopTimer" $ do
+          divClass "resetTimer" $ text $ T.pack "reset"
+        pausePlay <- clickableDiv "rowBottomTimer" $ do
+          divClass "pauseTimer" $ text $ T.pack "pause/play"
+        aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) reset
+        let resetEvent = resetFunc <$> aTimeReset
+        aTimePlay <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) pausePlay
+        let playPauseEvent = playPauseFunc <$> aTimePlay
+        return $ leftmost [resetEvent, playPauseEvent]
+      modeChangeItem <- clickableDiv "segmentRightTimer" $ do
+        divClass "modeTimer" $ text $ T.pack "change mode"
+      let modeChangeEvent = visualiserFunc <$ modeChangeItem
+      let networkedEvents = leftmost [timerStateEvents, modeChangeEvent]
+      return (networkedEvents, flipEvent)
+    let flippy = id <$  (tag (constant ()) $ snd topContainer)
+    let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [fst topContainer,flippy] -- mergeWith is the proper one to use, also here you can use attachWith reverse application &!!!
+    let flipper = fmap (\x -> x $ True) $ snd topContainer 
+    return (polyptychEvent, flipper)
+  return top
+
+
+timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
+timerDisplay' delta = divClass "timer-Visualiser" $ mdo
   --liftIO $ putStrLn "timerDisplay"
   dInit <- sample $ current delta
   let local = fst topContainer
@@ -105,6 +192,8 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
   topContainer <- divClass "flex-container-col" $ do
     fstRowWrap <- divClass "flex-item-col" $ do
       divClass "flex-container-row" $ do
+        -- let w = divClass "hola" $ text $ T.pack "moi"
+        -- tooltip w $ text $ T.pack "mui"
         resetItem <- clickableDiv "flex-item-row" blank -- :: Event t ()
         aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) resetItem
         playPauseItem <- clickableDiv "flex-item-row" blank -- Event t ()
@@ -312,7 +401,22 @@ calculateLabel delta wBuildT elapsedCount t =
             loopedCountUp = loopCountUp' (loop delta) countForm countUp
             label = genLabel 0 (form delta) loopedCountUp
         in label 
----- genLabel:: Rational -> [(Text,Rational)] -> Rational -> T.Text
+
+
+peek:: MonadWidget t m => Dynamic t Timer -> W t m ()
+peek delta = do
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
+  beat <- holdDyn 0 beatPosition
+  wBuildT <- liftIO getCurrentTime
+  let count' = (calculateCountSorC (measure iDelta) False iDelta wBuildT) <$> beat <*> currentTempo
+  let count = formatTextDisplay (measure iDelta) <$> count'
+  let label = calculateLabelSorC (measure iDelta) iDelta wBuildT <$> beat <*> currentTempo
+  dynText label
+  text $ T.pack "    "
+  dynText count
+  pure ()
 
 visualiseProgressBarLabel:: MonadWidget t m => Dynamic t Timer -> W t m ()
 visualiseProgressBarLabel delta = do
@@ -340,7 +444,8 @@ drawProgressBarLabel countdown tag = do
   let width1 = constDyn $ "width" =: "100"
   let height1 = constDyn $ "height" =: "30"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let attrsRect = mconcat [x',y',width1, height1, stroke] 
+  let fill = constDyn $ "fill" =: "transparent"
+  let attrsRect = mconcat [x',y',width1, height1, stroke, fill] 
   -- progress rect
   let x'' = constDyn $ "x" =: "100"
   let y'' = constDyn $ "y" =: "0"
@@ -392,7 +497,8 @@ drawProgressBar countdown = do
   let width1 = constDyn $ "width" =: "100"
   let height1 = constDyn $ "height" =: "30"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let attrsRect = mconcat [x',y',width1, height1, stroke] 
+  let fill = constDyn $ "fill" =: "transparent"
+  let attrsRect = mconcat [x',y',width1, height1, stroke, fill] 
   -- progress rect
   let x'' = constDyn $ "x" =: "100"
   let y'' = constDyn $ "y" =: "0"
@@ -686,10 +792,10 @@ flipFunc:: Bool -> Bool -- this is just not !!! -- instead of this we need a con
 flipFunc True = False
 flipFunc False = True
 
-resetFunc:: UTCTime -> Timer -> Timer -- prelude func id: function that returns its input!!!
+resetFunc:: UTCTime -> Timer -> Timer 
 resetFunc u timer = timer {mode = Falling' u}
 
-playPauseFunc:: UTCTime -> Timer -> Timer -- this needs to be Timer -> Timer ???
+playPauseFunc:: UTCTime -> Timer -> Timer
 playPauseFunc u x = changeMode (mode x) u x
 
 
@@ -906,7 +1012,7 @@ loopIcon :: MonadWidget t m => Dynamic t Bool -> W t m ()
 loopIcon d = do
   let class' = constDyn $ "class" =: "icons"
   let width = constDyn $ "width" =: "100%"
-  let height = constDyn $ "height" =: "100%"
+  let height = constDyn $ "height" =: "50%"
   let vB = constDyn $  "viewBox" =: "-2 -2 28 28"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let stroke =  setStroke <$> d
@@ -931,7 +1037,7 @@ measureIcons:: MonadWidget t m => Dynamic t Measure -> W t m ()
 measureIcons measure = do 
   let class' = constDyn $ "class" =: "icons"
   let width = constDyn $ "width" =: "100%"
-  let height = constDyn $ "height" =: "100%"
+  let height = constDyn $ "height" =: "50%"
   let vB = constDyn $  "viewBox" =: "0 0 30 30"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
@@ -969,7 +1075,7 @@ metronomeIcon:: MonadWidget t m => W t m ()
 metronomeIcon = do
   let class' = constDyn $ "class" =: "icons"
   let width = constDyn $ "width" =: "100%"
-  let height = constDyn $ "height" =: "100%"
+  let height = constDyn $ "height" =: "50%"
   let vB = constDyn $  "viewBox" =: "0 0 512 512"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
