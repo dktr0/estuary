@@ -240,6 +240,26 @@ clickableDivNoClass child = do
 --   clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
 --   return $ (() <$) clickEv
 
+---- see this!!!  !! !! !!
+clickableDivAndTooltip :: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
+  => Text -> m a -> m (Event t ())
+clickableDivAndTooltip cssclass child = do
+  (element,_) <- elAttr' "div" attr $ child
+  tooltip child $ text $ T.pack "pruebiringa"
+  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
+  return $ (() <$) clickEv
+  where
+    attr = singleton "class" cssclass
+
+flipItemWithinClickableAndTooltip:: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
+  => m a -> m (Event t ())
+flipItemWithinClickableAndTooltip popup = do
+    flipItem <- clickableDiv "segmentTimer" $ do
+      divClass "tooltipPosAbsolutetest" $ elClass "span" "tooltiptexttest code-font" popup
+      return ()
+    return flipItem
+
+    
 -- clickableDiv with class
 clickableDiv :: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
   => Text -> m a -> m (Event t ())
@@ -524,6 +544,13 @@ traceDynamic msg x = do
   let u = traceEvent msg (updated x)
   holdDyn i u
 
+traceDynamicWith :: (MonadIO m, Reflex t, MonadSample t m, MonadHold t m, Show a) => (a -> String) -> Dynamic t a -> m (Dynamic t a)
+traceDynamicWith f x = do
+  i <- sample $ current x 
+  let i' = f i
+  liftIO $ putStrLn $ show i'
+  let u = traceEventWith f (updated x)
+  holdDyn i u
 
 -- a hideable widget that is only built/rebuilt when it is made visible
 deferredWidget :: (MonadFix m, DomBuilder t m, MonadSample t m, MonadHold t m, Adjustable t m, NotReady t m, PostBuild t m) => Text -> Dynamic t Bool -> Dynamic t (m ()) -> m ()
@@ -564,6 +591,7 @@ tooltipNoPopUpClass child popup = do
     a <- child
     divClass "tooltipPosAbsolute" $ popup
     return a
+
 
 
 -- below this line is the former Estuary.Reflex.Container

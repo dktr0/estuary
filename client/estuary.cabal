@@ -69,6 +69,7 @@ library
       Estuary.Types.Tutorial
       Estuary.Types.View.Parser
       Estuary.Types.View.Presets
+      Estuary.Types.JSException
       Estuary.Widgets.AboutEstuary
       Estuary.Widgets.Announcements
       Estuary.Widgets.AudioMap
@@ -95,6 +96,7 @@ library
       Estuary.Widgets.SpecificPattern
       Estuary.Widgets.StopWatchExplorations
       Estuary.Widgets.Tempo
+      Estuary.Widgets.Timer
       Estuary.Widgets.Terminal
       Estuary.Widgets.Text
       Estuary.Widgets.TransformedPattern
@@ -103,6 +105,8 @@ library
       Estuary.Widgets.ViewEditor
       Estuary.Widgets.W
       Estuary.Widgets.WebSocket
+      Estuary.Widgets.ExoWidget
+      Estuary.Types.AsyncValue
   other-modules:
       Paths_estuary
   hs-source-dirs:
@@ -149,6 +153,7 @@ library
     , tuple
     , witherable
     , ghcjs-promise
+    , async
   default-language: Haskell2010
 
 executable Estuary

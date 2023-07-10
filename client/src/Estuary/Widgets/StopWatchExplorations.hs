@@ -25,13 +25,13 @@ stopWatchWidget deltasDown =  divClass "stopwatch" $  mdo
   -- 1. Translate button presses into localChanges
   let bText = stopWatchToButtonText <$> currentValue v
   x <- dynButton $ bText -- Event () (i think)
-  let y = tag (current $ currentValue v) x 
+  let y = tag (current $ currentValue v) x -- Event
   localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
   -- 2. Calculate and display text
   widgetBuildTime <- liftIO $ getCurrentTime  -- :: UTC (happens when widget is built)
   initialStopWatch <- sample $ current deltasDown     -- Behaviour t ?? (only happens when widget is built)
   let initialText = stopWatchToText initialStopWatch widgetBuildTime -- calculated once :: Text
-  tick <- tickLossy 0.01 widgetBuildTime -- :: tickInfo (next line is UTC)
+  tick <- tickLossy 0.06666666666666667 widgetBuildTime -- :: tickInfo (next line is UTC)
   let textUpdates = attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
  -- holdDyn initialText textUpdates >>= dynText -- simple unstyled display of the timer
   texto <- holdDyn initialText textUpdates
@@ -102,7 +102,7 @@ countDownWidget delta =  divClass "countDown" $  mdo
   widgetBuildTime <- liftIO $ getCurrentTime  
   initialCount <- sample $ current delta -- current gets the Behaviour of the dyn and then gets the m Downer
   let initialTime = countDownToDisplay initialCount widgetBuildTime
-  tick <- tickLossy 0.01 widgetBuildTime 
+  tick <- tickLossy 0.06666666666666667 widgetBuildTime 
   let textUpdates = attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
   v <- variable delta localChanges
   return v
@@ -131,7 +131,7 @@ sandClockWidget deltasDown =  divClass "countDown" $  mdo
   widgetBuildTime <- liftIO $ getCurrentTime  
   initialCount <- sample $ current deltasDown
   let initialTime = countDownToDisplay initialCount widgetBuildTime
-  tick <- tickLossy 0.01 widgetBuildTime 
+  tick <- tickLossy 0.06666666666666667 widgetBuildTime 
   let textUpdates = attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
 
 ---- here I have to open a pathway for different kind of visualisations, so far: text, sandclock, bar progress----
@@ -184,7 +184,6 @@ clockForSVGs (Falling target startTime) now = if xx < 0 then Just $ 0 else Just 
 
 -- function to calculate in percentage the countdown
 
--- not in iuse
 sandClock :: TimerDownState -> UTCTime -> Maybe Text 
 sandClock (Holding _) _ = Nothing
 sandClock (Falling target startTime) now = if xx < 0 then Just $ timeToDots 0 else Just $ timeToDots (countToPercent 100 target xx) 
@@ -258,8 +257,6 @@ countToHoldH defH percent =
   let countUp = realToFrac (100 + (percent*(-1))) :: Double 
       halfClock = countUp/2
   in "height" =: showt halfClock
-
-
     
 ---- SVG helpers
 

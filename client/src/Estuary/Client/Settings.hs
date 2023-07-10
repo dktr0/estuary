@@ -28,6 +28,7 @@ import Control.Monad.IO.Class (liftIO)
 data Settings = Settings {
 
   -- settings affecting appearance/behaviour of UI
+  noui :: Bool,
   language :: Language,
   theme :: Text,
   terminalVisible :: Bool,
@@ -52,13 +53,17 @@ data Settings = Settings {
   dynamicsMode :: DynamicsMode,
   globalAudioDelay :: Double,
   punctualAudioInputMode :: PunctualAudioInputMode,
-  monitorInput :: Maybe Double
+  monitorInput :: Maybe Double,
+
+  -- experimental settings (may be removed at any time!)
+  minitidal :: Text
   }
 
 
 defaultSettings :: Settings
 defaultSettings = Settings {
 
+  noui = False,
   language = English,
   theme = "../css-custom/classic.css",
   terminalVisible = True,
@@ -81,7 +86,9 @@ defaultSettings = Settings {
   dynamicsMode = DefaultDynamics,
   globalAudioDelay = 0.0,
   punctualAudioInputMode = MicToPunctual,
-  monitorInput = Nothing
+  monitorInput = Nothing,
+
+  minitidal = ""
   }
 
 getSettingsFromURI :: MonadJSM m => m Settings
@@ -108,6 +115,7 @@ settings = do
 
 uriOption :: P UriOption
 uriOption = choice [
+  try nouiP,
   try languageP,
   try themeP,
   try $ onOrOffP "canvas" (\x y -> y { canvasOn = x }),
@@ -117,8 +125,18 @@ uriOption = choice [
   try $ onOrOffP "terminal" (\x y -> y { terminalVisible = x }),
   try $ onOrOffP "sideBar" (\x y -> y { sideBarVisible = x }),
   try $ onOrOffP "stats" (\x y -> y { statsVisible = x }),
-  try $ onOrOffP "header" (\x y -> y { headerVisible = x })
+  try $ onOrOffP "header" (\x y -> y { headerVisible = x }),
+  minitidalP
   ]
+
+nouiP :: P UriOption
+nouiP = string "noui" >> return (\y -> y { noui = True } )
+
+minitidalP :: P UriOption
+minitidalP = do
+  string "minitidal="
+  xs <- manyTill anyChar ((char '&' >> return ()) <|> lookAhead eof)
+  return $ \y -> y { minitidal = pack $ unEscapeString xs }
 
 -- note: responding to ISO 639-1 or ISO 639-2 language codes
 languageP :: P UriOption

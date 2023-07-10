@@ -70,8 +70,32 @@ data TimerUpState =
   Stopped NominalDiffTime
   deriving (Eq, Show, Generic)
 
---data TimeVision = Cyclic Rational | Metric Rational | Weather | Ring Rational | Depth deriving (Show,Eq,Ord,Generic)
-data TimeVision = Cyclic Rational | Metric Rational | Ring Rational | Beads (Rational,Rational) deriving (Show,Eq,Ord,Generic)
+
+data Measure = Cycles | Seconds deriving (Show,Ord,Eq,Generic)
+instance ToJSON Measure where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Measure
+
+-- this should be something like: Falling' UTCTime | Halted | Holding' UTCTime Rational
+data Mode = Falling' UTCTime | Halted | Holding' Rational deriving (Show,Ord,Eq,Generic)
+instance ToJSON Mode where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Mode
+
+
+data Timer = Timer {
+  n:: Int,
+  form:: [(Text,Rational)],
+  mode:: Mode,
+  loop:: Bool,
+  measure:: Measure
+} deriving (Show,Eq,Ord,Generic)
+
+instance ToJSON Timer where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON Timer
+
+data TimeVision = Tv Int Rational Rational deriving (Show,Eq,Ord,Generic)
 
 instance ToJSON TimeVision where
   toEncoding = genericToEncoding defaultOptions
@@ -95,6 +119,7 @@ data Definition =
   SandClock TimerDownState |
   StopWatch TimerUpState |
   SeeTime TimeVision |
+  TimerDef Timer |
   NotePad NotePad |
   CalendarEv CalendarEvent |
   SpecChat SpecChat |
@@ -123,6 +148,7 @@ definitionForRendering (CountDown x) = CountDown x
 definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
+definitionForRendering (TimerDef x) = TimerDef x
 definitionForRendering (NotePad x) = NotePad x
 definitionForRendering (SpecChat x) = SpecChat x
 definitionForRendering (CalendarEvs x) = CalendarEvs x
@@ -196,6 +222,10 @@ maybeTimerDownState _ = Nothing
 maybeSeeTime:: Definition -> Maybe TimeVision
 maybeSeeTime (SeeTime x) = Just x
 maybeSeeTime _ = Nothing
+
+maybeTimer:: Definition -> Maybe Timer
+maybeTimer (TimerDef x) = Just x
+maybeTimer _ = Nothing
 
 maybeNotePad :: Definition -> Maybe NotePad
 maybeNotePad (NotePad x) = Just x
