@@ -61,10 +61,7 @@ calendarEventBuilder delta = do
   return $ leftmost [row]
 
 calendarEventWidgetEv :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Event t CalendarEvent)
-calendarEventWidgetEv delta =
-
-
-  divClass "calendarEventWidgetMainContainer" $ mdo
+calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
   autoUpdateStartingDateEv <- autoUpdateStartingDate $ fmap getStartingDateFromCalendarEv delta
 
   (descEv, dateEv, changePeriodicityEv, changeEndDateEv) <- divClass "calendarEventWidgetSubContainer" $ do
@@ -87,6 +84,7 @@ calendarEventWidgetEv delta =
   let changeEndDateF = fmap changeEndDate changeEndDateEv
 
   -- let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
+  
   let localFThatRebuilds = mergeWith (.) [autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
   let localFThatNotRebuilds = descF -- Event t (CalendarEvent -> CalendarEvent)--
 
@@ -96,6 +94,7 @@ calendarEventWidgetEv delta =
   -- v' <- variable delta localUpdates --  m (Variable t a)
   return localUpdates -- -- Event t (CalendarEvent )
 
+currentValue
 -- helper functions
 
 changePeriodicity :: Periodicity -> CalendarEvent -> CalendarEvent
