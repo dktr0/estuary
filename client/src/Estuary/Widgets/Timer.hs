@@ -30,6 +30,14 @@ import Estuary.Widgets.W
 import Estuary.Types.Definition
 import Estuary.Types.Live
 
+-- data Timer = Timer {
+--   n:: Int,
+--   form:: Live [(Text,Rational)],
+--   mode:: Mode,
+--   loop:: Bool,
+--   measure:: Measure
+-- } deriving (Show,Eq,Ord,Generic)
+
 
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
@@ -40,9 +48,9 @@ timerWidget delta = mdo
   x <- flippableWidget (timerControl delta) (timerDisplay delta) True newModeEv 
   variable delta timerEv
 
-f:: Live String -> Bool
-f (Live str _) = True
-f (Edited str newstr) = False
+-- f:: Live String -> Bool
+-- f (Live str _) = True
+-- f (Edited str newstr) = False
 
 timerControl:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 -- timerControl':: MonadWidget t m => Dynamic t Timer -> W t m ()
@@ -61,8 +69,8 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
         return (flipEvent, programItem) -- small area :: (Event t Bool, Event t ())
       bigAreaL <- divClass "big-areaControl" $ do
         inputWrapper <- divClass "input-wrapperControl" $ do
-          let iText = (formToText . form) <$> delta
-          (valTxBx,_,_) <- textWidget 3 (constDyn False) (T.pack "a=5,b=7,c=3") $ updated iText 
+          let iText = (formToText . form) <$> delta 
+          (valTxBx,_) <- textWithLockWidget 3 (constDyn $ False) iText  
           let boton = snd smallAreaL
           let txPressed = tag (current $ valTxBx) boton -- Event t Text
           return $ parseForm <$> txPressed -- Event t [(Text,Rat)]
@@ -91,16 +99,24 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
 timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
 -- timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m ()
 timerDisplay delta = divClass "timer-Visualiser" $ mdo
+  
   -- liftIO $ putStrLn "timerDisplay"
   dInit <- sample $ current delta
   let local = fst top
   mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
   timerChangeDisplay True mergedLocalDelta
 
+  let mouseCoords = getMouseEventCoords
+  -- mouseCoordsDyn <- holdDyn (0,0) $
+  -- elDynAttr :: forall t m a. (DomBuilder t m, PostBuild t m) => Text -> Dynamic t (Map Text Text) -> m a -> m a
+-- elClass "div" (constDyn ("class" =: "row")) (return ())
+
+
   top <- do
     topContainer <- divClass "containerTimer" $ do 
       flipItem <- clickableDiv "segmentLeftTimer" $ do
-        divClass "flipTimer" $ text $ T.pack "edit"
+        -- divClass "flipTimer" $ text $ T.pack "edit"
+        elDynAttr "div" (constDyn ("class" =: "flipTimer")) $ text $ T.pack "edit"
       let flipEvent = flipFunc <$ flipItem  
       timerStateEvents <- divClass "segmentTimer" $ do
         reset <- clickableDiv "rowTopTimer" $ do
@@ -165,11 +181,14 @@ visualDisplay delta 6 = do
   visualiseOnlyLabel delta
   return ()
 visualDisplay delta 7 = do 
+  visualiseCircle delta
+  return ()
+visualDisplay delta 8 = do 
   visualiseStack delta
   return ()
 
 visualDisplayPeek:: MonadWidget t m => Dynamic t Timer -> Int -> W t m ()
-visualDisplayPeek delta _ = do  
+visualDisplayPeek delta _ = do 
   peek delta
   return ()
 
@@ -239,8 +258,8 @@ holdingCalculationP' display markC (z:zs) (x:xs) =
           calculatedSegments = if z > markC then percen else holdingCalculationP' display markC zs xs 
           generalForm = sum (x:xs)
 
-generalOrSegmentedHold:: Int -> Bool
-generalOrSegmentedHold 7 = False
+generalOrSegmentedHold:: Int -> Bool -- if new visual representations added this number should correspond to the ones that have a general count. For the moment only 8 has a general count
+generalOrSegmentedHold 8 = False
 generalOrSegmentedHold _ = True
 
 cycleForm:: Rational -> [Rational] -> Rational
@@ -333,13 +352,60 @@ peek delta = do
   beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
   beat <- holdDyn 0 beatPosition
   wBuildT <- liftIO getCurrentTime
+  let countPercent = (calculateCountSorC (measure iDelta) True iDelta wBuildT) <$> beat <*> currentTempo
   let count' = (calculateCountSorC (measure iDelta) False iDelta wBuildT) <$> beat <*> currentTempo
   let count = formatTextDisplay (measure iDelta) <$> count'
   let label = calculateLabelSorC (measure iDelta) iDelta wBuildT <$> beat <*> currentTempo
+  divClass "spot" $ do 
+    drawCircle countPercent 
+    pure ()
   dynText label
   text $ T.pack "  "
   dynText count
   pure ()
+
+visualiseCircle:: MonadWidget t m => Dynamic t Timer -> W t m ()
+visualiseCircle delta = do
+  iDelta <- sample $ current delta
+  currentTempo <- Estuary.Widgets.W.tempo
+  beatPosition <- elapsedCounts  -- :: Event t Rational -- tiempo desde origen
+  beat <- holdDyn 0 beatPosition
+  wBuildT <- liftIO getCurrentTime
+  let count = (calculateCountSorC (measure iDelta) True iDelta wBuildT) <$> beat <*> currentTempo
+  let label = calculateLabelSorC (measure iDelta) iDelta wBuildT <$> beat <*> currentTempo
+  drawCircle count
+  pure ()
+
+
+drawCircle:: MonadWidget t m => Dynamic t Rational -> W t m ()
+drawCircle delta = do
+ 
+  let class' = constDyn $ "class" =: "visualiser"
+  let vB = constDyn $ "viewBox" =: "0 0 100 100"
+  let w' = constDyn $ "width" =: "100"
+  let h' = constDyn $ "height" =: "100"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
+  let attrs = mconcat [class',w',h',vB,par]
+
+  -- define circle attrs
+  let cx = constDyn $  "cx" =: "50"
+  let cy = constDyn $  "cy" =: "50"
+  let fill = constDyn $ "fill" =:"var(--primary-color)"
+  let size = (\x -> "r" =: showt (realToFrac (x*0.495) :: Double)) <$> delta
+  let circleAttrs = mconcat [cx,cy,size,fill]
+
+  let size' = constDyn $ "r" =: "49.5"
+  let stroke = constDyn $ "stroke" =: "var(--secondary-color)"
+  let fill' = constDyn $ "fill" =: "transparent"
+
+  let markAttrs = mconcat [cx, cy, size', stroke, fill']
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" markAttrs $ return ()
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" circleAttrs $ return ()
+  
+  pure ()
+
 
 visualiseStack:: MonadWidget t m => Dynamic t Timer -> W t m ()
 visualiseStack delta = do
@@ -361,7 +427,8 @@ drawStack countdown' program = do
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
   let vB = constDyn $  "viewBox" =: "0 0 150 100"
-  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let par = constDyn $ "preserveAspectRatio" =: "none" 
+  let par' = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let attrs = mconcat [class',width,height, vB, par]  -- svg
 
   let x1Line = constDyn $ "x1" =: "0"
@@ -370,6 +437,12 @@ drawStack countdown' program = do
   let y1Line = (\y1 -> "y1" =: showt y1) <$> countdown
   let y2Line = (\y2 -> "y2" =: showt y2) <$> countdown
   let lineAttrs = mconcat [x1Line, x2Line, strokeLine, y1Line, y2Line]
+
+  let attrs' = mconcat [class',width,height, vB, par']
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs' $ do
+    generateLabelForBlocks countdown program
+
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     generateStackBlocks countdown program
@@ -383,19 +456,15 @@ generateStackBlocks count program = do
   x <- simpleList heightsAndYs (generateBlock count)
   return ()
 
---simpleList :: MonadWidget t m => Dynamic t [v] -> (Dynamic t v -> m a) -> m (Dynamic t [a])
+generateLabelForBlocks:: MonadWidget t m => Dynamic t Double -> [(Text, Rational)] ->  m ()
+generateLabelForBlocks count program = do
+  let heightsAndYs = constDyn <$> heightsAndY (percenForm $ Prelude.map snd program) $ Prelude.map fst program
+  x <- simpleList heightsAndYs (generateLabelForBlock count)
+  return ()
 
-generateBlock:: MonadWidget t m => Dynamic t Double -> Dynamic t (Double,Double,Text) ->  m ()
-generateBlock count segment = do
-  let height = (\x -> "height" =: (showt $ fst' x)) <$> segment
-  let y = (\x -> "y" =: (showt $ snd' x)) <$> segment
+generateLabelForBlock:: MonadWidget t m => Dynamic t Double -> Dynamic t (Double,Double,Text) ->  m ()
+generateLabelForBlock count segment = do
   let label = (\x -> (trd' x)) <$> segment -- Dyn t Text
-  let width = constDyn $ "width" =: "150"
-  let x = constDyn $ "x" =: "0"
-  let stroke = constDyn $ "stroke" =: "var(--background-color)" 
-  let fill = fill' <$> count <*> (fst' <$> segment) <*> (snd' <$> segment)
-  let op = opacity' <$> count <*> (fst' <$> segment) <*> (snd' <$> segment)
-  let attrsRect = mconcat [x,y,width,height,fill,op, stroke]
   -- text attributes
   let textX = constDyn $ "x" =: "70"
   let textY = (\y -> "y" =: (showt $ (snd' y) + ((fst' y)*0.85))) <$> segment
@@ -407,13 +476,28 @@ generateBlock count segment = do
 
   -- span attributes
 
-
-
-  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
       elDynAttrNS' (Just "http://www.w3.org/2000/svg") "tspan" tspanAttrs $ do
         -- dynText $ fmap (\x -> showt (floor x)) countdown
         dynText label
+  return ()
+
+
+--simpleList :: MonadWidget t m => Dynamic t [v] -> (Dynamic t v -> m a) -> m (Dynamic t [a])
+
+generateBlock:: MonadWidget t m => Dynamic t Double -> Dynamic t (Double,Double,Text) ->  m ()
+generateBlock count segment = do
+  let height = (\x -> "height" =: (showt $ fst' x)) <$> segment
+  let y = (\x -> "y" =: (showt $ snd' x)) <$> segment
+  let width = constDyn $ "width" =: "150"
+  let x = constDyn $ "x" =: "0"
+  let stroke = constDyn $ "stroke" =: "var(--background-color)" 
+  let fill = fill' <$> count <*> (fst' <$> segment) <*> (snd' <$> segment)
+  let op = opacity' <$> count <*> (fst' <$> segment) <*> (snd' <$> segment)
+  let attrsRect = mconcat [x,y,width,height,fill,op, stroke]
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
+
   return ()
 
 fill':: Double -> Double -> Double -> Map Text Text
@@ -463,38 +547,52 @@ drawProgressBarLabel countdown tag = do
   let vB = constDyn $  "viewBox" =: "0 0 100 80"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
   let attrs = mconcat [class',width,height, vB, par]  -- svg
-  -- rect1
-  let x' = constDyn $ "x" =: "0"
-  let y' = constDyn $ "y" =: "12"
-  let width1 = constDyn $ "width" =: "100"
-  let height1 = constDyn $ "height" =: "30"
-  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-  let fill = constDyn $ "fill" =: "transparent"
-  let attrsRect = mconcat [x',y',width1, height1, stroke, fill] 
-  -- progress rect
-  let x'' = constDyn $ "x" =: "100"
-  let y'' = constDyn $ "y" =: "0"
-  let height2 = constDyn $ "height" =: "30"
-  let opacity = constDyn $ "opacity" =: "0.5"
-  let transform = constDyn $ "transform" =: "rotate(180,100,21)"
-  let fill = constDyn $ "fill" =: "var(--primary-color)"
-  let dynWidth = (\x -> "width" =: showt (realToFrac x :: Double)) <$> countdown
-  let attrsDynRect = mconcat [x'', y'', height2, opacity, transform, fill, dynWidth]
-  -- tag text
-  let txFill = constDyn $ "fill" =: "var(--primary-color)"
+
+  let id = constDyn $ "id" =: "solid" 
+  let fltAttrs = mconcat [id]
+
+  let floodColor = constDyn $ "flood-color" =: "var(--background-color)"
+  let floodOpacity = constDyn $ "flood-opacity" =: "0.35"
+  let result = constDyn $ "result" =: "bg" 
+  let feFloodAttrs = mconcat [floodColor, floodOpacity, result]
+
+  -- <defs>
+  --   <filter x="0" y="0" width="1" height="1" id="solid">
+  --     <feFlood flood-color="yellow" result="bg" />
+  --     <feMerge>
+  --       <feMergeNode in="bg"/>
+  --       <feMergeNode in="SourceGraphic"/>
+  --     </feMerge>
+  --   </filter>
+  -- </defs>
+
+
+  -- defs
+  -- filter
+
+
+  let txFill = constDyn $ "fill" =: "var(--secondary-color)"
   let txX = constDyn $ "x" =: "50"
-  let txY = constDyn $ "y" =: "72"
+  let txY = constDyn $ "y" =: "60"
   let txAnchor = constDyn $ "text-anchor" =: "middle"
   let fontSize = constDyn $ "font-size" =: "2em"
+  let txFilter = constDyn $ "filter" =: "url(#solid)"
   -- let fontSz = a dynamic text size with...
-  let txAttrs = mconcat [txFill, txX, txY, txAnchor, fontSize]
+  let txAttrs = mconcat [txFill, txX, txY, txAnchor, fontSize, txFilter]
+
+
+  drawProgressBar countdown
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "defs" (constDyn Data.Map.empty) $ do
+      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "filter" fltAttrs $ do
+        elDynAttrNS' (Just "http://www.w3.org/2000/svg") "feFlood" feFloodAttrs $ pure ()
+        elDynAttrNS' (Just "http://www.w3.org/2000/svg") "feMerge" (constDyn Data.Map.empty) $ do
+          elDynAttrNS' (Just "http://www.w3.org/2000/svg") "feMergeNode" (constDyn $ "in" =: "bg") $ pure ()
+          elDynAttrNS' (Just "http://www.w3.org/2000/svg") "feMergeNode" (constDyn $ "in" =: "SourceGraphic") $ pure ()
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
       dynText tag
-      return ()
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return ()
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsDynRect $ return ()
+      return () 
   return ()
 
 visualiseProgressBar:: MonadWidget t m => Dynamic t Timer -> W t m ()
@@ -513,23 +611,23 @@ drawProgressBar countdown = do
   let class' = constDyn $ "class" =: "visualiser"
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
-  let vB = constDyn $  "viewBox" =: "0 0 100 80"
-  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let vB = constDyn $  "viewBox" =: "0 0 100 50"
+  let par = constDyn $ "preserveAspectRatio" =: "none" 
   let attrs = mconcat [class',width,height, vB, par]  -- svg
   -- rect1
   let x' = constDyn $ "x" =: "0"
-  let y' = constDyn $ "y" =: "12"
+  let y' = constDyn $ "y" =: "1"
   let width1 = constDyn $ "width" =: "100"
-  let height1 = constDyn $ "height" =: "30"
+  let height1 = constDyn $ "height" =: "48"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let fill = constDyn $ "fill" =: "transparent"
   let attrsRect = mconcat [x',y',width1, height1, stroke, fill] 
   -- progress rect
   let x'' = constDyn $ "x" =: "100"
-  let y'' = constDyn $ "y" =: "0"
-  let height2 = constDyn $ "height" =: "30"
+  let y'' = constDyn $ "y" =: "1"
+  let height2 = constDyn $ "height" =: "48"
   let opacity = constDyn $ "opacity" =: "0.5"
-  let transform = constDyn $ "transform" =: "rotate(180,100,21)"
+  let transform = constDyn $ "transform" =: "rotate(180,100,24.75)"
   let fill = constDyn $ "fill" =: "var(--primary-color)"
   let dynWidth = (\x -> "width" =: showt (realToFrac x :: Double)) <$> countdown
   let attrsDynRect = mconcat [x'', y'', height2, opacity, transform, fill, dynWidth]
@@ -647,17 +745,15 @@ drawSandClock countdown = do
   let fillHold = constDyn $ "fill" =: "var(--primary-color)"
   let attrsHold = mconcat [mask',fillHold,x',yHold,widthHold,heightHold]
 
-  let transform = constDyn $ "transform" =: "scale(0.67) translate(27)"
-  let layerAttrs = mconcat [transform]
+
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     -- creatMask first
     sandClockMask
     -- sand Falling
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "g" layerAttrs $ do
-      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsFall $ return () 
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsFall $ return () 
       -- sand held
-      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
   return ()
 
 ---------
@@ -745,8 +841,8 @@ drawText countdown = do
   -- tspan1 attrs
   let y' = constDyn $ "y" =: "95"
   -- tspan2 attrs
-  let font2 = constDyn $ "font-size" =: "2.8em"
-  let y'' = constDyn $ "y" =: "45"
+  let font2 = constDyn $ "font-size" =: "5em"
+  let y'' = constDyn $ "y" =: "75"
   let tspan2Attrs = mconcat [txAnchor,fill,x',y'',font2]
 
   let txAttrs = mconcat [txAnchor,fill,x',y']
@@ -779,7 +875,7 @@ visualiseOnlyLabel delta = do
 drawOnlyLabel :: MonadWidget t m => Dynamic t Text -> W t m ()
 drawOnlyLabel tag = do
   -- scale tag
-  let fontScaled = (fontSize . T.length) <$> tag
+  let fontScaled = (fontSize' . T.length) <$> tag
   
   -- svg attrs
   let class' = constDyn $ "class" =: "visualiser code-font"
@@ -796,7 +892,7 @@ drawOnlyLabel tag = do
   let x' = constDyn $ "x" =: "50"
   -- tspan1 attrs
   let font1 = fontScaled
-  let y' = constDyn $ "y" =: "50"
+  let y' = constDyn $ "y" =: "75"
   let tspan1Attrs = mconcat [txAnchor,fill,x',y',font1]
 
   let txAttrs = mconcat [txAnchor,fill,x',y']
@@ -858,12 +954,20 @@ loopFunc timer
 
 -- this needs to change if other visualisers are added (either on the fly or permanently to estuary).
 numberOfVis:: Int
-numberOfVis = 8
+numberOfVis = 9
 
 
 ----- helpers for display
+fontSize':: Int -> Map Text Text
+fontSize' len 
+    | len <= 8 = "font-size" =: "4em"
+    | len <= 12 = "font-size" =: "3em"
+    | len <= 20 = "font-size" =: "2em"
+    | len <= 30 = "font-size" =: "1.5em"
+    | otherwise = "font-size" =: "1em"
 
-fontSize:: Int -> Map Text Text -- this is not attach to anything yet... follow throu...
+
+fontSize:: Int -> Map Text Text
 fontSize len 
     | len <= 8 = "font-size" =: "2.5em"
     | len <= 12 = "font-size" =: "2.0em"
@@ -905,7 +1009,7 @@ sandClockMask = do
   let fill' = constDyn $ "fill" =: "black"
   let attrsRect = mconcat [x,y,width',height',fill']
   -- clock shape attributes
-  let points' = constDyn $ points [(5,95),(95,95),(45,45),(5,5),(95,5)]
+  let points' = constDyn $ points [(0,100),(100,100),(50,50),(0,0),(100,0)]
   let stroke' = constDyn $ "stroke" =: "white"
   let fill'' = constDyn $ "fill" =: "white"
   let attrsClock = mconcat [stroke',points',fill'']
@@ -932,9 +1036,7 @@ ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)
 
 
 ----
--- Elapsed seconds makes most sense. Basically pass the count of elapsed seconds from builtime and then make the conversions locally (to beats). You have to figure out where this operations makes the most sense, candidate: calculateCount
 
---- I might have to use only a tick and the UTC time of 'last tick'
 -- this creates ticks from the moment estuary is built, just that
 elapsedCounts:: MonadWidget t m => W t m (Event t  Rational)
 elapsedCounts = do
@@ -951,8 +1053,9 @@ extractTimeMark (Holding' mark) = Left mark
 extractTimeMark Halted = Left $ realToFrac 0
 
 -- 
+-- this needs to be precisely mapped to the timers
 generalOrSegmentedCount:: Int -> Bool 
-generalOrSegmentedCount 7 = False
+generalOrSegmentedCount 8 = False -- stack timer, the only one that shows the whole program
 generalOrSegmentedCount _ = True
 
 -- this generates only whole numbers (less precise, more economic??)
@@ -1186,3 +1289,9 @@ refreshIcon bool = do
 boolOpacity:: Bool -> Map Text Text
 boolOpacity False = "style" =: "filter: opacity(50%)"
 boolOpacity True = "style" =: "filter: opacity(100%)"
+
+
+-- getMouseEventCoords :: EventM e MouseEvent (Int, Int)
+
+
+

@@ -1109,6 +1109,12 @@ cursor: pointer;
 	z-index: 3;
 }
 
+.spot {
+	position: relative;
+	width: 10%;
+	height: 100%;
+}
+
 .visualiser {
     position: absolute; 
 	z-index: 0;
