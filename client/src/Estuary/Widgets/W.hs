@@ -562,6 +562,7 @@ widgetMapEventWithAdd delta addEv buildF = mdo
   displayedValue <- holdDyn iDelta $ leftmost [evIntegratedDelta, editsBelow]
   pure $ leftmost [editsBelow,addEv']
 
+-- basically broken, don't use
 widgetMapEventWithAddDelete :: (Show a, MonadWidget t m) => Dynamic t (IntMap a) -> Event t a -> (Dynamic t a -> m (Event t (Maybe a))) -> m (Event t (IntMap a))
 widgetMapEventWithAddDelete delta addEv buildF = mdo
   let evAddMap = attachWith (\m a -> Data.IntMap.insert (highestKeyPlusOne m) a m) (current localValue) addEv
@@ -637,13 +638,15 @@ calculateAddMap oldMap newRow = Map.singleton n (Just newRow)
       [] -> 0
       ks' -> Prelude.maximum ks + 1
       
-      
-type Test = IntMap Text
+
+-- type Test = IntMap Text
+type Test = Map Int Text
 
 testMap :: MonadWidget t m => Dynamic t Test -> m (Variable t Test)
 testMap delta = do
   addButton <- traceEvent "AddButton" <$> button "+"
-  mapEv <- widgetMapEventWithAddDelete delta ("newtext" <$ addButton) testRowMaybe
+--   mapEv <- widgetMapEventWithAddDelete delta ("newtext" <$ addButton) testRowMaybe
+  mapEv <- widgetMapAddDelete delta ("newtext" <$ addButton) testRowMaybe
   variable delta mapEv
 
 testRow :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
@@ -669,9 +672,10 @@ testRowMaybe' delta = do
 --  Just x = local edit to this row
 
 widgetMapDemo :: IO ()
-widgetMapDemo = mainWidget $ do
-  let i = Data.IntMap.singleton 0 "text zero"
-  delta <- holdDyn i never
+widgetMapDemo = mainWidget $ mdo
+
+  let i = Map.singleton 0 "text zero"
+  delta <- holdDyn i $ localEdits x
   x <- el "div" $ testMap delta -- :: Variable t Test
 
   -- display localEdits issued from widget
