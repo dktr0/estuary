@@ -21,7 +21,8 @@ import Data.IntMap
 import Data.Sequence
 import Text.Read (readMaybe)
 import Data.IntMap
-import Data.Maybe
+import Data.Maybe hiding (catMaybes)
+import Data.Witherable
 
 import qualified Sound.Punctual.Resolution as Punctual
 
@@ -529,7 +530,7 @@ distributeIntMapOverVariable iMap = Variable curVal locEdits
 -- we need the difference between a and b here if we are to have widgets that give back signals of different types
 -- than the types of the values the "create" the widgets, such as a "delete me" signal, for example.
 -- soon we expect to rework this so that builder function takes an Int argument representing that item's position in map
--- and later we expect to rework this to avoid rebuilds whenever possible (eg. when values change but keys don't)
+-- and later we expect to rework this to avoid rebuilds whenever possible (eg. when va lues change but keys don't)
 
 widgetMap :: (Show a, Monad m, MonadSample t m, Reflex t, Adjustable t m, MonadHold t m) => Dynamic t (IntMap a) -> (Dynamic t a -> m b) -> m (Dynamic t (IntMap b))
 widgetMap delta buildF = do
@@ -591,6 +592,52 @@ updateOrDeletePartialMap oldMap partialMap = Data.IntMap.alter f theKey oldMap
     f _ = Prelude.head $ Data.IntMap.elems partialMap
 
 
+widgetMapAddDelete :: (Eq a, MonadWidget t m) =>
+  Dynamic t (Map Int a) -> -- deltaDown
+  Event t a -> -- event to add a new row (note: causes update to propagate upwards)
+  (Dynamic t a -> m (Event t (Maybe a))) -> -- row builder (Maybe a: Just x is a local row edit, Nothing is a delete-self message)
+  m (Event t (Map Int a))
+widgetMapAddDelete delta localAddEv rowBuilder = mdo
+  initialMap <- sample $ current delta -- :: Map Int a
+  -- calculate changes (a diff map) 
+  let deltaDiffMap = attachWith calculateDiffMap (current localValue) $ updated delta 
+  -- calculate changes (a diff map) for any local add events
+  -- note: in any frame with a delta, the map for calculating add events is the map from the delta (otherwise, local map)  
+  mapForAddMap <- holdDyn initialMap $ leftmost [updated delta, updated localValue] 
+  let addMap = attachWith calculateAddMap (current mapForAddMap) localAddEv
+  -- calculate changes (a diff map) for any local delete events
+  let deleteMap = fmap (Map.filter isNothing) x' -- :: Event t (Map Int a), all of the Nothing rows from x'
+  let widgetDiffMap = mergeWith Map.union [deleteMap, mergeWith Map.union [addMap, deltaDiffMap]]
+  let rowBuilder' _ v e = holdDyn v e >>= rowBuilder
+  x <- listWithKeyShallowDiff initialMap widgetDiffMap rowBuilder' -- :: m (Dynamic t (Map Int (Event t (Maybe a))))
+  let x' = switchDyn $ fmap mergeMap x -- :: Event t (Map Int (Maybe a))
+  let localChanges = fmap (Map.filter isJust) x' -- :: Event t (Map Int (Maybe a)), all of the Just rows from x'
+  let allDiffMap = mergeWith Map.union [localChanges, widgetDiffMap] -- :: Event t (Map Int (Maybe a))
+  localValue <- foldDyn applyDiffMap initialMap allDiffMap
+  pure $ tag (current localValue) $ leftmost [0 <$ localAddEv,0 <$ x'] -- any local changes, deletes, adds (we hope)
+  
+applyDiffMap :: Map Int (Maybe a) -> Map Int a -> Map Int a
+applyDiffMap diffMap oldMap = Map.union editOrAdds (Map.difference oldMap deletions)
+  where
+    deletions = Map.filter isNothing diffMap
+    editOrAdds = catMaybes diffMap
+
+calculateDiffMap :: Eq a => Map Int a -> Map Int a -> Map Int (Maybe a)
+calculateDiffMap oldMap newMap = Map.union additions (Map.union deletions changes)
+  where
+    additions = Just <$> Map.difference newMap oldMap
+    deletions = Nothing <$ Map.difference oldMap newMap
+    changes = fmap Just $ catMaybes $ Map.intersectionWith (\a b -> if a == b then Nothing else Just a) newMap oldMap -- from Data.Witherable
+
+calculateAddMap :: Map Int a -> a -> Map Int (Maybe a)
+calculateAddMap oldMap newRow = Map.singleton n (Just newRow)
+  where
+    ks = Map.keys oldMap
+    n = case ks of 
+      [] -> 0
+      ks' -> Prelude.maximum ks + 1
+      
+      
 type Test = IntMap Text
 
 testMap :: MonadWidget t m => Dynamic t Test -> m (Variable t Test)
