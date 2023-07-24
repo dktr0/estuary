@@ -23,6 +23,7 @@ import Text.Read (readMaybe)
 import Data.IntMap
 import Data.Maybe hiding (catMaybes)
 import Data.Witherable
+import Data.Foldable (foldr,null)
 
 import qualified Sound.Punctual.Resolution as Punctual
 
@@ -593,60 +594,72 @@ updateOrDeletePartialMap oldMap partialMap = Data.IntMap.alter f theKey oldMap
     f _ = Prelude.head $ Data.IntMap.elems partialMap
 
 
-widgetMapAddDelete :: (Eq a, MonadWidget t m) =>
-  Dynamic t (Map Int a) -> -- deltaDown
+widgetMapAddDelete :: (Show a, Eq a, MonadWidget t m) =>
+  Map Int a -> Event t (Map Int a) -> -- deltaDown
   Event t a -> -- event to add a new row (note: causes update to propagate upwards)
   (Dynamic t a -> m (Event t (Maybe a))) -> -- row builder (Maybe a: Just x is a local row edit, Nothing is a delete-self message)
   m (Event t (Map Int a))
-widgetMapAddDelete delta localAddEv rowBuilder = mdo
-  initialMap <- sample $ current delta -- :: Map Int a
-  -- calculate changes (a diff map) 
-  let deltaDiffMap = attachWith calculateDiffMap (current localValue) $ updated delta 
-  -- calculate changes (a diff map) for any local add events
-  -- note: in any frame with a delta, the map for calculating add events is the map from the delta (otherwise, local map)  
-  mapForAddMap <- holdDyn initialMap $ leftmost [updated delta, updated localValue] 
-  let addMap = attachWith calculateAddMap (current mapForAddMap) localAddEv
-  -- calculate changes (a diff map) for any local delete events
-  let deleteMap = fmap (Map.filter isNothing) x' -- :: Event t (Map Int a), all of the Nothing rows from x'
-  let widgetDiffMap = mergeWith Map.union [deleteMap, mergeWith Map.union [addMap, deltaDiffMap]]
+widgetMapAddDelete initialMap deltaEv localAddEv rowBuilder = mdo
+  let remoteWrites = fmap const deltaEv -- :: Event t (Map Int a -> Map Int a)
+  let localAdds = fmap calculateAdds localAddEv -- :: Event t (Map Int a -> Map Int a)
+  let keysToDelete = ffilter (not . Data.Foldable.null) $ fmap (Map.keys . Map.filter isNothing) x' -- :: Event t [Int]
+  let localDeletes = fmap calculateDeletes keysToDelete -- :: Event t (Map Int a -> Map Int a)
+  let changesToWidgets = mergeWith (.) [localAdds, localDeletes, remoteWrites] -- because widgets were the source of local changes
+  let widgetDiffMap = traceEvent "widgetDiffMap" $ ffilter (not . Data.Foldable.null) $ attachWith calculateDiffMap (current z') changesToWidgets -- Event t (Map Int (Maybe a))
   let rowBuilder' _ v e = holdDyn v e >>= rowBuilder
   x <- listWithKeyShallowDiff initialMap widgetDiffMap rowBuilder' -- :: m (Dynamic t (Map Int (Event t (Maybe a))))
   let x' = switchDyn $ fmap mergeMap x -- :: Event t (Map Int (Maybe a))
-  let localChanges = fmap (Map.filter isJust) x' -- :: Event t (Map Int (Maybe a)), all of the Just rows from x'
-  let allDiffMap = mergeWith Map.union [localChanges, widgetDiffMap] -- :: Event t (Map Int (Maybe a))
-  localValue <- foldDyn applyDiffMap initialMap allDiffMap
-  pure $ tag (current localValue) $ leftmost [0 <$ localAddEv,0 <$ x'] -- any local changes, deletes, adds (we hope)
-  
-applyDiffMap :: Map Int (Maybe a) -> Map Int a -> Map Int a
-applyDiffMap diffMap oldMap = Map.union editOrAdds (Map.difference oldMap deletions)
-  where
-    deletions = Map.filter isNothing diffMap
-    editOrAdds = catMaybes diffMap
+  let localJusts = ffilter (not . Data.Foldable.null) $ fmap (Map.filter isJust) x'
+  let localEdits = fmap (Data.Foldable.foldr (.) id . Map.mapWithKey calculateEdit) localJusts -- :: Event t (Map Int a -> Map Int a)
+  let allChanges = mergeWith (.) [localEdits,changesToWidgets] -- :: Event t (Map Int a -> Map Int a)
+  localValue <- foldDyn ($) initialMap allChanges -- :: Dynamic t (Map Int a)
+  -- accumDyn :: (Reflex t, MonadHold t m, MonadFix m) => (a -> b -> a) -> a -> Event t b -> m (Dynamic t a) 
+  z <- accumDyn (&) initialMap allChanges
+  z' <- holdUniqDyn z
+  pure $ traceEvent "widgetMapAddDelete" $ updated z'
+  -- y <- holdUniqDyn localValue
+  -- pure $ traceEvent "widgetMapAddDelete" $ updated localValue
 
-calculateDiffMap :: Eq a => Map Int a -> Map Int a -> Map Int (Maybe a)
-calculateDiffMap oldMap newMap = Map.union additions (Map.union deletions changes)
-  where
-    additions = Just <$> Map.difference newMap oldMap
-    deletions = Nothing <$ Map.difference oldMap newMap
-    changes = fmap Just $ catMaybes $ Map.intersectionWith (\a b -> if a == b then Nothing else Just a) newMap oldMap -- from Data.Witherable
 
-calculateAddMap :: Map Int a -> a -> Map Int (Maybe a)
-calculateAddMap oldMap newRow = Map.singleton n (Just newRow)
+calculateAdds :: a -> Map Int a -> Map Int a
+calculateAdds newRow oldMap = Map.insert n newRow oldMap
   where
     ks = Map.keys oldMap
     n = case ks of 
       [] -> 0
       ks' -> Prelude.maximum ks + 1
       
+calculateDeletes :: [Int] -> Map Int a -> Map Int a
+calculateDeletes ks = Data.Foldable.foldr (.) id $ fmap Map.delete ks
+
+calculateEdit :: Int -> Maybe a -> Map Int a -> Map Int a
+calculateEdit k (Just v) = Map.insert k v
+calculateEdit _ Nothing = id
+
+calculateDiffMap :: Eq a => Map Int a -> (Map Int a -> Map Int a) -> Map Int (Maybe a)
+calculateDiffMap oldMap f = Map.union additions (Map.union deletions changes)
+  where
+    newMap = f oldMap
+    additions = Just <$> Map.difference newMap oldMap
+    deletions = Nothing <$ Map.difference oldMap newMap
+    changes = fmap Just $ catMaybes $ Map.intersectionWith (\a b -> if a == b then Nothing else Just a) newMap oldMap -- from Data.Witherable
+
+applyDiffMap :: Map Int (Maybe a) -> Map Int a -> Map Int a
+applyDiffMap diffMap oldMap = Map.union editOrAdds (Map.difference oldMap deletions)
+  where
+    deletions = Map.filter isNothing diffMap
+    editOrAdds = catMaybes diffMap
+
 
 -- type Test = IntMap Text
 type Test = Map Int Text
 
 testMap :: MonadWidget t m => Dynamic t Test -> m (Variable t Test)
 testMap delta = do
+  initialMap <- sample $ current delta
   addButton <- traceEvent "AddButton" <$> button "+"
 --   mapEv <- widgetMapEventWithAddDelete delta ("newtext" <$ addButton) testRowMaybe
-  mapEv <- widgetMapAddDelete delta ("newtext" <$ addButton) testRowMaybe
+  mapEv <- widgetMapAddDelete initialMap (updated delta) ("newtext" <$ addButton) testRowMaybe
   variable delta mapEv
 
 testRow :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
