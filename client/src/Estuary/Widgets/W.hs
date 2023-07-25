@@ -24,6 +24,7 @@ import Data.IntMap
 import Data.Maybe hiding (catMaybes)
 import Data.Witherable
 import Data.Foldable (foldr,null)
+import Data.These
 
 import qualified Sound.Punctual.Resolution as Punctual
 
@@ -605,21 +606,26 @@ widgetMapAddDelete initialMap deltaEv localAddEv rowBuilder = mdo
   let keysToDelete = ffilter (not . Data.Foldable.null) $ fmap (Map.keys . Map.filter isNothing) x' -- :: Event t [Int]
   let localDeletes = fmap calculateDeletes keysToDelete -- :: Event t (Map Int a -> Map Int a)
   let changesToWidgets = mergeWith (.) [localAdds, localDeletes, remoteWrites] -- because widgets were the source of local changes
-  let widgetDiffMap = traceEvent "widgetDiffMap" $ ffilter (not . Data.Foldable.null) $ attachWith calculateDiffMap (current z') changesToWidgets -- Event t (Map Int (Maybe a))
+  let widgetDiffMap = traceEvent "widgetDiffMap" $ ffilter (not . Data.Foldable.null) $ attachWith calculateDiffMap (current localValue) changesToWidgets -- Event t (Map Int (Maybe a))
   let rowBuilder' _ v e = holdDyn v e >>= rowBuilder
   x <- listWithKeyShallowDiff initialMap widgetDiffMap rowBuilder' -- :: m (Dynamic t (Map Int (Event t (Maybe a))))
   let x' = switchDyn $ fmap mergeMap x -- :: Event t (Map Int (Maybe a))
   let localJusts = ffilter (not . Data.Foldable.null) $ fmap (Map.filter isJust) x'
   let localEdits = fmap (Data.Foldable.foldr (.) id . Map.mapWithKey calculateEdit) localJusts -- :: Event t (Map Int a -> Map Int a)
   let allChanges = mergeWith (.) [localEdits,changesToWidgets] -- :: Event t (Map Int a -> Map Int a)
-  localValue <- foldDyn ($) initialMap allChanges -- :: Dynamic t (Map Int a)
-  -- accumDyn :: (Reflex t, MonadHold t m, MonadFix m) => (a -> b -> a) -> a -> Event t b -> m (Dynamic t a) 
-  z <- accumDyn (&) initialMap allChanges
-  z' <- holdUniqDyn z
-  pure $ traceEvent "widgetMapAddDelete" $ updated z'
-  -- y <- holdUniqDyn localValue
-  -- pure $ traceEvent "widgetMapAddDelete" $ updated localValue
+  localValue0 <- foldDyn ($) initialMap allChanges -- :: Dynamic t (Map Int a)
+  localValue <- holdUniqDyn localValue0
+  pure $ allow (updated localValue) $ leftmost [localAdds,localDeletes,localEdits]  
 
+
+-- the opposite of 'difference' from Reflex - the first event occurs as the result
+-- only when the second supplied event occurs simultaneously.
+-- TODO: move to Reflex helpers module, together with Data.These module import
+allow :: Reflex t => Event t a -> Event t b -> Event t a
+allow = alignEventWithMaybe $ \x -> case x of
+  These a _ -> Just a
+  _ -> Nothing
+  
 
 calculateAdds :: a -> Map Int a -> Map Int a
 calculateAdds newRow oldMap = Map.insert n newRow oldMap
