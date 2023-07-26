@@ -605,18 +605,34 @@ widgetMapAddDelete initialMap deltaEv localAddEv rowBuilder = mdo
   let localAdds = fmap calculateAdds localAddEv -- :: Event t (Map Int a -> Map Int a)
   let keysToDelete = ffilter (not . Data.Foldable.null) $ fmap (Map.keys . Map.filter isNothing) x' -- :: Event t [Int]
   let localDeletes = fmap calculateDeletes keysToDelete -- :: Event t (Map Int a -> Map Int a)
-  let changesToWidgets = mergeWith (.) [localAdds, localDeletes, remoteWrites] -- because widgets were the source of local changes
-  let widgetDiffMap = traceEvent "widgetDiffMap" $ ffilter (not . Data.Foldable.null) $ attachWith calculateDiffMap (current localValue) changesToWidgets -- Event t (Map Int (Maybe a))
+  let changesToWidgets = mergeWith (.) [localAdds, localDeletes, remoteWrites] -- because widgets are the source of local edits, they don't receive them
+  let allChanges = mergeWith (.) [localEdits,changesToWidgets]
+  newMaps <- accumDyn (&) initialMap allChanges
+  newMapsUniq <- holdUniqDyn newMaps
+  widgetDiffMap <- mapAccum_ calculateDiffMap initialMap (updated newMapsUniq) -- :: m (Event t (Map Int (Maybe a))
   let rowBuilder' _ v e = holdDyn v e >>= rowBuilder
   x <- listWithKeyShallowDiff initialMap widgetDiffMap rowBuilder' -- :: m (Dynamic t (Map Int (Event t (Maybe a))))
   let x' = switchDyn $ fmap mergeMap x -- :: Event t (Map Int (Maybe a))
   let localJusts = ffilter (not . Data.Foldable.null) $ fmap (Map.filter isJust) x'
   let localEdits = fmap (Data.Foldable.foldr (.) id . Map.mapWithKey calculateEdit) localJusts -- :: Event t (Map Int a -> Map Int a)
-  let allChanges = mergeWith (.) [localEdits,changesToWidgets] -- :: Event t (Map Int a -> Map Int a)
-  localValue0 <- foldDyn ($) initialMap allChanges -- :: Dynamic t (Map Int a)
-  localValue <- holdUniqDyn localValue0
-  pure $ allow (updated localValue) $ leftmost [localAdds,localDeletes,localEdits]  
+  pure $ updated newMapsUniq
 
+  {-
+  let widgetDiffMap = traceEvent "widgetDiffMap" $ ffilter (not . Data.Foldable.null) $ attachWith calculateDiffMap (current localValue) changesToWidgets -- Event t (Map Int (Maybe a))
+  let rowBuilder' _ v e = holdDyn v e >>= rowBuilder
+  x <- listWithKeyShallowDiff initialMap widgetDiffMap rowBuilder' -- :: m (Dynamic t (Map Int (Event t (Maybe a))))
+  let x' = switchDyn $ fmap mergeMap x -- :: Event t (Map Int (Maybe a))
+  -}
+  
+
+calculateDiffMap :: Eq a => Map Int a -> Map Int a -> (Map Int a, Map Int (Maybe a))
+calculateDiffMap oldMap newMap = (newMap,diffMap)
+  where
+    additions = Just <$> Map.difference newMap oldMap
+    deletions = Nothing <$ Map.difference oldMap newMap
+    changes = fmap Just $ catMaybes $ Map.intersectionWith (\a b -> if a == b then Nothing else Just a) newMap oldMap -- from Data.Witherable
+    diffMap = Map.union additions (Map.union deletions changes)
+  
 
 -- the opposite of 'difference' from Reflex - the first event occurs as the result
 -- only when the second supplied event occurs simultaneously.
@@ -641,14 +657,6 @@ calculateDeletes ks = Data.Foldable.foldr (.) id $ fmap Map.delete ks
 calculateEdit :: Int -> Maybe a -> Map Int a -> Map Int a
 calculateEdit k (Just v) = Map.insert k v
 calculateEdit _ Nothing = id
-
-calculateDiffMap :: Eq a => Map Int a -> (Map Int a -> Map Int a) -> Map Int (Maybe a)
-calculateDiffMap oldMap f = Map.union additions (Map.union deletions changes)
-  where
-    newMap = f oldMap
-    additions = Just <$> Map.difference newMap oldMap
-    deletions = Nothing <$ Map.difference oldMap newMap
-    changes = fmap Just $ catMaybes $ Map.intersectionWith (\a b -> if a == b then Nothing else Just a) newMap oldMap -- from Data.Witherable
 
 applyDiffMap :: Map Int (Maybe a) -> Map Int a -> Map Int a
 applyDiffMap diffMap oldMap = Map.union editOrAdds (Map.difference oldMap deletions)
@@ -694,7 +702,7 @@ widgetMapDemo :: IO ()
 widgetMapDemo = mainWidget $ mdo
 
   let i = Map.singleton 0 "text zero"
-  delta <- holdDyn i $ localEdits x
+  delta <- holdDyn i never -- $ localEdits x
   x <- el "div" $ testMap delta -- :: Variable t Test
 
   -- display localEdits issued from widget
