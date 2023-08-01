@@ -154,6 +154,7 @@ library
     , witherable
     , ghcjs-promise
     , async
+    , these
   default-language: Haskell2010
 
 executable Estuary

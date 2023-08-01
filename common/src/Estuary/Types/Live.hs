@@ -36,3 +36,11 @@ instance Show a => Show (Live a) where
 isEdited :: Live a -> Bool
 isEdited (Edited _ _) = True
 isEdited _ = False
+
+edit :: Live a -> a -> Live a
+edit (Edited x _) y = Edited x y
+edit (Live _ l) y = Live y l
+
+evaluate :: Live a -> Live a
+evaluate (Edited _ x) = Live x L3
+evaluate x = x
