@@ -69,11 +69,14 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
         return (flipEvent, programItem) -- small area :: (Event t Bool, Event t ())
       bigAreaL <- divClass "big-areaControl" $ do
         inputWrapper <- divClass "input-wrapperControl" $ do
-          let iText = (formToText . form) <$> delta 
-          (valTxBx,_) <- textWithLockWidget 3 (constDyn $ False) iText  
-          let boton = snd smallAreaL
-          let txPressed = tag (current $ valTxBx) boton -- Event t Text
-          return $ parseForm <$> txPressed -- Event t [(Text,Rat)]
+          let iText = (formToText . forRendering . form) <$> delta 
+          (valTxBx,_) <- textWithLockWidget 3 (constDyn $ False) iText  -- Dyn t Text
+          let boton = snd smallAreaL -- Event t ()
+          let dynFormed = fmap parseForm valTxBx -- dyn t [(tx, rat)] 
+          let forma = (current dynFormed) <@ boton -- Event t Live [(tx,rat)]
+          -- let txPressed = tag (current $ valTxBx) boton -- Event t Text
+          return forma
+          --return $ parseForm <$> txPressed -- Event t [(Text,Rat)]
         return $ textInputFunc <$> inputWrapper -- big area :: Event t (Form -> Timer Timer)     
       return (bigAreaL, fst smallAreaL) -- columnLeft
     columnRight <- divClass "columnControl" $ do
@@ -105,13 +108,6 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
   let local = fst top
   mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
   timerChangeDisplay True mergedLocalDelta
-
-  let mouseCoords = getMouseEventCoords
-  -- mouseCoordsDyn <- holdDyn (0,0) $
-  -- elDynAttr :: forall t m a. (DomBuilder t m, PostBuild t m) => Text -> Dynamic t (Map Text Text) -> m a -> m a
--- elClass "div" (constDyn ("class" =: "row")) (return ())
-
-
   top <- do
     topContainer <- divClass "containerTimer" $ do 
       flipItem <- clickableDiv "segmentLeftTimer" $ do
@@ -122,14 +118,14 @@ timerDisplay delta = divClass "timer-Visualiser" $ mdo
         reset <- clickableDiv "rowTopTimer" $ do
           divClass "resetTimer" $ text $ T.pack "reset"
         pausePlay <- clickableDiv "rowBottomTimer" $ do
-          divClass "pauseTimer" $ text $ T.pack "pause/play"
+          divClass "pauseTimer" $ text $ T.pack "pause/resume"
         aTimeReset <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) reset
         let resetEvent = resetFunc <$> aTimeReset
         aTimePlay <- performEvent $ fmap (\ _ -> liftIO $ getCurrentTime) pausePlay
         let playPauseEvent = playPauseFunc <$> aTimePlay
         return $ leftmost [resetEvent, playPauseEvent]
       modeChangeItem <- clickableDiv "segmentRightTimer" $ do
-        divClass "modeTimer" $ text $ T.pack "change mode"
+        divClass "modeTimer" $ text $ T.pack "change visualiser"
       let modeChangeEvent = visualiserFunc <$ modeChangeItem
       let networkedEvents = leftmost [timerStateEvents, modeChangeEvent]
       return (networkedEvents, flipEvent)
@@ -206,12 +202,12 @@ calculateCountSorC Seconds graphOrText timer wBuildT elapsingCount t =
 
 holdingCalculation:: Bool -> Rational -> Timer -> Tempo -> Rational
 holdingCalculation True mark timer t
-  | (measure timer) == Seconds = holdingCalculationLooped mark $ Prelude.map snd (form timer)
-  | otherwise = holdingCalculationLooped markAsBeat $ Prelude.map snd (form timer)
+  | (measure timer) == Seconds = holdingCalculationLooped mark $ Prelude.map snd (forRendering $ form timer)
+  | otherwise = holdingCalculationLooped markAsBeat $ Prelude.map snd (forRendering $ form timer)
     where markAsBeat = (freq t) * mark
 holdingCalculation False mark timer t
-  | (measure timer) == Seconds = holdingCalculationUnlooped mark $ Prelude.map snd (form timer)
-  | otherwise = holdingCalculationUnlooped markAsBeat $ Prelude.map snd (form timer)
+  | (measure timer) == Seconds = holdingCalculationUnlooped mark $ Prelude.map snd (forRendering $ form timer)
+  | otherwise = holdingCalculationUnlooped markAsBeat $ Prelude.map snd (forRendering $ form timer)
     where markAsBeat = (freq t) * mark
 
 holdingCalculationUnlooped:: Rational -> [Rational] -> Rational
@@ -230,12 +226,12 @@ holdingCalculation' markC (z:zs) = if z > markC then (z-markC)
 
 holdingCalculationP:: Bool -> Rational -> Timer -> Tempo -> Rational
 holdingCalculationP True mark timer t 
-  | (measure timer) == Seconds = holdingCalculationLoopedP (n timer) mark $ Prelude.map snd (form timer)
-  | otherwise = holdingCalculationLoopedP (n timer) markAsBeat $ Prelude.map snd (form timer)
+  | (measure timer) == Seconds = holdingCalculationLoopedP (n timer) mark $ Prelude.map snd (forRendering $ form timer)
+  | otherwise = holdingCalculationLoopedP (n timer) markAsBeat $ Prelude.map snd (forRendering $ form timer)
       where markAsBeat = (freq t) * mark
 holdingCalculationP False mark timer t 
-  | (measure timer) == Seconds = holdingCalculationUnloopedP (n timer) mark $ Prelude.map snd (form timer)
-  | otherwise = holdingCalculationUnloopedP (n timer) markAsBeat $ Prelude.map snd (form timer)
+  | (measure timer) == Seconds = holdingCalculationUnloopedP (n timer) mark $ Prelude.map snd (forRendering $ form timer)
+  | otherwise = holdingCalculationUnloopedP (n timer) markAsBeat $ Prelude.map snd (forRendering $ form timer)
       where markAsBeat = (freq t) * mark
 
 -- int is the N necessary for general or segmented timer (checkes which timer we are using)
@@ -278,7 +274,7 @@ calculateCount False delta wBuildT elapsingCount t = -- elapsed count is seconds
                         then realToFrac (diffUTCTime startMark' wBuildT) :: Rational 
                         else timeToCount t startMark'  
             countUp = elapsingCount - startMark
-            countForm = Prelude.map snd (form delta) -- [Rat]
+            countForm = Prelude.map snd (forRendering $ form delta) -- [Rat]
             loopedCountUp = loopCountUp' (loop delta) countForm countUp
             countDown = multiTimer 0 countForm loopedCountUp
         in countDown
@@ -291,7 +287,7 @@ calculateCount True delta wBuildT elapsingCount t = -- elapsed count is seconds
                         then realToFrac (diffUTCTime startMark' wBuildT) :: Rational 
                         else timeToCount t startMark'  
             countUp = elapsingCount - (realToFrac startMark :: Rational)
-            countForm = Prelude.map snd (form delta) -- [Rat]
+            countForm = Prelude.map snd (forRendering $ form delta) -- [Rat]
             loopedCountUp = loopCountUp (loop delta) countForm countUp
             countDown = if generalOrSegmentedCount (n delta) then multiTimerPercent 0 countForm loopedCountUp else generalTimerPercent 0 countForm loopedCountUp
         in countDown 
@@ -307,12 +303,12 @@ calculateLabelSorC Seconds timer wBuildT elapsingCount t =
 
 holdingLabel:: Bool -> Rational -> Timer -> Tempo -> Text
 holdingLabel True mark timer t 
-  | (measure timer) == Seconds = holdingLabelLooped mark (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
-  | otherwise = holdingLabelLooped markAsBeat (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
+  | (measure timer) == Seconds = holdingLabelLooped mark (Prelude.map snd (forRendering $ form timer)) $ Prelude.map fst (forRendering $ form timer)
+  | otherwise = holdingLabelLooped markAsBeat (Prelude.map snd (forRendering $ form timer)) $ Prelude.map fst (forRendering $ form timer)
       where markAsBeat = (freq t) * mark
 holdingLabel False mark timer t 
-  | (measure timer) == Seconds = holdingLabelUnlooped mark (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
-  | otherwise = holdingLabelUnlooped markAsBeat (Prelude.map snd (form timer)) $ Prelude.map fst (form timer)
+  | (measure timer) == Seconds = holdingLabelUnlooped mark (Prelude.map snd (forRendering $ form timer)) $ Prelude.map fst (forRendering $ form timer)
+  | otherwise = holdingLabelUnlooped markAsBeat (Prelude.map snd (forRendering $ form timer)) $ Prelude.map fst (forRendering $ form timer)
     where markAsBeat = (freq t) * mark 
 
 holdingLabelUnlooped:: Rational -> [Rational] -> [Text] -> Text
@@ -339,9 +335,9 @@ calculateLabel delta wBuildT elapsedCount t =
                         then realToFrac (diffUTCTime startMark' wBuildT) :: Rational 
                         else timeToCount t startMark'
             countUp = elapsedCount - (realToFrac startMark :: Rational)
-            countForm = Prelude.map snd (form delta) -- [Rat]
+            countForm = Prelude.map snd (forRendering $ form delta) -- [Rat]
             loopedCountUp = loopCountUp' (loop delta) countForm countUp
-            label = genLabel 0 (form delta) loopedCountUp
+            label = genLabel 0 (forRendering $ form delta) loopedCountUp
         in label 
 
 
@@ -415,7 +411,7 @@ visualiseStack delta = do
   beat <- holdDyn 0 beatPosition
   wBuildT <- liftIO getCurrentTime
   let count = (calculateCountSorC (measure iDelta) True iDelta wBuildT) <$> beat <*> currentTempo
-  let program = (form iDelta)
+  let program = (forRendering $ form iDelta)
   drawStack count program 
   pure ()
 
@@ -939,7 +935,8 @@ visualiserFunc timer = timer {n= (((n timer)+1)`mod`numberOfVis)} -- add the mod
 
 --- controller funcas
 textInputFunc:: [(T.Text,Rational)] -> Timer -> Timer
-textInputFunc count timer = timer {form=count}
+textInputFunc count timer = timer {form=cuenta}
+  where cuenta = evaluate $ edit (form timer) count
 
 -- Measure = Cycles | Seconds
 measureFunc:: Timer -> Timer 
@@ -1292,6 +1289,5 @@ boolOpacity True = "style" =: "filter: opacity(100%)"
 
 
 -- getMouseEventCoords :: EventM e MouseEvent (Int, Int)
-
 
 

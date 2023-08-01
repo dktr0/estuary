@@ -37,10 +37,11 @@ data View =
   TempoView |
   RouletteView Int Int |
   AudioMapView |
-  CountDownView Int |
-  SandClockView Int |
+  -- CountDownView Int |
+  -- SandClockView Int |
   StopWatchView Int |
-  SeeTimeView Int |
+  MetreView Int | -- brit/canadian spelling
+  MeterView Int | -- murikan spelling
   TimerView Int |
   NotePadView Int |
   IFrame Text | -- embedded web page
