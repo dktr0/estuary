@@ -66,7 +66,7 @@ calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
 
   (descEv, dateEv, changePeriodicityEv, changeEndDateEv) <- divClass "calendarEventWidgetSubContainer" $ do
     descEv' <- divClass "detailsContainer" $ divClass "descriptionWidget code-font background" $ descriptionWidget $ fmap getDetailsFromCalendarEv delta -- Event t Text
-
+-- descEv' shouldn cause anything to be rebuilt - even if it comes up or down.
     dateEv' <- divClass "selectStartingDateContainer" $ do
         dateEv'' <- divClass "dateWidget code-font background" $ utcTimeOrLocalTimeWidget (fmap getStartingDateFromCalendarEv delta) -- Event t TimeZone
         return dateEv''
@@ -84,19 +84,20 @@ calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
   let changeEndDateF = fmap changeEndDate changeEndDateEv
 
   -- let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
-  
+
   let localFThatRebuilds = mergeWith (.) [autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
   let localFThatNotRebuilds = descF -- Event t (CalendarEvent -> CalendarEvent)--
 
   let localUpdates = attachWith (flip ($)) (current $ currentValue v) localFThatRebuilds -- Event t CalendarEvent
   -- let localUpdates' = attachWith (flip ($)) (current $ currentValue v') localF'
+
   v <- variable delta localUpdates --  m (Variable t a)
   -- v' <- variable delta localUpdates --  m (Variable t a)
   return localUpdates -- -- Event t (CalendarEvent )
 
-currentValue
--- helper functions
+-- if someone makes a local change or touches a key it generates an event that goes up, when a delta comes down reflecting a remote edit the widget has to update istelf and not signal that as a local edit (all the views/editors receive the remote edit)
 
+-- helper functions
 changePeriodicity :: Periodicity -> CalendarEvent -> CalendarEvent
 changePeriodicity Once (CalendarEvent details (CalendarTime startingDate (Recurrence periodicity endDate))) = CalendarEvent details (CalendarTime startingDate (Recurrence Once startingDate))
 changePeriodicity newPeriodicity (CalendarEvent details (CalendarTime startingDate (Recurrence periodicity endDate))) = CalendarEvent details (CalendarTime startingDate (Recurrence newPeriodicity endDate))
