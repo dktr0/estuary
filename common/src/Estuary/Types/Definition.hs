@@ -35,7 +35,8 @@ type SpecChat = [Chat]
 
 type Test = I.IntMap Text
 
-type CalendarEvents = IntMap.IntMap CalendarEvent
+-- type CalendarEvents = IntMap.IntMap CalendarEvent
+type CalendarEvents = M.Map Int CalendarEvent
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
 data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
 data Recurrence = Recurrence { periodicity :: Periodicity, endDate :: ZonedTime} deriving  (Eq, Show, Generic)

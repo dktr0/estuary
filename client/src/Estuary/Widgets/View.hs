@@ -32,7 +32,7 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
 import Estuary.Widgets.Roulette
 import Estuary.Widgets.EnsembleStatus
-import Estuary.Widgets.Tempo 
+import Estuary.Widgets.Tempo
 import Estuary.Widgets.Timer
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
@@ -118,7 +118,7 @@ viewWidget (RouletteView z rows) = zoneWidget False z [] maybeRoulette Roulette 
 
 viewWidget (CalendarEventView z) = do
   today <- liftIO getZonedTime
-  let defaultValue = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
+  let defaultValue = Map.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
   zoneWidget False z defaultValue maybeCalendarEvents CalendarEvs calendarEventWidget
 
 viewWidget (TestView z) = do

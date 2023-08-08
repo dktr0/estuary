@@ -122,12 +122,14 @@ presetViews = fromList [
       Views [LabelView 3,CodeView 4 0 [] ]
       ]),
 
-      ("calendarEvent",  GridView 2 3  [
-      (Views [CalendarEventView 1, CodeView 2 0 [] ]),
-      (Views [TestView 3, CodeView 4 0 [] ]),
-      (Views [LabelView 5, CodeView 6 0 [] ]),
-      (Views [LabelView 7, CodeView 8 0 [] ]),
-      (Views [LabelView 9, CodeView 10 0 [] ]),
-      (Views [LabelView 11, CodeView 12 0 [] ])
+      ("calendar",GridView 2 1 [
+        BorderDiv [CalendarEventView 1],
+        BorderDiv [CodeView 3 0 [] ]
+        ]),
+
+      ("calendarEvent",  GridView 1 1  [
+      (Views [CalendarEventView 1])
       ])
+
+
       ]

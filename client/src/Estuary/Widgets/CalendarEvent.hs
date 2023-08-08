@@ -38,11 +38,11 @@ calendarEventWidget deltasDown = mdo
   iDeltasDown <- sample $ current deltasDown
   deltasDownBroken <- holdDyn iDeltasDown never
   today <- liftIO getZonedTime
-  let i = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
-  -- delta <- holdDyn i never
+  let initialMap = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
   addButton <- divClass "addButtonCalendarEvent" $ buttonWithClass "+" -- Event t ()
   let newCalendarEvent = CalendarEvent "" (CalendarTime today (Recurrence Once today))
-  mapEv <- widgetMapEventWithAddDelete deltasDown (newCalendarEvent <$ addButton) calendarEventBuilderMaybe
+  mapEv <- widgetMapAddDelete iDeltasDown (updated $ constDyn iDeltasDown) (newCalendarEvent <$ addButton) calendarEventBuilderMaybe
+  -- mapEv <- widgetMapEventWithAddDelete deltasDown (newCalendarEvent <$ addButton) calendarEventBuilderMaybe
   variable deltasDown mapEv
 
 calendarEventBuilderMaybe :: MonadWidget t m => Dynamic t CalendarEvent ->  W t m (Event t (Maybe CalendarEvent))
@@ -53,12 +53,6 @@ calendarEventBuilderMaybe delta = divClass "calendarEventRow" $ do
   let rowMaybe = fmap Just row -- Event t (Maybe CalendarEvent)
   return $ leftmost [rowMaybe, Nothing <$ deleteButton]
 
-calendarEventBuilder :: MonadWidget t m => Dynamic t CalendarEvent ->  W t m (Event t CalendarEvent)
-calendarEventBuilder delta = do
-  today <- liftIO getZonedTime
-  row <- calendarEventWidgetEv delta -- Event t CalendarEvent
-  -- let rowMaybe = fmap row -- Event t (Maybe CalendarEvent)
-  return $ leftmost [row]
 
 calendarEventWidgetEv :: MonadWidget t m => Dynamic t CalendarEvent -> W t m (Event t CalendarEvent)
 calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
@@ -83,16 +77,9 @@ calendarEventWidgetEv delta = divClass "calendarEventWidgetMainContainer" $ mdo
   let changePeriodicityF = fmap changePeriodicity changePeriodicityEv
   let changeEndDateF = fmap changeEndDate changeEndDateEv
 
-  -- let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
-
-  let localFThatRebuilds = mergeWith (.) [autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
-  let localFThatNotRebuilds = descF -- Event t (CalendarEvent -> CalendarEvent)--
-
-  let localUpdates = attachWith (flip ($)) (current $ currentValue v) localFThatRebuilds -- Event t CalendarEvent
-  -- let localUpdates' = attachWith (flip ($)) (current $ currentValue v') localF'
-
+  let localF = mergeWith (.) [descF, autoUpdateStartingDateF, dateAndTimeF, changePeriodicityF, changeEndDateF] -- Event t (CalendarEvent -> CalendarEvent)--
+  let localUpdates = attachWith (flip ($)) (current $ currentValue v) localF -- Event t   v <- variable delta localUpdates --  m (Variable t a)
   v <- variable delta localUpdates --  m (Variable t a)
-  -- v' <- variable delta localUpdates --  m (Variable t a)
   return localUpdates -- -- Event t (CalendarEvent )
 
 -- if someone makes a local change or touches a key it generates an event that goes up, when a delta comes down reflecting a remote edit the widget has to update istelf and not signal that as a local edit (all the views/editors receive the remote edit)
