@@ -41,6 +41,7 @@ calendarEventWidget deltasDown = mdo
   let initialMap = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
   addButton <- divClass "addButtonCalendarEvent" $ buttonWithClass "+" -- Event t ()
   let newCalendarEvent = CalendarEvent "" (CalendarTime today (Recurrence Once today))
+  -- TODO calendarEventWidget makes Estuary stop if using widgetMapAddDelete below but it won't if using widgetMapEventWithAddDelete (commented below)
   mapEv <- widgetMapAddDelete iDeltasDown (updated $ constDyn iDeltasDown) (newCalendarEvent <$ addButton) calendarEventBuilderMaybe
   -- mapEv <- widgetMapEventWithAddDelete deltasDown (newCalendarEvent <$ addButton) calendarEventBuilderMaybe
   variable deltasDown mapEv
