@@ -144,17 +144,16 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "1fnghnpxfx6hvrg6h5c4n040c6sgwvficyn11mwxjmy6imirj032";
-          rev = "ed8401c7e8c0b0d7028c2bc68163d40e933a4183";
+          sha256 = "0nffi8bh3kkic1dyaj4djvms56ygs3smzham1cqj7rv2109xjrwh";
+          rev = "7637e9c9057361c5ac5adc4c736e00b80607db39";
         }) {}));
 
-        # musicw = self.callHackage "musicw" "0.3.9" {};
         musicw = self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
-          owner = "dktr0";
-          repo = "musicw";
-          sha256 = "19c31jnsdhw85qczgwcmfch217nfc631qv9jf4wzbyg0xz50s64c";
-          rev = "b42ff7b1ea3ea322fb830a4e4757626761aebcd5";
-        }) {};
+      	  owner = "dktr0";
+      	  repo = "musicw";
+      	  sha256 = "1ir4nw3hx4anl5pdvf8kz0v9jhf0bd0ck0sfj867a9p9y0zfwwfz";
+      	  rev = "2bc30b1add5043e467088999b7971b5f28e1b063";
+    	}) {};
 
         # needs jailbreak for dependency microspec >=0.2.0.1
         tidal = if !(self.ghc.isGhcjs or false) then null else appendPatch (dontCheck (doJailbreak (self.callCabal2nixWithOptions
