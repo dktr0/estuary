@@ -106,6 +106,18 @@ library
       Estuary.Widgets.WebSocket
       Estuary.Widgets.ExoWidget
       Estuary.Types.AsyncValue
+      Estuary.Widgets.TapTempo
+      Estuary.Languages.CineCer0
+      Estuary.Languages.MiniTidal
+      Estuary.Languages.Punctual
+      Estuary.Languages.TimeNot
+      Estuary.Render.ForeignTempo
+      Estuary.Render.RenderOp
+      Estuary.Render.TextNotationRenderer
+      Estuary.Types.ServerInfo
+      Estuary.Widgets.Chat
+      Estuary.Widgets.DataVisualisers
+
   other-modules:
       Paths_estuary
   hs-source-dirs:

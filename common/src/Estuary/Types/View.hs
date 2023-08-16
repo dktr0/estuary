@@ -46,7 +46,8 @@ data View =
   IFrame Text | -- embedded web page
   CalendarEventView Int |
   LoadView Int |
-  ChatView Int 
+  ChatView Int |
+  TapTempoView 
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

@@ -341,6 +341,9 @@ ensembleName = askEnsemble (Ensemble.ensembleName . ensemble)
 tempo :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t Tempo)
 tempo = askEnsemble (Ensemble.tempo . ensemble)
 
+setTempo :: (Monad m, Reflex t) => Event t Tempo -> W t m ()
+setTempo = request . fmap WriteTempo
+
 zones :: (Reflex t, MonadFix m, MonadHold t m)  => W t m (Dynamic t (IntMap Definition))
 zones = askEnsemble (Ensemble.zones . ensemble)
 

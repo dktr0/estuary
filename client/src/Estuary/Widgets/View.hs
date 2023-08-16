@@ -42,6 +42,7 @@ import Estuary.Widgets.CalendarEvent
 import Estuary.Widgets.DataVisualisers
 import Estuary.Widgets.Chat
 import Estuary.Types.Request
+import Estuary.Widgets.TapTempo
 
 
 
@@ -142,6 +143,8 @@ viewWidget TempoView = return () {- do -- disactivating TempoView - noone uses i
   tempoDelta <- holdDyn initialTempo $ fmapMaybe lastTempoChange er
   tempoE <- tempoWidget tempoDelta
   return $ fmap WriteTempo tempoE -}
+  
+viewWidget TapTempoView = tapTempoWidget
 
 viewWidget (Snippet z b n t) = do
   let c = if b then "example code-font" else "snippet code-font"

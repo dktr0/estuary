@@ -53,6 +53,7 @@ dumpView (IFrame url) = "iFrame \"" <> url <> "\""
 dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
 dumpView (LoadView x) = "load " <> showInt x
 dumpView (ChatView x) = "chat " <> showInt x
+dumpView TapTempoView = "tapTempo"
 
 dumpView _ = " "
 
@@ -91,6 +92,7 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> genGridParser
           <|> loadVisionParser
           <|> specChatParser 
+          <|> tapTempoParser
 
 genGridParser :: H View
 genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
@@ -413,6 +415,10 @@ specChatParser' =  specChatFunc <$ reserved "chat"
 
 specChatFunc :: Int -> View
 specChatFunc x  = ChatView x 
+
+
+tapTempoParser :: H View
+tapTempoParser = TapTempoView <$ reserved "tapTempo"
 
 -- helper funcs
 int :: H Int
