@@ -424,7 +424,7 @@ drawStack countdown' program = do
   let height = constDyn $ "height" =: "100%"
   let vB = constDyn $  "viewBox" =: "0 0 150 100"
   let par = constDyn $ "preserveAspectRatio" =: "none" 
-  let par' = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let par' = constDyn $ "preserveAspectRatio" =: "none" 
   let attrs = mconcat [class',width,height, vB, par]  -- svg
 
   let x1Line = constDyn $ "x1" =: "0"
@@ -541,7 +541,7 @@ drawProgressBarLabel countdown tag = do
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
   let vB = constDyn $  "viewBox" =: "0 0 100 80"
-  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
   let attrs = mconcat [class',width,height, vB, par]  -- svg
 
   let id = constDyn $ "id" =: "solid" 
@@ -551,21 +551,6 @@ drawProgressBarLabel countdown tag = do
   let floodOpacity = constDyn $ "flood-opacity" =: "0.35"
   let result = constDyn $ "result" =: "bg" 
   let feFloodAttrs = mconcat [floodColor, floodOpacity, result]
-
-  -- <defs>
-  --   <filter x="0" y="0" width="1" height="1" id="solid">
-  --     <feFlood flood-color="yellow" result="bg" />
-  --     <feMerge>
-  --       <feMergeNode in="bg"/>
-  --       <feMergeNode in="SourceGraphic"/>
-  --     </feMerge>
-  --   </filter>
-  -- </defs>
-
-
-  -- defs
-  -- filter
-
 
   let txFill = constDyn $ "fill" =: "var(--secondary-color)"
   let txX = constDyn $ "x" =: "50"
@@ -577,18 +562,19 @@ drawProgressBarLabel countdown tag = do
   let txAttrs = mconcat [txFill, txX, txY, txAnchor, fontSize, txFilter]
 
 
-  drawProgressBar countdown
-
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
+      dynText tag
+      return () 
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "defs" (constDyn Data.Map.empty) $ do
       elDynAttrNS' (Just "http://www.w3.org/2000/svg") "filter" fltAttrs $ do
         elDynAttrNS' (Just "http://www.w3.org/2000/svg") "feFlood" feFloodAttrs $ pure ()
         elDynAttrNS' (Just "http://www.w3.org/2000/svg") "feMerge" (constDyn Data.Map.empty) $ do
           elDynAttrNS' (Just "http://www.w3.org/2000/svg") "feMergeNode" (constDyn $ "in" =: "bg") $ pure ()
           elDynAttrNS' (Just "http://www.w3.org/2000/svg") "feMergeNode" (constDyn $ "in" =: "SourceGraphic") $ pure ()
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
-      dynText tag
-      return () 
+  
+  drawProgressBar countdown
+    
   return ()
 
 visualiseProgressBar:: MonadWidget t m => Dynamic t Timer -> W t m ()
