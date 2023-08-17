@@ -253,3 +253,27 @@ runCommand rEnv _ Terminal.NoSerialPort = do
 
 -- set custom CSS theme
 runCommand _ _ (Terminal.Theme x) = pure [ ChangeSettings $ \s -> s { Settings.theme = x } ]
+
+
+showResourceOps :: Seq ResourceOp -> Text
+showResourceOps xs | Data.Sequence.length xs == 0 = "empty resource ops"
+                   | otherwise = T.intercalate ", " $ toList $ mapWithIndex f xs
+  where f i x = showt i <> ": " <> showResourceOp x
+
+showResourceOp :: ResourceOp -> Text
+showResourceOp (InsertResource Audio url (bankName,n)) = "insertsound " <> showt url <> " " <> bankName <> " " <> showt n
+showResourceOp (InsertResource Image url (bankName,n)) = "insertimage " <> showt url <> " " <> bankName <> " " <> showt n
+showResourceOp (InsertResource Video url (bankName,n)) = "insertvideo " <> showt url <> " " <> bankName <> " " <> showt n
+showResourceOp (InsertResource ExoLang url (bankName,n)) = "insertexolang " <> showt url <> " " <> bankName <> " " <> showt n
+showResourceOp (AppendResource Audio url bankName) = "appendsound " <> showt url <> " " <> bankName
+showResourceOp (AppendResource Image url bankName) = "appendimage " <> showt url <> " " <> bankName
+showResourceOp (AppendResource Video url bankName) = "appendvideo " <> showt url <> " " <> bankName
+showResourceOp (AppendResource ExoLang url bankName) = "appendexolang " <> showt url <> " " <> showt bankName
+showResourceOp (DeleteResource Audio (bankName,n)) = "deletesound " <> bankName <> " " <> showt n
+showResourceOp (DeleteResource Image (bankName,n)) = "deleteimage " <> bankName <> " " <> showt n
+showResourceOp (DeleteResource Video (bankName,n)) = "deletevideo " <> bankName <> " " <> showt n
+showResourceOp (DeleteResource ExoLang (bankName,n)) = "deleteexolang " <> bankName <> " " <> showt n
+showResourceOp (ResourceListURL url) = "reslist " <> showt url
+
+
+

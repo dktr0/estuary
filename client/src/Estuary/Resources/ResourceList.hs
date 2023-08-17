@@ -61,6 +61,7 @@ showResourceList x = do
 typeTextToResourceType :: Text -> ResourceType
 typeTextToResourceType "video" = Video
 typeTextToResourceType "image" = Image
+typeTextToResourceType "exolang" = ExoLang
 typeTextToResourceType _ = Audio
 
 instance Loadable ResourceList where
