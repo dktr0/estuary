@@ -10,6 +10,8 @@ import GHC.Generics
 import Data.Aeson
 import Data.Time
 import Data.Sequence
+import qualified  Data.IntMap as I
+
 
 
 import Estuary.Tidal.Types
@@ -31,7 +33,10 @@ type NotePage = (Text,Text)
 
 type SpecChat = [Chat]
 
-type CalendarEvents = IntMap.IntMap CalendarEvent
+type Test = I.IntMap Text
+
+-- type CalendarEvents = IntMap.IntMap CalendarEvent
+type CalendarEvents = M.Map Int CalendarEvent
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
 data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
 data Recurrence = Recurrence { periodicity :: Periodicity, endDate :: ZonedTime} deriving  (Eq, Show, Generic)
@@ -119,7 +124,9 @@ data Definition =
   NotePad NotePad |
   CalendarEv CalendarEvent |
   SpecChat SpecChat |
-  CalendarEvs CalendarEvents
+  CalendarEvs CalendarEvents |
+  Test Test
+
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -146,6 +153,7 @@ definitionForRendering (TimerDef x) = TimerDef x
 definitionForRendering (NotePad x) = NotePad x
 definitionForRendering (SpecChat x) = SpecChat x
 definitionForRendering (CalendarEvs x) = CalendarEvs x
+definitionForRendering (Test x) = Test x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -181,6 +189,13 @@ maybeRoulette _ = Nothing
 
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
+
+maybeTestEvent :: Definition -> Maybe Test
+maybeTestEvent (Test x) = Just x
+maybeTestEvent _ = Nothing
+
+justTestEvents :: [Definition] -> [Test]
+justTestEvents = mapMaybe maybeTestEvent
 
 maybeCalendarEvents :: Definition -> Maybe CalendarEvents
 maybeCalendarEvents (CalendarEvs x) = (Just x)

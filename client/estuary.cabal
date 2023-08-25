@@ -74,6 +74,7 @@ library
       Estuary.Widgets.Announcements
       Estuary.Widgets.AudioMap
       Estuary.Widgets.CalendarEvent
+      Estuary.Widgets.TestMap
       Estuary.Widgets.Config
       Estuary.Widgets.CreateEnsemble
       Estuary.Widgets.Ensemble

@@ -45,6 +45,7 @@ data View =
   NotePadView Int |
   IFrame Text | -- embedded web page
   CalendarEventView Int |
+  TestView Int |
   LoadView Int |
   ChatView Int |
   TapTempoView 
