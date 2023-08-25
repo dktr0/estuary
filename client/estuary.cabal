@@ -57,6 +57,8 @@ library
       Estuary.Tutorials.CineCer0
       Estuary.Tutorials.Punctual
       Estuary.Tutorials.TidalCyclesBasics
+      Estuary.Tutorials.Timer
+      Estuary.Tutorials.Metre
       Estuary.Types.AnimationState
       Estuary.Types.EnsembleC
       Estuary.Types.Hint
@@ -74,6 +76,7 @@ library
       Estuary.Widgets.Announcements
       Estuary.Widgets.AudioMap
       Estuary.Widgets.CalendarEvent
+      Estuary.Widgets.TestMap
       Estuary.Widgets.Config
       Estuary.Widgets.CreateEnsemble
       Estuary.Widgets.Ensemble

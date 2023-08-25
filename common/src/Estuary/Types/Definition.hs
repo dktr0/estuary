@@ -10,6 +10,8 @@ import GHC.Generics
 import Data.Aeson
 import Data.Time
 import Data.Sequence
+import qualified  Data.IntMap as I
+
 
 
 import Estuary.Tidal.Types
@@ -31,7 +33,10 @@ type NotePage = (Text,Text)
 
 type SpecChat = [Chat]
 
-type CalendarEvents = IntMap.IntMap CalendarEvent
+type Test = I.IntMap Text
+
+-- type CalendarEvents = IntMap.IntMap CalendarEvent
+type CalendarEvents = M.Map Int CalendarEvent
 data CalendarEvent = CalendarEvent Text CalendarTime deriving (Eq, Show, Generic)
 data CalendarTime = CalendarTime { startingDate :: ZonedTime, recurrence :: Recurrence } deriving  (Eq, Show, Generic)
 data Recurrence = Recurrence { periodicity :: Periodicity, endDate :: ZonedTime} deriving  (Eq, Show, Generic)
@@ -60,12 +65,15 @@ data TimerDownState =
   Falling Int UTCTime -- target and start time
   deriving (Eq,Show,Generic)
 
-data TimerUpState =
+data StopwatchState =
   Cleared |
   Running UTCTime |
   Stopped NominalDiffTime
   deriving (Eq, Show, Generic)
 
+instance ToJSON StopwatchState where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON StopwatchState
 
 data Measure = Cycles | Seconds deriving (Show,Ord,Eq,Generic)
 instance ToJSON Measure where
@@ -81,11 +89,11 @@ instance FromJSON Mode
 
 data Timer = Timer {
   n:: Int,
-  form:: [(Text,Rational)],
+  form:: Live [(Text,Rational)],
   mode:: Mode,
   loop:: Bool,
   measure:: Measure
-} deriving (Show,Eq,Ord,Generic)
+} deriving (Show,Eq,Generic)
 
 instance ToJSON Timer where
   toEncoding = genericToEncoding defaultOptions
@@ -96,10 +104,6 @@ data TimeVision = Tv Int Rational Rational deriving (Show,Eq,Ord,Generic)
 instance ToJSON TimeVision where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON TimeVision
-
-instance ToJSON TimerUpState where
-  toEncoding = genericToEncoding defaultOptions
-instance FromJSON TimerUpState
 
 instance ToJSON TimerDownState where
   toEncoding = genericToEncoding defaultOptions
@@ -113,13 +117,15 @@ data Definition =
   Roulette Roulette |
   CountDown TimerDownState |
   SandClock TimerDownState |
-  StopWatch TimerUpState |
+  StopWatch StopwatchState |
   SeeTime TimeVision |
   TimerDef Timer |
   NotePad NotePad |
   CalendarEv CalendarEvent |
   SpecChat SpecChat |
-  CalendarEvs CalendarEvents
+  CalendarEvs CalendarEvents |
+  Test Test
+
   deriving (Eq,Show,Generic)
 
 instance ToJSON Definition where
@@ -138,14 +144,15 @@ definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
 definitionForRendering (CalendarEv x)  = CalendarEv x
-definitionForRendering (CountDown x) = CountDown x
-definitionForRendering (SandClock x) = SandClock x
+-- definitionForRendering (CountDown x) = CountDown x
+-- definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
 definitionForRendering (TimerDef x) = TimerDef x
 definitionForRendering (NotePad x) = NotePad x
 definitionForRendering (SpecChat x) = SpecChat x
 definitionForRendering (CalendarEvs x) = CalendarEvs x
+definitionForRendering (Test x) = Test x
 
 maybeTidalStructure :: Definition -> Maybe TransformedPattern
 maybeTidalStructure (TidalStructure x) = Just x
@@ -182,6 +189,13 @@ maybeRoulette _ = Nothing
 justRoulettes :: [Definition] -> [Roulette]
 justRoulettes = mapMaybe maybeRoulette
 
+maybeTestEvent :: Definition -> Maybe Test
+maybeTestEvent (Test x) = Just x
+maybeTestEvent _ = Nothing
+
+justTestEvents :: [Definition] -> [Test]
+justTestEvents = mapMaybe maybeTestEvent
+
 maybeCalendarEvents :: Definition -> Maybe CalendarEvents
 maybeCalendarEvents (CalendarEvs x) = (Just x)
 maybeCalendarEvents _ = Nothing
@@ -196,14 +210,14 @@ maybeCalendarEvent _ = Nothing
 justCalendarEvent :: [Definition] -> [CalendarEvent]
 justCalendarEvent = mapMaybe maybeCalendarEvent
 
-maybeTimerUpState:: Definition -> Maybe TimerUpState
-maybeTimerUpState (StopWatch x) = Just x
-maybeTimerUpState _ = Nothing
+maybeStopwatchState:: Definition -> Maybe StopwatchState
+maybeStopwatchState (StopWatch x) = Just x
+maybeStopwatchState _ = Nothing
 
-maybeTimerDownState:: Definition -> Maybe TimerDownState
-maybeTimerDownState (CountDown x) = Just x
-maybeTimerDownState (SandClock x) = Just x
-maybeTimerDownState _ = Nothing
+-- maybeTimerDownState:: Definition -> Maybe TimerDownState
+-- maybeTimerDownState (CountDown x) = Just x
+-- maybeTimerDownState (SandClock x) = Just x
+-- maybeTimerDownState _ = Nothing
 
 maybeSeeTime:: Definition -> Maybe TimeVision
 maybeSeeTime (SeeTime x) = Just x

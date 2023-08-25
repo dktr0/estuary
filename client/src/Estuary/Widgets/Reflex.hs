@@ -240,25 +240,6 @@ clickableDivNoClass child = do
 --   clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
 --   return $ (() <$) clickEv
 
----- see this!!!  !! !! !!
-clickableDivAndTooltip :: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
-  => Text -> m a -> m (Event t ())
-clickableDivAndTooltip cssclass child = do
-  (element,_) <- elAttr' "div" attr $ child
-  tooltip child $ text $ T.pack "pruebiringa"
-  clickEv <- wrapDomEvent (_element_raw element) (elementOnEventName Click) (mouseXY)
-  return $ (() <$) clickEv
-  where
-    attr = singleton "class" cssclass
-
-flipItemWithinClickableAndTooltip:: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)
-  => m a -> m (Event t ())
-flipItemWithinClickableAndTooltip popup = do
-    flipItem <- clickableDiv "segmentTimer" $ do
-      divClass "tooltipPosAbsolutetest" $ elClass "span" "tooltiptexttest code-font" popup
-      return ()
-    return flipItem
-
     
 -- clickableDiv with class
 clickableDiv :: (Monad m, DomBuilder t m, TriggerEvent t m, G.IsElement (RawElement (DomBuilderSpace m)), Reflex t, MonadIO m)

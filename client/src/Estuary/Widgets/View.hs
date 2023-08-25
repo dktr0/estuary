@@ -32,13 +32,14 @@ import Estuary.Widgets.TransformedPattern
 import Estuary.Widgets.Sequencer
 import Estuary.Widgets.Roulette
 import Estuary.Widgets.EnsembleStatus
-import Estuary.Widgets.Tempo 
+import Estuary.Widgets.Tempo
 import Estuary.Widgets.Timer
 import Estuary.Types.Hint
 import Estuary.Widgets.AudioMap
 import Estuary.Widgets.StopWatchExplorations
 import Estuary.Widgets.Notepad
 import Estuary.Widgets.CalendarEvent
+import Estuary.Widgets.TestMap
 import Estuary.Widgets.DataVisualisers
 import Estuary.Widgets.Chat
 import Estuary.Types.Request
@@ -118,20 +119,16 @@ viewWidget (RouletteView z rows) = zoneWidget False z [] maybeRoulette Roulette 
 
 viewWidget (CalendarEventView z) = do
   today <- liftIO getZonedTime
-  let defaultValue = IntMap.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
+  let defaultValue = Map.singleton 0 (CalendarEvent "" (CalendarTime today (Recurrence Once today)))
   zoneWidget False z defaultValue maybeCalendarEvents CalendarEvs calendarEventWidget
 
-viewWidget (CountDownView z) = zoneWidget False z (Holding 60) maybeTimerDownState CountDown countDownWidget
+viewWidget (StopWatchView z) = zoneWidget False z Cleared maybeStopwatchState StopWatch stopWatchWidget
 
-viewWidget (SandClockView z) = zoneWidget False z (Holding 60) maybeTimerDownState CountDown sandClockWidget
+viewWidget (TimerView z) = zoneWidget False z (Timer 0 (Live [("a",5),("b",7),("c",3)] L3) Halted True Cycles) maybeTimer TimerDef timerWidget
 
-viewWidget (StopWatchView z) = zoneWidget False z Cleared maybeTimerUpState StopWatch stopWatchWidget
+viewWidget (MetreView z) = zoneWidget False z (Tv 0 4 0) maybeSeeTime SeeTime visualiseTempoWidget
 
--- viewWidget er (SeeTimeView z) = zoneWidget z (Tv 0 4 0) maybeSeeTime SeeTime er visualiseTempoWidget
-
-viewWidget (TimerView z) = zoneWidget False z (Timer 0 [("a",5),("b",7),("c",3)] Halted True Cycles) maybeTimer TimerDef timerWidget
-
-viewWidget (SeeTimeView z) = zoneWidget False z (Tv 0 4 0) maybeSeeTime SeeTime visualiseTempoWidget
+viewWidget (MeterView z) = zoneWidget False z (Tv 0 4 0) maybeSeeTime SeeTime visualiseTempoWidget
 
 viewWidget (NotePadView z) = zoneWidget False z (0,Seq.fromList[("Title","Content")]) maybeNotePad NotePad notePadWidget
 

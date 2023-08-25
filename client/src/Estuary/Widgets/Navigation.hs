@@ -43,6 +43,8 @@ import Estuary.Widgets.CreateEnsemble
 import Estuary.Tutorials.TidalCyclesBasics
 import Estuary.Tutorials.Punctual
 import Estuary.Tutorials.CineCer0
+import Estuary.Tutorials.Timer
+import Estuary.Tutorials.Metre
 import Estuary.Widgets.Announcements
 
 data Navigation =
@@ -79,7 +81,9 @@ page TutorialList = splitPageWithAnnouncements $ do
   navTidalCyclesBasics <- liftM (TutorialNav "TidalCyclesBasics" <$) $ divClass "tutorialButton" $ button "TidalCycles"
   navPunctualTutorial <- liftM (TutorialNav "Punctual" <$) $ divClass "tutorialButton" $ button "Punctual"
   navCineCer0 <- liftM (TutorialNav "CineCer0" <$) $ divClass "tutorialButton" $ button "CineCer0"
-  return $ leftmost [navTidalCyclesBasics,navPunctualTutorial,navCineCer0]
+  navTimer <- liftM (TutorialNav "Timer" <$) $ divClass "tutorialButton" $ button "Timer"
+  navMetre <- liftM (TutorialNav "Metre" <$) $ divClass "tutorialButton" $ button "Metre"
+  return $ leftmost [navTidalCyclesBasics,navPunctualTutorial,navCineCer0,navTimer, navMetre]
 
 page (TutorialNav "TidalCyclesBasics") = do
   leaveEnsemble
@@ -94,6 +98,16 @@ page (TutorialNav "Punctual") = do
 page (TutorialNav "CineCer0") = do
   leaveEnsemble
   runTutorial cineCer0Tutorial
+  return never
+
+page (TutorialNav "Timer") = do
+  leaveEnsemble
+  runTutorial timerTutorial
+  return never
+
+page (TutorialNav "Metre") = do
+  leaveEnsemble
+  runTutorial metreTutorial
   return never
 
 page (TutorialNav _) = do

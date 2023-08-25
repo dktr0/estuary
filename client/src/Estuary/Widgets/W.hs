@@ -626,7 +626,7 @@ widgetMapAddDelete initialMap deltaEv localAddEv rowBuilder = mdo
   x <- listWithKeyShallowDiff initialMap widgetDiffMap rowBuilder' -- :: m (Dynamic t (Map Int (Event t (Maybe a))))
   let x' = switchDyn $ fmap mergeMap x -- :: Event t (Map Int (Maybe a))
   -}
-  
+
 
 calculateDiffMap :: Eq a => Map Int a -> Map Int a -> (Map Int a, Map Int (Maybe a))
 calculateDiffMap oldMap newMap = (newMap,diffMap)
@@ -635,7 +635,7 @@ calculateDiffMap oldMap newMap = (newMap,diffMap)
     deletions = Nothing <$ Map.difference oldMap newMap
     changes = fmap Just $ catMaybes $ Map.intersectionWith (\a b -> if a == b then Nothing else Just a) newMap oldMap -- from Data.Witherable
     diffMap = Map.union additions (Map.union deletions changes)
-  
+
 
 -- the opposite of 'difference' from Reflex - the first event occurs as the result
 -- only when the second supplied event occurs simultaneously.
@@ -644,16 +644,16 @@ allow :: Reflex t => Event t a -> Event t b -> Event t a
 allow = alignEventWithMaybe $ \x -> case x of
   These a _ -> Just a
   _ -> Nothing
-  
+
 
 calculateAdds :: a -> Map Int a -> Map Int a
 calculateAdds newRow oldMap = Map.insert n newRow oldMap
   where
     ks = Map.keys oldMap
-    n = case ks of 
+    n = case ks of
       [] -> 0
       ks' -> Prelude.maximum ks + 1
-      
+
 calculateDeletes :: [Int] -> Map Int a -> Map Int a
 calculateDeletes ks = Data.Foldable.foldr (.) id $ fmap Map.delete ks
 
@@ -669,52 +669,52 @@ applyDiffMap diffMap oldMap = Map.union editOrAdds (Map.difference oldMap deleti
 
 
 -- type Test = IntMap Text
-type Test = Map Int Text
-
-testMap :: MonadWidget t m => Dynamic t Test -> m (Variable t Test)
-testMap delta = do
-  initialMap <- sample $ current delta
-  addButton <- traceEvent "AddButton" <$> button "+"
---   mapEv <- widgetMapEventWithAddDelete delta ("newtext" <$ addButton) testRowMaybe
-  mapEv <- widgetMapAddDelete initialMap (updated delta) ("newtext" <$ addButton) testRowMaybe
-  variable delta mapEv
-
-testRow :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
-testRow delta = el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta)
-
-testRowMaybe :: MonadWidget t m => Dynamic t Text -> m (Event t (Maybe Text))
-testRowMaybe delta = do
-  deleteButton <- button "-"
-  row <- el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta) -- Event t Text
-  let rowMaybe = fmap Just row -- Event t (Maybe Text)
-  return $ leftmost [rowMaybe, Nothing <$ deleteButton]
-
-
-testRowMaybe' :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
-testRowMaybe' delta = do
-  deleteButton <- button "-"
-  row <- el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta) -- Event t Text
-  return $ leftmost [row, "delete" <$ deleteButton]
-
--- Dynamic t a -> m (Event t (Maybe a))
--- Event t (Maybe a) where
---  Nothing = delete this row
---  Just x = local edit to this row
-
-widgetMapDemo :: IO ()
-widgetMapDemo = mainWidget $ mdo
-
-  let i = Map.singleton 0 "text zero"
-  delta <- holdDyn i never -- $ localEdits x
-  x <- el "div" $ testMap delta -- :: Variable t Test
-
-  -- display localEdits issued from widget
-  el "div" $ do
-    text "localEdits: "
-    y <- holdDyn i $ localEdits x -- :: Dynamic t Test
-    dynText $ fmap (T.pack . show) y
-
-  -- display currentValue issued from widget
-  el "div" $ do
-    text "currentValue: "
-    dynText $ fmap (T.pack . show) $ currentValue x
+-- type Test = Map Int Text
+--
+-- testMap :: MonadWidget t m => Dynamic t Test -> m (Variable t Test)
+-- testMap delta = do
+--   initialMap <- sample $ current delta
+--   addButton <- traceEvent "AddButton" <$> button "+"
+-- --   mapEv <- widgetMapEventWithAddDelete delta ("newtext" <$ addButton) testRowMaybe
+--   mapEv <- widgetMapAddDelete initialMap (updated delta) ("newtext" <$ addButton) testRowMaybe
+--   variable delta mapEv
+--
+-- testRow :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
+-- testRow delta = el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta)
+--
+-- testRowMaybe :: MonadWidget t m => Dynamic t Text -> m (Event t (Maybe Text))
+-- testRowMaybe delta = do
+--   deleteButton <- button "-"
+--   row <- el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta) -- Event t Text
+--   let rowMaybe = fmap Just row -- Event t (Maybe Text)
+--   return $ leftmost [rowMaybe, Nothing <$ deleteButton]
+--
+--
+-- testRowMaybe' :: MonadWidget t m => Dynamic t Text -> m (Event t Text)
+-- testRowMaybe' delta = do
+--   deleteButton <- button "-"
+--   row <- el "div" $ (textInputW (constDyn $ "placeholder" =: "") delta) -- Event t Text
+--   return $ leftmost [row, "delete" <$ deleteButton]
+--
+-- -- Dynamic t a -> m (Event t (Maybe a))
+-- -- Event t (Maybe a) where
+-- --  Nothing = delete this row
+-- --  Just x = local edit to this row
+--
+-- widgetMapDemo :: IO ()
+-- widgetMapDemo = mainWidget $ mdo
+--
+--   let i = Map.singleton 0 "text zero"
+--   delta <- holdDyn i never -- $ localEdits x
+--   x <- el "div" $ testMap delta -- :: Variable t Test
+--
+--   -- display localEdits issued from widget
+--   el "div" $ do
+--     text "localEdits: "
+--     y <- holdDyn i $ localEdits x -- :: Dynamic t Test
+--     dynText $ fmap (T.pack . show) y
+--
+--   -- display currentValue issued from widget
+--   el "div" $ do
+--     text "currentValue: "
+--     dynText $ fmap (T.pack . show) $ currentValue x
