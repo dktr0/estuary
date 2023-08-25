@@ -57,6 +57,8 @@ library
       Estuary.Tutorials.CineCer0
       Estuary.Tutorials.Punctual
       Estuary.Tutorials.TidalCyclesBasics
+      Estuary.Tutorials.Timer
+      Estuary.Tutorials.Metre
       Estuary.Types.AnimationState
       Estuary.Types.EnsembleC
       Estuary.Types.Hint

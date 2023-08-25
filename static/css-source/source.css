@@ -1057,12 +1057,51 @@ cursor: pointer;
 }
 
 
-.flex-item-for-timeVision {
+.flex-item-for-timeVision-left {
 	width: 100%;
 	z-index: 1;
   	height: 100%;
   	min-height: 100%;
 }
+
+.flex-item-for-timeVision-left:hover .left-panel-hoover {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+  }
+
+.left-panel-hoover {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 50%;
+	left: 15%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+  }
+
+.flex-item-for-timeVision-right {
+	width: 100%;
+	z-index: 1;
+  	height: 100%;
+  	min-height: 100%;
+}
+
+.flex-item-for-timeVision-right:hover .right-panel-hoover {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+  }
+
+.right-panel-hoover {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 50%;
+	left: 75%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+  }
 
 .flex-container-for-timeVision-vertical {
 	display: flex;
@@ -1073,11 +1112,50 @@ cursor: pointer;
   	min-height: 100%;
 }
 
-.flex-item-for-timeVision-vertical {
+.flex-item-for-timeVision-vertical-up {
 	width: 100%;
   	height: 100%;
 	z-index: 1;
   	min-height: 50%;
+}
+
+.flex-item-for-timeVision-vertical-up:hover .up-panel-hoover {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+}
+
+.up-panel-hoover {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 25%;
+	left: 45%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+}
+
+.flex-item-for-timeVision-vertical-down {
+	width: 100%;
+  	height: 100%;
+	z-index: 1;
+  	min-height: 50%;
+}
+
+.flex-item-for-timeVision-vertical-down:hover .down-panel-hoover {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+}
+
+.down-panel-hoover {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 75%;
+	left: 45%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
 }
 
 .flex-container-for-timeVision-vertical-2 {
@@ -1089,11 +1167,73 @@ cursor: pointer;
 	min-height: 100%;
 }
 
-.flex-item-for-timeVision-vertical-2 {
+.flex-item-for-timeVision-vertical-2-up {
 	width: 100%;
   	height: 100%;
 	z-index: 1;
   	min-height: 33%;
+}
+
+.flex-item-for-timeVision-vertical-2-up:hover .up-panel-hoover-2 {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+}
+
+.up-panel-hoover-2 {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 25%;
+	left: 45%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+}
+
+.flex-item-for-timeVision-vertical-2-down {
+	width: 100%;
+  	height: 100%;
+	z-index: 1;
+  	min-height: 33%;
+}
+
+.flex-item-for-timeVision-vertical-2-down:hover .down-panel-hoover-2 {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+}
+
+.down-panel-hoover-2 {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 75%;
+	left: 45%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
+}
+
+.flex-item-for-timeVision-vertical-2-middle {
+	width: 100%;
+  	height: 100%;
+	z-index: 1;
+  	min-height: 33%;
+}
+
+.flex-item-for-timeVision-vertical-2-middle:hover .middle-panel-hoover {
+	visibility: visible;
+	opacity: 0%;
+    transition: opacity 5s linear;
+}
+
+.middle-panel-hoover {
+	z-index: 1;
+	visibility: hidden;
+	position: absolute;
+	top: 50%;
+	left: 45%;
+	background-color: var(--secondary-color);
+	opacity: 75%;
 }
 
 .timer-Visualiser {
@@ -1107,6 +1247,12 @@ cursor: pointer;
 .temporaryDiv {
 	position: absolute;
 	z-index: 3;
+}
+
+.spot {
+	position: relative;
+	width: 10%;
+	height: 100%;
 }
 
 .visualiser {
@@ -2445,7 +2591,7 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	visibility: hidden;
 	position: absolute;
 	top: 50%;
-	left: 0%;
+	left: 40%;
 	background-color: var(--secondary-color);
 	opacity: 75%;
   }
@@ -2472,7 +2618,7 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	visibility: hidden;
 	position: absolute;
 	top: 50%;
-	left: 0%;
+	left: 40%;
 	background-color: var(--secondary-color);
 	opacity: 75%;
   }
@@ -2497,7 +2643,7 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	visibility: hidden;
 	position: absolute;
 	top: 50%;
-	left: 0%;
+	left: 40%;
 	background-color: var(--secondary-color);
 	opacity: 75%;
   }
@@ -2522,7 +2668,7 @@ box-shadow: inset 0 0 3px var(--primary-color);
 	visibility: hidden;
 	position: absolute;
 	top: 50%;
-	left: 0%;
+	left: 40%;
 	background-color: var(--secondary-color);
 	opacity: 75%;
   }

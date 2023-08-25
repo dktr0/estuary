@@ -65,12 +65,15 @@ data TimerDownState =
   Falling Int UTCTime -- target and start time
   deriving (Eq,Show,Generic)
 
-data TimerUpState =
+data StopwatchState =
   Cleared |
   Running UTCTime |
   Stopped NominalDiffTime
   deriving (Eq, Show, Generic)
 
+instance ToJSON StopwatchState where
+  toEncoding = genericToEncoding defaultOptions
+instance FromJSON StopwatchState
 
 data Measure = Cycles | Seconds deriving (Show,Ord,Eq,Generic)
 instance ToJSON Measure where
@@ -86,11 +89,11 @@ instance FromJSON Mode
 
 data Timer = Timer {
   n:: Int,
-  form:: [(Text,Rational)],
+  form:: Live [(Text,Rational)],
   mode:: Mode,
   loop:: Bool,
   measure:: Measure
-} deriving (Show,Eq,Ord,Generic)
+} deriving (Show,Eq,Generic)
 
 instance ToJSON Timer where
   toEncoding = genericToEncoding defaultOptions
@@ -101,10 +104,6 @@ data TimeVision = Tv Int Rational Rational deriving (Show,Eq,Ord,Generic)
 instance ToJSON TimeVision where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON TimeVision
-
-instance ToJSON TimerUpState where
-  toEncoding = genericToEncoding defaultOptions
-instance FromJSON TimerUpState
 
 instance ToJSON TimerDownState where
   toEncoding = genericToEncoding defaultOptions
@@ -118,7 +117,7 @@ data Definition =
   Roulette Roulette |
   CountDown TimerDownState |
   SandClock TimerDownState |
-  StopWatch TimerUpState |
+  StopWatch StopwatchState |
   SeeTime TimeVision |
   TimerDef Timer |
   NotePad NotePad |
@@ -145,8 +144,8 @@ definitionForRendering (TidalStructure x) = TidalStructure x
 definitionForRendering (LabelText x) = LabelText x
 definitionForRendering (Roulette x) = Roulette x
 definitionForRendering (CalendarEv x)  = CalendarEv x
-definitionForRendering (CountDown x) = CountDown x
-definitionForRendering (SandClock x) = SandClock x
+-- definitionForRendering (CountDown x) = CountDown x
+-- definitionForRendering (SandClock x) = SandClock x
 definitionForRendering (StopWatch x) = StopWatch x
 definitionForRendering (SeeTime x) = SeeTime x
 definitionForRendering (TimerDef x) = TimerDef x
@@ -211,14 +210,14 @@ maybeCalendarEvent _ = Nothing
 justCalendarEvent :: [Definition] -> [CalendarEvent]
 justCalendarEvent = mapMaybe maybeCalendarEvent
 
-maybeTimerUpState:: Definition -> Maybe TimerUpState
-maybeTimerUpState (StopWatch x) = Just x
-maybeTimerUpState _ = Nothing
+maybeStopwatchState:: Definition -> Maybe StopwatchState
+maybeStopwatchState (StopWatch x) = Just x
+maybeStopwatchState _ = Nothing
 
-maybeTimerDownState:: Definition -> Maybe TimerDownState
-maybeTimerDownState (CountDown x) = Just x
-maybeTimerDownState (SandClock x) = Just x
-maybeTimerDownState _ = Nothing
+-- maybeTimerDownState:: Definition -> Maybe TimerDownState
+-- maybeTimerDownState (CountDown x) = Just x
+-- maybeTimerDownState (SandClock x) = Just x
+-- maybeTimerDownState _ = Nothing
 
 maybeSeeTime:: Definition -> Maybe TimeVision
 maybeSeeTime (SeeTime x) = Just x
