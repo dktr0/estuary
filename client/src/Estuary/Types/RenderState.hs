@@ -72,7 +72,8 @@ data RenderState = RenderState {
   jsoLangs :: Map.Map Text JSoLang,
   valueMap :: Tidal.ValueMap,
   locoMotion :: ExoLang,
-  exoLangTest :: ExoLang
+  exoLangTest :: ExoLang,
+  transMit :: ExoLang
   }
 
 
@@ -81,6 +82,7 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
   pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 hCanvas glCtx
   lm <- exoLang lCanvas "https://dktr0.github.io/LocoMotion/src/webpack-module.js"
   elt <- exoLang lCanvas "./exolang.js"
+  tm <- exoLang lCanvas "https://jac307.github.io/TransMit/exolang.js"
   return $ RenderState {
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
@@ -117,5 +119,6 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     jsoLangs = Map.empty,
     valueMap = Map.empty,
     locoMotion = lm,
-    exoLangTest = elt
+    exoLangTest = elt,
+    transMit = tm
   }

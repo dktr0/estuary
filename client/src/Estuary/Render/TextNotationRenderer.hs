@@ -47,9 +47,9 @@ emptyTextNotationRenderer = TextNotationRenderer {
   postAnimationFrame = return ()
   }
 
-exoLangToRenderer :: ExoLang -> TextNotationRenderer
-exoLangToRenderer exolang = emptyTextNotationRenderer {
-  parseZone = parseZone' exolang,
+exoLangToRenderer :: TextNotation -> ExoLang -> TextNotationRenderer
+exoLangToRenderer tn exolang = emptyTextNotationRenderer {
+  parseZone = parseZone' tn exolang,
   scheduleWebDirtEvents = scheduleWebDirtEvents' exolang,
   clearZone' = clearZone'' exolang,
   preAnimationFrame = preAnimationFrame' exolang,
@@ -57,15 +57,15 @@ exoLangToRenderer exolang = emptyTextNotationRenderer {
   postAnimationFrame = postAnimationFrame' exolang
   }
 
-parseZone' :: ExoLang -> Int -> Text -> UTCTime -> R ()
-parseZone' exoLang z txt eTime = do
+parseZone' :: TextNotation -> ExoLang -> Int -> Text -> UTCTime -> R ()
+parseZone' tn exoLang z txt eTime = do
   r <- liftIO $ evaluate exoLang z txt
   case r of
     Just err -> do
-      setBaseNotation z TextNotation.LocoMotion
+      setBaseNotation z tn
       setZoneError z err
     Nothing -> do
-      setBaseNotation z TextNotation.LocoMotion
+      setBaseNotation z tn
       setEvaluationTime z eTime
       clearZoneError z
 
