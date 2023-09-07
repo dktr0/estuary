@@ -144,8 +144,8 @@ in
           dontCheck (dontHaddock (self.callCabal2nix "punctual" (pkgs.fetchFromGitHub {
           owner = "dktr0";
           repo = "punctual";
-          sha256 = "10xph5q27sbcci74ml2j18kkymf66lzxw0j6ywswa4mvn5px4856";
-          rev = "fe18e43b960804a4ea9f336ebc724fe0852fc3a9";
+          sha256 = "07z23vf9hyydj2kbywzp0mjlxvhzmjh0z5irwrahzsrnij8gix9w";
+          rev = "d8a9f5df78f7c7c70a4dccdd311ca5a0a7a708f3";
         }) {}));
 
         musicw = self.callCabal2nix "musicw" (pkgs.fetchFromGitHub {
