@@ -117,4 +117,5 @@ adjustResourceURLs :: Text -> [ResourceMeta] -> [ResourceMeta]
 adjustResourceURLs baseURL = fmap f
   where
     baseURL' = T.dropWhileEnd (/= '/') baseURL
-    f (ResourceMeta url t loc) = ResourceMeta (baseURL' <> url) t loc
+    f (ResourceMeta url t loc c) = ResourceMeta (baseURL' <> url) t loc c
+

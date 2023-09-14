@@ -21,8 +21,7 @@ import Estuary.Types.ResourceOp
 import Estuary.Languages.ExoLang
 import Estuary.Types.Live
 import Estuary.Types.Definition (Definition(..))
-import Estuary.Types.TextNotation (TextNotation(..))
-import Estuary.Types.TidalParser (TidalParser(..))
+import Estuary.Types.TextNotation
 
 data RenderEnvironment = RenderEnvironment {
   mainBus :: MainBus,
@@ -55,7 +54,7 @@ initialRenderEnvironment s = do
                      "" -> pure []
                      x -> do
                        putStrLn $ "minitidal: " ++ unpack (minitidal s)
-                       pure [WriteZone 1 $ TextProgram $ Live (TidalTextNotation MiniTidal,x,now) L3]
+                       pure [WriteZone 1 $ TextProgram $ Live ("MiniTidal",x,now) L3]
   renderOps' <- newMVar iRenderOps
   renderInfo' <- newMVar emptyRenderInfo
   putStrLn "finished initialRenderEnvironment"

@@ -118,9 +118,9 @@ resourceOpIO r maps (ResourceListURL url) = liftIO $ do
   return $ Prelude.foldl insertResourceMeta maps rMetas
 
 insertResourceMeta :: (LocMap Text,LocMap Text,LocMap Text) -> ResourceMeta -> (LocMap Text,LocMap Text,LocMap Text)
-insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Audio loc) = (LocMap.insert loc url aMap,iMap,vMap)
-insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Image loc) = (aMap,LocMap.insert loc url iMap,vMap)
-insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Video loc) = (aMap,iMap,LocMap.insert loc url vMap)
+insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Audio loc _) = (LocMap.insert loc url aMap,iMap,vMap)
+insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Image loc _) = (aMap,LocMap.insert loc url iMap,vMap)
+insertResourceMeta (aMap,iMap,vMap) (ResourceMeta url Video loc _) = (aMap,iMap,LocMap.insert loc url vMap)
 
 insertResource :: (LocMap Text,LocMap Text,LocMap Text) -> ResourceType -> Text -> Location -> (LocMap Text,LocMap Text,LocMap Text)
 insertResource (aMap,iMap,vMap) Audio url loc = (LocMap.insert loc url aMap,iMap,vMap)

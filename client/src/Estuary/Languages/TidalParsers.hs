@@ -7,15 +7,5 @@ import Data.Bifunctor (first)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Estuary.Types.TidalParser
-
-
-
-tidalParsers :: [TidalParser]
-tidalParsers = [
-  MiniTidal
-  ]
-
-
-tidalParser :: TidalParser -> Text -> Either String Tidal.ControlPattern
-tidalParser MiniTidal = parseTidal . T.unpack
+tidalParser :: Text -> Either String Tidal.ControlPattern
+tidalParser = parseTidal . T.unpack

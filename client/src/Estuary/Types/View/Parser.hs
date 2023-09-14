@@ -15,7 +15,6 @@ import Estuary.Types.View
 import Estuary.Types.View.Presets
 import Estuary.Types.TextNotation
 import Estuary.Types.CodeWidgetOptions
-import Estuary.Types.TidalParser
 
 type H = Haskellish ()
 
@@ -463,12 +462,12 @@ cwoToText (Fontsize x) = "(fontsize " <> (showt x) <> ")"
 -----
 
 textToNotation :: T.Text -> TextNotation
-textToNotation "minitidal" = TidalTextNotation MiniTidal
-textToNotation "punctual" = Punctual
-textToNotation "cinecer0" = CineCer0
-textToNotation "timenot" = TimeNot
-textToNotation "seis8s" = Seis8s
-textToNotation "hydra" = Hydra
+textToNotation "minitidal" = "MiniTidal"
+textToNotation "punctual" = "Punctual"
+textToNotation "cinecer0" = "CineCer0"
+textToNotation "timenot" = "TimeNot"
+textToNotation "seis8s" = "Seis8s"
+textToNotation "hydra" = "Hydra"
 textToNotation x = EphemeralNotation x
 
 textToNotation':: T.Text -> TextNotation ----- this wrapper function checks for JSoLangs. Syntax is: "jsolang myNanoLang" and "ephemeral myNanoLang"
@@ -478,12 +477,12 @@ textToNotation' x
         | otherwise = textToNotation x
 
 notationToText:: TextNotation -> T.Text
-notationToText (TidalTextNotation x) = "minitidal"
-notationToText Punctual = "punctual"
-notationToText CineCer0 = "cinecer0"
-notationToText TimeNot = "timenot"
-notationToText Seis8s = "seis8s"
-notationToText Hydra = "hydra"
+notationToText "MiniTidal" = "minitidal"
+notationToText "Punctual" = "punctual"
+notationToText "CineCer0" = "cinecer0"
+notationToText "TimeNot" = "timenot"
+notationToText "Seis8s" = "seis8s"
+notationToText "Hydra" = "hydra"
 notationToText (JSoLang x) = "\"" <> "jsolang " <> x <> "\""
 notationToText (EphemeralNotation x) = "\"" <> x <> "\""
 notationToText UnspecifiedNotation = ""

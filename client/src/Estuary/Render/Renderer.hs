@@ -97,12 +97,6 @@ clockRatioThreshold :: Double
 clockRatioThreshold = 0.8
 
 
-{-
-earlyWakeUp :: NominalDiffTime
-earlyWakeUp = 0.002
--}
-
-
 -- flush note events to WebDirt, SuperDirt, and/or WebSerial
 flushEvents :: R ()
 flushEvents = do
@@ -119,8 +113,8 @@ flushEvents = do
     mapM_ (WebDirt.playSample (webDirt rEnv)) $ noteEvents' ++ webDirtEvents'
 
   -- maybe send events to SuperDirt via the SuperDirt socket
-  sdOn <- superDirtOn
-  when sdOn $ liftIO $ do
+  -- sdOn <- superDirtOn
+  whenM superDirtOn $ do
     noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
     mapM_ (SuperDirt.playSample (superDirt rEnv)) $ noteEvents'
 
@@ -514,15 +508,6 @@ calculateZoneAnimationTimes z zat = do
   let newAvgMap = insert z (getAverage zat) (avgZoneAnimationTime $ info s)
   modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap }}
 
-{-
-sleepIfNecessary :: R ()
-sleepIfNecessary = do
-  s <- get
-  let targetTime = addUTCTime (maxRenderLatency * (-1) - earlyWakeUp) (renderEnd s)
-  tNow <- liftIO $ getCurrentTime
-  let diff = diffUTCTime targetTime tNow
-  when (diff > 0) $ liftIO $ threadDelay $ floor $ realToFrac $ diff * 1000000
--}
   
 forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> IO ()
 forkRenderThreads rEnv s vidDiv cvsElement glCtx hCanvas lCanvas = do
