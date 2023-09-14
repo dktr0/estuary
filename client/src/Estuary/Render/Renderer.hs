@@ -299,7 +299,10 @@ clearTextProgram z (CineCer0,_,_) = (clearZone' cineCer0) z
 clearTextProgram z (Hydra,_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
 clearTextProgram z (LocoMotion,_,_) = do
   s <- get
-  (clearZone' $ exoLangToRenderer $ locoMotion s) z
+  (clearZone' $ exoLangToRenderer LocoMotion $ locoMotion s) z
+clearTextProgram z (TransMit,_,_) = do
+  s <- get
+  (clearZone' $ exoLangToRenderer TransMit $ transMit s) z
 clearTextProgram _ _ = return ()
 
 
@@ -316,11 +319,14 @@ renderAnimation = do
     let ns = baseNotations s
     let anyPunctualZones = elem Punctual ns
     let anyLocoMotionZones = elem LocoMotion ns
+    let anyTransMitZones = elem TransMit ns
     when anyPunctualZones $ preAnimationFrame punctual
     when anyLocoMotionZones $ liftIO $ ExoLang.preAnimate (locoMotion s)
+    when anyTransMitZones $ liftIO $ ExoLang.preAnimate (transMit s)
     traverseWithKey (renderZoneAnimation t1) ns
     when anyPunctualZones $ postAnimationFrame punctual
     when anyLocoMotionZones $ liftIO $ ExoLang.postAnimate (locoMotion s)
+    when anyTransMitZones $ liftIO $ ExoLang.postAnimate (transMit s)
     t2 <- liftIO $ getCurrentTime
     s <- get
     let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 wta)
@@ -347,7 +353,10 @@ renderZoneAnimationTextProgram tNow z CineCer0 = (zoneAnimationFrame cineCer0) t
 renderZoneAnimationTextProgram tNow z Hydra = renderHydra tNow z
 renderZoneAnimationTextProgram tNow z LocoMotion = do
   s <- get
-  (zoneAnimationFrame $ exoLangToRenderer $ locoMotion s) tNow z
+  (zoneAnimationFrame $ exoLangToRenderer LocoMotion $ locoMotion s) tNow z
+renderZoneAnimationTextProgram tNow z TransMit = do
+  s <- get
+  (zoneAnimationFrame $ exoLangToRenderer TransMit $ transMit s) tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
 renderHydra :: UTCTime -> Int -> R ()
@@ -403,7 +412,10 @@ renderTextProgramChanged z (CineCer0,x,eTime) = (parseZone cineCer0) z x eTime
 renderTextProgramChanged z (Hydra,x,_) = parseHydra z x
 renderTextProgramChanged z (LocoMotion,x,eTime) = do
   s <- get
-  parseZone (exoLangToRenderer $ locoMotion s) z x eTime
+  parseZone (exoLangToRenderer LocoMotion $ locoMotion s) z x eTime
+renderTextProgramChanged z (TransMit,x,eTime) = do
+  s <- get
+  parseZone (exoLangToRenderer TransMit $ transMit s) z x eTime
 renderTextProgramChanged z (TimeNot,x,eTime) = (parseZone timeNot) z x eTime
 
 renderTextProgramChanged z (Seis8s,x,eTime) = do
@@ -474,7 +486,7 @@ renderBaseProgramAlways :: Int -> Maybe TextNotation -> R ()
 renderBaseProgramAlways z (Just (TidalTextNotation _)) = (scheduleNoteEvents miniTidal) z >>= pushNoteEvents
 renderBaseProgramAlways z (Just LocoMotion) = do
   s <- get
-  ns <- (scheduleWebDirtEvents $ exoLangToRenderer $ locoMotion s) z
+  ns <- (scheduleWebDirtEvents $ exoLangToRenderer LocoMotion $ locoMotion s) z
   pushWebDirtEvents ns
 renderBaseProgramAlways z (Just TimeNot) = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
 renderBaseProgramAlways z (Just Seis8s) = do
