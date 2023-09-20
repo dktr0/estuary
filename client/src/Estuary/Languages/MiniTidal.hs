@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Languages.MiniTidal (miniTidal,renderTidalPattern,renderControlPattern) where
 
 import Data.Time
@@ -11,6 +13,7 @@ import Control.Monad.Reader
 import qualified Sound.Tidal.Context as Tidal
 import Control.DeepSeq
 import Data.Maybe
+import Sound.Tidal.Parse
 
 import Estuary.Render.R
 import Estuary.Render.TextNotationRenderer
@@ -21,10 +24,11 @@ import Estuary.Render.MainBus
 import Estuary.Types.Tempo as Tempo
 import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
-import Estuary.Types.TidalParser
-import Estuary.Languages.TidalParsers
 import Estuary.Types.NoteEvent
 
+
+tidalParser :: Text -> Either String Tidal.ControlPattern
+tidalParser = parseTidal . T.unpack
 
 miniTidal :: TextNotationRenderer
 miniTidal = emptyTextNotationRenderer {
@@ -37,11 +41,11 @@ miniTidal = emptyTextNotationRenderer {
 _parseZone :: Int -> Text -> UTCTime -> R ()
 _parseZone z y eTime = do
   s <- get
-  parseResult <- liftIO $ (return $! force (tidalParser MiniTidal y)) `catch` (return . Left . (show :: SomeException -> String))
+  parseResult <- liftIO $ (return $! force (tidalParser y)) `catch` (return . Left . (show :: SomeException -> String))
   case parseResult of
     Right p -> do
       clearZoneError z
-      setBaseNotation z (TidalTextNotation MiniTidal)
+      setBaseNotation z "MiniTidal"
       setEvaluationTime z eTime
       modify' $ \xx -> xx { paramPatterns = insert z p $ paramPatterns xx }
     Left err -> setZoneError z $ T.pack err

@@ -48,11 +48,9 @@ import qualified Estuary.Languages.Hydra.Render as Hydra
 
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
-import Estuary.Types.TidalParser
 import Estuary.Tidal.Types
 import Estuary.Types.ParamPatternable
 import Estuary.Types.Live
-import Estuary.Languages.TidalParsers
 import qualified Estuary.Languages.JSoLang as JSoLang
 import qualified Estuary.Render.WebDirt as WebDirt
 import qualified Estuary.Render.SuperDirt as SuperDirt
@@ -113,8 +111,8 @@ flushEvents = do
     mapM_ (WebDirt.playSample (webDirt rEnv)) $ noteEvents' ++ webDirtEvents'
 
   -- maybe send events to SuperDirt via the SuperDirt socket
-  -- sdOn <- superDirtOn
-  whenM superDirtOn $ do
+  sdOn <- superDirtOn
+  when sdOn $ liftIO $ do
     noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
     mapM_ (SuperDirt.playSample (superDirt rEnv)) $ noteEvents'
 
@@ -287,16 +285,16 @@ clearZone z (Sequence _) = clearParamPattern z
 clearZone _ _ = return ()
 
 clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
-clearTextProgram z (TidalTextNotation MiniTidal,_,_) = (clearZone' miniTidal) z
-clearTextProgram z (Punctual,_,_) = (clearZone' punctual) z
-clearTextProgram z (CineCer0,_,_) = (clearZone' cineCer0) z
-clearTextProgram z (Hydra,_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
-clearTextProgram z (LocoMotion,_,_) = do
+clearTextProgram z ("MiniTidal",_,_) = (clearZone' miniTidal) z
+clearTextProgram z ("Punctual",_,_) = (clearZone' punctual) z
+clearTextProgram z ("CineCer0",_,_) = (clearZone' cineCer0) z
+clearTextProgram z ("Hydra",_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
+clearTextProgram z ("LocoMotion",_,_) = do
   s <- get
-  (clearZone' $ exoLangToRenderer LocoMotion $ locoMotion s) z
-clearTextProgram z (TransMit,_,_) = do
+  (clearZone' $ exoLangToRenderer "LocoMotion" $ locoMotion s) z
+clearTextProgram z ("TransMit",_,_) = do
   s <- get
-  (clearZone' $ exoLangToRenderer TransMit $ transMit s) z
+  (clearZone' $ exoLangToRenderer "TransMit" $ transMit s) z
 clearTextProgram _ _ = return ()
 
 
@@ -311,9 +309,9 @@ renderAnimation = do
   when okToRender $ do
     s <- get
     let ns = baseNotations s
-    let anyPunctualZones = elem Punctual ns
-    let anyLocoMotionZones = elem LocoMotion ns
-    let anyTransMitZones = elem TransMit ns
+    let anyPunctualZones = elem "Punctual" ns
+    let anyLocoMotionZones = elem "LocoMotion" ns
+    let anyTransMitZones = elem "TransMit" ns
     when anyPunctualZones $ preAnimationFrame punctual
     when anyLocoMotionZones $ liftIO $ ExoLang.preAnimate (locoMotion s)
     when anyTransMitZones $ liftIO $ ExoLang.preAnimate (transMit s)
@@ -342,15 +340,15 @@ renderZoneAnimation :: UTCTime -> Int -> TextNotation -> R ()
 renderZoneAnimation tNow z n = renderZoneAnimationTextProgram tNow z n
 
 renderZoneAnimationTextProgram :: UTCTime -> Int -> TextNotation -> R ()
-renderZoneAnimationTextProgram tNow z Punctual = (zoneAnimationFrame punctual) tNow z
-renderZoneAnimationTextProgram tNow z CineCer0 = (zoneAnimationFrame cineCer0) tNow z
-renderZoneAnimationTextProgram tNow z Hydra = renderHydra tNow z
-renderZoneAnimationTextProgram tNow z LocoMotion = do
+renderZoneAnimationTextProgram tNow z "Punctual" = (zoneAnimationFrame punctual) tNow z
+renderZoneAnimationTextProgram tNow z "CineCer0" = (zoneAnimationFrame cineCer0) tNow z
+renderZoneAnimationTextProgram tNow z "Hydra" = renderHydra tNow z
+renderZoneAnimationTextProgram tNow z "LocoMotion" = do
   s <- get
-  (zoneAnimationFrame $ exoLangToRenderer LocoMotion $ locoMotion s) tNow z
-renderZoneAnimationTextProgram tNow z TransMit = do
+  (zoneAnimationFrame $ exoLangToRenderer "LocoMotion" $ locoMotion s) tNow z
+renderZoneAnimationTextProgram tNow z "TransMit" = do
   s <- get
-  (zoneAnimationFrame $ exoLangToRenderer TransMit $ transMit s) tNow z
+  (zoneAnimationFrame $ exoLangToRenderer "TransMit" $ transMit s) tNow z
 renderZoneAnimationTextProgram  _ _ _ = return ()
 
 renderHydra :: UTCTime -> Int -> R ()
@@ -382,58 +380,59 @@ renderZoneAlways _ _ = return ()
 
 renderTextProgramChanged :: Int -> TextProgram -> R ()
 
-renderTextProgramChanged z (UnspecifiedNotation,x,eTime) = do
+renderTextProgramChanged z ("",x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
   case determineTextNotation x ns of
     Left err -> do
       setZoneError z (T.pack $ show err)
-      setBaseNotation z UnspecifiedNotation
+      setBaseNotation z ""
     Right (x',n) -> do
       case n of
-        UnspecifiedNotation -> do
+        "" -> do
           case T.filter (\c -> not (isControl c) && not (isSpace c)) x' of
             "" -> do -- notation is unspecified but
               clearZoneError z
-              setBaseNotation z UnspecifiedNotation
+              setBaseNotation z ""
             _ -> do
               setZoneError z "no base notation specified"
-              setBaseNotation z UnspecifiedNotation
-        _-> renderTextProgramChanged z (n,x',eTime)
+              setBaseNotation z ""
+        _ -> renderTextProgramChanged z (n,x',eTime)
 
-renderTextProgramChanged z (TidalTextNotation _,x,eTime) = (parseZone miniTidal) z x eTime
-renderTextProgramChanged z (Punctual,x,eTime) = (parseZone punctual) z x eTime
-renderTextProgramChanged z (CineCer0,x,eTime) = (parseZone cineCer0) z x eTime
-renderTextProgramChanged z (Hydra,x,_) = parseHydra z x
-renderTextProgramChanged z (LocoMotion,x,eTime) = do
+renderTextProgramChanged z ("MiniTidal",x,eTime) = (parseZone miniTidal) z x eTime
+renderTextProgramChanged z ("Punctual",x,eTime) = (parseZone punctual) z x eTime
+renderTextProgramChanged z ("CineCer0",x,eTime) = (parseZone cineCer0) z x eTime
+renderTextProgramChanged z ("Hydra",x,_) = parseHydra z x
+renderTextProgramChanged z ("LocoMotion",x,eTime) = do
   s <- get
-  parseZone (exoLangToRenderer LocoMotion $ locoMotion s) z x eTime
-renderTextProgramChanged z (TransMit,x,eTime) = do
+  parseZone (exoLangToRenderer "LocoMotion" $ locoMotion s) z x eTime
+renderTextProgramChanged z ("TransMit",x,eTime) = do
   s <- get
-  parseZone (exoLangToRenderer TransMit $ transMit s) z x eTime
-renderTextProgramChanged z (TimeNot,x,eTime) = (parseZone timeNot) z x eTime
+  parseZone (exoLangToRenderer "TransMit" $ transMit s) z x eTime
+renderTextProgramChanged z ("TimeNot",x,eTime) = (parseZone timeNot) z x eTime
 
-renderTextProgramChanged z (Seis8s,x,eTime) = do
+renderTextProgramChanged z ("Seis8s",x,eTime) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
   case parseResult of
     Right p -> do
       clearZoneError z
-      setBaseNotation z Seis8s
+      setBaseNotation z "Seis8s"
       setEvaluationTime z eTime
       modify' $ \xx -> xx { seis8ses = insert z p $ seis8ses xx }
     Left e -> setZoneError z (T.pack $ show e)
 
-renderTextProgramChanged z (JSoLang x,y,eTime) = do
+renderTextProgramChanged z ("JSoLang",y,eTime) = do
+  let x = "JSoLang'" -- TODO: replace this placeholder which hard codes JSoLangs to produce a notation called JSoLang'
   parseResult <- liftIO $ JSoLang.define y
   case parseResult of
     Right j -> do
       clearZoneError z
-      setBaseNotation z (JSoLang x)
+      setBaseNotation z "JSoLang"
       setEvaluationTime z eTime
       modify' $ \xx -> xx { jsoLangs = Map.insert x j $ jsoLangs xx }
       liftIO $ T.putStrLn $ "defined JSoLang " <> x
     Left e -> setZoneError z (T.pack $ show e)
 
-renderTextProgramChanged z (EphemeralNotation x,y,eTime) = do
+renderTextProgramChanged z (x,y,eTime) = do
   maybeJSoLang <- (Map.lookup x . jsoLangs) <$> get
   case maybeJSoLang of
     Just j -> do
@@ -442,11 +441,10 @@ renderTextProgramChanged z (EphemeralNotation x,y,eTime) = do
         Right x' -> do
           liftIO $ T.putStrLn $ "result of parsing " <> x <> ":"
           liftIO $ T.putStrLn x'
-          renderTextProgramChanged z (UnspecifiedNotation,x',eTime)
+          renderTextProgramChanged z ("",x',eTime)
         Left e -> setZoneError z e
-    Nothing -> setZoneError z $ "no ephemeral notation called " <> y <> " exists"
+    Nothing -> setZoneError z $ "renderTextProgramChanged: no language called " <> x <> " exists"
 
-renderTextProgramChanged z _ = setZoneError z "renderTextProgramChanged: no match for base notation"
 
 parseHydra :: Int -> Text -> R ()
 parseHydra z t = do
@@ -455,7 +453,7 @@ parseHydra z t = do
  case parseResult of
    Right (Right stmts) -> do
      clearZoneError z
-     setBaseNotation z Hydra
+     setBaseNotation z "Hydra"
      -- setEvaluationTime z eTime ???
      let x = IntMap.lookup z $ hydras s
      hydra <- case x of
@@ -477,13 +475,13 @@ renderTextProgramAlways z = do
 
 
 renderBaseProgramAlways :: Int -> Maybe TextNotation -> R ()
-renderBaseProgramAlways z (Just (TidalTextNotation _)) = (scheduleNoteEvents miniTidal) z >>= pushNoteEvents
-renderBaseProgramAlways z (Just LocoMotion) = do
+renderBaseProgramAlways z (Just "MiniTidal") = (scheduleNoteEvents miniTidal) z >>= pushNoteEvents
+renderBaseProgramAlways z (Just "LocoMotion") = do
   s <- get
-  ns <- (scheduleWebDirtEvents $ exoLangToRenderer LocoMotion $ locoMotion s) z
+  ns <- (scheduleWebDirtEvents $ exoLangToRenderer "LocoMotion" $ locoMotion s) z
   pushWebDirtEvents ns
-renderBaseProgramAlways z (Just TimeNot) = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
-renderBaseProgramAlways z (Just Seis8s) = do
+renderBaseProgramAlways z (Just "TimeNot") = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
+renderBaseProgramAlways z (Just "Seis8s") = do
   s <- get
   let p = IntMap.lookup z $ seis8ses s
   case p of

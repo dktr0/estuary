@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Estuary.Languages.TimeNot (timeNot) where
 
 import qualified Data.IntMap as IntMap
@@ -40,10 +41,10 @@ _parseZone z txt eTime = do
   evalResult <- liftIO $ evaluate timekNot txt (utcTimeToWhenPOSIX eTime)
   case exoResultToErrorText evalResult of
     Just err -> do
-      setBaseNotation z TimeNot
+      setBaseNotation z "TimeNot"
       setZoneError z err
     Nothing -> do
-      setBaseNotation z TimeNot
+      setBaseNotation z "TimeNot"
       setEvaluationTime z eTime
       clearZoneError z
 

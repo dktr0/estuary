@@ -23,7 +23,6 @@ import Estuary.Types.Definition
 import Estuary.Types.View
 import Estuary.Tidal.Types (TransformedPattern(..))
 import Estuary.Types.TextNotation
-import Estuary.Types.TidalParser
 import Estuary.Types.Tempo
 import Estuary.Widgets.W
 import Estuary.Widgets.Reflex
@@ -103,7 +102,7 @@ viewWidget (CodeView zoneNumber rows styles) = do
   errorDyn <- fmap (IntMap.lookup zoneNumber) <$> errors
   -- zoneWidget True z (Live (UnspecifiedNotation,"",whenever) L3) maybeTextProgram TextProgram (textProgramEditor styles rows errorDyn)
   zs <- zones
-  let defaultLiveTextProgram = (Live (UnspecifiedNotation,"",whenever) L3)
+  let defaultLiveTextProgram = (Live ("","",whenever) L3)
   let getLiveTextProgram = maybe defaultLiveTextProgram (maybe defaultLiveTextProgram id . maybeTextProgram) . IntMap.lookup zoneNumber
   dynLiveTextProgram <- holdUniqDyn $ fmap getLiveTextProgram zs
   varA <- textProgramEditor styles rows errorDyn dynLiveTextProgram -- :: W t m (Variable t (Live TextProgram))

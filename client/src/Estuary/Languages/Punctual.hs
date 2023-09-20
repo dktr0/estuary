@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Estuary.Languages.Punctual (punctual) where
 
 import Data.Time
@@ -44,7 +46,7 @@ _parseZone z t eTime = do
   parseResult <- liftIO $ try $ return $! Punctual.parse eTime t
   parseResult' <- case parseResult of
     Right (Right punctualProgram) -> do
-      setBaseNotation z Punctual
+      setBaseNotation z "Punctual"
       setEvaluationTime z eTime
       punctualProgramChanged z punctualProgram
       return (Right punctualProgram)

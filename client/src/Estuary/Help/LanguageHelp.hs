@@ -17,11 +17,9 @@ import Estuary.Help.PunctualAudio
 import Estuary.Help.Hydra
 import Estuary.Help.CineCer0.CineCer0
 import Estuary.Help.CineCer0.CineCer0Reference
-import Estuary.Types.TidalParser
-import Estuary.Languages.TidalParsers
 import Estuary.Types.TextNotation
 
 parserToHelp :: (MonadFix m, PostBuild t m, DomBuilder t m, MonadHold t m) => TextNotation -> m ()
-parserToHelp (TidalTextNotation MiniTidal) = miniTidalHelpFile
-parserToHelp Punctual = punctualAudioHelpFile
+parserToHelp "MiniTidal" = miniTidalHelpFile
+parserToHelp "Punctual" = punctualAudioHelpFile
 parserToHelp _ = noHelpFile

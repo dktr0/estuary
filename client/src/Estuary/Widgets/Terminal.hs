@@ -16,6 +16,7 @@ import TextShow
 import Sound.MusicW.AudioContext
 import Data.Sequence as Seq
 import Data.Time
+import Data.Foldable
 
 import Estuary.Types.Definition
 import Estuary.Types.Request as Request
@@ -256,8 +257,8 @@ runCommand _ _ (Terminal.Theme x) = pure [ ChangeSettings $ \s -> s { Settings.t
 
 
 showResourceOps :: Seq ResourceOp -> Text
-showResourceOps xs | Data.Sequence.length xs == 0 = "empty resource ops"
-                   | otherwise = T.intercalate ", " $ toList $ mapWithIndex f xs
+showResourceOps xs | Seq.length xs == 0 = "empty resource ops"
+                   | otherwise = T.intercalate ", " $ Data.Foldable.toList $ Seq.mapWithIndex f xs
   where f i x = showt i <> ": " <> showResourceOp x
 
 showResourceOp :: ResourceOp -> Text

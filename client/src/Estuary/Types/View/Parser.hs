@@ -137,7 +137,7 @@ snippetParser'''':: H (Int -> Bool -> T.Text -> T.Text -> View)
 snippetParser'''' = snippetViewFunc <$ (reserved "snippet")
 
 snippetViewFunc :: Int -> Bool -> T.Text -> T.Text -> View
-snippetViewFunc z b tn sn = Snippet z b (textToNotation' tn) sn
+snippetViewFunc z b tn sn = Snippet z b (textToNotation tn) sn
 
 
 --
@@ -468,13 +468,15 @@ textToNotation "cinecer0" = "CineCer0"
 textToNotation "timenot" = "TimeNot"
 textToNotation "seis8s" = "Seis8s"
 textToNotation "hydra" = "Hydra"
-textToNotation x = EphemeralNotation x
+textToNotation x = x
 
+{-
 textToNotation':: T.Text -> TextNotation ----- this wrapper function checks for JSoLangs. Syntax is: "jsolang myNanoLang" and "ephemeral myNanoLang"
 textToNotation' x
         | x == "" = UnspecifiedNotation
         | "jsolang" == (Prelude.head $ T.words x) = JSoLang (T.unwords $ Prelude.tail $ T.words x)
         | otherwise = textToNotation x
+-}
 
 notationToText:: TextNotation -> T.Text
 notationToText "MiniTidal" = "minitidal"
@@ -483,9 +485,8 @@ notationToText "CineCer0" = "cinecer0"
 notationToText "TimeNot" = "timenot"
 notationToText "Seis8s" = "seis8s"
 notationToText "Hydra" = "hydra"
-notationToText (JSoLang x) = "\"" <> "jsolang " <> x <> "\""
-notationToText (EphemeralNotation x) = "\"" <> x <> "\""
-notationToText UnspecifiedNotation = ""
+notationToText "JSoLang" = "jsolang"
+notationToText x = x
 
 formatText:: T.Text -> T.Text
 formatText x = T.replace "\"" "\\\"" x

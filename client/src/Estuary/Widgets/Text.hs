@@ -28,8 +28,6 @@ import Estuary.Widgets.Reflex
 import Estuary.Utility (lastOrNothing)
 import Estuary.Types.Definition
 import Estuary.Types.Hint
-import Estuary.Types.TidalParser
-import Estuary.Languages.TidalParsers
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
 import Estuary.Help.LanguageHelp
@@ -197,7 +195,7 @@ textToInvisibleClass False = "class" =: "primary-color textInputToEndOfLine code
 
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = [UnspecifiedNotation, Punctual, CineCer0, TimeNot, Seis8s, Hydra] ++ (fmap TidalTextNotation tidalParsers)
+textNotationParsers = ["", "MiniTidal","Punctual", "CineCer0", "TimeNot", "Seis8s", "Hydra"]
 
 holdUniq :: (MonadHold t m, Monad m, Reflex t, MonadFix m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
@@ -225,7 +223,7 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
     -- build dropdown menu if "nomenu" is not among the provided options
     dropdown' <- if elem Nomenu styles then (return never) else do
       let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
-      let ddAttrs = ((def :: DropdownConfig t TidalParser) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
+      let ddAttrs = ((def :: DropdownConfig t TextNotation) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
       d <- dropdown initialParser parserMap ddAttrs
       return $ _dropdown_change d
     -- build eval button if "noeval" is not among the provided options

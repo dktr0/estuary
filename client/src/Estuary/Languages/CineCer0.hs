@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, OverloadedStrings #-}
 
 module Estuary.Languages.CineCer0 (cineCer0) where
 
@@ -42,7 +42,7 @@ _parseZone z x eTime = do
   case parseResult of
     Right spec -> do
       clearZoneError z
-      setBaseNotation z CineCer0
+      setBaseNotation z "CineCer0"
       setEvaluationTime z eTime
       modify' $ \xx -> xx { cineCer0Specs = insert z spec $ cineCer0Specs xx }
     Left err -> setZoneError z (T.pack err)
