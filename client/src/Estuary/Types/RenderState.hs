@@ -45,7 +45,6 @@ data RenderState = RenderState {
   cachedDefs :: !DefinitionMap,
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
---  tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
   webDirtEvents :: ![JSVal], -- deprecated/temporary
   baseNotations :: !(IntMap TextNotation),
   punctuals :: !(IntMap Punctual.PunctualW),

@@ -79,11 +79,6 @@ runR r rEnv rState = do
 pushNoteEvents :: [NoteEvent] -> R ()
 pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
-{- already obsolete?
-pushTidalEvents :: [(UTCTime,Tidal.ValueMap)] -> R ()
-pushTidalEvents = pushNoteEvents . fmap tidalEventToNoteEvent
--}
-
 -- deprecated/temporary
 pushWebDirtEvents :: [JSVal] -> R ()
 pushWebDirtEvents xs = modify' $ \x -> x { webDirtEvents = webDirtEvents x ++ xs }

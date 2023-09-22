@@ -37,7 +37,7 @@ import Sound.MusicW.AudioContext
 import qualified Sound.Seis8s.Parser as Seis8s
 import Estuary.Languages.Punctual
 import Estuary.Languages.CineCer0
-import Estuary.Languages.MiniTidal
+import qualified Estuary.Languages.MiniTidal as MiniTidal
 import Estuary.Languages.TimeNot
 import qualified Estuary.Languages.ExoLang as ExoLang
 import Sound.Punctual.GL (GLContext)
@@ -124,24 +124,12 @@ flushEvents = do
   modify' $ \x -> x { noteEvents = [], webDirtEvents = [] } -- note: webDirtEvents is temporary/deprecated
   return ()
 
-renderTidalPattern :: Tidal.ValueMap -> UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
-renderTidalPattern vMap start range t p = events''
-  where
-    start' = (realToFrac $ diffUTCTime start (time t)) * freq t + count t -- start time in cycles since beginning of tempo
-    end = realToFrac range * freq t + start' -- end time in cycles since beginning of tempo
-    a = Tidal.Arc (toRational start') (toRational end)
-    events = Tidal.query p $ Tidal.State a vMap
-    events' = Prelude.filter Tidal.eventHasOnset events
-    events'' = f <$> events'
-    f e = (utcTime,Tidal.value e)
-      where
-        utcTime = addUTCTime (realToFrac ((fromRational w1 - count t)/freq t)) (time t)
-        w1 = Tidal.start $ fromJust $ Tidal.whole e
 
 sequenceToControlPattern :: (Text,[Bool]) -> Tidal.ControlPattern
 sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " " $ fmap f pat
   where f False = "~"
         f True = T.unpack sampleName
+
 
 render :: R ()
 render = do
@@ -222,7 +210,6 @@ microRenderInAnimationFrame = do
   let diff = diffUTCTime (renderEnd s) tNow
   let microRender = diff >= microRenderThreshold && diff < waitThreshold
   when microRender $ do
-    -- liftIO $ T.putStrLn "+"
     fpsl <- fpsLimit
     let mDelta = realToFrac $ getAverage $ animationDelta s
     let microRenderPeriod = calculateMicroRenderPeriod mDelta fpsl
@@ -285,7 +272,9 @@ clearZone z (Sequence _) = clearParamPattern z
 clearZone _ _ = return ()
 
 clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
-clearTextProgram z ("MiniTidal",_,_) = (clearZone' miniTidal) z
+clearTextProgram z ("MiniTidal",_,_) = do
+  mt <- asks miniTidal
+  liftIO $ (MiniTidal.clearZone mt) z
 clearTextProgram z ("Punctual",_,_) = (clearZone' punctual) z
 clearTextProgram z ("CineCer0",_,_) = (clearZone' cineCer0) z
 clearTextProgram z ("Hydra",_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
@@ -398,7 +387,15 @@ renderTextProgramChanged z ("",x,eTime) = do
               setBaseNotation z ""
         _ -> renderTextProgramChanged z (n,x',eTime)
 
-renderTextProgramChanged z ("MiniTidal",x,eTime) = (parseZone miniTidal) z x eTime
+renderTextProgramChanged z ("MiniTidal",x,eTime) = do
+  mt <- asks miniTidal
+  let d = TextProgram $ Live ("MiniTidal",x,eTime) L4
+  err <- liftIO $ (MiniTidal.defineZone mt) z d
+  case err of 
+    Just e -> setZoneError z e
+    Nothing -> do
+      setBaseNotation z "MiniTidal"
+      clearZoneError z
 renderTextProgramChanged z ("Punctual",x,eTime) = (parseZone punctual) z x eTime
 renderTextProgramChanged z ("CineCer0",x,eTime) = (parseZone cineCer0) z x eTime
 renderTextProgramChanged z ("Hydra",x,_) = parseHydra z x
@@ -475,7 +472,16 @@ renderTextProgramAlways z = do
 
 
 renderBaseProgramAlways :: Int -> Maybe TextNotation -> R ()
-renderBaseProgramAlways z (Just "MiniTidal") = (scheduleNoteEvents miniTidal) z >>= pushNoteEvents
+renderBaseProgramAlways z (Just "MiniTidal") = do
+  mt <- asks miniTidal
+  t <- gets tempoCache
+  wStart <- gets renderStart
+  wEnd <- gets renderEnd
+  vMap <- gets valueMap
+  ns <- liftIO $ do
+    MiniTidal.preRender mt t
+    MiniTidal.renderZone mt z wStart wEnd vMap
+  pushNoteEvents ns
 renderBaseProgramAlways z (Just "LocoMotion") = do
   s <- get
   ns <- (scheduleWebDirtEvents $ exoLangToRenderer "LocoMotion" $ locoMotion s) z
@@ -538,3 +544,22 @@ animationThread rEnv rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
     rs'' <- runR renderAnimation rEnv rs'
     putMVar rsM rs''
   animationThread rEnv rsM
+  
+-- note: renderControlPattern is used by Tidal structure editor, and Sequencer
+renderControlPattern :: Int -> R ()
+renderControlPattern z = do
+  wdOn <- webDirtOn
+  sdOn <- superDirtOn
+  when (wdOn || sdOn) $ do
+    s <- get
+    let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
+    let vMap = valueMap s
+    case controlPattern of
+      Just controlPattern' -> do
+        let lt = renderStart s
+        let rp = renderPeriod s
+        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
+          `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
+        pushNoteEvents $ tidalEventToNoteEvent <$> ns
+      Nothing -> return ()
+
