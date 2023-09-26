@@ -22,15 +22,7 @@ import Estuary.Types.NoteEvent
 import Estuary.Types.Definition
 import Estuary.Types.Live
 import Estuary.Types.TextNotation
-
-
-data Renderer = Renderer {
-  defineZone :: Int -> Definition -> IO (Maybe Text),
-  preRender :: Tempo -> IO (),
-  renderZone :: Int -> UTCTime -> UTCTime -> Tidal.ValueMap -> IO [NoteEvent], -- TODO: add a flag for whether we are in or out of animationFrame callback ("noDraw"?)
-  postRender :: IO (),
-  clearZone :: Int -> IO ()
-  }
+import Estuary.Render.Renderer
   
   
 type MiniTidalState = IORef (IntMap Tidal.ControlPattern, Tempo)

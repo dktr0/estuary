@@ -29,6 +29,8 @@ import Estuary.Render.MainBus
 import Estuary.Types.Tempo
 import Estuary.Types.Ensemble
 import Estuary.Types.EnsembleC
+import Estuary.Render.Renderer
+
 
 punctual :: TextNotationRenderer
 punctual = emptyTextNotationRenderer {
@@ -79,9 +81,6 @@ punctualProgramChanged z p = do
   t <- liftAudioIO $ audioTime
   nchnls <- liftIO $ getAudioOutputs $ mainBus rEnv
   let prevPunctualW = Punctual.setPunctualWChannels nchnls $ findWithDefault (Punctual.emptyPunctualW ac pIn pOut nchnls (Punctual.evalTime p)) z (punctuals s)
-  let tempo' = tempoCache s
-  let beat0 = utcTimeToAudioSeconds (wakeTimeSystem s, wakeTimeAudio s) $ origin tempo'
-  let cps' = freq tempo'
   newPunctualW <- liftIO $ do
     runAudioContextIO ac $ Punctual.updatePunctualW prevPunctualW (tempoCache s) p
     `catch` (\e -> putStrLn (show (e :: SomeException)) >> return prevPunctualW)

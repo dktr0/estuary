@@ -46,7 +46,7 @@ import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
-import Estuary.Render.Renderer
+import Estuary.Render.RenderEngine
 import Estuary.Widgets.Terminal
 import Estuary.Widgets.Reflex
 import Estuary.Widgets.Sidebar
