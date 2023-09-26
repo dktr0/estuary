@@ -11,12 +11,7 @@ import Control.Monad.State.Strict
 import Sound.MusicW.AudioContext
 import Control.Monad.Reader
 
-import qualified Sound.Punctual.Program as Punctual
-import qualified Sound.Punctual.PunctualW as Punctual
-import qualified Sound.Punctual.GL as Punctual
-import qualified Sound.Punctual.WebGL as Punctual
-import qualified Sound.Punctual.AsyncProgram as Punctual
-import qualified Sound.Punctual.Parser as Punctual
+import qualified Sound.Punctual as Punctual
 import qualified Sound.Punctual.Resolution as Punctual
 
 import Estuary.Render.R
@@ -32,92 +27,60 @@ import Estuary.Types.EnsembleC
 import Estuary.Render.Renderer
 
 
-punctual :: TextNotationRenderer
-punctual = emptyTextNotationRenderer {
-  parseZone = _parseZone,
-  clearZone' = _clearZone,
-  preAnimationFrame = _preAnimationFrame,
-  zoneAnimationFrame = _zoneAnimationFrame,
-  postAnimationFrame = _postAnimationFrame
-  }
+punctual :: Tempo -> MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> IO TextNotationRenderer
+punctual iTempo audioIn audioOut canvas = do
+  punctual <- Punctual.new iTempo audioIn audioOut 2 canvas
+  pure $ emptyTextNotationRenderer {
+    parseZone = _parseZone punctual,
+    clearZone' = _clearZone punctual,
+    preAnimationFrame = _preAnimationFrame punctual,
+    zoneAnimationFrame = _zoneAnimationFrame punctual,
+    postAnimationFrame = _postAnimationFrame punctual
+    }
 
 
-_parseZone :: Int -> Text -> UTCTime -> R ()
-_parseZone z t eTime = do
-  s <- get
-  parseResult <- liftIO $ try $ return $! Punctual.parse eTime t
-  parseResult' <- case parseResult of
-    Right (Right punctualProgram) -> do
+_parseZone :: Punctual.Punctual -> Int -> Text -> UTCTime -> R ()
+_parseZone p z txt eTime = do
+  rEnv <- ask
+  liftIO $ do
+    pIn <- getPunctualInput $ mainBus rEnv
+    pOut <- getMainBusInput $ mainBus rEnv
+    nChnls <- getAudioOutputs $ mainBus rEnv
+    Punctual.setAudioInput p pIn
+    Punctual.setAudioOutput p pOut
+    Punctual.setNchnls p nChnls
+  x <- liftIO $ Punctual.evaluate p z txt eTime
+  case x of 
+    Right _ -> do
       setBaseNotation z "Punctual"
       setEvaluationTime z eTime
-      punctualProgramChanged z punctualProgram
-      return (Right punctualProgram)
-    Right (Left parseErr) -> return (Left $ T.pack $ show parseErr)
-    Left exception -> return (Left $ T.pack $ show (exception :: SomeException))
-  let newErrors = either (\e -> insert z e (errors (info s))) (const $ delete z (errors (info s))) parseResult'
-  modify' $ \x -> x { info = (info s) { errors = newErrors }}
+      clearZoneError z
+    Left err -> setZoneError z err
+    
 
+_clearZone :: Punctual.Punctual -> Int -> R ()
+_clearZone p z = do
+  liftIO $ Punctual.clear p z
+  clearZoneError z
+  setBaseNotation z ""
+  
 
-_clearZone :: Int -> R ()
-_clearZone z = do
-  s <- get
-  case (IntMap.lookup z $ punctuals s) of
-    Just x -> liftAudioIO $ Punctual.deletePunctualW x
-    Nothing -> return ()
-  newPunctualWebGL <- liftIO $ Punctual.deletePunctualWebGL (glContext s) z $ punctualWebGL s
-  modify' $ \x -> x {
-    punctuals = IntMap.delete z $ punctuals x,
-    punctualWebGL = newPunctualWebGL
-  }
-
-punctualProgramChanged :: Int -> Punctual.Program -> R ()
-punctualProgramChanged z p = do
-  rEnv <- ask
-  s <- get
-  -- A. update PunctualW (audio state) in response to new, syntactically correct program
-  pIn <- liftIO $ getPunctualInput $ mainBus rEnv
-  pOut <- liftIO $ getMainBusInput $ mainBus rEnv
-  ac <- liftAudioIO $ audioContext
-  t <- liftAudioIO $ audioTime
-  nchnls <- liftIO $ getAudioOutputs $ mainBus rEnv
-  let prevPunctualW = Punctual.setPunctualWChannels nchnls $ findWithDefault (Punctual.emptyPunctualW ac pIn pOut nchnls (Punctual.evalTime p)) z (punctuals s)
-  newPunctualW <- liftIO $ do
-    runAudioContextIO ac $ Punctual.updatePunctualW prevPunctualW (tempoCache s) p
-    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return prevPunctualW)
-  modify' $ \x -> x { punctuals = insert z newPunctualW (punctuals s)}
-  -- B. update Punctual WebGL state in response to new, syntactically correct program
-  pWebGL <- gets punctualWebGL
-  newWebGL <- liftIO $
-    fmap fst (Punctual.evaluatePunctualWebGL (glContext s) (tempoCache s) z p pWebGL)
-    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return pWebGL)
-  modify' $ \x -> x { punctualWebGL = newWebGL }
-
-
-_preAnimationFrame :: R ()
-_preAnimationFrame = do
+_preAnimationFrame :: Punctual -> R ()
+_preAnimationFrame p = do
   s <- get
   res <- resolution
   b <- brightness
-  newWebGL <- liftIO $ do
-    x <- Punctual.setResolution (glContext s) res (punctualWebGL s)
-    Punctual.setBrightness b x
-    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
-  modify' $ \x -> x { punctualWebGL = newWebGL }
+  liftIO $ Punctual.setResolution p res
+  liftIO $ Punctual.setBrightness p b
+  
 
+_zoneAnimationFrame :: Punctual -> UTCTime -> Int -> R ()
+_zoneAnimationFrame p tNow z = do
+  t <- gets tempoCache
+  liftIO $ Punctual.setTempo p t
+  liftIO $ Punctual.render p True z tNow
+  
 
-_zoneAnimationFrame :: UTCTime -> Int -> R ()
-_zoneAnimationFrame tNow z = do
-  s <- get
-  newWebGL <- liftIO $
-    Punctual.drawPunctualWebGL (glContext s) (tempoCache s) tNow z (punctualWebGL s)
-    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
-  modify' $ \x -> x { punctualWebGL = newWebGL }
+_postAnimationFrame :: Punctual -> R ()
+_postAnimationFrame p = liftIO $ Punctual.postRender p True
 
-
-_postAnimationFrame :: R ()
-_postAnimationFrame = do
-  s  <- get
-  newWebGL <- liftIO $
-    Punctual.displayPunctualWebGL (glContext s) (punctualWebGL s)
-    `catch` (\e -> putStrLn (show (e :: SomeException)) >> return (punctualWebGL s))
-  modify' $ \x -> x { punctualWebGL = newWebGL }
