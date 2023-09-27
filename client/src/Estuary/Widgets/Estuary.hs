@@ -107,13 +107,12 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   vidDiv <- cinecer0Widget settings
   punctualZIndex' <- holdUniqDyn $ fmap Settings.punctualZIndex settings
   cvsElement <- canvasWidget settings punctualZIndex' -- canvas for Punctual
-  glCtx <- liftIO $ newGLContext cvsElement
   improvizZIndex' <- holdUniqDyn $ fmap Settings.improvizZIndex settings
   iCanvas <- canvasWidget settings improvizZIndex' -- canvas for Improviz
   hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
   hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
 
-  liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement glCtx hCanvas iCanvas
+  liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement hCanvas iCanvas
 
   rInfo <- pollRenderInfo rEnv
   resourceMaps <- dynamicResourceMaps rEnv

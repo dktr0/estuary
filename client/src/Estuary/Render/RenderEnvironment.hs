@@ -23,7 +23,6 @@ import Estuary.Languages.ExoLang
 import Estuary.Types.Live
 import Estuary.Types.Definition (Definition(..))
 import Estuary.Types.TextNotation
-import qualified Estuary.Languages.MiniTidal as MiniTidal
 
 data RenderEnvironment = RenderEnvironment {
   mainBus :: MainBus,
@@ -34,9 +33,7 @@ data RenderEnvironment = RenderEnvironment {
   ccMap :: IORef (Map.Map Text Double),
   _settings :: IORef Settings,
   renderOps :: MVar [RenderOp],
-  renderInfo :: MVar RenderInfo,
-  miniTidal :: Renderer,
-  punctual :: Renderer
+  renderInfo :: MVar RenderInfo
   }
 
 initialRenderEnvironment :: Settings -> IO RenderEnvironment
@@ -61,8 +58,6 @@ initialRenderEnvironment s = do
                        pure [WriteZone 1 $ TextProgram $ Live ("MiniTidal",x,now) L3]
   renderOps' <- newMVar iRenderOps
   renderInfo' <- newMVar emptyRenderInfo
-  miniTidal' <- MiniTidal.miniTidal
-  punctual' <- Punctual.punctual ...
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,
@@ -73,7 +68,5 @@ initialRenderEnvironment s = do
     ccMap = ccMap',
     _settings = settings',
     renderOps = renderOps',
-    renderInfo = renderInfo',
-    miniTidal = miniTidal',
-    punctual = punctual'
-  }
+    renderInfo = renderInfo'
+    }

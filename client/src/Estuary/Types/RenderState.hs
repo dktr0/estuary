@@ -29,6 +29,9 @@ import qualified Sound.Seis8s.Program as Seis8s
 import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
 import Estuary.Languages.ExoLang
+import Estuary.Render.Renderer
+import qualified Estuary.Languages.MiniTidal as MiniTidal
+import qualified Estuary.Languages.Punctual as Punctual
 
 newtype LocoMotion = LocoMotion JSVal
 
@@ -47,8 +50,6 @@ data RenderState = RenderState {
   noteEvents :: ![NoteEvent],
   webDirtEvents :: ![JSVal], -- deprecated/temporary
   baseNotations :: !(IntMap TextNotation),
-  punctuals :: !(IntMap Punctual.PunctualW),
-  punctualWebGL :: Punctual.PunctualWebGL,
   cineCer0Specs :: !(IntMap CineCer0.Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
   timeNots :: IntMap JSVal,
@@ -62,7 +63,6 @@ data RenderState = RenderState {
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo,
-  glContext :: GLContext,
   canvasElement :: HTMLCanvasElement,
   hydraCanvas :: HTMLCanvasElement,
   locoMotionCanvas :: HTMLCanvasElement,
@@ -72,16 +72,22 @@ data RenderState = RenderState {
   valueMap :: Tidal.ValueMap,
   locoMotion :: ExoLang,
   exoLangTest :: ExoLang,
-  transMit :: ExoLang
+  transMit :: ExoLang,
+  miniTidal :: Renderer,
+  punctual :: Renderer
   }
 
 
-initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
-initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = do
-  pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 hCanvas glCtx
+initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> HTMLCanvasElement -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
+initialRenderState pIn pOut cvsElement hCanvas lCanvas t0System t0Audio = do
   lm <- exoLang lCanvas "https://dktr0.github.io/LocoMotion/src/webpack-module.js"
   elt <- exoLang lCanvas "./exolang.js"
   tm <- exoLang lCanvas "https://jac307.github.io/TransMit/exolang.js"
+  miniTidal' <- MiniTidal.miniTidal
+  punctual' <- Punctual.punctual hCanvas
+  setAudioInput punctual' pIn
+  setAudioOutput punctual' pOut
+  setNchnls punctual' $ numberOfOutputs pOut
   return $ RenderState {
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
@@ -91,11 +97,8 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     cachedDefs = empty,
     paramPatterns = empty,
     noteEvents = [],
---    tidalEvents = [],
     webDirtEvents = [],
     baseNotations = empty,
-    punctuals = empty,
-    punctualWebGL = pWebGL,
     cineCer0Specs = empty,
     cineCer0States = empty,
     timeNots = empty,
@@ -109,7 +112,6 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
     info = emptyRenderInfo,
-    glContext = glCtx,
     canvasElement = cvsElement,
     hydraCanvas = hCanvas,
     locoMotionCanvas = lCanvas,
@@ -119,5 +121,7 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
     valueMap = Map.empty,
     locoMotion = lm,
     exoLangTest = elt,
-    transMit = tm
-  }
+    transMit = tm,
+    miniTidal = miniTidal',
+    punctual = punctual'
+    }

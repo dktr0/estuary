@@ -1,10 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Estuary.Languages.MiniTidal (Renderer(..),miniTidal,renderTidalPattern) where
+module Estuary.Languages.MiniTidal (miniTidal,renderTidalPattern) where
 
 import Data.Time
 import Control.Monad.Except
 import Data.IntMap as IntMap
+import Data.Map as Map
 import Data.Text as T
 import Control.Exception hiding (evaluate)
 import Control.Monad.State.Strict
@@ -30,29 +31,28 @@ miniTidal = do
   now <- getCurrentTime
   zonesRef <- newIORef IntMap.empty
   tempoRef <- newIORef $ Tempo {freq=0.5, time=now, Tempo.count=0}
-  valueMapRef <- newIORef ???/
+  valueMapRef <- newIORef Map.empty
   pure $ emptyRenderer {
     defineZone = _defineZone zonesRef,
     renderZone = _renderZone zonesRef tempoRef valueMapRef,
-    postRender = pure (),
     clearZone = _clearZone zonesRef,
     setTempo = writeIORef tempoRef,
     setValueMap = writeIORef valueMapRef
     }
   
   
-_defineZone :: IORef (IntMap Tidal.ControlPattern) -> Int -> Definition -> IO (Maybe Text) -- Just values represent evaluation errors
+_defineZone :: IORef (IntMap Tidal.ControlPattern) -> Int -> Definition -> IO (Either Text Text)
 _defineZone zonesRef z d = do
   case definitionToRenderingTextProgram d of 
-    Nothing -> pure $ Just "internal error in Estuary.Languages.MiniTidal: defineZone called for a definition that doesn't pertain to a text program"
+    Nothing -> pure $ Left "internal error in Estuary.Languages.MiniTidal: defineZone called for a definition that doesn't pertain to a text program"
     Just (_,txt,eTime) -> do
       parseResult <- liftIO $ (return $! force (tidalParser txt)) `catch` (return . Left . (show :: SomeException -> String))
       case parseResult of
         Right p -> do
           -- setEvaluationTime z eTime -- TODO: confirm that recording evaluation time and base notation are handled by render engine instead of a render module
           modifyIORef zonesRef $ IntMap.insert z p
-          pure Nothing
-        Left err -> pure $ Just $ T.pack err
+          pure $ Right ""
+        Left err -> pure $ Left $ T.pack err
 
 
 tidalParser :: Text -> Either String Tidal.ControlPattern
@@ -60,8 +60,8 @@ tidalParser = parseTidal . T.unpack
 
 
 _renderZone :: IORef (IntMap Tidal.ControlPattern) -> IORef Tempo -> IORef Tidal.ValueMap -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
-_renderZone zonesRef tempoRef valueMapRef z _ wStart wEnd _ = do
-  controlPattern <- (IntMap.lookup z . fst) <$> readIORef zonesRef -- :: Maybe ControlPattern
+_renderZone zonesRef tempoRef valueMapRef _ wStart wEnd _ z = do
+  controlPattern <- IntMap.lookup z <$> readIORef zonesRef -- :: Maybe ControlPattern
   case controlPattern of
     Just controlPattern' -> do
       tempo <- readIORef tempoRef

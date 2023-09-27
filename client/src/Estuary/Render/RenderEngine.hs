@@ -35,12 +35,12 @@ import Data.IORef
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Seis8s.Parser as Seis8s
-import Estuary.Languages.Punctual
+-- import Estuary.Languages.Punctual
 import Estuary.Languages.CineCer0
 import qualified Estuary.Languages.MiniTidal as MiniTidal
 import Estuary.Languages.TimeNot
 import qualified Estuary.Languages.ExoLang as ExoLang
-import Sound.Punctual.GL (GLContext)
+-- import Sound.Punctual.GL (GLContext)
 
 import qualified Estuary.Languages.Hydra.Types as Hydra
 import qualified Estuary.Languages.Hydra.Parser as Hydra
@@ -219,7 +219,7 @@ microRenderInAnimationFrame = do
       renderPeriod = microRenderPeriod
     }
     updateTidalValueMap
-    renderZones
+    renderZones True
     flushEvents
 
 calculateMicroRenderPeriod :: NominalDiffTime -> Maybe NominalDiffTime -> NominalDiffTime
@@ -246,8 +246,8 @@ renderRenderOp _ ResetZones = do
   gets cachedDefs >>= traverseWithKey clearZone
   modify' $ \s -> s { cachedDefs = empty }
 
-renderZones :: R ()
-renderZones = gets cachedDefs >>= traverseWithKey renderZoneAlways >> return ()
+renderZones :: Bool -> R ()
+renderZones canDraw = gets cachedDefs >>= traverseWithKey (renderZoneAlways canDraw) >> return ()
 
 
 maybeClearChangedZone :: Int -> Maybe Definition -> Definition -> R ()
@@ -272,18 +272,12 @@ clearZone z (Sequence _) = clearParamPattern z
 clearZone _ _ = return ()
 
 clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
-clearTextProgram z ("MiniTidal",_,_) = do
-  mt <- asks miniTidal
-  liftIO $ (MiniTidal.clearZone mt) z
-clearTextProgram z ("Punctual",_,_) = (clearZone' punctual) z
+clearTextProgram z ("MiniTidal",_,_) = gets miniTidal >>= liftIO . (flip clearZone) z
+clearTextProgram z ("Punctual",_,_) = gets punctual >>= liftIO . (flip clearZone) z
 clearTextProgram z ("CineCer0",_,_) = (clearZone' cineCer0) z
 clearTextProgram z ("Hydra",_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
-clearTextProgram z ("LocoMotion",_,_) = do
-  s <- get
-  (clearZone' $ exoLangToRenderer "LocoMotion" $ locoMotion s) z
-clearTextProgram z ("TransMit",_,_) = do
-  s <- get
-  (clearZone' $ exoLangToRenderer "TransMit" $ transMit s) z
+clearTextProgram z ("LocoMotion",_,_) = gets locoMotion >>= (flip $ clearZone' $ exoLangToRenderer "LocoMotion") z
+clearTextProgram z ("TranMit",_,_) = gets locoMotion >>= (flip $ clearZone' $ exoLangToRenderer "TransMit") z
 clearTextProgram _ _ = return ()
 
 
@@ -325,30 +319,7 @@ renderAnimation = do
       }
   microRenderInAnimationFrame
 
-renderZoneAnimation :: UTCTime -> Int -> TextNotation -> R ()
-renderZoneAnimation tNow z n = renderZoneAnimationTextProgram tNow z n
 
-renderZoneAnimationTextProgram :: UTCTime -> Int -> TextNotation -> R ()
-renderZoneAnimationTextProgram tNow z "Punctual" = (zoneAnimationFrame punctual) tNow z
-renderZoneAnimationTextProgram tNow z "CineCer0" = (zoneAnimationFrame cineCer0) tNow z
-renderZoneAnimationTextProgram tNow z "Hydra" = renderHydra tNow z
-renderZoneAnimationTextProgram tNow z "LocoMotion" = do
-  s <- get
-  (zoneAnimationFrame $ exoLangToRenderer "LocoMotion" $ locoMotion s) tNow z
-renderZoneAnimationTextProgram tNow z "TransMit" = do
-  s <- get
-  (zoneAnimationFrame $ exoLangToRenderer "TransMit" $ transMit s) tNow z
-renderZoneAnimationTextProgram  _ _ _ = return ()
-
-renderHydra :: UTCTime -> Int -> R ()
-renderHydra tNow z = do
-  s <- get
-  let wta = wakeTimeAnimation s
-  let elapsed = realToFrac $ diffUTCTime tNow wta * 1000
-  let x = IntMap.lookup z $ hydras s
-  case x of
-    Just hydra -> liftIO $ Hydra.tick hydra elapsed
-    Nothing -> return ()
 
 renderZoneChanged :: Int -> Definition -> R ()
 renderZoneChanged z (TidalStructure x) = do
@@ -360,11 +331,6 @@ renderZoneChanged z (Sequence xs) = do
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
 renderZoneChanged _ _ = return ()
 
-renderZoneAlways :: Int -> Definition -> R ()
-renderZoneAlways z (TidalStructure _) = renderControlPattern z
-renderZoneAlways z (TextProgram x) = renderTextProgramAlways z
-renderZoneAlways z (Sequence _) = renderControlPattern z
-renderZoneAlways _ _ = return ()
 
 
 renderTextProgramChanged :: Int -> TextProgram -> R ()
@@ -388,15 +354,23 @@ renderTextProgramChanged z ("",x,eTime) = do
         _ -> renderTextProgramChanged z (n,x',eTime)
 
 renderTextProgramChanged z ("MiniTidal",x,eTime) = do
-  mt <- asks miniTidal
+  mt <- gets miniTidal
   let d = TextProgram $ Live ("MiniTidal",x,eTime) L4
-  err <- liftIO $ (MiniTidal.defineZone mt) z d
-  case err of 
-    Just e -> setZoneError z e
-    Nothing -> do
+  r <- liftIO $ defineZone mt z d
+  case r of 
+    Left err -> setZoneError z err
+    Right _ -> do
       setBaseNotation z "MiniTidal"
       clearZoneError z
-renderTextProgramChanged z ("Punctual",x,eTime) = (parseZone punctual) z x eTime
+renderTextProgramChanged z ("Punctual",x,eTime) = do
+  mt <- gets punctual
+  let d = TextProgram $ Live ("Punctual",x,eTime) L4
+  r <- liftIO $ defineZone mt z d
+  case r of 
+    Left err -> setZoneError z err
+    Right _ -> do
+      setBaseNotation z "Punctual"
+      clearZoneError z
 renderTextProgramChanged z ("CineCer0",x,eTime) = (parseZone cineCer0) z x eTime
 renderTextProgramChanged z ("Hydra",x,_) = parseHydra z x
 renderTextProgramChanged z ("LocoMotion",x,eTime) = do
@@ -465,29 +439,36 @@ parseHydra z t = do
    Left exception -> setZoneError z (T.pack $ show (exception :: SomeException))
 
 
-renderTextProgramAlways :: Int -> R ()
-renderTextProgramAlways z = do
-  s <- get
-  renderBaseProgramAlways z $ IntMap.lookup z $ baseNotations s
 
+renderZone :: Bool -> Int -> Definition -> R ()
+renderZone _ z (Sequence _) = renderControlPattern z
+renderZone _ z (TidalStructure _) = renderControlPattern z
+renderZone canDraw z (TextProgram x) = renderTextProgram canDraw z x
 
-renderBaseProgramAlways :: Int -> Maybe TextNotation -> R ()
-renderBaseProgramAlways z (Just "MiniTidal") = do
-  mt <- asks miniTidal
-  t <- gets tempoCache
-  wStart <- gets renderStart
-  wEnd <- gets renderEnd
-  vMap <- gets valueMap
-  ns <- liftIO $ do
-    MiniTidal.preRender mt t
-    MiniTidal.renderZone mt z wStart wEnd vMap
-  pushNoteEvents ns
-renderBaseProgramAlways z (Just "LocoMotion") = do
-  s <- get
-  ns <- (scheduleWebDirtEvents $ exoLangToRenderer "LocoMotion" $ locoMotion s) z
-  pushWebDirtEvents ns
-renderBaseProgramAlways z (Just "TimeNot") = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
-renderBaseProgramAlways z (Just "Seis8s") = do
+renderZoneAlways :: Int -> Definition -> R ()
+renderZoneAlways z (TidalStructure _) = renderControlPattern z
+renderZoneAlways z (TextProgram x) = renderTextProgramAlways z
+renderZoneAlways z (Sequence _) = renderControlPattern z
+renderZoneAlways _ _ = return ()
+
+renderZoneText :: Bool -> Int -> Live TextProgram -> R ()
+renderZoneText canDraw z x = do
+  let (textNotation,_,_) = forRendering x
+  renderZoneBase canDraw z textNotation 
+
+renderZoneBase :: Bool -> Int -> TextNotation -> R ()
+renderZoneBase canDraw z "MiniTidal" = gets miniTidal >>= renderZoneGeneric canDraw z
+renderZoneBase canDraw z "Punctual" = gets punctual >>= renderZoneGeneric canDraw z
+renderZoneBase canDraw z "LocoMotion" = when canDraw $ do
+  lm <- gets locoMotion
+  tNow <- gets wakeTimeAnimation
+  (zoneAnimationFrame $ exoLangToRenderer "LocoMotion" lm) tNow z
+renderZoneBase canDraw z "TransMit" = when canDraw $ do
+  tm <- gets transMit
+  tNow <- gets wakeTimeAnimation
+  (zoneAnimationFrame $ exoLangToRenderer "TransMit" tm) tNow z
+renderZoneBase _ z "TimeNot" = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
+renderZoneBase _ z "Seis8s" = do
   s <- get
   let p = IntMap.lookup z $ seis8ses s
   case p of
@@ -497,7 +478,47 @@ renderBaseProgramAlways z (Just "Seis8s") = do
       let wEnd = renderEnd s
       pushNoteEvents $ Seis8s.render p' theTempo wStart wEnd
     Nothing -> return ()
-renderBaseProgramAlways _ _ = return ()
+renderZoneBase canDraw z "CineCero" = when canDraw $ do
+  tNow <- gets wakeTimeAnimation
+  (zoneAnimationFrame cineCer0) tNow z
+renderZoneBase canDraw z "Hydra" = when canDraw $ do
+  s <- get
+  let wta = wakeTimeAnimation s
+  let elapsed = realToFrac $ diffUTCTime tNow wta * 1000
+  let x = IntMap.lookup z $ hydras s
+  case x of
+    Just hydra -> liftIO $ Hydra.tick hydra elapsed
+    Nothing -> return ()
+renderZoneBase _ _ _ = return ()
+
+renderZoneGeneric :: Bool -> Int -> Renderer -> R ()
+renderZoneGeneric canDraw z r = do
+  gets tempoCache >>= (liftIO . setTempo r)
+  gets valueMap >>= (liftIO . setValueMap r)
+  tNow <- gets wakeTimeAnimation
+  wStart <- gets renderStart
+  wEnd <- gets renderEnd
+  liftIO $ preRender r canDraw
+  ns <- liftIO $ renderZone mt tNow wStart wEnd canDraw z
+  pushNoteEvents ns
+
+renderControlPattern :: Int -> R () -- used by Tidal structure editor, and Sequencer
+renderControlPattern z = do
+  wdOn <- webDirtOn
+  sdOn <- superDirtOn
+  when (wdOn || sdOn) $ do
+    s <- get
+    let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
+    let vMap = valueMap s
+    case controlPattern of
+      Just controlPattern' -> do
+        let lt = renderStart s
+        let rp = renderPeriod s
+        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
+          `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
+        pushNoteEvents $ tidalEventToNoteEvent <$> ns
+      Nothing -> return ()
+
 
 
 calculateZoneRenderTimes :: Int -> MovingAverage -> R ()
@@ -513,13 +534,13 @@ calculateZoneAnimationTimes z zat = do
   modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap }}
 
   
-forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> IO ()
-forkRenderThreads rEnv s vidDiv cvsElement glCtx hCanvas lCanvas = do
+forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> HTMLCanvasElement -> HTMLCanvasElement -> IO ()
+forkRenderThreads rEnv s vidDiv cvsElement hCanvas lCanvas = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv
   pOut <- getMainBusInput $ mainBus rEnv
-  irs <- initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio
+  irs <- initialRenderState pIn pOut cvsElement hCanvas lCanvas t0System t0Audio
   let irs' = irs { videoDivCache = Just vidDiv }
   rsM <- newMVar irs'
   void $ forkIO $ mainRenderThread rEnv rsM
@@ -544,22 +565,4 @@ animationThread rEnv rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
     rs'' <- runR renderAnimation rEnv rs'
     putMVar rsM rs''
   animationThread rEnv rsM
-  
--- note: renderControlPattern is used by Tidal structure editor, and Sequencer
-renderControlPattern :: Int -> R ()
-renderControlPattern z = do
-  wdOn <- webDirtOn
-  sdOn <- superDirtOn
-  when (wdOn || sdOn) $ do
-    s <- get
-    let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
-    let vMap = valueMap s
-    case controlPattern of
-      Just controlPattern' -> do
-        let lt = renderStart s
-        let rp = renderPeriod s
-        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
-          `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
-        pushNoteEvents $ tidalEventToNoteEvent <$> ns
-      Nothing -> return ()
 
