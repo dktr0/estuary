@@ -13,6 +13,7 @@ import Estuary.Render.MainBus
 import Estuary.Render.WebDirt as WebDirt
 import Estuary.Render.SuperDirt
 import Estuary.Render.WebSerial as WebSerial
+import Estuary.Render.Renderer
 import Estuary.Resources
 import Estuary.Client.Settings as Settings
 import Estuary.Types.RenderInfo
@@ -34,7 +35,8 @@ data RenderEnvironment = RenderEnvironment {
   _settings :: IORef Settings,
   renderOps :: MVar [RenderOp],
   renderInfo :: MVar RenderInfo,
-  miniTidal :: MiniTidal.Renderer -- TODO: the definition of Renderer belongs in its own module, not in MiniTidal
+  miniTidal :: Renderer,
+  punctual :: Renderer
   }
 
 initialRenderEnvironment :: Settings -> IO RenderEnvironment
@@ -60,6 +62,7 @@ initialRenderEnvironment s = do
   renderOps' <- newMVar iRenderOps
   renderInfo' <- newMVar emptyRenderInfo
   miniTidal' <- MiniTidal.miniTidal
+  punctual' <- Punctual.punctual ...
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,
@@ -71,5 +74,6 @@ initialRenderEnvironment s = do
     _settings = settings',
     renderOps = renderOps',
     renderInfo = renderInfo',
-    miniTidal = miniTidal'
+    miniTidal = miniTidal',
+    punctual = punctual'
   }

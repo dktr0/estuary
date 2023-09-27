@@ -168,6 +168,9 @@ maybeTextProgram _ = Nothing
 justTextPrograms :: [Definition] -> [Live TextProgram]
 justTextPrograms = mapMaybe maybeTextProgram
 
+definitionToRenderingTextProgram :: Definition -> Maybe (TextNotation,Text,UTCTime)
+definitionToRenderingTextProgram x = forRendering <$> maybeTextProgram x
+  
 maybeSequence :: Definition -> Maybe Sequence
 maybeSequence (Sequence x) = Just x
 maybeSequence _ = Nothing
