@@ -12,8 +12,6 @@ import Data.Time
 import Data.Sequence
 import qualified  Data.IntMap as I
 
-
-
 import Estuary.Tidal.Types
 import Estuary.Types.Live
 import Estuary.Types.TextNotation

@@ -98,11 +98,22 @@ clearZoneError z = do
   let newErrors = IntMap.delete z oldErrors
   modify' $ \x -> x { info = (info s) { errors = newErrors } }
 
-setBaseNotation :: Int -> TextNotation -> R ()
-setBaseNotation z n = modify' $ \x -> x { baseNotations = IntMap.insert z n $ baseNotations x}
 
-setEvaluationTime :: Int -> UTCTime -> R ()
-setEvaluationTime z n = modify' $ \x -> x { evaluationTimes = IntMap.insert z n $ evaluationTimes x}
+-- setBaseNotation :: Int -> TextNotation -> R ()
+-- setBaseNotation z n = modify' $ \x -> x { baseNotations = IntMap.insert z n $ baseNotations x}
+
+setBaseDefinition :: Int -> Definition -> R ()
+setBaseDefinition z x = modify' $ \s -> s { baseDefinitions = IntMap.insert z x $ baseDefinitions s }
+
+clearBaseDefinition :: Int -> R ()
+clearBaseDefinition z = modify' $ \s -> s { baseDefinitions = IntMap.delete z $ baseDefinitions s }
+
+getBaseDefinition :: Int -> R (Maybe Definition)
+getBaseDefinition z = gets (IntMap.lookup z)
+  
+ 
+-- setEvaluationTime :: Int -> UTCTime -> R ()
+-- setEvaluationTime z n = modify' $ \x -> x { evaluationTimes = IntMap.insert z n $ evaluationTimes x}
 
 clearParamPattern :: Int -> R ()
 clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }

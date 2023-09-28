@@ -133,7 +133,6 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 render :: R ()
 render = do
-  -- rEnv <- ask
   s <- get
   -- check if audio clock has advanced same amount as system clock
   t1System <- liftIO $ getCurrentTime
@@ -320,90 +319,62 @@ renderAnimation = do
   microRenderInAnimationFrame
 
 
-
-renderZoneChanged :: Int -> Definition -> R ()
-renderZoneChanged z (TidalStructure x) = do
+defineZone :: Int -> Definition -> R ()
+defineZone z d@(TidalStructure x) = do
   let newParamPattern = toParamPattern x
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged z (TextProgram x) = renderTextProgramChanged z $ forRendering x
-renderZoneChanged z (Sequence xs) = do
+  setBaseDefinition z d 
+defineZone z d@(Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged _ _ = return ()
+  setBaseDefinition z d
+defineZone z (TextProgram x) = defineZoneTextProgram z $ forRendering x
+defineZone _ _ = return ()
 
-
-
-renderTextProgramChanged :: Int -> TextProgram -> R ()
-
-renderTextProgramChanged z ("",x,eTime) = do
-  ns <- (Map.keys . jsoLangs) <$> get
-  case determineTextNotation x ns of
-    Left err -> do
-      setZoneError z (T.pack $ show err)
-      setBaseNotation z ""
-    Right (x',n) -> do
-      case n of
-        "" -> do
-          case T.filter (\c -> not (isControl c) && not (isSpace c)) x' of
-            "" -> do -- notation is unspecified but
-              clearZoneError z
-              setBaseNotation z ""
-            _ -> do
-              setZoneError z "no base notation specified"
-              setBaseNotation z ""
-        _ -> renderTextProgramChanged z (n,x',eTime)
-
-renderTextProgramChanged z ("MiniTidal",x,eTime) = do
-  mt <- gets miniTidal
-  let d = TextProgram $ Live ("MiniTidal",x,eTime) L4
-  r <- liftIO $ defineZone mt z d
-  case r of 
-    Left err -> setZoneError z err
-    Right _ -> do
-      setBaseNotation z "MiniTidal"
-      clearZoneError z
-renderTextProgramChanged z ("Punctual",x,eTime) = do
-  mt <- gets punctual
-  let d = TextProgram $ Live ("Punctual",x,eTime) L4
-  r <- liftIO $ defineZone mt z d
-  case r of 
-    Left err -> setZoneError z err
-    Right _ -> do
-      setBaseNotation z "Punctual"
-      clearZoneError z
-renderTextProgramChanged z ("CineCer0",x,eTime) = (parseZone cineCer0) z x eTime
-renderTextProgramChanged z ("Hydra",x,_) = parseHydra z x
-renderTextProgramChanged z ("LocoMotion",x,eTime) = do
+defineZoneTextProgram :: Int -> TextProgram -> R ()
+defineZoneTextProgram z d@("MiniTidal",_,_) = gets miniTidal >>= defineZoneGeneric z d
+defineZoneTextProgram z d@("Punctual",_,_) = gets punctual >>= defineZoneGeneric z d
+defineZoneTextProgram z ("CineCer0",x,eTime) = (parseZone cineCer0) z x eTime
+defineZoneTextProgram z ("Hydra",x,_) = defineZoneHydra z x
+defineZoneTextProgram z ("LocoMotion",x,eTime) = do
   s <- get
   parseZone (exoLangToRenderer "LocoMotion" $ locoMotion s) z x eTime
-renderTextProgramChanged z ("TransMit",x,eTime) = do
+defineZoneTextProgram z ("TransMit",x,eTime) = do
   s <- get
   parseZone (exoLangToRenderer "TransMit" $ transMit s) z x eTime
-renderTextProgramChanged z ("TimeNot",x,eTime) = (parseZone timeNot) z x eTime
-
-renderTextProgramChanged z ("Seis8s",x,eTime) = do
+defineZoneTextProgram z ("TimeNot",x,eTime) = (parseZone timeNot) z x eTime
+defineZoneTextProgram z d@("Seis8s",x,eTime) = do
   let parseResult = Seis8s.parseLang $ T.unpack x
   case parseResult of
     Right p -> do
       clearZoneError z
-      setBaseNotation z "Seis8s"
-      setEvaluationTime z eTime
+      setBaseDefinition z d
       modify' $ \xx -> xx { seis8ses = insert z p $ seis8ses xx }
     Left e -> setZoneError z (T.pack $ show e)
-
-renderTextProgramChanged z ("JSoLang",y,eTime) = do
+defineZoneTextProgram z ("",x,eTime) = do
+  ns <- (Map.keys . jsoLangs) <$> get
+  case determineTextNotation x ns of
+    Left err -> setZoneError z (T.pack $ show err)
+    Right (x',n) -> do
+      case n of
+        "" -> do
+          case T.filter (\c -> not (isControl c) && not (isSpace c)) x' of
+            "" -> do -- notation is unspecified but there is also no program, so okay
+              clearZoneError z
+              clearBaseDefinition z
+            _ -> setZoneError z "no base notation specified"
+        _ -> defineZoneTextProgram z (n,x',eTime)
+defineZoneTextProgram z d@("JSoLang",y,eTime) = do
   let x = "JSoLang'" -- TODO: replace this placeholder which hard codes JSoLangs to produce a notation called JSoLang'
   parseResult <- liftIO $ JSoLang.define y
   case parseResult of
     Right j -> do
       clearZoneError z
-      setBaseNotation z "JSoLang"
-      setEvaluationTime z eTime
+      setBaseDefinition d
       modify' $ \xx -> xx { jsoLangs = Map.insert x j $ jsoLangs xx }
       liftIO $ T.putStrLn $ "defined JSoLang " <> x
     Left e -> setZoneError z (T.pack $ show e)
-
-renderTextProgramChanged z (x,y,eTime) = do
+defineZoneTextProgram z (x,y,eTime) = do
   maybeJSoLang <- (Map.lookup x . jsoLangs) <$> get
   case maybeJSoLang of
     Just j -> do
@@ -412,20 +383,27 @@ renderTextProgramChanged z (x,y,eTime) = do
         Right x' -> do
           liftIO $ T.putStrLn $ "result of parsing " <> x <> ":"
           liftIO $ T.putStrLn x'
-          renderTextProgramChanged z ("",x',eTime)
+          defineZoneTextProgram z ("",x',eTime)
         Left e -> setZoneError z e
     Nothing -> setZoneError z $ "renderTextProgramChanged: no language called " <> x <> " exists"
 
+defineZoneGeneric :: Int -> Definition -> Renderer -> R ()
+defineZoneGeneric z d r = do
+  result <- liftIO $ (Renderer.defineZone r) z d
+  case r of 
+    Left err -> setZoneError z err
+    Right _ -> do
+      setBaseDefinition z d
+      clearZoneError z
 
-parseHydra :: Int -> Text -> R ()
-parseHydra z t = do
+defineZoneHydra :: Int -> Definition -> R ()
+defineZoneHydra z d@(_,txt,eTime) = do
  s <- get
  parseResult <- liftIO $ try $ return $! Hydra.parseHydra t
  case parseResult of
    Right (Right stmts) -> do
      clearZoneError z
-     setBaseNotation z "Hydra"
-     -- setEvaluationTime z eTime ???
+     setBaseDefinition z d
      let x = IntMap.lookup z $ hydras s
      hydra <- case x of
        Just h -> return h
@@ -443,13 +421,8 @@ parseHydra z t = do
 renderZone :: Bool -> Int -> Definition -> R ()
 renderZone _ z (Sequence _) = renderControlPattern z
 renderZone _ z (TidalStructure _) = renderControlPattern z
-renderZone canDraw z (TextProgram x) = renderTextProgram canDraw z x
-
-renderZoneAlways :: Int -> Definition -> R ()
-renderZoneAlways z (TidalStructure _) = renderControlPattern z
-renderZoneAlways z (TextProgram x) = renderTextProgramAlways z
-renderZoneAlways z (Sequence _) = renderControlPattern z
-renderZoneAlways _ _ = return ()
+renderZone canDraw z (TextProgram x) = renderZoneText canDraw z x
+renderZone _ _ _ = pure ()
 
 renderZoneText :: Bool -> Int -> Live TextProgram -> R ()
 renderZoneText canDraw z x = do
@@ -488,8 +461,8 @@ renderZoneBase canDraw z "Hydra" = when canDraw $ do
   let x = IntMap.lookup z $ hydras s
   case x of
     Just hydra -> liftIO $ Hydra.tick hydra elapsed
-    Nothing -> return ()
-renderZoneBase _ _ _ = return ()
+    Nothing -> pure ()
+renderZoneBase _ _ _ = pure ()
 
 renderZoneGeneric :: Bool -> Int -> Renderer -> R ()
 renderZoneGeneric canDraw z r = do
@@ -517,7 +490,7 @@ renderControlPattern z = do
         ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
           `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
         pushNoteEvents $ tidalEventToNoteEvent <$> ns
-      Nothing -> return ()
+      Nothing -> pure ()
 
 
 

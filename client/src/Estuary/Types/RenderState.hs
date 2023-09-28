@@ -45,17 +45,18 @@ data RenderState = RenderState {
   renderStart :: !UTCTime,
   renderPeriod :: !NominalDiffTime,
   renderEnd :: !UTCTime,
-  cachedDefs :: !DefinitionMap,
+  cachedDefs :: !DefinitionMap, -- the map of definitions as received from the external world via render ops
+  baseDefinitions :: !DefinitionMap, -- the map of definitions as actually rendered (eg. with jsolang translations)
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
   webDirtEvents :: ![JSVal], -- deprecated/temporary
-  baseNotations :: !(IntMap TextNotation),
+--  baseNotations :: !(IntMap TextNotation),
   cineCer0Specs :: !(IntMap CineCer0.Spec),
   cineCer0States :: !(IntMap CineCer0.CineCer0State),
   timeNots :: IntMap JSVal,
   seis8ses :: IntMap Seis8s.Program,
   hydras :: IntMap Hydra.Hydra,
-  evaluationTimes :: IntMap UTCTime, -- this is probably temporary
+  -- evaluationTimes :: IntMap UTCTime, -- this is probably temporary
   renderTime :: !MovingAverage,
   wakeTimeAnimation :: !UTCTime,
   animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
@@ -95,16 +96,17 @@ initialRenderState pIn pOut cvsElement hCanvas lCanvas t0System t0Audio = do
     renderPeriod = 0,
     renderEnd = t0System,
     cachedDefs = empty,
+    baseDefinitions = empty,
     paramPatterns = empty,
     noteEvents = [],
     webDirtEvents = [],
-    baseNotations = empty,
+--    baseNotations = empty,
     cineCer0Specs = empty,
     cineCer0States = empty,
     timeNots = empty,
     seis8ses = empty,
     hydras = empty,
-    evaluationTimes = empty,
+    -- evaluationTimes = empty,
     renderTime = newAverage 20,
     wakeTimeAnimation = t0System,
     animationDelta = newAverage 20,
