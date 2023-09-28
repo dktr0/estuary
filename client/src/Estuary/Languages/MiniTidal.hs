@@ -33,34 +33,36 @@ miniTidal = do
   tempoRef <- newIORef $ Tempo {freq=0.5, time=now, Tempo.count=0}
   valueMapRef <- newIORef Map.empty
   pure $ emptyRenderer {
-    defineZone = _defineZone zonesRef,
-    renderZone = _renderZone zonesRef tempoRef valueMapRef,
-    clearZone = _clearZone zonesRef,
+    define = _define zonesRef,
+    render = _render zonesRef tempoRef valueMapRef,
+    clear = _clear zonesRef,
     setTempo = writeIORef tempoRef,
     setValueMap = writeIORef valueMapRef
     }
   
   
-_defineZone :: IORef (IntMap Tidal.ControlPattern) -> Int -> Definition -> IO (Either Text Text)
-_defineZone zonesRef z d = do
+_define :: IORef (IntMap Tidal.ControlPattern) -> Int -> Definition -> IO (Either Text Text)
+_define zonesRef z d = do
   case definitionToRenderingTextProgram d of 
     Nothing -> pure $ Left "internal error in Estuary.Languages.MiniTidal: defineZone called for a definition that doesn't pertain to a text program"
     Just (_,txt,eTime) -> do
       parseResult <- liftIO $ (return $! force (tidalParser txt)) `catch` (return . Left . (show :: SomeException -> String))
       case parseResult of
         Right p -> do
-          -- setEvaluationTime z eTime -- TODO: confirm that recording evaluation time and base notation are handled by render engine instead of a render module
           modifyIORef zonesRef $ IntMap.insert z p
           pure $ Right ""
         Left err -> pure $ Left $ T.pack err
-
 
 tidalParser :: Text -> Either String Tidal.ControlPattern
 tidalParser = parseTidal . T.unpack
 
 
-_renderZone :: IORef (IntMap Tidal.ControlPattern) -> IORef Tempo -> IORef Tidal.ValueMap -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
-_renderZone zonesRef tempoRef valueMapRef _ wStart wEnd _ z = do
+_clear :: IORef (IntMap Tidal.ControlPattern) -> Int -> IO ()
+_clear zonesRef z = modifyIORef zonesRef $ IntMap.delete z
+
+
+_render :: IORef (IntMap Tidal.ControlPattern) -> IORef Tempo -> IORef Tidal.ValueMap -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
+_render zonesRef tempoRef valueMapRef _ wStart wEnd _ z = do
   controlPattern <- IntMap.lookup z <$> readIORef zonesRef -- :: Maybe ControlPattern
   case controlPattern of
     Just controlPattern' -> do
@@ -85,8 +87,4 @@ renderTidalPattern vMap start range t p = events''
       where
         utcTime = addUTCTime (realToFrac ((fromRational w1 - Tempo.count t)/freq t)) (time t)
         w1 = Tidal.start $ fromJust $ Tidal.whole e    
-        
-        
-_clearZone :: IORef (IntMap Tidal.ControlPattern) -> Int -> IO ()
-_clearZone zonesRef z = modifyIORef zonesRef $ IntMap.delete z
 

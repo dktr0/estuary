@@ -4,7 +4,7 @@ module Estuary.Render.TextNotationRenderer
   (
   TextNotationRenderer(..),
   emptyTextNotationRenderer,
-  exoLangToRenderer
+  exoLangToTextNotationRenderer
   ) where
 
 import Data.Text
@@ -47,8 +47,8 @@ emptyTextNotationRenderer = TextNotationRenderer {
   postAnimationFrame = return ()
   }
 
-exoLangToRenderer :: TextNotation -> ExoLang -> TextNotationRenderer
-exoLangToRenderer tn exolang = emptyTextNotationRenderer {
+exoLangToTextNotationRenderer :: TextNotation -> ExoLang -> TextNotationRenderer
+exoLangToTextNotationRenderer tn exolang = emptyTextNotationRenderer {
   parseZone = parseZone' tn exolang,
   scheduleWebDirtEvents = scheduleWebDirtEvents' exolang,
   clearZone' = clearZone'' exolang,

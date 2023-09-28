@@ -73,7 +73,7 @@ flush webSerial = do
   mapM_ (\_ -> putStrLn "Estuary WebSerial: flushing event (PLACEHOLDER)") evs1
   writeIORef (queue webSerial) evs2
 
-
+-- *** WORKING HERE after NoteEvent refactor ***
 noteEventToWebSerialEvent :: NoteEvent -> Maybe WebSerialEvent
 noteEventToWebSerialEvent (nWhenUtc,nMap) = do
   s <- Map.lookup "s" nMap
@@ -81,3 +81,8 @@ noteEventToWebSerialEvent (nWhenUtc,nMap) = do
   b <- Map.lookup "byte" nMap
   b' <- datumToInteger b
   pure $ (nWhenUtc,B.singleton $ fromInteger b')
+  
+  
+datumToInteger :: Datum -> Maybe Integer
+datumToInteger (Int32 x) = Just $ toInteger x
+datumToInteger _ = Nothing

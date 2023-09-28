@@ -1,7 +1,7 @@
 {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Languages.ExoLang
-  (ExoLang,exoLang,ExoResult,exoResultToErrorText,utcTimeToWhenPOSIX,
+  (ExoLang,exoLang,ExoResult,exoResultToMaybe,exoResultToEither,utcTimeToWhenPOSIX,
   evaluate,render,clearZone,preAnimate,animateZone,postAnimate,setTempo) where
 
 import Data.Text
@@ -16,6 +16,7 @@ import Estuary.Types.AsyncValue
 import Estuary.Types.JSException
 import Estuary.Types.Tempo
 import Estuary.Render.ForeignTempo
+import Estuary.Types.NoteEvent
 
 
 foreign import javascript safe
@@ -51,81 +52,125 @@ exoLang canvas path = asyncValue $ _loadExoLang canvas path
 withExoLang :: ExoLang -> (ExoLangClass -> IO a) -> IO a
 withExoLang x f = blocking x >>= f
 
-
--- Nothing values represent successful evaluation
-evaluate :: ExoLang -> Int -> Text -> IO (Maybe Text)
-evaluate e z txt = do
-  exoResult <- withExoLang e $ _evaluate z txt
-  case exoResultToErrorText exoResult of
-    Just err -> pure (Just err)
-    Nothing -> pure Nothing
-
-foreign import javascript safe
-  "$3.evaluate($1,$2)"
-  _evaluate :: Int -> Text -> ExoLangClass -> IO ExoResult
-
-
-render :: ExoLang -> Int -> UTCTime -> UTCTime -> IO [JSVal]
-render e z wStart wEnd = do
-  let wStart' = utcTimeToWhenPOSIX wStart
-  let wEnd' = utcTimeToWhenPOSIX wEnd
-  jsVal <- withExoLang e $ \elc -> if hasRender elc then (_render z wStart' wEnd' elc) else emptyList
-  jsVal' <- fromJSVal jsVal
-  case jsVal' of
-    Just ns -> pure ns
-    Nothing -> pure []
-
-foreign import javascript unsafe
-  "[]"
-  emptyList :: IO JSVal
-
 foreign import javascript unsafe
   "typeof ($2.$1)"
   _typeOfProperty :: Text -> ExoLangClass -> Text
 
-hasRender :: ExoLangClass -> Bool
-hasRender elo = _typeOfProperty "render" elo == "Function"
+hasFunction :: Text -> ExoLangClass -> Bool
+hasFunction x elc = _typeOfProperty x elc == "Function"
+
+
+define :: ExoLang -> Int -> Text -> UTCTime -> IO (Either Text Text)
+define e z txt eTime = withExoLang e $ \elc -> do
+  let eTime' = utcTimeToPOSIXWhen eTime
+  case hasFunction "define" elc of
+    True -> exoResultToEither <$> _define z txt eTime' elc
+    False -> do
+      case hasFunction "evaluate" elc of
+        True -> exoResultToEither <$> _evaluate z txt eTime' elc
+        False -> pure $ Left "ERROR: an exolang (language defined externally to Estuary) lacks defineZone (previously known as evaluate)"
 
 foreign import javascript safe
-  "$4.render($1,$2,$3)"
-  _render :: Int -> Double -> Double -> ExoLangClass -> IO JSVal
+  "$4.define({zone: $1, text: $2, time: $3})"
+  _define :: Int -> Text -> Double -> ExoLangClass -> IO ExoResult
+
+foreign import javascript safe -- DEPRECATED
+  "$4.evaluate($1,$2,$3)"
+  _evaluate :: Int -> Text -> Double -> ExoLangClass -> IO ExoResult
 
 
-clearZone :: ExoLang -> Int -> IO ()
-clearZone e z = void $ withExoLang e $ _clearZone z
+clear :: ExoLang -> UTCTime -> IO ()
+clear e z = withExoLang e $ \elc -> do
+  case hasFunction "clear" elc of
+    True -> _clear z elc
+    False -> do
+      case hasFunction "clearZone" elc of
+        True -> _clearZone z elc
+        False -> pure ()
 
 foreign import javascript safe
+  "$2.clear({zone: $1})"
+  _clear :: Int -> ExoLangClass -> IO ()
+
+foreign import javascript safe -- DEPRECATED
   "$2.clearZone($1)"
   _clearZone :: Int -> ExoLangClass -> IO ()
 
 
-preAnimate :: ExoLang -> IO ()
-preAnimate e = void $ withExoLang e _preAnimate
+preRender :: ExoLang -> Bool -> UTCTime -> IO ()
+preRender e canDraw tNow = withExoLang e $ \elc -> do
+  let tNow' = utcTimeToWhenPOSIX tNow
+  case hasFunction "preRender" elc of 
+    True -> _preRender canDraw tNow' elc
+    False -> do
+      case hasFunction "preAnimate" elc of
+        True -> _preAnimate canDraw tNow' elc
+        False -> pure ()
+        
+foreign import javascript unsafe
+  "$3.preRender({canDraw: $1, time: $2})"
+  _preRender :: Bool -> Double -> ExoLangClass -> IO ()
+
+foreign import javascript unsafe -- DEPRECATED
+  "$3.preAnimate($1,$2)"
+  _preAnimate :: Bool -> Double -> ExoLangClass -> IO ()
+  
+  
+render :: ExoLang -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
+render e tNow wStart wEnd canDraw z = withExoLang e $ \elc -> do
+  let tNow' = utcTimeToWhenPOSIX tNow
+  let wStart' = utcTimeToWhenPOSIX wStart
+  let wEnd' = utcTimeToWhenPOSIX wEnd
+  case hasFunction "render" elc of
+    True -> _render tNow' wStart' wEnd' canDraw z elc >>= jsValToNoteEvents
+    False -> do
+      case hasFunction "animateZone" elc of
+        True -> _animateZone z canDraw elc >>= jsValToNoteEvents
+        False -> pure []
 
 foreign import javascript unsafe
-  "$1.preAnimate()"
-  _preAnimate :: ExoLangClass -> IO ()
+  "$6.render({tNow: $1, wStart: $2, wEnd: $3, canDraw: $4, zone: $5})"
+  _render :: Double -> Double -> Double -> Bool -> Int -> ExoLangClass -> IO JSVal
+  
+foreign import javascript unsafe -- DEPRECATED
+  "$3.animateZone($1,$2)"
+  _animateZone :: Int -> Bool -> ExoLangClass -> IO ()
+
+jsValToNoteEvents :: JSVal -> IO [NoteEvent]
+jsValToNoteEvents x = do
+  jsVal' <- fromJSVal jsVal
+  let jsEvents = case jsVal' of
+                   Just ns -> pure ns
+                   Nothing -> pure []
+  pure $ fmap jsEventToNoteEvent jsEvents
 
 
-animateZone :: ExoLang -> Int -> IO ()
-animateZone e z = void $ withExoLang e $ _animateZone z
-
+postRender :: ExoLang -> Bool -> UTCTime -> IO ()
+postRender e canDraw tNow = withExoLang e $ \elc -> do
+  let tNow' = utcTimeToWhenPOSIX tNow
+  case hasFunction "postRender" elc of 
+    True -> _postRender canDraw tNow' elc
+    False -> do
+      case hasFunction "postAnimate" elc of
+        True -> _postAnimate canDraw tNow' elc
+        False -> pure ()
+        
 foreign import javascript unsafe
-  "$2.animateZone($1)"
-  _animateZone :: Int -> ExoLangClass -> IO ()
+  "$3.postRender({canDraw: $1, time: $2})"
+  _postRender :: Bool -> Double -> ExoLangClass -> IO ()
 
+foreign import javascript unsafe -- DEPRECATED
+  "$3.postAnimate($1,$2)"
+  _postAnimate :: Bool -> Double -> ExoLangClass -> IO ()
 
-postAnimate :: ExoLang -> IO ()
-postAnimate e = void $ withExoLang e _postAnimate
-
-foreign import javascript unsafe
-  "$1.postAnimate()"
-  _postAnimate :: ExoLangClass -> IO ()
 
 
 setTempo :: ExoLang -> Tempo -> IO ()
-setTempo e t = void $ withExoLang e $ _setTempo $ toForeignTempo t
-
+setTempo e t = void $ withExoLang e $ \elc -> do
+  case hasFunction "setTempo" elc of
+    True -> _setTempo (toForeignTempo t) elc
+    False -> pure ()
+    
 foreign import javascript unsafe
   "$2.setTempo($1)"
   _setTempo :: ForeignTempo -> ExoLangClass -> IO ()
@@ -144,12 +189,20 @@ foreign import javascript safe
 foreign import javascript safe
   "$1.error"
   _exoResultError :: ExoResult -> Text
+  
+foreign import javascript safe
+  "$1.info"
+  _exoResultInfo :: ExoResult -> Text
 
-exoResultToErrorText :: ExoResult -> Maybe Text
-exoResultToErrorText x = case _exoResultSuccess x of
+exoResultToMaybe :: ExoResult -> Maybe Text
+exoResultToMaybe x = case _exoResultSuccess x of
   True -> Nothing
   False -> Just $ _exoResultError x
 
+exoResultToEither :: ExoResult -> Either Text Text
+exoResultToEither x = case _exoResultSuccess x of
+  True -> Right $ _exoResultInfo x
+  False -> Left $ _exoResultError x
 
 utcTimeToWhenPOSIX :: UTCTime -> Double
 utcTimeToWhenPOSIX = realToFrac . utcTimeToPOSIXSeconds

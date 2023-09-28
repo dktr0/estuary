@@ -88,44 +88,22 @@ foreign import javascript unsafe
   "$1.voices"
   voices :: WebDirt -> IO Int
 
-makeNoteEventSafe :: Map.Map Text Datum -> Map.Map Text Datum
-makeNoteEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
-
-noteEventToWebDirtJSVal :: Bool -> Resources -> (UTCTime,Double) -> NoteEvent -> IO (Maybe JSVal)
-noteEventToWebDirtJSVal unsafe r cDiff (utc,m) = do
-  let mSafe = if unsafe then m else makeNoteEventSafe m
-  let s = Map.lookup "s" mSafe
-  let n = Map.lookup "n" mSafe
-  case datumsToLocation s n of
-    Nothing -> return Nothing
-    Just loc -> do
-      res <- accessAudioResource r loc
-      case res of
-        Right res' -> do
-          let t' = utcTimeToAudioSeconds cDiff utc
-          let m' = Map.insert "buffer" (pToJSVal res') $ fmap datumToJSVal mSafe -- :: Map Text JSVal
-          Just <$> mapTextJSValToJSVal (t',m')
-        Left _ -> return Nothing
-
-makeTidalEventSafe :: Tidal.ValueMap -> Tidal.ValueMap
-makeTidalEventSafe = Map.delete "crush" . Map.delete "coarse" . Map.delete "shape"
-
-
+{-
 mapTextJSValToJSVal :: (Double, Map.Map Text JSVal) -> IO JSVal
 mapTextJSValToJSVal (t,m) = do
   o <- create
   unsafeSetProp "when" (pToJSVal t) o
   Map.traverseWithKey (\k v -> unsafeSetProp (textToJSString k) v o) m
   return $ jsval o
-
+-}
 
 -- given a JSVal that contains a JavaScript object containing parameters ready for consumption
 -- by WebDirt's playSample method, use the audio resources system to substitute a buffer
 -- this is probably just a temporary hack while we are (temporarily) allowing a "direct to WebDirt"
 -- pathway in connection with some languages.
 
-accessBufferForWebDirtEvent :: MonadIO m => Resources -> JSVal -> m JSVal
-accessBufferForWebDirtEvent r j = do
+accessBufferForWebDirtEvent :: MonadIO m => Resources -> NoteEvent -> m ()
+accessBufferForWebDirtEvent r (NoteEvent j) = do
   o <- liftIO $ makeObject j
   props <- liftIO $ listProps o
   when (elem "s" props) $ do
@@ -137,7 +115,12 @@ accessBufferForWebDirtEvent r j = do
     liftIO $ case x of
       Left err -> putStrLn $ "accessBufferForWebDirtEvent error: " ++ show err
       Right ar -> unsafeSetProp "buffer" (audioJSVal ar) o
-  pure j
+
+makeNoteEventSafe :: MonadIO m => NoteEvent -> m ()
+makeNoteEventSafe (NoteEvent j) = liftIO $ do
+  unsafeSetProp "crush" nullRef $ pFromJSVal j
+  unsafeSetProp "coarse" nullRef $ pFromJSVal j
+  unsafeSetProp "shape" nullRef $ pFromJSVal j
 
 datumsToLocation :: Maybe Datum -> Maybe Datum -> Maybe Location
 datumsToLocation (Just (AsciiString x)) Nothing = Just (decodeUtf8 x,0)
