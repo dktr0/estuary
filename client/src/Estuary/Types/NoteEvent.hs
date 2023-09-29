@@ -48,21 +48,32 @@ valueToJSVal (Tidal.VB x) = pToJSVal (if x then pToJSVal (1::Int) else pToJSVal 
 valueToJSVal _ = nullRef
 -- note: Tidal also has other constructors that we are currently ignoring
 
-datumMapEventToNoteEvent :: MonadIO m => (UTCTime,Double) -> (UTCTime, Map Text Datum) -> m NoteEvent
-datumMapEventToNoteEvent clockDiff (whenUTC,m) = liftIO $ do
+datumMapEventToNoteEvent :: MonadIO m => (UTCTime, Map Text Datum) -> m NoteEvent
+datumMapEventToNoteEvent (whenUTC,m) = liftIO $ do
   o <- create
   Map.traverseWithKey (\k v -> unsafeSetProp (textToJSString k) (datumToJSVal v) o) m
-  unsafeSetProp "when" (pToJSVal $ utcTimeToAudioSeconds clockDiff whenUTC) o
   unsafeSetProp "whenPosix" (pToJSVal $ (realToFrac :: NominalDiffTime -> Double) $ utcTimeToPOSIXSeconds whenUTC) o
   j <- toJSVal o
   pure $ NoteEvent j
 
-tidalEventToNoteEvent :: MonadIO m => (UTCTime,Double) -> (UTCTime,Tidal.ValueMap) -> m NoteEvent
-tidalEventToNoteEvent clockDiff (whenUTC,m) = liftIO $ do
+tidalEventToNoteEvent :: MonadIO m => (UTCTime,Tidal.ValueMap) -> m NoteEvent
+tidalEventToNoteEvent (whenUTC,m) = liftIO $ do
   o <- create
   Map.traverseWithKey (\k v -> unsafeSetProp (textToJSString $ T.pack $ k) (valueToJSVal v) o) m
-  unsafeSetProp "when" (pToJSVal $ utcTimeToAudioSeconds clockDiff whenUTC) o
   unsafeSetProp "whenPosix" (pToJSVal $ (realToFrac :: NominalDiffTime -> Double) $ utcTimeToPOSIXSeconds whenUTC) o
   j <- toJSVal o
   pure $ NoteEvent j
+
+-- if a provided NoteEvent has a when field then assume it is in POSIX units
+-- put that in whenPosix instead and 
+whenToPOSIXandAudio :: MonadIO m => (UTCTime, Double) -> NoteEvent -> m ()
+whenToPOSIXandAudio clockDiff (NoteEvent j) = liftIO $ do
+  o <- makeObject j
+  props <- listProps o
+  when (elem "when" props) $ do
+    w <- unsafeGetProp "when" o
+    unsafeSetProp "whenPosix" w o
+    let whenUTC = posixSecondsToUTCTime $ realToFrac $ (pFromJSVal w :: Double)
+    unsafeSetProp "whenAudio" (pToJSVal $ utcTimeToAudioSeconds clockDiff whenUTC) o
+    unsafeSetProp "when" nullRef o
 

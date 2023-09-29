@@ -1,8 +1,18 @@
 {-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Languages.ExoLang
-  (ExoLang,exoLang,ExoResult,exoResultToMaybe,exoResultToEither,utcTimeToWhenPOSIX,
-  evaluate,render,clearZone,preAnimate,animateZone,postAnimate,setTempo) where
+  (ExoLang,
+  exoLang,
+  ExoResult,
+  exoResultToMaybe,
+  exoResultToEither,
+  define,
+  clear,
+  preRender,
+  render,
+  postRender,
+  setTempo)
+  where
 
 import Data.Text
 import Data.Time
@@ -62,7 +72,7 @@ hasFunction x elc = _typeOfProperty x elc == "Function"
 
 define :: ExoLang -> Int -> Text -> UTCTime -> IO (Either Text Text)
 define e z txt eTime = withExoLang e $ \elc -> do
-  let eTime' = utcTimeToPOSIXWhen eTime
+  let eTime' = utcTimeToWhenPOSIX eTime
   case hasFunction "define" elc of
     True -> exoResultToEither <$> _define z txt eTime' elc
     False -> do
@@ -79,7 +89,7 @@ foreign import javascript safe -- DEPRECATED
   _evaluate :: Int -> Text -> Double -> ExoLangClass -> IO ExoResult
 
 
-clear :: ExoLang -> UTCTime -> IO ()
+clear :: ExoLang -> Int -> IO ()
 clear e z = withExoLang e $ \elc -> do
   case hasFunction "clear" elc of
     True -> _clear z elc
@@ -134,15 +144,15 @@ foreign import javascript unsafe
   
 foreign import javascript unsafe -- DEPRECATED
   "$3.animateZone($1,$2)"
-  _animateZone :: Int -> Bool -> ExoLangClass -> IO ()
+  _animateZone :: Int -> Bool -> ExoLangClass -> IO JSVal
 
 jsValToNoteEvents :: JSVal -> IO [NoteEvent]
 jsValToNoteEvents x = do
-  jsVal' <- fromJSVal jsVal
-  let jsEvents = case jsVal' of
-                   Just ns -> pure ns
-                   Nothing -> pure []
-  pure $ fmap jsEventToNoteEvent jsEvents
+  x' <- fromJSVal x
+  let jsEvents = case x' of
+                   Just ns -> ns
+                   Nothing -> []
+  pure $ fmap pFromJSVal jsEvents -- TODO: confirm that double time translation is done elsewhere (ie. in RenderEngine)
 
 
 postRender :: ExoLang -> Bool -> UTCTime -> IO ()

@@ -10,7 +10,8 @@ import qualified Sound.MusicW as MusicW
 import Estuary.Types.Tempo
 import Estuary.Types.NoteEvent
 import Estuary.Types.Definition
-import Estuary.Languages.ExoLang as ExoLang
+import Estuary.Types.TextNotation
+import qualified Estuary.Languages.ExoLang as ExoLang
 
 data Renderer = Renderer {
   define :: Int -> Definition -> IO (Either Text Text), -- left=error, right=info
@@ -43,20 +44,20 @@ emptyRenderer = Renderer {
   setNchnls = \_ -> pure ()
   }
 
-exoLangToRenderer :: TextNotation -> ExoLang -> Renderer
+exoLangToRenderer :: TextNotation -> ExoLang.ExoLang -> Renderer
 exoLangToRenderer tn e = emptyRenderer {
   define = define' tn e,
   clear = ExoLang.clear e,
-  preRender = ExoLang.preAnimate e,
+  preRender = ExoLang.preRender e,
   render = ExoLang.render e,
-  postRender = ExoLang.postAnimate e,
+  postRender = ExoLang.postRender e,
   setTempo = ExoLang.setTempo e  
   -- TODO: open pathways between ExoLang and the remaining setters of Renderer
   }
 
-define' :: TextNotation -> ExoLang -> Int -> Definition -> IO (Either Text Text)
+define' :: TextNotation -> ExoLang.ExoLang -> Int -> Definition -> IO (Either Text Text)
 define' tn exoLang z d = do
   case definitionToRenderingTextProgram d of 
-    Nothing -> pure $ Left "internal error in Estuary.Render.Renderer: defineZone called for a definition that doesn't pertain to a text program passed to exolang for text notation " <> tn
+    Nothing -> pure $ Left $ "internal error in Estuary.Render.Renderer: defineZone called for a definition that doesn't pertain to a text program passed to exolang for text notation " <> tn
     Just (_,txt,eTime) -> ExoLang.define exoLang z txt eTime
 

@@ -71,7 +71,7 @@ _render zonesRef tempoRef valueMapRef _ wStart wEnd _ z = do
       let rp = diffUTCTime wEnd wStart
       ns <- liftIO $ (return $! force $ renderTidalPattern valueMap wStart rp tempo controlPattern')
         `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
-      pure $ tidalEventToNoteEvent <$> ns
+      mapM tidalEventToNoteEvent ns
     Nothing -> pure []
     
 renderTidalPattern :: Tidal.ValueMap -> UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]

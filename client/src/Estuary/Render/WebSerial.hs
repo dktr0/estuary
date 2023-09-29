@@ -58,11 +58,12 @@ setNoActivePort webSerial = writeIORef (activePort webSerial) Nothing
 
 
 send :: WebSerial -> NoteEvent -> IO ()
-send webSerial ev = case noteEventToWebSerialEvent ev of
+send webSerial ev = pure ()
+{- case noteEventToWebSerialEvent ev of
   Just ev' -> do
     evs <- readIORef (queue webSerial)
     writeIORef (queue webSerial) $ evs ++ [ev']
-  Nothing -> pure ()
+  Nothing -> pure () -}
 
 
 flush :: WebSerial -> IO ()
@@ -73,7 +74,7 @@ flush webSerial = do
   mapM_ (\_ -> putStrLn "Estuary WebSerial: flushing event (PLACEHOLDER)") evs1
   writeIORef (queue webSerial) evs2
 
--- *** WORKING HERE after NoteEvent refactor ***
+{-
 noteEventToWebSerialEvent :: NoteEvent -> Maybe WebSerialEvent
 noteEventToWebSerialEvent (nWhenUtc,nMap) = do
   s <- Map.lookup "s" nMap
@@ -86,3 +87,4 @@ noteEventToWebSerialEvent (nWhenUtc,nMap) = do
 datumToInteger :: Datum -> Maybe Integer
 datumToInteger (Int32 x) = Just $ toInteger x
 datumToInteger _ = Nothing
+-}

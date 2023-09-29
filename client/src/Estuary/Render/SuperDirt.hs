@@ -1,11 +1,10 @@
-{-# LANGUAGE JavaScriptFFI #-}
+{-# LANGUAGE JavaScriptFFI, OverloadedStrings #-}
 
 module Estuary.Render.SuperDirt (
   SuperDirt,
   newSuperDirt,
   setActive,
-  playSample,
-  noteEventToSuperDirtJSVal
+  playSample
   ) where
 
 import GHCJS.Types
@@ -13,8 +12,9 @@ import GHCJS.Marshal.Pure
 import Data.Time
 import Data.Time.Clock.POSIX
 import qualified Sound.Tidal.Context as Tidal
+import Language.Javascript.JSaddle.Object
+import Control.Monad (when)
 
--- import Estuary.Types.Tempo
 import Estuary.Render.WebDirt hiding (playSample)
 import Estuary.Types.NoteEvent
 
@@ -32,11 +32,20 @@ foreign import javascript unsafe
   "$1.setActive($2)"
   setActive :: SuperDirt -> Bool -> IO ()
 
+playSample :: SuperDirt -> NoteEvent -> IO ()
+playSample sd x = noteEventToSuperDirtJSVal x >>= _playSample sd
+
 foreign import javascript unsafe
   "try { $1.playSample($2) } catch(e) { console.log(e)} "
-  playSample :: SuperDirt -> JSVal -> IO ()
+  _playSample :: SuperDirt -> JSVal -> IO ()
 
+-- transfer whenPosix field to when for SuperDirt
 noteEventToSuperDirtJSVal :: NoteEvent -> IO JSVal
-noteEventToSuperDirtJSVal (utc,m) = do
-  let t = realToFrac $ utcTimeToPOSIXSeconds utc
-  mapTextJSValToJSVal (t,fmap datumToJSVal m)
+noteEventToSuperDirtJSVal (NoteEvent j) = do
+  o <- makeObject j
+  props <- listProps o
+  when (elem "whenPosix" props) $ do
+    wPosix <- unsafeGetProp "whenPosix" o
+    unsafeSetProp "when" wPosix o
+  pure j
+

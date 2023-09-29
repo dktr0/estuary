@@ -6,8 +6,6 @@ module Estuary.Render.WebDirt (
   initializeWebAudio,
   performWebDirtHints,
   playSample,
-  mapTextJSValToJSVal,
-  noteEventToWebDirtJSVal,
   accessBufferForWebDirtEvent,
   setWebDirtAudioOutputs,
   voices) where
@@ -26,6 +24,7 @@ import Data.JSString.Text
 import GHCJS.Types
 import GHCJS.Marshal.Pure
 import Language.Javascript.JSaddle.Object
+import Language.Javascript.JSaddle.Value
 import Data.Text.Encoding
 
 
@@ -118,9 +117,10 @@ accessBufferForWebDirtEvent r (NoteEvent j) = do
 
 makeNoteEventSafe :: MonadIO m => NoteEvent -> m ()
 makeNoteEventSafe (NoteEvent j) = liftIO $ do
-  unsafeSetProp "crush" nullRef $ pFromJSVal j
-  unsafeSetProp "coarse" nullRef $ pFromJSVal j
-  unsafeSetProp "shape" nullRef $ pFromJSVal j
+  o <- makeObject j
+  unsafeSetProp "crush" nullRef o
+  unsafeSetProp "coarse" nullRef o
+  unsafeSetProp "shape" nullRef o
 
 datumsToLocation :: Maybe Datum -> Maybe Datum -> Maybe Location
 datumsToLocation (Just (AsciiString x)) Nothing = Just (decodeUtf8 x,0)
