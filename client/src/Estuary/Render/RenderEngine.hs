@@ -63,7 +63,6 @@ import Estuary.Render.DynamicsMode
 import Estuary.Render.MainBus
 import Estuary.Render.R
 import Estuary.Render.RenderEnvironment
-import Estuary.Render.TextNotationRenderer
 import Estuary.Render.RenderOp
 import qualified Estuary.Client.Settings as Settings
 import Estuary.Render.WebSerial as WebSerial

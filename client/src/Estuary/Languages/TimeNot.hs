@@ -12,17 +12,19 @@ import GHCJS.Marshal -- .Internal
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderState
 import Estuary.Render.R hiding (setTempo)
-import Estuary.Render.TextNotationRenderer
+import Estuary.Render.Renderer
 import Estuary.Types.TextNotation
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble
 import Estuary.Types.Tempo
 import Estuary.Render.ForeignTempo
-import Estuary.Languages.ExoLang (ExoResult,utcTimeToWhenPOSIX,exoResultToErrorText)
+import Estuary.Languages.ExoLang
 
+timeNot :: IO Renderer
+timeNot = pure emptyRenderer -- placeholder during refactor
 
-timeNot :: TextNotationRenderer
-timeNot = emptyTextNotationRenderer {
+{-
+{
   parseZone = _parseZone,
   scheduleWebDirtEvents = _scheduleWebDirtEvents,
   clearZone' = _clearZone
@@ -90,3 +92,5 @@ foreign import javascript unsafe
 
 setTempo :: JSVal -> Tempo -> IO ()
 setTempo timekNot x = _setTempo timekNot $ toForeignTempo x
+-}
+

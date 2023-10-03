@@ -109,7 +109,7 @@ clearBaseDefinition :: Int -> R ()
 clearBaseDefinition z = modify' $ \s -> s { baseDefinitions = IntMap.delete z $ baseDefinitions s }
 
 getBaseDefinition :: Int -> R (Maybe Definition)
-getBaseDefinition z = gets (IntMap.lookup z)
+getBaseDefinition z = gets (IntMap.lookup z . baseDefinitions)
   
  
 -- setEvaluationTime :: Int -> UTCTime -> R ()

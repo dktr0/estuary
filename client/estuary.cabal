@@ -116,7 +116,6 @@ library
       Estuary.Languages.TimeNot
       Estuary.Render.ForeignTempo
       Estuary.Render.RenderOp
-      Estuary.Render.TextNotationRenderer
       Estuary.Types.ServerInfo
       Estuary.Widgets.Chat
       Estuary.Widgets.DataVisualisers
