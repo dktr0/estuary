@@ -54,7 +54,8 @@ data Term =
   TerminalViewCommands |
   Voices |
   AddATitle |
-  Tap
+  Tap |
+  Resources
   deriving (Show,Eq)
 
 translate :: Term -> Language -> Text
@@ -225,5 +226,7 @@ translate IPaddressDescription Español = "Las direcciones IP de l@s participant
 translate Voices English = "voices"
 
 translate Tap English = "Tap"
+
+translate Resources English = "Resources"
 
 translate x _ = translate x English

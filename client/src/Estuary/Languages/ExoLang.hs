@@ -181,6 +181,12 @@ setTempo e t = void $ withExoLang e $ \elc -> do
     True -> _setTempo (toForeignTempo t) elc
     False -> pure ()
     
+{- setTempo e t = withExoLang e $ \elo -> do
+  let t' = toForeignTempo t
+  putStrLn $ "t " ++ show t
+  putStrLn $ "t' " ++ unpack (showForeignTempo t')
+  _setTempo t' elo -}
+
 foreign import javascript unsafe
   "$2.setTempo($1)"
   _setTempo :: ForeignTempo -> ExoLangClass -> IO ()

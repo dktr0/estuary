@@ -1,6 +1,6 @@
 {-# LANGUAGE JavaScriptFFI #-}
 
-module Estuary.Render.ForeignTempo (ForeignTempo(..),toForeignTempo) where
+module Estuary.Render.ForeignTempo (ForeignTempo(..),toForeignTempo,showForeignTempo) where
 
 -- | The ForeignTempo type is used to interface with (and is essentially defined by)
 -- the purescript-tempi library. toForeignTempo can be used to convert Estuary's
@@ -10,6 +10,7 @@ import Data.Ratio
 import GHCJS.DOM.Types hiding (Text)
 import Estuary.Types.Tempo
 import Data.Time.Clock.POSIX
+import Data.Text (Text)
 
 newtype ForeignTempo = ForeignTempo JSVal
 
@@ -31,3 +32,7 @@ toForeignTempo t = _newForeignTempo freqNumerator freqDenominator time countNume
     countRatioInt = fromRational (count t) :: Ratio Int
     countNumerator = numerator countRatioInt
     countDenominator = denominator countRatioInt
+    
+foreign import javascript unsafe
+  "$1.freqNumerator.toString() + \" \" + $1.freqDenominator.toString() + \" \" + $1.time.toString() + \" \" + $1.countNumerator.toString() + \" \" + $1.countDenominator.toString()"
+  showForeignTempo :: ForeignTempo -> Text 
