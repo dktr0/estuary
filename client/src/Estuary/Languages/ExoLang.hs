@@ -126,11 +126,11 @@ foreign import javascript unsafe
 setTempo :: ExoLang -> Tempo -> IO ()
 setTempo e t = void $ withExoLang e $ _setTempo $ toForeignTempo t
 {- setTempo e t = withExoLang e $ \elo -> do
-  let t' = toForeignTempo t
   putStrLn $ "t " ++ show t
+  -- let t' = toForeignTempo t
+  t' <- toForeignTempoDebug t
   putStrLn $ "t' " ++ unpack (showForeignTempo t')
   _setTempo t' elo -}
-
 
 foreign import javascript unsafe
   "$2.setTempo($1)"
