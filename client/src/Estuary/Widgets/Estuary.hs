@@ -104,15 +104,15 @@ estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t I
 estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
 
   settings <- settingsForWidgets rEnv iSettings hints
-  vidDiv <- cinecer0Widget settings
+  cineCer0Div <- cinecer0Widget settings
   punctualZIndex' <- holdUniqDyn $ fmap Settings.punctualZIndex settings
-  cvsElement <- canvasWidget settings punctualZIndex' -- canvas for Punctual
+  pCanvas <- canvasWidget settings punctualZIndex' -- canvas for Punctual
   improvizZIndex' <- holdUniqDyn $ fmap Settings.improvizZIndex settings
-  iCanvas <- canvasWidget settings improvizZIndex' -- canvas for Improviz
+  lCanvas <- canvasWidget settings improvizZIndex' -- canvas shared by LocoMotion and TransMit
   hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
   hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
 
-  liftIO $ forkRenderThreads rEnv iSettings vidDiv cvsElement hCanvas iCanvas
+  liftIO $ forkRenderThreads rEnv iSettings cineCer0Div pCanvas lCanvas hCanvas
 
   rInfo <- pollRenderInfo rEnv
   resourceMaps <- dynamicResourceMaps rEnv

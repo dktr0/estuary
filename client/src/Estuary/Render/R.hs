@@ -79,11 +79,6 @@ runR r rEnv rState = do
 pushNoteEvents :: [NoteEvent] -> R ()
 pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
--- deprecated/temporary
-pushWebDirtEvents :: [JSVal] -> R ()
-pushWebDirtEvents xs = modify' $ \x -> x { webDirtEvents = webDirtEvents x ++ xs }
-
-
 setZoneError :: Int -> Text -> R ()
 setZoneError z t = do
   s <- get
@@ -98,10 +93,6 @@ clearZoneError z = do
   let newErrors = IntMap.delete z oldErrors
   modify' $ \x -> x { info = (info s) { errors = newErrors } }
 
-
--- setBaseNotation :: Int -> TextNotation -> R ()
--- setBaseNotation z n = modify' $ \x -> x { baseNotations = IntMap.insert z n $ baseNotations x}
-
 setBaseDefinition :: Int -> Definition -> R ()
 setBaseDefinition z x = modify' $ \s -> s { baseDefinitions = IntMap.insert z x $ baseDefinitions s }
 
@@ -110,10 +101,6 @@ clearBaseDefinition z = modify' $ \s -> s { baseDefinitions = IntMap.delete z $ 
 
 getBaseDefinition :: Int -> R (Maybe Definition)
 getBaseDefinition z = gets (IntMap.lookup z . baseDefinitions)
-  
- 
--- setEvaluationTime :: Int -> UTCTime -> R ()
--- setEvaluationTime z n = modify' $ \x -> x { evaluationTimes = IntMap.insert z n $ evaluationTimes x}
 
 clearParamPattern :: Int -> R ()
 clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }
@@ -127,7 +114,7 @@ updateSettings re = writeIORef (_settings re)
 
 -- asking/reading settings from within the R monad
 -- (note: not all Settings are given accessors here, just those that might
--- be useful during computations with Estuary's two render threads.)
+-- be useful during computations with Estuary's render threads)
 
 askSettings :: (Settings -> a) -> R a
 askSettings f = asks _settings >>= liftIO . readIORef >>= return . f

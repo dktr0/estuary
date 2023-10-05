@@ -114,6 +114,7 @@ library
       Estuary.Languages.MiniTidal
       Estuary.Languages.Punctual
       Estuary.Languages.TimeNot
+      Estuary.Languages.Seis8s
       Estuary.Render.ForeignTempo
       Estuary.Render.RenderOp
       Estuary.Types.ServerInfo

@@ -17,6 +17,7 @@ import Sound.MusicW
 import Data.Text
 import qualified Data.Text as T
 import Data.Time
+import Data.Time.Clock.POSIX
 import Sound.Osc.Datum
 import qualified Data.Map as Map
 import Data.String (fromString)
@@ -37,6 +38,7 @@ import Estuary.Resources
 import Estuary.Resources.Loadable
 import Estuary.Types.NoteEvent
 import qualified Sound.Tidal.Context as Tidal
+import Estuary.Resources
 
 newtype WebDirt = WebDirt JSVal
 
@@ -59,7 +61,14 @@ foreign import javascript unsafe
 
 foreign import javascript unsafe
   "try { $1.playSample($2) } catch(e) { console.log(e)} "
-  playSample :: WebDirt -> JSVal -> IO ()
+  _playSample :: WebDirt -> NoteEvent -> IO ()
+  
+playSample :: MonadIO m => WebDirt -> Resources -> Bool -> (UTCTime, Double) -> NoteEvent -> m ()
+playSample wd r unsafe clockDiff j = do
+  when (not unsafe) $ makeNoteEventSafe j
+  accessBufferForWebDirtEvent r j
+  applyClockDiff clockDiff j
+  liftIO $ _playSample wd j
 
 foreign import javascript unsafe
   "$1.audioOutputs = $2;"
@@ -87,14 +96,6 @@ foreign import javascript unsafe
   "$1.voices"
   voices :: WebDirt -> IO Int
 
-{-
-mapTextJSValToJSVal :: (Double, Map.Map Text JSVal) -> IO JSVal
-mapTextJSValToJSVal (t,m) = do
-  o <- create
-  unsafeSetProp "when" (pToJSVal t) o
-  Map.traverseWithKey (\k v -> unsafeSetProp (textToJSString k) v o) m
-  return $ jsval o
--}
 
 -- given a JSVal that contains a JavaScript object containing parameters ready for consumption
 -- by WebDirt's playSample method, use the audio resources system to substitute a buffer
@@ -121,6 +122,19 @@ makeNoteEventSafe (NoteEvent j) = liftIO $ do
   unsafeSetProp "crush" nullRef o
   unsafeSetProp "coarse" nullRef o
   unsafeSetProp "shape" nullRef o
+
+
+-- if a provided NoteEvent has a when field then assume it is in POSIX units
+-- and replace it's value with a time relative to audio clock (given a clock diff)
+applyClockDiff :: MonadIO m => (UTCTime, Double) -> NoteEvent -> m ()
+applyClockDiff clockDiff (NoteEvent j) = liftIO $ do
+  o <- makeObject j
+  props <- listProps o
+  when (elem "when" props) $ do
+    w <- unsafeGetProp "when" o
+    let whenUTC = posixSecondsToUTCTime $ realToFrac $ (pFromJSVal w :: Double)
+    unsafeSetProp "when" (pToJSVal $ utcTimeToAudioSeconds clockDiff whenUTC) o
+
 
 datumsToLocation :: Maybe Datum -> Maybe Datum -> Maybe Location
 datumsToLocation (Just (AsciiString x)) Nothing = Just (decodeUtf8 x,0)

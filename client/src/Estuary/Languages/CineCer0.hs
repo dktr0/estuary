@@ -17,10 +17,7 @@ import qualified Estuary.Languages.CineCer0.CineCer0State as CineCer0
 import qualified Estuary.Languages.CineCer0.Spec as CineCer0
 import qualified Estuary.Languages.CineCer0.Parser as CineCer0
 
-import Estuary.Render.R
 import Estuary.Render.Renderer
-import Estuary.Types.RenderState
-import Estuary.Types.RenderInfo
 import Estuary.Types.TextNotation
 import Estuary.Render.MainBus
 import Estuary.Types.Tempo

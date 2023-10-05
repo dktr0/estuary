@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Estuary.Render.Renderer (Renderer(..),emptyRenderer,exoLangToRenderer) where
+module Estuary.Render.Renderer where
 
 import Data.Text
 import Data.Time
@@ -11,7 +11,6 @@ import Estuary.Types.Tempo
 import Estuary.Types.NoteEvent
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
-import qualified Estuary.Languages.ExoLang as ExoLang
 
 data Renderer = Renderer {
   define :: Int -> Definition -> IO (Either Text Text), -- left=error, right=info
@@ -43,21 +42,4 @@ emptyRenderer = Renderer {
   setAudioOutput = \_ -> pure (),
   setNchnls = \_ -> pure ()
   }
-
-exoLangToRenderer :: TextNotation -> ExoLang.ExoLang -> Renderer
-exoLangToRenderer tn e = emptyRenderer {
-  define = define' tn e,
-  clear = ExoLang.clear e,
-  preRender = ExoLang.preRender e,
-  render = ExoLang.render e,
-  postRender = ExoLang.postRender e,
-  setTempo = ExoLang.setTempo e  
-  -- TODO: open pathways between ExoLang and the remaining setters of Renderer
-  }
-
-define' :: TextNotation -> ExoLang.ExoLang -> Int -> Definition -> IO (Either Text Text)
-define' tn exoLang z d = do
-  case definitionToRenderingTextProgram d of 
-    Nothing -> pure $ Left $ "internal error in Estuary.Render.Renderer: defineZone called for a definition that doesn't pertain to a text program passed to exolang for text notation " <> tn
-    Just (_,txt,eTime) -> ExoLang.define exoLang z txt eTime
 

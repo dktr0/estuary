@@ -26,11 +26,11 @@ import Estuary.Types.TextNotation
 import Estuary.Render.Renderer
   
     
-miniTidal :: IO Renderer 
-miniTidal = do
+miniTidal :: Tempo -> IO Renderer 
+miniTidal iTempo = do
   now <- getCurrentTime
   zonesRef <- newIORef IntMap.empty
-  tempoRef <- newIORef $ Tempo {freq=0.5, time=now, Tempo.count=0}
+  tempoRef <- newIORef iTempo
   valueMapRef <- newIORef Map.empty
   pure $ emptyRenderer {
     define = _define zonesRef,

@@ -64,16 +64,4 @@ tidalEventToNoteEvent (whenUTC,m) = liftIO $ do
   j <- toJSVal o
   pure $ NoteEvent j
 
--- if a provided NoteEvent has a when field then assume it is in POSIX units
--- put that in whenPosix instead and 
-whenToPOSIXandAudio :: MonadIO m => (UTCTime, Double) -> NoteEvent -> m ()
-whenToPOSIXandAudio clockDiff (NoteEvent j) = liftIO $ do
-  o <- makeObject j
-  props <- listProps o
-  when (elem "when" props) $ do
-    w <- unsafeGetProp "when" o
-    unsafeSetProp "whenPosix" w o
-    let whenUTC = posixSecondsToUTCTime $ realToFrac $ (pFromJSVal w :: Double)
-    unsafeSetProp "whenAudio" (pToJSVal $ utcTimeToAudioSeconds clockDiff whenUTC) o
-    unsafeSetProp "when" nullRef o
 

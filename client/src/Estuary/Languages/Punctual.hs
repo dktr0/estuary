@@ -15,11 +15,13 @@ import GHCJS.DOM.Types (HTMLCanvasElement)
 import qualified Sound.Punctual as Punctual
 import Estuary.Render.Renderer
 import Estuary.Types.Definition
+import Estuary.Types.Tempo
 
 
-punctual :: HTMLCanvasElement -> IO Renderer
-punctual canvas = do
+punctual :: HTMLCanvasElement -> Tempo -> IO Renderer
+punctual canvas iTempo = do
   punctual' <- Punctual.new canvas
+  Punctual.setTempo punctual' iTempo
   pure $ emptyRenderer {
     define = _define punctual',
     render = \tNow _ _ canDraw z -> Punctual.render punctual' canDraw z tNow >> pure [],

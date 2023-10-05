@@ -34,12 +34,10 @@ import Data.Char
 import Data.IORef
 
 import Sound.MusicW.AudioContext
-import qualified Sound.Seis8s.Parser as Seis8s
--- import Estuary.Languages.Punctual
-import Estuary.Languages.CineCer0
+
 import qualified Estuary.Languages.MiniTidal as MiniTidal
 import Estuary.Languages.TimeNot
-import qualified Estuary.Languages.ExoLang as ExoLang
+-- import qualified Estuary.Languages.ExoLang as ExoLang
 -- import Sound.Punctual.GL (GLContext)
 
 import qualified Estuary.Languages.Hydra.Types as Hydra
@@ -64,6 +62,7 @@ import Estuary.Render.MainBus
 import Estuary.Render.R
 import Estuary.Render.RenderEnvironment
 import Estuary.Render.RenderOp
+import Estuary.Render.Renderer
 import qualified Estuary.Client.Settings as Settings
 import Estuary.Render.WebSerial as WebSerial
 
@@ -99,28 +98,18 @@ flushEvents :: R ()
 flushEvents = do
   rEnv <- ask
   s <- get
-  unsafe <- unsafeModeOn
-
-  -- maybe send events to WebDirt
-  wdOn <- webDirtOn
-  when wdOn $ liftIO $ do
-    let cDiff = (wakeTimeSystem s,wakeTimeAudio s)
-    noteEvents' <- witherM (WebDirt.noteEventToWebDirtJSVal unsafe (resources rEnv) cDiff) $ noteEvents s
-    webDirtEvents' <- mapM (WebDirt.accessBufferForWebDirtEvent (resources rEnv)) $ webDirtEvents s
-    mapM_ (WebDirt.playSample (webDirt rEnv)) $ noteEvents' ++ webDirtEvents'
-
-  -- maybe send events to SuperDirt via the SuperDirt socket
-  sdOn <- superDirtOn
-  when sdOn $ liftIO $ do
-    noteEvents' <- mapM SuperDirt.noteEventToSuperDirtJSVal $ noteEvents s
-    mapM_ (SuperDirt.playSample (superDirt rEnv)) $ noteEvents'
-
-  -- maybe send events to WebSerial
+  let ns = noteEvents s
+  -- maybe send events to WebSerial (no modification of underlying JSVals)
   webSerialOn <- liftIO $ WebSerial.isActive (webSerial rEnv)
-  when webSerialOn $ liftIO $ mapM_ (WebSerial.send (webSerial rEnv)) $ noteEvents s
-
-  -- clear the queue of all note events
-  modify' $ \x -> x { noteEvents = [], webDirtEvents = [] } -- note: webDirtEvents is temporary/deprecated
+  when webSerialOn $ liftIO $ mapM_ (WebSerial.send (webSerial rEnv)) ns
+  -- maybe send events to SuperDirt (no modification of underlying JSVals)   
+  sdOn <- superDirtOn
+  when sdOn $ liftIO $ mapM_ (SuperDirt.playSample (superDirt rEnv)) ns
+  -- maybe send events to WebDirt (note: WebDirt modifies underlying JSVals)
+  wdOn <- webDirtOn   
+  unsafe <- unsafeModeOn
+  when wdOn $ liftIO $ mapM_ (WebDirt.playSample (webDirt rEnv) (resources rEnv) unsafe clockDiff) ns
+  modify' $ \x -> x { noteEvents = [] } -- clear the queue of all note events
   return ()
 
 
@@ -269,13 +258,16 @@ clearZone z (TextProgram x) = clearTextProgram z $ forRendering x
 clearZone z (Sequence _) = clearParamPattern z
 clearZone _ _ = return ()
 
+-- TODO: how is clearZone handled for JSoLangs????
 clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
-clearTextProgram z ("MiniTidal",_,_) = gets miniTidal >>= liftIO . (flip clearZone) z
-clearTextProgram z ("Punctual",_,_) = gets punctual >>= liftIO . (flip clearZone) z
-clearTextProgram z ("CineCer0",_,_) = (clearZone' cineCer0) z
+clearTextProgram z ("MiniTidal",_,_) = gets miniTidal >>= liftIO . (flip clear) z
+clearTextProgram z ("Punctual",_,_) = gets punctual >>= liftIO . (flip clear) z
+clearTextProgram z ("CineCer0",_,_) = gets cineCer0 >>= liftIO . (flip clear) z
+clearTextProgram z ("Seis8s",_,_) = gets seis8s >>= liftIO . (flip clear) z
+clearTextProgram z ("LocoMotion",_,_) = gets locoMotion >>= liftIO . (flip clear) z
+clearTextProgram z ("TransMit",_,_) = gets transMit >>= liftIO . (flip clear) z
 clearTextProgram z ("Hydra",_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
-clearTextProgram z ("LocoMotion",_,_) = gets locoMotion >>= (flip $ clearZone' $ exoLangToRenderer "LocoMotion") z
-clearTextProgram z ("TranMit",_,_) = gets locoMotion >>= (flip $ clearZone' $ exoLangToRenderer "TransMit") z
+clearTextProgram z ("TimeNot",_,_) = pure () -- placeholder
 clearTextProgram _ _ = return ()
 
 
@@ -287,6 +279,8 @@ renderAnimation = do
   let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
   rEnv <- ask
   liftIO $ WebSerial.flush (webSerial rEnv)
+  punctual' <- gets punctual
+  
   when okToRender $ do
     s <- get
     let ns = baseNotations s
@@ -333,23 +327,12 @@ defineZone _ _ = return ()
 defineZoneTextProgram :: Int -> TextProgram -> R ()
 defineZoneTextProgram z d@("MiniTidal",_,_) = gets miniTidal >>= defineZoneGeneric z d
 defineZoneTextProgram z d@("Punctual",_,_) = gets punctual >>= defineZoneGeneric z d
-defineZoneTextProgram z ("CineCer0",x,eTime) = (parseZone cineCer0) z x eTime
+defineZoneTextProgram z d@("CineCer0",_,_) = gets cineCer0 >>= defineZoneGeneric z d
+defineZoneTextProgram z d@("LocoMotion",_,_) = gets locoMotion >>= defineZoneGeneric z d
+defineZoneTextProgram z d@("TransMit",_,_) = gets transMit >>= defineZoneGeneric z d
+defineZoneTextProgram z d@("Seis8s",_,_) = gets seis8s >>= defineZoneGeneric z d
 defineZoneTextProgram z ("Hydra",x,_) = defineZoneHydra z x
-defineZoneTextProgram z ("LocoMotion",x,eTime) = do
-  s <- get
-  parseZone (exoLangToRenderer "LocoMotion" $ locoMotion s) z x eTime
-defineZoneTextProgram z ("TransMit",x,eTime) = do
-  s <- get
-  parseZone (exoLangToRenderer "TransMit" $ transMit s) z x eTime
 defineZoneTextProgram z ("TimeNot",x,eTime) = (parseZone timeNot) z x eTime
-defineZoneTextProgram z d@("Seis8s",x,eTime) = do
-  let parseResult = Seis8s.parseLang $ T.unpack x
-  case parseResult of
-    Right p -> do
-      clearZoneError z
-      setBaseDefinition z d
-      modify' $ \xx -> xx { seis8ses = insert z p $ seis8ses xx }
-    Left e -> setZoneError z (T.pack $ show e)
 defineZoneTextProgram z ("",x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
   case determineTextNotation x ns of
@@ -388,7 +371,7 @@ defineZoneTextProgram z (x,y,eTime) = do
 
 defineZoneGeneric :: Int -> Definition -> Renderer -> R ()
 defineZoneGeneric z d r = do
-  result <- liftIO $ (Renderer.defineZone r) z d
+  result <- liftIO $ (define r) z d
   case r of 
     Left err -> setZoneError z err
     Right _ -> do
@@ -431,28 +414,12 @@ renderZoneText canDraw z x = do
 renderZoneBase :: Bool -> Int -> TextNotation -> R ()
 renderZoneBase canDraw z "MiniTidal" = gets miniTidal >>= renderZoneGeneric canDraw z
 renderZoneBase canDraw z "Punctual" = gets punctual >>= renderZoneGeneric canDraw z
-renderZoneBase canDraw z "LocoMotion" = when canDraw $ do
-  lm <- gets locoMotion
-  tNow <- gets wakeTimeAnimation
-  (zoneAnimationFrame $ exoLangToRenderer "LocoMotion" lm) tNow z
-renderZoneBase canDraw z "TransMit" = when canDraw $ do
-  tm <- gets transMit
-  tNow <- gets wakeTimeAnimation
-  (zoneAnimationFrame $ exoLangToRenderer "TransMit" tm) tNow z
+renderZoneBase canDraw z "CineCer0" = gets cineCer0 >>= renderZoneGeneric canDraw z
+renderZoneBase canDraw z "Seis8s" = gets seis8s >>= renderZoneGeneric canDraw z
+renderZoneBase canDraw z "LocoMotion" = gets locoMotion >>= renderZoneGeneric canDraw z
+renderZoneBase canDraw z "TransMit" = gets transMit >>= renderZoneGeneric canDraw z
+
 renderZoneBase _ z "TimeNot" = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
-renderZoneBase _ z "Seis8s" = do
-  s <- get
-  let p = IntMap.lookup z $ seis8ses s
-  case p of
-    Just p' -> do
-      let theTempo = tempoCache s
-      let wStart = renderStart s
-      let wEnd = renderEnd s
-      pushNoteEvents $ Seis8s.render p' theTempo wStart wEnd
-    Nothing -> return ()
-renderZoneBase canDraw z "CineCero" = when canDraw $ do
-  tNow <- gets wakeTimeAnimation
-  (zoneAnimationFrame cineCer0) tNow z
 renderZoneBase canDraw z "Hydra" = when canDraw $ do
   s <- get
   let wta = wakeTimeAnimation s
@@ -507,21 +474,20 @@ calculateZoneAnimationTimes z zat = do
 
   
 forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> HTMLCanvasElement -> HTMLCanvasElement -> IO ()
-forkRenderThreads rEnv s vidDiv cvsElement hCanvas lCanvas = do
+forkRenderThreads rEnv s cineCer0Div pCanvas lCanvas hCanvas = do
   t0Audio <- liftAudioIO $ audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv
   pOut <- getMainBusInput $ mainBus rEnv
-  irs <- initialRenderState pIn pOut cvsElement hCanvas lCanvas t0System t0Audio
-  let irs' = irs { videoDivCache = Just vidDiv }
-  rsM <- newMVar irs'
+  irs <- initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
+  rsM <- newMVar irs
   void $ forkIO $ mainRenderThread rEnv rsM
   void $ forkIO $ animationThread rEnv rsM
 
 mainRenderThread :: RenderEnvironment -> MVar RenderState -> IO ()
 mainRenderThread rEnv rsM = do
   rs <- takeMVar rsM
-  rs' <- runR render rEnv rs
+  rs' <- runR Estuary.Render.RenderEngine.render rEnv rs
   putMVar rsM rs'
   swapMVar (renderInfo rEnv) (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
   -- _ <- runR sleepIfNecessary rEnv rs'

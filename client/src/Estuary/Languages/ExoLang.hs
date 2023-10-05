@@ -2,17 +2,11 @@
 
 module Estuary.Languages.ExoLang
   (ExoLang,
-  exoLang,
+  exoLangRenderer,
   ExoResult,
   exoResultToMaybe,
-  exoResultToEither,
-  define,
-  clear,
-  preRender,
-  render,
-  postRender,
-  setTempo)
-  where
+  exoResultToEither
+  ) where
 
 import Data.Text
 import Data.Time
@@ -27,6 +21,10 @@ import Estuary.Types.JSException
 import Estuary.Types.Tempo
 import Estuary.Render.ForeignTempo
 import Estuary.Types.NoteEvent
+import Estuary.Render.Renderer (Renderer)
+import qualified Estuary.Render.Renderer as Renderer
+import Estuary.Types.TextNotation
+import Estuary.Types.Definition
 
 
 foreign import javascript safe
@@ -223,4 +221,25 @@ exoResultToEither x = case _exoResultSuccess x of
 
 utcTimeToWhenPOSIX :: UTCTime -> Double
 utcTimeToWhenPOSIX = realToFrac . utcTimeToPOSIXSeconds
+
+
+exoLangRenderer :: TextNotation -> HTMLCanvasElement -> Text -> IO Renderer
+exoLangRenderer tn canvas url = exoLangToRenderer tn <$> exoLang canvas url
+
+exoLangToRenderer :: TextNotation -> ExoLang -> Renderer
+exoLangToRenderer tn e = Renderer.emptyRenderer {
+  Renderer.define = define' tn e,
+  Renderer.clear = clear e,
+  Renderer.preRender = preRender e,
+  Renderer.render = render e,
+  Renderer.postRender = postRender e,
+  Renderer.setTempo = setTempo e  
+  -- TODO: open pathways between ExoLang and the remaining setters of Renderer
+  }
+
+define' :: TextNotation -> ExoLang -> Int -> Definition -> IO (Either Text Text)
+define' tn exoLang z d = do
+  case definitionToRenderingTextProgram d of 
+    Nothing -> pure $ Left $ "internal error in Estuary.Render.Renderer: defineZone called for a definition that doesn't pertain to a text program passed to exolang for text notation " <> tn
+    Just (_,txt,eTime) -> define exoLang z txt eTime
 
