@@ -182,8 +182,9 @@ setTempo e t = void $ withExoLang e $ \elc -> do
     False -> pure ()
     
 {- setTempo e t = withExoLang e $ \elo -> do
-  let t' = toForeignTempo t
   putStrLn $ "t " ++ show t
+  -- let t' = toForeignTempo t
+  t' <- toForeignTempoDebug t
   putStrLn $ "t' " ++ unpack (showForeignTempo t')
   _setTempo t' elo -}
 
