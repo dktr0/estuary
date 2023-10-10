@@ -37,12 +37,7 @@ import Sound.MusicW.AudioContext
 
 import qualified Estuary.Languages.MiniTidal as MiniTidal
 import Estuary.Languages.TimeNot
--- import qualified Estuary.Languages.ExoLang as ExoLang
--- import Sound.Punctual.GL (GLContext)
 
-import qualified Estuary.Languages.Hydra.Types as Hydra
-import qualified Estuary.Languages.Hydra.Parser as Hydra
-import qualified Estuary.Languages.Hydra.Render as Hydra
 
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
@@ -260,15 +255,18 @@ clearZone _ _ = return ()
 
 -- TODO: how is clearZone handled for JSoLangs????
 clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
-clearTextProgram z ("MiniTidal",_,_) = gets miniTidal >>= liftIO . (flip clear) z
-clearTextProgram z ("Punctual",_,_) = gets punctual >>= liftIO . (flip clear) z
-clearTextProgram z ("CineCer0",_,_) = gets cineCer0 >>= liftIO . (flip clear) z
-clearTextProgram z ("Seis8s",_,_) = gets seis8s >>= liftIO . (flip clear) z
-clearTextProgram z ("LocoMotion",_,_) = gets locoMotion >>= liftIO . (flip clear) z
-clearTextProgram z ("TransMit",_,_) = gets transMit >>= liftIO . (flip clear) z
-clearTextProgram z ("Hydra",_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
+clearTextProgram z ("MiniTidal",_,_) = gets miniTidal >>= clearTextProgramGeneric z
+clearTextProgram z ("Punctual",_,_) = gets punctual >>= clearTextProgramGeneric z
+clearTextProgram z ("CineCer0",_,_) = gets cineCer0 >>= clearTextProgramGeneric z
+clearTextProgram z ("Seis8s",_,_) = gets seis8s >>= clearTextProgramGeneric z
+clearTextProgram z ("LocoMotion",_,_) = gets locoMotion >>= clearTextProgramGeneric z
+clearTextProgram z ("TransMit",_,_) = gets transMit >>= clearTextProgramGeneric z
+clearTextProgram z ("Hydra",_,_) = gets hydra >>= clearTextProgramGeneric z
 clearTextProgram z ("TimeNot",_,_) = pure () -- placeholder
 clearTextProgram _ _ = return ()
+
+clearTextProgramGeneric :: Int -> Renderer -> R ()
+clearTextProgramGeneric z r = liftIO $ clear r z
 
 
 renderAnimation :: R ()
@@ -331,7 +329,7 @@ defineZoneTextProgram z d@("CineCer0",_,_) = gets cineCer0 >>= defineZoneGeneric
 defineZoneTextProgram z d@("LocoMotion",_,_) = gets locoMotion >>= defineZoneGeneric z d
 defineZoneTextProgram z d@("TransMit",_,_) = gets transMit >>= defineZoneGeneric z d
 defineZoneTextProgram z d@("Seis8s",_,_) = gets seis8s >>= defineZoneGeneric z d
-defineZoneTextProgram z ("Hydra",x,_) = defineZoneHydra z x
+defineZoneTextProgram z d@("Hydra",x,_) = gets hydra >>= defineZoneGeneric z d
 defineZoneTextProgram z ("TimeNot",x,eTime) = (parseZone timeNot) z x eTime
 defineZoneTextProgram z ("",x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
@@ -378,27 +376,6 @@ defineZoneGeneric z d r = do
       setBaseDefinition z d
       clearZoneError z
 
-defineZoneHydra :: Int -> Definition -> R ()
-defineZoneHydra z d@(_,txt,eTime) = do
- s <- get
- parseResult <- liftIO $ try $ return $! Hydra.parseHydra t
- case parseResult of
-   Right (Right stmts) -> do
-     clearZoneError z
-     setBaseDefinition z d
-     let x = IntMap.lookup z $ hydras s
-     hydra <- case x of
-       Just h -> return h
-       Nothing -> do
-         h <- liftIO $ Hydra.newHydra $ hydraCanvas s
-         modify' $ \x -> x { hydras = IntMap.insert z h (hydras x)}
-         return h
-     -- liftIO $ Hydra.setResolution hydra 1280 720
-     liftIO $ Hydra.evaluate hydra stmts
-   Right (Left parseErr) -> setZoneError z (T.pack $ show parseErr)
-   Left exception -> setZoneError z (T.pack $ show (exception :: SomeException))
-
-
 
 renderZone :: Bool -> Int -> Definition -> R ()
 renderZone _ z (Sequence _) = renderControlPattern z
@@ -418,16 +395,8 @@ renderZoneBase canDraw z "CineCer0" = gets cineCer0 >>= renderZoneGeneric canDra
 renderZoneBase canDraw z "Seis8s" = gets seis8s >>= renderZoneGeneric canDraw z
 renderZoneBase canDraw z "LocoMotion" = gets locoMotion >>= renderZoneGeneric canDraw z
 renderZoneBase canDraw z "TransMit" = gets transMit >>= renderZoneGeneric canDraw z
-
+renderZoneBase canDraw z "Hydra" = gets hydra >>= renderZoneGeneric canDraw z
 renderZoneBase _ z "TimeNot" = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
-renderZoneBase canDraw z "Hydra" = when canDraw $ do
-  s <- get
-  let wta = wakeTimeAnimation s
-  let elapsed = realToFrac $ diffUTCTime tNow wta * 1000
-  let x = IntMap.lookup z $ hydras s
-  case x of
-    Just hydra -> liftIO $ Hydra.tick hydra elapsed
-    Nothing -> pure ()
 renderZoneBase _ _ _ = pure ()
 
 renderZoneGeneric :: Bool -> Int -> Renderer -> R ()
@@ -435,6 +404,7 @@ renderZoneGeneric canDraw z r = do
   gets tempoCache >>= (liftIO . setTempo r)
   gets valueMap >>= (liftIO . setValueMap r)
   tNow <- gets wakeTimeAnimation
+  tPrevDraw <- gets prevDrawTime
   wStart <- gets renderStart
   wEnd <- gets renderEnd
   liftIO $ preRender r canDraw

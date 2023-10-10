@@ -15,9 +15,9 @@ import Estuary.Types.TextNotation
 data Renderer = Renderer {
   define :: Int -> Definition -> IO (Either Text Text), -- left=error, right=info
   clear :: Int -> IO (),
-  preRender :: Bool -> UTCTime -> IO (),
-  render :: UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent],
-  postRender :: Bool -> UTCTime -> IO (),
+  preRender :: Bool -> UTCTime -> UTCTime -> IO (), -- canDraw nowTime prevDrawTime
+  render :: UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent], -- nowTime prevDrawTime windowStartTime windowEndTime canDraw zone
+  postRender :: Bool -> UTCTime -> UTCTime -> IO (), -- canDraw nowTime prevDrawTime
   setTempo :: Tempo -> IO (),
   setBrightness :: Double -> IO (),
   setResolution :: Punctual.Resolution -> IO (),
@@ -31,9 +31,9 @@ emptyRenderer :: Renderer
 emptyRenderer = Renderer {
   define = \_ _ -> pure (Left "Estuary internal error: defineZone is empty default from Estuary.Render.Renderer"),
   clear = \_ -> pure (),
-  preRender = \_ _ -> pure (),
-  render = \_ _ _ _ _ -> pure [],
-  postRender = \_ _ -> pure (),
+  preRender = \_ _ _ -> pure (),
+  render = \_ _ _ _ _ _ -> pure [],
+  postRender = \_ _ _ -> pure (),
   setTempo = \_ -> pure (),
   setBrightness = \_ -> pure (),
   setResolution = \_ -> pure (),

@@ -59,8 +59,8 @@ _clear :: IORef (IntMap Program) -> Int -> IO ()
 _clear zonesRef z = modifyIORef zonesRef $ IntMap.delete z
 
 
-_render :: IORef (IntMap Program) -> IORef Tempo -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
-_render zonesRef tempoRef _ wStart wEnd _ z = do
+_render :: IORef (IntMap Program) -> IORef Tempo -> UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
+_render zonesRef tempoRef _ _ wStart wEnd _ z = do
   pMaybe <- IntMap.lookup z <$> readIORef zonesRef
   case pMaybe of
     Just p -> do

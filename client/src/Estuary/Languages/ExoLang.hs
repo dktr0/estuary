@@ -105,44 +105,46 @@ foreign import javascript safe -- DEPRECATED
   _clearZone :: Int -> ExoLangClass -> IO ()
 
 
-preRender :: ExoLang -> Bool -> UTCTime -> IO ()
-preRender e canDraw tNow = withExoLang e $ \elc -> do
+preRender :: ExoLang -> Bool -> UTCTime -> UTCTime -> IO ()
+preRender e canDraw tNow tPrevDraw = withExoLang e $ \elc -> do
   let tNow' = utcTimeToWhenPOSIX tNow
+  let tPrevDraw' = utcTimeToWhenPOSIX tPrevDraw
   case hasFunction "preRender" elc of 
-    True -> _preRender canDraw tNow' elc
+    True -> _preRender canDraw tNow' tPrevDraw' elc
     False -> do
       case hasFunction "preAnimate" elc of
-        True -> _preAnimate canDraw tNow' elc
+        True -> _preAnimate canDraw tNow' tPrevDraw' elc
         False -> pure ()
         
 foreign import javascript unsafe
-  "$3.preRender({canDraw: $1, time: $2})"
-  _preRender :: Bool -> Double -> ExoLangClass -> IO ()
+  "$3.preRender({canDraw: $1, nowTime: $2, previousDrawTime: $3})"
+  _preRender :: Bool -> Double -> Double -> ExoLangClass -> IO ()
 
 foreign import javascript unsafe -- DEPRECATED
-  "$3.preAnimate($1,$2)"
-  _preAnimate :: Bool -> Double -> ExoLangClass -> IO ()
+  "$3.preAnimate($1,$2,$3)"
+  _preAnimate :: Bool -> Double -> Double -> ExoLangClass -> IO ()
   
   
-render :: ExoLang -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
-render e tNow wStart wEnd canDraw z = withExoLang e $ \elc -> do
+render :: ExoLang -> UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
+render e tNow tPrevDraw wStart wEnd canDraw z = withExoLang e $ \elc -> do
   let tNow' = utcTimeToWhenPOSIX tNow
+  let tPrevDraw' = utcTimeToWhenPOSIX tPrevDraw
   let wStart' = utcTimeToWhenPOSIX wStart
   let wEnd' = utcTimeToWhenPOSIX wEnd
   case hasFunction "render" elc of
-    True -> _render tNow' wStart' wEnd' canDraw z elc >>= jsValToNoteEvents
+    True -> _render tNow' tPrevDraw' wStart' wEnd' canDraw z elc >>= jsValToNoteEvents
     False -> do
       case hasFunction "animateZone" elc of
-        True -> _animateZone z canDraw elc >>= jsValToNoteEvents
+        True -> _animateZone z canDraw tNow' tPrevDraw' wStart' wEnd' elc >>= jsValToNoteEvents
         False -> pure []
 
 foreign import javascript unsafe
-  "$6.render({tNow: $1, wStart: $2, wEnd: $3, canDraw: $4, zone: $5})"
-  _render :: Double -> Double -> Double -> Bool -> Int -> ExoLangClass -> IO JSVal
+  "$6.render({nowTime: $1, previousDrawTime: $2, windowStartTime: $3, windowEndTime: $4, canDraw: $5, zone: $6})"
+  _render :: Double -> Double -> Double -> Double -> Bool -> Int -> ExoLangClass -> IO JSVal
   
 foreign import javascript unsafe -- DEPRECATED
-  "$3.animateZone($1,$2)"
-  _animateZone :: Int -> Bool -> ExoLangClass -> IO JSVal
+  "$3.animateZone($1,$2,$3,$4,$5,$6)"
+  _animateZone :: Int -> Bool -> Double -> Double -> Double -> Double -> ExoLangClass -> IO JSVal
 
 jsValToNoteEvents :: JSVal -> IO [NoteEvent]
 jsValToNoteEvents x = do
@@ -150,26 +152,27 @@ jsValToNoteEvents x = do
   let jsEvents = case x' of
                    Just ns -> ns
                    Nothing -> []
-  pure $ fmap pFromJSVal jsEvents -- TODO: confirm that double time translation is done elsewhere (ie. in RenderEngine)
+  pure $ fmap pFromJSVal jsEvents
 
 
-postRender :: ExoLang -> Bool -> UTCTime -> IO ()
-postRender e canDraw tNow = withExoLang e $ \elc -> do
+postRender :: ExoLang -> Bool -> UTCTime -> UTCTime -> IO ()
+postRender e canDraw tNow tPrevDraw = withExoLang e $ \elc -> do
   let tNow' = utcTimeToWhenPOSIX tNow
+  let tPrevDraw' = utcTimeToWhenPOSIX tPrevDraw
   case hasFunction "postRender" elc of 
-    True -> _postRender canDraw tNow' elc
+    True -> _postRender canDraw tNow' tPrevDraw' elc
     False -> do
       case hasFunction "postAnimate" elc of
-        True -> _postAnimate canDraw tNow' elc
+        True -> _postAnimate canDraw tNow' tPrevDraw' elc
         False -> pure ()
         
 foreign import javascript unsafe
-  "$3.postRender({canDraw: $1, time: $2})"
-  _postRender :: Bool -> Double -> ExoLangClass -> IO ()
+  "$3.postRender({canDraw: $1, nowTime: $2, previousDrawTime: $3})"
+  _postRender :: Bool -> Double -> Double -> ExoLangClass -> IO ()
 
 foreign import javascript unsafe -- DEPRECATED
-  "$3.postAnimate($1,$2)"
-  _postAnimate :: Bool -> Double -> ExoLangClass -> IO ()
+  "$3.postAnimate($1,$2,$3)"
+  _postAnimate :: Bool -> Double -> Double -> ExoLangClass -> IO ()
 
 
 

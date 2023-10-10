@@ -22,7 +22,6 @@ import Estuary.Types.RenderInfo
 import Estuary.Types.NoteEvent
 import Estuary.Types.MovingAverage
 import Estuary.Types.TextNotation hiding (LocoMotion)
-import qualified Estuary.Languages.Hydra.Render as Hydra
 import Estuary.Languages.JSoLang
 import Estuary.Render.Renderer
 import Estuary.Languages.ExoLang
@@ -30,6 +29,7 @@ import qualified Estuary.Languages.MiniTidal as MiniTidal
 import qualified Estuary.Languages.Punctual as Punctual
 import qualified Estuary.Languages.Seis8s as Seis8s
 import qualified Estuary.Languages.CineCer0 as CineCer0
+import qualified Estuary.Languages.Hydra as Hydra
 
 newtype LocoMotion = LocoMotion JSVal
 
@@ -48,7 +48,6 @@ data RenderState = RenderState {
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
   timeNots :: IntMap JSVal,
-  hydras :: IntMap Hydra.Hydra,
   renderTime :: !MovingAverage,
   wakeTimeAnimation :: !UTCTime,
   animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
@@ -59,20 +58,21 @@ data RenderState = RenderState {
   tempoCache :: Tempo,
   jsoLangs :: Map.Map Text JSoLang,
   valueMap :: Tidal.ValueMap,
-  locoMotion :: Renderer,
   exoLangTest :: Renderer,
+  locoMotion :: Renderer,
   transMit :: Renderer,
   miniTidal :: Renderer,
   punctual :: Renderer,
-  cineCer0 :: Renderer
+  cineCer0 :: Renderer,
+  hydra :: Renderer
   }
 
 
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLDivElement -> HTMLCanvasElement -> HTMLCanvasElement -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio = do
   let iTempo = Tempo { freq = 0.5, time = t0System, count = 0 }
-  locoMotion' <- exoLangRenderer "LocoMotion" lCanvas "https://dktr0.github.io/LocoMotion/src/webpack-module.js"
   exoLangTest' <- exoLangRenderer "exolangtest" lCanvas "./exolang.js"
+  locoMotion' <- exoLangRenderer "LocoMotion" lCanvas "https://dktr0.github.io/LocoMotion/src/webpack-module.js"
   transMit' <- exoLangRenderer "TransMit" lCanvas "https://jac307.github.io/TransMit/exolang.js"
   miniTidal' <- MiniTidal.miniTidal iTempo
   punctual' <- Punctual.punctual pCanvas iTempo
@@ -80,6 +80,7 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
   setAudioOutput punctual' pOut
   setNchnls punctual' $ numberOfOutputs pOut
   cineCer0' <- CineCer0.cineCer0 cineCer0Div iTempo
+  hydra' <- Hydra.hydra hCanvas
   return $ RenderState {
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
@@ -91,7 +92,6 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
     paramPatterns = empty,
     noteEvents = [],
     timeNots = empty,
-    hydras = empty,
     renderTime = newAverage 20,
     wakeTimeAnimation = t0System,
     animationDelta = newAverage 20,
@@ -107,5 +107,6 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
     transMit = transMit',
     miniTidal = miniTidal',
     punctual = punctual',
-    cineCer0 = cineCer0'
+    cineCer0 = cineCer0',
+    hydra = hydra'
     }

@@ -115,6 +115,7 @@ library
       Estuary.Languages.Punctual
       Estuary.Languages.TimeNot
       Estuary.Languages.Seis8s
+      Estuary.Languages.Hydra
       Estuary.Render.ForeignTempo
       Estuary.Render.RenderOp
       Estuary.Types.ServerInfo

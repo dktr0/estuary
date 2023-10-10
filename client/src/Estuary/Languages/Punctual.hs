@@ -24,8 +24,8 @@ punctual canvas iTempo = do
   Punctual.setTempo punctual' iTempo
   pure $ emptyRenderer {
     define = _define punctual',
-    render = \tNow _ _ canDraw z -> Punctual.render punctual' canDraw z tNow >> pure [],
-    postRender = \canDraw _ -> Punctual.postRender punctual' canDraw,
+    render = \tNow _ _ _ canDraw z -> Punctual.render punctual' canDraw z tNow >> pure [],
+    postRender = \canDraw _ _ -> Punctual.postRender punctual' canDraw,
     clear = Punctual.clear punctual',
     setTempo = Punctual.setTempo punctual',
     setResolution = Punctual.setResolution punctual',

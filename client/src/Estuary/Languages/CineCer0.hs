@@ -65,8 +65,8 @@ _clear specsRef statesRef z = do
   modifyIORef statesRef $ IntMap.delete z
 
 
-_render :: HTMLDivElement -> IORef Tempo -> IORef (IntMap CineCer0.Spec) -> IORef (IntMap CineCer0.CineCer0State) -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
-_render videoDiv tempoRef specsRef statesRef tNow _ _ canDraw z = do
+_render :: HTMLDivElement -> IORef Tempo -> IORef (IntMap CineCer0.Spec) -> IORef (IntMap CineCer0.CineCer0State) -> UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
+_render videoDiv tempoRef specsRef statesRef tNow _ _ _ canDraw z = do
   tempo <- readIORef tempoRef
   specs <- readIORef specsRef
   states <- readIORef statesRef

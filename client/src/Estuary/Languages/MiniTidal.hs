@@ -61,8 +61,8 @@ _clear :: IORef (IntMap Tidal.ControlPattern) -> Int -> IO ()
 _clear zonesRef z = modifyIORef zonesRef $ IntMap.delete z
 
 
-_render :: IORef (IntMap Tidal.ControlPattern) -> IORef Tempo -> IORef Tidal.ValueMap -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
-_render zonesRef tempoRef valueMapRef _ wStart wEnd _ z = do
+_render :: IORef (IntMap Tidal.ControlPattern) -> IORef Tempo -> IORef Tidal.ValueMap -> UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
+_render zonesRef tempoRef valueMapRef _ _ wStart wEnd _ z = do
   controlPattern <- IntMap.lookup z <$> readIORef zonesRef -- :: Maybe ControlPattern
   case controlPattern of
     Just controlPattern' -> do
