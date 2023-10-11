@@ -30,6 +30,7 @@ import qualified Estuary.Languages.Punctual as Punctual
 import qualified Estuary.Languages.Seis8s as Seis8s
 import qualified Estuary.Languages.CineCer0 as CineCer0
 import qualified Estuary.Languages.Hydra as Hydra
+import qualified Estuary.Languages.TimeNot as TimeNot
 
 newtype LocoMotion = LocoMotion JSVal
 
@@ -47,7 +48,6 @@ data RenderState = RenderState {
   baseDefinitions :: !DefinitionMap, -- the map of definitions as actually rendered (eg. with jsolang translations)
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   noteEvents :: ![NoteEvent],
-  timeNots :: IntMap JSVal,
   renderTime :: !MovingAverage,
   wakeTimeAnimation :: !UTCTime,
   animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
@@ -64,7 +64,8 @@ data RenderState = RenderState {
   miniTidal :: Renderer,
   punctual :: Renderer,
   cineCer0 :: Renderer,
-  hydra :: Renderer
+  hydra :: Renderer,
+  timeNot :: Renderer
   }
 
 
@@ -81,6 +82,7 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
   setNchnls punctual' $ numberOfOutputs pOut
   cineCer0' <- CineCer0.cineCer0 cineCer0Div iTempo
   hydra' <- Hydra.hydra hCanvas
+  timeNot' <- TimeNot.timeNot iTempo
   return $ RenderState {
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
@@ -91,7 +93,6 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
     baseDefinitions = empty,
     paramPatterns = empty,
     noteEvents = [],
-    timeNots = empty,
     renderTime = newAverage 20,
     wakeTimeAnimation = t0System,
     animationDelta = newAverage 20,
@@ -108,5 +109,6 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
     miniTidal = miniTidal',
     punctual = punctual',
     cineCer0 = cineCer0',
-    hydra = hydra'
+    hydra = hydra',
+    timeNot = timeNot'
     }

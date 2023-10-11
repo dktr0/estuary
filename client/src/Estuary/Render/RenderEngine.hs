@@ -36,8 +36,6 @@ import Data.IORef
 import Sound.MusicW.AudioContext
 
 import qualified Estuary.Languages.MiniTidal as MiniTidal
-import Estuary.Languages.TimeNot
-
 
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
@@ -262,7 +260,7 @@ clearTextProgram z ("Seis8s",_,_) = gets seis8s >>= clearTextProgramGeneric z
 clearTextProgram z ("LocoMotion",_,_) = gets locoMotion >>= clearTextProgramGeneric z
 clearTextProgram z ("TransMit",_,_) = gets transMit >>= clearTextProgramGeneric z
 clearTextProgram z ("Hydra",_,_) = gets hydra >>= clearTextProgramGeneric z
-clearTextProgram z ("TimeNot",_,_) = pure () -- placeholder
+clearTextProgram z ("TimeNot",_,_) = gets timeNot >>= clearTextProgramGeneric z
 clearTextProgram _ _ = return ()
 
 clearTextProgramGeneric :: Int -> Renderer -> R ()
@@ -329,8 +327,8 @@ defineZoneTextProgram z d@("CineCer0",_,_) = gets cineCer0 >>= defineZoneGeneric
 defineZoneTextProgram z d@("LocoMotion",_,_) = gets locoMotion >>= defineZoneGeneric z d
 defineZoneTextProgram z d@("TransMit",_,_) = gets transMit >>= defineZoneGeneric z d
 defineZoneTextProgram z d@("Seis8s",_,_) = gets seis8s >>= defineZoneGeneric z d
-defineZoneTextProgram z d@("Hydra",x,_) = gets hydra >>= defineZoneGeneric z d
-defineZoneTextProgram z ("TimeNot",x,eTime) = (parseZone timeNot) z x eTime
+defineZoneTextProgram z d@("Hydra",_,_) = gets hydra >>= defineZoneGeneric z d
+defineZoneTextProgram z d@("TimeNot",_,_) = gets timeNot >>= defineZoneGeneric z d 
 defineZoneTextProgram z ("",x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
   case determineTextNotation x ns of
@@ -396,7 +394,7 @@ renderZoneBase canDraw z "Seis8s" = gets seis8s >>= renderZoneGeneric canDraw z
 renderZoneBase canDraw z "LocoMotion" = gets locoMotion >>= renderZoneGeneric canDraw z
 renderZoneBase canDraw z "TransMit" = gets transMit >>= renderZoneGeneric canDraw z
 renderZoneBase canDraw z "Hydra" = gets hydra >>= renderZoneGeneric canDraw z
-renderZoneBase _ z "TimeNot" = (scheduleWebDirtEvents timeNot) z >>= pushWebDirtEvents
+renderZoneBase canDraw z "TimeNot" = gets timeNot >>= renderZoneGeneric canDraw z
 renderZoneBase _ _ _ = pure ()
 
 renderZoneGeneric :: Bool -> Int -> Renderer -> R ()

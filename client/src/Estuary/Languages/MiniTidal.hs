@@ -16,7 +16,6 @@ import Control.DeepSeq
 import Data.Maybe
 import Sound.Tidal.Parse
 import Data.IORef
-import Data.Time
 
 import Estuary.Types.Tempo as Tempo
 import Estuary.Types.NoteEvent
@@ -28,7 +27,6 @@ import Estuary.Render.Renderer
     
 miniTidal :: Tempo -> IO Renderer 
 miniTidal iTempo = do
-  now <- getCurrentTime
   zonesRef <- newIORef IntMap.empty
   tempoRef <- newIORef iTempo
   valueMapRef <- newIORef Map.empty
