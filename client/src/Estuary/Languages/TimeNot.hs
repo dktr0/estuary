@@ -8,70 +8,59 @@ import qualified Data.Text as T
 import Control.Monad.State.Strict
 import GHCJS.Types
 import GHCJS.Marshal -- .Internal
+import Data.IORef
+import Data.IntMap as IntMap
 
 import Estuary.Types.NoteEvent
-import Estuary.Types.RenderState
-import Estuary.Render.R hiding (setTempo)
 import Estuary.Render.Renderer
-import Estuary.Types.TextNotation
-import Estuary.Types.EnsembleC
-import Estuary.Types.Ensemble
+import Estuary.Types.Definition
+-- import Estuary.Types.TextNotation
 import Estuary.Types.Tempo
 import Estuary.Render.ForeignTempo
 import Estuary.Languages.ExoLang
 
-timeNot :: IO Renderer
-timeNot = pure emptyRenderer -- placeholder during refactor
 
-{-
-{
-  parseZone = _parseZone,
-  scheduleWebDirtEvents = _scheduleWebDirtEvents,
-  clearZone' = _clearZone
-  }
-
-
-_parseZone :: Int -> Text -> UTCTime -> R ()
-_parseZone z txt eTime = do
-  s <- get
-  timekNot <- case IntMap.lookup z (timeNots s) of
-    Just j -> pure j
-    Nothing -> do
-      x <- liftIO $ launch
-      modify' $ \ss -> ss { timeNots = IntMap.insert z x $ timeNots ss }
-      pure x
-  evalResult <- liftIO $ evaluate timekNot txt (utcTimeToWhenPOSIX eTime)
-  case exoResultToErrorText evalResult of
-    Just err -> do
-      setBaseNotation z "TimeNot"
-      setZoneError z err
-    Nothing -> do
-      setBaseNotation z "TimeNot"
-      setEvaluationTime z eTime
-      clearZoneError z
-
-
-_scheduleWebDirtEvents :: Int -> R [JSVal]
-_scheduleWebDirtEvents z = do
-  liftIO $ putStrLn "_scheduleWebDirtEvents"
-  s <- get
-  case IntMap.lookup z (timeNots s) of
-    Just timekNot -> liftIO $ do
-      setTempo timekNot $ tempoCache s
-      let wStart = utcTimeToWhenPOSIX $ renderStart s
-      let wEnd = utcTimeToWhenPOSIX $ renderEnd s
-      j <- _scheduleEvents timekNot wStart wEnd
-      j' <- fromJSVal j -- :: JSM (Maybe [JSVal])
-      case j' of
-        Just xs -> return xs
+timeNot :: Tempo -> IO Renderer
+timeNot iTempo = do
+  zonesRef <- newIORef IntMap.empty
+  tempoRef <- newIORef iTempo
+  pure $ emptyRenderer {
+    define = _define zonesRef,
+    clear = \z -> modifyIORef zonesRef (IntMap.delete z),
+    render = _render zonesRef tempoRef,
+    setTempo = writeIORef tempoRef
+    }
+    
+    
+_define :: IORef (IntMap JSVal) -> Int -> Definition -> IO (Either Text Text)
+_define zonesRef z d = do
+  case definitionToRenderingTextProgram d of 
+    Nothing -> pure $ Left "internal error in Estuary.Languages.TimeNot: defineZone called for a definition that doesn't pertain to a text program"
+    Just (_,txt,eTime) -> do
+      zones <- readIORef zonesRef
+      timekNot <- case IntMap.lookup z zones of
+        Just j -> pure j
         Nothing -> do
-          putStrLn "Estuary.Languages.TimeNot JSval problem"
-          return []
-    Nothing -> return []
+          x <- launch
+          modifyIORef zonesRef $ IntMap.insert z x
+          pure x
+      exoResultToEither <$> evaluate timekNot txt (utcTimeToWhenPOSIX eTime)
+   
+--  render :: UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent], -- nowTime prevDrawTime windowStartTime windowEndTime canDraw zone
 
 
-_clearZone :: Int -> R ()
-_clearZone z = modify' $ \s -> s { timeNots = IntMap.delete z (timeNots s) }
+_render :: IORef (IntMap JSVal) -> IORef Tempo -> UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
+_render zonesRef tempoRef _ _ wStart wEnd _ z = do
+  let wStart' = utcTimeToWhenPOSIX wStart
+  let wEnd' = utcTimeToWhenPOSIX wEnd
+  zones <- readIORef zonesRef
+  case IntMap.lookup z zones of
+    Just timekNot -> do
+      tempo <- readIORef tempoRef
+      _setTempo timekNot $ toForeignTempo tempo
+      j <- _scheduleEvents timekNot wStart' wEnd'
+      jsValToNoteEvents j
+    Nothing -> pure []
 
 
 foreign import javascript safe
@@ -89,8 +78,4 @@ foreign import javascript safe
 foreign import javascript unsafe
   "window.timekNot.setTempo($1,$2)"
   _setTempo :: JSVal -> ForeignTempo -> IO ()
-
-setTempo :: JSVal -> Tempo -> IO ()
-setTempo timekNot x = _setTempo timekNot $ toForeignTempo x
--}
 

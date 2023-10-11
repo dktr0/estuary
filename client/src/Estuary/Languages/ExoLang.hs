@@ -5,7 +5,9 @@ module Estuary.Languages.ExoLang
   exoLangRenderer,
   ExoResult,
   exoResultToMaybe,
-  exoResultToEither
+  exoResultToEither,
+  utcTimeToWhenPOSIX,
+  jsValToNoteEvents
   ) where
 
 import Data.Text
