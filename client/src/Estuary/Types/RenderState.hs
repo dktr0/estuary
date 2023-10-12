@@ -9,7 +9,7 @@ import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.PunctualW as Punctual
 import qualified Sound.Punctual.WebGL as Punctual
 import qualified Sound.Punctual.Resolution as Punctual
-import Sound.MusicW.AudioContext
+import Sound.MusicW.AudioContext (AudioTime)
 import Sound.MusicW.Node as MusicW
 import GHCJS.DOM.Types hiding (Text)
 import Data.Text (Text)
@@ -39,25 +39,29 @@ instance PToJSVal LocoMotion where pToJSVal (LocoMotion x) = x
 instance PFromJSVal LocoMotion where pFromJSVal = LocoMotion
 
 data RenderState = RenderState {
-  wakeTimeAudio :: !Double,
-  wakeTimeSystem :: !UTCTime,
-  renderStart :: !UTCTime,
-  renderPeriod :: !NominalDiffTime,
-  renderEnd :: !UTCTime,
+  audioTime :: !Double,
+  systemTime :: !UTCTime,
+  prevDrawTime :: !UTCTime,
+  windowStart :: !UTCTime,
+  windowPeriod :: !NominalDiffTime,
+  windowEnd :: !UTCTime,
+
+  tempo :: Tempo,
   cachedDefs :: !DefinitionMap, -- the map of definitions as received from the external world via render ops
   baseDefinitions :: !DefinitionMap, -- the map of definitions as actually rendered (eg. with jsolang translations)
   paramPatterns :: !(IntMap Tidal.ControlPattern),
+  
   noteEvents :: ![NoteEvent],
+  valueMap :: Tidal.ValueMap,
+  
   renderTime :: !MovingAverage,
-  wakeTimeAnimation :: !UTCTime,
   animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
   animationTime :: !MovingAverage, -- time between frame start and end of drawing operations
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo,
-  tempoCache :: Tempo,
+  
   jsoLangs :: Map.Map Text JSoLang,
-  valueMap :: Tidal.ValueMap,
   exoLangTest :: Renderer,
   locoMotion :: Renderer,
   transMit :: Renderer,
@@ -83,26 +87,31 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
   cineCer0' <- CineCer0.cineCer0 cineCer0Div iTempo
   hydra' <- Hydra.hydra hCanvas
   timeNot' <- TimeNot.timeNot iTempo
+  
   pure $ RenderState {
-    wakeTimeSystem = t0System,
-    wakeTimeAudio = t0Audio,
-    renderStart = t0System,
-    renderPeriod = 0,
-    renderEnd = t0System,
+    audioTime = t0Audio,
+    systemTime = t0System,
+    prevDrawTime = t0System,
+    windowStart = t0System,
+    windowPeriod = 0,
+    windowEnd = t0System,
+
+    tempo = iTempo,
     cachedDefs = empty,
     baseDefinitions = empty,
     paramPatterns = empty,
+    
     noteEvents = [],
+    valueMap = Map.empty,
+
     renderTime = newAverage 20,
-    wakeTimeAnimation = t0System,
     animationDelta = newAverage 20,
-    animationTime = newAverage 20,
+    animationTime = newAverage 20,    
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
     info = emptyRenderInfo,
-    tempoCache = iTempo,
+    
     jsoLangs = Map.empty,
-    valueMap = Map.empty,
     locoMotion = locoMotion',
     exoLangTest = exoLangTest',
     transMit = transMit',

@@ -118,18 +118,18 @@ render = do
   -- check if audio clock has advanced same amount as system clock
   t1System <- liftIO $ getCurrentTime
   t1Audio <- liftAudioIO $ audioTime
-  let elapsedSystem = (realToFrac $ diffUTCTime t1System $ wakeTimeSystem s) :: Double
-  let elapsedAudio = t1Audio - wakeTimeAudio s
+  let elapsedSystem = (realToFrac $ diffUTCTime t1System $ systemTime s) :: Double
+  let elapsedAudio = t1Audio - audioTime s
   let cr = elapsedAudio / elapsedSystem
   let crProblem = cr < clockRatioThreshold && cr > 0
   modify' $ \x -> x {
-    wakeTimeSystem = t1System,
-    wakeTimeAudio = t1Audio,
+    systemTime = t1System,
+    audioTime = t1Audio,
     info = (info x) { clockRatio = cr, clockRatioProblem = crProblem }
   }
   when crProblem $ liftIO $ T.putStrLn $ "audio clock slower, ratio=" <> showt cr
 
-  let diff = diffUTCTime (renderEnd s) t1System
+  let diff = diffUTCTime (windowEnd s) t1System
 
   -- 1. Fast Forward
   -- if the logical endtime of previous rendering is very soon in the future (below a threshold), or is in the past
@@ -138,9 +138,9 @@ render = do
   when fastForward $ do
     liftIO $ T.putStrLn "FAST-FORWARD"
     modify' $ \x -> x {
-      renderStart = addUTCTime fastForwardThreshold t1System,
-      renderPeriod = mainRenderPeriod,
-      renderEnd = addUTCTime (mainRenderPeriod+fastForwardThreshold) t1System
+      windowStart = addUTCTime fastForwardThreshold t1System,
+      windowPeriod = mainRenderPeriod,
+      windowEnd = addUTCTime (mainRenderPeriod+fastForwardThreshold) t1System
     }
 
   -- 2. Catchup
@@ -148,9 +148,9 @@ render = do
   when catchup $ do
     liftIO $ T.putStrLn $ "CATCHUP"
     modify' $ \x -> x {
-      renderStart = renderEnd s,
-      renderPeriod = mainRenderPeriod,
-      renderEnd = addUTCTime mainRenderPeriod (renderEnd s)
+      windowStart = windowEnd s,
+      windowPeriod = mainRenderPeriod,
+      windowEnd = addUTCTime mainRenderPeriod (windowEnd s)
     }
 
   -- 3. Wait
@@ -161,19 +161,19 @@ render = do
   when rewind $ do
     liftIO $ T.putStrLn $ "REWIND"
     modify' $ \x -> x {
-      renderStart = addUTCTime fastForwardThreshold t1System,
-      renderPeriod = mainRenderPeriod,
-      renderEnd = addUTCTime (mainRenderPeriod+fastForwardThreshold) t1System
+      windowStart = addUTCTime fastForwardThreshold t1System,
+      windowPeriod = mainRenderPeriod,
+      windowEnd = addUTCTime (mainRenderPeriod+fastForwardThreshold) t1System
     }
   
-  renderRenderOps
+  processRenderOps
   when (fastForward || catchup || rewind) $ do
     updateTidalValueMap
     renderZones
     flushEvents
 
   -- calculate how much time this render cycle took and update load measurements
-  -- TODO: these calculations don't completely make sense given the microRendering system
+  -- TODO: these calculations don't really make sense the way the rendering system has evolved
   t2System <- liftIO $ getCurrentTime
   let mostRecentRenderTime = diffUTCTime t2System t1System
   let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
@@ -187,16 +187,16 @@ microRenderInAnimationFrame :: R ()
 microRenderInAnimationFrame = do
   s <- get
   tNow <- liftIO $ getCurrentTime
-  let diff = diffUTCTime (renderEnd s) tNow
+  let diff = diffUTCTime (windowEnd s) tNow
   let microRender = diff >= microRenderThreshold && diff < waitThreshold
   when microRender $ do
     fpsl <- fpsLimit
     let mDelta = realToFrac $ getAverage $ animationDelta s
     let microRenderPeriod = calculateMicroRenderPeriod mDelta fpsl
     modify' $ \x -> x {
-      renderStart = renderEnd s,
-      renderEnd = addUTCTime microRenderPeriod (renderEnd s),
-      renderPeriod = microRenderPeriod
+      windowStart = windowEnd s,
+      windowEnd = addUTCTime microRenderPeriod (windowEnd s),
+      windowPeriod = microRenderPeriod
     }
     updateTidalValueMap
     renderZones True
@@ -207,27 +207,25 @@ calculateMicroRenderPeriod _ (Just fpsl) = fpsl
 calculateMicroRenderPeriod measuredDelta Nothing = measuredDelta
 
 
-renderRenderOps :: R ()
-renderRenderOps = takeRenderOps >>= foldM renderRenderOp ()
+processRenderOps :: R ()
+processRenderOps = takeRenderOps >>= foldM processRenderOp ()
 
-renderRenderOp :: () -> RenderOp -> R ()
+processRenderOp :: () -> RenderOp -> R ()
 
-renderRenderOp _ (WriteTempo t) = do
-  modify' $ \s -> s { tempoCache = t }
+processRenderOp _ (WriteTempo t) = do
+  modify' $ \s -> s { tempo = t }
 
-renderRenderOp _ (WriteZone z x) = do
+processRenderOp _ (WriteZone z x) = do
   defs <- gets cachedDefs
   let x' = definitionForRendering x
   maybeClearChangedZone z (IntMap.lookup z defs) x'
   renderZoneChanged z x'
   modify' $ \s -> s { cachedDefs = insert z x' (cachedDefs s) }
 
-renderRenderOp _ ResetZones = do
+processRenderOp _ ResetZones = do
   gets cachedDefs >>= traverseWithKey clearZone
   modify' $ \s -> s { cachedDefs = empty }
 
-renderZones :: Bool -> R ()
-renderZones canDraw = gets cachedDefs >>= traverseWithKey (renderZoneAlways canDraw) >> return ()
 
 
 maybeClearChangedZone :: Int -> Maybe Definition -> Definition -> R ()
@@ -267,29 +265,24 @@ clearTextProgramGeneric :: Int -> Renderer -> R ()
 clearTextProgramGeneric z r = liftIO $ clear r z
 
 
-renderAnimation :: R ()
-renderAnimation = do
-  t1 <- liftIO $ getCurrentTime
-  wta <- gets wakeTimeAnimation
-  fpsl <- fpsLimit
-  let okToRender = case fpsl of Nothing -> True; Just x -> diffUTCTime t1 wta > x
-  rEnv <- ask
-  liftIO $ WebSerial.flush (webSerial rEnv)
-  punctual' <- gets punctual
-  
-  when okToRender $ do
-    s <- get
-    let ns = baseNotations s
-    let anyPunctualZones = elem "Punctual" ns
-    let anyLocoMotionZones = elem "LocoMotion" ns
-    let anyTransMitZones = elem "TransMit" ns
-    when anyPunctualZones $ preAnimationFrame punctual
-    when anyLocoMotionZones $ liftIO $ ExoLang.preAnimate (locoMotion s)
-    when anyTransMitZones $ liftIO $ ExoLang.preAnimate (transMit s)
-    traverseWithKey (renderZoneAnimation t1) ns
-    when anyPunctualZones $ postAnimationFrame punctual
-    when anyLocoMotionZones $ liftIO $ ExoLang.postAnimate (locoMotion s)
-    when anyTransMitZones $ liftIO $ ExoLang.postAnimate (transMit s)
+preRenderRenderPostRender :: Bool -> R ()
+preRenderRenderPostRender canDraw = do
+  -- get the set of active renderers
+  defs <- gets baseDefinitions
+  let activeRenderers = ???
+  -- preRender
+  tNow <- gets frameSystemTime
+  tPrev <- gets prevDrawTime
+  liftIO $ traverse_ (\r -> (preRender r) canDraw tNow tPrev) activeRenderers
+  -- render for each active zone
+  traverseWithKey_ (renderZone canDraw) defs
+  -- postRender
+  liftIO $ traverse_ (\r -> (postRender r) canDraw tNow tPrev) activeRenderers
+  -- if canDraw, update record of previous drawing times
+  when canDraw $ modify' $ \s -> s { prevDrawTime = tNow }
+      
+
+{-
     t2 <- liftIO $ getCurrentTime
     s <- get
     let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 wta)
@@ -306,7 +299,7 @@ renderAnimation = do
         }
       }
   microRenderInAnimationFrame
-
+-}
 
 defineZone :: Int -> Definition -> R ()
 defineZone z d@(TidalStructure x) = do
@@ -399,14 +392,14 @@ renderZoneBase _ _ _ = pure ()
 
 renderZoneGeneric :: Bool -> Int -> Renderer -> R ()
 renderZoneGeneric canDraw z r = do
-  gets tempoCache >>= (liftIO . setTempo r)
+  gets tempo >>= (liftIO . setTempo r)
   gets valueMap >>= (liftIO . setValueMap r)
-  tNow <- gets wakeTimeAnimation
-  tPrevDraw <- gets prevDrawTime
-  wStart <- gets renderStart
-  wEnd <- gets renderEnd
+  tNow <- gets systemTime
+  tPrev <- gets prevDrawTime
+  wStart <- gets windowStart
+  wEnd <- gets windowEnd
   liftIO $ preRender r canDraw
-  ns <- liftIO $ renderZone mt tNow wStart wEnd canDraw z
+  ns <- liftIO $ renderZone r tNow tPrev wStart wEnd canDraw z
   pushNoteEvents ns
 
 renderControlPattern :: Int -> R () -- used by Tidal structure editor, and Sequencer
@@ -419,9 +412,9 @@ renderControlPattern z = do
     let vMap = valueMap s
     case controlPattern of
       Just controlPattern' -> do
-        let lt = renderStart s
-        let rp = renderPeriod s
-        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (tempoCache s) controlPattern')
+        let lt = windowStart s
+        let rp = windowPeriod s
+        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (tempo s) controlPattern')
           `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
         pushNoteEvents $ tidalEventToNoteEvent <$> ns
       Nothing -> pure ()
@@ -448,27 +441,25 @@ forkRenderThreads rEnv s cineCer0Div pCanvas lCanvas hCanvas = do
   pIn <- getPunctualInput $ mainBus rEnv
   pOut <- getMainBusInput $ mainBus rEnv
   irs <- initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
-  rsM <- newMVar irs
-  void $ forkIO $ mainRenderThread rEnv rsM
-  void $ forkIO $ animationThread rEnv rsM
+  rsRef <- newIORef irs
+  void $ forkIO $ mainThread rEnv rsRef
+  void $ forkIO $ animationThread rEnv rsRef
 
-mainRenderThread :: RenderEnvironment -> MVar RenderState -> IO ()
-mainRenderThread rEnv rsM = do
-  rs <- takeMVar rsM
+mainThread :: RenderEnvironment -> IORef RenderState -> IO ()
+mainThread rEnv rsRef = do
+  rs <- readIORef rsRef
   rs' <- runR Estuary.Render.RenderEngine.render rEnv rs
-  putMVar rsM rs'
-  swapMVar (renderInfo rEnv) (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere
-  -- _ <- runR sleepIfNecessary rEnv rs'
+  writeIORef rsRef rs'
+  swapMVar (renderInfo rEnv) (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere TODO: replace MVar with IORef, allow renderInfo to be updated on the spot so this operation is unnecessary
   threadDelay mainRenderThreadSleepTime
-  mainRenderThread rEnv rsM
+  mainRenderThread rEnv rsRef
 
-animationThread :: RenderEnvironment -> MVar RenderState -> IO ()
-animationThread rEnv rsM = void $ inAnimationFrame ContinueAsync $ \_ -> do
-  rs <- readMVar rsM
+animationThread :: RenderEnvironment -> IORef RenderState -> IO ()
+animationThread rEnv rsRef = void $ inAnimationFrame ContinueAsync $ \_ -> do
   animOn <- Settings.canvasOn <$> (readIORef $ _settings rEnv)
   when animOn $ do
-    rs' <- takeMVar rsM
-    rs'' <- runR renderAnimation rEnv rs'
-    putMVar rsM rs''
-  animationThread rEnv rsM
+    rs <- readIORef rsRef
+    rs' <- runR renderAnimation rEnv rs
+    writeIORef rsRef rs'
+  animationThread rEnv rsRef
 
