@@ -73,7 +73,7 @@ initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLDivElement -> HTMLCanvas
 initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio = do
   let iTempo = Tempo { freq = 0.5, time = t0System, count = 0 }
   exoLangTest' <- exoLangRenderer "exolangtest" lCanvas "./exolang.js"
-  locoMotion' <- exoLangRenderer "LocoMotion" lCanvas "https://dktr0.github.io/LocoMotion/src/webpack-module.js"
+  locoMotion' <- exoLangRenderer "LocoMotion" lCanvas "https://dktr0.github.io/LocoMotion/locoMotion.js"
   transMit' <- exoLangRenderer "TransMit" lCanvas "https://jac307.github.io/TransMit/exolang.js"
   miniTidal' <- MiniTidal.miniTidal iTempo
   punctual' <- Punctual.punctual pCanvas iTempo
@@ -83,7 +83,7 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
   cineCer0' <- CineCer0.cineCer0 cineCer0Div iTempo
   hydra' <- Hydra.hydra hCanvas
   timeNot' <- TimeNot.timeNot iTempo
-  return $ RenderState {
+  pure $ RenderState {
     wakeTimeSystem = t0System,
     wakeTimeAudio = t0Audio,
     renderStart = t0System,
