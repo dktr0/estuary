@@ -80,7 +80,7 @@ data RenderState = RenderState {
 initialRenderState :: MusicW.Node -> MusicW.Node -> HTMLCanvasElement -> GLContext -> HTMLCanvasElement -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = do
   pWebGL <- Punctual.newPunctualWebGL (Just pIn) (Just pOut) Punctual.HD 1.0 hCanvas glCtx
-  lm <- exoLang lCanvas "https://dktr0.github.io/LocoMotion/src/webpack-module.js"
+  lm <- exoLang lCanvas "https://dktr0.github.io/LocoMotion/locoMotion.js"
   elt <- exoLang lCanvas "./exolang.js"
   tm <- exoLang lCanvas "https://jac307.github.io/TransMit/exolang.js"
   return $ RenderState {
