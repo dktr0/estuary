@@ -48,6 +48,7 @@ data RenderState = RenderState {
 --  tidalEvents :: ![(UTCTime,Tidal.ValueMap)],
   webDirtEvents :: ![JSVal], -- deprecated/temporary
   baseNotations :: !(IntMap TextNotation),
+  baseDefinitions :: !(IntMap Definition),
   punctuals :: !(IntMap Punctual.PunctualW),
   punctualWebGL :: Punctual.PunctualWebGL,
   cineCer0Specs :: !(IntMap CineCer0.Spec),
@@ -95,6 +96,7 @@ initialRenderState pIn pOut cvsElement glCtx hCanvas lCanvas t0System t0Audio = 
 --    tidalEvents = [],
     webDirtEvents = [],
     baseNotations = empty,
+    baseDefinitions = empty,
     punctuals = empty,
     punctualWebGL = pWebGL,
     cineCer0Specs = empty,

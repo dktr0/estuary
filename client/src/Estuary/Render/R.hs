@@ -106,8 +106,20 @@ clearZoneError z = do
 setBaseNotation :: Int -> TextNotation -> R ()
 setBaseNotation z n = modify' $ \x -> x { baseNotations = IntMap.insert z n $ baseNotations x}
 
+clearBaseNotation :: Int -> R ()
+clearBaseNotation z = modify' $ \x -> x { baseNotations = IntMap.delete z $ baseNotations x}
+
+setBaseDefinition :: Int -> Definition -> R ()
+setBaseDefinition z n = modify' $ \x -> x { baseDefinitions = IntMap.insert z n $ baseDefinitions x}
+
+clearBaseDefinition :: Int -> R ()
+clearBaseDefinition z = modify' $ \x -> x { baseDefinitions = IntMap.delete z $ baseDefinitions x}
+
 setEvaluationTime :: Int -> UTCTime -> R ()
 setEvaluationTime z n = modify' $ \x -> x { evaluationTimes = IntMap.insert z n $ evaluationTimes x}
+
+clearEvaluationTime :: Int -> R ()
+clearEvaluationTime z = modify' $ \x -> x { evaluationTimes = IntMap.delete z $ evaluationTimes x}
 
 clearParamPattern :: Int -> R ()
 clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }

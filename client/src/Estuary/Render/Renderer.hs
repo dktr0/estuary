@@ -258,69 +258,84 @@ renderRenderOp _ (WriteTempo t) = do
 
 renderRenderOp _ (WriteZone z x) = do
   let x' = definitionForRendering x
-  maybeClearChangedZone z x'
-  renderZoneChanged z x'
   modify' $ \s -> s { cachedDefs = insert z x' (cachedDefs s) }
+  renderZoneChanged z x'
 
 renderRenderOp _ ResetZones = do
-  gets cachedDefs >>= traverseWithKey clearZone
+  gets cachedDefs >>= traverseWithKey clearZone -- TODO: this is not quite right because of JSoLangs...
   modify' $ \s -> s { cachedDefs = empty }
 
 renderZones :: R ()
 renderZones = gets cachedDefs >>= traverseWithKey renderZoneAlways >> return ()
 
 
-maybeClearChangedZone :: Int -> Definition -> R ()
-maybeClearChangedZone z newDef = do
+maybeClearZone :: Int -> (TextNotation,Text,UTCTime) -> R ()
+maybeClearZone z (newNotation,newTxt,_) = do
+  mOldDef <- gets (IntMap.lookup z . baseDefinitions)
+  case mOldDef of
+    Nothing -> liftIO $ putStrLn "maybeClearZone - no previous definition" -- pure () -- no previous definition so nothing to clear
+    Just oldDef -> do
+      x <- defsSameRenderer z oldDef newNotation newTxt
+      case x of
+        True -> liftIO $ putStrLn $ "maybeClearZone - defs have same renderer, " ++ show oldDef ++ ", " ++ show newNotation  -- pure () -- definitions have same renderer so nothing to clear
+        False -> do
+          liftIO $ putStrLn $ "maybeClearZone - clearing zone: " ++ show oldDef
+          clearZone z oldDef
+          clearBaseDefinition z
+          clearBaseNotation z
+          clearEvaluationTime z
+                    
+definitelyClearZone :: Int -> R ()
+definitelyClearZone z = do
+  mOldDef <- gets (IntMap.lookup z . baseDefinitions)
+  case mOldDef of
+    Nothing -> pure () -- no previous definition so nothing to clear
+    Just oldDef -> clearZone z oldDef
+
+defsSameRenderer :: Int -> Definition -> TextNotation -> Text -> R Bool
+defsSameRenderer _ (Sequence _) _ _ = pure False
+defsSameRenderer _ (TidalStructure _) _ _ = pure False
+defsSameRenderer z (TextProgram x) UnspecifiedNotation newTxt = do
   mOldNotation <- gets (IntMap.lookup z . baseNotations)
-  case mOldNotation of 
-    Nothing -> liftIO $ putStrLn "maybeClearChangedZone: no previous base notation" -- return ()
+  case mOldNotation of
+    Nothing -> pure False
     Just oldNotation -> do
-      case defsSameRender oldNotation newDef of
-        True -> liftIO $ putStrLn "maybeClearChangedZone: defs have same renderer" -- return ()
-        False -> clearZone z oldDef
-        
-defsSameRender :: Definition -> Definition -> Bool
-defsSameRender (Sequence _) (Sequence _) = True
-defsSameRender (TidalStructure _) (TidalStructure _) = True
-defsSameRender (TextProgram x) (TextProgram y) = textProgramsSameRender (forRendering x) (forRendering y)
-defsSameRender _ _ = False
+      ns <- (Map.keys . jsoLangs) <$> get
+      case determineTextNotation newTxt ns of
+        Left err -> pure False 
+        Right (_,newNotation) -> pure $ oldNotation == newNotation 
+defsSameRenderer z (TextProgram x) newNotation _ = do
+  mOldNotation <- gets (IntMap.lookup z . baseNotations)
+  case mOldNotation of
+    Nothing -> pure False
+    Just oldNotation -> pure $ oldNotation == newNotation
+defsSameRenderer _ _ _ _ = pure False
 
-textProgramsSameRender :: (TextNotation,Text,UTCTime) -> (TextNotation,Text,UTCTime) -> Bool
-textProgramsSameRender x y = determineBaseNotation x == determineBaseNotation y
-
-determineBaseNotation :: (TextNotation,Text,UTCTime) -> TextNotation
-determineBaseNotation (TidalTextNotation MiniTidal,_,_) = TidalTextNotation MiniTidal
-determineBaseNotation (Punctual,_,_) = Punctual
-determineBaseNotation (CineCer0,_,_) = CineCer0
-determineBaseNotation (Hydra,_,_) = Hydra
-determineBaseNotation (LocoMotion,_,_) = LocoMotion
-determineBaseNotation (TransMit,_,_) = TransMit
-determineBaseNotation (Seis8s,_,_) = Seis8s
-determineBaseNotation (TimeNot,_,_) = TimeNot
-determineBaseNotation (Punctual,_,_) = Punctual
-determineBaseNotation (JSoLang x,_,_) = JSoLang x
-determineBaseNotation (EphemeralNotation x,txt,_) = ???
-determineBaseNotation (UnspecifiedNotation,_,_) = ???
+textProgramsSameRenderer :: (TextNotation,Text,UTCTime) -> TextNotation -> Bool
+textProgramsSameRenderer (x,_,_) y = x==y
 
 clearZone :: Int -> Definition -> R ()
 clearZone z (TidalStructure _) = clearParamPattern z
-clearZone z (TextProgram x) = clearTextProgram z $ forRendering x
+clearZone z (TextProgram x) = do
+  mbn <- gets (IntMap.lookup z . baseNotations)
+  case mbn of
+    Just bn -> clearTextProgram z bn
+    Nothing -> pure () 
 clearZone z (Sequence _) = clearParamPattern z
 clearZone _ _ = return ()
 
-clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
-clearTextProgram z (TidalTextNotation MiniTidal,_,_) = do
+clearTextProgram :: Int -> TextNotation -> R ()
+clearTextProgram z (TidalTextNotation MiniTidal) = do
   liftIO $ putStrLn "clearTextProgram MiniTidal..."
   (clearZone' miniTidal) z
-clearTextProgram z (Punctual,_,_) = (clearZone' punctual) z
-clearTextProgram z (CineCer0,_,_) = (clearZone' cineCer0) z
-clearTextProgram z (Hydra,_,_) = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
-clearTextProgram z (LocoMotion,_,_) = do
+clearTextProgram z Punctual = (clearZone' punctual) z
+clearTextProgram z CineCer0 = (clearZone' cineCer0) z
+clearTextProgram z Hydra = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
+clearTextProgram z LocoMotion = do
   liftIO $ putStrLn "clearTextProgram LocoMotion..."
   s <- get
   (clearZone' $ exoLangToRenderer LocoMotion $ locoMotion s) z
-clearTextProgram z (TransMit,_,_) = do
+clearTextProgram z TransMit = do
   s <- get
   (clearZone' $ exoLangToRenderer TransMit $ transMit s) z
 clearTextProgram _ _ = return ()
@@ -390,13 +405,20 @@ renderHydra tNow z = do
     Nothing -> return ()
 
 renderZoneChanged :: Int -> Definition -> R ()
-renderZoneChanged z (TidalStructure x) = do
+renderZoneChanged z d@(TidalStructure x) = do
+  definitelyClearZone z
   let newParamPattern = toParamPattern x
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
-renderZoneChanged z (TextProgram x) = renderTextProgramChanged z $ forRendering x
-renderZoneChanged z (Sequence xs) = do
+  setBaseDefinition z d
+renderZoneChanged z d@(Sequence xs) = do
+  definitelyClearZone z
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
+  setBaseDefinition z d
+renderZoneChanged z d@(TextProgram x) = do
+  maybeClearZone z $ forRendering x
+  renderTextProgramChanged z $ forRendering x
+  setBaseDefinition z d
 renderZoneChanged _ _ = return ()
 
 renderZoneAlways :: Int -> Definition -> R ()
@@ -411,19 +433,17 @@ renderTextProgramChanged :: Int -> TextProgram -> R ()
 renderTextProgramChanged z (UnspecifiedNotation,x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
   case determineTextNotation x ns of
-    Left err -> do
-      setZoneError z (T.pack $ show err)
-      setBaseNotation z UnspecifiedNotation
+    Left err -> setZoneError z (T.pack $ show err)
     Right (x',n) -> do
       case n of
         UnspecifiedNotation -> do
           case T.filter (\c -> not (isControl c) && not (isSpace c)) x' of
-            "" -> do -- notation is unspecified but
+            "" -> do -- notation is unspecified and text is empty
               clearZoneError z
-              setBaseNotation z UnspecifiedNotation
-            _ -> do
-              setZoneError z "no base notation specified"
-              setBaseNotation z UnspecifiedNotation
+              clearBaseNotation z
+              clearBaseDefinition z
+              clearEvaluationTime z
+            _ -> setZoneError z "no base notation specified"
         _-> renderTextProgramChanged z (n,x',eTime)
 
 renderTextProgramChanged z (TidalTextNotation _,x,eTime) = (parseZone miniTidal) z x eTime
