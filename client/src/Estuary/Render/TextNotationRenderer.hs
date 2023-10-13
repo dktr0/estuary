@@ -11,6 +11,7 @@ import Data.Text
 import Data.Time
 import Data.Time.Clock.POSIX
 import Control.Monad.State.Strict
+import Control.Exception hiding (evaluate)
 
 import Estuary.Types.NoteEvent
 import Estuary.Render.R
@@ -77,7 +78,15 @@ scheduleWebDirtEvents' exoLang z = do
   liftIO $ render exoLang z wStart wEnd
 
 clearZone'' :: ExoLang -> Int -> R ()
-clearZone'' exoLang z = liftIO $ clearZone exoLang z
+clearZone'' exoLang z = do
+  x <- liftIO $ try $ clearZone exoLang z
+  case x of
+    Right () -> pure ()
+    Left exception -> do
+      let msg = "Estuary: exception in clearZone'': " ++ show (exception :: SomeException)
+      liftIO $ putStrLn msg
+      pure ()
+      
 
 preAnimationFrame' :: ExoLang -> R ()
 preAnimationFrame' exoLang = liftIO $ preAnimate exoLang

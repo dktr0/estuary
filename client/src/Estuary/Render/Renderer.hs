@@ -273,13 +273,12 @@ maybeClearZone :: Int -> (TextNotation,Text,UTCTime) -> R ()
 maybeClearZone z (newNotation,newTxt,_) = do
   mOldDef <- gets (IntMap.lookup z . baseDefinitions)
   case mOldDef of
-    Nothing -> liftIO $ putStrLn "maybeClearZone - no previous definition" -- pure () -- no previous definition so nothing to clear
+    Nothing -> pure () -- no previous definition so nothing to clear
     Just oldDef -> do
       x <- defsSameRenderer z oldDef newNotation newTxt
       case x of
-        True -> liftIO $ putStrLn $ "maybeClearZone - defs have same renderer, " ++ show oldDef ++ ", " ++ show newNotation  -- pure () -- definitions have same renderer so nothing to clear
+        True -> pure () -- definitions have same renderer so nothing to clear
         False -> do
-          liftIO $ putStrLn $ "maybeClearZone - clearing zone: " ++ show oldDef
           clearZone z oldDef
           clearBaseDefinition z
           clearBaseNotation z
@@ -325,14 +324,11 @@ clearZone z (Sequence _) = clearParamPattern z
 clearZone _ _ = return ()
 
 clearTextProgram :: Int -> TextNotation -> R ()
-clearTextProgram z (TidalTextNotation MiniTidal) = do
-  liftIO $ putStrLn "clearTextProgram MiniTidal..."
-  (clearZone' miniTidal) z
+clearTextProgram z (TidalTextNotation MiniTidal) = (clearZone' miniTidal) z
 clearTextProgram z Punctual = (clearZone' punctual) z
 clearTextProgram z CineCer0 = (clearZone' cineCer0) z
 clearTextProgram z Hydra = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
 clearTextProgram z LocoMotion = do
-  liftIO $ putStrLn "clearTextProgram LocoMotion..."
   s <- get
   (clearZone' $ exoLangToRenderer LocoMotion $ locoMotion s) z
 clearTextProgram z TransMit = do
