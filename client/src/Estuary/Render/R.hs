@@ -11,10 +11,12 @@ import Control.Exception (evaluate,catch,SomeException,try)
 import Control.Concurrent.MVar
 import Data.IntMap.Strict as IntMap
 import Data.Map.Strict as Map
+import Data.List (nub)
 import Data.IORef
 import Sound.MusicW
 import TextShow
 import GHCJS.Types (JSVal)
+import Data.Witherable
 
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
@@ -38,6 +40,7 @@ import Estuary.Render.WebSerial as WebSerial
 import Estuary.Render.WebDirt as WebDirt
 import Estuary.Types.RenderInfo
 import Estuary.Render.RenderEnvironment
+import Estuary.Render.Renderer
 
 putRenderOps :: MonadIO m => RenderEnvironment -> [RenderOp] -> m ()
 putRenderOps re x = liftIO $ do
@@ -101,6 +104,35 @@ clearBaseDefinition z = modify' $ \s -> s { baseDefinitions = IntMap.delete z $ 
 
 getBaseDefinition :: Int -> R (Maybe Definition)
 getBaseDefinition z = gets (IntMap.lookup z . baseDefinitions)
+
+setBaseRenderer :: Int -> Text -> R ()
+setBaseRenderer z name = modify' $ \s -> s { activeRenderersMap = IntMap.insert z name $ activeRenderersMap s }
+
+clearBaseRenderer :: Int -> R ()
+clearBaseRenderer z = modify' $ \s -> s { activeRenderersMap = IntMap.delete z $ activeRenderersMap s }
+
+updateActiveRenderers :: R ()
+updateActiveRenderers = do
+  s <- get
+  let names = nub $ IntMap.elems $ activeRenderersMap s -- [Text]
+  let rs = catMaybes $ fmap (\n -> Map.lookup n $ allRenderers s) names
+  modify' $ \s -> s { activeRenderers = rs  }
+
+getActiveRenderers :: R [Renderer]
+getActiveRenderers = gets activeRenderers
+
+getActiveRenderer :: Int -> R (Maybe Renderer)
+getActiveRenderer z = do
+  brs <- gets activeRenderersMap
+  case lookup z brs of
+    Nothing -> pure Nothing
+    Just name -> do
+      allRs <- gets allRenderers
+      case Map.lookup name allRs o
+        Nothing -> pure Nothing
+        Just r ->  pure (Just r)
+  
+
 
 clearParamPattern :: Int -> R ()
 clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }

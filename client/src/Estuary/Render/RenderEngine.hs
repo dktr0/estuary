@@ -245,31 +245,22 @@ textProgramsSameRender (x,_,_) (y,_,_) = x==y
 
 clearZone :: Int -> Definition -> R ()
 clearZone z (TidalStructure _) = clearParamPattern z
-clearZone z (TextProgram x) = clearTextProgram z $ forRendering x
+clearZone z (TextProgram x) = clearTextProgramGeneric z
 clearZone z (Sequence _) = clearParamPattern z
 clearZone _ _ = return ()
 
--- TODO: how is clearZone handled for JSoLangs????
-clearTextProgram :: Int -> (TextNotation,Text,UTCTime) -> R ()
-clearTextProgram z ("MiniTidal",_,_) = gets miniTidal >>= clearTextProgramGeneric z
-clearTextProgram z ("Punctual",_,_) = gets punctual >>= clearTextProgramGeneric z
-clearTextProgram z ("CineCer0",_,_) = gets cineCer0 >>= clearTextProgramGeneric z
-clearTextProgram z ("Seis8s",_,_) = gets seis8s >>= clearTextProgramGeneric z
-clearTextProgram z ("LocoMotion",_,_) = gets locoMotion >>= clearTextProgramGeneric z
-clearTextProgram z ("TransMit",_,_) = gets transMit >>= clearTextProgramGeneric z
-clearTextProgram z ("Hydra",_,_) = gets hydra >>= clearTextProgramGeneric z
-clearTextProgram z ("TimeNot",_,_) = gets timeNot >>= clearTextProgramGeneric z
-clearTextProgram _ _ = return ()
-
-clearTextProgramGeneric :: Int -> Renderer -> R ()
-clearTextProgramGeneric z r = liftIO $ clear r z
+clearTextProgramGeneric :: Int -> R ()
+clearTextProgramGeneric z = do
+  mr <- getActiveRenderer z
+  case mr of
+    Nothing -> pure ()
+    Just r -> clear r z
+  clearActiveRenderer z
 
 
 preRenderRenderPostRender :: Bool -> R ()
 preRenderRenderPostRender canDraw = do
-  -- get the set of active renderers
-  defs <- gets baseDefinitions
-  let activeRenderers = ???
+  rs <- getActiveRenderers
   -- preRender
   tNow <- gets frameSystemTime
   tPrev <- gets prevDrawTime
@@ -310,19 +301,19 @@ defineZone z d@(Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
   setBaseDefinition z d
-defineZone z (TextProgram x) = defineZoneTextProgram z $ forRendering x
+defineZone z d@(TextProgram x) = defineZoneTextProgram z d $ forRendering x
 defineZone _ _ = return ()
 
-defineZoneTextProgram :: Int -> TextProgram -> R ()
-defineZoneTextProgram z d@("MiniTidal",_,_) = gets miniTidal >>= defineZoneGeneric z d
-defineZoneTextProgram z d@("Punctual",_,_) = gets punctual >>= defineZoneGeneric z d
-defineZoneTextProgram z d@("CineCer0",_,_) = gets cineCer0 >>= defineZoneGeneric z d
-defineZoneTextProgram z d@("LocoMotion",_,_) = gets locoMotion >>= defineZoneGeneric z d
-defineZoneTextProgram z d@("TransMit",_,_) = gets transMit >>= defineZoneGeneric z d
-defineZoneTextProgram z d@("Seis8s",_,_) = gets seis8s >>= defineZoneGeneric z d
-defineZoneTextProgram z d@("Hydra",_,_) = gets hydra >>= defineZoneGeneric z d
-defineZoneTextProgram z d@("TimeNot",_,_) = gets timeNot >>= defineZoneGeneric z d 
-defineZoneTextProgram z ("",x,eTime) = do
+defineZoneTextProgram :: Int -> Definition -> (TextNotation,Text,UTCTime) -> R ()
+defineZoneTextProgram z d ("MiniTidal",_,_) = defineZoneGeneric z d "MiniTidal"
+defineZoneTextProgram z d ("Punctual",_,_) = defineZoneGeneric z d "Punctual"
+defineZoneTextProgram z d ("CineCer0",_,_) = defineZoneGeneric z d "CineCer0"
+defineZoneTextProgram z d ("LocoMotion",_,_) = defineZoneGeneric z d "LocoMotion"
+defineZoneTextProgram z d ("TransMit",_,_) = defineZoneGeneric z d "TransMit"
+defineZoneTextProgram z d ("Seis8s",_,_) = defineZoneGeneric z d "Seis8s"
+defineZoneTextProgram z d ("Hydra",_,_) = defineZoneGeneric z d "Hydra"
+defineZoneTextProgram z d ("TimeNot",_,_) = defineZoneGeneric z d  "TimeNot"
+defineZoneTextProgram z d ("",x,eTime) = do
   ns <- (Map.keys . jsoLangs) <$> get
   case determineTextNotation x ns of
     Left err -> setZoneError z (T.pack $ show err)
@@ -334,8 +325,8 @@ defineZoneTextProgram z ("",x,eTime) = do
               clearZoneError z
               clearBaseDefinition z
             _ -> setZoneError z "no base notation specified"
-        _ -> defineZoneTextProgram z (n,x',eTime)
-defineZoneTextProgram z d@("JSoLang",y,eTime) = do
+        _ -> defineZoneTextProgram z d (n,x',eTime)
+defineZoneTextProgram z d ("JSoLang",y,eTime) = do
   let x = "JSoLang'" -- TODO: replace this placeholder which hard codes JSoLangs to produce a notation called JSoLang'
   parseResult <- liftIO $ JSoLang.define y
   case parseResult of
@@ -345,7 +336,7 @@ defineZoneTextProgram z d@("JSoLang",y,eTime) = do
       modify' $ \xx -> xx { jsoLangs = Map.insert x j $ jsoLangs xx }
       liftIO $ T.putStrLn $ "defined JSoLang " <> x
     Left e -> setZoneError z (T.pack $ show e)
-defineZoneTextProgram z (x,y,eTime) = do
+defineZoneTextProgram z d (x,y,eTime) = do
   maybeJSoLang <- (Map.lookup x . jsoLangs) <$> get
   case maybeJSoLang of
     Just j -> do
@@ -354,18 +345,26 @@ defineZoneTextProgram z (x,y,eTime) = do
         Right x' -> do
           liftIO $ T.putStrLn $ "result of parsing " <> x <> ":"
           liftIO $ T.putStrLn x'
-          defineZoneTextProgram z ("",x',eTime)
+          defineZoneTextProgram z d ("",x',eTime)
         Left e -> setZoneError z e
     Nothing -> setZoneError z $ "renderTextProgramChanged: no language called " <> x <> " exists"
 
-defineZoneGeneric :: Int -> Definition -> Renderer -> R ()
-defineZoneGeneric z d r = do
-  result <- liftIO $ (define r) z d
-  case r of 
-    Left err -> setZoneError z err
-    Right _ -> do
-      setBaseDefinition z d
-      clearZoneError z
+defineZoneGeneric :: Int -> Definition -> Text -> R ()
+defineZoneGeneric z d rName = do
+  rs <- gets allRenderers
+  case Map.lookup rName rs of
+    Nothing -> do
+      let err = "internal error in defineZoneGeneric: no renderer named " <> rName
+      T.putStrLn err
+      setZoneError z err
+    Just r -> do
+      result <- liftIO $ (define r) z d
+      case result of 
+        Left err -> setZoneError z err
+        Right _ -> do
+          setBaseDefinition z d
+          setBaseRenderer z r
+          clearZoneError z
 
 
 renderZone :: Bool -> Int -> Definition -> R ()

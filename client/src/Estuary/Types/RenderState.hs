@@ -62,14 +62,9 @@ data RenderState = RenderState {
   info :: !RenderInfo,
   
   jsoLangs :: Map.Map Text JSoLang,
-  exoLangTest :: Renderer,
-  locoMotion :: Renderer,
-  transMit :: Renderer,
-  miniTidal :: Renderer,
-  punctual :: Renderer,
-  cineCer0 :: Renderer,
-  hydra :: Renderer,
-  timeNot :: Renderer
+  allRenderers :: !(Map.Map Text Renderer),
+  activeRenderersMap :: !(IntMap Text),
+  activeRenderers :: ![Renderer]
   }
 
 
@@ -112,12 +107,16 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
     info = emptyRenderInfo,
     
     jsoLangs = Map.empty,
-    locoMotion = locoMotion',
-    exoLangTest = exoLangTest',
-    transMit = transMit',
-    miniTidal = miniTidal',
-    punctual = punctual',
-    cineCer0 = cineCer0',
-    hydra = hydra',
-    timeNot = timeNot'
+    allRenderers = Map.fromList [
+      ("ExoLangTest",exoLangTest'),
+      ("LocoMotion",locoMotion'),
+      ("TransMit",transMit'),
+      ("MiniTidal",miniTidal'),
+      ("Punctual",punctual'),
+      ("CineCer0",cineCer0'),
+      ("Hydra",hydra'),
+      ("TimeNot",timeNot')
+      ],
+    activeRenderersMap = empty,
+    activeRenderers = []
     }
