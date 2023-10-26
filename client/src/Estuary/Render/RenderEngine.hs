@@ -33,7 +33,7 @@ import Data.Witherable
 import Data.Char
 import Data.IORef
 
-import Sound.MusicW.AudioContext
+import Sound.MusicW.AudioContext (liftAudioIO)
 
 import qualified Estuary.Languages.MiniTidal as MiniTidal
 
@@ -101,7 +101,8 @@ flushEvents = do
   -- maybe send events to WebDirt (note: WebDirt modifies underlying JSVals)
   wdOn <- webDirtOn   
   unsafe <- unsafeModeOn
-  when wdOn $ liftIO $ mapM_ (WebDirt.playSample (webDirt rEnv) (resources rEnv) unsafe clockDiff) ns
+  let cDiff = (systemTime s, audioTime s)
+  when wdOn $ liftIO $ mapM_ (WebDirt.playSample (webDirt rEnv) (resources rEnv) unsafe cDiff) ns
   modify' $ \x -> x { noteEvents = [] } -- clear the queue of all note events
   return ()
 

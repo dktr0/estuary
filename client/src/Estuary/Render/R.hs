@@ -124,11 +124,11 @@ getActiveRenderers = gets activeRenderers
 getActiveRenderer :: Int -> R (Maybe Renderer)
 getActiveRenderer z = do
   brs <- gets activeRenderersMap
-  case lookup z brs of
+  case IntMap.lookup z brs of
     Nothing -> pure Nothing
     Just name -> do
       allRs <- gets allRenderers
-      case Map.lookup name allRs o
+      case Map.lookup name allRs of
         Nothing -> pure Nothing
         Just r ->  pure (Just r)
   
