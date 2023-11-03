@@ -65,7 +65,6 @@ library
       Estuary.Types.NoteEvent
       Estuary.Types.ParamPatternable
       Estuary.Types.RenderInfo
-      Estuary.Types.RenderState
       Estuary.Types.Term
       Estuary.Types.Terminal
       Estuary.Types.Tutorial
@@ -112,11 +111,9 @@ library
       Estuary.Widgets.TapTempo
       Estuary.Languages.CineCer0
       Estuary.Languages.MiniTidal
-      Estuary.Languages.Punctual
       Estuary.Languages.TimeNot
       Estuary.Render.ForeignTempo
       Estuary.Render.RenderOp
-      Estuary.Render.TextNotationRenderer
       Estuary.Types.ServerInfo
       Estuary.Widgets.Chat
       Estuary.Widgets.DataVisualisers

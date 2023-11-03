@@ -13,8 +13,6 @@ import Control.DeepSeq
 import Data.Maybe
 
 import Estuary.Render.R
-import Estuary.Render.TextNotationRenderer
-import Estuary.Types.RenderState
 import Estuary.Types.RenderInfo
 import Estuary.Types.TextNotation
 import Estuary.Render.MainBus

@@ -35,7 +35,6 @@ import Data.IORef
 
 import Sound.MusicW.AudioContext
 import qualified Sound.Seis8s.Parser as Seis8s
-import Estuary.Languages.Punctual
 import Estuary.Languages.CineCer0
 import Estuary.Languages.MiniTidal
 import Estuary.Languages.TimeNot
@@ -58,14 +57,12 @@ import qualified Estuary.Render.WebDirt as WebDirt
 import qualified Estuary.Render.SuperDirt as SuperDirt
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
-import Estuary.Types.RenderState hiding (LocoMotion)
 import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
 import Estuary.Render.MainBus
-import Estuary.Render.R
+import Estuary.Render.R hiding (LocoMotion)
 import Estuary.Render.RenderEnvironment
-import Estuary.Render.TextNotationRenderer
 import Estuary.Render.RenderOp
 import qualified Estuary.Client.Settings as Settings
 import Estuary.Render.WebSerial as WebSerial
@@ -325,7 +322,9 @@ clearZone _ _ = return ()
 
 clearTextProgram :: Int -> TextNotation -> R ()
 clearTextProgram z (TidalTextNotation MiniTidal) = (clearZone' miniTidal) z
-clearTextProgram z Punctual = (clearZone' punctual) z
+clearTextProgram z Punctual = do
+  s <- get
+  (clearZone' (punctual s)) z
 clearTextProgram z CineCer0 = (clearZone' cineCer0) z
 clearTextProgram z Hydra = modify' $ \x -> x { hydras = IntMap.delete z $ hydras x }
 clearTextProgram z LocoMotion = do
@@ -351,11 +350,11 @@ renderAnimation = do
     let anyPunctualZones = elem Punctual ns
     let anyLocoMotionZones = elem LocoMotion ns
     let anyTransMitZones = elem TransMit ns
-    when anyPunctualZones $ preAnimationFrame punctual
+    when anyPunctualZones $ preAnimationFrame (punctual s)
     when anyLocoMotionZones $ liftIO $ ExoLang.preAnimate (locoMotion s)
     when anyTransMitZones $ liftIO $ ExoLang.preAnimate (transMit s)
     traverseWithKey (renderZoneAnimation t1) ns
-    when anyPunctualZones $ postAnimationFrame punctual
+    when anyPunctualZones $ postAnimationFrame (punctual s)
     when anyLocoMotionZones $ liftIO $ ExoLang.postAnimate (locoMotion s)
     when anyTransMitZones $ liftIO $ ExoLang.postAnimate (transMit s)
     t2 <- liftIO $ getCurrentTime
@@ -379,7 +378,9 @@ renderZoneAnimation :: UTCTime -> Int -> TextNotation -> R ()
 renderZoneAnimation tNow z n = renderZoneAnimationTextProgram tNow z n
 
 renderZoneAnimationTextProgram :: UTCTime -> Int -> TextNotation -> R ()
-renderZoneAnimationTextProgram tNow z Punctual = (zoneAnimationFrame punctual) tNow z
+renderZoneAnimationTextProgram tNow z Punctual = do
+  s <- get
+  (zoneAnimationFrame (punctual s)) tNow z
 renderZoneAnimationTextProgram tNow z CineCer0 = (zoneAnimationFrame cineCer0) tNow z
 renderZoneAnimationTextProgram tNow z Hydra = renderHydra tNow z
 renderZoneAnimationTextProgram tNow z LocoMotion = do
@@ -443,7 +444,9 @@ renderTextProgramChanged z (UnspecifiedNotation,x,eTime) = do
         _-> renderTextProgramChanged z (n,x',eTime)
 
 renderTextProgramChanged z (TidalTextNotation _,x,eTime) = (parseZone miniTidal) z x eTime
-renderTextProgramChanged z (Punctual,x,eTime) = (parseZone punctual) z x eTime
+renderTextProgramChanged z (Punctual,x,eTime) = do
+  s <- get
+  (parseZone (punctual s)) z x eTime
 renderTextProgramChanged z (CineCer0,x,eTime) = (parseZone cineCer0) z x eTime
 renderTextProgramChanged z (Hydra,x,_) = parseHydra z x
 renderTextProgramChanged z (LocoMotion,x,eTime) = do
