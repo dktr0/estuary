@@ -292,6 +292,13 @@ _parseZonePunctual :: Punctual.Punctual -> Int -> Text -> UTCTime -> R ()
 _parseZonePunctual p z t eTime = do
   s <- get
   liftIO $ Punctual.setTempo p (tempoCache s)
+  rEnv <- ask
+  pIn <- liftIO $ getPunctualInput $ mainBus rEnv
+  pOut <- liftIO $ getMainBusInput $ mainBus rEnv
+  nchnls <- liftIO $ getAudioOutputs $ mainBus rEnv
+  liftIO $ Punctual.setAudioInput p pIn
+  liftIO $ Punctual.setAudioOutput p pOut
+  liftIO $ Punctual.setNchnls p nchnls
   r <- liftIO $ try $ Punctual.evaluate p z t eTime
   case r of 
     Right (Right _) -> do
@@ -320,7 +327,14 @@ _preAnimationFramePunctual p = do
   liftIO $ Punctual.setResolution p res
   liftIO $ Punctual.setBrightness p b
   liftIO $ Punctual.setTempo p (tempoCache s)
-
+  rEnv <- ask
+  pIn <- liftIO $ getPunctualInput $ mainBus rEnv
+  pOut <- liftIO $ getMainBusInput $ mainBus rEnv
+  nchnls <- liftIO $ getAudioOutputs $ mainBus rEnv
+  liftIO $ Punctual.setAudioInput p pIn
+  liftIO $ Punctual.setAudioOutput p pOut
+  liftIO $ Punctual.setNchnls p nchnls
+  
 
 _zoneAnimationFramePunctual :: Punctual.Punctual -> UTCTime -> Int -> R ()
 _zoneAnimationFramePunctual p tNow z = liftIO $ Punctual.render p True z tNow
