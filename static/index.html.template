@@ -97,6 +97,7 @@
   <script src="./hydra-synth.js"></script>
   <script src="./peg-0.10.0.min.js"></script>
   <script src="https://afrancob.github.io/timekNot/timekNot.js" type="module"></script>
+  //<script src="./timekNot/timekNot.js" type="module"></script>
   <script>
   // this is necessary to get around GHCJS sometimes refusing to compile "import"
   function importExoLang(path) {
