@@ -33,7 +33,7 @@ import Data.Witherable
 import Data.Char
 import Data.IORef
 
-import Sound.MusicW.AudioContext (liftAudioIO)
+import qualified Sound.MusicW.AudioContext as MusicW
 
 import qualified Estuary.Languages.MiniTidal as MiniTidal
 
@@ -113,12 +113,12 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
         f True = T.unpack sampleName
 
 
-render :: R ()
-render = do
+renderMainThread :: R ()
+renderMainThread = do
   s <- get
   -- check if audio clock has advanced same amount as system clock
   t1System <- liftIO $ getCurrentTime
-  t1Audio <- liftAudioIO $ audioTime
+  t1Audio <- MusicW.liftAudioIO $ MusicW.audioTime
   let elapsedSystem = (realToFrac $ diffUTCTime t1System $ systemTime s) :: Double
   let elapsedAudio = t1Audio - audioTime s
   let cr = elapsedAudio / elapsedSystem
@@ -170,7 +170,7 @@ render = do
   processRenderOps
   when (fastForward || catchup || rewind) $ do
     updateTidalValueMap
-    renderZones
+    renderZones False
     flushEvents
 
   -- calculate how much time this render cycle took and update load measurements
@@ -184,8 +184,8 @@ render = do
   updateWebDirtVoices
 
 
-microRenderInAnimationFrame :: R ()
-microRenderInAnimationFrame = do
+renderAnimationFrame :: R ()
+renderAnimationFrame = do
   s <- get
   tNow <- liftIO $ getCurrentTime
   let diff = diffUTCTime (windowEnd s) tNow
@@ -220,7 +220,7 @@ processRenderOp _ (WriteZone z x) = do
   defs <- gets cachedDefs
   let x' = definitionForRendering x
   maybeClearChangedZone z (IntMap.lookup z defs) x'
-  renderZoneChanged z x'
+  defineZone z x'
   modify' $ \s -> s { cachedDefs = insert z x' (cachedDefs s) }
 
 processRenderOp _ ResetZones = do
@@ -255,21 +255,22 @@ clearTextProgramGeneric z = do
   mr <- getActiveRenderer z
   case mr of
     Nothing -> pure ()
-    Just r -> clear r z
-  clearActiveRenderer z
+    Just r -> liftIO $ clear r z
+  clearBaseRenderer z
 
 
-preRenderRenderPostRender :: Bool -> R ()
-preRenderRenderPostRender canDraw = do
-  rs <- getActiveRenderers
+renderZones :: Bool -> R ()
+renderZones canDraw = do
   -- preRender
-  tNow <- gets frameSystemTime
+  tNow <- gets systemTime
   tPrev <- gets prevDrawTime
-  liftIO $ traverse_ (\r -> (preRender r) canDraw tNow tPrev) activeRenderers
+  rs <- getActiveRenderers
+  liftIO $ mapM_ (\r -> (preRender r) canDraw tNow tPrev) rs
   -- render for each active zone
-  traverseWithKey_ (renderZone canDraw) defs
+  defs <- gets baseDefinitions
+  IntMap.traverseWithKey (renderZone canDraw) defs
   -- postRender
-  liftIO $ traverse_ (\r -> (postRender r) canDraw tNow tPrev) activeRenderers
+  liftIO $ mapM_ (\r -> (postRender r) canDraw tNow tPrev) rs
   -- if canDraw, update record of previous drawing times
   when canDraw $ modify' $ \s -> s { prevDrawTime = tNow }
       
@@ -333,7 +334,7 @@ defineZoneTextProgram z d ("JSoLang",y,eTime) = do
   case parseResult of
     Right j -> do
       clearZoneError z
-      setBaseDefinition d
+      setBaseDefinition z d
       modify' $ \xx -> xx { jsoLangs = Map.insert x j $ jsoLangs xx }
       liftIO $ T.putStrLn $ "defined JSoLang " <> x
     Left e -> setZoneError z (T.pack $ show e)
@@ -356,7 +357,7 @@ defineZoneGeneric z d rName = do
   case Map.lookup rName rs of
     Nothing -> do
       let err = "internal error in defineZoneGeneric: no renderer named " <> rName
-      T.putStrLn err
+      liftIO $ T.putStrLn err
       setZoneError z err
     Just r -> do
       result <- liftIO $ (define r) z d
@@ -364,7 +365,7 @@ defineZoneGeneric z d rName = do
         Left err -> setZoneError z err
         Right _ -> do
           setBaseDefinition z d
-          setBaseRenderer z r
+          setBaseRenderer z rName
           clearZoneError z
 
 
@@ -380,16 +381,12 @@ renderZoneText canDraw z x = do
   renderZoneBase canDraw z textNotation 
 
 renderZoneBase :: Bool -> Int -> TextNotation -> R ()
-renderZoneBase canDraw z "MiniTidal" = gets miniTidal >>= renderZoneGeneric canDraw z
-renderZoneBase canDraw z "Punctual" = gets punctual >>= renderZoneGeneric canDraw z
-renderZoneBase canDraw z "CineCer0" = gets cineCer0 >>= renderZoneGeneric canDraw z
-renderZoneBase canDraw z "Seis8s" = gets seis8s >>= renderZoneGeneric canDraw z
-renderZoneBase canDraw z "LocoMotion" = gets locoMotion >>= renderZoneGeneric canDraw z
-renderZoneBase canDraw z "TransMit" = gets transMit >>= renderZoneGeneric canDraw z
-renderZoneBase canDraw z "Hydra" = gets hydra >>= renderZoneGeneric canDraw z
-renderZoneBase canDraw z "TimeNot" = gets timeNot >>= renderZoneGeneric canDraw z
-renderZoneBase _ _ _ = pure ()
-
+renderZoneBase canDraw z tn = do
+  mr <- getActiveRenderer z -- :: Maybe Renderer
+  case mr of
+    Just r -> renderZoneGeneric canDraw z r
+    Nothing -> setZoneError z $ "no renderer for " <> tn <> " in zone " <> showt z
+    
 renderZoneGeneric :: Bool -> Int -> Renderer -> R ()
 renderZoneGeneric canDraw z r = do
   gets tempo >>= (liftIO . setTempo r)
@@ -398,8 +395,7 @@ renderZoneGeneric canDraw z r = do
   tPrev <- gets prevDrawTime
   wStart <- gets windowStart
   wEnd <- gets windowEnd
-  liftIO $ preRender r canDraw
-  ns <- liftIO $ renderZone r tNow tPrev wStart wEnd canDraw z
+  ns <- liftIO $ render r tNow tPrev wStart wEnd canDraw z
   pushNoteEvents ns
 
 renderControlPattern :: Int -> R () -- used by Tidal structure editor, and Sequencer
@@ -416,7 +412,8 @@ renderControlPattern z = do
         let rp = windowPeriod s
         ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (tempo s) controlPattern')
           `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
-        pushNoteEvents $ tidalEventToNoteEvent <$> ns
+        ns' <- mapM tidalEventToNoteEvent ns
+        pushNoteEvents ns'
       Nothing -> pure ()
 
 
@@ -436,7 +433,7 @@ calculateZoneAnimationTimes z zat = do
   
 forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> HTMLCanvasElement -> HTMLCanvasElement -> IO ()
 forkRenderThreads rEnv s cineCer0Div pCanvas lCanvas hCanvas = do
-  t0Audio <- liftAudioIO $ audioTime
+  t0Audio <- MusicW.liftAudioIO $ MusicW.audioTime
   t0System <- getCurrentTime
   pIn <- getPunctualInput $ mainBus rEnv
   pOut <- getMainBusInput $ mainBus rEnv
@@ -448,18 +445,18 @@ forkRenderThreads rEnv s cineCer0Div pCanvas lCanvas hCanvas = do
 mainThread :: RenderEnvironment -> IORef RenderState -> IO ()
 mainThread rEnv rsRef = do
   rs <- readIORef rsRef
-  rs' <- runR Estuary.Render.RenderEngine.render rEnv rs
+  rs' <- runR renderMainThread rEnv rs
   writeIORef rsRef rs'
   swapMVar (renderInfo rEnv) (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere TODO: replace MVar with IORef, allow renderInfo to be updated on the spot so this operation is unnecessary
   threadDelay mainRenderThreadSleepTime
-  mainRenderThread rEnv rsRef
+  mainThread rEnv rsRef
 
 animationThread :: RenderEnvironment -> IORef RenderState -> IO ()
 animationThread rEnv rsRef = void $ inAnimationFrame ContinueAsync $ \_ -> do
   animOn <- Settings.canvasOn <$> (readIORef $ _settings rEnv)
   when animOn $ do
     rs <- readIORef rsRef
-    rs' <- runR renderAnimation rEnv rs
+    rs' <- runR renderAnimationFrame rEnv rs
     writeIORef rsRef rs'
   animationThread rEnv rsRef
 
