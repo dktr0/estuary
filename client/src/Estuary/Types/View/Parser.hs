@@ -39,21 +39,20 @@ dumpView (CodeView x y vs) = "code " <> showInt x <> " " <> showInt y <> " " <> 
 
 dumpView (SequenceView z) = "sequence " <> showInt z
 dumpView (Snippet z b tn txt) = "snippet " <> showInt z <> " " <> (boolToText b) <> " " <> (notationToText tn) <> (" \""<>(formatText txt)<>"\"")
-dumpView EnsembleStatusView = "ensembleStatus"
+dumpView EnsembleStatusView = "ensemblestatus"
 dumpView TempoView = "tempo"
 dumpView (RouletteView x rows) = "roulette " <> showInt x <> " " <> showInt rows
 dumpView AudioMapView = "audiomap"
 dumpView (StopWatchView z) = "stopwatch " <> showInt z
--- dumpView (CountDownView z) = "countDown " <> showInt z
--- dumpView (SandClockView z) = "sandClock " <> showInt z
 dumpView (MetreView z) = "metre " <> showInt z
 dumpView (MeterView z) = "meter " <> showInt z
 dumpView (TimerView z) = "timer " <> showInt z
 dumpView (NotePadView z) = "notepad " <> showInt z
-dumpView (IFrame url) = "iFrame \"" <> url <> "\""
-dumpView (CalendarEventView x) = "calendarEvent " <> showInt x
+dumpView (IFrame url) = "iframe \"" <> url <> "\""
+dumpView (CalendarEventView x) = "calendarevent " <> showInt x
 dumpView (LoadView x) = "load " <> showInt x
 dumpView (ChatView x) = "chat " <> showInt x
+dumpView TapTempoView = "taptempo"
 
 dumpView _ = " "
 
@@ -82,8 +81,6 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> rouletteViewView -- localview (grid 2 2 [roulette 0 0,roulette 1 0,roulette 2 0,roulette 3 0])
           <|> audioMapView
           <|> stopwatchParser
-          -- <|> countDownParser
-          -- <|> sandClockParser
           <|> metreParser
           <|> meterParser
           <|> timerParser
@@ -93,9 +90,10 @@ viewParser =  EmptyView <$ reserved "empty" -- localview empty
           <|> genGridParser
           <|> loadVisionParser
           <|> specChatParser 
+          <|> tapTempoParser
 
 genGridParser :: H View
-genGridParser = (genGrid <$ reserved "genGrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
+genGridParser = (genGrid <$ reserved "gengrid") <*> rowsOrColumns <*> rowsOrColumns <*> trueOrFalse
 
 rowsOrColumns :: H Int
 rowsOrColumns = do
@@ -159,7 +157,7 @@ meterParser :: H View
 meterParser = meterParser' <*> int
 
 meterParser' :: H (Int -> View)
-meterParser' = meterFunc <$ reserved "metre"
+meterParser' = meterFunc <$ reserved "meter"
 
 meterFunc :: Int -> View
 meterFunc z = MeterView z
@@ -174,26 +172,6 @@ timerParser' = timerFunc <$ reserved "timer"
 
 timerFunc :: Int -> View
 timerFunc z = TimerView z
-
---
--- sandClockParser :: H View
--- sandClockParser = sandClockParser' <*> int
-
--- sandClockParser' :: H (Int -> View)
--- sandClockParser' = sandClockFunc <$ reserved "sandClock"
-
--- sandClockFunc :: Int -> View
--- sandClockFunc z = SandClockView z
-
--- --
--- countDownParser :: H View
--- countDownParser = countDownParser' <*> int
-
--- countDownParser' :: H (Int -> View)
--- countDownParser' = countDownFunc <$ reserved "countDown"
-
--- countDownFunc :: Int -> View
--- countDownFunc z = CountDownView z
 
 --
 stopwatchParser :: H View
@@ -392,7 +370,7 @@ rouletteViewViewFunc x y = RouletteView x y
 -- (reserved "ensembleStatus") >> return EnsembleStatusView
 
 ensembleStatusView :: H View
-ensembleStatusView = ensembleStatusViewFunc <$ (reserved "ensembleStatus")
+ensembleStatusView = ensembleStatusViewFunc <$ (reserved "ensemblestatus")
 
 ensembleStatusViewFunc :: View
 ensembleStatusViewFunc = EnsembleStatusView
@@ -425,6 +403,10 @@ specChatParser' =  specChatFunc <$ reserved "chat"
 
 specChatFunc :: Int -> View
 specChatFunc x  = ChatView x 
+
+
+tapTempoParser :: H View
+tapTempoParser = TapTempoView <$ reserved "taptempo"
 
 -- helper funcs
 int :: H Int

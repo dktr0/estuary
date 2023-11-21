@@ -9,9 +9,7 @@ import GHCJS.Types
 import GHCJS.Marshal -- .Internal
 
 import Estuary.Types.NoteEvent
-import Estuary.Types.RenderState
 import Estuary.Render.R hiding (setTempo)
-import Estuary.Render.TextNotationRenderer
 import Estuary.Types.TextNotation
 import Estuary.Types.EnsembleC
 import Estuary.Types.Ensemble

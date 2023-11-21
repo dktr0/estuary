@@ -17,6 +17,8 @@ import Estuary.Types.TranslatableText
 
 -- type TranslatableText = Map Language Text
 
+-- an editor to let people edit multilingual text. Be able to add a row and ...
+
 translatableTextWidget ::  MonadWidget t m => Dynamic t (TranslatableText) -> W t m  (Variable t TranslatableText)
 translatableTextWidget delta = mdo
   editorWidget <- multilingualEditorWidget (constDyn "hi") -- Event Text

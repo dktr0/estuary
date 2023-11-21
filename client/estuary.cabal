@@ -65,7 +65,6 @@ library
       Estuary.Types.NoteEvent
       Estuary.Types.ParamPatternable
       Estuary.Types.RenderInfo
-      Estuary.Types.RenderState
       Estuary.Types.Term
       Estuary.Types.Terminal
       Estuary.Types.Tutorial
@@ -76,6 +75,7 @@ library
       Estuary.Widgets.Announcements
       Estuary.Widgets.AudioMap
       Estuary.Widgets.CalendarEvent
+      Estuary.Widgets.TestMap
       Estuary.Widgets.Config
       Estuary.Widgets.CreateEnsemble
       Estuary.Widgets.Ensemble
@@ -108,6 +108,16 @@ library
       Estuary.Widgets.WebSocket
       Estuary.Widgets.ExoWidget
       Estuary.Types.AsyncValue
+      Estuary.Widgets.TapTempo
+      Estuary.Languages.CineCer0
+      Estuary.Languages.MiniTidal
+      Estuary.Languages.TimeNot
+      Estuary.Render.ForeignTempo
+      Estuary.Render.RenderOp
+      Estuary.Types.ServerInfo
+      Estuary.Widgets.Chat
+      Estuary.Widgets.DataVisualisers
+
   other-modules:
       Paths_estuary
   hs-source-dirs:
@@ -155,6 +165,7 @@ library
     , witherable
     , ghcjs-promise
     , async
+    , these
   default-language: Haskell2010
 
 executable Estuary

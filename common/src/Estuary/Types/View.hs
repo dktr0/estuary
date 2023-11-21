@@ -37,8 +37,6 @@ data View =
   TempoView |
   RouletteView Int Int |
   AudioMapView |
-  -- CountDownView Int |
-  -- SandClockView Int |
   StopWatchView Int |
   MetreView Int | -- brit/canadian spelling
   MeterView Int | -- murikan spelling
@@ -47,7 +45,8 @@ data View =
   IFrame Text | -- embedded web page
   CalendarEventView Int |
   LoadView Int |
-  ChatView Int 
+  ChatView Int |
+  TapTempoView 
   deriving (Show,Eq,Generic)
 
 instance ToJSON View where

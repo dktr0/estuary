@@ -21,6 +21,7 @@ data TextNotation =
   Seis8s |
   Hydra |
   LocoMotion |
+  TransMit |
   JSoLang Text |
   EphemeralNotation Text
   deriving (Read,Eq,Ord,Show,Generic)
@@ -58,6 +59,7 @@ pragmaToTextNotation "timenot" _ _ = Just TimeNot
 pragmaToTextNotation "seis8s" _ _ = Just Seis8s
 pragmaToTextNotation "hydra" _ _ = Just Hydra
 pragmaToTextNotation "locomotion" _ _ = Just LocoMotion
+pragmaToTextNotation "transmit" _ _ = Just TransMit
 pragmaToTextNotation "jsolang" x _ = Just $ JSoLang x
 pragmaToTextNotation x _ ns =
   case elem x ns of
