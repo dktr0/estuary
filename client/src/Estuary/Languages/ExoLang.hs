@@ -133,12 +133,16 @@ render e tNow tPrevDraw wStart wEnd canDraw z = withExoLang e $ \elc -> do
   let tPrevDraw' = utcTimeToWhenPOSIX tPrevDraw
   let wStart' = utcTimeToWhenPOSIX wStart
   let wEnd' = utcTimeToWhenPOSIX wEnd
-  case hasFunction "render" elc of
+  ns <- case hasFunction "render" elc of
     True -> _render tNow' tPrevDraw' wStart' wEnd' canDraw z elc >>= jsValToNoteEvents
     False -> do
       case hasFunction "animateZone" elc of
         True -> _animateZone z canDraw tNow' tPrevDraw' wStart' wEnd' elc >>= jsValToNoteEvents
         False -> pure []
+  let rp = diffUTCTime wEnd wStart
+  case rp of -- if render period was 0, discard any events that an exolang (nonsensically) calculated
+    0 -> pure []
+    _ -> pure ns  
 
 foreign import javascript unsafe
   "$6.render({nowTime: $1, previousDrawTime: $2, windowStartTime: $3, windowEndTime: $4, canDraw: $5, zone: $6})"

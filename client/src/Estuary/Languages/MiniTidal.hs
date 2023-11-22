@@ -61,16 +61,19 @@ _clear zonesRef z = modifyIORef zonesRef $ IntMap.delete z
 
 _render :: IORef (IntMap Tidal.ControlPattern) -> IORef Tempo -> IORef Tidal.ValueMap -> UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]
 _render zonesRef tempoRef valueMapRef _ _ wStart wEnd _ z = do
-  controlPattern <- IntMap.lookup z <$> readIORef zonesRef -- :: Maybe ControlPattern
-  case controlPattern of
-    Just controlPattern' -> do
-      tempo <- readIORef tempoRef
-      valueMap <- readIORef valueMapRef
-      let rp = diffUTCTime wEnd wStart
-      ns <- liftIO $ (return $! force $ renderTidalPattern valueMap wStart rp tempo controlPattern')
-        `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
-      mapM tidalEventToNoteEvent ns
-    Nothing -> pure []
+  let rp = diffUTCTime wEnd wStart
+  case rp of
+    0 -> pure []
+    _ -> do
+      controlPattern <- IntMap.lookup z <$> readIORef zonesRef -- :: Maybe ControlPattern
+      case controlPattern of
+        Just controlPattern' -> do
+          tempo <- readIORef tempoRef
+          valueMap <- readIORef valueMapRef
+          ns <- liftIO $ (return $! force $ renderTidalPattern valueMap wStart rp tempo controlPattern')
+            `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
+          mapM tidalEventToNoteEvent ns
+        Nothing -> pure []
     
 renderTidalPattern :: Tidal.ValueMap -> UTCTime -> NominalDiffTime -> Tempo -> Tidal.ControlPattern -> [(UTCTime,Tidal.ValueMap)]
 renderTidalPattern vMap start range t p = events''

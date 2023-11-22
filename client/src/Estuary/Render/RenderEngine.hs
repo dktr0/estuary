@@ -115,6 +115,29 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 renderMainThread :: R ()
 renderMainThread = do
+  processRenderOps
+  updateActiveRenderers
+  calculateEventRenderingWindow mainRenderPeriod
+  s <- get
+  when (windowPeriod s /= 0) $ do
+    updateTidalValueMap
+    renderZones False
+    flushEvents
+  updateWebDirtVoices
+    
+  -- calculate how much time this render cycle took and update load measurements
+  -- TODO: these calculations don't really make sense the way the rendering system has evolved
+  {- t2System <- liftIO $ getCurrentTime
+  let mostRecentRenderTime = diffUTCTime t2System t1System
+  let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
+  let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac mainRenderPeriod)
+  modify' $ \x -> x { renderTime = newRenderTime }
+  modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}-}
+
+  
+  
+calculateEventRenderingWindow :: NominalDiffTime -> R ()
+calculateEventRenderingWindow renderPeriodTarget = do
   s <- get
   -- check if audio clock has advanced same amount as system clock
   t1System <- liftIO $ getCurrentTime
@@ -131,77 +154,57 @@ renderMainThread = do
   when crProblem $ liftIO $ T.putStrLn $ "audio clock slower, ratio=" <> showt cr
 
   let diff = diffUTCTime (windowEnd s) t1System
-
-  -- 1. Fast Forward
-  -- if the logical endtime of previous rendering is very soon in the future (below a threshold), or is in the past
-  -- then skip ahead so that the logical starttime of new rendering is at least in the future by that threshold
-  let fastForward = diff < fastForwardThreshold
-  when fastForward $ do
-    liftIO $ T.putStrLn "FAST-FORWARD"
-    modify' $ \x -> x {
-      windowStart = addUTCTime fastForwardThreshold t1System,
-      windowPeriod = mainRenderPeriod,
-      windowEnd = addUTCTime (mainRenderPeriod+fastForwardThreshold) t1System
-    }
-
-  -- 2. Catchup
-  let catchup = diff >= fastForwardThreshold && diff < catchupThreshold
-  when catchup $ do
-    liftIO $ T.putStrLn $ "CATCHUP"
-    modify' $ \x -> x {
-      windowStart = windowEnd s,
-      windowPeriod = mainRenderPeriod,
-      windowEnd = addUTCTime mainRenderPeriod (windowEnd s)
-    }
-
-  -- 3. Wait
-  -- let wait = diff >= waitThreshold && diff < rewindThreshold
- 
-  -- 4. Rewind
-  let rewind = (diff >= rewindThreshold)
-  when rewind $ do
-    liftIO $ T.putStrLn $ "REWIND"
-    modify' $ \x -> x {
-      windowStart = addUTCTime fastForwardThreshold t1System,
-      windowPeriod = mainRenderPeriod,
-      windowEnd = addUTCTime (mainRenderPeriod+fastForwardThreshold) t1System
-    }
   
-  processRenderOps
-  when (fastForward || catchup || rewind) $ do
-    updateTidalValueMap
-    renderZones False
-    flushEvents
+  -- 1. Fast Forward or Rewind
+  -- if the logical endtime of previous rendering is too soon in the future (below fastForwardThreshold), or is in the past
+  -- then fast forward ahead so that the logical starttime of new rendering is at least in the future by that threshold
+  -- if the logical endtime of previous rendering is very far in the future (above rewindThreshold),
+  -- then rewind. 
+  let fastForward = diff < fastForwardThreshold
+  let rewind = (diff >= rewindThreshold)
+  when fastForward $ liftIO $ T.putStrLn "FAST-FORWARD"
+  when rewind $ liftIO $ T.putStrLn "REWIND"
+  when (fastForward || rewind) $ do
+    modify' $ \x -> x {
+      windowStart = addUTCTime fastForwardThreshold t1System,
+      windowPeriod = renderPeriodTarget,
+      windowEnd = addUTCTime (renderPeriodTarget+fastForwardThreshold) t1System
+      }
+    
+  -- 2. Normal
+  -- if the logical endtime of previous rendering is sufficiently in the future (above fastForwardThreshold)
+  -- but not so far in the future that we should wait (below waitThreshold), render the full renderPeriodTarget
+  let normal = diff >= fastForwardThreshold && diff < waitThreshold
+  when normal $ do
+    modify' $ \x -> x {
+      windowStart = windowEnd x,
+      windowPeriod = renderPeriodTarget,
+      windowEnd = addUTCTime renderPeriodTarget (windowEnd x)
+      }
+  
+  -- 3. Wait
+  -- if the logical endtime of previous rendering is quite far in the future (above waitThreshold)
+  -- but not so far in the future that we are going to rewind (below rewindThreshold)
+  -- then signal that no events should be rendered by holding windowEnd and setting windowStart to equal it
+  let wait = diff >= waitThreshold && diff < rewindThreshold
+  when wait $ do
+    modify' $ \x -> x {
+      windowStart = windowEnd x,
+      windowPeriod = 0
+      }
 
-  -- calculate how much time this render cycle took and update load measurements
-  -- TODO: these calculations don't really make sense the way the rendering system has evolved
-  t2System <- liftIO $ getCurrentTime
-  let mostRecentRenderTime = diffUTCTime t2System t1System
-  let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
-  let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac mainRenderPeriod)
-  modify' $ \x -> x { renderTime = newRenderTime }
-  modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}
-  updateWebDirtVoices
 
 
 renderAnimationFrame :: R ()
 renderAnimationFrame = do
   s <- get
-  tNow <- liftIO $ getCurrentTime
-  let diff = diffUTCTime (windowEnd s) tNow
-  let microRender = diff >= microRenderThreshold && diff < waitThreshold
-  when microRender $ do
-    fpsl <- fpsLimit
-    let mDelta = realToFrac $ getAverage $ animationDelta s
-    let microRenderPeriod = calculateMicroRenderPeriod mDelta fpsl
-    modify' $ \x -> x {
-      windowStart = windowEnd s,
-      windowEnd = addUTCTime microRenderPeriod (windowEnd s),
-      windowPeriod = microRenderPeriod
-    }
-    updateTidalValueMap
-    renderZones True
-    flushEvents
+  let mDelta = realToFrac $ getAverage $ animationDelta s
+  fpsl <- fpsLimit
+  let p = calculateMicroRenderPeriod mDelta fpsl
+  calculateEventRenderingWindow p
+  renderZones True
+  flushEvents
+  updateWebDirtVoices
 
 calculateMicroRenderPeriod :: NominalDiffTime -> Maybe NominalDiffTime -> NominalDiffTime
 calculateMicroRenderPeriod _ (Just fpsl) = fpsl
