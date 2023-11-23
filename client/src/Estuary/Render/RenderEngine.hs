@@ -306,70 +306,78 @@ defineZone z d@(Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
   setBaseDefinition z d
-defineZone z d@(TextProgram x) = defineZoneTextProgram z d $ forRendering x
+defineZone z d@(TextProgram x) = defineZoneTextProgram z (forRendering x) ""
 defineZone _ _ = return ()
 
-defineZoneTextProgram :: Int -> Definition -> (TextNotation,Text,UTCTime) -> R ()
-defineZoneTextProgram z d ("MiniTidal",_,_) = defineZoneGeneric z d "MiniTidal"
-defineZoneTextProgram z d ("Punctual",_,_) = defineZoneGeneric z d "Punctual"
-defineZoneTextProgram z d ("CineCer0",_,_) = defineZoneGeneric z d "CineCer0"
-defineZoneTextProgram z d ("LocoMotion",_,_) = defineZoneGeneric z d "LocoMotion"
-defineZoneTextProgram z d ("TransMit",_,_) = defineZoneGeneric z d "TransMit"
-defineZoneTextProgram z d ("Seis8s",_,_) = defineZoneGeneric z d "Seis8s"
-defineZoneTextProgram z d ("Hydra",_,_) = defineZoneGeneric z d "Hydra"
-defineZoneTextProgram z d ("TimeNot",_,_) = defineZoneGeneric z d  "TimeNot"
-defineZoneTextProgram z d ("",x,eTime) = do
-  ns <- (Map.keys . jsoLangs) <$> get
-  case determineTextNotation x ns of
-    Left err -> setZoneError z (T.pack $ show err)
-    Right (x',n) -> do
-      case n of
-        "" -> do
-          case T.filter (\c -> not (isControl c) && not (isSpace c)) x' of
-            "" -> do -- notation is unspecified but there is also no program, so okay
-              clearZoneError z
-              clearBaseDefinition z
-            _ -> setZoneError z "no base notation specified"
-        _ -> defineZoneTextProgram z d (n,x',eTime)
-defineZoneTextProgram z d ("JSoLang",y,eTime) = do
-  let x = "JSoLang'" -- TODO: replace this placeholder which hard codes JSoLangs to produce a notation called JSoLang'
-  parseResult <- liftIO $ JSoLang.define y
-  case parseResult of
-    Right j -> do
-      clearZoneError z
-      setBaseDefinition z d
-      modify' $ \xx -> xx { jsoLangs = Map.insert x j $ jsoLangs xx }
-      liftIO $ T.putStrLn $ "defined JSoLang " <> x
-    Left e -> setZoneError z (T.pack $ show e)
-defineZoneTextProgram z d (x,y,eTime) = do
-  maybeJSoLang <- (Map.lookup x . jsoLangs) <$> get
-  case maybeJSoLang of
-    Just j -> do
-      parseResult <- liftIO $ JSoLang.parse j y
-      case parseResult of
-        Right x' -> do
-          liftIO $ T.putStrLn $ "result of parsing " <> x <> ":"
-          liftIO $ T.putStrLn x'
-          defineZoneTextProgram z d ("",x',eTime)
-        Left e -> setZoneError z e
-    Nothing -> setZoneError z $ "renderTextProgramChanged: no language called " <> x <> " exists"
 
-defineZoneGeneric :: Int -> Definition -> Text -> R ()
-defineZoneGeneric z d rName = do
+defineZoneTextProgram :: Int -> TextProgram -> Text -> R ()
+
+defineZoneTextProgram z ("",txt,eTime) _ = do
+  case determineTextNotation txt of
+    ("",_,txt') -> do -- if there's still no language specified, check if there's actually any program at all
+      case T.filter (\c -> not (isControl c) && not (isSpace c)) txt' of
+        "" -> do -- notation is unspecified but there is also no program, so okay
+          clearZoneError z
+          clearBaseDefinition z
+          clearBaseRenderer z
+        _ -> setZoneError z "no language specified"
+    (tn,options,txt') -> defineZoneTextProgram z (tn,txt',eTime) options
+    
+defineZoneTextProgram z ("jsolang",txt,eTime) options = do
+  case determineJSoLangName options of
+    "" -> setZoneError z "JSoLang requires a name (hint: after ##JSoLang)"
+    jsoLangName -> do
+      parseResult <- liftIO $ JSoLang.define txt
+      case parseResult of
+        Right j -> do
+          clearZoneError z
+          clearBaseDefinition z
+          clearBaseRenderer z
+          modify' $ \s -> s { jsoLangs = Map.insert jsoLangName j $ jsoLangs s }
+          liftIO $ T.putStrLn $ "defined JSoLang " <> jsoLangName
+        Left e -> setZoneError z (T.pack $ show e)
+        
+defineZoneTextProgram z (tn,txt,eTime) options = do
+  maybeJSoLang <- Map.lookup tn <$> gets jsoLangs
+  case maybeJSoLang of -- is it a JSoLang?
+    Just j -> do
+      parseResult <- liftIO $ JSoLang.parse j txt
+      case parseResult of
+        Right txt' -> defineZoneTextProgram z ("",txt',eTime) ""
+        Left e -> setZoneError z e
+    Nothing -> defineZoneGeneric z (tn,txt,eTime) options 
+    
+defineZoneGeneric :: Int -> TextProgram -> Text -> R ()
+defineZoneGeneric z (rName,txt,eTime) options = do
   rs <- gets allRenderers
   case Map.lookup rName rs of
-    Nothing -> do
-      let err = "internal error in defineZoneGeneric: no renderer named " <> rName
-      liftIO $ T.putStrLn err
-      setZoneError z err
+    Nothing -> setZoneError z $ "no language called " <> rName <> " exists"
     Just r -> do
-      result <- liftIO $ (define r) z d
+      let d = TextProgram (Live (rName,txt,eTime) L3)
+      result <- liftIO $ (define r) z d -- TODO: options need to be passed into renderers/exolangs
       case result of 
         Left err -> setZoneError z err
         Right _ -> do
-          setBaseDefinition z d
-          setBaseRenderer z rName
           clearZoneError z
+          setBaseRenderer z rName
+          setBaseDefinition z d
+        
+determineTextNotation :: Text -> (TextNotation,Text,Text) -- (text notation, options, text code with pragma removed)
+determineTextNotation x =
+  case T.isPrefixOf "##" x of
+    False -> ("","",x)
+    True -> (textNotation,options,newText)
+      where 
+        x' = T.lines x
+        firstLine = head x'
+        otherLines = tail x'
+        (firstWord,restOfLine) = T.break isSpace firstLine
+        textNotation = T.toLower $ T.drop 2 firstWord
+        options = T.stripStart restOfLine
+        newText = T.unlines ("":otherLines)
+
+determineJSoLangName :: Text -> Text
+determineJSoLangName x = fst $ T.break isSpace $ T.stripStart x
 
 
 renderZone :: Bool -> Int -> Definition -> R ()

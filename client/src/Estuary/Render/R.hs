@@ -132,7 +132,16 @@ getActiveRenderer z = do
         Nothing -> pure Nothing
         Just r ->  pure (Just r)
   
-
+getAllRendererNames :: R [TextNotation]
+getAllRendererNames = do
+  s <- get
+  pure $ Map.keys $ allRenderers s
+  
+rendererExists :: TextNotation -> R Bool
+rendererExists x = do
+  xs <- getAllRendererNames 
+  pure $ elem x xs
+  
 
 clearParamPattern :: Int -> R ()
 clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }

@@ -108,14 +108,14 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
     
     jsoLangs = Map.empty,
     allRenderers = Map.fromList [
-      ("ExoLangTest",exoLangTest'),
-      ("LocoMotion",locoMotion'),
-      ("TransMit",transMit'),
-      ("MiniTidal",miniTidal'),
-      ("Punctual",punctual'),
-      ("CineCer0",cineCer0'),
-      ("Hydra",hydra'),
-      ("TimeNot",timeNot')
+      ("exolangtest",exoLangTest'),
+      ("locomotion",locoMotion'),
+      ("transmit",transMit'),
+      ("minitidal",miniTidal'),
+      ("punctual",punctual'),
+      ("cinecer0",cineCer0'),
+      ("hydra",hydra'),
+      ("timenot",timeNot')
       ],
     activeRenderersMap = empty,
     activeRenderers = []
