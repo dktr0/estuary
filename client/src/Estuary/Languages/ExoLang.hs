@@ -78,7 +78,7 @@ define e z txt eTime = withExoLang e $ \elc -> do
     False -> do
       case hasFunction "evaluate" elc of
         True -> exoResultToEither <$> _evaluate z txt eTime' elc
-        False -> pure $ Left "ERROR: an exolang (language defined externally to Estuary) lacks defineZone (previously known as evaluate)"
+        False -> pure $ Left "ERROR: an exolang (language defined externally to Estuary) lacks define (previously known as evaluate)"
 
 foreign import javascript safe
   "$4.define({zone: $1, text: $2, time: $3})"

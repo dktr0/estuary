@@ -151,7 +151,7 @@ calculateEventRenderingWindow renderPeriodTarget = do
     audioTime = t1Audio,
     info = (info x) { clockRatio = cr, clockRatioProblem = crProblem }
   }
-  when crProblem $ liftIO $ T.putStrLn $ "audio clock slower, ratio=" <> showt cr
+  -- when crProblem $ liftIO $ T.putStrLn $ "audio clock slower, ratio=" <> showt cr
 
   let diff = diffUTCTime (windowEnd s) t1System
   
