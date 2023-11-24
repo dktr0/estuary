@@ -12,7 +12,3 @@ import Control.Monad.Except
 
 type TextNotation = Text
 
-textNotationDropDownLabel :: TextNotation -> String
-textNotationDropDownLabel "UnspecifiedNotation" = ""
-textNotationDropDownLabel x = show x
-

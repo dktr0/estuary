@@ -195,7 +195,7 @@ textToInvisibleClass False = "class" =: "primary-color textInputToEndOfLine code
 
 
 textNotationParsers :: [TextNotation]
-textNotationParsers = ["", "MiniTidal","Punctual", "CineCer0", "TimeNot", "Seis8s", "Hydra"]
+textNotationParsers = ["", "MiniTidal","Punctual", "CineCer0", "TimeNot", "Seis8s", "Hydra", "LocoMotion", "TransMit"]
 
 holdUniq :: (MonadHold t m, Monad m, Reflex t, MonadFix m, Eq a) => a -> Event t a -> m (Event t a)
 holdUniq i e = holdDyn i e >>= holdUniqDyn >>= return . updated
@@ -222,7 +222,7 @@ textProgramEditor styles rows errorText deltasDown = divClass "textPatternChain"
   (parserEdit,evalButton) <- divClass "fullWidthDiv" $ do
     -- build dropdown menu if "nomenu" is not among the provided options
     dropdown' <- if elem Nomenu styles then (return never) else do
-      let parserMap = constDyn $ fromList $ fmap (\x -> (x,T.pack $ textNotationDropDownLabel x)) textNotationParsers
+      let parserMap = constDyn $ fromList $ fmap (\x -> (T.toLower x,x)) textNotationParsers
       let ddAttrs = ((def :: DropdownConfig t TextNotation) & attributes .~ constDyn ("class" =: "ui-dropdownMenus code-font primary-color primary-borders")) & dropdownConfig_setValue .~ parserDelta
       d <- dropdown initialParser parserMap ddAttrs
       return $ _dropdown_change d
