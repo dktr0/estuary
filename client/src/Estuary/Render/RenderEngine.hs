@@ -377,7 +377,7 @@ determineTextNotation x =
         newText = T.unlines ("":otherLines)
 
 determineJSoLangName :: Text -> Text
-determineJSoLangName x = fst $ T.break isSpace $ T.stripStart x
+determineJSoLangName x = T.toLower $ fst $ T.break isSpace $ T.stripStart x
 
 
 renderZone :: Bool -> Int -> Definition -> R ()
