@@ -14,6 +14,7 @@ import Data.Text
 import Data.Time
 import Data.Time.Clock.POSIX
 import Control.Monad (void,when)
+import GHCJS.Types (isUndefined)
 import GHCJS.DOM.Types hiding (Text)
 import Data.JSVal.Promise
 import Control.Exception.Base (throwIO)
@@ -51,9 +52,21 @@ _loadExoLang canvas path = do
     Left j -> throwIO (JSException j)
     Right j -> pure j
   putStrLn $ "loaded exolang from " ++ unpack path
-  exoLangClass canvas exoLangModule
-
-
+  elc <- exoLangClass canvas exoLangModule
+  putStrLn $ " hasFunction define: " ++ show (hasFunction "define" elc)
+  putStrLn $ " hasFunction evaluate: " ++ show (hasFunction "evaluate" elc)
+  putStrLn $ " hasFunction clear: " ++ show (hasFunction "clear" elc)
+  putStrLn $ " hasFunction clearZone: " ++ show (hasFunction "clearZone" elc)
+  putStrLn $ " hasFunction preRender: " ++ show (hasFunction "preRender" elc)
+  putStrLn $ " hasFunction preAnimate: " ++ show (hasFunction "preAnimate" elc)
+  putStrLn $ " hasFunction render: " ++ show (hasFunction "render" elc)
+  putStrLn $ " hasFunction animateZone: " ++ show (hasFunction "animateZone" elc)
+  putStrLn $ " hasFunction postRender: " ++ show (hasFunction "postRender" elc)
+  putStrLn $ " hasFunction postAnimate: " ++ show (hasFunction "postAnimate" elc)
+  putStrLn $ " hasFunction setTempo: " ++ show (hasFunction "setTempo" elc)
+  pure elc  
+  
+  
 type ExoLang = AsyncValue ExoLangClass
 
 exoLang :: HTMLCanvasElement -> Text -> IO ExoLang
@@ -63,11 +76,11 @@ withExoLang :: ExoLang -> (ExoLangClass -> IO a) -> IO a
 withExoLang x f = blocking x >>= f
 
 foreign import javascript unsafe
-  "typeof ($2.$1)"
+  "typeof ($2[$1])"
   _typeOfProperty :: Text -> ExoLangClass -> Text
 
 hasFunction :: Text -> ExoLangClass -> Bool
-hasFunction x elc = _typeOfProperty x elc == "Function"
+hasFunction x elc = _typeOfProperty x elc == "function"
 
 
 define :: ExoLang -> Int -> Text -> UTCTime -> IO (Either Text Text)
@@ -119,11 +132,11 @@ preRender e canDraw tNow tPrevDraw = withExoLang e $ \elc -> do
         False -> pure ()
         
 foreign import javascript unsafe
-  "$3.preRender({canDraw: $1, nowTime: $2, previousDrawTime: $3})"
+  "$4.preRender({canDraw: $1, nowTime: $2, previousDrawTime: $3})"
   _preRender :: Bool -> Double -> Double -> ExoLangClass -> IO ()
 
 foreign import javascript unsafe -- DEPRECATED
-  "$3.preAnimate($1,$2,$3)"
+  "$4.preAnimate($1,$2,$3)"
   _preAnimate :: Bool -> Double -> Double -> ExoLangClass -> IO ()
   
   
@@ -145,20 +158,23 @@ render e tNow tPrevDraw wStart wEnd canDraw z = withExoLang e $ \elc -> do
     _ -> pure ns  
 
 foreign import javascript unsafe
-  "$6.render({nowTime: $1, previousDrawTime: $2, windowStartTime: $3, windowEndTime: $4, canDraw: $5, zone: $6})"
+  "$7.render({nowTime: $1, previousDrawTime: $2, windowStartTime: $3, windowEndTime: $4, canDraw: $5, zone: $6})"
   _render :: Double -> Double -> Double -> Double -> Bool -> Int -> ExoLangClass -> IO JSVal
   
 foreign import javascript unsafe -- DEPRECATED
-  "$3.animateZone($1,$2,$3,$4,$5,$6)"
+  "$7.animateZone($1,$2,$3,$4,$5,$6)"
   _animateZone :: Int -> Bool -> Double -> Double -> Double -> Double -> ExoLangClass -> IO JSVal
 
 jsValToNoteEvents :: JSVal -> IO [NoteEvent]
 jsValToNoteEvents x = do
-  x' <- fromJSVal x
-  let jsEvents = case x' of
-                   Just ns -> ns
-                   Nothing -> []
-  pure $ fmap pFromJSVal jsEvents
+  case isUndefined x of
+    True -> pure []
+    False -> do
+      x' <- fromJSVal x
+      let jsEvents = case x' of
+                       Just ns -> ns
+                       Nothing -> []
+      pure $ fmap pFromJSVal jsEvents
 
 
 postRender :: ExoLang -> Bool -> UTCTime -> UTCTime -> IO ()
@@ -173,11 +189,11 @@ postRender e canDraw tNow tPrevDraw = withExoLang e $ \elc -> do
         False -> pure ()
         
 foreign import javascript unsafe
-  "$3.postRender({canDraw: $1, nowTime: $2, previousDrawTime: $3})"
+  "$4.postRender({canDraw: $1, nowTime: $2, previousDrawTime: $3})"
   _postRender :: Bool -> Double -> Double -> ExoLangClass -> IO ()
 
 foreign import javascript unsafe -- DEPRECATED
-  "$3.postAnimate($1,$2,$3)"
+  "$4.postAnimate($1,$2,$3)"
   _postAnimate :: Bool -> Double -> Double -> ExoLangClass -> IO ()
 
 
