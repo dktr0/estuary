@@ -55,8 +55,8 @@ data RenderState = RenderState {
   valueMap :: Tidal.ValueMap,
   
   renderTime :: !MovingAverage,
+  renderedTime :: !MovingAverage,
   animationDelta :: !MovingAverage, -- time between frame starts, ie. 1/FPS
-  animationTime :: !MovingAverage, -- time between frame start and end of drawing operations
   zoneRenderTimes :: !(IntMap MovingAverage),
   zoneAnimationTimes :: !(IntMap MovingAverage),
   info :: !RenderInfo,
@@ -99,9 +99,9 @@ initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
     noteEvents = [],
     valueMap = Map.empty,
 
-    renderTime = newAverage 20,
-    animationDelta = newAverage 20,
-    animationTime = newAverage 20,    
+    renderTime = newAverage 70,
+    renderedTime = newAverage 70,
+    animationDelta = newAverage 70,
     zoneRenderTimes = empty,
     zoneAnimationTimes = empty,
     info = emptyRenderInfo,

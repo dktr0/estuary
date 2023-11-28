@@ -115,6 +115,7 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 renderMainThread :: R ()
 renderMainThread = do
+  updateSystemAndAudioTime
   processRenderOps
   updateActiveRenderers
   calculateEventRenderingWindow mainRenderPeriod
@@ -124,36 +125,55 @@ renderMainThread = do
     renderZones False
     flushEvents
   updateWebDirtVoices
-    
-  -- calculate how much time this render cycle took and update load measurements
-  -- TODO: these calculations don't really make sense the way the rendering system has evolved
-  {- t2System <- liftIO $ getCurrentTime
-  let mostRecentRenderTime = diffUTCTime t2System t1System
+  updateRenderLoad
+
+
+-- to be done at the beginning of a render frame (whether in main or animation thread)
+updateSystemAndAudioTime :: R ()
+updateSystemAndAudioTime = do
+  t1System <- liftIO $ getCurrentTime
+  t1Audio <- MusicW.liftAudioIO $ MusicW.audioTime
+  modify' $ \x -> x {
+    systemTime = t1System,
+    audioTime = t1Audio
+    }
+  -- let elapsedSystem = (realToFrac $ diffUTCTime t1System $ systemTime s) :: Double
+  -- let elapsedAudio = t1Audio - audioTime s
+  
+-- to be done at the beginning of an animation frame only (after updateSystemAndAudioTime)
+updateAnimationDelta :: R ()
+updateAnimationDelta = do
+  s <- get
+  let immediateDelta = realToFrac $ diffUTCTime (systemTime s) (prevDrawTime s)
+  let newAnimationDelta = updateAverage (animationDelta s) immediateDelta
+  let fps = round $ 1 / getAverage newAnimationDelta
+  modify' $ \x -> x {
+    prevDrawTime = systemTime s,
+    animationDelta = newAnimationDelta,
+    info = (info x) { animationFPS = fps }
+    }
+ 
+-- to be done at the end of a render frame (whether in main or animation thread)  
+updateRenderLoad :: R () 
+updateRenderLoad = do
+  s <- get
+  t2System <- liftIO $ getCurrentTime
+  let mostRecentRenderTime = diffUTCTime t2System (systemTime s)
   let newRenderTime = updateAverage (renderTime s) $ realToFrac mostRecentRenderTime
-  let newAvgRenderLoad = ceiling (getAverage newRenderTime * 100 / realToFrac mainRenderPeriod)
-  modify' $ \x -> x { renderTime = newRenderTime }
-  modify' $ \x -> x { info = (info x) { avgRenderLoad = newAvgRenderLoad }}-}
+  let newRenderedTime = updateAverage (renderedTime s) $ realToFrac (windowPeriod s)
+  let newRenderLoad = ceiling (getAverage newRenderTime * 100 / getAverage newRenderedTime)
+  modify' $ \x -> x {
+    renderTime = newRenderTime,
+    renderedTime = newRenderedTime,
+    info = (info x) { avgRenderLoad = newRenderLoad } 
+    }
 
   
   
 calculateEventRenderingWindow :: NominalDiffTime -> R ()
 calculateEventRenderingWindow renderPeriodTarget = do
-  s <- get
-  -- check if audio clock has advanced same amount as system clock
-  t1System <- liftIO $ getCurrentTime
-  t1Audio <- MusicW.liftAudioIO $ MusicW.audioTime
-  let elapsedSystem = (realToFrac $ diffUTCTime t1System $ systemTime s) :: Double
-  let elapsedAudio = t1Audio - audioTime s
-  let cr = elapsedAudio / elapsedSystem
-  let crProblem = cr < clockRatioThreshold && cr > 0
-  modify' $ \x -> x {
-    systemTime = t1System,
-    audioTime = t1Audio,
-    info = (info x) { clockRatio = cr, clockRatioProblem = crProblem }
-  }
-  -- when crProblem $ liftIO $ T.putStrLn $ "audio clock slower, ratio=" <> showt cr
-
-  let diff = diffUTCTime (windowEnd s) t1System
+  s <- get 
+  let diff = diffUTCTime (windowEnd s) (systemTime s)
   
   -- 1. Fast Forward or Rewind
   -- if the logical endtime of previous rendering is too soon in the future (below fastForwardThreshold), or is in the past
@@ -166,9 +186,9 @@ calculateEventRenderingWindow renderPeriodTarget = do
   when rewind $ liftIO $ T.putStrLn "REWIND"
   when (fastForward || rewind) $ do
     modify' $ \x -> x {
-      windowStart = addUTCTime fastForwardThreshold t1System,
+      windowStart = addUTCTime fastForwardThreshold (systemTime s),
       windowPeriod = renderPeriodTarget,
-      windowEnd = addUTCTime (renderPeriodTarget+fastForwardThreshold) t1System
+      windowEnd = addUTCTime (renderPeriodTarget+fastForwardThreshold) (systemTime s)
       }
     
   -- 2. Normal
@@ -194,9 +214,10 @@ calculateEventRenderingWindow renderPeriodTarget = do
       }
 
 
-
 renderAnimationFrame :: R ()
 renderAnimationFrame = do
+  updateSystemAndAudioTime
+  updateAnimationDelta
   s <- get
   let mDelta = realToFrac $ getAverage $ animationDelta s
   fpsl <- fpsLimit
@@ -205,6 +226,7 @@ renderAnimationFrame = do
   renderZones True
   flushEvents
   updateWebDirtVoices
+  updateRenderLoad
 
 calculateMicroRenderPeriod :: NominalDiffTime -> Maybe NominalDiffTime -> NominalDiffTime
 calculateMicroRenderPeriod _ (Just fpsl) = fpsl
@@ -277,25 +299,6 @@ renderZones canDraw = do
   -- if canDraw, update record of previous drawing times
   when canDraw $ modify' $ \s -> s { prevDrawTime = tNow }
       
-
-{-
-    t2 <- liftIO $ getCurrentTime
-    s <- get
-    let newAnimationDelta = updateAverage (animationDelta s) (realToFrac $ diffUTCTime t1 wta)
-    let newAnimationTime = updateAverage (animationTime s) (realToFrac $ diffUTCTime t2 t1)
-    let newAnimationFPS = round $ 1 / getAverage newAnimationDelta
-    let newAnimationLoad = round $ getAverage newAnimationTime * 1000
-    modify' $ \x -> x {
-      wakeTimeAnimation = t1,
-      animationDelta = newAnimationDelta,
-      animationTime = newAnimationTime,
-      info = (info x) {
-        animationFPS = newAnimationFPS,
-        animationLoad = newAnimationLoad
-        }
-      }
-  microRenderInAnimationFrame
--}
 
 defineZone :: Int -> Definition -> R ()
 defineZone z d@(TidalStructure x) = do
