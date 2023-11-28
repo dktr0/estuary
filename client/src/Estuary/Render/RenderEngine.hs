@@ -141,17 +141,23 @@ updateSystemAndAudioTime = do
   -- let elapsedAudio = t1Audio - audioTime s
   
 -- to be done at the beginning of an animation frame only (after updateSystemAndAudioTime)
-updateAnimationDelta :: R ()
+updateAnimationDelta :: R Bool
 updateAnimationDelta = do
   s <- get
   let immediateDelta = realToFrac $ diffUTCTime (systemTime s) (prevDrawTime s)
-  let newAnimationDelta = updateAverage (animationDelta s) immediateDelta
-  let fps = round $ 1 / getAverage newAnimationDelta
-  modify' $ \x -> x {
-    prevDrawTime = systemTime s,
-    animationDelta = newAnimationDelta,
-    info = (info x) { animationFPS = fps }
-    }
+  fpsl <- fpsLimit
+  let okToRender = case fpsl of Nothing -> True; Just x -> immediateDelta >= (realToFrac x*0.95)
+  case okToRender of
+    False -> pure False
+    True -> do
+      let newAnimationDelta = updateAverage (animationDelta s) immediateDelta
+      let fps = round $ 1 / getAverage newAnimationDelta
+      modify' $ \x -> x {
+        prevDrawTime = systemTime s,
+        animationDelta = newAnimationDelta,
+        info = (info x) { animationFPS = fps }
+      }
+      pure True
  
 -- to be done at the end of a render frame (whether in main or animation thread)  
 updateRenderLoad :: R () 
@@ -217,16 +223,17 @@ calculateEventRenderingWindow renderPeriodTarget = do
 renderAnimationFrame :: R ()
 renderAnimationFrame = do
   updateSystemAndAudioTime
-  updateAnimationDelta
-  s <- get
-  let mDelta = realToFrac $ getAverage $ animationDelta s
-  fpsl <- fpsLimit
-  let p = calculateMicroRenderPeriod mDelta fpsl
-  calculateEventRenderingWindow p
-  renderZones True
-  flushEvents
-  updateWebDirtVoices
-  updateRenderLoad
+  canRender <- updateAnimationDelta
+  when canRender $ do
+    s <- get
+    let mDelta = realToFrac $ getAverage $ animationDelta s
+    fpsl <- fpsLimit
+    let p = calculateMicroRenderPeriod mDelta fpsl
+    calculateEventRenderingWindow p
+    renderZones True
+    flushEvents
+    updateWebDirtVoices
+    updateRenderLoad
 
 calculateMicroRenderPeriod :: NominalDiffTime -> Maybe NominalDiffTime -> NominalDiffTime
 calculateMicroRenderPeriod _ (Just fpsl) = fpsl

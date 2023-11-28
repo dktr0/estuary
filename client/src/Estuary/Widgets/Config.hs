@@ -49,7 +49,7 @@ configWidget = do
 
   divClass "config-option primary-color ui-font" $ do
     text "FPS:"
-    let fpsMap = fromList [(Just 0.030,"30"),(Just 0.060,"15"),(Just 0.015,"60"),(Nothing,"unlimited")]
+    let fpsMap = fromList [(Just 0.0333,"30"),(Just 0.0666,"15"),(Just 0.0166,"60"),(Nothing,"unlimited")]
     fpsLimit >>= dropdownW fpsMap >>= setFpsLimit
     el "div" $ dynText =<< (translatableText $ fromList [
       (English,"By default, visuals are limited to rendering at ~30 FPS. It is possible to set other limits and to have no limits on frame rate. Higher frame rates and unlimited frame rates may increase demands on the computer's CPU and GPU."),
