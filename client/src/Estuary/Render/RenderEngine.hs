@@ -359,7 +359,8 @@ defineZoneTextProgram z (tn,txt,eTime) options = do
     
 defineZoneGeneric :: Int -> TextProgram -> Text -> R ()
 defineZoneGeneric z (rName,txt,eTime) options = do
-  rs <- gets allRenderers
+  rEnv <- ask
+  rs <- liftIO $ readIORef (allRenderers rEnv)
   case Map.lookup rName rs of
     Nothing -> setZoneError z $ "no language called " <> rName <> " exists"
     Just r -> do
@@ -456,9 +457,7 @@ forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement ->
 forkRenderThreads rEnv s cineCer0Div pCanvas lCanvas hCanvas = do
   t0Audio <- MusicW.liftAudioIO $ MusicW.audioTime
   t0System <- getCurrentTime
-  pIn <- getPunctualInput $ mainBus rEnv
-  pOut <- getMainBusInput $ mainBus rEnv
-  irs <- initialRenderState pIn pOut cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
+  irs <- initialRenderState cineCer0Div pCanvas lCanvas hCanvas t0System t0Audio
   rsRef <- newIORef irs
   void $ forkIO $ mainThread rEnv rsRef
   void $ forkIO $ animationThread rEnv rsRef

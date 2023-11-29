@@ -5,6 +5,7 @@ module Estuary.Render.R where
 import Data.Time
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Control.Exception (evaluate,catch,SomeException,try)
@@ -26,7 +27,7 @@ import Estuary.Types.TextNotation
 import Estuary.Types.NoteEvent
 import Estuary.Types.RenderInfo
 import Estuary.Types.RenderState
-
+import Estuary.Languages.ExoLang
 import Estuary.Render.MainBus
 import Estuary.Render.WebDirt
 import Estuary.Render.SuperDirt
@@ -114,9 +115,11 @@ clearBaseRenderer z = modify' $ \s -> s { activeRenderersMap = IntMap.delete z $
 updateActiveRenderers :: R ()
 updateActiveRenderers = do
   s <- get
+  rEnv <- ask
+  rs <- liftIO $ readIORef (allRenderers rEnv)
   let names = nub $ IntMap.elems $ activeRenderersMap s -- [Text]
-  let rs = catMaybes $ fmap (\n -> Map.lookup n $ allRenderers s) names
-  modify' $ \s -> s { activeRenderers = rs  }
+  let rs' = catMaybes $ fmap (\n -> Map.lookup n rs) names
+  modify' $ \s -> s { activeRenderers = rs'  }
 
 getActiveRenderers :: R [Renderer]
 getActiveRenderers = gets activeRenderers
@@ -127,15 +130,17 @@ getActiveRenderer z = do
   case IntMap.lookup z brs of
     Nothing -> pure Nothing
     Just name -> do
-      allRs <- gets allRenderers
+      rEnv <- ask
+      allRs <- liftIO $ readIORef (allRenderers rEnv)
       case Map.lookup name allRs of
         Nothing -> pure Nothing
         Just r ->  pure (Just r)
   
 getAllRendererNames :: R [TextNotation]
 getAllRendererNames = do
-  s <- get
-  pure $ Map.keys $ allRenderers s
+  rEnv <- ask
+  rs <- liftIO $ readIORef (allRenderers rEnv)
+  pure $ Map.keys rs
   
 rendererExists :: TextNotation -> R Bool
 rendererExists x = do
@@ -202,3 +207,13 @@ updateWebDirtVoices = do
   wd <- asks webDirt
   n <- liftIO $ WebDirt.voices wd
   modify' $ \s -> s { info = (info s) { webDirtVoices = n } }
+
+
+insertExoLang :: Text -> Text -> R ()
+insertExoLang name url = do
+  c <- gets exoLangCanvas
+  e <- liftIO $ exoLangRenderer name c url
+  rEnv <- ask
+  liftIO $ insertRenderer rEnv name e
+  liftIO $ T.putStrLn $ "inserted exolang " <> name <> " from " <> url
+

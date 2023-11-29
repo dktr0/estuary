@@ -32,8 +32,9 @@ data RenderEnvironment = RenderEnvironment {
   resources :: Resources,
   ccMap :: IORef (Map.Map Text Double),
   _settings :: IORef Settings,
-  renderOps :: MVar [RenderOp],
-  renderInfo :: MVar RenderInfo
+  renderOps :: MVar [RenderOp], -- todo: could this be IORef?
+  renderInfo :: MVar RenderInfo, -- todo: this could definitely be IORef
+  allRenderers :: IORef (Map.Map Text Renderer)
   }
 
 initialRenderEnvironment :: Settings -> IO RenderEnvironment
@@ -58,6 +59,7 @@ initialRenderEnvironment s = do
                        pure [WriteZone 1 $ TextProgram $ Live ("MiniTidal",x,now) L3]
   renderOps' <- newMVar iRenderOps
   renderInfo' <- newMVar emptyRenderInfo
+  allRenderers' <- newIORef Map.empty
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,
@@ -68,5 +70,13 @@ initialRenderEnvironment s = do
     ccMap = ccMap',
     _settings = settings',
     renderOps = renderOps',
-    renderInfo = renderInfo'
+    renderInfo = renderInfo',
+    allRenderers = allRenderers'
     }
+    
+insertRenderer :: RenderEnvironment -> Text -> Renderer -> IO ()
+insertRenderer rEnv name r = modifyIORef (allRenderers rEnv) $ Map.insert name r
+
+
+
+    

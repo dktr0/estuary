@@ -25,6 +25,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import TextShow
 import Sound.MusicW.AudioContext
+import Sound.MusicW.Node as MusicW
 import Sound.Punctual.GL
 import Sound.Punctual.Resolution
 import Data.List (sort)
@@ -65,11 +66,19 @@ import Estuary.Render.MainBus
 import Estuary.Client.Settings as Settings
 import Estuary.Types.LogEntry
 import Estuary.Render.RenderOp as RenderOp
+import qualified Estuary.Languages.MiniTidal as MiniTidal
+import qualified Estuary.Languages.Punctual as Punctual
+import qualified Estuary.Languages.Seis8s as Seis8s
+import qualified Estuary.Languages.CineCer0 as CineCer0
+import qualified Estuary.Languages.Hydra as Hydra
+import qualified Estuary.Languages.TimeNot as TimeNot
+import Estuary.Languages.ExoLang
+import Estuary.Render.Renderer
 
 
-keyboardHintsCatcher :: MonadWidget t m => R.RenderEnvironment -> Settings -> m ()
-keyboardHintsCatcher rEnv settings = mdo
-  (theElement,_) <- elClass' "div" "" $ estuaryWidget rEnv settings keyboardShortcut
+keyboardHintsCatcher :: MonadWidget t m => Settings -> m ()
+keyboardHintsCatcher settings = mdo
+  (theElement,_) <- elClass' "div" "" $ estuaryWidget settings keyboardShortcut
   let e = HTMLDivElement $ pToJSVal $ _el_element theElement
   togTerminal <- (24 <$) <$> catchKeyboardShortcut e 24 True True
   togStats <- (12 <$) <$> catchKeyboardShortcut e 12 True True
@@ -100,8 +109,8 @@ hintsToSettingsChange = g . catMaybes . fmap f
     g xs = Just $ foldl1 (.) xs
 
 
-estuaryWidget :: MonadWidget t m => R.RenderEnvironment -> Settings -> Event t Int -> m ()
-estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
+estuaryWidget :: MonadWidget t m => Settings -> Event t Int -> m ()
+estuaryWidget iSettings keyboardShortcut = divClass "estuary" $ mdo
 
   settings <- settingsForWidgets rEnv iSettings hints
   cineCer0Div <- cinecer0Widget settings
@@ -111,7 +120,26 @@ estuaryWidget rEnv iSettings keyboardShortcut = divClass "estuary" $ mdo
   lCanvas <- canvasWidget settings improvizZIndex' -- canvas shared by LocoMotion and TransMit
   hydraZIndex' <- holdUniqDyn $ fmap Settings.hydraZIndex settings
   hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
-
+  
+  rEnv <- liftIO $ do
+    rEnv <- initialRenderEnvironment iSettings
+    t0System <- getCurrentTime
+    let iTempo = Tempo { freq = 0.5, time = t0System, Estuary.Types.Tempo.count = 0 }
+    exoLangRenderer "LocoMotion" lCanvas "https://dktr0.github.io/LocoMotion/locoMotion.js" >>= insertRenderer rEnv "locomotion"
+    exoLangRenderer "TransMit" lCanvas "https://jac307.github.io/TransMit/exolang.js" >>= insertRenderer rEnv "transmit"
+    MiniTidal.miniTidal iTempo >>= insertRenderer rEnv "minitidal"
+    punctual' <- Punctual.punctual pCanvas iTempo
+    pIn <- getPunctualInput $ mainBus rEnv
+    pOut <- getMainBusInput $ mainBus rEnv
+    setAudioInput punctual' pIn
+    setAudioOutput punctual' pOut
+    setNchnls punctual' $ numberOfOutputs pOut
+    insertRenderer rEnv "punctual" punctual'
+    CineCer0.cineCer0 cineCer0Div iTempo >>= insertRenderer rEnv "cinecer0"
+    Hydra.hydra hCanvas >>= insertRenderer rEnv "hydra"
+    TimeNot.timeNot iTempo >>= insertRenderer rEnv "timenot"
+    pure rEnv
+  
   liftIO $ forkRenderThreads rEnv iSettings cineCer0Div pCanvas lCanvas hCanvas
 
   rInfo <- pollRenderInfo rEnv
