@@ -17,11 +17,11 @@ bin
 .stack-work/*
 .stack-work
 .stack-work-production/
-static/
 .DS_Store
 *~
 EstuaryServer/EstuaryServer
 EstuaryServer/EstuaryServer.exe
+static/samples/
 
 **/.stack-work/**/*
 **/.stack-work-*/**/*

@@ -55,7 +55,8 @@ data Command =
   SetSerialPort Int | -- select a WebSerial port by index, and activate WebSerial output
   NoSerialPort | -- disactivate WebSerial output
   Theme Text | -- URL to a custom stylesheet (aka "theme"), empty text = revert to theme setting
-  LocalExoLang Text Text -- name URL
+  LocalExoLang Text Text | -- name URL
+  ExoLang Text Text -- name URL
   deriving (Show,Eq)
 
 parseCommand :: T.Text -> Either (Span, Text) Command
@@ -103,6 +104,7 @@ terminalCommand =
   <|> serialPortsParsers
   <|> themeParser
   <|> localExoLangParser
+  <|> exoLangParser
   <|> commandErrors
 
 commandErrors :: H Command
@@ -234,6 +236,11 @@ localExoLangParser :: H Command
 localExoLangParser =
   ((LocalExoLang <$ reserved "localexolang") <*> textLiteral <*> textLiteral) <|>
   (reserved "localexolang" >> fatal "Missing argument. !localexolangparser expects two text literal arguments (in quotation marks)")
+
+exoLangParser :: H Command
+exoLangParser =
+  ((ExoLang <$ reserved "exolang") <*> textLiteral <*> textLiteral) <|>
+  (reserved "exolang" >> fatal "Missing argument. !exolangparser expects two text literal arguments (in quotation marks)")
   
 -- select a presetview
 presetView :: H Command
