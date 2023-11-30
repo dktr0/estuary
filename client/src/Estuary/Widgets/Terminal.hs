@@ -255,6 +255,11 @@ runCommand rEnv _ Terminal.NoSerialPort = do
 -- set custom CSS theme
 runCommand _ _ (Terminal.Theme x) = pure [ ChangeSettings $ \s -> s { Settings.theme = x } ]
 
+-- add a local exolang
+runCommand rEnv _ (Terminal.LocalExoLang name url) = do
+  liftIO $ insertExoLang rEnv name url
+  pure [ logText "local exolang reference added" ]
+
 
 showResourceOps :: Seq ResourceOp -> Text
 showResourceOps xs | Seq.length xs == 0 = "empty resource ops"

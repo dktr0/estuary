@@ -8,6 +8,7 @@ import Data.Text
 import Control.Concurrent.MVar
 import Sound.MusicW
 import Data.Time (getCurrentTime)
+import GHCJS.DOM.Types (HTMLCanvasElement)
 
 import Estuary.Render.MainBus
 import Estuary.Render.WebDirt as WebDirt
@@ -23,6 +24,7 @@ import Estuary.Languages.ExoLang
 import Estuary.Types.Live
 import Estuary.Types.Definition (Definition(..))
 import Estuary.Types.TextNotation
+import Estuary.Types.AsyncValue (nonBlocking)
 
 data RenderEnvironment = RenderEnvironment {
   mainBus :: MainBus,
@@ -34,11 +36,12 @@ data RenderEnvironment = RenderEnvironment {
   _settings :: IORef Settings,
   renderOps :: MVar [RenderOp], -- todo: could this be IORef?
   renderInfo :: MVar RenderInfo, -- todo: this could definitely be IORef
-  allRenderers :: IORef (Map.Map Text Renderer)
+  allRenderers :: IORef (Map.Map Text Renderer),
+  sharedCanvas :: HTMLCanvasElement -- this will be replaced by a sharedDiv very soon!
   }
 
-initialRenderEnvironment :: Settings -> IO RenderEnvironment
-initialRenderEnvironment s = do
+initialRenderEnvironment :: Settings -> HTMLCanvasElement -> IO RenderEnvironment
+initialRenderEnvironment s cvs = do
   ac <- getGlobalAudioContextPlayback
   addWorklets ac
   mb <- initializeMainBus
@@ -71,12 +74,18 @@ initialRenderEnvironment s = do
     _settings = settings',
     renderOps = renderOps',
     renderInfo = renderInfo',
-    allRenderers = allRenderers'
+    allRenderers = allRenderers',
+    sharedCanvas = cvs
     }
     
 insertRenderer :: RenderEnvironment -> Text -> Renderer -> IO ()
 insertRenderer rEnv name r = modifyIORef (allRenderers rEnv) $ Map.insert name r
 
+-- insertExoLang inserts the reference to the exolang but doesn't force it to load yet
+insertExoLang :: RenderEnvironment -> Text -> Text -> IO ()
+insertExoLang rEnv name url = do
+  let name' = toLower name  
+  let cvs = sharedCanvas rEnv
+  r <- exoLangRenderer name' cvs url
+  insertRenderer rEnv name' r
 
-
-    

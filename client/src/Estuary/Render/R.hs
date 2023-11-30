@@ -209,11 +209,11 @@ updateWebDirtVoices = do
   modify' $ \s -> s { info = (info s) { webDirtVoices = n } }
 
 
-insertExoLang :: Text -> Text -> R ()
+{- insertExoLang :: Text -> Text -> R ()
 insertExoLang name url = do
   c <- gets exoLangCanvas
   e <- liftIO $ exoLangRenderer name c url
   rEnv <- ask
   liftIO $ insertRenderer rEnv name e
   liftIO $ T.putStrLn $ "inserted exolang " <> name <> " from " <> url
-
+-}

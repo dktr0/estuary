@@ -122,7 +122,7 @@ estuaryWidget iSettings keyboardShortcut = divClass "estuary" $ mdo
   hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
   
   rEnv <- liftIO $ do
-    rEnv <- initialRenderEnvironment iSettings
+    rEnv <- initialRenderEnvironment iSettings lCanvas
     t0System <- getCurrentTime
     let iTempo = Tempo { freq = 0.5, time = t0System, Estuary.Types.Tempo.count = 0 }
     exoLangRenderer "LocoMotion" lCanvas "https://dktr0.github.io/LocoMotion/locoMotion.js" >>= insertRenderer rEnv "locomotion"
