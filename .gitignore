@@ -17,6 +17,7 @@ bin
 .stack-work/*
 .stack-work
 .stack-work-production/
+static/samples/
 .DS_Store
 *~
 EstuaryServer/EstuaryServer

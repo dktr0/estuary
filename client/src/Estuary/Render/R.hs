@@ -18,9 +18,10 @@ import Sound.MusicW
 import TextShow
 import GHCJS.Types (JSVal)
 import Data.Witherable
-
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
+import qualified Sound.Punctual as Punctual
+import Sound.Punctual.GL
 
 import Estuary.Types.Definition
 import Estuary.Types.TextNotation
@@ -148,6 +149,9 @@ rendererExists x = do
   pure $ elem x xs
   
 
+-- clearEvaluationTime :: Int -> R ()
+-- clearEvaluationTime z = modify' $ \x -> x { evaluationTimes = IntMap.delete z $ evaluationTimes x}
+
 clearParamPattern :: Int -> R ()
 clearParamPattern z = modify' $ \s -> s { paramPatterns = IntMap.delete z (paramPatterns s) }
 
@@ -208,12 +212,3 @@ updateWebDirtVoices = do
   n <- liftIO $ WebDirt.voices wd
   modify' $ \s -> s { info = (info s) { webDirtVoices = n } }
 
-
-{- insertExoLang :: Text -> Text -> R ()
-insertExoLang name url = do
-  c <- gets exoLangCanvas
-  e <- liftIO $ exoLangRenderer name c url
-  rEnv <- ask
-  liftIO $ insertRenderer rEnv name e
-  liftIO $ T.putStrLn $ "inserted exolang " <> name <> " from " <> url
--}

@@ -123,9 +123,8 @@ data Definition =
   SpecChat SpecChat |
   CalendarEvs CalendarEvents |
   Test Test
-
   deriving (Eq,Show,Generic)
-
+ 
 instance ToJSON Definition where
   toEncoding = genericToEncoding defaultOptions
 instance FromJSON Definition

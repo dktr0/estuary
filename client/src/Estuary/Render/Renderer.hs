@@ -6,7 +6,6 @@ import Data.Time
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
 import qualified Sound.MusicW as MusicW
-
 import Estuary.Types.Tempo
 import Estuary.Types.NoteEvent
 import Estuary.Types.Definition

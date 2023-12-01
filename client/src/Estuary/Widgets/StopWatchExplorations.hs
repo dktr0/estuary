@@ -19,13 +19,45 @@ import Estuary.Types.Definition
 import Estuary.Widgets.Text
 
 
+-- selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
+-- selectVisualiser (Tv 0 seg k) = divClass "tempo-visualiser" $ do
+--   cycleTracer seg
+--   x <- do 
+--     y <- divClass "flex-container-for-timeVision" $ do
+--       leftPanel <- clickableDiv "flex-item-for-timeVision-left" $ do -- :: Event t ()
+--           divClass "left-panel-hoover" $ text $ T.pack "previous metre visualiser"
+--       let leftEvent = tvNextStateLeft <$ leftPanel-- Event t (TimeVision -> TimeVision)
+--       centreEvent <- do
+--           z <- elClass "div" "flex-container-for-timeVision-vertical" $ do
+--             upPanel <- clickableDiv "flex-item-for-timeVision-vertical-up" $ do
+--               divClass "up-panel-hoover" $ text $ T.pack "more subdivisions"
+--             infoDisplay upPanel seg 4
+--             let upEvent = segmentUp <$ upPanel  
+--             downPanel <- clickableDiv "flex-item-for-timeVision-vertical-down" $ do
+--               divClass "down-panel-hoover" $ text $ T.pack "less subdivisions"
+--             infoDisplay downPanel seg 4
+--             let downEvent = segmentDown <$ downPanel
+--             let cPanelEvent = leftmost [upEvent,downEvent]
+--             return cPanelEvent
+--           return z
+--       rightPanel <- clickableDiv "flex-item-for-timeVision-right" $ do -- :: Event t ()
+--           divClass "right-panel-hoover" $ text $ T.pack "next metre visualiser"
+--       let rightEvent = tvNextStateRight <$ rightPanel
+--       let panelEvent = fmap (\x -> x $ Tv 0 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
+--       return panelEvent
+--     return y
+--   return x
 
 stopWatchWidget :: MonadWidget t m => Dynamic t StopwatchState -> W t m (Variable t StopwatchState)
 stopWatchWidget deltasDown =  divClass "stopwatch" $  mdo
   -- 1. Translate button presses into localChanges
-  let bText = stopWatchToButtonText <$> currentValue v
-  x <- dynButton $ bText -- Event () (i think)
-  let y = tag (current $ currentValue v) x -- Event
+  let hoverText = stopWatchToButtonText <$> currentValue v
+  -- x <- dynButton $ bText 
+
+  panel <- clickableDiv "stopwatch-panel" $ do -- :: Event t ()
+          divClass "stopwatch-panel-hover" $ dynText hoverText
+  
+  let y = tag (current $ currentValue v) panel -- Event
   localChanges <- performEvent $ fmap (liftIO . stopWatchToNextState) y
   -- 2. Calculate and display text
   widgetBuildTime <- liftIO $ getCurrentTime  -- :: UTC (happens when widget is built)
@@ -35,19 +67,53 @@ stopWatchWidget deltasDown =  divClass "stopwatch" $  mdo
   let textUpdates = attachWith stopWatchToText (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
  -- holdDyn initialText textUpdates >>= dynText -- simple unstyled display of the timer
   texto <- holdDyn initialText textUpdates
-  visualiseStopwatchWidget $ texto
+  drawStopwatch texto
   v <- returnVariable deltasDown localChanges
   return v
 
 ------ stopwatch visualisation widget (work in progress)
 
-visualiseStopwatchWidget :: MonadWidget t m => Dynamic t Text -> W t m ()
-visualiseStopwatchWidget delta = do
-  let class' = constDyn $ "class" =: "human-to-human-comm code-font"
-  let style = constDyn $ "style" =: "height: auto;"
-  let attrs = mconcat [class',style]
-  elDynAttr "stopwatch" attrs $ dynText delta
+-- visualiseStopwatchWidget :: MonadWidget t m => Dynamic t Text -> W t m ()
+-- visualiseStopwatchWidget delta = do
+--   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
+--   let style = constDyn $ "style" =: "height: auto;"
+--   let attrs = mconcat [class',style]
+--   elDynAttr "stopwatch" attrs $ dynText delta
+--   return ()
+
+drawStopwatch :: MonadWidget t m => Dynamic t Text -> W t m ()
+drawStopwatch countup = do
+  -- svg attrs
+  let class' = constDyn $ "class" =: "visualiser code-font"
+  let vB = constDyn $ "viewBox" =: "0 0 100 100"
+  let w' = constDyn $ "width" =: "100%"
+  let h' = constDyn $ "height" =: "100%"
+  let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
+  let attrs = mconcat [class',w',h',vB,par]
+  -- text attrs
+  -- let txAttrs = constDyn $ "" =: ""
+  -- tspans attrs
+  let txAnchor = constDyn $ "text-anchor" =: "middle"
+  let fill = constDyn $ "fill" =: "var(--primary-color)"
+  let x' = constDyn $ "x" =: "50"
+  -- tspan1 attrs
+  let y' = constDyn $ "y" =: "95"
+  -- tspan2 attrs
+  let font2 = constDyn $ "font-size" =: "5em"
+  let y'' = constDyn $ "y" =: "75"
+  let tspan2Attrs = mconcat [txAnchor,fill,x',y'',font2]
+
+  let txAttrs = mconcat [txAnchor,fill,x',y']
+
+  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "text" txAttrs $ do
+      elDynAttrNS' (Just "http://www.w3.org/2000/svg") "tspan" tspan2Attrs $ do
+        dynText countup
+        return ()
+      return ()
+    return ()    
   return ()
+
 
 ------ State calculations ----
 
@@ -72,227 +138,6 @@ stopWatchToButtonText:: StopwatchState -> Text
 stopWatchToButtonText Cleared = "Start"
 stopWatchToButtonText (Running _) = "Stop"
 stopWatchToButtonText (Stopped _) = "Clear"
-
-
--------- Countdown widget 
-
--- countDownWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
--- countDownWidget delta =  divClass "countDown" $  mdo
-
---   let initialText = "t-minus: 60"   -- Text
---   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
---   let editable = editableText <$> currentValue v    -- Bool --checks if holding or falling. If holding editable if falling not.
---   textos <- holdDyn initialText $ leftmost [updatedText,textUpdates] -- Dynamic t Text
---   (valTxBx,_) <- textWithLockWidget 1 editable textos -- (Dynamic t Text, Event t Text)
-
---   let bText = countDownToButtonText <$> currentValue v -- Dynamic t Text  -- changes the text in button
---   butt <- dynButton $ bText                            -- Event t ()  -- when this button is pressed
-
--- ---- OJO two tags in a row, different kind of pattern
---   let buttonPressedEvent = tag (current valTxBx) $ butt -- Event t Text  -- the val in the textbox is tagged
-
---   let stateWhenButtonPressed = tag (current $ currentValue v) buttonPressedEvent -- Event t Downer -- the current value of v (not delta) is tagged to the button pressed, currentValue v is a Dynamic of Downer, current gets the behaviour
-
-
---   localChanges <- performEvent $ attachWith countDownButtonStateChange (current $ timeDyn) stateWhenButtonPressed -- Event to Downer
-
--- ------------------------------------------------------
---   timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) $ buttonPressedEvent -- Dynamic t Int
-
---   widgetBuildTime <- liftIO $ getCurrentTime  
---   initialCount <- sample $ current delta -- current gets the Behaviour of the dyn and then gets the m Downer
---   let initialTime = countDownToDisplay initialCount widgetBuildTime
---   tick <- tickLossy 0.06666666666666667 widgetBuildTime 
---   let textUpdates = attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
---   v <- variable delta localChanges
---   return v
-
-
-
--- -------- Sandclock widget 
-
--- sandClockWidget :: MonadWidget t m => Dynamic t TimerDownState -> W t m (Variable t TimerDownState)
--- sandClockWidget deltasDown =  divClass "countDown" $  mdo
-
---   let initialText = "initial count is 60, change it here"
---   let updatedText = fmap (showt) $ updated timeDyn  -- Event t Text
---   let editable = editableText <$> currentValue v
---   textos <- holdDyn initialText $ leftmost [updatedText, textUpdates]
---   (valTxBx,_) <- textToInvisible 1 editable textos
---   let bText = countDownToButtonText <$> currentValue v
---   butt <- dynButton $ bText 
---   let buttonPressedEvent = tagPromptlyDyn valTxBx $ butt
---   let stateWhenButtonPressed = tagPromptlyDyn (currentValue v) buttonPressedEvent
---   localChanges <- performEvent $ attachPromptlyDynWith countDownButtonStateChange timeDyn stateWhenButtonPressed
---   -- this needs to change to attachWith countDownButtonStateChange (current timeDyn) stateWhenButtonPressed, however I have to discover how to updateText in line 81 and keep an eye on the targetTime update issue, for the moment it is clear that buttonPressedEvent caqnnot be in line 81 without consequences in the proper functioning of the widget...
-
---   timeDyn <- holdDyn 60 $ fmapMaybe ((readMaybe :: String -> Maybe Int) . T.unpack) buttonPressedEvent
-
---   widgetBuildTime <- liftIO $ getCurrentTime  
---   initialCount <- sample $ current deltasDown
---   let initialTime = countDownToDisplay initialCount widgetBuildTime
---   tick <- tickLossy 0.06666666666666667 widgetBuildTime 
---   let textUpdates = attachWithMaybe countDownToDisplay (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
-
--- ---- here I have to open a pathway for different kind of visualisations, so far: text, sandclock, bar progress----
-
--- --- sandclock experiments
---   let sandUpdates = attachWithMaybe sandClock (current $ currentValue v) $ fmap _tickInfo_lastUTC tick 
---   -- holdDyn initialTime textUpdates >>= dynText -- if state is falling then do this
---   -- coso <- holdDyn "" sandUpdates -- >>= dynText -- if state is falling then do this
--- --  sandClockWidget coso
-
---   let sandUpdates' = attachWithMaybe clockForSVGs (current $ currentValue v) $ fmap _tickInfo_lastUTC tick
---   coso' <- holdDyn 0 sandUpdates'
-
---   visualiseSVGWidget coso'
-
---   v <- returnVariable deltasDown localChanges
---   return v
-
-
--- editableText:: TimerDownState -> Bool
--- editableText (Holding _) = False
--- editableText (Falling _ _) = True
-
--- countDownButtonStateChange :: MonadIO m => Int -> TimerDownState -> m TimerDownState
--- countDownButtonStateChange newTar (Holding tar) = do
---   now <- liftIO getCurrentTime
---   return (Falling newTar now)
--- countDownButtonStateChange newTar (Falling tar y) = do
---   return (Holding newTar)
-
--- countDownToDisplay:: TimerDownState -> UTCTime -> Maybe Text
--- countDownToDisplay (Holding _) _ = Nothing
--- countDownToDisplay (Falling x y) now = if xx < 0 then Just $ diffTimeToText 0 else Just $ diffTimeToText xx 
---                                  where xx = (diffUTCTime (addUTCTime (realToFrac x) y) now)
-
--- countDownToButtonText:: TimerDownState -> Text
--- countDownToButtonText (Holding _) = "Start"
--- countDownToButtonText (Falling _ _) = "Stop"
-
--- countDownToInitialVal:: TimerDownState -> Int
--- countDownToInitialVal (Holding x) = x
--- countDownToInitialVal (Falling x _) = x
-
-
--- clockForSVGs:: TimerDownState -> UTCTime -> Maybe Int 
--- clockForSVGs (Holding _) _ = Nothing
--- clockForSVGs (Falling target startTime) now = if xx < 0 then Just $ 0 else Just $ countToPercent 100 target xx
---                                  where xx = (diffUTCTime (addUTCTime (realToFrac target) startTime) now)
-
-
--- -- function to calculate in percentage the countdown
-
--- sandClock :: TimerDownState -> UTCTime -> Maybe Text 
--- sandClock (Holding _) _ = Nothing
--- sandClock (Falling target startTime) now = if xx < 0 then Just $ timeToDots 0 else Just $ timeToDots (countToPercent 100 target xx) 
---                                  where xx = (diffUTCTime (addUTCTime (realToFrac target) startTime) now)
-
--- -- not in use
--- timeToDots :: Int -> Text
--- timeToDots grains = showt $ concat $ replicate grains "."
-
--- ------ ambitious sandclock widget ----
-
--- visualiseSVGWidget :: MonadWidget t m => Dynamic t Int -> W t m ()
--- visualiseSVGWidget delta = do
---   -- dynamic stuff
---   let yFall = countToFallY 50 0 <$> delta
---   let heightFall = countToFallH 50 <$> delta
---   let yHold = countToHoldY 0 100 <$> delta
---   let heightHold = countToHoldH 0 <$> delta
-
---   let class' = constDyn $ "class" =: "mySVG"
---   let width = constDyn $ "width" =: "100%"
---   let height = constDyn $ "height" =: "100%"
---   let style = constDyn $ "style" =: ("height: auto; color: white; z-index: 0")
---   let vB = constDyn $  "viewBox" =: "0 0 100 100"
---   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet" 
---   let attrs = mconcat [class',width,height, style, vB, par]
---   -- sand falling 
---   let x = constDyn $ "x" =: "0"
---   let width' = constDyn $ "width" =: "100"
---   let strokeFall = constDyn $ "fill" =: "var(--primary-color)"
---   let mask' = constDyn $ "mask" =: "url(#myMask)"
---   let attrsFall = mconcat [mask',class',strokeFall,x,yFall,width',heightFall]
-
---   -- sand holder
---   let x = constDyn $ "x" =: "0"
---   let widthHold = constDyn $ "width" =: "100"
---   let strokeHold = constDyn $ "fill" =: "var(--primary-color)"
---   let attrsHold = mconcat [mask',class',strokeHold,x,yHold,widthHold,heightHold]
-
-
---   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
---     -- creatMask first
---     sandClockMask
---     -- sand Falling
---     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsFall $ return () 
---     -- sand held
---     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsHold $ return () 
-
---   return ()
-
--- countToFallY:: Rational -> Rational -> Int -> Map Text Text
--- countToFallY defH defY percent = 
---   let y' = realToFrac (defY + (defH * (realToFrac percent)))/100 :: Double
---       y = (realToFrac defH :: Double) + (y'*(-1))
---   in "y" =: (showt y)
-
--- countToFallH:: Rational -> Int -> Map Text Text
--- countToFallH defH percent = 
---   let h = realToFrac (round $ defH * (realToFrac percent))/100 :: Double
---   in "height" =: (showt h)
-           
--- countToHoldY:: Rational -> Rational -> Int -> Map Text Text
--- countToHoldY defH defY percent = -- percent es una cuenta regresiva del 100 al 0
---   let countUp = realToFrac (100 + (percent*(-1))) :: Double
---       halfClock = countUp/2
---       result = (realToFrac defY :: Double) - halfClock
---   in "y" =: (showt result)
-
--- countToHoldH:: Rational -> Int -> Map Text Text
--- countToHoldH defH percent = 
---   let countUp = realToFrac (100 + (percent*(-1))) :: Double 
---       halfClock = countUp/2
---   in "height" =: showt halfClock
-    
--- ---- SVG helpers
-
--- sandClockMask:: MonadWidget t m => W t m ()
--- sandClockMask = do
---   let class' = constDyn $ "class" =: "human-to-human-comm textInputToEndOfLine code-font"
---   -- rect mask
---   let x = constDyn $ "x" =: "0"
---   let y = constDyn $ "y" =: "0"
---   let width' = constDyn $ "width" =: "100"
---   let height' = constDyn $ "height" =: "100"
---   let fill' = constDyn $ "fill" =: "black"
---   let attrsRect = mconcat [class', x,y,width',height',fill']
---   -- clock shape attributes
---   let points' = constDyn $ points [(5,95),(95,95),(45,45),(5,5),(95,5)]
---   let stroke' = constDyn $ "stroke" =: "white"
---   let fill'' = constDyn $ "fill" =: "white"
---   let attrsClock = mconcat [class',stroke',points',fill'']
---   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "mask" (constDyn $ "id" =: "myMask") $ do
---     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "rect" attrsRect $ return () 
---     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "polygon" attrsClock $ return () 
---     return ()
---   return ()
-
--- -------- points to make polygons or paths
-
--- points :: [(Int,Int)] -> Map Text Text
--- points [] = Data.Map.empty
--- points x = "points" =: (coordToText x)
-
--- coordToText:: [(Int,Int)] -> Text
--- coordToText p = Prelude.foldl (\ x y -> x <> " " <> (ptsToCoord y)) "" p
-
--- ptsToCoord:: (Int,Int) -> Text
--- ptsToCoord (x,y) = T.pack (show x) <> (T.pack ",") <> T.pack (show y)
-
 
 -- -- general helpers
 

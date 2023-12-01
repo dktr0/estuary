@@ -147,7 +147,8 @@ visualiseCycles delta segments = do
   let r = constDyn $ "r" =: "1.4"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05"
-  let attrsCircle = mconcat [cx,cy,r,stroke,strokeWidth]
+  let fill' = constDyn $ "fill" =: "transparent"
+  let attrsCircle = mconcat [cx,cy,r,stroke,strokeWidth, fill']
 
   let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1.4")

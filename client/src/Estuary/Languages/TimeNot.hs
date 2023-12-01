@@ -14,7 +14,6 @@ import Data.IntMap as IntMap
 import Estuary.Types.NoteEvent
 import Estuary.Render.Renderer
 import Estuary.Types.Definition
--- import Estuary.Types.TextNotation
 import Estuary.Types.Tempo
 import Estuary.Render.ForeignTempo
 import Estuary.Languages.ExoLang

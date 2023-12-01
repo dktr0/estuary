@@ -423,8 +423,10 @@ drawStack countdown' program = do
   let width = constDyn $ "width" =: "100%"
   let height = constDyn $ "height" =: "100%"
   let vB = constDyn $  "viewBox" =: "0 0 150 100"
+  let vB' = constDyn $ "viewBox" =: "0 0 100 100"
   let par = constDyn $ "preserveAspectRatio" =: "none" 
-  let par' = constDyn $ "preserveAspectRatio" =: "none" 
+  let par' = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
+  let txLen = constDyn $ "textLength" =: "75%"
   let attrs = mconcat [class',width,height, vB, par]  -- svg
 
   let x1Line = constDyn $ "x1" =: "0"
@@ -434,11 +436,10 @@ drawStack countdown' program = do
   let y2Line = (\y2 -> "y2" =: showt y2) <$> countdown
   let lineAttrs = mconcat [x1Line, x2Line, strokeLine, y1Line, y2Line]
 
-  let attrs' = mconcat [class',width,height, vB, par']
+  let attrs' = mconcat [class',width,height, vB', par', txLen]
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs' $ do
     generateLabelForBlocks countdown program
-
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     generateStackBlocks countdown program
@@ -462,7 +463,7 @@ generateLabelForBlock:: MonadWidget t m => Dynamic t Double -> Dynamic t (Double
 generateLabelForBlock count segment = do
   let label = (\x -> (trd' x)) <$> segment -- Dyn t Text
   -- text attributes
-  let textX = constDyn $ "x" =: "70"
+  let textX = constDyn $ "x" =: "45"
   let textY = (\y -> "y" =: (showt $ (snd' y) + ((fst' y)*0.85))) <$> segment
   let txAnchor = constDyn $ "text-anchor" =: "middle"
   let fillTx = constDyn $ "fill" =: "var(--primary-color)" 
