@@ -125,8 +125,6 @@ estuaryWidget iSettings keyboardShortcut = divClass "estuary" $ mdo
     rEnv <- initialRenderEnvironment iSettings lCanvas
     t0System <- getCurrentTime
     let iTempo = Tempo { freq = 0.5, time = t0System, Estuary.Types.Tempo.count = 0 }
-    exoLangRenderer "LocoMotion" lCanvas "https://dktr0.github.io/LocoMotion/locoMotion.js" >>= insertRenderer rEnv "locomotion"
-    exoLangRenderer "TransMit" lCanvas "https://jac307.github.io/TransMit/exolang.js" >>= insertRenderer rEnv "transmit"
     MiniTidal.miniTidal iTempo >>= insertRenderer rEnv "minitidal"
     punctual' <- Punctual.punctual pCanvas iTempo
     pIn <- getPunctualInput $ mainBus rEnv

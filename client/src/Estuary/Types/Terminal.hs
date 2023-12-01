@@ -235,12 +235,12 @@ themeParser =
 localExoLangParser :: H Command
 localExoLangParser =
   ((LocalExoLang <$ reserved "localexolang") <*> textLiteral <*> textLiteral) <|>
-  (reserved "localexolang" >> fatal "Missing argument. !localexolangparser expects two text literal arguments (in quotation marks)")
+  (reserved "localexolang" >> fatal "Missing argument. !localexolang expects two text literal arguments (in quotation marks)")
 
 exoLangParser :: H Command
 exoLangParser =
   ((ExoLang <$ reserved "exolang") <*> textLiteral <*> textLiteral) <|>
-  (reserved "exolang" >> fatal "Missing argument. !exolangparser expects two text literal arguments (in quotation marks)")
+  (reserved "exolang" >> fatal "Missing argument. !exolang expects two text literal arguments (in quotation marks)")
   
 -- select a presetview
 presetView :: H Command

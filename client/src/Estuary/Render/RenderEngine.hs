@@ -58,7 +58,7 @@ import Estuary.Render.RenderOp
 import Estuary.Render.Renderer
 import qualified Estuary.Client.Settings as Settings
 import Estuary.Render.WebSerial as WebSerial
-
+import qualified Estuary.Resources as Resources
 
 
 mainRenderThreadSleepTime :: Int
@@ -355,24 +355,38 @@ defineZoneTextProgram z (tn,txt,eTime) options = do
       case parseResult of
         Right txt' -> defineZoneTextProgram z ("",txt',eTime) ""
         Left e -> setZoneError z e
-    Nothing -> defineZoneGeneric z (tn,txt,eTime) options 
+    Nothing -> defineZoneExistingRenderer z (tn,txt,eTime) options 
     
-defineZoneGeneric :: Int -> TextProgram -> Text -> R ()
-defineZoneGeneric z (rName,txt,eTime) options = do
+defineZoneExistingRenderer :: Int -> TextProgram -> Text -> R ()
+defineZoneExistingRenderer z (rName,txt,eTime) options = do
   rEnv <- ask
   rs <- liftIO $ readIORef (allRenderers rEnv)
-  case Map.lookup rName rs of
+  case Map.lookup rName rs of -- or is it an existing renderer?
+    Just r -> defineZoneExoLang r z (rName,txt,eTime) options
+    Nothing -> defineZoneNewExoLang z (rName,txt,eTime) options
+    
+defineZoneNewExoLang :: Int -> TextProgram -> Text -> R ()
+defineZoneNewExoLang z (rName,txt,eTime) options = do
+  rEnv <- ask
+  mURL <- Resources.findExoLangURL (resources rEnv) rName
+  case mURL of -- or is it an ExoLang that hasn't been loaded yet?
+    Just url -> do
+      r <- insertExoLang rEnv rName url
+      defineZoneExoLang r z (rName,txt,eTime) options    
     Nothing -> setZoneError z $ "no language called " <> rName <> " exists"
-    Just r -> do
-      let d = TextProgram (Live (rName,txt,eTime) L3)
-      result <- liftIO $ (define r) z d -- TODO: options need to be passed into renderers/exolangs
-      case result of 
-        Left err -> setZoneError z err
-        Right _ -> do
-          clearZoneError z
-          setBaseRenderer z rName
-          setBaseDefinition z d
-        
+    
+defineZoneExoLang :: Renderer -> Int -> TextProgram -> Text -> R ()
+defineZoneExoLang r z (rName,txt,eTime) options = do
+  let d = TextProgram (Live (rName,txt,eTime) L3)
+  result <- liftIO $ (define r) z d -- TODO: options need to be passed into renderers/exolangs
+  case result of 
+    Left err -> setZoneError z err
+    Right _ -> do
+      clearZoneError z
+      setBaseRenderer z rName
+      setBaseDefinition z d
+
+     
 determineTextNotation :: Text -> (TextNotation,Text,Text) -- (text notation, options, text code with pragma removed)
 determineTextNotation x =
   case T.isPrefixOf "##" x of

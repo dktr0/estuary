@@ -9,6 +9,7 @@ import Control.Concurrent.MVar
 import Sound.MusicW
 import Data.Time (getCurrentTime)
 import GHCJS.DOM.Types (HTMLCanvasElement)
+import Control.Monad.IO.Class
 
 import Estuary.Render.MainBus
 import Estuary.Render.WebDirt as WebDirt
@@ -39,7 +40,7 @@ data RenderEnvironment = RenderEnvironment {
   allRenderers :: IORef (Map.Map Text Renderer),
   sharedCanvas :: HTMLCanvasElement -- this will be replaced by a sharedDiv very soon!
   }
-
+  
 initialRenderEnvironment :: Settings -> HTMLCanvasElement -> IO RenderEnvironment
 initialRenderEnvironment s cvs = do
   ac <- getGlobalAudioContextPlayback
@@ -78,14 +79,15 @@ initialRenderEnvironment s cvs = do
     sharedCanvas = cvs
     }
     
-insertRenderer :: RenderEnvironment -> Text -> Renderer -> IO ()
-insertRenderer rEnv name r = modifyIORef (allRenderers rEnv) $ Map.insert name r
+insertRenderer :: MonadIO m => RenderEnvironment -> Text -> Renderer -> m ()
+insertRenderer rEnv name r = liftIO $ modifyIORef (allRenderers rEnv) $ Map.insert name r
 
 -- insertExoLang inserts the reference to the exolang but doesn't force it to load yet
-insertExoLang :: RenderEnvironment -> Text -> Text -> IO ()
+insertExoLang :: MonadIO m => RenderEnvironment -> Text -> Text -> m Renderer
 insertExoLang rEnv name url = do
   let name' = toLower name  
   let cvs = sharedCanvas rEnv
-  r <- exoLangRenderer name' cvs url
+  r <- liftIO $ exoLangRenderer name' cvs url
   insertRenderer rEnv name' r
+  pure r
 

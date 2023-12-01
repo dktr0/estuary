@@ -255,10 +255,16 @@ runCommand rEnv _ Terminal.NoSerialPort = do
 -- set custom CSS theme
 runCommand _ _ (Terminal.Theme x) = pure [ ChangeSettings $ \s -> s { Settings.theme = x } ]
 
--- add a local exolang
+-- add an exolang locally only
 runCommand rEnv _ (Terminal.LocalExoLang name url) = do
   liftIO $ insertExoLang rEnv name url
   pure [ logText "local exolang reference added" ]
+
+-- add an exolang (normally, ie. locally and shared to ensemble resources)
+runCommand _ e (Terminal.ExoLang name url) = do
+  let rs = Ensemble.resourceOps $ ensemble e
+  let rs' = rs |> InsertResource ExoLang url (name,0)
+  pure [ Request $ Request.WriteResourceOps rs', logText "exolang reference added" ]
 
 
 showResourceOps :: Seq ResourceOp -> Text

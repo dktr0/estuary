@@ -26,5 +26,10 @@ instance ToJSON ResourceOp where
 instance FromJSON ResourceOp
 
 defaultResourceOps :: Seq ResourceOp
-defaultResourceOps = Data.Sequence.singleton $ ResourceListURL "samples/resources.json"
+defaultResourceOps = Data.Sequence.fromList [
+  ResourceListURL "samples/resources.json",
+  AppendResource ExoLang "https://dktr0.github.io/LocoMotion/locoMotion.js" "locomotion",
+  AppendResource ExoLang "https://jac307.github.io/TransMit/exolang.js" "transmit"
+  ]
+
 

@@ -15,7 +15,6 @@ import qualified Sound.Tidal.Context as Tidal
 import Data.IntMap as IntMap
 import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Estuary.Resources
 import Estuary.Types.Tempo
 import Language.Javascript.JSaddle.Object
 import Language.Javascript.JSaddle.Value

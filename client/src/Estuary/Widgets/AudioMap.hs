@@ -9,18 +9,17 @@ import Data.IntMap as IntMap
 import Data.Text
 import TextShow
 import Data.List (nub)
-import Data.Tuple.Select
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class
 
 import Estuary.Widgets.W
 import Estuary.Resources.LocMap
 import Estuary.Widgets.Reflex (traceDynamic)
-
+import Estuary.Resources (audioMap)
 
 audioMapWidget :: (Reflex t, Monad m, MonadFix m, Adjustable t m, PostBuild t m, MonadHold t m, DomBuilder t m) => W t m ()
 audioMapWidget = elClass "div" "reference" $ do
-  aMap <- fmap sel1 <$> resourceMaps -- :: Dynamic t (LocMap Text)
+  aMap <- fmap audioMap <$> resourceMaps -- :: Dynamic t (LocMap Text)
   simpleList (reduceAudioMap <$> aMap) builder
   return ()
 
