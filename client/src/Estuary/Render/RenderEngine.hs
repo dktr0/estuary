@@ -297,6 +297,10 @@ renderZones canDraw = do
   tNow <- gets systemTime
   tPrev <- gets prevDrawTime
   rs <- getActiveRenderers
+  res <- resolution
+  liftIO $ mapM_ (\r -> (setResolution r) res) rs -- later optimize so that these setters are only called when settings actual change not every frame...
+  b <- brightness
+  liftIO $ mapM_ (\r -> (setBrightness r) b) rs  
   liftIO $ mapM_ (\r -> (preRender r) canDraw tNow tPrev) rs
   -- render for each active zone
   defs <- gets baseDefinitions

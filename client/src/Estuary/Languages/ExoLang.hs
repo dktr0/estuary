@@ -199,17 +199,7 @@ foreign import javascript unsafe -- DEPRECATED
 
 
 setTempo :: ExoLang -> Tempo -> IO ()
-setTempo e t = void $ withExoLang e $ \elc -> do
-  case hasFunction "setTempo" elc of
-    True -> _setTempo (toForeignTempo t) elc
-    False -> pure ()
-    
-{- setTempo e t = withExoLang e $ \elo -> do
-  putStrLn $ "t " ++ show t
-  -- let t' = toForeignTempo t
-  t' <- toForeignTempoDebug t
-  putStrLn $ "t' " ++ unpack (showForeignTempo t')
-  _setTempo t' elo -}
+setTempo e t = void $ withExoLang e $ \elc -> when (hasFunction "setTempo" elc) $ _setTempo (toForeignTempo t) elc
 
 foreign import javascript unsafe
   "$2.setTempo($1)"
