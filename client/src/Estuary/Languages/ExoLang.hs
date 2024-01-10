@@ -64,6 +64,8 @@ _loadExoLang canvas path = do
   putStrLn $ " hasFunction postRender: " ++ show (hasFunction "postRender" elc)
   putStrLn $ " hasFunction postAnimate: " ++ show (hasFunction "postAnimate" elc)
   putStrLn $ " hasFunction setTempo: " ++ show (hasFunction "setTempo" elc)
+  putStrLn $ " hasFunction setBrightness: " ++ show (hasFunction "setBrightness" elc)
+  putStrLn $ " hasFunction setOutputChannelCount: " ++ show (hasFunction "setOutputChannelCount" elc)
   pure elc  
   
   
@@ -206,6 +208,22 @@ foreign import javascript unsafe
   _setTempo :: ForeignTempo -> ExoLangClass -> IO ()
 
 
+setBrightness :: ExoLang -> Double -> IO ()
+setBrightness e x = void $ withExoLang e $ \elc -> when (hasFunction "setBrightness" elc) $ _setBrightness x elc
+
+foreign import javascript safe
+  "$2.setBrightness($1)"
+  _setBrightness :: Double -> ExoLangClass -> IO ()
+
+
+setOutputChannelCount :: ExoLang -> Int -> IO ()
+setOutputChannelCount e x = void $ withExoLang e $ \elc -> when (hasFunction "setOutputChannelCount" elc) $ _setOutputChannelCount x elc
+
+foreign import javascript safe
+  "$2.setOutputChannelCount($1)"
+  _setOutputChannelCount :: Int -> ExoLangClass -> IO ()
+
+
 newtype ExoResult = ExoResult JSVal
 
 instance PToJSVal ExoResult where pToJSVal (ExoResult x) = x
@@ -248,7 +266,9 @@ exoLangToRenderer tn e = Renderer.emptyRenderer {
   Renderer.preRender = preRender e,
   Renderer.render = render e,
   Renderer.postRender = postRender e,
-  Renderer.setTempo = setTempo e  
+  Renderer.setTempo = setTempo e,
+  Renderer.setBrightness = setBrightness e,
+  Renderer.setNchnls = setOutputChannelCount e
   -- TODO: open pathways between ExoLang and the remaining setters of Renderer
   }
 
