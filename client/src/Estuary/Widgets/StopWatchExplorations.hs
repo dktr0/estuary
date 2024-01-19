@@ -18,36 +18,6 @@ import Estuary.Widgets.W
 import Estuary.Types.Definition
 import Estuary.Widgets.Text
 
-
--- selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
--- selectVisualiser (Tv 0 seg k) = divClass "tempo-visualiser" $ do
---   cycleTracer seg
---   x <- do 
---     y <- divClass "flex-container-for-timeVision" $ do
---       leftPanel <- clickableDiv "flex-item-for-timeVision-left" $ do -- :: Event t ()
---           divClass "left-panel-hoover" $ text $ T.pack "previous metre visualiser"
---       let leftEvent = tvNextStateLeft <$ leftPanel-- Event t (TimeVision -> TimeVision)
---       centreEvent <- do
---           z <- elClass "div" "flex-container-for-timeVision-vertical" $ do
---             upPanel <- clickableDiv "flex-item-for-timeVision-vertical-up" $ do
---               divClass "up-panel-hoover" $ text $ T.pack "more subdivisions"
---             infoDisplay upPanel seg 4
---             let upEvent = segmentUp <$ upPanel  
---             downPanel <- clickableDiv "flex-item-for-timeVision-vertical-down" $ do
---               divClass "down-panel-hoover" $ text $ T.pack "less subdivisions"
---             infoDisplay downPanel seg 4
---             let downEvent = segmentDown <$ downPanel
---             let cPanelEvent = leftmost [upEvent,downEvent]
---             return cPanelEvent
---           return z
---       rightPanel <- clickableDiv "flex-item-for-timeVision-right" $ do -- :: Event t ()
---           divClass "right-panel-hoover" $ text $ T.pack "next metre visualiser"
---       let rightEvent = tvNextStateRight <$ rightPanel
---       let panelEvent = fmap (\x -> x $ Tv 0 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
---       return panelEvent
---     return y
---   return x
-
 stopWatchWidget :: MonadWidget t m => Dynamic t StopwatchState -> W t m (Variable t StopwatchState)
 stopWatchWidget deltasDown =  divClass "stopwatch" $  mdo
   -- 1. Translate button presses into localChanges
@@ -73,13 +43,6 @@ stopWatchWidget deltasDown =  divClass "stopwatch" $  mdo
 
 ------ stopwatch visualisation widget (work in progress)
 
--- visualiseStopwatchWidget :: MonadWidget t m => Dynamic t Text -> W t m ()
--- visualiseStopwatchWidget delta = do
---   let class' = constDyn $ "class" =: "human-to-human-comm code-font"
---   let style = constDyn $ "style" =: "height: auto;"
---   let attrs = mconcat [class',style]
---   elDynAttr "stopwatch" attrs $ dynText delta
---   return ()
 
 drawStopwatch :: MonadWidget t m => Dynamic t Text -> W t m ()
 drawStopwatch countup = do
@@ -114,7 +77,6 @@ drawStopwatch countup = do
     return ()    
   return ()
 
-
 ------ State calculations ----
 
 stopWatchToNextState :: StopwatchState -> IO StopwatchState
@@ -127,7 +89,6 @@ stopWatchToNextState (Running startTime) = do
   return (Stopped (diffUTCTime now startTime))
 -- C. If stop watch is stopped at x:yy then it goes back to 0:
 stopWatchToNextState (Stopped _) = return (Cleared)
-
 
 stopWatchToText :: StopwatchState -> UTCTime -> Text
 stopWatchToText Cleared _ = diffTimeToText 0

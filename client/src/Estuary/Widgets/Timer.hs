@@ -30,32 +30,18 @@ import Estuary.Widgets.W
 import Estuary.Types.Definition
 import Estuary.Types.Live
 
--- data Timer = Timer {
---   n:: Int,
---   form:: Live [(Text,Rational)],
---   mode:: Mode,
---   loop:: Bool,
---   measure:: Measure
--- } deriving (Show,Eq,Ord,Generic)
-
-
 timerWidget:: MonadWidget t m => Dynamic t Timer -> W t m (Variable t Timer)
 timerWidget delta = mdo
   initVal <- sample $ current delta
-  dynMode <- holdDyn True $ newModeEv -- changes from previous to false
-  let timerEv = switchDyn $ fmap fst x -- :: Event t Timer -- timer from controler
-  let newModeEv = {- traceEvent "newModeEv" $ -} switchDyn $ fmap snd x -- :: Event t Bool -- false
+  dynMode <- holdDyn True $ newModeEv 
+  let timerEv = switchDyn $ fmap fst x 
+  let newModeEv = switchDyn $ fmap snd x
   x <- flippableWidget (timerControl delta) (timerDisplay delta) True newModeEv 
   variable delta timerEv
 
--- f:: Live String -> Bool
--- f (Live str _) = True
--- f (Edited str newstr) = False
-
 timerControl:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
--- timerControl':: MonadWidget t m => Dynamic t Timer -> W t m ()
-timerControl delta = divClass "timer-Visualiser" $ mdo
-  liftIO $ putStrLn "timerControl"
+timerControl delta = divClass "time-widget" $ mdo
+  -- liftIO $ putStrLn "timerControl"
   dInit <- sample $ current delta
   let local = fst topContainer
   mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xC" -} $ leftmost [local, updated delta]
@@ -74,9 +60,7 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
           let boton = snd smallAreaL -- Event t ()
           let dynFormed = fmap parseForm valTxBx -- dyn t [(tx, rat)] 
           let forma = (current dynFormed) <@ boton -- Event t Live [(tx,rat)]
-          -- let txPressed = tag (current $ valTxBx) boton -- Event t Text
           return forma
-          --return $ parseForm <$> txPressed -- Event t [(Text,Rat)]
         return $ textInputFunc <$> inputWrapper -- big area :: Event t (Form -> Timer Timer)     
       return (bigAreaL, fst smallAreaL) -- columnLeft
     columnRight <- divClass "columnControl" $ do
@@ -95,18 +79,15 @@ timerControl delta = divClass "timer-Visualiser" $ mdo
     let flippy = id <$  (tag (constant ()) $ snd columnLeft)
     let polyptychEvent = attachWith (\d x -> x d) (current mergedLocalDelta) $ leftmost [columnRight, fst columnLeft, flippy] 
     let flipper = fmap (\x -> x False) $ snd columnLeft 
-    return (polyptychEvent, flipper) -- (Timer, Bool) -- return of topRowContainer
-  return topContainer -- mdo last return
+    return (polyptychEvent, flipper) 
+  return topContainer 
 
 
 timerDisplay:: MonadWidget t m => Dynamic t Timer -> W t m (Event t Timer, Event t Bool)
--- timerDisplay':: MonadWidget t m => Dynamic t Timer -> W t m ()
-timerDisplay delta = divClass "timer-Visualiser" $ mdo
-  
-  -- liftIO $ putStrLn "timerDisplay"
+timerDisplay delta = divClass "time-widget" $ mdo
   dInit <- sample $ current delta
   let local = fst top
-  mergedLocalDelta <- holdDyn dInit {- $ traceEvent "xD" -} $ leftmost [local,updated delta]
+  mergedLocalDelta <- holdDyn dInit $ leftmost [local,updated delta]
   timerChangeDisplay True mergedLocalDelta
   top <- do
     topContainer <- divClass "containerTimer" $ do 
@@ -145,8 +126,6 @@ timerChangeDisplay False timer = do
   pure ()
 
 timerChangeDisplay True timer = do 
---  liftIO $ putStrLn "timerChangeDisplay"
-  --timer' <- traceDynamic "timer'" timer
   defTimer <- sample $ current timer
   let defN = n defTimer
   dynN <- holdDyn 0 $ updated $  n <$> timer
@@ -188,7 +167,6 @@ visualDisplayPeek delta _ = do
   peek delta
   return ()
 
--- think whether is better to pass UTC coming from the ticklossy rather than the Rational...
 calculateCountSorC:: Measure -> Bool -> Timer -> UTCTime -> Rational -> Tempo -> Rational
 calculateCountSorC Cycles graphOrText timer wBuildT elapsingCount t = 
     calculateCount graphOrText timer wBuildT elapsingBeat t
@@ -378,8 +356,8 @@ drawCircle delta = do
  
   let class' = constDyn $ "class" =: "visualiser"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
-  let w' = constDyn $ "width" =: "100"
-  let h' = constDyn $ "height" =: "100"
+  let w' = constDyn $ "width" =: "100%"
+  let h' = constDyn $ "height" =: "100%"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
   let attrs = mconcat [class',w',h',vB,par]
 
@@ -1107,23 +1085,6 @@ add0Mod:: Rational -> Text
 add0Mod x = if modulo < 10 then ("0" <> (showt modulo)) else showt modulo 
   where modulo = (ceiling x) `mod` (60 :: Int)
 
-
-
-
--- icons 
-iconDisplay:: MonadWidget t m => Dynamic t Timer -> W t m ()
-iconDisplay  x = do
-  divClass "icons" $ do
-    divClass "icons-row" $ do
-        divClass "iconTopLeft" $ do
-          divClass "flex-container-col" $ do
-            divClass "flex-item-col-Form" blank
-            pure (refreshIcon $ constDyn True) >>= (divClass "flex-item-col-Form") -- text 
-        pure (loopIcon $ (loop <$> x)) >>= (divClass "iconTopRight") -- loop
-    divClass "icons-row" $ do
-      pure (flipIcon $ constDyn True) >>= (divClass "iconBottomLeft") -- flip
-      pure (measureIcons $ (measure <$> x)) >>= (divClass "iconBottomRight") -- measure
-
 loopIcon :: MonadWidget t m => Dynamic t Bool -> W t m ()
 loopIcon d = do
   let class' = constDyn $ "class" =: "icons"
@@ -1248,33 +1209,6 @@ flipIcon bool = do
     return ()
   return ()
 
-refreshIcon:: MonadWidget t m => Dynamic t Bool -> W t m ()
-refreshIcon bool = do
-  let class' = constDyn $ "class" =: "iconForm"
-  let width = constDyn $ "width" =: "100%"
-  let height = constDyn $ "height" =: "100%"
-  let vB = constDyn $  "viewBox" =: "0 0 122.61 122.88"
-  let par = constDyn $ "preserveAspectRatio" =: "xMidYMax meet" 
-  let stroke = constDyn $ "stroke" =: "var(--primary-color)"
-
-  let attrs = mconcat [class',width,height, vB, par, stroke]
-  let d1 = constDyn $ "d" =: "M50 0 L5 30 L95 30 Z"
-  let d2 = constDyn $ "d" =: "M50 25 L5 55 L95 55 Z"
-  -- let d = constDyn $ "d" =: "M111.9,61.57a5.36,5.36,0,0,1,10.71,0A61.3,61.3,0,0,1,17.54,104.48v12.35a5.36,5.36,0,0,1-10.72,0V89.31A5.36,5.36,0,0,1,12.18,84H40a5.36,5.36,0,1,1,0,10.71H23a50.6,50.6,0,0,0,88.87-33.1ZM106.6,5.36a5.36,5.36,0,1,1,10.71,0V33.14A5.36,5.36,0,0,1,112,38.49H84.44a5.36,5.36,0,1,1,0-10.71H99A50.6,50.6,0,0,0,10.71,61.57,5.36,5.36,0,1,1,0,61.57,61.31,61.31,0,0,1,91.07,8,61.83,61.83,0,0,1,106.6,20.27V5.36Z"
-
-
-  elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
-    -- elDynAttrNS' (Just "http://www.w3.org/2000/svg") "path" d $ return ()
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "path" d1 $ return ()
-    elDynAttrNS' (Just "http://www.w3.org/2000/svg") "path" d2 $ return ()
-    return ()
-  return ()
-
 boolOpacity:: Bool -> Map Text Text
 boolOpacity False = "style" =: "filter: opacity(50%)"
 boolOpacity True = "style" =: "filter: opacity(100%)"
-
-
--- getMouseEventCoords :: EventM e MouseEvent (Int, Int)
-
-

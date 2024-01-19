@@ -134,29 +134,21 @@ beatToPercentage' beat = percen
 visualiseCycles :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseCycles delta segments = do
   delta' <- holdUniqDyn delta
---  liftIO $ putStrLn "build the cycle visualiser"
-  let class' = constDyn $ "class" =: "cycleVisualiser"
---  let style = constDyn $ "style" =: "position: absolute; z-index: -10;"
+  let class' = constDyn $ "class" =: "visualiser"
   let vB = constDyn $ "viewBox" =: "-1.5 -1.5 3 3"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
   let w' = constDyn $ "width" =: "100%;"
   let h' = constDyn $ "height" =: "100%;"
   let attrs = mconcat [class',w',h',vB, par]
-
   let (cx,cy) = (constDyn $ "cx" =: "0", constDyn $ "cy" =: "0")
   let r = constDyn $ "r" =: "1.4"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05"
   let fill' = constDyn $ "fill" =: "transparent"
   let attrsCircle = mconcat [cx,cy,r,stroke,strokeWidth, fill']
-
   let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "-1.4")
-
---  delta' <- traceDynamicWith (\x -> show $ (realToFrac x :: Double)) delta
-
   let transform = beatToRotation <$> delta'
-
   let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth,transform]
 
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
@@ -177,7 +169,6 @@ generatePieSegments nLines = do
 
 generatePieSegment:: MonadWidget t m => Dynamic t Rational ->  m ()
 generatePieSegment x = do
- -- liftIO $ putStrLn "generate segments for cycle visualiser"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.05"
   let (x1,x2) = (constDyn $ "x1" =: "0",constDyn $ "x2" =: "0")
@@ -191,27 +182,18 @@ generatePieSegment x = do
 visualiseMetreFancy :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseMetreFancy delta subDivisions = do
   delta' <- holdUniqDyn delta
- -- liftIO $ putStrLn "build the metre visualiser"
-  let class' = constDyn $ "class" =: "metreVisualiser code-font"
---  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
+  let class' = constDyn $ "class" =: "visualiser code-font"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100%"
   let h' = constDyn $ "height" =: "100%"
   let stroke = constDyn $ "stroke" =: "var(--primary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "0.5"
   let par = constDyn $ "preserveAspectRatio" =: "none"
-
   let attrs = mconcat [class',w',h',vB, par]
-
---  delta' <- traceDynamicWith (\x -> "beat of metre: " ++ show (realToFrac x :: Double)) delta
-
   let x1 = beatToPercentage "x1" <$> delta'
   let x2 = beatToPercentage "x2" <$> delta'
---  let lineStyle = constDyn $ "style" =: "z-index:-9;"
   let (y1,y2) = (constDyn $ "y1" =: "0",constDyn $ "y2" =: "100")
   let attrsLine = mconcat [x1,y1,x2,y2,stroke,strokeWidth]
-
-
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     generateSegments 100 subDivisions
     -- manecilla
@@ -222,18 +204,12 @@ visualiseMetreFancy delta subDivisions = do
 visualiseMetreCheap :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseMetreCheap delta subDivisions = do
   delta' <- holdUniqDyn delta
- -- liftIO $ putStrLn "build the metre visualiser"
-  let class' = constDyn $ "class" =: "metreVisualiser code-font"
---  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
+  let class' = constDyn $ "class" =: "visualiser code-font"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100%"
   let h' = constDyn $ "height" =: "100%"
   let par = constDyn $ "preserveAspectRatio" =: "none"
-
   let attrs = mconcat [class',w',h',vB, par]
-
---  delta' <- traceDynamicWith (\x -> "beat of metre: " ++ show (realToFrac x :: Double)) delta
-
 --  this is for the segment
   let barPos = barPosition subDivisions <$> beatToPercentage' <$> delta'
   let y = constDyn $ "y" =: "0"
@@ -290,13 +266,10 @@ generateSegments width nLines = do
 generateSegment:: MonadWidget t m => Rational -> Dynamic t Rational ->  m ()
 generateSegment width x = do
   x' <- holdUniqDyn x
---  liftIO $ putStrLn "build a segment of metre"
   let x1 = generateAttr "x" <$> x'
---  let x2 = generateAttr "x2" <$> x
   let w = constDyn $ "width" =: (showt (realToFrac width :: Double))
   let h = constDyn $ "height" =: "100"
   let y1 = constDyn $ "y" =: "0"
---  let y2 = constDyn $ "y2" =: "100"
   let f = constDyn $ "fill" =: "var(--secondary-color)"
   let opacity = setOpacityPercen <$> x'
   let attrsRect = mconcat [x1,y1,w,h,f,opacity]
@@ -325,17 +298,12 @@ barPosition nSegs' position =
 visualiseRing :: MonadWidget t m => Dynamic t Rational -> Rational -> m ()
 visualiseRing delta segs = do
   delta' <- holdUniqDyn delta
---  liftIO $ putStrLn "build the doughnut visualiser"
---  delta' <- traceDynamicWith (\x -> "beat of ring: " ++ show (realToFrac x :: Double)) delta
- -- delta' <- traceDynamicWith (\x -> "beat of metre: " ++ show (realToFrac x :: Double)) delta
-  let class' = constDyn $ "class" =: "ringVisualiser code-font"
---  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
+  let class' = constDyn $ "class" =: "visualiser code-font"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
   let w' = constDyn $ "width" =: "100%;"
   let h' = constDyn $ "height" =: "100%;"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
   let attrs = mconcat [class',w',h',vB,par]
-
   let radius = 40 :: Float
   let stroke = constDyn $ dynStroke segs
   let strokeWidth = constDyn $ "stroke-width" =: "10"
@@ -346,21 +314,17 @@ visualiseRing delta segs = do
   let r = constDyn $ "r" =: (showt radius)
   let dashArray = constDyn $ segmentSize radius (realToFrac segs :: Float) -- because of PI it has to be floats
   let style = constDyn $ "style" =: "opacity: 0.85"
-
   let currentBeatAttrs = mconcat [cx,cy,r,fill,stroke,strokeWidth,dashArray,currentSegPos,style]
-
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     markTheZero delta'
     generateRingSegments segs radius
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" currentBeatAttrs $ return ()
-    
   return ()
 
 dynStroke:: Rational -> Map Text Text
 dynStroke x 
     | x == 0  = "stroke" =: "none"
     | otherwise = "stroke" =: "var(--primary-color)"
-
 
 segmentSize:: Float -> Float -> Map Text Text
 segmentSize radio segs = "stroke-dasharray" =: ((showt arg1) <> " " <> (showt arg2))
@@ -393,7 +357,6 @@ generateRingSegments nSegs' radius = do
 generateRingSegment:: MonadWidget t m => Rational -> Dynamic t Rational -> Float ->  m ()
 generateRingSegment segs segPos radius = do
   segPos' <- holdUniqDyn segPos
- -- liftIO $ putStrLn "build segment of doughnut"
   let stroke = constDyn $ "stroke" =: "var(--secondary-color)"
   let strokeWidth = constDyn $ "stroke-width" =: "15"
   let fill = constDyn $ "fill" =: "transparent"
@@ -441,27 +404,20 @@ beadSize False nBeads pos = "r" =: showt (realToFrac (beadScaling nBeads) :: Dou
 visualiseBeads :: MonadWidget t m => Dynamic t Rational -> Rational -> Rational -> Bool -> m ()
 visualiseBeads delta k beads dyn = do
   delta' <- holdUniqDyn delta
- -- liftIO $ putStrLn "build beads visualiser"
---  delta' <- traceDynamicWith (\x -> "beat of beads: " ++ show (realToFrac x :: Double)) delta
-  let class' = constDyn $ "class" =: "beadVisualiser code-font"
---  let style = constDyn $ "style" =: "position: relative; z-index: -10;"
+  let class' = constDyn $ "class" =: "visualiser code-font"
   let vB = constDyn $ "viewBox" =: "0 0 100 100"
-  let w' = constDyn $ "width" =: "100"
-  let h' = constDyn $ "height" =: "100"
+  let w' = constDyn $ "width" =: "100%"
+  let h' = constDyn $ "height" =: "100%"
   let par = constDyn $ "preserveAspectRatio" =: "xMidYMid meet"
   let attrs = mconcat [class',w',h',vB,par]
-
   -- define circle attrs
   let cx = constDyn $  "cx" =: "50"
   let cy = constDyn $  "cy" =: "7.2"
   let fill = constDyn $ "fill" =:"var(--primary-color)"
-
   -- size of bead changes depending of position in the beat
   let currentBeatBead = beadPosition beads <$> beatToPercentage' <$> delta' -- Map Text Text --- transform: rotate(x,50,50)
   let beadDynSize = beadSize dyn beads <$> beatToPercentage' <$> delta'
-
   let beadAttrs = mconcat [cx,cy,beadDynSize,currentBeatBead,fill]
-
   elDynAttrNS' (Just "http://www.w3.org/2000/svg") "svg" attrs $ do
     -- create bids with transparent fill and minimal stroke
     generateBeads beads
@@ -470,7 +426,6 @@ visualiseBeads delta k beads dyn = do
     -- change the filled bid of position and size
     elDynAttrNS' (Just "http://www.w3.org/2000/svg") "circle" beadAttrs $ return ()
   return ()
-
 
 generateBeads:: MonadWidget t m => Rational ->  m ()
 generateBeads nBeads = do
@@ -567,171 +522,171 @@ intsToBool n' n
   | otherwise = False
 
 selectVisualiser :: MonadWidget t m => TimeVision -> W t m (Event t TimeVision)-- :: this variable represents the timeVision to be built, EG. Cyclic 2
-selectVisualiser (Tv 0 seg k) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 0 seg k) = divClass "time-widget" $ do
   cycleTracer seg
   x <- do 
     y <- divClass "flex-container-for-timeVision" $ do
-      leftPanel <- clickableDiv "flex-item-for-timeVision-left" $ do -- :: Event t ()
-          divClass "left-panel-hoover" $ text $ T.pack "previous metre visualiser"
+      leftPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+          divClass "panel-hoover lefty" $ text $ T.pack "previous metre visualiser"
       let leftEvent = tvNextStateLeft <$ leftPanel-- Event t (TimeVision -> TimeVision)
       centreEvent <- do
-          z <- elClass "div" "flex-container-for-timeVision-vertical" $ do
-            upPanel <- clickableDiv "flex-item-for-timeVision-vertical-up" $ do
-              divClass "up-panel-hoover" $ text $ T.pack "more subdivisions"
+          z <- elClass "div" "flex-container-for-timeVision verty" $ do
+            upPanel <- clickableDiv "flex-item-for-timeVision verty halfer" $ do
+              divClass "panel-hoover upper" $ text $ T.pack "more subdivisions"
             infoDisplay upPanel seg 4
             let upEvent = segmentUp <$ upPanel  
-            downPanel <- clickableDiv "flex-item-for-timeVision-vertical-down" $ do
-              divClass "down-panel-hoover" $ text $ T.pack "less subdivisions"
+            downPanel <- clickableDiv "flex-item-for-timeVision verty halfer" $ do
+              divClass "panel-hoover downner" $ text $ T.pack "less subdivisions"
             infoDisplay downPanel seg 4
             let downEvent = segmentDown <$ downPanel
             let cPanelEvent = leftmost [upEvent,downEvent]
             return cPanelEvent
           return z
-      rightPanel <- clickableDiv "flex-item-for-timeVision-right" $ do -- :: Event t ()
-          divClass "right-panel-hoover" $ text $ T.pack "next metre visualiser"
+      rightPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+          divClass "panel-hoover righty" $ text $ T.pack "next metre visualiser"
       let rightEvent = tvNextStateRight <$ rightPanel
       let panelEvent = fmap (\x -> x $ Tv 0 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
       return panelEvent
     return y
   return x
 
-selectVisualiser (Tv 1 seg k) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 1 seg k) = divClass "time-widget" $ do
   ringTracer seg
   x <- divClass "flex-container-for-timeVision" $ do
-    leftPanel <- clickableDiv "flex-item-for-timeVision-left" $ do -- :: Event t ()
-        divClass "left-panel-hoover" $ text $ T.pack "previous metre visualiser"
+    leftPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+        divClass "panel-hoover lefty" $ text $ T.pack "previous metre visualiser"
     let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
     centreEvent <- do 
-      x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
-        upPanel <- clickableDiv "flex-item-for-timeVision-vertical-up" $ do
-          divClass "up-panel-hoover" $ text $ T.pack "more subdivisions"
+      x <- elClass "div" "flex-container-for-timeVision verty" $ do
+        upPanel <- clickableDiv "flex-item-for-timeVision verty halfer" $ do
+          divClass "panel-hoover upper" $ text $ T.pack "more subdivisions"
         infoDisplay upPanel seg 4
         let upEvent = segmentUp <$ upPanel  
-        downPanel <- clickableDiv "flex-item-for-timeVision-vertical-down" $ do
-          divClass "down-panel-hoover" $ text $ T.pack "less subdivisions"
+        downPanel <- clickableDiv "flex-item-for-timeVision verty halfer" $ do
+          divClass "panel-hoover downner" $ text $ T.pack "less subdivisions"
         infoDisplay downPanel seg 4
         let downEvent = segmentDown <$ downPanel
         let cPanelEvent = leftmost [upEvent,downEvent]
         return cPanelEvent
       return x
-    rightPanel <- clickableDiv "flex-item-for-timeVision-right" $ do -- :: Event t ()
-        divClass "right-panel-hoover" $ text $ T.pack "next metre visualiser"
+    rightPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+        divClass "panel-hoover righty" $ text $ T.pack "next metre visualiser"
     let rightEvent = tvNextStateRight <$ rightPanel
     let panelEvent = fmap (\x -> x $ Tv 1 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
     return panelEvent
   return x
 
-selectVisualiser (Tv 2 seg k) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 2 seg k) = divClass "time-widget" $ do
   metreTracerFancy seg
   x <- do
     x <- divClass "flex-container-for-timeVision" $ do
-      leftPanel <- clickableDiv "flex-item-for-timeVision-left" $ do -- :: Event t ()
-          divClass "left-panel-hoover" $ text $ T.pack "previous metre visualiser"
+      leftPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+          divClass "panel-hoover lefty" $ text $ T.pack "previous metre visualiser"
       let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
       centreEvent <- do
-        x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
-          upPanel <- clickableDiv "flex-item-for-timeVision-vertical-up" $ do
-            divClass "up-panel-hoover" $ text $ T.pack "more subdivisions"
+        x <- elClass "div" "flex-container-for-timeVision verty" $ do
+          upPanel <- clickableDiv "flex-item-for-timeVision verty halfer" $ do
+            divClass "panel-hoover upper" $ text $ T.pack "more subdivisions"
           infoDisplay upPanel seg 4
           let upEvent = segmentUp <$ upPanel  
-          downPanel <- clickableDiv "flex-item-for-timeVision-vertical-down" $ do
-            divClass "down-panel-hoover" $ text $ T.pack "less subdivisions"
+          downPanel <- clickableDiv "flex-item-for-timeVision verty halfer" $ do
+            divClass "panel-hoover downner" $ text $ T.pack "less subdivisions"
           infoDisplay downPanel seg 4
           let downEvent = segmentDown <$ downPanel
           let cPanelEvent = leftmost [upEvent,downEvent]
           return cPanelEvent
         return x
-      rightPanel <- clickableDiv "flex-item-for-timeVision-right" $ do -- :: Event t ()
-          divClass "right-panel-hoover" $ text $ T.pack "next metre visualiser"
+      rightPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+          divClass "panel-hoover righty" $ text $ T.pack "next metre visualiser"
       let rightEvent = tvNextStateRight <$ rightPanel
       let panelEvent = fmap (\x -> x $ Tv 2 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
       return panelEvent
     return x
   return x
 
-selectVisualiser (Tv 3 seg k) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 3 seg k) = divClass "time-widget" $ do
   metreTracerCheap seg
   x <- do
     x <- divClass "flex-container-for-timeVision" $ do
-      leftPanel <- clickableDiv "flex-item-for-timeVision-left" $ do -- :: Event t ()
-          divClass "left-panel-hoover" $ text $ T.pack "previous metre visualiser"
+      leftPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+          divClass "panel-hoover lefty" $ text $ T.pack "previous metre visualiser"
       let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
       centreEvent <- do 
-        x <- elClass "div" "flex-container-for-timeVision-vertical" $ do
-          upPanel <- clickableDiv "flex-item-for-timeVision-vertical-up" $ do
-            divClass "up-panel-hoover" $ text $ T.pack "more subdivisions"
+        x <- elClass "div" "flex-container-for-timeVision verty" $ do
+          upPanel <- clickableDiv "flex-item-for-timeVision verty halfer" $ do
+            divClass "panel-hoover upper" $ text $ T.pack "more subdivisions"
           infoDisplay upPanel seg 4
           let upEvent = segmentUp <$ upPanel  
-          downPanel <- clickableDiv "flex-item-for-timeVision-vertical-down" $ do
-            divClass "down-panel-hoover" $ text $ T.pack "less subdivisions"
+          downPanel <- clickableDiv "flex-item-for-timeVision verty halfer" $ do
+            divClass "panel-hoover downner" $ text $ T.pack "less subdivisions"
           infoDisplay downPanel seg 4
           let downEvent = segmentDown <$ downPanel
           let cPanelEvent = leftmost [upEvent,downEvent]
           return cPanelEvent
         return x
-      rightPanel <- clickableDiv "flex-item-for-timeVision-right" $ do -- :: Event t ()
-          divClass "right-panel-hoover" $ text $ T.pack "next metre visualiser"
+      rightPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+          divClass "panel-hoover righty" $ text $ T.pack "next metre visualiser"
       let rightEvent = tvNextStateRight <$ rightPanel
       let panelEvent = fmap (\x -> x $ Tv 3 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
       return panelEvent
     return x
   return x
 
-selectVisualiser (Tv 4 seg k) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 4 seg k) = divClass "time-widget" $ do
   beadsTracerFancy k seg
   x <- divClass "flex-container-for-timeVision" $ do
-    leftPanel <- clickableDiv "flex-item-for-timeVision-left" $ do -- :: Event t ()
-        divClass "left-panel-hoover" $ text $ T.pack "previous metre visualiser"
+    leftPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+        divClass "panel-hoover lefty" $ text $ T.pack "previous metre visualiser"
     let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
     centreEvent <- do  
-      x <- elClass "div" "flex-container-for-timeVision-vertical-2" $ do
-        upPanel <- clickableDiv "flex-item-for-timeVision-vertical-2-up" $ do
-          divClass "up-panel-hoover-2" $ text $ T.pack "more subdivisions"
+      x <- elClass "div" "flex-container-for-timeVision verty" $ do
+        upPanel <- clickableDiv "flex-item-for-timeVision verty tri" $ do
+          divClass "panel-hoover upper" $ text $ T.pack "more subdivisions"
         infoDisplay' upPanel k seg 4
         let upEvent = segmentUp <$ upPanel  
-        middlePanel <- clickableDiv "flex-item-for-timeVision-vertical-2-middle" $ do
-          divClass "middle-panel-hoover" $ text $ T.pack "bjorklund pattern"
+        middlePanel <- clickableDiv "flex-item-for-timeVision verty tri" $ do
+          divClass "panel-hoover midder" $ text $ T.pack "bjorklund pattern"
         infoDisplay' middlePanel k seg 4
         let middleEvent = bjorklundUp <$ middlePanel
-        downPanel <- clickableDiv "flex-item-for-timeVision-vertical-2-down" $ do
-          divClass "down-panel-hoover-2" $ text $ T.pack "less subdivisions"
+        downPanel <- clickableDiv "flex-item-for-timeVision verty tri" $ do
+          divClass "panel-hoover downner" $ text $ T.pack "less subdivisions"
         infoDisplay' downPanel k seg 4
         let downEvent = segmentDown <$ downPanel
         let cPanelEvent = leftmost [middleEvent,upEvent,downEvent]
         return cPanelEvent
       return x
-    rightPanel <- clickableDiv "flex-item-for-timeVision-right" $ do -- :: Event t ()
-        divClass "right-panel-hoover" $ text $ T.pack "next metre visualiser"
+    rightPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+        divClass "panel-hoover righty" $ text $ T.pack "next metre visualiser"
     let rightEvent = tvNextStateRight <$ rightPanel
     let panelEvent = fmap (\x -> x $ Tv 4 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
     return panelEvent
   return x
 
-selectVisualiser (Tv 5 seg k) = divClass "tempo-visualiser" $ do
+selectVisualiser (Tv 5 seg k) = divClass "time-widget" $ do
   beadsTracerCheap k seg
   x <- divClass "flex-container-for-timeVision" $ do
-    leftPanel <- clickableDiv "flex-item-for-timeVision-left" $ do -- :: Event t ()
-        divClass "left-panel-hoover" $ text $ T.pack "previous metre visualiser"
+    leftPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+        divClass "panel-hoover lefty" $ text $ T.pack "previous metre visualiser"
     let leftEvent = tvNextStateLeft <$ leftPanel -- Event t (TimeVision -> TimeVision)
     centreEvent <- do
-      x <- elClass "div" "flex-container-for-timeVision-vertical-2" $ do
-        upPanel <- clickableDiv "flex-item-for-timeVision-vertical-2-up" $ do
+      x <- elClass "div" "flex-container-for-timeVision verty" $ do
+        upPanel <- clickableDiv "flex-item-for-timeVision verty tri" $ do
           divClass "up-panel-hoover-2" $ text $ T.pack "more subdivisions"
         infoDisplay' upPanel k seg 4
         let upEvent = segmentUp <$ upPanel  
-        middlePanel <- clickableDiv "flex-item-for-timeVision-vertical-2-middle" $ do
+        middlePanel <- clickableDiv "flex-item-for-timeVision verty tri" $ do
           divClass "middle-panel-hoover" $ text $ T.pack "bjorklund pattern"
         infoDisplay' middlePanel k seg 4
         let middleEvent = bjorklundUp <$ middlePanel
-        downPanel <- clickableDiv "flex-item-for-timeVision-vertical-2-down" $ do
+        downPanel <- clickableDiv "flex-item-for-timeVision verty tri" $ do
           divClass "down-panel-hoover-2" $ text $ T.pack "less subdivisions"
         infoDisplay' downPanel k seg 4
         let downEvent = segmentDown <$ downPanel
         let cPanelEvent = leftmost [middleEvent,upEvent,downEvent]
         return cPanelEvent
       return x
-    rightPanel <- clickableDiv "flex-item-for-timeVision-right" $ do -- :: Event t ()
-        divClass "right-panel-hoover" $ text $ T.pack "next metre visualiser"
+    rightPanel <- clickableDiv "flex-item-for-timeVision" $ do -- :: Event t ()
+        divClass "panel-hoover righty" $ text $ T.pack "next metre visualiser"
     let rightEvent = tvNextStateRight <$ rightPanel
     let panelEvent = fmap (\x -> x $ Tv 5 seg k) $ leftmost [centreEvent,leftEvent,rightEvent]
     return panelEvent
@@ -764,15 +719,3 @@ tvNextStateRight (Tv n x k) = Tv ((n+1)`mod`6) x k
 
 tvNextStateLeft:: TimeVision -> TimeVision
 tvNextStateLeft (Tv n x k) = Tv ((n-1)`mod`6) x k
-
-
-------------------------------------------
-
-
--- upLeft <- stop
--- upCentre <- play
--- upright <- pause
-
--- downLeft <- flip visualiser
--- downCentre <- flip to controlers
--- downRight <- flip visualiser

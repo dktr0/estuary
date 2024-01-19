@@ -997,257 +997,63 @@ cursor: pointer;
 
 }
 
-/* recently added by AFB, experimentas for widget creation */
+/* recently added by AFB, experiments for widget creation */
 
-.tempo-visualiser {
-	width: 100%;
+.time-widget {
   	height: 100%;
   	position: relative;
-	color: var(--primary-color);
-	font-size: 1em;
 }
 
-.cycleVisualiser {
-	position: absolute;
+.visualiser {
+    position: absolute; 
 	z-index: 0;
-	width: 100%;
-  	height: 100%;
 }
 
-.metreVisualiser {
-	position: absolute;
-	z-index: 0;
-	width: 100%;
-  	height: 100%;
-}
-
-.ringVisualiser {
-	position: absolute;
-	z-index: 0;
-	width: 100%;
-  	height: 100%;
-}
-
-.beadVisualiser {
-	position: absolute;
-	z-index: 0;
-	width: 100%;
-  	height: 100%;
-}
-
-.central-panel {
-	z-index: 1;
-  	height: 100%;
-  	width: 100%;
-  	min-height: 100%;
-}
-
-.segmentMark {
-	position:absolute;
-	left: 0%;
-	top: 0%;
-}
+.segmentMark { position:absolute; }
 
 .flex-container-for-timeVision {
 	display: flex;
-	z-index: 1;
-	width: 100%;
     height: 100%;
-  	min-height: 100%;
 }
 
-
-.flex-item-for-timeVision-left {
-	width: 100%;
-	z-index: 1;
-  	height: 100%;
-  	min-height: 100%;
-}
-
-.flex-item-for-timeVision-left:hover .left-panel-hoover {
-	visibility: visible;
-	opacity: 0%;
-    transition: opacity 5s linear;
-  }
-
-.left-panel-hoover {
-	z-index: 1;
-	visibility: hidden;
-	position: absolute;
-	top: 50%;
-	left: 15%;
-	background-color: var(--secondary-color);
-	opacity: 75%;
-  }
-
-.flex-item-for-timeVision-right {
-	width: 100%;
-	z-index: 1;
-  	height: 100%;
-  	min-height: 100%;
-}
-
-.flex-item-for-timeVision-right:hover .right-panel-hoover {
-	visibility: visible;
-	opacity: 0%;
-    transition: opacity 5s linear;
-  }
-
-.right-panel-hoover {
-	z-index: 1;
-	visibility: hidden;
-	position: absolute;
-	top: 50%;
-	left: 75%;
-	background-color: var(--secondary-color);
-	opacity: 75%;
-  }
-
-.flex-container-for-timeVision-vertical {
-	display: flex;
+.verty {
 	flex-direction: column;
-	z-index: 1;
-  	height: 100%;
   	width: 100%;
-  	min-height: 100%;
 }
 
-.flex-item-for-timeVision-vertical-up {
+.flex-item-for-timeVision {
 	width: 100%;
-  	height: 100%;
 	z-index: 1;
-  	min-height: 50%;
 }
 
-.flex-item-for-timeVision-vertical-up:hover .up-panel-hoover {
+.halfer { min-height: 50%; }
+
+.tri { min-height: 33%; }
+
+.flex-item-for-timeVision:hover .panel-hoover {
 	visibility: visible;
 	opacity: 0%;
     transition: opacity 5s linear;
-}
+  }
 
-.up-panel-hoover {
-	z-index: 1;
-	visibility: hidden;
-	position: absolute;
-	top: 25%;
-	left: 45%;
-	background-color: var(--secondary-color);
-	opacity: 75%;
-}
-
-.flex-item-for-timeVision-vertical-down {
-	width: 100%;
-  	height: 100%;
-	z-index: 1;
-  	min-height: 50%;
-}
-
-.flex-item-for-timeVision-vertical-down:hover .down-panel-hoover {
-	visibility: visible;
-	opacity: 0%;
-    transition: opacity 5s linear;
-}
-
-.down-panel-hoover {
-	z-index: 1;
-	visibility: hidden;
-	position: absolute;
-	top: 75%;
-	left: 45%;
-	background-color: var(--secondary-color);
-	opacity: 75%;
-}
-
-.flex-container-for-timeVision-vertical-2 {
-	display: flex;
-	flex-direction: column;
-	z-index: 1;
-	height: 100%;
-	width: 100%;
-	min-height: 100%;
-}
-
-.flex-item-for-timeVision-vertical-2-up {
-	width: 100%;
-  	height: 100%;
-	z-index: 1;
-  	min-height: 33%;
-}
-
-.flex-item-for-timeVision-vertical-2-up:hover .up-panel-hoover-2 {
-	visibility: visible;
-	opacity: 0%;
-    transition: opacity 5s linear;
-}
-
-.up-panel-hoover-2 {
-	z-index: 1;
-	visibility: hidden;
-	position: absolute;
-	top: 25%;
-	left: 45%;
-	background-color: var(--secondary-color);
-	opacity: 75%;
-}
-
-.flex-item-for-timeVision-vertical-2-down {
-	width: 100%;
-  	height: 100%;
-	z-index: 1;
-  	min-height: 33%;
-}
-
-.flex-item-for-timeVision-vertical-2-down:hover .down-panel-hoover-2 {
-	visibility: visible;
-	opacity: 0%;
-    transition: opacity 5s linear;
-}
-
-.down-panel-hoover-2 {
-	z-index: 1;
-	visibility: hidden;
-	position: absolute;
-	top: 75%;
-	left: 45%;
-	background-color: var(--secondary-color);
-	opacity: 75%;
-}
-
-.flex-item-for-timeVision-vertical-2-middle {
-	width: 100%;
-  	height: 100%;
-	z-index: 1;
-  	min-height: 33%;
-}
-
-.flex-item-for-timeVision-vertical-2-middle:hover .middle-panel-hoover {
-	visibility: visible;
-	opacity: 0%;
-    transition: opacity 5s linear;
-}
-
-.middle-panel-hoover {
+.panel-hoover {
 	z-index: 1;
 	visibility: hidden;
 	position: absolute;
 	top: 50%;
-	left: 45%;
 	background-color: var(--secondary-color);
 	opacity: 75%;
-}
+  }
 
-.timer-Visualiser {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    color: var(--primary-color);
-    font-size: 1em;
-}
+.lefty { left: 15%; }
 
-.temporaryDiv {
-	position: absolute;
-	z-index: 3;
-}
+.righty { left: 75% ; }
+
+.upper { top: 25%; left: 45%; }
+
+.downner { top: 75%; left: 45% }
+
+.midder { top: 50%; left: 45%;}
 
 .spot {
 	position: relative;
@@ -1255,71 +1061,9 @@ cursor: pointer;
 	height: 100%;
 }
 
-.visualiser {
-    position: absolute; 
-	z-index: 0;
-    width: 100%;
-    height: 100%;
-}
-
 .icons {
     display: flex;
 	position: absolute;
-}
-
-.iconForm {
-    display: flex;
-    width: 100%;
-    height: 100%;
-	position: relative;
-}
-.testy {
-    width: 100%;
-    height: 100%;
-	position: absolute;
-}
-
-.icons-row {
-    width: 100%;
-    height: 100%;
-
-}
-
-.iconTopLeft {
-    position: absolute;
-    width: 50%;
-    height: 50%;
-}
-
-.iconBottomLeft {
-    position: absolute;
-    width: 50%;
-    height: 50%;
-	top: 50%;
-	left: 0%;
-}
-
-.iconFlippedFlip {
-    position: absolute;
-    width: 50%;
-    height: 50%;
-	top: 50%;
-	left: 0%;
-}
-
-.iconTopRight {
-    position: absolute;
-    width: 50%;
-    height: 50%;
-	left: 50%;
-}
-
-.iconBottomRight {
-    position: absolute;
-    width: 50%;
-    height: 50%;
-	left: 50%;
-	top: 50%
 }
 
 .flex-container-row {
@@ -1359,21 +1103,6 @@ cursor: pointer;
 	z-index: 0;
 }
 
-.countDown {
-	display: flex;
-	flex-direction: row;
-	z-index: 0;
-	width: 100%;
-	height: 100%;
-}
-
-.countDown textarea{
-	position: relative;
-	border: none;
-	max-width:13em;
-    text-align: center;
-}
-
 .stopwatch {
 	width: 100%;
   	height: 100%;
@@ -1382,12 +1111,10 @@ cursor: pointer;
 	font-size: 1em;
 }
 
-
 .stopwatch-panel {
 	position:absolute;
 	width: 100%;
 	z-index: 1;
-  	height: 100%;
   	min-height: 100%;
 }
 
