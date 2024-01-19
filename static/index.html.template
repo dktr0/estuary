@@ -90,9 +90,6 @@
 </head>
 <body>
   <script src="./WebDirt/WebDirt-packed.js"></script>
-  <script src="https://dktr0.github.io/LocoMotion/threejs/three.min.js"></script>
-  <script src="https://dktr0.github.io/LocoMotion/threejs/OBJLoader.js"></script>
-  <script src="https://dktr0.github.io/LocoMotion/threejs/MTLLoader.js"></script>
   <script src="./SuperDirt.js"></script>
   <script src="./hydra-synth.js"></script>
   <script src="./peg-0.10.0.min.js"></script>
