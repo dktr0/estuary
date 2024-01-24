@@ -382,7 +382,11 @@ defineZoneNewExoLang z (rName,txt,eTime) options = do
 defineZoneExoLang :: Renderer -> Int -> TextProgram -> Text -> R ()
 defineZoneExoLang r z (rName,txt,eTime) options = do
   let d = TextProgram (Live (rName,txt,eTime) L3)
-  result <- liftIO $ (define r) z d -- TODO: options need to be passed into renderers/exolangs
+  env <- ask
+  result <- liftIO $ do 
+    n <- getAudioOutputs $ mainBus env
+    (setNchnls r) n -- TODO: possibly other options need to be sent to renderer as well
+    (define r) z d
   case result of 
     Left err -> setZoneError z err
     Right _ -> do
