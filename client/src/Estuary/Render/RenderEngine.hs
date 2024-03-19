@@ -115,7 +115,7 @@ sequenceToControlPattern (sampleName,pat) = Tidal.s $ parseBP' $ intercalate " "
 
 renderMainThread :: R ()
 renderMainThread = do
-  updateSystemAndAudioTime
+  updateTimeMain
   processRenderOps
   updateActiveRenderers
   calculateEventRenderingWindow mainRenderPeriod
@@ -128,9 +128,9 @@ renderMainThread = do
   updateRenderLoad
 
 
--- to be done at the beginning of a render frame (whether in main or animation thread)
-updateSystemAndAudioTime :: R ()
-updateSystemAndAudioTime = do
+-- to be done at the beginning of a render frame (in main thread only, not animation)
+updateTimeMain :: R ()
+updateTimeMain = do
   t1System <- liftIO $ getCurrentTime
   t1Audio <- MusicW.liftAudioIO $ MusicW.audioTime
   modify' $ \x -> x {
@@ -140,11 +140,13 @@ updateSystemAndAudioTime = do
   -- let elapsedSystem = (realToFrac $ diffUTCTime t1System $ systemTime s) :: Double
   -- let elapsedAudio = t1Audio - audioTime s
   
--- to be done at the beginning of an animation frame only (after updateSystemAndAudioTime)
-updateAnimationDelta :: R Bool
-updateAnimationDelta = do
+-- to be done at the beginning of an animation frame only
+updateTimeAnimation :: R Bool
+updateTimeAnimation = do
   s <- get
-  let immediateDelta = realToFrac $ diffUTCTime (systemTime s) (prevDrawTime s)
+  t1System <- liftIO $ getCurrentTime
+  t1Audio <- MusicW.liftAudioIO $ MusicW.audioTime
+  let immediateDelta = realToFrac $ diffUTCTime t1System (prevDrawTime s)
   fpsl <- fpsLimit
   let okToRender = case fpsl of Nothing -> True; Just x -> immediateDelta >= (realToFrac x*0.95)
   case okToRender of
@@ -153,6 +155,8 @@ updateAnimationDelta = do
       let newAnimationDelta = updateAverage (animationDelta s) immediateDelta
       let fps = round $ 1 / getAverage newAnimationDelta
       modify' $ \x -> x {
+        systemTime = t1System,
+        audioTime = t1Audio,
         prevDrawTime = systemTime s,
         animationDelta = newAnimationDelta,
         info = (info x) { animationFPS = fps }
@@ -222,8 +226,7 @@ calculateEventRenderingWindow renderPeriodTarget = do
 
 renderAnimationFrame :: R ()
 renderAnimationFrame = do
-  updateSystemAndAudioTime
-  canRender <- updateAnimationDelta
+  canRender <- updateTimeAnimation
   when canRender $ do
     s <- get
     let mDelta = realToFrac $ getAverage $ animationDelta s
@@ -307,8 +310,6 @@ renderZones canDraw = do
   IntMap.traverseWithKey (renderZone canDraw) defs
   -- postRender
   liftIO $ mapM_ (\r -> (postRender r) canDraw tNow tPrev) rs
-  -- if canDraw, update record of previous drawing times
-  when canDraw $ modify' $ \s -> s { prevDrawTime = tNow }
       
 
 defineZone :: Int -> Definition -> R ()
