@@ -253,7 +253,7 @@ processRenderOp _ (WriteTempo t) = do
 
 processRenderOp _ (WriteZone z x) = do
   defs <- gets cachedDefs
-  let x' = definitionForRendering x
+  let x' = sanitizeDefinition $ definitionForRendering x
   maybeClearChangedZone z (IntMap.lookup z defs) x'
   defineZone z x'
   modify' $ \s -> s { cachedDefs = insert z x' (cachedDefs s) }
@@ -262,7 +262,19 @@ processRenderOp _ ResetZones = do
   gets cachedDefs >>= traverseWithKey clearZone
   modify' $ \s -> s { cachedDefs = empty }
 
+sanitizeDefinition :: Definition -> Definition
+sanitizeDefinition (TextProgram x) = TextProgram $ sanitizeLiveTextProgram x
+sanitizeDefinition x = x
 
+sanitizeLiveTextProgram :: Live TextProgram -> Live TextProgram
+sanitizeLiveTextProgram (Live a lness) = Live (sanitizeTextProgram a) lness
+sanitizeLiveTextProgram (Edited a b) = Edited (sanitizeTextProgram a) (sanitizeTextProgram b)
+
+sanitizeTextProgram :: TextProgram -> TextProgram
+sanitizeTextProgram (tn,txt,eTime) = (tn,sanitizeText txt,eTime)
+
+sanitizeText :: Text -> Text
+sanitizeText x = x -- PLACEHOLDER
 
 maybeClearChangedZone :: Int -> Maybe Definition -> Definition -> R ()
 maybeClearChangedZone _ Nothing y = return ()
