@@ -274,7 +274,12 @@ sanitizeTextProgram :: TextProgram -> TextProgram
 sanitizeTextProgram (tn,txt,eTime) = (tn,sanitizeText txt,eTime)
 
 sanitizeText :: Text -> Text
-sanitizeText x = x -- PLACEHOLDER
+sanitizeText = T.map sanitizeChar 
+
+sanitizeChar :: Char -> Char
+sanitizeChar '“' = '"'
+sanitizeChar '”' = '"'
+sanitizeChar x = x
 
 maybeClearChangedZone :: Int -> Maybe Definition -> Definition -> R ()
 maybeClearChangedZone _ Nothing y = return ()
