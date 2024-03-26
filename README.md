@@ -10,4 +10,3 @@ The development of Estuary is the result of ongoing collaborative work that has 
 
 You don't need to install or build anything to start using Estuary - you can just point your web browser to an existing deployment of it, and start making things! At the time of writing, a stable, recent version of Estuary is online 24/7 at a test server belonging to the research group at McMaster University that is working on Estuary - you can try it out anytime at the following URL: https://estuary.mcmaster.ca. For discussion, help, and assistance, head over to the following Discord server (make an account on discord.com first): https://discord.gg/snvFzkPtFr
 
-(Note that building Estuary depends on a rather complex tool-chain and can be time-consuming - building Estuary from source yourself is not recommended.)
