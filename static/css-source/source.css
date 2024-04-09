@@ -602,8 +602,10 @@ display: block;
 
 .evalFlash {
   color: var(--background-color);
-  background-color: var(--primary-color);
+  background-color: var(--background-color) !important;
 }
+
+input:focus, textarea:focus { outline: none; }
 
 /*ex. the div that 'Sound' is written in, in ICLCFixed)*/
 .singlePatternDiv-label{
