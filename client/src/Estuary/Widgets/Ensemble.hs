@@ -24,10 +24,13 @@ import Estuary.Widgets.View
 import Estuary.Widgets.Tempo
 import Estuary.Types.Hint
 import Estuary.Types.View
-
+import Estuary.Client.Extension (testExtension)
+import Estuary.Render.RenderEnvironment (RenderEnvironment(..))
 
 ensembleView :: MonadWidget t m => W t m ()
 ensembleView = do
+  rEnv <- renderEnvironment
+  liftIO $ testExtension (resources rEnv) "./extension.js"
   currentView <- activeView
   _ <- dyn' $ fmap viewWidget currentView
   pure ()

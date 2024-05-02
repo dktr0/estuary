@@ -119,6 +119,7 @@ library
       Estuary.Types.ServerInfo
       Estuary.Widgets.Chat
       Estuary.Widgets.DataVisualisers
+      Estuary.Client.Extension
 
   other-modules:
       Paths_estuary
