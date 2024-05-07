@@ -6,11 +6,12 @@ import Data.Text
 import Data.Time
 import Data.Time.Clock.POSIX
 import Control.Monad (void,when)
-import GHCJS.Types (isUndefined)
+import GHCJS.Types (isUndefined,jsval)
 import GHCJS.DOM.Types hiding (Text)
 import Data.JSVal.Promise
 import Control.Exception.Base (throwIO)
-import GHCJS.Foreign.Callback (Callback, syncCallback3, OnBlocked(ContinueAsync))
+import GHCJS.Foreign.Callback (Callback, syncCallback1, syncCallback3, OnBlocked(ContinueAsync))
+import JavaScript.Object
 
 import Estuary.Types.AsyncValue
 import Estuary.Types.JSException
@@ -29,12 +30,12 @@ newtype Extension = Extension JSVal
 instance PToJSVal Extension where pToJSVal (Extension x) = x
 instance PFromJSVal Extension where pFromJSVal = Extension
 
-type API = Callback (JSVal -> JSVal -> JSVal -> IO ())
-{-
+-- type API = Callback (JSVal -> JSVal -> JSVal -> IO ())
+
 newtype API = API JSVal
 instance PToJSVal API where pToJSVal (API x) = x
 instance PFromJSVal API where pFromJSVal = API
--}
+
 
 foreign import javascript safe
   "$r = importExoLang($1);"
@@ -53,13 +54,20 @@ insertSound resources url bankName n = do
   Just bankName' <- fromJSVal bankName
   Just n' <- fromJSVal n
   addResourceOp resources $ InsertResource Audio url' (bankName',n')
-  print "completed addResourceOp"
--- addResourceOp :: MonadIO m => Resources -> ResourceOp -> m ()
--- data ResourceOp = InsertResource ResourceType Text Location 
+  print "addResourceOp"
+  
+newAPI :: Resources -> IO API
+newAPI resources = do
+  insertSoundCallback <- syncCallback3 ContinueAsync (insertSound resources)
+  anAPIcallCallback <- syncCallback1 ContinueAsync anAPIcall
+  o <- create
+  setProp "insertSound" (jsval insertSoundCallback) o
+  setProp "anAPIcall" (jsval anAPIcallCallback) o
+  pure $ API $ jsval o
 
 testExtension :: Resources -> Text -> IO ()
 testExtension resources path = do
-  api <- syncCallback3 ContinueAsync (insertSound resources)
+  api <- newAPI resources
   p <- extensionPromise path
   r <- await p
   case r of
