@@ -76,7 +76,6 @@ newResources = liftIO $ do
 
 addResourceOp :: MonadIO m => Resources -> ResourceOp -> m ()
 addResourceOp r op = liftIO $ do
-  -- putStrLn $ "addResourceOp: " ++ show op
   opsSeq <- takeMVar $ _resourceOps r
   let newOpsSeq = opsSeq |> op
   updateMaps r newOpsSeq
@@ -85,7 +84,6 @@ addResourceOp r op = liftIO $ do
 
 deleteResourceOp :: MonadIO m => Resources -> Int -> m ()
 deleteResourceOp r x = liftIO $ do
-  -- putStrLn $ "deleteResourceOp: " ++ show x
   opsSeq <- takeMVar $ _resourceOps r
   let newOpsSeq = Seq.deleteAt x opsSeq
   updateMaps r newOpsSeq
@@ -93,10 +91,10 @@ deleteResourceOp r x = liftIO $ do
 
 
 clearResourceOps :: MonadIO m => Resources -> m ()
-clearResourceOps r = liftIO $ do
-  -- putStrLn "clearResourceOps"
-  setResourceOps r Seq.empty
+clearResourceOps r = liftIO $ setResourceOps r Seq.empty
 
+setDefaultResourceOps :: MonadIO m => Resources -> m ()
+setDefaultResourceOps r = liftIO $ setResourceOps r defaultResourceOps
 
 setResourceOps :: MonadIO m => Resources -> Seq ResourceOp -> m ()
 setResourceOps r x = liftIO $ do
