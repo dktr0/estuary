@@ -95,10 +95,44 @@
   <script src="./peg-0.10.0.min.js"></script>
   <script src="https://afrancob.github.io/timekNot/timekNot.js" type="module"></script>
   <script>
+  // this script is to support the exolang subsystem
+
   // this is necessary to get around GHCJS sometimes refusing to compile "import"
   function importExoLang(path) {
     return import(path);
   }
+
+  // define (and the deprecated 'evaluate') have several different return types
+  // both because of the option to implement it asynchronously or asynchronously
+  // and because of some deprecated variants. This converts all to a standard promise.
+  function exolangDefinePromise(x) {
+    if(x instanceof Promise) return x;
+    else if(x instanceof Error) return _exolangDefineError(x);
+    else if(x instanceof Object) {
+      if(x.success == false) {
+        if(typeof x.error == "string") return _exolangDefineError(new Error(x.error));
+        else if (x.error instanceof Error) return _exolangDefineError(x.error);
+        else return _exolangDefineError(new Error());
+      }
+      else if(x.success == true) {
+        if(typeof x.info == "string") return _exolangDefineOkay(x.info);
+        else return _exolangDefineOkay("");
+      }
+      else if(typeof x.error == "string") return _exolangDefineError(new Error(x.error));
+      else if(x.error instanceof Error) return _exolangDefineError(x.error);
+      else if(typeof x.info == "string") return _exolangDefineOkay(x.info);
+    }
+    else return _exolangDefineError(new Error("exolang define or evaluate returned invalid type"));
+  }
+
+  function _exolangDefineOkay(info) {
+    return new Promise((resolve,reject) => resolve({info:info}));
+  }
+
+  function _exolangDefineError(e) {
+    return new Promise((resolve,reject) => reject(e));
+  }
+
   </script>
   <div id="estuary-root"></div>
   <script type="text/javascript">
