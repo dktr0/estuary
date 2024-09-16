@@ -39,17 +39,17 @@ miniTidal iTempo = do
     }
   
   
-_define :: IORef (IntMap Tidal.ControlPattern) -> Int -> Definition -> IO (Either Text Text)
-_define zonesRef z d = do
+_define :: IORef (IntMap Tidal.ControlPattern) -> (Int -> Text -> IO ()) -> (Int -> Text -> IO ()) -> Int -> Definition -> IO ()
+_define zonesRef okCb errorCb z d = do
   case definitionToRenderingTextProgram d of 
-    Nothing -> pure $ Left "internal error in Estuary.Languages.MiniTidal: defineZone called for a definition that doesn't pertain to a text program"
+    Nothing -> errorCb z "internal error in Estuary.Languages.MiniTidal: defineZone called for a definition that doesn't pertain to a text program"
     Just (_,txt,eTime) -> do
       parseResult <- liftIO $ (return $! force (tidalParser txt)) `catch` (return . Left . (show :: SomeException -> String))
       case parseResult of
         Right p -> do
           modifyIORef zonesRef $ IntMap.insert z p
-          pure $ Right ""
-        Left err -> pure $ Left $ T.pack err
+          okCb z ""
+        Left err -> errorCb z $ T.pack err
 
 tidalParser :: Text -> Either String Tidal.ControlPattern
 tidalParser = parseTidal . T.unpack

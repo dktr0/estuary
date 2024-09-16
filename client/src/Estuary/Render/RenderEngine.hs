@@ -404,14 +404,21 @@ defineZoneExoLang r z (rName,txt,eTime) options = do
   result <- liftIO $ do 
     n <- getAudioOutputs $ mainBus env
     (setNchnls r) n -- TODO: possibly other options need to be sent to renderer as well
-    (define r) z d
+    -- WORKING HERE
+    let okCb z' _ = do -- TODO: info field is not currently cached/used by Estuary at all...
+                      clearZoneError z'
+                      setBaseRenderer z' rName
+                      setBaseDefinition z' d
+    let errorCb z' err = setZoneError z' err
+    (define r) z d okCb errorCb
+{-
   case result of 
     Left err -> setZoneError z err
     Right _ -> do
       clearZoneError z
       setBaseRenderer z rName
       setBaseDefinition z d
-
+-}
      
 determineTextNotation :: Text -> (TextNotation,Text,Text) -- (text notation, options, text code with pragma removed)
 determineTextNotation x =

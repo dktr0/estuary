@@ -32,10 +32,10 @@ hydra canvas = do
     }
 
     
-_define :: HTMLCanvasElement -> IORef (IntMap Hydra) -> Int -> Definition -> IO (Either Text Text)
-_define hCanvas hydras z d = do
+_define :: HTMLCanvasElement -> IORef (IntMap Hydra) -> (Int -> Text -> IO ()) -> (Int -> Text -> IO ()) -> Int -> Definition -> IO ()
+_define hCanvas hydras okCb errorCb z d = do
   case definitionToRenderingTextProgram d of 
-    Nothing -> pure $ Left "internal error in Estuary.Languages.Hydra: defineZone called for a definition that doesn't pertain to a text program"
+    Nothing -> errorCb z "internal error in Estuary.Languages.Hydra: defineZone called for a definition that doesn't pertain to a text program"
     Just (_,txt,eTime) -> do
       parseResult <- liftIO $ try $ return $! Hydra.parseHydra txt
       case parseResult of
@@ -46,9 +46,9 @@ _define hCanvas hydras z d = do
             Nothing -> newHydra hCanvas
           modifyIORef hydras $ IntMap.insert z h
           Hydra.evaluate h stmts
-          pure $ Right ""
-        Right (Left parseError) -> pure $ Left $ T.pack $ show parseError
-        Left exception -> pure $ Left $ T.pack $ show (exception :: SomeException)
+          okCb z ""
+        Right (Left parseError) -> errorCb z $ T.pack $ show parseError
+        Left exception -> errorCb z $ T.pack $ show (exception :: SomeException)
         
 
 _render :: IORef (IntMap Hydra) -> UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent]

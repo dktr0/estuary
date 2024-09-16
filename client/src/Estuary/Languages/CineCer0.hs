@@ -41,17 +41,17 @@ cineCer0 videoDiv tempo = do
     }
 
 
-_define :: IORef (IntMap CineCer0.Spec) -> Int -> Definition -> IO (Either Text Text)
-_define specsRef z d = do
+_define :: IORef (IntMap CineCer0.Spec) -> (Int -> Text -> IO ()) -> (Int -> Text -> IO ()) -> Int -> Definition -> IO ()
+_define specsRef okCb errorCb z d = do
   case definitionToRenderingTextProgram d of 
-    Nothing -> pure $ Left "internal error in Estuary.Languages.CineCer0: defineZone called for a definition that doesn't pertain to a text program"
+    Nothing -> errorCb z "internal error in Estuary.Languages.CineCer0: defineZone called for a definition that doesn't pertain to a text program"
     Just (_,txt,eTime) -> do
       let parseResult :: Either String CineCer0.Spec = CineCer0.cineCer0 eTime $ T.unpack txt
       case parseResult of
         Right spec -> do
           modifyIORef specsRef $ IntMap.insert z spec
-          pure $ Right ""
-        Left err -> pure $ Left $ T.pack err 
+          okCb z ""
+        Left err -> errorCb z $ T.pack err 
     
 
 _clear :: IORef (IntMap CineCer0.Spec) -> IORef (IntMap CineCer0.CineCer0State) -> Int -> IO ()

@@ -12,7 +12,7 @@ import Estuary.Types.Definition
 import Estuary.Types.TextNotation
 
 data Renderer = Renderer {
-  define :: Int -> Definition -> IO (Either Text Text), -- left=error, right=info
+  define :: (Int -> Text -> IO ()) -> (Int -> Text -> IO ()) -> Int -> Definition -> IO (), -- success callback with info, error callback with error msg, zone #, definition
   clear :: Int -> IO (),
   preRender :: Bool -> UTCTime -> UTCTime -> IO (), -- canDraw nowTime prevDrawTime
   render :: UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent], -- nowTime prevDrawTime windowStartTime windowEndTime canDraw zone
@@ -28,7 +28,7 @@ data Renderer = Renderer {
 
 emptyRenderer :: Renderer
 emptyRenderer = Renderer {
-  define = \_ _ -> pure (Left "Estuary internal error: defineZone is empty default from Estuary.Render.Renderer"),
+  define = \_ _ _ _ -> pure (),
   clear = \_ -> pure (),
   preRender = \_ _ _ -> pure (),
   render = \_ _ _ _ _ _ -> pure [],

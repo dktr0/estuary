@@ -16,6 +16,7 @@ import Data.Time.Clock.POSIX
 import Control.Monad (void,when)
 import GHCJS.Types (isUndefined)
 import GHCJS.DOM.Types hiding (Text)
+import GHCJS.Foreign.Callback
 import Data.JSVal.Promise
 import Control.Exception.Base (throwIO)
 
@@ -84,24 +85,51 @@ foreign import javascript unsafe
 hasFunction :: Text -> ExoLangClass -> Bool
 hasFunction x elc = _typeOfProperty x elc == "function"
 
-
-define :: ExoLang -> Int -> Text -> UTCTime -> IO (Either Text Text)
-define e z txt eTime = withExoLang e $ \elc -> do
+define :: FromJSVal j1 => FromJSVal j2 => (j1 -> IO ()) -> (j2 -> IO ()) -> ExoLang -> Int -> Text -> UTCTime -> IO ()
+define okCb errorCb e z txt eTime = withExoLang e $ \elc -> do
   let eTime' = utcTimeToWhenPOSIX eTime
-  case hasFunction "define" elc of
-    True -> exoResultToEither <$> _define z txt eTime' elc
+  p <- case hasFunction "define" elc of
+    True -> _define z txt eTime' elc
     False -> do
       case hasFunction "evaluate" elc of
-        True -> exoResultToEither <$> _evaluate z txt eTime' elc
-        False -> pure $ Left "ERROR: an exolang (language defined externally to Estuary) lacks define (previously known as evaluate)"
+        True -> _evaluate z txt eTime' elc
+        False -> _noDefineError
+  setDefineOkayCallback p (\x -> fromJSValUnchecked x >>= okCb) 
+  setDefineErrorCallback p (\e -> fromJSValUnchecked e >>= errorCb)
 
 foreign import javascript safe
-  "$4.define({zone: $1, text: $2, time: $3})"
-  _define :: Int -> Text -> Double -> ExoLangClass -> IO ExoResult
+  "exolangDefinePromise($4.define({zone: $1, text: $2, time: $3}))"
+  _define :: Int -> Text -> Double -> ExoLangClass -> IO Promise
 
 foreign import javascript safe -- DEPRECATED
-  "$4.evaluate($1,$2,$3)"
-  _evaluate :: Int -> Text -> Double -> ExoLangClass -> IO ExoResult
+  "exolangDefinePromise($4.evaluate($1,$2,$3))"
+  _evaluate :: Int -> Text -> Double -> ExoLangClass -> IO Promise
+
+foreign import javascript unsafe
+  "new Promise(function(resolve,reject) { reject(new Error('ERROR: an exolang (language defined externally to Estuary) lacks define'))})"
+  _noDefineError :: IO Promise
+
+foreign import javascript safe
+  "$1.then((x) => $2(x))"
+  _setDefineOkayCallback :: Promise -> Callback (JSVal -> IO ()) -> IO ()
+
+setDefineOkayCallback :: Promise -> (JSVal -> IO ()) -> IO ()
+setDefineOkayCallback p cb = do
+  cb' <- asyncCallback1 cb
+  -- _setDefineOkayCallback p cb'
+  pure ()
+
+{-
+foreign import javascript safe
+  "$1.catch((e) => $2(e))"
+  _setDefineErrorCallback :: Promise -> Callback (JSVal -> IO ()) -> IO ()
+-}
+
+setDefineErrorCallback :: Promise -> (JSVal -> IO ()) -> IO ()
+setDefineErrorCallback p cb = do
+  cb' <- asyncCallback1 cb
+  -- _setDefineErrorCallback p cb'
+  pure ()
 
 
 clear :: ExoLang -> Int -> IO ()
@@ -272,9 +300,9 @@ exoLangToRenderer tn e = Renderer.emptyRenderer {
   -- TODO: open pathways between ExoLang and the remaining setters of Renderer
   }
 
-define' :: TextNotation -> ExoLang -> Int -> Definition -> IO (Either Text Text)
-define' tn exoLang z d = do
+define' :: TextNotation -> ExoLang -> (Int -> Text -> IO ()) -> (Int -> Text -> IO ()) -> Int -> Definition -> IO ()
+define' tn exoLang okCb errorCb z d = do
   case definitionToRenderingTextProgram d of 
-    Nothing -> pure $ Left $ "internal error in Estuary.Render.Renderer: defineZone called for a definition that doesn't pertain to a text program passed to exolang for text notation " <> tn
-    Just (_,txt,eTime) -> define exoLang z txt eTime
+    Nothing -> errorCb z $ "internal error in Estuary.Render.Renderer: defineZone called for a definition that doesn't pertain to a text program passed to exolang for text notation " <> tn
+    Just (_,txt,eTime) -> define (okCb z) (errorCb z) exoLang z txt eTime
 

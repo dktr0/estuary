@@ -31,10 +31,10 @@ timeNot iTempo = do
     }
     
     
-_define :: IORef (IntMap JSVal) -> Int -> Definition -> IO (Either Text Text)
-_define zonesRef z d = do
+_define :: IORef (IntMap JSVal) -> (Int -> Text -> IO ()) -> (Int -> Text -> IO ()) -> Int -> Definition -> IO ()
+_define zonesRef okCb errorCb z d = do
   case definitionToRenderingTextProgram d of 
-    Nothing -> pure $ Left "internal error in Estuary.Languages.TimeNot: defineZone called for a definition that doesn't pertain to a text program"
+    Nothing -> errorCb z "internal error in Estuary.Languages.TimeNot: defineZone called for a definition that doesn't pertain to a text program"
     Just (_,txt,eTime) -> do
       zones <- readIORef zonesRef
       timekNot <- case IntMap.lookup z zones of
@@ -43,7 +43,10 @@ _define zonesRef z d = do
           x <- launch
           modifyIORef zonesRef $ IntMap.insert z x
           pure x
-      exoResultToEither <$> evaluate timekNot txt (utcTimeToWhenPOSIX eTime)
+      r <- exoResultToEither <$> evaluate timekNot txt (utcTimeToWhenPOSIX eTime)
+      case r of
+        Left e -> errorCb z e
+        Right x -> okCb z x
    
 --  render :: UTCTime -> UTCTime -> UTCTime -> UTCTime -> Bool -> Int -> IO [NoteEvent], -- nowTime prevDrawTime windowStartTime windowEndTime canDraw zone
 
