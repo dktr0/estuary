@@ -12,7 +12,7 @@ import Control.Exception (evaluate,catch,SomeException,try)
 import Control.Concurrent.MVar
 import Data.IntMap.Strict as IntMap
 import Data.Map.Strict as Map
-import Data.List (nub)
+-- import Data.List (nub)
 import Data.IORef
 import Sound.MusicW
 import TextShow
@@ -41,7 +41,7 @@ import Estuary.Types.Language
 import Estuary.Render.WebSerial as WebSerial
 import Estuary.Render.WebDirt as WebDirt
 import Estuary.Types.RenderInfo
-import Estuary.Render.RenderEnvironment
+import Estuary.Render.RenderEnvironment as RenderEnvironment
 import Estuary.Render.Renderer
 
 putRenderOps :: MonadIO m => RenderEnvironment -> [RenderOp] -> m ()
@@ -86,68 +86,58 @@ pushNoteEvents xs = modify' $ \x -> x { noteEvents = noteEvents x ++ xs }
 
 setZoneError :: Int -> Text -> R ()
 setZoneError z t = do
-  s <- get
-  let oldErrors = errors $ info s
-  let newErrors = IntMap.insert z t oldErrors
-  modify' $ \x -> x { info = (info s) { errors = newErrors } }
+  rEnv <- ask
+  RenderEnvironment.setZoneError rEnv z t
 
 clearZoneError :: Int -> R ()
 clearZoneError z = do
-  s <- get
-  let oldErrors = errors $ info s
-  let newErrors = IntMap.delete z oldErrors
-  modify' $ \x -> x { info = (info s) { errors = newErrors } }
-
+  rEnv <- ask
+  RenderEnvironment.clearZoneError rEnv z
+  
 setBaseDefinition :: Int -> Definition -> R ()
-setBaseDefinition z x = modify' $ \s -> s { baseDefinitions = IntMap.insert z x $ baseDefinitions s }
+setBaseDefinition z x = do
+  rEnv <- ask
+  RenderEnvironment.setBaseDefinition rEnv z x
 
 clearBaseDefinition :: Int -> R ()
-clearBaseDefinition z = modify' $ \s -> s { baseDefinitions = IntMap.delete z $ baseDefinitions s }
+clearBaseDefinition z = do
+  rEnv <- ask
+  RenderEnvironment.clearBaseDefinition rEnv z
 
 getBaseDefinition :: Int -> R (Maybe Definition)
-getBaseDefinition z = gets (IntMap.lookup z . baseDefinitions)
+getBaseDefinition z = do 
+  rEnv <- ask
+  RenderEnvironment.getBaseDefinition rEnv z
 
 setBaseRenderer :: Int -> Text -> R ()
-setBaseRenderer z name = modify' $ \s -> s { activeRenderersMap = IntMap.insert z name $ activeRenderersMap s }
+setBaseRenderer z name = do
+  rEnv <- ask
+  RenderEnvironment.setBaseRenderer rEnv z name
 
 clearBaseRenderer :: Int -> R ()
-clearBaseRenderer z = modify' $ \s -> s { activeRenderersMap = IntMap.delete z $ activeRenderersMap s }
-
-updateActiveRenderers :: R ()
-updateActiveRenderers = do
-  s <- get
+clearBaseRenderer z = do
   rEnv <- ask
-  rs <- liftIO $ readIORef (allRenderers rEnv)
-  let names = nub $ IntMap.elems $ activeRenderersMap s -- [Text]
-  let rs' = catMaybes $ fmap (\n -> Map.lookup n rs) names
-  modify' $ \s -> s { activeRenderers = rs'  }
+  RenderEnvironment.clearBaseRenderer rEnv z
+  
+updateActiveRenderers :: R ()
+updateActiveRenderers = ask >>= RenderEnvironment.updateActiveRenderers
 
 getActiveRenderers :: R [Renderer]
-getActiveRenderers = gets activeRenderers
+getActiveRenderers = ask >>= RenderEnvironment.getActiveRenderers
 
 getActiveRenderer :: Int -> R (Maybe Renderer)
 getActiveRenderer z = do
-  brs <- gets activeRenderersMap
-  case IntMap.lookup z brs of
-    Nothing -> pure Nothing
-    Just name -> do
-      rEnv <- ask
-      allRs <- liftIO $ readIORef (allRenderers rEnv)
-      case Map.lookup name allRs of
-        Nothing -> pure Nothing
-        Just r ->  pure (Just r)
+  rEnv <- ask
+  RenderEnvironment.getActiveRenderer rEnv z
   
 getAllRendererNames :: R [TextNotation]
 getAllRendererNames = do
   rEnv <- ask
-  rs <- liftIO $ readIORef (allRenderers rEnv)
-  pure $ Map.keys rs
-  
+  RenderEnvironment.getAllRendererNames rEnv
+
 rendererExists :: TextNotation -> R Bool
-rendererExists x = do
-  xs <- getAllRendererNames 
-  pure $ elem x xs
-  
+rendererExists x = ask >>= RenderEnvironment.getAllRendererNames >>= pure . elem x
+
 
 -- clearEvaluationTime :: Int -> R ()
 -- clearEvaluationTime z = modify' $ \x -> x { evaluationTimes = IntMap.delete z $ evaluationTimes x}
@@ -205,10 +195,5 @@ unsafeModeOn = askSettings Settings.unsafeModeOn
 superDirtOn :: R Bool
 superDirtOn = askSettings Settings.superDirtOn
 
-
 updateWebDirtVoices :: R ()
-updateWebDirtVoices = do
-  wd <- asks webDirt
-  n <- liftIO $ WebDirt.voices wd
-  modify' $ \s -> s { info = (info s) { webDirtVoices = n } }
-
+updateWebDirtVoices = ask >>= RenderEnvironment.updateWebDirtVoices

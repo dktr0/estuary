@@ -52,8 +52,8 @@ import Estuary.Types.Tempo
 import Estuary.Types.MovingAverage
 import Estuary.Render.DynamicsMode
 import Estuary.Render.MainBus
-import Estuary.Render.R
-import Estuary.Render.RenderEnvironment
+import Estuary.Render.R as R
+import Estuary.Render.RenderEnvironment as RenderEnvironment
 import Estuary.Render.RenderOp
 import Estuary.Render.Renderer
 import qualified Estuary.Client.Settings as Settings
@@ -117,14 +117,14 @@ renderMainThread :: R ()
 renderMainThread = do
   updateTimeMain
   processRenderOps
-  updateActiveRenderers
+  R.updateActiveRenderers
   calculateEventRenderingWindow mainRenderPeriod
   s <- get
   when (windowPeriod s /= 0) $ do
     updateTidalValueMap
     renderZones False
     flushEvents
-  updateWebDirtVoices
+  R.updateWebDirtVoices
   updateRenderLoad
 
 
@@ -158,9 +158,10 @@ updateTimeAnimation = do
         systemTime = t1System,
         audioTime = t1Audio,
         prevDrawTime = systemTime s,
-        animationDelta = newAnimationDelta,
-        info = (info x) { animationFPS = fps }
+        animationDelta = newAnimationDelta
       }
+      rEnv <- ask
+      modifyRenderInfo rEnv $ \i -> i { animationFPS = fps }
       pure True
  
 -- to be done at the end of a render frame (whether in main or animation thread)  
@@ -174,9 +175,10 @@ updateRenderLoad = do
   let newRenderLoad = ceiling (getAverage newRenderTime * 100 / getAverage newRenderedTime)
   modify' $ \x -> x {
     renderTime = newRenderTime,
-    renderedTime = newRenderedTime,
-    info = (info x) { avgRenderLoad = newRenderLoad } 
+    renderedTime = newRenderedTime
     }
+  rEnv <- ask
+  modifyRenderInfo rEnv $ \i -> i { avgRenderLoad = newRenderLoad }
 
   
   
@@ -235,7 +237,7 @@ renderAnimationFrame = do
     calculateEventRenderingWindow p
     renderZones True
     flushEvents
-    updateWebDirtVoices
+    R.updateWebDirtVoices
     updateRenderLoad
 
 calculateMicroRenderPeriod :: NominalDiffTime -> Maybe NominalDiffTime -> NominalDiffTime
@@ -304,11 +306,11 @@ clearZone _ _ = return ()
 
 clearTextProgramGeneric :: Int -> R ()
 clearTextProgramGeneric z = do
-  mr <- getActiveRenderer z
+  mr <- R.getActiveRenderer z
   case mr of
     Nothing -> pure ()
     Just r -> liftIO $ clear r z
-  clearBaseRenderer z
+  R.clearBaseRenderer z
 
 
 renderZones :: Bool -> R ()
@@ -316,14 +318,15 @@ renderZones canDraw = do
   -- preRender
   tNow <- gets systemTime
   tPrev <- gets prevDrawTime
-  rs <- getActiveRenderers
+  rs <- R.getActiveRenderers
   res <- resolution
   liftIO $ mapM_ (\r -> (setResolution r) res) rs -- later optimize so that these setters are only called when settings actual change not every frame...
   b <- brightness
   liftIO $ mapM_ (\r -> (setBrightness r) b) rs  
   liftIO $ mapM_ (\r -> (preRender r) canDraw tNow tPrev) rs
   -- render for each active zone
-  defs <- gets baseDefinitions
+  rEnv <- ask
+  defs <- getBaseDefinitions rEnv
   IntMap.traverseWithKey (renderZone canDraw) defs
   -- postRender
   liftIO $ mapM_ (\r -> (postRender r) canDraw tNow tPrev) rs
@@ -333,11 +336,11 @@ defineZone :: Int -> Definition -> R ()
 defineZone z d@(TidalStructure x) = do
   let newParamPattern = toParamPattern x
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
-  setBaseDefinition z d 
+  R.setBaseDefinition z d 
 defineZone z d@(Sequence xs) = do
   let newParamPattern = Tidal.stack $ Map.elems $ Map.map sequenceToControlPattern xs
   modify' $ \s -> s { paramPatterns = insert z newParamPattern (paramPatterns s) }
-  setBaseDefinition z d
+  R.setBaseDefinition z d
 defineZone z d@(TextProgram x) = defineZoneTextProgram z (forRendering x) ""
 defineZone _ _ = return ()
 
@@ -349,25 +352,25 @@ defineZoneTextProgram z ("",txt,eTime) _ = do
     ("",_,txt') -> do -- if there's still no language specified, check if there's actually any program at all
       case T.filter (\c -> not (isControl c) && not (isSpace c)) txt' of
         "" -> do -- notation is unspecified but there is also no program, so okay
-          clearZoneError z
-          clearBaseDefinition z
-          clearBaseRenderer z
-        _ -> setZoneError z "no language specified"
+          R.clearZoneError z
+          R.clearBaseDefinition z
+          R.clearBaseRenderer z
+        _ -> R.setZoneError z "no language specified"
     (tn,options,txt') -> defineZoneTextProgram z (tn,txt',eTime) options
     
 defineZoneTextProgram z ("jsolang",txt,eTime) options = do
   case determineJSoLangName options of
-    "" -> setZoneError z "JSoLang requires a name (hint: after ##JSoLang)"
+    "" -> R.setZoneError z "JSoLang requires a name (hint: after ##JSoLang)"
     jsoLangName -> do
       parseResult <- liftIO $ JSoLang.define txt
       case parseResult of
         Right j -> do
-          clearZoneError z
-          clearBaseDefinition z
-          clearBaseRenderer z
+          R.clearZoneError z
+          R.clearBaseDefinition z
+          R.clearBaseRenderer z
           modify' $ \s -> s { jsoLangs = Map.insert jsoLangName j $ jsoLangs s }
           liftIO $ T.putStrLn $ "defined JSoLang " <> jsoLangName
-        Left e -> setZoneError z (T.pack $ show e)
+        Left e -> R.setZoneError z (T.pack $ show e)
         
 defineZoneTextProgram z (tn,txt,eTime) options = do
   maybeJSoLang <- Map.lookup tn <$> gets jsoLangs
@@ -376,7 +379,7 @@ defineZoneTextProgram z (tn,txt,eTime) options = do
       parseResult <- liftIO $ JSoLang.parse j txt
       case parseResult of
         Right txt' -> defineZoneTextProgram z ("",txt',eTime) ""
-        Left e -> setZoneError z e
+        Left e -> R.setZoneError z e
     Nothing -> defineZoneExistingRenderer z (tn,txt,eTime) options 
     
 defineZoneExistingRenderer :: Int -> TextProgram -> Text -> R ()
@@ -395,30 +398,21 @@ defineZoneNewExoLang z (rName,txt,eTime) options = do
     Just url -> do
       r <- insertExoLang rEnv rName url
       defineZoneExoLang r z (rName,txt,eTime) options    
-    Nothing -> setZoneError z $ "no language called " <> rName <> " exists"
+    Nothing -> R.setZoneError z $ "no language called " <> rName <> " exists"
     
 defineZoneExoLang :: Renderer -> Int -> TextProgram -> Text -> R ()
 defineZoneExoLang r z (rName,txt,eTime) options = do
   let d = TextProgram (Live (rName,txt,eTime) L3)
-  env <- ask
-  result <- liftIO $ do 
-    n <- getAudioOutputs $ mainBus env
+  rEnv <- ask
+  liftIO $ do 
+    n <- getAudioOutputs $ mainBus rEnv
     (setNchnls r) n -- TODO: possibly other options need to be sent to renderer as well
-    -- WORKING HERE
-    let okCb z' _ = do -- TODO: info field is not currently cached/used by Estuary at all...
-                      clearZoneError z'
-                      setBaseRenderer z' rName
-                      setBaseDefinition z' d
-    let errorCb z' err = setZoneError z' err
-    (define r) z d okCb errorCb
-{-
-  case result of 
-    Left err -> setZoneError z err
-    Right _ -> do
-      clearZoneError z
-      setBaseRenderer z rName
-      setBaseDefinition z d
--}
+    let okCb z' _ = do
+                      RenderEnvironment.clearZoneError rEnv z'
+                      RenderEnvironment.setBaseRenderer rEnv z' rName
+                      RenderEnvironment.setBaseDefinition rEnv z' d
+    let errorCb z' err = RenderEnvironment.setZoneError rEnv z' err
+    (define r) okCb errorCb z d
      
 determineTextNotation :: Text -> (TextNotation,Text,Text) -- (text notation, options, text code with pragma removed)
 determineTextNotation x =
@@ -451,10 +445,10 @@ renderZoneText canDraw z x = do
 
 renderZoneBase :: Bool -> Int -> TextNotation -> R ()
 renderZoneBase canDraw z tn = do
-  mr <- getActiveRenderer z -- :: Maybe Renderer
+  mr <- R.getActiveRenderer z -- :: Maybe Renderer
   case mr of
     Just r -> renderZoneGeneric canDraw z r
-    Nothing -> setZoneError z $ "no renderer for " <> tn <> " in zone " <> showt z
+    Nothing -> R.setZoneError z $ "no renderer for " <> tn <> " in zone " <> showt z
     
 renderZoneGeneric :: Bool -> Int -> Renderer -> R ()
 renderZoneGeneric canDraw z r = do
@@ -486,18 +480,15 @@ renderControlPattern z = do
       Nothing -> pure ()
 
 
-
 calculateZoneRenderTimes :: Int -> MovingAverage -> R ()
 calculateZoneRenderTimes z zrt = do
-  s <- get
-  let newAvgMap = insert z (getAverage zrt) (avgZoneRenderTime $ info s)
-  modify' $ \x -> x { info = (info x) { avgZoneRenderTime = newAvgMap }}
-
+  rEnv <- ask
+  modifyRenderInfo rEnv $ \i -> i { avgZoneRenderTime = insert z (getAverage zrt) (avgZoneRenderTime i) }
+  
 calculateZoneAnimationTimes :: Int -> MovingAverage -> R ()
 calculateZoneAnimationTimes z zat = do
-  s <- get
-  let newAvgMap = insert z (getAverage zat) (avgZoneAnimationTime $ info s)
-  modify' $ \x -> x { info = (info x) { avgZoneAnimationTime = newAvgMap }}
+  rEnv <- ask
+  modifyRenderInfo rEnv $ \i -> i { avgZoneAnimationTime = insert z (getAverage zat) (avgZoneAnimationTime i) }
 
   
 forkRenderThreads :: RenderEnvironment -> Settings.Settings -> HTMLDivElement -> HTMLCanvasElement -> HTMLCanvasElement -> HTMLCanvasElement -> IO ()
@@ -514,7 +505,7 @@ mainThread rEnv rsRef = do
   rs <- readIORef rsRef
   rs' <- runR renderMainThread rEnv rs
   writeIORef rsRef rs'
-  swapMVar (renderInfo rEnv) (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere TODO: replace MVar with IORef, allow renderInfo to be updated on the spot so this operation is unnecessary
+  -- swapMVar (renderInfo rEnv) (info rs') -- copy RenderInfo from state into MVar for instant reading elsewhere TODO: replace MVar with IORef, allow renderInfo to be updated on the spot so this operation is unnecessary
   threadDelay mainRenderThreadSleepTime
   mainThread rEnv rsRef
 

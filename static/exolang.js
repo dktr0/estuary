@@ -1,3 +1,4 @@
+"use strict";
 
 // the only thing this exolang module needs to export is a function called exactly exoLang
 // that provides an instance of an object that implements the exolang API (keep reading to 
@@ -13,18 +14,19 @@ function ExoLangExample() {
 
 ExoLangExample.prototype.define = function(args) {
   // define can be implemented asynchronously:
-  return new Promise((resolve,reject) => {
+  return new Promise(function (resolve,reject) {
     console.log("ExoLangExample received define (will respond 1 second later)");
     console.log(" zone: " + args.zone);
     console.log(" time: " + args.time);
     console.log(" text: " + args.text);
-    setTimeout(1000,{
-      if (args.text == "goodcode") {
+    setTimeout(function() {
+      console.log("responding now to this code: " + args.text);
+      if (args.text == "\ngoodcode") {
         resolve({ info: "some interesting info about the evaluated code" });
       } else {
         reject(new Error("uhoh that wasn't goodcode"));
       }
-    });
+    },1000);
   });
   
   // define can also be implemented synchronously:

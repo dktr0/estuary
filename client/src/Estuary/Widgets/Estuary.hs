@@ -29,6 +29,7 @@ import Sound.MusicW.Node as MusicW
 import Sound.Punctual.GL
 import Sound.Punctual.Resolution
 import Data.List (sort)
+import Data.IORef (readIORef)
 
 import Estuary.Utility
 import Estuary.Widgets.Navigation
@@ -279,9 +280,9 @@ canvasWidget settings dynZIndex = do
 pollRenderInfo :: (Monad m, MonadIO m, PostBuild t m, Reflex t, MonadHold t m, PerformEvent t m, TriggerEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> m (Dynamic t RenderInfo)
 pollRenderInfo rEnv = do
   now <- liftIO $ getCurrentTime
-  riInitial <- liftIO $ readMVar (renderInfo rEnv)
+  riInitial <- liftIO $ readIORef (renderInfo rEnv)
   ticks <- tickLossy (1.02::NominalDiffTime) now
-  newInfo <- performEvent $ fmap (liftIO . const (readMVar $ renderInfo rEnv)) ticks
+  newInfo <- performEvent $ fmap (liftIO . const (readIORef $ renderInfo rEnv)) ticks
   holdDyn riInitial newInfo
 
 
