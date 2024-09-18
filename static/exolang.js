@@ -21,8 +21,8 @@ ExoLangExample.prototype.define = function(args) {
     console.log(" text: " + args.text);
     setTimeout(function() {
       console.log("responding now to this code: " + args.text);
-      if (args.text == "\ngoodcode") {
-        resolve({ info: "some interesting info about the evaluated code" });
+      if (args.text == "\ngoodcode\n") {
+        resolve({ info: "some interesting text info about the evaluated code" });
       } else {
         reject(new Error("uhoh that wasn't goodcode"));
       }
@@ -35,22 +35,24 @@ ExoLangExample.prototype.define = function(args) {
   console.log(" zone: " + args.zone);
   console.log(" time: " + args.time);
   console.log(" text: " + args.text);
-  if (args.text == "goodcode") {
-    return { info: "some interesting info about the evaluated code" });
-  } else {
+  if (args.text == "\ngoodcode\n") {
+    return { info: "some interesting text info about the evaluated code" };
+  }
+  else {
     return new Error("uhoh that wasn't goodcode");
   }
   */
-  
+
   // older synchronous model (deprecated)
   /*
   console.log("ExoLangExample received define");
   console.log(" zone: " + args.zone);
   console.log(" time: " + args.time);
   console.log(" text: " + args.text);
-  if (args.text == "goodcode") {
-    return { success: true, info: "some interesting info about the evaluated code" });
-  } else {
+  if (args.text == "\ngoodcode\n") {
+    return { success: true, info: "some interesting text info about the evaluated code" };
+  }
+  else {
     return { success: false, error: "uhoh that wasn't goodcode" };
   }
   */

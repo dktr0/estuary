@@ -94,8 +94,9 @@ define okCb errorCb e z txt eTime = withExoLang e $ \elc -> do
       case hasFunction "evaluate" elc of
         True -> _evaluate z txt eTime' elc
         False -> _noDefineError
-  setDefineOkayCallback p (\x -> fromJSValUnchecked x >>= okCb) 
-  setDefineErrorCallback p (\e -> fromJSValUnchecked e >>= errorCb)
+  p' <- setDefineOkayCallback p (\x -> fromJSValUnchecked x >>= okCb) 
+  setDefineErrorCallback p' (\e -> fromJSValUnchecked e >>= errorCb)
+  pure ()
 
 foreign import javascript safe
   "exolangDefinePromise($4.define({zone: $1, text: $2, time: $3}))"
@@ -110,27 +111,24 @@ foreign import javascript unsafe
   _noDefineError :: IO Promise
 
 foreign import javascript safe
-  "$1.then((x) => $2(x))"
-  _setDefineOkayCallback :: Promise -> Callback (JSVal -> IO ()) -> IO ()
+  "$1.then(function(x) {$2(x)})"
+  _setDefineOkayCallback :: Promise -> Callback (JSVal -> IO ()) -> IO Promise
 
-setDefineOkayCallback :: Promise -> (JSVal -> IO ()) -> IO ()
+setDefineOkayCallback :: Promise -> (JSVal -> IO ()) -> IO Promise
 setDefineOkayCallback p cb = do
   cb' <- asyncCallback1 cb
-  -- _setDefineOkayCallback p cb'
-  pure ()
+  _setDefineOkayCallback p cb'
 
-{-
 foreign import javascript safe
-  "$1.catch((e) => $2(e))"
-  _setDefineErrorCallback :: Promise -> Callback (JSVal -> IO ()) -> IO ()
--}
+  "$1['catch'](function (e) {$2(e.toString())})"
+  -- "$1['catch'](function (e) { console.log('_setDefineErrorCallback' + e.toString());  })"
+  _setDefineErrorCallback :: Promise -> Callback (JSVal -> IO ()) -> IO Promise
 
-setDefineErrorCallback :: Promise -> (JSVal -> IO ()) -> IO ()
+setDefineErrorCallback :: Promise -> (JSVal -> IO ()) -> IO Promise
 setDefineErrorCallback p cb = do
   cb' <- asyncCallback1 cb
-  -- _setDefineErrorCallback p cb'
-  pure ()
-
+  _setDefineErrorCallback p cb'
+  
 
 clear :: ExoLang -> Int -> IO ()
 clear e z = withExoLang e $ \elc -> do
