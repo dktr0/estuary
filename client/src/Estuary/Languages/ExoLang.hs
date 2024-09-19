@@ -121,7 +121,6 @@ setDefineOkayCallback p cb = do
 
 foreign import javascript safe
   "$1['catch'](function (e) {$2(e.toString())})"
-  -- "$1['catch'](function (e) { console.log('_setDefineErrorCallback' + e.toString());  })"
   _setDefineErrorCallback :: Promise -> Callback (JSVal -> IO ()) -> IO Promise
 
 setDefineErrorCallback :: Promise -> (JSVal -> IO ()) -> IO Promise

@@ -276,12 +276,12 @@ canvasWidget settings dynZIndex = do
   liftM (uncheckedCastTo HTMLCanvasElement .  _element_raw . fst) $ elDynAttr' "canvas" attrs $ return ()
 
 
--- every 1.02 seconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
+-- every 255 milliseconds, read the RenderInfo MVar to get load and audio level information back from the rendering/animation threads
 pollRenderInfo :: (Monad m, MonadIO m, PostBuild t m, Reflex t, MonadHold t m, PerformEvent t m, TriggerEvent t m, MonadIO (Performable m), MonadFix m) => R.RenderEnvironment -> m (Dynamic t RenderInfo)
 pollRenderInfo rEnv = do
   now <- liftIO $ getCurrentTime
   riInitial <- liftIO $ readIORef (renderInfo rEnv)
-  ticks <- tickLossy (1.02::NominalDiffTime) now
+  ticks <- tickLossy (0.255::NominalDiffTime) now
   newInfo <- performEvent $ fmap (liftIO . const (readIORef $ renderInfo rEnv)) ticks
   holdDyn riInitial newInfo
 
