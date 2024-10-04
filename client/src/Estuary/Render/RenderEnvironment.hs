@@ -13,6 +13,9 @@ import GHCJS.DOM.Types (HTMLCanvasElement)
 import Control.Monad.IO.Class
 import Data.Witherable (catMaybes)
 import Data.List (nub)
+import qualified Sound.Tidal.Context as Tidal
+import qualified Sound.Punctual.Resolution as Punctual
+import qualified Sound.MusicW as MusicW
 
 import Estuary.Render.MainBus
 import Estuary.Render.WebDirt as WebDirt
@@ -29,6 +32,9 @@ import Estuary.Types.Live
 import Estuary.Types.Definition (Definition(..),DefinitionMap)
 import Estuary.Types.TextNotation
 import Estuary.Types.AsyncValue (nonBlocking)
+import Estuary.Types.Tempo
+import qualified Estuary.Render.Renderer as Renderer
+
 
 data RenderEnvironment = RenderEnvironment {
   mainBus :: MainBus,
@@ -158,3 +164,32 @@ getActiveRenderer rEnv z = liftIO $ do
   
 getAllRendererNames :: MonadIO m => RenderEnvironment -> m [TextNotation]
 getAllRendererNames rEnv = liftIO $ Map.keys <$> readIORef (allRenderers rEnv)
+
+
+-- functions to call setters on all cached renderers 
+-- for example, when those settings are changed in the client environment
+
+setTempo :: MonadIO m => RenderEnvironment -> Tempo -> m ()
+setTempo rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setTempo $ x)
+
+setBrightness :: MonadIO m => RenderEnvironment -> Double -> m ()
+setBrightness rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setBrightness $ x)
+
+setResolution :: MonadIO m => RenderEnvironment -> Punctual.Resolution -> m ()
+setResolution rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setResolution $ x)
+
+setValueMap :: MonadIO m => RenderEnvironment -> Tidal.ValueMap -> m ()
+setValueMap rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setValueMap $ x)
+
+setAudioInput :: MonadIO m => RenderEnvironment -> MusicW.Node -> m ()
+setAudioInput rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioInput $ x)
+
+setAudioOutput :: MonadIO m => RenderEnvironment -> MusicW.Node -> m ()
+setAudioOutput rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioOutput $ x)
+
+setNchnls :: MonadIO m => RenderEnvironment -> Int -> m ()
+setNchnls rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setNchnls $ x)
+
+-- a function to call setters with initial values when a new renderer is inserted into the render environment
+-- CONTINUE HERE --
+{- initializeRenderer :: MonadIO m => RenderEnvironment -> Renderer -> m () -}

@@ -88,8 +88,19 @@ ExoLangExample.prototype.postRender = function(args) {
   console.log(" previousDrawTime: " + args.previousDrawTime);
 } // note: no return value is expected, and any that is provided will be ignored
 
-ExoLangExample.prototype.setTempo = function(args) {
-  console.log("ExoLangExample received setTempo: " + args);
+ExoLangExample.prototype.setTempo = function(tempoObject) {
+  console.log("ExoLangExample received setTempo: " + tempoObject.toString());
 } // note: no return value is expected, and any that is provided will be ignored
 
+ExoLangExample.prototype.setAudioInput = function(node) { -- argument is WebAudioNode
+  console.log("ExoLangExample received setAudioInput: " + node.toString());
+} // note: no return value is expected, and any that is provided will be ignored
+
+ExoLangExample.prototype.setAudioOutput = function(node) { -- argument is WebAudioNode
+  console.log("ExoLangExample received setAudioOutput: " + node.toString());
+} // note: no return value is expected, and any that is provided will be ignored
+
+ExoLangExample.prototype.setBrightness = function(brightness) { -- argument is number 0-1
+  console.log("ExoLangExample received setBrightness: " + brightness.toString());
+} // note: no return value is expected, and any that is provided will be ignored
 

@@ -19,6 +19,7 @@ import GHCJS.DOM.Types hiding (Text)
 import GHCJS.Foreign.Callback
 import Data.JSVal.Promise
 import Control.Exception.Base (throwIO)
+import qualified Sound.MusicW as MusicW
 
 import Estuary.Types.AsyncValue
 import Estuary.Types.JSException
@@ -55,16 +56,18 @@ _loadExoLang canvas path = do
   putStrLn $ "loaded exolang from " ++ unpack path
   elc <- exoLangClass canvas exoLangModule
   putStrLn $ " hasFunction define: " ++ show (hasFunction "define" elc)
-  putStrLn $ " hasFunction evaluate: " ++ show (hasFunction "evaluate" elc)
+  putStrLn $ " has deprecated function evaluate: " ++ show (hasFunction "evaluate" elc)
   putStrLn $ " hasFunction clear: " ++ show (hasFunction "clear" elc)
-  putStrLn $ " hasFunction clearZone: " ++ show (hasFunction "clearZone" elc)
+  putStrLn $ " has deprecated function clearZone: " ++ show (hasFunction "clearZone" elc)
   putStrLn $ " hasFunction preRender: " ++ show (hasFunction "preRender" elc)
-  putStrLn $ " hasFunction preAnimate: " ++ show (hasFunction "preAnimate" elc)
+  putStrLn $ " has deprecated function preAnimate: " ++ show (hasFunction "preAnimate" elc)
   putStrLn $ " hasFunction render: " ++ show (hasFunction "render" elc)
-  putStrLn $ " hasFunction animateZone: " ++ show (hasFunction "animateZone" elc)
+  putStrLn $ " has deprecated function animateZone: " ++ show (hasFunction "animateZone" elc)
   putStrLn $ " hasFunction postRender: " ++ show (hasFunction "postRender" elc)
-  putStrLn $ " hasFunction postAnimate: " ++ show (hasFunction "postAnimate" elc)
+  putStrLn $ " has deprecated function postAnimate: " ++ show (hasFunction "postAnimate" elc)
   putStrLn $ " hasFunction setTempo: " ++ show (hasFunction "setTempo" elc)
+  putStrLn $ " hasFunction setAudioInput: " ++ show (hasFunction "setAudioInput" elc)
+  putStrLn $ " hasFunction setAudioOutput: " ++ show (hasFunction "setAudioOutput" elc)
   putStrLn $ " hasFunction setBrightness: " ++ show (hasFunction "setBrightness" elc)
   putStrLn $ " hasFunction setOutputChannelCount: " ++ show (hasFunction "setOutputChannelCount" elc)
   pure elc  
@@ -241,6 +244,21 @@ foreign import javascript safe
   _setBrightness :: Double -> ExoLangClass -> IO ()
 
 
+setAudioInput :: ExoLang -> MusicW.Node -> IO ()
+setAudioInput e x = void $ withExoLang e $ \elc -> when (hasFunction "setAudioInput" elc) $ _setAudioInput x elc
+
+foreign import javascript safe
+  "$2.setAudioInput($1)"
+  _setAudioInput :: MusicW.Node -> ExoLangClass -> IO ()
+
+setAudioOutput :: ExoLang -> MusicW.Node -> IO ()
+setAudioOutput e x = void $ withExoLang e $ \elc -> when (hasFunction "setAudioOutput" elc) $ _setAudioOutput x elc
+
+foreign import javascript safe
+  "$2.setAudioOutput($1)"
+  _setAudioOutput :: MusicW.Node -> ExoLangClass -> IO ()
+
+
 setOutputChannelCount :: ExoLang -> Int -> IO ()
 setOutputChannelCount e x = void $ withExoLang e $ \elc -> when (hasFunction "setOutputChannelCount" elc) $ _setOutputChannelCount x elc
 
@@ -292,6 +310,8 @@ exoLangToRenderer tn e = Renderer.emptyRenderer {
   Renderer.render = render e,
   Renderer.postRender = postRender e,
   Renderer.setTempo = setTempo e,
+  Renderer.setAudioInput = setAudioInput e,
+  Renderer.setAudioOutput = setAudioOutput e,
   Renderer.setBrightness = setBrightness e,
   Renderer.setNchnls = setOutputChannelCount e
   -- TODO: open pathways between ExoLang and the remaining setters of Renderer

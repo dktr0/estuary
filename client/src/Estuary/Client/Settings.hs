@@ -28,7 +28,7 @@ import Control.Monad.IO.Class (liftIO)
 data Settings = Settings {
 
   -- settings affecting appearance/behaviour of UI
-  noui :: Bool,
+  noui :: Bool, -- i.e. "no UI"
   language :: Language,
   theme :: Text,
   terminalVisible :: Bool,
