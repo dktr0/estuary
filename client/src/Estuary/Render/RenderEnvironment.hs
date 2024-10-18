@@ -168,6 +168,8 @@ getAllRendererNames rEnv = liftIO $ Map.keys <$> readIORef (allRenderers rEnv)
 
 -- functions to call setters on all cached renderers 
 -- for example, when those settings are changed in the client environment
+-- TODO: double-check/confirm/reconsider - this should only be when a renderer is active
+-- (when inactive or not yet active renderers are (re)activated, they should get all setters then
 
 setTempo :: MonadIO m => RenderEnvironment -> Tempo -> m ()
 setTempo rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setTempo $ x)
@@ -181,7 +183,7 @@ setResolution rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Re
 setValueMap :: MonadIO m => RenderEnvironment -> Tidal.ValueMap -> m ()
 setValueMap rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setValueMap $ x)
 
-setAudioInput :: MonadIO m => RenderEnvironment -> MusicW.Node -> m ()
+setAudioInput :: MonadIO m => RenderEnvironment -> IO MusicW.Node -> m ()
 setAudioInput rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioInput $ x)
 
 setAudioOutput :: MonadIO m => RenderEnvironment -> MusicW.Node -> m ()

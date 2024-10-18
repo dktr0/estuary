@@ -244,12 +244,14 @@ foreign import javascript safe
   _setBrightness :: Double -> ExoLangClass -> IO ()
 
 
-setAudioInput :: ExoLang -> MusicW.Node -> IO ()
-setAudioInput e x = void $ withExoLang e $ \elc -> when (hasFunction "setAudioInput" elc) $ _setAudioInput x elc
+setAudioInput :: ExoLang -> IO MusicW.Node -> IO ()
+setAudioInput e ioNode = do
+  cb <- syncCallback' (pToJSVal <$> ioNode)
+  void $ withExoLang e $ \elc -> when (hasFunction "setAudioInput" elc) $ _setAudioInput cb elc
 
 foreign import javascript safe
   "$2.setAudioInput($1)"
-  _setAudioInput :: MusicW.Node -> ExoLangClass -> IO ()
+  _setAudioInput :: Callback (IO JSVal) -> ExoLangClass -> IO ()
 
 setAudioOutput :: ExoLang -> MusicW.Node -> IO ()
 setAudioOutput e x = void $ withExoLang e $ \elc -> when (hasFunction "setAudioOutput" elc) $ _setAudioOutput x elc

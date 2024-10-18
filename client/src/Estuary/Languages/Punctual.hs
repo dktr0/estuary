@@ -30,7 +30,7 @@ punctual canvas iTempo = do
     setTempo = Punctual.setTempo punctual',
     setResolution = Punctual.setResolution punctual',
     setBrightness = Punctual.setBrightness punctual',
-    setAudioInput = Punctual.setAudioInput punctual',
+    setAudioInput = _setAudioInput punctual',
     setAudioOutput = Punctual.setAudioOutput punctual',
     setNchnls = Punctual.setNchnls punctual'
     }
@@ -44,3 +44,6 @@ _define p okCb errorCb z d = do
       case x of
         Right i -> okCb z i
         Left e -> errorCb z e
+
+_setAudioInput :: Punctual.Punctual -> IO MusicW.Node -> IO ()
+_setAudioInput p ioNode = ioNode >>= Punctual.setAudioInput p

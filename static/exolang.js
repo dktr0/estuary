@@ -92,15 +92,19 @@ ExoLangExample.prototype.setTempo = function(tempoObject) {
   console.log("ExoLangExample received setTempo: " + tempoObject.toString());
 } // note: no return value is expected, and any that is provided will be ignored
 
-ExoLangExample.prototype.setAudioInput = function(node) { -- argument is WebAudioNode
-  console.log("ExoLangExample received setAudioInput: " + node.toString());
+ExoLangExample.prototype.setAudioInput = function(nodeFunction) { 
+  // argument nodeFunction is a function that returns a webAudioNode
+  // this allows that function to be called to acquire the resource only when necessary so 
+  // that, for example, Estuary/an exolang don't attempt to acquire microphone input from
+  // the browser until/unless it is necessary
+  console.log("ExoLangExample received setAudioInput: " + nodeFunction.toString());
 } // note: no return value is expected, and any that is provided will be ignored
 
-ExoLangExample.prototype.setAudioOutput = function(node) { -- argument is WebAudioNode
+ExoLangExample.prototype.setAudioOutput = function(node) { // argument is WebAudioNode
   console.log("ExoLangExample received setAudioOutput: " + node.toString());
 } // note: no return value is expected, and any that is provided will be ignored
 
-ExoLangExample.prototype.setBrightness = function(brightness) { -- argument is number 0-1
+ExoLangExample.prototype.setBrightness = function(brightness) { // argument is number 0-1
   console.log("ExoLangExample received setBrightness: " + brightness.toString());
 } // note: no return value is expected, and any that is provided will be ignored
 

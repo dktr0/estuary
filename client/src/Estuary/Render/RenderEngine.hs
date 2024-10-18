@@ -315,17 +315,15 @@ clearTextProgramGeneric z = do
 
 renderZones :: Bool -> R ()
 renderZones canDraw = do
+  rEnv <- ask
   -- preRender
   tNow <- gets systemTime
   tPrev <- gets prevDrawTime
   rs <- R.getActiveRenderers
-  res <- resolution
-  liftIO $ mapM_ (\r -> (setResolution r) res) rs -- later optimize so that these setters are only called when settings actual change not every frame...
-  b <- brightness
-  liftIO $ mapM_ (\r -> (setBrightness r) b) rs  
+  resolution >>= RenderEnvironment.setResolution rEnv  -- later optimize so that these setters are only called when settings actual change not every frame...
+  brightness >>= RenderEnvironment.setBrightness rEnv
   liftIO $ mapM_ (\r -> (preRender r) canDraw tNow tPrev) rs
   -- render for each active zone
-  rEnv <- ask
   defs <- getBaseDefinitions rEnv
   IntMap.traverseWithKey (renderZone canDraw) defs
   -- postRender

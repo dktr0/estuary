@@ -21,7 +21,7 @@ data Renderer = Renderer {
   setBrightness :: Double -> IO (),
   setResolution :: Punctual.Resolution -> IO (),
   setValueMap :: Tidal.ValueMap -> IO (),
-  setAudioInput :: MusicW.Node -> IO (),
+  setAudioInput :: IO MusicW.Node -> IO (),
   setAudioOutput :: MusicW.Node -> IO (),
   setNchnls :: Int -> IO ()
   }
