@@ -251,7 +251,7 @@ processRenderOps = takeRenderOps >>= foldM processRenderOp ()
 processRenderOp :: () -> RenderOp -> R ()
 
 processRenderOp _ (WriteTempo t) = do
-  modify' $ \s -> s { tempo = t }
+  modify' $ \s -> s { Estuary.Types.RenderState.tempo = t }
 
 processRenderOp _ (WriteZone z x) = do
   defs <- gets cachedDefs
@@ -320,8 +320,8 @@ renderZones canDraw = do
   tNow <- gets systemTime
   tPrev <- gets prevDrawTime
   rs <- R.getActiveRenderers
-  resolution >>= RenderEnvironment.setResolution rEnv  -- later optimize so that these setters are only called when settings actual change not every frame...
-  brightness >>= RenderEnvironment.setBrightness rEnv
+  R.resolution >>= RenderEnvironment.setResolution rEnv  -- later optimize so that these setters are only called when settings actual change not every frame...
+  R.brightness >>= RenderEnvironment.setBrightness rEnv
   liftIO $ mapM_ (\r -> (preRender r) canDraw tNow tPrev) rs
   -- render for each active zone
   defs <- getBaseDefinitions rEnv
@@ -404,7 +404,7 @@ defineZoneExoLang r z (rName,txt,eTime) options = do
   rEnv <- ask
   liftIO $ do 
     n <- getAudioOutputs $ mainBus rEnv
-    (setNchnls r) n -- TODO: possibly other options need to be sent to renderer as well
+    (RenderEnvironment.setNchnls rEnv) n -- TODO: possibly other options need to be sent to renderer as well
     let okCb z' _ = do
                       RenderEnvironment.clearZoneError rEnv z'
                       RenderEnvironment.setBaseRenderer rEnv z' rName
@@ -450,8 +450,8 @@ renderZoneBase canDraw z tn = do
     
 renderZoneGeneric :: Bool -> Int -> Renderer -> R ()
 renderZoneGeneric canDraw z r = do
-  gets tempo >>= (liftIO . setTempo r)
-  gets valueMap >>= (liftIO . setValueMap r)
+  rEnv <- ask
+  gets Estuary.Types.RenderState.tempo >>= (liftIO . RenderEnvironment.setTempo rEnv)
   tNow <- gets systemTime
   tPrev <- gets prevDrawTime
   wStart <- gets windowStart
@@ -466,12 +466,12 @@ renderControlPattern z = do
   when (wdOn || sdOn) $ do
     s <- get
     let controlPattern = IntMap.lookup z $ paramPatterns s -- :: Maybe ControlPattern
-    let vMap = valueMap s
+    vMap <- ask >>= getValueMap
     case controlPattern of
       Just controlPattern' -> do
         let lt = windowStart s
         let rp = windowPeriod s
-        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (tempo s) controlPattern')
+        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (Estuary.Types.RenderState.tempo s) controlPattern')
           `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
         ns' <- mapM tidalEventToNoteEvent ns
         pushNoteEvents ns'

@@ -126,17 +126,18 @@ estuaryWidget iSettings keyboardShortcut = divClass "estuary" $ mdo
     rEnv <- initialRenderEnvironment iSettings lCanvas
     t0System <- getCurrentTime
     let iTempo = Tempo { freq = 0.5, time = t0System, Estuary.Types.Tempo.count = 0 }
+    -- insert fixed (non exo-lang) renderers into RenderEnvironment
     MiniTidal.miniTidal iTempo >>= insertRenderer rEnv "minitidal"
-    punctual' <- Punctual.punctual pCanvas iTempo
-    pIn <- getPunctualInput $ mainBus rEnv
-    pOut <- getMainBusInput $ mainBus rEnv
-    setAudioInput punctual' pIn
-    setAudioOutput punctual' pOut
-    setNchnls punctual' $ numberOfOutputs pOut
-    insertRenderer rEnv "punctual" punctual'
+    Punctual.punctual pCanvas iTempo >>= insertRenderer rEnv "punctual"
     CineCer0.cineCer0 cineCer0Div iTempo >>= insertRenderer rEnv "cinecer0"
     Hydra.hydra hCanvas >>= insertRenderer rEnv "hydra"
     TimeNot.timeNot iTempo >>= insertRenderer rEnv "timenot"
+    -- call all setters with appropriate initial values
+    pIn <- getPunctualInput $ mainBus rEnv
+    pOut <- getMainBusInput $ mainBus rEnv
+    R.setAudioInput rEnv (pure pIn)
+    R.setAudioOutput rEnv pOut
+    R.setNchnls rEnv (numberOfOutputs pOut)
     pure rEnv
   
   liftIO $ forkRenderThreads rEnv iSettings cineCer0Div pCanvas lCanvas hCanvas

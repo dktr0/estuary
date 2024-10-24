@@ -70,7 +70,8 @@ updateTidalValueMap :: R ()
 updateTidalValueMap = do
   rEnv <- ask
   m <- liftIO $ readIORef $ ccMap rEnv
-  modify' $ \x -> x { valueMap = fmap Tidal.toValue $ Map.mapKeys T.unpack m}
+  RenderEnvironment.setValueMap rEnv $ fmap Tidal.toValue $ Map.mapKeys T.unpack m
+  -- modify' $ \x -> x { valueMap = fmap Tidal.toValue $ Map.mapKeys T.unpack m}
 
 
 type R = ReaderT RenderEnvironment (StateT RenderState IO)

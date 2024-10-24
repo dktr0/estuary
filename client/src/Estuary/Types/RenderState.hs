@@ -42,11 +42,9 @@ data RenderState = RenderState {
 
   tempo :: Tempo,
   cachedDefs :: !DefinitionMap, -- the map of definitions as received from the external world via render ops
-  -- baseDefinitions :: !DefinitionMap, -- the map of definitions as actually rendered (eg. with jsolang translations)
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   
   noteEvents :: ![NoteEvent],
-  valueMap :: Tidal.ValueMap,
   
   renderTime :: !MovingAverage,
   renderedTime :: !MovingAverage,
@@ -55,8 +53,6 @@ data RenderState = RenderState {
   zoneAnimationTimes :: !(IntMap MovingAverage),
   
   jsoLangs :: Map.Map Text JSoLang,
-  -- activeRenderersMap :: !(IntMap Text),
-  -- activeRenderers :: ![Renderer],
   
   exoLangCanvas :: HTMLCanvasElement -- this is a temporary hack, will be replaced with a suitable div soon
   }
@@ -79,7 +75,7 @@ initialRenderState cineCer0Div pCanvas elCanvas hCanvas t0System t0Audio = do
     paramPatterns = empty,
     
     noteEvents = [],
-    valueMap = Map.empty,
+    -- valueMap = Map.empty, -- moved to RenderEnvironment
 
     renderTime = newAverage 70,
     renderedTime = newAverage 70,

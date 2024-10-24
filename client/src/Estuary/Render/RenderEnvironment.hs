@@ -50,9 +50,15 @@ data RenderEnvironment = RenderEnvironment {
   sharedCanvas :: HTMLCanvasElement, -- this will be replaced by a sharedDiv very soon!
   baseDefinitions :: IORef DefinitionMap, -- the map of definitions as actually rendered (eg. with jsolang translations)
   activeRenderersMap :: IORef (IntMap Text),
-  activeRenderers :: IORef [Renderer]
+  activeRenderers :: IORef [Renderer],
+  tempo :: IORef Tempo,
+  valueMap :: IORef Tidal.ValueMap,
+  audioInput :: IORef (IO MusicW.Node),
+  audioOutput :: IORef MusicW.Node,
+  nchnls :: IORef Int
   }
-  
+
+
 initialRenderEnvironment :: Settings -> HTMLCanvasElement -> IO RenderEnvironment
 initialRenderEnvironment s cvs = do
   ac <- getGlobalAudioContextPlayback
@@ -166,32 +172,57 @@ getAllRendererNames :: MonadIO m => RenderEnvironment -> m [TextNotation]
 getAllRendererNames rEnv = liftIO $ Map.keys <$> readIORef (allRenderers rEnv)
 
 
--- functions to call setters on all cached renderers 
--- for example, when those settings are changed in the client environment
--- TODO: double-check/confirm/reconsider - this should only be when a renderer is active
--- (when inactive or not yet active renderers are (re)activated, they should get all setters then
+-- setters
 
 setTempo :: MonadIO m => RenderEnvironment -> Tempo -> m ()
-setTempo rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setTempo $ x)
+setTempo rEnv x = liftIO $ do
+  writeIORef (tempo rEnv) x
+  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setTempo $ x) -- TODO! should only be active renderers
 
 setBrightness :: MonadIO m => RenderEnvironment -> Double -> m ()
-setBrightness rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setBrightness $ x)
+setBrightness rEnv x = liftIO $ do
+  settings <- readIORef (_settings rEnv)
+  writeIORef (_settings rEnv) $ settings { brightness = x }
+  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setBrightness $ x) -- TODO! should only be active renderers
 
 setResolution :: MonadIO m => RenderEnvironment -> Punctual.Resolution -> m ()
-setResolution rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setResolution $ x)
+setResolution rEnv x = liftIO $ do
+  settings <- readIORef (_settings rEnv)
+  writeIORef (_settings rEnv) $ settings { resolution = x }
+  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setResolution $ x) -- TODO! should only be active renderers
 
 setValueMap :: MonadIO m => RenderEnvironment -> Tidal.ValueMap -> m ()
-setValueMap rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setValueMap $ x)
+setValueMap rEnv x = liftIO $ do
+  writeIORef (valueMap rEnv) x
+  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setValueMap $ x) -- TODO! should only be active renderers
+
+getValueMap :: MonadIO m => RenderEnvironment -> m Tidal.ValueMap
+getValueMap rEnv = liftIO $ readIORef (valueMap rEnv)
 
 setAudioInput :: MonadIO m => RenderEnvironment -> IO MusicW.Node -> m ()
-setAudioInput rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioInput $ x)
+setAudioInput rEnv x = liftIO $ do
+  writeIORef (audioInput rEnv) x
+  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioInput $ x) -- TODO! should only be active renderers
 
 setAudioOutput :: MonadIO m => RenderEnvironment -> MusicW.Node -> m ()
-setAudioOutput rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioOutput $ x)
+setAudioOutput rEnv x = liftIO $ do
+  writeIORef (audioOutput rEnv) x
+  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioOutput $ x) -- TODO! should only be active renderers
 
 setNchnls :: MonadIO m => RenderEnvironment -> Int -> m ()
-setNchnls rEnv x = liftIO $ readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setNchnls $ x)
+setNchnls rEnv x = liftIO $ do
+  writeIORef (nchnls rEnv) x
+  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setNchnls $ x) -- TODO! should only be active renderers
+
 
 -- a function to call setters with initial values when a new renderer is inserted into the render environment
--- CONTINUE HERE --
-{- initializeRenderer :: MonadIO m => RenderEnvironment -> Renderer -> m () -}
+initializeRenderer :: MonadIO m => RenderEnvironment -> Renderer -> m ()
+initializeRenderer rEnv r = liftIO $ do
+  settings <- readIORef (_settings rEnv)
+  readIORef (tempo rEnv) >>= Renderer.setTempo r
+  Renderer.setBrightness r (brightness settings)
+  Renderer.setResolution r (resolution settings)
+  readIORef (valueMap rEnv) >>= Renderer.setValueMap r
+  readIORef (audioInput rEnv) >>= Renderer.setAudioInput r
+  readIORef (audioOutput rEnv) >>= Renderer.setAudioOutput r
+  readIORef (nchnls rEnv) >>= Renderer.setNchnls r
