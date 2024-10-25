@@ -250,8 +250,7 @@ processRenderOps = takeRenderOps >>= foldM processRenderOp ()
 
 processRenderOp :: () -> RenderOp -> R ()
 
-processRenderOp _ (WriteTempo t) = do
-  modify' $ \s -> s { Estuary.Types.RenderState.tempo = t }
+processRenderOp _ (WriteTempo t) = ask >>= flip RenderEnvironment.setTempo t
 
 processRenderOp _ (WriteZone z x) = do
   defs <- gets cachedDefs
@@ -451,7 +450,7 @@ renderZoneBase canDraw z tn = do
 renderZoneGeneric :: Bool -> Int -> Renderer -> R ()
 renderZoneGeneric canDraw z r = do
   rEnv <- ask
-  gets Estuary.Types.RenderState.tempo >>= (liftIO . RenderEnvironment.setTempo rEnv)
+  -- gets Estuary.Types.RenderState.tempo >>= (liftIO . RenderEnvironment.setTempo rEnv)
   tNow <- gets systemTime
   tPrev <- gets prevDrawTime
   wStart <- gets windowStart
@@ -471,7 +470,8 @@ renderControlPattern z = do
       Just controlPattern' -> do
         let lt = windowStart s
         let rp = windowPeriod s
-        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp (Estuary.Types.RenderState.tempo s) controlPattern')
+        theTempo <- ask >>= getTempo
+        ns <- liftIO $ (return $! force $ MiniTidal.renderTidalPattern vMap lt rp theTempo controlPattern')
           `catch` (\e -> putStrLn (show (e :: SomeException)) >> return [])
         ns' <- mapM tidalEventToNoteEvent ns
         pushNoteEvents ns'

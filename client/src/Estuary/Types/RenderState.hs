@@ -40,7 +40,7 @@ data RenderState = RenderState {
   windowPeriod :: !NominalDiffTime,
   windowEnd :: !UTCTime,
 
-  tempo :: Tempo,
+  -- tempo :: Tempo, -- moving to RenderEnvironment
   cachedDefs :: !DefinitionMap, -- the map of definitions as received from the external world via render ops
   paramPatterns :: !(IntMap Tidal.ControlPattern),
   
@@ -60,7 +60,7 @@ data RenderState = RenderState {
 
 initialRenderState :: HTMLDivElement -> HTMLCanvasElement -> HTMLCanvasElement -> HTMLCanvasElement -> UTCTime -> AudioTime -> IO RenderState
 initialRenderState cineCer0Div pCanvas elCanvas hCanvas t0System t0Audio = do
-  let iTempo = Tempo { freq = 0.5, time = t0System, count = 0 }
+  -- let iTempo = Tempo { freq = 0.5, time = t0System, count = 0 } -- moving to RenderEnvironment
   pure $ RenderState {
     audioTime = t0Audio,
     systemTime = t0System,
@@ -69,13 +69,11 @@ initialRenderState cineCer0Div pCanvas elCanvas hCanvas t0System t0Audio = do
     windowPeriod = 0,
     windowEnd = addUTCTime 0.3 t0System,
 
-    tempo = iTempo,
+    -- tempo = iTempo, -- moving to RenderEnvironment
     cachedDefs = empty,
-    -- baseDefinitions = empty,
     paramPatterns = empty,
     
     noteEvents = [],
-    -- valueMap = Map.empty, -- moved to RenderEnvironment
 
     renderTime = newAverage 70,
     renderedTime = newAverage 70,
@@ -84,8 +82,6 @@ initialRenderState cineCer0Div pCanvas elCanvas hCanvas t0System t0Audio = do
     zoneAnimationTimes = empty,
     
     jsoLangs = Map.empty,
-    -- activeRenderersMap = empty,
-    -- activeRenderers = [],
     
     exoLangCanvas = elCanvas
     }

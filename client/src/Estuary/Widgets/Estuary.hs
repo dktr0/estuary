@@ -123,21 +123,15 @@ estuaryWidget iSettings keyboardShortcut = divClass "estuary" $ mdo
   hCanvas <- canvasWidget settings hydraZIndex' -- canvas for Hydra
   
   rEnv <- liftIO $ do
-    rEnv <- initialRenderEnvironment iSettings lCanvas
     t0System <- getCurrentTime
-    let iTempo = Tempo { freq = 0.5, time = t0System, Estuary.Types.Tempo.count = 0 }
+    rEnv <- initialRenderEnvironment iSettings t0System lCanvas
     -- insert fixed (non exo-lang) renderers into RenderEnvironment
+    iTempo <- getTempo rEnv
     MiniTidal.miniTidal iTempo >>= insertRenderer rEnv "minitidal"
     Punctual.punctual pCanvas iTempo >>= insertRenderer rEnv "punctual"
     CineCer0.cineCer0 cineCer0Div iTempo >>= insertRenderer rEnv "cinecer0"
     Hydra.hydra hCanvas >>= insertRenderer rEnv "hydra"
-    TimeNot.timeNot iTempo >>= insertRenderer rEnv "timenot"
-    -- call all setters with appropriate initial values
-    pIn <- getPunctualInput $ mainBus rEnv
-    pOut <- getMainBusInput $ mainBus rEnv
-    R.setAudioInput rEnv (pure pIn)
-    R.setAudioOutput rEnv pOut
-    R.setNchnls rEnv (numberOfOutputs pOut)
+    getTempo rEnv >>= TimeNot.timeNot >>= insertRenderer rEnv "timenot"
     pure rEnv
   
   liftIO $ forkRenderThreads rEnv iSettings cineCer0Div pCanvas lCanvas hCanvas

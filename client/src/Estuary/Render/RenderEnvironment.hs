@@ -16,6 +16,7 @@ import Data.List (nub)
 import qualified Sound.Tidal.Context as Tidal
 import qualified Sound.Punctual.Resolution as Punctual
 import qualified Sound.MusicW as MusicW
+import Data.Time.Clock
 
 import Estuary.Render.MainBus
 import Estuary.Render.WebDirt as WebDirt
@@ -59,8 +60,8 @@ data RenderEnvironment = RenderEnvironment {
   }
 
 
-initialRenderEnvironment :: Settings -> HTMLCanvasElement -> IO RenderEnvironment
-initialRenderEnvironment s cvs = do
+initialRenderEnvironment :: Settings -> UTCTime -> HTMLCanvasElement -> IO RenderEnvironment
+initialRenderEnvironment s t0System cvs = do
   ac <- getGlobalAudioContextPlayback
   addWorklets ac
   mb <- initializeMainBus
@@ -85,6 +86,12 @@ initialRenderEnvironment s cvs = do
   baseDefinitions' <- newIORef IntMap.empty
   activeRenderersMap' <- newIORef IntMap.empty
   activeRenderers' <- newIORef []
+  tempo' <- newIORef $ Tempo { freq = 0.5, time = t0System, Estuary.Types.Tempo.count = 0 }
+  valueMap' <- newIORef Map.empty
+  audioInput' <- newIORef $ getPunctualInput mb
+  aOut <- getMainBusInput mb
+  audioOutput' <- newIORef aOut
+  nchnls' <- newIORef (numberOfOutputs aOut)
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,
@@ -100,7 +107,12 @@ initialRenderEnvironment s cvs = do
     sharedCanvas = cvs,
     baseDefinitions = baseDefinitions',
     activeRenderersMap = activeRenderersMap',
-    activeRenderers = activeRenderers'
+    activeRenderers = activeRenderers',
+    tempo = tempo',
+    valueMap = valueMap',
+    audioInput = audioInput',
+    audioOutput = audioOutput',
+    nchnls = nchnls'
     }
     
 insertRenderer :: MonadIO m => RenderEnvironment -> Text -> Renderer -> m ()
@@ -177,24 +189,27 @@ getAllRendererNames rEnv = liftIO $ Map.keys <$> readIORef (allRenderers rEnv)
 setTempo :: MonadIO m => RenderEnvironment -> Tempo -> m ()
 setTempo rEnv x = liftIO $ do
   writeIORef (tempo rEnv) x
-  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setTempo $ x) -- TODO! should only be active renderers
+  readIORef (activeRenderers rEnv) >>= mapM_ (flip Renderer.setTempo $ x)
+
+getTempo :: MonadIO m => RenderEnvironment -> m Tempo
+getTempo rEnv = liftIO $ readIORef (tempo rEnv)
 
 setBrightness :: MonadIO m => RenderEnvironment -> Double -> m ()
 setBrightness rEnv x = liftIO $ do
   settings <- readIORef (_settings rEnv)
   writeIORef (_settings rEnv) $ settings { brightness = x }
-  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setBrightness $ x) -- TODO! should only be active renderers
+  readIORef (activeRenderers rEnv) >>= mapM_ (flip Renderer.setBrightness $ x)
 
 setResolution :: MonadIO m => RenderEnvironment -> Punctual.Resolution -> m ()
 setResolution rEnv x = liftIO $ do
   settings <- readIORef (_settings rEnv)
   writeIORef (_settings rEnv) $ settings { resolution = x }
-  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setResolution $ x) -- TODO! should only be active renderers
+  readIORef (activeRenderers rEnv) >>= mapM_ (flip Renderer.setResolution $ x)
 
 setValueMap :: MonadIO m => RenderEnvironment -> Tidal.ValueMap -> m ()
 setValueMap rEnv x = liftIO $ do
   writeIORef (valueMap rEnv) x
-  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setValueMap $ x) -- TODO! should only be active renderers
+  readIORef (activeRenderers rEnv) >>= mapM_ (flip Renderer.setValueMap $ x)
 
 getValueMap :: MonadIO m => RenderEnvironment -> m Tidal.ValueMap
 getValueMap rEnv = liftIO $ readIORef (valueMap rEnv)
@@ -202,20 +217,21 @@ getValueMap rEnv = liftIO $ readIORef (valueMap rEnv)
 setAudioInput :: MonadIO m => RenderEnvironment -> IO MusicW.Node -> m ()
 setAudioInput rEnv x = liftIO $ do
   writeIORef (audioInput rEnv) x
-  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioInput $ x) -- TODO! should only be active renderers
+  readIORef (activeRenderers rEnv) >>= mapM_ (flip Renderer.setAudioInput $ x)
 
 setAudioOutput :: MonadIO m => RenderEnvironment -> MusicW.Node -> m ()
 setAudioOutput rEnv x = liftIO $ do
   writeIORef (audioOutput rEnv) x
-  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setAudioOutput $ x) -- TODO! should only be active renderers
+  readIORef (activeRenderers rEnv) >>= mapM_ (flip Renderer.setAudioOutput $ x)
 
 setNchnls :: MonadIO m => RenderEnvironment -> Int -> m ()
 setNchnls rEnv x = liftIO $ do
   writeIORef (nchnls rEnv) x
-  readIORef (allRenderers rEnv) >>= mapM_ (flip Renderer.setNchnls $ x) -- TODO! should only be active renderers
+  readIORef (activeRenderers rEnv) >>= mapM_ (flip Renderer.setNchnls $ x)
 
 
--- a function to call setters with initial values when a new renderer is inserted into the render environment
+-- TODO: this function needs to be called (for every new renderer that becomes active)
+-- a function to call setters with initial values when a new renderer becomes active
 initializeRenderer :: MonadIO m => RenderEnvironment -> Renderer -> m ()
 initializeRenderer rEnv r = liftIO $ do
   settings <- readIORef (_settings rEnv)
