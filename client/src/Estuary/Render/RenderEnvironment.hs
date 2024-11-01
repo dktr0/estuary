@@ -51,7 +51,7 @@ data RenderEnvironment = RenderEnvironment {
   sharedCanvas :: HTMLCanvasElement, -- this will be replaced by a sharedDiv very soon!
   baseDefinitions :: IORef DefinitionMap, -- the map of definitions as actually rendered (eg. with jsolang translations)
   activeRenderersMap :: IORef (IntMap Text),
-  activeRenderers :: IORef [Renderer],
+  activeRenderers :: IORef (Map.Map Text Renderer),
   tempo :: IORef Tempo,
   valueMap :: IORef Tidal.ValueMap,
   audioInput :: IORef (IO MusicW.Node),
@@ -85,7 +85,7 @@ initialRenderEnvironment s t0System cvs = do
   allRenderers' <- newIORef Map.empty
   baseDefinitions' <- newIORef IntMap.empty
   activeRenderersMap' <- newIORef IntMap.empty
-  activeRenderers' <- newIORef []
+  activeRenderers' <- newIORef Map.empty
   tempo' <- newIORef $ Tempo { freq = 0.5, time = t0System, Estuary.Types.Tempo.count = 0 }
   valueMap' <- newIORef Map.empty
   audioInput' <- newIORef $ getPunctualInput mb
@@ -162,11 +162,21 @@ clearBaseRenderer rEnv z = liftIO $ modifyIORef (activeRenderersMap rEnv) $ IntM
 
 updateActiveRenderers :: MonadIO m => RenderEnvironment -> m ()
 updateActiveRenderers rEnv = liftIO $ do
-  rs <- readIORef (allRenderers rEnv)
   arm <- readIORef (activeRenderersMap rEnv)
-  writeIORef (activeRenderers rEnv) $ catMaybes $ fmap (\n -> Map.lookup n rs) $ nub $ IntMap.elems arm
+  let listOfRendererNames = IntMap.elems arm -- :: [Text], active renderer names, will contain duplicates and be in arbitrary order
+  rs <- readIORef (allRenderers rEnv)
+  let xs = fmap (\k -> Map.lookup k rs >>= (\v -> Just (k,v))) listOfRendererNames -- :: [Maybe (Text,Renderer)]
+  let newActiveRenderers = Map.fromList $ catMaybes xs
+  prevActiveRenderers <- readIORef (activeRenderers rEnv)
+  writeIORef (activeRenderers rEnv) newActiveRenderers
+  mapM_ (initializeRenderer rEnv) $ Map.difference newActiveRenderers prevActiveRenderers
 
-getActiveRenderers :: MonadIO m => RenderEnvironment -> m [Renderer]
+-- work in progress (above)
+-- the function above needs to change so that when a new renderer is added to activeRenderers it is 'initialized' (all setters called)
+-- initializeRenderer :: MonadIO m => RenderEnvironment -> Renderer -> m ()
+
+
+getActiveRenderers :: MonadIO m => RenderEnvironment -> m (Map.Map Text Renderer)
 getActiveRenderers rEnv = liftIO $ readIORef (activeRenderers rEnv)
 
 getActiveRenderer :: MonadIO m => RenderEnvironment -> Int -> m (Maybe Renderer)

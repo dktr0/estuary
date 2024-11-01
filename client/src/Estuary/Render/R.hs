@@ -71,8 +71,6 @@ updateTidalValueMap = do
   rEnv <- ask
   m <- liftIO $ readIORef $ ccMap rEnv
   RenderEnvironment.setValueMap rEnv $ fmap Tidal.toValue $ Map.mapKeys T.unpack m
-  -- modify' $ \x -> x { valueMap = fmap Tidal.toValue $ Map.mapKeys T.unpack m}
-
 
 type R = ReaderT RenderEnvironment (StateT RenderState IO)
 
@@ -123,7 +121,7 @@ clearBaseRenderer z = do
 updateActiveRenderers :: R ()
 updateActiveRenderers = ask >>= RenderEnvironment.updateActiveRenderers
 
-getActiveRenderers :: R [Renderer]
+getActiveRenderers :: R (Map.Map Text Renderer)
 getActiveRenderers = ask >>= RenderEnvironment.getActiveRenderers
 
 getActiveRenderer :: Int -> R (Maybe Renderer)
