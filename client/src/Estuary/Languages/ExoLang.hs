@@ -43,8 +43,8 @@ instance PToJSVal ExoLangClass where pToJSVal (ExoLangClass x) = x
 instance PFromJSVal ExoLangClass where pFromJSVal = ExoLangClass
 
 foreign import javascript safe
-  "$r = $2.exoLang($1);"
-  exoLangClass :: HTMLCanvasElement -> JSVal -> IO ExoLangClass
+  "$1.webAudioContext = $2; $r = $3.exoLang($1);"
+  exoLangClass :: HTMLCanvasElement -> MusicW.AudioContext -> JSVal -> IO ExoLangClass
 
 _loadExoLang :: HTMLCanvasElement -> Text -> IO ExoLangClass
 _loadExoLang canvas path = do
@@ -54,7 +54,8 @@ _loadExoLang canvas path = do
     Left j -> throwIO (JSException j)
     Right j -> pure j
   putStrLn $ "loaded exolang from " ++ unpack path
-  elc <- exoLangClass canvas exoLangModule
+  webAudioContext <- MusicW.getGlobalAudioContext
+  elc <- exoLangClass canvas webAudioContext exoLangModule
   putStrLn $ " hasFunction define: " ++ show (hasFunction "define" elc)
   putStrLn $ " has deprecated function evaluate: " ++ show (hasFunction "evaluate" elc)
   putStrLn $ " hasFunction clear: " ++ show (hasFunction "clear" elc)

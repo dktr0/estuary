@@ -171,10 +171,6 @@ updateActiveRenderers rEnv = liftIO $ do
   writeIORef (activeRenderers rEnv) newActiveRenderers
   mapM_ (initializeRenderer rEnv) $ Map.difference newActiveRenderers prevActiveRenderers
 
--- work in progress (above)
--- the function above needs to change so that when a new renderer is added to activeRenderers it is 'initialized' (all setters called)
--- initializeRenderer :: MonadIO m => RenderEnvironment -> Renderer -> m ()
-
 
 getActiveRenderers :: MonadIO m => RenderEnvironment -> m (Map.Map Text Renderer)
 getActiveRenderers rEnv = liftIO $ readIORef (activeRenderers rEnv)
@@ -240,7 +236,6 @@ setNchnls rEnv x = liftIO $ do
   readIORef (activeRenderers rEnv) >>= mapM_ (flip Renderer.setNchnls $ x)
 
 
--- TODO: this function needs to be called (for every new renderer that becomes active)
 -- a function to call setters with initial values when a new renderer becomes active
 initializeRenderer :: MonadIO m => RenderEnvironment -> Renderer -> m ()
 initializeRenderer rEnv r = liftIO $ do
