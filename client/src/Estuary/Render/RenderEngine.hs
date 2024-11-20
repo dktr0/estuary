@@ -402,8 +402,6 @@ defineZoneExoLang r z (rName,txt,eTime) options = do
   let d = TextProgram (Live (rName,txt,eTime) L3)
   rEnv <- ask
   liftIO $ do 
-    n <- getAudioOutputs $ mainBus rEnv
-    (RenderEnvironment.setNchnls rEnv) n -- TODO: possibly other options need to be sent to renderer as well
     let okCb z' _ = do
                       RenderEnvironment.clearZoneError rEnv z'
                       RenderEnvironment.setBaseRenderer rEnv z' rName

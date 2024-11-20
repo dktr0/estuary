@@ -91,7 +91,7 @@ initialRenderEnvironment s t0System cvs = do
   audioInput' <- newIORef $ getPunctualInput mb
   aOut <- getMainBusInput mb
   audioOutput' <- newIORef aOut
-  nchnls' <- newIORef (numberOfOutputs aOut)
+  nchnls' <- newIORef 2
   putStrLn "finished initialRenderEnvironment"
   return $ RenderEnvironment {
     mainBus = mb,

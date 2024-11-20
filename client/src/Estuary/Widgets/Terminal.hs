@@ -229,6 +229,7 @@ runCommand _ _ Terminal.MaxAudioOutputs = do
 -- attempt to set a specific number of audio output channels
 runCommand rEnv _ (Terminal.SetAudioOutputs n) = do
   liftIO $ setAudioOutputs (webDirt rEnv) (mainBus rEnv) n
+  setNchnls rEnv n
   n' <- liftAudioIO channelCount
   pure [ logText $ "audioOutputs = " <> showt n' ]
 
