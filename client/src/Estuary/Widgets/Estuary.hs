@@ -128,7 +128,7 @@ estuaryWidget iSettings keyboardShortcut = divClass "estuary" $ mdo
     -- insert fixed (non exo-lang) renderers into RenderEnvironment
     iTempo <- getTempo rEnv
     MiniTidal.miniTidal iTempo >>= insertRenderer rEnv "minitidal"
-    Punctual.punctual pCanvas iTempo >>= insertRenderer rEnv "punctual"
+    Punctual.punctual pCanvas iTempo >>= insertRenderer rEnv "oldpunctual"
     CineCer0.cineCer0 cineCer0Div iTempo >>= insertRenderer rEnv "cinecer0"
     Hydra.hydra hCanvas >>= insertRenderer rEnv "hydra"
     getTempo rEnv >>= TimeNot.timeNot >>= insertRenderer rEnv "timenot"
